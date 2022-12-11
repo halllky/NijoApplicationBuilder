@@ -1,0 +1,73 @@
+﻿@using System.Reflection;
+@using System.Collections;
+@model (Guid, dynamic);
+@inject haldoc.Schema.ApplicationSchema schema;
+@{
+    var props = schema.EnumerateProps(Model.Item1);
+}
+
+<div class="container">
+    @for (int i = 0; i < props.Length; i++)
+    {
+        @if (props[i].PropertyType == typeof(string))
+        {
+            <div class="row">
+                <div class="col-2">
+                    <span>@props[i].Name</span>
+                </div>
+                <div class="col">
+                    <input type="text" value="@props[i].GetValue(Model.Item2)" />
+                </div>
+            </div>
+        }
+        else if (props[i].GetCustomAttribute<haldoc.Schema.ChildrenAttribute>() != null)
+        {
+            var children = (IList)props[i].GetValue(Model.Item2);
+            var childType = props[i].PropertyType.GetGenericArguments()[0];
+            var childProps = childType
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(prop => prop.GetCustomAttribute<haldoc.Schema.ChildrenAttribute>() == null)
+                .ToArray();
+
+            <div class="row">
+                <div class="col-2">
+                    <span>@props[i].Name</span>
+                </div>
+                <div class="col">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                @for (int j = 0; j < childProps.Length; j++) {
+                                    <th>@childProps[j].Name</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int j = 0; j < children.Count; j++) {
+                                <tr>
+                                    @for (int k = 0; k < childProps.Length; k++) {
+                                        var value = childProps[k].GetValue(children[j]);
+                                        if (childProps[k].PropertyType == typeof(string))
+                                        {
+                                            <td>
+                                                <input type="text" value="@value" />
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            <td>
+                                                <a asp-controller="Haldoc" asp-action="Single" asp-route-aggregateId="@childProps[k].PropertyType.GUID">
+                                                    @schema.GetInstanceName(value)
+                                                </a>
+                                            </td>
+                                        }
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+</div>
