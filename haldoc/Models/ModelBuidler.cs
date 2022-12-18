@@ -86,7 +86,7 @@ namespace haldoc.Models {
         #region 新規作成画面
         public CreateViewModel InitCreateViewModel(Guid aggregateId) {
             var aggregate = _schema.CachedTypes.Single(a => a.GUID == aggregateId);
-            var instance = Activator.CreateInstance(aggregate);
+            var instance = _schema.CreateInstance(aggregate);
 
             return new CreateViewModel {
                 PageTitle = $"{aggregate.Name} - 新規作成",

@@ -20,7 +20,7 @@
                 </div>
             </div>
         }
-        else if (props[i].GetCustomAttribute<haldoc.Schema.ChildrenAttribute>() != null)
+        else if (props[i].PropertyType.IsGenericType && props[i].PropertyType.GetGenericTypeDefinition() == typeof(haldoc.Schema.Relation.Children<>))
         {
             var children = (IList)props[i].GetValue(Model.Item2);
             var childType = props[i].PropertyType.GetGenericArguments()[0];

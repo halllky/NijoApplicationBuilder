@@ -9,12 +9,17 @@ namespace haldoc.Schema {
     public abstract class ApplicationSchema {
 
         public abstract string ApplicationName { get; }
-        protected abstract IEnumerable<Type> RegisterAggregates();
 
         private HashSet<Type> _cache;
         public IReadOnlySet<Type> CachedTypes {
             get {
-                if (_cache == null) _cache = RegisterAggregates().ToHashSet();
+                if (_cache == null) {
+                    _cache = new();
+                    foreach (var type in Assembly.GetExecutingAssembly().GetTypes()) {
+                        if (type.GetCustomAttribute<AggregateRootAttribute>() != null) _cache.Add(type);
+                        if (type.GetCustomAttribute<AggregateChildAttribute>() != null) _cache.Add(type);
+                    }
+                }
                 return _cache;
             }
         }
@@ -103,8 +108,17 @@ namespace haldoc.Schema {
             } else {
                 throw new InvalidOperationException($"いまのところプロパティ {prop.Name} の型 {prop.PropertyType.Name} はサポートしていません。");
             }
-
-        } 
+        }
+        public object CreateInstance(Type aggregateRoot) {
+            var instance = Activator.CreateInstance(aggregateRoot);
+            foreach (var prop in aggregateRoot.GetProperties(BindingFlags.Instance | BindingFlags.Public)) {
+                if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Relation.Children<>)) {
+                    var children = Activator.CreateInstance(prop.PropertyType);
+                    prop.SetValue(instance, children);
+                }
+            }
+            return instance;
+        }
     }
 
     public class EntityDef {

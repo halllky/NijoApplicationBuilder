@@ -115,21 +115,9 @@ namespace haldoc {
 
     public class テストアプリケーション : ApplicationSchema {
 
-        public static テストアプリケーション CreateWithDummyData() {
-            throw new NotImplementedException();
-        }
-
         public テストアプリケーション(HashSet<object> db) : base(db) { }
 
         public override string ApplicationName => "サンプルシステム";
-
-        protected override IEnumerable<Type> RegisterAggregates() {
-            return Assembly
-                .GetExecutingAssembly()
-                .GetTypes()
-                .Where(type => type.GetCustomAttribute<AggregateRootAttribute>() != null
-                            || type.GetCustomAttribute<AggregateChildAttribute>() != null);
-        }
     }
 
     // デモンストレーション

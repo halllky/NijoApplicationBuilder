@@ -21,7 +21,7 @@ namespace haldoc {
         public void ConfigureServices(IServiceCollection services) {
             services.AddControllersWithViews();
 
-            services.AddSingleton<Schema.ApplicationSchema>(テストアプリケーション.CreateWithDummyData());
+            services.AddSingleton<Schema.ApplicationSchema>(new テストアプリケーション(new HashSet<object>()));
             services.AddSingleton(provider => new Models.ModelBuidler(provider.GetRequiredService<Schema.ApplicationSchema>()));
         }
 
