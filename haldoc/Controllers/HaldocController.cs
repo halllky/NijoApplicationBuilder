@@ -9,39 +9,39 @@ using Microsoft.AspNetCore.Mvc;
 namespace haldoc.Controllers {
     public class HaldocController : Controller {
         public HaldocController(Schema.ApplicationSchema schema) {
-            _schema = schema;
+            _modelBuidler = new Models.ModelBuidler(schema);
         }
-        private readonly Schema.ApplicationSchema _schema;
+        private readonly Models.ModelBuidler _modelBuidler;
 
         #region 一覧画面
         public IActionResult List(Guid aggregateId) {
-            var model = _schema.InitListViewModel(aggregateId);
+            var model = _modelBuidler.InitListViewModel(aggregateId);
             return View(model);
         }
         public IActionResult ClearSearchCondition(Models.ListViewModel model) {
-            _schema.ClearSearchCondition(model);
+            _modelBuidler.ClearSearchCondition(model);
             return View(nameof(List), model);
         }
         public IActionResult ExecuteSearch(Models.ListViewModel model) {
-            _schema.ExecuteSearch(model);
+            _modelBuidler.ExecuteSearch(model);
             return View(nameof(List), model);
         }
         #endregion
 
         #region 新規作成画面
         public IActionResult Create(Guid aggregateId) {
-            var model = _schema.InitCreateViewModel(aggregateId);
+            var model = _modelBuidler.InitCreateViewModel(aggregateId);
             return View(model);
         }
         public IActionResult SaveNewInstance(Models.CreateViewModel model) {
-            _schema.SaveNewInstance(model);
+            _modelBuidler.SaveNewInstance(model);
             return View(nameof(Create), model);
         }
         #endregion
 
         #region シングルビュー
         public IActionResult Single(Guid aggregateId) {
-            var model = _schema.InitSingleViewModel(aggregateId);
+            var model = _modelBuidler.InitSingleViewModel(aggregateId);
             return View(model);
         }
         #endregion

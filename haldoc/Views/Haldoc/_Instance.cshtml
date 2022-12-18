@@ -1,7 +1,7 @@
 ﻿@using System.Reflection;
 @using System.Collections;
 @model (Guid, dynamic);
-@inject haldoc.Schema.ApplicationSchema schema;
+@inject haldoc.Models.ModelBuidler schema;
 @{
     var props = schema.EnumerateProps(Model.Item1);
 }

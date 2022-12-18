@@ -22,6 +22,7 @@ namespace haldoc {
             services.AddControllersWithViews();
 
             services.AddSingleton<Schema.ApplicationSchema>(テストアプリケーション.CreateWithDummyData());
+            services.AddSingleton(provider => new Models.ModelBuidler(provider.GetRequiredService<Schema.ApplicationSchema>()));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

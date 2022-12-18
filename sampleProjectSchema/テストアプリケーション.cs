@@ -32,12 +32,14 @@ namespace haldoc {
     public interface I資本情報 {
         E_安定性 安定性 { get; }
     }
+    [AggregateChild]
     public class 上場企業資本情報 : I資本情報 {
         public decimal 自己資本比率 { get; set; }
         public decimal 利益率 { get; set; }
         [NotMapped]
         public E_安定性 安定性 => 自己資本比率 >= 0.2m ? E_安定性.安定 : E_安定性.不安;
     }
+    [AggregateChild]
     public class 非上場企業資本情報 : I資本情報 {
         public string 主要株主 { get; set; }
         public E_安定性 安定性 { get; set; }
@@ -117,7 +119,7 @@ namespace haldoc {
             throw new NotImplementedException();
         }
 
-        private テストアプリケーション(HashSet<object> db) : base(db) { }
+        public テストアプリケーション(HashSet<object> db) : base(db) { }
 
         public override string ApplicationName => "サンプルシステム";
 
@@ -125,7 +127,8 @@ namespace haldoc {
             return Assembly
                 .GetExecutingAssembly()
                 .GetTypes()
-                .Where(type => type.GetCustomAttribute<AggregateRootAttribute>() != null);
+                .Where(type => type.GetCustomAttribute<AggregateRootAttribute>() != null
+                            || type.GetCustomAttribute<AggregateChildAttribute>() != null);
         }
     }
 
