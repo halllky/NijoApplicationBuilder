@@ -52,7 +52,7 @@ namespace haldoc.CodeGenerating {
  /*Entityクラスの生成: プロパティ*/ 
  foreach (var prop in entity.Keys.Concat(entity.NonKeyProps)) { 
             this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.TypeName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
             this.Write(" ");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.ColumnName));
             this.Write(" { get; set; }\n");

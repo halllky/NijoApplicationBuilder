@@ -12,6 +12,8 @@
   <ItemGroup>
     <Folder Include="Schema\" />
     <Folder Include="CodeGenerating\" />
+    <Folder Include="Core\" />
+    <Folder Include="Core\Props\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="CodeGenerating\Entities.tt">

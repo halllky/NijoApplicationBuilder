@@ -20,13 +20,13 @@
                 </div>
             </div>
         }
-        else if (props[i].PropertyType.IsGenericType && props[i].PropertyType.GetGenericTypeDefinition() == typeof(haldoc.Schema.Relation.Children<>))
+        else if (props[i].PropertyType.IsGenericType && props[i].PropertyType.GetGenericTypeDefinition() == typeof(haldoc.Schema.Children<>))
         {
             var children = (IList)props[i].GetValue(Model.Item2);
             var childType = props[i].PropertyType.GetGenericArguments()[0];
             var childProps = childType
                 .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(prop => prop.GetCustomAttribute<haldoc.Schema.ChildrenAttribute>() == null)
+                .Where(prop => !prop.PropertyType.IsGenericType || prop.PropertyType.GetGenericTypeDefinition() != typeof(haldoc.Schema.Children<>))
                 .ToArray();
 
             <div class="row">

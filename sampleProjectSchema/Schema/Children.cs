@@ -2,8 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace haldoc.Schema.Relation {
+namespace haldoc.Schema {
 
-    public class Children<T> : List<T> {
+    public sealed class Children<T> : List<T> {
     }
 }

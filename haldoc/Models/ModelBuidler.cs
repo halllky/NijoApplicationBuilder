@@ -27,7 +27,7 @@ namespace haldoc.Models {
             var aggregate = _schema.CachedTypes.Single(a => a.GUID == aggregateId);
             var props = aggregate
                 .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(prop => prop.GetCustomAttribute<ChildrenAttribute>() == null);
+                .Where(prop => !prop.PropertyType.IsGenericType || prop.PropertyType.GetGenericTypeDefinition() != typeof(haldoc.Schema.Children<>));
 
             var searchConditionItems = props
                 .Select(prop => new SearchConditionItem {
@@ -68,7 +68,7 @@ namespace haldoc.Models {
 
             var props = aggregate
                 .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(prop => prop.GetCustomAttribute<ChildrenAttribute>() == null)
+                .Where(prop => !prop.PropertyType.IsGenericType || prop.PropertyType.GetGenericTypeDefinition() != typeof(haldoc.Schema.Children<>))
                 .ToArray();
             var values = new List<IList<string>>();
             for (int i = 0; i < searchResult.Length; i++) {

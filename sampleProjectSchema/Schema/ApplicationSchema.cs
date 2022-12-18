@@ -17,7 +17,6 @@ namespace haldoc.Schema {
                     _cache = new();
                     foreach (var type in Assembly.GetExecutingAssembly().GetTypes()) {
                         if (type.GetCustomAttribute<AggregateRootAttribute>() != null) _cache.Add(type);
-                        if (type.GetCustomAttribute<AggregateChildAttribute>() != null) _cache.Add(type);
                     }
                 }
                 return _cache;
@@ -65,31 +64,31 @@ namespace haldoc.Schema {
             entityDef = _entityDefCache[aggregate];
             return true;
         }
-        private IEnumerable<EntityPropDef> ToEntityProp(PropertyInfo prop) {
+        private IEnumerable<EntityColumnDef> ToEntityProp(PropertyInfo prop) {
             if (prop.GetCustomAttribute<NotMappedAttribute>() != null) yield break;
-            if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Relation.Children<>)) {
+            if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Children<>)) {
                 yield break; // 配列型
-            } else if (prop.GetCustomAttributes<Relation.VariationAttribute>().Any()) {
+            } else if (prop.GetCustomAttributes<VariationAttribute>().Any()) {
                 yield break; // 多態型
             } else if (prop.PropertyType == typeof(string)) {
-                yield return new EntityPropDef {
-                    TypeName = "string",
+                yield return new EntityColumnDef {
+                    CSharpTypeName = "string",
                     ColumnName = prop.Name,
                 };
             } else if (prop.PropertyType.IsEnum) {
-                yield return new EntityPropDef {
-                    TypeName = prop.PropertyType.FullName,
+                yield return new EntityColumnDef {
+                    CSharpTypeName = prop.PropertyType.FullName,
                     ColumnName = prop.Name,
                 };
             } else if (prop.PropertyType.IsGenericType
                 && prop.PropertyType.GetGenericArguments()[0].IsEnum) {
-                yield return new EntityPropDef {
-                    TypeName = prop.PropertyType.GetGenericArguments()[0].FullName + "?",
+                yield return new EntityColumnDef {
+                    CSharpTypeName = prop.PropertyType.GetGenericArguments()[0].FullName + "?",
                     ColumnName = prop.Name,
                 };
             } else if (TryGetEFCoreEntityDef(prop.PropertyType, out var propType)) {
-                var foreignKeys = propType.Keys.Select(fk => new EntityPropDef {
-                    TypeName = fk.TypeName,
+                var foreignKeys = propType.Keys.Select(fk => new EntityColumnDef {
+                    CSharpTypeName = fk.CSharpTypeName,
                     ColumnName = $"{prop.Name}__{fk.ColumnName}",
                 });
                 foreach (var fk in foreignKeys) yield return fk;
@@ -100,8 +99,8 @@ namespace haldoc.Schema {
                 foreach (var nestedProp in nestedProps) {
                     if (nestedProp.PropertyType != typeof(string))
                         throw new InvalidOperationException($"今のところ入れ子型はstringのみサポート");
-                    yield return new EntityPropDef {
-                        TypeName = "string",
+                    yield return new EntityColumnDef {
+                        CSharpTypeName = "string",
                         ColumnName = $"{prop.Name}__{nestedProp.Name}",
                     };
                 }
@@ -112,7 +111,7 @@ namespace haldoc.Schema {
         public object CreateInstance(Type aggregateRoot) {
             var instance = Activator.CreateInstance(aggregateRoot);
             foreach (var prop in aggregateRoot.GetProperties(BindingFlags.Instance | BindingFlags.Public)) {
-                if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Relation.Children<>)) {
+                if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Children<>)) {
                     var children = Activator.CreateInstance(prop.PropertyType);
                     prop.SetValue(instance, children);
                 }
@@ -123,11 +122,11 @@ namespace haldoc.Schema {
 
     public class EntityDef {
         public string TableName { get; set; }
-        public IList<EntityPropDef> Keys { get; set; }
-        public IList<EntityPropDef> NonKeyProps { get; set; }
+        public IList<EntityColumnDef> Keys { get; set; }
+        public IList<EntityColumnDef> NonKeyProps { get; set; }
     }
-    public class EntityPropDef {
-        public string TypeName { get; set; }
+    public class EntityColumnDef {
+        public string CSharpTypeName { get; set; }
         public string ColumnName { get; set; }
     }
 }
