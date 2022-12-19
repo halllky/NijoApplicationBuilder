@@ -22,6 +22,8 @@ namespace haldoc.Core {
         }
 
         private readonly Dictionary<Type, Aggregate> aggregates = new();
+        private readonly Dictionary<Type, IReadOnlyList<IAggregateProp>> properties = new();
+
         internal Aggregate CreateAggregate(Type type, Aggregate parent, bool multiple) {
             if (!aggregates.ContainsKey(type)) {
                 aggregates.Add(type, new Aggregate(type, parent, multiple, this));
@@ -33,7 +35,6 @@ namespace haldoc.Core {
             return aggregates[type];
         }
 
-        private readonly Dictionary<Type, IReadOnlyList<IAggregateProp>> properties = new();
         internal IReadOnlyList<IAggregateProp> GetPropsOf(Type type) {
             if (!properties.ContainsKey(type)) {
                 var list = new List<IAggregateProp>();
@@ -55,6 +56,15 @@ namespace haldoc.Core {
                 properties.Add(type, list);
             }
             return properties[type];
+        }
+
+        public  object CreateInstance(Type type) {
+            var instance = Activator.CreateInstance(type);
+            var props = GetPropsOf(type);
+            foreach (var prop in props) {
+                prop.UnderlyingPropInfo.SetValue(instance, prop.CreateInstanceDefaultValue());
+            }
+            return instance;
         }
 
         internal bool IsUserDefinedType(Type type) {

@@ -32,7 +32,12 @@ namespace haldoc.Core.Props {
         }
 
         public object CreateInstanceDefaultValue() {
-            return Activator.CreateInstance(UnderlyingPropInfo.PropertyType);
+            var instance = Activator.CreateInstance(UnderlyingPropInfo.PropertyType);
+            var props = _context.GetPropsOf(UnderlyingPropInfo.PropertyType);
+            foreach (var prop in props) {
+                prop.UnderlyingPropInfo.SetValue(instance, prop.CreateInstanceDefaultValue());
+            }
+            return instance;
         }
     }
 }

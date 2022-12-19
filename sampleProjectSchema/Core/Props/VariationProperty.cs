@@ -38,7 +38,14 @@ namespace haldoc.Core.Props {
         }
 
         public object CreateInstanceDefaultValue() {
-            return Activator.CreateInstance(_variations.OrderBy(x => x.Key).First().Value.UnderlyingType);
+            var type = _variations.OrderBy(x => x.Key).First().Value.UnderlyingType;
+            var instance = Activator.CreateInstance(type);
+            var props = _context.GetPropsOf(UnderlyingPropInfo.PropertyType);
+            foreach (var prop in props) {
+                if (prop.UnderlyingPropInfo.SetMethod == null) continue;
+                prop.UnderlyingPropInfo.SetValue(instance, prop.CreateInstanceDefaultValue());
+            }
+            return instance;
         }
     }
 }
