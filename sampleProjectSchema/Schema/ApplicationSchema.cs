@@ -81,6 +81,7 @@ namespace haldoc.Schema {
                     ColumnName = prop.Name,
                 };
             } else if (prop.PropertyType.IsGenericType
+                && prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>)
                 && prop.PropertyType.GetGenericArguments()[0].IsEnum) {
                 yield return new EntityColumnDef {
                     CSharpTypeName = prop.PropertyType.GetGenericArguments()[0].FullName + "?",

@@ -6,13 +6,19 @@ using System.Linq;
 namespace haldoc.CodeGenerating {
     partial class EFCodeGenerator {
         public EFCodeGenerator(Schema.ApplicationSchema schema) {
-            _schema = schema;
+            entities = schema.GetEFCoreEntities();
+        }
+        public EFCodeGenerator(Core.ProjectContext context) {
+            var aggregates = context.BuildAll();
+            entities = aggregates
+                .Union(aggregates.SelectMany(e => e.GetDescendantAggregates()))
+                .Select(e => e.ToEFCoreEntity());
         }
 
-        private readonly Schema.ApplicationSchema _schema;
+        private readonly IEnumerable<Schema.EntityDef> entities;
 
         public IEnumerable<Schema.EntityDef> GetEntityDefs() {
-            return _schema.GetEFCoreEntities();
+            return entities;
         }
     }
 }

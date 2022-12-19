@@ -50,14 +50,14 @@ namespace haldoc {
 
         public string 宛名 { get; set; }
 
-        public 連絡先 住所 { get; set; }
+        public Nested<連絡先> 住所 { get; set; }
     }
 
     // 1対多、同じ集約
     public class コメント {
         public string Text { get; set; }
 
-        public DateTime At { get; set; }
+        public string At { get; set; }
 
         public 担当者 By { get; set; }
     }
@@ -75,7 +75,7 @@ namespace haldoc {
         [Key]
         public 取引先 会社 { get; set; }
         [Key]
-        public string 支店ID { get; set; }
+        public string 支店連番 { get; set; }
 
         public string 支店名 { get; set; }
     }
