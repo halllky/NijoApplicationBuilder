@@ -6,13 +6,15 @@ using haldoc.Schema;
 
 namespace haldoc.Core.Props {
     public class ChildrenProperty : IAggregateProp {
-        public ChildrenProperty(PropertyInfo propInfo, ProjectContext context) {
+        public ChildrenProperty(PropertyInfo propInfo, Aggregate owner, ProjectContext context) {
             _context = context;
+            Owner = owner;
             UnderlyingPropInfo = propInfo;
         }
 
         private readonly ProjectContext _context;
 
+        public Aggregate Owner { get; }
         public PropertyInfo UnderlyingPropInfo { get; }
 
         public IEnumerable<Aggregate> GetChildAggregates() {

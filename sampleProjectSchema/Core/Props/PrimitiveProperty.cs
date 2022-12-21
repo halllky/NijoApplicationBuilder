@@ -6,10 +6,12 @@ using haldoc.Schema;
 
 namespace haldoc.Core.Props {
     public class PrimitiveProperty : IAggregateProp {
-        public PrimitiveProperty(PropertyInfo propInfo) {
+        public PrimitiveProperty(PropertyInfo propInfo, Aggregate owner) {
+            Owner = owner;
             UnderlyingPropInfo = propInfo;
         }
 
+        public Aggregate Owner { get; }
         public PropertyInfo UnderlyingPropInfo { get; }
 
         public IEnumerable<Aggregate> GetChildAggregates() {

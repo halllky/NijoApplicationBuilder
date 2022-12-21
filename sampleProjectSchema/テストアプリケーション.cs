@@ -50,7 +50,7 @@ namespace haldoc {
 
         public string 宛名 { get; set; }
 
-        public Nested<連絡先> 住所 { get; set; }
+        public Child<連絡先> 住所 { get; set; }
     }
 
     // 1対多、同じ集約

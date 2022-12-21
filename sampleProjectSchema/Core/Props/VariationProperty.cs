@@ -6,7 +6,7 @@ using haldoc.Schema;
 
 namespace haldoc.Core.Props {
     public class VariationProperty : IAggregateProp {
-        public VariationProperty(PropertyInfo propInfo, ProjectContext context) {
+        public VariationProperty(PropertyInfo propInfo, Aggregate owner, ProjectContext context) {
             var parent = context.GetAggregate(propInfo.DeclaringType);
             var variations = propInfo.GetCustomAttributes<VariationAttribute>();
 
@@ -15,13 +15,15 @@ namespace haldoc.Core.Props {
 
             _context = context;
             _variations = variations.ToDictionary(v => v.Key, v => context.CreateAggregate(v.Type, parent, multiple: false));
-            UnderlyingPropInfo = propInfo;
 
+            Owner = owner;
+            UnderlyingPropInfo = propInfo;
         }
 
         private readonly ProjectContext _context;
         private readonly Dictionary<int, Aggregate> _variations;
 
+        public Aggregate Owner { get; }
         public PropertyInfo UnderlyingPropInfo { get; }
 
         public IEnumerable<Aggregate> GetChildAggregates() {

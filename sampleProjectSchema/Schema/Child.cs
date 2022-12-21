@@ -5,8 +5,8 @@ namespace haldoc.Schema {
     /// ComplexTypeなのか集約外部への参照なのか判別できない
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public sealed class Nested<T> where T : class {
-        public Nested() {
+    public sealed class Child<T> where T : class {
+        public Child() {
         }
     }
 }

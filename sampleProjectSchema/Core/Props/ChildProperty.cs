@@ -5,30 +5,27 @@ using System.Reflection;
 using haldoc.Schema;
 
 namespace haldoc.Core.Props {
-    public class NestedObjectProperty : IAggregateProp {
-        public NestedObjectProperty(PropertyInfo propInfo, ProjectContext context) {
+    public class ChildProperty : IAggregateProp {
+        public ChildProperty(PropertyInfo propInfo, Aggregate owner, ProjectContext context) {
             _context = context;
+            Owner = owner;
             UnderlyingPropInfo = propInfo;
-            NestedObjectType = propInfo.PropertyType.GetGenericArguments()[0];
         }
 
         private readonly ProjectContext _context;
 
+        public Aggregate Owner { get; }
         public PropertyInfo UnderlyingPropInfo { get; }
-        private Type NestedObjectType { get; }
 
         public IEnumerable<Aggregate> GetChildAggregates() {
-            yield break;
+            yield return _context.CreateAggregate(
+                UnderlyingPropInfo.PropertyType.GetGenericArguments()[0],
+                _context.GetAggregate(UnderlyingPropInfo.DeclaringType),
+                multiple: false);
         }
 
         public IEnumerable<EntityColumnDef> ToEFCoreColumn() {
-            var props = _context.GetPropsOf(NestedObjectType);
-            foreach (var column in props.SelectMany(p => p.ToEFCoreColumn())) {
-                yield return new EntityColumnDef {
-                    CSharpTypeName = column.CSharpTypeName,
-                    ColumnName = $"{UnderlyingPropInfo.Name}__{column.ColumnName}",
-                };
-            }
+            yield break;
         }
 
         public object CreateInstanceDefaultValue() {

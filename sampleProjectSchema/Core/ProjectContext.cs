@@ -42,15 +42,15 @@ namespace haldoc.Core {
                     if (prop.GetCustomAttribute<NotMappedAttribute>() != null) continue;
 
                     if (IsSchalarType(prop.PropertyType)) {
-                        list.Add(new PrimitiveProperty(prop));
+                        list.Add(new PrimitiveProperty(prop, null));
                     } else if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Children<>)) {
-                        list.Add(new ChildrenProperty(prop, this));
-                    } else if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Nested<>)) {
-                        list.Add(new NestedObjectProperty(prop, this));
+                        list.Add(new ChildrenProperty(prop, null, this));
+                    } else if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Child<>)) {
+                        list.Add(new ChildProperty(prop, null, this));
                     } else if (prop.GetCustomAttributes<VariationAttribute>().Any()) {
-                        list.Add(new VariationProperty(prop, this));
+                        list.Add(new VariationProperty(prop, null, this));
                     } else if (prop.PropertyType.IsClass && IsUserDefinedType(prop.PropertyType)) {
-                        list.Add(new ReferenceProperty(prop, this));
+                        list.Add(new ReferenceProperty(prop, null, this));
                     }
                 }
                 properties.Add(type, list);
