@@ -31,12 +31,20 @@ namespace haldoc.Core {
 
                     if (_context.IsSchalarType(prop.PropertyType)) {
                         _properties.Add(new PrimitiveProperty(prop, this));
-                    } else if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Children<>)) {
+
+                    } else if (prop.PropertyType.IsGenericType
+                        && prop.PropertyType.GetGenericTypeDefinition() == typeof(Children<>)) {
                         _properties.Add(new ChildrenProperty(prop, this, _context));
-                    } else if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Child<>)) {
-                        _properties.Add(new ChildProperty(prop, this, _context));
-                    } else if (prop.GetCustomAttributes<VariationAttribute>().Any()) {
-                        _properties.Add(new VariationProperty(prop, this, _context));
+
+                    } else if (prop.PropertyType.IsGenericType
+                        && prop.PropertyType.GetGenericTypeDefinition() == typeof(Child<>)) {
+
+                        if (prop.PropertyType.GetGenericArguments()[0].IsAbstract
+                            && prop.GetCustomAttributes<VariationAttribute>().Any())
+                            _properties.Add(new VariationProperty(prop, this, _context));
+                        else
+                            _properties.Add(new ChildProperty(prop, this, _context));
+
                     } else if (prop.PropertyType.IsClass && _context.IsUserDefinedType(prop.PropertyType)) {
                         _properties.Add(new ReferenceProperty(prop, this, _context));
                     }

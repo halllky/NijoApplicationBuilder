@@ -10,7 +10,9 @@ namespace haldoc.Core.Props {
             var parent = context.GetAggregate(propInfo.DeclaringType);
             var variations = propInfo.GetCustomAttributes<VariationAttribute>();
 
-            var cannotAssignable = variations.Where(x => !propInfo.PropertyType.IsAssignableFrom(x.Type)).ToArray();
+            // 型の妥当性チェック
+            var childType = propInfo.PropertyType.GetGenericArguments()[0];
+            var cannotAssignable = variations.Where(x => !childType.IsAssignableFrom(x.Type)).ToArray();
             if (cannotAssignable.Any()) throw new InvalidOperationException($"{propInfo.PropertyType.Name} の派生型でない: {string.Join(", ", cannotAssignable.Select(x => x.Type.Name))}");
 
             _context = context;

@@ -20,7 +20,7 @@ namespace haldoc {
 
         [Variation(0, typeof(上場企業資本情報))]
         [Variation(1, typeof(非上場企業資本情報))]
-        public I資本情報 資本情報 { get; set; }
+        public Child<I資本情報> 資本情報 { get; set; }
 
         public Children<コメント> 備考 { get; set; }
 
