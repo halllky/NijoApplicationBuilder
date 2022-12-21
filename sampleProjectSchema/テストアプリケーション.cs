@@ -110,13 +110,6 @@ namespace haldoc {
         不安,
     }
 
-    public class テストアプリケーション : ApplicationSchema {
-
-        public テストアプリケーション(HashSet<object> db) : base(db) { }
-
-        public override string ApplicationName => "サンプルシステム";
-    }
-
     // デモンストレーション
     // - このファイルへのプロパティ追加で3画面全てに反映されることを確認
 }

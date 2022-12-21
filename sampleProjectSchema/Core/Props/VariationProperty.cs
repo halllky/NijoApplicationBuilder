@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
 using haldoc.Core.Dto;
@@ -32,6 +33,19 @@ namespace haldoc.Core.Props {
         public IEnumerable<Aggregate> GetChildAggregates() {
             foreach (var variation in _variations) {
                 yield return variation.Value;
+            }
+        }
+
+        public IEnumerable<TableHeader> ToTableHeader() {
+            var commonProps = UnderlyingPropInfo.PropertyType
+                .GetGenericArguments()[0]
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var prop in commonProps) {
+                if (prop.GetCustomAttribute<NotMappedAttribute>() != null) continue;
+                yield return new TableHeader {
+                    Key = $"{UnderlyingPropInfo.Name}__{prop.Name}",
+                    Text = prop.Name,
+                };
             }
         }
 

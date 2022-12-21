@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
 using haldoc.Core.Dto;
@@ -23,6 +24,19 @@ namespace haldoc.Core.Props {
                 Owner);
         public IEnumerable<Aggregate> GetChildAggregates() {
             yield return ChildAggregate;
+        }
+
+        public IEnumerable<TableHeader> ToTableHeader() {
+            var props = UnderlyingPropInfo.PropertyType
+                .GetGenericArguments()[0]
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var prop in props) {
+                if (prop.GetCustomAttribute<NotMappedAttribute>() != null) continue;
+                yield return new TableHeader {
+                    Key = $"{UnderlyingPropInfo.Name}__{prop.Name}",
+                    Text = prop.Name,
+                };
+            }
         }
 
         public IEnumerable<EntityColumnDef> ToEFCoreColumn() {

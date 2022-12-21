@@ -16,12 +16,20 @@ namespace haldoc.Core {
             _context = context;
         }
 
+        public Guid GUID => UnderlyingType.GUID;
+        public string Name => UnderlyingType.Name;
         public Type UnderlyingType { get; }
-        public Aggregate Parent { get; }
         private readonly bool _hasIndexKey;
         private readonly ProjectContext _context;
 
-        public bool IsRoot => UnderlyingType.GetCustomAttribute<AggregateRootAttribute>() != null;
+        public Aggregate Parent { get; }
+        public Aggregate GetRoot() {
+            var aggregate = this;
+            while (aggregate.Parent != null) {
+                aggregate = aggregate.Parent;
+            }
+            return aggregate;
+        }
 
         private List<IAggregateProp> _properties;
         public IReadOnlyList<IAggregateProp> GetProperties() {
@@ -60,6 +68,40 @@ namespace haldoc.Core {
                 yield return child;
                 foreach (var grandChild in child.GetDescendantAggregates()) {
                     yield return grandChild;
+                }
+            }
+        }
+
+        public IEnumerable<TableHeader> ToTableHeader() {
+            foreach (var prop in GetProperties()) {
+                switch (prop) {
+                    case PrimitiveProperty primitive:
+                        yield return new TableHeader {
+                            Key = primitive.UnderlyingPropInfo.Name,
+                            Text = primitive.UnderlyingPropInfo.Name,
+                            LinkTo = null,
+                        };
+                        break;
+                    case ReferenceProperty reference:
+                        yield return new TableHeader {
+                            Key = reference.UnderlyingPropInfo.Name,
+                            Text = reference.UnderlyingPropInfo.Name,
+                            LinkTo = reference.ReferedAggregate,
+                        };
+                        break;
+                    case ChildProperty child:
+                        foreach (var header in child.ToTableHeader()) {
+                            yield return header;
+                        }
+                        break;
+                    case VariationProperty variation:
+                        foreach (var header in variation.ToTableHeader()) {
+                            yield return header;
+                        }
+                        break;
+                    case ChildrenProperty:
+                    default:
+                        break;
                 }
             }
         }

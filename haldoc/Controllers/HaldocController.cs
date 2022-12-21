@@ -8,8 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace haldoc.Controllers {
     public class HaldocController : Controller {
-        public HaldocController(Schema.ApplicationSchema schema) {
-            _modelBuidler = new Models.ModelBuidler(schema);
+        public HaldocController(haldoc.Core.ProjectContext context) {
+            _modelBuidler = new Models.ModelBuidler(context);
         }
         private readonly Models.ModelBuidler _modelBuidler;
 

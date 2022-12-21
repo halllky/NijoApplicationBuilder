@@ -7,24 +7,23 @@ using haldoc.Schema;
 
 namespace haldoc.Models {
     public class ModelBuidler {
-        public ModelBuidler(ApplicationSchema schema) {
-            _schema = schema;
+        public ModelBuidler(haldoc.Core.ProjectContext schema) {
+            _context = schema;
         }
 
-        private readonly ApplicationSchema _schema;
+        private readonly haldoc.Core.ProjectContext _context;
 
         public IEnumerable<KeyValuePair<Guid, string>> GetMenu() {
-            foreach (var type in _schema.CachedTypes) {
-                if (type.GetCustomAttribute<AggregateRootAttribute>() == null) continue;
-                yield return KeyValuePair.Create(type.GUID, type.Name);
+            foreach (var aggregate in _context.BuildAll()) {
+                yield return KeyValuePair.Create(aggregate.GUID, aggregate.Name);
             }
         }
 
-        public string ApplicationName => _schema.ApplicationName;
+        public string ApplicationName => _context.ProjectName;
 
         #region 一覧画面
         public ListViewModel InitListViewModel(Guid aggregateId) {
-            var aggregate = _schema.CachedTypes.Single(a => a.GUID == aggregateId);
+            var aggregate = _context.BuildAll().Single(a => a.GUID == aggregateId);
             var props = aggregate
                 .GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(prop => !prop.PropertyType.IsGenericType || prop.PropertyType.GetGenericTypeDefinition() != typeof(haldoc.Schema.Children<>));
@@ -56,8 +55,8 @@ namespace haldoc.Models {
             }
         }
         public void ExecuteSearch(ListViewModel model) {
-            var aggregate = _schema.CachedTypes.Single(a => a.GUID == model.AggregateID);
-            var query = _schema.DB.Where(item => item.GetType() == aggregate);
+            var aggregate = _context.CachedTypes.Single(a => a.GUID == model.AggregateID);
+            var query = _context.DB.Where(item => item.GetType() == aggregate);
 
             foreach (var searchCondition in model.SearchConditionItems) {
                 if (string.IsNullOrWhiteSpace(searchCondition.Value)) continue;
@@ -85,8 +84,8 @@ namespace haldoc.Models {
 
         #region 新規作成画面
         public CreateViewModel InitCreateViewModel(Guid aggregateId) {
-            var aggregate = _schema.CachedTypes.Single(a => a.GUID == aggregateId);
-            var instance = _schema.CreateInstance(aggregate);
+            var aggregate = _context.CachedTypes.Single(a => a.GUID == aggregateId);
+            var instance = _context.CreateInstance(aggregate);
 
             return new CreateViewModel {
                 PageTitle = $"{aggregate.Name} - 新規作成",
@@ -95,22 +94,22 @@ namespace haldoc.Models {
             };
         }
         public PropertyInfo[] EnumerateProps(Guid typeGuid) {
-            var type = _schema.CachedTypes.Single(t => t.GUID == typeGuid);
+            var type = _context.CachedTypes.Single(t => t.GUID == typeGuid);
             return type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
         }
         public void AddChild(CreateViewModel model, string propName) {
-            var aggregate = _schema.CachedTypes.Single(a => a.Name == model.PageTitle);
+            var aggregate = _context.CachedTypes.Single(a => a.Name == model.PageTitle);
             var prop = aggregate.GetProperty(propName);
         }
         public void SaveNewInstance(CreateViewModel model) {
-            _schema.DB.Add(model.Instance);
+            _context.DB.Add(model.Instance);
         }
         #endregion
 
         #region シングルビュー
         public Models.SingleViewModel InitSingleViewModel(Guid aggregateId) {
             var random = new Random();
-            var item = _schema.DB
+            var item = _context.DB
                 .Where(x => x.GetType().GUID == aggregateId)
                 .OrderBy(_ => random.Next())
                 .FirstOrDefault();

@@ -8,12 +8,15 @@ using haldoc.Schema;
 
 namespace haldoc.Core {
     public class ProjectContext {
-        public ProjectContext(Assembly assembly) {
+        public ProjectContext(string projectName, Assembly assembly) {
+            ProjectName = projectName;
             _assembly = assembly;
         }
 
+        public string ProjectName { get; }
         private readonly Assembly _assembly;
 
+        private readonly Dictionary<Type, Aggregate> aggregates = new();
         public IEnumerable<Aggregate> BuildAll() {
             foreach (var type in _assembly.GetTypes()) {
                 if (type.GetCustomAttribute<AggregateRootAttribute>() == null) continue;
@@ -21,7 +24,6 @@ namespace haldoc.Core {
             }
         }
 
-        private readonly Dictionary<Type, Aggregate> aggregates = new();
 
         internal Aggregate GetOrCreateAggregate(Type type, Aggregate parent, bool asChildren = false) {
             if (!aggregates.ContainsKey(type)) {

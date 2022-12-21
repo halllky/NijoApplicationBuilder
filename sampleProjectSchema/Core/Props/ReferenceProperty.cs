@@ -15,6 +15,7 @@ namespace haldoc.Core.Props {
         private readonly ProjectContext _context;
 
         public Aggregate Owner { get; }
+        public Aggregate ReferedAggregate => _context.GetAggregate(UnderlyingPropInfo.PropertyType);
         public PropertyInfo UnderlyingPropInfo { get; }
 
         public IEnumerable<Aggregate> GetChildAggregates() {
@@ -22,8 +23,7 @@ namespace haldoc.Core.Props {
         }
 
         public IEnumerable<EntityColumnDef> ToEFCoreColumn() {
-            var aggregate = _context.GetAggregate(UnderlyingPropInfo.PropertyType);
-            foreach (var foreignKey in aggregate.ToEFCoreEntity().Keys) {
+            foreach (var foreignKey in ReferedAggregate.ToEFCoreEntity().Keys) {
                 yield return new EntityColumnDef {
                     CSharpTypeName = foreignKey.CSharpTypeName,
                     ColumnName = $"{UnderlyingPropInfo.Name}__{foreignKey.ColumnName}",
