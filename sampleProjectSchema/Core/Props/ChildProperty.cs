@@ -17,11 +17,11 @@ namespace haldoc.Core.Props {
         public Aggregate Owner { get; }
         public PropertyInfo UnderlyingPropInfo { get; }
 
-        public IEnumerable<Aggregate> GetChildAggregates() {
-            yield return _context.CreateAggregate(
+        public Aggregate ChildAggregate => _context.GetOrCreateAggregate(
                 UnderlyingPropInfo.PropertyType.GetGenericArguments()[0],
-                _context.GetAggregate(UnderlyingPropInfo.DeclaringType),
-                multiple: false);
+                Owner);
+        public IEnumerable<Aggregate> GetChildAggregates() {
+            yield return ChildAggregate;
         }
 
         public IEnumerable<EntityColumnDef> ToEFCoreColumn() {
@@ -29,12 +29,7 @@ namespace haldoc.Core.Props {
         }
 
         public object CreateInstanceDefaultValue() {
-            var instance = Activator.CreateInstance(UnderlyingPropInfo.PropertyType);
-            var props = _context.GetPropsOf(UnderlyingPropInfo.PropertyType);
-            foreach (var prop in props) {
-                prop.UnderlyingPropInfo.SetValue(instance, prop.CreateInstanceDefaultValue());
-            }
-            return instance;
+            throw new NotImplementedException();
         }
     }
 }

@@ -18,10 +18,10 @@ namespace haldoc.Core.Props {
         public PropertyInfo UnderlyingPropInfo { get; }
 
         public IEnumerable<Aggregate> GetChildAggregates() {
-            yield return _context.CreateAggregate(
+            yield return _context.GetOrCreateAggregate(
                 UnderlyingPropInfo.PropertyType.GetGenericArguments()[0],
-                _context.GetAggregate(UnderlyingPropInfo.DeclaringType),
-                multiple: true);
+                Owner,
+                asChildren: true);
         }
 
         public IEnumerable<EntityColumnDef> ToEFCoreColumn() {

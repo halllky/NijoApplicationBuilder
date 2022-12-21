@@ -17,16 +17,15 @@ namespace haldoc.Core {
         public IEnumerable<Aggregate> BuildAll() {
             foreach (var type in _assembly.GetTypes()) {
                 if (type.GetCustomAttribute<AggregateRootAttribute>() == null) continue;
-                yield return CreateAggregate(type, null, multiple: false);
+                yield return GetOrCreateAggregate(type, null);
             }
         }
 
         private readonly Dictionary<Type, Aggregate> aggregates = new();
-        private readonly Dictionary<Type, IReadOnlyList<IAggregateProp>> properties = new();
 
-        internal Aggregate CreateAggregate(Type type, Aggregate parent, bool multiple) {
+        internal Aggregate GetOrCreateAggregate(Type type, Aggregate parent, bool asChildren = false) {
             if (!aggregates.ContainsKey(type)) {
-                aggregates.Add(type, new Aggregate(type, parent, multiple, this));
+                aggregates.Add(type, new Aggregate(type, parent, this, asChildren: asChildren));
             }
             return aggregates[type];
         }
@@ -35,32 +34,9 @@ namespace haldoc.Core {
             return aggregates[type];
         }
 
-        internal IReadOnlyList<IAggregateProp> GetPropsOf(Type type) {
-            if (!properties.ContainsKey(type)) {
-                var list = new List<IAggregateProp>();
-                foreach (var prop in type.GetProperties(BindingFlags.Instance | BindingFlags.Public)) {
-                    if (prop.GetCustomAttribute<NotMappedAttribute>() != null) continue;
-
-                    if (IsSchalarType(prop.PropertyType)) {
-                        list.Add(new PrimitiveProperty(prop, null));
-                    } else if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Children<>)) {
-                        list.Add(new ChildrenProperty(prop, null, this));
-                    } else if (prop.PropertyType.IsGenericType && prop.PropertyType.GetGenericTypeDefinition() == typeof(Child<>)) {
-                        list.Add(new ChildProperty(prop, null, this));
-                    } else if (prop.GetCustomAttributes<VariationAttribute>().Any()) {
-                        list.Add(new VariationProperty(prop, null, this));
-                    } else if (prop.PropertyType.IsClass && IsUserDefinedType(prop.PropertyType)) {
-                        list.Add(new ReferenceProperty(prop, null, this));
-                    }
-                }
-                properties.Add(type, list);
-            }
-            return properties[type];
-        }
-
         public  object CreateInstance(Type type) {
             var instance = Activator.CreateInstance(type);
-            var props = GetPropsOf(type);
+            var props = GetAggregate(type).GetProperties();
             foreach (var prop in props) {
                 prop.UnderlyingPropInfo.SetValue(instance, prop.CreateInstanceDefaultValue());
             }

@@ -14,7 +14,7 @@ namespace haldoc.Core.Props {
             if (cannotAssignable.Any()) throw new InvalidOperationException($"{propInfo.PropertyType.Name} の派生型でない: {string.Join(", ", cannotAssignable.Select(x => x.Type.Name))}");
 
             _context = context;
-            _variations = variations.ToDictionary(v => v.Key, v => context.CreateAggregate(v.Type, parent, multiple: false));
+            _variations = variations.ToDictionary(v => v.Key, v => context.GetOrCreateAggregate(v.Type, parent));
 
             Owner = owner;
             UnderlyingPropInfo = propInfo;
@@ -40,14 +40,7 @@ namespace haldoc.Core.Props {
         }
 
         public object CreateInstanceDefaultValue() {
-            var type = _variations.OrderBy(x => x.Key).First().Value.UnderlyingType;
-            var instance = Activator.CreateInstance(type);
-            var props = _context.GetPropsOf(UnderlyingPropInfo.PropertyType);
-            foreach (var prop in props) {
-                if (prop.UnderlyingPropInfo.SetMethod == null) continue;
-                prop.UnderlyingPropInfo.SetValue(instance, prop.CreateInstanceDefaultValue());
-            }
-            return instance;
+            throw new NotImplementedException();
         }
     }
 }
