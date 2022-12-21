@@ -6,7 +6,6 @@ namespace haldoc {
         static void Main(string[] args) {
             Console.WriteLine("コード自動生成 開始");
 
-            var schema = new テストアプリケーション(new System.Collections.Generic.HashSet<object>());
             var schemaV2 = new Core.ProjectContext(System.Reflection.Assembly.GetExecutingAssembly());
 
             File.WriteAllText(

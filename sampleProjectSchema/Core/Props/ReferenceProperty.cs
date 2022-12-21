@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using haldoc.Core.Dto;
 using haldoc.Schema;
 
 namespace haldoc.Core.Props {

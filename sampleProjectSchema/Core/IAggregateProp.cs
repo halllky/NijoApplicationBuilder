@@ -14,7 +14,9 @@ namespace haldoc.Core {
 
         IEnumerable<Aggregate> GetChildAggregates();
 
-        IEnumerable<Schema.EntityColumnDef> ToEFCoreColumn();
+        IEnumerable<Dto.EntityColumnDef> ToEFCoreColumn();
+
+
 
         object CreateInstanceDefaultValue();
     }

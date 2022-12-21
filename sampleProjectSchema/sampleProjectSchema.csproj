@@ -14,6 +14,7 @@
     <Folder Include="CodeGenerating\" />
     <Folder Include="Core\" />
     <Folder Include="Core\Props\" />
+    <Folder Include="Core\Dto\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="CodeGenerating\Entities.tt">

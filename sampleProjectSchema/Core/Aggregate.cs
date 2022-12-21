@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
+using haldoc.Core.Dto;
 using haldoc.Core.Props;
 using haldoc.Schema;
 
