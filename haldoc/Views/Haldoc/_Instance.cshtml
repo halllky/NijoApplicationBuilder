@@ -7,67 +7,73 @@
 }
 
 <div class="container">
-    @for (int i = 0; i < props.Length; i++)
-    {
-        @if (props[i].PropertyType == typeof(string))
-        {
-            <div class="row">
-                <div class="col-2">
-                    <span>@props[i].Name</span>
-                </div>
-                <div class="col">
-                    <input type="text" value="@props[i].GetValue(Model.Item2)" />
-                </div>
-            </div>
-        }
-        else if (props[i].PropertyType.IsGenericType && props[i].PropertyType.GetGenericTypeDefinition() == typeof(haldoc.Schema.Children<>))
-        {
-            var children = (IList)props[i].GetValue(Model.Item2);
-            var childType = props[i].PropertyType.GetGenericArguments()[0];
-            var childProps = childType
-                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(prop => !prop.PropertyType.IsGenericType || prop.PropertyType.GetGenericTypeDefinition() != typeof(haldoc.Schema.Children<>))
-                .ToArray();
+    <div class="form-horizontal">
 
-            <div class="row">
-                <div class="col-2">
-                    <span>@props[i].Name</span>
+        @for (int i = 0; i < props.Length; i++)
+        {
+            @if (props[i].PropertyType == typeof(string))
+            {
+                <div class="row mb-3">
+                    <label class="col-form-label col-sm-2">
+                        @props[i].Name
+                    </label>
+                    <div class="col-sm-10">
+                        <input type="text" value="@props[i].GetValue(Model.Item2)" class="form-control" />
+                    </div>
                 </div>
-                <div class="col">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                @for (int j = 0; j < childProps.Length; j++) {
-                                    <th>@childProps[j].Name</th>
-                                }
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @for (int j = 0; j < children.Count; j++) {
+            }
+            else if (props[i].PropertyType.IsGenericType && props[i].PropertyType.GetGenericTypeDefinition() == typeof(haldoc.Schema.Children<>))
+            {
+                var children = (IList)props[i].GetValue(Model.Item2);
+                var childType = props[i].PropertyType.GetGenericArguments()[0];
+                var childProps = childType
+                    .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(prop => !prop.PropertyType.IsGenericType || prop.PropertyType.GetGenericTypeDefinition() != typeof(haldoc.Schema.Children<>))
+                    .ToArray();
+
+                <div class="row mb-3">
+                    <label class="col-form-label col-sm-2">
+                        @props[i].Name
+                    </label>
+                    <div class="col-sm-10">
+                        <table class="table table-sm">
+                            <thead>
                                 <tr>
-                                    @for (int k = 0; k < childProps.Length; k++) {
-                                        var value = childProps[k].GetValue(children[j]);
-                                        if (childProps[k].PropertyType == typeof(string))
-                                        {
-                                            <td>
-                                                <input type="text" value="@value" />
-                                            </td>
-                                        }
-                                        else
-                                        {
-                                            <td>
-                                                <a asp-controller="Haldoc" asp-action="Single" asp-route-aggregateId="@childProps[k].PropertyType.GUID">
-                                                    @schema.GetInstanceName(value)
-                                                </a>
-                                            </td>
-                                        }
+                                    @for (int j = 0; j < childProps.Length; j++)
+                                    {
+                                        <th>@childProps[j].Name</th>
                                     }
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @for (int j = 0; j < children.Count; j++)
+                                {
+                                    <tr>
+                                        @for (int k = 0; k < childProps.Length; k++)
+                                        {
+                                            var value = childProps[k].GetValue(children[j]);
+                                            if (childProps[k].PropertyType == typeof(string))
+                                            {
+                                                <td>
+                                                    <input type="text" value="@value" />
+                                                </td>
+                                            }
+                                            else
+                                            {
+                                                <td>
+                                                    <a asp-controller="Haldoc" asp-action="Single" asp-route-aggregateId="@childProps[k].PropertyType.GUID">
+                                                        @schema.GetInstanceName(value)
+                                                    </a>
+                                                </td>
+                                            }
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            }
         }
-    }
+    </div>
 </div>
