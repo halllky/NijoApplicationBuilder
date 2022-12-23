@@ -14,7 +14,7 @@ namespace haldoc.Models {
         private readonly haldoc.Core.ProjectContext _context;
 
         public IEnumerable<KeyValuePair<Guid, string>> GetMenu() {
-            foreach (var aggregate in _context.BuildAll()) {
+            foreach (var aggregate in _context.EnumerateRootAggregates()) {
                 yield return KeyValuePair.Create(aggregate.GUID, aggregate.Name);
             }
         }
@@ -23,18 +23,16 @@ namespace haldoc.Models {
 
         #region 一覧画面
         public ListViewModel InitListViewModel(Guid aggregateId) {
-            var aggregate = _context.BuildAll().Single(a => a.GUID == aggregateId);
-            var props = aggregate
-                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(prop => !prop.PropertyType.IsGenericType || prop.PropertyType.GetGenericTypeDefinition() != typeof(haldoc.Schema.Children<>));
+            var aggregate = _context.EnumerateRootAggregates().Single(a => a.GUID == aggregateId);
+            var props = aggregate.ToTableHeader();
 
             var searchConditionItems = props
-                .Select(prop => new SearchConditionItem {
-                    Name = prop.Name,
+                .Select(prop => new FilterObject {
+                    Name = prop.Key,
                     Value = "",
                 })
                 .ToArray();
-            var tableHeader = props.Select(prop => prop.Name).ToArray();
+            var tableHeader = props.Select(prop => prop.Key).ToArray();
 
             var model = new ListViewModel {
                 PageTitle = aggregate.Name,

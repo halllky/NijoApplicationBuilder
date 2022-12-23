@@ -7,57 +7,40 @@ using haldoc.Core.Dto;
 using haldoc.Schema;
 
 namespace haldoc.Core.Props {
-    public class VariationProperty : IAggregateProp {
-        public VariationProperty(PropertyInfo propInfo, Aggregate owner, ProjectContext context) {
-            var parent = context.GetAggregate(propInfo.DeclaringType);
-            var variations = propInfo.GetCustomAttributes<VariationAttribute>();
+    public class VariationProperty : AggregatePropBase {
 
-            // 型の妥当性チェック
-            var childType = propInfo.PropertyType.GetGenericArguments()[0];
-            var cannotAssignable = variations.Where(x => !childType.IsAssignableFrom(x.Type)).ToArray();
-            if (cannotAssignable.Any()) throw new InvalidOperationException($"{propInfo.PropertyType.Name} の派生型でない: {string.Join(", ", cannotAssignable.Select(x => x.Type.Name))}");
+        private Dictionary<int, Aggregate> _variations;
+        private IReadOnlyDictionary<int, Aggregate> GetVariations() {
+            if (_variations == null) {
+                var parent = Context.GetAggregate(UnderlyingPropInfo.DeclaringType);
+                var variations = UnderlyingPropInfo.GetCustomAttributes<VariationAttribute>();
 
-            _context = context;
-            _variations = variations.ToDictionary(v => v.Key, v => context.GetOrCreateAggregate(v.Type, parent));
+                // 型の妥当性チェック
+                var childType = UnderlyingPropInfo.PropertyType.GetGenericArguments()[0];
+                var cannotAssignable = variations.Where(x => !childType.IsAssignableFrom(x.Type)).ToArray();
+                if (cannotAssignable.Any()) {
+                    var typeNames = string.Join(", ", cannotAssignable.Select(x => x.Type.Name));
+                    throw new InvalidOperationException($"{UnderlyingPropInfo.PropertyType.Name} の派生型でない: {typeNames}");
+                }
 
-            Owner = owner;
-            UnderlyingPropInfo = propInfo;
-        }
-
-        private readonly ProjectContext _context;
-        private readonly Dictionary<int, Aggregate> _variations;
-
-        public Aggregate Owner { get; }
-        public PropertyInfo UnderlyingPropInfo { get; }
-
-        public IEnumerable<Aggregate> GetChildAggregates() {
-            foreach (var variation in _variations) {
-                yield return variation.Value;
+                _variations = variations.ToDictionary(v => v.Key, v => Context.GetOrCreateAggregate(v.Type, parent));
             }
+            return _variations;
         }
 
-        public IEnumerable<TableHeader> ToTableHeader() {
-            var commonProps = UnderlyingPropInfo.PropertyType
-                .GetGenericArguments()[0]
-                .GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            foreach (var prop in commonProps) {
-                if (prop.GetCustomAttribute<NotMappedAttribute>() != null) continue;
-                yield return new TableHeader {
-                    Key = $"{UnderlyingPropInfo.Name}__{prop.Name}",
-                    Text = prop.Name,
-                };
-            }
+        public override IEnumerable<Aggregate> GetChildAggregates() {
+            return GetVariations().Select(v => v.Value);
         }
 
-        public IEnumerable<EntityColumnDef> ToEFCoreColumn() {
-            yield return new EntityColumnDef {
+        public override IEnumerable<PropertyTemplate> ToDbColumnModel() {
+            yield return new PropertyTemplate {
                 CSharpTypeName = "int?",
-                ColumnName = UnderlyingPropInfo.Name,
+                PropertyName = UnderlyingPropInfo.Name,
             };
         }
 
-        public object CreateInstanceDefaultValue() {
-            throw new NotImplementedException();
+        public override IEnumerable<PropertyTemplate> ToListItemMember() {
+            yield break;
         }
     }
 }

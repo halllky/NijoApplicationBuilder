@@ -17,7 +17,12 @@ namespace haldoc.Core {
         private readonly Assembly _assembly;
 
         private readonly Dictionary<Type, Aggregate> aggregates = new();
-        public IEnumerable<Aggregate> BuildAll() {
+
+        public IEnumerable<Aggregate> EnumerateAllAggregates() {
+            var rootAggregates = EnumerateRootAggregates();
+            return rootAggregates.Union(rootAggregates.SelectMany(e => e.GetDescendantAggregates()));
+        }
+        public IEnumerable<Aggregate> EnumerateRootAggregates() {
             foreach (var type in _assembly.GetTypes()) {
                 if (type.GetCustomAttribute<AggregateRootAttribute>() == null) continue;
                 yield return GetOrCreateAggregate(type, null);
@@ -36,6 +41,33 @@ namespace haldoc.Core {
             return aggregates[type];
         }
 
+
+        public IEnumerable<AggregatePropBase> GenerateProperties(Type type, Aggregate owner) {
+            foreach (var prop in type.GetProperties(BindingFlags.Instance | BindingFlags.Public)) {
+                if (prop.GetCustomAttribute<NotMappedAttribute>() != null) continue;
+
+                if (PrimitiveProperty.IsPrimitive(prop.PropertyType)) {
+                    yield return new PrimitiveProperty { UnderlyingPropInfo = prop, Owner = owner, Context = this };
+
+                } else if (prop.PropertyType.IsGenericType
+                    && prop.PropertyType.GetGenericTypeDefinition() == typeof(Children<>)) {
+                    yield return new ChildrenProperty { UnderlyingPropInfo = prop, Owner = owner, Context = this };
+
+                } else if (prop.PropertyType.IsGenericType
+                    && prop.PropertyType.GetGenericTypeDefinition() == typeof(Child<>)) {
+
+                    if (prop.PropertyType.GetGenericArguments()[0].IsAbstract
+                        && prop.GetCustomAttributes<VariationAttribute>().Any())
+                        yield return new VariationProperty { UnderlyingPropInfo = prop, Owner = owner, Context = this };
+                    else
+                        yield return new ChildProperty { UnderlyingPropInfo = prop, Owner = owner, Context = this };
+
+                } else if (prop.PropertyType.IsClass && IsUserDefinedType(prop.PropertyType)) {
+                    yield return new ReferenceProperty { UnderlyingPropInfo = prop, Owner = owner, Context = this };
+                }
+            }
+        }
+
         public  object CreateInstance(Type type) {
             var instance = Activator.CreateInstance(type);
             var props = GetAggregate(type).GetProperties();
@@ -47,26 +79,6 @@ namespace haldoc.Core {
 
         internal bool IsUserDefinedType(Type type) {
             return type.Assembly == _assembly;
-        }
-        internal bool IsSchalarType(Type type) {
-            if (type == typeof(string)) return true;
-            if (type == typeof(bool)) return true;
-            if (type == typeof(int)) return true;
-            if (type == typeof(float)) return true;
-            if (type == typeof(decimal)) return true;
-            if (type.IsEnum) return true;
-
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>)) {
-                var generic = type.GetGenericArguments()[0];
-                if (generic == typeof(string)) return true;
-                if (generic == typeof(bool)) return true;
-                if (generic == typeof(int)) return true;
-                if (generic == typeof(float)) return true;
-                if (generic == typeof(decimal)) return true;
-                if (generic.IsEnum) return true;
-            }
-
-            return false;
         }
     }
 }

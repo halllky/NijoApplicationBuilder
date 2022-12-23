@@ -6,31 +6,21 @@ using haldoc.Core.Dto;
 using haldoc.Schema;
 
 namespace haldoc.Core.Props {
-    public class ChildrenProperty : IAggregateProp {
-        public ChildrenProperty(PropertyInfo propInfo, Aggregate owner, ProjectContext context) {
-            _context = context;
-            Owner = owner;
-            UnderlyingPropInfo = propInfo;
-        }
+    public class ChildrenProperty : AggregatePropBase {
 
-        private readonly ProjectContext _context;
-
-        public Aggregate Owner { get; }
-        public PropertyInfo UnderlyingPropInfo { get; }
-
-        public IEnumerable<Aggregate> GetChildAggregates() {
-            yield return _context.GetOrCreateAggregate(
+        public override IEnumerable<Aggregate> GetChildAggregates() {
+            yield return Context.GetOrCreateAggregate(
                 UnderlyingPropInfo.PropertyType.GetGenericArguments()[0],
                 Owner,
                 asChildren: true);
         }
 
-        public IEnumerable<EntityColumnDef> ToEFCoreColumn() {
+        public override IEnumerable<PropertyTemplate> ToDbColumnModel() {
             yield break;
         }
 
-        public object CreateInstanceDefaultValue() {
-            return Activator.CreateInstance(UnderlyingPropInfo.PropertyType);
+        public override IEnumerable<PropertyTemplate> ToListItemMember() {
+            yield break;
         }
     }
 }

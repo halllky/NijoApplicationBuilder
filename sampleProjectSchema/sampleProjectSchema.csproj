@@ -14,6 +14,7 @@
     <Folder Include="CodeGenerating\" />
     <Folder Include="Core\" />
     <Folder Include="Core\Props\" />
+    <Folder Include="SqlQuery\" />
     <Folder Include="Core\Dto\" />
   </ItemGroup>
   <ItemGroup>
@@ -21,13 +22,50 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>Entities.cs</LastGenOutput>
     </None>
+    <None Update="CodeGenerating\MVCModel.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>MVCModel.cs</LastGenOutput>
+    </None>
+    <None Update="CodeGenerating\ListView.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>ListView.cs</LastGenOutput>
+    </None>
+    <None Update="CodeGenerating\ListViewGenerator.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>ListViewGenerator.cs</LastGenOutput>
+    </None>
+    <None Update="CodeGenerating\EFCodeGenerator.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>EFCodeGenerator.cs</LastGenOutput>
+    </None>
+    <None Update="CodeGenerating\MvcModelGenerator.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>MvcModelGenerator.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Compile Update="CodeGenerating\Entities.cs">
       <DependentUpon>Entities.tt</DependentUpon>
     </Compile>
+    <Compile Update="CodeGenerating\MVCModel.cs">
+      <DependentUpon>MVCModel.tt</DependentUpon>
+    </Compile>
+    <Compile Update="CodeGenerating\ListView.cs">
+      <DependentUpon>ListViewGenerator.tt</DependentUpon>
+    </Compile>
+    <Compile Update="CodeGenerating\EFCodeGenerator.cs">
+      <DependentUpon>EFCodeGenerator.tt</DependentUpon>
+    </Compile>
+    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeGenerating\ListViewGenerator.cs">
+      <DependentUpon>ListViewGenerator.tt</DependentUpon>
+    </Compile>
+    <Compile Update="CodeGenerating\MvcModelGenerator.cs">
+      <DependentUpon>MvcModelGenerator.tt</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.CodeDom" Version="5.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.17" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.0.1" />
   </ItemGroup>
 </Project>

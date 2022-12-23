@@ -5,46 +5,25 @@ using System.Linq;
 using System.Reflection;
 using haldoc.Core.Dto;
 using haldoc.Schema;
+using haldoc.SqlQuery;
 
 namespace haldoc.Core.Props {
-    public class ChildProperty : IAggregateProp {
-        public ChildProperty(PropertyInfo propInfo, Aggregate owner, ProjectContext context) {
-            _context = context;
-            Owner = owner;
-            UnderlyingPropInfo = propInfo;
-        }
+    public class ChildProperty : AggregatePropBase {
 
-        private readonly ProjectContext _context;
-
-        public Aggregate Owner { get; }
-        public PropertyInfo UnderlyingPropInfo { get; }
-
-        public Aggregate ChildAggregate => _context.GetOrCreateAggregate(
+        public Aggregate ChildAggregate => Context.GetOrCreateAggregate(
                 UnderlyingPropInfo.PropertyType.GetGenericArguments()[0],
                 Owner);
-        public IEnumerable<Aggregate> GetChildAggregates() {
+
+        public override IEnumerable<Aggregate> GetChildAggregates() {
             yield return ChildAggregate;
         }
 
-        public IEnumerable<TableHeader> ToTableHeader() {
-            var props = UnderlyingPropInfo.PropertyType
-                .GetGenericArguments()[0]
-                .GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            foreach (var prop in props) {
-                if (prop.GetCustomAttribute<NotMappedAttribute>() != null) continue;
-                yield return new TableHeader {
-                    Key = $"{UnderlyingPropInfo.Name}__{prop.Name}",
-                    Text = prop.Name,
-                };
-            }
+        public override IEnumerable<PropertyTemplate> ToDbColumnModel() {
+            return ChildAggregate.GetDbTablePK();
         }
 
-        public IEnumerable<EntityColumnDef> ToEFCoreColumn() {
+        public override IEnumerable<PropertyTemplate> ToListItemMember() {
             yield break;
-        }
-
-        public object CreateInstanceDefaultValue() {
-            throw new NotImplementedException();
         }
     }
 }

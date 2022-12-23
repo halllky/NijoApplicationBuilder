@@ -5,34 +5,25 @@ using haldoc.Core.Dto;
 using haldoc.Schema;
 
 namespace haldoc.Core.Props {
-    public class ReferenceProperty : IAggregateProp {
-        public ReferenceProperty(PropertyInfo prop, Aggregate owner, ProjectContext context) {
-            _context = context;
-            Owner = owner;
-            UnderlyingPropInfo = prop;
-        }
+    public class ReferenceProperty : AggregatePropBase {
 
-        private readonly ProjectContext _context;
+        public Aggregate ReferedAggregate => Context.GetAggregate(UnderlyingPropInfo.PropertyType);
 
-        public Aggregate Owner { get; }
-        public Aggregate ReferedAggregate => _context.GetAggregate(UnderlyingPropInfo.PropertyType);
-        public PropertyInfo UnderlyingPropInfo { get; }
-
-        public IEnumerable<Aggregate> GetChildAggregates() {
+        public override IEnumerable<Aggregate> GetChildAggregates() {
             yield break;
         }
 
-        public IEnumerable<EntityColumnDef> ToEFCoreColumn() {
-            foreach (var foreignKey in ReferedAggregate.ToEFCoreEntity().Keys) {
-                yield return new EntityColumnDef {
+        public override IEnumerable<PropertyTemplate> ToDbColumnModel() {
+            foreach (var foreignKey in ReferedAggregate.GetDbTablePK()) {
+                yield return new PropertyTemplate {
+                    PropertyName = $"{UnderlyingPropInfo.Name}__{foreignKey.PropertyName}",
                     CSharpTypeName = foreignKey.CSharpTypeName,
-                    ColumnName = $"{UnderlyingPropInfo.Name}__{foreignKey.ColumnName}",
                 };
             }
         }
 
-        public object CreateInstanceDefaultValue() {
-            return null;
+        public override IEnumerable<PropertyTemplate> ToListItemMember() {
+            yield break;
         }
     }
 }
