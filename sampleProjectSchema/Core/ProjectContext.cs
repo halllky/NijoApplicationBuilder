@@ -30,7 +30,7 @@ namespace haldoc.Core {
         }
 
 
-        internal Aggregate GetOrCreateAggregate(Type type, Aggregate parent, bool asChildren = false) {
+        internal Aggregate GetOrCreateAggregate(Type type, AggregatePropBase parent, bool asChildren = false) {
             if (!aggregates.ContainsKey(type)) {
                 aggregates.Add(type, new Aggregate(type, parent, this, asChildren: asChildren));
             }

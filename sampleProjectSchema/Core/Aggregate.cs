@@ -8,7 +8,7 @@ using haldoc.Schema;
 
 namespace haldoc.Core {
     public class Aggregate {
-        public Aggregate(Type underlyingType, Aggregate parent, ProjectContext context, bool asChildren = false) {
+        public Aggregate(Type underlyingType, AggregatePropBase parent, ProjectContext context, bool asChildren = false) {
             UnderlyingType = underlyingType;
             Parent = parent;
             _hasIndexKey = asChildren;
@@ -21,11 +21,11 @@ namespace haldoc.Core {
         private readonly ProjectContext _context;
 
 
-        public Aggregate Parent { get; }
+        public AggregatePropBase Parent { get; }
         public Aggregate GetRoot() {
             var aggregate = this;
             while (aggregate.Parent != null) {
-                aggregate = aggregate.Parent;
+                aggregate = aggregate.Parent.Owner;
             }
             return aggregate;
         }
@@ -59,7 +59,7 @@ namespace haldoc.Core {
                 _pk = new List<Dto.PropertyTemplate>();
 
                 if (Parent != null)
-                    _pk.AddRange(Parent.GetDbTablePK());
+                    _pk.AddRange(Parent.Owner.GetDbTablePK());
 
                 var props = GetProperties()
                     .Select(p => new { p.IsPrimaryKey, models = p.ToDbColumnModel().ToArray() })
@@ -70,8 +70,8 @@ namespace haldoc.Core {
                 _pk.AddRange(props.Where(p => p.IsPrimaryKey).SelectMany(p => p.models));
 
                 _dbTableModel = new Dto.ClassTemplate {
-                    ClassName = UnderlyingType.Name,
-                    Properties = props.SelectMany(p => p.models).ToList(),
+                    ClassName = Name,
+                    Properties = _pk.Union(props.SelectMany(p => p.models)).Distinct().ToList(),
                 };
             }
             return _dbTableModel;
@@ -91,6 +91,22 @@ namespace haldoc.Core {
                 };
             }
             return _listViewModel;
+        }
+
+
+        public override string ToString() {
+            var path = new List<string>();
+            var parent = Parent;
+            while (parent != null) {
+                path.Insert(0, parent.Name);
+                parent = parent.Owner.Parent;
+            }
+            if (path.Any()) {
+                path.Insert(0, GetRoot().Name);
+                return $"{Name}[{string.Join(".", path)}]";
+            } else {
+                return Name;
+            }
         }
     }
 }

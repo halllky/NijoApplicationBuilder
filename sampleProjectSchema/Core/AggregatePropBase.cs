@@ -15,7 +15,7 @@ namespace haldoc.Core {
         public Aggregate Owner { get; init; }
         public PropertyInfo UnderlyingPropInfo { get; init; }
 
-        public string Key => UnderlyingPropInfo.Name;
+        public string Name => UnderlyingPropInfo.Name;
         public bool IsPrimaryKey => UnderlyingPropInfo.GetCustomAttribute<KeyAttribute>() != null;
 
         public abstract IEnumerable<Aggregate> GetChildAggregates();

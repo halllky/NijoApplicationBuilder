@@ -23,7 +23,7 @@ namespace haldoc.Core.Props {
                     throw new InvalidOperationException($"{UnderlyingPropInfo.PropertyType.Name} の派生型でない: {typeNames}");
                 }
 
-                _variations = variations.ToDictionary(v => v.Key, v => Context.GetOrCreateAggregate(v.Type, parent));
+                _variations = variations.ToDictionary(v => v.Key, v => Context.GetOrCreateAggregate(v.Type, this));
             }
             return _variations;
         }

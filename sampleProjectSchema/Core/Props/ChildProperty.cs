@@ -12,7 +12,7 @@ namespace haldoc.Core.Props {
 
         public Aggregate ChildAggregate => Context.GetOrCreateAggregate(
                 UnderlyingPropInfo.PropertyType.GetGenericArguments()[0],
-                Owner);
+                this);
 
         public override IEnumerable<Aggregate> GetChildAggregates() {
             yield return ChildAggregate;
