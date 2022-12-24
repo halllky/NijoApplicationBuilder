@@ -41,8 +41,9 @@ namespace haldoc.Core.Props {
 
         public override IEnumerable<PropertyTemplate> ToInstanceDtoProperty() {
             yield return new PropertyTemplate {
-                CSharpTypeName = $"List<{Context.GetOutputNamespace(E_Namespace.MvcModel)}.{ChildAggregate.ToSingleViewDtoClass().ClassName}>",
+                CSharpTypeName = $"{Context.GetOutputNamespace(E_Namespace.MvcModel)}.{ChildAggregate.ToSingleItemModel().ClassName}",
                 PropertyName = Name,
+                Initializer = "new()",
             };
         }
         public override string RenderSingleView(AggregateInstanceBuildContext renderingContext) {

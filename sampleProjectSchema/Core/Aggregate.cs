@@ -156,17 +156,6 @@ namespace haldoc.Core {
             return code;
         }
 
-        private Dto.ClassTemplate _singleViewDtoClass;
-        public Dto.ClassTemplate ToSingleViewDtoClass() {
-            if (_singleViewDtoClass == null) {
-                _singleViewDtoClass = new Dto.ClassTemplate {
-                    ClassName = Name + "__Instance",
-                    Properties = GetProperties().SelectMany(p => p.ToInstanceDtoProperty()).ToList(),
-                };
-            }
-            return _singleViewDtoClass;
-        }
-
 
         public override string ToString() {
             var path = new List<string>();

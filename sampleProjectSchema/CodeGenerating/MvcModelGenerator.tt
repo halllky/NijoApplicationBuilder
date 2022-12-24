@@ -12,7 +12,7 @@ namespace <#=Context.GetOutputNamespace(haldoc.Core.E_Namespace.MvcModel)#> {
 <# foreach (var classDef in Context.EnumerateRootAggregates().Select(a => a.ToSearchConditionModel())) { #>
     public class <#=classDef.ClassName#> {
 <# foreach (var prop in classDef.Properties) { #>
-        public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }
+        public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }<#=prop.Initializer == null ? "" : $" = {prop.Initializer};"#>
 <# }#>
     }
 <# }#>
@@ -21,25 +21,16 @@ namespace <#=Context.GetOutputNamespace(haldoc.Core.E_Namespace.MvcModel)#> {
 <# foreach (var classDef in Context.EnumerateRootAggregates().Select(a => a.ToListItemModel())) { #>
     public class <#=classDef.ClassName#> {
 <# foreach (var prop in classDef.Properties) { #>
-        public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }
+        public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }<#=prop.Initializer == null ? "" : $" = {prop.Initializer};"#>
 <# }#>
     }
 <# }#>
 
-<# /* シングルビューDTO */ #>
+<# /* シングルビュー兼新規作成コマンドDTO */ #>
 <# foreach (var classDef in Context.EnumerateAllAggregates().Select(a => a.ToSingleItemModel())) { #>
     public class <#=classDef.ClassName#> {
 <# foreach (var prop in classDef.Properties) { #>
-        public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }
-<# }#>
-    }
-<# }#>
-
-<# /* インスタンスDTO */ #>
-<# foreach (var classDef in Context.EnumerateAllAggregates().Select(a => a.ToSingleViewDtoClass())) { #>
-    public class <#=classDef.ClassName#> {
-<# foreach (var prop in classDef.Properties) { #>
-        public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }
+        public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }<#=prop.Initializer == null ? "" : $" = {prop.Initializer};"#>
 <# }#>
     }
 <# }#>

@@ -32,7 +32,9 @@ namespace haldoc.CodeGenerating {
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
             this.Write(" ");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(" { get; set; }\n");
+            this.Write(" { get; set; }");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
+            this.Write("\n");
  }
             this.Write("    }\n");
  }
@@ -47,12 +49,14 @@ namespace haldoc.CodeGenerating {
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
             this.Write(" ");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(" { get; set; }\n");
+            this.Write(" { get; set; }");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
+            this.Write("\n");
  }
             this.Write("    }\n");
  }
             this.Write("\n");
- /* シングルビューDTO */ 
+ /* シングルビュー兼新規作成コマンドDTO */ 
  foreach (var classDef in Context.EnumerateAllAggregates().Select(a => a.ToSingleItemModel())) { 
             this.Write("    public class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(classDef.ClassName));
@@ -62,22 +66,9 @@ namespace haldoc.CodeGenerating {
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
             this.Write(" ");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(" { get; set; }\n");
- }
-            this.Write("    }\n");
- }
+            this.Write(" { get; set; }");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
             this.Write("\n");
- /* インスタンスDTO */ 
- foreach (var classDef in Context.EnumerateAllAggregates().Select(a => a.ToSingleViewDtoClass())) { 
-            this.Write("    public class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(classDef.ClassName));
-            this.Write(" {\n");
- foreach (var prop in classDef.Properties) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(" { get; set; }\n");
  }
             this.Write("    }\n");
  }
