@@ -10,7 +10,7 @@ namespace haldoc.Core.Props {
     public class VariationProperty : AggregatePropBase {
 
         private Dictionary<int, Aggregate> _variations;
-        private IReadOnlyDictionary<int, Aggregate> GetVariations() {
+        public IReadOnlyDictionary<int, Aggregate> GetVariations() {
             if (_variations == null) {
                 var parent = Context.GetAggregate(UnderlyingPropInfo.DeclaringType);
                 var variations = UnderlyingPropInfo.GetCustomAttributes<VariationAttribute>();
@@ -32,7 +32,7 @@ namespace haldoc.Core.Props {
             return GetVariations().Select(v => v.Value);
         }
 
-        public override IEnumerable<PropertyTemplate> ToDbColumnModel() {
+        public override IEnumerable<PropertyTemplate> ToDbEntityProperty() {
             yield return new PropertyTemplate {
                 CSharpTypeName = "int?",
                 PropertyName = Name,
@@ -40,7 +40,7 @@ namespace haldoc.Core.Props {
         }
 
         private string SearchConditionPropName(Aggregate variation) => $"{Name}__{variation.Name}";
-        public override IEnumerable<PropertyTemplate> ToSearchConditionModel() {
+        public override IEnumerable<PropertyTemplate> ToSearchConditionDtoProperty() {
             foreach (var variation in GetVariations()) {
                 yield return new PropertyTemplate {
                     PropertyName = SearchConditionPropName(variation.Value),
@@ -62,5 +62,35 @@ namespace haldoc.Core.Props {
                 CSharpTypeName = "string", // Variation集約名を表示する
             };
         }
+
+        public override IEnumerable<PropertyTemplate> ToInstanceDtoProperty() {
+            yield return new PropertyTemplate {
+                CSharpTypeName = "object", // 理想を言えば動的にinterfaceを定義したいが面倒なので
+                PropertyName = Name,
+            };
+        }
+
+        public override string RenderSingleView(AggregateInstanceBuildContext renderingContext) {
+            renderingContext.Push(Name);
+
+            var template = new VariationPropertyInstance {
+                Property = this,
+                RenderingContext = renderingContext,
+            };
+            var code = string.Join(Environment.NewLine, template
+                .TransformText()
+                .Split(Environment.NewLine)
+                .Select((line, index) => index == 0
+                    ? line // 先頭行だけは呼び出し元ttファイル内のインデントがそのまま反映されるので
+                    : renderingContext.CurrentIndent + line));
+
+            renderingContext.Pop();
+            return code;
+        }
+    }
+
+    partial class VariationPropertyInstance {
+        public VariationProperty Property { get; init; }
+        public AggregateInstanceBuildContext RenderingContext { get; init; }
     }
 }

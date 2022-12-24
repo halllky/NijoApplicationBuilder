@@ -1,7 +1,8 @@
 ﻿@using System.Reflection;
 @using System.Collections;
 @model (Guid, dynamic);
-@inject haldoc.Models.ModelBuidler schema;
+@*@inject haldoc.Models.ModelBuidler schema;*@
+@inject dynamic schema;
 @{
     var props = schema.EnumerateProps(Model.Item1);
 }
@@ -28,7 +29,7 @@
                 var childType = props[i].PropertyType.GetGenericArguments()[0];
                 var childProps = childType
                     .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                    .Where(prop => !prop.PropertyType.IsGenericType || prop.PropertyType.GetGenericTypeDefinition() != typeof(haldoc.Schema.Children<>))
+                    @*.Where(prop => !prop.PropertyType.IsGenericType || prop.PropertyType.GetGenericTypeDefinition() != typeof(haldoc.Schema.Children<>))*@
                     .ToArray();
 
                 <div class="row mb-3">

@@ -62,8 +62,8 @@ namespace haldoc.Core {
         public Dto.ClassTemplate ToDbTableModel() {
             if (_dbTableModel == null) {
                 var props = GetProperties();
-                _pk = props.Where(p => p.IsPrimaryKey).SelectMany(p => p.ToDbColumnModel()).ToList();
-                _notPk = props.Where(p => !p.IsPrimaryKey).SelectMany(p => p.ToDbColumnModel()).ToList();
+                _pk = props.Where(p => p.IsPrimaryKey).SelectMany(p => p.ToDbEntityProperty()).ToList();
+                _notPk = props.Where(p => !p.IsPrimaryKey).SelectMany(p => p.ToDbEntityProperty()).ToList();
 
                 if (Parent != null && !_pk.Any() && _hasIndexKey)
                     _pk.Insert(0, new Dto.PropertyTemplate { PropertyName = "Index", CSharpTypeName = "int" });
@@ -80,15 +80,15 @@ namespace haldoc.Core {
         }
 
 
-        private Dto.ClassTemplate _filterObjectModel;
+        private Dto.ClassTemplate _searchconditionModel;
         public Dto.ClassTemplate ToSearchConditionModel() {
-            if (_filterObjectModel == null) {
-                _filterObjectModel = new Dto.ClassTemplate {
+            if (_searchconditionModel == null) {
+                _searchconditionModel = new Dto.ClassTemplate {
                     ClassName = Name + "__SearchCondition",
-                    Properties = GetProperties().SelectMany(p => p.ToSearchConditionModel()).ToList(),
+                    Properties = GetProperties().SelectMany(p => p.ToSearchConditionDtoProperty()).ToList(),
                 };
             }
-            return _filterObjectModel;
+            return _searchconditionModel;
         }
 
         private Dto.ClassTemplate _listViewModel;
@@ -110,6 +110,62 @@ namespace haldoc.Core {
                 };
             }
         }
+        private Dto.ClassTemplate _singleItemModel;
+        public Dto.ClassTemplate ToSingleItemModel() {
+            if (_singleItemModel == null) {
+                _singleItemModel = new Dto.ClassTemplate {
+                    ClassName = Name,
+                    Properties = GetProperties()
+                        .SelectMany(p => p.ToInstanceDtoProperty())
+                        .ToList(),
+                };
+            }
+            return _singleItemModel;
+        }
+
+        /// <summary>SingleViewレンダリングの入り口</summary>
+        public string RenderSingleView(string boundObjectName, int initialIndent) {
+            var renderingContext = new AggregateInstanceBuildContext(boundObjectName, initialIndent);
+            var template = new AggregateInstance()
+            { Aggregate = this,
+                RenderingContext = renderingContext,
+            };
+            var code = string.Join(Environment.NewLine, template
+                .TransformText()
+                .Split(Environment.NewLine)
+                .Select((line, index) => index == 0
+                    ? line // 先頭行だけは呼び出し元ttファイル内のインデントがそのまま反映されるので
+                    : renderingContext.CurrentIndent + line));
+
+            return code;
+        }
+        /// <summary>集約ルート以外の場合</summary>
+        public string RenderSingleView(AggregateInstanceBuildContext renderingContext) {
+            var template = new AggregateInstance()
+            {
+                Aggregate = this,
+                RenderingContext = renderingContext,
+            };
+            var code = string.Join(Environment.NewLine, template
+                .TransformText()
+                .Split(Environment.NewLine)
+                .Select((line, index) => index == 0
+                    ? line // 先頭行だけは呼び出し元ttファイル内のインデントがそのまま反映されるので
+                    : renderingContext.CurrentIndent + line));
+            //var code = template.TransformText();
+            return code;
+        }
+
+        private Dto.ClassTemplate _singleViewDtoClass;
+        public Dto.ClassTemplate ToSingleViewDtoClass() {
+            if (_singleViewDtoClass == null) {
+                _singleViewDtoClass = new Dto.ClassTemplate {
+                    ClassName = Name + "__Instance",
+                    Properties = GetProperties().SelectMany(p => p.ToInstanceDtoProperty()).ToList(),
+                };
+            }
+            return _singleViewDtoClass;
+        }
 
 
         public override string ToString() {
@@ -126,5 +182,10 @@ namespace haldoc.Core {
                 return Name;
             }
         }
+    }
+
+    partial class AggregateInstance {
+        public Aggregate Aggregate { get; init; }
+        public AggregateInstanceBuildContext RenderingContext { get; init; }
     }
 }

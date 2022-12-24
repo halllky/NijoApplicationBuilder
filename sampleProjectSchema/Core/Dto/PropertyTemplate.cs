@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace haldoc.Core.Dto {
     public class PropertyTemplate {
@@ -8,6 +9,6 @@ namespace haldoc.Core.Dto {
     }
     public class PropertyLayoutTemplate {
         public string PropertyName { get; set; }
-        public List<string> Layout { get; set; }
+        public IEnumerable<string> Layout { get; set; }
     }
 }

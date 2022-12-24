@@ -8,66 +8,33 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace haldoc.CodeGenerating {
+namespace haldoc.Core.Props {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
     using System;
     
     
-    public partial class EFCodeGenerator : EFCodeGeneratorBase {
+    public partial class VariationPropertyInstance : VariationPropertyInstanceBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            this.Write("\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Context.GetOutputNamespace(haldoc.Core.E_Namespace.DbContext)));
-            this.Write(" {\n    using Microsoft.EntityFrameworkCore;\n\n    partial class DynamicDbContext {" +
-                    "\n    \n");
- /* DbSetプロパティの生成 */ 
- foreach (var entity in Context.EnumerateAllAggregates().Select(a => a.ToDbTableModel())) { 
-            this.Write("        public DbSet<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Context.GetOutputNamespace(haldoc.Core.E_Namespace.DbEntity)));
-            this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entity.ClassName));
-            this.Write("> ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entity.ClassName));
-            this.Write(" { get; set; }\n");
- }
+            this.Write("\n<div class=\"row mb-3\">\n    <label class=\"col-sm-2 col-form-label\">\n        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Property.Name));
+            this.Write("\n    </label>\n    <div class=\"col-sm-10\" style=\"display: flex; flex-direction: co" +
+                    "lumn; align-items: flex-start\">\n");
+ foreach (var variation in Property.GetVariations()) { 
+            this.Write("        <label>\n            <input type=\"radio\" value=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(variation.Key));
+            this.Write("\" name=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(RenderingContext.CurrentMemberName));
+            this.Write("\">\n            ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(variation.Value.Name));
+            this.Write("\n        </label>\n        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(variation.Value.RenderSingleView(RenderingContext.WithIndent(1))));
             this.Write("\n");
- /* OnModelCreatingの定義 */ 
-            this.Write("        protected override void OnModelCreating(ModelBuilder modelBuilder) {\n");
- foreach (var aggregate in Context.EnumerateAllAggregates()) { 
-            this.Write("            modelBuilder.Entity<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Context.GetOutputNamespace(haldoc.Core.E_Namespace.DbEntity)));
-            this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(aggregate.ToDbTableModel().ClassName));
-            this.Write(">()\n                .HasKey(e => new {\n");
- foreach (var prop in aggregate.GetDbTablePK()) { 
-            this.Write("                    e.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(",\n");
- }
-            this.Write("                });\n");
- }
-            this.Write("        }\n    }\n}\n\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Context.GetOutputNamespace(haldoc.Core.E_Namespace.DbEntity)));
-            this.Write(" {\n\n");
- /*Entityクラスの生成*/ 
- foreach (var entity in Context.EnumerateAllAggregates().Select(a => a.ToDbTableModel())) { 
-            this.Write("    public partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entity.ClassName));
-            this.Write(" {\n");
- /*Entityクラスの生成: プロパティ*/ 
- foreach (var prop in entity.Properties) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(" { get; set; }\n");
- }
-            this.Write("    }\n");
- }
-            this.Write("\n}");
+ } 
+            this.Write("    </div>\n</div>");
             return this.GenerationEnvironment.ToString();
         }
         
@@ -75,7 +42,7 @@ namespace haldoc.CodeGenerating {
         }
     }
     
-    public class EFCodeGeneratorBase {
+    public class VariationPropertyInstanceBase {
         
         private global::System.Text.StringBuilder builder;
         

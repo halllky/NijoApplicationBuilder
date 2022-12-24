@@ -20,12 +20,26 @@ namespace haldoc.Core {
 
         public abstract IEnumerable<Aggregate> GetChildAggregates();
 
-        public abstract IEnumerable<PropertyTemplate> ToDbColumnModel();
+        public abstract IEnumerable<PropertyTemplate> ToDbEntityProperty();
 
-        public abstract IEnumerable<PropertyTemplate> ToSearchConditionModel();
+        public abstract IEnumerable<PropertyTemplate> ToSearchConditionDtoProperty();
         public abstract IEnumerable<string> GenerateSearchConditionLayout(string modelPath);
 
+        public abstract IEnumerable<PropertyTemplate> ToInstanceDtoProperty();
+        public abstract string RenderSingleView(AggregateInstanceBuildContext renderingContext);
+
         public abstract IEnumerable<PropertyTemplate> ToListItemModel();
+
+        /// <summary>集約ルートのプロパティなら0、そこから子集約になるごとに+1</summary>
+        public int GetDepth() {
+            var count = 0;
+            var ancestor = Owner.Parent;
+            while (ancestor != null) {
+                count++;
+                ancestor = ancestor.Owner.Parent;
+            }
+            return count;
+        }
 
         public object CreateInstanceDefaultValue() {
             throw new NotImplementedException();

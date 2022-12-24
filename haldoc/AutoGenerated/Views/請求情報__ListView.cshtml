@@ -38,10 +38,43 @@
                     住所
                 </label>
                 <div class="col-sm-10">
-                    <input asp-for="Filter.郵便番号" />
-                    <input asp-for="Filter.都道府県" />
-                    <input asp-for="Filter.市町村" />
-                    <input asp-for="Filter.丁番地" />
+                    
+                    <div class="container">
+                        <div class="form-horizontal">
+                            <div class="row mb-3">
+                                <label class="col-sm-2 col-form-label">
+                                    郵便番号
+                                </label>
+                                <div class="col-sm-10">
+                                    <input asp-for="Filter.郵便番号" />
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <label class="col-sm-2 col-form-label">
+                                    都道府県
+                                </label>
+                                <div class="col-sm-10">
+                                    <input asp-for="Filter.都道府県" />
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <label class="col-sm-2 col-form-label">
+                                    市町村
+                                </label>
+                                <div class="col-sm-10">
+                                    <input asp-for="Filter.市町村" />
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <label class="col-sm-2 col-form-label">
+                                    丁番地
+                                </label>
+                                <div class="col-sm-10">
+                                    <input asp-for="Filter.丁番地" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

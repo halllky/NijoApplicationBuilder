@@ -9,9 +9,10 @@ using Microsoft.AspNetCore.Mvc;
 namespace haldoc.Controllers {
     public class HaldocController : Controller {
         public HaldocController(haldoc.Core.ProjectContext context) {
-            _modelBuidler = new Models.ModelBuidler(context);
+            //_modelBuidler = new Models.ModelBuidler(context);
         }
-        private readonly Models.ModelBuidler _modelBuidler;
+        //private readonly Models.ModelBuidler _modelBuidler;
+        private dynamic _modelBuidler;
 
         #region 一覧画面
         public IActionResult List(Guid aggregateId) {

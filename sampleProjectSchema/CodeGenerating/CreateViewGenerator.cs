@@ -15,59 +15,21 @@ namespace haldoc.CodeGenerating {
     using System;
     
     
-    public partial class EFCodeGenerator : EFCodeGeneratorBase {
+    public partial class CreateViewGenerator : CreateViewGeneratorBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            this.Write("\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Context.GetOutputNamespace(haldoc.Core.E_Namespace.DbContext)));
-            this.Write(" {\n    using Microsoft.EntityFrameworkCore;\n\n    partial class DynamicDbContext {" +
-                    "\n    \n");
- /* DbSetプロパティの生成 */ 
- foreach (var entity in Context.EnumerateAllAggregates().Select(a => a.ToDbTableModel())) { 
-            this.Write("        public DbSet<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Context.GetOutputNamespace(haldoc.Core.E_Namespace.DbEntity)));
+            this.Write("@model ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Context.GetOutputNamespace(haldoc.Core.E_Namespace.MvcModel)));
             this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entity.ClassName));
-            this.Write("> ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entity.ClassName));
-            this.Write(" { get; set; }\n");
- }
-            this.Write("\n");
- /* OnModelCreatingの定義 */ 
-            this.Write("        protected override void OnModelCreating(ModelBuilder modelBuilder) {\n");
- foreach (var aggregate in Context.EnumerateAllAggregates()) { 
-            this.Write("            modelBuilder.Entity<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Context.GetOutputNamespace(haldoc.Core.E_Namespace.DbEntity)));
-            this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(aggregate.ToDbTableModel().ClassName));
-            this.Write(">()\n                .HasKey(e => new {\n");
- foreach (var prop in aggregate.GetDbTablePK()) { 
-            this.Write("                    e.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(",\n");
- }
-            this.Write("                });\n");
- }
-            this.Write("        }\n    }\n}\n\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Context.GetOutputNamespace(haldoc.Core.E_Namespace.DbEntity)));
-            this.Write(" {\n\n");
- /*Entityクラスの生成*/ 
- foreach (var entity in Context.EnumerateAllAggregates().Select(a => a.ToDbTableModel())) { 
-            this.Write("    public partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entity.ClassName));
-            this.Write(" {\n");
- /*Entityクラスの生成: プロパティ*/ 
- foreach (var prop in entity.Properties) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(" { get; set; }\n");
- }
-            this.Write("    }\n");
- }
-            this.Write("\n}");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Aggregate.ToSingleItemModel().ClassName));
+            this.Write(";\n@{\n    ViewData[\"Title\"] = \"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Aggregate.Name));
+            this.Write(" - 新規作成\";\n}\n\n<h1>\n    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Aggregate.Name));
+            this.Write(" - 新規作成\n</h1>\n\n<form>\n    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Aggregate.RenderSingleView("", 1)));
+            this.Write("\n    \n    <button asp-action=\"SaveNewInstance\">作成</button>\n</form>");
             return this.GenerationEnvironment.ToString();
         }
         
@@ -75,7 +37,7 @@ namespace haldoc.CodeGenerating {
         }
     }
     
-    public class EFCodeGeneratorBase {
+    public class CreateViewGeneratorBase {
         
         private global::System.Text.StringBuilder builder;
         

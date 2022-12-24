@@ -35,14 +35,14 @@ namespace haldoc.Core.Props {
             return UnderlyingPropInfo.PropertyType.FullName;
         }
 
-        public override IEnumerable<PropertyTemplate> ToDbColumnModel() {
+        public override IEnumerable<PropertyTemplate> ToDbEntityProperty() {
             yield return new PropertyTemplate {
                 PropertyName = this.Name,
                 CSharpTypeName = GetCSharpTypeName(),
             };
         }
 
-        public override IEnumerable<PropertyTemplate> ToSearchConditionModel() {
+        public override IEnumerable<PropertyTemplate> ToSearchConditionDtoProperty() {
             string typeName;
             var fromto = typeof(FromTo).FullName;
             if (UnderlyingPropInfo.PropertyType == typeof(string)) typeName = "string";
@@ -72,7 +72,7 @@ namespace haldoc.Core.Props {
             };
         }
         public override IEnumerable<string> GenerateSearchConditionLayout(string modelPath) {
-            var aspFor = $"{modelPath}.{Name}";
+            var aspFor = string.IsNullOrEmpty(modelPath) ? Name : $"{modelPath}.{Name}";
             if (UnderlyingPropInfo.PropertyType == typeof(string)
                 || UnderlyingPropInfo.PropertyType == typeof(bool)) {
                 yield return $"<input asp-for=\"{aspFor}\" />";
@@ -109,6 +109,28 @@ namespace haldoc.Core.Props {
                 PropertyName = this.Name,
                 CSharpTypeName = GetCSharpTypeName(),
             };
+        }
+
+        public override IEnumerable<PropertyTemplate> ToInstanceDtoProperty() {
+            return ToDbEntityProperty();
+        }
+
+        public override string RenderSingleView(AggregateInstanceBuildContext renderingContext) {
+            renderingContext.Push(Name);
+
+            var template = new PrimitivePropertyInstance {
+                Property = this,
+                RenderingContext = renderingContext,
+            };
+            var code = string.Join(Environment.NewLine, template
+                .TransformText()
+                .Split(Environment.NewLine)
+                .Select((line, index) => index == 0
+                    ? line // 先頭行だけは呼び出し元ttファイル内のインデントがそのまま反映されるので
+                    : renderingContext.CurrentIndent + line));
+
+            renderingContext.Pop();
+            return code;
         }
 
         object ISearchConditionHandler.Deserialize(string serialized) {
@@ -189,5 +211,10 @@ namespace haldoc.Core.Props {
 
             return false;
         }
+    }
+
+    partial class PrimitivePropertyInstance {
+        public PrimitiveProperty Property { get; init; }
+        public AggregateInstanceBuildContext RenderingContext { get; init; }
     }
 }

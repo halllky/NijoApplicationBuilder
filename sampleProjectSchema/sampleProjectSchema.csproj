@@ -43,6 +43,41 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>MvcModelGenerator.cs</LastGenOutput>
     </None>
+    <None Update="Core\Props\ChildPropertySearchCondition.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>ChildPropertySearchCondition.cs</LastGenOutput>
+    </None>
+    <None Update="CodeGenerating\CreateViewGenerator.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>CreateViewGenerator.cs</LastGenOutput>
+    </None>
+    <None Update="Core\Props\VariationPropertyInstance.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>VariationPropertyInstance.cs</LastGenOutput>
+    </None>
+    <None Update="Core\Props\ChildrenPropertyInstance.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>ChildrenPropertyInstance.cs</LastGenOutput>
+    </None>
+    <None Update="Core\AggregateInstance.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>AggregateInstance.cs</LastGenOutput>
+    </None>
+    <None Update="Core\Props\ChildPropertyInstance.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>ChildPropertyInstance.cs</LastGenOutput>
+    </None>
+    <None Update="Core\Props\PrimitivePropertyInstance.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>PrimitivePropertyInstance.cs</LastGenOutput>
+    </None>
+    <None Update="Core\Props\ReferencePropertyInstance.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>ReferencePropertyInstance.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="CodeGenerating\AggregateInstance.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="CodeGenerating\Entities.cs">
@@ -62,6 +97,30 @@
     </Compile>
     <Compile Update="CodeGenerating\MvcModelGenerator.cs">
       <DependentUpon>MvcModelGenerator.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Core\Props\ChildPropertySearchCondition.cs">
+      <DependentUpon>ChildPropertySearchCondition.tt</DependentUpon>
+    </Compile>
+    <Compile Update="CodeGenerating\CreateViewGenerator.cs">
+      <DependentUpon>CreateViewGenerator.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Core\Props\VariationPropertyInstance.cs">
+      <DependentUpon>VariationPropertyInstance.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Core\Props\ChildrenPropertyInstance.cs">
+      <DependentUpon>ChildrenPropertyInstance.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Core\AggregateInstance.cs">
+      <DependentUpon>AggregateInstance.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Core\Props\ChildPropertyInstance.cs">
+      <DependentUpon>ChildPropertyInstance.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Core\Props\PrimitivePropertyInstance.cs">
+      <DependentUpon>PrimitivePropertyInstance.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Core\Props\ReferencePropertyInstance.cs">
+      <DependentUpon>ReferencePropertyInstance.tt</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
