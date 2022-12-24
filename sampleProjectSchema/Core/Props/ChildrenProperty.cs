@@ -19,7 +19,14 @@ namespace haldoc.Core.Props {
             yield break;
         }
 
-        public override IEnumerable<PropertyTemplate> ToListItemMember() {
+        public override IEnumerable<PropertyTemplate> ToSearchConditionModel() {
+            yield break;
+        }
+        public override IEnumerable<string> GenerateSearchConditionLayout(string modelPath) {
+            yield break;
+        }
+
+        public override IEnumerable<PropertyTemplate> ToListItemModel() {
             yield break;
         }
     }

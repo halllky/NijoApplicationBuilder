@@ -35,12 +35,32 @@ namespace haldoc.Core.Props {
         public override IEnumerable<PropertyTemplate> ToDbColumnModel() {
             yield return new PropertyTemplate {
                 CSharpTypeName = "int?",
-                PropertyName = UnderlyingPropInfo.Name,
+                PropertyName = Name,
             };
         }
 
-        public override IEnumerable<PropertyTemplate> ToListItemMember() {
-            yield break;
+        private string SearchConditionPropName(Aggregate variation) => $"{Name}__{variation.Name}";
+        public override IEnumerable<PropertyTemplate> ToSearchConditionModel() {
+            foreach (var variation in GetVariations()) {
+                yield return new PropertyTemplate {
+                    PropertyName = SearchConditionPropName(variation.Value),
+                    CSharpTypeName = "bool",
+                };
+            }
+        }
+        public override IEnumerable<string> GenerateSearchConditionLayout(string modelPath) {
+            yield return $"<div>";
+            foreach (var variation in GetVariations()) {
+                yield return $"    <input type=\"checkbox\" asp-for=\"{modelPath}.{SearchConditionPropName(variation.Value)}\" />";
+            }
+            yield return $"</div>";
+        }
+
+        public override IEnumerable<PropertyTemplate> ToListItemModel() {
+            yield return new PropertyTemplate {
+                PropertyName = Name,
+                CSharpTypeName = "string", // Variation集約名を表示する
+            };
         }
     }
 }

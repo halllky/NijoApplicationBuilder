@@ -16,6 +16,7 @@
     <Folder Include="Core\Props\" />
     <Folder Include="SqlQuery\" />
     <Folder Include="Core\Dto\" />
+    <Folder Include="Runtime\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="CodeGenerating\Entities.tt">

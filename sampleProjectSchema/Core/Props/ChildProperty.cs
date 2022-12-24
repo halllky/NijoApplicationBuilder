@@ -22,8 +22,24 @@ namespace haldoc.Core.Props {
             return ChildAggregate.GetDbTablePK();
         }
 
-        public override IEnumerable<PropertyTemplate> ToListItemMember() {
-            yield break;
+        public override IEnumerable<PropertyTemplate> ToSearchConditionModel() {
+            return ChildAggregate
+                .GetProperties()
+                .Where(p => !p.IsPrimaryKey)
+                .SelectMany(p => p.ToSearchConditionModel());
+        }
+        public override IEnumerable<string> GenerateSearchConditionLayout(string modelPath) {
+            return ChildAggregate
+                .GetProperties()
+                .Where(p => !p.IsPrimaryKey)
+                .SelectMany(p => p.GenerateSearchConditionLayout(modelPath));
+        }
+
+        public override IEnumerable<PropertyTemplate> ToListItemModel() {
+            return ChildAggregate
+                .GetProperties()
+                .Where(p => !p.IsPrimaryKey)
+                .SelectMany(p => p.ToListItemModel());
         }
     }
 }

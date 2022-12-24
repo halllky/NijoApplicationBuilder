@@ -16,14 +16,37 @@ namespace haldoc.Core.Props {
         public override IEnumerable<PropertyTemplate> ToDbColumnModel() {
             foreach (var foreignKey in ReferedAggregate.GetDbTablePK()) {
                 yield return new PropertyTemplate {
-                    PropertyName = $"{UnderlyingPropInfo.Name}__{foreignKey.PropertyName}",
+                    PropertyName = $"{this.Name}__{foreignKey.PropertyName}",
                     CSharpTypeName = foreignKey.CSharpTypeName,
                 };
             }
         }
 
-        public override IEnumerable<PropertyTemplate> ToListItemMember() {
-            yield break;
+        public override IEnumerable<PropertyTemplate> ToSearchConditionModel() {
+            yield return new PropertyTemplate {
+                PropertyName = Name,
+                CSharpTypeName = "string", // 複合キーはJSONを格納
+            };
+        }
+        public override IEnumerable<string> GenerateSearchConditionLayout(string modelPath) {
+            var aspFor = $"{modelPath}.{Name}";
+
+            yield return $"<select asp-for=\"{aspFor}\">";
+            yield return $"    <option selected=\"selected\" value=\"\"></option>";
+            yield return $"</select>";
+        }
+
+        public override IEnumerable<PropertyTemplate> ToListItemModel() {
+            // UI上に表示する名前
+            yield return new PropertyTemplate {
+                PropertyName = Name,
+                CSharpTypeName = "string",
+            };
+            // リンク用
+            yield return new PropertyTemplate {
+                PropertyName = Name + "__ID",
+                CSharpTypeName = "string", // 複合キーはJSONを格納
+            };
         }
     }
 }

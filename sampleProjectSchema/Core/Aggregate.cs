@@ -49,29 +49,31 @@ namespace haldoc.Core {
 
         private readonly bool _hasIndexKey;
         private List<Dto.PropertyTemplate> _pk;
+        private List<Dto.PropertyTemplate> _notPk;
         private Dto.ClassTemplate _dbTableModel;
         public IEnumerable<Dto.PropertyTemplate> GetDbTablePK() {
             if (_pk == null) ToDbTableModel();
             return _pk;
         }
+        public IEnumerable<Dto.PropertyTemplate> GetDbTableWithoutPK() {
+            if (_notPk == null) ToDbTableModel();
+            return _notPk;
+        }
         public Dto.ClassTemplate ToDbTableModel() {
             if (_dbTableModel == null) {
-                _pk = new List<Dto.PropertyTemplate>();
+                var props = GetProperties();
+                _pk = props.Where(p => p.IsPrimaryKey).SelectMany(p => p.ToDbColumnModel()).ToList();
+                _notPk = props.Where(p => !p.IsPrimaryKey).SelectMany(p => p.ToDbColumnModel()).ToList();
+
+                if (Parent != null && !_pk.Any() && _hasIndexKey)
+                    _pk.Insert(0, new Dto.PropertyTemplate { PropertyName = "Index", CSharpTypeName = "int" });
 
                 if (Parent != null)
-                    _pk.AddRange(Parent.Owner.GetDbTablePK());
-
-                var props = GetProperties()
-                    .Select(p => new { p.IsPrimaryKey, models = p.ToDbColumnModel().ToArray() })
-                    .ToArray();
-                if (Parent != null && !props.Any(p => p.IsPrimaryKey) && _hasIndexKey)
-                    _pk.Add(new Dto.PropertyTemplate { PropertyName = "Index", CSharpTypeName = "int" });
-                
-                _pk.AddRange(props.Where(p => p.IsPrimaryKey).SelectMany(p => p.models));
+                    _pk.InsertRange(0, Parent.Owner.GetDbTablePK());
 
                 _dbTableModel = new Dto.ClassTemplate {
                     ClassName = Name,
-                    Properties = _pk.Union(props.SelectMany(p => p.models)).Distinct().ToList(),
+                    Properties = _pk.Union(_notPk).ToList(),
                 };
             }
             return _dbTableModel;
@@ -80,17 +82,33 @@ namespace haldoc.Core {
 
         private Dto.ClassTemplate _filterObjectModel;
         public Dto.ClassTemplate ToSearchConditionModel() {
-            throw new NotImplementedException();
+            if (_filterObjectModel == null) {
+                _filterObjectModel = new Dto.ClassTemplate {
+                    ClassName = Name + "__SearchCondition",
+                    Properties = GetProperties().SelectMany(p => p.ToSearchConditionModel()).ToList(),
+                };
+            }
+            return _filterObjectModel;
         }
 
         private Dto.ClassTemplate _listViewModel;
         public Dto.ClassTemplate ToListItemModel() {
             if (_listViewModel == null) {
                 _listViewModel = new Dto.ClassTemplate {
-                    ClassName = UnderlyingType.Name,
+                    ClassName = Name + "__ListItem",
+                    Properties = GetProperties().SelectMany(p => p.ToListItemModel()).ToList(),
                 };
             }
             return _listViewModel;
+        }
+        public IEnumerable<Dto.PropertyLayoutTemplate> ToSearchConditionLayout(string modelPath) {
+            foreach (var prop in GetProperties()) {
+                var layout = prop.GenerateSearchConditionLayout(modelPath).ToList();
+                if (layout.Any()) yield return new Dto.PropertyLayoutTemplate {
+                    PropertyName = prop.Name,
+                    Layout = layout,
+                };
+            }
         }
 
 

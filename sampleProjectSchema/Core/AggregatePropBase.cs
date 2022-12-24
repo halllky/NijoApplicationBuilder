@@ -22,7 +22,10 @@ namespace haldoc.Core {
 
         public abstract IEnumerable<PropertyTemplate> ToDbColumnModel();
 
-        public abstract IEnumerable<PropertyTemplate> ToListItemMember();
+        public abstract IEnumerable<PropertyTemplate> ToSearchConditionModel();
+        public abstract IEnumerable<string> GenerateSearchConditionLayout(string modelPath);
+
+        public abstract IEnumerable<PropertyTemplate> ToListItemModel();
 
         public object CreateInstanceDefaultValue() {
             throw new NotImplementedException();

@@ -75,7 +75,7 @@ namespace haldoc {
         [Key]
         public 取引先 会社 { get; set; }
         [Key]
-        public string 支店連番 { get; set; }
+        public int 支店連番 { get; set; }
 
         public string 支店名 { get; set; }
     }

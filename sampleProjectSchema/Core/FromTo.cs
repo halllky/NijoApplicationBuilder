@@ -1,7 +1,9 @@
 ﻿using System;
 namespace haldoc.Core {
-    public class FromTo {
-        public object From { get; }
-        public object To { get; }
+    public class FromTo<T> {
+        public T From { get; }
+        public T To { get; }
     }
+
+    public class FromTo : FromTo<object> { }
 }
