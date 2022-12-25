@@ -15,25 +15,22 @@ namespace haldoc.Controllers {
 
         #region 一覧画面
         public IActionResult List(Guid aggregateId) {
-            var actionResult = _projectContext.MapToListView(aggregateId);
-            if (actionResult == null) return NotFound();
-            return View(actionResult.View, actionResult.Model);
-        }
-        public IActionResult ClearSearchCondition(Models.ListViewModel model) {
             throw new NotImplementedException();
         }
-        public IActionResult ExecuteSearch(Models.ListViewModel model) {
+        public IActionResult ClearSearchCondition(haldoc.Runtime.ListViewModel model) {
+            throw new NotImplementedException();
+        }
+        public IActionResult ExecuteSearch(haldoc.Runtime.ListViewModel model) {
             throw new NotImplementedException();
         }
         #endregion
 
         #region 新規作成画面
         public IActionResult Create(Guid aggregateId) {
-            var actionResult = _projectContext.MapToCreateView(aggregateId);
-            if (actionResult == null) return NotFound();
-            return View(actionResult.View, actionResult.Model);
+            throw new NotImplementedException();
         }
-        public IActionResult SaveNewInstance(Models.CreateViewModel model) {
+        [HttpPost]
+        public IActionResult SaveNewInstance(haldoc.Runtime.SingleViewModel model) {
             throw new NotImplementedException();
         }
         #endregion

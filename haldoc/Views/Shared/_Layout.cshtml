@@ -23,7 +23,7 @@
                         @foreach (var aggregate in projectContext.EnumerateRootAggregates())
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Haldoc" asp-action="List" asp-route-aggregateId="@aggregate.GUID">@aggregate.Name</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="@aggregate.Name" asp-action="List">@aggregate.Name</a>
                             </li>
                         }
                     </ul>

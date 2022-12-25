@@ -30,13 +30,14 @@ namespace <#=Context.GetOutputNamespace(haldoc.Core.E_Namespace.DbContext)#> {
 }
 
 namespace <#=Context.GetOutputNamespace(haldoc.Core.E_Namespace.DbEntity)#> {
+    using System.Collections.Generic;
 
 <# /*Entityクラスの生成*/ #>
 <# foreach (var entity in Context.EnumerateAllAggregates().Select(a => a.ToDbTableModel())) { #>
     public partial class <#=entity.ClassName#> {
 <# /*Entityクラスの生成: プロパティ*/ #>
 <# foreach (var prop in entity.Properties) { #>
-        public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }
+        public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }<#=prop.Initializer == null ? "" : $" = {prop.Initializer};"#>
 <# }#>
     }
 <# }#>

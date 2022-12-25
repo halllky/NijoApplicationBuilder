@@ -51,7 +51,7 @@ namespace haldoc.CodeGenerating {
  }
             this.Write("        }\n    }\n}\n\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(Context.GetOutputNamespace(haldoc.Core.E_Namespace.DbEntity)));
-            this.Write(" {\n\n");
+            this.Write(" {\n    using System.Collections.Generic;\n\n");
  /*Entityクラスの生成*/ 
  foreach (var entity in Context.EnumerateAllAggregates().Select(a => a.ToDbTableModel())) { 
             this.Write("    public partial class ");
@@ -63,7 +63,9 @@ namespace haldoc.CodeGenerating {
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
             this.Write(" ");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(" { get; set; }\n");
+            this.Write(" { get; set; }");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
+            this.Write("\n");
  }
             this.Write("    }\n");
  }

@@ -19,12 +19,68 @@ namespace haldoc.CodeGenerating {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            
-            #line 6 ""
-            this.Write("\n");
-            
-            #line default
-            #line hidden
+
+    var controllerName = Aggregate.Name + "Controller";
+
+    var sc = Aggregate.ToSearchConditionModel().ClassName;
+    var li = Aggregate.ToListItemModel().ClassName;
+    var si = Aggregate.ToSingleItemModel().ClassName;
+    var listViewTypeName = $"haldoc.Runtime.ListViewModel<{sc}, {li}>";
+    var singleViewTypeName = $"haldoc.Runtime.SingleViewModel<{si}>";
+
+            this.Write("\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Context.GetOutputNamespace(haldoc.Core.E_Namespace.MvcModel)));
+            this.Write(" {\n    using System;\n    using System.Collections.Generic;\n    using System.Linq;" +
+                    "\n    using System.Threading.Tasks;\n    using Microsoft.AspNetCore.Mvc;\n    \n    " +
+                    "public class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(controllerName));
+            this.Write(" : Controller {\n        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(controllerName));
+            this.Write("(haldoc.Core.ProjectContext context) {\n            _projectContext = context;\n   " +
+                    "         _aggregate = _projectContext.GetAggregate(typeof(");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Aggregate.UnderlyingType.FullName));
+            this.Write(@"));
+        }
+        private readonly haldoc.Core.Aggregate _aggregate;
+        private readonly haldoc.Core.ProjectContext _projectContext;
+        
+        public IActionResult List() {
+            var actionResult = _projectContext.MapToListView(_aggregate);
+            if (actionResult == null) return NotFound();
+            return View(actionResult.View, actionResult.Model);
+        }
+        public IActionResult ClearSearchCondition(");
+            this.Write(this.ToStringHelper.ToStringWithCulture(listViewTypeName));
+            this.Write(" model) {\n            throw new NotImplementedException();\n        }\n        publ" +
+                    "ic IActionResult ExecuteSearch(");
+            this.Write(this.ToStringHelper.ToStringWithCulture(listViewTypeName));
+            this.Write(@" model) {
+            throw new NotImplementedException();
+        }
+        
+        public IActionResult Create() {
+            var actionResult = _projectContext.MapToCreateView(_aggregate);
+            if (actionResult == null) return NotFound();
+            return View(actionResult.View, actionResult.Model);
+        }
+        [HttpPost]
+        public IActionResult SaveNewInstance(");
+            this.Write(this.ToStringHelper.ToStringWithCulture(singleViewTypeName));
+            this.Write(@" model) {
+            var actionResult = _projectContext.SaveNewInstance(_aggregate, model);
+            if (actionResult.Errors.Any()) {
+                foreach (var error in actionResult.Errors.SelectMany(e => e.MemberNames, (e, Member) => new { Member, e.ErrorMessage })) {
+                    ModelState.AddModelError(error.Member, error.ErrorMessage);
+                }
+            }
+            return View(actionResult.View, actionResult.Model);
+        }
+        
+        public IActionResult Single() {
+            throw new NotImplementedException();
+        }
+    }
+}");
             return this.GenerationEnvironment.ToString();
         }
         

@@ -11,4 +11,5 @@
     @for (var <#=RenderingContext.CurrentLoopVar#> = 0; <#=RenderingContext.CurrentLoopVar#> < Model.<#=RenderingContext.CurrentMemberWithoutLoopIndex#>.Count; <#=RenderingContext.CurrentLoopVar#>++) {
         <#=Property.ChildAggregate.RenderSingleView(RenderingContext.WithIndent(1))#>
     }
+    <a>+ 追加</a>
 </div>

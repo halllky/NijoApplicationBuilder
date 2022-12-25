@@ -21,6 +21,11 @@ namespace haldoc.Core.Props {
                     CSharpTypeName = foreignKey.CSharpTypeName,
                 };
             }
+            //// navigation property
+            //yield return new PropertyTemplate {
+            //    CSharpTypeName = $"virtual {ReferedAggregate.ToDbTableModel().ClassName}",
+            //    PropertyName = ReferedAggregate.ToDbTableModel().ClassName,
+            //};
         }
 
         public override IEnumerable<string> GenerateSearchConditionLayout(string modelPath) {

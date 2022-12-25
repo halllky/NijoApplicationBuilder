@@ -37,6 +37,13 @@ namespace haldoc.Core.Props {
                 CSharpTypeName = "int?",
                 PropertyName = Name,
             };
+            //// navigation property
+            //foreach (var variation in GetVariations()) {
+            //    yield return new PropertyTemplate {
+            //        CSharpTypeName = $"virtual {variation.Value.ToDbTableModel().ClassName}",
+            //        PropertyName = variation.Value.ToDbTableModel().ClassName,
+            //    };
+            //}
         }
 
         private string SearchConditionPropName(Aggregate variation) => $"{Name}_{variation.Name}";
@@ -67,6 +74,11 @@ namespace haldoc.Core.Props {
         }
 
         public override IEnumerable<PropertyTemplate> ToInstanceDtoProperty() {
+            yield return new PropertyTemplate {
+                CSharpTypeName = "int?",
+                PropertyName = Name,
+            };
+
             foreach (var variation in GetVariations()) {
                 yield return new PropertyTemplate {
                     CSharpTypeName = $"{Context.GetOutputNamespace(E_Namespace.MvcModel)}.{variation.Value.Name}",
@@ -77,7 +89,7 @@ namespace haldoc.Core.Props {
         }
 
         public override string RenderSingleView(AggregateInstanceBuildContext renderingContext) {
-            //renderingContext.Push(Name);
+            //renderingContext.Push(Name); // SingleViewのプロパティは、種別を表すint + 各variationの子要素、なのでインターフェース自体のプロパティは生成されない
 
             var template = new VariationPropertyInstance {
                 Property = this,
@@ -93,6 +105,9 @@ namespace haldoc.Core.Props {
             //renderingContext.Pop();
             return code;
         }
+        public string GetRadioButtonAspFor(AggregateInstanceBuildContext renderingContext) => string.IsNullOrEmpty(renderingContext.CurrentMemberName)
+            ? Name
+            : renderingContext.CurrentMemberName + "." + Name;
     }
 
     partial class VariationPropertyInstance {

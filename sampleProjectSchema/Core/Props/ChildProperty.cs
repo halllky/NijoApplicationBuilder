@@ -19,7 +19,14 @@ namespace haldoc.Core.Props {
         }
 
         public override IEnumerable<PropertyTemplate> ToDbEntityProperty() {
-            return ChildAggregate.GetDbTablePK();
+            foreach (var foreignKey in ChildAggregate.GetDbTablePK()) {
+                yield return foreignKey;
+            }
+            //// navigation property
+            //yield return new PropertyTemplate {
+            //    CSharpTypeName = $"virtual {ChildAggregate.ToDbTableModel().ClassName}",
+            //    PropertyName = ChildAggregate.ToDbTableModel().ClassName,
+            //};
         }
 
         public override IEnumerable<PropertyTemplate> ToSearchConditionDtoProperty() {

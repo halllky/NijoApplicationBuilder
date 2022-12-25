@@ -75,6 +75,10 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>ReferencePropertyInstance.cs</LastGenOutput>
     </None>
+    <None Update="CodeGenerating\MvcControllerGenerator.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>MvcControllerGenerator.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="CodeGenerating\AggregateInstance.cs" />
@@ -121,6 +125,9 @@
     </Compile>
     <Compile Update="Core\Props\ReferencePropertyInstance.cs">
       <DependentUpon>ReferencePropertyInstance.tt</DependentUpon>
+    </Compile>
+    <Compile Update="CodeGenerating\MvcControllerGenerator.cs">
+      <DependentUpon>MvcControllerGenerator.tt</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>

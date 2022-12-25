@@ -50,6 +50,7 @@ namespace haldoc.Core {
         private readonly bool _hasIndexKey;
         private List<Dto.PropertyTemplate> _pk;
         private List<Dto.PropertyTemplate> _notPk;
+        private List<Dto.PropertyTemplate> _navigationProperties;
         private Dto.ClassTemplate _dbTableModel;
         public IEnumerable<Dto.PropertyTemplate> GetDbTablePK() {
             if (_pk == null) ToDbTableModel();
@@ -66,10 +67,15 @@ namespace haldoc.Core {
                 _notPk = props.Where(p => !p.IsPrimaryKey).SelectMany(p => p.ToDbEntityProperty()).ToList();
 
                 if (Parent != null && !_pk.Any() && _hasIndexKey)
-                    _pk.Insert(0, new Dto.PropertyTemplate { PropertyName = "Index", CSharpTypeName = "int" });
+                    _pk.Insert(0, new Dto.PropertyTemplate { CSharpTypeName = "int", PropertyName = "Index" });
 
-                if (Parent != null)
+                if (Parent != null) {
                     _pk.InsertRange(0, Parent.Owner.GetDbTablePK());
+                    // stack overflow
+                    //_navigationProperties = new() {
+                    //    new Dto.PropertyTemplate { CSharpTypeName = $"virtual {Parent.Owner.ToDbTableModel().ClassName}", PropertyName = "Parent" },
+                    //};
+                }
 
                 _dbTableModel = new Dto.ClassTemplate {
                     ClassName = Name,
@@ -77,6 +83,12 @@ namespace haldoc.Core {
                 };
             }
             return _dbTableModel;
+        }
+
+        public object TransformMvcModelToDbEntity(object mvcModel) {
+            var dbEntityType = _context.RuntimeAssembly.GetType($"{_context.GetOutputNamespace(E_Namespace.MvcModel)}.{ToDbTableModel().ClassName}");
+            var dbEntity = Activator.CreateInstance(dbEntityType);
+            throw new NotImplementedException();
         }
 
 

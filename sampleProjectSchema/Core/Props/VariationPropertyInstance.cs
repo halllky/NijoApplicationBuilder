@@ -24,10 +24,10 @@ namespace haldoc.Core.Props {
             this.Write("\n    </label>\n    <div class=\"col-sm-10\" style=\"display: flex; flex-direction: co" +
                     "lumn; align-items: flex-start\">\n");
  foreach (var variation in Property.GetVariations()) { 
-            this.Write("        <label>\n            <input type=\"radio\" value=\"");
+            this.Write("        <label>\n            <input type=\"radio\" asp-for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Property.GetRadioButtonAspFor(RenderingContext)));
+            this.Write("\" value=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(variation.Key));
-            this.Write("\" name=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(RenderingContext.CurrentMemberName));
             this.Write("\">\n            ");
             this.Write(this.ToStringHelper.ToStringWithCulture(variation.Value.Name));
             this.Write("\n        </label>\n        ");

@@ -42,7 +42,7 @@
     @* 検索結果欄 *@
     <div>
         <div style="display: flex; justify-content: flex-end">
-            <a asp-controller="Haldoc" asp-action="Create" asp-route-aggregateId="<#=Aggregate.GUID#>">新規作成</a>
+            <a asp-action="Create">新規作成</a>
         </div>
         <table class="table table-sm">
             <thead>
@@ -60,7 +60,7 @@
                 {
                     <tr>
                         <td>
-                            <a asp-controller="Haldoc" asp-action="Single" asp-route-aggregateId="<#=Aggregate.GUID#>">詳細</a>
+                            <a asp-action="Single" asp-route-aggregateId="<#=Aggregate.GUID#>">詳細</a>
                         </td>
 <# foreach (var prop in Aggregate.ToListItemModel().Properties) { #>
                         <td>

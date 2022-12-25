@@ -54,10 +54,13 @@ namespace haldoc.CodeGenerating {
     @* 検索結果欄 *@
     <div>
         <div style=""display: flex; justify-content: flex-end"">
-            <a asp-controller=""Haldoc"" asp-action=""Create"" asp-route-aggregateId=""");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Aggregate.GUID));
-            this.Write("\">新規作成</a>\n        </div>\n        <table class=\"table table-sm\">\n            <the" +
-                    "ad>\n                <tr>\n                    <th></th>\n");
+            <a asp-action=""Create"">新規作成</a>
+        </div>
+        <table class=""table table-sm"">
+            <thead>
+                <tr>
+                    <th></th>
+");
  foreach (var prop in Aggregate.ToListItemModel().Properties) { 
             this.Write("                    <th>\n                        ");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
@@ -70,7 +73,7 @@ namespace haldoc.CodeGenerating {
                 {
                     <tr>
                         <td>
-                            <a asp-controller=""Haldoc"" asp-action=""Single"" asp-route-aggregateId=""");
+                            <a asp-action=""Single"" asp-route-aggregateId=""");
             this.Write(this.ToStringHelper.ToStringWithCulture(Aggregate.GUID));
             this.Write("\">詳細</a>\n                        </td>\n");
  foreach (var prop in Aggregate.ToListItemModel().Properties) { 

@@ -18,4 +18,8 @@ namespace haldoc.CodeGenerating {
         public Core.ProjectContext Context { get; init; }
         public Core.Aggregate Aggregate { get; init; }
     }
+    partial class MvcControllerGenerator {
+        public Core.ProjectContext Context { get; init; }
+        public Core.Aggregate Aggregate { get; init; }
+    }
 }

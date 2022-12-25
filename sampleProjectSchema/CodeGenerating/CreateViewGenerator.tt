@@ -3,7 +3,8 @@
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
-@model <#=Context.GetOutputNamespace(haldoc.Core.E_Namespace.MvcModel)#>.<#=Aggregate.ToSingleItemModel().ClassName#>;
+@model haldoc.Runtime.SingleViewModel<
+    <#=Context.GetOutputNamespace(haldoc.Core.E_Namespace.MvcModel)#>.<#=Aggregate.ToSingleItemModel().ClassName#>>;
 @{
     ViewData["Title"] = "<#=Aggregate.Name#> - 新規作成";
 }
@@ -13,7 +14,9 @@
 </h1>
 
 <form>
-    <#=Aggregate.RenderSingleView("", 1)#>
+    <input type="hidden" asp-for="AggregateId" />
+
+    <#=Aggregate.RenderSingleView(nameof(haldoc.Runtime.SingleViewModel.Instance), 1)#>
     
-    <button asp-action="SaveNewInstance">作成</button>
+    <button asp-action="SaveNewInstance" formmethod="post">作成</button>
 </form>

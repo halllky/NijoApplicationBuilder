@@ -18,6 +18,12 @@ namespace haldoc.Core.Props {
         }
 
         public override IEnumerable<PropertyTemplate> ToDbEntityProperty() {
+            //// navigation property
+            //yield return new PropertyTemplate {
+            //    CSharpTypeName = $"virtual ICollection<{ChildAggregate.ToDbTableModel().ClassName}>",
+            //    PropertyName = ChildAggregate.ToDbTableModel().ClassName,
+            //    Initializer = $"new HashSet<{ChildAggregate.ToDbTableModel().ClassName}>()",
+            //};
             yield break;
         }
 

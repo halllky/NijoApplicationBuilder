@@ -11,7 +11,7 @@
     <div class="col-sm-10" style="display: flex; flex-direction: column; align-items: flex-start">
 <# foreach (var variation in Property.GetVariations()) { #>
         <label>
-            <input type="radio" value="<#=variation.Key#>" name="<#=RenderingContext.CurrentMemberName#>">
+            <input type="radio" asp-for="<#=Property.GetRadioButtonAspFor(RenderingContext)#>" value="<#=variation.Key#>">
             <#=variation.Value.Name#>
         </label>
         <# RenderingContext.Push($"{Property.Name}_{variation.Key}"); #>

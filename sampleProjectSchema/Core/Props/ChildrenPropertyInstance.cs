@@ -32,7 +32,7 @@ namespace haldoc.Core.Props {
             this.Write(this.ToStringHelper.ToStringWithCulture(RenderingContext.CurrentLoopVar));
             this.Write("++) {\n        ");
             this.Write(this.ToStringHelper.ToStringWithCulture(Property.ChildAggregate.RenderSingleView(RenderingContext.WithIndent(1))));
-            this.Write("\n    }\n</div>");
+            this.Write("\n    }\n    <a>+ 追加</a>\n</div>");
             return this.GenerationEnvironment.ToString();
         }
         

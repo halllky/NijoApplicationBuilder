@@ -40,7 +40,7 @@
     @* 検索結果欄 *@
     <div>
         <div style="display: flex; justify-content: flex-end">
-            <a asp-controller="Haldoc" asp-action="Create" asp-route-aggregateId="b3660889-c8a1-3498-b55e-28ae656cd18e">新規作成</a>
+            <a asp-action="Create">新規作成</a>
         </div>
         <table class="table table-sm">
             <thead>
@@ -59,7 +59,7 @@
                 {
                     <tr>
                         <td>
-                            <a asp-controller="Haldoc" asp-action="Single" asp-route-aggregateId="b3660889-c8a1-3498-b55e-28ae656cd18e">詳細</a>
+                            <a asp-action="Single" asp-route-aggregateId="b3660889-c8a1-3498-b55e-28ae656cd18e">詳細</a>
                         </td>
                         <td>
                             @Model.Items[i].営業所ID

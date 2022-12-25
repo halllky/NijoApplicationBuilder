@@ -19,17 +19,18 @@ namespace haldoc.CodeGenerating {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            this.Write("@model ");
+            this.Write("@model haldoc.Runtime.SingleViewModel<\n    ");
             this.Write(this.ToStringHelper.ToStringWithCulture(Context.GetOutputNamespace(haldoc.Core.E_Namespace.MvcModel)));
             this.Write(".");
             this.Write(this.ToStringHelper.ToStringWithCulture(Aggregate.ToSingleItemModel().ClassName));
-            this.Write(";\n@{\n    ViewData[\"Title\"] = \"");
+            this.Write(">;\n@{\n    ViewData[\"Title\"] = \"");
             this.Write(this.ToStringHelper.ToStringWithCulture(Aggregate.Name));
             this.Write(" - 新規作成\";\n}\n\n<h1>\n    ");
             this.Write(this.ToStringHelper.ToStringWithCulture(Aggregate.Name));
-            this.Write(" - 新規作成\n</h1>\n\n<form>\n    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Aggregate.RenderSingleView("", 1)));
-            this.Write("\n    \n    <button asp-action=\"SaveNewInstance\">作成</button>\n</form>");
+            this.Write(" - 新規作成\n</h1>\n\n<form>\n    <input type=\"hidden\" asp-for=\"AggregateId\" />\n\n    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Aggregate.RenderSingleView(nameof(haldoc.Runtime.SingleViewModel.Instance), 1)));
+            this.Write("\n    \n    <button asp-action=\"SaveNewInstance\" formmethod=\"post\">作成</button>\n</fo" +
+                    "rm>");
             return this.GenerationEnvironment.ToString();
         }
         

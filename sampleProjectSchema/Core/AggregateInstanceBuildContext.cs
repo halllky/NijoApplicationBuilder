@@ -39,7 +39,7 @@ namespace haldoc.Core {
 
             public string CurrentMemberName => string.IsNullOrEmpty(_boundObjectPath)
                 ? string.Join(".", _path.Reverse())
-                : _boundObjectPath + "." + string.Join(".", _path.Reverse());
+                : string.Join(".", new[] { _boundObjectPath }.Union(_path.Reverse()));
             public string CurrentMemberWithoutLoopIndex => CurrentMemberName.EndsWith("]")
                 ? CurrentMemberName.Substring(0, CurrentMemberName.Length - 3)
                 : CurrentMemberName;
