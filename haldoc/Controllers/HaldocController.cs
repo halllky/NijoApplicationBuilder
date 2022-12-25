@@ -9,41 +9,38 @@ using Microsoft.AspNetCore.Mvc;
 namespace haldoc.Controllers {
     public class HaldocController : Controller {
         public HaldocController(haldoc.Core.ProjectContext context) {
-            //_modelBuidler = new Models.ModelBuidler(context);
+            _projectContext = context;
         }
-        //private readonly Models.ModelBuidler _modelBuidler;
-        private dynamic _modelBuidler;
+        private readonly haldoc.Core.ProjectContext _projectContext;
 
         #region 一覧画面
         public IActionResult List(Guid aggregateId) {
-            var model = _modelBuidler.InitListViewModel(aggregateId);
-            return View(model);
+            var actionResult = _projectContext.MapToListView(aggregateId);
+            if (actionResult == null) return NotFound();
+            return View(actionResult.View, actionResult.Model);
         }
         public IActionResult ClearSearchCondition(Models.ListViewModel model) {
-            _modelBuidler.ClearSearchCondition(model);
-            return View(nameof(List), model);
+            throw new NotImplementedException();
         }
         public IActionResult ExecuteSearch(Models.ListViewModel model) {
-            _modelBuidler.ExecuteSearch(model);
-            return View(nameof(List), model);
+            throw new NotImplementedException();
         }
         #endregion
 
         #region 新規作成画面
         public IActionResult Create(Guid aggregateId) {
-            var model = _modelBuidler.InitCreateViewModel(aggregateId);
-            return View(model);
+            var actionResult = _projectContext.MapToCreateView(aggregateId);
+            if (actionResult == null) return NotFound();
+            return View(actionResult.View, actionResult.Model);
         }
         public IActionResult SaveNewInstance(Models.CreateViewModel model) {
-            _modelBuidler.SaveNewInstance(model);
-            return View(nameof(Create), model);
+            throw new NotImplementedException();
         }
         #endregion
 
         #region シングルビュー
         public IActionResult Single(Guid aggregateId) {
-            var model = _modelBuidler.InitSingleViewModel(aggregateId);
-            return View(model);
+            throw new NotImplementedException();
         }
         #endregion
     }

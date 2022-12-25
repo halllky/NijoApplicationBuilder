@@ -39,7 +39,7 @@ namespace haldoc.Core.Props {
             };
         }
 
-        private string SearchConditionPropName(Aggregate variation) => $"{Name}__{variation.Name}";
+        private string SearchConditionPropName(Aggregate variation) => $"{Name}_{variation.Name}";
         public override IEnumerable<PropertyTemplate> ToSearchConditionDtoProperty() {
             foreach (var variation in GetVariations()) {
                 yield return new PropertyTemplate {
@@ -51,7 +51,10 @@ namespace haldoc.Core.Props {
         public override IEnumerable<string> GenerateSearchConditionLayout(string modelPath) {
             yield return $"<div>";
             foreach (var variation in GetVariations()) {
-                yield return $"    <input type=\"checkbox\" asp-for=\"{modelPath}.{SearchConditionPropName(variation.Value)}\" />";
+                yield return $"    <label>";
+                yield return $"        <input type=\"checkbox\" asp-for=\"{modelPath}.{SearchConditionPropName(variation.Value)}\" />";
+                yield return $"       {variation.Value.Name}";
+                yield return $"    </label>";
             }
             yield return $"</div>";
         }
@@ -64,14 +67,17 @@ namespace haldoc.Core.Props {
         }
 
         public override IEnumerable<PropertyTemplate> ToInstanceDtoProperty() {
-            yield return new PropertyTemplate {
-                CSharpTypeName = "object", // 理想を言えば動的にinterfaceを定義したいが面倒なので
-                PropertyName = Name,
-            };
+            foreach (var variation in GetVariations()) {
+                yield return new PropertyTemplate {
+                    CSharpTypeName = $"{Context.GetOutputNamespace(E_Namespace.MvcModel)}.{variation.Value.Name}",
+                    PropertyName = $"{Name}_{variation.Key}",
+                    Initializer = "new()",
+                };
+            }
         }
 
         public override string RenderSingleView(AggregateInstanceBuildContext renderingContext) {
-            renderingContext.Push(Name);
+            //renderingContext.Push(Name);
 
             var template = new VariationPropertyInstance {
                 Property = this,
@@ -84,7 +90,7 @@ namespace haldoc.Core.Props {
                     ? line // 先頭行だけは呼び出し元ttファイル内のインデントがそのまま反映されるので
                     : renderingContext.CurrentIndent + line));
 
-            renderingContext.Pop();
+            //renderingContext.Pop();
             return code;
         }
     }

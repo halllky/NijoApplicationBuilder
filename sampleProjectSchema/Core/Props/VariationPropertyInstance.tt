@@ -14,7 +14,9 @@
             <input type="radio" value="<#=variation.Key#>" name="<#=RenderingContext.CurrentMemberName#>">
             <#=variation.Value.Name#>
         </label>
+        <# RenderingContext.Push($"{Property.Name}_{variation.Key}"); #>
         <#=variation.Value.RenderSingleView(RenderingContext.WithIndent(1))#>
+        <# RenderingContext.Pop(); #>
 <# } #>
     </div>
 </div>

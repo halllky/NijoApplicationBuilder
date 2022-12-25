@@ -8,36 +8,23 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace haldoc.Core.Props {
+namespace haldoc.CodeGenerating {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
     using System;
     
     
-    public partial class VariationPropertyInstance : VariationPropertyInstanceBase {
+    public partial class MvcControllerGenerator : MvcControllerGeneratorBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            this.Write("\n<div class=\"row mb-3\">\n    <label class=\"col-sm-2 col-form-label\">\n        ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Property.Name));
-            this.Write("\n    </label>\n    <div class=\"col-sm-10\" style=\"display: flex; flex-direction: co" +
-                    "lumn; align-items: flex-start\">\n");
- foreach (var variation in Property.GetVariations()) { 
-            this.Write("        <label>\n            <input type=\"radio\" value=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(variation.Key));
-            this.Write("\" name=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(RenderingContext.CurrentMemberName));
-            this.Write("\">\n            ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(variation.Value.Name));
-            this.Write("\n        </label>\n        ");
- RenderingContext.Push($"{Property.Name}_{variation.Key}"); 
-            this.Write("        ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(variation.Value.RenderSingleView(RenderingContext.WithIndent(1))));
-            this.Write("\n        ");
- RenderingContext.Pop(); 
- } 
-            this.Write("    </div>\n</div>");
+            
+            #line 6 ""
+            this.Write("\n");
+            
+            #line default
+            #line hidden
             return this.GenerationEnvironment.ToString();
         }
         
@@ -45,7 +32,7 @@ namespace haldoc.Core.Props {
         }
     }
     
-    public class VariationPropertyInstanceBase {
+    public class MvcControllerGeneratorBase {
         
         private global::System.Text.StringBuilder builder;
         

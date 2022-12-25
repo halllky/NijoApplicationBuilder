@@ -1,5 +1,4 @@
-﻿@*@inject haldoc.Models.ModelBuidler schema;*@
-@inject dynamic schema; 
+﻿@inject haldoc.Core.ProjectContext projectContext; 
 
 <!DOCTYPE html>
 <html lang="ja">
@@ -14,17 +13,17 @@
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">@schema.ApplicationName</a>
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">@projectContext.ProjectName</a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
-                        @foreach (var item in schema.GetMenu())
+                        @foreach (var aggregate in projectContext.EnumerateRootAggregates())
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Haldoc" asp-action="List" asp-route-aggregateId="@item.Key">@item.Value</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Haldoc" asp-action="List" asp-route-aggregateId="@aggregate.GUID">@aggregate.Name</a>
                             </li>
                         }
                     </ul>
