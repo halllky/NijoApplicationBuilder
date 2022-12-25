@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -61,6 +62,15 @@ namespace haldoc.Core.Props {
 
         public override IEnumerable<PropertyTemplate> ToListItemModel() {
             yield break;
+        }
+
+        public override IEnumerable<object> AssignMvcToDb(object mvcModel, object dbEntity) {
+            var list = (IEnumerable)mvcModel.GetType().GetProperty(Name).GetValue(mvcModel);
+            foreach (var mvcModelChild in list) {
+                foreach (var dbEntityChild in ChildAggregate.TransformMvcModelToDbEntities(mvcModelChild)) {
+                    yield return dbEntityChild;
+                }
+            }
         }
     }
 

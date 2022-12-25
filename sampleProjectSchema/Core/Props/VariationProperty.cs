@@ -12,7 +12,7 @@ namespace haldoc.Core.Props {
         private Dictionary<int, Aggregate> _variations;
         public IReadOnlyDictionary<int, Aggregate> GetVariations() {
             if (_variations == null) {
-                var parent = Context.GetAggregate(UnderlyingPropInfo.DeclaringType);
+                var parent = Context.FindAggregate(UnderlyingPropInfo.DeclaringType);
                 var variations = UnderlyingPropInfo.GetCustomAttributes<VariationAttribute>();
 
                 // 型の妥当性チェック
@@ -108,6 +108,17 @@ namespace haldoc.Core.Props {
         public string GetRadioButtonAspFor(AggregateInstanceBuildContext renderingContext) => string.IsNullOrEmpty(renderingContext.CurrentMemberName)
             ? Name
             : renderingContext.CurrentMemberName + "." + Name;
+
+        public override IEnumerable<object> AssignMvcToDb(object mvcModel, object dbEntity) {
+            var key = (int?)mvcModel.GetType().GetProperty(Name).GetValue(mvcModel);
+            dbEntity.GetType().GetProperty(Name).SetValue(dbEntity, key);
+            foreach (var variation in GetVariations()) {
+                var detail = mvcModel.GetType().GetProperty($"{Name}_{variation.Key}").GetValue(mvcModel);
+                foreach (var descendant in variation.Value.TransformMvcModelToDbEntities(detail)) {
+                    yield return descendant;
+                }
+            }
+        }
     }
 
     partial class VariationPropertyInstance {

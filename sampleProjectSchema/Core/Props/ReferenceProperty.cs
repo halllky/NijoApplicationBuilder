@@ -8,7 +8,7 @@ using haldoc.Schema;
 namespace haldoc.Core.Props {
     public class ReferenceProperty : AggregatePropBase {
 
-        public Aggregate ReferedAggregate => Context.GetAggregate(UnderlyingPropInfo.PropertyType);
+        public Aggregate ReferedAggregate => Context.FindAggregate(UnderlyingPropInfo.PropertyType);
 
         public override IEnumerable<Aggregate> GetChildAggregates() {
             yield break;
@@ -78,7 +78,20 @@ namespace haldoc.Core.Props {
             yield return new PropertyTemplate {
                 CSharpTypeName = typeof(haldoc.Runtime.ExternalObject).FullName,
                 PropertyName = Name,
+                Initializer = "new()",
             };
+        }
+
+        public override IEnumerable<object> AssignMvcToDb(object mvcModel, object dbEntity) {
+            var externalObject = (haldoc.Runtime.ExternalObject)mvcModel.GetType().GetProperty(Name).GetValue(mvcModel);
+            var pkValues = ReferedAggregate.ParseKey(externalObject).ToArray();
+            var pkDefs = ReferedAggregate.GetDbTablePK().ToArray();
+            for (int i = 0; i < pkDefs.Length; i++) {
+                if (i >= pkValues.Length) break;
+                var entityPropName = $"{Name}__{pkDefs[i].PropertyName}";
+                dbEntity.GetType().GetProperty(entityPropName).SetValue(dbEntity, pkValues[i]);
+            }
+            yield break;
         }
     }
 

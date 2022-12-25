@@ -11,9 +11,11 @@ namespace haldoc {
     public partial class DynamicDbContext : DbContext {
         public DynamicDbContext() {
         }
+        public DynamicDbContext(DbContextOptions<DynamicDbContext> options) : base(options) {
+        }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {
-            optionsBuilder.UseSqlite("filename=:memory:");
+            // optionsBuilder.UseSqlite("filename=:memory:");
         }
 
         //protected override void OnModelCreating(ModelBuilder modelBuilder) {

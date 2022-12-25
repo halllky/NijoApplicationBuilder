@@ -211,6 +211,12 @@ namespace haldoc.Core.Props {
 
             return false;
         }
+
+        public override IEnumerable<object> AssignMvcToDb(object mvcModel, object dbEntity) {
+            var value = mvcModel.GetType().GetProperty(Name).GetValue(mvcModel);
+            dbEntity.GetType().GetProperty(Name).SetValue(dbEntity, value);
+            yield break;
+        }
     }
 
     partial class PrimitivePropertyInstance {

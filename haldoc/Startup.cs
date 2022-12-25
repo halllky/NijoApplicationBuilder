@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -21,10 +22,16 @@ namespace haldoc {
         public void ConfigureServices(IServiceCollection services) {
             services.AddControllersWithViews();
 
-            services.AddSingleton(new haldoc.Core.ProjectContext(
+            services.AddDbContext<haldoc.DynamicDbContext>(option => {
+                var connStr = $"Data Source=\"{System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "bin", "Debug", "debug.sqlite3")}\"";
+                option.UseSqlite(connStr);
+            }, ServiceLifetime.Singleton);
+
+            services.AddSingleton(provider => new haldoc.Core.ProjectContext(
                 "サンプルプロジェクト",
                 typeof(haldoc.Core.ProjectContext).Assembly,
-                GetType().Assembly));
+                GetType().Assembly,
+                provider.GetService<DynamicDbContext>()));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

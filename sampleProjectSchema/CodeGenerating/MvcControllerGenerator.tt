@@ -23,7 +23,7 @@ namespace <#=Context.GetOutputNamespace(haldoc.Core.E_Namespace.MvcModel)#> {
     public class <#=controllerName#> : Controller {
         public <#=controllerName#>(haldoc.Core.ProjectContext context) {
             _projectContext = context;
-            _aggregate = _projectContext.GetAggregate(typeof(<#=Aggregate.UnderlyingType.FullName#>));
+            _aggregate = _projectContext.FindAggregate(typeof(<#=Aggregate.UnderlyingType.FullName#>));
         }
         private readonly haldoc.Core.Aggregate _aggregate;
         private readonly haldoc.Core.ProjectContext _projectContext;

@@ -85,10 +85,16 @@ namespace haldoc.Core {
             return _dbTableModel;
         }
 
-        public object TransformMvcModelToDbEntity(object mvcModel) {
-            var dbEntityType = _context.RuntimeAssembly.GetType($"{_context.GetOutputNamespace(E_Namespace.MvcModel)}.{ToDbTableModel().ClassName}");
+        /// <summary>ナビゲーションプロパティ未実装のためIEnumerableで返している</summary>
+        public IEnumerable<object> TransformMvcModelToDbEntities(object mvcModel) {
+            var dbEntityType = _context.RuntimeAssembly.GetType($"{_context.GetOutputNamespace(E_Namespace.DbEntity)}.{ToDbTableModel().ClassName}");
             var dbEntity = Activator.CreateInstance(dbEntityType);
-            throw new NotImplementedException();
+            foreach (var prop in GetProperties()) {
+                foreach (var descendantDbEntity in prop.AssignMvcToDb(mvcModel, dbEntity)) {
+                    yield return descendantDbEntity;
+                }
+            }
+            yield return dbEntity;
         }
 
 
@@ -166,6 +172,27 @@ namespace haldoc.Core {
                     : renderingContext.CurrentIndent + line));
             //var code = template.TransformText();
             return code;
+        }
+
+
+        public IEnumerable<object> ParseKey(Runtime.ExternalObject externalObject) {
+            if (string.IsNullOrWhiteSpace(externalObject.Key)) {
+                yield break;
+            }
+            var keys = GetDbTablePK().ToArray();
+            if (keys.Length == 0) {
+                yield break;
+            } else {
+                var json = System.Text.Json.JsonSerializer.Deserialize<string[]>(externalObject.Key);
+                for (int i = 0; i < keys.Length; i++) {
+                    if (i >= json.Length) yield break;
+                    yield return keys[i].CSharpTypeName switch {
+                        "int" => Convert.ToInt32(json[i]),
+                        "string" => json[i],
+                        _ => throw new InvalidOperationException("string, int 以外の主キー未実装"),
+                    };
+                }
+            }
         }
 
 

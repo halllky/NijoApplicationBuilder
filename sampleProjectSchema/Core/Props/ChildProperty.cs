@@ -77,6 +77,13 @@ namespace haldoc.Core.Props {
                 .Where(p => !p.IsPrimaryKey)
                 .SelectMany(p => p.ToListItemModel());
         }
+
+        public override IEnumerable<object> AssignMvcToDb(object mvcModel, object dbEntity) {
+            var mvcModelChild = mvcModel.GetType().GetProperty(Name).GetValue(mvcModel);
+            foreach (var dbEntitychild in ChildAggregate.TransformMvcModelToDbEntities(mvcModelChild)) {
+                yield return dbEntitychild;
+            }
+        }
     }
 
     partial class ChildPropertySearchCondition {

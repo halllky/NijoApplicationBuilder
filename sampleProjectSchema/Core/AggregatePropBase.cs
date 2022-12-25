@@ -30,6 +30,8 @@ namespace haldoc.Core {
 
         public abstract IEnumerable<PropertyTemplate> ToListItemModel();
 
+        public abstract IEnumerable<object> AssignMvcToDb(object mvcModel, object dbEntity);
+
         /// <summary>集約ルートのプロパティなら0、そこから子集約になるごとに+1</summary>
         public int GetDepth() {
             var count = 0;

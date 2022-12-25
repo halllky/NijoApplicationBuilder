@@ -37,7 +37,7 @@ namespace haldoc.CodeGenerating {
             this.Write(" : Controller {\n        public ");
             this.Write(this.ToStringHelper.ToStringWithCulture(controllerName));
             this.Write("(haldoc.Core.ProjectContext context) {\n            _projectContext = context;\n   " +
-                    "         _aggregate = _projectContext.GetAggregate(typeof(");
+                    "         _aggregate = _projectContext.FindAggregate(typeof(");
             this.Write(this.ToStringHelper.ToStringWithCulture(Aggregate.UnderlyingType.FullName));
             this.Write(@"));
         }

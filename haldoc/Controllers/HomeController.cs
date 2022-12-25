@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using haldoc.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace haldoc.Controllers {
     public class HomeController : Controller {
@@ -15,7 +16,11 @@ namespace haldoc.Controllers {
             _logger = logger;
         }
 
-        public IActionResult Index() {
+        public IActionResult Index([FromServices] haldoc.DynamicDbContext dbContext) {
+
+            // TODO
+            dbContext.Database.Migrate();
+
             return View();
         }
 
