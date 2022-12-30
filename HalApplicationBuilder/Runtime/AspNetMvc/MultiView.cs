@@ -8,11 +8,10 @@ namespace HalApplicationBuilder.Runtime.AspNetMvc {
         internal string FileName => $"{RootAggregate.Name}__MultiView.cshtml";
 
         internal string TransformText() {
-            var searchConditionClass = RootAggregate.ToSearchConditionModel();
-            var searchResultClass = RootAggregate.ToSearchResultModel();
-            var model = $"{GetType().FullName}.{nameof(Model<object, object>)}<{searchConditionClass.RuntimeFullName}, {searchResultClass.RuntimeFullName}>";
+            var searchConditionClass = RootAggregate.ToSearchConditionModel(new Core.ViewRenderingContext("Model", nameof(Model<object, object>.SearchCondition)));
+            var searchResultClass = RootAggregate.ToSearchResultModel(new Core.ViewRenderingContext("Model", nameof(Model<object, object>.SearchResult)));
             var template = new MultiViewTemplate {
-                ModelTypeFullname = model,
+                ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<object, object>)}<{searchConditionClass.RuntimeFullName}, {searchResultClass.RuntimeFullName}>",
                 PageTitle = RootAggregate.Name,
                 SearchConditionClass = searchConditionClass,
                 SearchResultClass = searchResultClass,

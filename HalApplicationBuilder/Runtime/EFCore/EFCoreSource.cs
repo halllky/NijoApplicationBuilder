@@ -6,7 +6,7 @@ using HalApplicationBuilder.Core;
 namespace HalApplicationBuilder.Runtime.EFCore {
     internal class EFCoreSource {
         internal Config Config { get; init; }
-        internal Core.AggregateBuilder AggregateBuilder { get; init; }
+        internal Core.Builder AggregateBuilder { get; init; }
 
         internal string TransformText() {
             var aggregates = AggregateBuilder.EnumerateAllAggregates();

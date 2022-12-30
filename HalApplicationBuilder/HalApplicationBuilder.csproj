@@ -34,6 +34,18 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>MvcModelsTemplate.cs</LastGenOutput>
     </None>
+    <None Update="Runtime\AspNetMvc\CreateViewTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>CreateViewTemplate.cs</LastGenOutput>
+    </None>
+    <None Update="Core\AggregateInstanceTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>AggregateInstanceTemplate.cs</LastGenOutput>
+    </None>
+    <None Update="Runtime\AspNetMvc\SingleViewTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>SingleViewTemplate.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Runtime\MultiView\MultiViewTemplate.cs" />
@@ -53,6 +65,15 @@
     </Compile>
     <Compile Update="Runtime\AspNetMvc\MvcModelsTemplate.cs">
       <DependentUpon>MvcModelsTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Runtime\AspNetMvc\CreateViewTemplate.cs">
+      <DependentUpon>CreateViewTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Core\AggregateInstanceTemplate.cs">
+      <DependentUpon>AggregateInstanceTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Runtime\AspNetMvc\SingleViewTemplate.cs">
+      <DependentUpon>SingleViewTemplate.tt</DependentUpon>
     </Compile>
   </ItemGroup>
 </Project>

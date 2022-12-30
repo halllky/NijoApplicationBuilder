@@ -9,11 +9,9 @@
 <# } #>
 
 <# if (Type == E_Type.Range) { #>
-<div>
-    <input asp-for="<#=AspFor[0]#>" />
-    〜
-    <input asp-for="<#=AspFor[1]#>" />
-</div>
+<input asp-for="<#=AspFor[0]#>" />
+〜
+<input asp-for="<#=AspFor[1]#>" />
 <# } #>
 
 <# if (Type == E_Type.Select) { #>

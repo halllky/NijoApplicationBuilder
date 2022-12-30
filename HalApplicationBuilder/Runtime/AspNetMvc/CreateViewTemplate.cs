@@ -15,7 +15,7 @@ namespace HalApplicationBuilder.Runtime.AspNetMvc {
     using System;
     
     
-    public partial class MultiViewTemplate : MultiViewTemplateBase {
+    public partial class CreateViewTemplate : CreateViewTemplateBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
@@ -25,52 +25,11 @@ namespace HalApplicationBuilder.Runtime.AspNetMvc {
             this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
             this.Write("\";\n}\n\n<h1>\n    ");
             this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
-            this.Write("\n</h1>\n\n<form>\n    \n    @* 検索条件欄 *@\n    <div class=\"container\">\n        <div clas" +
-                    "s=\"form-horizontal\">\n");
- foreach (var prop in SearchConditionClass.Properties) { 
-            this.Write("            <div class=\"row mb-3\">\n                <label class=\"col-sm-2 col-for" +
-                    "m-label\">\n                    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write("\n                </label>\n                <div class=\"col-sm-10\">\n               " +
-                    "     ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.View));
-            this.Write("\n                </div>\n            </div>\n");
- } 
-            this.Write("        </div>\n\n        <button asp-action=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ClearActionName));
-            this.Write("\">クリア</button>\n        <button asp-action=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchActionName));
-            this.Write(@""">検索</button>
-    </div>
-    
-    @* 検索結果欄 *@
-    <div>
-        <div style=""display: flex; justify-content: flex-end"">
-            <a asp-action=""Create"">新規作成</a>
-        </div>
-        <table class=""table table-sm"">
-            <thead>
-                <tr>
-                    <th></th>
-");
- foreach (var prop in SearchResultClass.Properties) { 
-            this.Write("                    <th>\n                        ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write("\n                    </th>\n");
- } 
-            this.Write("                </tr>\n            </thead>\n            <tbody>\n                @f" +
-                    "or (int i = 0; i < Model.SearchResult.Count; i++)\n                {\n            " +
-                    "        <tr>\n                        <td>\n                            <a asp-act" +
-                    "ion=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(LinkToSingleViewActionName));
-            this.Write("\">詳細</a>\n                        </td>\n");
- foreach (var prop in SearchResultClass.Properties) { 
-            this.Write("                        <td>\n                            @Model.SearchResult[i].");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write("\n                        </td>\n");
- } 
-            this.Write("                    </tr>\n                }\n            </tbody>\n        </table>" +
-                    "\n    </div>\n</form>\n\n");
+            this.Write("\n</h1>\n\n<form>\n    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ModelClass.View));
+            this.Write("\n    <button asp-action=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ExecuteActionName));
+            this.Write("\">作成</button>\n</form>\n");
             return this.GenerationEnvironment.ToString();
         }
         
@@ -78,7 +37,7 @@ namespace HalApplicationBuilder.Runtime.AspNetMvc {
         }
     }
     
-    public class MultiViewTemplateBase {
+    public class CreateViewTemplateBase {
         
         private global::System.Text.StringBuilder builder;
         

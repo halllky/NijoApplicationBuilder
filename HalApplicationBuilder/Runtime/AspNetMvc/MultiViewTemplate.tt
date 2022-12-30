@@ -51,7 +51,7 @@
                 </tr>
             </thead>
             <tbody>
-                @for (int i = 0; i < Model.Items.Count; i++)
+                @for (int i = 0; i < Model.SearchResult.Count; i++)
                 {
                     <tr>
                         <td>
@@ -59,7 +59,7 @@
                         </td>
 <# foreach (var prop in SearchResultClass.Properties) { #>
                         <td>
-                            @Model.Items[i].<#=prop.PropertyName#>
+                            @Model.SearchResult[i].<#=prop.PropertyName#>
                         </td>
 <# } #>
                     </tr>

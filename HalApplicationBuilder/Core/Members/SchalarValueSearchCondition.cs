@@ -69,132 +69,132 @@ namespace HalApplicationBuilder.Core.Members {
             #line hidden
             
             #line 12 ""
-            this.Write("<div>\n    <input asp-for=\"");
+            this.Write("<input asp-for=\"");
             
             #line default
             #line hidden
             
-            #line 13 ""
+            #line 12 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(AspFor[0]));
             
             #line default
             #line hidden
             
-            #line 13 ""
-            this.Write("\" />\n    〜\n    <input asp-for=\"");
+            #line 12 ""
+            this.Write("\" />\n〜\n<input asp-for=\"");
             
             #line default
             #line hidden
             
-            #line 15 ""
+            #line 14 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(AspFor[1]));
             
             #line default
             #line hidden
             
-            #line 15 ""
-            this.Write("\" />\n</div>\n");
+            #line 14 ""
+            this.Write("\" />\n");
             
             #line default
             #line hidden
             
-            #line 17 ""
+            #line 15 ""
  } 
             
             #line default
             #line hidden
             
-            #line 18 ""
+            #line 16 ""
             this.Write("\n");
             
             #line default
             #line hidden
             
-            #line 19 ""
+            #line 17 ""
  if (Type == E_Type.Select) { 
             
             #line default
             #line hidden
             
-            #line 20 ""
+            #line 18 ""
             this.Write("<select asp-for=\"");
             
             #line default
             #line hidden
             
-            #line 20 ""
+            #line 18 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(AspFor[0]));
             
             #line default
             #line hidden
             
-            #line 20 ""
+            #line 18 ""
             this.Write("\" asp-items=\"@Html.GetEnumSelectList(typeof(");
             
             #line default
             #line hidden
             
-            #line 20 ""
+            #line 18 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(EnumTypeName));
             
             #line default
             #line hidden
             
-            #line 20 ""
+            #line 18 ""
             this.Write("))\">\n");
             
             #line default
             #line hidden
             
-            #line 21 ""
+            #line 19 ""
  foreach (var option in Options) { 
             
             #line default
             #line hidden
             
-            #line 22 ""
+            #line 20 ""
             this.Write("    <option selected=\"selected\" value=\"");
             
             #line default
             #line hidden
             
-            #line 22 ""
+            #line 20 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(option.Key));
             
             #line default
             #line hidden
             
-            #line 22 ""
+            #line 20 ""
             this.Write("\">\n        ");
             
             #line default
             #line hidden
             
-            #line 23 ""
+            #line 21 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(option.Value));
             
             #line default
             #line hidden
             
-            #line 23 ""
+            #line 21 ""
             this.Write("\n    </option>\n");
             
             #line default
             #line hidden
             
-            #line 25 ""
+            #line 23 ""
  } 
             
             #line default
             #line hidden
             
-            #line 26 ""
+            #line 24 ""
             this.Write("</select>\n");
             
             #line default
             #line hidden
             
-            #line 27 ""
+            #line 25 ""
  } 
             
             #line default

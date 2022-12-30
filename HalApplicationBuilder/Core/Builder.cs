@@ -4,8 +4,8 @@ using System.Linq;
 using System.Reflection;
 
 namespace HalApplicationBuilder.Core {
-    internal class AggregateBuilder {
-        internal AggregateBuilder(Assembly assembly, Config config) {
+    internal class Builder {
+        internal Builder(Assembly assembly, Config config) {
             _assembly = assembly;
             _config = config;
         }

@@ -19,7 +19,7 @@
                 </label>
                 <div class="col-sm-10">
                     
-<input asp-for="営業所ID" />
+<input asp-for="SearchCondition.営業所ID" />
 
 
 
@@ -31,7 +31,7 @@
                 </label>
                 <div class="col-sm-10">
                     
-<input asp-for="営業所名" />
+<input asp-for="SearchCondition.営業所名" />
 
 
 
@@ -44,11 +44,9 @@
                 <div class="col-sm-10">
                     
 
-<div>
-    <input asp-for="運用開始日.From" />
-    〜
-    <input asp-for="運用開始日.To" />
-</div>
+<input asp-for="SearchCondition.運用開始日.From" />
+〜
+<input asp-for="SearchCondition.運用開始日.To" />
 
 
                 </div>
@@ -80,20 +78,20 @@
                 </tr>
             </thead>
             <tbody>
-                @for (int i = 0; i < Model.Items.Count; i++)
+                @for (int i = 0; i < Model.SearchResult.Count; i++)
                 {
                     <tr>
                         <td>
                             <a asp-action="Detail">詳細</a>
                         </td>
                         <td>
-                            @Model.Items[i].営業所ID
+                            @Model.SearchResult[i].営業所ID
                         </td>
                         <td>
-                            @Model.Items[i].営業所名
+                            @Model.SearchResult[i].営業所名
                         </td>
                         <td>
-                            @Model.Items[i].運用開始日
+                            @Model.SearchResult[i].運用開始日
                         </td>
                     </tr>
                 }
