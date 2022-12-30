@@ -8,10 +8,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace haldoc.Controllers {
     public class HaldocController : Controller {
-        public HaldocController(haldoc.Core.ProjectContext context) {
+        public HaldocController(haldoc.Core2.ProjectContext context) {
             _projectContext = context;
         }
-        private readonly haldoc.Core.ProjectContext _projectContext;
+        private readonly haldoc.Core2.ProjectContext _projectContext;
 
         #region 一覧画面
         public IActionResult List(Guid aggregateId) {

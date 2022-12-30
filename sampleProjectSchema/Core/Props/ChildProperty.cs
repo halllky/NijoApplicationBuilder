@@ -14,6 +14,8 @@ namespace haldoc.Core.Props {
                 UnderlyingPropInfo.PropertyType.GetGenericArguments()[0],
                 this);
 
+        public override bool IsListProperty => false;
+
         public override IEnumerable<Aggregate> GetChildAggregates() {
             yield return ChildAggregate;
         }

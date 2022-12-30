@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using haldoc.Core.Dto;
+using haldoc.Runtime;
 using haldoc.Schema;
 using haldoc.SqlQuery;
 
 namespace haldoc.Core.Props {
     public class PrimitiveProperty : AggregatePropBase, SqlQuery.ISearchConditionHandler {
+
+        public override bool IsListProperty => false;
 
         public override IEnumerable<Aggregate> GetChildAggregates() {
             yield break;

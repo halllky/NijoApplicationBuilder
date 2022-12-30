@@ -1,5 +1,5 @@
 ﻿using System;
-namespace haldoc.Core {
+namespace haldoc.Runtime {
     public class FromTo<T> {
         public T From { get; }
         public T To { get; }

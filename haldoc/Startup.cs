@@ -27,9 +27,9 @@ namespace haldoc {
                 option.UseSqlite(connStr);
             }, ServiceLifetime.Singleton);
 
-            services.AddSingleton(provider => new haldoc.Core.ProjectContext(
+            services.AddSingleton(provider => new haldoc.Core2.ProjectContext(
                 "サンプルプロジェクト",
-                typeof(haldoc.Core.ProjectContext).Assembly,
+                typeof(haldoc.Core2.ProjectContext).Assembly,
                 GetType().Assembly,
                 provider.GetService<DynamicDbContext>()));
         }

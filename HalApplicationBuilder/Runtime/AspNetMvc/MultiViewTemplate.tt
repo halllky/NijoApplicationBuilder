@@ -1,0 +1,71 @@
+﻿<#@ template language="C#" linePragmas="false" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+
+@model <#=ModelTypeFullname#>;
+@{
+    ViewData["Title"] = "<#=PageTitle#>";
+}
+
+<h1>
+    <#=PageTitle#>
+</h1>
+
+<form>
+    
+    @* 検索条件欄 *@
+    <div class="container">
+        <div class="form-horizontal">
+<# foreach (var prop in SearchConditionClass.Properties) { #>
+            <div class="row mb-3">
+                <label class="col-sm-2 col-form-label">
+                    <#=prop.PropertyName#>
+                </label>
+                <div class="col-sm-10">
+                    <#=prop.View#>
+                </div>
+            </div>
+<# } #>
+        </div>
+
+        <button asp-action="<#=ClearActionName#>">クリア</button>
+        <button asp-action="<#=SearchActionName#>">検索</button>
+    </div>
+    
+    @* 検索結果欄 *@
+    <div>
+        <div style="display: flex; justify-content: flex-end">
+            <a asp-action="Create">新規作成</a>
+        </div>
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th></th>
+<# foreach (var prop in SearchResultClass.Properties) { #>
+                    <th>
+                        <#=prop.PropertyName#>
+                    </th>
+<# } #>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.Items.Count; i++)
+                {
+                    <tr>
+                        <td>
+                            <a asp-action="<#=LinkToSingleViewActionName#>">詳細</a>
+                        </td>
+<# foreach (var prop in SearchResultClass.Properties) { #>
+                        <td>
+                            @Model.Items[i].<#=prop.PropertyName#>
+                        </td>
+<# } #>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</form>
+

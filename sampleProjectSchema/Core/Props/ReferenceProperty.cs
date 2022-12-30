@@ -10,6 +10,8 @@ namespace haldoc.Core.Props {
 
         public Aggregate ReferedAggregate => Context.FindAggregate(UnderlyingPropInfo.PropertyType);
 
+        public override bool IsListProperty => false;
+
         public override IEnumerable<Aggregate> GetChildAggregates() {
             yield break;
         }

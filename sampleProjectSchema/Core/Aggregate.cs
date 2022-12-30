@@ -8,20 +8,19 @@ using haldoc.Schema;
 
 namespace haldoc.Core {
     public class Aggregate {
-        public Aggregate(Type underlyingType, AggregatePropBase parent, ProjectContext context, bool asChildren = false) {
+        public Aggregate(Type underlyingType, AggregatePropBase parent, ProjectContext context) {
             UnderlyingType = underlyingType;
             Parent = parent;
-            _hasIndexKey = asChildren;
-            _context = context;
+            Context = context;
         }
+
+        public Type UnderlyingType { get; }
+        public ProjectContext Context { get; }
+        public AggregatePropBase Parent { get; }
 
         public Guid GUID => UnderlyingType.GUID;
         public string Name => UnderlyingType.Name;
-        public Type UnderlyingType { get; }
-        private readonly ProjectContext _context;
 
-
-        public AggregatePropBase Parent { get; }
         public Aggregate GetRoot() {
             var aggregate = this;
             while (aggregate.Parent != null) {
@@ -42,59 +41,8 @@ namespace haldoc.Core {
 
         private List<AggregatePropBase> _properties;
         public IReadOnlyList<AggregatePropBase> GetProperties() {
-            if (_properties == null) _properties = _context.GenerateProperties(UnderlyingType, this).ToList();
+            if (_properties == null) _properties = Context.GenerateProperties(UnderlyingType, this).ToList();
             return _properties;
-        }
-
-
-        private readonly bool _hasIndexKey;
-        private List<Dto.PropertyTemplate> _pk;
-        private List<Dto.PropertyTemplate> _notPk;
-        private List<Dto.PropertyTemplate> _navigationProperties;
-        private Dto.ClassTemplate _dbTableModel;
-        public IEnumerable<Dto.PropertyTemplate> GetDbTablePK() {
-            if (_pk == null) ToDbTableModel();
-            return _pk;
-        }
-        public IEnumerable<Dto.PropertyTemplate> GetDbTableWithoutPK() {
-            if (_notPk == null) ToDbTableModel();
-            return _notPk;
-        }
-        public Dto.ClassTemplate ToDbTableModel() {
-            if (_dbTableModel == null) {
-                var props = GetProperties();
-                _pk = props.Where(p => p.IsPrimaryKey).SelectMany(p => p.ToDbEntityProperty()).ToList();
-                _notPk = props.Where(p => !p.IsPrimaryKey).SelectMany(p => p.ToDbEntityProperty()).ToList();
-
-                if (Parent != null && !_pk.Any() && _hasIndexKey)
-                    _pk.Insert(0, new Dto.PropertyTemplate { CSharpTypeName = "int", PropertyName = "Index" });
-
-                if (Parent != null) {
-                    _pk.InsertRange(0, Parent.Owner.GetDbTablePK());
-                    // stack overflow
-                    //_navigationProperties = new() {
-                    //    new Dto.PropertyTemplate { CSharpTypeName = $"virtual {Parent.Owner.ToDbTableModel().ClassName}", PropertyName = "Parent" },
-                    //};
-                }
-
-                _dbTableModel = new Dto.ClassTemplate {
-                    ClassName = Name,
-                    Properties = _pk.Union(_notPk).ToList(),
-                };
-            }
-            return _dbTableModel;
-        }
-
-        /// <summary>ナビゲーションプロパティ未実装のためIEnumerableで返している</summary>
-        public IEnumerable<object> TransformMvcModelToDbEntities(object mvcModel) {
-            var dbEntityType = _context.RuntimeAssembly.GetType($"{_context.GetOutputNamespace(E_Namespace.DbEntity)}.{ToDbTableModel().ClassName}");
-            var dbEntity = Activator.CreateInstance(dbEntityType);
-            foreach (var prop in GetProperties()) {
-                foreach (var descendantDbEntity in prop.AssignMvcToDb(mvcModel, dbEntity)) {
-                    yield return descendantDbEntity;
-                }
-            }
-            yield return dbEntity;
         }
 
 
@@ -144,8 +92,8 @@ namespace haldoc.Core {
         /// <summary>SingleViewレンダリングの入り口</summary>
         public string RenderSingleView(string boundObjectName, int initialIndent) {
             var renderingContext = new AggregateInstanceBuildContext(boundObjectName, initialIndent);
-            var template = new AggregateInstance()
-            { Aggregate = this,
+            var template = new AggregateInstance() {
+                Aggregate = this,
                 RenderingContext = renderingContext,
             };
             var code = string.Join(Environment.NewLine, template

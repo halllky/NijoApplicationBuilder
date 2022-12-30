@@ -14,6 +14,8 @@ namespace haldoc.Core.Props {
                 this,
                 asChildren: true);
 
+        public override bool IsListProperty => true;
+
         public override IEnumerable<Aggregate> GetChildAggregates() {
             yield return ChildAggregate;
         }

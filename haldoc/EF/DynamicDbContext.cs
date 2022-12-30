@@ -4,7 +4,7 @@ using System.Dynamic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using haldoc.Schema;
+using haldoc.Api;
 using Microsoft.EntityFrameworkCore;
 
 namespace haldoc {

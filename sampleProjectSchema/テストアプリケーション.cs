@@ -8,7 +8,6 @@ using haldoc.Schema;
 
 namespace haldoc {
 
-    // 集約ルート
     [AggregateRoot]
     public class 取引先 {
         [Key]
@@ -110,6 +109,44 @@ namespace haldoc {
         不安,
     }
 
-    // デモンストレーション
-    // - このファイルへのプロパティ追加で3画面全てに反映されることを確認
+    // ---------- 以下はプレゼン用 ----------
+
+    //class SlidePage2 : ViewBuilderBase {
+
+    //    [AggregateRoot]
+    //    public class 商品 {
+    //        [Key]
+    //        public string 商品ID { get; set; }
+    //        public string 商品名 { get; set; }
+    //    }
+
+    //    protected override void OnViewBuilding(Option option) {
+    //        option.SingleView<商品>()
+    //            .AddButton("発注する", e => {
+    //                e.LinkTo<発注>(new {
+    //                    e.商品ID,                // パラメータ
+    //                    発注日時 = DateTime.Now, // パラメータ
+    //                });
+    //            });
+    //    }
+
+    //    [AggregateRoot]
+    //    public class 発注 {
+    //        [Key]
+    //        public string 発注番号 { get; set; }
+    //        public DateTime 発注日時 { get; set; }
+    //        public 商品 商品 { get; set; }
+    //        public int 個数 { get; set; }
+    //    }
+    //}
+
+    //abstract class ViewBuilderBase {
+    //    protected abstract void OnViewBuilding(Option option);
+    //}
+    //class Option {
+    //    public SingleViewOption<T> SingleView<T>() => new();
+    //}
+    //class SingleViewOption<T> {
+    //    public void AddButton(string buttonName, Action<dynamic> predicate) { }
+    //}
 }

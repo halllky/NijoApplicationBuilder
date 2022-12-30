@@ -28,6 +28,8 @@ namespace haldoc.Core.Props {
             return _variations;
         }
 
+        public override bool IsListProperty => false;
+
         public override IEnumerable<Aggregate> GetChildAggregates() {
             return GetVariations().Select(v => v.Value);
         }

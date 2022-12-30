@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.17" />
+    <PackageReference Include="System.CodeDom" Version="5.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Core\" />
+    <Folder Include="Core\Members\" />
+    <Folder Include="Runtime\" />
+    <Folder Include="Runtime\EFCore\" />
+    <Folder Include="Runtime\AspNetMvc\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Core\Members\SchalarValueSearchCondition.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>SchalarValueSearchCondition.cs</LastGenOutput>
+    </None>
+    <None Update="Runtime\EFCore\EFCoreSourceTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>EFCoreSourceTemplate.cs</LastGenOutput>
+    </None>
+    <None Update="Runtime\AspNetMvc\MultiViewTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>MultiViewTemplate.cs</LastGenOutput>
+    </None>
+    <None Update="Runtime\AspNetMvc\MvcModelsTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>MvcModelsTemplate.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Runtime\MultiView\MultiViewTemplate.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Core\Members\SchalarValueSearchCondition.cs">
+      <DependentUpon>SchalarValueSearchCondition.tt</DependentUpon>
+    </Compile>
+    <Compile Update="CodeGenerating\MultiView\MultiViewTemplate.cs">
+      <DependentUpon>MultiViewTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="Runtime\EFCore\EFCoreSourceTemplate.cs">
+      <DependentUpon>EFCoreSourceTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Runtime\AspNetMvc\MultiViewTemplate.cs">
+      <DependentUpon>MultiViewTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Runtime\AspNetMvc\MvcModelsTemplate.cs">
+      <DependentUpon>MvcModelsTemplate.tt</DependentUpon>
+    </Compile>
+  </ItemGroup>
+</Project>

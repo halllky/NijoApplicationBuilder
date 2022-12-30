@@ -17,10 +17,11 @@ namespace haldoc.Core {
 
         public string Name => UnderlyingPropInfo.Name;
         public bool IsPrimaryKey => UnderlyingPropInfo.GetCustomAttribute<KeyAttribute>() != null;
+        public abstract bool IsListProperty { get; }
 
         public abstract IEnumerable<Aggregate> GetChildAggregates();
 
-        public abstract IEnumerable<PropertyTemplate> ToDbEntityProperty();
+        public abstract IEnumerable<PropertyTemplate> ToDbEntityProperty(EntityFramework.DbSchema dbSchema);
 
         public abstract IEnumerable<PropertyTemplate> ToSearchConditionDtoProperty();
         public abstract IEnumerable<string> GenerateSearchConditionLayout(string modelPath);
