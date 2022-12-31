@@ -25,18 +25,9 @@ namespace HalApplicationBuilder.Runtime.AspNetMvc {
             this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
             this.Write("\";\n}\n\n<h1>\n    ");
             this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
-            this.Write("\n</h1>\n\n<form>\n    \n    @* 検索条件欄 *@\n    <div class=\"container\">\n        <div clas" +
-                    "s=\"form-horizontal\">\n");
- foreach (var prop in SearchConditionClass.Properties) { 
-            this.Write("            <div class=\"row mb-3\">\n                <label class=\"col-sm-2 col-for" +
-                    "m-label\">\n                    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write("\n                </label>\n                <div class=\"col-sm-10\">\n               " +
-                    "     ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.View));
-            this.Write("\n                </div>\n            </div>\n");
- } 
-            this.Write("        </div>\n\n        <button asp-action=\"");
+            this.Write("\n</h1>\n\n<form>\n    @* 検索条件欄 *@\n    <div>\n        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(SearchConditionClass.View));
+            this.Write("\n        <button asp-action=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(ClearActionName));
             this.Write("\">クリア</button>\n        <button asp-action=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(SearchActionName));
@@ -46,7 +37,7 @@ namespace HalApplicationBuilder.Runtime.AspNetMvc {
     @* 検索結果欄 *@
     <div>
         <div style=""display: flex; justify-content: flex-end"">
-            <a asp-action=""Create"">新規作成</a>
+            <a asp-action=""New"">新規作成</a>
         </div>
         <table class=""table table-sm"">
             <thead>

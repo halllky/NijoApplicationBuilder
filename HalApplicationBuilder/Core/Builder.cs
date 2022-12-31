@@ -13,13 +13,6 @@ namespace HalApplicationBuilder.Core {
         private readonly Assembly _assembly;
         private readonly Config _config;
 
-        internal IEnumerable<Aggregate> EnumerateAllAggregates() {
-            return AllAggregates;
-        }
-        internal IEnumerable<Aggregate> EnumerateRootAggregates() {
-            return AllAggregates.Where(a => a.Parent == null);
-        }
-
         private HashSet<Aggregate> _allAggregates;
         private HashSet<Aggregate> AllAggregates {
             get {
@@ -44,6 +37,13 @@ namespace HalApplicationBuilder.Core {
                 }
                 return _allAggregates;
             }
+        }
+
+        internal IEnumerable<Aggregate> EnumerateAllAggregates() {
+            return AllAggregates;
+        }
+        internal IEnumerable<Aggregate> EnumerateRootAggregates() {
+            return AllAggregates.Where(a => a.Parent == null);
         }
     }
 }

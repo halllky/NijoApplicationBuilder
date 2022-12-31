@@ -8,12 +8,13 @@ namespace HalApplicationBuilder.Runtime.AspNetMvc {
         internal Core.Builder AggregateBuilder { get; init; }
 
         internal string TransformText() {
-            var aggregates = AggregateBuilder.EnumerateAllAggregates();
+            var rootAggregates = AggregateBuilder.EnumerateRootAggregates();
+            var allAggregates = AggregateBuilder.EnumerateAllAggregates();
             var template = new MvcModelsTemplate {
                 Namespace = Config.MvcModelNamespace,
-                SearchConditionClasses = aggregates.Select(a => a.ToSearchConditionModel(new Core.ViewRenderingContext())),
-                SearchResultClasses = aggregates.Select(a => a.ToSearchResultModel(new Core.ViewRenderingContext())),
-                InstanceClasses = aggregates.Select(a => a.ToInstanceModel(new Core.ViewRenderingContext())),
+                SearchConditionClasses = allAggregates.Select(a => a.ToSearchConditionModel(new Core.ViewRenderingContext())),
+                SearchResultClasses = rootAggregates.Select(a => a.ToSearchResultModel(new Core.ViewRenderingContext())),
+                InstanceClasses = allAggregates.Select(a => a.ToInstanceModel(new Core.ViewRenderingContext())),
             };
             return template.TransformText();
         }

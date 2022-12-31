@@ -14,22 +14,9 @@
 </h1>
 
 <form>
-    
     @* 検索条件欄 *@
-    <div class="container">
-        <div class="form-horizontal">
-<# foreach (var prop in SearchConditionClass.Properties) { #>
-            <div class="row mb-3">
-                <label class="col-sm-2 col-form-label">
-                    <#=prop.PropertyName#>
-                </label>
-                <div class="col-sm-10">
-                    <#=prop.View#>
-                </div>
-            </div>
-<# } #>
-        </div>
-
+    <div>
+        <#=SearchConditionClass.View#>
         <button asp-action="<#=ClearActionName#>">クリア</button>
         <button asp-action="<#=SearchActionName#>">検索</button>
     </div>
@@ -37,7 +24,7 @@
     @* 検索結果欄 *@
     <div>
         <div style="display: flex; justify-content: flex-end">
-            <a asp-action="Create">新規作成</a>
+            <a asp-action="New">新規作成</a>
         </div>
         <table class="table table-sm">
             <thead>

@@ -29,9 +29,9 @@ namespace HalApplicationBuilder.Runtime.AspNetMvc {
             this.Write(this.ToStringHelper.ToStringWithCulture(ModelClass.View));
             this.Write("\n    <button asp-action=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(UpdateActionName));
-            this.Write("\">更新</button>\n    <button asp-action=\"");
+            this.Write("\" formmethod=\"post\">更新</button>\n    <button asp-action=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(DeleteActionName));
-            this.Write("\">削除</button>\n</form>\n");
+            this.Write("\" formmethod=\"post\">削除</button>\n</form>\n");
             return this.GenerationEnvironment.ToString();
         }
         

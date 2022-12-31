@@ -1,0 +1,13 @@
+﻿<#@ template language="C#" linePragmas="false" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+
+<div>
+    <label>
+        <input type="radio" asp-for="<#=RadioButtonAspFor#>" value="<#=Key#>" />
+        <#=Name#>
+    </label>
+    <#=ChildAggregateView#>
+</div>

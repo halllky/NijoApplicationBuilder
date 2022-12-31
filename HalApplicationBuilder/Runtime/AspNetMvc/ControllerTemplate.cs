@@ -15,21 +15,29 @@ namespace HalApplicationBuilder.Runtime.AspNetMvc {
     using System;
     
     
-    public partial class CreateViewTemplate : CreateViewTemplateBase {
+    public partial class ControllerTemplate : ControllerTemplateBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            this.Write("\n@model ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ModelTypeFullname));
-            this.Write(";\n@{\n    ViewData[\"Title\"] = \"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
-            this.Write("\";\n}\n\n<h1>\n    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
-            this.Write("\n</h1>\n\n<form>\n    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ModelClass.View));
-            this.Write("\n    <button asp-action=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ExecuteActionName));
-            this.Write("\" formmethod=\"post\">作成</button>\n</form>\n");
+            this.Write("\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Namespace));
+            this.Write(" {\n    using System;\n    using System.Collections.Generic;\n    using System.Diagn" +
+                    "ostics;\n    using System.Linq;\n    using System.Threading.Tasks;\n    using Micro" +
+                    "soft.AspNetCore.Mvc;\n    using Microsoft.Extensions.Logging;\n    \n");
+ foreach (var controller in Controllers) { 
+            this.Write("    public partial class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(controller.ClassName));
+            this.Write(" : ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(controller.BaseClassFullName));
+            this.Write(" {\n        protected override string MultiViewName => \"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(controller.MultiViewName));
+            this.Write("\";\n        protected override string CreateViewName => \"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(controller.CreateViewName));
+            this.Write("\";\n        protected override string SingleViewName => \"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(controller.SingleViewName));
+            this.Write("\";\n    }\n");
+ } 
+            this.Write("}");
             return this.GenerationEnvironment.ToString();
         }
         
@@ -37,7 +45,7 @@ namespace HalApplicationBuilder.Runtime.AspNetMvc {
         }
     }
     
-    public class CreateViewTemplateBase {
+    public class ControllerTemplateBase {
         
         private global::System.Text.StringBuilder builder;
         

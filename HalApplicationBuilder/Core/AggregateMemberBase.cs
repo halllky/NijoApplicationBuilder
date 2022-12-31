@@ -12,6 +12,9 @@ namespace HalApplicationBuilder.Core {
 
         public string Name => UnderlyingPropertyInfo.Name;
         public bool IsPrimaryKey => UnderlyingPropertyInfo.GetCustomAttribute<KeyAttribute>() != null;
+        /// <summary>
+        /// Entity Framework エンティティ作成時に連番カラムを生成するか否かに影響
+        /// </summary>
         public abstract bool IsCollection { get; }
 
 

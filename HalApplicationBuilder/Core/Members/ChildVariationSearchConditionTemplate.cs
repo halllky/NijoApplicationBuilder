@@ -8,27 +8,22 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace HalApplicationBuilder.Core {
+namespace HalApplicationBuilder.Core.Members {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
     using System;
     
     
-    public partial class AggregateInstanceTemplate : AggregateInstanceTemplateBase {
+    public partial class ChildVariationSearchConditionTemplate : ChildVariationSearchConditionTemplateBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            this.Write("\n<div class=\"container\">\n    <div class=\"form-horizontal\">\n");
- foreach (var member in Members) { 
-            this.Write("        <div class=\"row mb-3\">\n            <label class=\"col-sm-2 col-form-label\"" +
-                    ">\n                ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(member.Key));
-            this.Write("\n            </label>\n            <div class=\"col-sm-10\">\n                ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(member.Value));
-            this.Write("\n            </div>\n        </div>\n");
- } 
-            this.Write("    </div>\n</div>");
+            this.Write("\n<label>\n    <input type=\"checkbox\" asp-for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AspFor));
+            this.Write("\" />\n    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(PropertyName));
+            this.Write("\n</label>\n");
             return this.GenerationEnvironment.ToString();
         }
         
@@ -36,7 +31,7 @@ namespace HalApplicationBuilder.Core {
         }
     }
     
-    public class AggregateInstanceTemplateBase {
+    public class ChildVariationSearchConditionTemplateBase {
         
         private global::System.Text.StringBuilder builder;
         

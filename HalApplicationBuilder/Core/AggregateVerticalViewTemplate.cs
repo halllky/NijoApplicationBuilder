@@ -8,28 +8,72 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace HalApplicationBuilder.Runtime.AspNetMvc {
+namespace HalApplicationBuilder.Core {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
     using System;
     
     
-    public partial class CreateViewTemplate : CreateViewTemplateBase {
+    public partial class AggregateVerticalViewTemplate : AggregateVerticalViewTemplateBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            this.Write("\n@model ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ModelTypeFullname));
-            this.Write(";\n@{\n    ViewData[\"Title\"] = \"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
-            this.Write("\";\n}\n\n<h1>\n    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
-            this.Write("\n</h1>\n\n<form>\n    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ModelClass.View));
-            this.Write("\n    <button asp-action=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ExecuteActionName));
-            this.Write("\" formmethod=\"post\">作成</button>\n</form>\n");
+            
+            #line 6 ""
+            this.Write("\n<div class=\"container\">\n    <div class=\"form-horizontal\">\n");
+            
+            #line default
+            #line hidden
+            
+            #line 9 ""
+ foreach (var member in Members) { 
+            
+            #line default
+            #line hidden
+            
+            #line 10 ""
+            this.Write("        <div class=\"row mb-3\">\n            <label class=\"col-sm-2 col-form-label\"" +
+                    ">\n                ");
+            
+            #line default
+            #line hidden
+            
+            #line 12 ""
+            this.Write(this.ToStringHelper.ToStringWithCulture(member.Key));
+            
+            #line default
+            #line hidden
+            
+            #line 12 ""
+            this.Write("\n            </label>\n            <div class=\"col-sm-10\">\n                ");
+            
+            #line default
+            #line hidden
+            
+            #line 15 ""
+            this.Write(this.ToStringHelper.ToStringWithCulture(member.Value));
+            
+            #line default
+            #line hidden
+            
+            #line 15 ""
+            this.Write("\n            </div>\n        </div>\n");
+            
+            #line default
+            #line hidden
+            
+            #line 18 ""
+ } 
+            
+            #line default
+            #line hidden
+            
+            #line 19 ""
+            this.Write("    </div>\n</div>\n");
+            
+            #line default
+            #line hidden
             return this.GenerationEnvironment.ToString();
         }
         
@@ -37,7 +81,7 @@ namespace HalApplicationBuilder.Runtime.AspNetMvc {
         }
     }
     
-    public class CreateViewTemplateBase {
+    public class AggregateVerticalViewTemplateBase {
         
         private global::System.Text.StringBuilder builder;
         

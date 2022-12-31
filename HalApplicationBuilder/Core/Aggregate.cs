@@ -27,6 +27,9 @@ namespace HalApplicationBuilder.Core {
 
                         if (Core.Members.SchalarValue.IsPrimitive(prop.PropertyType)) {
                             _members.Add(new Core.Members.SchalarValue { Config = Config, Owner = this, UnderlyingPropertyInfo = prop });
+                        } else if (prop.PropertyType.IsGenericType
+                            && prop.PropertyType.GetGenericTypeDefinition() == typeof(Child<>)) {
+                            _members.Add(new Core.Members.Child { Config = Config, Owner = this, UnderlyingPropertyInfo = prop });
                         }
                     }
                 }
@@ -87,18 +90,19 @@ namespace HalApplicationBuilder.Core {
             };
         }
         internal AutoGenerateMvcModelClass ToSearchConditionModel(ViewRenderingContext context) {
-            var props = Members
-                .SelectMany(member => member.ToSearchConditionModel(context))
-                .ToList();
             var className = $"{UnderlyingType.Name}__SearchCondition";
             var fullname = Config.MvcModelNamespace + "." + className;
-            var view = string.Join(Environment.NewLine, props.Select(p => p.View));
-
+            var props = Members
+                .Select(member => new { member, ModelProps = member.ToSearchConditionModel(context) })
+                .ToList();
+            var template = new AggregateVerticalViewTemplate {
+                Members = props.Select(x => KeyValuePair.Create(x.member.Name, string.Join(Environment.NewLine, x.ModelProps.Select(p => p.View)))),
+            };
             return new AutoGenerateMvcModelClass {
                 ClassName = className,
                 RuntimeFullName = fullname,
-                Properties = props,
-                View = view,
+                Properties = props.SelectMany(p => p.ModelProps).ToArray(),
+                View = template.TransformText(),
             };
         }
         internal AutoGenerateMvcModelClass ToSearchResultModel(ViewRenderingContext context) {
@@ -122,7 +126,7 @@ namespace HalApplicationBuilder.Core {
             var props = Members
                 .Select(member => new { member, ModelProps = member.ToInstanceModel(context) })
                 .ToList();
-            var template = new AggregateInstanceTemplate {
+            var template = new AggregateVerticalViewTemplate {
                 Members = props.Select(x => KeyValuePair.Create(x.member.Name, string.Join(Environment.NewLine, x.ModelProps.Select(p => p.View)))),
             };
             return new AutoGenerateMvcModelClass {
@@ -140,7 +144,7 @@ namespace HalApplicationBuilder.Core {
         #endregion Runtime
     }
 
-    partial class AggregateInstanceTemplate {
+    partial class AggregateVerticalViewTemplate {
         internal IEnumerable<KeyValuePair<string, string>> Members { get; set; }
     }
 }

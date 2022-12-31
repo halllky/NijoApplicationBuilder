@@ -15,5 +15,5 @@
 
 <form>
     <#=ModelClass.View#>
-    <button asp-action="<#=ExecuteActionName#>">作成</button>
+    <button asp-action="<#=ExecuteActionName#>" formmethod="post">作成</button>
 </form>

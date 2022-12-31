@@ -15,6 +15,6 @@
 
 <form>
     <#=ModelClass.View#>
-    <button asp-action="<#=UpdateActionName#>">更新</button>
-    <button asp-action="<#=DeleteActionName#>">削除</button>
+    <button asp-action="<#=UpdateActionName#>" formmethod="post">更新</button>
+    <button asp-action="<#=DeleteActionName#>" formmethod="post">削除</button>
 </form>

@@ -8,28 +8,26 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace HalApplicationBuilder.Runtime.AspNetMvc {
+namespace HalApplicationBuilder.Core.Members {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
     using System;
     
     
-    public partial class CreateViewTemplate : CreateViewTemplateBase {
+    public partial class ChildVariationInstanceTemplate : ChildVariationInstanceTemplateBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            this.Write("\n@model ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ModelTypeFullname));
-            this.Write(";\n@{\n    ViewData[\"Title\"] = \"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
-            this.Write("\";\n}\n\n<h1>\n    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
-            this.Write("\n</h1>\n\n<form>\n    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ModelClass.View));
-            this.Write("\n    <button asp-action=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ExecuteActionName));
-            this.Write("\" formmethod=\"post\">作成</button>\n</form>\n");
+            this.Write("\n<div>\n    <label>\n        <input type=\"radio\" asp-for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(RadioButtonAspFor));
+            this.Write("\" value=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Key));
+            this.Write("\" />\n        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Name));
+            this.Write("\n    </label>\n    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ChildAggregateView));
+            this.Write("\n</div>");
             return this.GenerationEnvironment.ToString();
         }
         
@@ -37,7 +35,7 @@ namespace HalApplicationBuilder.Runtime.AspNetMvc {
         }
     }
     
-    public class CreateViewTemplateBase {
+    public class ChildVariationInstanceTemplateBase {
         
         private global::System.Text.StringBuilder builder;
         

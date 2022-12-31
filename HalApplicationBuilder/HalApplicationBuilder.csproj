@@ -9,6 +9,7 @@
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.17" />
     <PackageReference Include="System.CodeDom" Version="5.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.ViewFeatures" Version="2.2.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Core\" />
@@ -46,6 +47,26 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>SingleViewTemplate.cs</LastGenOutput>
     </None>
+    <None Update="Core\AggregateVerticalViewTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>AggregateVerticalViewTemplate.cs</LastGenOutput>
+    </None>
+    <None Update="Core\Members\ChildVariationInstanceTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>ChildVariationInstanceTemplate.cs</LastGenOutput>
+    </None>
+    <None Update="Runtime\AspNetMvc\ControllersTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>ControllerTemplate.cs</LastGenOutput>
+    </None>
+    <None Update="Runtime\AspNetMvc\ControllerTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>ControllerTemplate.cs</LastGenOutput>
+    </None>
+    <None Update="Core\Members\ChildVariationSearchConditionTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>ChildVariationSearchConditionTemplate.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Runtime\MultiView\MultiViewTemplate.cs" />
@@ -74,6 +95,21 @@
     </Compile>
     <Compile Update="Runtime\AspNetMvc\SingleViewTemplate.cs">
       <DependentUpon>SingleViewTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Core\AggregateVerticalViewTemplate.cs">
+      <DependentUpon>AggregateVerticalViewTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Core\Members\ChildVariationInstanceTemplate.cs">
+      <DependentUpon>ChildVariationInstanceTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Runtime\AspNetMvc\ControllersTemplate.cs">
+      <DependentUpon>ControllerTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Runtime\AspNetMvc\ControllerTemplate.cs">
+      <DependentUpon>ControllerTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Core\Members\ChildVariationSearchConditionTemplate.cs">
+      <DependentUpon>ChildVariationSearchConditionTemplate.tt</DependentUpon>
     </Compile>
   </ItemGroup>
 </Project>
