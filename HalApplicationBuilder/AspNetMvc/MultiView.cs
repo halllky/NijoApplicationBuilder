@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace HalApplicationBuilder.Runtime.AspNetMvc {
+namespace HalApplicationBuilder.AspNetMvc {
     public class MultiView {
         internal Core.Aggregate RootAggregate { get; init; }
 

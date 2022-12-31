@@ -8,36 +8,60 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace HalApplicationBuilder.Runtime.AspNetMvc {
+namespace HalApplicationBuilder.AspNetMvc {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
     using System;
     
     
-    public partial class ControllerTemplate : ControllerTemplateBase {
+    public partial class MultiViewTemplate : MultiViewTemplateBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            this.Write("\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Namespace));
-            this.Write(" {\n    using System;\n    using System.Collections.Generic;\n    using System.Diagn" +
-                    "ostics;\n    using System.Linq;\n    using System.Threading.Tasks;\n    using Micro" +
-                    "soft.AspNetCore.Mvc;\n    using Microsoft.Extensions.Logging;\n    \n");
- foreach (var controller in Controllers) { 
-            this.Write("    public partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(controller.ClassName));
-            this.Write(" : ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(controller.BaseClassFullName));
-            this.Write(" {\n        protected override string MultiViewName => \"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(controller.MultiViewName));
-            this.Write("\";\n        protected override string CreateViewName => \"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(controller.CreateViewName));
-            this.Write("\";\n        protected override string SingleViewName => \"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(controller.SingleViewName));
-            this.Write("\";\n    }\n");
+            this.Write("\n@model ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ModelTypeFullname));
+            this.Write(";\n@{\n    ViewData[\"Title\"] = \"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
+            this.Write("\";\n}\n\n<h1>\n    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
+            this.Write("\n</h1>\n\n<form>\n    @* 検索条件欄 *@\n    <div>\n        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(SearchConditionClass.View));
+            this.Write("\n        <button asp-action=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ClearActionName));
+            this.Write("\">クリア</button>\n        <button asp-action=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(SearchActionName));
+            this.Write(@""">検索</button>
+    </div>
+    
+    @* 検索結果欄 *@
+    <div>
+        <div style=""display: flex; justify-content: flex-end"">
+            <a asp-action=""New"">新規作成</a>
+        </div>
+        <table class=""table table-sm"">
+            <thead>
+                <tr>
+                    <th></th>
+");
+ foreach (var prop in SearchResultClass.Properties) { 
+            this.Write("                    <th>\n                        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write("\n                    </th>\n");
  } 
-            this.Write("}");
+            this.Write("                </tr>\n            </thead>\n            <tbody>\n                @f" +
+                    "or (int i = 0; i < Model.SearchResult.Count; i++)\n                {\n            " +
+                    "        <tr>\n                        <td>\n                            <a asp-act" +
+                    "ion=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(LinkToSingleViewActionName));
+            this.Write("\">詳細</a>\n                        </td>\n");
+ foreach (var prop in SearchResultClass.Properties) { 
+            this.Write("                        <td>\n                            @Model.SearchResult[i].");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write("\n                        </td>\n");
+ } 
+            this.Write("                    </tr>\n                }\n            </tbody>\n        </table>" +
+                    "\n    </div>\n</form>\n\n");
             return this.GenerationEnvironment.ToString();
         }
         
@@ -45,7 +69,7 @@ namespace HalApplicationBuilder.Runtime.AspNetMvc {
         }
     }
     
-    public class ControllerTemplateBase {
+    public class MultiViewTemplateBase {
         
         private global::System.Text.StringBuilder builder;
         

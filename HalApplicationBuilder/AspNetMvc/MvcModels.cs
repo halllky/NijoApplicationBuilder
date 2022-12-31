@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace HalApplicationBuilder.Runtime.AspNetMvc {
+namespace HalApplicationBuilder.AspNetMvc {
     public class MvcModels {
         internal Core.Config Config { get; init; }
         internal Core.Builder AggregateBuilder { get; init; }

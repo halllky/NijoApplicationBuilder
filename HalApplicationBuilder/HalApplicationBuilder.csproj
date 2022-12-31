@@ -15,37 +15,17 @@
     <Folder Include="Core\" />
     <Folder Include="Core\Members\" />
     <Folder Include="Runtime\" />
-    <Folder Include="Runtime\EFCore\" />
-    <Folder Include="Runtime\AspNetMvc\" />
+    <Folder Include="AspNetMvc\" />
+    <Folder Include="EntityFramework\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Core\Members\SchalarValueSearchCondition.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>SchalarValueSearchCondition.cs</LastGenOutput>
     </None>
-    <None Update="Runtime\EFCore\EFCoreSourceTemplate.tt">
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>EFCoreSourceTemplate.cs</LastGenOutput>
-    </None>
-    <None Update="Runtime\AspNetMvc\MultiViewTemplate.tt">
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>MultiViewTemplate.cs</LastGenOutput>
-    </None>
-    <None Update="Runtime\AspNetMvc\MvcModelsTemplate.tt">
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>MvcModelsTemplate.cs</LastGenOutput>
-    </None>
-    <None Update="Runtime\AspNetMvc\CreateViewTemplate.tt">
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>CreateViewTemplate.cs</LastGenOutput>
-    </None>
     <None Update="Core\AggregateInstanceTemplate.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>AggregateInstanceTemplate.cs</LastGenOutput>
-    </None>
-    <None Update="Runtime\AspNetMvc\SingleViewTemplate.tt">
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>SingleViewTemplate.cs</LastGenOutput>
     </None>
     <None Update="Core\AggregateVerticalViewTemplate.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
@@ -59,13 +39,33 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>ControllerTemplate.cs</LastGenOutput>
     </None>
-    <None Update="Runtime\AspNetMvc\ControllerTemplate.tt">
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>ControllerTemplate.cs</LastGenOutput>
-    </None>
     <None Update="Core\Members\ChildVariationSearchConditionTemplate.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>ChildVariationSearchConditionTemplate.cs</LastGenOutput>
+    </None>
+    <None Update="AspNetMvc\ControllerTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>ControllerTemplate.cs</LastGenOutput>
+    </None>
+    <None Update="AspNetMvc\CreateViewTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>CreateViewTemplate.cs</LastGenOutput>
+    </None>
+    <None Update="AspNetMvc\MultiViewTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>MultiViewTemplate.cs</LastGenOutput>
+    </None>
+    <None Update="AspNetMvc\MvcModelsTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>MvcModelsTemplate.cs</LastGenOutput>
+    </None>
+    <None Update="AspNetMvc\SingleViewTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>SingleViewTemplate.cs</LastGenOutput>
+    </None>
+    <None Update="EFCore\EFCoreSourceTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>EFCoreSourceTemplate.cs</LastGenOutput>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -78,23 +78,8 @@
     <Compile Update="CodeGenerating\MultiView\MultiViewTemplate.cs">
       <DependentUpon>MultiViewTemplate.tt</DependentUpon>
     </Compile>
-    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="Runtime\EFCore\EFCoreSourceTemplate.cs">
-      <DependentUpon>EFCoreSourceTemplate.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Runtime\AspNetMvc\MultiViewTemplate.cs">
-      <DependentUpon>MultiViewTemplate.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Runtime\AspNetMvc\MvcModelsTemplate.cs">
-      <DependentUpon>MvcModelsTemplate.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Runtime\AspNetMvc\CreateViewTemplate.cs">
-      <DependentUpon>CreateViewTemplate.tt</DependentUpon>
-    </Compile>
     <Compile Update="Core\AggregateInstanceTemplate.cs">
       <DependentUpon>AggregateInstanceTemplate.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Runtime\AspNetMvc\SingleViewTemplate.cs">
-      <DependentUpon>SingleViewTemplate.tt</DependentUpon>
     </Compile>
     <Compile Update="Core\AggregateVerticalViewTemplate.cs">
       <DependentUpon>AggregateVerticalViewTemplate.tt</DependentUpon>
@@ -105,11 +90,26 @@
     <Compile Update="Runtime\AspNetMvc\ControllersTemplate.cs">
       <DependentUpon>ControllerTemplate.tt</DependentUpon>
     </Compile>
-    <Compile Update="Runtime\AspNetMvc\ControllerTemplate.cs">
-      <DependentUpon>ControllerTemplate.tt</DependentUpon>
-    </Compile>
     <Compile Update="Core\Members\ChildVariationSearchConditionTemplate.cs">
       <DependentUpon>ChildVariationSearchConditionTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="AspNetMvc\ControllerTemplate.cs">
+      <DependentUpon>..\Runtime\AspNetMvc\ControllerTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="AspNetMvc\CreateViewTemplate.cs">
+      <DependentUpon>CreateViewTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="AspNetMvc\MultiViewTemplate.cs">
+      <DependentUpon>MultiViewTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="AspNetMvc\MvcModelsTemplate.cs">
+      <DependentUpon>..\Runtime\AspNetMvc\MvcModelsTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="AspNetMvc\SingleViewTemplate.cs">
+      <DependentUpon>SingleViewTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="EFCore\EFCoreSourceTemplate.cs">
+      <DependentUpon>EFCoreSourceTemplate.tt</DependentUpon>
     </Compile>
   </ItemGroup>
 </Project>

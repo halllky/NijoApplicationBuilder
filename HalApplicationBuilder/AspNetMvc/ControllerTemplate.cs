@@ -8,75 +8,36 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace HalApplicationBuilder.Runtime.EFCore {
+namespace HalApplicationBuilder.AspNetMvc {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
     using System;
     
     
-    public partial class EFCoreSourceTemplate : EFCoreSourceTemplateBase {
+    public partial class ControllerTemplate : ControllerTemplateBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
             this.Write("\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(DbContextNamespace));
-            this.Write(" {\n    using Microsoft.EntityFrameworkCore;\n\n    partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(DbContextName));
-            this.Write(" {\n    \n");
- /* DbSetプロパティの生成 */ 
- foreach (var entityClass in EntityClasses) { 
-            this.Write("        public DbSet<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entityClass.RuntimeFullName));
-            this.Write("> ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entityClass.ClassName));
-            this.Write(" { get; set; }\n");
- }
-            this.Write("\n");
- /* OnModelCreatingの定義 */ 
-            this.Write("        protected override void OnModelCreating(ModelBuilder modelBuilder) {\n");
- foreach (var entityClass in EntityClasses) { 
-            this.Write("            modelBuilder.Entity<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entityClass.RuntimeFullName));
-            this.Write(">()\n                .HasKey(e => new {\n");
- foreach (var prop in entityClass.PKColumns) { 
-            this.Write("                    e.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(",\n");
- }
-            this.Write("                });\n");
- }
-            this.Write("        }\n    }\n}\n\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(EntityNamespace));
-            this.Write(" {\n    using System;\n    using System.Collections.Generic;\n\n");
- /*Entityクラスの生成*/ 
- foreach (var entityClass in EntityClasses) { 
+            this.Write(this.ToStringHelper.ToStringWithCulture(Namespace));
+            this.Write(" {\n    using System;\n    using System.Collections.Generic;\n    using System.Diagn" +
+                    "ostics;\n    using System.Linq;\n    using System.Threading.Tasks;\n    using Micro" +
+                    "soft.AspNetCore.Mvc;\n    using Microsoft.Extensions.Logging;\n    \n");
+ foreach (var controller in Controllers) { 
             this.Write("    public partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entityClass.ClassName));
-            this.Write(" {\n");
- /*Entityクラスの生成: PKプロパティ*/ 
- foreach (var prop in entityClass.PKColumns) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
-            this.Write("\n");
- }
- /*Entityクラスの生成: PK以外のプロパティ*/ 
- foreach (var prop in entityClass.NotPKColumns) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
-            this.Write("\n");
- }
-            this.Write("    }\n");
- }
-            this.Write("\n}");
+            this.Write(this.ToStringHelper.ToStringWithCulture(controller.ClassName));
+            this.Write(" : ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(controller.BaseClassFullName));
+            this.Write(" {\n        protected override string MultiViewName => \"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(controller.MultiViewName));
+            this.Write("\";\n        protected override string CreateViewName => \"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(controller.CreateViewName));
+            this.Write("\";\n        protected override string SingleViewName => \"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(controller.SingleViewName));
+            this.Write("\";\n    }\n");
+ } 
+            this.Write("}");
             return this.GenerationEnvironment.ToString();
         }
         
@@ -84,7 +45,7 @@ namespace HalApplicationBuilder.Runtime.EFCore {
         }
     }
     
-    public class EFCoreSourceTemplateBase {
+    public class ControllerTemplateBase {
         
         private global::System.Text.StringBuilder builder;
         

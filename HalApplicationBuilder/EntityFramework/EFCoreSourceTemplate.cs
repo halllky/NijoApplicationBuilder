@@ -8,28 +8,75 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace HalApplicationBuilder.Runtime.AspNetMvc {
+namespace HalApplicationBuilder.EntityFramework {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
     using System;
     
     
-    public partial class CreateViewTemplate : CreateViewTemplateBase {
+    public partial class EFCoreSourceTemplate : EFCoreSourceTemplateBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            this.Write("\n@model ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ModelTypeFullname));
-            this.Write(";\n@{\n    ViewData[\"Title\"] = \"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
-            this.Write("\";\n}\n\n<h1>\n    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
-            this.Write("\n</h1>\n\n<form>\n    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ModelClass.View));
-            this.Write("\n    <button asp-action=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ExecuteActionName));
-            this.Write("\" formmethod=\"post\">作成</button>\n</form>\n");
+            this.Write("\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(DbContextNamespace));
+            this.Write(" {\n    using Microsoft.EntityFrameworkCore;\n\n    partial class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(DbContextName));
+            this.Write(" {\n    \n");
+ /* DbSetプロパティの生成 */ 
+ foreach (var entityClass in EntityClasses) { 
+            this.Write("        public DbSet<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(entityClass.RuntimeFullName));
+            this.Write("> ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(entityClass.ClassName));
+            this.Write(" { get; set; }\n");
+ }
+            this.Write("\n");
+ /* OnModelCreatingの定義 */ 
+            this.Write("        protected override void OnModelCreating(ModelBuilder modelBuilder) {\n");
+ foreach (var entityClass in EntityClasses) { 
+            this.Write("            modelBuilder.Entity<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(entityClass.RuntimeFullName));
+            this.Write(">()\n                .HasKey(e => new {\n");
+ foreach (var prop in entityClass.PKColumns) { 
+            this.Write("                    e.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write(",\n");
+ }
+            this.Write("                });\n");
+ }
+            this.Write("        }\n    }\n}\n\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(EntityNamespace));
+            this.Write(" {\n    using System;\n    using System.Collections.Generic;\n\n");
+ /*Entityクラスの生成*/ 
+ foreach (var entityClass in EntityClasses) { 
+            this.Write("    public partial class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(entityClass.ClassName));
+            this.Write(" {\n");
+ /*Entityクラスの生成: PKプロパティ*/ 
+ foreach (var prop in entityClass.PKColumns) { 
+            this.Write("        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
+            this.Write(" ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write(" { get; set; }");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
+            this.Write("\n");
+ }
+ /*Entityクラスの生成: PK以外のプロパティ*/ 
+ foreach (var prop in entityClass.NotPKColumns) { 
+            this.Write("        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
+            this.Write(" ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write(" { get; set; }");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
+            this.Write("\n");
+ }
+            this.Write("    }\n");
+ }
+            this.Write("\n}");
             return this.GenerationEnvironment.ToString();
         }
         
@@ -37,7 +84,7 @@ namespace HalApplicationBuilder.Runtime.AspNetMvc {
         }
     }
     
-    public class CreateViewTemplateBase {
+    public class EFCoreSourceTemplateBase {
         
         private global::System.Text.StringBuilder builder;
         

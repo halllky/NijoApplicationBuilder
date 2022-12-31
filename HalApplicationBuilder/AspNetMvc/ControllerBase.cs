@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using HalApplicationBuilder.Runtime.AspNetMvc;
+using HalApplicationBuilder.AspNetMvc;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HalApplicationBuilder.Runtime {
+namespace HalApplicationBuilder.AspNetMvc {
 
     public abstract class ControllerBase<TSearchCondition, TSearchResult, TInstanceModel>
         : Microsoft.AspNetCore.Mvc.Controller {

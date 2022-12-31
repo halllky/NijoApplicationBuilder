@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace HalApplicationBuilder.Runtime.AspNetMvc {
+namespace HalApplicationBuilder.AspNetMvc {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;

@@ -1,5 +1,5 @@
 ﻿using System;
-namespace HalApplicationBuilder.Runtime.AspNetMvc {
+namespace HalApplicationBuilder.AspNetMvc {
     public class CreateView {
         internal Core.Aggregate RootAggregate { get; init; }
 

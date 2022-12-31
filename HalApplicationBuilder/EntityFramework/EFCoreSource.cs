@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using HalApplicationBuilder.Core;
 
-namespace HalApplicationBuilder.Runtime.EFCore {
+namespace HalApplicationBuilder.EntityFramework {
     internal class EFCoreSource {
         internal Config Config { get; init; }
         internal Core.Builder AggregateBuilder { get; init; }
