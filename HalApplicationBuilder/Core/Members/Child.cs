@@ -18,7 +18,7 @@ namespace HalApplicationBuilder.Core.Members {
                 if (!childType.IsAbstract && !variations.Any()) {
                     // complex object
                     _children = new Dictionary<int, Aggregate> {
-                        { -1, new Aggregate { Config = Config, Parent = this, UnderlyingType = childType }},
+                        { -1, new Aggregate { Schema = Schema, Parent = this, UnderlyingType = childType }},
                     };
 
                 } else if (childType.IsAbstract && variations.Any()) {
@@ -29,7 +29,7 @@ namespace HalApplicationBuilder.Core.Members {
                         throw new InvalidOperationException($"{childType.Name} の派生型でない: {typeNames}");
                     }
                     _children = variations.ToDictionary(v => v.Key, v => new Aggregate {
-                        Config = Config,
+                        Schema = Schema,
                         UnderlyingType = v.Type,
                         Parent = this,
                     });

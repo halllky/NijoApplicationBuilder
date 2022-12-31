@@ -5,13 +5,12 @@ using System.Linq;
 
 namespace HalApplicationBuilder.AspNetMvc {
     public class Controller {
-        internal Core.Config Config { get; init; }
-        internal Core.Builder AggregateBuilder { get; init; }
+        internal Core.ApplicationSchema Schema { get; init; }
 
         internal string TransformText() {
             var _ = new Core.ViewRenderingContext();
-            var controllers = AggregateBuilder
-                .EnumerateRootAggregates()
+            var controllers = Schema
+                .RootAggregates()
                 .Select(aggregate => new ControllerClassMetadata {
                     ClassName = $"{aggregate.Name}Controller",
                     BaseClassFullName
@@ -19,12 +18,12 @@ namespace HalApplicationBuilder.AspNetMvc {
                         + $"<{aggregate.ToSearchConditionModel(_).RuntimeFullName},"
                         + $" {aggregate.ToSearchResultModel(_).RuntimeFullName},"
                         + $" {aggregate.ToInstanceModel(_).RuntimeFullName}>",
-                    MultiViewName = "~/" + Path.Combine(Config.MvcViewDirectoryRelativePath, new MultiView { RootAggregate = aggregate }.FileName),
-                    CreateViewName = "~/" + Path.Combine(Config.MvcViewDirectoryRelativePath, new CreateView { RootAggregate = aggregate }.FileName),
-                    SingleViewName = "~/" + Path.Combine(Config.MvcViewDirectoryRelativePath, new SingleView { RootAggregate = aggregate }.FileName),
+                    MultiViewName = "~/" + Path.Combine(Schema.Config.MvcViewDirectoryRelativePath, new MultiView { RootAggregate = aggregate }.FileName),
+                    CreateViewName = "~/" + Path.Combine(Schema.Config.MvcViewDirectoryRelativePath, new CreateView { RootAggregate = aggregate }.FileName),
+                    SingleViewName = "~/" + Path.Combine(Schema.Config.MvcViewDirectoryRelativePath, new SingleView { RootAggregate = aggregate }.FileName),
                 });
             var template = new ControllerTemplate {
-                Namespace = Config.MvcControllerNamespace,
+                Namespace = Schema.Config.MvcControllerNamespace,
                 Controllers = controllers,
             };
             return template.TransformText();

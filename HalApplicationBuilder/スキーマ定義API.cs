@@ -25,4 +25,7 @@ namespace HalApplicationBuilder {
 
     public sealed class Children<T> : List<T> {
     }
+
+    public sealed class RefTo<T> where T : class {
+    }
 }

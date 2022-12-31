@@ -7,7 +7,7 @@ using System.Reflection;
 namespace HalApplicationBuilder.Core {
     public abstract class AggregateMemberBase {
 
-        public Config Config { get; init; }
+        internal ApplicationSchema Schema { get; init; }
         internal PropertyInfo UnderlyingPropertyInfo { get; init; }
 
         public string Name => UnderlyingPropertyInfo.Name;

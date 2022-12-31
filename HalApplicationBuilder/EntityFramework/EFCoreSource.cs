@@ -5,15 +5,14 @@ using HalApplicationBuilder.Core;
 
 namespace HalApplicationBuilder.EntityFramework {
     internal class EFCoreSource {
-        internal Config Config { get; init; }
-        internal Core.Builder AggregateBuilder { get; init; }
+        internal Core.ApplicationSchema Schema { get; init; }
 
         internal string TransformText() {
-            var aggregates = AggregateBuilder.EnumerateAllAggregates();
+            var aggregates = Schema.AllAggregates();
             var template = new EFCoreSourceTemplate {
-                DbContextName = Config.DbContextName,
-                DbContextNamespace = Config.DbContextNamespace,
-                EntityNamespace = Config.EntityNamespace,
+                DbContextName = Schema.Config.DbContextName,
+                DbContextNamespace = Schema.Config.DbContextNamespace,
+                EntityNamespace = Schema.Config.EntityNamespace,
                 EntityClasses = aggregates.Select(a => a.ToDbTableModel()),
             };
             return template.TransformText();

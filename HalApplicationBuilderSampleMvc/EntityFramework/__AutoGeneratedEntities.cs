@@ -8,6 +8,9 @@ namespace HalApplicationBuilderSampleMvc.EntityFramework {
         public DbSet<HalApplicationBuilderSampleMvc.EntityFramework.Entities.連絡先> 連絡先 { get; set; }
         public DbSet<HalApplicationBuilderSampleMvc.EntityFramework.Entities.上場企業資本情報> 上場企業資本情報 { get; set; }
         public DbSet<HalApplicationBuilderSampleMvc.EntityFramework.Entities.非上場企業資本情報> 非上場企業資本情報 { get; set; }
+        public DbSet<HalApplicationBuilderSampleMvc.EntityFramework.Entities.営業所> 営業所 { get; set; }
+        public DbSet<HalApplicationBuilderSampleMvc.EntityFramework.Entities.支店> 支店 { get; set; }
+        public DbSet<HalApplicationBuilderSampleMvc.EntityFramework.Entities.担当者> 担当者 { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder) {
             modelBuilder.Entity<HalApplicationBuilderSampleMvc.EntityFramework.Entities.会社>()
@@ -25,6 +28,21 @@ namespace HalApplicationBuilderSampleMvc.EntityFramework {
             modelBuilder.Entity<HalApplicationBuilderSampleMvc.EntityFramework.Entities.非上場企業資本情報>()
                 .HasKey(e => new {
                     e.会社ID,
+                });
+            modelBuilder.Entity<HalApplicationBuilderSampleMvc.EntityFramework.Entities.営業所>()
+                .HasKey(e => new {
+                    e.会社ID,
+                    e.営業所_連番,
+                });
+            modelBuilder.Entity<HalApplicationBuilderSampleMvc.EntityFramework.Entities.支店>()
+                .HasKey(e => new {
+                    e.会社ID,
+                    e.営業所_連番,
+                    e.支店_連番,
+                });
+            modelBuilder.Entity<HalApplicationBuilderSampleMvc.EntityFramework.Entities.担当者>()
+                .HasKey(e => new {
+                    e.ユーザーID,
                 });
         }
     }
@@ -56,6 +74,22 @@ namespace HalApplicationBuilderSampleMvc.EntityFramework.Entities {
         public string 会社ID { get; set; }
         public string 主要株主 { get; set; }
         public HalApplicationBuilderSampleSchema.E_安定性 安定性 { get; set; }
+    }
+    public partial class 営業所 {
+        public string 会社ID { get; set; }
+        public int 営業所_連番 { get; set; }
+        public string 営業所名 { get; set; }
+        public string 担当者_ユーザーID { get; set; }
+    }
+    public partial class 支店 {
+        public string 会社ID { get; set; }
+        public int 営業所_連番 { get; set; }
+        public int 支店_連番 { get; set; }
+        public string 支店名 { get; set; }
+    }
+    public partial class 担当者 {
+        public string ユーザーID { get; set; }
+        public string 氏名 { get; set; }
     }
 
 }

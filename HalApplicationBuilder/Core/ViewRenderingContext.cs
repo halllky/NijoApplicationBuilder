@@ -21,6 +21,12 @@ namespace HalApplicationBuilder.Core {
         internal string AspForPath => _ancestors[0] == "Model"
             ? string.Join(".", _ancestors.Skip(1))
             : string.Join(".", _ancestors);
+        /// <summary>
+        /// for文の第2節に出力するための .Count の文字列
+        /// </summary>
+        internal string CountPropertyPath => _ancestors.Last().EndsWith("]")
+            ? $"{Path.Substring(0, Path.LastIndexOf("["))}.Count"
+            : throw new InvalidOperationException($"{Path} は配列でない");
 
         /// <summary>
         /// 配列の添字。現在レンダリング中のオブジェクトの深さが1なら"i"、2なら"j"、…と以下延々と続く

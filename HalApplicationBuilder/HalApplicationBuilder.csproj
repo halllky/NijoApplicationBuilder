@@ -17,6 +17,7 @@
     <Folder Include="Runtime\" />
     <Folder Include="AspNetMvc\" />
     <Folder Include="EntityFramework\" />
+    <Folder Include="Runtime\RuntimeContextFeatures\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Core\Members\SchalarValueSearchCondition.tt">
@@ -67,6 +68,14 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>EFCoreSourceTemplate.cs</LastGenOutput>
     </None>
+    <None Update="Core\Members\ChildrenInstanceTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>ChildrenInstanceTemplate.cs</LastGenOutput>
+    </None>
+    <None Update="Core\Members\ReferenceInstanceTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>ReferenceInstanceTemplate.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Runtime\MultiView\MultiViewTemplate.cs" />
@@ -110,6 +119,12 @@
     </Compile>
     <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="EFCore\EFCoreSourceTemplate.cs">
       <DependentUpon>EFCoreSourceTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Core\Members\ChildrenInstanceTemplate.cs">
+      <DependentUpon>ChildrenInstanceTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Core\Members\ReferenceInstanceTemplate.cs">
+      <DependentUpon>ReferenceInstanceTemplate.tt</DependentUpon>
     </Compile>
   </ItemGroup>
 </Project>

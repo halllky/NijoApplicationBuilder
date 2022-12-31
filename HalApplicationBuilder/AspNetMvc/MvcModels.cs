@@ -4,14 +4,13 @@ using System.Linq;
 
 namespace HalApplicationBuilder.AspNetMvc {
     public class MvcModels {
-        internal Core.Config Config { get; init; }
-        internal Core.Builder AggregateBuilder { get; init; }
+        internal Core.ApplicationSchema Schema { get; init; }
 
         internal string TransformText() {
-            var rootAggregates = AggregateBuilder.EnumerateRootAggregates();
-            var allAggregates = AggregateBuilder.EnumerateAllAggregates();
+            var rootAggregates = Schema.RootAggregates();
+            var allAggregates = Schema.AllAggregates();
             var template = new MvcModelsTemplate {
-                Namespace = Config.MvcModelNamespace,
+                Namespace = Schema.Config.MvcModelNamespace,
                 SearchConditionClasses = allAggregates.Select(a => a.ToSearchConditionModel(new Core.ViewRenderingContext())),
                 SearchResultClasses = rootAggregates.Select(a => a.ToSearchResultModel(new Core.ViewRenderingContext())),
                 InstanceClasses = allAggregates.Select(a => a.ToInstanceModel(new Core.ViewRenderingContext())),

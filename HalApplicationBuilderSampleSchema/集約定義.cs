@@ -17,6 +17,8 @@ namespace HalApplicationBuilderSampleSchema {
         [Variation(0, typeof(上場企業資本情報))]
         [Variation(1, typeof(非上場企業資本情報))]
         public Child<I資本情報> 資本情報 { get; set; }
+
+        public Children<営業所> 営業所 { get; set; }
     }
 
     public class 連絡先 {
@@ -39,6 +41,22 @@ namespace HalApplicationBuilderSampleSchema {
     public class 非上場企業資本情報 : I資本情報 {
         public string 主要株主 { get; set; }
         public E_安定性 安定性 { get; set; }
+    }
+
+    public class 営業所 {
+        public string 営業所名 { get; set; }
+        public Children<支店> 支店 { get; set; }
+        public RefTo<担当者> 担当者 { get; set; }
+    }
+    public class 支店 {
+        public string 支店名 { get; set; }
+    }
+
+    [Aggregate]
+    public class 担当者 {
+        [Key]
+        public string ユーザーID { get; set; }
+        public string 氏名 { get; set; }
     }
 
     public enum E_重要度 {

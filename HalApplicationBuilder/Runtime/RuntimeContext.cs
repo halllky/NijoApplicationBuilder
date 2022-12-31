@@ -11,17 +11,16 @@ namespace HalApplicationBuilder.Runtime {
             RuntimeAssembly = runtimeAssembly;
             Config = config;
 
-            AggregateBuilder = new Core.Builder(schemaAssembly, config);
+            ApplicationSchema = new Core.ApplicationSchema(schemaAssembly, config);
         }
 
         internal Assembly SchemaAssembly { get; }
         internal Assembly RuntimeAssembly { get; }
         internal Core.Config Config { get; }
-        internal Core.Builder AggregateBuilder { get; }
+        internal Core.ApplicationSchema ApplicationSchema { get; }
 
         public IEnumerable<MenuItem> GetRootNavigations() {
-            var builder = new Core.Builder(SchemaAssembly, Config);
-            var rootAggregates = builder.EnumerateRootAggregates();
+            var rootAggregates = ApplicationSchema.RootAggregates();
             foreach (var aggregate in rootAggregates) {
                 yield return new MenuItem {
                     LinkText = aggregate.Name,
@@ -40,8 +39,8 @@ namespace HalApplicationBuilder.Runtime {
             // 型名と集約定義の対応関係の紐付けのキャッシュを作成
             if (_typeFullNameIndex == null) {
                 var _ = new Core.ViewRenderingContext();
-                _typeFullNameIndex = AggregateBuilder
-                    .EnumerateAllAggregates()
+                _typeFullNameIndex = ApplicationSchema
+                    .AllAggregates()
                     .SelectMany(
                         aggregate => new[]
                         {
