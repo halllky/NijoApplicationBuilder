@@ -94,7 +94,7 @@
       <DependentUpon>ChildVariationSearchConditionTemplate.tt</DependentUpon>
     </Compile>
     <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="AspNetMvc\ControllerTemplate.cs">
-      <DependentUpon>..\Runtime\AspNetMvc\ControllerTemplate.tt</DependentUpon>
+      <DependentUpon>ControllerTemplate.tt</DependentUpon>
     </Compile>
     <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="AspNetMvc\CreateViewTemplate.cs">
       <DependentUpon>CreateViewTemplate.tt</DependentUpon>

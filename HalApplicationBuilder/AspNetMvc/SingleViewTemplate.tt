@@ -11,6 +11,7 @@
 
 <h1>
     <#=PageTitle#>
+    <asp type="hidden" asp-for="<#=NameofInstanceName#>" />
 </h1>
 
 <form>

@@ -29,7 +29,10 @@ namespace HalApplicationBuilder.AspNetMvc {
             this.Write(this.ToStringHelper.ToStringWithCulture(controller.ClassName));
             this.Write(" : ");
             this.Write(this.ToStringHelper.ToStringWithCulture(controller.BaseClassFullName));
-            this.Write(" {\n        protected override string MultiViewName => \"");
+            this.Write(" {\n        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(controller.ClassName));
+            this.Write("(IServiceProvider services) : base(services) {}\n    \n        protected override s" +
+                    "tring MultiViewName => \"");
             this.Write(this.ToStringHelper.ToStringWithCulture(controller.MultiViewName));
             this.Write("\";\n        protected override string CreateViewName => \"");
             this.Write(this.ToStringHelper.ToStringWithCulture(controller.CreateViewName));

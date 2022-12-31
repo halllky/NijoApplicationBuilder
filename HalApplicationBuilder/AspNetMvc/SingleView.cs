@@ -26,6 +26,7 @@ namespace HalApplicationBuilder.AspNetMvc {
     partial class SingleViewTemplate {
         internal string ModelTypeFullname { get; set; }
         internal string PageTitle { get; set; }
+        internal string NameofInstanceName => nameof(SingleView.Model<object>.InstanceName);
         internal Core.AutoGenerateMvcModelClass ModelClass { get; set; }
         internal string UpdateActionName { get; set; }
         internal string DeleteActionName { get; set; }

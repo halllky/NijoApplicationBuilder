@@ -1,7 +1,7 @@
-﻿@inject HalApplicationBuilder.Runtime.RootNavigation rootNavigation; 
+﻿@inject HalApplicationBuilder.Runtime.RuntimeContext runtimeContext; 
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -20,10 +20,10 @@
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
-                        @foreach (var item in rootNavigation.GetRootNavigations())
+                        @foreach (var menuItem in runtimeContext.GetRootNavigations())
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="@item.AspController" asp-action="Index">@item.Text</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="@menuItem.AspController" asp-action="Index">@menuItem.LinkText</a>
                             </li>
                         }
                     </ul>

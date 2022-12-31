@@ -25,7 +25,9 @@ namespace HalApplicationBuilder.AspNetMvc {
             this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
             this.Write("}\";\n}\n\n<h1>\n    ");
             this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
-            this.Write("\n</h1>\n\n<form>\n    ");
+            this.Write("\n    <asp type=\"hidden\" asp-for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(NameofInstanceName));
+            this.Write("\" />\n</h1>\n\n<form>\n    ");
             this.Write(this.ToStringHelper.ToStringWithCulture(ModelClass.View));
             this.Write("\n    <button asp-action=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(UpdateActionName));
