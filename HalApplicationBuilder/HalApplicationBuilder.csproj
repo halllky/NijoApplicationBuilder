@@ -76,6 +76,10 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>ReferenceInstanceTemplate.cs</LastGenOutput>
     </None>
+    <None Update="AspNetMvc\AggregatePartialViewTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>AggregatePartialViewTemplate.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Runtime\MultiView\MultiViewTemplate.cs" />
@@ -125,6 +129,9 @@
     </Compile>
     <Compile Update="Core\Members\ReferenceInstanceTemplate.cs">
       <DependentUpon>ReferenceInstanceTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Update="AspNetMvc\AggregatePartialViewTemplate.cs">
+      <DependentUpon>AggregatePartialViewTemplate.tt</DependentUpon>
     </Compile>
   </ItemGroup>
 </Project>

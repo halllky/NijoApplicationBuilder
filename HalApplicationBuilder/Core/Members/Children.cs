@@ -33,7 +33,8 @@ namespace HalApplicationBuilder.Core.Members {
             var template = new ChildrenInstanceTemplate {
                 i = context.LoopVar,
                 Count = nested.CountPropertyPath,
-                ChildAggregateView = ChildAggregat.ToInstanceModel(nested).View,
+                PartialViewName = new AspNetMvc.AggregatePartialView { Aggregate = ChildAggregat }.FileName,
+                PartialViewBoundObjectName = nested.AspForPath,
             };
             yield return new AutoGenerateMvcModelProperty {
                 CSharpTypeName = $"List<{ChildAggregat.ToInstanceModel(context).RuntimeFullName}>",
@@ -56,6 +57,7 @@ namespace HalApplicationBuilder.Core.Members {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE1006:命名スタイル", Justification = "<意図して小文字>")]
         internal string i { get; set; }
         internal string Count { get; set; }
-        internal string ChildAggregateView { get; set; }
+        internal string PartialViewName { get; set; }
+        internal string PartialViewBoundObjectName { get; set; }
     }
 }

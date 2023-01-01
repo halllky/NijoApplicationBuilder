@@ -1,0 +1,42 @@
+﻿
+@model HalApplicationBuilderSampleMvc.Models.営業所;
+
+
+<div class="container">
+    <div class="form-horizontal">
+        <div class="row mb-3">
+            <label class="col-sm-2 col-form-label">
+                営業所名
+            </label>
+            <div class="col-sm-10">
+                <input asp-for="営業所名"/>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-2 col-form-label">
+                支店
+            </label>
+            <div class="col-sm-10">
+                
+@for (var i = 0; i < Model.支店.Count; i++) {
+    <partial name="_支店__Partial.cshtml" for="支店[i]" />
+}
+
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-2 col-form-label">
+                担当者
+            </label>
+            <div class="col-sm-10">
+                
+<div>
+    <input type="hidden" asp-for="担当者.InstanceKey" />
+    <input asp-for="担当者.InstanceName" />
+</div>
+
+            </div>
+        </div>
+    </div>
+</div>
+

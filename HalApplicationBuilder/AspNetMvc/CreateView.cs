@@ -3,7 +3,7 @@ namespace HalApplicationBuilder.AspNetMvc {
     public class CreateView {
         internal Core.Aggregate RootAggregate { get; init; }
 
-        internal string FileName => $"{RootAggregate.Name}_CreateView.cshtml";
+        internal string FileName => $"{RootAggregate.Name}__CreateView.cshtml";
 
         internal string TransformText() {
             var modelClass = RootAggregate.ToInstanceModel(new Core.ViewRenderingContext("Model", nameof(Model<object>.Item)));

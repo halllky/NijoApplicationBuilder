@@ -8,30 +8,22 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace HalApplicationBuilder.Core.Members {
+namespace HalApplicationBuilder.AspNetMvc {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
     using System;
     
     
-    public partial class ChildrenInstanceTemplate : ChildrenInstanceTemplateBase {
+    public partial class AggregatePartialViewTemplate : AggregatePartialViewTemplateBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            this.Write("\n@for (var ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(i));
-            this.Write(" = 0; ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(i));
-            this.Write(" < ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Count));
-            this.Write("; ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(i));
-            this.Write("++) {\n    <partial name=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PartialViewName));
-            this.Write("\" for=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PartialViewBoundObjectName));
-            this.Write("\" />\n}\n");
+            this.Write("\n@model ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ModelTypeFullname));
+            this.Write(";\n\n");
+            this.Write(this.ToStringHelper.ToStringWithCulture(View));
+            this.Write("\n");
             return this.GenerationEnvironment.ToString();
         }
         
@@ -39,7 +31,7 @@ namespace HalApplicationBuilder.Core.Members {
         }
     }
     
-    public class ChildrenInstanceTemplateBase {
+    public class AggregatePartialViewTemplateBase {
         
         private global::System.Text.StringBuilder builder;
         

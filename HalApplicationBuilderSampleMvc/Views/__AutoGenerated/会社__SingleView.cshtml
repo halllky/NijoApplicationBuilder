@@ -155,58 +155,7 @@
             <div class="col-sm-10">
                 
 @for (var j = 0; j < Model.Item.営業所.Count; j++) {
-    
-<div class="container">
-    <div class="form-horizontal">
-        <div class="row mb-3">
-            <label class="col-sm-2 col-form-label">
-                営業所名
-            </label>
-            <div class="col-sm-10">
-                <input asp-for="Item.営業所[j].営業所名"/>
-            </div>
-        </div>
-        <div class="row mb-3">
-            <label class="col-sm-2 col-form-label">
-                支店
-            </label>
-            <div class="col-sm-10">
-                
-@for (var k = 0; k < Model.Item.営業所[j].支店.Count; k++) {
-    
-<div class="container">
-    <div class="form-horizontal">
-        <div class="row mb-3">
-            <label class="col-sm-2 col-form-label">
-                支店名
-            </label>
-            <div class="col-sm-10">
-                <input asp-for="Item.営業所[j].支店[k].支店名"/>
-            </div>
-        </div>
-    </div>
-</div>
-
-}
-
-            </div>
-        </div>
-        <div class="row mb-3">
-            <label class="col-sm-2 col-form-label">
-                担当者
-            </label>
-            <div class="col-sm-10">
-                
-<div>
-    <input type="hidden" asp-for="Item.営業所[j].担当者.InstanceKey" />
-    <input asp-for="Item.営業所[j].担当者.InstanceName" />
-</div>
-
-            </div>
-        </div>
-    </div>
-</div>
-
+    <partial name="_営業所__Partial.cshtml" for="Item.営業所[j]" />
 }
 
             </div>

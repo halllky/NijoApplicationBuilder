@@ -5,7 +5,7 @@ namespace HalApplicationBuilder.AspNetMvc {
     public class MultiView {
         internal Core.Aggregate RootAggregate { get; init; }
 
-        internal string FileName => $"{RootAggregate.Name}_MultiView.cshtml";
+        internal string FileName => $"{RootAggregate.Name}__MultiView.cshtml";
 
         internal string TransformText() {
             var searchConditionClass = RootAggregate.ToSearchConditionModel(new Core.ViewRenderingContext("Model", nameof(Model<object, object>.SearchCondition)));

@@ -4,6 +4,6 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 
-@for (var <#=i#> = 0; <#=i#> < <#=Count#>; <#=i#>++) {
-    <partial name="<#=PartialViewName#>" for="<#=PartialViewBoundObjectName#>" />
-}
+@model <#=ModelTypeFullname#>;
+
+<#=View#>
