@@ -21,6 +21,7 @@ namespace HalApplicationBuilder.AspNetMvc {
         #region MultiView
         protected abstract string MultiViewName { get; }
 
+        [HttpGet]
         public virtual IActionResult Index(TSearchCondition searchCondition) {
             var model = new MultiView.Model<TSearchCondition, TSearchResult> {
                 SearchCondition = searchCondition,
@@ -28,6 +29,7 @@ namespace HalApplicationBuilder.AspNetMvc {
             };
             return View(MultiViewName, model);
         }
+        [HttpGet]
         public virtual IActionResult Search(MultiView.Model<TSearchCondition, TSearchResult> model) {
             model.SearchResult = RuntimeContext
                 .Search(model.SearchCondition)
@@ -35,6 +37,7 @@ namespace HalApplicationBuilder.AspNetMvc {
                 .ToList();
             return View(MultiViewName, model);
         }
+        [HttpGet]
         public virtual IActionResult Clear(MultiView.Model<TSearchCondition, TSearchResult> model) {
             ModelState.Clear();
             model.SearchCondition = Activator.CreateInstance<TSearchCondition>();
@@ -43,9 +46,11 @@ namespace HalApplicationBuilder.AspNetMvc {
         #endregion MultiView
 
 
-        #region CreateView
+        #region CreateView, SingleView
         protected abstract string CreateViewName { get; }
+        protected abstract string SingleViewName { get; }
 
+        [HttpGet]
         public virtual IActionResult New() {
             var model = new CreateView.Model<TInstanceModel> {
                 Item = RuntimeContext.CreateInstance<TInstanceModel>(),
@@ -57,12 +62,8 @@ namespace HalApplicationBuilder.AspNetMvc {
             var id = RuntimeContext.SaveNewInstance(model.Item);
             return RedirectToAction(nameof(Detail), new { id = id.StringValue });
         }
-        #endregion CreateView
 
-
-        #region SingleView
-        protected abstract string SingleViewName { get; }
-
+        [HttpGet]
         public virtual IActionResult Detail(string id) {
             var aggregate = RuntimeContext.FindAggregateByRuntimeType(typeof(TInstanceModel));
             var key = new Runtime.InstanceKey(id, aggregate);
@@ -85,6 +86,22 @@ namespace HalApplicationBuilder.AspNetMvc {
             RuntimeContext.DeleteInstance(model);
             return RedirectToAction(nameof(Index));
         }
-        #endregion SingleView
+
+        [HttpGet]
+        public virtual IActionResult NewChild(string aggregateTreePath, int currentArrayCount) {
+            var rootAggregate = RuntimeContext.FindAggregateByRuntimeType(typeof(TInstanceModel));
+            if (!Runtime.InstanceModelTreePath.TryParse(aggregateTreePath, rootAggregate, out var treePath)) {
+                return BadRequest($"{aggregateTreePath} と対応するメンバーが見つからない");
+            }
+            if (treePath.Member is not Core.Members.Children children) {
+                return BadRequest($"{aggregateTreePath} は配列メンバーでない");
+            }
+            var _ = new Core.ViewRenderingContext();
+            var instance = RuntimeContext.RuntimeAssembly.CreateInstance(children.ChildAggregate.ToInstanceModel(_).RuntimeFullName);
+            var partialView = new AspNetMvc.AggregatePartialView { Aggregate = children.ChildAggregate };
+            ViewData.TemplateInfo.HtmlFieldPrefix = $"{aggregateTreePath}[{currentArrayCount}]";
+            return PartialView(partialView.AspViewPath, instance);
+        }
+        #endregion CreateView, SingleView
     }
 }

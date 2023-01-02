@@ -22,10 +22,16 @@ namespace HalApplicationBuilder.Core {
             ? string.Join(".", _ancestors.Skip(1))
             : string.Join(".", _ancestors);
         /// <summary>
-        /// for文の第2節に出力するための .Count の文字列
+        /// 配列添字"[i]"を除いた配列自体のパス
         /// </summary>
-        internal string CountPropertyPath => _ancestors.Last().EndsWith("]")
-            ? $"{Path.Substring(0, Path.LastIndexOf("["))}.Count"
+        internal string CollectionPath => _ancestors.Last().EndsWith("]")
+            ? Path.Substring(0, Path.LastIndexOf("["))
+            : throw new InvalidOperationException($"{Path} は配列でない");
+        /// <summary>
+        /// 配列添字"[i]"を除いた配列自体のパス（asp-forバインド用）
+        /// </summary>
+        internal string AspForCollectionPath => _ancestors.Last().EndsWith("]")
+            ? AspForPath.Substring(0, AspForPath.LastIndexOf("["))
             : throw new InvalidOperationException($"{Path} は配列でない");
 
         /// <summary>

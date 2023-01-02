@@ -25,11 +25,17 @@ namespace HalApplicationBuilder.AspNetMvc {
             this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
             this.Write("\";\n}\n\n<h1>\n    ");
             this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
-            this.Write("\n</h1>\n\n<form>\n    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ModelClass.View));
-            this.Write("\n    <button asp-action=\"");
+            this.Write("\n</h1>\n\n<form id=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(FormId));
+            this.Write("\">\n    <partial name=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(PartialViewName));
+            this.Write("\" for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(PartialViewBoundObjectName));
+            this.Write("\" />\n    <div id=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(FormFooterId));
+            this.Write("\">\n        <button asp-action=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(ExecuteActionName));
-            this.Write("\" formmethod=\"post\">作成</button>\n</form>\n");
+            this.Write("\" formmethod=\"post\">作成</button>\n    </div>\n</form>\n");
             return this.GenerationEnvironment.ToString();
         }
         

@@ -1,0 +1,26 @@
+﻿
+<script>
+    const Halapp = {
+        addNewChild: event => {
+            const controllerName = '@(Context.Request.RouteValues["controller"].ToString())';
+            const addButton = $(event.target);
+            const aggregateTreePath = addButton.attr('halapp-aggregate-tree-path');
+            const currentArrayCount = addButton.siblings().length;
+            $.ajax({
+                type: 'GET',
+                url: `/${controllerName}/NewChild`,
+                data: { aggregateTreePath, currentArrayCount },
+            }).then((data, textStatus, jqXHR) => {
+                const partialView = $($.parseHTML(data));
+                partialView.find('.halapp-add-child').on('click', Halapp.addNewChild);
+                partialView.insertBefore(addButton);
+            }).catch(err => {
+                console.trace('ERROR!!', err);
+            });
+        },
+        
+        // const form = $('#halapp-single-view-form');
+        // const formFooter = $('#halapp-single-view-form-footer');
+    }
+    $('.halapp-add-child').on('click', Halapp.addNewChild);
+</script>

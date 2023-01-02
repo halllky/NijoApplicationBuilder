@@ -14,8 +14,10 @@
     <asp type="hidden" asp-for="<#=NameofInstanceName#>" />
 </h1>
 
-<form>
-    <#=ModelClass.View#>
-    <button asp-action="<#=UpdateActionName#>" formmethod="post">更新</button>
-    <button asp-action="<#=DeleteActionName#>" formmethod="post">削除</button>
+<form id="<#=FormId#>">
+    <partial name="<#=PartialViewName#>" for="<#=PartialViewBoundObjectName#>" />
+    <div id="<#=FormFooterId#>">
+        <button asp-action="<#=UpdateActionName#>" formmethod="post">更新</button>
+        <button asp-action="<#=DeleteActionName#>" formmethod="post">削除</button>
+    </div>
 </form>

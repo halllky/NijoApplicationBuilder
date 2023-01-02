@@ -13,7 +13,9 @@
     <#=PageTitle#>
 </h1>
 
-<form>
-    <#=ModelClass.View#>
-    <button asp-action="<#=ExecuteActionName#>" formmethod="post">作成</button>
+<form id="<#=FormId#>">
+    <partial name="<#=PartialViewName#>" for="<#=PartialViewBoundObjectName#>" />
+    <div id="<#=FormFooterId#>">
+        <button asp-action="<#=ExecuteActionName#>" formmethod="post">作成</button>
+    </div>
 </form>

@@ -80,6 +80,10 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>AggregatePartialViewTemplate.cs</LastGenOutput>
     </None>
+    <None Update="AspNetMvc\JsTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>JsTemplate.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Runtime\MultiView\MultiViewTemplate.cs" />
@@ -132,6 +136,9 @@
     </Compile>
     <Compile Update="AspNetMvc\AggregatePartialViewTemplate.cs">
       <DependentUpon>AggregatePartialViewTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Update="AspNetMvc\JsTemplate.cs">
+      <DependentUpon>JsTemplate.tt</DependentUpon>
     </Compile>
   </ItemGroup>
 </Project>

@@ -9,29 +9,10 @@
     <asp type="hidden" asp-for="InstanceName" />
 </h1>
 
-<form>
-    
-<div class="container">
-    <div class="form-horizontal">
-        <div class="row mb-3">
-            <label class="col-sm-2 col-form-label">
-                ユーザーID
-            </label>
-            <div class="col-sm-10">
-                <input asp-for="Item.ユーザーID"/>
-            </div>
-        </div>
-        <div class="row mb-3">
-            <label class="col-sm-2 col-form-label">
-                氏名
-            </label>
-            <div class="col-sm-10">
-                <input asp-for="Item.氏名"/>
-            </div>
-        </div>
+<form id="halapp-single-view-form">
+    <partial name="_担当者__Partial.cshtml" for="Item" />
+    <div id="halapp-single-view-form-footer">
+        <button asp-action="Update" formmethod="post">更新</button>
+        <button asp-action="Delete" formmethod="post">削除</button>
     </div>
-</div>
-
-    <button asp-action="Update" formmethod="post">更新</button>
-    <button asp-action="Delete" formmethod="post">削除</button>
 </form>

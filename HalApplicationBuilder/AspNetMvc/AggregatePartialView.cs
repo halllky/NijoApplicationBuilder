@@ -1,10 +1,13 @@
 ﻿using System;
+using System.IO;
+
 namespace HalApplicationBuilder.AspNetMvc {
 
     internal class AggregatePartialView {
         internal Core.Aggregate Aggregate { get; init; }
 
         internal string FileName => $"_{Aggregate.Name}__Partial.cshtml";
+        internal string AspViewPath => Path.Combine("~", Aggregate.Schema.Config.MvcViewDirectoryRelativePath, FileName);
 
         internal string TransformText() {
             var modelClass = Aggregate.ToInstanceModel(new Core.ViewRenderingContext("Model"));

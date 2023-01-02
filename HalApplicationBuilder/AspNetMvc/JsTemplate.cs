@@ -15,31 +15,37 @@ namespace HalApplicationBuilder.AspNetMvc {
     using System;
     
     
-    public partial class SingleViewTemplate : SingleViewTemplateBase {
+    public partial class JsTemplate : JsTemplateBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            this.Write("\n@model ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ModelTypeFullname));
-            this.Write(";\n@{\n    ViewData[\"Title\"] = $\"{");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
-            this.Write("}\";\n}\n\n<h1>\n    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
-            this.Write("\n    <asp type=\"hidden\" asp-for=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(NameofInstanceName));
-            this.Write("\" />\n</h1>\n\n<form id=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(FormId));
-            this.Write("\">\n    <partial name=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PartialViewName));
-            this.Write("\" for=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PartialViewBoundObjectName));
-            this.Write("\" />\n    <div id=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(FormFooterId));
-            this.Write("\">\n        <button asp-action=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(UpdateActionName));
-            this.Write("\" formmethod=\"post\">更新</button>\n        <button asp-action=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(DeleteActionName));
-            this.Write("\" formmethod=\"post\">削除</button>\n    </div>\n</form>\n");
+            this.Write("\n<script>\n    const Halapp = {\n        addNewChild: event => {\n            const " +
+                    "controllerName = \'@(Context.Request.RouteValues[\"controller\"].ToString())\';\n    " +
+                    "        const addButton = $(event.target);\n            const ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AGGREGATE_TREE_PATH_ARG));
+            this.Write(" = addButton.attr(\'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AGGREGATE_TREE_PATH_ATTR));
+            this.Write("\');\n            const ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ADD_CHILD_ARG_2));
+            this.Write(" = addButton.siblings().length;\n            $.ajax({\n                type: \'GET\'," +
+                    "\n                url: `/${controllerName}/");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ADD_CHILD_CTL));
+            this.Write("`,\n                data: { ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AGGREGATE_TREE_PATH_ARG));
+            this.Write(", ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ADD_CHILD_ARG_2));
+            this.Write(" },\n            }).then((data, textStatus, jqXHR) => {\n                const part" +
+                    "ialView = $($.parseHTML(data));\n                partialView.find(\'.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ADD_CHILD_BTN));
+            this.Write("\').on(\'click\', Halapp.addNewChild);\n                partialView.insertBefore(addB" +
+                    "utton);\n            }).catch(err => {\n                console.trace(\'ERROR!!\', e" +
+                    "rr);\n            });\n        },\n        \n        // const form = $(\'#");
+            this.Write(this.ToStringHelper.ToStringWithCulture(FORM_ID));
+            this.Write("\');\n        // const formFooter = $(\'#");
+            this.Write(this.ToStringHelper.ToStringWithCulture(FORM_FOOTER_ID));
+            this.Write("\');\n    }\n    $(\'.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ADD_CHILD_BTN));
+            this.Write("\').on(\'click\', Halapp.addNewChild);\n</script>\n");
             return this.GenerationEnvironment.ToString();
         }
         
@@ -47,7 +53,7 @@ namespace HalApplicationBuilder.AspNetMvc {
         }
     }
     
-    public class SingleViewTemplateBase {
+    public class JsTemplateBase {
         
         private global::System.Text.StringBuilder builder;
         

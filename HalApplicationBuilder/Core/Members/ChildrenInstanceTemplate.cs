@@ -31,7 +31,13 @@ namespace HalApplicationBuilder.Core.Members {
             this.Write(this.ToStringHelper.ToStringWithCulture(PartialViewName));
             this.Write("\" for=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(PartialViewBoundObjectName));
-            this.Write("\" />\n}\n");
+            this.Write("\" />\n}\n\n<input\n    type=\"button\"\n    value=\"追加\"\n    class=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AddButtonCssClass));
+            this.Write("\"\n    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AddButtonSenderIdentifier));
+            this.Write("=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AspForAddChild));
+            this.Write("\" />\n");
             return this.GenerationEnvironment.ToString();
         }
         

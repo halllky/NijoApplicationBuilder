@@ -41,6 +41,11 @@ namespace HalApplicationBuilderSampleMvc {
                 };
                 return new HalApplicationBuilder.Runtime.RuntimeContext(schemaAssembly, runtimeAssembly, config);
             });
+
+            // HTMLのエンコーディングをUTF-8にする(日本語のHTMLエンコード防止)
+            services.Configure<Microsoft.Extensions.WebEncoders.WebEncoderOptions>(options => {
+                options.TextEncoderSettings = new System.Text.Encodings.Web.TextEncoderSettings(System.Text.Unicode.UnicodeRanges.All);
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

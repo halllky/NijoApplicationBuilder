@@ -33,6 +33,9 @@ namespace HalApplicationBuilder.Runtime {
         public Core.Aggregate FindAggregate(object instance) {
             return FindAggregateByRuntimeType(instance?.GetType());
         }
+        public Core.Aggregate FindAggregateByName(string name) {
+            return ApplicationSchema.AllAggregates().SingleOrDefault(a => a.Name == name);
+        }
         public Core.Aggregate FindAggregateByRuntimeType(Type runtimeType) {
             if (runtimeType == null) return null;
 
@@ -55,6 +58,7 @@ namespace HalApplicationBuilder.Runtime {
 
             return _typeFullNameIndex.GetValueOrDefault(runtimeType.FullName);
         }
+
         internal DbContext GetDbContext() {
             var dbContext = RuntimeAssembly.CreateInstance($"{Config.DbContextNamespace}.{Config.DbContextName}"); ;
             return (DbContext)dbContext;

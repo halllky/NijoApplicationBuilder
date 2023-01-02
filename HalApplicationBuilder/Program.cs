@@ -43,9 +43,9 @@ namespace HalApplicationBuilder {
             Console.WriteLine("コード自動生成: MVC View - 既存ファイル削除");
             var viewDir = Path.Combine("/__local__/20221211_haldoc_csharp/haldoc/HalApplicationBuilderSampleMvc", config.MvcViewDirectoryRelativePath);
             if (!Directory.Exists(viewDir)) Directory.CreateDirectory(viewDir);
-            foreach (var file in Directory.GetFiles(viewDir)) {
-                File.Delete(file);
-            }
+            //foreach (var file in Directory.GetFiles(viewDir)) {
+            //    File.Delete(file);
+            //}
 
             Console.WriteLine("コード自動生成: MVC View - MultiView");
             foreach (var aggregate in schema.RootAggregates()) {
@@ -86,6 +86,14 @@ namespace HalApplicationBuilder {
             using (var sw = new StreamWriter(controllerFile, append: false, encoding: Encoding.UTF8)) {
                 var source = new AspNetMvc.Controller { Schema = schema };
                 sw.Write(source.TransformText());
+            }
+
+            Console.WriteLine("コード自動生成: JS");
+            {
+                var view = new AspNetMvc.JsTemplate();
+                var filename = Path.Combine(viewDir, AspNetMvc.JsTemplate.FILE_NAME);
+                using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
+                sw.Write(view.TransformText());
             }
 
             Console.WriteLine("コード自動生成終了");
