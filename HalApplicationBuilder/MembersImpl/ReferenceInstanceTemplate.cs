@@ -8,22 +8,22 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace HalApplicationBuilder.AspNetMvc {
+namespace HalApplicationBuilder.MembersImpl {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
     using System;
     
     
-    public partial class AggregatePartialViewTemplate : AggregatePartialViewTemplateBase {
+    public partial class ReferenceInstanceTemplate : ReferenceInstanceTemplateBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            this.Write("\n@model ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ModelTypeFullname));
-            this.Write(";\n\n");
-            this.Write(this.ToStringHelper.ToStringWithCulture(View));
-            this.Write("\n");
+            this.Write("\n<div>\n    <input type=\"hidden\" asp-for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AspForKey));
+            this.Write("\" />\n    <input asp-for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AspForText));
+            this.Write("\" />\n</div>\n");
             return this.GenerationEnvironment.ToString();
         }
         
@@ -31,7 +31,7 @@ namespace HalApplicationBuilder.AspNetMvc {
         }
     }
     
-    public class AggregatePartialViewTemplateBase {
+    public class ReferenceInstanceTemplateBase {
         
         private global::System.Text.StringBuilder builder;
         

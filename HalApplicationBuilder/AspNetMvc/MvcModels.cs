@@ -11,9 +11,9 @@ namespace HalApplicationBuilder.AspNetMvc {
             var allAggregates = Schema.AllAggregates();
             var template = new MvcModelsTemplate {
                 Namespace = Schema.Config.MvcModelNamespace,
-                SearchConditionClasses = allAggregates.Select(a => a.SearchConditionModel),
-                SearchResultClasses = rootAggregates.Select(a => a.SearchResultModel),
-                InstanceClasses = allAggregates.Select(a => a.InstanceModel),
+                SearchConditionClasses = allAggregates.Select(a => Schema.GetSearchConditionModel(a)),
+                SearchResultClasses = rootAggregates.Select(a => Schema.GetSearchResultModel(a)),
+                InstanceClasses = allAggregates.Select(a => Schema.GetInstanceModel(a)),
             };
             return template.TransformText();
         }
@@ -21,8 +21,8 @@ namespace HalApplicationBuilder.AspNetMvc {
 
     partial class MvcModelsTemplate {
         internal string Namespace { get; set; }
-        internal IEnumerable<Core.UIClass> SearchConditionClasses { get; set; }
-        internal IEnumerable<Core.UIClass> SearchResultClasses { get; set; }
-        internal IEnumerable<Core.UIClass> InstanceClasses { get; set; }
+        internal IEnumerable<MvcModel> SearchConditionClasses { get; set; }
+        internal IEnumerable<MvcModel> SearchResultClasses { get; set; }
+        internal IEnumerable<MvcModel> InstanceClasses { get; set; }
     }
 }

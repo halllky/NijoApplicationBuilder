@@ -8,22 +8,36 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace HalApplicationBuilder.Core.Members {
+namespace HalApplicationBuilder.MembersImpl {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
     using System;
     
     
-    public partial class ReferenceInstanceTemplate : ReferenceInstanceTemplateBase {
+    public partial class ChildrenInstanceTemplate : ChildrenInstanceTemplateBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            this.Write("\n<div>\n    <input type=\"hidden\" asp-for=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AspForKey));
-            this.Write("\" />\n    <input asp-for=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AspForText));
-            this.Write("\" />\n</div>\n");
+            this.Write("\n@for (var ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(i));
+            this.Write(" = 0; ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(i));
+            this.Write(" < ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Count));
+            this.Write("; ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(i));
+            this.Write("++) {\n    <partial name=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(PartialViewName));
+            this.Write("\" for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(PartialViewBoundObjectName));
+            this.Write("\" />\n}\n\n<input\n    type=\"button\"\n    value=\"追加\"\n    class=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AddButtonCssClass));
+            this.Write("\"\n    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AddButtonSenderIdentifier));
+            this.Write("=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AspForAddChild));
+            this.Write("\" />\n    ");
             return this.GenerationEnvironment.ToString();
         }
         
@@ -31,7 +45,7 @@ namespace HalApplicationBuilder.Core.Members {
         }
     }
     
-    public class ReferenceInstanceTemplateBase {
+    public class ChildrenInstanceTemplateBase {
         
         private global::System.Text.StringBuilder builder;
         

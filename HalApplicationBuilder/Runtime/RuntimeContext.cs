@@ -11,7 +11,10 @@ namespace HalApplicationBuilder.Runtime {
             RuntimeAssembly = runtimeAssembly;
             Config = config;
 
-            ApplicationSchema = new Core.ApplicationSchema(schemaAssembly, config);
+            ApplicationSchema = new Core.ApplicationSchema(
+                schemaAssembly,
+                config,
+                new MembersImpl.AggregateMemberFactory());
         }
 
         internal Assembly SchemaAssembly { get; }
@@ -47,9 +50,9 @@ namespace HalApplicationBuilder.Runtime {
                         aggregate => new[]
                         {
                             aggregate.ToDbTableModel().RuntimeFullName,
-                            aggregate.SearchConditionModel.RuntimeFullName,
-                            aggregate.SearchResultModel.RuntimeFullName,
-                            aggregate.InstanceModel.RuntimeFullName,
+                            ApplicationSchema.GetSearchConditionModel(aggregate).RuntimeFullName,
+                            ApplicationSchema.GetSearchResultModel(aggregate).RuntimeFullName,
+                            ApplicationSchema.GetInstanceModel(aggregate).RuntimeFullName,
                         },
                         (aggregate, runtimeFullname) => new { aggregate, runtimeFullname })
                     .ToDictionary(x => x.runtimeFullname, x => x.aggregate);
@@ -69,7 +72,7 @@ namespace HalApplicationBuilder.Runtime {
         }
         public object CreateInstance(Type runtimeType) {
             var aggregate = FindAggregateByRuntimeType(runtimeType);
-            var instance = RuntimeAssembly.CreateInstance(aggregate.InstanceModel.RuntimeFullName);
+            var instance = RuntimeAssembly.CreateInstance(ApplicationSchema.GetInstanceModel(aggregate).RuntimeFullName);
             return instance;
         }
 

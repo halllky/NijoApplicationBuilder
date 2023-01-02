@@ -8,22 +8,22 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace HalApplicationBuilder.Core.Members {
+namespace HalApplicationBuilder.AspNetMvc {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
     using System;
     
     
-    public partial class ChildVariationSearchConditionTemplate : ChildVariationSearchConditionTemplateBase {
+    public partial class InstancePartialViewTemplate : InstancePartialViewTemplateBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            this.Write("\n<label>\n    <input type=\"checkbox\" asp-for=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AspFor));
-            this.Write("\" />\n    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PropertyName));
-            this.Write("\n</label>\n");
+            this.Write("\n@model ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ModelTypeFullname));
+            this.Write(";\n\n");
+            this.Write(this.ToStringHelper.ToStringWithCulture(View));
+            this.Write("\n");
             return this.GenerationEnvironment.ToString();
         }
         
@@ -31,7 +31,7 @@ namespace HalApplicationBuilder.Core.Members {
         }
     }
     
-    public class ChildVariationSearchConditionTemplateBase {
+    public class InstancePartialViewTemplateBase {
         
         private global::System.Text.StringBuilder builder;
         

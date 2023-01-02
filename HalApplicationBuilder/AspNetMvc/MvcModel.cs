@@ -1,59 +1,56 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using HalApplicationBuilder.Core;
 
-namespace HalApplicationBuilder.Core {
+namespace HalApplicationBuilder.AspNetMvc {
 
-    public class SearchConditionClass : UIClass {
+    public class SearchConditionClass : MvcModel {
         public override string ClassName
             => $"{Source.Name}__SearchCondition";
-        public override UIProperty Parent
-            => Source.Parent?.SearchConditionModels.FirstOrDefault();
-        protected override IReadOnlyList<UIProperty> BuildProperties(AggregateMemberBase member)
-            => member.SearchConditionModels;
+        private protected override IEnumerable<MvcModelProperty> CreateProperties(IAggregateMember member)
+            => PropertyFactory.CreateSearchConditionModels(member);
         internal override string Render(ViewRenderingContext context) {
-            var propViews = Source.Members.Select(x => KeyValuePair.Create(x.Name, x.RenderSearchConditionView(context)));
             var template = new AggregateVerticalViewTemplate {
-                Members = propViews,
+                Members = Properties.ToDictionary(
+                    x => x.PropertyName,
+                    x => x.Render.Invoke(context)),
             };
             return template.TransformText();
         }
     }
-    public class SearchResultClass : UIClass {
+    public class SearchResultClass : MvcModel {
         public override string ClassName
             => $"{Source.Name}__SearchResult";
-        public override UIProperty Parent
-            => Source.Parent?.SearchResultModels.FirstOrDefault();
-        protected override IReadOnlyList<UIProperty> BuildProperties(AggregateMemberBase member)
-            => member.SearchResultModels;
+        private protected override IEnumerable<MvcModelProperty> CreateProperties(IAggregateMember member)
+            => PropertyFactory.CreateSearchResultModels(member);
         internal override string Render(ViewRenderingContext context) {
-            var propViews = Source.Members
-                .Select(member => member.RenderSearchResultView(context))
-                .ToList();
+            var propViews = Properties
+                .Select(member => member.Render.Invoke(context));
             return string.Join(Environment.NewLine, propViews);
         }
     }
-    public class InstanceModelClass : UIClass {
+    public class InstanceModelClass : MvcModel {
         public override string ClassName
             => Source.Name;
-        public override UIProperty Parent
-            => Source.Parent?.InstanceModels.FirstOrDefault();
-        protected override IReadOnlyList<UIProperty> BuildProperties(AggregateMemberBase member)
-            => member.InstanceModels;
+        private protected override IEnumerable<MvcModelProperty> CreateProperties(IAggregateMember member)
+            => PropertyFactory.CreateInstanceModels(member);
         internal override string Render(ViewRenderingContext context) {
-            var propViews = Source.Members.Select(x => KeyValuePair.Create(x.Name, x.RenderInstanceView(context)));
             var template = new AggregateVerticalViewTemplate {
-                Members = propViews,
+                Members = Properties.ToDictionary(
+                    x => x.PropertyName,
+                    x => x.Render.Invoke(context)),
             };
             return template.TransformText();
         }
     }
 
-    public abstract class UIClass {
+
+    public abstract class MvcModel {
 
         public Aggregate Source { get; init; }
-        public abstract UIProperty Parent { get; }
-        public UIClass GetRoot() {
+        public MvcModelProperty Parent { get; init; }
+        public MvcModel GetRoot() {
             var cls = this;
             while (cls.Parent != null) {
                 cls = cls.Parent.Owner;
@@ -64,12 +61,13 @@ namespace HalApplicationBuilder.Core {
         public abstract string ClassName { get; }
         public string RuntimeFullName => Source.Schema.Config.MvcModelNamespace + "." + ClassName;
 
-        private IReadOnlyList<UIProperty> _properties;
-        public IReadOnlyList<UIProperty> Properties {
+        private protected IMvcModelPropertyFactory PropertyFactory { get; init; }
+        private IReadOnlyList<MvcModelProperty> _properties;
+        public IReadOnlyList<MvcModelProperty> Properties {
             get {
                 if (_properties == null) {
                     var props = Source.Members
-                        .SelectMany(BuildProperties, (m, ui) => new { m, ui })
+                        .SelectMany(CreateProperties, (m, ui) => new { m, ui })
                         .ToList();
                     foreach (var x in props) {
                         x.ui.Source = x.m;
@@ -80,7 +78,7 @@ namespace HalApplicationBuilder.Core {
                 return _properties;
             }
         }
-        protected abstract IReadOnlyList<UIProperty> BuildProperties(AggregateMemberBase member);
+        private protected abstract IEnumerable<MvcModelProperty> CreateProperties(IAggregateMember member);
 
         internal abstract string Render(ViewRenderingContext context);
 
@@ -92,19 +90,21 @@ namespace HalApplicationBuilder.Core {
                 parent = parent.Owner.Parent;
             }
             path.Insert(0, GetRoot().ClassName);
-            return $"{nameof(UIClass)}[{string.Join(".", path)}]";
+            return $"{nameof(MvcModel)}[{string.Join(".", path)}]";
         }
     }
 
-    public class UIProperty {
-        internal UIProperty() { }
 
-        public AggregateMemberBase Source { get; set; }
-        public UIClass Owner { get; set; }
+    public class MvcModelProperty {
+
+        public IAggregateMember Source { get; set; }
+        public MvcModel Owner { get; set; }
 
         public string CSharpTypeName { get; init; }
         public string PropertyName { get; init; }
         public string Initializer { get; init; }
+
+        internal Func<ViewRenderingContext, string> Render { get; set; }
 
         public override string ToString() {
             var path = new List<string>();
@@ -116,7 +116,13 @@ namespace HalApplicationBuilder.Core {
                 parent = parent.Owner.Parent;
             }
             path.Insert(0, Owner.GetRoot().ClassName);
-            return $"{nameof(UIProperty)}[{string.Join(".", path)}]";
+            return $"{nameof(MvcModelProperty)}[{string.Join(".", path)}]";
         }
+    }
+
+    internal interface IMvcModelPropertyFactory {
+        IEnumerable<MvcModelProperty> CreateSearchConditionModels(IAggregateMember member);
+        IEnumerable<MvcModelProperty> CreateSearchResultModels(IAggregateMember member);
+        IEnumerable<MvcModelProperty> CreateInstanceModels(IAggregateMember member);
     }
 }

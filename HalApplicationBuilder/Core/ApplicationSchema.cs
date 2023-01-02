@@ -5,13 +5,18 @@ using System.Reflection;
 
 namespace HalApplicationBuilder.Core {
     internal class ApplicationSchema {
-        internal ApplicationSchema(Assembly assembly, Config config) {
+        internal ApplicationSchema(
+            Assembly assembly,
+            Config config,
+            IAggregateMemberFactory memberFactory) {
             Assembly = assembly;
             Config = config;
+            MemberFactory = memberFactory;
         }
 
         internal Assembly Assembly { get; }
         internal Config Config { get; }
+        internal IAggregateMemberFactory MemberFactory { get; }
 
         private HashSet<Aggregate> _cache;
         private HashSet<Aggregate> Cache {
@@ -47,6 +52,16 @@ namespace HalApplicationBuilder.Core {
         }
         internal Aggregate FindByType(Type type) {
             return Cache.SingleOrDefault(a => a.UnderlyingType == type);
+        }
+
+        internal AspNetMvc.MvcModel GetInstanceModel(Aggregate aggregate) {
+            throw new NotImplementedException();
+        }
+        internal AspNetMvc.MvcModel GetSearchConditionModel(Aggregate aggregate) {
+            throw new NotImplementedException();
+        }
+        internal AspNetMvc.MvcModel GetSearchResultModel(Aggregate aggregate) {
+            throw new NotImplementedException();
         }
     }
 }

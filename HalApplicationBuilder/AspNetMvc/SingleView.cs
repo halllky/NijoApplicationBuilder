@@ -6,14 +6,14 @@ namespace HalApplicationBuilder.AspNetMvc {
         internal string FileName => $"{RootAggregate.Name}__SingleView.cshtml";
 
         internal string TransformText() {
-            var context = new Core.ViewRenderingContext("Model", nameof(Model<object>.Item));
+            var model = RootAggregate.Schema.GetInstanceModel(RootAggregate);
+            var context = new ViewRenderingContext("Model", nameof(Model<object>.Item));
             var template = new SingleViewTemplate {
-                ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<object>)}<{RootAggregate.InstanceModel.RuntimeFullName}>",
+                ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<object>)}<{model.RuntimeFullName}>",
                 PageTitle = $"@Model.{nameof(Model<object>.InstanceName)}",
-                ModelClass = RootAggregate.InstanceModel,
                 UpdateActionName = "Update",
                 DeleteActionName = "Delete",
-                PartialViewName = new AggregatePartialView { Aggregate = RootAggregate }.FileName,
+                PartialViewName = new InstancePartialView { Aggregate = RootAggregate }.FileName,
                 PartialViewBoundObjectName = context.AspForPath,
             };
             return template.TransformText();
@@ -32,7 +32,6 @@ namespace HalApplicationBuilder.AspNetMvc {
         internal string ModelTypeFullname { get; set; }
         internal string PageTitle { get; set; }
         internal string NameofInstanceName => nameof(SingleView.Model<object>.InstanceName);
-        internal Core.UIClass ModelClass { get; set; }
         internal string UpdateActionName { get; set; }
         internal string DeleteActionName { get; set; }
         internal string PartialViewName { get; set; }

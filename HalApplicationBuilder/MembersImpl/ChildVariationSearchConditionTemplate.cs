@@ -8,197 +8,22 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace HalApplicationBuilder.Core.Members {
+namespace HalApplicationBuilder.MembersImpl {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
     using System;
     
     
-    public partial class SchalarValueSearchCondition : SchalarValueSearchConditionBase {
+    public partial class ChildVariationSearchConditionTemplate : ChildVariationSearchConditionTemplateBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            
-            #line 6 ""
-            this.Write("\n");
-            
-            #line default
-            #line hidden
-            
-            #line 7 ""
- if (Type == E_Type.Input) { 
-            
-            #line default
-            #line hidden
-            
-            #line 8 ""
-            this.Write("<input asp-for=\"");
-            
-            #line default
-            #line hidden
-            
-            #line 8 ""
-            this.Write(this.ToStringHelper.ToStringWithCulture(AspFor[0]));
-            
-            #line default
-            #line hidden
-            
-            #line 8 ""
-            this.Write("\" />\n");
-            
-            #line default
-            #line hidden
-            
-            #line 9 ""
- } 
-            
-            #line default
-            #line hidden
-            
-            #line 10 ""
-            this.Write("\n");
-            
-            #line default
-            #line hidden
-            
-            #line 11 ""
- if (Type == E_Type.Range) { 
-            
-            #line default
-            #line hidden
-            
-            #line 12 ""
-            this.Write("<input asp-for=\"");
-            
-            #line default
-            #line hidden
-            
-            #line 12 ""
-            this.Write(this.ToStringHelper.ToStringWithCulture(AspFor[0]));
-            
-            #line default
-            #line hidden
-            
-            #line 12 ""
-            this.Write("\" />\n〜\n<input asp-for=\"");
-            
-            #line default
-            #line hidden
-            
-            #line 14 ""
-            this.Write(this.ToStringHelper.ToStringWithCulture(AspFor[1]));
-            
-            #line default
-            #line hidden
-            
-            #line 14 ""
-            this.Write("\" />\n");
-            
-            #line default
-            #line hidden
-            
-            #line 15 ""
- } 
-            
-            #line default
-            #line hidden
-            
-            #line 16 ""
-            this.Write("\n");
-            
-            #line default
-            #line hidden
-            
-            #line 17 ""
- if (Type == E_Type.Select) { 
-            
-            #line default
-            #line hidden
-            
-            #line 18 ""
-            this.Write("<select asp-for=\"");
-            
-            #line default
-            #line hidden
-            
-            #line 18 ""
-            this.Write(this.ToStringHelper.ToStringWithCulture(AspFor[0]));
-            
-            #line default
-            #line hidden
-            
-            #line 18 ""
-            this.Write("\" asp-items=\"@Html.GetEnumSelectList(typeof(");
-            
-            #line default
-            #line hidden
-            
-            #line 18 ""
-            this.Write(this.ToStringHelper.ToStringWithCulture(EnumTypeName));
-            
-            #line default
-            #line hidden
-            
-            #line 18 ""
-            this.Write("))\">\n");
-            
-            #line default
-            #line hidden
-            
-            #line 19 ""
- foreach (var option in Options) { 
-            
-            #line default
-            #line hidden
-            
-            #line 20 ""
-            this.Write("    <option selected=\"selected\" value=\"");
-            
-            #line default
-            #line hidden
-            
-            #line 20 ""
-            this.Write(this.ToStringHelper.ToStringWithCulture(option.Key));
-            
-            #line default
-            #line hidden
-            
-            #line 20 ""
-            this.Write("\">\n        ");
-            
-            #line default
-            #line hidden
-            
-            #line 21 ""
-            this.Write(this.ToStringHelper.ToStringWithCulture(option.Value));
-            
-            #line default
-            #line hidden
-            
-            #line 21 ""
-            this.Write("\n    </option>\n");
-            
-            #line default
-            #line hidden
-            
-            #line 23 ""
- } 
-            
-            #line default
-            #line hidden
-            
-            #line 24 ""
-            this.Write("</select>\n");
-            
-            #line default
-            #line hidden
-            
-            #line 25 ""
- } 
-            
-            #line default
-            #line hidden
+            this.Write("\n<label>\n    <input type=\"checkbox\" asp-for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AspFor));
+            this.Write("\" />\n    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(PropertyName));
+            this.Write("\n</label>\n");
             return this.GenerationEnvironment.ToString();
         }
         
@@ -206,7 +31,7 @@ namespace HalApplicationBuilder.Core.Members {
         }
     }
     
-    public class SchalarValueSearchConditionBase {
+    public class ChildVariationSearchConditionTemplateBase {
         
         private global::System.Text.StringBuilder builder;
         

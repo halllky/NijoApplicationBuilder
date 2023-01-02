@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace HalApplicationBuilder.Core.Members {
+namespace HalApplicationBuilder.MembersImpl {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;

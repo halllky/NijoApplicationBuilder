@@ -21,7 +21,7 @@ namespace HalApplicationBuilder.Runtime.RuntimeContextFeatures {
 
             var rootInstance = RuntimeContext
                 .RuntimeAssembly
-                .CreateInstance(key.Aggregate.InstanceModel.RuntimeFullName);
+                .CreateInstance(RuntimeContext.ApplicationSchema.GetInstanceModel(key.Aggregate).RuntimeFullName);
 
             throw new NotImplementedException();
         }

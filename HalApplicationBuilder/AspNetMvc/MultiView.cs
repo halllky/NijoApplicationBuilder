@@ -8,16 +8,18 @@ namespace HalApplicationBuilder.AspNetMvc {
         internal string FileName => $"{RootAggregate.Name}__MultiView.cshtml";
 
         internal string TransformText() {
+            var searchConditionModel = RootAggregate.Schema.GetSearchConditionModel(RootAggregate);
+            var searchResultModel = RootAggregate.Schema.GetSearchResultModel(RootAggregate);
             var template = new MultiViewTemplate {
-                ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<object, object>)}<{RootAggregate.SearchConditionModel.RuntimeFullName}, {RootAggregate.SearchResultModel.RuntimeFullName}>",
+                ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<object, object>)}<{searchConditionModel.RuntimeFullName}, {searchResultModel.RuntimeFullName}>",
                 PageTitle = RootAggregate.Name,
-                SearchConditionClass = RootAggregate.SearchConditionModel,
-                SearchResultClass = RootAggregate.SearchResultModel,
+                SearchResultClass = searchResultModel,
                 ClearActionName = "Clear",
                 SearchActionName = "Search",
                 LinkToSingleViewActionName = "Detail",
-                SearchConditionView = RootAggregate.SearchConditionModel.Render(new Core.ViewRenderingContext("Model", nameof(Model<object, object>.SearchCondition))),
-                // SearchResultView = RootAggregate.SearchResultModel.Render(new Core.ViewRenderingContext("Model", nameof(Model<object, object>.SearchResult))),
+                //SearchConditionClass = searchConditionModel,
+                SearchConditionView = searchConditionModel.Render(new ViewRenderingContext("Model", nameof(Model<object, object>.SearchCondition))),
+                // SearchResultView = searchResultModel.Render(new Core.ViewRenderingContext("Model", nameof(Model<object, object>.SearchResult))),
             };
             return template.TransformText();
         }
@@ -31,12 +33,13 @@ namespace HalApplicationBuilder.AspNetMvc {
     partial class MultiViewTemplate {
         internal string ModelTypeFullname { get; set; }
         internal string PageTitle { get; set; }
-        internal Core.UIClass SearchConditionClass { get; set; }
-        internal Core.UIClass SearchResultClass { get; set; }
         internal string ClearActionName { get; set; }
         internal string SearchActionName { get; set; }
         internal string LinkToSingleViewActionName { get; set; }
+
         internal string SearchConditionView { get; set; }
+
         // internal string SearchResultView { get; set; }
+        internal MvcModel SearchResultClass { get; set; }
     }
 }

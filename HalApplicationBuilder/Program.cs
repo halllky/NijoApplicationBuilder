@@ -17,7 +17,7 @@ namespace HalApplicationBuilder {
             };
             var dllPath = "/__local__/20221211_haldoc_csharp/haldoc/HalApplicationBuilderSampleSchema/bin/Debug/net5.0/HalApplicationBuilderSampleSchema.dll";
             var dll = Assembly.LoadFile(dllPath);
-            var schema = new Core.ApplicationSchema(dll, config);
+            var schema = new Core.ApplicationSchema(dll, config, new MembersImpl.AggregateMemberFactory());
 
             var dllFileInfo = new FileInfo(dllPath);
             Console.WriteLine($"コード自動生成開始: {dllFileInfo.Name} (最終更新時刻: {dllFileInfo.LastWriteTime:G})");
@@ -73,7 +73,7 @@ namespace HalApplicationBuilder {
 
             Console.WriteLine("コード自動生成: MVC View - 集約部分ビュー");
             foreach (var aggregate in schema.AllAggregates()) {
-                var view = new AspNetMvc.AggregatePartialView { Aggregate = aggregate };
+                var view = new AspNetMvc.InstancePartialView { Aggregate = aggregate };
                 var filename = Path.Combine(viewDir, view.FileName);
                 using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
                 sw.Write(view.TransformText());

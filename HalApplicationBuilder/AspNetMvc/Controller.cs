@@ -14,9 +14,9 @@ namespace HalApplicationBuilder.AspNetMvc {
                     ClassName = $"{aggregate.Name}Controller",
                     BaseClassFullName
                         = $"{typeof(ControllerBase<,,>).Namespace}.{nameof(ControllerBase<object, object, object>)}"
-                        + $"<{aggregate.SearchConditionModel.RuntimeFullName},"
-                        + $" {aggregate.SearchResultModel.RuntimeFullName},"
-                        + $" {aggregate.InstanceModel.RuntimeFullName}>",
+                        + $"<{Schema.GetSearchConditionModel(aggregate).RuntimeFullName},"
+                        + $" {Schema.GetSearchResultModel(aggregate).RuntimeFullName},"
+                        + $" {Schema.GetInstanceModel(aggregate).RuntimeFullName}>",
                     MultiViewName = "~/" + Path.Combine(Schema.Config.MvcViewDirectoryRelativePath, new MultiView { RootAggregate = aggregate }.FileName),
                     CreateViewName = "~/" + Path.Combine(Schema.Config.MvcViewDirectoryRelativePath, new CreateView { RootAggregate = aggregate }.FileName),
                     SingleViewName = "~/" + Path.Combine(Schema.Config.MvcViewDirectoryRelativePath, new SingleView { RootAggregate = aggregate }.FileName),

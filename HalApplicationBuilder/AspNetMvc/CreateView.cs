@@ -6,13 +6,13 @@ namespace HalApplicationBuilder.AspNetMvc {
         internal string FileName => $"{RootAggregate.Name}__CreateView.cshtml";
 
         internal string TransformText() {
-            var context = new Core.ViewRenderingContext("Model", nameof(Model<object>.Item));
+            var model = RootAggregate.Schema.GetInstanceModel(RootAggregate);
+            var context = new ViewRenderingContext("Model", nameof(Model<object>.Item));
             var template = new CreateViewTemplate {
-                ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<object>)}<{RootAggregate.InstanceModel.RuntimeFullName}>",
+                ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<object>)}<{model.RuntimeFullName}>",
                 PageTitle = $"{RootAggregate.Name} - 新規作成",
-                ModelClass = RootAggregate.InstanceModel,
                 ExecuteActionName = "Create",
-                PartialViewName = new AggregatePartialView { Aggregate = RootAggregate }.FileName,
+                PartialViewName = new InstancePartialView { Aggregate = RootAggregate }.FileName,
                 PartialViewBoundObjectName = context.AspForPath,
             };
             return template.TransformText();
@@ -29,7 +29,6 @@ namespace HalApplicationBuilder.AspNetMvc {
 
         internal string ModelTypeFullname { get; set; }
         internal string PageTitle { get; set; }
-        internal Core.UIClass ModelClass { get; set; }
         internal string ExecuteActionName { get; set; }
         internal string PartialViewName { get; set; }
         internal string PartialViewBoundObjectName { get; set; }

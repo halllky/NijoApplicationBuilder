@@ -89,17 +89,19 @@ namespace HalApplicationBuilder.AspNetMvc {
 
         [HttpGet]
         public virtual IActionResult NewChild(string aggregateTreePath, int currentArrayCount) {
-            var rootAggregate = RuntimeContext.FindAggregateByRuntimeType(typeof(TInstanceModel));
-            if (!Runtime.InstanceModelTreePath.TryParse(aggregateTreePath, rootAggregate, out var treePath)) {
-                return BadRequest($"{aggregateTreePath} と対応するメンバーが見つからない");
-            }
-            if (treePath.Member is not Core.Members.Children children) {
-                return BadRequest($"{aggregateTreePath} は配列メンバーでない");
-            }
-            var instance = RuntimeContext.RuntimeAssembly.CreateInstance(children.ChildAggregate.InstanceModel.RuntimeFullName);
-            var partialView = new AspNetMvc.AggregatePartialView { Aggregate = children.ChildAggregate };
-            ViewData.TemplateInfo.HtmlFieldPrefix = $"{aggregateTreePath}[{currentArrayCount}]";
-            return PartialView(partialView.AspViewPath, instance);
+            //var rootAggregate = RuntimeContext.FindAggregateByRuntimeType(typeof(TInstanceModel));
+            //if (!Runtime.InstanceModelTreePath.TryParse(aggregateTreePath, rootAggregate, out var treePath)) {
+            //    return BadRequest($"{aggregateTreePath} と対応するメンバーが見つからない");
+            //}
+            //if (treePath.Member is not Core.MembersImpl.Children children) {
+            //    return BadRequest($"{aggregateTreePath} は配列メンバーでない");
+            //}
+            //var instance = RuntimeContext.RuntimeAssembly.CreateInstance(children.ChildAggregate.InstanceModel.RuntimeFullName);
+            //var partialView = new AspNetMvc.InstancePartialView { Aggregate = children.ChildAggregate };
+            //ViewData.TemplateInfo.HtmlFieldPrefix = $"{aggregateTreePath}[{currentArrayCount}]";
+            //return PartialView(partialView.AspViewPath, instance);
+
+            throw new NotImplementedException();
         }
         #endregion CreateView, SingleView
     }
