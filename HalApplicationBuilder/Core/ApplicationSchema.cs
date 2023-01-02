@@ -54,6 +54,10 @@ namespace HalApplicationBuilder.Core {
             return Cache.SingleOrDefault(a => a.UnderlyingType == type);
         }
 
+        internal EntityFramework.DbEntity GetDbEntity(Aggregate aggregate) {
+            throw new NotImplementedException();
+        }
+
         internal AspNetMvc.MvcModel GetInstanceModel(Aggregate aggregate) {
             throw new NotImplementedException();
         }

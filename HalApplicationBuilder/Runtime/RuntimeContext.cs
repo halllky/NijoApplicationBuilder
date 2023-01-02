@@ -49,7 +49,7 @@ namespace HalApplicationBuilder.Runtime {
                     .SelectMany(
                         aggregate => new[]
                         {
-                            aggregate.ToDbTableModel().RuntimeFullName,
+                            ApplicationSchema.GetDbEntity(aggregate).RuntimeFullName,
                             ApplicationSchema.GetSearchConditionModel(aggregate).RuntimeFullName,
                             ApplicationSchema.GetSearchResultModel(aggregate).RuntimeFullName,
                             ApplicationSchema.GetInstanceModel(aggregate).RuntimeFullName,
