@@ -11,9 +11,9 @@ namespace HalApplicationBuilder.AspNetMvc {
             var allAggregates = Schema.AllAggregates();
             var template = new MvcModelsTemplate {
                 Namespace = Schema.Config.MvcModelNamespace,
-                SearchConditionClasses = allAggregates.Select(a => a.ToSearchConditionModel()),
-                SearchResultClasses = rootAggregates.Select(a => a.ToSearchResultModel()),
-                InstanceClasses = allAggregates.Select(a => a.ToInstanceModel()),
+                SearchConditionClasses = allAggregates.Select(a => a.SearchConditionModel),
+                SearchResultClasses = rootAggregates.Select(a => a.SearchResultModel),
+                InstanceClasses = allAggregates.Select(a => a.InstanceModel),
             };
             return template.TransformText();
         }

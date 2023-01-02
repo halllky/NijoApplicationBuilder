@@ -66,11 +66,10 @@ namespace HalApplicationBuilder.Core.Members {
             }
         }
 
-        protected override IEnumerable<UIProperty> CreateSearchConditionModel() {
+        protected override IEnumerable<UIProperty> CreateSearchConditionModels() {
             if (IsComplexType()) {
-                var child = ChildAggregate.ToSearchConditionModel();
                 yield return new UIProperty {
-                    CSharpTypeName = child.RuntimeFullName,
+                    CSharpTypeName = ChildAggregate.SearchConditionModel.RuntimeFullName,
                     PropertyName = Name,
                     Initializer = "new()",
                 };
@@ -85,10 +84,14 @@ namespace HalApplicationBuilder.Core.Members {
             }
         }
 
-        protected override IEnumerable<UIProperty> CreateSearchResultModel() {
+        protected override IEnumerable<UIProperty> CreateSearchResultModels() {
             if (IsComplexType()) {
-                foreach (var childProp in ChildAggregate.ToSearchResultModel().Properties) {
-                    yield return childProp;
+                foreach (var childProp in ChildAggregate.SearchResultModel.Properties) {
+                    yield return new UIProperty {
+                        PropertyName = childProp.PropertyName,
+                        CSharpTypeName = childProp.CSharpTypeName,
+                        Initializer = childProp.Initializer,
+                    };
                 }
             } else {
                 yield return new UIProperty {
@@ -98,11 +101,10 @@ namespace HalApplicationBuilder.Core.Members {
             }
         }
 
-        protected override IEnumerable<UIProperty> CreateInstanceModel() {
+        protected override IEnumerable<UIProperty> CreateInstanceModels() {
             if (IsComplexType()) {
-                var childModel = ChildAggregate.ToInstanceModel();
                 yield return new UIProperty {
-                    CSharpTypeName = childModel.RuntimeFullName,
+                    CSharpTypeName = ChildAggregate.InstanceModel.RuntimeFullName,
                     PropertyName = Name,
                     Initializer = "new()",
                 };
@@ -115,7 +117,7 @@ namespace HalApplicationBuilder.Core.Members {
                 // 各区分の詳細値
                 foreach (var child in GetChildren()) {
                     yield return new UIProperty {
-                        CSharpTypeName = child.Value.ToInstanceModel().RuntimeFullName,
+                        CSharpTypeName = child.Value.InstanceModel.RuntimeFullName,
                         PropertyName = $"{Name}__{child.Value.Name}",
                         Initializer = "new()",
                     };
@@ -125,10 +127,10 @@ namespace HalApplicationBuilder.Core.Members {
 
         internal override string RenderSearchConditionView(ViewRenderingContext context) {
             if (IsComplexType()) {
-                var nested = context.Nest(ToSearchConditionModel().Single().PropertyName);
+                var nested = context.Nest(SearchConditionModels.Single().PropertyName);
                 return ChildAggregate.RenderSearchCondition(nested);
             } else {
-                var childrenViews = ToSearchConditionModel()
+                var childrenViews = SearchConditionModels
                     .Select(child => {
                         var nested = context.Nest(child.PropertyName);
                         var template = new ChildVariationSearchConditionTemplate {
@@ -145,19 +147,19 @@ namespace HalApplicationBuilder.Core.Members {
             if (IsComplexType()) {
                 return string.Empty;
             } else {
-                var nested = context.Nest(ToSearchResultModel().Single().PropertyName);
+                var nested = context.Nest(SearchResultModels.Single().PropertyName);
                 return $"<span>@{nested.Path}</span>";
             }
         }
 
         internal override string RenderInstanceView(ViewRenderingContext context) {
             if (IsComplexType()) {
-                var model = ToInstanceModel().Single();
+                var model = InstanceModels.Single();
                 var nestedContext = context.Nest(model.PropertyName);
                 return ChildAggregate.RenderInstanceView(nestedContext);
             } else {
                 var nested1 = context.Nest(Name); // 区分値(ラジオボタン用)
-                var instanceModels = ToInstanceModel().ToArray();
+                var instanceModels = InstanceModels.ToArray();
                 var childrenViews = GetChildren()
                     .Select(child => {
                         var nested2 = context.Nest($"{Name}__{child.Value.Name}"); // TODO: ToInstanceModelとロジック重複

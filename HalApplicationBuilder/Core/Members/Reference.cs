@@ -31,7 +31,7 @@ namespace HalApplicationBuilder.Core.Members {
             }
         }
 
-        protected override IEnumerable<UIProperty> CreateInstanceModel() {
+        protected override IEnumerable<UIProperty> CreateInstanceModels() {
             yield return new UIProperty {
                 CSharpTypeName = typeof(Runtime.ReferenceDTO).FullName,
                 PropertyName = Name,
@@ -39,7 +39,7 @@ namespace HalApplicationBuilder.Core.Members {
             };
         }
 
-        protected override IEnumerable<UIProperty> CreateSearchConditionModel() {
+        protected override IEnumerable<UIProperty> CreateSearchConditionModels() {
             yield return new UIProperty {
                 CSharpTypeName = typeof(Runtime.ReferenceDTO).FullName,
                 PropertyName = Name,
@@ -47,7 +47,7 @@ namespace HalApplicationBuilder.Core.Members {
             };
         }
 
-        protected override IEnumerable<UIProperty> CreateSearchResultModel() {
+        protected override IEnumerable<UIProperty> CreateSearchResultModels() {
             yield return new UIProperty {
                 CSharpTypeName = "string",
                 PropertyName = UnderlyingPropertyInfo.Name,
@@ -55,7 +55,7 @@ namespace HalApplicationBuilder.Core.Members {
         }
 
         internal override string RenderSearchConditionView(ViewRenderingContext context) {
-            var model = ToSearchConditionModel().Single();
+            var model = SearchConditionModels.Single();
             var nestedKey = context.Nest(model.PropertyName).Nest(nameof(Runtime.ReferenceDTO.InstanceKey));
             var nestedText = context.Nest(model.PropertyName).Nest(nameof(Runtime.ReferenceDTO.InstanceName));
             var template = new ReferenceInstanceTemplate {
@@ -66,14 +66,14 @@ namespace HalApplicationBuilder.Core.Members {
         }
 
         internal override string RenderSearchResultView(ViewRenderingContext context) {
-            var model = ToSearchResultModel().Single();
+            var model = SearchResultModels.Single();
             var nestedKey = context.Nest(model.PropertyName).Nest(nameof(Runtime.ReferenceDTO.InstanceKey));
             var nestedText = context.Nest(model.PropertyName).Nest(nameof(Runtime.ReferenceDTO.InstanceName));
             return $"<span>@{nestedText.Path}<input type=\"hidden\" asp-for=\"{nestedKey.AspForPath}\"></span>";
         }
 
         internal override string RenderInstanceView(ViewRenderingContext context) {
-            var model = ToInstanceModel().Single();
+            var model = InstanceModels.Single();
             var nestedKey = context.Nest(model.PropertyName).Nest(nameof(Runtime.ReferenceDTO.InstanceKey));
             var nestedText = context.Nest(model.PropertyName).Nest(nameof(Runtime.ReferenceDTO.InstanceName));
             var template = new ReferenceInstanceTemplate {

@@ -59,13 +59,12 @@ namespace HalApplicationBuilder.Core.Members {
             };
         }
 
-        protected override IEnumerable<UIProperty> CreateSearchConditionModel() {
+        protected override IEnumerable<UIProperty> CreateSearchConditionModels() {
             var propName = UnderlyingPropertyInfo.Name;
             var type = GetPropertyTypeExceptNullable();
             if (new[] { typeof(int), typeof(float), typeof(decimal), typeof(DateTime) }.Contains(type)) {
                 // 範囲検索
                 yield return new UIProperty {
-                    Virtual = false,
                     CSharpTypeName = $"{typeof(FromTo<>).Namespace}.{nameof(FromTo<object>)}<{GetSearchConditionCSharpTypeName()}>",
                     PropertyName = propName,
                 };
@@ -73,7 +72,6 @@ namespace HalApplicationBuilder.Core.Members {
             } else if (type.IsEnum) {
                 // enumドロップダウン
                 yield return new UIProperty {
-                    Virtual = false,
                     CSharpTypeName = type.FullName,
                     PropertyName = propName,
                 };
@@ -81,32 +79,29 @@ namespace HalApplicationBuilder.Core.Members {
             } else {
                 // ただのinput
                 yield return new UIProperty {
-                    Virtual = false,
                     CSharpTypeName = GetSearchConditionCSharpTypeName(),
                     PropertyName = propName,
                 };
             }
         }
 
-        protected override IEnumerable<UIProperty> CreateSearchResultModel() {
+        protected override IEnumerable<UIProperty> CreateSearchResultModels() {
             yield return new UIProperty {
-                Virtual = false,
                 CSharpTypeName = GetCSharpTypeName(),
                 PropertyName = UnderlyingPropertyInfo.Name,
             };
         }
 
-        protected override IEnumerable<UIProperty> CreateInstanceModel() {
+        protected override IEnumerable<UIProperty> CreateInstanceModels() {
             var propertyName = UnderlyingPropertyInfo.Name;
             yield return new UIProperty {
-                Virtual = false,
                 CSharpTypeName = GetCSharpTypeName(),
                 PropertyName = propertyName,
             };
         }
 
         internal override string RenderSearchConditionView(ViewRenderingContext context) {
-            var propName = ToSearchConditionModel().Single().PropertyName;
+            var propName = SearchConditionModels.Single().PropertyName;
             var type = GetPropertyTypeExceptNullable();
             var nestedContext = context.Nest(propName, isCollection: false);
             if (new[] { typeof(int), typeof(float), typeof(decimal), typeof(DateTime) }.Contains(type)) {
@@ -143,13 +138,13 @@ namespace HalApplicationBuilder.Core.Members {
         }
 
         internal override string RenderSearchResultView(ViewRenderingContext context) {
-            var propertyName = ToSearchResultModel().Single().PropertyName;
+            var propertyName = SearchResultModels.Single().PropertyName;
             var nested = context.Nest(propertyName, isCollection: false);
             return $"<span>@{nested.Path}</span>";
         }
 
         internal override string RenderInstanceView(ViewRenderingContext context) {
-            var propertyName = ToInstanceModel().Single().PropertyName;
+            var propertyName = InstanceModels.Single().PropertyName;
             var nested = context.Nest(propertyName);
             return $"<input asp-for=\"{nested.AspForPath}\"/>";
         }

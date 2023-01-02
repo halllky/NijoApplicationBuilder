@@ -16,7 +16,7 @@ namespace HalApplicationBuilder.Runtime {
                 var found = aggregates
                     .SelectMany(a => a.Members)
                     .SelectMany(
-                        member => member.ToInstanceModel(),
+                        member => member.InstanceModels,
                         (member, instanceMember) => new { member, instanceMember })
                     .SingleOrDefault(a => a.instanceMember.PropertyName == paths.First());
 

@@ -28,19 +28,19 @@ namespace HalApplicationBuilder.Core.Members {
             yield break;
         }
 
-        protected override IEnumerable<UIProperty> CreateInstanceModel() {
+        protected override IEnumerable<UIProperty> CreateInstanceModels() {
             yield return new UIProperty {
-                CSharpTypeName = $"List<{ChildAggregate.ToInstanceModel().RuntimeFullName}>",
+                CSharpTypeName = $"List<{ChildAggregate.InstanceModel.RuntimeFullName}>",
                 PropertyName = Name,
                 Initializer = "new()",
             };
         }
 
-        protected override IEnumerable<UIProperty> CreateSearchConditionModel() {
+        protected override IEnumerable<UIProperty> CreateSearchConditionModels() {
             yield break;
         }
 
-        protected override IEnumerable<UIProperty> CreateSearchResultModel() {
+        protected override IEnumerable<UIProperty> CreateSearchResultModels() {
             yield break;
         }
 
@@ -53,7 +53,7 @@ namespace HalApplicationBuilder.Core.Members {
         }
 
         internal override string RenderInstanceView(ViewRenderingContext context) {
-            var model = ToInstanceModel().Single();
+            var model = InstanceModels.Single();
             var nested = context.Nest(model.PropertyName, isCollection: true);
             var template = new ChildrenInstanceTemplate {
                 i = context.LoopVar,

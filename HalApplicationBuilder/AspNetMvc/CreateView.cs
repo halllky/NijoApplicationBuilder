@@ -7,11 +7,10 @@ namespace HalApplicationBuilder.AspNetMvc {
 
         internal string TransformText() {
             var context = new Core.ViewRenderingContext("Model", nameof(Model<object>.Item));
-            var modelClass = RootAggregate.ToInstanceModel();
             var template = new CreateViewTemplate {
-                ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<object>)}<{modelClass.RuntimeFullName}>",
+                ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<object>)}<{RootAggregate.InstanceModel.RuntimeFullName}>",
                 PageTitle = $"{RootAggregate.Name} - 新規作成",
-                ModelClass = modelClass,
+                ModelClass = RootAggregate.InstanceModel,
                 ExecuteActionName = "Create",
                 PartialViewName = new AggregatePartialView { Aggregate = RootAggregate }.FileName,
                 PartialViewBoundObjectName = context.AspForPath,

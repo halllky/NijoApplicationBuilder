@@ -110,54 +110,75 @@ namespace HalApplicationBuilder.Core {
                 NotPKColumns = notPk,
             };
         }
-        internal UIClass ToSearchConditionModel() {
-            if (_searchConditionClass == null) {
-                var className = $"{UnderlyingType.Name}__SearchCondition";
-                var fullname = Schema.Config.MvcModelNamespace + "." + className;
-                var props = Members
-                    .Select(member => new { member, ModelProps = member.ToSearchConditionModel() })
-                    .ToList();
-                _searchConditionClass = new UIClass {
-                    Source = this,
-                    ClassName = className,
-                    RuntimeFullName = fullname,
-                    Properties = props.SelectMany(p => p.ModelProps).ToArray(),
-                };
+        internal UIClass SearchConditionModel {
+            get {
+                if (_searchConditionClass == null) {
+                    var className = $"{UnderlyingType.Name}__SearchCondition";
+                    var fullname = Schema.Config.MvcModelNamespace + "." + className;
+                    var props = Members
+                        .SelectMany(m => m.SearchConditionModels, (m, ui) => new { m, ui })
+                        .ToList();
+                    _searchConditionClass = new UIClass {
+                        Source = this,
+                        Parent = () => Parent?.InstanceModels.FirstOrDefault(),
+                        ClassName = className,
+                        RuntimeFullName = fullname,
+                        Properties = props.Select(x => x.ui).ToArray(),
+                    };
+                    foreach (var x in props) {
+                        x.ui.Source = x.m;
+                        x.ui.Owner = _searchConditionClass;
+                    }
+                }
+                return _searchConditionClass;
             }
-            return _searchConditionClass;
         }
-        internal UIClass ToSearchResultModel() {
-            if (_searchResultClass == null) {
-                var props = Members
-                    .SelectMany(member => member.ToSearchResultModel())
-                    .ToList();
-                var className = $"{UnderlyingType.Name}__SearchResult";
-                var fullname = Schema.Config.MvcModelNamespace + "." + className;
+        internal UIClass SearchResultModel {
+            get {
+                if (_searchResultClass == null) {
+                    var props = Members
+                        .SelectMany(m => m.SearchResultModels, (m, ui) => new { m, ui })
+                        .ToList();
+                    var className = $"{UnderlyingType.Name}__SearchResult";
+                    var fullname = Schema.Config.MvcModelNamespace + "." + className;
 
-                _searchResultClass = new UIClass {
-                    Source = this,
-                    ClassName = className,
-                    RuntimeFullName = fullname,
-                    Properties = props,
-                };
+                    _searchResultClass = new UIClass {
+                        Source = this,
+                        Parent = () => Parent?.InstanceModels.FirstOrDefault(),
+                        ClassName = className,
+                        RuntimeFullName = fullname,
+                        Properties = props.Select(x => x.ui).ToArray(),
+                    };
+                    foreach (var x in props) {
+                        x.ui.Source = x.m;
+                        x.ui.Owner = _searchResultClass;
+                    }
+                }
+                return _searchResultClass;
             }
-            return _searchResultClass;
         }
-        internal UIClass ToInstanceModel() {
-            if (_instanceClass == null) {
-                var className = $"{UnderlyingType.Name}";
-                var fullname = Schema.Config.MvcModelNamespace + "." + className;
-                var props = Members
-                    .Select(member => new { member, ModelProps = member.ToInstanceModel() })
-                    .ToList();
-                _instanceClass = new UIClass {
-                    Source = this,
-                    ClassName = className,
-                    RuntimeFullName = fullname,
-                    Properties = props.SelectMany(p => p.ModelProps).ToArray(),
-                };
+        internal UIClass InstanceModel {
+            get {
+                if (_instanceClass == null) {
+                    var className = $"{UnderlyingType.Name}";
+                    var fullname = Schema.Config.MvcModelNamespace + "." + className;
+                    var props = Members
+                        .SelectMany(m => m.InstanceModels, (m, ui) => new { m, ui })
+                        .ToList();
+                    _instanceClass = new UIClass {
+                        Source = this,
+                        Parent = () => Parent?.InstanceModels.FirstOrDefault(),
+                        ClassName = className,
+                        RuntimeFullName = fullname,
+                        Properties = props.Select(x => x.ui).ToArray(),
+                    };
+                    foreach (var x in props) {
+                        x.ui.Source = x.m;
+                        x.ui.Owner = _instanceClass;
+                    }
+                }
+                return _instanceClass;
             }
-            return _instanceClass;
         }
 
         internal string RenderSearchCondition(ViewRenderingContext context) {
@@ -195,12 +216,8 @@ namespace HalApplicationBuilder.Core {
                 path.Insert(0, parent.Name);
                 parent = parent.Owner.Parent;
             }
-            if (path.Any()) {
-                path.Insert(0, GetRoot().Name);
-                return $"{Name}[{string.Join(".", path)}]";
-            } else {
-                return Name;
-            }
+            path.Insert(0, GetRoot().Name);
+            return $"{nameof(Aggregate)}[{string.Join(".", path)}]";
         }
     }
 

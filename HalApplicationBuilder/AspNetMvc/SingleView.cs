@@ -7,11 +7,10 @@ namespace HalApplicationBuilder.AspNetMvc {
 
         internal string TransformText() {
             var context = new Core.ViewRenderingContext("Model", nameof(Model<object>.Item));
-            var modelClass = RootAggregate.ToInstanceModel();
             var template = new SingleViewTemplate {
-                ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<object>)}<{modelClass.RuntimeFullName}>",
+                ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<object>)}<{RootAggregate.InstanceModel.RuntimeFullName}>",
                 PageTitle = $"@Model.{nameof(Model<object>.InstanceName)}",
-                ModelClass = modelClass,
+                ModelClass = RootAggregate.InstanceModel,
                 UpdateActionName = "Update",
                 DeleteActionName = "Delete",
                 PartialViewName = new AggregatePartialView { Aggregate = RootAggregate }.FileName,

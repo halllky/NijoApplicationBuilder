@@ -11,7 +11,7 @@ namespace HalApplicationBuilder.AspNetMvc {
 
         internal string TransformText() {
             var template = new AggregatePartialViewTemplate {
-                ModelTypeFullname = Aggregate.ToInstanceModel().RuntimeFullName,
+                ModelTypeFullname = Aggregate.InstanceModel.RuntimeFullName,
                 View = Aggregate.RenderInstanceView(new Core.ViewRenderingContext("Model")),
             };
             return template.TransformText();
