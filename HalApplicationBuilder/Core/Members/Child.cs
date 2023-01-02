@@ -128,7 +128,7 @@ namespace HalApplicationBuilder.Core.Members {
         internal override string RenderSearchConditionView(ViewRenderingContext context) {
             if (IsComplexType()) {
                 var nested = context.Nest(SearchConditionModels.Single().PropertyName);
-                return ChildAggregate.RenderSearchCondition(nested);
+                return ChildAggregate.SearchConditionModel.Render(nested);
             } else {
                 var childrenViews = SearchConditionModels
                     .Select(child => {
@@ -156,7 +156,7 @@ namespace HalApplicationBuilder.Core.Members {
             if (IsComplexType()) {
                 var model = InstanceModels.Single();
                 var nestedContext = context.Nest(model.PropertyName);
-                return ChildAggregate.RenderInstanceView(nestedContext);
+                return ChildAggregate.InstanceModel.Render(nestedContext);
             } else {
                 var nested1 = context.Nest(Name); // 区分値(ラジオボタン用)
                 var instanceModels = InstanceModels.ToArray();
@@ -167,7 +167,7 @@ namespace HalApplicationBuilder.Core.Members {
                             Key = child.Key,
                             Name = child.Value.Name,
                             RadioButtonAspFor = nested1.AspForPath,
-                            ChildAggregateView = child.Value.RenderInstanceView(nested2),
+                            ChildAggregateView = child.Value.InstanceModel.Render(nested2),
                         };
                         return template.TransformText();
                     });

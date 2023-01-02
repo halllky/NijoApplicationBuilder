@@ -113,22 +113,7 @@ namespace HalApplicationBuilder.Core {
         internal UIClass SearchConditionModel {
             get {
                 if (_searchConditionClass == null) {
-                    var className = $"{UnderlyingType.Name}__SearchCondition";
-                    var fullname = Schema.Config.MvcModelNamespace + "." + className;
-                    var props = Members
-                        .SelectMany(m => m.SearchConditionModels, (m, ui) => new { m, ui })
-                        .ToList();
-                    _searchConditionClass = new UIClass {
-                        Source = this,
-                        Parent = () => Parent?.InstanceModels.FirstOrDefault(),
-                        ClassName = className,
-                        RuntimeFullName = fullname,
-                        Properties = props.Select(x => x.ui).ToArray(),
-                    };
-                    foreach (var x in props) {
-                        x.ui.Source = x.m;
-                        x.ui.Owner = _searchConditionClass;
-                    }
+                    _searchConditionClass = new SearchConditionClass { Source = this };
                 }
                 return _searchConditionClass;
             }
@@ -136,23 +121,7 @@ namespace HalApplicationBuilder.Core {
         internal UIClass SearchResultModel {
             get {
                 if (_searchResultClass == null) {
-                    var props = Members
-                        .SelectMany(m => m.SearchResultModels, (m, ui) => new { m, ui })
-                        .ToList();
-                    var className = $"{UnderlyingType.Name}__SearchResult";
-                    var fullname = Schema.Config.MvcModelNamespace + "." + className;
-
-                    _searchResultClass = new UIClass {
-                        Source = this,
-                        Parent = () => Parent?.InstanceModels.FirstOrDefault(),
-                        ClassName = className,
-                        RuntimeFullName = fullname,
-                        Properties = props.Select(x => x.ui).ToArray(),
-                    };
-                    foreach (var x in props) {
-                        x.ui.Source = x.m;
-                        x.ui.Owner = _searchResultClass;
-                    }
+                    _searchResultClass = new SearchResultClass { Source = this };
                 }
                 return _searchResultClass;
             }
@@ -160,46 +129,10 @@ namespace HalApplicationBuilder.Core {
         internal UIClass InstanceModel {
             get {
                 if (_instanceClass == null) {
-                    var className = $"{UnderlyingType.Name}";
-                    var fullname = Schema.Config.MvcModelNamespace + "." + className;
-                    var props = Members
-                        .SelectMany(m => m.InstanceModels, (m, ui) => new { m, ui })
-                        .ToList();
-                    _instanceClass = new UIClass {
-                        Source = this,
-                        Parent = () => Parent?.InstanceModels.FirstOrDefault(),
-                        ClassName = className,
-                        RuntimeFullName = fullname,
-                        Properties = props.Select(x => x.ui).ToArray(),
-                    };
-                    foreach (var x in props) {
-                        x.ui.Source = x.m;
-                        x.ui.Owner = _instanceClass;
-                    }
+                    _instanceClass = new InstanceModelClass { Source = this };
                 }
                 return _instanceClass;
             }
-        }
-
-        internal string RenderSearchCondition(ViewRenderingContext context) {
-            var propViews = Members.Select(x => KeyValuePair.Create(x.Name, x.RenderSearchConditionView(context)));
-            var template = new AggregateVerticalViewTemplate {
-                Members = propViews,
-            };
-            return template.TransformText();
-        }
-        internal string RenderSearchResult(ViewRenderingContext context) {
-            var propViews = Members
-                .Select(member => member.RenderSearchResultView(context))
-                .ToList();
-            return string.Join(Environment.NewLine, propViews);
-        }
-        internal string RenderInstanceView(ViewRenderingContext context) {
-            var propViews = Members.Select(x => KeyValuePair.Create(x.Name, x.RenderInstanceView(context)));
-            var template = new AggregateVerticalViewTemplate {
-                Members = propViews,
-            };
-            return template.TransformText();
         }
         #endregion CodeGenerating
 
