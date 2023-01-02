@@ -31,24 +31,24 @@ namespace HalApplicationBuilder.Core.Members {
             }
         }
 
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToInstanceModel() {
-            yield return new AutoGenerateMvcModelProperty {
+        protected override IEnumerable<UIProperty> CreateInstanceModel() {
+            yield return new UIProperty {
                 CSharpTypeName = typeof(Runtime.ReferenceDTO).FullName,
                 PropertyName = Name,
                 Initializer = "new()",
             };
         }
 
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToSearchConditionModel() {
-            yield return new AutoGenerateMvcModelProperty {
+        protected override IEnumerable<UIProperty> CreateSearchConditionModel() {
+            yield return new UIProperty {
                 CSharpTypeName = typeof(Runtime.ReferenceDTO).FullName,
                 PropertyName = Name,
                 Initializer = "new()",
             };
         }
 
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToSearchResultModel() {
-            yield return new AutoGenerateMvcModelProperty {
+        protected override IEnumerable<UIProperty> CreateSearchResultModel() {
+            yield return new UIProperty {
                 CSharpTypeName = "string",
                 PropertyName = UnderlyingPropertyInfo.Name,
             };

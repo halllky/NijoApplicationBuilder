@@ -21,8 +21,8 @@ namespace HalApplicationBuilder.AspNetMvc {
 
     partial class MvcModelsTemplate {
         internal string Namespace { get; set; }
-        internal IEnumerable<Core.AutoGenerateMvcModelClass> SearchConditionClasses { get; set; }
-        internal IEnumerable<Core.AutoGenerateMvcModelClass> SearchResultClasses { get; set; }
-        internal IEnumerable<Core.AutoGenerateMvcModelClass> InstanceClasses { get; set; }
+        internal IEnumerable<Core.UIClass> SearchConditionClasses { get; set; }
+        internal IEnumerable<Core.UIClass> SearchResultClasses { get; set; }
+        internal IEnumerable<Core.UIClass> InstanceClasses { get; set; }
     }
 }

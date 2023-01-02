@@ -59,12 +59,12 @@ namespace HalApplicationBuilder.Core.Members {
             };
         }
 
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToSearchConditionModel() {
+        protected override IEnumerable<UIProperty> CreateSearchConditionModel() {
             var propName = UnderlyingPropertyInfo.Name;
             var type = GetPropertyTypeExceptNullable();
             if (new[] { typeof(int), typeof(float), typeof(decimal), typeof(DateTime) }.Contains(type)) {
                 // 範囲検索
-                yield return new AutoGenerateMvcModelProperty {
+                yield return new UIProperty {
                     Virtual = false,
                     CSharpTypeName = $"{typeof(FromTo<>).Namespace}.{nameof(FromTo<object>)}<{GetSearchConditionCSharpTypeName()}>",
                     PropertyName = propName,
@@ -72,7 +72,7 @@ namespace HalApplicationBuilder.Core.Members {
 
             } else if (type.IsEnum) {
                 // enumドロップダウン
-                yield return new AutoGenerateMvcModelProperty {
+                yield return new UIProperty {
                     Virtual = false,
                     CSharpTypeName = type.FullName,
                     PropertyName = propName,
@@ -80,7 +80,7 @@ namespace HalApplicationBuilder.Core.Members {
 
             } else {
                 // ただのinput
-                yield return new AutoGenerateMvcModelProperty {
+                yield return new UIProperty {
                     Virtual = false,
                     CSharpTypeName = GetSearchConditionCSharpTypeName(),
                     PropertyName = propName,
@@ -88,17 +88,17 @@ namespace HalApplicationBuilder.Core.Members {
             }
         }
 
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToSearchResultModel() {
-            yield return new AutoGenerateMvcModelProperty {
+        protected override IEnumerable<UIProperty> CreateSearchResultModel() {
+            yield return new UIProperty {
                 Virtual = false,
                 CSharpTypeName = GetCSharpTypeName(),
                 PropertyName = UnderlyingPropertyInfo.Name,
             };
         }
 
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToInstanceModel() {
+        protected override IEnumerable<UIProperty> CreateInstanceModel() {
             var propertyName = UnderlyingPropertyInfo.Name;
-            yield return new AutoGenerateMvcModelProperty {
+            yield return new UIProperty {
                 Virtual = false,
                 CSharpTypeName = GetCSharpTypeName(),
                 PropertyName = propertyName,

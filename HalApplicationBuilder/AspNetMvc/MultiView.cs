@@ -33,8 +33,8 @@ namespace HalApplicationBuilder.AspNetMvc {
     partial class MultiViewTemplate {
         internal string ModelTypeFullname { get; set; }
         internal string PageTitle { get; set; }
-        internal Core.AutoGenerateMvcModelClass SearchConditionClass { get; set; }
-        internal Core.AutoGenerateMvcModelClass SearchResultClass { get; set; }
+        internal Core.UIClass SearchConditionClass { get; set; }
+        internal Core.UIClass SearchResultClass { get; set; }
         internal string ClearActionName { get; set; }
         internal string SearchActionName { get; set; }
         internal string LinkToSingleViewActionName { get; set; }

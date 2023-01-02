@@ -66,17 +66,17 @@ namespace HalApplicationBuilder.Core.Members {
             }
         }
 
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToSearchConditionModel() {
+        protected override IEnumerable<UIProperty> CreateSearchConditionModel() {
             if (IsComplexType()) {
                 var child = ChildAggregate.ToSearchConditionModel();
-                yield return new AutoGenerateMvcModelProperty {
+                yield return new UIProperty {
                     CSharpTypeName = child.RuntimeFullName,
                     PropertyName = Name,
                     Initializer = "new()",
                 };
             } else {
                 foreach (var variation in GetChildren()) {
-                    yield return new AutoGenerateMvcModelProperty {
+                    yield return new UIProperty {
                         PropertyName = $"{Name}_{variation.Value.Name}",
                         CSharpTypeName = "bool",
                         Initializer = "true",
@@ -85,36 +85,36 @@ namespace HalApplicationBuilder.Core.Members {
             }
         }
 
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToSearchResultModel() {
+        protected override IEnumerable<UIProperty> CreateSearchResultModel() {
             if (IsComplexType()) {
                 foreach (var childProp in ChildAggregate.ToSearchResultModel().Properties) {
                     yield return childProp;
                 }
             } else {
-                yield return new AutoGenerateMvcModelProperty {
+                yield return new UIProperty {
                     CSharpTypeName = "string",
                     PropertyName = Name,
                 };
             }
         }
 
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToInstanceModel() {
+        protected override IEnumerable<UIProperty> CreateInstanceModel() {
             if (IsComplexType()) {
                 var childModel = ChildAggregate.ToInstanceModel();
-                yield return new AutoGenerateMvcModelProperty {
+                yield return new UIProperty {
                     CSharpTypeName = childModel.RuntimeFullName,
                     PropertyName = Name,
                     Initializer = "new()",
                 };
             } else {
                 // 区分値
-                yield return new AutoGenerateMvcModelProperty {
+                yield return new UIProperty {
                     CSharpTypeName = "int?",
                     PropertyName = Name,
                 };
                 // 各区分の詳細値
                 foreach (var child in GetChildren()) {
-                    yield return new AutoGenerateMvcModelProperty {
+                    yield return new UIProperty {
                         CSharpTypeName = child.Value.ToInstanceModel().RuntimeFullName,
                         PropertyName = $"{Name}__{child.Value.Name}",
                         Initializer = "new()",

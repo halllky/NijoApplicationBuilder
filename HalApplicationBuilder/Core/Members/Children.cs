@@ -28,19 +28,19 @@ namespace HalApplicationBuilder.Core.Members {
             yield break;
         }
 
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToInstanceModel() {
-            yield return new AutoGenerateMvcModelProperty {
+        protected override IEnumerable<UIProperty> CreateInstanceModel() {
+            yield return new UIProperty {
                 CSharpTypeName = $"List<{ChildAggregate.ToInstanceModel().RuntimeFullName}>",
                 PropertyName = Name,
                 Initializer = "new()",
             };
         }
 
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToSearchConditionModel() {
+        protected override IEnumerable<UIProperty> CreateSearchConditionModel() {
             yield break;
         }
 
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToSearchResultModel() {
+        protected override IEnumerable<UIProperty> CreateSearchResultModel() {
             yield break;
         }
 
