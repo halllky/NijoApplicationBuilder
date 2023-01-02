@@ -16,7 +16,7 @@
 <form>
     @* 検索条件欄 *@
     <div>
-        <#=SearchConditionClass.View#>
+        <#=SearchConditionView#>
         <button asp-action="<#=ClearActionName#>">クリア</button>
         <button asp-action="<#=SearchActionName#>">検索</button>
     </div>

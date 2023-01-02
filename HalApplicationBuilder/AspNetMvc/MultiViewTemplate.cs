@@ -26,7 +26,7 @@ namespace HalApplicationBuilder.AspNetMvc {
             this.Write("\";\n}\n\n<h1>\n    ");
             this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
             this.Write("\n</h1>\n\n<form>\n    @* 検索条件欄 *@\n    <div>\n        ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchConditionClass.View));
+            this.Write(this.ToStringHelper.ToStringWithCulture(SearchConditionView));
             this.Write("\n        <button asp-action=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(ClearActionName));
             this.Write("\">クリア</button>\n        <button asp-action=\"");

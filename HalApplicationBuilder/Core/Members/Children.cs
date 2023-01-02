@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace HalApplicationBuilder.Core.Members {
     internal class Children : AggregateMemberBase {
@@ -27,9 +28,33 @@ namespace HalApplicationBuilder.Core.Members {
             yield break;
         }
 
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToInstanceModel(ViewRenderingContext context) {
-            var propName = Name;
-            var nested = context.Nest(propName, isCollection: true);
+        internal override IEnumerable<AutoGenerateMvcModelProperty> ToInstanceModel() {
+            yield return new AutoGenerateMvcModelProperty {
+                CSharpTypeName = $"List<{ChildAggregate.ToInstanceModel().RuntimeFullName}>",
+                PropertyName = Name,
+                Initializer = "new()",
+            };
+        }
+
+        internal override IEnumerable<AutoGenerateMvcModelProperty> ToSearchConditionModel() {
+            yield break;
+        }
+
+        internal override IEnumerable<AutoGenerateMvcModelProperty> ToSearchResultModel() {
+            yield break;
+        }
+
+        internal override string RenderSearchConditionView(ViewRenderingContext context) {
+            return string.Empty;
+        }
+
+        internal override string RenderSearchResultView(ViewRenderingContext context) {
+            return string.Empty;
+        }
+
+        internal override string RenderInstanceView(ViewRenderingContext context) {
+            var model = ToInstanceModel().Single();
+            var nested = context.Nest(model.PropertyName, isCollection: true);
             var template = new ChildrenInstanceTemplate {
                 i = context.LoopVar,
                 Count = $"{nested.CollectionPath}.{nameof(ICollection<object>.Count)}",
@@ -37,20 +62,7 @@ namespace HalApplicationBuilder.Core.Members {
                 PartialViewBoundObjectName = nested.AspForPath,
                 AspForAddChild = nested.AspForCollectionPath,
             };
-            yield return new AutoGenerateMvcModelProperty {
-                CSharpTypeName = $"List<{ChildAggregate.ToInstanceModel(context).RuntimeFullName}>",
-                PropertyName = propName,
-                Initializer = "new()",
-                View = template.TransformText(),
-            };
-        }
-
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToSearchConditionModel(ViewRenderingContext context) {
-            yield break;
-        }
-
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToSearchResultModel(ViewRenderingContext context) {
-            yield break;
+            return template.TransformText();
         }
     }
 

@@ -8,8 +8,8 @@ namespace HalApplicationBuilder.AspNetMvc {
         internal string FileName => $"{RootAggregate.Name}__MultiView.cshtml";
 
         internal string TransformText() {
-            var searchConditionClass = RootAggregate.ToSearchConditionModel(new Core.ViewRenderingContext("Model", nameof(Model<object, object>.SearchCondition)));
-            var searchResultClass = RootAggregate.ToSearchResultModel(new Core.ViewRenderingContext("Model", nameof(Model<object, object>.SearchResult)));
+            var searchConditionClass = RootAggregate.ToSearchConditionModel();
+            var searchResultClass = RootAggregate.ToSearchResultModel();
             var template = new MultiViewTemplate {
                 ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<object, object>)}<{searchConditionClass.RuntimeFullName}, {searchResultClass.RuntimeFullName}>",
                 PageTitle = RootAggregate.Name,
@@ -18,6 +18,8 @@ namespace HalApplicationBuilder.AspNetMvc {
                 ClearActionName = "Clear",
                 SearchActionName = "Search",
                 LinkToSingleViewActionName = "Detail",
+                SearchConditionView = RootAggregate.RenderSearchCondition(new Core.ViewRenderingContext("Model", nameof(Model<object, object>.SearchCondition))),
+                // SearchResultView = RootAggregate.RenderSearchResult(new Core.ViewRenderingContext("Model", nameof(Model<object, object>.SearchResult))),
             };
             return template.TransformText();
         }
@@ -36,5 +38,7 @@ namespace HalApplicationBuilder.AspNetMvc {
         internal string ClearActionName { get; set; }
         internal string SearchActionName { get; set; }
         internal string LinkToSingleViewActionName { get; set; }
+        internal string SearchConditionView { get; set; }
+        // internal string SearchResultView { get; set; }
     }
 }

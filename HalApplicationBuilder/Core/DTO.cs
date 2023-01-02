@@ -11,7 +11,6 @@ namespace HalApplicationBuilder.Core {
     public class AutoGenerateMvcModelClass {
         public string ClassName { get; init; }
         public string RuntimeFullName { get; init; }
-        public string View { get; init; }
         public IReadOnlyList<AutoGenerateMvcModelProperty> Properties { get; init; }
     }
 
@@ -26,6 +25,5 @@ namespace HalApplicationBuilder.Core {
         public string CSharpTypeName { get; init; }
         public string PropertyName { get; init; }
         public string Initializer { get; init; }
-        public string View { get; init; }
     }
 }

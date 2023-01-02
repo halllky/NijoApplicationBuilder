@@ -59,10 +59,56 @@ namespace HalApplicationBuilder.Core.Members {
             };
         }
 
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToSearchConditionModel(ViewRenderingContext context) {
+        internal override IEnumerable<AutoGenerateMvcModelProperty> ToSearchConditionModel() {
             var propName = UnderlyingPropertyInfo.Name;
-            var nestedContext = context.Nest(propName, isCollection: false);
             var type = GetPropertyTypeExceptNullable();
+            if (new[] { typeof(int), typeof(float), typeof(decimal), typeof(DateTime) }.Contains(type)) {
+                // 範囲検索
+                yield return new AutoGenerateMvcModelProperty {
+                    Virtual = false,
+                    CSharpTypeName = $"{typeof(FromTo<>).Namespace}.{nameof(FromTo<object>)}<{GetSearchConditionCSharpTypeName()}>",
+                    PropertyName = propName,
+                };
+
+            } else if (type.IsEnum) {
+                // enumドロップダウン
+                yield return new AutoGenerateMvcModelProperty {
+                    Virtual = false,
+                    CSharpTypeName = type.FullName,
+                    PropertyName = propName,
+                };
+
+            } else {
+                // ただのinput
+                yield return new AutoGenerateMvcModelProperty {
+                    Virtual = false,
+                    CSharpTypeName = GetSearchConditionCSharpTypeName(),
+                    PropertyName = propName,
+                };
+            }
+        }
+
+        internal override IEnumerable<AutoGenerateMvcModelProperty> ToSearchResultModel() {
+            yield return new AutoGenerateMvcModelProperty {
+                Virtual = false,
+                CSharpTypeName = GetCSharpTypeName(),
+                PropertyName = UnderlyingPropertyInfo.Name,
+            };
+        }
+
+        internal override IEnumerable<AutoGenerateMvcModelProperty> ToInstanceModel() {
+            var propertyName = UnderlyingPropertyInfo.Name;
+            yield return new AutoGenerateMvcModelProperty {
+                Virtual = false,
+                CSharpTypeName = GetCSharpTypeName(),
+                PropertyName = propertyName,
+            };
+        }
+
+        internal override string RenderSearchConditionView(ViewRenderingContext context) {
+            var propName = ToSearchConditionModel().Single().PropertyName;
+            var type = GetPropertyTypeExceptNullable();
+            var nestedContext = context.Nest(propName, isCollection: false);
             if (new[] { typeof(int), typeof(float), typeof(decimal), typeof(DateTime) }.Contains(type)) {
                 // 範囲検索
                 var template = new SchalarValueSearchCondition {
@@ -72,12 +118,7 @@ namespace HalApplicationBuilder.Core.Members {
                         $"{nestedContext.AspForPath}.{nameof(FromTo<object>.To)}",
                     },
                 };
-                yield return new AutoGenerateMvcModelProperty {
-                    Virtual = false,
-                    CSharpTypeName = $"{typeof(FromTo<>).Namespace}.{nameof(FromTo<object>)}<{GetSearchConditionCSharpTypeName()}>",
-                    PropertyName = propName,
-                    View = template.TransformText(),
-                };
+                return template.TransformText();
 
             } else if (type.IsEnum) {
                 // enumドロップダウン
@@ -89,12 +130,7 @@ namespace HalApplicationBuilder.Core.Members {
                         ? new[] { KeyValuePair.Create("", "") }
                         : Array.Empty<KeyValuePair<string, string>>(),
                 };
-                yield return new AutoGenerateMvcModelProperty {
-                    Virtual = false,
-                    CSharpTypeName = type.FullName,
-                    PropertyName = propName,
-                    View = template.TransformText(),
-                };
+                return template.TransformText();
 
             } else {
                 // ただのinput
@@ -102,37 +138,21 @@ namespace HalApplicationBuilder.Core.Members {
                     Type = SchalarValueSearchCondition.E_Type.Input,
                     AspFor = new[] { nestedContext.AspForPath },
                 };
-                yield return new AutoGenerateMvcModelProperty {
-                    Virtual = false,
-                    CSharpTypeName = GetSearchConditionCSharpTypeName(),
-                    PropertyName = propName,
-                    View = template.TransformText(),
-                };
+                return template.TransformText();
             }
         }
 
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToSearchResultModel(ViewRenderingContext context) {
-            var propertyName = UnderlyingPropertyInfo.Name;
+        internal override string RenderSearchResultView(ViewRenderingContext context) {
+            var propertyName = ToSearchResultModel().Single().PropertyName;
             var nested = context.Nest(propertyName, isCollection: false);
-            yield return new AutoGenerateMvcModelProperty {
-                Virtual = false,
-                CSharpTypeName = GetCSharpTypeName(),
-                PropertyName = propertyName,
-                View = $"<span>@{nested.Path}</span>",
-            };
+            return $"<span>@{nested.Path}</span>";
         }
 
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToInstanceModel(ViewRenderingContext context) {
-            var propertyName = UnderlyingPropertyInfo.Name;
+        internal override string RenderInstanceView(ViewRenderingContext context) {
+            var propertyName = ToInstanceModel().Single().PropertyName;
             var nested = context.Nest(propertyName);
-            yield return new AutoGenerateMvcModelProperty {
-                Virtual = false,
-                CSharpTypeName = GetCSharpTypeName(),
-                PropertyName = propertyName,
-                View = $"<input asp-for=\"{nested.AspForPath}\"/>",
-            };
+            return $"<input asp-for=\"{nested.AspForPath}\"/>";
         }
-
 
         public static bool IsPrimitive(Type type) {
             if (type == typeof(string)) return true;

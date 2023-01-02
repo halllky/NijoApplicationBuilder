@@ -7,7 +7,7 @@ namespace HalApplicationBuilder.AspNetMvc {
 
         internal string TransformText() {
             var context = new Core.ViewRenderingContext("Model", nameof(Model<object>.Item));
-            var modelClass = RootAggregate.ToInstanceModel(context);
+            var modelClass = RootAggregate.ToInstanceModel();
             var template = new CreateViewTemplate {
                 ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<object>)}<{modelClass.RuntimeFullName}>",
                 PageTitle = $"{RootAggregate.Name} - 新規作成",

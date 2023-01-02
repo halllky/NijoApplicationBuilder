@@ -66,89 +66,110 @@ namespace HalApplicationBuilder.Core.Members {
             }
         }
 
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToSearchConditionModel(ViewRenderingContext context) {
+        internal override IEnumerable<AutoGenerateMvcModelProperty> ToSearchConditionModel() {
             if (IsComplexType()) {
-                var propname = Name;
-                var nested = context.Nest(propname);
-                var child = ChildAggregate.ToSearchConditionModel(nested);
+                var child = ChildAggregate.ToSearchConditionModel();
                 yield return new AutoGenerateMvcModelProperty {
                     CSharpTypeName = child.RuntimeFullName,
-                    PropertyName = propname,
+                    PropertyName = Name,
                     Initializer = "new()",
-                    View = child.View,
                 };
             } else {
                 foreach (var variation in GetChildren()) {
-                    var propname = $"{Name}_{variation.Value.Name}";
-                    var nested = context.Nest(propname);
-                    var template = new ChildVariationSearchConditionTemplate {
-                        PropertyName = propname,
-                        AspFor = nested.AspForPath,
-                    };
                     yield return new AutoGenerateMvcModelProperty {
-                        PropertyName = propname,
+                        PropertyName = $"{Name}_{variation.Value.Name}",
                         CSharpTypeName = "bool",
                         Initializer = "true",
-                        View = template.TransformText(),
                     };
                 }
             }
         }
 
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToSearchResultModel(ViewRenderingContext context) {
+        internal override IEnumerable<AutoGenerateMvcModelProperty> ToSearchResultModel() {
             if (IsComplexType()) {
-                foreach (var childProp in ChildAggregate.ToSearchResultModel(context).Properties) {
+                foreach (var childProp in ChildAggregate.ToSearchResultModel().Properties) {
                     yield return childProp;
                 }
             } else {
-                var propname = Name;
-                var nested = context.Nest(propname);
                 yield return new AutoGenerateMvcModelProperty {
                     CSharpTypeName = "string",
-                    PropertyName = propname,
-                    View = $"<span>@{nested.Path}</span>",
+                    PropertyName = Name,
                 };
             }
         }
 
-        internal override IEnumerable<AutoGenerateMvcModelProperty> ToInstanceModel(ViewRenderingContext context) {
+        internal override IEnumerable<AutoGenerateMvcModelProperty> ToInstanceModel() {
             if (IsComplexType()) {
-                var propName = Name;
-                var nestedContext = context.Nest(propName);
-                var childModel = ChildAggregate.ToInstanceModel(nestedContext);
+                var childModel = ChildAggregate.ToInstanceModel();
                 yield return new AutoGenerateMvcModelProperty {
                     CSharpTypeName = childModel.RuntimeFullName,
-                    PropertyName = propName,
-                    View = childModel.View,
+                    PropertyName = Name,
                     Initializer = "new()",
                 };
             } else {
                 // 区分値
-                var typePropertyName = Name;
-                var nested1 = context.Nest(typePropertyName);
                 yield return new AutoGenerateMvcModelProperty {
                     CSharpTypeName = "int?",
-                    PropertyName = typePropertyName,
-                    View = "",
+                    PropertyName = Name,
                 };
                 // 各区分の詳細値
                 foreach (var child in GetChildren()) {
-                    var detailPropertyName = $"{Name}__{child.Value.Name}";
-                    var nested2 = context.Nest(detailPropertyName);
-                    var childModel = child.Value.ToInstanceModel(nested2);
-                    var template = new ChildVariationInstanceTemplate {
-                        Key = child.Key,
-                        Name = child.Value.Name,
-                        RadioButtonAspFor = nested1.AspForPath,
-                        ChildAggregateView = childModel.View,
-                    };
                     yield return new AutoGenerateMvcModelProperty {
-                        CSharpTypeName = childModel.RuntimeFullName,
-                        PropertyName = detailPropertyName,
+                        CSharpTypeName = child.Value.ToInstanceModel().RuntimeFullName,
+                        PropertyName = $"{Name}__{child.Value.Name}",
                         Initializer = "new()",
-                        View = template.TransformText(),
                     };
                 }
+            }
+        }
+
+        internal override string RenderSearchConditionView(ViewRenderingContext context) {
+            if (IsComplexType()) {
+                var nested = context.Nest(ToSearchConditionModel().Single().PropertyName);
+                return ChildAggregate.RenderSearchCondition(nested);
+            } else {
+                var childrenViews = ToSearchConditionModel()
+                    .Select(child => {
+                        var nested = context.Nest(child.PropertyName);
+                        var template = new ChildVariationSearchConditionTemplate {
+                            PropertyName = child.PropertyName,
+                            AspFor = nested.AspForPath,
+                        };
+                        return template.TransformText();
+                    });
+                return string.Join(Environment.NewLine, childrenViews);
+            }
+        }
+
+        internal override string RenderSearchResultView(ViewRenderingContext context) {
+            if (IsComplexType()) {
+                return string.Empty;
+            } else {
+                var nested = context.Nest(ToSearchResultModel().Single().PropertyName);
+                return $"<span>@{nested.Path}</span>";
+            }
+        }
+
+        internal override string RenderInstanceView(ViewRenderingContext context) {
+            if (IsComplexType()) {
+                var model = ToInstanceModel().Single();
+                var nestedContext = context.Nest(model.PropertyName);
+                return ChildAggregate.RenderInstanceView(nestedContext);
+            } else {
+                var nested1 = context.Nest(Name); // 区分値(ラジオボタン用)
+                var instanceModels = ToInstanceModel().ToArray();
+                var childrenViews = GetChildren()
+                    .Select(child => {
+                        var nested2 = context.Nest($"{Name}__{child.Value.Name}"); // TODO: ToInstanceModelとロジック重複
+                        var template = new ChildVariationInstanceTemplate {
+                            Key = child.Key,
+                            Name = child.Value.Name,
+                            RadioButtonAspFor = nested1.AspForPath,
+                            ChildAggregateView = child.Value.RenderInstanceView(nested2),
+                        };
+                        return template.TransformText();
+                    });
+                return string.Join(Environment.NewLine, childrenViews);
             }
         }
     }

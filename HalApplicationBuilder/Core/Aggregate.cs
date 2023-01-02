@@ -106,52 +106,63 @@ namespace HalApplicationBuilder.Core {
                 NotPKColumns = notPk,
             };
         }
-        internal AutoGenerateMvcModelClass ToSearchConditionModel(ViewRenderingContext context) {
+        internal AutoGenerateMvcModelClass ToSearchConditionModel() {
             var className = $"{UnderlyingType.Name}__SearchCondition";
             var fullname = Schema.Config.MvcModelNamespace + "." + className;
             var props = Members
-                .Select(member => new { member, ModelProps = member.ToSearchConditionModel(context) })
+                .Select(member => new { member, ModelProps = member.ToSearchConditionModel() })
                 .ToList();
-            var template = new AggregateVerticalViewTemplate {
-                Members = props.Select(x => KeyValuePair.Create(x.member.Name, string.Join(Environment.NewLine, x.ModelProps.Select(p => p.View)))),
-            };
             return new AutoGenerateMvcModelClass {
                 ClassName = className,
                 RuntimeFullName = fullname,
                 Properties = props.SelectMany(p => p.ModelProps).ToArray(),
-                View = template.TransformText(),
             };
         }
-        internal AutoGenerateMvcModelClass ToSearchResultModel(ViewRenderingContext context) {
+        internal AutoGenerateMvcModelClass ToSearchResultModel() {
             var props = Members
-                .SelectMany(member => member.ToSearchResultModel(context))
+                .SelectMany(member => member.ToSearchResultModel())
                 .ToList();
             var className = $"{UnderlyingType.Name}__SearchResult";
             var fullname = Schema.Config.MvcModelNamespace + "." + className;
-            var view = string.Join(Environment.NewLine, props.Select(p => p.View));
 
             return new AutoGenerateMvcModelClass {
                 ClassName = className,
                 RuntimeFullName = fullname,
                 Properties = props,
-                View = view,
             };
         }
-        internal AutoGenerateMvcModelClass ToInstanceModel(ViewRenderingContext context) {
+        internal AutoGenerateMvcModelClass ToInstanceModel() {
             var className = $"{UnderlyingType.Name}";
             var fullname = Schema.Config.MvcModelNamespace + "." + className;
             var props = Members
-                .Select(member => new { member, ModelProps = member.ToInstanceModel(context) })
+                .Select(member => new { member, ModelProps = member.ToInstanceModel() })
                 .ToList();
-            var template = new AggregateVerticalViewTemplate {
-                Members = props.Select(x => KeyValuePair.Create(x.member.Name, string.Join(Environment.NewLine, x.ModelProps.Select(p => p.View)))),
-            };
             return new AutoGenerateMvcModelClass {
                 ClassName = className,
                 RuntimeFullName = fullname,
                 Properties = props.SelectMany(p => p.ModelProps).ToArray(),
-                View = template.TransformText(),
             };
+        }
+
+        internal string RenderSearchCondition(ViewRenderingContext context) {
+            var propViews = Members.Select(x => KeyValuePair.Create(x.Name, x.RenderSearchConditionView(context)));
+            var template = new AggregateVerticalViewTemplate {
+                Members = propViews,
+            };
+            return template.TransformText();
+        }
+        internal string RenderSearchResult(ViewRenderingContext context) {
+            var propViews = Members
+                .Select(member => member.RenderSearchResultView(context))
+                .ToList();
+            return string.Join(Environment.NewLine, propViews);
+        }
+        internal string RenderInstanceView(ViewRenderingContext context) {
+            var propViews = Members.Select(x => KeyValuePair.Create(x.Name, x.RenderInstanceView(context)));
+            var template = new AggregateVerticalViewTemplate {
+                Members = propViews,
+            };
+            return template.TransformText();
         }
         #endregion CodeGenerating
 

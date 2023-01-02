@@ -96,8 +96,7 @@ namespace HalApplicationBuilder.AspNetMvc {
             if (treePath.Member is not Core.Members.Children children) {
                 return BadRequest($"{aggregateTreePath} は配列メンバーでない");
             }
-            var _ = new Core.ViewRenderingContext();
-            var instance = RuntimeContext.RuntimeAssembly.CreateInstance(children.ChildAggregate.ToInstanceModel(_).RuntimeFullName);
+            var instance = RuntimeContext.RuntimeAssembly.CreateInstance(children.ChildAggregate.ToInstanceModel().RuntimeFullName);
             var partialView = new AspNetMvc.AggregatePartialView { Aggregate = children.ChildAggregate };
             ViewData.TemplateInfo.HtmlFieldPrefix = $"{aggregateTreePath}[{currentArrayCount}]";
             return PartialView(partialView.AspViewPath, instance);

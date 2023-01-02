@@ -41,16 +41,15 @@ namespace HalApplicationBuilder.Runtime {
 
             // 型名と集約定義の対応関係の紐付けのキャッシュを作成
             if (_typeFullNameIndex == null) {
-                var _ = new Core.ViewRenderingContext();
                 _typeFullNameIndex = ApplicationSchema
                     .AllAggregates()
                     .SelectMany(
                         aggregate => new[]
                         {
                             aggregate.ToDbTableModel().RuntimeFullName,
-                            aggregate.ToSearchConditionModel(_).RuntimeFullName,
-                            aggregate.ToSearchResultModel(_).RuntimeFullName,
-                            aggregate.ToInstanceModel(_).RuntimeFullName,
+                            aggregate.ToSearchConditionModel().RuntimeFullName,
+                            aggregate.ToSearchResultModel().RuntimeFullName,
+                            aggregate.ToInstanceModel().RuntimeFullName,
                         },
                         (aggregate, runtimeFullname) => new { aggregate, runtimeFullname })
                     .ToDictionary(x => x.runtimeFullname, x => x.aggregate);
@@ -70,8 +69,7 @@ namespace HalApplicationBuilder.Runtime {
         }
         public object CreateInstance(Type runtimeType) {
             var aggregate = FindAggregateByRuntimeType(runtimeType);
-            var _ = new Core.ViewRenderingContext();
-            var instance = RuntimeAssembly.CreateInstance(aggregate.ToInstanceModel(_).RuntimeFullName);
+            var instance = RuntimeAssembly.CreateInstance(aggregate.ToInstanceModel().RuntimeFullName);
             return instance;
         }
 

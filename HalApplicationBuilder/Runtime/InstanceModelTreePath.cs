@@ -10,14 +10,13 @@ namespace HalApplicationBuilder.Runtime {
         internal static bool TryParse(string pathString, Core.Aggregate rootAggregate, out InstanceModelTreePath treePath) {
             var paths = (IEnumerable<string>)pathString.Split(".");
 
-            var _ = new Core.ViewRenderingContext();
             IEnumerable<Core.Aggregate> aggregates = new[] { rootAggregate };
             Core.AggregateMemberBase member = null;
             do {
                 var found = aggregates
                     .SelectMany(a => a.Members)
                     .SelectMany(
-                        member => member.ToInstanceModel(_),
+                        member => member.ToInstanceModel(),
                         (member, instanceMember) => new { member, instanceMember })
                     .SingleOrDefault(a => a.instanceMember.PropertyName == paths.First());
 

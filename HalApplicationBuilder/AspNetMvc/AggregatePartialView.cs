@@ -10,10 +10,9 @@ namespace HalApplicationBuilder.AspNetMvc {
         internal string AspViewPath => Path.Combine("~", Aggregate.Schema.Config.MvcViewDirectoryRelativePath, FileName);
 
         internal string TransformText() {
-            var modelClass = Aggregate.ToInstanceModel(new Core.ViewRenderingContext("Model"));
             var template = new AggregatePartialViewTemplate {
-                ModelTypeFullname = modelClass.RuntimeFullName,
-                View = modelClass.View,
+                ModelTypeFullname = Aggregate.ToInstanceModel().RuntimeFullName,
+                View = Aggregate.RenderInstanceView(new Core.ViewRenderingContext("Model")),
             };
             return template.TransformText();
         }

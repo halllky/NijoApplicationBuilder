@@ -19,10 +19,9 @@ namespace HalApplicationBuilder.Runtime.RuntimeContextFeatures {
                 .GetDescendants()
                 .Select(aggregate => aggregate.ToDbTableModel()));
 
-            var _ = new Core.ViewRenderingContext();
             var rootInstance = RuntimeContext
                 .RuntimeAssembly
-                .CreateInstance(key.Aggregate.ToInstanceModel(_).RuntimeFullName);
+                .CreateInstance(key.Aggregate.ToInstanceModel().RuntimeFullName);
 
             throw new NotImplementedException();
         }
