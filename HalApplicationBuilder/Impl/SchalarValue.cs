@@ -7,8 +7,11 @@ using HalApplicationBuilder.Core;
 using HalApplicationBuilder.EntityFramework;
 using HalApplicationBuilder.Runtime;
 
-namespace HalApplicationBuilder.MembersImpl {
+namespace HalApplicationBuilder.Impl {
     internal class SchalarValue : AggregateMemberBase {
+        internal SchalarValue(PropertyInfo propertyInfo, Aggregate owner, IServiceProvider serviceProvider)
+            : base(propertyInfo, owner, serviceProvider) { }
+
         public override bool IsCollection => false;
 
         public override IEnumerable<Aggregate> GetChildAggregates() {
@@ -61,58 +64,59 @@ namespace HalApplicationBuilder.MembersImpl {
             };
         }
 
-        public override IEnumerable<AspNetMvc.MvcModelProperty> CreateSearchConditionModels(IAggregateMember member) {
-            var propName = UnderlyingPropertyInfo.Name;
+        public override IEnumerable<AspNetMvc.MvcModelProperty> CreateSearchConditionModels() {
             var type = GetPropertyTypeExceptNullable();
             if (new[] { typeof(int), typeof(float), typeof(decimal), typeof(DateTime) }.Contains(type)) {
                 // 範囲検索
                 yield return new AspNetMvc.MvcModelProperty {
                     CSharpTypeName = $"{typeof(FromTo<>).Namespace}.{nameof(FromTo<object>)}<{GetSearchConditionCSharpTypeName()}>",
-                    PropertyName = propName,
+                    PropertyName = SearchConditonPropName,
                 };
 
             } else if (type.IsEnum) {
                 // enumドロップダウン
                 yield return new AspNetMvc.MvcModelProperty {
                     CSharpTypeName = type.FullName,
-                    PropertyName = propName,
+                    PropertyName = SearchConditonPropName,
                 };
 
             } else {
                 // ただのinput
                 yield return new AspNetMvc.MvcModelProperty {
                     CSharpTypeName = GetSearchConditionCSharpTypeName(),
-                    PropertyName = propName,
+                    PropertyName = SearchConditonPropName,
                 };
             }
         }
 
-        public override IEnumerable<AspNetMvc.MvcModelProperty> CreateSearchResultModels(IAggregateMember member) {
+        public override IEnumerable<AspNetMvc.MvcModelProperty> CreateSearchResultModels() {
             yield return new AspNetMvc.MvcModelProperty {
                 CSharpTypeName = GetCSharpTypeName(),
-                PropertyName = UnderlyingPropertyInfo.Name,
+                PropertyName = SearchResultPropName,
             };
         }
 
-        public override IEnumerable<AspNetMvc.MvcModelProperty> CreateInstanceModels(IAggregateMember member) {
-            var propertyName = UnderlyingPropertyInfo.Name;
+        public override IEnumerable<AspNetMvc.MvcModelProperty> CreateInstanceModels() {
             yield return new AspNetMvc.MvcModelProperty {
                 CSharpTypeName = GetCSharpTypeName(),
-                PropertyName = propertyName,
+                PropertyName = InstanceModelPropName,
             };
         }
 
-        internal override string RenderSearchConditionView(AspNetMvc.ViewRenderingContext context) {
-            var propName = SearchConditionModels.Single().PropertyName;
+        private string SearchConditonPropName => Name;
+        private string SearchResultPropName => Name;
+        private string InstanceModelPropName => Name;
+
+        public override string RenderSearchConditionView(AspNetMvc.ViewRenderingContext context) {
             var type = GetPropertyTypeExceptNullable();
-            var nestedContext = context.Nest(propName, isCollection: false);
+            var nested = context.Nest(SearchConditonPropName);
             if (new[] { typeof(int), typeof(float), typeof(decimal), typeof(DateTime) }.Contains(type)) {
                 // 範囲検索
                 var template = new SchalarValueSearchCondition {
                     Type = SchalarValueSearchCondition.E_Type.Range,
                     AspFor = new[] {
-                        $"{nestedContext.AspForPath}.{nameof(FromTo<object>.From)}",
-                        $"{nestedContext.AspForPath}.{nameof(FromTo<object>.To)}",
+                        $"{nested.AspForPath}.{nameof(FromTo<object>.From)}",
+                        $"{nested.AspForPath}.{nameof(FromTo<object>.To)}",
                     },
                 };
                 return template.TransformText();
@@ -121,7 +125,7 @@ namespace HalApplicationBuilder.MembersImpl {
                 // enumドロップダウン
                 var template = new SchalarValueSearchCondition {
                     Type = SchalarValueSearchCondition.E_Type.Select,
-                    AspFor = new[] { nestedContext.AspForPath },
+                    AspFor = new[] { nested.AspForPath },
                     EnumTypeName = GetSearchConditionCSharpTypeName(),
                     Options = IsNullable()
                         ? new[] { KeyValuePair.Create("", "") }
@@ -133,21 +137,19 @@ namespace HalApplicationBuilder.MembersImpl {
                 // ただのinput
                 var template = new SchalarValueSearchCondition {
                     Type = SchalarValueSearchCondition.E_Type.Input,
-                    AspFor = new[] { nestedContext.AspForPath },
+                    AspFor = new[] { nested.AspForPath },
                 };
                 return template.TransformText();
             }
         }
 
-        internal override string RenderSearchResultView(AspNetMvc.ViewRenderingContext context) {
-            var propertyName = SearchResultModels.Single().PropertyName;
-            var nested = context.Nest(propertyName, isCollection: false);
+        public override string RenderSearchResultView(AspNetMvc.ViewRenderingContext context) {
+            var nested = context.Nest(SearchResultPropName, isCollection: false);
             return $"<span>@{nested.Path}</span>";
         }
 
-        internal override string RenderInstanceView(AspNetMvc.ViewRenderingContext context) {
-            var propertyName = InstanceModels.Single().PropertyName;
-            var nested = context.Nest(propertyName);
+        public override string RenderInstanceView(AspNetMvc.ViewRenderingContext context) {
+            var nested = context.Nest(InstanceModelPropName);
             return $"<input asp-for=\"{nested.AspForPath}\"/>";
         }
 

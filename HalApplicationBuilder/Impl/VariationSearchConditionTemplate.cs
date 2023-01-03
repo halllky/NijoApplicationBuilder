@@ -8,14 +8,14 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace HalApplicationBuilder.MembersImpl {
+namespace HalApplicationBuilder.Impl {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
     using System;
     
     
-    public partial class ChildVariationSearchConditionTemplate : ChildVariationSearchConditionTemplateBase {
+    public partial class VariationSearchConditionTemplate : VariationSearchConditionTemplateBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
@@ -31,7 +31,7 @@ namespace HalApplicationBuilder.MembersImpl {
         }
     }
     
-    public class ChildVariationSearchConditionTemplateBase {
+    public class VariationSearchConditionTemplateBase {
         
         private global::System.Text.StringBuilder builder;
         

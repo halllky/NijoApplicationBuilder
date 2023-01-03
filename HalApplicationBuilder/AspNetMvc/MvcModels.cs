@@ -5,7 +5,7 @@ using System.Linq;
 namespace HalApplicationBuilder.AspNetMvc {
     public class MvcModels {
 
-        internal string TransformText(Core.ApplicationSchema schema, IViewModelProvider viewModelProvider, Core.Config config) {
+        internal string TransformText(Core.IApplicationSchema schema, IViewModelProvider viewModelProvider, Core.Config config) {
             var rootAggregates = schema.RootAggregates();
             var allAggregates = schema.AllAggregates();
             var template = new MvcModelsTemplate {

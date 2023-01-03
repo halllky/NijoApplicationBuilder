@@ -5,11 +5,9 @@ using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HalApplicationBuilder {
-    class Program {
-        static void Main(string[] args) {
-            var dllPath = "/__local__/20221211_haldoc_csharp/haldoc/HalApplicationBuilderSampleSchema/bin/Debug/net5.0/HalApplicationBuilderSampleSchema.dll";
+    public class Program {
 
-            var serviceCollection = new ServiceCollection();
+        public static void ConfigureServices(IServiceCollection serviceCollection, string dllPath) {
             serviceCollection.AddScoped(_ => new Core.Config {
                 DbContextName = "SampleDbContext",
                 DbContextNamespace = "HalApplicationBuilderSampleMvc.EntityFramework",
@@ -20,12 +18,18 @@ namespace HalApplicationBuilder {
             });
             serviceCollection.AddScoped(provider => {
                 var dll = Assembly.LoadFile(dllPath);
-                return new Core.ApplicationSchema(dll, provider.GetRequiredService<MembersImpl.AggregateMemberFactory>());
+                return new Impl.SchemaImpl(dll, provider);
             });
-            serviceCollection.AddScoped(provider => new MembersImpl.AggregateMemberFactory(provider));
-            serviceCollection.AddScoped<AspNetMvc.IViewModelProvider>(provider => provider.GetRequiredService<Core.ApplicationSchema>());
-            serviceCollection.AddScoped<EntityFramework.IDbSchema>(provider => provider.GetRequiredService<Core.ApplicationSchema>());
+            serviceCollection.AddScoped<Core.IAggregateMemberFactory>(provider => new Impl.AggregateMemberFactory(provider));
+            serviceCollection.AddScoped<Core.IApplicationSchema>(provider => provider.GetRequiredService<Impl.SchemaImpl>());
+            serviceCollection.AddScoped<AspNetMvc.IViewModelProvider>(provider => provider.GetRequiredService<Impl.SchemaImpl>());
+            serviceCollection.AddScoped<EntityFramework.IDbSchema>(provider => provider.GetRequiredService<Impl.SchemaImpl>());
+        }
 
+        static void Main(string[] args) {
+            var dllPath = "/__local__/20221211_haldoc_csharp/haldoc/HalApplicationBuilderSampleSchema/bin/Debug/net5.0/HalApplicationBuilderSampleSchema.dll";
+            var serviceCollection = new ServiceCollection();
+            ConfigureServices(serviceCollection, dllPath);
             var service = serviceCollection.BuildServiceProvider();
 
             var dllFileInfo = new FileInfo(dllPath);
@@ -38,7 +42,8 @@ namespace HalApplicationBuilder {
             using (var sw = new StreamWriter(efSourceFile, append: false, encoding: Encoding.UTF8)) {
                 var source = new EntityFramework.EFCoreSource();
                 sw.Write(source.TransformText(
-                    service.GetRequiredService<Core.ApplicationSchema>(),
+                    service.GetRequiredService<Core.IApplicationSchema>(),
+                    service.GetRequiredService<EntityFramework.IDbSchema>(),
                     service.GetRequiredService<Core.Config>()));
             }
 
@@ -49,7 +54,7 @@ namespace HalApplicationBuilder {
             using (var sw = new StreamWriter(modelFile, append: false, encoding: Encoding.UTF8)) {
                 var source = new AspNetMvc.MvcModels();
                 sw.Write(source.TransformText(
-                    service.GetRequiredService<Core.ApplicationSchema>(),
+                    service.GetRequiredService<Core.IApplicationSchema>(),
                     service.GetRequiredService<AspNetMvc.IViewModelProvider>(),
                     service.GetRequiredService<Core.Config>()));
             }
@@ -64,42 +69,42 @@ namespace HalApplicationBuilder {
             //}
 
             Console.WriteLine("コード自動生成: MVC View - MultiView");
-            foreach (var aggregate in service.GetRequiredService<Core.ApplicationSchema>().RootAggregates()) {
+            foreach (var aggregate in service.GetRequiredService<Core.IApplicationSchema>().RootAggregates()) {
                 var view = new AspNetMvc.MultiView(aggregate);
                 var filename = Path.Combine(viewDir, view.FileName);
                 using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
-                sw.Write(view.TransformText(service.GetRequiredService<Core.ApplicationSchema>()));
+                sw.Write(view.TransformText(service.GetRequiredService<AspNetMvc.IViewModelProvider>()));
             }
 
             Console.WriteLine("コード自動生成: MVC View - SingleView");
-            foreach (var aggregate in service.GetRequiredService<Core.ApplicationSchema>().RootAggregates()) {
+            foreach (var aggregate in service.GetRequiredService<Core.IApplicationSchema>().RootAggregates()) {
                 var view = new AspNetMvc.SingleView(aggregate);
                 var filename = Path.Combine(viewDir, view.FileName);
                 using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
                 sw.Write(view.TransformText(
-                    service.GetRequiredService<Core.ApplicationSchema>(),
+                    service.GetRequiredService<AspNetMvc.IViewModelProvider>(),
                     service.GetRequiredService<Core.Config>()));
             }
 
             Console.WriteLine("コード自動生成: MVC View - CreateView");
-            foreach (var aggregate in service.GetRequiredService<Core.ApplicationSchema>().RootAggregates()) {
+            foreach (var aggregate in service.GetRequiredService<Core.IApplicationSchema>().RootAggregates()) {
                 var view = new AspNetMvc.CreateView(aggregate);
                 var filename = Path.Combine(viewDir, view.FileName);
                 using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
                 sw.Write(view.TransformText(
-                    service.GetRequiredService<Core.ApplicationSchema>(),
+                    service.GetRequiredService<AspNetMvc.IViewModelProvider>(),
                     service.GetRequiredService<Core.Config>()));
             }
 
             Console.WriteLine("コード自動生成: MVC View - 集約部分ビュー");
-            foreach (var aggregate in service.GetRequiredService<Core.ApplicationSchema>().AllAggregates()) {
+            foreach (var aggregate in service.GetRequiredService<Core.IApplicationSchema>().AllAggregates()) {
                 var view = new AspNetMvc.InstancePartialView(
                     aggregate,
                     service.GetRequiredService<Core.Config>());
                 var filename = Path.Combine(viewDir, view.FileName);
                 using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
                 sw.Write(view.TransformText(
-                    service.GetRequiredService<Core.ApplicationSchema>()));
+                    service.GetRequiredService<AspNetMvc.IViewModelProvider>()));
             }
 
             Console.WriteLine("コード自動生成: MVC Controller");
@@ -109,7 +114,8 @@ namespace HalApplicationBuilder {
             using (var sw = new StreamWriter(controllerFile, append: false, encoding: Encoding.UTF8)) {
                 var source = new AspNetMvc.Controller();
                 sw.Write(source.TransformText(
-                    service.GetRequiredService<Core.ApplicationSchema>(),
+                    service.GetRequiredService<Core.IApplicationSchema>(),
+                    service.GetRequiredService<AspNetMvc.IViewModelProvider>(),
                     service.GetRequiredService<Core.Config>()));
             }
 

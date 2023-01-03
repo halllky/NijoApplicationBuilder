@@ -38,6 +38,13 @@ namespace HalApplicationBuilder.Core {
             }
             return aggregate;
         }
+        public IEnumerable<Aggregate> GetAncestors() {
+            var aggregate = Parent?.Owner;
+            while (aggregate != null) {
+                yield return aggregate;
+                aggregate = aggregate.Parent?.Owner;
+            }
+        }
         public IEnumerable<Aggregate> GetDescendants() {
             var children = Members.SelectMany(member => member.GetChildAggregates());
             foreach (var child in children) {

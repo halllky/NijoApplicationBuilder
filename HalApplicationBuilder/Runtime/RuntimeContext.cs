@@ -11,15 +11,18 @@ namespace HalApplicationBuilder.Runtime {
             SchemaAssembly = schemaAssembly;
             RuntimeAssembly = runtimeAssembly;
 
-            var memberFactory = service.GetRequiredService<Core.IAggregateMemberFactory>();
-            ApplicationSchema = new Core.ApplicationSchema(schemaAssembly, memberFactory);
+            ApplicationSchema = service.GetRequiredService<Core.IApplicationSchema>();
+            DbSchema = service.GetRequiredService<EntityFramework.IDbSchema>();
+            ViewModelProvider = service.GetRequiredService<AspNetMvc.IViewModelProvider>();
             _service = service;
         }
 
         internal Assembly SchemaAssembly { get; }
         internal Assembly RuntimeAssembly { get; }
         internal Core.Config Config { get; }
-        internal Core.ApplicationSchema ApplicationSchema { get; }
+        internal Core.IApplicationSchema ApplicationSchema { get; }
+        internal EntityFramework.IDbSchema DbSchema { get; }
+        internal AspNetMvc.IViewModelProvider ViewModelProvider { get; }
 
         private readonly IServiceProvider _service;
 
@@ -50,10 +53,10 @@ namespace HalApplicationBuilder.Runtime {
                     .SelectMany(
                         aggregate => new[]
                         {
-                            ApplicationSchema.GetDbEntity(aggregate).RuntimeFullName,
-                            ApplicationSchema.GetSearchConditionModel(aggregate).RuntimeFullName,
-                            ApplicationSchema.GetSearchResultModel(aggregate).RuntimeFullName,
-                            ApplicationSchema.GetInstanceModel(aggregate).RuntimeFullName,
+                            DbSchema.GetDbEntity(aggregate).RuntimeFullName,
+                            ViewModelProvider.GetSearchConditionModel(aggregate).RuntimeFullName,
+                            ViewModelProvider.GetSearchResultModel(aggregate).RuntimeFullName,
+                            ViewModelProvider.GetInstanceModel(aggregate).RuntimeFullName,
                         },
                         (aggregate, runtimeFullname) => new { aggregate, runtimeFullname })
                     .ToDictionary(x => x.runtimeFullname, x => x.aggregate);
@@ -74,7 +77,7 @@ namespace HalApplicationBuilder.Runtime {
         }
         public object CreateInstance(Type runtimeType) {
             var aggregate = FindAggregateByRuntimeType(runtimeType);
-            var instance = RuntimeAssembly.CreateInstance(ApplicationSchema.GetInstanceModel(aggregate).RuntimeFullName);
+            var instance = RuntimeAssembly.CreateInstance(ViewModelProvider.GetInstanceModel(aggregate).RuntimeFullName);
             return instance;
         }
 

@@ -8,38 +8,69 @@ namespace HalApplicationBuilder.AspNetMvc {
     public class SearchConditionClass : MvcModel {
         public override string ClassName
             => $"{Source.Name}__SearchCondition";
-        private protected override IEnumerable<MvcModelProperty> CreateProperties(IAggregateMember member)
-            => PropertyFactory.CreateSearchConditionModels(member);
+
+        private protected override IEnumerable<MvcModelProperty> CreateProperties(IMvcModelPropertySource mvcModelProperty) {
+            foreach (var prop in mvcModelProperty.CreateSearchConditionModels()) {
+                //prop.Render = mvcModelProperty.RenderSearchConditionView;
+                yield return prop;
+            }
+        }
+
         internal override string Render(ViewRenderingContext context) {
+            var views = new Dictionary<string, string>();
+            foreach (var member in Source.Members) {
+                if (member is not IMemberRenderer renderer) continue;
+                views.Add(member.Name, renderer.RenderSearchConditionView(context));
+            }
             var template = new AggregateVerticalViewTemplate {
-                Members = Properties.ToDictionary(
-                    x => x.PropertyName,
-                    x => x.Render.Invoke(context)),
+                Members = views,
             };
             return template.TransformText();
         }
     }
+
     public class SearchResultClass : MvcModel {
         public override string ClassName
             => $"{Source.Name}__SearchResult";
-        private protected override IEnumerable<MvcModelProperty> CreateProperties(IAggregateMember member)
-            => PropertyFactory.CreateSearchResultModels(member);
+
+        private protected override IEnumerable<MvcModelProperty> CreateProperties(IMvcModelPropertySource mvcModelProperty) {
+            foreach (var prop in mvcModelProperty.CreateSearchResultModels()) {
+                //prop.Render = mvcModelProperty.RenderSearchResultView;
+                yield return prop;
+            }
+        }
+
         internal override string Render(ViewRenderingContext context) {
-            var propViews = Properties
-                .Select(member => member.Render.Invoke(context));
+            var propViews = new List<string>();
+            foreach (var member in Source.Members) {
+                if (member is not IMemberRenderer renderer) continue;
+                propViews.Add(renderer.RenderSearchResultView(context));
+            }
+            //var propViews = Properties
+            //    .Select(member => member.Render.Invoke(context));
             return string.Join(Environment.NewLine, propViews);
         }
     }
+
     public class InstanceModelClass : MvcModel {
         public override string ClassName
             => Source.Name;
-        private protected override IEnumerable<MvcModelProperty> CreateProperties(IAggregateMember member)
-            => PropertyFactory.CreateInstanceModels(member);
+
+        private protected override IEnumerable<MvcModelProperty> CreateProperties(IMvcModelPropertySource mvcModelProperty) {
+            foreach (var prop in mvcModelProperty.CreateInstanceModels()) {
+                //prop.Render = mvcModelProperty.RenderInstanceView;
+                yield return prop;
+            }
+        }
+
         internal override string Render(ViewRenderingContext context) {
+            var views = new Dictionary<string, string>();
+            foreach (var member in Source.Members) {
+                if (member is not IMemberRenderer renderer) continue;
+                views.Add(member.Name, renderer.RenderInstanceView(context));
+            }
             var template = new AggregateVerticalViewTemplate {
-                Members = Properties.ToDictionary(
-                    x => x.PropertyName,
-                    x => x.Render.Invoke(context)),
+                Members = views,
             };
             return template.TransformText();
         }
@@ -50,6 +81,8 @@ namespace HalApplicationBuilder.AspNetMvc {
 
         public Aggregate Source { get; init; }
         public MvcModelProperty Parent { get; init; }
+        public Core.Config Config { get; init; }
+
         public MvcModel GetRoot() {
             var cls = this;
             while (cls.Parent != null) {
@@ -58,29 +91,32 @@ namespace HalApplicationBuilder.AspNetMvc {
             return cls;
         }
 
-        public Core.Config Config { get; init; }
 
         public abstract string ClassName { get; }
         public string RuntimeFullName => Config.MvcModelNamespace + "." + ClassName;
 
-        private protected IMvcModelPropertyFactory PropertyFactory { get; init; }
-        private IReadOnlyList<MvcModelProperty> _properties;
+        private List<MvcModelProperty> _properties;
         public IReadOnlyList<MvcModelProperty> Properties {
             get {
                 if (_properties == null) {
-                    var props = Source.Members
-                        .SelectMany(CreateProperties, (m, ui) => new { m, ui })
-                        .ToList();
-                    foreach (var x in props) {
-                        x.ui.Source = x.m;
-                        x.ui.Owner = this;
+                    _properties = new List<MvcModelProperty>();
+                    foreach (var member in Source.Members) {
+                        if (member is not IMvcModelPropertySource mvcModelProperty)
+                            throw new InvalidOperationException($"{nameof(IMvcModelPropertySource)}を継承していない{nameof(IAggregateMember)}がある");
+
+                        var props = CreateProperties(mvcModelProperty).ToArray();
+                        foreach (var prop in props) {
+                            prop.Source = member;
+                            prop.Owner = this;
+                        }
+
+                        _properties.AddRange(props);
                     }
-                    _properties = props.Select(x => x.ui).ToArray();
                 }
                 return _properties;
             }
         }
-        private protected abstract IEnumerable<MvcModelProperty> CreateProperties(IAggregateMember member);
+        private protected abstract IEnumerable<MvcModelProperty> CreateProperties(IMvcModelPropertySource mvcModelProperty);
 
         internal abstract string Render(ViewRenderingContext context);
 
@@ -106,6 +142,7 @@ namespace HalApplicationBuilder.AspNetMvc {
         public string PropertyName { get; init; }
         public string Initializer { get; init; }
 
+        [Obsolete]
         internal Func<ViewRenderingContext, string> Render { get; set; }
 
         public override string ToString() {
@@ -122,9 +159,14 @@ namespace HalApplicationBuilder.AspNetMvc {
         }
     }
 
-    internal interface IMvcModelPropertyFactory {
-        IEnumerable<MvcModelProperty> CreateSearchConditionModels(IAggregateMember member);
-        IEnumerable<MvcModelProperty> CreateSearchResultModels(IAggregateMember member);
-        IEnumerable<MvcModelProperty> CreateInstanceModels(IAggregateMember member);
+    internal interface IMvcModelPropertySource {
+        IEnumerable<MvcModelProperty> CreateSearchConditionModels();
+        IEnumerable<MvcModelProperty> CreateSearchResultModels();
+        IEnumerable<MvcModelProperty> CreateInstanceModels();
+    }
+    internal interface IMemberRenderer {
+        string RenderSearchConditionView(ViewRenderingContext context);
+        string RenderSearchResultView(ViewRenderingContext context);
+        string RenderInstanceView(ViewRenderingContext context);
     }
 }

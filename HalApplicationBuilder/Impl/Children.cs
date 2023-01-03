@@ -1,12 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using HalApplicationBuilder.AspNetMvc;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.EntityFramework;
 
-namespace HalApplicationBuilder.MembersImpl {
+namespace HalApplicationBuilder.Impl {
     internal class Children : AggregateMemberBase {
+        internal Children(PropertyInfo propertyInfo, Aggregate owner, IServiceProvider serviceProvider)
+            : base(propertyInfo, owner, serviceProvider) { }
+
         public override bool IsCollection => true;
 
         private Aggregate _child;
@@ -28,33 +32,34 @@ namespace HalApplicationBuilder.MembersImpl {
             yield break;
         }
 
-        public override IEnumerable<MvcModelProperty> CreateInstanceModels(IAggregateMember member) {
+        public override IEnumerable<MvcModelProperty> CreateInstanceModels() {
             yield return new AspNetMvc.MvcModelProperty {
-                CSharpTypeName = $"List<{Schema.GetInstanceModel(ChildAggregate).RuntimeFullName}>",
-                PropertyName = Name,
+                CSharpTypeName = $"List<{ViewModelProvider.GetInstanceModel(ChildAggregate).RuntimeFullName}>",
+                PropertyName = InstanceModelPropName,
                 Initializer = "new()",
             };
         }
 
-        public override IEnumerable<MvcModelProperty> CreateSearchConditionModels(IAggregateMember member) {
+        public override IEnumerable<MvcModelProperty> CreateSearchConditionModels() {
             yield break;
         }
 
-        public override IEnumerable<MvcModelProperty> CreateSearchResultModels(IAggregateMember member) {
+        public override IEnumerable<MvcModelProperty> CreateSearchResultModels() {
             yield break;
         }
 
-        internal override string RenderSearchConditionView(ViewRenderingContext context) {
+        public override string RenderSearchConditionView(ViewRenderingContext context) {
             return string.Empty;
         }
 
-        internal override string RenderSearchResultView(ViewRenderingContext context) {
+        public override string RenderSearchResultView(ViewRenderingContext context) {
             return string.Empty;
         }
 
-        internal override string RenderInstanceView(ViewRenderingContext context) {
-            var model = InstanceModels.Single();
-            var nested = context.Nest(model.PropertyName, isCollection: true);
+        private string InstanceModelPropName => Name;
+
+        public override string RenderInstanceView(ViewRenderingContext context) {
+            var nested = context.Nest(InstanceModelPropName, isCollection: true);
             var template = new ChildrenInstanceTemplate {
                 i = context.LoopVar,
                 Count = $"{nested.CollectionPath}.{nameof(ICollection<object>.Count)}",

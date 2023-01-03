@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace HalApplicationBuilder.AspNetMvc {
 
-    internal class ViewRenderingContext {
+    public class ViewRenderingContext {
         internal ViewRenderingContext(params string[] ancestors) {
             _ancestors = ancestors;
         }

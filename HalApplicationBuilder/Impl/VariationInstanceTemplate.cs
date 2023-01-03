@@ -8,14 +8,14 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace HalApplicationBuilder.MembersImpl {
+namespace HalApplicationBuilder.Impl {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
     using System;
     
     
-    public partial class ChildVariationInstanceTemplate : ChildVariationInstanceTemplateBase {
+    public partial class VariationInstanceTemplate : VariationInstanceTemplateBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
@@ -35,7 +35,7 @@ namespace HalApplicationBuilder.MembersImpl {
         }
     }
     
-    public class ChildVariationInstanceTemplateBase {
+    public class VariationInstanceTemplateBase {
         
         private global::System.Text.StringBuilder builder;
         

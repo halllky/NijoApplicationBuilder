@@ -18,7 +18,7 @@
     <Folder Include="AspNetMvc\" />
     <Folder Include="EntityFramework\" />
     <Folder Include="Runtime\RuntimeContextFeatures\" />
-    <Folder Include="MembersImpl\" />
+    <Folder Include="Impl\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Core\AggregateInstanceTemplate.tt">
