@@ -65,7 +65,7 @@ namespace HalApplicationBuilder.Impl {
                 Count = $"{nested.CollectionPath}.{nameof(ICollection<object>.Count)}",
                 PartialViewName = new InstancePartialView(ChildAggregate, Config).FileName,
                 PartialViewBoundObjectName = nested.AspForPath,
-                AspForAddChild = nested.AspForCollectionPath,
+                AspForAddChild = new AggregatePath(ChildAggregate).Value,
             };
             return template.TransformText();
         }

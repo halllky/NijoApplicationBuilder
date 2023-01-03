@@ -84,13 +84,19 @@ namespace HalApplicationBuilder.AspNetMvc {
         public Core.Config Config { get; init; }
 
         public MvcModel GetRoot() {
-            var cls = this;
-            while (cls.Parent != null) {
-                cls = cls.Parent.Owner;
+            var model = this;
+            while (model.Parent != null) {
+                model = model.Parent.Owner;
             }
-            return cls;
+            return model;
         }
-
+        public IEnumerable<MvcModel> GetAncestors() {
+            var model = Parent.Owner;
+            while (model != null) {
+                yield return model;
+                model = model.Parent.Owner;
+            }
+        }
 
         public abstract string ClassName { get; }
         public string RuntimeFullName => Config.MvcModelNamespace + "." + ClassName;

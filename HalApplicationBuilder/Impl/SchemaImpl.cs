@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using HalApplicationBuilder.AspNetMvc;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HalApplicationBuilder.Impl {
     internal class SchemaImpl :
         Core.IApplicationSchema,
         EntityFramework.IDbSchema,
-        AspNetMvc.IViewModelProvider {
+        IViewModelProvider {
 
         internal SchemaImpl(Assembly assembly, IServiceProvider serviceProvider) {
             _schemaAssembly = assembly;
@@ -21,26 +22,38 @@ namespace HalApplicationBuilder.Impl {
 
         #region ApplicationSchema
         private HashSet<Core.Aggregate> _appSchema;
+        private Dictionary<string, Core.Aggregate> _pathMapping;
         private IReadOnlySet<Core.Aggregate> AppSchema {
             get {
-                if (_appSchema == null) {
-                    var memberFactory = _services.GetRequiredService<Core.IAggregateMemberFactory>();
-                    var rootAggregates = _schemaAssembly
-                        .GetTypes()
-                        .Where(type => type.GetCustomAttribute<AggregateAttribute>() != null)
-                        .Select(type => new Core.Aggregate(type, null, memberFactory));
-
-                    _appSchema = new HashSet<Core.Aggregate>();
-                    foreach (var aggregate in rootAggregates) {
-                        _appSchema.Add(aggregate);
-
-                        foreach (var descendant in aggregate.GetDescendants()) {
-                            _appSchema.Add(descendant);
-                        }
-                    }
-                }
+                if (_appSchema == null) BuildAggregates();
                 return _appSchema;
             }
+        }
+        private IReadOnlyDictionary<string, Core.Aggregate> PathMapping {
+            get {
+                if (_pathMapping == null) BuildAggregates();
+                return _pathMapping;
+            }
+        }
+        private void BuildAggregates() {
+            var memberFactory = _services.GetRequiredService<Core.IAggregateMemberFactory>();
+            var rootAggregates = _schemaAssembly
+                .GetTypes()
+                .Where(type => type.GetCustomAttribute<AggregateAttribute>() != null)
+                .Select(type => new Core.Aggregate(type, null, memberFactory));
+
+            _appSchema = new HashSet<Core.Aggregate>();
+            foreach (var aggregate in rootAggregates) {
+                _appSchema.Add(aggregate);
+
+                foreach (var descendant in aggregate.GetDescendants()) {
+                    _appSchema.Add(descendant);
+                }
+            }
+
+            _pathMapping = _appSchema
+                .GroupBy(aggregate => new Core.AggregatePath(aggregate))
+                .ToDictionary(path => path.Key.Value, path => path.First());
         }
 
         public IEnumerable<Core.Aggregate> AllAggregates() {
@@ -52,6 +65,10 @@ namespace HalApplicationBuilder.Impl {
         public Core.Aggregate FindByType(Type type) {
             return AppSchema.SingleOrDefault(a => a.UnderlyingType == type);
         }
+        public Core.Aggregate FindByPath(string aggregatePath) {
+            return PathMapping[aggregatePath];
+        }
+
         #endregion ApplicationSchema
 
 
@@ -83,11 +100,11 @@ namespace HalApplicationBuilder.Impl {
 
 
         #region ViewModelProvider
-        private Dictionary<Core.Aggregate, AspNetMvc.MvcModel> _searchConditions;
-        private Dictionary<Core.Aggregate, AspNetMvc.MvcModel> _searchResults;
-        private Dictionary<Core.Aggregate, AspNetMvc.MvcModel> _instanceModels;
+        private Dictionary<Core.Aggregate, MvcModel> _searchConditions;
+        private Dictionary<Core.Aggregate, MvcModel> _searchResults;
+        private Dictionary<Core.Aggregate, MvcModel> _instanceModels;
 
-        private IReadOnlyDictionary<Core.Aggregate, AspNetMvc.MvcModel> SearchConditions {
+        private IReadOnlyDictionary<Core.Aggregate, MvcModel> SearchConditions {
             get {
                 if (_searchConditions == null) {
 
@@ -107,7 +124,7 @@ namespace HalApplicationBuilder.Impl {
                 return _searchConditions;
             }
         }
-        private IReadOnlyDictionary<Core.Aggregate, AspNetMvc.MvcModel> SearchResults {
+        private IReadOnlyDictionary<Core.Aggregate, MvcModel> SearchResults {
             get {
                 if (_searchResults == null) {
 
@@ -127,7 +144,7 @@ namespace HalApplicationBuilder.Impl {
                 return _searchResults;
             }
         }
-        private IReadOnlyDictionary<Core.Aggregate, AspNetMvc.MvcModel> InstanceModels {
+        private IReadOnlyDictionary<Core.Aggregate, MvcModel> InstanceModels {
             get {
                 if (_instanceModels == null) {
 
@@ -148,13 +165,13 @@ namespace HalApplicationBuilder.Impl {
             }
         }
 
-        public AspNetMvc.MvcModel GetInstanceModel(Core.Aggregate aggregate) {
+        public MvcModel GetInstanceModel(Core.Aggregate aggregate) {
             return InstanceModels[aggregate];
         }
-        public AspNetMvc.MvcModel GetSearchConditionModel(Core.Aggregate aggregate) {
+        public MvcModel GetSearchConditionModel(Core.Aggregate aggregate) {
             return SearchConditions[aggregate];
         }
-        public AspNetMvc.MvcModel GetSearchResultModel(Core.Aggregate aggregate) {
+        public MvcModel GetSearchResultModel(Core.Aggregate aggregate) {
             return SearchResults[aggregate];
         }
         #endregion ViewModelProvider

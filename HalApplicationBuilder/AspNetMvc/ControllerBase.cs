@@ -88,20 +88,19 @@ namespace HalApplicationBuilder.AspNetMvc {
         }
 
         [HttpGet]
-        public virtual IActionResult NewChild(string aggregateTreePath, int currentArrayCount) {
-            //var rootAggregate = RuntimeContext.FindAggregateByRuntimeType(typeof(TInstanceModel));
-            //if (!Runtime.InstanceModelTreePath.TryParse(aggregateTreePath, rootAggregate, out var treePath)) {
-            //    return BadRequest($"{aggregateTreePath} と対応するメンバーが見つからない");
-            //}
-            //if (treePath.Member is not Core.MembersImpl.Children children) {
-            //    return BadRequest($"{aggregateTreePath} は配列メンバーでない");
-            //}
-            //var instance = RuntimeContext.RuntimeAssembly.CreateInstance(children.ChildAggregate.InstanceModel.RuntimeFullName);
-            //var partialView = new AspNetMvc.InstancePartialView { Aggregate = children.ChildAggregate };
-            //ViewData.TemplateInfo.HtmlFieldPrefix = $"{aggregateTreePath}[{currentArrayCount}]";
-            //return PartialView(partialView.AspViewPath, instance);
+        public virtual IActionResult NewChild(
+            [FromServices] Core.IApplicationSchema applicationSchema,
+            [FromServices] IViewModelProvider viewModelProvider,
+            [FromServices] Core.Config config,
+            string aggregateTreePath,
+            int currentArrayCount) {
 
-            throw new NotImplementedException();
+            var aggregate = applicationSchema.FindByPath(aggregateTreePath);
+            if (aggregate == null) return BadRequest($"{aggregateTreePath} と対応するメンバーが見つからない");
+
+            var partialView = new InstancePartialView(aggregate, config);
+            var instanceModel = viewModelProvider.GetInstanceModel(aggregate);
+            return PartialView(partialView.AspViewPath, RuntimeContext.RuntimeAssembly.CreateInstance(instanceModel.RuntimeFullName));
         }
         #endregion CreateView, SingleView
     }
