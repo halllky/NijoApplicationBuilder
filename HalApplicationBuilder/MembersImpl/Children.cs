@@ -13,11 +13,8 @@ namespace HalApplicationBuilder.MembersImpl {
         internal Aggregate ChildAggregate {
             get {
                 if (_child == null) {
-                    _child = new Aggregate {
-                        Schema = Schema,
-                        UnderlyingType = UnderlyingPropertyInfo.PropertyType.GetGenericArguments()[0],
-                        Parent = this,
-                    };
+                    var type = UnderlyingPropertyInfo.PropertyType.GetGenericArguments()[0];
+                    _child = new Aggregate(type, this, MemberFactory);
                 }
                 return _child;
             }
@@ -61,7 +58,7 @@ namespace HalApplicationBuilder.MembersImpl {
             var template = new ChildrenInstanceTemplate {
                 i = context.LoopVar,
                 Count = $"{nested.CollectionPath}.{nameof(ICollection<object>.Count)}",
-                PartialViewName = new AspNetMvc.InstancePartialView { Aggregate = ChildAggregate }.FileName,
+                PartialViewName = new InstancePartialView(ChildAggregate, Config).FileName,
                 PartialViewBoundObjectName = nested.AspForPath,
                 AspForAddChild = nested.AspForCollectionPath,
             };

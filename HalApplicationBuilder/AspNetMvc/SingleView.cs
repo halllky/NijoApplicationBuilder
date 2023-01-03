@@ -1,19 +1,24 @@
 ﻿using System;
 namespace HalApplicationBuilder.AspNetMvc {
     public class SingleView {
-        internal Core.Aggregate RootAggregate { get; init; }
+        internal SingleView(Core.Aggregate aggregate) {
+            if (aggregate.Parent != null) throw new ArgumentException($"集約ルートのみ");
+            RootAggregate = aggregate;
+        }
+
+        internal Core.Aggregate RootAggregate { get; }
 
         internal string FileName => $"{RootAggregate.Name}__SingleView.cshtml";
 
-        internal string TransformText() {
-            var model = RootAggregate.Schema.GetInstanceModel(RootAggregate);
+        internal string TransformText(IViewModelProvider viewModelProvider, Core.Config config) {
+            var model = viewModelProvider.GetInstanceModel(RootAggregate);
             var context = new ViewRenderingContext("Model", nameof(Model<object>.Item));
             var template = new SingleViewTemplate {
                 ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<object>)}<{model.RuntimeFullName}>",
                 PageTitle = $"@Model.{nameof(Model<object>.InstanceName)}",
                 UpdateActionName = "Update",
                 DeleteActionName = "Delete",
-                PartialViewName = new InstancePartialView { Aggregate = RootAggregate }.FileName,
+                PartialViewName = new InstancePartialView(RootAggregate, config).FileName,
                 PartialViewBoundObjectName = context.AspForPath,
             };
             return template.TransformText();

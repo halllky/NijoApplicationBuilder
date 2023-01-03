@@ -8,20 +8,24 @@ using System.Reflection;
 namespace HalApplicationBuilder.Core {
     public class Aggregate {
 
-        internal Aggregate() { }
+        internal Aggregate(Type underlyingType, IAggregateMember parent, IAggregateMemberFactory memberFactory) {
+            UnderlyingType = underlyingType;
+            Parent = parent;
+            _memberFactory = memberFactory;
+        }
 
-        internal ApplicationSchema Schema { get; init; }
-        internal Type UnderlyingType { get; init; }
+        private readonly IAggregateMemberFactory _memberFactory;
+        internal Type UnderlyingType { get; }
 
         public string Name => UnderlyingType.Name;
 
-        public IAggregateMember Parent { get; init; }
+        public IAggregateMember Parent { get; }
 
         private List<IAggregateMember> _members;
         public IReadOnlyList<IAggregateMember> Members {
             get {
                 if (_members == null) {
-                    _members = Schema.MemberFactory.CreateMembers(this).ToList();
+                    _members = _memberFactory.CreateMembers(this).ToList();
                 }
                 return _members;
             }

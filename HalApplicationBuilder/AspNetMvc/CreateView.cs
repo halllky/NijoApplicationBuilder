@@ -1,18 +1,23 @@
 ﻿using System;
 namespace HalApplicationBuilder.AspNetMvc {
     public class CreateView {
-        internal Core.Aggregate RootAggregate { get; init; }
+        internal CreateView(Core.Aggregate aggregate) {
+            if (aggregate.Parent != null) throw new ArgumentException($"集約ルートのみ");
+            RootAggregate = aggregate;
+        }
+
+        internal Core.Aggregate RootAggregate { get; }
 
         internal string FileName => $"{RootAggregate.Name}__CreateView.cshtml";
 
-        internal string TransformText() {
-            var model = RootAggregate.Schema.GetInstanceModel(RootAggregate);
+        internal string TransformText(IViewModelProvider viewModelProvider, Core.Config config) {
+            var model = viewModelProvider.GetInstanceModel(RootAggregate);
             var context = new ViewRenderingContext("Model", nameof(Model<object>.Item));
             var template = new CreateViewTemplate {
                 ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<object>)}<{model.RuntimeFullName}>",
                 PageTitle = $"{RootAggregate.Name} - 新規作成",
                 ExecuteActionName = "Create",
-                PartialViewName = new InstancePartialView { Aggregate = RootAggregate }.FileName,
+                PartialViewName = new InstancePartialView(RootAggregate, config).FileName,
                 PartialViewBoundObjectName = context.AspForPath,
             };
             return template.TransformText();

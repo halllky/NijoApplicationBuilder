@@ -5,24 +5,23 @@ using System.Linq;
 
 namespace HalApplicationBuilder.AspNetMvc {
     public class Controller {
-        internal Core.ApplicationSchema Schema { get; init; }
 
-        internal string TransformText() {
-            var controllers = Schema
+        internal string TransformText(Core.ApplicationSchema schema, Core.Config config) {
+            var controllers = schema
                 .RootAggregates()
                 .Select(aggregate => new ControllerClassMetadata {
                     ClassName = $"{aggregate.Name}Controller",
                     BaseClassFullName
                         = $"{typeof(ControllerBase<,,>).Namespace}.{nameof(ControllerBase<object, object, object>)}"
-                        + $"<{Schema.GetSearchConditionModel(aggregate).RuntimeFullName},"
-                        + $" {Schema.GetSearchResultModel(aggregate).RuntimeFullName},"
-                        + $" {Schema.GetInstanceModel(aggregate).RuntimeFullName}>",
-                    MultiViewName = "~/" + Path.Combine(Schema.Config.MvcViewDirectoryRelativePath, new MultiView { RootAggregate = aggregate }.FileName),
-                    CreateViewName = "~/" + Path.Combine(Schema.Config.MvcViewDirectoryRelativePath, new CreateView { RootAggregate = aggregate }.FileName),
-                    SingleViewName = "~/" + Path.Combine(Schema.Config.MvcViewDirectoryRelativePath, new SingleView { RootAggregate = aggregate }.FileName),
+                        + $"<{schema.GetSearchConditionModel(aggregate).RuntimeFullName},"
+                        + $" {schema.GetSearchResultModel(aggregate).RuntimeFullName},"
+                        + $" {schema.GetInstanceModel(aggregate).RuntimeFullName}>",
+                    MultiViewName = "~/" + Path.Combine(config.MvcViewDirectoryRelativePath, new MultiView(aggregate).FileName),
+                    CreateViewName = "~/" + Path.Combine(config.MvcViewDirectoryRelativePath, new CreateView(aggregate).FileName),
+                    SingleViewName = "~/" + Path.Combine(config.MvcViewDirectoryRelativePath, new SingleView(aggregate).FileName),
                 });
             var template = new ControllerTemplate {
-                Namespace = Schema.Config.MvcControllerNamespace,
+                Namespace = config.MvcControllerNamespace,
                 Controllers = controllers,
             };
             return template.TransformText();

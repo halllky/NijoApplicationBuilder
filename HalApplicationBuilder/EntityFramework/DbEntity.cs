@@ -7,13 +7,22 @@ using HalApplicationBuilder.Core;
 
 namespace HalApplicationBuilder.EntityFramework {
     public class DbEntity {
-        public Aggregate Source { get; init; }
+        internal DbEntity(Aggregate source, DbEntity parent, Config config) {
+            Source = source;
+            Parent = parent;
+            _config = config;
+        }
+
+        public Aggregate Source { get; }
+        public DbEntity Parent { get; }
+
+        private readonly Config _config;
 
         public string ClassName
             => Source.UnderlyingType.GetCustomAttribute<TableAttribute>()?.Name
             ?? Source.UnderlyingType.Name;
         public string RuntimeFullName
-            => Source.Schema.Config.EntityNamespace + "." + ClassName;
+            => _config.EntityNamespace + "." + ClassName;
 
         private List<DbColumn> _pk;
         private List<DbColumn> _notPk;
@@ -50,8 +59,8 @@ namespace HalApplicationBuilder.EntityFramework {
                 });
             }
             // 親の主キー
-            if (Source.Parent != null) {
-                _pk.InsertRange(0, Source.Schema.GetDbEntity(Source.Parent.Owner).PKColumns);
+            if (Parent != null) {
+                _pk.InsertRange(0, Parent.PKColumns);
                 // stack overflow
                 //_navigationProperties = new() {
                 //    new Dto.PropertyTemplate { CSharpTypeName = $"virtual {Parent.Owner.ToDbTableModel().ClassName}", PropertyName = "Parent" },

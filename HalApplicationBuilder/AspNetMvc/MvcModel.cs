@@ -58,8 +58,10 @@ namespace HalApplicationBuilder.AspNetMvc {
             return cls;
         }
 
+        public Core.Config Config { get; init; }
+
         public abstract string ClassName { get; }
-        public string RuntimeFullName => Source.Schema.Config.MvcModelNamespace + "." + ClassName;
+        public string RuntimeFullName => Config.MvcModelNamespace + "." + ClassName;
 
         private protected IMvcModelPropertyFactory PropertyFactory { get; init; }
         private IReadOnlyList<MvcModelProperty> _properties;

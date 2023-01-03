@@ -21,7 +21,7 @@ namespace HalApplicationBuilder.MembersImpl {
                 if (!childType.IsAbstract && !variations.Any()) {
                     // complex object
                     _children = new Dictionary<int, Aggregate> {
-                        { -1, new Aggregate { Schema = Schema, Parent = this, UnderlyingType = childType }},
+                        { -1, new Aggregate(childType, this, MemberFactory) },
                     };
 
                 } else if (childType.IsAbstract && variations.Any()) {
@@ -31,11 +31,9 @@ namespace HalApplicationBuilder.MembersImpl {
                         var typeNames = string.Join(", ", cannotAssignable.Select(x => x.Type.Name));
                         throw new InvalidOperationException($"{childType.Name} の派生型でない: {typeNames}");
                     }
-                    _children = variations.ToDictionary(v => v.Key, v => new Aggregate {
-                        Schema = Schema,
-                        UnderlyingType = v.Type,
-                        Parent = this,
-                    });
+                    _children = variations.ToDictionary(
+                        v => v.Key,
+                        v => new Aggregate(v.Type, this, MemberFactory));
 
                 } else {
                     throw new InvalidOperationException($": 抽象型ならバリエーション必須、抽象型でないならバリエーション指定不可");
@@ -72,7 +70,7 @@ namespace HalApplicationBuilder.MembersImpl {
         public override IEnumerable<MvcModelProperty> CreateSearchConditionModels(IAggregateMember member) {
             if (IsComplexType()) {
                 yield return new MvcModelProperty {
-                    CSharpTypeName = ChildAggregate.Schema.GetSearchConditionModel(ChildAggregate).RuntimeFullName,
+                    CSharpTypeName = Schema.GetSearchConditionModel(ChildAggregate).RuntimeFullName,
                     PropertyName = Name,
                     Initializer = "new()",
                 };
@@ -89,7 +87,7 @@ namespace HalApplicationBuilder.MembersImpl {
 
         public override IEnumerable<MvcModelProperty> CreateSearchResultModels(IAggregateMember member) {
             if (IsComplexType()) {
-                foreach (var childProp in ChildAggregate.Schema.GetSearchResultModel(ChildAggregate).Properties) {
+                foreach (var childProp in Schema.GetSearchResultModel(ChildAggregate).Properties) {
                     yield return new MvcModelProperty {
                         PropertyName = childProp.PropertyName,
                         CSharpTypeName = childProp.CSharpTypeName,
@@ -107,7 +105,7 @@ namespace HalApplicationBuilder.MembersImpl {
         public override IEnumerable<MvcModelProperty> CreateInstanceModels(IAggregateMember member) {
             if (IsComplexType()) {
                 yield return new MvcModelProperty {
-                    CSharpTypeName = ChildAggregate.Schema.GetInstanceModel(ChildAggregate).RuntimeFullName,
+                    CSharpTypeName = Schema.GetInstanceModel(ChildAggregate).RuntimeFullName,
                     PropertyName = Name,
                     Initializer = "new()",
                 };
@@ -120,7 +118,7 @@ namespace HalApplicationBuilder.MembersImpl {
                 // 各区分の詳細値
                 foreach (var child in GetChildren()) {
                     yield return new MvcModelProperty {
-                        CSharpTypeName = child.Value.Schema.GetInstanceModel(child.Value).RuntimeFullName,
+                        CSharpTypeName = Schema.GetInstanceModel(child.Value).RuntimeFullName,
                         PropertyName = $"{Name}__{child.Value.Name}",
                         Initializer = "new()",
                     };
@@ -131,7 +129,7 @@ namespace HalApplicationBuilder.MembersImpl {
         internal override string RenderSearchConditionView(ViewRenderingContext context) {
             if (IsComplexType()) {
                 var nested = context.Nest(SearchConditionModels.Single().PropertyName);
-                return ChildAggregate.Schema.GetSearchConditionModel(ChildAggregate).Render(nested);
+                return Schema.GetSearchConditionModel(ChildAggregate).Render(nested);
             } else {
                 var childrenViews = SearchConditionModels
                     .Select(child => {
@@ -159,7 +157,7 @@ namespace HalApplicationBuilder.MembersImpl {
             if (IsComplexType()) {
                 var model = InstanceModels.Single();
                 var nestedContext = context.Nest(model.PropertyName);
-                return ChildAggregate.Schema.GetInstanceModel(ChildAggregate).Render(nestedContext);
+                return Schema.GetInstanceModel(ChildAggregate).Render(nestedContext);
             } else {
                 var nested1 = context.Nest(Name); // 区分値(ラジオボタン用)
                 var instanceModels = InstanceModels.ToArray();
@@ -170,7 +168,7 @@ namespace HalApplicationBuilder.MembersImpl {
                             Key = child.Key,
                             Name = child.Value.Name,
                             RadioButtonAspFor = nested1.AspForPath,
-                            ChildAggregateView = child.Value.Schema.GetInstanceModel(child.Value).Render(nested2),
+                            ChildAggregateView = Schema.GetInstanceModel(child.Value).Render(nested2),
                         };
                         return template.TransformText();
                     });

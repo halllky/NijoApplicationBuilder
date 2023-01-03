@@ -3,24 +3,25 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace HalApplicationBuilder.Runtime {
     public class RuntimeContext {
-        public RuntimeContext(Assembly schemaAssembly, Assembly runtimeAssembly, Core.Config config) {
+        public RuntimeContext(Assembly schemaAssembly, Assembly runtimeAssembly, IServiceProvider service) {
             SchemaAssembly = schemaAssembly;
             RuntimeAssembly = runtimeAssembly;
-            Config = config;
 
-            ApplicationSchema = new Core.ApplicationSchema(
-                schemaAssembly,
-                config,
-                new MembersImpl.AggregateMemberFactory());
+            var memberFactory = service.GetRequiredService<Core.IAggregateMemberFactory>();
+            ApplicationSchema = new Core.ApplicationSchema(schemaAssembly, memberFactory);
+            _service = service;
         }
 
         internal Assembly SchemaAssembly { get; }
         internal Assembly RuntimeAssembly { get; }
         internal Core.Config Config { get; }
         internal Core.ApplicationSchema ApplicationSchema { get; }
+
+        private readonly IServiceProvider _service;
 
         public IEnumerable<MenuItem> GetRootNavigations() {
             var rootAggregates = ApplicationSchema.RootAggregates();
@@ -62,7 +63,8 @@ namespace HalApplicationBuilder.Runtime {
         }
 
         internal DbContext GetDbContext() {
-            var dbContext = RuntimeAssembly.CreateInstance($"{Config.DbContextNamespace}.{Config.DbContextName}"); ;
+            var config = _service.GetRequiredService<Core.Config>();
+            var dbContext = RuntimeAssembly.CreateInstance($"{config.DbContextNamespace}.{config.DbContextName}"); ;
             return (DbContext)dbContext;
         }
 

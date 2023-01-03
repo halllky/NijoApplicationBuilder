@@ -14,6 +14,9 @@ namespace HalApplicationBuilder.MembersImpl {
         internal ApplicationSchema Schema { get; init; }
         internal PropertyInfo UnderlyingPropertyInfo { get; init; }
 
+        protected Config Config { get; init; }
+        protected IAggregateMemberFactory MemberFactory { get; init; }
+
         public string Name => UnderlyingPropertyInfo.Name;
         public bool IsPrimaryKey => UnderlyingPropertyInfo.GetCustomAttribute<KeyAttribute>() != null;
         /// <summary>

@@ -2,21 +2,17 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace HalApplicationBuilder.Core {
-    internal class ApplicationSchema {
-        internal ApplicationSchema(
-            Assembly assembly,
-            Config config,
-            IAggregateMemberFactory memberFactory) {
+    internal class ApplicationSchema : EntityFramework.IDbSchema, AspNetMvc.IViewModelProvider {
+        internal ApplicationSchema(Assembly assembly, IAggregateMemberFactory memberFactory) {
             Assembly = assembly;
-            Config = config;
-            MemberFactory = memberFactory;
+            _memberFactory = memberFactory;
         }
 
         internal Assembly Assembly { get; }
-        internal Config Config { get; }
-        internal IAggregateMemberFactory MemberFactory { get; }
+        private readonly IAggregateMemberFactory _memberFactory;
 
         private HashSet<Aggregate> _cache;
         private HashSet<Aggregate> Cache {
@@ -25,11 +21,7 @@ namespace HalApplicationBuilder.Core {
                     var rootAggregates = Assembly
                         .GetTypes()
                         .Where(type => type.GetCustomAttribute<AggregateAttribute>() != null)
-                        .Select(type => new Aggregate {
-                            Schema = this,
-                            UnderlyingType = type,
-                            Parent = null,
-                        });
+                        .Select(type => new Aggregate(type, null, _memberFactory));
 
                     _cache = new HashSet<Aggregate>();
                     foreach (var aggregate in rootAggregates) {
@@ -54,17 +46,17 @@ namespace HalApplicationBuilder.Core {
             return Cache.SingleOrDefault(a => a.UnderlyingType == type);
         }
 
-        internal EntityFramework.DbEntity GetDbEntity(Aggregate aggregate) {
+        public EntityFramework.DbEntity GetDbEntity(Aggregate aggregate) {
             throw new NotImplementedException();
         }
 
-        internal AspNetMvc.MvcModel GetInstanceModel(Aggregate aggregate) {
+        public AspNetMvc.MvcModel GetInstanceModel(Aggregate aggregate) {
             throw new NotImplementedException();
         }
-        internal AspNetMvc.MvcModel GetSearchConditionModel(Aggregate aggregate) {
+        public AspNetMvc.MvcModel GetSearchConditionModel(Aggregate aggregate) {
             throw new NotImplementedException();
         }
-        internal AspNetMvc.MvcModel GetSearchResultModel(Aggregate aggregate) {
+        public AspNetMvc.MvcModel GetSearchResultModel(Aggregate aggregate) {
             throw new NotImplementedException();
         }
     }

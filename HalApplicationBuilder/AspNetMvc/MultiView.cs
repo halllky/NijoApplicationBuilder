@@ -3,13 +3,18 @@ using System.Collections.Generic;
 
 namespace HalApplicationBuilder.AspNetMvc {
     public class MultiView {
-        internal Core.Aggregate RootAggregate { get; init; }
+        internal MultiView(Core.Aggregate aggregate) {
+            if (aggregate.Parent != null) throw new ArgumentException($"集約ルートのみ");
+            RootAggregate = aggregate;
+        }
+
+        internal Core.Aggregate RootAggregate { get; }
 
         internal string FileName => $"{RootAggregate.Name}__MultiView.cshtml";
 
-        internal string TransformText() {
-            var searchConditionModel = RootAggregate.Schema.GetSearchConditionModel(RootAggregate);
-            var searchResultModel = RootAggregate.Schema.GetSearchResultModel(RootAggregate);
+        internal string TransformText(IViewModelProvider viewModelProvider) {
+            var searchConditionModel = viewModelProvider.GetSearchConditionModel(RootAggregate);
+            var searchResultModel = viewModelProvider.GetSearchResultModel(RootAggregate);
             var template = new MultiViewTemplate {
                 ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<object, object>)}<{searchConditionModel.RuntimeFullName}, {searchResultModel.RuntimeFullName}>",
                 PageTitle = RootAggregate.Name,
