@@ -5,6 +5,7 @@ using System.Reflection;
 using HalApplicationBuilder.AspNetMvc;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.EntityFramework;
+using HalApplicationBuilder.Runtime;
 
 namespace HalApplicationBuilder.Impl {
     internal class Children : AggregateMemberBase {
@@ -33,8 +34,10 @@ namespace HalApplicationBuilder.Impl {
         }
 
         public override IEnumerable<MvcModelProperty> CreateInstanceModels() {
+            var vm = $"{typeof(Runtime.Instance<>).Namespace}.{nameof(Runtime.Instance<object>)}";
+            var item = ViewModelProvider.GetInstanceModel(ChildAggregate).RuntimeFullName;
             yield return new AspNetMvc.MvcModelProperty {
-                CSharpTypeName = $"List<{ViewModelProvider.GetInstanceModel(ChildAggregate).RuntimeFullName}>",
+                CSharpTypeName = $"List<{vm}<{item}>>",
                 PropertyName = InstanceModelPropName,
                 Initializer = "new()",
             };

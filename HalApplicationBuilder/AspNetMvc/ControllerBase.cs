@@ -53,7 +53,9 @@ namespace HalApplicationBuilder.AspNetMvc {
         [HttpGet]
         public virtual IActionResult New() {
             var model = new CreateView.Model<TInstanceModel> {
-                Item = RuntimeContext.CreateInstance<TInstanceModel>(),
+                Item = new Runtime.Instance<TInstanceModel> {
+                    Item = RuntimeContext.CreateInstance<TInstanceModel>(),
+                },
             };
             return View(CreateViewName, model);
         }
@@ -72,7 +74,9 @@ namespace HalApplicationBuilder.AspNetMvc {
 
             var model = new SingleView.Model<TInstanceModel> {
                 InstanceName = new Runtime.InstanceName(instance, aggregate).Value,
-                Item = (TInstanceModel)instance,
+                Item = new Runtime.Instance<TInstanceModel> {
+                    Item = (TInstanceModel)instance,
+                },
             };
             return View(SingleViewName, model);
         }
@@ -100,7 +104,15 @@ namespace HalApplicationBuilder.AspNetMvc {
 
             var partialView = new InstancePartialView(aggregate, config);
             var instanceModel = viewModelProvider.GetInstanceModel(aggregate);
-            return PartialView(partialView.AspViewPath, RuntimeContext.RuntimeAssembly.CreateInstance(instanceModel.RuntimeFullName));
+            var newChildType = RuntimeContext.RuntimeAssembly.GetType(instanceModel.RuntimeFullName);
+
+            var viewModelType = typeof(Runtime.Instance<>).MakeGenericType(newChildType);
+            var instance = Activator.CreateInstance(viewModelType);
+            viewModelType
+                .GetProperty(nameof(Runtime.Instance<object>.Item))
+                .SetValue(instance, RuntimeContext.CreateInstance(newChildType));
+
+            return PartialView(partialView.AspViewPath, instance);
         }
         #endregion CreateView, SingleView
     }

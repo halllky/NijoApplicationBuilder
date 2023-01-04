@@ -55,11 +55,11 @@ namespace HalApplicationBuilderSampleMvc.Models {
     public class 会社 {
         public string 会社ID { get; set; }
         public string 会社名 { get; set; }
-        public HalApplicationBuilderSampleMvc.Models.連絡先 連絡先 { get; set; } = new();
+        public HalApplicationBuilder.Runtime.Instance<HalApplicationBuilderSampleMvc.Models.連絡先> 連絡先 { get; set; } = new();
         public int? 資本情報 { get; set; }
         public HalApplicationBuilderSampleMvc.Models.上場企業資本情報 資本情報_上場企業資本情報 { get; set; } = new();
         public HalApplicationBuilderSampleMvc.Models.非上場企業資本情報 資本情報_非上場企業資本情報 { get; set; } = new();
-        public List<HalApplicationBuilderSampleMvc.Models.営業所> 営業所 { get; set; } = new();
+        public List<HalApplicationBuilder.Runtime.Instance<HalApplicationBuilderSampleMvc.Models.営業所>> 営業所 { get; set; } = new();
     }
     public class 連絡先 {
         public string 電話番号 { get; set; }
@@ -78,7 +78,7 @@ namespace HalApplicationBuilderSampleMvc.Models {
     }
     public class 営業所 {
         public string 営業所名 { get; set; }
-        public List<HalApplicationBuilderSampleMvc.Models.支店> 支店 { get; set; } = new();
+        public List<HalApplicationBuilder.Runtime.Instance<HalApplicationBuilderSampleMvc.Models.支店>> 支店 { get; set; } = new();
         public HalApplicationBuilder.Runtime.ReferenceDTO 担当者 { get; set; } = new();
     }
     public class 支店 {

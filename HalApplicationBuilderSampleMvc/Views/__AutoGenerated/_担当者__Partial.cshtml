@@ -1,5 +1,5 @@
 ﻿
-@model HalApplicationBuilderSampleMvc.Models.担当者;
+@model HalApplicationBuilder.Runtime.Instance<HalApplicationBuilderSampleMvc.Models.担当者>;
 
 
 <div class="container">
@@ -9,7 +9,7 @@
                 ユーザーID
             </label>
             <div class="col-sm-10">
-                <input asp-for="ユーザーID"/>
+                <input asp-for="Item.ユーザーID"/>
             </div>
         </div>
         <div class="row mb-3">
@@ -17,7 +17,7 @@
                 氏名
             </label>
             <div class="col-sm-10">
-                <input asp-for="氏名"/>
+                <input asp-for="Item.氏名"/>
             </div>
         </div>
     </div>

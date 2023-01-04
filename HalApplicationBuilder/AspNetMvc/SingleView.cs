@@ -1,4 +1,6 @@
 ﻿using System;
+using HalApplicationBuilder.Runtime;
+
 namespace HalApplicationBuilder.AspNetMvc {
     public class SingleView {
         internal SingleView(Core.Aggregate aggregate) {
@@ -12,7 +14,7 @@ namespace HalApplicationBuilder.AspNetMvc {
 
         internal string TransformText(IViewModelProvider viewModelProvider, Core.Config config) {
             var model = viewModelProvider.GetInstanceModel(RootAggregate);
-            var context = new ViewRenderingContext("Model", nameof(Model<object>.Item));
+            var context = new ViewRenderingContext("Model", nameof(Instance<object>.Item));
             var template = new SingleViewTemplate {
                 ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<object>)}<{model.RuntimeFullName}>",
                 PageTitle = $"@Model.{nameof(Model<object>.InstanceName)}",
@@ -26,7 +28,7 @@ namespace HalApplicationBuilder.AspNetMvc {
 
         public class Model<T> {
             public string InstanceName { get; set; }
-            public T Item { get; set; }
+            public Instance<T> Item { get; set; }
         }
     }
 

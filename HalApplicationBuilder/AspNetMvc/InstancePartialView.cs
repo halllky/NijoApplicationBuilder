@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using HalApplicationBuilder.Runtime;
 
 namespace HalApplicationBuilder.AspNetMvc {
 
@@ -18,8 +19,8 @@ namespace HalApplicationBuilder.AspNetMvc {
         internal string TransformText(IViewModelProvider viewModelProvider) {
             var model = viewModelProvider.GetInstanceModel(Aggregate);
             var template = new InstancePartialViewTemplate {
-                ModelTypeFullname = model.RuntimeFullName,
-                View = model.Render(new ViewRenderingContext("Model")),
+                ModelTypeFullname = $"{typeof(Instance<>).Namespace}.{nameof(Instance<object>)}<{model.RuntimeFullName}>",
+                View = model.Render(new ViewRenderingContext("Model", nameof(Instance<object>.Item))),
             };
             return template.TransformText();
         }

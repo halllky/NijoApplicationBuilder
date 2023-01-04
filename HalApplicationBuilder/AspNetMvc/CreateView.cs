@@ -1,4 +1,6 @@
 ﻿using System;
+using HalApplicationBuilder.Runtime;
+
 namespace HalApplicationBuilder.AspNetMvc {
     public class CreateView {
         internal CreateView(Core.Aggregate aggregate) {
@@ -24,7 +26,7 @@ namespace HalApplicationBuilder.AspNetMvc {
         }
 
         public class Model<T> {
-            public T Item { get; set; }
+            public Instance<T> Item { get; set; }
         }
     }
 

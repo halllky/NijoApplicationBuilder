@@ -1,5 +1,5 @@
 ﻿
-@model HalApplicationBuilderSampleMvc.Models.非上場企業資本情報;
+@model HalApplicationBuilder.Runtime.Instance<HalApplicationBuilderSampleMvc.Models.非上場企業資本情報>;
 
 
 <div class="container">
@@ -9,7 +9,7 @@
                 主要株主
             </label>
             <div class="col-sm-10">
-                <input asp-for="主要株主"/>
+                <input asp-for="Item.主要株主"/>
             </div>
         </div>
         <div class="row mb-3">
@@ -17,7 +17,7 @@
                 安定性
             </label>
             <div class="col-sm-10">
-                <input asp-for="安定性"/>
+                <input asp-for="Item.安定性"/>
             </div>
         </div>
     </div>

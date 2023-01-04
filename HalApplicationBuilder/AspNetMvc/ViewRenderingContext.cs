@@ -52,7 +52,7 @@ namespace HalApplicationBuilder.AspNetMvc {
         /// <param name="isCollection">コレクションなら添字つき</param>
         internal ViewRenderingContext Nest(string propertyName, bool isCollection = false) {
             var nested = isCollection ? $"{propertyName}[{LoopVar}]" : propertyName;
-            return new ViewRenderingContext(_ancestors.Union(new[] { nested }).ToArray());
+            return new ViewRenderingContext(_ancestors.Concat(new[] { nested }).ToArray());
         }
     }
 

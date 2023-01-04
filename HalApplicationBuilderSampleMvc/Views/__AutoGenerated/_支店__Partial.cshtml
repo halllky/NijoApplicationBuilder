@@ -1,5 +1,5 @@
 ﻿
-@model HalApplicationBuilderSampleMvc.Models.支店;
+@model HalApplicationBuilder.Runtime.Instance<HalApplicationBuilderSampleMvc.Models.支店>;
 
 
 <div class="container">
@@ -9,7 +9,7 @@
                 支店名
             </label>
             <div class="col-sm-10">
-                <input asp-for="支店名"/>
+                <input asp-for="Item.支店名"/>
             </div>
         </div>
     </div>

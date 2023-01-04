@@ -53,8 +53,10 @@ namespace HalApplicationBuilder.Impl {
         }
 
         public override IEnumerable<MvcModelProperty> CreateInstanceModels() {
+            var vm = $"{typeof(Instance<>).Namespace}.{nameof(Instance<object>)}";
+            var item = ViewModelProvider.GetInstanceModel(ChildAggregate).RuntimeFullName;
             yield return new MvcModelProperty {
-                CSharpTypeName = ViewModelProvider.GetInstanceModel(ChildAggregate).RuntimeFullName,
+                CSharpTypeName = $"{vm}<{item}>",
                 PropertyName = InstanceModelPropName,
                 Initializer = "new()",
             };
@@ -73,7 +75,7 @@ namespace HalApplicationBuilder.Impl {
         }
 
         public override string RenderInstanceView(ViewRenderingContext context) {
-            var nested = context.Nest(InstanceModelPropName);
+            var nested = context.Nest(InstanceModelPropName).Nest(nameof(Instance<object>.Item));
             return ViewModelProvider.GetInstanceModel(ChildAggregate).Render(nested);
         }
     }

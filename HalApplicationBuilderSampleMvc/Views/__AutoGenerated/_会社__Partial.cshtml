@@ -1,5 +1,5 @@
 ﻿
-@model HalApplicationBuilderSampleMvc.Models.会社;
+@model HalApplicationBuilder.Runtime.Instance<HalApplicationBuilderSampleMvc.Models.会社>;
 
 
 <div class="container">
@@ -9,7 +9,7 @@
                 会社ID
             </label>
             <div class="col-sm-10">
-                <input asp-for="会社ID"/>
+                <input asp-for="Item.会社ID"/>
             </div>
         </div>
         <div class="row mb-3">
@@ -17,7 +17,7 @@
                 会社名
             </label>
             <div class="col-sm-10">
-                <input asp-for="会社名"/>
+                <input asp-for="Item.会社名"/>
             </div>
         </div>
         <div class="row mb-3">
@@ -33,7 +33,7 @@
                 電話番号
             </label>
             <div class="col-sm-10">
-                <input asp-for="連絡先.電話番号"/>
+                <input asp-for="Item.連絡先.Item.電話番号"/>
             </div>
         </div>
         <div class="row mb-3">
@@ -41,7 +41,7 @@
                 郵便番号
             </label>
             <div class="col-sm-10">
-                <input asp-for="連絡先.郵便番号"/>
+                <input asp-for="Item.連絡先.Item.郵便番号"/>
             </div>
         </div>
         <div class="row mb-3">
@@ -49,7 +49,7 @@
                 住所1
             </label>
             <div class="col-sm-10">
-                <input asp-for="連絡先.住所1"/>
+                <input asp-for="Item.連絡先.Item.住所1"/>
             </div>
         </div>
         <div class="row mb-3">
@@ -57,7 +57,7 @@
                 住所2
             </label>
             <div class="col-sm-10">
-                <input asp-for="連絡先.住所2"/>
+                <input asp-for="Item.連絡先.Item.住所2"/>
             </div>
         </div>
         <div class="row mb-3">
@@ -65,7 +65,7 @@
                 住所3
             </label>
             <div class="col-sm-10">
-                <input asp-for="連絡先.住所3"/>
+                <input asp-for="Item.連絡先.Item.住所3"/>
             </div>
         </div>
     </div>
@@ -81,7 +81,7 @@
                 
 <div>
     <label>
-        <input type="radio" asp-for="資本情報" value="0" />
+        <input type="radio" asp-for="Item.資本情報" value="0" />
         上場企業資本情報
     </label>
     
@@ -92,7 +92,7 @@
                 自己資本比率
             </label>
             <div class="col-sm-10">
-                <input asp-for="資本情報_上場企業資本情報.自己資本比率"/>
+                <input asp-for="Item.資本情報_上場企業資本情報.自己資本比率"/>
             </div>
         </div>
         <div class="row mb-3">
@@ -100,7 +100,7 @@
                 利益率
             </label>
             <div class="col-sm-10">
-                <input asp-for="資本情報_上場企業資本情報.利益率"/>
+                <input asp-for="Item.資本情報_上場企業資本情報.利益率"/>
             </div>
         </div>
     </div>
@@ -110,7 +110,7 @@
 
 <div>
     <label>
-        <input type="radio" asp-for="資本情報" value="1" />
+        <input type="radio" asp-for="Item.資本情報" value="1" />
         非上場企業資本情報
     </label>
     
@@ -121,7 +121,7 @@
                 主要株主
             </label>
             <div class="col-sm-10">
-                <input asp-for="資本情報_非上場企業資本情報.主要株主"/>
+                <input asp-for="Item.資本情報_非上場企業資本情報.主要株主"/>
             </div>
         </div>
         <div class="row mb-3">
@@ -129,7 +129,7 @@
                 安定性
             </label>
             <div class="col-sm-10">
-                <input asp-for="資本情報_非上場企業資本情報.安定性"/>
+                <input asp-for="Item.資本情報_非上場企業資本情報.安定性"/>
             </div>
         </div>
     </div>
@@ -144,8 +144,8 @@
             </label>
             <div class="col-sm-10">
                 
-@for (var i = 0; i < Model.営業所.Count; i++) {
-    <partial name="_営業所__Partial.cshtml" for="営業所[i]" />
+@for (var j = 0; j < Model.Item.営業所.Count; j++) {
+    <partial name="_営業所__Partial.cshtml" for="Item.営業所[j]" />
 }
 
 <input

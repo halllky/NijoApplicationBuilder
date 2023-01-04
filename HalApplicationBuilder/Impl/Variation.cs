@@ -108,7 +108,7 @@ namespace HalApplicationBuilder.Impl {
             var childrenViews = Variations
                 .Select(child => {
                     var nested2 = context.Nest(InstanceModelTypeDetailPropName(child));
-                        var template = new VariationInstanceTemplate {
+                    var template = new VariationInstanceTemplate {
                         Key = child.Key,
                         Name = child.Value.Name,
                         RadioButtonAspFor = nested1.AspForPath,
