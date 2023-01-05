@@ -21,9 +21,23 @@ namespace HalApplicationBuilder.AspNetMvc {
             this.GenerationEnvironment = null;
             this.Write("\n@model ");
             this.Write(this.ToStringHelper.ToStringWithCulture(ModelTypeFullname));
-            this.Write(";\n\n");
+            this.Write(";\n\n<div class=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ContainerClassName));
+            this.Write("\">\n    @if (");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ShowRemoveButton));
+            this.Write(") {\n        <input type=\"button\" value=\"削除\" class=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(RemoveButtonClassName));
+            this.Write("\" />\n    }\n\n    ");
             this.Write(this.ToStringHelper.ToStringWithCulture(View));
-            this.Write("\n");
+            this.Write("\n\n");
+ foreach (var field in HiddenFields) { 
+            this.Write("    <input type=\"hidden\" asp-for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(field.AspFor));
+            this.Write("\" class=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(field.Class));
+            this.Write("\" />\n");
+ } 
+            this.Write("</div>");
             return this.GenerationEnvironment.ToString();
         }
         

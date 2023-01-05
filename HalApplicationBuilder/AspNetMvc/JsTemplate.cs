@@ -21,31 +21,51 @@ namespace HalApplicationBuilder.AspNetMvc {
             this.GenerationEnvironment = null;
             this.Write("\n<script>\n    const Halapp = {\n        addNewChild: event => {\n            const " +
                     "controllerName = \'@(Context.Request.RouteValues[\"controller\"].ToString())\';\n    " +
-                    "        const addButton = $(event.target);\n            const ");
+                    "        const button = $(event.target);\n            const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(AGGREGATE_TREE_PATH_ARG));
-            this.Write(" = addButton.attr(\'");
+            this.Write(" = button.attr(\'");
             this.Write(this.ToStringHelper.ToStringWithCulture(AGGREGATE_TREE_PATH_ATTR));
             this.Write("\');\n            const ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AGGREGATE_MODEL_PATH_ARG));
+            this.Write(" = button.siblings(\'.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AGGREGATE_MODEL_PATH_ATTR));
+            this.Write("\').attr(\'name\');\n            const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(ADD_CHILD_ARG_2));
-            this.Write(" = addButton.siblings().length;\n            $.ajax({\n                type: \'GET\'," +
-                    "\n                url: `/${controllerName}/");
+            this.Write(" = button.siblings().length;\n            $.ajax({\n                type: \'GET\',\n  " +
+                    "              url: `/${controllerName}/");
             this.Write(this.ToStringHelper.ToStringWithCulture(ADD_CHILD_CTL));
-            this.Write("`,\n                data: { ");
+            this.Write("`,\n                data: {\n                    ");
             this.Write(this.ToStringHelper.ToStringWithCulture(AGGREGATE_TREE_PATH_ARG));
-            this.Write(", ");
+            this.Write(",\n                    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AGGREGATE_MODEL_PATH_ARG));
+            this.Write(",\n                    ");
             this.Write(this.ToStringHelper.ToStringWithCulture(ADD_CHILD_ARG_2));
-            this.Write(" },\n            }).then((data, textStatus, jqXHR) => {\n                const part" +
-                    "ialView = $($.parseHTML(data));\n                partialView.find(\'.");
+            this.Write(",\n                },\n            }).then((data, textStatus, jqXHR) => {\n         " +
+                    "       const partialView = $($.parseHTML(data));\n                partialView.fin" +
+                    "d(\'.");
             this.Write(this.ToStringHelper.ToStringWithCulture(ADD_CHILD_BTN));
-            this.Write("\').on(\'click\', Halapp.addNewChild);\n                partialView.insertBefore(addB" +
-                    "utton);\n            }).catch(err => {\n                console.trace(\'ERROR!!\', e" +
-                    "rr);\n            });\n        },\n        \n        // const form = $(\'#");
+            this.Write("\').on(\'click\', Halapp.addNewChild);\n                partialView.find(\'.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(REMOVE_BTN));
+            this.Write(@"').on('click', Halapp.removeChild);
+                partialView.insertBefore(button);
+            }).catch(err => {
+                console.trace('ERROR!!', err);
+            });
+        },
+        removeChild: event => {
+            const button = $(event.target);
+            const hiddenField = button.siblings('.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(REMOVE_HIDDEN_FIELD));
+            this.Write("\');\n            hiddenField.val(\'true\');\n            button.parent().css(\'display" +
+                    "\', \'none\');\n        },\n        \n        // const form = $(\'#");
             this.Write(this.ToStringHelper.ToStringWithCulture(FORM_ID));
             this.Write("\');\n        // const formFooter = $(\'#");
             this.Write(this.ToStringHelper.ToStringWithCulture(FORM_FOOTER_ID));
             this.Write("\');\n    }\n    $(\'.");
             this.Write(this.ToStringHelper.ToStringWithCulture(ADD_CHILD_BTN));
-            this.Write("\').on(\'click\', Halapp.addNewChild);\n</script>\n");
+            this.Write("\').on(\'click\', Halapp.addNewChild);\n    $(\'.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(REMOVE_BTN));
+            this.Write("\').on(\'click\', Halapp.removeChild);\n</script>");
             return this.GenerationEnvironment.ToString();
         }
         

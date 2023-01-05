@@ -69,6 +69,7 @@ namespace HalApplicationBuilder.Impl {
                 PartialViewName = new InstancePartialView(ChildAggregate, Config).FileName,
                 PartialViewBoundObjectName = nested.AspForPath,
                 AspForAddChild = new AggregatePath(ChildAggregate).Value,
+                AddButtonBoundObjectName = nested.AspForCollectionPath,
             };
             return template.TransformText();
         }
@@ -81,8 +82,10 @@ namespace HalApplicationBuilder.Impl {
         internal string PartialViewName { get; set; }
         internal string PartialViewBoundObjectName { get; set; }
         internal string AspForAddChild { get; set; }
+        internal string AddButtonBoundObjectName { get; set; }
 
-        internal static string AddButtonSenderIdentifier => AspNetMvc.JsTemplate.AGGREGATE_TREE_PATH_ATTR;
-        internal static string AddButtonCssClass => AspNetMvc.JsTemplate.ADD_CHILD_BTN;
+        internal static string AddButtonSenderIdentifier => JsTemplate.AGGREGATE_TREE_PATH_ATTR;
+        internal static string AddButtonCssClass => JsTemplate.ADD_CHILD_BTN;
+        internal static string ModelPathAttrName => JsTemplate.AGGREGATE_MODEL_PATH_ATTR;
     }
 }

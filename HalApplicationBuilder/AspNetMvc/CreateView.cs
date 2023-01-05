@@ -18,7 +18,6 @@ namespace HalApplicationBuilder.AspNetMvc {
             var template = new CreateViewTemplate {
                 ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<object>)}<{model.RuntimeFullName}>",
                 PageTitle = $"{RootAggregate.Name} - 新規作成",
-                ExecuteActionName = "Create",
                 PartialViewName = new InstancePartialView(RootAggregate, config).FileName,
                 PartialViewBoundObjectName = context.AspForPath,
             };
@@ -33,10 +32,10 @@ namespace HalApplicationBuilder.AspNetMvc {
     partial class CreateViewTemplate {
         internal static string FormId => JsTemplate.FORM_ID;
         internal static string FormFooterId => JsTemplate.FORM_FOOTER_ID;
+        internal static string ExecuteActionName => nameof(ControllerBase<object, object, object>.Create);
 
         internal string ModelTypeFullname { get; set; }
         internal string PageTitle { get; set; }
-        internal string ExecuteActionName { get; set; }
         internal string PartialViewName { get; set; }
         internal string PartialViewBoundObjectName { get; set; }
     }

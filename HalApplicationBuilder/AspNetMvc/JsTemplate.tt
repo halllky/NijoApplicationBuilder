@@ -8,24 +8,37 @@
     const Halapp = {
         addNewChild: event => {
             const controllerName = '@(Context.Request.RouteValues["controller"].ToString())';
-            const addButton = $(event.target);
-            const <#=AGGREGATE_TREE_PATH_ARG#> = addButton.attr('<#=AGGREGATE_TREE_PATH_ATTR#>');
-            const <#=ADD_CHILD_ARG_2#> = addButton.siblings().length;
+            const button = $(event.target);
+            const <#=AGGREGATE_TREE_PATH_ARG#> = button.attr('<#=AGGREGATE_TREE_PATH_ATTR#>');
+            const <#=AGGREGATE_MODEL_PATH_ARG#> = button.siblings('.<#=AGGREGATE_MODEL_PATH_ATTR#>').attr('name');
+            const <#=ADD_CHILD_ARG_2#> = button.siblings().length;
             $.ajax({
                 type: 'GET',
                 url: `/${controllerName}/<#=ADD_CHILD_CTL#>`,
-                data: { <#=AGGREGATE_TREE_PATH_ARG#>, <#=ADD_CHILD_ARG_2#> },
+                data: {
+                    <#=AGGREGATE_TREE_PATH_ARG#>,
+                    <#=AGGREGATE_MODEL_PATH_ARG#>,
+                    <#=ADD_CHILD_ARG_2#>,
+                },
             }).then((data, textStatus, jqXHR) => {
                 const partialView = $($.parseHTML(data));
                 partialView.find('.<#=ADD_CHILD_BTN#>').on('click', Halapp.addNewChild);
-                partialView.insertBefore(addButton);
+                partialView.find('.<#=REMOVE_BTN#>').on('click', Halapp.removeChild);
+                partialView.insertBefore(button);
             }).catch(err => {
                 console.trace('ERROR!!', err);
             });
+        },
+        removeChild: event => {
+            const button = $(event.target);
+            const hiddenField = button.siblings('.<#=REMOVE_HIDDEN_FIELD#>');
+            hiddenField.val('true');
+            button.parent().css('display', 'none');
         },
         
         // const form = $('#<#=FORM_ID#>');
         // const formFooter = $('#<#=FORM_FOOTER_ID#>');
     }
     $('.<#=ADD_CHILD_BTN#>').on('click', Halapp.addNewChild);
+    $('.<#=REMOVE_BTN#>').on('click', Halapp.removeChild);
 </script>

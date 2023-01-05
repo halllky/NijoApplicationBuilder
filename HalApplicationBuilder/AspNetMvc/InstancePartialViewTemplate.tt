@@ -6,4 +6,14 @@
 
 @model <#=ModelTypeFullname#>;
 
-<#=View#>
+<div class="<#=ContainerClassName#>">
+    @if (<#=ShowRemoveButton#>) {
+        <input type="button" value="削除" class="<#=RemoveButtonClassName#>" />
+    }
+
+    <#=View#>
+
+<# foreach (var field in HiddenFields) { #>
+    <input type="hidden" asp-for="<#=field.AspFor#>" class="<#=field.Class#>" />
+<# } #>
+</div>

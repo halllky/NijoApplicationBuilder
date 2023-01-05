@@ -1,7 +1,12 @@
 ﻿
 @model HalApplicationBuilder.Runtime.Instance<HalApplicationBuilderSampleMvc.Models.非上場企業資本情報>;
 
+<div class="halapp-aggregate-container">
+    @if (Model.IsRoot == false) {
+        <input type="button" value="削除" class="halapp-remove-button" />
+    }
 
+    
 <div class="container">
     <div class="form-horizontal">
         <div class="row mb-3">
@@ -23,3 +28,6 @@
     </div>
 </div>
 
+
+    <input type="hidden" asp-for="Removed" class="halapp-removed" />
+</div>

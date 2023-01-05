@@ -3,24 +3,37 @@
     const Halapp = {
         addNewChild: event => {
             const controllerName = '@(Context.Request.RouteValues["controller"].ToString())';
-            const addButton = $(event.target);
-            const aggregateTreePath = addButton.attr('halapp-aggregate-tree-path');
-            const currentArrayCount = addButton.siblings().length;
+            const button = $(event.target);
+            const aggregateTreePath = button.attr('halapp-aggregate-tree-path');
+            const modelPath = button.siblings('.halapp-aggregate-model-path').attr('name');
+            const currentArrayCount = button.siblings().length;
             $.ajax({
                 type: 'GET',
                 url: `/${controllerName}/NewChild`,
-                data: { aggregateTreePath, currentArrayCount },
+                data: {
+                    aggregateTreePath,
+                    modelPath,
+                    currentArrayCount,
+                },
             }).then((data, textStatus, jqXHR) => {
                 const partialView = $($.parseHTML(data));
                 partialView.find('.halapp-add-child').on('click', Halapp.addNewChild);
-                partialView.insertBefore(addButton);
+                partialView.find('.halapp-remove-button').on('click', Halapp.removeChild);
+                partialView.insertBefore(button);
             }).catch(err => {
                 console.trace('ERROR!!', err);
             });
+        },
+        removeChild: event => {
+            const button = $(event.target);
+            const hiddenField = button.siblings('.halapp-removed');
+            hiddenField.val('true');
+            button.parent().css('display', 'none');
         },
         
         // const form = $('#halapp-single-view-form');
         // const formFooter = $('#halapp-single-view-form-footer');
     }
     $('.halapp-add-child').on('click', Halapp.addNewChild);
+    $('.halapp-remove-button').on('click', Halapp.removeChild);
 </script>

@@ -66,23 +66,23 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>JsTemplate.cs</LastGenOutput>
     </None>
-    <None Update="MembersImpl\ChildrenInstanceTemplate.tt">
+    <None Update="Impl\ChildrenInstanceTemplate.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>ChildrenInstanceTemplate.cs</LastGenOutput>
     </None>
-    <None Update="MembersImpl\ChildVariationInstanceTemplate.tt">
+    <None Update="Impl\VariationInstanceTemplate.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>ChildVariationInstanceTemplate.cs</LastGenOutput>
+      <LastGenOutput>VariationInstanceTemplate.cs</LastGenOutput>
     </None>
-    <None Update="MembersImpl\ChildVariationSearchConditionTemplate.tt">
+    <None Update="Impl\VariationSearchConditionTemplate.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>ChildVariationSearchConditionTemplate.cs</LastGenOutput>
+      <LastGenOutput>VariationSearchConditionTemplate.cs</LastGenOutput>
     </None>
-    <None Update="MembersImpl\ReferenceInstanceTemplate.tt">
+    <None Update="Impl\ReferenceInstanceTemplate.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>ReferenceInstanceTemplate.cs</LastGenOutput>
     </None>
-    <None Update="MembersImpl\SchalarValueSearchCondition.tt">
+    <None Update="Impl\SchalarValueSearchCondition.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>SchalarValueSearchCondition.cs</LastGenOutput>
     </None>
@@ -131,19 +131,19 @@
     <Compile Update="AspNetMvc\JsTemplate.cs">
       <DependentUpon>JsTemplate.tt</DependentUpon>
     </Compile>
-    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="MembersImpl\ChildrenInstanceTemplate.cs">
+    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="Impl\ChildrenInstanceTemplate.cs">
       <DependentUpon>ChildrenInstanceTemplate.tt</DependentUpon>
     </Compile>
-    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="MembersImpl\ChildVariationInstanceTemplate.cs">
-      <DependentUpon>ChildVariationInstanceTemplate.tt</DependentUpon>
+    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="Impl\VariationInstanceTemplate.cs">
+      <DependentUpon>VariationInstanceTemplate.tt</DependentUpon>
     </Compile>
-    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="MembersImpl\ChildVariationSearchConditionTemplate.cs">
-      <DependentUpon>ChildVariationSearchConditionTemplate.tt</DependentUpon>
+    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="Impl\VariationSearchConditionTemplate.cs">
+      <DependentUpon>VariationSearchConditionTemplate.tt</DependentUpon>
     </Compile>
-    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="MembersImpl\ReferenceInstanceTemplate.cs">
+    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="Impl\ReferenceInstanceTemplate.cs">
       <DependentUpon>ReferenceInstanceTemplate.tt</DependentUpon>
     </Compile>
-    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="MembersImpl\SchalarValueSearchCondition.cs">
+    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="Impl\SchalarValueSearchCondition.cs">
       <DependentUpon>SchalarValueSearchCondition.tt</DependentUpon>
     </Compile>
     <Compile Update="AspNetMvc\InstancePartialViewTemplate.cs">

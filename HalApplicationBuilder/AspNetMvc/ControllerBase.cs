@@ -55,6 +55,7 @@ namespace HalApplicationBuilder.AspNetMvc {
             var model = new CreateView.Model<TInstanceModel> {
                 Item = new Runtime.Instance<TInstanceModel> {
                     Item = RuntimeContext.CreateInstance<TInstanceModel>(),
+                    IsRoot = true,
                 },
             };
             return View(CreateViewName, model);
@@ -76,6 +77,7 @@ namespace HalApplicationBuilder.AspNetMvc {
                 InstanceName = new Runtime.InstanceName(instance, aggregate).Value,
                 Item = new Runtime.Instance<TInstanceModel> {
                     Item = (TInstanceModel)instance,
+                    IsRoot = true,
                 },
             };
             return View(SingleViewName, model);
@@ -97,6 +99,7 @@ namespace HalApplicationBuilder.AspNetMvc {
             [FromServices] IViewModelProvider viewModelProvider,
             [FromServices] Core.Config config,
             string aggregateTreePath,
+            string modelPath,
             int currentArrayCount) {
 
             var aggregate = applicationSchema.FindByPath(aggregateTreePath);
@@ -111,6 +114,8 @@ namespace HalApplicationBuilder.AspNetMvc {
             viewModelType
                 .GetProperty(nameof(Runtime.Instance<object>.Item))
                 .SetValue(instance, RuntimeContext.CreateInstance(newChildType));
+
+            ViewData.TemplateInfo.HtmlFieldPrefix = modelPath;
 
             return PartialView(partialView.AspViewPath, instance);
         }

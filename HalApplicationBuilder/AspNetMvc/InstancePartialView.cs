@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using HalApplicationBuilder.Runtime;
 
@@ -21,6 +22,10 @@ namespace HalApplicationBuilder.AspNetMvc {
             var template = new InstancePartialViewTemplate {
                 ModelTypeFullname = $"{typeof(Instance<>).Namespace}.{nameof(Instance<object>)}<{model.RuntimeFullName}>",
                 View = model.Render(new ViewRenderingContext("Model", nameof(Instance<object>.Item))),
+                HiddenFields = new[] {
+                    (nameof(Instance<object>.Removed), JsTemplate.REMOVE_HIDDEN_FIELD),
+                },
+                ShowRemoveButton = $"Model.{nameof(Instance<object>.IsRoot)} == false",
             };
             return template.TransformText();
         }
@@ -29,5 +34,9 @@ namespace HalApplicationBuilder.AspNetMvc {
     partial class InstancePartialViewTemplate {
         internal string ModelTypeFullname { get; set; }
         internal string View { get; set; }
+        internal string ShowRemoveButton { get; set; }
+        internal IEnumerable<(string AspFor, string Class)> HiddenFields { get; set; }
+        internal static string ContainerClassName => JsTemplate.AGG_PARTIAL_CONTAINER;
+        internal static string RemoveButtonClassName => JsTemplate.REMOVE_BTN;
     }
 }

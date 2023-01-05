@@ -1,7 +1,12 @@
 ﻿
 @model HalApplicationBuilder.Runtime.Instance<HalApplicationBuilderSampleMvc.Models.会社>;
 
+<div class="halapp-aggregate-container">
+    @if (Model.IsRoot == false) {
+        <input type="button" value="削除" class="halapp-remove-button" />
+    }
 
+    
 <div class="container">
     <div class="form-horizontal">
         <div class="row mb-3">
@@ -153,9 +158,14 @@
     value="追加"
     class="halapp-add-child"
     halapp-aggregate-tree-path="会社.営業所" />
+
+<input type="hidden" asp-for="Item.営業所" class="halapp-aggregate-model-path" />    
     
             </div>
         </div>
     </div>
 </div>
 
+
+    <input type="hidden" asp-for="Removed" class="halapp-removed" />
+</div>
