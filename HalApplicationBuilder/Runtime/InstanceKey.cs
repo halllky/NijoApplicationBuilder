@@ -13,6 +13,6 @@ namespace HalApplicationBuilder.Runtime {
         public Core.Aggregate Aggregate { get; }
 
         public string StringValue { get; }
-        public IReadOnlyDictionary<Core.IAggregateMember, object> ParsedValue { get; }
+        public IReadOnlyDictionary<EntityFramework.DbColumn, object> ParsedValue { get; }
     }
 }

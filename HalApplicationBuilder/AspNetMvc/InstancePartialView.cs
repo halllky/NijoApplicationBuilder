@@ -20,12 +20,12 @@ namespace HalApplicationBuilder.AspNetMvc {
         internal string TransformText(IViewModelProvider viewModelProvider) {
             var model = viewModelProvider.GetInstanceModel(Aggregate);
             var template = new InstancePartialViewTemplate {
-                ModelTypeFullname = $"{typeof(Instance<>).Namespace}.{nameof(Instance<object>)}<{model.RuntimeFullName}>",
-                View = model.Render(new ViewRenderingContext("Model", nameof(Instance<object>.Item))),
+                ModelTypeFullname = model.RuntimeFullName,
+                View = model.Render(new ViewRenderingContext("Model")),
                 HiddenFields = new[] {
-                    (nameof(Instance<object>.Removed), JsTemplate.REMOVE_HIDDEN_FIELD),
+                    ($"{nameof(UIInstanceBase.__halapp__)}.{nameof(HalappViewState.Removed)}", JsTemplate.REMOVE_HIDDEN_FIELD),
                 },
-                ShowRemoveButton = $"Model.{nameof(Instance<object>.IsRoot)} == false",
+                ShowRemoveButton = $"Model.{nameof(UIInstanceBase.__halapp__)}.{nameof(HalappViewState.IsRoot)} == false",
             };
             return template.TransformText();
         }

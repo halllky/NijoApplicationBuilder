@@ -9,7 +9,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace HalApplicationBuilder.AspNetMvc {
 
     public abstract class ControllerBase<TSearchCondition, TSearchResult, TInstanceModel>
-        : Microsoft.AspNetCore.Mvc.Controller {
+        : Microsoft.AspNetCore.Mvc.Controller
+        where TInstanceModel : Runtime.UIInstanceBase {
 
         public ControllerBase(IServiceProvider services) {
             ServiceProvider = services;
@@ -52,11 +53,10 @@ namespace HalApplicationBuilder.AspNetMvc {
 
         [HttpGet]
         public virtual IActionResult New() {
+            var instance = RuntimeContext.CreateInstance<TInstanceModel>();
+            instance.__halapp__.IsRoot = true;
             var model = new CreateView.Model<TInstanceModel> {
-                Item = new Runtime.Instance<TInstanceModel> {
-                    Item = RuntimeContext.CreateInstance<TInstanceModel>(),
-                    IsRoot = true,
-                },
+                Item = instance,
             };
             return View(CreateViewName, model);
         }
@@ -70,15 +70,13 @@ namespace HalApplicationBuilder.AspNetMvc {
         public virtual IActionResult Detail(string id) {
             var aggregate = RuntimeContext.FindAggregateByRuntimeType(typeof(TInstanceModel));
             var key = new Runtime.InstanceKey(id, aggregate);
-            var instance = RuntimeContext.FindInstance(key);
+            var instance = (TInstanceModel)RuntimeContext.FindInstance(key);
             if (instance == null) return NotFound();
 
+            instance.__halapp__.IsRoot = true;
             var model = new SingleView.Model<TInstanceModel> {
                 InstanceName = new Runtime.InstanceName(instance, aggregate).Value,
-                Item = new Runtime.Instance<TInstanceModel> {
-                    Item = (TInstanceModel)instance,
-                    IsRoot = true,
-                },
+                Item = instance,
             };
             return View(SingleViewName, model);
         }
@@ -102,19 +100,15 @@ namespace HalApplicationBuilder.AspNetMvc {
             string modelPath,
             int currentArrayCount) {
 
+            // 新インスタンスを作成
             var aggregate = applicationSchema.FindByPath(aggregateTreePath);
             if (aggregate == null) return BadRequest($"{aggregateTreePath} と対応するメンバーが見つからない");
-
             var partialView = new InstancePartialView(aggregate, config);
             var instanceModel = viewModelProvider.GetInstanceModel(aggregate);
             var newChildType = RuntimeContext.RuntimeAssembly.GetType(instanceModel.RuntimeFullName);
+            var instance = RuntimeContext.CreateInstance(newChildType);
 
-            var viewModelType = typeof(Runtime.Instance<>).MakeGenericType(newChildType);
-            var instance = Activator.CreateInstance(viewModelType);
-            viewModelType
-                .GetProperty(nameof(Runtime.Instance<object>.Item))
-                .SetValue(instance, RuntimeContext.CreateInstance(newChildType));
-
+            // name属性用
             ViewData.TemplateInfo.HtmlFieldPrefix = modelPath;
 
             return PartialView(partialView.AspViewPath, instance);

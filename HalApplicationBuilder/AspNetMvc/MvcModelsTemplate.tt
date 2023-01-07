@@ -28,7 +28,7 @@ namespace <#=Namespace#> {
 
 <# /* シングルビューDTO */ #>
 <# foreach (var classDef in InstanceClasses) { #>
-    public class <#=classDef.ClassName#> {
+    public class <#=classDef.ClassName#> : <#=UIInstanceBase#> {
 <# foreach (var prop in classDef.Properties) { #>
         public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }<#=prop.Initializer == null ? "" : $" = {prop.Initializer};"#>
 <# }#>

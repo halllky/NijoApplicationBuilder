@@ -267,6 +267,18 @@ namespace HalApplicationBuilder.AspNetMvc {
             #line hidden
             
             #line 31 ""
+            this.Write(" : ");
+            
+            #line default
+            #line hidden
+            
+            #line 31 ""
+            this.Write(this.ToStringHelper.ToStringWithCulture(UIInstanceBase));
+            
+            #line default
+            #line hidden
+            
+            #line 31 ""
             this.Write(" {\n");
             
             #line default

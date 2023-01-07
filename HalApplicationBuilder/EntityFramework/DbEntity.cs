@@ -74,10 +74,7 @@ namespace HalApplicationBuilder.EntityFramework {
             // 親のPKをコピーする
             if (parentInstance != null) {
                 var parentInstanceType = parentInstance.GetType();
-                var parentInstanceItem = parentInstanceType.IsGenericType && parentInstanceType.GetGenericTypeDefinition() == typeof(Instance<>)
-                    ? parentInstance.GetType().GetProperty(nameof(Instance<object>.Item)).GetValue(parentInstance)
-                    : parentInstance;
-                var parentAggregate = context.FindAggregateByRuntimeType(parentInstanceItem.GetType());
+                var parentAggregate = context.FindAggregateByRuntimeType(parentInstance.GetType());
                 var parentEntityModel = context.DbSchema.GetDbEntity(parentAggregate);
                 foreach (var pkColumn in parentEntityModel.PKColumns) {
                     var parentPk = parentInstanceType.GetProperty(pkColumn.PropertyName);

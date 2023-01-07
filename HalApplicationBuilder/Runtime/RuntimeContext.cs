@@ -88,26 +88,20 @@ namespace HalApplicationBuilder.Runtime {
         public InstanceKey SaveNewInstance(object createCommand) {
             if (createCommand == null) throw new ArgumentNullException(nameof(createCommand));
 
-            if (createCommand == null) throw new ArgumentNullException(nameof(createCommand));
-            var instanceType = createCommand.GetType();
-            var instanceItem = instanceType.IsGenericType && instanceType.GetGenericTypeDefinition() == typeof(Instance<>)
-                ? createCommand.GetType().GetProperty(nameof(Instance<object>.Item)).GetValue(createCommand)
-                : createCommand;
-
             // Aggregateを特定
-            var aggregate = FindAggregateByRuntimeType(instanceItem.GetType());
-            if (aggregate == null) throw new ArgumentException($"型 {instanceItem.GetType().Name} と対応する集約が見つからない");
+            var aggregate = FindAggregateByRuntimeType(createCommand.GetType());
+            if (aggregate == null) throw new ArgumentException($"型 {createCommand.GetType().Name} と対応する集約が見つからない");
 
             // Entityのインスタンスを生成
             var entityModel = DbSchema.GetDbEntity(aggregate);
 
-            var dbEntities = entityModel.ConvertUiInstanceToDbInstance(instanceItem, this, null);
+            var dbEntities = entityModel.ConvertUiInstanceToDbInstance((object)createCommand, this, null);
             var dbContext = GetDbContext();
             dbContext.AddRange(dbEntities);
             dbContext.SaveChanges();
 
             if (aggregate == null) throw new ArgumentException($"型 {createCommand.GetType().Name} と対応する集約が見つからない");
-            var instanceKey = new InstanceKey(instanceItem, aggregate);
+            var instanceKey = new InstanceKey(createCommand, aggregate);
 
             return instanceKey;
         }

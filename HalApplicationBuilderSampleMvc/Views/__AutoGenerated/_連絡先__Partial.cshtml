@@ -1,8 +1,8 @@
 ﻿
-@model HalApplicationBuilder.Runtime.Instance<HalApplicationBuilderSampleMvc.Models.連絡先>;
+@model HalApplicationBuilderSampleMvc.Models.連絡先;
 
 <div class="halapp-aggregate-container">
-    @if (Model.IsRoot == false) {
+    @if (Model.__halapp__.IsRoot == false) {
         <input type="button" value="削除" class="halapp-remove-button" />
     }
 
@@ -14,7 +14,7 @@
                 電話番号
             </label>
             <div class="col-sm-10">
-                <input asp-for="Item.電話番号"/>
+                <input asp-for="電話番号"/>
             </div>
         </div>
         <div class="row mb-3">
@@ -22,7 +22,7 @@
                 郵便番号
             </label>
             <div class="col-sm-10">
-                <input asp-for="Item.郵便番号"/>
+                <input asp-for="郵便番号"/>
             </div>
         </div>
         <div class="row mb-3">
@@ -30,7 +30,7 @@
                 住所1
             </label>
             <div class="col-sm-10">
-                <input asp-for="Item.住所1"/>
+                <input asp-for="住所1"/>
             </div>
         </div>
         <div class="row mb-3">
@@ -38,7 +38,7 @@
                 住所2
             </label>
             <div class="col-sm-10">
-                <input asp-for="Item.住所2"/>
+                <input asp-for="住所2"/>
             </div>
         </div>
         <div class="row mb-3">
@@ -46,12 +46,12 @@
                 住所3
             </label>
             <div class="col-sm-10">
-                <input asp-for="Item.住所3"/>
+                <input asp-for="住所3"/>
             </div>
         </div>
     </div>
 </div>
 
 
-    <input type="hidden" asp-for="Removed" class="halapp-removed" />
+    <input type="hidden" asp-for="__halapp__.Removed" class="halapp-removed" />
 </div>

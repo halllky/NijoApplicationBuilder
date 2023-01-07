@@ -35,10 +35,9 @@ namespace HalApplicationBuilder.Impl {
         }
 
         public override IEnumerable<MvcModelProperty> CreateInstanceModels() {
-            var vm = $"{typeof(Runtime.Instance<>).Namespace}.{nameof(Runtime.Instance<object>)}";
             var item = ViewModelProvider.GetInstanceModel(ChildAggregate).RuntimeFullName;
             yield return new AspNetMvc.MvcModelProperty {
-                CSharpTypeName = $"List<{vm}<{item}>>",
+                CSharpTypeName = $"List<{item}>",
                 PropertyName = InstanceModelPropName,
                 Initializer = "new()",
             };

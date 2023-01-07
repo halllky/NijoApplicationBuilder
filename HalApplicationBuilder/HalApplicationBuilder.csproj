@@ -117,7 +117,7 @@
       <DependentUpon>MultiViewTemplate.tt</DependentUpon>
     </Compile>
     <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="AspNetMvc\MvcModelsTemplate.cs">
-      <DependentUpon>..\Runtime\AspNetMvc\MvcModelsTemplate.tt</DependentUpon>
+      <DependentUpon>MvcModelsTemplate.tt</DependentUpon>
     </Compile>
     <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="AspNetMvc\SingleViewTemplate.cs">
       <DependentUpon>SingleViewTemplate.tt</DependentUpon>

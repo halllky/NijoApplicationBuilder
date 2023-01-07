@@ -1,8 +1,8 @@
 ﻿
-@model HalApplicationBuilder.Runtime.Instance<HalApplicationBuilderSampleMvc.Models.上場企業資本情報>;
+@model HalApplicationBuilderSampleMvc.Models.上場企業資本情報;
 
 <div class="halapp-aggregate-container">
-    @if (Model.IsRoot == false) {
+    @if (Model.__halapp__.IsRoot == false) {
         <input type="button" value="削除" class="halapp-remove-button" />
     }
 
@@ -14,7 +14,7 @@
                 自己資本比率
             </label>
             <div class="col-sm-10">
-                <input asp-for="Item.自己資本比率"/>
+                <input asp-for="自己資本比率"/>
             </div>
         </div>
         <div class="row mb-3">
@@ -22,12 +22,12 @@
                 利益率
             </label>
             <div class="col-sm-10">
-                <input asp-for="Item.利益率"/>
+                <input asp-for="利益率"/>
             </div>
         </div>
     </div>
 </div>
 
 
-    <input type="hidden" asp-for="Removed" class="halapp-removed" />
+    <input type="hidden" asp-for="__halapp__.Removed" class="halapp-removed" />
 </div>

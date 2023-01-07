@@ -23,5 +23,7 @@ namespace HalApplicationBuilder.AspNetMvc {
         internal IEnumerable<MvcModel> SearchConditionClasses { get; set; }
         internal IEnumerable<MvcModel> SearchResultClasses { get; set; }
         internal IEnumerable<MvcModel> InstanceClasses { get; set; }
+
+        internal static string UIInstanceBase => typeof(Runtime.UIInstanceBase).FullName;
     }
 }

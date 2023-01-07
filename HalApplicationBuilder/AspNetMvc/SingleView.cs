@@ -14,10 +14,10 @@ namespace HalApplicationBuilder.AspNetMvc {
 
         internal string TransformText(IViewModelProvider viewModelProvider, Core.Config config) {
             var model = viewModelProvider.GetInstanceModel(RootAggregate);
-            var context = new ViewRenderingContext("Model", nameof(Instance<object>.Item));
+            var context = new ViewRenderingContext("Model", nameof(Model<UIInstanceBase>.Item));
             var template = new SingleViewTemplate {
-                ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<object>)}<{model.RuntimeFullName}>",
-                PageTitle = $"@Model.{nameof(Model<object>.InstanceName)}",
+                ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<UIInstanceBase>)}<{model.RuntimeFullName}>",
+                PageTitle = $"@Model.{nameof(Model<UIInstanceBase>.InstanceName)}",
                 UpdateActionName = "Update",
                 DeleteActionName = "Delete",
                 PartialViewName = new InstancePartialView(RootAggregate, config).FileName,
@@ -26,9 +26,9 @@ namespace HalApplicationBuilder.AspNetMvc {
             return template.TransformText();
         }
 
-        public class Model<T> {
+        public class Model<T> where T : UIInstanceBase {
             public string InstanceName { get; set; }
-            public Instance<T> Item { get; set; }
+            public T Item { get; set; }
         }
     }
 
@@ -38,7 +38,7 @@ namespace HalApplicationBuilder.AspNetMvc {
 
         internal string ModelTypeFullname { get; set; }
         internal string PageTitle { get; set; }
-        internal string NameofInstanceName => nameof(SingleView.Model<object>.InstanceName);
+        internal string NameofInstanceName => nameof(SingleView.Model<UIInstanceBase>.InstanceName);
         internal string UpdateActionName { get; set; }
         internal string DeleteActionName { get; set; }
         internal string PartialViewName { get; set; }
