@@ -122,11 +122,11 @@ namespace HalApplicationBuilder.Impl {
             return string.Join(Environment.NewLine, childrenViews);
         }
 
-        public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context, HashSet<object> dbEntities) {
+        public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context, HashSet<object> dbInstances) {
             // 区分値(int)の設定
-            var instanceProp = uiInstance.GetType().GetProperty(InstanceModelTypeSwitchPropName);
-            var value = instanceProp.GetValue(uiInstance);
             var dbProp = dbInstance.GetType().GetProperty(DbPropName);
+            var uiProp = uiInstance.GetType().GetProperty(InstanceModelTypeSwitchPropName);
+            var value = uiProp.GetValue(uiInstance);
             dbProp.SetValue(dbInstance, value);
 
             // Variation子要素の設定
@@ -135,8 +135,21 @@ namespace HalApplicationBuilder.Impl {
                 var detailInstance = detailProp.GetValue(uiInstance);
                 var dbEntity = context.DbSchema.GetDbEntity(variation.Value);
                 foreach (var descendantDbEntity in dbEntity.ConvertUiInstanceToDbInstance(detailInstance, context, uiInstance)) {
-                    dbEntities.Add(descendantDbEntity);
+                    dbInstances.Add(descendantDbEntity);
                 }
+            }
+        }
+
+        public override void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context) {
+            // 区分値(int)の設定
+            var dbProp = dbInstance.GetType().GetProperty(DbPropName);
+            var uiProp = uiInstance.GetType().GetProperty(InstanceModelTypeSwitchPropName);
+            var value = dbProp.GetValue(dbInstance);
+            uiProp.SetValue(uiInstance, value);
+
+            // Variation子要素の設定
+            foreach (var variation in Variations) {
+                // TODO: ナビゲーションプロパティへのアクセス
             }
         }
     }

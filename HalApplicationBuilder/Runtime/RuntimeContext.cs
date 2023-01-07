@@ -108,7 +108,12 @@ namespace HalApplicationBuilder.Runtime {
         }
 
         public TInstanceModel FindInstance<TInstanceModel>(InstanceKey key) {
-            return default; // TODO
+            var entityType = RuntimeAssembly.GetType(key.DbEntity.RuntimeFullName);
+            var pkValues = key.ParsedValue.Select(v => v.Value).ToArray();
+            var dbContext = GetDbContext();
+            var dbInstance = dbContext.Find(entityType, pkValues);
+            var uiInstance = key.DbEntity.ConvertDbInstanceToUiInstance(dbInstance, this);
+            return (TInstanceModel)uiInstance;
         }
 
         public void UpdateInstance(object instance) {

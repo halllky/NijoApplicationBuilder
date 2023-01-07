@@ -57,7 +57,8 @@ namespace HalApplicationBuilder.Impl {
 
 
         #region Runtime
-        public abstract void MapUIToDB(object instance, object dbEntity, Runtime.RuntimeContext context, HashSet<object> dbEntities);
+        public abstract void MapUIToDB(object uiInstance, object dbInstance, Runtime.RuntimeContext context, HashSet<object> dbInstances);
+        public abstract void MapDBToUI(object dbInstance, object uiInstance, Runtime.RuntimeContext context);
         #endregion Runtime
 
 

@@ -32,17 +32,22 @@ namespace HalApplicationBuilder.Runtime {
         }
 
         public static bool TryParse(string key, DbEntity dbEntity, out InstanceKey instanceKey) {
-            var values = dbEntity.PKColumns.Count == 1
-                ? new[] { JsonSerializer.Deserialize<object>(key) }
-                : JsonSerializer.Deserialize<object[]>(key);
+            var jsonValues = JsonSerializer.Deserialize<JsonElement[]>(key);
 
-            if (dbEntity.PKColumns.Count != values.Length) { instanceKey = null; return false; }
+            if (dbEntity.PKColumns.Count != jsonValues.Length) { instanceKey = null; return false; }
 
+            var dict = new Dictionary<DbColumn, object>();
+            for (int i = 0; i < dbEntity.PKColumns.Count; i++) {
+                var value = dbEntity.PKColumns[i].CSharpTypeName switch {
+                    "string" => (object)jsonValues[i].GetString(),
+                    "int" => jsonValues[i].GetInt32(),
+                    _ => throw new InvalidOperationException($"{dbEntity.PKColumns[i].PropertyName} の主キーの型が非対応: {dbEntity.PKColumns[i].CSharpTypeName}"),
+                };
+                dict.Add(dbEntity.PKColumns[i], value);
+            }
             instanceKey = new InstanceKey {
                 DbEntity = dbEntity,
-                ParsedValue = values
-                    .Select((value, index) => new { col = dbEntity.PKColumns[index], value })
-                    .ToDictionary(x => x.col, x => x.value),
+                ParsedValue = dict,
             };
             return true;
         }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
@@ -77,13 +78,25 @@ namespace HalApplicationBuilder.Impl {
             return ViewModelProvider.GetInstanceModel(ChildAggregate).Render(nested);
         }
 
-        public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context, HashSet<object> dbEntities) {
+        public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context, HashSet<object> dbInstances) {
             var prop = uiInstance.GetType().GetProperty(InstanceModelPropName);
             var childInstance = prop.GetValue(uiInstance);
-            var dbEntity = context.DbSchema.GetDbEntity(ChildAggregate);
-            foreach (var descendantDbEntity in dbEntity.ConvertUiInstanceToDbInstance(childInstance, context, uiInstance)) {
-                dbEntities.Add(descendantDbEntity);
+            var childDbEntity = context.DbSchema.GetDbEntity(ChildAggregate);
+            foreach (var descendantDbEntity in childDbEntity.ConvertUiInstanceToDbInstance(childInstance, context, uiInstance)) {
+                dbInstances.Add(descendantDbEntity);
             }
+        }
+
+        public override void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context) {
+            return;
+
+            var prop = uiInstance.GetType().GetProperty(InstanceModelPropName);
+            var childDbInstance = new object(); // TODO: ナビゲーションプロパティへのアクセス
+
+            var childDbEntity = context.DbSchema.GetDbEntity(ChildAggregate);
+            var childUiInstance = childDbEntity.ConvertDbInstanceToUiInstance(childDbInstance, context);
+
+            prop.SetValue(uiInstance, childUiInstance);
         }
     }
 }

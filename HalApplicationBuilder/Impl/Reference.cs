@@ -94,6 +94,10 @@ namespace HalApplicationBuilder.Impl {
         public override void MapUIToDB(object instance, object dbEntity, RuntimeContext context, HashSet<object> dbEntities) {
             // TODO
         }
+
+        public override void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context) {
+            // TODO
+        }
     }
 
     partial class ReferenceInstanceTemplate {

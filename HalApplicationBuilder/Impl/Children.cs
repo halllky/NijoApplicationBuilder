@@ -84,6 +84,18 @@ namespace HalApplicationBuilder.Impl {
                 }
             }
         }
+
+        public override void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context) {
+            var prop = uiInstance.GetType().GetProperty(InstanceModelPropName);
+            var children = (IList)prop.GetValue(uiInstance);
+            var navigationProp = new List<object>(); // TODO: ナビゲーションプロパティへのアクセス
+
+            var childDbEntity = context.DbSchema.GetDbEntity(ChildAggregate);
+            foreach (var childDbInstance in navigationProp) {
+                var childUiInstance = childDbEntity.ConvertDbInstanceToUiInstance(childDbInstance, context);
+                children.Add(childUiInstance);
+            }
+        }
     }
 
     partial class ChildrenInstanceTemplate {
