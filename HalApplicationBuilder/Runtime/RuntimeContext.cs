@@ -85,13 +85,14 @@ namespace HalApplicationBuilder.Runtime {
             yield break; // TODO
         }
 
-        /// <summary>TODO リファクタリング課題: おそらく <see cref="EntityFramework.DbEntity"/> クラスの仕事</summary>
-        public IEnumerable<object> ConvertUIToDB(object instance, object parentInstance) {
-            if (instance == null) throw new ArgumentNullException(nameof(instance));
-            var instanceType = instance.GetType();
+        public InstanceKey SaveNewInstance(object createCommand) {
+            if (createCommand == null) throw new ArgumentNullException(nameof(createCommand));
+
+            if (createCommand == null) throw new ArgumentNullException(nameof(createCommand));
+            var instanceType = createCommand.GetType();
             var instanceItem = instanceType.IsGenericType && instanceType.GetGenericTypeDefinition() == typeof(Instance<>)
-                ? instance.GetType().GetProperty(nameof(Instance<object>.Item)).GetValue(instance)
-                : instance;
+                ? createCommand.GetType().GetProperty(nameof(Instance<object>.Item)).GetValue(createCommand)
+                : createCommand;
 
             // Aggregateを特定
             var aggregate = FindAggregateByRuntimeType(instanceItem.GetType());
@@ -99,48 +100,14 @@ namespace HalApplicationBuilder.Runtime {
 
             // Entityのインスタンスを生成
             var entityModel = DbSchema.GetDbEntity(aggregate);
-            var entity = RuntimeAssembly.CreateInstance(entityModel.RuntimeFullName);
 
-            // 親のPKをコピーする
-            if (parentInstance != null) {
-                var parentInstanceType = parentInstance.GetType();
-                var parentInstanceItem = parentInstanceType.IsGenericType && parentInstanceType.GetGenericTypeDefinition() == typeof(Instance<>)
-                    ? parentInstance.GetType().GetProperty(nameof(Instance<object>.Item)).GetValue(parentInstance)
-                    : parentInstance;
-                var parentAggregate = FindAggregateByRuntimeType(parentInstanceItem.GetType());
-                var parentEntityModel = DbSchema.GetDbEntity(parentAggregate);
-                foreach (var pkColumn in parentEntityModel.PKColumns) {
-                    var parentPk = parentInstanceType.GetProperty(pkColumn.PropertyName);
-                    var childPk = entity.GetType().GetProperty(pkColumn.PropertyName);
-                    var pkValue = parentPk.GetValue(parentInstance);
-                    childPk.SetValue(entity, pkValue);
-                }
-            }
-
-            // instacneModelの各プロパティの値をentityにマッピング
-            var set = new HashSet<object> { entity };
-            foreach (var member in aggregate.Members) {
-                if (member is not IInstanceConverter converter) continue;
-                converter.MapUIToDB(instanceItem, entity, this, set);
-            }
-
-            return set;
-        }
-
-        public InstanceKey SaveNewInstance(object createCommand) {
-            if (createCommand == null) throw new ArgumentNullException(nameof(createCommand));
-
-            var dbEntities = ConvertUIToDB(createCommand, null);
+            var dbEntities = entityModel.ConvertUiInstanceToDbInstance(instanceItem, this, null);
             var dbContext = GetDbContext();
             dbContext.AddRange(dbEntities);
             dbContext.SaveChanges();
 
-            var model = createCommand.GetType().IsGenericType && createCommand.GetType().GetGenericTypeDefinition() == typeof(Instance<>)
-                    ? createCommand.GetType().GetProperty(nameof(Instance<object>.Item)).GetValue(createCommand)
-                    : createCommand;
-            var aggregate = FindAggregateByRuntimeType(model.GetType());
             if (aggregate == null) throw new ArgumentException($"型 {createCommand.GetType().Name} と対応する集約が見つからない");
-            var instanceKey = new InstanceKey(model, aggregate);
+            var instanceKey = new InstanceKey(instanceItem, aggregate);
 
             return instanceKey;
         }

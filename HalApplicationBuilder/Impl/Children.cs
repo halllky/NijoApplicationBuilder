@@ -75,11 +75,12 @@ namespace HalApplicationBuilder.Impl {
             return template.TransformText();
         }
 
-        public override void MapUIToDB(object instance, object dbEntity, RuntimeContext context, HashSet<object> dbEntities) {
-            var prop = instance.GetType().GetProperty(InstanceModelPropName);
-            var instanceChildren = (IEnumerable)prop.GetValue(instance);
+        public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context, HashSet<object> dbEntities) {
+            var prop = uiInstance.GetType().GetProperty(InstanceModelPropName);
+            var instanceChildren = (IEnumerable)prop.GetValue(uiInstance);
+            var dbEntity = context.DbSchema.GetDbEntity(ChildAggregate);
             foreach (var childInstance in instanceChildren) {
-                foreach (var descendantDbEntity in context.ConvertUIToDB(childInstance, instance)) {
+                foreach (var descendantDbEntity in dbEntity.ConvertUiInstanceToDbInstance(childInstance, context, uiInstance)) {
                     dbEntities.Add(descendantDbEntity);
                 }
             }

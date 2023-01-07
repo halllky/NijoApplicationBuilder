@@ -122,16 +122,19 @@ namespace HalApplicationBuilder.Impl {
             return string.Join(Environment.NewLine, childrenViews);
         }
 
-        public override void MapUIToDB(object instance, object dbEntity, RuntimeContext context, HashSet<object> dbEntities) {
-            var instanceProp = instance.GetType().GetProperty(InstanceModelTypeSwitchPropName);
-            var value = instanceProp.GetValue(instance);
-            var dbProp = dbEntity.GetType().GetProperty(DbPropName);
-            dbProp.SetValue(dbEntity, value);
+        public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context, HashSet<object> dbEntities) {
+            // 区分値(int)の設定
+            var instanceProp = uiInstance.GetType().GetProperty(InstanceModelTypeSwitchPropName);
+            var value = instanceProp.GetValue(uiInstance);
+            var dbProp = dbInstance.GetType().GetProperty(DbPropName);
+            dbProp.SetValue(dbInstance, value);
 
+            // Variation子要素の設定
             foreach (var variation in Variations) {
-                var detailProp = instance.GetType().GetProperty(InstanceModelTypeDetailPropName(variation));
-                var detailInstance = detailProp.GetValue(instance);
-                foreach (var descendantDbEntity in context.ConvertUIToDB(detailInstance, instance)) {
+                var detailProp = uiInstance.GetType().GetProperty(InstanceModelTypeDetailPropName(variation));
+                var detailInstance = detailProp.GetValue(uiInstance);
+                var dbEntity = context.DbSchema.GetDbEntity(variation.Value);
+                foreach (var descendantDbEntity in dbEntity.ConvertUiInstanceToDbInstance(detailInstance, context, uiInstance)) {
                     dbEntities.Add(descendantDbEntity);
                 }
             }

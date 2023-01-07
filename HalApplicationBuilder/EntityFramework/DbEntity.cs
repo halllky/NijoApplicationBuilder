@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.Core;
+using HalApplicationBuilder.Runtime;
 
 namespace HalApplicationBuilder.EntityFramework {
     public class DbEntity {
@@ -38,7 +39,6 @@ namespace HalApplicationBuilder.EntityFramework {
                 return _notPk;
             }
         }
-
         private void BuildColumns() {
             // 集約で定義されているカラム
             _pk = Source.Members
@@ -66,6 +66,35 @@ namespace HalApplicationBuilder.EntityFramework {
                 //    new Dto.PropertyTemplate { CSharpTypeName = $"virtual {Parent.Owner.ToDbTableModel().ClassName}", PropertyName = "Parent" },
                 //};
             }
+        }
+
+        internal IEnumerable<object> ConvertUiInstanceToDbInstance(object instance, RuntimeContext context, object parentInstance) {
+            var entity = context.RuntimeAssembly.CreateInstance(RuntimeFullName);
+
+            // 親のPKをコピーする
+            if (parentInstance != null) {
+                var parentInstanceType = parentInstance.GetType();
+                var parentInstanceItem = parentInstanceType.IsGenericType && parentInstanceType.GetGenericTypeDefinition() == typeof(Instance<>)
+                    ? parentInstance.GetType().GetProperty(nameof(Instance<object>.Item)).GetValue(parentInstance)
+                    : parentInstance;
+                var parentAggregate = context.FindAggregateByRuntimeType(parentInstanceItem.GetType());
+                var parentEntityModel = context.DbSchema.GetDbEntity(parentAggregate);
+                foreach (var pkColumn in parentEntityModel.PKColumns) {
+                    var parentPk = parentInstanceType.GetProperty(pkColumn.PropertyName);
+                    var childPk = entity.GetType().GetProperty(pkColumn.PropertyName);
+                    var pkValue = parentPk.GetValue(parentInstance);
+                    childPk.SetValue(entity, pkValue);
+                }
+            }
+
+            // instacneModelの各プロパティの値をentityにマッピング
+            var set = new HashSet<object> { entity };
+            foreach (var member in Source.Members) {
+                if (member is not IInstanceConverter converter) continue;
+                converter.MapUIToDB(instance, entity, context, set);
+            }
+
+            return set;
         }
     }
 
