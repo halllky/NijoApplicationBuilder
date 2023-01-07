@@ -41,10 +41,20 @@ namespace HalApplicationBuilder.Impl {
         }
 
         public override IEnumerable<DbColumn> ToDbColumnModel() {
+            // 区分値
             yield return new DbColumn {
                 CSharpTypeName = "int?",
                 PropertyName = DbPropName,
             };
+            // ナビゲーションプロパティ
+            foreach (var variation in Variations) {
+                var variationDbEntity = DbSchema.GetDbEntity(variation.Value);
+                yield return new DbColumn {
+                    Virtual = true,
+                    CSharpTypeName = variationDbEntity.RuntimeFullName,
+                    PropertyName = NavigationPropName(variationDbEntity),
+                };
+            }
         }
 
         public override IEnumerable<MvcModelProperty> CreateSearchConditionModels() {
@@ -81,6 +91,7 @@ namespace HalApplicationBuilder.Impl {
         }
 
         private string DbPropName => Name;
+        private string NavigationPropName(DbEntity variationDbEntity) => $"{DbPropName}__{variationDbEntity.ClassName}";
 
         /// <summary>アンダースコア2連だと ArgumentException: The name of an HTML field cannot be null or empty... になる</summary>
         private string SearchConditionPropName(KeyValuePair<int, Aggregate> variation) => $"{Name}_{variation.Value.Name}";
@@ -122,7 +133,7 @@ namespace HalApplicationBuilder.Impl {
             return string.Join(Environment.NewLine, childrenViews);
         }
 
-        public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context, HashSet<object> dbInstances) {
+        public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context) {
             // 区分値(int)の設定
             var dbProp = dbInstance.GetType().GetProperty(DbPropName);
             var uiProp = uiInstance.GetType().GetProperty(InstanceModelTypeSwitchPropName);
@@ -131,12 +142,19 @@ namespace HalApplicationBuilder.Impl {
 
             // Variation子要素の設定
             foreach (var variation in Variations) {
-                var detailProp = uiInstance.GetType().GetProperty(InstanceModelTypeDetailPropName(variation));
-                var detailInstance = detailProp.GetValue(uiInstance);
-                var dbEntity = context.DbSchema.GetDbEntity(variation.Value);
-                foreach (var descendantDbEntity in dbEntity.ConvertUiInstanceToDbInstance(detailInstance, context, uiInstance)) {
-                    dbInstances.Add(descendantDbEntity);
-                }
+                var chlidUiInstance = uiInstance
+                    .GetType()
+                    .GetProperty(InstanceModelTypeDetailPropName(variation))
+                    .GetValue(uiInstance);
+                var childDbEntity = context.DbSchema
+                    .GetDbEntity(variation.Value);
+                var childDbInstance = childDbEntity
+                    .ConvertUiInstanceToDbInstance(chlidUiInstance, context);
+                var navigationProperty = dbInstance
+                    .GetType()
+                    .GetProperty(NavigationPropName(childDbEntity));
+
+                navigationProperty.SetValue(dbInstance, childDbInstance);
             }
         }
 
@@ -149,7 +167,23 @@ namespace HalApplicationBuilder.Impl {
 
             // Variation子要素の設定
             foreach (var variation in Variations) {
-                // TODO: ナビゲーションプロパティへのアクセス
+                var childDbEntity = context.DbSchema
+                    .GetDbEntity(variation.Value);
+                var childDbProperty = dbInstance
+                    .GetType()
+                    .GetProperty(NavigationPropName(childDbEntity));
+                var childDbInstance = childDbProperty
+                    .GetValue(dbInstance);
+
+                if (childDbInstance != null) {
+                    var childUiProperty = uiInstance
+                        .GetType()
+                        .GetProperty(InstanceModelTypeDetailPropName(variation));
+                    var childUiInstance = childDbEntity
+                        .ConvertDbInstanceToUiInstance(childDbInstance, context);
+
+                    childUiProperty.SetValue(uiInstance, childUiInstance);
+                }
             }
         }
     }

@@ -32,7 +32,12 @@ namespace HalApplicationBuilder.Impl {
         }
 
         public override IEnumerable<DbColumn> ToDbColumnModel() {
-            yield break;
+            // ナビゲーションプロパティ
+            yield return new DbColumn {
+                Virtual = true,
+                CSharpTypeName = DbSchema.GetDbEntity(ChildAggregate).RuntimeFullName,
+                PropertyName = NavigationPropName,
+            };
         }
 
         public override IEnumerable<MvcModelProperty> CreateSearchConditionModels() {
@@ -61,6 +66,7 @@ namespace HalApplicationBuilder.Impl {
             };
         }
 
+        private string NavigationPropName => Name;
         private string SearchConditionPropName => Name;
         private string InstanceModelPropName => Name;
 
@@ -78,25 +84,39 @@ namespace HalApplicationBuilder.Impl {
             return ViewModelProvider.GetInstanceModel(ChildAggregate).Render(nested);
         }
 
-        public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context, HashSet<object> dbInstances) {
-            var prop = uiInstance.GetType().GetProperty(InstanceModelPropName);
-            var childInstance = prop.GetValue(uiInstance);
-            var childDbEntity = context.DbSchema.GetDbEntity(ChildAggregate);
-            foreach (var descendantDbEntity in childDbEntity.ConvertUiInstanceToDbInstance(childInstance, context, uiInstance)) {
-                dbInstances.Add(descendantDbEntity);
-            }
+        public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context) {
+            var chlidUiInstance = uiInstance
+                .GetType()
+                .GetProperty(InstanceModelPropName)
+                .GetValue(uiInstance);
+            var childDbEntity = context.DbSchema
+                .GetDbEntity(ChildAggregate);
+            var childDbInstance = childDbEntity
+                .ConvertUiInstanceToDbInstance(chlidUiInstance, context);
+            var navigationProperty = dbInstance
+                .GetType()
+                .GetProperty(NavigationPropName);
+
+            navigationProperty.SetValue(dbInstance, childDbInstance);
         }
 
         public override void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context) {
-            return;
+            var dbProperty = dbInstance
+                .GetType()
+                .GetProperty(NavigationPropName);
+            var childDbInstance = dbProperty
+                .GetValue(dbInstance);
 
-            var prop = uiInstance.GetType().GetProperty(InstanceModelPropName);
-            var childDbInstance = new object(); // TODO: ナビゲーションプロパティへのアクセス
+            if (childDbInstance != null) {
+                var childUiInstance = context.DbSchema
+                    .GetDbEntity(ChildAggregate)
+                    .ConvertDbInstanceToUiInstance(childDbInstance, context);
+                var childUiProperty = uiInstance
+                    .GetType()
+                    .GetProperty(InstanceModelPropName);
 
-            var childDbEntity = context.DbSchema.GetDbEntity(ChildAggregate);
-            var childUiInstance = childDbEntity.ConvertDbInstanceToUiInstance(childDbInstance, context);
-
-            prop.SetValue(uiInstance, childUiInstance);
+                childUiProperty.SetValue(uiInstance, childUiInstance);
+            }
         }
     }
 }

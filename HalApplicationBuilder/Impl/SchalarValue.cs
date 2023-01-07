@@ -171,7 +171,7 @@ namespace HalApplicationBuilder.Impl {
             return false;
         }
 
-        public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context, HashSet<object> dbInstances) {
+        public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context) {
             var dbProp = dbInstance.GetType().GetProperty(DbColumnPropName);
             var uiProp = uiInstance.GetType().GetProperty(InstanceModelPropName);
 

@@ -38,13 +38,27 @@ namespace HalApplicationBuilder.EntityFramework {
  foreach (var entityClass in EntityClasses) { 
             this.Write("            modelBuilder.Entity<");
             this.Write(this.ToStringHelper.ToStringWithCulture(entityClass.RuntimeFullName));
-            this.Write(">()\n                .HasKey(e => new {\n");
+            this.Write(">(entity => {\n");
+ /* 主キー定義 */ 
+            this.Write("                entity.HasKey(e => new {\n");
  foreach (var prop in entityClass.PKColumns) { 
             this.Write("                    e.");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
             this.Write(",\n");
  }
             this.Write("                });\n");
+ /* ナビゲーションプロパティ定義 */ 
+ foreach (var manyToOne in entityClass.GetManyToOne()) { 
+            this.Write("                ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(manyToOne));
+            this.Write("\n");
+ }
+ foreach (var oneToOne in entityClass.GetOneToOne()) { 
+            this.Write("                ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(oneToOne));
+            this.Write("\n");
+ }
+            this.Write("            });\n");
  }
             this.Write("        }\n    }\n}\n\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(EntityNamespace));
@@ -54,19 +68,9 @@ namespace HalApplicationBuilder.EntityFramework {
             this.Write("    public partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(entityClass.ClassName));
             this.Write(" {\n");
- /*Entityクラスの生成: PKプロパティ*/ 
- foreach (var prop in entityClass.PKColumns) { 
+ foreach (var prop in entityClass.GetAllDbProperties()) { 
             this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
-            this.Write("\n");
- }
- /*Entityクラスの生成: PK以外のプロパティ*/ 
- foreach (var prop in entityClass.NotPKColumns) { 
-            this.Write("        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Virtual ? "virtual " : ""));
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
             this.Write(" ");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));

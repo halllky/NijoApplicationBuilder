@@ -94,15 +94,14 @@ namespace HalApplicationBuilder.Runtime {
 
             // Entityのインスタンスを生成
             var entityModel = DbSchema.GetDbEntity(aggregate);
+            var dbInstance = entityModel.ConvertUiInstanceToDbInstance(createCommand, this);
 
-            var dbEntities = entityModel.ConvertUiInstanceToDbInstance(createCommand, this, null).ToList();
             var dbContext = GetDbContext();
-            dbContext.AddRange(dbEntities);
+            dbContext.Add(dbInstance);
             dbContext.SaveChanges();
 
-            var rootDbInstance = dbEntities.First(); // TODO リファクタリング: 順番に依存している
             var dbEntity = DbSchema.GetDbEntity(aggregate);
-            var instanceKey = InstanceKey.Create(rootDbInstance, dbEntity);
+            var instanceKey = InstanceKey.Create(dbInstance, dbEntity);
 
             return instanceKey;
         }

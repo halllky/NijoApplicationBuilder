@@ -25,7 +25,9 @@ namespace HalApplicationBuilderSampleMvc {
 
             services.AddDbContext<EntityFramework.SampleDbContext>(option => {
                 var connStr = $"Data Source=\"{System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "bin", "Debug", "debug.sqlite3")}\"";
-                option.UseSqlite(connStr);
+                option
+                    .UseLazyLoadingProxies() // ナビゲーションプロパティアクセス時に自動で遅延ロード
+                    .UseSqlite(connStr);
             });
 
             // SaveやDetailでDbContextをダイレクトに参照しているため

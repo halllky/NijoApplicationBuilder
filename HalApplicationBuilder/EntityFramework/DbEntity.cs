@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
@@ -27,19 +28,26 @@ namespace HalApplicationBuilder.EntityFramework {
 
         private List<DbColumn> _pk;
         private List<DbColumn> _notPk;
+        private List<DbColumn> _navigation;
         public IReadOnlyList<DbColumn> PKColumns {
             get {
-                if (_pk == null) BuildColumns();
+                if (_pk == null) BuildValueColumns();
                 return _pk;
             }
         }
         public IReadOnlyList<DbColumn> NotPKColumns {
             get {
-                if (_notPk == null) BuildColumns();
+                if (_notPk == null) BuildValueColumns();
                 return _notPk;
             }
         }
-        private void BuildColumns() {
+        public IReadOnlyList<DbColumn> NavigationProperties {
+            get {
+                if (_navigation == null) BuildValueColumns();
+                return _navigation;
+            }
+        }
+        private void BuildValueColumns() {
             // 集約で定義されているカラム
             _pk = Source.Members
                 .Where(member => member.IsPrimaryKey)
@@ -58,40 +66,63 @@ namespace HalApplicationBuilder.EntityFramework {
                     Initializer = null,
                 });
             }
-            // 親の主キー
+            // 親
             if (Parent != null) {
+                // 親の主キー
                 _pk.InsertRange(0, Parent.PKColumns);
-                // stack overflow
-                //_navigationProperties = new() {
-                //    new Dto.PropertyTemplate { CSharpTypeName = $"virtual {Parent.Owner.ToDbTableModel().ClassName}", PropertyName = "Parent" },
-                //};
+                // ナビゲーションプロパティ
+                _notPk.Add(new DbColumn {
+                    Virtual = true,
+                    CSharpTypeName = Parent.RuntimeFullName,
+                    PropertyName = Parent.ClassName,
+                });
+            }
+            // TODO
+            _navigation = _pk.Concat(_notPk)
+                .Where(col => col.Virtual)
+                .ToList();
+            _pk.RemoveAll(col => col.Virtual);
+            _notPk.RemoveAll(col => col.Virtual);
+        }
+
+        internal IEnumerable<DbColumn> GetAllDbProperties() {
+            foreach (var col in PKColumns) yield return col;
+            foreach (var col in NotPKColumns) yield return col;
+            foreach (var col in NavigationProperties) yield return col;
+        }
+        internal IEnumerable<string> GetManyToOne() {
+            if (Parent != null) {
+                // TODO
+                var parent = Parent.ClassName;
+                var children = Parent.NavigationProperties
+                    .SingleOrDefault(col => col.CSharpTypeName == $"ICollection<{RuntimeFullName}>")?
+                    .PropertyName;
+                if (children != null)
+                    yield return $"entity.HasOne(e => e.{parent}).WithMany(e => e.{children});";
+            }
+        }
+        internal IEnumerable<string> GetOneToOne() {
+            if (Parent != null) {
+                // TODO
+                var parent = Parent.ClassName;
+                var child = Parent.NavigationProperties
+                    .SingleOrDefault(col => col.CSharpTypeName == RuntimeFullName)?
+                    .PropertyName;
+                if (child != null)
+                    yield return $"entity.HasOne(e => e.{parent}).WithOne(e => e.{child});";
             }
         }
 
-        internal IEnumerable<object> ConvertUiInstanceToDbInstance(object instance, RuntimeContext context, object parentInstance) {
-            var entity = context.RuntimeAssembly.CreateInstance(RuntimeFullName);
-
-            // 親のPKをコピーする
-            if (parentInstance != null) {
-                var parentInstanceType = parentInstance.GetType();
-                var parentAggregate = context.FindAggregateByRuntimeType(parentInstance.GetType());
-                var parentEntityModel = context.DbSchema.GetDbEntity(parentAggregate);
-                foreach (var pkColumn in parentEntityModel.PKColumns) {
-                    var parentPk = parentInstanceType.GetProperty(pkColumn.PropertyName);
-                    var childPk = entity.GetType().GetProperty(pkColumn.PropertyName);
-                    var pkValue = parentPk.GetValue(parentInstance);
-                    childPk.SetValue(entity, pkValue);
-                }
-            }
+        internal object ConvertUiInstanceToDbInstance(object uiInstance, RuntimeContext context) {
+            var dbInstance = context.RuntimeAssembly.CreateInstance(RuntimeFullName);
 
             // instacneModelの各プロパティの値をentityにマッピング
-            var set = new HashSet<object> { entity };
             foreach (var member in Source.Members) {
                 if (member is not IInstanceConverter converter) continue;
-                converter.MapUIToDB(instance, entity, context, set);
+                converter.MapUIToDB(uiInstance, dbInstance, context);
             }
 
-            return set;
+            return dbInstance;
         }
         internal object ConvertDbInstanceToUiInstance(object dbInstance, RuntimeContext context) {
             var uiModel = context.ViewModelProvider.GetInstanceModel(Source);

@@ -17,12 +17,21 @@ namespace <#=DbContextNamespace#> {
 <# /* OnModelCreatingの定義 */ #>
         protected override void OnModelCreating(ModelBuilder modelBuilder) {
 <# foreach (var entityClass in EntityClasses) { #>
-            modelBuilder.Entity<<#=entityClass.RuntimeFullName#>>()
-                .HasKey(e => new {
+            modelBuilder.Entity<<#=entityClass.RuntimeFullName#>>(entity => {
+<# /* 主キー定義 */ #>
+                entity.HasKey(e => new {
 <# foreach (var prop in entityClass.PKColumns) { #>
                     e.<#=prop.PropertyName#>,
 <# }#>
                 });
+<# /* ナビゲーションプロパティ定義 */ #>
+<# foreach (var manyToOne in entityClass.GetManyToOne()) { #>
+                <#=manyToOne#>
+<# }#>
+<# foreach (var oneToOne in entityClass.GetOneToOne()) { #>
+                <#=oneToOne#>
+<# }#>
+            });
 <# }#>
         }
     }
@@ -35,13 +44,8 @@ namespace <#=EntityNamespace#> {
 <# /*Entityクラスの生成*/ #>
 <# foreach (var entityClass in EntityClasses) { #>
     public partial class <#=entityClass.ClassName#> {
-<# /*Entityクラスの生成: PKプロパティ*/ #>
-<# foreach (var prop in entityClass.PKColumns) { #>
-        public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }<#=prop.Initializer == null ? "" : $" = {prop.Initializer};"#>
-<# }#>
-<# /*Entityクラスの生成: PK以外のプロパティ*/ #>
-<# foreach (var prop in entityClass.NotPKColumns) { #>
-        public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }<#=prop.Initializer == null ? "" : $" = {prop.Initializer};"#>
+<# foreach (var prop in entityClass.GetAllDbProperties()) { #>
+        public <#=prop.Virtual ? "virtual " : ""#><#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }<#=prop.Initializer == null ? "" : $" = {prop.Initializer};"#>
 <# }#>
     }
 <# }#>

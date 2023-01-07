@@ -31,7 +31,14 @@ namespace HalApplicationBuilder.Impl {
         }
 
         public override IEnumerable<DbColumn> ToDbColumnModel() {
-            yield break;
+            // ナビゲーションプロパティ
+            var item = DbSchema.GetDbEntity(ChildAggregate).RuntimeFullName;
+            yield return new DbColumn {
+                Virtual = true,
+                CSharpTypeName = $"ICollection<{item}>",
+                PropertyName = NavigationPropName,
+                Initializer = $"new HashSet<{item}>()",
+            };
         }
 
         public override IEnumerable<MvcModelProperty> CreateInstanceModels() {
@@ -59,6 +66,7 @@ namespace HalApplicationBuilder.Impl {
             return string.Empty;
         }
 
+        private string NavigationPropName => Name;
         private string InstanceModelPropName => Name;
 
         public override string RenderInstanceView(ViewRenderingContext context) {
@@ -74,27 +82,54 @@ namespace HalApplicationBuilder.Impl {
             return template.TransformText();
         }
 
-        public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context, HashSet<object> dbEntities) {
-            var prop = uiInstance.GetType().GetProperty(InstanceModelPropName);
-            var instanceChildren = (IEnumerable)prop.GetValue(uiInstance);
-            var dbEntity = context.DbSchema.GetDbEntity(ChildAggregate);
-            foreach (var childInstance in instanceChildren) {
-                foreach (var descendantDbEntity in dbEntity.ConvertUiInstanceToDbInstance(childInstance, context, uiInstance)) {
-                    dbEntities.Add(descendantDbEntity);
-                }
+        public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context) {
+            var childDbEntity = context.DbSchema
+                .GetDbEntity(ChildAggregate);
+            var navigationProperty = dbInstance
+                .GetType()
+                .GetProperty(NavigationPropName);
+
+            // ジェネリック型でないとAddメソッドがないのでリフレクションを使ってAddを呼び出す
+            var collection = navigationProperty
+                .GetValue(dbInstance);
+            var add = collection
+                .GetType()
+                .GetMethod(nameof(ICollection<object>.Add));
+
+            var chlidrenUiInstances = (IEnumerable)uiInstance
+                .GetType()
+                .GetProperty(InstanceModelPropName)
+                .GetValue(uiInstance);
+
+            foreach (var childUiInstance in chlidrenUiInstances) {
+                var childDbInstance = childDbEntity.ConvertUiInstanceToDbInstance(childUiInstance, context);
+                add.Invoke(collection, new[] { childDbInstance });
             }
         }
 
         public override void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context) {
-            var prop = uiInstance.GetType().GetProperty(InstanceModelPropName);
-            var children = (IList)prop.GetValue(uiInstance);
-            var navigationProp = new List<object>(); // TODO: ナビゲーションプロパティへのアクセス
+            var childDbProperty = dbInstance
+                .GetType()
+                .GetProperty(NavigationPropName);
+            var childDbInstanceList = (IEnumerable)childDbProperty
+                .GetValue(dbInstance);
+
+            var childUiProperty = uiInstance
+                .GetType()
+                .GetProperty(InstanceModelPropName);
+            var childUiType = childUiProperty
+                .PropertyType
+                .GetGenericArguments()[0];
+            var childUiInstanceList = (IList)Activator.CreateInstance(
+                typeof(List<>).MakeGenericType(childUiType));
 
             var childDbEntity = context.DbSchema.GetDbEntity(ChildAggregate);
-            foreach (var childDbInstance in navigationProp) {
+            foreach (var childDbInstance in childDbInstanceList) {
                 var childUiInstance = childDbEntity.ConvertDbInstanceToUiInstance(childDbInstance, context);
-                children.Add(childUiInstance);
+                childUiInstanceList.Add(childUiInstance);
             }
+
+            childUiProperty.SetValue(uiInstance, childUiInstanceList);
         }
     }
 

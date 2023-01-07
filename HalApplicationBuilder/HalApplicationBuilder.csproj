@@ -11,6 +11,7 @@
     <PackageReference Include="System.CodeDom" Version="5.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.ViewFeatures" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="5.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="5.0.17" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Core\" />
@@ -53,10 +54,6 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>SingleViewTemplate.cs</LastGenOutput>
     </None>
-    <None Update="EFCore\EFCoreSourceTemplate.tt">
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>EFCoreSourceTemplate.cs</LastGenOutput>
-    </None>
     <None Update="AspNetMvc\AggregatePartialViewTemplate.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>AggregatePartialViewTemplate.cs</LastGenOutput>
@@ -88,6 +85,10 @@
     <None Update="AspNetMvc\InstancePartialViewTemplate.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>InstancePartialViewTemplate.cs</LastGenOutput>
+    </None>
+    <None Update="EntityFramework\EFCoreSourceTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>EFCoreSourceTemplate.cs</LastGenOutput>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -121,9 +122,6 @@
     <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="AspNetMvc\SingleViewTemplate.cs">
       <DependentUpon>SingleViewTemplate.tt</DependentUpon>
     </Compile>
-    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="EFCore\EFCoreSourceTemplate.cs">
-      <DependentUpon>EFCoreSourceTemplate.tt</DependentUpon>
-    </Compile>
     <Compile Update="AspNetMvc\AggregatePartialViewTemplate.cs">
       <DependentUpon>AggregatePartialViewTemplate.tt</DependentUpon>
     </Compile>
@@ -147,6 +145,9 @@
     </Compile>
     <Compile Update="AspNetMvc\InstancePartialViewTemplate.cs">
       <DependentUpon>InstancePartialViewTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Update="EntityFramework\EFCoreSourceTemplate.cs">
+      <DependentUpon>EFCoreSourceTemplate.tt</DependentUpon>
     </Compile>
   </ItemGroup>
 </Project>

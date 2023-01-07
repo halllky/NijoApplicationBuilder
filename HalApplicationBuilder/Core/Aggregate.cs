@@ -39,6 +39,9 @@ namespace HalApplicationBuilder.Core {
             }
             return aggregate;
         }
+        public IEnumerable<Aggregate> GetChildren() {
+            return Members.SelectMany(member => member.GetChildAggregates());
+        }
         public IEnumerable<Aggregate> GetAncestors() {
             var aggregate = Parent?.Owner;
             while (aggregate != null) {
@@ -47,8 +50,7 @@ namespace HalApplicationBuilder.Core {
             }
         }
         public IEnumerable<Aggregate> GetDescendants() {
-            var children = Members.SelectMany(member => member.GetChildAggregates());
-            foreach (var child in children) {
+            foreach (var child in GetChildren()) {
                 yield return child;
                 foreach (var descendant in child.GetDescendants()) {
                     yield return descendant;

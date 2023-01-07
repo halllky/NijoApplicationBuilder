@@ -30,12 +30,20 @@ namespace HalApplicationBuilder.Impl {
         }
 
         public override IEnumerable<DbColumn> ToDbColumnModel() {
-            foreach (var foreignKey in DbSchema.GetDbEntity(RefTarget).PKColumns) {
+            var refTargetDbEntity = DbSchema.GetDbEntity(RefTarget);
+            // 参照先DBの主キー
+            foreach (var foreignKey in refTargetDbEntity.PKColumns) {
                 yield return new DbColumn {
                     CSharpTypeName = foreignKey.CSharpTypeName,
                     PropertyName = $"{Name}_{foreignKey.PropertyName}",
                 };
             }
+            // ナビゲーションプロパティ
+            yield return new DbColumn {
+                Virtual = true,
+                CSharpTypeName = refTargetDbEntity.RuntimeFullName,
+                PropertyName = Name,
+            };
         }
 
         public override IEnumerable<AspNetMvc.MvcModelProperty> CreateSearchConditionModels() {
@@ -91,7 +99,7 @@ namespace HalApplicationBuilder.Impl {
             return template.TransformText();
         }
 
-        public override void MapUIToDB(object instance, object dbEntity, RuntimeContext context, HashSet<object> dbEntities) {
+        public override void MapUIToDB(object instance, object dbEntity, RuntimeContext context) {
             // TODO
         }
 
