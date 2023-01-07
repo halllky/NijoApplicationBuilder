@@ -95,19 +95,20 @@ namespace HalApplicationBuilder.Runtime {
             // Entityのインスタンスを生成
             var entityModel = DbSchema.GetDbEntity(aggregate);
 
-            var dbEntities = entityModel.ConvertUiInstanceToDbInstance((object)createCommand, this, null);
+            var dbEntities = entityModel.ConvertUiInstanceToDbInstance(createCommand, this, null).ToList();
             var dbContext = GetDbContext();
             dbContext.AddRange(dbEntities);
             dbContext.SaveChanges();
 
-            if (aggregate == null) throw new ArgumentException($"型 {createCommand.GetType().Name} と対応する集約が見つからない");
-            var instanceKey = new InstanceKey(createCommand, aggregate);
+            var rootDbInstance = dbEntities.First(); // TODO リファクタリング: 順番に依存している
+            var dbEntity = DbSchema.GetDbEntity(aggregate);
+            var instanceKey = InstanceKey.Create(rootDbInstance, dbEntity);
 
             return instanceKey;
         }
 
-        public object FindInstance(InstanceKey key) {
-            return null; // TODO
+        public TInstanceModel FindInstance<TInstanceModel>(InstanceKey key) {
+            return default; // TODO
         }
 
         public void UpdateInstance(object instance) {

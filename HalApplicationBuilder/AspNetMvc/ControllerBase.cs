@@ -69,8 +69,10 @@ namespace HalApplicationBuilder.AspNetMvc {
         [HttpGet]
         public virtual IActionResult Detail(string id) {
             var aggregate = RuntimeContext.FindAggregateByRuntimeType(typeof(TInstanceModel));
-            var key = new Runtime.InstanceKey(id, aggregate);
-            var instance = (TInstanceModel)RuntimeContext.FindInstance(key);
+            var dbEntity = RuntimeContext.DbSchema.GetDbEntity(aggregate);
+            if (!Runtime.InstanceKey.TryParse(id, dbEntity, out var instanceKey)) return NotFound();
+
+            var instance = RuntimeContext.FindInstance<TInstanceModel>(instanceKey);
             if (instance == null) return NotFound();
 
             instance.__halapp__.IsRoot = true;
@@ -78,6 +80,7 @@ namespace HalApplicationBuilder.AspNetMvc {
                 InstanceName = new Runtime.InstanceName(instance, aggregate).Value,
                 Item = instance,
             };
+
             return View(SingleViewName, model);
         }
         [HttpPost]

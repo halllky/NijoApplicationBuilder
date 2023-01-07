@@ -93,6 +93,16 @@ namespace HalApplicationBuilder.EntityFramework {
 
             return set;
         }
+
+        public override string ToString() {
+            var path = new List<string>();
+            var parent = Parent;
+            while (parent != null) {
+                path.Insert(0, parent.ClassName);
+                parent = parent.Parent;
+            }
+            return $"{nameof(DbEntity)}[{string.Join(".", path)}]";
+        }
     }
 
     public class DbColumn {

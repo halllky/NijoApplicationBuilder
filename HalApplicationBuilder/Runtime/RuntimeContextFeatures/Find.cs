@@ -14,14 +14,14 @@ namespace HalApplicationBuilder.Runtime.RuntimeContextFeatures {
         internal TInstanceModel Execute<TInstanceModel>(InstanceKey key) {
             // SQL発行回数が全く最適化されていないが後で考える
             var tables = new List<EntityFramework.DbEntity>();
-            tables.Add(RuntimeContext.DbSchema.GetDbEntity(key.Aggregate));
-            tables.AddRange(key.Aggregate
+            tables.Add(RuntimeContext.DbSchema.GetDbEntity(key.DbEntity.Source));
+            tables.AddRange(key.DbEntity.Source
                 .GetDescendants()
                 .Select(aggregate => RuntimeContext.DbSchema.GetDbEntity(aggregate)));
 
             var rootInstance = RuntimeContext
                 .RuntimeAssembly
-                .CreateInstance(RuntimeContext.ViewModelProvider.GetInstanceModel(key.Aggregate).RuntimeFullName);
+                .CreateInstance(RuntimeContext.ViewModelProvider.GetInstanceModel(key.DbEntity.Source).RuntimeFullName);
 
             throw new NotImplementedException();
         }

@@ -19,342 +19,62 @@ namespace HalApplicationBuilder.AspNetMvc {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            
-            #line 6 ""
             this.Write("\nnamespace ");
-            
-            #line default
-            #line hidden
-            
-            #line 7 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(Namespace));
-            
-            #line default
-            #line hidden
-            
-            #line 7 ""
             this.Write(" {\n    using System;\n    using System.Collections.Generic;\n\n");
-            
-            #line default
-            #line hidden
-            
-            #line 11 ""
  /* 検索条件DTO */ 
-            
-            #line default
-            #line hidden
-            
-            #line 12 ""
  foreach (var classDef in SearchConditionClasses) { 
-            
-            #line default
-            #line hidden
-            
-            #line 13 ""
             this.Write("    public class ");
-            
-            #line default
-            #line hidden
-            
-            #line 13 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(classDef.ClassName));
-            
-            #line default
-            #line hidden
-            
-            #line 13 ""
             this.Write(" {\n");
-            
-            #line default
-            #line hidden
-            
-            #line 14 ""
  foreach (var prop in classDef.Properties) { 
-            
-            #line default
-            #line hidden
-            
-            #line 15 ""
             this.Write("        public ");
-            
-            #line default
-            #line hidden
-            
-            #line 15 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
-            
-            #line default
-            #line hidden
-            
-            #line 15 ""
             this.Write(" ");
-            
-            #line default
-            #line hidden
-            
-            #line 15 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            
-            #line default
-            #line hidden
-            
-            #line 15 ""
             this.Write(" { get; set; }");
-            
-            #line default
-            #line hidden
-            
-            #line 15 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
-            
-            #line default
-            #line hidden
-            
-            #line 15 ""
             this.Write("\n");
-            
-            #line default
-            #line hidden
-            
-            #line 16 ""
  }
-            
-            #line default
-            #line hidden
-            
-            #line 17 ""
             this.Write("    }\n");
-            
-            #line default
-            #line hidden
-            
-            #line 18 ""
  }
-            
-            #line default
-            #line hidden
-            
-            #line 19 ""
             this.Write("\n");
-            
-            #line default
-            #line hidden
-            
-            #line 20 ""
  /* 検索結果DTO */ 
-            
-            #line default
-            #line hidden
-            
-            #line 21 ""
  foreach (var classDef in SearchResultClasses) { 
-            
-            #line default
-            #line hidden
-            
-            #line 22 ""
             this.Write("    public class ");
-            
-            #line default
-            #line hidden
-            
-            #line 22 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(classDef.ClassName));
-            
-            #line default
-            #line hidden
-            
-            #line 22 ""
             this.Write(" {\n");
-            
-            #line default
-            #line hidden
-            
-            #line 23 ""
  foreach (var prop in classDef.Properties) { 
-            
-            #line default
-            #line hidden
-            
-            #line 24 ""
             this.Write("        public ");
-            
-            #line default
-            #line hidden
-            
-            #line 24 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
-            
-            #line default
-            #line hidden
-            
-            #line 24 ""
             this.Write(" ");
-            
-            #line default
-            #line hidden
-            
-            #line 24 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            
-            #line default
-            #line hidden
-            
-            #line 24 ""
             this.Write(" { get; set; }");
-            
-            #line default
-            #line hidden
-            
-            #line 24 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
-            
-            #line default
-            #line hidden
-            
-            #line 24 ""
             this.Write("\n");
-            
-            #line default
-            #line hidden
-            
-            #line 25 ""
  }
-            
-            #line default
-            #line hidden
-            
-            #line 26 ""
             this.Write("    }\n");
-            
-            #line default
-            #line hidden
-            
-            #line 27 ""
  }
-            
-            #line default
-            #line hidden
-            
-            #line 28 ""
             this.Write("\n");
-            
-            #line default
-            #line hidden
-            
-            #line 29 ""
  /* シングルビューDTO */ 
-            
-            #line default
-            #line hidden
-            
-            #line 30 ""
  foreach (var classDef in InstanceClasses) { 
-            
-            #line default
-            #line hidden
-            
-            #line 31 ""
             this.Write("    public class ");
-            
-            #line default
-            #line hidden
-            
-            #line 31 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(classDef.ClassName));
-            
-            #line default
-            #line hidden
-            
-            #line 31 ""
             this.Write(" : ");
-            
-            #line default
-            #line hidden
-            
-            #line 31 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(UIInstanceBase));
-            
-            #line default
-            #line hidden
-            
-            #line 31 ""
             this.Write(" {\n");
-            
-            #line default
-            #line hidden
-            
-            #line 32 ""
  foreach (var prop in classDef.Properties) { 
-            
-            #line default
-            #line hidden
-            
-            #line 33 ""
             this.Write("        public ");
-            
-            #line default
-            #line hidden
-            
-            #line 33 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
-            
-            #line default
-            #line hidden
-            
-            #line 33 ""
             this.Write(" ");
-            
-            #line default
-            #line hidden
-            
-            #line 33 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            
-            #line default
-            #line hidden
-            
-            #line 33 ""
             this.Write(" { get; set; }");
-            
-            #line default
-            #line hidden
-            
-            #line 33 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
-            
-            #line default
-            #line hidden
-            
-            #line 33 ""
             this.Write("\n");
-            
-            #line default
-            #line hidden
-            
-            #line 34 ""
  }
-            
-            #line default
-            #line hidden
-            
-            #line 35 ""
             this.Write("    }\n");
-            
-            #line default
-            #line hidden
-            
-            #line 36 ""
  }
-            
-            #line default
-            #line hidden
-            
-            #line 37 ""
             this.Write("\n}");
-            
-            #line default
-            #line hidden
             return this.GenerationEnvironment.ToString();
         }
         
