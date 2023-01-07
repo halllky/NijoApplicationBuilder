@@ -11,7 +11,8 @@ namespace HalApplicationBuilder.Impl {
     public abstract class AggregateMemberBase :
         IAggregateMember,
         AspNetMvc.IMvcModelPropertySource,
-        AspNetMvc.IMemberRenderer {
+        AspNetMvc.IMemberRenderer,
+        Runtime.IInstanceConverter {
 
         internal AggregateMemberBase(PropertyInfo propertyInfo, Aggregate owner, IServiceProvider serviceProvider) {
             UnderlyingPropertyInfo = propertyInfo;
@@ -56,7 +57,7 @@ namespace HalApplicationBuilder.Impl {
 
 
         #region Runtime
-
+        public abstract void MapUIToDB(object instance, object dbEntity, Runtime.RuntimeContext context, HashSet<object> dbEntities);
         #endregion Runtime
 
 

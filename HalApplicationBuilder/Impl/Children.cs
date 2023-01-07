@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -72,6 +73,16 @@ namespace HalApplicationBuilder.Impl {
                 AddButtonBoundObjectName = nested.AspForCollectionPath,
             };
             return template.TransformText();
+        }
+
+        public override void MapUIToDB(object instance, object dbEntity, RuntimeContext context, HashSet<object> dbEntities) {
+            var prop = instance.GetType().GetProperty(InstanceModelPropName);
+            var instanceChildren = (IEnumerable)prop.GetValue(instance);
+            foreach (var childInstance in instanceChildren) {
+                foreach (var descendantDbEntity in context.ConvertUIToDB(childInstance, instance)) {
+                    dbEntities.Add(descendantDbEntity);
+                }
+            }
         }
     }
 

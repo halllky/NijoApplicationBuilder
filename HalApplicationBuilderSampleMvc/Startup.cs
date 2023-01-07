@@ -26,7 +26,10 @@ namespace HalApplicationBuilderSampleMvc {
             services.AddDbContext<EntityFramework.SampleDbContext>(option => {
                 var connStr = $"Data Source=\"{System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "bin", "Debug", "debug.sqlite3")}\"";
                 option.UseSqlite(connStr);
-            }, ServiceLifetime.Singleton);
+            });
+
+            // SaveやDetailでDbContextをダイレクトに参照しているため
+            services.AddScoped<DbContext>(provider => provider.GetService<EntityFramework.SampleDbContext>());
 
             var dllPath = "/__local__/20221211_haldoc_csharp/haldoc/HalApplicationBuilderSampleSchema/bin/Debug/net5.0/HalApplicationBuilderSampleSchema.dll";
             HalApplicationBuilder.Program.ConfigureServices(services, dllPath);

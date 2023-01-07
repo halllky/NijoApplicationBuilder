@@ -58,8 +58,7 @@ namespace HalApplicationBuilder.Impl {
             yield return new DbColumn {
                 Virtual = false,
                 CSharpTypeName = GetCSharpTypeName(),
-                PropertyName = UnderlyingPropertyInfo.GetCustomAttribute<ColumnAttribute>()?.Name
-                    ?? UnderlyingPropertyInfo.Name,
+                PropertyName = DbColumnPropName,
                 Initializer = null,
             };
         }
@@ -102,6 +101,8 @@ namespace HalApplicationBuilder.Impl {
                 PropertyName = InstanceModelPropName,
             };
         }
+
+        private string DbColumnPropName => UnderlyingPropertyInfo.GetCustomAttribute<ColumnAttribute>()?.Name ?? UnderlyingPropertyInfo.Name;
 
         private string SearchConditonPropName => Name;
         private string SearchResultPropName => Name;
@@ -168,6 +169,13 @@ namespace HalApplicationBuilder.Impl {
             if (type.IsEnum) return true;
 
             return false;
+        }
+
+        public override void MapUIToDB(object instance, object dbEntity, RuntimeContext context, HashSet<object> dbEntities) {
+            var instanceProp = instance.GetType().GetProperty(InstanceModelPropName);
+            var value = instanceProp.GetValue(instance);
+            var dbProp = dbEntity.GetType().GetProperty(DbColumnPropName);
+            dbProp.SetValue(dbEntity, value);
         }
     }
 

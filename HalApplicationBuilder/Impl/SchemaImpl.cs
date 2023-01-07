@@ -68,7 +68,6 @@ namespace HalApplicationBuilder.Impl {
         public Core.Aggregate FindByPath(string aggregatePath) {
             return PathMapping[aggregatePath];
         }
-
         #endregion ApplicationSchema
 
 

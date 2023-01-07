@@ -19,6 +19,7 @@ namespace HalApplicationBuilder.Core {
 
         public string Name => UnderlyingType.Name;
 
+
         public IAggregateMember Parent { get; }
 
         private List<IAggregateMember> _members;
@@ -54,6 +55,7 @@ namespace HalApplicationBuilder.Core {
                 }
             }
         }
+
 
         public override string ToString() {
             var path = new List<string>();

@@ -5,6 +5,7 @@ using System.Reflection;
 using HalApplicationBuilder.AspNetMvc;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.EntityFramework;
+using HalApplicationBuilder.Runtime;
 
 namespace HalApplicationBuilder.Impl {
     public class Variation : AggregateMemberBase {
@@ -42,7 +43,7 @@ namespace HalApplicationBuilder.Impl {
         public override IEnumerable<DbColumn> ToDbColumnModel() {
             yield return new DbColumn {
                 CSharpTypeName = "int?",
-                PropertyName = Name,
+                PropertyName = DbPropName,
             };
         }
 
@@ -79,7 +80,9 @@ namespace HalApplicationBuilder.Impl {
             }
         }
 
-        /// <summary>アンダースコア2連だと ArgumentException: The name of an HTML field cannot be null or empty... になるので</summary>
+        private string DbPropName => Name;
+
+        /// <summary>アンダースコア2連だと ArgumentException: The name of an HTML field cannot be null or empty... になる</summary>
         private string SearchConditionPropName(KeyValuePair<int, Aggregate> variation) => $"{Name}_{variation.Value.Name}";
         private string SearchResultPropName => Name;
         private string InstanceModelTypeSwitchPropName => Name;
@@ -117,6 +120,21 @@ namespace HalApplicationBuilder.Impl {
                     return template.TransformText();
                 });
             return string.Join(Environment.NewLine, childrenViews);
+        }
+
+        public override void MapUIToDB(object instance, object dbEntity, RuntimeContext context, HashSet<object> dbEntities) {
+            var instanceProp = instance.GetType().GetProperty(InstanceModelTypeSwitchPropName);
+            var value = instanceProp.GetValue(instance);
+            var dbProp = dbEntity.GetType().GetProperty(DbPropName);
+            dbProp.SetValue(dbEntity, value);
+
+            foreach (var variation in Variations) {
+                var detailProp = instance.GetType().GetProperty(InstanceModelTypeDetailPropName(variation));
+                var detailInstance = detailProp.GetValue(instance);
+                foreach (var descendantDbEntity in context.ConvertUIToDB(detailInstance, instance)) {
+                    dbEntities.Add(descendantDbEntity);
+                }
+            }
         }
     }
 

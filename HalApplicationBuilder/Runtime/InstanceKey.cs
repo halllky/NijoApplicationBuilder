@@ -6,9 +6,8 @@ namespace HalApplicationBuilder.Runtime {
     /// 複合キーをASP.NETで扱えるようにするための仕組み
     /// </summary>
     public class InstanceKey {
-        internal InstanceKey(string stringValue, Core.Aggregate aggregate) {
-            Aggregate = aggregate;
-            StringValue = stringValue;
+        internal InstanceKey(object instanceModel, Core.Aggregate aggregate) {
+            throw new NotImplementedException();
         }
 
         public Core.Aggregate Aggregate { get; }

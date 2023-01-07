@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.EntityFramework;
+using HalApplicationBuilder.Runtime;
 
 namespace HalApplicationBuilder.Impl {
     internal class Reference : AggregateMemberBase {
@@ -88,6 +89,10 @@ namespace HalApplicationBuilder.Impl {
                 AspForText = nestedText.AspForPath,
             };
             return template.TransformText();
+        }
+
+        public override void MapUIToDB(object instance, object dbEntity, RuntimeContext context, HashSet<object> dbEntities) {
+            // TODO
         }
     }
 

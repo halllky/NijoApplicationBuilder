@@ -1,5 +1,6 @@
 ﻿using System;
 namespace HalApplicationBuilder.Runtime {
+
     /// <summary>
     /// SingleView, CreateView, 集約PartialView の編集対象オブジェクト
     /// </summary>
