@@ -96,7 +96,7 @@ namespace HalApplicationBuilderSampleMvc.EntityFramework.Entities {
     }
     public partial class 営業所 {
         public string 会社ID { get; set; }
-        public int 営業所_連番 { get; set; }
+        public string 営業所_連番 { get; set; } = Guid.NewGuid().ToString();
         public string 営業所名 { get; set; }
         public string 担当者_ユーザーID { get; set; }
         public virtual ICollection<HalApplicationBuilderSampleMvc.EntityFramework.Entities.支店> 支店 { get; set; } = new HashSet<HalApplicationBuilderSampleMvc.EntityFramework.Entities.支店>();
@@ -105,8 +105,8 @@ namespace HalApplicationBuilderSampleMvc.EntityFramework.Entities {
     }
     public partial class 支店 {
         public string 会社ID { get; set; }
-        public int 営業所_連番 { get; set; }
-        public int 支店_連番 { get; set; }
+        public string 営業所_連番 { get; set; } = Guid.NewGuid().ToString();
+        public string 支店_連番 { get; set; } = Guid.NewGuid().ToString();
         public string 支店名 { get; set; }
         public virtual HalApplicationBuilderSampleMvc.EntityFramework.Entities.営業所 営業所 { get; set; }
     }

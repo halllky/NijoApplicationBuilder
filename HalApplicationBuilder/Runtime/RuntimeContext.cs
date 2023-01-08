@@ -112,7 +112,7 @@ namespace HalApplicationBuilder.Runtime {
             return (TInstanceModel)uiInstance;
         }
 
-        public void UpdateInstance(object uiInstance) {
+        public InstanceKey UpdateInstance(object uiInstance) {
             // 検索用の主キーを作成する
             var aggregate = FindAggregateByRuntimeType(uiInstance.GetType());
             var dbEntity = DbSchema.GetDbEntity(aggregate);
@@ -127,6 +127,8 @@ namespace HalApplicationBuilder.Runtime {
             // Save
             dbContext.Update(dbInstance);
             dbContext.SaveChanges();
+
+            return pk;
         }
 
         public void DeleteInstance(object instance) {

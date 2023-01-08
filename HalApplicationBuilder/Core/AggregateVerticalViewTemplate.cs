@@ -21,7 +21,7 @@ namespace HalApplicationBuilder.Core {
             this.GenerationEnvironment = null;
             
             #line 6 ""
-            this.Write("\n<div class=\"container\">\n    <div class=\"form-horizontal\">\n");
+            this.Write("\n<div class=\"card container\">\n    <div class=\"card-body form-horizontal\">\n");
             
             #line default
             #line hidden

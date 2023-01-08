@@ -59,11 +59,11 @@ namespace HalApplicationBuilder.EntityFramework {
                 .ToList();
             // 連番
             if (Source.Parent != null && Source.Parent.IsCollection && _pk.Count == 0) {
-                _pk.Insert(0, new DbColumn {
+                _pk.Insert(0, new IndexColumn {
                     Virtual = false,
-                    CSharpTypeName = "int",
+                    CSharpTypeName = "string",
                     PropertyName = $"{Source.Name}_連番",
-                    Initializer = null,
+                    Initializer = "Guid.NewGuid().ToString()",
                 });
             }
             // 親
@@ -152,5 +152,9 @@ namespace HalApplicationBuilder.EntityFramework {
         public string CSharpTypeName { get; init; }
         public string PropertyName { get; init; }
         public string Initializer { get; init; }
+    }
+    /// <summary>連番</summary>
+    public class IndexColumn : DbColumn{
+
     }
 }

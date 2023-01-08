@@ -85,8 +85,8 @@ namespace HalApplicationBuilder.AspNetMvc {
         }
         [HttpPost]
         public virtual IActionResult Update(SingleView.Model<TInstanceModel> model) {
-            RuntimeContext.UpdateInstance(model.Item);
-            return View(SingleViewName, model);
+            var id = RuntimeContext.UpdateInstance(model.Item);
+            return RedirectToAction(nameof(Detail), new { id });
         }
         [HttpPost]
         public virtual IActionResult Delete(SingleView.Model<TInstanceModel> model) {
