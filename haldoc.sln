@@ -3,10 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.809.9
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "haldocApp", "haldoc\haldocApp.csproj", "{ADB58951-0C64-4F9A-8878-A764CB9FDC7E}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sampleProjectSchema", "sampleProjectSchema\sampleProjectSchema.csproj", "{B8B51A26-8F5D-4392-A2B4-5F3B9A359683}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HalApplicationBuilder", "HalApplicationBuilder\HalApplicationBuilder.csproj", "{E1447BCD-245D-4364-993F-1D4536AC5788}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HalApplicationBuilderSampleMvc", "HalApplicationBuilderSampleMvc\HalApplicationBuilderSampleMvc.csproj", "{ED4D699D-D081-4F56-B7F2-409796BF671F}"
@@ -19,14 +15,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{ADB58951-0C64-4F9A-8878-A764CB9FDC7E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{ADB58951-0C64-4F9A-8878-A764CB9FDC7E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{ADB58951-0C64-4F9A-8878-A764CB9FDC7E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{ADB58951-0C64-4F9A-8878-A764CB9FDC7E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B8B51A26-8F5D-4392-A2B4-5F3B9A359683}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B8B51A26-8F5D-4392-A2B4-5F3B9A359683}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B8B51A26-8F5D-4392-A2B4-5F3B9A359683}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B8B51A26-8F5D-4392-A2B4-5F3B9A359683}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E1447BCD-245D-4364-993F-1D4536AC5788}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E1447BCD-245D-4364-993F-1D4536AC5788}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E1447BCD-245D-4364-993F-1D4536AC5788}.Release|Any CPU.ActiveCfg = Release|Any CPU
