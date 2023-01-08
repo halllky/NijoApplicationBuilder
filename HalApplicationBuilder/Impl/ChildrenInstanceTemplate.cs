@@ -43,7 +43,9 @@ namespace HalApplicationBuilder.Impl {
             this.Write(this.ToStringHelper.ToStringWithCulture(AddButtonBoundObjectName));
             this.Write("\" class=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(ModelPathAttrName));
-            this.Write("\" />    \n    ");
+            this.Write("\" />\n<input type=\"text\" value=\"@ViewData.TemplateInfo.HtmlFieldPrefix\" class=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ModelPathAttrName));
+            this.Write("\" />");
             return this.GenerationEnvironment.ToString();
         }
         

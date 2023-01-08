@@ -43,6 +43,7 @@ namespace HalApplicationBuilder.Runtime {
         public Core.Aggregate FindAggregateByName(string name) {
             return ApplicationSchema.AllAggregates().SingleOrDefault(a => a.Name == name);
         }
+        /// <summary>見つからない場合は例外</summary>
         public Core.Aggregate FindAggregateByRuntimeType(Type runtimeType) {
             if (runtimeType == null) return null;
 
@@ -62,7 +63,10 @@ namespace HalApplicationBuilder.Runtime {
                     .ToDictionary(x => x.runtimeFullname, x => x.aggregate);
             }
 
-            return _typeFullNameIndex.GetValueOrDefault(runtimeType.FullName);
+            if (!_typeFullNameIndex.ContainsKey(runtimeType.FullName))
+                throw new ArgumentException($"型 {runtimeType.Name} と対応する集約が見つからない");
+
+            return _typeFullNameIndex[runtimeType.FullName];
         }
 
         internal DbContext GetDbContext() {
@@ -88,35 +92,41 @@ namespace HalApplicationBuilder.Runtime {
         public InstanceKey SaveNewInstance(object createCommand) {
             if (createCommand == null) throw new ArgumentNullException(nameof(createCommand));
 
-            // Aggregateを特定
             var aggregate = FindAggregateByRuntimeType(createCommand.GetType());
-            if (aggregate == null) throw new ArgumentException($"型 {createCommand.GetType().Name} と対応する集約が見つからない");
-
-            // Entityのインスタンスを生成
-            var entityModel = DbSchema.GetDbEntity(aggregate);
-            var dbInstance = entityModel.ConvertUiInstanceToDbInstance(createCommand, this);
+            var dbEntity = DbSchema.GetDbEntity(aggregate);
+            var dbInstance = dbEntity.ConvertUiInstanceToDbInstance(createCommand, this);
 
             var dbContext = GetDbContext();
             dbContext.Add(dbInstance);
             dbContext.SaveChanges();
 
-            var dbEntity = DbSchema.GetDbEntity(aggregate);
             var instanceKey = InstanceKey.Create(dbInstance, dbEntity);
-
             return instanceKey;
         }
 
-        public TInstanceModel FindInstance<TInstanceModel>(InstanceKey key) {
-            var entityType = RuntimeAssembly.GetType(key.DbEntity.RuntimeFullName);
-            var pkValues = key.ParsedValue.Select(v => v.Value).ToArray();
+        public TInstanceModel FindInstance<TInstanceModel>(InstanceKey pk) {
+            var entityType = RuntimeAssembly.GetType(pk.DbEntity.RuntimeFullName);
             var dbContext = GetDbContext();
-            var dbInstance = dbContext.Find(entityType, pkValues);
-            var uiInstance = key.DbEntity.ConvertDbInstanceToUiInstance(dbInstance, this);
+            var dbInstance = dbContext.Find(entityType, pk.Values);
+            var uiInstance = pk.DbEntity.ConvertDbInstanceToUiInstance(dbInstance, this);
             return (TInstanceModel)uiInstance;
         }
 
-        public void UpdateInstance(object instance) {
-            // TODO
+        public void UpdateInstance(object uiInstance) {
+            // 検索用の主キーを作成する
+            var aggregate = FindAggregateByRuntimeType(uiInstance.GetType());
+            var dbEntity = DbSchema.GetDbEntity(aggregate);
+            var tempDbInstance = dbEntity.ConvertUiInstanceToDbInstance(uiInstance, this);
+            var pk = InstanceKey.Create(tempDbInstance, dbEntity);
+            // DBからentityを読み込む
+            var entityType = RuntimeAssembly.GetType(dbEntity.RuntimeFullName);
+            var dbContext = GetDbContext();
+            var dbInstance = dbContext.Find(entityType, pk.Values);
+            // UIの値をentityにマッピングする
+            dbEntity.MapUiInstanceToDbInsntace(uiInstance, dbInstance, this);
+            // Save
+            dbContext.Update(dbInstance);
+            dbContext.SaveChanges();
         }
 
         public void DeleteInstance(object instance) {

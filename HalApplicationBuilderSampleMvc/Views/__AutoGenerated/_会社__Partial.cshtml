@@ -159,8 +159,8 @@
     class="halapp-add-child"
     halapp-aggregate-tree-path="会社.営業所" />
 
-<input type="hidden" asp-for="営業所" class="halapp-aggregate-model-path" />    
-    
+<input type="hidden" asp-for="営業所" class="halapp-aggregate-model-path" />
+<input type="text" value="@ViewData.TemplateInfo.HtmlFieldPrefix" class="halapp-aggregate-model-path" />
             </div>
         </div>
     </div>

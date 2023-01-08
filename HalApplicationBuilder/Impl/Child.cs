@@ -85,19 +85,27 @@ namespace HalApplicationBuilder.Impl {
         }
 
         public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context) {
-            var chlidUiInstance = uiInstance
+            var childUiInstance = uiInstance
                 .GetType()
                 .GetProperty(InstanceModelPropName)
                 .GetValue(uiInstance);
             var childDbEntity = context.DbSchema
                 .GetDbEntity(ChildAggregate);
-            var childDbInstance = childDbEntity
-                .ConvertUiInstanceToDbInstance(chlidUiInstance, context);
             var navigationProperty = dbInstance
                 .GetType()
                 .GetProperty(NavigationPropName);
 
-            navigationProperty.SetValue(dbInstance, childDbInstance);
+            var childDbInstance = navigationProperty.GetValue(dbInstance);
+            if (childDbInstance != null) {
+                childDbEntity.MapUiInstanceToDbInsntace(childUiInstance, childDbInstance, context);
+
+            } else {
+                var newChildDbInstance = childDbEntity
+                    .ConvertUiInstanceToDbInstance(childUiInstance, context);
+
+                navigationProperty.SetValue(dbInstance, newChildDbInstance);
+            }
+
         }
 
         public override void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context) {

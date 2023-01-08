@@ -116,11 +116,7 @@ namespace HalApplicationBuilder.EntityFramework {
         internal object ConvertUiInstanceToDbInstance(object uiInstance, RuntimeContext context) {
             var dbInstance = context.RuntimeAssembly.CreateInstance(RuntimeFullName);
 
-            // instacneModelの各プロパティの値をentityにマッピング
-            foreach (var member in Source.Members) {
-                if (member is not IInstanceConverter converter) continue;
-                converter.MapUIToDB(uiInstance, dbInstance, context);
-            }
+            MapUiInstanceToDbInsntace(uiInstance, dbInstance, context);
 
             return dbInstance;
         }
@@ -133,13 +129,19 @@ namespace HalApplicationBuilder.EntityFramework {
             }
             return uiInstance;
         }
+        internal void MapUiInstanceToDbInsntace(object uiInstance, object dbInstance, RuntimeContext context) {
+            foreach (var member in Source.Members) {
+                if (member is not IInstanceConverter converter) continue;
+                converter.MapUIToDB(uiInstance, dbInstance, context);
+            }
+        }
 
         public override string ToString() {
             var path = new List<string>();
-            var parent = Parent;
-            while (parent != null) {
-                path.Insert(0, parent.ClassName);
-                parent = parent.Parent;
+            var dbEntity = this;
+            while (dbEntity != null) {
+                path.Insert(0, dbEntity.ClassName);
+                dbEntity = dbEntity.Parent;
             }
             return $"{nameof(DbEntity)}[{string.Join(".", path)}]";
         }

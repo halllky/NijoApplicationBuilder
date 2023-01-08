@@ -142,19 +142,26 @@ namespace HalApplicationBuilder.Impl {
 
             // Variation子要素の設定
             foreach (var variation in Variations) {
-                var chlidUiInstance = uiInstance
+                var childUiInstance = uiInstance
                     .GetType()
                     .GetProperty(InstanceModelTypeDetailPropName(variation))
                     .GetValue(uiInstance);
                 var childDbEntity = context.DbSchema
                     .GetDbEntity(variation.Value);
-                var childDbInstance = childDbEntity
-                    .ConvertUiInstanceToDbInstance(chlidUiInstance, context);
                 var navigationProperty = dbInstance
                     .GetType()
                     .GetProperty(NavigationPropName(childDbEntity));
 
-                navigationProperty.SetValue(dbInstance, childDbInstance);
+                var childDbInstance = navigationProperty.GetValue(dbInstance);
+                if (childDbInstance != null) {
+                    childDbEntity.MapUiInstanceToDbInsntace(childUiInstance, childDbInstance, context);
+
+                } else {
+                    var newChildDbInstance = childDbEntity
+                        .ConvertUiInstanceToDbInstance(childUiInstance, context);
+
+                    navigationProperty.SetValue(dbInstance, newChildDbInstance);
+                }
             }
         }
 

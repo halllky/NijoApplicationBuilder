@@ -85,16 +85,22 @@ namespace HalApplicationBuilder.Impl {
         public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context) {
             var childDbEntity = context.DbSchema
                 .GetDbEntity(ChildAggregate);
-            var navigationProperty = dbInstance
+            var childDbProperty = dbInstance
                 .GetType()
                 .GetProperty(NavigationPropName);
 
-            // ジェネリック型でないとAddメソッドがないのでリフレクションを使ってAddを呼び出す
-            var collection = navigationProperty
+            // Addメソッドはジェネリック型の方のICollectionにしかないのでリフレクションを使って呼び出す
+            var collection = (IEnumerable)childDbProperty
                 .GetValue(dbInstance);
             var add = collection
                 .GetType()
                 .GetMethod(nameof(ICollection<object>.Add));
+
+            // キーを比較して重複あるものは上書き、ないものは新規追加、という動きを実現するためのdictionary
+            var keymaps = new Dictionary<InstanceKey, object>();
+            foreach (var childDbInstance in collection) {
+                keymaps.Add(InstanceKey.Create(childDbInstance, childDbEntity), childDbInstance);
+            }
 
             var chlidrenUiInstances = (IEnumerable)uiInstance
                 .GetType()
@@ -102,8 +108,14 @@ namespace HalApplicationBuilder.Impl {
                 .GetValue(uiInstance);
 
             foreach (var childUiInstance in chlidrenUiInstances) {
-                var childDbInstance = childDbEntity.ConvertUiInstanceToDbInstance(childUiInstance, context);
-                add.Invoke(collection, new[] { childDbInstance });
+                var newChildDbInstance = childDbEntity.ConvertUiInstanceToDbInstance(childUiInstance, context);
+                var pk = InstanceKey.Create(newChildDbInstance, childDbEntity);
+
+                if (keymaps.TryGetValue(pk, out var existDbEntity)) {
+                    childDbEntity.MapUiInstanceToDbInsntace(childUiInstance, existDbEntity, context);
+                } else {
+                    add.Invoke(collection, new[] { newChildDbInstance });
+                }
             }
         }
 

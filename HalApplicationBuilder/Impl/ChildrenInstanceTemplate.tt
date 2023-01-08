@@ -15,5 +15,5 @@
     <#=AddButtonSenderIdentifier#>="<#=AspForAddChild#>" />
 
 <# /* 入れ子の子要素の新規作成時にname属性の接頭につける文字列をASP.NETに生成してもらうためのもの */ #>
-<input type="hidden" asp-for="<#=AddButtonBoundObjectName#>" class="<#=ModelPathAttrName#>" />    
-    
+<input type="hidden" asp-for="<#=AddButtonBoundObjectName#>" class="<#=ModelPathAttrName#>" />
+<input type="text" value="@ViewData.TemplateInfo.HtmlFieldPrefix" class="<#=ModelPathAttrName#>" />
