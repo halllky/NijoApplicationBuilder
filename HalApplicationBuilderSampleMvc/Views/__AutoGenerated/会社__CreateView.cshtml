@@ -4,13 +4,13 @@
     ViewData["Title"] = "会社 - 新規作成";
 }
 
-<h1>
+<h1 class="font-bold text-[18px] select-none">
     会社 - 新規作成
 </h1>
 
-<form id="halapp-single-view-form">
+<form id="halapp-single-view-form" class="mt-2">
     <partial name="_会社__Partial.cshtml" for="Item" />
     <div id="halapp-single-view-form-footer">
-        <button asp-action="Create" formmethod="post">作成</button>
+        <button asp-action="Create" formmethod="post" class="halapp-btn-primary">作成</button>
     </div>
 </form>

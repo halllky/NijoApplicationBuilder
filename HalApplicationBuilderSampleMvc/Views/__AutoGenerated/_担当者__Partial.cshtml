@@ -3,27 +3,25 @@
 
 <div class="halapp-aggregate-container">
     @if (Model.__halapp__.IsRoot == false) {
-        <input type="button" value="削除" class="halapp-remove-button" />
+        <input type="button" value="削除" class="halapp-remove-button halapp-btn-secondary" />
     }
 
     
-<div class="card container">
-    <div class="card-body form-horizontal">
-        <div class="row mb-3">
-            <label class="col-sm-2 col-form-label">
-                ユーザーID
-            </label>
-            <div class="col-sm-10">
-                <input asp-for="ユーザーID"/>
-            </div>
+<div class="border border-gray-300 rounded-lg flex flex-col p-2">
+    <div class="flex flex-col md:flex-row mb-1">
+        <label class="w-32 select-none">
+            ユーザーID
+        </label>
+        <div class="flex-1">
+            <input asp-for="ユーザーID"/>
         </div>
-        <div class="row mb-3">
-            <label class="col-sm-2 col-form-label">
-                氏名
-            </label>
-            <div class="col-sm-10">
-                <input asp-for="氏名"/>
-            </div>
+    </div>
+    <div class="flex flex-col md:flex-row mb-1">
+        <label class="w-32 select-none">
+            氏名
+        </label>
+        <div class="flex-1">
+            <input asp-for="氏名"/>
         </div>
     </div>
 </div>

@@ -11,6 +11,6 @@
 <input
     type="button"
     value="追加"
-    class="<#=AddButtonCssClass#>"
+    class="<#=AddButtonCssClass#> halapp-btn-secondary"
     <#=AddButtonSenderIdentifier#>="<#=AspForAddChild#>"
     <#=AddButtonModelIdentifier#>="<#=AddButtonBoundObjectName#>" />

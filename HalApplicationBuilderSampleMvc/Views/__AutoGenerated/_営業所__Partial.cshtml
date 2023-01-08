@@ -3,26 +3,25 @@
 
 <div class="halapp-aggregate-container">
     @if (Model.__halapp__.IsRoot == false) {
-        <input type="button" value="削除" class="halapp-remove-button" />
+        <input type="button" value="削除" class="halapp-remove-button halapp-btn-secondary" />
     }
 
     
-<div class="card container">
-    <div class="card-body form-horizontal">
-        <div class="row mb-3">
-            <label class="col-sm-2 col-form-label">
-                営業所名
-            </label>
-            <div class="col-sm-10">
-                <input asp-for="営業所名"/>
-            </div>
+<div class="border border-gray-300 rounded-lg flex flex-col p-2">
+    <div class="flex flex-col md:flex-row mb-1">
+        <label class="w-32 select-none">
+            営業所名
+        </label>
+        <div class="flex-1">
+            <input asp-for="営業所名"/>
         </div>
-        <div class="row mb-3">
-            <label class="col-sm-2 col-form-label">
-                支店
-            </label>
-            <div class="col-sm-10">
-                
+    </div>
+    <div class="flex flex-col md:flex-row mb-1">
+        <label class="w-32 select-none">
+            支店
+        </label>
+        <div class="flex-1">
+            
 @for (var i = 0; i < Model.支店.Count; i++) {
     <partial name="_支店__Partial.cshtml" for="支店[i]" />
 }
@@ -30,24 +29,23 @@
 <input
     type="button"
     value="追加"
-    class="halapp-add-child"
+    class="halapp-add-child halapp-btn-secondary"
     halapp-aggregate-tree-path="会社.営業所.支店"
     halapp-aggregate-model-path="支店" />
 
-            </div>
         </div>
-        <div class="row mb-3">
-            <label class="col-sm-2 col-form-label">
-                担当者
-            </label>
-            <div class="col-sm-10">
-                
+    </div>
+    <div class="flex flex-col md:flex-row mb-1">
+        <label class="w-32 select-none">
+            担当者
+        </label>
+        <div class="flex-1">
+            
 <div>
     <input type="hidden" asp-for="担当者.InstanceKey" />
     <input asp-for="担当者.InstanceName" />
 </div>
 
-            </div>
         </div>
     </div>
 </div>

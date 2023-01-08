@@ -19,16 +19,16 @@ namespace HalApplicationBuilder.AspNetMvc {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            this.Write("\n<div class=\"card container\">\n    <div class=\"card-body form-horizontal\">\n");
+            this.Write("\n<div class=\"border border-gray-300 rounded-lg flex flex-col p-2\">\n");
  foreach (var member in Members) { 
-            this.Write("        <div class=\"row mb-3\">\n            <label class=\"col-sm-2 col-form-label\"" +
-                    ">\n                ");
+            this.Write("    <div class=\"flex flex-col md:flex-row mb-1\">\n        <label class=\"w-32 selec" +
+                    "t-none\">\n            ");
             this.Write(this.ToStringHelper.ToStringWithCulture(member.Key));
-            this.Write("\n            </label>\n            <div class=\"col-sm-10\">\n                ");
+            this.Write("\n        </label>\n        <div class=\"flex-1\">\n            ");
             this.Write(this.ToStringHelper.ToStringWithCulture(member.Value));
-            this.Write("\n            </div>\n        </div>\n");
+            this.Write("\n        </div>\n    </div>\n");
  } 
-            this.Write("    </div>\n</div>\n");
+            this.Write("</div>\n");
             return this.GenerationEnvironment.ToString();
         }
         

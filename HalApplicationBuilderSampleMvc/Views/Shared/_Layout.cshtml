@@ -1,46 +1,42 @@
 ﻿@inject HalApplicationBuilder.Runtime.RuntimeContext runtimeContext; 
 
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" class="h-full w-full">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - HalApplicationBuilderSampleMvc</title>
-    <link rel="stylesheet" href="~/css/app.css" />
+    <title>@ViewData["Title"] - HalApplicationBuilder</title>
+    <link rel="stylesheet" href="~/css/app.min.css" />
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">HalApplicationBuilderSampleMvc</a>
-                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        @foreach (var menuItem in runtimeContext.GetRootNavigations())
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="@menuItem.AspController" asp-action="Index">@menuItem.LinkText</a>
-                            </li>
-                        }
-                    </ul>
-                </div>
-            </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
+<body class="bg-gray-200 h-full w-full flex flex-col">
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2022 - HalApplicationBuilderSampleMvc - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
+    @*ルートナビゲーション*@
+    <nav class="flex gap-3 mx-2 justify-start items-center border-b border-gray-400">
+        <h1 class="font-bold text-[24px]">
+            <a href="/">@runtimeContext.ApplicationName</a>
+        </h1>
+
+        @foreach (var menuItem in runtimeContext.GetRootNavigations())
+        {
+            <div class="flex items-center cursor-pointer">
+                <a asp-area=""
+                   asp-controller="@menuItem.AspController"
+                   asp-action="Index"
+                   class="halapp-btn-link">
+                    @menuItem.LinkText
+                </a>
+            </div>
+        }
+    </nav>
+
+    <main role="main" class="flex-1 mx-2">
+        @RenderBody()
+    </main>
+
+    <footer class="mx-2">
+        &copy; 2022 - HalApplicationBuilder
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 

@@ -9,15 +9,15 @@
     ViewData["Title"] = $"{<#=PageTitle#>}";
 }
 
-<h1>
+<h1 class="font-bold text-[18px] select-none">
     <#=PageTitle#>
     <asp type="hidden" asp-for="<#=NameofInstanceName#>" />
 </h1>
 
-<form id="<#=FormId#>">
+<form id="<#=FormId#>" class="mt-2">
     <partial name="<#=PartialViewName#>" for="<#=PartialViewBoundObjectName#>" />
     <div id="<#=FormFooterId#>">
-        <button asp-action="<#=UpdateActionName#>" formmethod="post">更新</button>
-        <button asp-action="<#=DeleteActionName#>" formmethod="post">削除</button>
+        <button asp-action="<#=UpdateActionName#>" formmethod="post" class="halapp-btn-primary">更新</button>
+        <button asp-action="<#=DeleteActionName#>" formmethod="post" class="halapp-btn-secondary">削除</button>
     </div>
 </form>

@@ -4,15 +4,15 @@
     ViewData["Title"] = $"{@Model.InstanceName}";
 }
 
-<h1>
+<h1 class="font-bold text-[18px] select-none">
     @Model.InstanceName
     <asp type="hidden" asp-for="InstanceName" />
 </h1>
 
-<form id="halapp-single-view-form">
+<form id="halapp-single-view-form" class="mt-2">
     <partial name="_会社__Partial.cshtml" for="Item" />
     <div id="halapp-single-view-form-footer">
-        <button asp-action="Update" formmethod="post">更新</button>
-        <button asp-action="Delete" formmethod="post">削除</button>
+        <button asp-action="Update" formmethod="post" class="halapp-btn-primary">更新</button>
+        <button asp-action="Delete" formmethod="post" class="halapp-btn-secondary">削除</button>
     </div>
 </form>

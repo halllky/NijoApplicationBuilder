@@ -17,6 +17,8 @@ namespace HalApplicationBuilder.Runtime {
             _service = service;
         }
 
+        public string ApplicationName => "サンプルアプリケーション";
+
         internal Assembly SchemaAssembly { get; }
         internal Assembly RuntimeAssembly { get; }
         internal Core.Config Config { get; }

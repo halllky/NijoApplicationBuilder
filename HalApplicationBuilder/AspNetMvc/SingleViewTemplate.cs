@@ -23,13 +23,13 @@ namespace HalApplicationBuilder.AspNetMvc {
             this.Write(this.ToStringHelper.ToStringWithCulture(ModelTypeFullname));
             this.Write(";\n@{\n    ViewData[\"Title\"] = $\"{");
             this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
-            this.Write("}\";\n}\n\n<h1>\n    ");
+            this.Write("}\";\n}\n\n<h1 class=\"font-bold text-[18px] select-none\">\n    ");
             this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
             this.Write("\n    <asp type=\"hidden\" asp-for=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(NameofInstanceName));
             this.Write("\" />\n</h1>\n\n<form id=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(FormId));
-            this.Write("\">\n    <partial name=\"");
+            this.Write("\" class=\"mt-2\">\n    <partial name=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(PartialViewName));
             this.Write("\" for=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(PartialViewBoundObjectName));
@@ -37,9 +37,10 @@ namespace HalApplicationBuilder.AspNetMvc {
             this.Write(this.ToStringHelper.ToStringWithCulture(FormFooterId));
             this.Write("\">\n        <button asp-action=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(UpdateActionName));
-            this.Write("\" formmethod=\"post\">更新</button>\n        <button asp-action=\"");
+            this.Write("\" formmethod=\"post\" class=\"halapp-btn-primary\">更新</button>\n        <button asp-ac" +
+                    "tion=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(DeleteActionName));
-            this.Write("\" formmethod=\"post\">削除</button>\n    </div>\n</form>\n");
+            this.Write("\" formmethod=\"post\" class=\"halapp-btn-secondary\">削除</button>\n    </div>\n</form>\n");
             return this.GenerationEnvironment.ToString();
         }
         

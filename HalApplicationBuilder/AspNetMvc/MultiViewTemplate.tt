@@ -9,22 +9,22 @@
     ViewData["Title"] = "<#=PageTitle#>";
 }
 
-<h1>
+<h1 class="font-bold text-[18px] select-none">
     <#=PageTitle#>
 </h1>
 
 <form>
     @* 検索条件欄 *@
-    <div>
+    <div class="mt-2">
         <#=SearchConditionView#>
-        <button asp-action="<#=ClearActionName#>">クリア</button>
-        <button asp-action="<#=SearchActionName#>">検索</button>
+        <button asp-action="<#=ClearActionName#>" class="halapp-btn-secondary">クリア</button>
+        <button asp-action="<#=SearchActionName#>" class="halapp-btn-primary">検索</button>
     </div>
     
     @* 検索結果欄 *@
-    <div>
+    <div class="mt-2">
         <div style="display: flex; justify-content: flex-end">
-            <a asp-action="New">新規作成</a>
+            <a asp-action="New" class="halapp-btn-link">新規作成</a>
         </div>
         <table class="table table-sm">
             <thead>
@@ -42,7 +42,7 @@
                 {
                     <tr>
                         <td>
-                            <a asp-action="<#=LinkToSingleViewActionName#>">詳細</a>
+                            <a asp-action="<#=LinkToSingleViewActionName#>" class="halapp-btn-link">詳細</a>
                         </td>
 <# foreach (var prop in SearchResultClass.Properties) { #>
                         <td>

@@ -9,13 +9,13 @@
     ViewData["Title"] = "<#=PageTitle#>";
 }
 
-<h1>
+<h1 class="font-bold text-[18px] select-none">
     <#=PageTitle#>
 </h1>
 
-<form id="<#=FormId#>">
+<form id="<#=FormId#>" class="mt-2">
     <partial name="<#=PartialViewName#>" for="<#=PartialViewBoundObjectName#>" />
     <div id="<#=FormFooterId#>">
-        <button asp-action="<#=ExecuteActionName#>" formmethod="post">作成</button>
+        <button asp-action="<#=ExecuteActionName#>" formmethod="post" class="halapp-btn-primary">作成</button>
     </div>
 </form>

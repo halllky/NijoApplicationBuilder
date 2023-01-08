@@ -8,7 +8,7 @@
 
 <div class="<#=ContainerClassName#>">
     @if (<#=ShowRemoveButton#>) {
-        <input type="button" value="削除" class="<#=RemoveButtonClassName#>" />
+        <input type="button" value="削除" class="<#=RemoveButtonClassName#> halapp-btn-secondary" />
     }
 
     <#=View#>

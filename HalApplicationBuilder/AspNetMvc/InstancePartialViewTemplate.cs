@@ -27,7 +27,7 @@ namespace HalApplicationBuilder.AspNetMvc {
             this.Write(this.ToStringHelper.ToStringWithCulture(ShowRemoveButton));
             this.Write(") {\n        <input type=\"button\" value=\"削除\" class=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(RemoveButtonClassName));
-            this.Write("\" />\n    }\n\n    ");
+            this.Write(" halapp-btn-secondary\" />\n    }\n\n    ");
             this.Write(this.ToStringHelper.ToStringWithCulture(View));
             this.Write("\n\n");
  foreach (var field in HiddenFields) { 

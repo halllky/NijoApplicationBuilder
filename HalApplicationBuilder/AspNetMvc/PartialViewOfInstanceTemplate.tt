@@ -4,17 +4,15 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 
-<div class="card container">
-    <div class="card-body form-horizontal">
+<div class="border border-gray-300 rounded-lg flex flex-col p-2">
 <# foreach (var member in Members) { #>
-        <div class="row mb-3">
-            <label class="col-sm-2 col-form-label">
-                <#=member.Key#>
-            </label>
-            <div class="col-sm-10">
-                <#=member.Value#>
-            </div>
+    <div class="flex flex-col md:flex-row mb-1">
+        <label class="w-32 select-none">
+            <#=member.Key#>
+        </label>
+        <div class="flex-1">
+            <#=member.Value#>
         </div>
-<# } #>
     </div>
+<# } #>
 </div>

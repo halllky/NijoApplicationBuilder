@@ -23,21 +23,21 @@ namespace HalApplicationBuilder.AspNetMvc {
             this.Write(this.ToStringHelper.ToStringWithCulture(ModelTypeFullname));
             this.Write(";\n@{\n    ViewData[\"Title\"] = \"");
             this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
-            this.Write("\";\n}\n\n<h1>\n    ");
+            this.Write("\";\n}\n\n<h1 class=\"font-bold text-[18px] select-none\">\n    ");
             this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
-            this.Write("\n</h1>\n\n<form>\n    @* 検索条件欄 *@\n    <div>\n        ");
+            this.Write("\n</h1>\n\n<form>\n    @* 検索条件欄 *@\n    <div class=\"mt-2\">\n        ");
             this.Write(this.ToStringHelper.ToStringWithCulture(SearchConditionView));
             this.Write("\n        <button asp-action=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(ClearActionName));
-            this.Write("\">クリア</button>\n        <button asp-action=\"");
+            this.Write("\" class=\"halapp-btn-secondary\">クリア</button>\n        <button asp-action=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(SearchActionName));
-            this.Write(@""">検索</button>
+            this.Write(@""" class=""halapp-btn-primary"">検索</button>
     </div>
     
     @* 検索結果欄 *@
-    <div>
+    <div class=""mt-2"">
         <div style=""display: flex; justify-content: flex-end"">
-            <a asp-action=""New"">新規作成</a>
+            <a asp-action=""New"" class=""halapp-btn-link"">新規作成</a>
         </div>
         <table class=""table table-sm"">
             <thead>
@@ -54,7 +54,7 @@ namespace HalApplicationBuilder.AspNetMvc {
                     "        <tr>\n                        <td>\n                            <a asp-act" +
                     "ion=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(LinkToSingleViewActionName));
-            this.Write("\">詳細</a>\n                        </td>\n");
+            this.Write("\" class=\"halapp-btn-link\">詳細</a>\n                        </td>\n");
  foreach (var prop in SearchResultClass.Properties) { 
             this.Write("                        <td>\n                            @Model.SearchResult[i].");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));

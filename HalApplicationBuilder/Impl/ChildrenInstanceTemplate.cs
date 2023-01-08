@@ -33,7 +33,7 @@ namespace HalApplicationBuilder.Impl {
             this.Write(this.ToStringHelper.ToStringWithCulture(PartialViewBoundObjectName));
             this.Write("\" />\n}\n\n<input\n    type=\"button\"\n    value=\"追加\"\n    class=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(AddButtonCssClass));
-            this.Write("\"\n    ");
+            this.Write(" halapp-btn-secondary\"\n    ");
             this.Write(this.ToStringHelper.ToStringWithCulture(AddButtonSenderIdentifier));
             this.Write("=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(AspForAddChild));
