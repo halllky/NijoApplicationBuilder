@@ -10,7 +10,7 @@
             const controllerName = '@(Context.Request.RouteValues["controller"].ToString())';
             const button = $(event.target);
             const <#=AGGREGATE_TREE_PATH_ARG#> = button.attr('<#=AGGREGATE_TREE_PATH_ATTR#>');
-            const <#=AGGREGATE_MODEL_PATH_ARG#> = button.siblings('.<#=AGGREGATE_MODEL_PATH_ATTR#>').attr('name');
+            const <#=AGGREGATE_MODEL_PATH_ARG#> = button.attr('<#=AGGREGATE_MODEL_PATH_ATTR#>');
             const <#=ADD_CHILD_ARG_2#> = button.siblings().length;
             $.ajax({
                 type: 'GET',

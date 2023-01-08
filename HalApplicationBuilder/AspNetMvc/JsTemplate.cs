@@ -27,9 +27,9 @@ namespace HalApplicationBuilder.AspNetMvc {
             this.Write(this.ToStringHelper.ToStringWithCulture(AGGREGATE_TREE_PATH_ATTR));
             this.Write("\');\n            const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(AGGREGATE_MODEL_PATH_ARG));
-            this.Write(" = button.siblings(\'.");
+            this.Write(" = button.attr(\'");
             this.Write(this.ToStringHelper.ToStringWithCulture(AGGREGATE_MODEL_PATH_ATTR));
-            this.Write("\').attr(\'name\');\n            const ");
+            this.Write("\');\n            const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(ADD_CHILD_ARG_2));
             this.Write(" = button.siblings().length;\n            $.ajax({\n                type: \'GET\',\n  " +
                     "              url: `/${controllerName}/");

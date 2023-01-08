@@ -5,7 +5,7 @@
             const controllerName = '@(Context.Request.RouteValues["controller"].ToString())';
             const button = $(event.target);
             const aggregateTreePath = button.attr('halapp-aggregate-tree-path');
-            const modelPath = button.siblings('.halapp-aggregate-model-path').attr('name');
+            const modelPath = button.attr('halapp-aggregate-model-path');
             const currentArrayCount = button.siblings().length;
             $.ajax({
                 type: 'GET',

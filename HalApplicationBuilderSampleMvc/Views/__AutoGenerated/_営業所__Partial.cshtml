@@ -31,10 +31,9 @@
     type="button"
     value="追加"
     class="halapp-add-child"
-    halapp-aggregate-tree-path="会社.営業所.支店" />
+    halapp-aggregate-tree-path="会社.営業所.支店"
+    halapp-aggregate-model-path="支店" />
 
-<input type="hidden" asp-for="支店" class="halapp-aggregate-model-path" />
-<input type="text" value="@ViewData.TemplateInfo.HtmlFieldPrefix" class="halapp-aggregate-model-path" />
             </div>
         </div>
         <div class="row mb-3">

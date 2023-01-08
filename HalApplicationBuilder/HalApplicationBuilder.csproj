@@ -12,6 +12,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.ViewFeatures" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="5.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="5.0.17" />
+    <PackageReference Include="Microsoft.AspNetCore.Razor" Version="2.2.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Core\" />
@@ -20,6 +21,7 @@
     <Folder Include="EntityFramework\" />
     <Folder Include="Impl\" />
     <Folder Include="DotnetEx\" />
+    <Folder Include="AspNetMvc\TagHelpers\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Core\AggregateInstanceTemplate.tt">

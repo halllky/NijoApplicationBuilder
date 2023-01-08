@@ -37,15 +37,11 @@ namespace HalApplicationBuilder.Impl {
             this.Write(this.ToStringHelper.ToStringWithCulture(AddButtonSenderIdentifier));
             this.Write("=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(AspForAddChild));
-            this.Write("\" />\n\n");
- /* 入れ子の子要素の新規作成時にname属性の接頭につける文字列をASP.NETに生成してもらうためのもの */ 
-            this.Write("<input type=\"hidden\" asp-for=\"");
+            this.Write("\"\n    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AddButtonModelIdentifier));
+            this.Write("=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(AddButtonBoundObjectName));
-            this.Write("\" class=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ModelPathAttrName));
-            this.Write("\" />\n<input type=\"text\" value=\"@ViewData.TemplateInfo.HtmlFieldPrefix\" class=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ModelPathAttrName));
-            this.Write("\" />");
+            this.Write("\" />\n");
             return this.GenerationEnvironment.ToString();
         }
         

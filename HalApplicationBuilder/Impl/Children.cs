@@ -155,7 +155,7 @@ namespace HalApplicationBuilder.Impl {
         internal string AddButtonBoundObjectName { get; set; }
 
         internal static string AddButtonSenderIdentifier => JsTemplate.AGGREGATE_TREE_PATH_ATTR;
+        internal static string AddButtonModelIdentifier => JsTemplate.AGGREGATE_MODEL_PATH_ATTR;
         internal static string AddButtonCssClass => JsTemplate.ADD_CHILD_BTN;
-        internal static string ModelPathAttrName => JsTemplate.AGGREGATE_MODEL_PATH_ATTR;
     }
 }

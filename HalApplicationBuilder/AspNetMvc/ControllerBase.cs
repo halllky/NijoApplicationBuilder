@@ -112,7 +112,8 @@ namespace HalApplicationBuilder.AspNetMvc {
             var instance = RuntimeContext.CreateInstance(newChildType);
 
             // name属性用
-            ViewData.TemplateInfo.HtmlFieldPrefix = modelPath;
+            var index = $"[{currentArrayCount}]";
+            ViewData.TemplateInfo.HtmlFieldPrefix = modelPath + index;
 
             return PartialView(partialView.AspViewPath, instance);
         }
