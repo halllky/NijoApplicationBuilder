@@ -22,7 +22,7 @@ namespace HalApplicationBuilder.AspNetMvc {
                 if (member is not IMemberRenderer renderer) continue;
                 views.Add(member.Name, renderer.RenderSearchConditionView(context));
             }
-            var template = new AggregateVerticalViewTemplate {
+            var template = new PartialViewOfInstanceTemplate {
                 Members = views,
             };
             return template.TransformText();
@@ -69,7 +69,7 @@ namespace HalApplicationBuilder.AspNetMvc {
                 if (member is not IMemberRenderer renderer) continue;
                 views.Add(member.Name, renderer.RenderInstanceView(context));
             }
-            var template = new AggregateVerticalViewTemplate {
+            var template = new PartialViewOfInstanceTemplate {
                 Members = views,
             };
             return template.TransformText();

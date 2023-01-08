@@ -8,72 +8,27 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace HalApplicationBuilder.Core {
+namespace HalApplicationBuilder.AspNetMvc {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
     using System;
     
     
-    public partial class AggregateVerticalViewTemplate : AggregateVerticalViewTemplateBase {
+    public partial class PartialViewOfInstanceTemplate : PartialViewOfInstanceTemplateBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            
-            #line 6 ""
             this.Write("\n<div class=\"card container\">\n    <div class=\"card-body form-horizontal\">\n");
-            
-            #line default
-            #line hidden
-            
-            #line 9 ""
  foreach (var member in Members) { 
-            
-            #line default
-            #line hidden
-            
-            #line 10 ""
             this.Write("        <div class=\"row mb-3\">\n            <label class=\"col-sm-2 col-form-label\"" +
                     ">\n                ");
-            
-            #line default
-            #line hidden
-            
-            #line 12 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(member.Key));
-            
-            #line default
-            #line hidden
-            
-            #line 12 ""
             this.Write("\n            </label>\n            <div class=\"col-sm-10\">\n                ");
-            
-            #line default
-            #line hidden
-            
-            #line 15 ""
             this.Write(this.ToStringHelper.ToStringWithCulture(member.Value));
-            
-            #line default
-            #line hidden
-            
-            #line 15 ""
             this.Write("\n            </div>\n        </div>\n");
-            
-            #line default
-            #line hidden
-            
-            #line 18 ""
  } 
-            
-            #line default
-            #line hidden
-            
-            #line 19 ""
             this.Write("    </div>\n</div>\n");
-            
-            #line default
-            #line hidden
             return this.GenerationEnvironment.ToString();
         }
         
@@ -81,7 +36,7 @@ namespace HalApplicationBuilder.Core {
         }
     }
     
-    public class AggregateVerticalViewTemplateBase {
+    public class PartialViewOfInstanceTemplateBase {
         
         private global::System.Text.StringBuilder builder;
         

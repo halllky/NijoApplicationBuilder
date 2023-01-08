@@ -28,10 +28,6 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>AggregateInstanceTemplate.cs</LastGenOutput>
     </None>
-    <None Update="Core\AggregateVerticalViewTemplate.tt">
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>AggregateVerticalViewTemplate.cs</LastGenOutput>
-    </None>
     <None Update="Runtime\AspNetMvc\ControllersTemplate.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>ControllerTemplate.cs</LastGenOutput>
@@ -92,6 +88,10 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>EFCoreSourceTemplate.cs</LastGenOutput>
     </None>
+    <None Update="AspNetMvc\PartialViewOfInstanceTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>PartialViewOfInstanceTemplate.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Runtime\MultiView\MultiViewTemplate.cs" />
@@ -102,9 +102,6 @@
     </Compile>
     <Compile Update="Core\AggregateInstanceTemplate.cs">
       <DependentUpon>AggregateInstanceTemplate.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Core\AggregateVerticalViewTemplate.cs">
-      <DependentUpon>AggregateVerticalViewTemplate.tt</DependentUpon>
     </Compile>
     <Compile Update="Runtime\AspNetMvc\ControllersTemplate.cs">
       <DependentUpon>ControllerTemplate.tt</DependentUpon>
@@ -150,6 +147,9 @@
     </Compile>
     <Compile Update="EntityFramework\EFCoreSourceTemplate.cs">
       <DependentUpon>EFCoreSourceTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Update="AspNetMvc\PartialViewOfInstanceTemplate.cs">
+      <DependentUpon>PartialViewOfInstanceTemplate.tt</DependentUpon>
     </Compile>
   </ItemGroup>
 </Project>

@@ -70,8 +70,4 @@ namespace HalApplicationBuilder.Core {
             return $"{nameof(Aggregate)}[{string.Join(".", path)}]";
         }
     }
-
-    partial class AggregateVerticalViewTemplate {
-        internal IEnumerable<KeyValuePair<string, string>> Members { get; set; }
-    }
 }
