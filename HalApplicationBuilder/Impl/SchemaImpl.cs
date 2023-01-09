@@ -85,7 +85,9 @@ namespace HalApplicationBuilder.Impl {
                         var parent = aggregate.Parent == null
                             ? null
                             : _dbEntities[aggregate.Parent.Owner];
-                        _dbEntities.Add(aggregate, new EntityFramework.DbEntity(aggregate, parent, config));
+                        var child = new EntityFramework.DbEntity(aggregate, parent, config);
+                        _dbEntities.Add(aggregate, child);
+                        parent.children.Add(child);
                     }
                 }
                 return _dbEntities;

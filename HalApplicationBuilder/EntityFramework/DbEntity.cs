@@ -18,6 +18,17 @@ namespace HalApplicationBuilder.EntityFramework {
         public Aggregate Source { get; }
         public DbEntity Parent { get; }
 
+        internal HashSet<DbEntity> children = new();
+        public IReadOnlySet<DbEntity> Children => children;
+        public IEnumerable<DbEntity> GetDescendants() {
+            foreach (var child in Children) {
+                yield return child;
+                foreach (var descendant in child.GetDescendants()) {
+                    yield return descendant;
+                }
+            }
+        }
+
         private readonly Config _config;
 
         public string ClassName
@@ -77,12 +88,16 @@ namespace HalApplicationBuilder.EntityFramework {
                     PropertyName = Parent.ClassName,
                 });
             }
-            // TODO
+            // TODO リファクタリング
             _navigation = _pk.Concat(_notPk)
                 .Where(col => col.Virtual)
                 .ToList();
             _pk.RemoveAll(col => col.Virtual);
             _notPk.RemoveAll(col => col.Virtual);
+            // TODO リファクタリング
+            foreach (var col in _pk) col.Owner = this;
+            foreach (var col in _notPk) col.Owner = this;
+            foreach (var col in _navigation) col.Owner = this;
         }
 
         internal IEnumerable<DbColumn> GetAllDbProperties() {
@@ -148,6 +163,8 @@ namespace HalApplicationBuilder.EntityFramework {
     }
 
     public class DbColumn {
+        public DbEntity Owner { get; internal set; }
+
         public bool Virtual { get; init; }
         public string CSharpTypeName { get; init; }
         public string PropertyName { get; init; }
