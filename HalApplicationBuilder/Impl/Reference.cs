@@ -106,6 +106,14 @@ namespace HalApplicationBuilder.Impl {
         public override void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context) {
             // TODO
         }
+
+        public override void BuildSelectStatement(SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix) {
+            // TODO
+        }
+
+        public override void MapSearchResultToUI(System.Data.Common.DbDataReader reader, object searchResult, RuntimeContext context, string selectClausePrefix) {
+            // TODO
+        }
     }
 
     partial class ReferenceInstanceTemplate {

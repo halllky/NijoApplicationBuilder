@@ -143,6 +143,14 @@ namespace HalApplicationBuilder.Impl {
 
             childUiProperty.SetValue(uiInstance, childUiInstanceList);
         }
+
+        public override void BuildSelectStatement(SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix) {
+            // 何もしない
+        }
+
+        public override void MapSearchResultToUI(System.Data.Common.DbDataReader reader, object searchResult, RuntimeContext context, string selectClausePrefix) {
+            // 何もしない
+        }
     }
 
     partial class ChildrenInstanceTemplate {

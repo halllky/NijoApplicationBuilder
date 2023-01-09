@@ -23,7 +23,7 @@ namespace HalApplicationBuilder.AspNetMvc {
 
         /// <summary>CSSクラス名</summary>
         internal const string ADD_CHILD_BTN = "halapp-add-child";
-        internal static string ADD_CHILD_CTL => nameof(ControllerBase<object, object, Runtime.UIInstanceBase>.NewChild);
+        internal static string ADD_CHILD_CTL => nameof(ControllerBase<object, Runtime.SearchResultBase, Runtime.UIInstanceBase>.NewChild);
         /// <summary><see cref="ADD_CHILD_CTL"/> の引数</summary>
         internal const string ADD_CHILD_ARG_2 = "currentArrayCount";
 

@@ -46,5 +46,7 @@ namespace HalApplicationBuilder.AspNetMvc {
 
         // internal string SearchResultView { get; set; }
         internal MvcModel SearchResultClass { get; set; }
+
+        internal static string BoundIdPropertyPathName => $"@Model.SearchResult[i].{nameof(Runtime.SearchResultBase.__halapp__InstanceKey)}";
     }
 }

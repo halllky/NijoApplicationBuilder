@@ -10,7 +10,8 @@ namespace HalApplicationBuilder.AspNetMvc {
 
     public abstract class ControllerBase<TSearchCondition, TSearchResult, TInstanceModel>
         : Microsoft.AspNetCore.Mvc.Controller
-        where TInstanceModel : Runtime.UIInstanceBase {
+        where TInstanceModel : Runtime.UIInstanceBase
+        where TSearchResult : Runtime.SearchResultBase {
 
         public ControllerBase(IServiceProvider services) {
             ServiceProvider = services;

@@ -193,6 +193,47 @@ namespace HalApplicationBuilder.Impl {
                 }
             }
         }
+
+        public override void BuildSelectStatement(SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix) {
+            // SELECT
+            var dbEntity = context.DbSchema.GetDbEntity(Owner);
+            selectStatement.Select(e => {
+                var table = e.GetAlias(dbEntity);
+                var column = DbPropName;
+                var alias = selectClausePrefix + SearchResultPropName;
+                return $"{table}.{column} AS [{alias}]";
+            });
+
+            // WHERE
+            var targetTypes = Variations
+                .Where(variation => {
+                    var prop = searchCondition.GetType().GetProperty(SearchConditionPropName(variation));
+                    var value = prop.GetValue(searchCondition);
+                    return value is bool b && (b == true);
+                })
+                .Select(variation => variation.Key)
+                .ToArray();
+
+            // - どのタイプも選択されていない場合は無条件検索とみなす
+            // - すべてのタイプが選択されている場合は無条件検索とみなす
+            if (targetTypes.Any() && targetTypes.Length < Variations.Count) {
+                selectStatement.Where(e => {
+                    var table = e.GetAlias(dbEntity);
+                    var column = DbPropName;
+                    return $"{table}.{column} IN ({string.Join(", ", targetTypes)})";
+                });
+            }
+        }
+
+        public override void MapSearchResultToUI(System.Data.Common.DbDataReader reader, object searchResult, RuntimeContext context, string selectClausePrefix) {
+            var prop = searchResult.GetType().GetProperty(SearchResultPropName);
+            var value = reader[SearchResultPropName];
+            if (value is long key && Variations.TryGetValue((int)key, out var variation)) {
+                prop.SetValue(searchResult, variation.Name);
+            } else {
+                prop.SetValue(searchResult, null);
+            }
+        }
     }
 
     partial class VariationSearchConditionTemplate {

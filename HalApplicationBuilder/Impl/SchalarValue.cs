@@ -53,6 +53,10 @@ namespace HalApplicationBuilder.Impl {
             if (type == typeof(DateTime)) return "DateTime?";
             return type.FullName;
         }
+        private bool IsRangeSearchCondition() {
+            var type = GetPropertyTypeExceptNullable();
+            return new[] { typeof(int), typeof(float), typeof(decimal), typeof(DateTime) }.Contains(type);
+        }
 
         public override IEnumerable<DbColumn> ToDbColumnModel() {
             yield return new DbColumn {
@@ -68,8 +72,9 @@ namespace HalApplicationBuilder.Impl {
             if (new[] { typeof(int), typeof(float), typeof(decimal), typeof(DateTime) }.Contains(type)) {
                 // 範囲検索
                 yield return new AspNetMvc.MvcModelProperty {
-                    CSharpTypeName = $"{typeof(FromTo<>).Namespace}.{nameof(FromTo<object>)}<{GetSearchConditionCSharpTypeName()}>",
+                    CSharpTypeName = $"{typeof(FromTo).Namespace}.{nameof(FromTo)}<{GetSearchConditionCSharpTypeName()}>",
                     PropertyName = SearchConditonPropName,
+                    Initializer = "new()",
                 };
 
             } else if (type.IsEnum) {
@@ -111,13 +116,13 @@ namespace HalApplicationBuilder.Impl {
         public override string RenderSearchConditionView(AspNetMvc.ViewRenderingContext context) {
             var type = GetPropertyTypeExceptNullable();
             var nested = context.Nest(SearchConditonPropName);
-            if (new[] { typeof(int), typeof(float), typeof(decimal), typeof(DateTime) }.Contains(type)) {
+            if (IsRangeSearchCondition()) {
                 // 範囲検索
                 var template = new SchalarValueSearchCondition {
                     Type = SchalarValueSearchCondition.E_Type.Range,
                     AspFor = new[] {
-                        $"{nested.AspForPath}.{nameof(FromTo<object>.From)}",
-                        $"{nested.AspForPath}.{nameof(FromTo<object>.To)}",
+                        $"{nested.AspForPath}.{nameof(FromTo.From)}",
+                        $"{nested.AspForPath}.{nameof(FromTo.To)}",
                     },
                 };
                 return template.TransformText();
@@ -185,6 +190,67 @@ namespace HalApplicationBuilder.Impl {
 
             var value = dbProp.GetValue(dbInstance);
             uiProp.SetValue(uiInstance, value);
+        }
+
+        public override void BuildSelectStatement(SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix) {
+            // SELECT
+            var dbEntity = context.DbSchema.GetDbEntity(Owner);
+            selectStatement.Select(e => {
+                var table = e.GetAlias(dbEntity);
+                var column = DbColumnPropName;
+                var alias = selectClausePrefix + SearchResultPropName;
+                return $"{table}.{column} AS [{alias}]";
+            });
+
+            // WHERE
+            var prop = searchCondition.GetType().GetProperty(SearchConditonPropName);
+            var value = prop.GetValue(searchCondition);
+            if (IsRangeSearchCondition()) {
+                // 範囲検索
+                var fromTo = (FromTo)value;
+                if (fromTo.From != null) {
+                    selectStatement.Where(e => {
+                        var table = e.GetAlias(dbEntity);
+                        var column = DbColumnPropName;
+                        var param = e.NewParam(fromTo.From);
+                        return $"{table}.{column} >= {param}";
+                    });
+                }
+                if (fromTo.To != null) {
+                    selectStatement.Where(e => {
+                        var table = e.GetAlias(dbEntity);
+                        var column = DbColumnPropName;
+                        var param = e.NewParam(fromTo.To);
+                        return $"{table}.{column} <= {param}";
+                    });
+                }
+            } else if (GetPropertyTypeExceptNullable().IsEnum) {
+                // enum
+                if (value != null) {
+                    selectStatement.Where(e => {
+                        var table = e.GetAlias(dbEntity);
+                        var column = DbColumnPropName;
+                        var param = e.NewParam(value);
+                        return $"{table}.{column} = {param}";
+                    });
+                }
+            } else {
+                // 文字列部分一致
+                if (value is string str && !string.IsNullOrWhiteSpace(str)) {
+                    selectStatement.Where(e => {
+                        var table = e.GetAlias(dbEntity);
+                        var column = DbColumnPropName;
+                        var param = e.NewParam($"%{str.Trim().Replace("%", "[%]")}%");
+                        return $"{table}.{column} LIKE {param}";
+                    });
+                }
+            }
+        }
+
+        public override void MapSearchResultToUI(System.Data.Common.DbDataReader reader, object searchResult, RuntimeContext context, string selectClausePrefix) {
+            var prop = searchResult.GetType().GetProperty(SearchResultPropName);
+            var value = reader[selectClausePrefix + SearchResultPropName];
+            prop.SetValue(searchResult, value == DBNull.Value ? null : value);
         }
     }
 

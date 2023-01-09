@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.EntityFramework;
+using HalApplicationBuilder.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HalApplicationBuilder.Impl {
@@ -59,6 +60,9 @@ namespace HalApplicationBuilder.Impl {
         #region Runtime
         public abstract void MapUIToDB(object uiInstance, object dbInstance, Runtime.RuntimeContext context);
         public abstract void MapDBToUI(object dbInstance, object uiInstance, Runtime.RuntimeContext context);
+
+        public abstract void BuildSelectStatement(SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix);
+        public abstract void MapSearchResultToUI(System.Data.Common.DbDataReader reader, object searchResult, Runtime.RuntimeContext context, string selectClausePrefix);
         #endregion Runtime
 
 

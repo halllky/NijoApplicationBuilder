@@ -12,7 +12,7 @@ namespace HalApplicationBuilder.AspNetMvc {
                 .Select(aggregate => new ControllerClassMetadata {
                     ClassName = $"{aggregate.Name}Controller",
                     BaseClassFullName
-                        = $"{typeof(ControllerBase<,,>).Namespace}.{nameof(ControllerBase<object, object, Runtime.UIInstanceBase>)}"
+                        = $"{typeof(ControllerBase<,,>).Namespace}.{nameof(ControllerBase<object, Runtime.SearchResultBase, Runtime.UIInstanceBase>)}"
                         + $"<{viewModelProvider.GetSearchConditionModel(aggregate).RuntimeFullName},"
                         + $" {viewModelProvider.GetSearchResultModel(aggregate).RuntimeFullName},"
                         + $" {viewModelProvider.GetInstanceModel(aggregate).RuntimeFullName}>",

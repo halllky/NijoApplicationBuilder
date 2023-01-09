@@ -516,6 +516,9 @@ video {
   text-decoration-line: underline;
   text-decoration-thickness: 1px;
 }
+.m-2 {
+  margin: 0.5rem;
+}
 .mx-2 {
   margin-left: 0.5rem;
   margin-right: 0.5rem;

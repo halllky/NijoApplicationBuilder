@@ -43,6 +43,8 @@ namespace HalApplicationBuilder.AspNetMvc {
  foreach (var classDef in SearchResultClasses) { 
             this.Write("    public class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(classDef.ClassName));
+            this.Write(" : ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(SearchResultBase));
             this.Write(" {\n");
  foreach (var prop in classDef.Properties) { 
             this.Write("        public ");

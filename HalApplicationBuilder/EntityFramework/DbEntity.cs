@@ -16,7 +16,15 @@ namespace HalApplicationBuilder.EntityFramework {
         }
 
         public Aggregate Source { get; }
+
         public DbEntity Parent { get; }
+        public IEnumerable<DbEntity> GetAncestors() {
+            var parent = Parent;
+            while (parent != null) {
+                yield return parent;
+                parent = parent.Parent;
+            }
+        }
 
         internal HashSet<DbEntity> children = new();
         public IReadOnlySet<DbEntity> Children => children;

@@ -51,7 +51,7 @@ namespace HalApplicationBuilder.Impl {
         public override IEnumerable<MvcModelProperty> CreateSearchResultModels() {
             foreach (var childProp in ViewModelProvider.GetSearchResultModel(ChildAggregate).Properties) {
                 yield return new MvcModelProperty {
-                    PropertyName = childProp.PropertyName,
+                    PropertyName = SearchResultPropName(childProp),
                     CSharpTypeName = childProp.CSharpTypeName,
                     Initializer = childProp.Initializer,
                 };
@@ -68,6 +68,7 @@ namespace HalApplicationBuilder.Impl {
 
         private string NavigationPropName => Name;
         private string SearchConditionPropName => Name;
+        private string SearchResultPropName(MvcModelProperty childProp) => childProp.PropertyName; // TODO 親子でプロパティ名が重複する場合を考慮する
         private string InstanceModelPropName => Name;
 
         public override string RenderSearchConditionView(ViewRenderingContext context) {
@@ -124,6 +125,30 @@ namespace HalApplicationBuilder.Impl {
                     .GetProperty(InstanceModelPropName);
 
                 childUiProperty.SetValue(uiInstance, childUiInstance);
+            }
+        }
+
+        public override void BuildSelectStatement(SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix) {
+            var childDbEntity = context.DbSchema.GetDbEntity(ChildAggregate);
+            // FROM
+            selectStatement.LeftJoin(childDbEntity);
+            // SELECT, WHERE
+            var prefix = selectClausePrefix + $"{Name}_";
+            var searchConditionProp = searchCondition.GetType().GetProperty(SearchConditionPropName);
+            var childSearchCondition = searchConditionProp.GetValue(searchCondition);
+            if (childSearchCondition != null) {
+                foreach (var childMember in ChildAggregate.Members) {
+                    if (childMember is not IInstanceConverter converter) continue;
+                    converter.BuildSelectStatement(selectStatement, childSearchCondition, context, prefix);
+                }
+            }
+        }
+
+        public override void MapSearchResultToUI(System.Data.Common.DbDataReader reader, object searchResult, RuntimeContext context, string selectClausePrefix) {
+            var prefix = selectClausePrefix + $"{Name}_";
+            foreach (var childMember in ChildAggregate.Members) {
+                if (childMember is not IInstanceConverter converter) continue;
+                converter.MapSearchResultToUI(reader, searchResult, context, prefix);
             }
         }
     }

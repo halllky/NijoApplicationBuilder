@@ -13,9 +13,11 @@ namespace HalApplicationBuilder.EntityFramework {
     public class SelectStatement {
 
         private readonly List<DbEntity> _tables = new();
-        private readonly List<SqlParameter> _params = new();
+        private readonly List<System.Data.Common.DbParameter> _params = new();
+
+        private readonly List<string> _selectClauses = new();
         private readonly List<string> _whereClauses = new();
-        private readonly List<(DbColumn column, bool asc)> _orderByClause = new();
+        private readonly List<(DbColumn column, bool asc)> _orderByClauses = new();
 
         internal string GetAlias(DbEntity dbEntity) {
             if (dbEntity == null) throw new ArgumentNullException(nameof(dbEntity));
@@ -24,6 +26,14 @@ namespace HalApplicationBuilder.EntityFramework {
             return $"t{_tables.IndexOf(dbEntity)}";
         }
 
+        public SelectStatement Select(Func<Arg, string> column) {
+            if (column == null) throw new ArgumentNullException(nameof(column));
+
+            var arg = new Arg(this);
+            var selectClause = column(arg);
+            _selectClauses.Add(selectClause);
+            return this;
+        }
         public SelectStatement From(DbEntity dbEntity) {
             if (dbEntity == null) throw new ArgumentNullException(nameof(dbEntity));
             if (_tables.Any()) throw new InvalidOperationException($"FROM句には既に {_tables[0]} が設定されているので {dbEntity} を設定できません。");
@@ -42,43 +52,33 @@ namespace HalApplicationBuilder.EntityFramework {
             return this;
         }
 
-        public SelectStatement Where(Func<WhereArg, string> predicate) {
+        public SelectStatement Where(Func<Arg, string> predicate) {
             if (predicate == null) throw new ArgumentNullException(nameof(predicate));
 
-            var arg = new WhereArg(this);
+            var arg = new Arg(this);
             var whereClause = predicate(arg);
             _whereClauses.Add(whereClause);
             return this;
         }
-        public class WhereArg {
-            internal WhereArg(SelectStatement statement) => _statement = statement;
-            private readonly SelectStatement _statement;
-            public string Alias(DbEntity dbEntity) {
-                return _statement.GetAlias(dbEntity);
-            }
-            public string Param(object value) {
-                var name = $"@p_{_statement._params.Count}";
-                _statement._params.Add(new SqlParameter(name, value));
-                return name;
-            }
-        }
 
         public SelectStatement OrderBy(DbColumn dbColumn) {
-            _orderByClause.Add((column: dbColumn, asc: true));
+            _orderByClauses.Add((column: dbColumn, asc: true));
             return this;
         }
         public SelectStatement OrderByDescending(DbColumn dbColumn) {
-            _orderByClause.Add((column: dbColumn, asc: false));
+            _orderByClauses.Add((column: dbColumn, asc: false));
             return this;
         }
 
-        public SqlCommand ToSqlCommand(SqlConnection sqlConnection) {
+
+        public string ToSqlString() {
+            if (_selectClauses.Any() == false) throw new InvalidOperationException($"SELECT句未設定");
             if (_tables.Any() == false) throw new InvalidOperationException($"FROM句未設定");
 
             var builder = new StringBuilder();
 
             // SELECT
-            builder.AppendLine($"SELECT *");
+            builder.AppendLine($"SELECT {string.Join(", ", _selectClauses)}");
 
             // FROM
             var mainTable = _tables[0];
@@ -103,15 +103,45 @@ namespace HalApplicationBuilder.EntityFramework {
             }
 
             // ORDER BY
-            if (_orderByClause.Any()) {
-                var order = _orderByClause.Select(o => $"{GetAlias(o.column.Owner)}.{o.column.PropertyName} {(o.asc ? "ASC" : "DESC")}");
+            if (_orderByClauses.Any()) {
+                var order = _orderByClauses.Select(o => $"{GetAlias(o.column.Owner)}.{o.column.PropertyName} {(o.asc ? "ASC" : "DESC")}");
                 builder.AppendLine($"ORDER BY {string.Join(", ", order)}");
             }
 
+            return builder.ToString();
+        }
+
+        public System.Data.Common.DbCommand ToSqlCommand(System.Data.Common.DbConnection sqlConnection) {
             var command = sqlConnection.CreateCommand();
-            command.CommandText = builder.ToString();
+            command.CommandText = ToSqlString();
             command.Parameters.AddRange(_params.ToArray());
             return command;
+        }
+
+
+        /// <summary>
+        /// Microsoft.Data.SqlClient.SqlParameter を Microsoft.Data.Sqlite.SqliteParameter に変換できないので
+        /// DIでパラメータ生成処理を渡すようにするためのインターフェース
+        /// </summary>
+        public interface IParamGenerator {
+            System.Data.Common.DbParameter CreateParameter(string paramName, object value);
+        }
+        public SelectStatement(IParamGenerator paramGenerator) {
+            _paramGenerator = paramGenerator;
+        }
+        private readonly IParamGenerator _paramGenerator;
+
+        public class Arg {
+            internal Arg(SelectStatement statement) => _statement = statement;
+            private readonly SelectStatement _statement;
+            public string GetAlias(DbEntity dbEntity) {
+                return _statement.GetAlias(dbEntity);
+            }
+            public string NewParam(object value) {
+                var name = $"@p_{_statement._params.Count}";
+                _statement._params.Add(_statement._paramGenerator.CreateParameter(name, value));
+                return name;
+            }
         }
     }
 }

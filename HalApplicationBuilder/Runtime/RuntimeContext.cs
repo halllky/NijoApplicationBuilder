@@ -88,7 +88,37 @@ namespace HalApplicationBuilder.Runtime {
         }
 
         public IEnumerable<object> Search(object searchCondition) {
-            yield break; // TODO
+            var aggregate = FindAggregateByRuntimeType(searchCondition.GetType());
+
+            // クエリの組み立て
+            var converters = aggregate.Members
+                .Select(member => member as IInstanceConverter)
+                .Where(member => member != null)
+                .ToArray();
+            var paramGenerator = _service.GetRequiredService<EntityFramework.SelectStatement.IParamGenerator>();
+            var selectStatement = new EntityFramework.SelectStatement(paramGenerator);
+            var mainTable = DbSchema.GetDbEntity(aggregate);
+            selectStatement.From(mainTable);
+            foreach (var member in converters) {
+                member.BuildSelectStatement(selectStatement, searchCondition, this, string.Empty);
+            }
+
+            // クエリ実行
+            var conn = GetDbContext().Database.GetDbConnection();
+            var cmd = selectStatement.ToSqlCommand(conn);
+            conn.Open();
+            var reader = cmd.ExecuteReader();
+
+            // クエリ結果をUIの型にマッピング
+            var searchResultTypeName = ViewModelProvider.GetSearchResultModel(aggregate).RuntimeFullName;
+            var searchResultType = RuntimeAssembly.GetType(searchResultTypeName);
+            while (reader.Read()) {
+                var row = Activator.CreateInstance(searchResultType);
+                foreach (var member in converters) {
+                    member.MapSearchResultToUI(reader, row, this, string.Empty);
+                }
+                yield return row;
+            }
         }
 
         public InstanceKey SaveNewInstance(object createCommand) {

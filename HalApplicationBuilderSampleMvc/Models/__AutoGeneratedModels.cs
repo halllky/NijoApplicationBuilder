@@ -18,8 +18,8 @@ namespace HalApplicationBuilderSampleMvc.Models {
         public string 住所3 { get; set; }
     }
     public class 上場企業資本情報__SearchCondition {
-        public HalApplicationBuilder.Runtime.FromTo<decimal?> 自己資本比率 { get; set; }
-        public HalApplicationBuilder.Runtime.FromTo<decimal?> 利益率 { get; set; }
+        public HalApplicationBuilder.Runtime.FromTo<decimal?> 自己資本比率 { get; set; } = new();
+        public HalApplicationBuilder.Runtime.FromTo<decimal?> 利益率 { get; set; } = new();
     }
     public class 非上場企業資本情報__SearchCondition {
         public string 主要株主 { get; set; }
@@ -37,7 +37,7 @@ namespace HalApplicationBuilderSampleMvc.Models {
         public string 氏名 { get; set; }
     }
 
-    public class 会社__SearchResult {
+    public class 会社__SearchResult : HalApplicationBuilder.Runtime.SearchResultBase {
         public string 会社ID { get; set; }
         public string 会社名 { get; set; }
         public string 電話番号 { get; set; }
@@ -47,7 +47,7 @@ namespace HalApplicationBuilderSampleMvc.Models {
         public string 住所3 { get; set; }
         public string 資本情報 { get; set; }
     }
-    public class 担当者__SearchResult {
+    public class 担当者__SearchResult : HalApplicationBuilder.Runtime.SearchResultBase {
         public string ユーザーID { get; set; }
         public string 氏名 { get; set; }
     }

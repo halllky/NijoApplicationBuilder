@@ -19,7 +19,7 @@ namespace <#=Namespace#> {
 
 <# /* 検索結果DTO */ #>
 <# foreach (var classDef in SearchResultClasses) { #>
-    public class <#=classDef.ClassName#> {
+    public class <#=classDef.ClassName#> : <#=SearchResultBase#> {
 <# foreach (var prop in classDef.Properties) { #>
         public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }<#=prop.Initializer == null ? "" : $" = {prop.Initializer};"#>
 <# }#>

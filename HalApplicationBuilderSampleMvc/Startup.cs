@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +29,9 @@ namespace HalApplicationBuilderSampleMvc {
                 option
                     .UseLazyLoadingProxies() // ナビゲーションプロパティアクセス時に自動で遅延ロード
                     .UseSqlite(connStr);
+            });
+            services.AddScoped<HalApplicationBuilder.EntityFramework.SelectStatement.IParamGenerator>(_ => {
+                return new SqliteParamGenerator();
             });
 
             // SaveやDetailでDbContextをダイレクトに参照しているため
@@ -68,6 +72,13 @@ namespace HalApplicationBuilderSampleMvc {
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
             });
+        }
+
+
+        private class SqliteParamGenerator : HalApplicationBuilder.EntityFramework.SelectStatement.IParamGenerator {
+            public System.Data.Common.DbParameter CreateParameter(string paramName, object value) {
+                return new Microsoft.Data.Sqlite.SqliteParameter(paramName, value);
+            }
         }
     }
 }
