@@ -20,7 +20,7 @@ namespace HalApplicationBuilder {
                 var dll = Assembly.LoadFile(dllPath);
                 return new Impl.SchemaImpl(dll, provider);
             });
-            serviceCollection.AddScoped<Core.IAggregateMemberFactory>(provider => new Impl.AggregateMemberFactory(provider));
+            serviceCollection.AddScoped<Core.IAggregateMemberFactory>(provider => new Core.AggregateMemberFactory(provider));
             serviceCollection.AddScoped<Core.IApplicationSchema>(provider => provider.GetRequiredService<Impl.SchemaImpl>());
             serviceCollection.AddScoped<AspNetMvc.IViewModelProvider>(provider => provider.GetRequiredService<Impl.SchemaImpl>());
             serviceCollection.AddScoped<EntityFramework.IDbSchema>(provider => provider.GetRequiredService<Impl.SchemaImpl>());

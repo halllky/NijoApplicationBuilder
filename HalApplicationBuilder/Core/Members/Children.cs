@@ -4,11 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.AspNetMvc;
-using HalApplicationBuilder.Core;
 using HalApplicationBuilder.EntityFramework;
 using HalApplicationBuilder.Runtime;
 
-namespace HalApplicationBuilder.Impl {
+namespace HalApplicationBuilder.Core.Members {
     internal class Children : AggregateMemberBase {
         internal Children(PropertyInfo propertyInfo, Aggregate owner, IServiceProvider serviceProvider)
             : base(propertyInfo, owner, serviceProvider) { }

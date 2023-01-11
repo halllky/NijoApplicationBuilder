@@ -5,11 +5,10 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.AspNetMvc;
-using HalApplicationBuilder.Core;
 using HalApplicationBuilder.EntityFramework;
 using HalApplicationBuilder.Runtime;
 
-namespace HalApplicationBuilder.Impl {
+namespace HalApplicationBuilder.Core.Members {
     internal class Child : AggregateMemberBase {
         internal Child(PropertyInfo propertyInfo, Aggregate owner, IServiceProvider serviceProvider)
             : base(propertyInfo, owner, serviceProvider) { }

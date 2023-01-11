@@ -8,40 +8,22 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace HalApplicationBuilder.Impl {
+namespace HalApplicationBuilder.Core.Members {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
     using System;
     
     
-    public partial class ChildrenInstanceTemplate : ChildrenInstanceTemplateBase {
+    public partial class ReferenceInstanceTemplate : ReferenceInstanceTemplateBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            this.Write("\n@for (var ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(i));
-            this.Write(" = 0; ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(i));
-            this.Write(" < ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Count));
-            this.Write("; ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(i));
-            this.Write("++) {\n    <partial name=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PartialViewName));
-            this.Write("\" for=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PartialViewBoundObjectName));
-            this.Write("\" />\n}\n\n<input\n    type=\"button\"\n    value=\"追加\"\n    class=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AddButtonCssClass));
-            this.Write(" halapp-btn-secondary\"\n    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AddButtonSenderIdentifier));
-            this.Write("=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AspForAddChild));
-            this.Write("\"\n    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AddButtonModelIdentifier));
-            this.Write("=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AddButtonBoundObjectName));
-            this.Write("\" />\n");
+            this.Write("\n<div>\n    <input type=\"hidden\" asp-for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AspForKey));
+            this.Write("\" />\n    <input asp-for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AspForText));
+            this.Write("\" />\n</div>\n");
             return this.GenerationEnvironment.ToString();
         }
         
@@ -49,7 +31,7 @@ namespace HalApplicationBuilder.Impl {
         }
     }
     
-    public class ChildrenInstanceTemplateBase {
+    public class ReferenceInstanceTemplateBase {
         
         private global::System.Text.StringBuilder builder;
         

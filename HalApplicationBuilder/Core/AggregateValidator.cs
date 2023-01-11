@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using HalApplicationBuilder.Core.Members;
 using HalApplicationBuilder.Impl;
 using Microsoft.Extensions.DependencyInjection;
 

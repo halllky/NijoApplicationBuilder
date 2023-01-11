@@ -23,6 +23,7 @@
     <Folder Include="Impl\" />
     <Folder Include="DotnetEx\" />
     <Folder Include="AspNetMvc\TagHelpers\" />
+    <Folder Include="Core\Members\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Core\AggregateInstanceTemplate.tt">
@@ -61,26 +62,6 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>JsTemplate.cs</LastGenOutput>
     </None>
-    <None Update="Impl\ChildrenInstanceTemplate.tt">
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>ChildrenInstanceTemplate.cs</LastGenOutput>
-    </None>
-    <None Update="Impl\VariationInstanceTemplate.tt">
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>VariationInstanceTemplate.cs</LastGenOutput>
-    </None>
-    <None Update="Impl\VariationSearchConditionTemplate.tt">
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>VariationSearchConditionTemplate.cs</LastGenOutput>
-    </None>
-    <None Update="Impl\ReferenceInstanceTemplate.tt">
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>ReferenceInstanceTemplate.cs</LastGenOutput>
-    </None>
-    <None Update="Impl\SchalarValueSearchCondition.tt">
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>SchalarValueSearchCondition.cs</LastGenOutput>
-    </None>
     <None Update="AspNetMvc\InstancePartialViewTemplate.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>InstancePartialViewTemplate.cs</LastGenOutput>
@@ -93,9 +74,33 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>PartialViewOfInstanceTemplate.cs</LastGenOutput>
     </None>
+    <None Update="Core\Members\ChildrenInstanceTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>ChildrenInstanceTemplate.cs</LastGenOutput>
+    </None>
+    <None Update="Core\Members\ReferenceInstanceTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>ReferenceInstanceTemplate.cs</LastGenOutput>
+    </None>
+    <None Update="Core\Members\SchalarValueSearchCondition.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>SchalarValueSearchCondition.cs</LastGenOutput>
+    </None>
+    <None Update="Core\Members\VariationInstanceTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>VariationInstanceTemplate.cs</LastGenOutput>
+    </None>
+    <None Update="Core\Members\VariationSearchConditionTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>VariationSearchConditionTemplate.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Runtime\MultiView\MultiViewTemplate.cs" />
+    <Compile Remove="Impl\SchalarValueSearchCondition.cs" />
+    <Compile Remove="Impl\ReferenceInstanceTemplate.cs" />
+    <Compile Remove="Impl\VariationSearchConditionTemplate.cs" />
+    <Compile Remove="Impl\VariationInstanceTemplate.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="CodeGenerating\MultiView\MultiViewTemplate.cs">
@@ -128,21 +133,6 @@
     <Compile Update="AspNetMvc\JsTemplate.cs">
       <DependentUpon>JsTemplate.tt</DependentUpon>
     </Compile>
-    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="Impl\ChildrenInstanceTemplate.cs">
-      <DependentUpon>ChildrenInstanceTemplate.tt</DependentUpon>
-    </Compile>
-    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="Impl\VariationInstanceTemplate.cs">
-      <DependentUpon>VariationInstanceTemplate.tt</DependentUpon>
-    </Compile>
-    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="Impl\VariationSearchConditionTemplate.cs">
-      <DependentUpon>VariationSearchConditionTemplate.tt</DependentUpon>
-    </Compile>
-    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="Impl\ReferenceInstanceTemplate.cs">
-      <DependentUpon>ReferenceInstanceTemplate.tt</DependentUpon>
-    </Compile>
-    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="Impl\SchalarValueSearchCondition.cs">
-      <DependentUpon>SchalarValueSearchCondition.tt</DependentUpon>
-    </Compile>
     <Compile Update="AspNetMvc\InstancePartialViewTemplate.cs">
       <DependentUpon>InstancePartialViewTemplate.tt</DependentUpon>
     </Compile>
@@ -151,6 +141,21 @@
     </Compile>
     <Compile Update="AspNetMvc\PartialViewOfInstanceTemplate.cs">
       <DependentUpon>PartialViewOfInstanceTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="Core\Members\ChildrenInstanceTemplate.cs">
+      <DependentUpon>ChildrenInstanceTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Core\Members\ReferenceInstanceTemplate.cs">
+      <DependentUpon>ReferenceInstanceTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Core\Members\SchalarValueSearchCondition.cs">
+      <DependentUpon>SchalarValueSearchCondition.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Core\Members\VariationSearchConditionTemplate.cs">
+      <DependentUpon>VariationSearchConditionTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Core\Members\VariationInstanceTemplate.cs">
+      <DependentUpon>VariationInstanceTemplate.tt</DependentUpon>
     </Compile>
   </ItemGroup>
 </Project>

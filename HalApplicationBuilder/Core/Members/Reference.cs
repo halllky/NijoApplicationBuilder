@@ -2,12 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using HalApplicationBuilder.Core;
 using HalApplicationBuilder.EntityFramework;
 using HalApplicationBuilder.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace HalApplicationBuilder.Impl {
+namespace HalApplicationBuilder.Core.Members {
     internal class Reference : AggregateMemberBase {
         internal Reference(PropertyInfo propertyInfo, Aggregate owner, IServiceProvider serviceProvider)
             : base(propertyInfo, owner, serviceProvider) { }
