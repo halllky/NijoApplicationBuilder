@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using HalApplicationBuilder.Core.DBModel;
+using HalApplicationBuilder.Core.Runtime;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -30,7 +32,7 @@ namespace HalApplicationBuilderSampleMvc {
                     .UseLazyLoadingProxies() // ナビゲーションプロパティアクセス時に自動で遅延ロード
                     .UseSqlite(connStr);
             });
-            services.AddScoped<HalApplicationBuilder.EntityFramework.SelectStatement.IParamGenerator>(_ => {
+            services.AddScoped<SelectStatement.IParamGenerator>(_ => {
                 return new SqliteParamGenerator();
             });
 
@@ -42,7 +44,7 @@ namespace HalApplicationBuilderSampleMvc {
             services.AddScoped(provider => {
                 var schemaAssembly = Assembly.LoadFile(dllPath);
                 var runtimeAssembly = Assembly.GetExecutingAssembly();
-                return new HalApplicationBuilder.Runtime.RuntimeContext(schemaAssembly, runtimeAssembly, provider);
+                return new RuntimeContext(schemaAssembly, runtimeAssembly, provider);
             });
 
             // HTMLのエンコーディングをUTF-8にする(日本語のHTMLエンコード防止)
@@ -75,7 +77,7 @@ namespace HalApplicationBuilderSampleMvc {
         }
 
 
-        private class SqliteParamGenerator : HalApplicationBuilder.EntityFramework.SelectStatement.IParamGenerator {
+        private class SqliteParamGenerator : SelectStatement.IParamGenerator {
             public System.Data.Common.DbParameter CreateParameter(string paramName, object value) {
                 return new Microsoft.Data.Sqlite.SqliteParameter(paramName, value);
             }

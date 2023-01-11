@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
-using HalApplicationBuilder.Core.Members;
-using Microsoft.Extensions.DependencyInjection;
 
-namespace HalApplicationBuilder.Core {
+namespace HalApplicationBuilder.Core.Members {
 
     internal class AggregateMemberFactory : Core.IAggregateMemberFactory {
         internal AggregateMemberFactory(IServiceProvider serviceProvider) {

@@ -15,6 +15,9 @@ namespace HalApplicationBuilder.Core {
         int? InstanceNameOrder { get; }
 
         bool IsCollection { get; }
+
+        IEnumerable<string> GetInvalidErrors();
+
         IEnumerable<DbColumn> ToDbColumnModel();
     }
 }

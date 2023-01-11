@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using HalApplicationBuilder.Core.Members;
+using HalApplicationBuilder.Core.DBModel;
 using HalApplicationBuilder.Core.UIModel;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,12 +12,12 @@ namespace HalApplicationBuilder.Core {
     public class AggregateValidator {
         public AggregateValidator(IServiceProvider service) {
             ApplicationSchema = service.GetRequiredService<IApplicationSchema>();
-            DbSchema = service.GetRequiredService<Core.DBModel.IDbSchema>();
+            DbSchema = service.GetRequiredService<IDbSchema>();
             ViewModelProvider = service.GetRequiredService<IViewModelProvider>();
         }
 
         private IApplicationSchema ApplicationSchema { get; }
-        private Core.DBModel.IDbSchema DbSchema { get; }
+        private IDbSchema DbSchema { get; }
         private IViewModelProvider ViewModelProvider { get; }
 
         public bool HasError(Action<string> errorHandler) {
@@ -39,17 +39,9 @@ namespace HalApplicationBuilder.Core {
             if (dbEntity.PKColumns.Any() == false)
                 yield return $"主キーがありません。";
 
-            // 主キーにできる型の制約
-            foreach (var member in aggregate.Members.Where(member => member.IsPrimaryKey)) {
-                switch (member) {
-                    case Child:
-                    case Children:
-                    case Variation:
-                        yield return $"{member.Name} は子要素のため主キーに設定できません。";
-                        break;
-                    default:
-                        break;
-                }
+            // 各member固有のエラー
+            foreach (var error in aggregate.Members.SelectMany(m => m.GetInvalidErrors())) {
+                yield return error;
             }
 
             // InstanceNameにできる型の制約

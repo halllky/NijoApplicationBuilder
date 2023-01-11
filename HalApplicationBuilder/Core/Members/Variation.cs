@@ -237,6 +237,10 @@ namespace HalApplicationBuilder.Core.Members {
         public override void BuildAutoCompleteSelectStatement(SelectStatement selectStatement, string inputText, RuntimeContext context, string selectClausePrefix) {
             // 何もしない
         }
+
+        public override IEnumerable<string> GetInvalidErrors() {
+            if (IsPrimaryKey) yield return $"{Name} は子要素のため主キーに設定できません。";
+        }
     }
 
     partial class VariationSearchConditionTemplate {

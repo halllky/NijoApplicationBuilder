@@ -118,6 +118,10 @@ namespace HalApplicationBuilder.Core.Members {
         public override void BuildAutoCompleteSelectStatement(SelectStatement selectStatement, string inputText, RuntimeContext context, string selectClausePrefix) {
             // TODO
         }
+
+        public override IEnumerable<string> GetInvalidErrors() {
+            yield break;
+        }
     }
 
     partial class ReferenceInstanceTemplate {

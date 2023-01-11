@@ -8,7 +8,7 @@ using HalApplicationBuilder.Core.Runtime;
 using HalApplicationBuilder.Core.UIModel;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace HalApplicationBuilder.Core {
+namespace HalApplicationBuilder.Core.Members {
     public abstract class AggregateMemberBase :
         IAggregateMember,
         IMvcModelPropertySource,
@@ -71,6 +71,7 @@ namespace HalApplicationBuilder.Core {
         public abstract void BuildAutoCompleteSelectStatement(SelectStatement selectStatement, string inputText, RuntimeContext context, string selectClausePrefix);
         #endregion Runtime
 
+        public abstract IEnumerable<string> GetInvalidErrors();
 
         public override string ToString() {
             var path = new List<string>();

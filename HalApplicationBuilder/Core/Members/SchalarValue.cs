@@ -274,6 +274,10 @@ namespace HalApplicationBuilder.Core.Members {
                 });
             }
         }
+
+        public override IEnumerable<string> GetInvalidErrors() {
+            yield break;
+        }
     }
 
     partial class SchalarValueSearchCondition {
