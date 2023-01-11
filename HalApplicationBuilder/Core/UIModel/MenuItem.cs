@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Reflection;
 
-namespace HalApplicationBuilder.Runtime {
+namespace HalApplicationBuilder.Core.UIModel {
     public class MenuItem {
         public string LinkText { get; internal init; }
         public string AspController { get; internal init; }

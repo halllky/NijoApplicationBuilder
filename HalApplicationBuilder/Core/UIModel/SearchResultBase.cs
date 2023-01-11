@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 
-namespace HalApplicationBuilder.Runtime {
+namespace HalApplicationBuilder.Core.UIModel {
     /// <summary>
     /// 検索結果
     /// </summary>

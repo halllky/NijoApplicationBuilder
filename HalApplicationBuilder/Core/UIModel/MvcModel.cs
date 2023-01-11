@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using HalApplicationBuilder.Core;
+using HalApplicationBuilder.AspNetMvc;
 
-namespace HalApplicationBuilder.AspNetMvc {
+namespace HalApplicationBuilder.Core.UIModel {
 
     public class SearchConditionClass : MvcModel {
         public override string ClassName

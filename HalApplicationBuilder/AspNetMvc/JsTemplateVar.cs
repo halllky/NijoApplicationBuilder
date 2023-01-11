@@ -1,4 +1,6 @@
 ﻿using System;
+using HalApplicationBuilder.Core.UIModel;
+
 namespace HalApplicationBuilder.AspNetMvc {
     partial class JsTemplate {
         /// <summary>_Layout.cshtml で指定するために使う</summary>
@@ -23,7 +25,7 @@ namespace HalApplicationBuilder.AspNetMvc {
 
         /// <summary>CSSクラス名</summary>
         internal const string ADD_CHILD_BTN = "halapp-add-child";
-        internal static string ADD_CHILD_CTL => nameof(ControllerBase<object, Runtime.SearchResultBase, Runtime.UIInstanceBase>.NewChild);
+        internal static string ADD_CHILD_CTL => nameof(ControllerBase<object, SearchResultBase, UIInstanceBase>.NewChild);
         /// <summary><see cref="ADD_CHILD_CTL"/> の引数</summary>
         internal const string ADD_CHILD_ARG_2 = "currentArrayCount";
 

@@ -1,5 +1,5 @@
 ﻿using System;
-using HalApplicationBuilder.Runtime;
+using HalApplicationBuilder.Core.UIModel;
 
 namespace HalApplicationBuilder.AspNetMvc {
     public class CreateView {
@@ -32,7 +32,7 @@ namespace HalApplicationBuilder.AspNetMvc {
     partial class CreateViewTemplate {
         internal static string FormId => JsTemplate.FORM_ID;
         internal static string FormFooterId => JsTemplate.FORM_FOOTER_ID;
-        internal static string ExecuteActionName => nameof(ControllerBase<object, Runtime.SearchResultBase, UIInstanceBase>.Create);
+        internal static string ExecuteActionName => nameof(ControllerBase<object, SearchResultBase, UIInstanceBase>.Create);
 
         internal string ModelTypeFullname { get; set; }
         internal string PageTitle { get; set; }

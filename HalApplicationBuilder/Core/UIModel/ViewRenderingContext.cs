@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace HalApplicationBuilder.AspNetMvc {
+namespace HalApplicationBuilder.Core.UIModel {
 
     public class ViewRenderingContext {
         internal ViewRenderingContext(params string[] ancestors) {

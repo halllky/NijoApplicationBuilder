@@ -17,7 +17,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Core\" />
-    <Folder Include="Runtime\" />
     <Folder Include="AspNetMvc\" />
     <Folder Include="EntityFramework\" />
     <Folder Include="Impl\" />
@@ -25,6 +24,8 @@
     <Folder Include="AspNetMvc\TagHelpers\" />
     <Folder Include="Core\Members\" />
     <Folder Include="Core\DBModel\" />
+    <Folder Include="Core\UIModel\" />
+    <Folder Include="Core\Runtime\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Core\AggregateInstanceTemplate.tt">

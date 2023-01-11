@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using HalApplicationBuilder.Runtime;
+using HalApplicationBuilder.Core.UIModel;
 
 namespace HalApplicationBuilder.AspNetMvc {
 

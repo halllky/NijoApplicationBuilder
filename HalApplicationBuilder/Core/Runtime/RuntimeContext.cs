@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using HalApplicationBuilder.Core.UIModel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace HalApplicationBuilder.Runtime {
+namespace HalApplicationBuilder.Core.Runtime {
     public class RuntimeContext {
         public RuntimeContext(Assembly schemaAssembly, Assembly runtimeAssembly, IServiceProvider service) {
             SchemaAssembly = schemaAssembly;
@@ -13,7 +14,7 @@ namespace HalApplicationBuilder.Runtime {
 
             ApplicationSchema = service.GetRequiredService<Core.IApplicationSchema>();
             DbSchema = service.GetRequiredService<Core.DBModel.IDbSchema>();
-            ViewModelProvider = service.GetRequiredService<AspNetMvc.IViewModelProvider>();
+            ViewModelProvider = service.GetRequiredService<IViewModelProvider>();
             _service = service;
         }
 
@@ -24,7 +25,7 @@ namespace HalApplicationBuilder.Runtime {
         internal Core.Config Config { get; }
         internal Core.IApplicationSchema ApplicationSchema { get; }
         internal Core.DBModel.IDbSchema DbSchema { get; }
-        internal AspNetMvc.IViewModelProvider ViewModelProvider { get; }
+        internal Core.UIModel.IViewModelProvider ViewModelProvider { get; }
 
         private readonly IServiceProvider _service;
 

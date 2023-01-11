@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
-using HalApplicationBuilder.Runtime;
+using HalApplicationBuilder.Core.Runtime;
 
 namespace HalApplicationBuilder.Core.DBModel {
     public class DbEntity {

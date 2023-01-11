@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using HalApplicationBuilder.AspNetMvc;
 using HalApplicationBuilder.Core.DBModel;
-using HalApplicationBuilder.Runtime;
+using HalApplicationBuilder.Core.Runtime;
+using HalApplicationBuilder.Core.UIModel;
 
 namespace HalApplicationBuilder.Core.Members {
     public class Variation : AggregateMemberBase {

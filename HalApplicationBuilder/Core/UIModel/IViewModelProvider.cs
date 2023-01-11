@@ -1,7 +1,6 @@
 ﻿using System;
-using HalApplicationBuilder.Core;
 
-namespace HalApplicationBuilder.AspNetMvc {
+namespace HalApplicationBuilder.Core.UIModel {
     public interface IViewModelProvider {
         MvcModel GetInstanceModel(Aggregate aggregate);
         MvcModel GetSearchConditionModel(Aggregate aggregate);

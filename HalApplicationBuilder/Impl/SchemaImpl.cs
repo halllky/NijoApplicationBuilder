@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.AspNetMvc;
 using HalApplicationBuilder.Core.DBModel;
+using HalApplicationBuilder.Core.UIModel;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HalApplicationBuilder.Impl {
@@ -115,9 +116,9 @@ namespace HalApplicationBuilder.Impl {
                         .OrderBy(a => a.GetAncestors().Count())
                         .ToList();
 
-                    _searchConditions = new Dictionary<Core.Aggregate, AspNetMvc.MvcModel>();
+                    _searchConditions = new Dictionary<Core.Aggregate, MvcModel>();
                     foreach (var aggregate in aggregates) {
-                        _searchConditions.Add(aggregate, new AspNetMvc.SearchConditionClass {
+                        _searchConditions.Add(aggregate, new SearchConditionClass {
                             Source = aggregate,
                             Config = config,
                         });
@@ -135,9 +136,9 @@ namespace HalApplicationBuilder.Impl {
                         .OrderBy(a => a.GetAncestors().Count())
                         .ToList();
 
-                    _searchResults = new Dictionary<Core.Aggregate, AspNetMvc.MvcModel>();
+                    _searchResults = new Dictionary<Core.Aggregate, MvcModel>();
                     foreach (var aggregate in aggregates) {
-                        _searchResults.Add(aggregate, new AspNetMvc.SearchResultClass {
+                        _searchResults.Add(aggregate, new SearchResultClass {
                             Source = aggregate,
                             Config = config,
                         });
@@ -155,9 +156,9 @@ namespace HalApplicationBuilder.Impl {
                         .OrderBy(a => a.GetAncestors().Count())
                         .ToList();
 
-                    _instanceModels = new Dictionary<Core.Aggregate, AspNetMvc.MvcModel>();
+                    _instanceModels = new Dictionary<Core.Aggregate, MvcModel>();
                     foreach (var aggregate in aggregates) {
-                        _instanceModels.Add(aggregate, new AspNetMvc.InstanceModelClass {
+                        _instanceModels.Add(aggregate, new InstanceModelClass {
                             Source = aggregate,
                             Config = config,
                         });

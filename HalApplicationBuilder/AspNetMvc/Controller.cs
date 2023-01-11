@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using HalApplicationBuilder.Core.UIModel;
 
 namespace HalApplicationBuilder.AspNetMvc {
     public class Controller {
@@ -12,7 +13,7 @@ namespace HalApplicationBuilder.AspNetMvc {
                 .Select(aggregate => new ControllerClassMetadata {
                     ClassName = $"{aggregate.Name}Controller",
                     BaseClassFullName
-                        = $"{typeof(ControllerBase<,,>).Namespace}.{nameof(ControllerBase<object, Runtime.SearchResultBase, Runtime.UIInstanceBase>)}"
+                        = $"{typeof(ControllerBase<,,>).Namespace}.{nameof(ControllerBase<object, SearchResultBase, UIInstanceBase>)}"
                         + $"<{viewModelProvider.GetSearchConditionModel(aggregate).RuntimeFullName},"
                         + $" {viewModelProvider.GetSearchResultModel(aggregate).RuntimeFullName},"
                         + $" {viewModelProvider.GetInstanceModel(aggregate).RuntimeFullName}>",

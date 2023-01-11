@@ -1,5 +1,5 @@
 ﻿using System;
-namespace HalApplicationBuilder.Runtime {
+namespace HalApplicationBuilder.DotnetEx {
     public class FromTo {
         public object From { get; set; }
         public object To { get; set; }

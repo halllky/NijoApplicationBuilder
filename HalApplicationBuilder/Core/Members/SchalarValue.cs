@@ -4,7 +4,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.Core.DBModel;
-using HalApplicationBuilder.Runtime;
+using HalApplicationBuilder.Core.UIModel;
+using HalApplicationBuilder.Core.Runtime;
+using HalApplicationBuilder.DotnetEx;
 
 namespace HalApplicationBuilder.Core.Members {
     internal class SchalarValue : AggregateMemberBase {
@@ -66,11 +68,11 @@ namespace HalApplicationBuilder.Core.Members {
             };
         }
 
-        public override IEnumerable<AspNetMvc.MvcModelProperty> CreateSearchConditionModels() {
+        public override IEnumerable<MvcModelProperty> CreateSearchConditionModels() {
             var type = GetPropertyTypeExceptNullable();
             if (new[] { typeof(int), typeof(float), typeof(decimal), typeof(DateTime) }.Contains(type)) {
                 // 範囲検索
-                yield return new AspNetMvc.MvcModelProperty {
+                yield return new MvcModelProperty {
                     CSharpTypeName = $"{typeof(FromTo).Namespace}.{nameof(FromTo)}<{GetSearchConditionCSharpTypeName()}>",
                     PropertyName = SearchConditonPropName,
                     Initializer = "new()",
@@ -78,29 +80,29 @@ namespace HalApplicationBuilder.Core.Members {
 
             } else if (type.IsEnum) {
                 // enumドロップダウン
-                yield return new AspNetMvc.MvcModelProperty {
+                yield return new MvcModelProperty {
                     CSharpTypeName = type.FullName,
                     PropertyName = SearchConditonPropName,
                 };
 
             } else {
                 // ただのinput
-                yield return new AspNetMvc.MvcModelProperty {
+                yield return new MvcModelProperty {
                     CSharpTypeName = GetSearchConditionCSharpTypeName(),
                     PropertyName = SearchConditonPropName,
                 };
             }
         }
 
-        public override IEnumerable<AspNetMvc.MvcModelProperty> CreateSearchResultModels() {
-            yield return new AspNetMvc.MvcModelProperty {
+        public override IEnumerable<MvcModelProperty> CreateSearchResultModels() {
+            yield return new MvcModelProperty {
                 CSharpTypeName = GetCSharpTypeName(),
                 PropertyName = SearchResultPropName,
             };
         }
 
-        public override IEnumerable<AspNetMvc.MvcModelProperty> CreateInstanceModels() {
-            yield return new AspNetMvc.MvcModelProperty {
+        public override IEnumerable<MvcModelProperty> CreateInstanceModels() {
+            yield return new MvcModelProperty {
                 CSharpTypeName = GetCSharpTypeName(),
                 PropertyName = InstanceModelPropName,
             };
@@ -112,7 +114,7 @@ namespace HalApplicationBuilder.Core.Members {
         private string SearchResultPropName => Name;
         private string InstanceModelPropName => Name;
 
-        public override string RenderSearchConditionView(AspNetMvc.ViewRenderingContext context) {
+        public override string RenderSearchConditionView(ViewRenderingContext context) {
             var type = GetPropertyTypeExceptNullable();
             var nested = context.Nest(SearchConditonPropName);
             if (IsRangeSearchCondition()) {
@@ -148,12 +150,12 @@ namespace HalApplicationBuilder.Core.Members {
             }
         }
 
-        public override string RenderSearchResultView(AspNetMvc.ViewRenderingContext context) {
+        public override string RenderSearchResultView(ViewRenderingContext context) {
             var nested = context.Nest(SearchResultPropName, isCollection: false);
             return $"<span>@{nested.Path}</span>";
         }
 
-        public override string RenderInstanceView(AspNetMvc.ViewRenderingContext context) {
+        public override string RenderInstanceView(ViewRenderingContext context) {
             var nested = context.Nest(InstanceModelPropName);
             return $"<input asp-for=\"{nested.AspForPath}\"/>";
         }

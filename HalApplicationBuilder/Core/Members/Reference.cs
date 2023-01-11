@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.Core.DBModel;
-using HalApplicationBuilder.Runtime;
-using Microsoft.Extensions.DependencyInjection;
+using HalApplicationBuilder.Core.Runtime;
+using HalApplicationBuilder.Core.UIModel;
 
 namespace HalApplicationBuilder.Core.Members {
     internal class Reference : AggregateMemberBase {
@@ -46,24 +46,24 @@ namespace HalApplicationBuilder.Core.Members {
             };
         }
 
-        public override IEnumerable<AspNetMvc.MvcModelProperty> CreateSearchConditionModels() {
-            yield return new AspNetMvc.MvcModelProperty {
-                CSharpTypeName = typeof(Runtime.ReferenceDTO).FullName,
+        public override IEnumerable<MvcModelProperty> CreateSearchConditionModels() {
+            yield return new MvcModelProperty {
+                CSharpTypeName = typeof(ReferenceDTO).FullName,
                 PropertyName = SearchConditonPropName,
                 Initializer = "new()",
             };
         }
 
-        public override IEnumerable<AspNetMvc.MvcModelProperty> CreateSearchResultModels() {
-            yield return new AspNetMvc.MvcModelProperty {
+        public override IEnumerable<MvcModelProperty> CreateSearchResultModels() {
+            yield return new MvcModelProperty {
                 CSharpTypeName = "string",
                 PropertyName = SearchResultPropName,
             };
         }
 
-        public override IEnumerable<AspNetMvc.MvcModelProperty> CreateInstanceModels() {
-            yield return new AspNetMvc.MvcModelProperty {
-                CSharpTypeName = typeof(Runtime.ReferenceDTO).FullName,
+        public override IEnumerable<MvcModelProperty> CreateInstanceModels() {
+            yield return new MvcModelProperty {
+                CSharpTypeName = typeof(ReferenceDTO).FullName,
                 PropertyName = InstanceModelPropName,
                 Initializer = "new()",
             };
@@ -73,9 +73,9 @@ namespace HalApplicationBuilder.Core.Members {
         private string SearchResultPropName => Name;
         private string InstanceModelPropName => Name;
 
-        public override string RenderSearchConditionView(AspNetMvc.ViewRenderingContext context) {
-            var nestedKey = context.Nest(SearchConditonPropName).Nest(nameof(Runtime.ReferenceDTO.InstanceKey));
-            var nestedText = context.Nest(SearchConditonPropName).Nest(nameof(Runtime.ReferenceDTO.InstanceName));
+        public override string RenderSearchConditionView(ViewRenderingContext context) {
+            var nestedKey = context.Nest(SearchConditonPropName).Nest(nameof(ReferenceDTO.InstanceKey));
+            var nestedText = context.Nest(SearchConditonPropName).Nest(nameof(ReferenceDTO.InstanceName));
             var template = new ReferenceInstanceTemplate {
                 AspForKey = nestedKey.AspForPath,
                 AspForText = nestedText.AspForPath,
@@ -83,15 +83,15 @@ namespace HalApplicationBuilder.Core.Members {
             return template.TransformText();
         }
 
-        public override string RenderSearchResultView(AspNetMvc.ViewRenderingContext context) {
-            var nestedKey = context.Nest(SearchResultPropName).Nest(nameof(Runtime.ReferenceDTO.InstanceKey));
-            var nestedText = context.Nest(SearchResultPropName).Nest(nameof(Runtime.ReferenceDTO.InstanceName));
+        public override string RenderSearchResultView(ViewRenderingContext context) {
+            var nestedKey = context.Nest(SearchResultPropName).Nest(nameof(ReferenceDTO.InstanceKey));
+            var nestedText = context.Nest(SearchResultPropName).Nest(nameof(ReferenceDTO.InstanceName));
             return $"<span>@{nestedText.Path}<input type=\"hidden\" asp-for=\"{nestedKey.AspForPath}\"></span>";
         }
 
-        public override string RenderInstanceView(AspNetMvc.ViewRenderingContext context) {
-            var nestedKey = context.Nest(InstanceModelPropName).Nest(nameof(Runtime.ReferenceDTO.InstanceKey));
-            var nestedText = context.Nest(InstanceModelPropName).Nest(nameof(Runtime.ReferenceDTO.InstanceName));
+        public override string RenderInstanceView(ViewRenderingContext context) {
+            var nestedKey = context.Nest(InstanceModelPropName).Nest(nameof(ReferenceDTO.InstanceKey));
+            var nestedText = context.Nest(InstanceModelPropName).Nest(nameof(ReferenceDTO.InstanceName));
             var template = new ReferenceInstanceTemplate {
                 AspForKey = nestedKey.AspForPath,
                 AspForText = nestedText.AspForPath,

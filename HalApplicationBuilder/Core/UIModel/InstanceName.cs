@@ -1,5 +1,5 @@
 ﻿using System;
-namespace HalApplicationBuilder.Runtime {
+namespace HalApplicationBuilder.Core.UIModel {
     internal class InstanceName {
         internal InstanceName(object instance, Core.Aggregate aggregate) {
         }

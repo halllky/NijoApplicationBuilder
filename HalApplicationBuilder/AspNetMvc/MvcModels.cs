@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using HalApplicationBuilder.Core.UIModel;
 
 namespace HalApplicationBuilder.AspNetMvc {
     public class MvcModels {
@@ -24,7 +25,7 @@ namespace HalApplicationBuilder.AspNetMvc {
         internal IEnumerable<MvcModel> SearchResultClasses { get; set; }
         internal IEnumerable<MvcModel> InstanceClasses { get; set; }
 
-        internal static string UIInstanceBase => typeof(Runtime.UIInstanceBase).FullName;
-        internal static string SearchResultBase => typeof(Runtime.SearchResultBase).FullName;
+        internal static string UIInstanceBase => typeof(UIInstanceBase).FullName;
+        internal static string SearchResultBase => typeof(SearchResultBase).FullName;
     }
 }

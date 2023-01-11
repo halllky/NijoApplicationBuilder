@@ -22,7 +22,7 @@ namespace HalApplicationBuilder {
             });
             serviceCollection.AddScoped<Core.IAggregateMemberFactory>(provider => new Core.AggregateMemberFactory(provider));
             serviceCollection.AddScoped<Core.IApplicationSchema>(provider => provider.GetRequiredService<Impl.SchemaImpl>());
-            serviceCollection.AddScoped<AspNetMvc.IViewModelProvider>(provider => provider.GetRequiredService<Impl.SchemaImpl>());
+            serviceCollection.AddScoped<Core.UIModel.IViewModelProvider>(provider => provider.GetRequiredService<Impl.SchemaImpl>());
             serviceCollection.AddScoped<Core.DBModel.IDbSchema>(provider => provider.GetRequiredService<Impl.SchemaImpl>());
         }
 
@@ -61,7 +61,7 @@ namespace HalApplicationBuilder {
                 var source = new AspNetMvc.MvcModels();
                 sw.Write(source.TransformText(
                     service.GetRequiredService<Core.IApplicationSchema>(),
-                    service.GetRequiredService<AspNetMvc.IViewModelProvider>(),
+                    service.GetRequiredService<Core.UIModel.IViewModelProvider>(),
                     service.GetRequiredService<Core.Config>()));
             }
 
@@ -79,7 +79,7 @@ namespace HalApplicationBuilder {
                 var view = new AspNetMvc.MultiView(aggregate);
                 var filename = Path.Combine(viewDir, view.FileName);
                 using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
-                sw.Write(view.TransformText(service.GetRequiredService<AspNetMvc.IViewModelProvider>()));
+                sw.Write(view.TransformText(service.GetRequiredService<Core.UIModel.IViewModelProvider>()));
             }
 
             Console.WriteLine("コード自動生成: MVC View - SingleView");
@@ -88,7 +88,7 @@ namespace HalApplicationBuilder {
                 var filename = Path.Combine(viewDir, view.FileName);
                 using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
                 sw.Write(view.TransformText(
-                    service.GetRequiredService<AspNetMvc.IViewModelProvider>(),
+                    service.GetRequiredService<Core.UIModel.IViewModelProvider>(),
                     service.GetRequiredService<Core.Config>()));
             }
 
@@ -98,7 +98,7 @@ namespace HalApplicationBuilder {
                 var filename = Path.Combine(viewDir, view.FileName);
                 using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
                 sw.Write(view.TransformText(
-                    service.GetRequiredService<AspNetMvc.IViewModelProvider>(),
+                    service.GetRequiredService<Core.UIModel.IViewModelProvider>(),
                     service.GetRequiredService<Core.Config>()));
             }
 
@@ -110,7 +110,7 @@ namespace HalApplicationBuilder {
                 var filename = Path.Combine(viewDir, view.FileName);
                 using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
                 sw.Write(view.TransformText(
-                    service.GetRequiredService<AspNetMvc.IViewModelProvider>()));
+                    service.GetRequiredService<Core.UIModel.IViewModelProvider>()));
             }
 
             Console.WriteLine("コード自動生成: MVC Controller");
@@ -121,7 +121,7 @@ namespace HalApplicationBuilder {
                 var source = new AspNetMvc.Controller();
                 sw.Write(source.TransformText(
                     service.GetRequiredService<Core.IApplicationSchema>(),
-                    service.GetRequiredService<AspNetMvc.IViewModelProvider>(),
+                    service.GetRequiredService<Core.UIModel.IViewModelProvider>(),
                     service.GetRequiredService<Core.Config>()));
             }
 

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using HalApplicationBuilder.Core.Members;
-using HalApplicationBuilder.Impl;
+using HalApplicationBuilder.Core.UIModel;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HalApplicationBuilder.Core {
@@ -13,12 +13,12 @@ namespace HalApplicationBuilder.Core {
         public AggregateValidator(IServiceProvider service) {
             ApplicationSchema = service.GetRequiredService<IApplicationSchema>();
             DbSchema = service.GetRequiredService<Core.DBModel.IDbSchema>();
-            ViewModelProvider = service.GetRequiredService<AspNetMvc.IViewModelProvider>();
+            ViewModelProvider = service.GetRequiredService<IViewModelProvider>();
         }
 
         private IApplicationSchema ApplicationSchema { get; }
         private Core.DBModel.IDbSchema DbSchema { get; }
-        private AspNetMvc.IViewModelProvider ViewModelProvider { get; }
+        private IViewModelProvider ViewModelProvider { get; }
 
         public bool HasError(Action<string> errorHandler) {
             var hasAnyError = false;

@@ -4,15 +4,16 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.Core.DBModel;
-using HalApplicationBuilder.Runtime;
+using HalApplicationBuilder.Core.Runtime;
+using HalApplicationBuilder.Core.UIModel;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HalApplicationBuilder.Core {
     public abstract class AggregateMemberBase :
         IAggregateMember,
-        AspNetMvc.IMvcModelPropertySource,
-        AspNetMvc.IMemberRenderer,
-        Runtime.IInstanceConverter {
+        IMvcModelPropertySource,
+        IMemberRenderer,
+        IInstanceConverter {
 
         internal AggregateMemberBase(PropertyInfo propertyInfo, Aggregate owner, IServiceProvider serviceProvider) {
             UnderlyingPropertyInfo = propertyInfo;
@@ -25,7 +26,7 @@ namespace HalApplicationBuilder.Core {
         protected readonly IServiceProvider _services;
         private protected IApplicationSchema AppSchema => _services.GetRequiredService<IApplicationSchema>();
         protected IDbSchema DbSchema => _services.GetRequiredService<IDbSchema>();
-        protected AspNetMvc.IViewModelProvider ViewModelProvider => _services.GetRequiredService<AspNetMvc.IViewModelProvider>();
+        protected IViewModelProvider ViewModelProvider => _services.GetRequiredService<IViewModelProvider>();
         protected IAggregateMemberFactory MemberFactory => _services.GetRequiredService<IAggregateMemberFactory>();
         protected Config Config => _services.GetRequiredService<Config>();
 
@@ -50,13 +51,13 @@ namespace HalApplicationBuilder.Core {
         #region CodeGenerating
         public abstract IEnumerable<Core.DBModel.DbColumn> ToDbColumnModel();
 
-        public abstract IEnumerable<AspNetMvc.MvcModelProperty> CreateSearchConditionModels();
-        public abstract IEnumerable<AspNetMvc.MvcModelProperty> CreateSearchResultModels();
-        public abstract IEnumerable<AspNetMvc.MvcModelProperty> CreateInstanceModels();
+        public abstract IEnumerable<MvcModelProperty> CreateSearchConditionModels();
+        public abstract IEnumerable<MvcModelProperty> CreateSearchResultModels();
+        public abstract IEnumerable<MvcModelProperty> CreateInstanceModels();
 
-        public abstract string RenderSearchConditionView(AspNetMvc.ViewRenderingContext context);
-        public abstract string RenderSearchResultView(AspNetMvc.ViewRenderingContext context);
-        public abstract string RenderInstanceView(AspNetMvc.ViewRenderingContext context);
+        public abstract string RenderSearchConditionView(ViewRenderingContext context);
+        public abstract string RenderSearchResultView(ViewRenderingContext context);
+        public abstract string RenderInstanceView(ViewRenderingContext context);
         #endregion CodeGenerating
 
 

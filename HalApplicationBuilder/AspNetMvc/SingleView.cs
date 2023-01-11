@@ -1,5 +1,5 @@
 ﻿using System;
-using HalApplicationBuilder.Runtime;
+using HalApplicationBuilder.Core.UIModel;
 
 namespace HalApplicationBuilder.AspNetMvc {
     public class SingleView {

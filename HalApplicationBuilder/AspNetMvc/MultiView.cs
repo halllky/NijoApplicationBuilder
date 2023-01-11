@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using HalApplicationBuilder.Core.UIModel;
 
 namespace HalApplicationBuilder.AspNetMvc {
     public class MultiView {
@@ -47,6 +48,6 @@ namespace HalApplicationBuilder.AspNetMvc {
         // internal string SearchResultView { get; set; }
         internal MvcModel SearchResultClass { get; set; }
 
-        internal static string BoundIdPropertyPathName => $"@Model.SearchResult[i].{nameof(Runtime.SearchResultBase.__halapp__InstanceKey)}";
+        internal static string BoundIdPropertyPathName => $"@Model.SearchResult[i].{nameof(SearchResultBase.__halapp__InstanceKey)}";
     }
 }

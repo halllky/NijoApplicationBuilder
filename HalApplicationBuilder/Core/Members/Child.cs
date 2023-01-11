@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
-using HalApplicationBuilder.AspNetMvc;
 using HalApplicationBuilder.Core.DBModel;
-using HalApplicationBuilder.Runtime;
+using HalApplicationBuilder.Core.Runtime;
+using HalApplicationBuilder.Core.UIModel;
 
 namespace HalApplicationBuilder.Core.Members {
     internal class Child : AggregateMemberBase {

@@ -5,7 +5,7 @@ using System.Text.Json;
 using HalApplicationBuilder.DotnetEx;
 using HalApplicationBuilder.Core.DBModel;
 
-namespace HalApplicationBuilder.Runtime {
+namespace HalApplicationBuilder.Core.UIModel {
     /// <summary>
     /// 複合キーをHTTPでやりとりするためにJSON化して取り扱う仕組み
     /// </summary>

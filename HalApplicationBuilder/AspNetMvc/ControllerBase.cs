@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using HalApplicationBuilder.AspNetMvc;
+using HalApplicationBuilder.Core.Runtime;
+using HalApplicationBuilder.Core.UIModel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,15 +11,15 @@ namespace HalApplicationBuilder.AspNetMvc {
 
     public abstract class ControllerBase<TSearchCondition, TSearchResult, TInstanceModel>
         : Microsoft.AspNetCore.Mvc.Controller
-        where TInstanceModel : Runtime.UIInstanceBase
-        where TSearchResult : Runtime.SearchResultBase {
+        where TInstanceModel : UIInstanceBase
+        where TSearchResult : SearchResultBase {
 
         public ControllerBase(IServiceProvider services) {
             ServiceProvider = services;
-            RuntimeContext = services.GetRequiredService<Runtime.RuntimeContext>();
+            RuntimeContext = services.GetRequiredService<RuntimeContext>();
         }
         protected IServiceProvider ServiceProvider { get; }
-        private Runtime.RuntimeContext RuntimeContext { get; }
+        private RuntimeContext RuntimeContext { get; }
 
         #region MultiView
         protected abstract string MultiViewName { get; }
@@ -71,14 +72,14 @@ namespace HalApplicationBuilder.AspNetMvc {
         public virtual IActionResult Detail(string id) {
             var aggregate = RuntimeContext.FindAggregateByRuntimeType(typeof(TInstanceModel));
             var dbEntity = RuntimeContext.DbSchema.GetDbEntity(aggregate);
-            if (!Runtime.InstanceKey.TryParse(id, dbEntity, out var instanceKey)) return NotFound();
+            if (!InstanceKey.TryParse(id, dbEntity, out var instanceKey)) return NotFound();
 
             var instance = RuntimeContext.FindInstance<TInstanceModel>(instanceKey);
             if (instance == null) return NotFound();
 
             instance.__halapp__.IsRoot = true;
             var model = new SingleView.Model<TInstanceModel> {
-                InstanceName = new Runtime.InstanceName(instance, aggregate).Value,
+                InstanceName = new InstanceName(instance, aggregate).Value,
                 Item = instance,
             };
 

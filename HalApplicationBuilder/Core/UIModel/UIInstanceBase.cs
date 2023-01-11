@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 
-namespace HalApplicationBuilder.Runtime {
+namespace HalApplicationBuilder.Core.UIModel {
 
     /// <summary>
     /// SingleView, CreateView, 集約PartialView の編集対象オブジェクト
