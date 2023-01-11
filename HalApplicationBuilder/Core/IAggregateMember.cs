@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
-using HalApplicationBuilder.EntityFramework;
+using HalApplicationBuilder.Core.DBModel;
 
 namespace HalApplicationBuilder.Core {
     public interface IAggregateMember {

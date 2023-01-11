@@ -8,10 +8,10 @@ namespace HalApplicationBuilder.Runtime {
         void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context);
 
         // SearchResult
-        void BuildSelectStatement(EntityFramework.SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix);
+        void BuildSelectStatement(Core.DBModel.SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix);
         void MapSearchResultToUI(System.Data.Common.DbDataReader reader, object searchResult, RuntimeContext context, string selectClausePrefix);
 
         // AutoComplete
-        void BuildAutoCompleteSelectStatement(EntityFramework.SelectStatement selectStatement, string inputText, RuntimeContext context, string selectClausePrefix);
+        void BuildAutoCompleteSelectStatement(Core.DBModel.SelectStatement selectStatement, string inputText, RuntimeContext context, string selectClausePrefix);
     }
 }

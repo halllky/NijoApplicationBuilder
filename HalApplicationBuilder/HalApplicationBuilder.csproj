@@ -24,6 +24,7 @@
     <Folder Include="DotnetEx\" />
     <Folder Include="AspNetMvc\TagHelpers\" />
     <Folder Include="Core\Members\" />
+    <Folder Include="Core\DBModel\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Core\AggregateInstanceTemplate.tt">

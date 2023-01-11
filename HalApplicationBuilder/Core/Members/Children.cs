@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.AspNetMvc;
-using HalApplicationBuilder.EntityFramework;
+using HalApplicationBuilder.Core.DBModel;
 using HalApplicationBuilder.Runtime;
 
 namespace HalApplicationBuilder.Core.Members {

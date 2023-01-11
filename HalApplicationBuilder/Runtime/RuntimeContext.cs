@@ -12,7 +12,7 @@ namespace HalApplicationBuilder.Runtime {
             RuntimeAssembly = runtimeAssembly;
 
             ApplicationSchema = service.GetRequiredService<Core.IApplicationSchema>();
-            DbSchema = service.GetRequiredService<EntityFramework.IDbSchema>();
+            DbSchema = service.GetRequiredService<Core.DBModel.IDbSchema>();
             ViewModelProvider = service.GetRequiredService<AspNetMvc.IViewModelProvider>();
             _service = service;
         }
@@ -23,7 +23,7 @@ namespace HalApplicationBuilder.Runtime {
         internal Assembly RuntimeAssembly { get; }
         internal Core.Config Config { get; }
         internal Core.IApplicationSchema ApplicationSchema { get; }
-        internal EntityFramework.IDbSchema DbSchema { get; }
+        internal Core.DBModel.IDbSchema DbSchema { get; }
         internal AspNetMvc.IViewModelProvider ViewModelProvider { get; }
 
         private readonly IServiceProvider _service;
@@ -95,8 +95,8 @@ namespace HalApplicationBuilder.Runtime {
                 .Select(member => member as IInstanceConverter)
                 .Where(member => member != null)
                 .ToArray();
-            var paramGenerator = _service.GetRequiredService<EntityFramework.SelectStatement.IParamGenerator>();
-            var selectStatement = new EntityFramework.SelectStatement(paramGenerator);
+            var paramGenerator = _service.GetRequiredService<Core.DBModel.SelectStatement.IParamGenerator>();
+            var selectStatement = new Core.DBModel.SelectStatement(paramGenerator);
             var mainTable = DbSchema.GetDbEntity(aggregate);
             selectStatement.From(mainTable);
             foreach (var member in converters) {
@@ -168,8 +168,8 @@ namespace HalApplicationBuilder.Runtime {
         }
 
         public IEnumerable<AutoCompleteSource> AutoComplete(Core.Aggregate aggregate, string inputText) {
-            var paramGenerator = _service.GetRequiredService<EntityFramework.SelectStatement.IParamGenerator>();
-            var selectStatement = new EntityFramework.SelectStatement(paramGenerator);
+            var paramGenerator = _service.GetRequiredService<Core.DBModel.SelectStatement.IParamGenerator>();
+            var selectStatement = new Core.DBModel.SelectStatement(paramGenerator);
 
             throw new NotImplementedException();
         }

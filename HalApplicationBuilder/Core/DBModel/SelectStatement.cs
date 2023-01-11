@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using Microsoft.Data.SqlClient;
 
-namespace HalApplicationBuilder.EntityFramework {
+namespace HalApplicationBuilder.Core.DBModel {
 
     /// <summary>
     /// SELECT文

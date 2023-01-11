@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.AspNetMvc;
+using HalApplicationBuilder.Core.DBModel;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HalApplicationBuilder.Impl {
     internal class SchemaImpl :
         Core.IApplicationSchema,
-        EntityFramework.IDbSchema,
+        IDbSchema,
         IViewModelProvider {
 
         internal SchemaImpl(Assembly assembly, IServiceProvider serviceProvider) {
@@ -72,20 +73,20 @@ namespace HalApplicationBuilder.Impl {
 
 
         #region DbSchema
-        private Dictionary<Core.Aggregate, EntityFramework.DbEntity> _dbEntities;
-        private IReadOnlyDictionary<Core.Aggregate, EntityFramework.DbEntity> DbEntities {
+        private Dictionary<Core.Aggregate, DbEntity> _dbEntities;
+        private IReadOnlyDictionary<Core.Aggregate, DbEntity> DbEntities {
             get {
                 if (_dbEntities == null) {
                     var config = _services.GetRequiredService<Core.Config>();
                     var aggregates = AllAggregates()
                         .OrderBy(a => a.GetAncestors().Count())
                         .ToList();
-                    _dbEntities = new Dictionary<Core.Aggregate, EntityFramework.DbEntity>();
+                    _dbEntities = new Dictionary<Core.Aggregate, DbEntity>();
                     foreach (var aggregate in aggregates) {
                         var parent = aggregate.Parent == null
                             ? null
                             : _dbEntities[aggregate.Parent.Owner];
-                        var child = new EntityFramework.DbEntity(aggregate, parent, config);
+                        var child = new DbEntity(aggregate, parent, config);
                         _dbEntities.Add(aggregate, child);
                         parent?.children.Add(child);
                     }
@@ -94,7 +95,7 @@ namespace HalApplicationBuilder.Impl {
             }
         }
 
-        public EntityFramework.DbEntity GetDbEntity(Core.Aggregate aggregate) {
+        public DbEntity GetDbEntity(Core.Aggregate aggregate) {
             return DbEntities[aggregate];
         }
         #endregion DbSchema

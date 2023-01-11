@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using HalApplicationBuilder.Core;
+using HalApplicationBuilder.Core.DBModel;
 
 namespace HalApplicationBuilder.EntityFramework {
     internal class EFCoreSource {
@@ -22,6 +23,6 @@ namespace HalApplicationBuilder.EntityFramework {
         internal string DbContextName { get; set; }
         internal string DbContextNamespace { get; set; }
         internal string EntityNamespace { get; set; }
-        internal IEnumerable<EntityFramework.DbEntity> EntityClasses { get; set; }
+        internal IEnumerable<DbEntity> EntityClasses { get; set; }
     }
 }

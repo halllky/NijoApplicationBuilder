@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using HalApplicationBuilder.DotnetEx;
-using HalApplicationBuilder.EntityFramework;
+using HalApplicationBuilder.Core.DBModel;
 
 namespace HalApplicationBuilder.Runtime {
     /// <summary>

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
-using HalApplicationBuilder.EntityFramework;
+using HalApplicationBuilder.Core.DBModel;
 using HalApplicationBuilder.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -24,7 +24,7 @@ namespace HalApplicationBuilder.Core {
 
         protected readonly IServiceProvider _services;
         private protected IApplicationSchema AppSchema => _services.GetRequiredService<IApplicationSchema>();
-        protected EntityFramework.IDbSchema DbSchema => _services.GetRequiredService<EntityFramework.IDbSchema>();
+        protected IDbSchema DbSchema => _services.GetRequiredService<IDbSchema>();
         protected AspNetMvc.IViewModelProvider ViewModelProvider => _services.GetRequiredService<AspNetMvc.IViewModelProvider>();
         protected IAggregateMemberFactory MemberFactory => _services.GetRequiredService<IAggregateMemberFactory>();
         protected Config Config => _services.GetRequiredService<Config>();
@@ -48,7 +48,7 @@ namespace HalApplicationBuilder.Core {
 
 
         #region CodeGenerating
-        public abstract IEnumerable<DbColumn> ToDbColumnModel();
+        public abstract IEnumerable<Core.DBModel.DbColumn> ToDbColumnModel();
 
         public abstract IEnumerable<AspNetMvc.MvcModelProperty> CreateSearchConditionModels();
         public abstract IEnumerable<AspNetMvc.MvcModelProperty> CreateSearchResultModels();

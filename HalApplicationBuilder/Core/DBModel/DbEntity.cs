@@ -4,10 +4,9 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
-using HalApplicationBuilder.Core;
 using HalApplicationBuilder.Runtime;
 
-namespace HalApplicationBuilder.EntityFramework {
+namespace HalApplicationBuilder.Core.DBModel {
     public class DbEntity {
         internal DbEntity(Aggregate source, DbEntity parent, Config config) {
             Source = source;

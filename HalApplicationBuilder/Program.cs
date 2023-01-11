@@ -23,7 +23,7 @@ namespace HalApplicationBuilder {
             serviceCollection.AddScoped<Core.IAggregateMemberFactory>(provider => new Core.AggregateMemberFactory(provider));
             serviceCollection.AddScoped<Core.IApplicationSchema>(provider => provider.GetRequiredService<Impl.SchemaImpl>());
             serviceCollection.AddScoped<AspNetMvc.IViewModelProvider>(provider => provider.GetRequiredService<Impl.SchemaImpl>());
-            serviceCollection.AddScoped<EntityFramework.IDbSchema>(provider => provider.GetRequiredService<Impl.SchemaImpl>());
+            serviceCollection.AddScoped<Core.DBModel.IDbSchema>(provider => provider.GetRequiredService<Impl.SchemaImpl>());
         }
 
         static void Main(string[] args) {
@@ -49,7 +49,7 @@ namespace HalApplicationBuilder {
                 var source = new EntityFramework.EFCoreSource();
                 sw.Write(source.TransformText(
                     service.GetRequiredService<Core.IApplicationSchema>(),
-                    service.GetRequiredService<EntityFramework.IDbSchema>(),
+                    service.GetRequiredService<Core.DBModel.IDbSchema>(),
                     service.GetRequiredService<Core.Config>()));
             }
 

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using HalApplicationBuilder.EntityFramework;
+using HalApplicationBuilder.Core.DBModel;
 using HalApplicationBuilder.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 

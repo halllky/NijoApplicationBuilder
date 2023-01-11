@@ -12,12 +12,12 @@ namespace HalApplicationBuilder.Core {
     public class AggregateValidator {
         public AggregateValidator(IServiceProvider service) {
             ApplicationSchema = service.GetRequiredService<IApplicationSchema>();
-            DbSchema = service.GetRequiredService<EntityFramework.IDbSchema>();
+            DbSchema = service.GetRequiredService<Core.DBModel.IDbSchema>();
             ViewModelProvider = service.GetRequiredService<AspNetMvc.IViewModelProvider>();
         }
 
         private IApplicationSchema ApplicationSchema { get; }
-        private EntityFramework.IDbSchema DbSchema { get; }
+        private Core.DBModel.IDbSchema DbSchema { get; }
         private AspNetMvc.IViewModelProvider ViewModelProvider { get; }
 
         public bool HasError(Action<string> errorHandler) {

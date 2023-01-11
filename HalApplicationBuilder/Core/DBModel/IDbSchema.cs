@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace HalApplicationBuilder.EntityFramework {
+namespace HalApplicationBuilder.Core.DBModel {
     public interface IDbSchema {
         DbEntity GetDbEntity(Core.Aggregate aggregate);
     }
