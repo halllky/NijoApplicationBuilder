@@ -252,6 +252,27 @@ namespace HalApplicationBuilder.Impl {
             var value = reader[selectClausePrefix + SearchResultPropName];
             prop.SetValue(searchResult, value == DBNull.Value ? null : value);
         }
+
+        public override void BuildAutoCompleteSelectStatement(SelectStatement selectStatement, string inputText, RuntimeContext context, string selectClausePrefix) {
+            // SELECT
+            var dbEntity = context.DbSchema.GetDbEntity(Owner);
+            selectStatement.Select(e => {
+                var table = e.GetAlias(dbEntity);
+                var column = DbColumnPropName;
+                var alias = selectClausePrefix + SearchResultPropName;
+                return $"{table}.{column} AS [{alias}]";
+            });
+
+            // WHERE
+            if (!string.IsNullOrWhiteSpace(inputText) && IsInstanceName) {
+                selectStatement.Where(e => {
+                    var table = e.GetAlias(dbEntity);
+                    var column = DbColumnPropName;
+                    var param = e.NewParam($"%{inputText.Trim().Replace("%", "[%]")}%");
+                    return $"{table}.{column} LIKE {param}";
+                });
+            }
+        }
     }
 
     partial class SchalarValueSearchCondition {

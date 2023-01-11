@@ -58,7 +58,6 @@ namespace HalApplicationBuilder.Core {
             }
         }
 
-
         public override string ToString() {
             var path = new List<string>();
             var parent = Parent;

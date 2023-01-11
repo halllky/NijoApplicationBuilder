@@ -31,7 +31,11 @@ namespace HalApplicationBuilder.Impl {
         protected Config Config => _services.GetRequiredService<Config>();
 
         public string Name => UnderlyingPropertyInfo.Name;
+
         public bool IsPrimaryKey => UnderlyingPropertyInfo.GetCustomAttribute<KeyAttribute>() != null;
+        public bool IsInstanceName => UnderlyingPropertyInfo.GetCustomAttribute<InstanceNameAttribute>() != null;
+        public int? InstanceNameOrder => UnderlyingPropertyInfo.GetCustomAttribute<InstanceNameAttribute>()?.Order;
+
         /// <summary>
         /// Entity Framework エンティティ作成時に連番カラムを生成するか否かに影響
         /// </summary>
@@ -63,6 +67,8 @@ namespace HalApplicationBuilder.Impl {
 
         public abstract void BuildSelectStatement(SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix);
         public abstract void MapSearchResultToUI(System.Data.Common.DbDataReader reader, object searchResult, Runtime.RuntimeContext context, string selectClausePrefix);
+
+        public abstract void BuildAutoCompleteSelectStatement(SelectStatement selectStatement, string inputText, RuntimeContext context, string selectClausePrefix);
         #endregion Runtime
 
 

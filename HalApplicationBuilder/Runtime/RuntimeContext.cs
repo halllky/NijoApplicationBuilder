@@ -166,5 +166,12 @@ namespace HalApplicationBuilder.Runtime {
         public void DeleteInstance(object instance) {
             // TODO
         }
+
+        public IEnumerable<AutoCompleteSource> AutoComplete(Core.Aggregate aggregate, string inputText) {
+            var paramGenerator = _service.GetRequiredService<EntityFramework.SelectStatement.IParamGenerator>();
+            var selectStatement = new EntityFramework.SelectStatement(paramGenerator);
+
+            throw new NotImplementedException();
+        }
     }
 }

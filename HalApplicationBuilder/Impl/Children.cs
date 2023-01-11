@@ -151,6 +151,10 @@ namespace HalApplicationBuilder.Impl {
         public override void MapSearchResultToUI(System.Data.Common.DbDataReader reader, object searchResult, RuntimeContext context, string selectClausePrefix) {
             // 何もしない
         }
+
+        public override void BuildAutoCompleteSelectStatement(SelectStatement selectStatement, string inputText, RuntimeContext context, string selectClausePrefix) {
+            // 何もしない
+        }
     }
 
     partial class ChildrenInstanceTemplate {

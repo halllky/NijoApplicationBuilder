@@ -234,6 +234,10 @@ namespace HalApplicationBuilder.Impl {
                 prop.SetValue(searchResult, null);
             }
         }
+
+        public override void BuildAutoCompleteSelectStatement(SelectStatement selectStatement, string inputText, RuntimeContext context, string selectClausePrefix) {
+            // 何もしない
+        }
     }
 
     partial class VariationSearchConditionTemplate {

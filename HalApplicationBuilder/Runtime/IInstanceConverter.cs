@@ -10,5 +10,8 @@ namespace HalApplicationBuilder.Runtime {
         // SearchResult
         void BuildSelectStatement(EntityFramework.SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix);
         void MapSearchResultToUI(System.Data.Common.DbDataReader reader, object searchResult, RuntimeContext context, string selectClausePrefix);
+
+        // AutoComplete
+        void BuildAutoCompleteSelectStatement(EntityFramework.SelectStatement selectStatement, string inputText, RuntimeContext context, string selectClausePrefix);
     }
 }

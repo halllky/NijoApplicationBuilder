@@ -11,6 +11,9 @@ namespace HalApplicationBuilder.Core {
         IEnumerable<Aggregate> GetChildAggregates();
 
         bool IsPrimaryKey { get; }
+        bool IsInstanceName { get; }
+        int? InstanceNameOrder { get; }
+
         bool IsCollection { get; }
         IEnumerable<DbColumn> ToDbColumnModel();
     }

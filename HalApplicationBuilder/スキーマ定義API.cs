@@ -8,6 +8,7 @@ namespace HalApplicationBuilder {
 
     [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
     public sealed class InstanceNameAttribute : Attribute {
+        public int? Order { get; set; }
     }
 
     [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = true)]

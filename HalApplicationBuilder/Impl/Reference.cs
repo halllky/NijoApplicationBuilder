@@ -5,6 +5,7 @@ using System.Reflection;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.EntityFramework;
 using HalApplicationBuilder.Runtime;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace HalApplicationBuilder.Impl {
     internal class Reference : AggregateMemberBase {
@@ -112,6 +113,10 @@ namespace HalApplicationBuilder.Impl {
         }
 
         public override void MapSearchResultToUI(System.Data.Common.DbDataReader reader, object searchResult, RuntimeContext context, string selectClausePrefix) {
+            // TODO
+        }
+
+        public override void BuildAutoCompleteSelectStatement(SelectStatement selectStatement, string inputText, RuntimeContext context, string selectClausePrefix) {
             // TODO
         }
     }

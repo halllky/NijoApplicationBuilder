@@ -32,6 +32,12 @@ namespace HalApplicationBuilder {
             ConfigureServices(serviceCollection, dllPath);
             var service = serviceCollection.BuildServiceProvider();
 
+            var validator = new Core.AggregateValidator(service);
+            if (validator.HasError(error => Console.WriteLine(error))) {
+                Console.WriteLine("コード自動生成終了");
+                return;
+            }
+
             var dllFileInfo = new FileInfo(dllPath);
             Console.WriteLine($"コード自動生成開始: {dllFileInfo.Name} (最終更新時刻: {dllFileInfo.LastWriteTime:G})");
 
@@ -59,7 +65,7 @@ namespace HalApplicationBuilder {
                     service.GetRequiredService<Core.Config>()));
             }
 
-            Console.WriteLine("コード自動生成: MVC View - 既存ファイル削除");
+            //Console.WriteLine("コード自動生成: MVC View - 既存ファイル削除");
             var viewDir = Path.Combine(
                 "/__local__/20221211_haldoc_csharp/haldoc/HalApplicationBuilderSampleMvc",
                 service.GetRequiredService<Core.Config>().MvcViewDirectoryRelativePath);

@@ -151,5 +151,9 @@ namespace HalApplicationBuilder.Impl {
                 converter.MapSearchResultToUI(reader, searchResult, context, prefix);
             }
         }
+
+        public override void BuildAutoCompleteSelectStatement(SelectStatement selectStatement, string inputText, RuntimeContext context, string selectClausePrefix) {
+            // 何もしない
+        }
     }
 }
