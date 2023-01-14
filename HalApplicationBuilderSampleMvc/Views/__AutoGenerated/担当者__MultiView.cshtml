@@ -13,9 +13,9 @@
 
 <form>
     @* 検索条件欄 *@
-    <div class="mt-2">
+    <div class="border mt-2 p-2">
         
-<div class="border border-gray-300 rounded-lg flex flex-col p-2">
+<div class="flex flex-col">
 
     <div class="flex flex-col md:flex-row mb-1">
     
@@ -25,7 +25,7 @@
         <div class="flex-1">
         
 
-            <input asp-for="SearchCondition.ユーザーID" />
+            <input asp-for="SearchCondition.ユーザーID" class="border" />
             
         
 
@@ -39,7 +39,7 @@
         <div class="flex-1">
         
 
-            <input asp-for="SearchCondition.氏名" />
+            <input asp-for="SearchCondition.氏名" class="border" />
             
         
 
@@ -56,8 +56,8 @@
     <div class="mt-2">
         <div style="display: flex; justify-content: flex-end">
         </div>
-        <table class="table table-sm">
-            <thead>
+        <table class="table table-sm text-left w-full border">
+            <thead class="border-b">
                 <tr>
                     <th></th>
                     <th>

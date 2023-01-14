@@ -4,7 +4,7 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 
-<div class="border border-gray-300 rounded-lg flex flex-col p-2">
+<div class="flex flex-col">
 
 <# foreach (var member in Members) { #>
     <div class="flex flex-col md:flex-row mb-1">
@@ -17,20 +17,20 @@
         
 <#     /* SchalarValue */ #>
 <#     if (member.Value is InstanceTemplateSchalarValueData schalarValue) { #>
-            <input asp-for="<#=schalarValue.AspForPath#>"/>
+            <input asp-for="<#=schalarValue.AspForPath#>" class="border" />
 
 <#     /* SchalarValue検索条件 */ #>
 <#     } else if (member.Value is InstanceTemplateSchalarValueSearchConditionData schalarValueSC) { #>
 
 <#         /* ただのinput */ #>
 <#         if (schalarValueSC.Type == InstanceTemplateSchalarValueSearchConditionData.E_Type.Input) { #>
-            <input asp-for="<#=schalarValueSC.AspFor[0]#>" />
+            <input asp-for="<#=schalarValueSC.AspFor[0]#>" class="border" />
             
 <#         /* 範囲検索 */ #>
 <#         } else if (schalarValueSC.Type == InstanceTemplateSchalarValueSearchConditionData.E_Type.Range) { #>
-            <input asp-for="<#=schalarValueSC.AspFor[0]#>" />
+            <input asp-for="<#=schalarValueSC.AspFor[0]#>" class="border" />
             〜
-            <input asp-for="<#=schalarValueSC.AspFor[1]#>" />
+            <input asp-for="<#=schalarValueSC.AspFor[1]#>" class="border" />
             
 <#         /* ドロップダウン */ #>
 <#         } else if (schalarValueSC.Type == InstanceTemplateSchalarValueSearchConditionData.E_Type.Select) { #>
@@ -60,7 +60,7 @@
 <#     } else if (member.Value is InstanceTemplateReferencenData reference) { #>
             <div>
                 <input type="hidden" asp-for="<#=reference.AspForKey#>" />
-                <input asp-for="<#=reference.AspForText#>" />
+                <input asp-for="<#=reference.AspForText#>" class="border" />
             </div>
 
 <#     /* Child, Child検索条件 */ #>

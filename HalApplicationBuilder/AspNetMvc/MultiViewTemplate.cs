@@ -27,7 +27,7 @@ namespace HalApplicationBuilder.AspNetMvc {
                     "select-none\">\n        ");
             this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
             this.Write("\n    </h1>\n    <a asp-action=\"New\" class=\"halapp-btn-link\">新規作成</a>\n</div>\n\n<form" +
-                    ">\n    @* 検索条件欄 *@\n    <div class=\"mt-2\">\n        ");
+                    ">\n    @* 検索条件欄 *@\n    <div class=\"border mt-2 p-2\">\n        ");
             this.Write(this.ToStringHelper.ToStringWithCulture(SearchConditionView));
             this.Write("\n        <button asp-action=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(SearchActionName));
@@ -40,8 +40,8 @@ namespace HalApplicationBuilder.AspNetMvc {
     <div class=""mt-2"">
         <div style=""display: flex; justify-content: flex-end"">
         </div>
-        <table class=""table table-sm"">
-            <thead>
+        <table class=""table table-sm text-left w-full border"">
+            <thead class=""border-b"">
                 <tr>
                     <th></th>
 ");

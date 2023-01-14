@@ -7,7 +7,7 @@
     }
 
     
-<div class="border border-gray-300 rounded-lg flex flex-col p-2">
+<div class="flex flex-col">
 
     <div class="flex flex-col md:flex-row mb-1">
     
@@ -16,7 +16,7 @@
         </label>
         <div class="flex-1">
         
-            <input asp-for="営業所名"/>
+            <input asp-for="営業所名" class="border" />
 
 
         </div>
@@ -50,7 +50,7 @@
         
             <div>
                 <input type="hidden" asp-for="担当者.InstanceKey" />
-                <input asp-for="担当者.InstanceName" />
+                <input asp-for="担当者.InstanceName" class="border" />
             </div>
 
 

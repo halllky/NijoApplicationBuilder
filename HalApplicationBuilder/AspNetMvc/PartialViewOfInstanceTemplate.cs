@@ -19,7 +19,7 @@ namespace HalApplicationBuilder.AspNetMvc {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            this.Write("\n<div class=\"border border-gray-300 rounded-lg flex flex-col p-2\">\n\n");
+            this.Write("\n<div class=\"flex flex-col\">\n\n");
  foreach (var member in Members) { 
             this.Write("    <div class=\"flex flex-col md:flex-row mb-1\">\n    \n");
      /* メンバー名 */ 
@@ -30,7 +30,7 @@ namespace HalApplicationBuilder.AspNetMvc {
      if (member.Value is InstanceTemplateSchalarValueData schalarValue) { 
             this.Write("            <input asp-for=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(schalarValue.AspForPath));
-            this.Write("\"/>\n\n");
+            this.Write("\" class=\"border\" />\n\n");
      /* SchalarValue検索条件 */ 
      } else if (member.Value is InstanceTemplateSchalarValueSearchConditionData schalarValueSC) { 
             this.Write("\n");
@@ -38,14 +38,14 @@ namespace HalApplicationBuilder.AspNetMvc {
          if (schalarValueSC.Type == InstanceTemplateSchalarValueSearchConditionData.E_Type.Input) { 
             this.Write("            <input asp-for=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(schalarValueSC.AspFor[0]));
-            this.Write("\" />\n            \n");
+            this.Write("\" class=\"border\" />\n            \n");
          /* 範囲検索 */ 
          } else if (schalarValueSC.Type == InstanceTemplateSchalarValueSearchConditionData.E_Type.Range) { 
             this.Write("            <input asp-for=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(schalarValueSC.AspFor[0]));
-            this.Write("\" />\n            〜\n            <input asp-for=\"");
+            this.Write("\" class=\"border\" />\n            〜\n            <input asp-for=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(schalarValueSC.AspFor[1]));
-            this.Write("\" />\n            \n");
+            this.Write("\" class=\"border\" />\n            \n");
          /* ドロップダウン */ 
          } else if (schalarValueSC.Type == InstanceTemplateSchalarValueSearchConditionData.E_Type.Select) { 
             this.Write("            <select asp-for=\"");
@@ -95,7 +95,7 @@ namespace HalApplicationBuilder.AspNetMvc {
             this.Write(this.ToStringHelper.ToStringWithCulture(reference.AspForKey));
             this.Write("\" />\n                <input asp-for=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(reference.AspForText));
-            this.Write("\" />\n            </div>\n\n");
+            this.Write("\" class=\"border\" />\n            </div>\n\n");
      /* Child, Child検索条件 */ 
      } else if (member.Value is InstanceTemplateChildData child) { 
             this.Write("            ");

@@ -13,9 +13,9 @@
 
 <form>
     @* 検索条件欄 *@
-    <div class="mt-2">
+    <div class="border mt-2 p-2">
         
-<div class="border border-gray-300 rounded-lg flex flex-col p-2">
+<div class="flex flex-col">
 
     <div class="flex flex-col md:flex-row mb-1">
     
@@ -25,7 +25,7 @@
         <div class="flex-1">
         
 
-            <input asp-for="SearchCondition.会社ID" />
+            <input asp-for="SearchCondition.会社ID" class="border" />
             
         
 
@@ -39,7 +39,7 @@
         <div class="flex-1">
         
 
-            <input asp-for="SearchCondition.会社名" />
+            <input asp-for="SearchCondition.会社名" class="border" />
             
         
 
@@ -53,7 +53,7 @@
         <div class="flex-1">
         
             
-<div class="border border-gray-300 rounded-lg flex flex-col p-2">
+<div class="flex flex-col">
 
     <div class="flex flex-col md:flex-row mb-1">
     
@@ -63,7 +63,7 @@
         <div class="flex-1">
         
 
-            <input asp-for="SearchCondition.連絡先.電話番号" />
+            <input asp-for="SearchCondition.連絡先.電話番号" class="border" />
             
         
 
@@ -77,7 +77,7 @@
         <div class="flex-1">
         
 
-            <input asp-for="SearchCondition.連絡先.郵便番号" />
+            <input asp-for="SearchCondition.連絡先.郵便番号" class="border" />
             
         
 
@@ -91,7 +91,7 @@
         <div class="flex-1">
         
 
-            <input asp-for="SearchCondition.連絡先.住所1" />
+            <input asp-for="SearchCondition.連絡先.住所1" class="border" />
             
         
 
@@ -105,7 +105,7 @@
         <div class="flex-1">
         
 
-            <input asp-for="SearchCondition.連絡先.住所2" />
+            <input asp-for="SearchCondition.連絡先.住所2" class="border" />
             
         
 
@@ -119,7 +119,7 @@
         <div class="flex-1">
         
 
-            <input asp-for="SearchCondition.連絡先.住所3" />
+            <input asp-for="SearchCondition.連絡先.住所3" class="border" />
             
         
 
@@ -162,8 +162,8 @@
     <div class="mt-2">
         <div style="display: flex; justify-content: flex-end">
         </div>
-        <table class="table table-sm">
-            <thead>
+        <table class="table table-sm text-left w-full border">
+            <thead class="border-b">
                 <tr>
                     <th></th>
                     <th>
