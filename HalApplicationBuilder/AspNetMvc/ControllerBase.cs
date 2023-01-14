@@ -54,18 +54,22 @@ namespace HalApplicationBuilder.AspNetMvc {
         protected abstract string SingleViewName { get; }
 
         [HttpGet]
-        public virtual IActionResult New() {
-            var instance = RuntimeContext.CreateInstance<TInstanceModel>();
-            instance.__halapp__.IsRoot = true;
-            var model = new CreateView.Model<TInstanceModel> {
-                Item = instance,
-            };
+        public virtual IActionResult New(CreateView.Model<TInstanceModel> model) {
+            if (model.Item == null) {
+                var instance = RuntimeContext.CreateInstance<TInstanceModel>();
+                instance.halapp_fields.IsRoot = true;
+                model.Item = instance;
+            }
             return View(CreateViewName, model);
         }
         [HttpPost]
         public virtual IActionResult Create(CreateView.Model<TInstanceModel> model) {
-            var id = RuntimeContext.SaveNewInstance(model.Item);
-            return RedirectToAction(nameof(Detail), new { id = id.StringValue });
+            if (RuntimeContext.SaveNewInstance(model.Item, out var id, out var errors)) {
+                return RedirectToAction(nameof(Detail), new { id = id.StringValue });
+            } else {
+                foreach (var err in errors) ModelState.AddModelError("", err);
+                return View(CreateViewName, model);
+            }
         }
 
         [HttpGet]
@@ -77,7 +81,7 @@ namespace HalApplicationBuilder.AspNetMvc {
             var instance = RuntimeContext.FindInstance<TInstanceModel>(instanceKey);
             if (instance == null) return NotFound();
 
-            instance.__halapp__.IsRoot = true;
+            instance.halapp_fields.IsRoot = true;
             var model = new SingleView.Model<TInstanceModel> {
                 InstanceName = new InstanceName(instance, aggregate).Value,
                 Item = instance,
@@ -87,8 +91,12 @@ namespace HalApplicationBuilder.AspNetMvc {
         }
         [HttpPost]
         public virtual IActionResult Update(SingleView.Model<TInstanceModel> model) {
-            var id = RuntimeContext.UpdateInstance(model.Item);
-            return RedirectToAction(nameof(Detail), new { id });
+            if (RuntimeContext.UpdateInstance(model.Item, out var id, out var errors)) {
+                return RedirectToAction(nameof(Detail), new { id });
+            } else {
+                foreach (var err in errors) ModelState.AddModelError("", err);
+                return View(SingleViewName, model);
+            }
         }
         [HttpPost]
         public virtual IActionResult Delete(SingleView.Model<TInstanceModel> model) {

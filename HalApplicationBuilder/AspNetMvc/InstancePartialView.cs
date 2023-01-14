@@ -23,9 +23,10 @@ namespace HalApplicationBuilder.AspNetMvc {
                 ModelTypeFullname = model.RuntimeFullName,
                 View = model.Render(new ViewRenderingContext(viewModelProvider, "Model")),
                 HiddenFields = new[] {
-                    ($"{nameof(UIInstanceBase.__halapp__)}.{nameof(HalappViewState.Removed)}", JsTemplate.REMOVE_HIDDEN_FIELD),
+                    ($"{nameof(UIInstanceBase.halapp_fields)}.{nameof(HalappViewState.IsRoot)}", ""),
+                    ($"{nameof(UIInstanceBase.halapp_fields)}.{nameof(HalappViewState.Removed)}", JsTemplate.REMOVE_HIDDEN_FIELD),
                 },
-                ShowRemoveButton = $"Model.{nameof(UIInstanceBase.__halapp__)}.{nameof(HalappViewState.IsRoot)} == false",
+                ShowRemoveButton = $"Model.{nameof(UIInstanceBase.halapp_fields)}.{nameof(HalappViewState.IsRoot)} == false",
             };
             return template.TransformText();
         }

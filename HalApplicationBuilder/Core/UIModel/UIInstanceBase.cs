@@ -7,8 +7,11 @@ namespace HalApplicationBuilder.Core.UIModel {
     /// SingleView, CreateView, 集約PartialView の編集対象オブジェクト
     /// </summary>
     public abstract class UIInstanceBase {
+        /// <summary>
+        /// 当初 __halapp__ という名前にしていたが、アンダースコアの関係なのか、name属性が正しくレンダリングされなかったためこの名前にしている
+        /// </summary>
         [SuppressMessage("Style", "IDE1006:命名スタイル", Justification = "フレームワークで使用するプロパティ")]
-        public HalappViewState __halapp__ { get; set; } = new();
+        public HalappViewState halapp_fields { get; set; } = new();
     }
 
     public sealed class HalappViewState {

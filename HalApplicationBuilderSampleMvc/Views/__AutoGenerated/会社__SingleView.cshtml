@@ -9,6 +9,8 @@
     <asp type="hidden" asp-for="InstanceName" />
 </h1>
 
+<div asp-validation-summary="All" class="mt-2 text-xs text-red-600 dark:text-red-400"></div>
+
 <form id="halapp-single-view-form" class="mt-2">
     <partial name="_会社__Partial.cshtml" for="Item" />
     <div id="halapp-single-view-form-footer">

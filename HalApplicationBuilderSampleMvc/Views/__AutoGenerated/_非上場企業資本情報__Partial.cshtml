@@ -2,7 +2,7 @@
 @model HalApplicationBuilderSampleMvc.Models.非上場企業資本情報;
 
 <div class="halapp-aggregate-container">
-    @if (Model.__halapp__.IsRoot == false) {
+    @if (Model.halapp_fields.IsRoot == false) {
         <input type="button" value="削除" class="halapp-remove-button halapp-btn-secondary" />
     }
 
@@ -37,5 +37,6 @@
 </div>
 
 
-    <input type="hidden" asp-for="__halapp__.Removed" class="halapp-removed" />
+    <input type="hidden" asp-for="halapp_fields.IsRoot" class="" />
+    <input type="hidden" asp-for="halapp_fields.Removed" class="halapp-removed" />
 </div>

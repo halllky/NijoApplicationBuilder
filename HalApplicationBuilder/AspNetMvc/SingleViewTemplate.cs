@@ -27,7 +27,8 @@ namespace HalApplicationBuilder.AspNetMvc {
             this.Write(this.ToStringHelper.ToStringWithCulture(PageTitle));
             this.Write("\n    <asp type=\"hidden\" asp-for=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(NameofInstanceName));
-            this.Write("\" />\n</h1>\n\n<form id=\"");
+            this.Write("\" />\n</h1>\n\n<div asp-validation-summary=\"All\" class=\"mt-2 text-xs text-red-600 da" +
+                    "rk:text-red-400\"></div>\n\n<form id=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(FormId));
             this.Write("\" class=\"mt-2\">\n    <partial name=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(PartialViewName));

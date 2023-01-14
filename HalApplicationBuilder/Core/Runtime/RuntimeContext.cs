@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.Core.UIModel;
@@ -122,19 +124,30 @@ namespace HalApplicationBuilder.Core.Runtime {
             }
         }
 
-        public InstanceKey SaveNewInstance(object createCommand) {
+        public bool SaveNewInstance(object createCommand, out InstanceKey instanceKey, out ICollection<string> errors) {
             if (createCommand == null) throw new ArgumentNullException(nameof(createCommand));
 
             var aggregate = FindAggregateByRuntimeType(createCommand.GetType());
             var dbEntity = DbSchema.GetDbEntity(aggregate);
             var dbInstance = dbEntity.ConvertUiInstanceToDbInstance(createCommand, this);
-
             var dbContext = GetDbContext();
-            dbContext.Add(dbInstance);
-            dbContext.SaveChanges();
 
-            var instanceKey = InstanceKey.Create(dbInstance, dbEntity);
-            return instanceKey;
+            try {
+                dbContext.Add(dbInstance);
+                dbContext.SaveChanges();
+            } catch (InvalidOperationException ex) {
+                errors = new[] { ex.Message };
+                instanceKey = null;
+                return false;
+            } catch (DbUpdateException ex) {
+                errors = new[] { ex.Message };
+                instanceKey = null;
+                return false;
+            }
+
+            instanceKey = InstanceKey.Create(dbInstance, dbEntity);
+            errors = Array.Empty<string>();
+            return true;
         }
 
         public TInstanceModel FindInstance<TInstanceModel>(InstanceKey pk) {
@@ -145,23 +158,33 @@ namespace HalApplicationBuilder.Core.Runtime {
             return (TInstanceModel)uiInstance;
         }
 
-        public InstanceKey UpdateInstance(object uiInstance) {
+        public bool UpdateInstance(object uiInstance, out InstanceKey instanceKey, out ICollection<string> errors) {
             // 検索用の主キーを作成する
             var aggregate = FindAggregateByRuntimeType(uiInstance.GetType());
             var dbEntity = DbSchema.GetDbEntity(aggregate);
             var tempDbInstance = dbEntity.ConvertUiInstanceToDbInstance(uiInstance, this);
-            var pk = InstanceKey.Create(tempDbInstance, dbEntity);
+            instanceKey = InstanceKey.Create(tempDbInstance, dbEntity);
             // DBからentityを読み込む
             var entityType = RuntimeAssembly.GetType(dbEntity.RuntimeFullName);
             var dbContext = GetDbContext();
-            var dbInstance = dbContext.Find(entityType, pk.Values);
+            var dbInstance = dbContext.Find(entityType, instanceKey.Values);
             // UIの値をentityにマッピングする
             dbEntity.MapUiInstanceToDbInsntace(uiInstance, dbInstance, this);
-            // Save
-            dbContext.Update(dbInstance);
-            dbContext.SaveChanges();
 
-            return pk;
+            // Save
+            try {
+                dbContext.Update(dbInstance);
+                dbContext.SaveChanges();
+            } catch (InvalidOperationException ex) {
+                errors = new[] { ex.Message };
+                return false;
+            } catch (DbUpdateException ex) {
+                errors = new[] { ex.Message };
+                return false;
+            }
+
+            errors = Array.Empty<string>();
+            return true;
         }
 
         public void DeleteInstance(object instance) {
