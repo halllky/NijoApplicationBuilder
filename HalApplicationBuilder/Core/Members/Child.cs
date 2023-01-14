@@ -16,7 +16,7 @@ namespace HalApplicationBuilder.Core.Members {
         public override bool IsCollection => false;
 
         private Aggregate _child;
-        private Aggregate ChildAggregate {
+        internal Aggregate ChildAggregate {
             get {
                 if (_child == null) {
                     var childType = UnderlyingPropertyInfo.PropertyType.GetGenericArguments()[0];
@@ -66,23 +66,9 @@ namespace HalApplicationBuilder.Core.Members {
         }
 
         private string NavigationPropName => Name;
-        private string SearchConditionPropName => Name;
+        internal string SearchConditionPropName => Name;
         private string SearchResultPropName(MvcModelProperty childProp) => childProp.PropertyName; // TODO 親子でプロパティ名が重複する場合を考慮する
-        private string InstanceModelPropName => Name;
-
-        public override string RenderSearchConditionView(ViewRenderingContext context) {
-            var nested = context.Nest(SearchConditionPropName);
-            return ViewModelProvider.GetSearchConditionModel(ChildAggregate).Render(nested);
-        }
-
-        public override string RenderSearchResultView(ViewRenderingContext context) {
-            return string.Empty;
-        }
-
-        public override string RenderInstanceView(ViewRenderingContext context) {
-            var nested = context.Nest(InstanceModelPropName);
-            return ViewModelProvider.GetInstanceModel(ChildAggregate).Render(nested);
-        }
+        internal string InstanceModelPropName => Name;
 
         public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context) {
             var childUiInstance = uiInstance

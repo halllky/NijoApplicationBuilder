@@ -19,11 +19,11 @@ namespace HalApplicationBuilder.Core.Members {
             yield break;
         }
 
-        private bool IsNullable() {
+        internal bool IsNullable() {
             return UnderlyingPropertyInfo.PropertyType.IsGenericType
                 && UnderlyingPropertyInfo.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>);
         }
-        private Type GetPropertyTypeExceptNullable() {
+        internal Type GetPropertyTypeExceptNullable() {
             return IsNullable()
                 ? UnderlyingPropertyInfo.PropertyType.GetGenericArguments()[0]
                 : UnderlyingPropertyInfo.PropertyType;
@@ -43,7 +43,7 @@ namespace HalApplicationBuilder.Core.Members {
 
             return valueTypeName + question;
         }
-        private string GetSearchConditionCSharpTypeName() {
+        internal string GetSearchConditionCSharpTypeName() {
             var type = GetPropertyTypeExceptNullable();
             if (type.IsEnum) return  type.FullName + "?";
             if (type == typeof(string)) return "string";
@@ -54,7 +54,7 @@ namespace HalApplicationBuilder.Core.Members {
             if (type == typeof(DateTime)) return "DateTime?";
             return type.FullName;
         }
-        private bool IsRangeSearchCondition() {
+        internal bool IsRangeSearchCondition() {
             var type = GetPropertyTypeExceptNullable();
             return new[] { typeof(int), typeof(float), typeof(decimal), typeof(DateTime) }.Contains(type);
         }
@@ -110,55 +110,9 @@ namespace HalApplicationBuilder.Core.Members {
 
         private string DbColumnPropName => UnderlyingPropertyInfo.GetCustomAttribute<ColumnAttribute>()?.Name ?? UnderlyingPropertyInfo.Name;
 
-        private string SearchConditonPropName => Name;
-        private string SearchResultPropName => Name;
-        private string InstanceModelPropName => Name;
-
-        public override string RenderSearchConditionView(ViewRenderingContext context) {
-            var type = GetPropertyTypeExceptNullable();
-            var nested = context.Nest(SearchConditonPropName);
-            if (IsRangeSearchCondition()) {
-                // 範囲検索
-                var template = new SchalarValueSearchCondition {
-                    Type = SchalarValueSearchCondition.E_Type.Range,
-                    AspFor = new[] {
-                        $"{nested.AspForPath}.{nameof(FromTo.From)}",
-                        $"{nested.AspForPath}.{nameof(FromTo.To)}",
-                    },
-                };
-                return template.TransformText();
-
-            } else if (type.IsEnum) {
-                // enumドロップダウン
-                var template = new SchalarValueSearchCondition {
-                    Type = SchalarValueSearchCondition.E_Type.Select,
-                    AspFor = new[] { nested.AspForPath },
-                    EnumTypeName = GetSearchConditionCSharpTypeName(),
-                    Options = IsNullable()
-                        ? new[] { KeyValuePair.Create("", "") }
-                        : Array.Empty<KeyValuePair<string, string>>(),
-                };
-                return template.TransformText();
-
-            } else {
-                // ただのinput
-                var template = new SchalarValueSearchCondition {
-                    Type = SchalarValueSearchCondition.E_Type.Input,
-                    AspFor = new[] { nested.AspForPath },
-                };
-                return template.TransformText();
-            }
-        }
-
-        public override string RenderSearchResultView(ViewRenderingContext context) {
-            var nested = context.Nest(SearchResultPropName, isCollection: false);
-            return $"<span>@{nested.Path}</span>";
-        }
-
-        public override string RenderInstanceView(ViewRenderingContext context) {
-            var nested = context.Nest(InstanceModelPropName);
-            return $"<input asp-for=\"{nested.AspForPath}\"/>";
-        }
+        internal string SearchConditonPropName => Name;
+        internal string SearchResultPropName => Name;
+        internal string InstanceModelPropName => Name;
 
         public static bool IsPrimitive(Type type) {
             if (type == typeof(string)) return true;
@@ -278,17 +232,5 @@ namespace HalApplicationBuilder.Core.Members {
         public override IEnumerable<string> GetInvalidErrors() {
             yield break;
         }
-    }
-
-    partial class SchalarValueSearchCondition {
-        public enum E_Type {
-            Input,
-            Range,
-            Select,
-        }
-        public string[] AspFor { get; set; }
-        public E_Type Type { get; set; }
-        public string EnumTypeName { get; set; }
-        public KeyValuePair<string, string>[] Options { get; set; }
     }
 }

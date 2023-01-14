@@ -58,29 +58,8 @@ namespace HalApplicationBuilder.Core.Members {
             yield break;
         }
 
-        public override string RenderSearchConditionView(ViewRenderingContext context) {
-            return string.Empty;
-        }
-
-        public override string RenderSearchResultView(ViewRenderingContext context) {
-            return string.Empty;
-        }
-
         private string NavigationPropName => Name;
-        private string InstanceModelPropName => Name;
-
-        public override string RenderInstanceView(ViewRenderingContext context) {
-            var nested = context.Nest(InstanceModelPropName, isCollection: true);
-            var template = new ChildrenInstanceTemplate {
-                i = context.LoopVar,
-                Count = $"{nested.CollectionPath}.{nameof(ICollection<object>.Count)}",
-                PartialViewName = new InstancePartialView(ChildAggregate, Config).FileName,
-                PartialViewBoundObjectName = nested.AspForPath,
-                AspForAddChild = new AggregatePath(ChildAggregate).Value,
-                AddButtonBoundObjectName = nested.AspForCollectionPath,
-            };
-            return template.TransformText();
-        }
+        internal string InstanceModelPropName => Name;
 
         public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context) {
             var childDbEntity = context.DbSchema
@@ -159,19 +138,5 @@ namespace HalApplicationBuilder.Core.Members {
         public override IEnumerable<string> GetInvalidErrors() {
             if (IsPrimaryKey) yield return $"{Name} は子要素のため主キーに設定できません。";
         }
-    }
-
-    partial class ChildrenInstanceTemplate {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE1006:命名スタイル", Justification = "<意図して小文字>")]
-        internal string i { get; set; }
-        internal string Count { get; set; }
-        internal string PartialViewName { get; set; }
-        internal string PartialViewBoundObjectName { get; set; }
-        internal string AspForAddChild { get; set; }
-        internal string AddButtonBoundObjectName { get; set; }
-
-        internal static string AddButtonSenderIdentifier => JsTemplate.AGGREGATE_TREE_PATH_ATTR;
-        internal static string AddButtonModelIdentifier => JsTemplate.AGGREGATE_MODEL_PATH_ATTR;
-        internal static string AddButtonCssClass => JsTemplate.ADD_CHILD_BTN;
     }
 }

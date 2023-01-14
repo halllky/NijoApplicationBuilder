@@ -69,35 +69,9 @@ namespace HalApplicationBuilder.Core.Members {
             };
         }
 
-        private string SearchConditonPropName => Name;
-        private string SearchResultPropName => Name;
-        private string InstanceModelPropName => Name;
-
-        public override string RenderSearchConditionView(ViewRenderingContext context) {
-            var nestedKey = context.Nest(SearchConditonPropName).Nest(nameof(ReferenceDTO.InstanceKey));
-            var nestedText = context.Nest(SearchConditonPropName).Nest(nameof(ReferenceDTO.InstanceName));
-            var template = new ReferenceInstanceTemplate {
-                AspForKey = nestedKey.AspForPath,
-                AspForText = nestedText.AspForPath,
-            };
-            return template.TransformText();
-        }
-
-        public override string RenderSearchResultView(ViewRenderingContext context) {
-            var nestedKey = context.Nest(SearchResultPropName).Nest(nameof(ReferenceDTO.InstanceKey));
-            var nestedText = context.Nest(SearchResultPropName).Nest(nameof(ReferenceDTO.InstanceName));
-            return $"<span>@{nestedText.Path}<input type=\"hidden\" asp-for=\"{nestedKey.AspForPath}\"></span>";
-        }
-
-        public override string RenderInstanceView(ViewRenderingContext context) {
-            var nestedKey = context.Nest(InstanceModelPropName).Nest(nameof(ReferenceDTO.InstanceKey));
-            var nestedText = context.Nest(InstanceModelPropName).Nest(nameof(ReferenceDTO.InstanceName));
-            var template = new ReferenceInstanceTemplate {
-                AspForKey = nestedKey.AspForPath,
-                AspForText = nestedText.AspForPath,
-            };
-            return template.TransformText();
-        }
+        internal string SearchConditonPropName => Name;
+        internal string SearchResultPropName => Name;
+        internal string InstanceModelPropName => Name;
 
         public override void MapUIToDB(object instance, object dbEntity, RuntimeContext context) {
             // TODO
@@ -122,10 +96,5 @@ namespace HalApplicationBuilder.Core.Members {
         public override IEnumerable<string> GetInvalidErrors() {
             yield break;
         }
-    }
-
-    partial class ReferenceInstanceTemplate {
-        internal string AspForKey { get; set; }
-        internal string AspForText { get; set; }
     }
 }

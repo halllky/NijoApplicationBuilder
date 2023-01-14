@@ -21,7 +21,7 @@ namespace HalApplicationBuilder.AspNetMvc {
             var model = viewModelProvider.GetInstanceModel(Aggregate);
             var template = new InstancePartialViewTemplate {
                 ModelTypeFullname = model.RuntimeFullName,
-                View = model.Render(new ViewRenderingContext("Model")),
+                View = model.Render(new ViewRenderingContext(viewModelProvider, "Model")),
                 HiddenFields = new[] {
                     ($"{nameof(UIInstanceBase.__halapp__)}.{nameof(HalappViewState.Removed)}", JsTemplate.REMOVE_HIDDEN_FIELD),
                 },

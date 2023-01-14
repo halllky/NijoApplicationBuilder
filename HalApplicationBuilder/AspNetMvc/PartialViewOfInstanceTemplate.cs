@@ -19,16 +19,117 @@ namespace HalApplicationBuilder.AspNetMvc {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
-            this.Write("\n<div class=\"border border-gray-300 rounded-lg flex flex-col p-2\">\n");
+            this.Write("\n<div class=\"border border-gray-300 rounded-lg flex flex-col p-2\">\n\n");
  foreach (var member in Members) { 
-            this.Write("    <div class=\"flex flex-col md:flex-row mb-1\">\n        <label class=\"w-32 selec" +
-                    "t-none\">\n            ");
+            this.Write("    <div class=\"flex flex-col md:flex-row mb-1\">\n    \n");
+     /* メンバー名 */ 
+            this.Write("        <label class=\"w-32 select-none\">\n            ");
             this.Write(this.ToStringHelper.ToStringWithCulture(member.Key));
-            this.Write("\n        </label>\n        <div class=\"flex-1\">\n            ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(member.Value));
+            this.Write("\n        </label>\n        <div class=\"flex-1\">\n        \n");
+     /* SchalarValue */ 
+     if (member.Value is InstanceTemplateSchalarValueData schalarValue) { 
+            this.Write("            <input asp-for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(schalarValue.AspForPath));
+            this.Write("\"/>\n\n");
+     /* SchalarValue検索条件 */ 
+     } else if (member.Value is InstanceTemplateSchalarValueSearchConditionData schalarValueSC) { 
+            this.Write("\n");
+         /* ただのinput */ 
+         if (schalarValueSC.Type == InstanceTemplateSchalarValueSearchConditionData.E_Type.Input) { 
+            this.Write("            <input asp-for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(schalarValueSC.AspFor[0]));
+            this.Write("\" />\n            \n");
+         /* 範囲検索 */ 
+         } else if (schalarValueSC.Type == InstanceTemplateSchalarValueSearchConditionData.E_Type.Range) { 
+            this.Write("            <input asp-for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(schalarValueSC.AspFor[0]));
+            this.Write("\" />\n            〜\n            <input asp-for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(schalarValueSC.AspFor[1]));
+            this.Write("\" />\n            \n");
+         /* ドロップダウン */ 
+         } else if (schalarValueSC.Type == InstanceTemplateSchalarValueSearchConditionData.E_Type.Select) { 
+            this.Write("            <select asp-for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(schalarValueSC.AspFor[0]));
+            this.Write("\"\n                    asp-items=\"@Html.GetEnumSelectList(typeof(");
+            this.Write(this.ToStringHelper.ToStringWithCulture(schalarValueSC.EnumTypeName));
+            this.Write("))\">\n");
+             foreach (var opt in schalarValueSC.Options) { 
+            this.Write("                <option selected=\"selected\" value=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(opt.Key));
+            this.Write("\">\n                    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(opt.Value));
+            this.Write("\n                </option>\n");
+             } 
+            this.Write("            </select>\n");
+         } 
+            this.Write("        \n");
+     /* Children */ 
+     } else if (member.Value is InstanceTemplateChildrenData chlidren) { 
+            this.Write("            @for (var ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(chlidren.i));
+            this.Write(" = 0; ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(chlidren.i));
+            this.Write(" < ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(chlidren.Count));
+            this.Write("; ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(chlidren.i));
+            this.Write("++) {\n                <partial name=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(chlidren.PartialViewName));
+            this.Write("\" for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(chlidren.PartialViewBoundObjectName));
+            this.Write("\" />\n            }\n            <input\n                type=\"button\"\n             " +
+                    "   value=\"追加\"\n                class=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(InstanceTemplateChildrenData.AddButtonCssClass));
+            this.Write(" halapp-btn-secondary\"\n                ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(InstanceTemplateChildrenData.AddButtonSenderIdentifier));
+            this.Write("=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(chlidren.AspForAddChild));
+            this.Write("\"\n                ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(InstanceTemplateChildrenData.AddButtonModelIdentifier));
+            this.Write("=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(chlidren.AddButtonBoundObjectName));
+            this.Write("\" />\n                \n");
+     /* Reference, Reference検索条件 */ 
+     } else if (member.Value is InstanceTemplateReferencenData reference) { 
+            this.Write("            <div>\n                <input type=\"hidden\" asp-for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(reference.AspForKey));
+            this.Write("\" />\n                <input asp-for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(reference.AspForText));
+            this.Write("\" />\n            </div>\n\n");
+     /* Child, Child検索条件 */ 
+     } else if (member.Value is InstanceTemplateChildData child) { 
+            this.Write("            ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(child.ChildView));
+            this.Write("\n            \n");
+     /* Variation */ 
+     } else if (member.Value is IEnumerable<InstanceTemplateVariationData> variations) { 
+         foreach (var variation in variations) { 
+            this.Write("            <div>\n                <label>\n                    <input type=\"radio\"" +
+                    " asp-for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(variation.RadioButtonAspFor));
+            this.Write("\" value=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(variation.Key));
+            this.Write("\" />\n                    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(variation.Name));
+            this.Write("\n                </label>\n                ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(variation.ChildAggregateView));
+            this.Write("\n            </div>\n");
+         } 
+            this.Write("            \n");
+     /* Variation検索条件 */ 
+     } else if (member.Value is IEnumerable<InstanceTemplateVariationSearchConditionData> variationSCs) { 
+         foreach (var variation in variationSCs) { 
+            this.Write("            <label>\n                <input type=\"checkbox\" asp-for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(variation.AspFor));
+            this.Write("\" />\n                ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(variation.PropertyName));
+            this.Write("\n            </label>\n");
+         } 
+            this.Write(" \n");
+     } 
             this.Write("\n        </div>\n    </div>\n");
  } 
-            this.Write("</div>\n");
+            this.Write("\n</div>\n");
             return this.GenerationEnvironment.ToString();
         }
         

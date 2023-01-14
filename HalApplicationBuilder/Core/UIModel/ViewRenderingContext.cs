@@ -5,10 +5,12 @@ using System.Linq;
 namespace HalApplicationBuilder.Core.UIModel {
 
     public class ViewRenderingContext {
-        internal ViewRenderingContext(params string[] ancestors) {
+        internal ViewRenderingContext(IViewModelProvider viewModelProvider, params string[] ancestors) {
+            ViewModelProvider = viewModelProvider;
             _ancestors = ancestors;
         }
 
+        public IViewModelProvider ViewModelProvider { get; }
         private readonly IReadOnlyList<string> _ancestors;
 
         /// <summary>
@@ -52,7 +54,7 @@ namespace HalApplicationBuilder.Core.UIModel {
         /// <param name="isCollection">コレクションなら添字つき</param>
         internal ViewRenderingContext Nest(string propertyName, bool isCollection = false) {
             var nested = isCollection ? $"{propertyName}[{LoopVar}]" : propertyName;
-            return new ViewRenderingContext(_ancestors.Concat(new[] { nested }).ToArray());
+            return new ViewRenderingContext(ViewModelProvider, _ancestors.Concat(new[] { nested }).ToArray());
         }
     }
 

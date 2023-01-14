@@ -12,7 +12,6 @@ namespace HalApplicationBuilder.Core.Members {
     public abstract class AggregateMemberBase :
         IAggregateMember,
         IMvcModelPropertySource,
-        IMemberRenderer,
         IInstanceConverter {
 
         internal AggregateMemberBase(PropertyInfo propertyInfo, Aggregate owner, IServiceProvider serviceProvider) {
@@ -54,10 +53,6 @@ namespace HalApplicationBuilder.Core.Members {
         public abstract IEnumerable<MvcModelProperty> CreateSearchConditionModels();
         public abstract IEnumerable<MvcModelProperty> CreateSearchResultModels();
         public abstract IEnumerable<MvcModelProperty> CreateInstanceModels();
-
-        public abstract string RenderSearchConditionView(ViewRenderingContext context);
-        public abstract string RenderSearchResultView(ViewRenderingContext context);
-        public abstract string RenderInstanceView(ViewRenderingContext context);
         #endregion CodeGenerating
 
 

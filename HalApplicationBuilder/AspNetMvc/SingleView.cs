@@ -14,7 +14,7 @@ namespace HalApplicationBuilder.AspNetMvc {
 
         internal string TransformText(IViewModelProvider viewModelProvider, Core.Config config) {
             var model = viewModelProvider.GetInstanceModel(RootAggregate);
-            var context = new ViewRenderingContext("Model", nameof(Model<UIInstanceBase>.Item));
+            var context = new ViewRenderingContext(viewModelProvider, "Model", nameof(Model<UIInstanceBase>.Item));
             var template = new SingleViewTemplate {
                 ModelTypeFullname = $"{GetType().FullName}.{nameof(Model<UIInstanceBase>)}<{model.RuntimeFullName}>",
                 PageTitle = $"@Model.{nameof(Model<UIInstanceBase>.InstanceName)}",

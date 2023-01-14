@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using HalApplicationBuilder.AspNetMvc;
+using HalApplicationBuilder.Core.Members;
+using HalApplicationBuilder.DotnetEx;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace HalApplicationBuilder.Core.UIModel {
 
@@ -17,14 +20,74 @@ namespace HalApplicationBuilder.Core.UIModel {
         }
 
         internal override string Render(ViewRenderingContext context) {
-            var views = new Dictionary<string, string>();
+            var members = new Dictionary<string, object>();
             foreach (var member in Source.Members) {
-                if (member is not IMemberRenderer renderer) continue;
-                views.Add(member.Name, renderer.RenderSearchConditionView(context));
+                if (member is SchalarValue schalarValue) {
+                    var type = schalarValue.GetPropertyTypeExceptNullable();
+                    var nested = context.Nest(schalarValue.SearchConditonPropName);
+                    if (schalarValue.IsRangeSearchCondition()) {
+                        // 範囲検索
+                        var data = new InstanceTemplateSchalarValueSearchConditionData {
+                            Type = InstanceTemplateSchalarValueSearchConditionData.E_Type.Range,
+                            AspFor = new[] {
+                                $"{nested.AspForPath}.{nameof(FromTo.From)}",
+                                $"{nested.AspForPath}.{nameof(FromTo.To)}",
+                            },
+                        };
+                        members.Add(member.Name, data);
+
+                    } else if (type.IsEnum) {
+                        // enumドロップダウン
+                        var data = new InstanceTemplateSchalarValueSearchConditionData {
+                            Type = InstanceTemplateSchalarValueSearchConditionData.E_Type.Select,
+                            AspFor = new[] { nested.AspForPath },
+                            EnumTypeName = schalarValue.GetSearchConditionCSharpTypeName(),
+                            Options = schalarValue.IsNullable()
+                                ? new[] { KeyValuePair.Create("", "") }
+                                : Array.Empty<KeyValuePair<string, string>>(),
+                        };
+                        members.Add(member.Name, data);
+
+                    } else {
+                        // ただのinput
+                        var data = new InstanceTemplateSchalarValueSearchConditionData {
+                            Type = InstanceTemplateSchalarValueSearchConditionData.E_Type.Input,
+                            AspFor = new[] { nested.AspForPath },
+                        };
+                        members.Add(member.Name, data);
+                    }
+
+                } else if (member is Child child) {
+                    var nested = context.Nest(child.SearchConditionPropName);
+                    var data = new InstanceTemplateChildData {
+                        ChildView = context.ViewModelProvider.GetSearchConditionModel(child.ChildAggregate).Render(nested),
+                    };
+                    members.Add(member.Name, data);
+
+                } else if (member is Variation variation) {
+                    var data = variation.CreateSearchConditionModels().Select(child => {
+                        var nested = context.Nest(child.PropertyName);
+                        return new InstanceTemplateVariationSearchConditionData {
+                            PropertyName = child.PropertyName,
+                            AspFor = nested.AspForPath,
+                        };
+                    });
+                    members.Add(member.Name, data);
+
+                } else if (member is Children children) {
+                    // 何もしない
+
+                } else if (member is Reference reference) {
+                    var nestedKey = context.Nest(reference.SearchConditonPropName).Nest(nameof(ReferenceDTO.InstanceKey));
+                    var nestedText = context.Nest(reference.SearchConditonPropName).Nest(nameof(ReferenceDTO.InstanceName));
+                    var data = new InstanceTemplateReferencenData {
+                        AspForKey = nestedKey.AspForPath,
+                        AspForText = nestedText.AspForPath,
+                    };
+                    members.Add(member.Name, data);
+                }
             }
-            var template = new PartialViewOfInstanceTemplate {
-                Members = views,
-            };
+            var template = new PartialViewOfInstanceTemplate { Members = members };
             return template.TransformText();
         }
     }
@@ -43,11 +106,26 @@ namespace HalApplicationBuilder.Core.UIModel {
         internal override string Render(ViewRenderingContext context) {
             var propViews = new List<string>();
             foreach (var member in Source.Members) {
-                if (member is not IMemberRenderer renderer) continue;
-                propViews.Add(renderer.RenderSearchResultView(context));
+                if (member is SchalarValue schalarValue) {
+                    var nested = context.Nest(schalarValue.SearchResultPropName, isCollection: false);
+                    propViews.Add($"<span>@{nested.Path}</span>");
+
+                } else if (member is Child child) {
+                    // 何もしない
+
+                } else if (member is Variation variation) {
+                    var nested = context.Nest(variation.SearchResultPropName);
+                    propViews.Add($"<span>@{nested.Path}</span>");
+
+                } else if (member is Children children) {
+                    // 何もしない
+
+                } else if (member is Reference reference) {
+                    var nestedKey = context.Nest(reference.SearchResultPropName).Nest(nameof(ReferenceDTO.InstanceKey));
+                    var nestedText = context.Nest(reference.SearchResultPropName).Nest(nameof(ReferenceDTO.InstanceName));
+                    propViews.Add($"<span>@{nestedText.Path}<input type=\"hidden\" asp-for=\"{nestedKey.AspForPath}\"></span>");
+                }
             }
-            //var propViews = Properties
-            //    .Select(member => member.Render.Invoke(context));
             return string.Join(Environment.NewLine, propViews);
         }
     }
@@ -64,14 +142,58 @@ namespace HalApplicationBuilder.Core.UIModel {
         }
 
         internal override string Render(ViewRenderingContext context) {
-            var views = new Dictionary<string, string>();
+            var members = new Dictionary<string, object>();
             foreach (var member in Source.Members) {
-                if (member is not IMemberRenderer renderer) continue;
-                views.Add(member.Name, renderer.RenderInstanceView(context));
+                if (member is SchalarValue schalarValue) {
+                    var nested = context.Nest(schalarValue.InstanceModelPropName);
+                    var data = new InstanceTemplateSchalarValueData {
+                        AspForPath = nested.AspForPath,
+                    };
+                    members.Add(member.Name, data);
+
+                } else if (member is Children children) {
+                    var nested = context.Nest(children.InstanceModelPropName, isCollection: true);
+                    var data = new InstanceTemplateChildrenData {
+                        i = context.LoopVar,
+                        Count = $"{nested.CollectionPath}.{nameof(ICollection<object>.Count)}",
+                        PartialViewName = new InstancePartialView(children.ChildAggregate, Config).FileName,
+                        PartialViewBoundObjectName = nested.AspForPath,
+                        AspForAddChild = new AggregatePath(children.ChildAggregate).Value,
+                        AddButtonBoundObjectName = nested.AspForCollectionPath,
+                    };
+                    members.Add(member.Name, data);
+
+                } else if (member is Reference reference) {
+                    var nestedKey = context.Nest(reference.InstanceModelPropName).Nest(nameof(ReferenceDTO.InstanceKey));
+                    var nestedText = context.Nest(reference.InstanceModelPropName).Nest(nameof(ReferenceDTO.InstanceName));
+                    var data = new InstanceTemplateReferencenData {
+                        AspForKey = nestedKey.AspForPath,
+                        AspForText = nestedText.AspForPath,
+                    };
+                    members.Add(member.Name, data);
+
+                } else if (member is Child child) {
+                    var nested = context.Nest(child.InstanceModelPropName);
+                    var data = new InstanceTemplateChildData {
+                        ChildView = context.ViewModelProvider.GetInstanceModel(child.ChildAggregate).Render(nested),
+                    };
+                    members.Add(member.Name, data);
+
+                } else if (member is Variation variation) {
+                    var nested1 = context.Nest(variation.InstanceModelTypeSwitchPropName); // 区分値(ラジオボタン用)
+                    var data = variation.Variations.Select(child => {
+                        var nested2 = context.Nest(variation.InstanceModelTypeDetailPropName(child));
+                        return new InstanceTemplateVariationData {
+                            Key = child.Key,
+                            Name = child.Value.Name,
+                            RadioButtonAspFor = nested1.AspForPath,
+                            ChildAggregateView = context.ViewModelProvider.GetInstanceModel(child.Value).Render(nested2),
+                        };
+                    });
+                    members.Add(member.Name, data);
+                }
             }
-            var template = new PartialViewOfInstanceTemplate {
-                Members = views,
-            };
+            var template = new PartialViewOfInstanceTemplate { Members = members };
             return template.TransformText();
         }
     }
@@ -169,10 +291,5 @@ namespace HalApplicationBuilder.Core.UIModel {
         IEnumerable<MvcModelProperty> CreateSearchConditionModels();
         IEnumerable<MvcModelProperty> CreateSearchResultModels();
         IEnumerable<MvcModelProperty> CreateInstanceModels();
-    }
-    internal interface IMemberRenderer {
-        string RenderSearchConditionView(ViewRenderingContext context);
-        string RenderSearchResultView(ViewRenderingContext context);
-        string RenderInstanceView(ViewRenderingContext context);
     }
 }

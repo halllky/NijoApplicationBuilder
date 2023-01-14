@@ -24,7 +24,7 @@ namespace HalApplicationBuilder.AspNetMvc {
                 SearchActionName = "Search",
                 LinkToSingleViewActionName = "Detail",
                 //SearchConditionClass = searchConditionModel,
-                SearchConditionView = searchConditionModel.Render(new ViewRenderingContext("Model", nameof(Model<object, object>.SearchCondition))),
+                SearchConditionView = searchConditionModel.Render(new ViewRenderingContext(viewModelProvider, "Model", nameof(Model<object, object>.SearchCondition))),
                 // SearchResultView = searchResultModel.Render(new Core.ViewRenderingContext("Model", nameof(Model<object, object>.SearchResult))),
             };
             return template.TransformText();

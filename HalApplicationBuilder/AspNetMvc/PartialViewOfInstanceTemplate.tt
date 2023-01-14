@@ -5,14 +5,93 @@
 <#@ import namespace="System.Collections.Generic" #>
 
 <div class="border border-gray-300 rounded-lg flex flex-col p-2">
+
 <# foreach (var member in Members) { #>
     <div class="flex flex-col md:flex-row mb-1">
+    
+<#     /* メンバー名 */ #>
         <label class="w-32 select-none">
             <#=member.Key#>
         </label>
         <div class="flex-1">
-            <#=member.Value#>
+        
+<#     /* SchalarValue */ #>
+<#     if (member.Value is InstanceTemplateSchalarValueData schalarValue) { #>
+            <input asp-for="<#=schalarValue.AspForPath#>"/>
+
+<#     /* SchalarValue検索条件 */ #>
+<#     } else if (member.Value is InstanceTemplateSchalarValueSearchConditionData schalarValueSC) { #>
+
+<#         /* ただのinput */ #>
+<#         if (schalarValueSC.Type == InstanceTemplateSchalarValueSearchConditionData.E_Type.Input) { #>
+            <input asp-for="<#=schalarValueSC.AspFor[0]#>" />
+            
+<#         /* 範囲検索 */ #>
+<#         } else if (schalarValueSC.Type == InstanceTemplateSchalarValueSearchConditionData.E_Type.Range) { #>
+            <input asp-for="<#=schalarValueSC.AspFor[0]#>" />
+            〜
+            <input asp-for="<#=schalarValueSC.AspFor[1]#>" />
+            
+<#         /* ドロップダウン */ #>
+<#         } else if (schalarValueSC.Type == InstanceTemplateSchalarValueSearchConditionData.E_Type.Select) { #>
+            <select asp-for="<#=schalarValueSC.AspFor[0]#>"
+                    asp-items="@Html.GetEnumSelectList(typeof(<#=schalarValueSC.EnumTypeName#>))">
+<#             foreach (var opt in schalarValueSC.Options) { #>
+                <option selected="selected" value="<#=opt.Key#>">
+                    <#=opt.Value#>
+                </option>
+<#             } #>
+            </select>
+<#         } #>
+        
+<#     /* Children */ #>
+<#     } else if (member.Value is InstanceTemplateChildrenData chlidren) { #>
+            @for (var <#=chlidren.i#> = 0; <#=chlidren.i#> < <#=chlidren.Count#>; <#=chlidren.i#>++) {
+                <partial name="<#=chlidren.PartialViewName#>" for="<#=chlidren.PartialViewBoundObjectName#>" />
+            }
+            <input
+                type="button"
+                value="追加"
+                class="<#=InstanceTemplateChildrenData.AddButtonCssClass#> halapp-btn-secondary"
+                <#=InstanceTemplateChildrenData.AddButtonSenderIdentifier#>="<#=chlidren.AspForAddChild#>"
+                <#=InstanceTemplateChildrenData.AddButtonModelIdentifier#>="<#=chlidren.AddButtonBoundObjectName#>" />
+                
+<#     /* Reference, Reference検索条件 */ #>
+<#     } else if (member.Value is InstanceTemplateReferencenData reference) { #>
+            <div>
+                <input type="hidden" asp-for="<#=reference.AspForKey#>" />
+                <input asp-for="<#=reference.AspForText#>" />
+            </div>
+
+<#     /* Child, Child検索条件 */ #>
+<#     } else if (member.Value is InstanceTemplateChildData child) { #>
+            <#=child.ChildView#>
+            
+<#     /* Variation */ #>
+<#     } else if (member.Value is IEnumerable<InstanceTemplateVariationData> variations) { #>
+<#         foreach (var variation in variations) { #>
+            <div>
+                <label>
+                    <input type="radio" asp-for="<#=variation.RadioButtonAspFor#>" value="<#=variation.Key#>" />
+                    <#=variation.Name#>
+                </label>
+                <#=variation.ChildAggregateView#>
+            </div>
+<#         } #>
+            
+<#     /* Variation検索条件 */ #>
+<#     } else if (member.Value is IEnumerable<InstanceTemplateVariationSearchConditionData> variationSCs) { #>
+<#         foreach (var variation in variationSCs) { #>
+            <label>
+                <input type="checkbox" asp-for="<#=variation.AspFor#>" />
+                <#=variation.PropertyName#>
+            </label>
+<#         } #>
+ 
+<#     } #>
+
         </div>
     </div>
 <# } #>
+
 </div>
