@@ -35,9 +35,10 @@ namespace HalApplicationBuilder.AspNetMvc {
         internal static string AddButtonModelIdentifier => JsTemplate.AGGREGATE_MODEL_PATH_ATTR;
         internal static string AddButtonCssClass => JsTemplate.ADD_CHILD_BTN;
     }
-    internal class InstanceTemplateReferencenData {
+    internal class InstanceTemplateReferenceData {
         internal string AspForKey { get; set; }
         internal string AspForText { get; set; }
+        internal string AspForGuid { get; set; }
     }
     internal class InstanceTemplateVariationData {
         internal string RadioButtonAspFor { get; set; }

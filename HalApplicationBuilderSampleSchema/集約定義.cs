@@ -12,6 +12,8 @@ namespace HalApplicationBuilderSampleSchema {
         [Required, InstanceName]
         public string 会社名 { get; set; }
 
+        public RefTo<担当者> 主担当 { get; set; }
+
         public Child<連絡先> 連絡先 { get; set; }
 
         [Variation(0, typeof(上場企業資本情報))]
@@ -56,6 +58,7 @@ namespace HalApplicationBuilderSampleSchema {
     public class 担当者 {
         [Key]
         public string ユーザーID { get; set; }
+        [InstanceName]
         public string 氏名 { get; set; }
     }
 

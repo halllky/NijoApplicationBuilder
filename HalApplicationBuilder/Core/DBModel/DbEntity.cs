@@ -48,6 +48,7 @@ namespace HalApplicationBuilder.Core.DBModel {
         private List<DbColumn> _pk;
         private List<DbColumn> _notPk;
         private List<DbColumn> _navigation;
+        private List<DbColumn> _instanceName;
         public IReadOnlyList<DbColumn> PKColumns {
             get {
                 if (_pk == null) BuildValueColumns();
@@ -66,6 +67,13 @@ namespace HalApplicationBuilder.Core.DBModel {
                 return _navigation;
             }
         }
+        public IReadOnlyList<DbColumn> InstanceNameColumns {
+            get {
+                if (_instanceName == null) BuildValueColumns();
+                return _instanceName;
+            }
+        }
+
         private void BuildValueColumns() {
             // 集約で定義されているカラム
             _pk = Source.Members
@@ -106,6 +114,13 @@ namespace HalApplicationBuilder.Core.DBModel {
             foreach (var col in _pk) col.Owner = this;
             foreach (var col in _notPk) col.Owner = this;
             foreach (var col in _navigation) col.Owner = this;
+
+            // TODO リファクタリング
+            _instanceName = Source.Members
+                .Where(member => member.IsInstanceName)
+                .OrderBy(member => member.InstanceNameOrder)
+                .SelectMany(member => member.ToDbColumnModel())
+                .ToList();
         }
 
         internal IEnumerable<DbColumn> GetAllDbProperties() {

@@ -67,7 +67,9 @@ namespace HalApplicationBuilderSampleMvc.EntityFramework.Entities {
     public partial class 会社 {
         public string 会社ID { get; set; }
         public string 会社名 { get; set; }
+        public string 主担当_ユーザーID { get; set; }
         public int? 資本情報 { get; set; }
+        public virtual HalApplicationBuilderSampleMvc.EntityFramework.Entities.担当者 主担当 { get; set; }
         public virtual HalApplicationBuilderSampleMvc.EntityFramework.Entities.連絡先 連絡先 { get; set; }
         public virtual HalApplicationBuilderSampleMvc.EntityFramework.Entities.上場企業資本情報 資本情報__上場企業資本情報 { get; set; }
         public virtual HalApplicationBuilderSampleMvc.EntityFramework.Entities.非上場企業資本情報 資本情報__非上場企業資本情報 { get; set; }

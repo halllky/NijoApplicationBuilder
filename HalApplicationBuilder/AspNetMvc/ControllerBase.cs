@@ -39,10 +39,6 @@ namespace HalApplicationBuilder.AspNetMvc {
                 .Cast<TSearchResult>()
                 .ToList();
 
-            var test = RuntimeContext
-                .AutoComplete(typeof(TSearchResult), "")
-                .ToArray();
-
             return View(MultiViewName, model);
         }
         [HttpGet]
@@ -88,7 +84,7 @@ namespace HalApplicationBuilder.AspNetMvc {
 
             instance.halapp_fields.IsRoot = true;
             var model = new SingleView.Model<TInstanceModel> {
-                InstanceName = new InstanceName(instance, aggregate).Value,
+                InstanceName = InstanceName.Create(instance, dbEntity).Value,
                 Item = instance,
             };
 
@@ -133,5 +129,13 @@ namespace HalApplicationBuilder.AspNetMvc {
             return PartialView(partialView.AspViewPath, instance);
         }
         #endregion CreateView, SingleView
+
+
+        [HttpGet]
+        public virtual IActionResult Autocomplete(Guid aggregateGuid, string term) {
+            var aggregate = RuntimeContext.FindAggregateByGuid(aggregateGuid);
+            var items = RuntimeContext.LoadAutoCompleteDataSource(aggregate, term);
+            return Json(items.ToArray());
+        }
     }
 }

@@ -1,9 +1,27 @@
 ﻿using System;
+using System.Collections.Generic;
+using HalApplicationBuilder.Core.DBModel;
+using HalApplicationBuilder.DotnetEx;
+
 namespace HalApplicationBuilder.Core.UIModel {
-    internal class InstanceName {
-        internal InstanceName(object instance, Core.Aggregate aggregate) {
+
+    public class InstanceName : ValueObject {
+        public static InstanceName Create(object dbInstance, DbEntity dbEntity) {
+            var type = dbInstance.GetType();
+            var name = "";
+            foreach (var col in dbEntity.InstanceNameColumns) {
+                var prop = type.GetProperty(col.PropertyName);
+                name += prop.GetValue(dbInstance);
+            }
+            return new InstanceName { Value = name };
         }
 
-        internal string Value { get; }
+        private InstanceName() { }
+
+        public string Value { get; private init; }
+
+        protected override IEnumerable<object> ValueObjectIdentifiers() {
+            yield return Value;
+        }
     }
 }

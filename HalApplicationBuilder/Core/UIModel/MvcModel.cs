@@ -80,9 +80,11 @@ namespace HalApplicationBuilder.Core.UIModel {
                 } else if (member is Reference reference) {
                     var nestedKey = context.Nest(reference.SearchConditonPropName).Nest(nameof(ReferenceDTO.InstanceKey));
                     var nestedText = context.Nest(reference.SearchConditonPropName).Nest(nameof(ReferenceDTO.InstanceName));
-                    var data = new InstanceTemplateReferencenData {
+                    var nestedGuid = context.Nest(reference.SearchConditonPropName).Nest(nameof(ReferenceDTO.AggreageteGuid));
+                    var data = new InstanceTemplateReferenceData {
                         AspForKey = nestedKey.AspForPath,
                         AspForText = nestedText.AspForPath,
+                        AspForGuid = nestedGuid.AspForPath,
                     };
                     members.Add(member.Name, data);
                 }
@@ -166,9 +168,11 @@ namespace HalApplicationBuilder.Core.UIModel {
                 } else if (member is Reference reference) {
                     var nestedKey = context.Nest(reference.InstanceModelPropName).Nest(nameof(ReferenceDTO.InstanceKey));
                     var nestedText = context.Nest(reference.InstanceModelPropName).Nest(nameof(ReferenceDTO.InstanceName));
-                    var data = new InstanceTemplateReferencenData {
+                    var nestedGuid = context.Nest(reference.SearchConditonPropName).Nest(nameof(ReferenceDTO.AggreageteGuid));
+                    var data = new InstanceTemplateReferenceData {
                         AspForKey = nestedKey.AspForPath,
                         AspForText = nestedText.AspForPath,
+                        AspForGuid = nestedGuid.AspForPath,
                     };
                     members.Add(member.Name, data);
 

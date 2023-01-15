@@ -57,10 +57,11 @@
                 <#=InstanceTemplateChildrenData.AddButtonModelIdentifier#>="<#=chlidren.AddButtonBoundObjectName#>" />
                 
 <#     /* Reference, Reference検索条件 */ #>
-<#     } else if (member.Value is InstanceTemplateReferencenData reference) { #>
+<#     } else if (member.Value is InstanceTemplateReferenceData reference) { #>
             <div>
-                <input type="hidden" asp-for="<#=reference.AspForKey#>" />
-                <input asp-for="<#=reference.AspForText#>" class="border" />
+                <input type="hidden" asp-for="<#=reference.AspForKey#>" class="<#=JsTemplate.AUTOCOMPLETE_VALUE#>" />
+                <input type="hidden" asp-for="<#=reference.AspForGuid#>" class="<#=JsTemplate.AGGREGATE_GUID#>" />
+                <input asp-for="<#=reference.AspForText#>" class="border <#=JsTemplate.AUTOCOMPLETE_INPUT#>" />
             </div>
 
 <#     /* Child, Child検索条件 */ #>

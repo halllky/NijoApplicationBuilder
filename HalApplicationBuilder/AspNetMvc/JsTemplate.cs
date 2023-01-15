@@ -46,7 +46,9 @@ namespace HalApplicationBuilder.AspNetMvc {
             this.Write(this.ToStringHelper.ToStringWithCulture(ADD_CHILD_BTN));
             this.Write("\').on(\'click\', Halapp.addNewChild);\n                partialView.find(\'.");
             this.Write(this.ToStringHelper.ToStringWithCulture(REMOVE_BTN));
-            this.Write(@"').on('click', Halapp.removeChild);
+            this.Write("\').on(\'click\', Halapp.removeChild);\n                partialView.find(\'.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AUTOCOMPLETE_INPUT));
+            this.Write(@"').autocomplete(Halapp.autoCompleteOption);
                 partialView.insertBefore(button);
             }).catch(err => {
                 console.trace('ERROR!!', err);
@@ -56,8 +58,52 @@ namespace HalApplicationBuilder.AspNetMvc {
             const button = $(event.target);
             const hiddenField = button.siblings('.");
             this.Write(this.ToStringHelper.ToStringWithCulture(REMOVE_HIDDEN_FIELD));
-            this.Write("\');\n            hiddenField.val(\'true\');\n            button.parent().css(\'display" +
-                    "\', \'none\');\n        },\n        \n        // const form = $(\'#");
+            this.Write(@"');
+            hiddenField.val('true');
+            button.parent().css('display', 'none');
+        },
+        autoCompleteOption: (i, el) => {
+            const element = $(el);
+            element.autocomplete({
+                minLength: 0, @* 0文字入力以上でサジェスチョン有効 *@
+                source: ({ term }, response) => {
+                    const controllerName = '@(Context.Request.RouteValues[""controller""].ToString())';
+                    const aggregateGuid = element.siblings('.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AGGREGATE_GUID));
+            this.Write("\').val();\n                    $.ajax({\n                        type: \'GET\',\n     " +
+                    "                   url: `/${controllerName}/");
+            this.Write(this.ToStringHelper.ToStringWithCulture(NAMEOF_AUTOCOMPLETE_ACTION));
+            this.Write(@"`,
+                        data: { aggregateGuid, term },
+                    }).done(data => {
+                        response(data);
+                    }).fail(res => {
+                        console.error(res.responseJSON); // TODO エラーハンドリング
+                        response([]);
+                    });
+                },
+                @* 矢印キー上下で選択肢を移動したときに発火 *@
+                focus: (event, ui) => {
+                    const hiddenField = element.siblings('.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AUTOCOMPLETE_VALUE));
+            this.Write(@"');
+                    $(event.target).val(ui.item.label);
+                    hiddenField.val(ui.item.value);
+                    return false; @* input(text)にvalueでなくlabelを表示するため既定の処理を殺す *@
+                },
+                @* 選択確定時に発火 *@
+                select: (event, ui) => {
+                    const hiddenField = element.siblings('.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AUTOCOMPLETE_VALUE));
+            this.Write(@"');
+                    $(event.target).val(ui.item.label);
+                    hiddenField.val(ui.item.value);
+                    return false; @* input(text)にvalueでなくlabelを表示するため既定の処理を殺す *@
+                },
+            });
+        },
+        
+        // const form = $('#");
             this.Write(this.ToStringHelper.ToStringWithCulture(FORM_ID));
             this.Write("\');\n        // const formFooter = $(\'#");
             this.Write(this.ToStringHelper.ToStringWithCulture(FORM_FOOTER_ID));
@@ -65,7 +111,9 @@ namespace HalApplicationBuilder.AspNetMvc {
             this.Write(this.ToStringHelper.ToStringWithCulture(ADD_CHILD_BTN));
             this.Write("\').on(\'click\', Halapp.addNewChild);\n    $(\'.");
             this.Write(this.ToStringHelper.ToStringWithCulture(REMOVE_BTN));
-            this.Write("\').on(\'click\', Halapp.removeChild);\n</script>");
+            this.Write("\').on(\'click\', Halapp.removeChild);\n    $(\'.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AUTOCOMPLETE_INPUT));
+            this.Write("\').each(Halapp.autoCompleteOption);\n</script>");
             return this.GenerationEnvironment.ToString();
         }
         

@@ -90,12 +90,20 @@ namespace HalApplicationBuilder.AspNetMvc {
             this.Write(this.ToStringHelper.ToStringWithCulture(chlidren.AddButtonBoundObjectName));
             this.Write("\" />\n                \n");
      /* Reference, Reference検索条件 */ 
-     } else if (member.Value is InstanceTemplateReferencenData reference) { 
+     } else if (member.Value is InstanceTemplateReferenceData reference) { 
             this.Write("            <div>\n                <input type=\"hidden\" asp-for=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(reference.AspForKey));
+            this.Write("\" class=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(JsTemplate.AUTOCOMPLETE_VALUE));
+            this.Write("\" />\n                <input type=\"hidden\" asp-for=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(reference.AspForGuid));
+            this.Write("\" class=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(JsTemplate.AGGREGATE_GUID));
             this.Write("\" />\n                <input asp-for=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(reference.AspForText));
-            this.Write("\" class=\"border\" />\n            </div>\n\n");
+            this.Write("\" class=\"border ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(JsTemplate.AUTOCOMPLETE_INPUT));
+            this.Write("\" />\n            </div>\n\n");
      /* Child, Child検索条件 */ 
      } else if (member.Value is InstanceTemplateChildData child) { 
             this.Write("            ");

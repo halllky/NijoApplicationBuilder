@@ -19,6 +19,7 @@
                 const partialView = $($.parseHTML(data));
                 partialView.find('.halapp-add-child').on('click', Halapp.addNewChild);
                 partialView.find('.halapp-remove-button').on('click', Halapp.removeChild);
+                partialView.find('.halapp-autocomplete').autocomplete(Halapp.autoCompleteOption);
                 partialView.insertBefore(button);
             }).catch(err => {
                 console.trace('ERROR!!', err);
@@ -30,10 +31,45 @@
             hiddenField.val('true');
             button.parent().css('display', 'none');
         },
+        autoCompleteOption: (i, el) => {
+            const element = $(el);
+            element.autocomplete({
+                minLength: 0, @* 0文字入力以上でサジェスチョン有効 *@
+                source: ({ term }, response) => {
+                    const controllerName = '@(Context.Request.RouteValues["controller"].ToString())';
+                    const aggregateGuid = element.siblings('.halapp-aggregate-guid').val();
+                    $.ajax({
+                        type: 'GET',
+                        url: `/${controllerName}/Autocomplete`,
+                        data: { aggregateGuid, term },
+                    }).done(data => {
+                        response(data);
+                    }).fail(res => {
+                        console.error(res.responseJSON); // TODO エラーハンドリング
+                        response([]);
+                    });
+                },
+                @* 矢印キー上下で選択肢を移動したときに発火 *@
+                focus: (event, ui) => {
+                    const hiddenField = element.siblings('.halapp-autocomplete-value');
+                    $(event.target).val(ui.item.label);
+                    hiddenField.val(ui.item.value);
+                    return false; @* input(text)にvalueでなくlabelを表示するため既定の処理を殺す *@
+                },
+                @* 選択確定時に発火 *@
+                select: (event, ui) => {
+                    const hiddenField = element.siblings('.halapp-autocomplete-value');
+                    $(event.target).val(ui.item.label);
+                    hiddenField.val(ui.item.value);
+                    return false; @* input(text)にvalueでなくlabelを表示するため既定の処理を殺す *@
+                },
+            });
+        },
         
         // const form = $('#halapp-single-view-form');
         // const formFooter = $('#halapp-single-view-form-footer');
     }
     $('.halapp-add-child').on('click', Halapp.addNewChild);
     $('.halapp-remove-button').on('click', Halapp.removeChild);
+    $('.halapp-autocomplete').each(Halapp.autoCompleteOption);
 </script>

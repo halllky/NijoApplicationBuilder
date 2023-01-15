@@ -36,6 +36,22 @@
     <div class="flex flex-col md:flex-row mb-1">
     
         <label class="w-32 select-none">
+            主担当
+        </label>
+        <div class="flex-1">
+        
+            <div>
+                <input type="hidden" asp-for="主担当.InstanceKey" class="halapp-autocomplete-value" />
+                <input type="hidden" asp-for="主担当.AggreageteGuid" class="halapp-aggregate-guid" />
+                <input asp-for="主担当.InstanceName" class="border halapp-autocomplete" />
+            </div>
+
+
+        </div>
+    </div>
+    <div class="flex flex-col md:flex-row mb-1">
+    
+        <label class="w-32 select-none">
             連絡先
         </label>
         <div class="flex-1">

@@ -18,6 +18,7 @@ namespace HalApplicationBuilder.Core {
         internal Type UnderlyingType { get; }
 
         public string Name => UnderlyingType.Name;
+        public Guid GUID => UnderlyingType.GUID;
 
 
         public IAggregateMember Parent { get; }

@@ -65,7 +65,7 @@ namespace HalApplicationBuilder.Core.Members {
             yield return new MvcModelProperty {
                 CSharpTypeName = typeof(ReferenceDTO).FullName,
                 PropertyName = InstanceModelPropName,
-                Initializer = "new()",
+                Initializer = $"new() {{ {nameof(ReferenceDTO.AggreageteGuid)} = new Guid(\"{RefTarget.GUID}\") }}",
             };
         }
 

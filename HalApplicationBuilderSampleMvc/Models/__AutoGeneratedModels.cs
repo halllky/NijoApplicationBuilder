@@ -6,6 +6,7 @@ namespace HalApplicationBuilderSampleMvc.Models {
     public class 会社__SearchCondition {
         public string 会社ID { get; set; }
         public string 会社名 { get; set; }
+        public HalApplicationBuilder.Core.UIModel.ReferenceDTO 主担当 { get; set; } = new();
         public HalApplicationBuilderSampleMvc.Models.連絡先__SearchCondition 連絡先 { get; set; } = new();
         public bool 資本情報_上場企業資本情報 { get; set; } = true;
         public bool 資本情報_非上場企業資本情報 { get; set; } = true;
@@ -40,6 +41,7 @@ namespace HalApplicationBuilderSampleMvc.Models {
     public class 会社__SearchResult : HalApplicationBuilder.Core.UIModel.SearchResultBase {
         public string 会社ID { get; set; }
         public string 会社名 { get; set; }
+        public string 主担当 { get; set; }
         public string 電話番号 { get; set; }
         public string 郵便番号 { get; set; }
         public string 住所1 { get; set; }
@@ -55,6 +57,7 @@ namespace HalApplicationBuilderSampleMvc.Models {
     public class 会社 : HalApplicationBuilder.Core.UIModel.UIInstanceBase {
         public string 会社ID { get; set; }
         public string 会社名 { get; set; }
+        public HalApplicationBuilder.Core.UIModel.ReferenceDTO 主担当 { get; set; } = new() { AggreageteGuid = new Guid("0335fc65-9904-3536-a176-61454dd6e2f4") };
         public HalApplicationBuilderSampleMvc.Models.連絡先 連絡先 { get; set; } = new();
         public int? 資本情報 { get; set; }
         public HalApplicationBuilderSampleMvc.Models.上場企業資本情報 資本情報_上場企業資本情報 { get; set; } = new();
@@ -79,7 +82,7 @@ namespace HalApplicationBuilderSampleMvc.Models {
     public class 営業所 : HalApplicationBuilder.Core.UIModel.UIInstanceBase {
         public string 営業所名 { get; set; }
         public List<HalApplicationBuilderSampleMvc.Models.支店> 支店 { get; set; } = new();
-        public HalApplicationBuilder.Core.UIModel.ReferenceDTO 担当者 { get; set; } = new();
+        public HalApplicationBuilder.Core.UIModel.ReferenceDTO 担当者 { get; set; } = new() { AggreageteGuid = new Guid("0335fc65-9904-3536-a176-61454dd6e2f4") };
     }
     public class 支店 : HalApplicationBuilder.Core.UIModel.UIInstanceBase {
         public string 支店名 { get; set; }

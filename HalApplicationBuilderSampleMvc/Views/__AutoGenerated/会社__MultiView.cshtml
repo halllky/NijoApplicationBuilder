@@ -48,6 +48,22 @@
     <div class="flex flex-col md:flex-row mb-1">
     
         <label class="w-32 select-none">
+            主担当
+        </label>
+        <div class="flex-1">
+        
+            <div>
+                <input type="hidden" asp-for="SearchCondition.主担当.InstanceKey" class="halapp-autocomplete-value" />
+                <input type="hidden" asp-for="SearchCondition.主担当.AggreageteGuid" class="halapp-aggregate-guid" />
+                <input asp-for="SearchCondition.主担当.InstanceName" class="border halapp-autocomplete" />
+            </div>
+
+
+        </div>
+    </div>
+    <div class="flex flex-col md:flex-row mb-1">
+    
+        <label class="w-32 select-none">
             連絡先
         </label>
         <div class="flex-1">
@@ -173,6 +189,9 @@
                         会社名
                     </th>
                     <th>
+                        主担当
+                    </th>
+                    <th>
                         電話番号
                     </th>
                     <th>
@@ -208,6 +227,9 @@
                         </td>
                         <td>
                             @Model.SearchResult[i].会社名
+                        </td>
+                        <td>
+                            @Model.SearchResult[i].主担当
                         </td>
                         <td>
                             @Model.SearchResult[i].電話番号
