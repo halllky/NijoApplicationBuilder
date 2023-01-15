@@ -38,6 +38,11 @@ namespace HalApplicationBuilder.AspNetMvc {
                 .Search(model.SearchCondition)
                 .Cast<TSearchResult>()
                 .ToList();
+
+            var test = RuntimeContext
+                .AutoComplete(typeof(TSearchResult), "")
+                .ToArray();
+
             return View(MultiViewName, model);
         }
         [HttpGet]

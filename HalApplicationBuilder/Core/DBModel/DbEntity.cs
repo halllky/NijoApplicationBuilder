@@ -43,6 +43,7 @@ namespace HalApplicationBuilder.Core.DBModel {
             ?? Source.UnderlyingType.Name;
         public string RuntimeFullName
             => _config.EntityNamespace + "." + ClassName;
+        public string DbSetName => ClassName;
 
         private List<DbColumn> _pk;
         private List<DbColumn> _notPk;

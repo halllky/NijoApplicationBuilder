@@ -11,7 +11,7 @@ namespace <#=DbContextNamespace#> {
     
 <# /* DbSetプロパティの生成 */ #>
 <# foreach (var entityClass in EntityClasses) { #>
-        public DbSet<<#=entityClass.RuntimeFullName#>> <#=entityClass.ClassName#> { get; set; }
+        public DbSet<<#=entityClass.RuntimeFullName#>> <#=entityClass.DbSetName#> { get; set; }
 <# }#>
 
 <# /* OnModelCreatingの定義 */ #>
