@@ -29,14 +29,28 @@ namespace HalApplicationBuilder.Core.Members {
             yield break;
         }
 
+        private IReadOnlyList<DbColumn> _refPKs;
+        private IReadOnlyList<DbColumn> RefPKs {
+            get {
+                if (_refPKs == null) {
+                    _refPKs = DbSchema
+                        .GetDbEntity(RefTarget)
+                        .PKColumns
+                        .Select(foreignKey => new DbColumn {
+                            CSharpTypeName = foreignKey.CSharpTypeName,
+                            PropertyName = $"{Name}_{foreignKey.PropertyName}",
+                        })
+                        .ToList();
+                }
+                return _refPKs;
+            }
+        }
+
         public override IEnumerable<DbColumn> ToDbColumnModel() {
             var refTargetDbEntity = DbSchema.GetDbEntity(RefTarget);
             // 参照先DBの主キー
-            foreach (var foreignKey in refTargetDbEntity.PKColumns) {
-                yield return new DbColumn {
-                    CSharpTypeName = foreignKey.CSharpTypeName,
-                    PropertyName = $"{Name}_{foreignKey.PropertyName}",
-                };
+            foreach (var foreignKey in RefPKs) {
+                yield return foreignKey;
             }
             // ナビゲーションプロパティ
             yield return new DbColumn {
@@ -73,12 +87,26 @@ namespace HalApplicationBuilder.Core.Members {
         internal string SearchResultPropName => Name;
         internal string InstanceModelPropName => Name;
 
-        public override void MapUIToDB(object instance, object dbEntity, RuntimeContext context) {
-            // TODO
+        public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context) {
+            var dbEntity = context.DbSchema.GetDbEntity(Owner);
+            var uiProp = uiInstance.GetType().GetProperty(InstanceModelPropName);
+            var referenceDto = (ReferenceDTO)uiProp.GetValue(uiInstance);
+            var parsed = InstanceKey.TryParse(referenceDto.InstanceKey, dbEntity, out var instanceKey);
+            var dbType = dbInstance.GetType();
+            foreach (var column in RefPKs) {
+                var dbProp = dbType.GetProperty(column.PropertyName);
+                var value = parsed ? instanceKey.ValuesDictionary[column] : null;
+                dbProp.SetValue(dbInstance, value);
+            }
         }
 
         public override void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context) {
-            // TODO
+            var dbEntity = context.DbSchema.GetDbEntity(Owner);
+            var instanceKey = InstanceKey.Create(dbInstance, dbEntity);
+            var uiProp = uiInstance.GetType().GetProperty(InstanceModelPropName);
+            var referenceDto = (ReferenceDTO)uiProp.GetValue(uiInstance);
+            referenceDto.InstanceKey = instanceKey.StringValue;
+            referenceDto.InstanceName = InstanceName.Create(dbInstance, dbEntity).Value;
         }
 
         public override void BuildSelectStatement(SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix) {
