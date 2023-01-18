@@ -10,7 +10,7 @@
 
 ## アーキテクチャ
 ```mermaid
-graph TD;
+graph LR;
 プログラマ -- 作成 --> C#集約定義
 プログラマ -- 作成 --> プログラマーが書いたソース
 プログラマ -- 作成 --> プログラマーが書いたEFソース
@@ -18,6 +18,7 @@ C#集約定義 --> HalApplicationBuidlerソース自動生成機能
 HalApplicationBuidlerソース自動生成機能 -- 自動生成 --> 自動生成されたEFソース
 HalApplicationBuidlerソース自動生成機能 -- 自動生成 --> 自動生成されたソース
 HalApplicationBuidlerソース自動生成機能 -- 自動生成 --> DB定義更新SQL
+プログラマ　-- 手修正 --> DB定義更新SQL
 
 subgraph ASP.NETCoreMVC
   プログラマーが書いたソース
@@ -29,13 +30,10 @@ subgraph EntityFrameworkCore
   自動生成されたEFソース
 end
 
-ASP.NETCoreMVC <--> EntityFrameworkCore
-EntityFrameworkCore <--> DB
-
 subgraph DB
   SQLite
-  DB定義更新SQL
 end
+
 ```
 
 ## デバッグ方法
