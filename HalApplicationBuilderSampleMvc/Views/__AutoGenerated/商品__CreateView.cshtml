@@ -1,17 +1,17 @@
 ﻿
-@model HalApplicationBuilder.AspNetMvc.CreateView.Model<HalApplicationBuilderSampleMvc.Models.担当者>;
+@model HalApplicationBuilder.AspNetMvc.CreateView.Model<HalApplicationBuilderSampleMvc.Models.商品>;
 @{
-    ViewData["Title"] = "担当者 > 新規作成";
+    ViewData["Title"] = "商品 > 新規作成";
 }
 
 <h1 class="font-bold text-[18px] select-none">
-    担当者 > 新規作成
+    商品 > 新規作成
 </h1>
 
 <div asp-validation-summary="All" class="mt-2 text-xs text-red-600 dark:text-red-400"></div>
 
 <form id="halapp-single-view-form" class="mt-2">
-    <partial name="_担当者__Partial.cshtml" for="Item" />
+    <partial name="_商品__Partial.cshtml" for="Item" />
     <div id="halapp-single-view-form-footer">
         <button asp-action="Create" formmethod="post" class="halapp-btn-primary">作成</button>
     </div>

@@ -11,8 +11,8 @@ namespace HalApplicationBuilderSampleMvc.EntityFramework {
         /// <summary>
         /// オートコンプリートのデータソースを読み込む
         /// </summary>
-        public IEnumerable<HalApplicationBuilderSampleMvc.EntityFramework.Entities.会社> LoadAutoCompleteSource_会社(string keyword = null) {
-            var query = (IQueryable<HalApplicationBuilderSampleMvc.EntityFramework.Entities.会社>)this.会社;
+        public IEnumerable<HalApplicationBuilderSampleMvc.EntityFramework.Entities.商品> LoadAutoCompleteSource_商品(string keyword = null) {
+            var query = (IQueryable<HalApplicationBuilderSampleMvc.EntityFramework.Entities.商品>)this.商品;
             return query
                 .Take(100 + 1)
                 .ToArray();
@@ -20,8 +20,8 @@ namespace HalApplicationBuilderSampleMvc.EntityFramework {
         /// <summary>
         /// オートコンプリートのデータソースを読み込む
         /// </summary>
-        public IEnumerable<HalApplicationBuilderSampleMvc.EntityFramework.Entities.担当者> LoadAutoCompleteSource_担当者(string keyword = null) {
-            var query = (IQueryable<HalApplicationBuilderSampleMvc.EntityFramework.Entities.担当者>)this.担当者;
+        public IEnumerable<HalApplicationBuilderSampleMvc.EntityFramework.Entities.売上> LoadAutoCompleteSource_売上(string keyword = null) {
+            var query = (IQueryable<HalApplicationBuilderSampleMvc.EntityFramework.Entities.売上>)this.売上;
             return query
                 .Take(100 + 1)
                 .ToArray();

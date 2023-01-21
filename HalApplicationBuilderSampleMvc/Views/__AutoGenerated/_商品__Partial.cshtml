@@ -1,5 +1,5 @@
 ﻿
-@model HalApplicationBuilderSampleMvc.Models.上場企業資本情報;
+@model HalApplicationBuilderSampleMvc.Models.商品;
 
 <div class="halapp-aggregate-container">
     @if (Model.halapp_fields.IsRoot == false) {
@@ -12,11 +12,11 @@
     <div class="flex flex-col md:flex-row mb-1">
     
         <label class="w-32 select-none">
-            自己資本比率
+            商品コード
         </label>
         <div class="flex-1">
         
-            <input asp-for="自己資本比率" class="border" />
+            <input asp-for="商品コード" class="border" />
 
 
         </div>
@@ -24,11 +24,23 @@
     <div class="flex flex-col md:flex-row mb-1">
     
         <label class="w-32 select-none">
-            利益率
+            商品名
         </label>
         <div class="flex-1">
         
-            <input asp-for="利益率" class="border" />
+            <input asp-for="商品名" class="border" />
+
+
+        </div>
+    </div>
+    <div class="flex flex-col md:flex-row mb-1">
+    
+        <label class="w-32 select-none">
+            単価
+        </label>
+        <div class="flex-1">
+        
+            <input asp-for="単価" class="border" />
 
 
         </div>

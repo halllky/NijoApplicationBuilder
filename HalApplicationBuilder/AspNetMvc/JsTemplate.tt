@@ -5,8 +5,8 @@
 <#@ import namespace="System.Collections.Generic" #>
 
 <script>
-    const Halapp = {
-        addNewChild: event => {
+    const setHalappFunctions = targetElementJQueryObject => {
+        targetElementJQueryObject.find('.<#=ADD_CHILD_BTN#>').on('click', event => {
             const controllerName = '@(Context.Request.RouteValues["controller"].ToString())';
             const button = $(event.target);
             const <#=AGGREGATE_TREE_PATH_ARG#> = button.attr('<#=AGGREGATE_TREE_PATH_ATTR#>');
@@ -22,21 +22,21 @@
                 },
             }).then((data, textStatus, jqXHR) => {
                 const partialView = $($.parseHTML(data));
-                partialView.find('.<#=ADD_CHILD_BTN#>').on('click', Halapp.addNewChild);
-                partialView.find('.<#=REMOVE_BTN#>').on('click', Halapp.removeChild);
-                partialView.find('.<#=AUTOCOMPLETE_INPUT#>').autocomplete(Halapp.autoCompleteOption);
                 partialView.insertBefore(button);
+                setHalappFunctions(partialView);
             }).catch(err => {
                 console.trace('ERROR!!', err);
             });
-        },
-        removeChild: event => {
+        });
+        
+        targetElementJQueryObject.find('.<#=REMOVE_BTN#>').on('click', event => {
             const button = $(event.target);
             const hiddenField = button.siblings('.<#=REMOVE_HIDDEN_FIELD#>');
             hiddenField.val('true');
             button.parent().css('display', 'none');
-        },
-        autoCompleteOption: (i, el) => {
+        });
+        
+        targetElementJQueryObject.find('.<#=AUTOCOMPLETE_INPUT#>').each((_, el) => {
             const element = $(el);
             element.autocomplete({
                 minLength: 0, @* 0文字入力以上でサジェスチョン有効 *@
@@ -69,12 +69,11 @@
                     return false; @* input(text)にvalueでなくlabelを表示するため既定の処理を殺す *@
                 },
             });
-        },
-        
-        // const form = $('#<#=FORM_ID#>');
-        // const formFooter = $('#<#=FORM_FOOTER_ID#>');
+        });
     }
-    $('.<#=ADD_CHILD_BTN#>').on('click', Halapp.addNewChild);
-    $('.<#=REMOVE_BTN#>').on('click', Halapp.removeChild);
-    $('.<#=AUTOCOMPLETE_INPUT#>').each(Halapp.autoCompleteOption);
+        
+    setHalappFunctions($(document));
+    
+    // const formFooter = $('#<#=FORM_FOOTER_ID#>');
+    // const form = $('#<#=FORM_ID#>');
 </script>

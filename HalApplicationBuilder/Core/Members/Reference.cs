@@ -88,7 +88,7 @@ namespace HalApplicationBuilder.Core.Members {
         internal string InstanceModelPropName => Name;
 
         public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context) {
-            var dbEntity = context.DbSchema.GetDbEntity(Owner);
+            var dbEntity = context.DbSchema.GetDbEntity(RefTarget);
             var uiProp = uiInstance.GetType().GetProperty(InstanceModelPropName);
             var referenceDto = (ReferenceDTO)uiProp.GetValue(uiInstance);
             var parsed = InstanceKey.TryParse(referenceDto.InstanceKey, dbEntity, out var instanceKey);
@@ -101,7 +101,7 @@ namespace HalApplicationBuilder.Core.Members {
         }
 
         public override void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context) {
-            var dbEntity = context.DbSchema.GetDbEntity(Owner);
+            var dbEntity = context.DbSchema.GetDbEntity(RefTarget);
             var instanceKey = InstanceKey.Create(dbInstance, dbEntity);
             var uiProp = uiInstance.GetType().GetProperty(InstanceModelPropName);
             var referenceDto = (ReferenceDTO)uiProp.GetValue(uiInstance);

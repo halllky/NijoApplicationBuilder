@@ -1,5 +1,5 @@
 ﻿
-@model HalApplicationBuilderSampleMvc.Models.連絡先;
+@model HalApplicationBuilderSampleMvc.Models.売上;
 
 <div class="halapp-aggregate-container">
     @if (Model.halapp_fields.IsRoot == false) {
@@ -12,11 +12,11 @@
     <div class="flex flex-col md:flex-row mb-1">
     
         <label class="w-32 select-none">
-            電話番号
+            ID
         </label>
         <div class="flex-1">
         
-            <input asp-for="電話番号" class="border" />
+            <input asp-for="ID" class="border" />
 
 
         </div>
@@ -24,11 +24,11 @@
     <div class="flex flex-col md:flex-row mb-1">
     
         <label class="w-32 select-none">
-            郵便番号
+            売上日時
         </label>
         <div class="flex-1">
         
-            <input asp-for="郵便番号" class="border" />
+            <input asp-for="売上日時" class="border" />
 
 
         </div>
@@ -36,36 +36,20 @@
     <div class="flex flex-col md:flex-row mb-1">
     
         <label class="w-32 select-none">
-            住所1
+            明細
         </label>
         <div class="flex-1">
         
-            <input asp-for="住所1" class="border" />
-
-
-        </div>
-    </div>
-    <div class="flex flex-col md:flex-row mb-1">
-    
-        <label class="w-32 select-none">
-            住所2
-        </label>
-        <div class="flex-1">
-        
-            <input asp-for="住所2" class="border" />
-
-
-        </div>
-    </div>
-    <div class="flex flex-col md:flex-row mb-1">
-    
-        <label class="w-32 select-none">
-            住所3
-        </label>
-        <div class="flex-1">
-        
-            <input asp-for="住所3" class="border" />
-
+            @for (var i = 0; i < Model.明細.Count; i++) {
+                <partial name="_売上明細__Partial.cshtml" for="明細[i]" />
+            }
+            <input
+                type="button"
+                value="追加"
+                class="halapp-add-child halapp-btn-secondary"
+                halapp-aggregate-tree-path="売上.明細"
+                halapp-aggregate-model-path="明細" />
+                
 
         </div>
     </div>

@@ -1,12 +1,12 @@
 ﻿
-@model HalApplicationBuilder.AspNetMvc.MultiView.Model<HalApplicationBuilderSampleMvc.Models.担当者__SearchCondition, HalApplicationBuilderSampleMvc.Models.担当者__SearchResult>;
+@model HalApplicationBuilder.AspNetMvc.MultiView.Model<HalApplicationBuilderSampleMvc.Models.商品__SearchCondition, HalApplicationBuilderSampleMvc.Models.商品__SearchResult>;
 @{
-    ViewData["Title"] = "担当者";
+    ViewData["Title"] = "商品";
 }
 
 <div class="flex gap-3 items-center">
     <h1 class="font-bold text-[18px] select-none">
-        担当者
+        商品
     </h1>
     <a asp-action="New" class="halapp-btn-link">新規作成</a>
 </div>
@@ -20,12 +20,12 @@
     <div class="flex flex-col md:flex-row mb-1">
     
         <label class="w-32 select-none">
-            ユーザーID
+            商品コード
         </label>
         <div class="flex-1">
         
 
-            <input asp-for="SearchCondition.ユーザーID" class="border" />
+            <input asp-for="SearchCondition.商品コード" class="border" />
             
         
 
@@ -34,12 +34,28 @@
     <div class="flex flex-col md:flex-row mb-1">
     
         <label class="w-32 select-none">
-            氏名
+            商品名
         </label>
         <div class="flex-1">
         
 
-            <input asp-for="SearchCondition.氏名" class="border" />
+            <input asp-for="SearchCondition.商品名" class="border" />
+            
+        
+
+        </div>
+    </div>
+    <div class="flex flex-col md:flex-row mb-1">
+    
+        <label class="w-32 select-none">
+            単価
+        </label>
+        <div class="flex-1">
+        
+
+            <input asp-for="SearchCondition.単価.From" class="border" />
+            〜
+            <input asp-for="SearchCondition.単価.To" class="border" />
             
         
 
@@ -61,10 +77,13 @@
                 <tr>
                     <th></th>
                     <th>
-                        ユーザーID
+                        商品コード
                     </th>
                     <th>
-                        氏名
+                        商品名
+                    </th>
+                    <th>
+                        単価
                     </th>
                 </tr>
             </thead>
@@ -80,10 +99,13 @@
                             </a>
                         </td>
                         <td>
-                            @Model.SearchResult[i].ユーザーID
+                            @Model.SearchResult[i].商品コード
                         </td>
                         <td>
-                            @Model.SearchResult[i].氏名
+                            @Model.SearchResult[i].商品名
+                        </td>
+                        <td>
+                            @Model.SearchResult[i].単価
                         </td>
                     </tr>
                 }

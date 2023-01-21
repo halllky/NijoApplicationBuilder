@@ -1,7 +1,7 @@
 ﻿
 <script>
-    const Halapp = {
-        addNewChild: event => {
+    const setHalappFunctions = targetElementJQueryObject => {
+        targetElementJQueryObject.find('.halapp-add-child').on('click', event => {
             const controllerName = '@(Context.Request.RouteValues["controller"].ToString())';
             const button = $(event.target);
             const aggregateTreePath = button.attr('halapp-aggregate-tree-path');
@@ -17,21 +17,21 @@
                 },
             }).then((data, textStatus, jqXHR) => {
                 const partialView = $($.parseHTML(data));
-                partialView.find('.halapp-add-child').on('click', Halapp.addNewChild);
-                partialView.find('.halapp-remove-button').on('click', Halapp.removeChild);
-                partialView.find('.halapp-autocomplete').autocomplete(Halapp.autoCompleteOption);
                 partialView.insertBefore(button);
+                setHalappFunctions(partialView);
             }).catch(err => {
                 console.trace('ERROR!!', err);
             });
-        },
-        removeChild: event => {
+        });
+        
+        targetElementJQueryObject.find('.halapp-remove-button').on('click', event => {
             const button = $(event.target);
             const hiddenField = button.siblings('.halapp-removed');
             hiddenField.val('true');
             button.parent().css('display', 'none');
-        },
-        autoCompleteOption: (i, el) => {
+        });
+        
+        targetElementJQueryObject.find('.halapp-autocomplete').each((_, el) => {
             const element = $(el);
             element.autocomplete({
                 minLength: 0, @* 0文字入力以上でサジェスチョン有効 *@
@@ -64,12 +64,11 @@
                     return false; @* input(text)にvalueでなくlabelを表示するため既定の処理を殺す *@
                 },
             });
-        },
-        
-        // const form = $('#halapp-single-view-form');
-        // const formFooter = $('#halapp-single-view-form-footer');
+        });
     }
-    $('.halapp-add-child').on('click', Halapp.addNewChild);
-    $('.halapp-remove-button').on('click', Halapp.removeChild);
-    $('.halapp-autocomplete').each(Halapp.autoCompleteOption);
+        
+    setHalappFunctions($(document));
+    
+    // const formFooter = $('#halapp-single-view-form-footer');
+    // const form = $('#halapp-single-view-form');
 </script>

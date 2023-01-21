@@ -1,5 +1,5 @@
 ﻿
-@model HalApplicationBuilderSampleMvc.Models.非上場企業資本情報;
+@model HalApplicationBuilderSampleMvc.Models.売上明細;
 
 <div class="halapp-aggregate-container">
     @if (Model.halapp_fields.IsRoot == false) {
@@ -12,11 +12,15 @@
     <div class="flex flex-col md:flex-row mb-1">
     
         <label class="w-32 select-none">
-            主要株主
+            商品
         </label>
         <div class="flex-1">
         
-            <input asp-for="主要株主" class="border" />
+            <div>
+                <input type="hidden" asp-for="商品.InstanceKey" class="halapp-autocomplete-value" />
+                <input type="hidden" asp-for="商品.AggreageteGuid" class="halapp-aggregate-guid" />
+                <input asp-for="商品.InstanceName" class="border halapp-autocomplete" />
+            </div>
 
 
         </div>
@@ -24,11 +28,11 @@
     <div class="flex flex-col md:flex-row mb-1">
     
         <label class="w-32 select-none">
-            安定性
+            数量
         </label>
         <div class="flex-1">
         
-            <input asp-for="安定性" class="border" />
+            <input asp-for="数量" class="border" />
 
 
         </div>

@@ -205,6 +205,7 @@ namespace HalApplicationBuilder.Core.Members {
         public override void MapSearchResultToUI(System.Data.Common.DbDataReader reader, object searchResult, RuntimeContext context, string selectClausePrefix) {
             var prop = searchResult.GetType().GetProperty(SearchResultPropName);
             var value = reader[selectClausePrefix + SearchResultPropName];
+            if (value is long ln) value = Convert.ToInt32(ln); // SQLiteのINTEGERはC#のlongに相当するので
             prop.SetValue(searchResult, value == DBNull.Value ? null : value);
         }
 

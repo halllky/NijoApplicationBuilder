@@ -1,5 +1,5 @@
 ﻿
-@model HalApplicationBuilder.AspNetMvc.SingleView.Model<HalApplicationBuilderSampleMvc.Models.会社>;
+@model HalApplicationBuilder.AspNetMvc.SingleView.Model<HalApplicationBuilderSampleMvc.Models.商品>;
 @{
     ViewData["Title"] = $"{@Model.InstanceName}";
 }
@@ -12,7 +12,7 @@
 <div asp-validation-summary="All" class="mt-2 text-xs text-red-600 dark:text-red-400"></div>
 
 <form id="halapp-single-view-form" class="mt-2">
-    <partial name="_会社__Partial.cshtml" for="Item" />
+    <partial name="_商品__Partial.cshtml" for="Item" />
     <div id="halapp-single-view-form-footer">
         <button asp-action="Update" formmethod="post" class="halapp-btn-primary">更新</button>
         <button asp-action="Delete" formmethod="post" class="halapp-btn-secondary">削除</button>
