@@ -8,33 +8,8 @@
 - プログラマーがデータ構造を定義するだけで、それなりの画面やRDBが自動的に出来上がってほしい
 - とはいえ、特に日次の定常業務で使われるような画面など、現場ユーザーの業務に合わせた高度なスクラッチ開発の柔軟性を捨てるわけには行かないので、スクラッチと同程度の拡張性をもった仕組みにしたい
 
-## アーキテクチャ
-```mermaid
-graph LR;
-プログラマ -- 作成 --> C#集約定義
-プログラマ -- 作成 --> プログラマーが書いたソース
-プログラマ -- 作成 --> プログラマーが書いたEFソース
-C#集約定義 --> HalApplicationBuidlerソース自動生成機能
-HalApplicationBuidlerソース自動生成機能 -- 自動生成 --> 自動生成されたEFソース
-HalApplicationBuidlerソース自動生成機能 -- 自動生成 --> 自動生成されたソース
-HalApplicationBuidlerソース自動生成機能 -- 自動生成 --> DB定義更新SQL
-プログラマ　-- 手修正 --> DB定義更新SQL
-
-subgraph ASP.NETCoreMVC
-  プログラマーが書いたソース
-  自動生成されたソース
-end
-
-subgraph EntityFrameworkCore
-  プログラマーが書いたEFソース
-  自動生成されたEFソース
-end
-
-subgraph DB
-  SQLite
-end
-
-```
+## 概要 summary
+![summary](./README.drawio.svg)
 
 ## デバッグ方法
 - スキーマを変更する（サンプルアプリの場合は `HalApplicationBuilderSampleSchema` を変更）
