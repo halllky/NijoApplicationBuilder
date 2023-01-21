@@ -65,34 +65,10 @@ namespace HalApplicationBuilder.Core.Members {
             };
         }
 
-        private string NavigationPropName => Name;
+        internal string NavigationPropName => Name;
         internal string SearchConditionPropName => Name;
-        private string SearchResultPropName(MvcModelProperty childProp) => childProp.PropertyName; // TODO 親子でプロパティ名が重複する場合を考慮する
+        internal string SearchResultPropName(MvcModelProperty childProp) => childProp.PropertyName; // TODO 親子でプロパティ名が重複する場合を考慮する
         internal string InstanceModelPropName => Name;
-
-        public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context) {
-            var childUiInstance = uiInstance
-                .GetType()
-                .GetProperty(InstanceModelPropName)
-                .GetValue(uiInstance);
-            var childDbEntity = context.DbSchema
-                .GetDbEntity(ChildAggregate);
-            var navigationProperty = dbInstance
-                .GetType()
-                .GetProperty(NavigationPropName);
-
-            var childDbInstance = navigationProperty.GetValue(dbInstance);
-            if (childDbInstance != null) {
-                childDbEntity.MapUiInstanceToDbInsntace(childUiInstance, childDbInstance, context);
-
-            } else {
-                var newChildDbInstance = childDbEntity
-                    .ConvertUiInstanceToDbInstance(childUiInstance, context);
-
-                navigationProperty.SetValue(dbInstance, newChildDbInstance);
-            }
-
-        }
 
         public override void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context) {
             var dbProperty = dbInstance
@@ -143,6 +119,10 @@ namespace HalApplicationBuilder.Core.Members {
 
         public override IEnumerable<string> GetInvalidErrors() {
             if (IsPrimaryKey) yield return $"{Name} は子要素のため主キーに設定できません。";
+        }
+
+        private protected override void Accept(IMemberVisitor visitor) {
+            visitor.Visit(this);
         }
     }
 }

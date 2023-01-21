@@ -108,7 +108,7 @@ namespace HalApplicationBuilder.Core.Members {
             };
         }
 
-        private string DbColumnPropName => UnderlyingPropertyInfo.GetCustomAttribute<ColumnAttribute>()?.Name ?? UnderlyingPropertyInfo.Name;
+        internal string DbColumnPropName => UnderlyingPropertyInfo.GetCustomAttribute<ColumnAttribute>()?.Name ?? UnderlyingPropertyInfo.Name;
 
         internal string SearchConditonPropName => Name;
         internal string SearchResultPropName => Name;
@@ -129,14 +129,6 @@ namespace HalApplicationBuilder.Core.Members {
             if (type.IsEnum) return true;
 
             return false;
-        }
-
-        public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context) {
-            var dbProp = dbInstance.GetType().GetProperty(DbColumnPropName);
-            var uiProp = uiInstance.GetType().GetProperty(InstanceModelPropName);
-
-            var value = uiProp.GetValue(uiInstance);
-            dbProp.SetValue(dbInstance, value);
         }
 
         public override void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context) {
@@ -232,6 +224,10 @@ namespace HalApplicationBuilder.Core.Members {
 
         public override IEnumerable<string> GetInvalidErrors() {
             yield break;
+        }
+
+        private protected override void Accept(IMemberVisitor visitor) {
+            visitor.Visit(this);
         }
     }
 }

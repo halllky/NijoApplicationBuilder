@@ -19,5 +19,7 @@ namespace HalApplicationBuilder.Core {
         IEnumerable<string> GetInvalidErrors();
 
         IEnumerable<DbColumn> ToDbColumnModel();
+
+        internal void Accept(IMemberVisitor visitor);
     }
 }

@@ -82,7 +82,6 @@ namespace HalApplicationBuilder.Core.Runtime {
             return dbContext;
         }
 
-
         public TInstanceModel CreateInstance<TInstanceModel>() {
             return (TInstanceModel)CreateInstance(typeof(TInstanceModel));
         }
@@ -132,7 +131,7 @@ namespace HalApplicationBuilder.Core.Runtime {
 
             var aggregate = FindAggregateByRuntimeType(createCommand.GetType());
             var dbEntity = DbSchema.GetDbEntity(aggregate);
-            var dbInstance = dbEntity.ConvertUiInstanceToDbInstance(createCommand, this);
+            var dbInstance = ConvertToDbInstance(createCommand, dbEntity);
             var dbContext = GetDbContext();
 
             try {
@@ -165,14 +164,17 @@ namespace HalApplicationBuilder.Core.Runtime {
             // 検索用の主キーを作成する
             var aggregate = FindAggregateByRuntimeType(uiInstance.GetType());
             var dbEntity = DbSchema.GetDbEntity(aggregate);
-            var tempDbInstance = dbEntity.ConvertUiInstanceToDbInstance(uiInstance, this);
+            var tempDbInstance = ConvertToDbInstance(uiInstance, dbEntity);
             instanceKey = InstanceKey.Create(tempDbInstance, dbEntity);
             // DBからentityを読み込む
             var entityType = RuntimeAssembly.GetType(dbEntity.RuntimeFullName);
             var dbContext = GetDbContext();
             var dbInstance = dbContext.Find(entityType, instanceKey.Values);
             // UIの値をentityにマッピングする
-            dbEntity.MapUiInstanceToDbInsntace(uiInstance, dbInstance, this);
+            var mapper = new MemberMapperFromUiToDb(uiInstance, dbInstance, this);
+            foreach (var member in dbEntity.Source.Members) {
+                member.Accept(mapper);
+            }
 
             // Save
             try {
@@ -208,5 +210,16 @@ namespace HalApplicationBuilder.Core.Runtime {
                 };
             }
         }
+
+        #region Instance Converting
+        internal object ConvertToDbInstance(object uiInstance, DBModel.DbEntity dbEntity) {
+            var dbInstance = RuntimeAssembly.CreateInstance(dbEntity.RuntimeFullName);
+            var mapper = new MemberMapperFromUiToDb(uiInstance, dbInstance, this);
+            foreach (var member in dbEntity.Source.Members) {
+                member.Accept(mapper);
+            }
+            return dbInstance;
+        }
+        #endregion
     }
 }

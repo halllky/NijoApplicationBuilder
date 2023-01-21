@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace HalApplicationBuilder.Core.Runtime {
     public interface IInstanceConverter {
         // InstanceModel
-        void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context);
         void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context);
 
         // SearchResult

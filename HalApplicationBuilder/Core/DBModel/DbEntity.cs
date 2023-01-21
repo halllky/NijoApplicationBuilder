@@ -151,13 +151,6 @@ namespace HalApplicationBuilder.Core.DBModel {
             }
         }
 
-        internal object ConvertUiInstanceToDbInstance(object uiInstance, RuntimeContext context) {
-            var dbInstance = context.RuntimeAssembly.CreateInstance(RuntimeFullName);
-
-            MapUiInstanceToDbInsntace(uiInstance, dbInstance, context);
-
-            return dbInstance;
-        }
         internal object ConvertDbInstanceToUiInstance(object dbInstance, RuntimeContext context) {
             var uiModel = context.ViewModelProvider.GetInstanceModel(Source);
             var uiInstance = context.RuntimeAssembly.CreateInstance(uiModel.RuntimeFullName);
@@ -166,12 +159,6 @@ namespace HalApplicationBuilder.Core.DBModel {
                 converter.MapDBToUI(dbInstance, uiInstance, context);
             }
             return uiInstance;
-        }
-        internal void MapUiInstanceToDbInsntace(object uiInstance, object dbInstance, RuntimeContext context) {
-            foreach (var member in Source.Members) {
-                if (member is not IInstanceConverter converter) continue;
-                converter.MapUIToDB(uiInstance, dbInstance, context);
-            }
         }
 
         public override string ToString() {

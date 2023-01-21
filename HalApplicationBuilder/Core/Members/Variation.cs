@@ -89,46 +89,14 @@ namespace HalApplicationBuilder.Core.Members {
             }
         }
 
-        private string DbPropName => Name;
-        private string NavigationPropName(DbEntity variationDbEntity) => $"{DbPropName}__{variationDbEntity.ClassName}";
+        internal string DbPropName => Name;
+        internal string NavigationPropName(DbEntity variationDbEntity) => $"{DbPropName}__{variationDbEntity.ClassName}";
 
         /// <summary>アンダースコア2連だと ArgumentException: The name of an HTML field cannot be null or empty... になる</summary>
         private string SearchConditionPropName(KeyValuePair<int, Aggregate> variation) => $"{Name}_{variation.Value.Name}";
         internal string SearchResultPropName => Name;
         internal string InstanceModelTypeSwitchPropName => Name;
         internal string InstanceModelTypeDetailPropName(KeyValuePair<int, Aggregate> variation) => $"{Name}_{variation.Value.Name}";
-
-        public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context) {
-            // 区分値(int)の設定
-            var dbProp = dbInstance.GetType().GetProperty(DbPropName);
-            var uiProp = uiInstance.GetType().GetProperty(InstanceModelTypeSwitchPropName);
-            var value = uiProp.GetValue(uiInstance);
-            dbProp.SetValue(dbInstance, value);
-
-            // Variation子要素の設定
-            foreach (var variation in Variations) {
-                var childUiInstance = uiInstance
-                    .GetType()
-                    .GetProperty(InstanceModelTypeDetailPropName(variation))
-                    .GetValue(uiInstance);
-                var childDbEntity = context.DbSchema
-                    .GetDbEntity(variation.Value);
-                var navigationProperty = dbInstance
-                    .GetType()
-                    .GetProperty(NavigationPropName(childDbEntity));
-
-                var childDbInstance = navigationProperty.GetValue(dbInstance);
-                if (childDbInstance != null) {
-                    childDbEntity.MapUiInstanceToDbInsntace(childUiInstance, childDbInstance, context);
-
-                } else {
-                    var newChildDbInstance = childDbEntity
-                        .ConvertUiInstanceToDbInstance(childUiInstance, context);
-
-                    navigationProperty.SetValue(dbInstance, newChildDbInstance);
-                }
-            }
-        }
 
         public override void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context) {
             // 区分値(int)の設定
@@ -206,6 +174,10 @@ namespace HalApplicationBuilder.Core.Members {
 
         public override IEnumerable<string> GetInvalidErrors() {
             if (IsPrimaryKey) yield return $"{Name} は子要素のため主キーに設定できません。";
+        }
+
+        private protected override void Accept(IMemberVisitor visitor) {
+            visitor.Visit(this);
         }
     }
 }

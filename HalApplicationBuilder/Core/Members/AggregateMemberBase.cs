@@ -57,7 +57,6 @@ namespace HalApplicationBuilder.Core.Members {
 
 
         #region Runtime
-        public abstract void MapUIToDB(object uiInstance, object dbInstance, Runtime.RuntimeContext context);
         public abstract void MapDBToUI(object dbInstance, object uiInstance, Runtime.RuntimeContext context);
 
         public abstract void BuildSelectStatement(SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix);
@@ -67,6 +66,9 @@ namespace HalApplicationBuilder.Core.Members {
         #endregion Runtime
 
         public abstract IEnumerable<string> GetInvalidErrors();
+
+        private protected abstract void Accept(IMemberVisitor visitor);
+        void IAggregateMember.Accept(IMemberVisitor visitor) => Accept(visitor);
 
         public override string ToString() {
             var path = new List<string>();

@@ -14,7 +14,7 @@ namespace HalApplicationBuilder.Core.Members {
         public override bool IsCollection => false;
 
         private Aggregate _refTarget;
-        private Aggregate RefTarget {
+        internal Aggregate RefTarget {
             get {
                 if (_refTarget == null) {
                     var type = UnderlyingPropertyInfo.PropertyType.GetGenericArguments()[0];
@@ -30,7 +30,7 @@ namespace HalApplicationBuilder.Core.Members {
         }
 
         private IReadOnlyList<DbColumn> _refPKs;
-        private IReadOnlyList<DbColumn> RefPKs {
+        internal IReadOnlyList<DbColumn> RefPKs {
             get {
                 if (_refPKs == null) {
                     _refPKs = DbSchema
@@ -87,19 +87,6 @@ namespace HalApplicationBuilder.Core.Members {
         internal string SearchResultPropName => Name;
         internal string InstanceModelPropName => Name;
 
-        public override void MapUIToDB(object uiInstance, object dbInstance, RuntimeContext context) {
-            var dbEntity = context.DbSchema.GetDbEntity(RefTarget);
-            var uiProp = uiInstance.GetType().GetProperty(InstanceModelPropName);
-            var referenceDto = (ReferenceDTO)uiProp.GetValue(uiInstance);
-            var parsed = InstanceKey.TryParse(referenceDto.InstanceKey, dbEntity, out var instanceKey);
-            var dbType = dbInstance.GetType();
-            foreach (var column in RefPKs) {
-                var dbProp = dbType.GetProperty(column.PropertyName);
-                var value = parsed ? instanceKey.ValuesDictionary[column] : null;
-                dbProp.SetValue(dbInstance, value);
-            }
-        }
-
         public override void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context) {
             var dbEntity = context.DbSchema.GetDbEntity(RefTarget);
             var instanceKey = InstanceKey.Create(dbInstance, dbEntity);
@@ -123,6 +110,10 @@ namespace HalApplicationBuilder.Core.Members {
 
         public override IEnumerable<string> GetInvalidErrors() {
             yield break;
+        }
+
+        private protected override void Accept(IMemberVisitor visitor) {
+            visitor.Visit(this);
         }
     }
 }
