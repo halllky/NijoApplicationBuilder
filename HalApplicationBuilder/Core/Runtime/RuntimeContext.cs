@@ -156,7 +156,7 @@ namespace HalApplicationBuilder.Core.Runtime {
             var entityType = RuntimeAssembly.GetType(pk.DbEntity.RuntimeFullName);
             var dbContext = GetDbContext();
             var dbInstance = dbContext.Find(entityType, pk.Values);
-            var uiInstance = pk.DbEntity.ConvertDbInstanceToUiInstance(dbInstance, this);
+            var uiInstance = ConvertToUiInstance(dbInstance, pk.DbEntity);
             return (TInstanceModel)uiInstance;
         }
 
@@ -219,6 +219,15 @@ namespace HalApplicationBuilder.Core.Runtime {
                 member.Accept(mapper);
             }
             return dbInstance;
+        }
+        internal object ConvertToUiInstance(object dbInstance, DBModel.DbEntity dbEntity) {
+            var uiModel = ViewModelProvider.GetInstanceModel(dbEntity.Source);
+            var uiInstance = RuntimeAssembly.CreateInstance(uiModel.RuntimeFullName);
+            var mapper = new MemberMapperFromDbToUi(dbInstance, uiInstance, this);
+            foreach (var member in dbEntity.Source.Members) {
+                member.Accept(mapper);
+            }
+            return uiInstance;
         }
         #endregion
     }

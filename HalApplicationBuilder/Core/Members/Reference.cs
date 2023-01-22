@@ -87,15 +87,6 @@ namespace HalApplicationBuilder.Core.Members {
         internal string SearchResultPropName => Name;
         internal string InstanceModelPropName => Name;
 
-        public override void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context) {
-            var dbEntity = context.DbSchema.GetDbEntity(RefTarget);
-            var instanceKey = InstanceKey.Create(dbInstance, dbEntity);
-            var uiProp = uiInstance.GetType().GetProperty(InstanceModelPropName);
-            var referenceDto = (ReferenceDTO)uiProp.GetValue(uiInstance);
-            referenceDto.InstanceKey = instanceKey.StringValue;
-            referenceDto.InstanceName = InstanceName.Create(dbInstance, dbEntity).Value;
-        }
-
         public override void BuildSelectStatement(SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix) {
             // TODO
         }

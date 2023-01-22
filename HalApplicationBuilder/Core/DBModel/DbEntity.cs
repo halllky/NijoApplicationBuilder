@@ -151,16 +151,6 @@ namespace HalApplicationBuilder.Core.DBModel {
             }
         }
 
-        internal object ConvertDbInstanceToUiInstance(object dbInstance, RuntimeContext context) {
-            var uiModel = context.ViewModelProvider.GetInstanceModel(Source);
-            var uiInstance = context.RuntimeAssembly.CreateInstance(uiModel.RuntimeFullName);
-            foreach (var member in Source.Members) {
-                if (member is not IInstanceConverter converter) continue;
-                converter.MapDBToUI(dbInstance, uiInstance, context);
-            }
-            return uiInstance;
-        }
-
         public override string ToString() {
             var path = new List<string>();
             var dbEntity = this;

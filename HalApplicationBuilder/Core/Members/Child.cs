@@ -70,25 +70,6 @@ namespace HalApplicationBuilder.Core.Members {
         internal string SearchResultPropName(MvcModelProperty childProp) => childProp.PropertyName; // TODO 親子でプロパティ名が重複する場合を考慮する
         internal string InstanceModelPropName => Name;
 
-        public override void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context) {
-            var dbProperty = dbInstance
-                .GetType()
-                .GetProperty(NavigationPropName);
-            var childDbInstance = dbProperty
-                .GetValue(dbInstance);
-
-            if (childDbInstance != null) {
-                var childUiInstance = context.DbSchema
-                    .GetDbEntity(ChildAggregate)
-                    .ConvertDbInstanceToUiInstance(childDbInstance, context);
-                var childUiProperty = uiInstance
-                    .GetType()
-                    .GetProperty(InstanceModelPropName);
-
-                childUiProperty.SetValue(uiInstance, childUiInstance);
-            }
-        }
-
         public override void BuildSelectStatement(SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix) {
             var childDbEntity = context.DbSchema.GetDbEntity(ChildAggregate);
             // FROM

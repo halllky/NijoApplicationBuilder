@@ -57,8 +57,6 @@ namespace HalApplicationBuilder.Core.Members {
 
 
         #region Runtime
-        public abstract void MapDBToUI(object dbInstance, object uiInstance, Runtime.RuntimeContext context);
-
         public abstract void BuildSelectStatement(SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix);
         public abstract void MapSearchResultToUI(System.Data.Common.DbDataReader reader, object searchResult, Runtime.RuntimeContext context, string selectClausePrefix);
 

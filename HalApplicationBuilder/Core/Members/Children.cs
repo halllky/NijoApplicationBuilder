@@ -61,31 +61,6 @@ namespace HalApplicationBuilder.Core.Members {
         internal string NavigationPropName => Name;
         internal string InstanceModelPropName => Name;
 
-        public override void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context) {
-            var childDbProperty = dbInstance
-                .GetType()
-                .GetProperty(NavigationPropName);
-            var childDbInstanceList = (IEnumerable)childDbProperty
-                .GetValue(dbInstance);
-
-            var childUiProperty = uiInstance
-                .GetType()
-                .GetProperty(InstanceModelPropName);
-            var childUiType = childUiProperty
-                .PropertyType
-                .GetGenericArguments()[0];
-            var childUiInstanceList = (IList)Activator.CreateInstance(
-                typeof(List<>).MakeGenericType(childUiType));
-
-            var childDbEntity = context.DbSchema.GetDbEntity(ChildAggregate);
-            foreach (var childDbInstance in childDbInstanceList) {
-                var childUiInstance = childDbEntity.ConvertDbInstanceToUiInstance(childDbInstance, context);
-                childUiInstanceList.Add(childUiInstance);
-            }
-
-            childUiProperty.SetValue(uiInstance, childUiInstanceList);
-        }
-
         public override void BuildSelectStatement(SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix) {
             // 何もしない
         }

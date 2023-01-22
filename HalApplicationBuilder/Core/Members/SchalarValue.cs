@@ -131,14 +131,6 @@ namespace HalApplicationBuilder.Core.Members {
             return false;
         }
 
-        public override void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context) {
-            var dbProp = dbInstance.GetType().GetProperty(DbColumnPropName);
-            var uiProp = uiInstance.GetType().GetProperty(InstanceModelPropName);
-
-            var value = dbProp.GetValue(dbInstance);
-            uiProp.SetValue(uiInstance, value);
-        }
-
         public override void BuildSelectStatement(SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix) {
             // SELECT
             var dbEntity = context.DbSchema.GetDbEntity(Owner);

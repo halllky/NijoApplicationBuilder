@@ -98,35 +98,6 @@ namespace HalApplicationBuilder.Core.Members {
         internal string InstanceModelTypeSwitchPropName => Name;
         internal string InstanceModelTypeDetailPropName(KeyValuePair<int, Aggregate> variation) => $"{Name}_{variation.Value.Name}";
 
-        public override void MapDBToUI(object dbInstance, object uiInstance, RuntimeContext context) {
-            // 区分値(int)の設定
-            var dbProp = dbInstance.GetType().GetProperty(DbPropName);
-            var uiProp = uiInstance.GetType().GetProperty(InstanceModelTypeSwitchPropName);
-            var value = dbProp.GetValue(dbInstance);
-            uiProp.SetValue(uiInstance, value);
-
-            // Variation子要素の設定
-            foreach (var variation in Variations) {
-                var childDbEntity = context.DbSchema
-                    .GetDbEntity(variation.Value);
-                var childDbProperty = dbInstance
-                    .GetType()
-                    .GetProperty(NavigationPropName(childDbEntity));
-                var childDbInstance = childDbProperty
-                    .GetValue(dbInstance);
-
-                if (childDbInstance != null) {
-                    var childUiProperty = uiInstance
-                        .GetType()
-                        .GetProperty(InstanceModelTypeDetailPropName(variation));
-                    var childUiInstance = childDbEntity
-                        .ConvertDbInstanceToUiInstance(childDbInstance, context);
-
-                    childUiProperty.SetValue(uiInstance, childUiInstance);
-                }
-            }
-        }
-
         public override void BuildSelectStatement(SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix) {
             // SELECT
             var dbEntity = context.DbSchema.GetDbEntity(Owner);
