@@ -45,7 +45,7 @@ namespace HalApplicationBuilder.Core {
             }
 
             // InstanceNameにできる型の制約
-            
+            // TODO
         }
     }
 }
