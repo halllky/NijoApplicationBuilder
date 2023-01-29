@@ -26,6 +26,18 @@ namespace HalApplicationBuilder.EntityFramework {
                     "tial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(DbContextName));
             this.Write(" {\n    \n");
+ /* 検索メソッドのレンダリング */ 
+ foreach (var item in SearchMethods) { 
+            this.Write("        public IQueryable<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(item.SearchResultClassName));
+            this.Write("> ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(item.MethodName));
+            this.Write("(");
+            this.Write(this.ToStringHelper.ToStringWithCulture(item.SearchConditionClassName));
+            this.Write(" searchCondition) {\n            \n        }\n");
+ } 
+            this.Write("    \n");
+ /* オートコンプリートデータソース読み込みメソッドのレンダリング */ 
  foreach (var item in LoadAutoCompleteMethod) { 
             this.Write("        /// <summary>\n        /// オートコンプリートのデータソースを読み込む\n        /// </summary>\n  " +
                     "      public IEnumerable<");

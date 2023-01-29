@@ -13,6 +13,14 @@ namespace <#=DbContextNamespace#> {
 
     partial class <#=DbContextName#> {
     
+<# /* 検索メソッドのレンダリング */ #>
+<# foreach (var item in SearchMethods) { #>
+        public IQueryable<<#=item.SearchResultClassName#>> <#=item.MethodName#>(<#=item.SearchConditionClassName#> searchCondition) {
+            
+        }
+<# } #>
+    
+<# /* オートコンプリートデータソース読み込みメソッドのレンダリング */ #>
 <# foreach (var item in LoadAutoCompleteMethod) { #>
         /// <summary>
         /// オートコンプリートのデータソースを読み込む
