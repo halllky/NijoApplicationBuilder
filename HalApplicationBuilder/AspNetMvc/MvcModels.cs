@@ -26,6 +26,7 @@ namespace HalApplicationBuilder.AspNetMvc {
         internal IEnumerable<MvcModel> InstanceClasses { get; set; }
 
         internal static string UIInstanceBase => typeof(UIInstanceBase).FullName;
+        internal static string SearchConditionBase => typeof(SearchConditionBase).FullName;
         internal static string SearchResultBase => typeof(SearchResultBase).FullName;
     }
 }

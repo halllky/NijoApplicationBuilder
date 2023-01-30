@@ -3,16 +3,16 @@ namespace HalApplicationBuilderSampleMvc.Models {
     using System;
     using System.Collections.Generic;
 
-    public class 商品__SearchCondition {
+    public class 商品__SearchCondition : HalApplicationBuilder.Core.UIModel.SearchConditionBase {
         public string 商品コード { get; set; }
         public string 商品名 { get; set; }
         public HalApplicationBuilder.DotnetEx.FromTo<int?> 単価 { get; set; } = new();
     }
-    public class 売上__SearchCondition {
+    public class 売上__SearchCondition : HalApplicationBuilder.Core.UIModel.SearchConditionBase {
         public string ID { get; set; }
         public HalApplicationBuilder.DotnetEx.FromTo<DateTime?> 売上日時 { get; set; } = new();
     }
-    public class 売上明細__SearchCondition {
+    public class 売上明細__SearchCondition : HalApplicationBuilder.Core.UIModel.SearchConditionBase {
         public HalApplicationBuilder.Core.UIModel.ReferenceDTO 商品 { get; set; } = new();
         public HalApplicationBuilder.DotnetEx.FromTo<int?> 数量 { get; set; } = new();
     }

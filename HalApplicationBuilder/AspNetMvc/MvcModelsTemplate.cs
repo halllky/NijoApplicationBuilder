@@ -26,6 +26,8 @@ namespace HalApplicationBuilder.AspNetMvc {
  foreach (var classDef in SearchConditionClasses) { 
             this.Write("    public class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(classDef.ClassName));
+            this.Write(" : ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(SearchConditionBase));
             this.Write(" {\n");
  foreach (var prop in classDef.Properties) { 
             this.Write("        public ");

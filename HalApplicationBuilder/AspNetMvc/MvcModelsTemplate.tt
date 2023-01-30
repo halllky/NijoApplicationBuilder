@@ -10,7 +10,7 @@ namespace <#=Namespace#> {
 
 <# /* 検索条件DTO */ #>
 <# foreach (var classDef in SearchConditionClasses) { #>
-    public class <#=classDef.ClassName#> {
+    public class <#=classDef.ClassName#> : <#=SearchConditionBase#> {
 <# foreach (var prop in classDef.Properties) { #>
         public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }<#=prop.Initializer == null ? "" : $" = {prop.Initializer};"#>
 <# }#>

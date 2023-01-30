@@ -15,8 +15,21 @@ namespace <#=DbContextNamespace#> {
     
 <# /* 検索メソッドのレンダリング */ #>
 <# foreach (var item in SearchMethods) { #>
-        public IQueryable<<#=item.SearchResultClassName#>> <#=item.MethodName#>(<#=item.SearchConditionClassName#> searchCondition) {
-            
+        public IEnumerable<<#=item.SearchResultClassName#>> <#=item.MethodName#>(<#=item.SearchConditionClassName#> <#=item.Arg#>) {
+            var <#=item.Query#> = this.<#=item.DbSetName#>.Select(<#=item.E#> => new <#=item.SearchResultClassName#> {
+<# foreach (var line in item.GetSelectClause()) { #>
+                <#=line#>
+<# } #>
+            });
+
+<# foreach (var line in item.GetWhereClause()) { #>
+            <#=line#>
+<# } #>
+
+            var page = <#=item.Arg#>.GetPageObject();
+            <#=item.Query#> = <#=item.Query#>.Skip(page.<#=nameof(DotnetEx.Page.SqlOffset)#>).Take(page.<#=nameof(DotnetEx.Page.SqlLimit)#>);
+
+            return <#=item.Query#>.AsEnumerable();
         }
 <# } #>
     

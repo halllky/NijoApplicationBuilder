@@ -62,6 +62,7 @@ namespace HalApplicationBuilder {
                 sw.Write(source.TransformText(
                     service.GetRequiredService<Core.IApplicationSchema>(),
                     service.GetRequiredService<Core.DBModel.IDbSchema>(),
+                    service.GetRequiredService<Core.UIModel.IViewModelProvider>(),
                     service.GetRequiredService<Core.Config>()));
             }
 

@@ -28,13 +28,47 @@ namespace HalApplicationBuilder.EntityFramework {
             this.Write(" {\n    \n");
  /* 検索メソッドのレンダリング */ 
  foreach (var item in SearchMethods) { 
-            this.Write("        public IQueryable<");
+            this.Write("        public IEnumerable<");
             this.Write(this.ToStringHelper.ToStringWithCulture(item.SearchResultClassName));
             this.Write("> ");
             this.Write(this.ToStringHelper.ToStringWithCulture(item.MethodName));
             this.Write("(");
             this.Write(this.ToStringHelper.ToStringWithCulture(item.SearchConditionClassName));
-            this.Write(" searchCondition) {\n            \n        }\n");
+            this.Write(" ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(item.Arg));
+            this.Write(") {\n            var ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(item.Query));
+            this.Write(" = this.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(item.DbSetName));
+            this.Write(".Select(");
+            this.Write(this.ToStringHelper.ToStringWithCulture(item.E));
+            this.Write(" => new ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(item.SearchResultClassName));
+            this.Write(" {\n");
+ foreach (var line in item.GetSelectClause()) { 
+            this.Write("                ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(line));
+            this.Write("\n");
+ } 
+            this.Write("            });\n\n");
+ foreach (var line in item.GetWhereClause()) { 
+            this.Write("            ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(line));
+            this.Write("\n");
+ } 
+            this.Write("\n            var page = ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(item.Arg));
+            this.Write(".GetPageObject();\n            ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(item.Query));
+            this.Write(" = ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(item.Query));
+            this.Write(".Skip(page.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(DotnetEx.Page.SqlOffset)));
+            this.Write(").Take(page.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(DotnetEx.Page.SqlLimit)));
+            this.Write(");\n\n            return ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(item.Query));
+            this.Write(".AsEnumerable();\n        }\n");
  } 
             this.Write("    \n");
  /* オートコンプリートデータソース読み込みメソッドのレンダリング */ 

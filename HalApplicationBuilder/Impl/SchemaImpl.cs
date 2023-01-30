@@ -103,11 +103,11 @@ namespace HalApplicationBuilder.Impl {
 
 
         #region ViewModelProvider
-        private Dictionary<Core.Aggregate, MvcModel> _searchConditions;
-        private Dictionary<Core.Aggregate, MvcModel> _searchResults;
+        private Dictionary<Core.Aggregate, SearchConditionClass> _searchConditions;
+        private Dictionary<Core.Aggregate, SearchResultClass> _searchResults;
         private Dictionary<Core.Aggregate, MvcModel> _instanceModels;
 
-        private IReadOnlyDictionary<Core.Aggregate, MvcModel> SearchConditions {
+        private IReadOnlyDictionary<Core.Aggregate, SearchConditionClass> SearchConditions {
             get {
                 if (_searchConditions == null) {
 
@@ -116,7 +116,7 @@ namespace HalApplicationBuilder.Impl {
                         .OrderBy(a => a.GetAncestors().Count())
                         .ToList();
 
-                    _searchConditions = new Dictionary<Core.Aggregate, MvcModel>();
+                    _searchConditions = new Dictionary<Core.Aggregate, SearchConditionClass>();
                     foreach (var aggregate in aggregates) {
                         _searchConditions.Add(aggregate, new SearchConditionClass {
                             Source = aggregate,
@@ -127,7 +127,7 @@ namespace HalApplicationBuilder.Impl {
                 return _searchConditions;
             }
         }
-        private IReadOnlyDictionary<Core.Aggregate, MvcModel> SearchResults {
+        private IReadOnlyDictionary<Core.Aggregate, SearchResultClass> SearchResults {
             get {
                 if (_searchResults == null) {
 
@@ -136,7 +136,7 @@ namespace HalApplicationBuilder.Impl {
                         .OrderBy(a => a.GetAncestors().Count())
                         .ToList();
 
-                    _searchResults = new Dictionary<Core.Aggregate, MvcModel>();
+                    _searchResults = new Dictionary<Core.Aggregate, SearchResultClass>();
                     foreach (var aggregate in aggregates) {
                         _searchResults.Add(aggregate, new SearchResultClass {
                             Source = aggregate,
@@ -171,10 +171,10 @@ namespace HalApplicationBuilder.Impl {
         public MvcModel GetInstanceModel(Core.Aggregate aggregate) {
             return InstanceModels[aggregate];
         }
-        public MvcModel GetSearchConditionModel(Core.Aggregate aggregate) {
+        public SearchConditionClass GetSearchConditionModel(Core.Aggregate aggregate) {
             return SearchConditions[aggregate];
         }
-        public MvcModel GetSearchResultModel(Core.Aggregate aggregate) {
+        public SearchResultClass GetSearchResultModel(Core.Aggregate aggregate) {
             return SearchResults[aggregate];
         }
         #endregion ViewModelProvider
