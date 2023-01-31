@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.Core.DBModel;
-using HalApplicationBuilder.Core.Runtime;
 using HalApplicationBuilder.Core.UIModel;
 
 namespace HalApplicationBuilder.Core.Members {
@@ -86,18 +85,6 @@ namespace HalApplicationBuilder.Core.Members {
         internal string SearchConditonPropName => Name;
         internal string SearchResultPropName => Name;
         internal string InstanceModelPropName => Name;
-
-        public override void BuildSelectStatement(SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix) {
-            // TODO
-        }
-
-        public override void MapSearchResultToUI(System.Data.Common.DbDataReader reader, object searchResult, RuntimeContext context, string selectClausePrefix) {
-            // TODO
-        }
-
-        public override void BuildAutoCompleteSelectStatement(SelectStatement selectStatement, string inputText, RuntimeContext context, string selectClausePrefix) {
-            // TODO
-        }
 
         public override IEnumerable<string> GetInvalidErrors() {
             yield break;

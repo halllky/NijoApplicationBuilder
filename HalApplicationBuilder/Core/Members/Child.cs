@@ -70,34 +70,6 @@ namespace HalApplicationBuilder.Core.Members {
         internal string SearchResultPropName(MvcModelProperty childProp) => childProp.PropertyName; // TODO 親子でプロパティ名が重複する場合を考慮する
         internal string InstanceModelPropName => Name;
 
-        public override void BuildSelectStatement(SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix) {
-            var childDbEntity = context.DbSchema.GetDbEntity(ChildAggregate);
-            // FROM
-            selectStatement.LeftJoin(childDbEntity);
-            // SELECT, WHERE
-            var prefix = selectClausePrefix + $"{Name}_";
-            var searchConditionProp = searchCondition.GetType().GetProperty(SearchConditionPropName);
-            var childSearchCondition = searchConditionProp.GetValue(searchCondition);
-            if (childSearchCondition != null) {
-                foreach (var childMember in ChildAggregate.Members) {
-                    if (childMember is not IInstanceConverter converter) continue;
-                    converter.BuildSelectStatement(selectStatement, childSearchCondition, context, prefix);
-                }
-            }
-        }
-
-        public override void MapSearchResultToUI(System.Data.Common.DbDataReader reader, object searchResult, RuntimeContext context, string selectClausePrefix) {
-            var prefix = selectClausePrefix + $"{Name}_";
-            foreach (var childMember in ChildAggregate.Members) {
-                if (childMember is not IInstanceConverter converter) continue;
-                converter.MapSearchResultToUI(reader, searchResult, context, prefix);
-            }
-        }
-
-        public override void BuildAutoCompleteSelectStatement(SelectStatement selectStatement, string inputText, RuntimeContext context, string selectClausePrefix) {
-            // 何もしない
-        }
-
         public override IEnumerable<string> GetInvalidErrors() {
             if (IsPrimaryKey) yield return $"{Name} は子要素のため主キーに設定できません。";
         }

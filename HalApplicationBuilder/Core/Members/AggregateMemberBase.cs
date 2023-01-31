@@ -11,8 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace HalApplicationBuilder.Core.Members {
     public abstract class AggregateMemberBase :
         IAggregateMember,
-        IMvcModelPropertySource,
-        IInstanceConverter {
+        IMvcModelPropertySource {
 
         internal AggregateMemberBase(PropertyInfo propertyInfo, Aggregate owner, IServiceProvider serviceProvider) {
             UnderlyingPropertyInfo = propertyInfo;
@@ -54,14 +53,6 @@ namespace HalApplicationBuilder.Core.Members {
         public abstract IEnumerable<MvcModelProperty> CreateSearchResultModels();
         public abstract IEnumerable<MvcModelProperty> CreateInstanceModels();
         #endregion CodeGenerating
-
-
-        #region Runtime
-        public abstract void BuildSelectStatement(SelectStatement selectStatement, object searchCondition, RuntimeContext context, string selectClausePrefix);
-        public abstract void MapSearchResultToUI(System.Data.Common.DbDataReader reader, object searchResult, Runtime.RuntimeContext context, string selectClausePrefix);
-
-        public abstract void BuildAutoCompleteSelectStatement(SelectStatement selectStatement, string inputText, RuntimeContext context, string selectClausePrefix);
-        #endregion Runtime
 
         public abstract IEnumerable<string> GetInvalidErrors();
 
