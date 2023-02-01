@@ -12,8 +12,7 @@ namespace <#=DbContextNamespace#> {
     using Microsoft.EntityFrameworkCore;
 
     partial class <#=DbContextName#> {
-    
-<# /* 検索メソッドのレンダリング */ #>
+
 <# foreach (var item in SearchMethods) { #>
         public IEnumerable<<#=item.SearchResultClassName#>> <#=item.MethodName#>(<#=item.SearchConditionClassName#> <#=item.Arg#>) {
             var <#=item.Query#> = this.<#=item.DbSetName#>.Select(<#=item.E#> => new <#=item.SearchResultClassName#> {
@@ -30,25 +29,6 @@ namespace <#=DbContextNamespace#> {
             <#=item.Query#> = <#=item.Query#>.Skip(page.<#=nameof(DotnetEx.Page.SqlOffset)#>).Take(page.<#=nameof(DotnetEx.Page.SqlLimit)#>);
 
             return <#=item.Query#>.AsEnumerable();
-        }
-<# } #>
-    
-<# /* オートコンプリートデータソース読み込みメソッドのレンダリング */ #>
-<# foreach (var item in LoadAutoCompleteMethod) { #>
-        /// <summary>
-        /// オートコンプリートのデータソースを読み込む
-        /// </summary>
-        public IEnumerable<<#=item.EntityClassName#>> <#=item.MethodName#>(string keyword = null) {
-            var query = (IQueryable<<#=item.EntityClassName#>>)this.<#=item.DbSetName#>;
-<# /*キーワードを当てに行くカラムが特定できている場合*/ #>
-<# if (item.NameColumnName != null) { #>
-            if (!string.IsNullOrWhiteSpace(keyword)) {
-                query = query.Where(e=> e.<#=item.NameColumnName#>.Contains(keyword));
-            }
-<# } #>
-            return query
-                .Take(100 + 1)
-                .ToArray();
         }
 <# } #>
 

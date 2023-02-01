@@ -15,7 +15,7 @@ namespace HalApplicationBuilder.EntityFramework {
     using System;
     
     
-    public partial class EFCoreSourceTemplate : EFCoreSourceTemplateBase {
+    public partial class DbSetTemplate : DbSetTemplateBase {
         
         public virtual string TransformText() {
             this.GenerationEnvironment = null;
@@ -23,8 +23,7 @@ namespace HalApplicationBuilder.EntityFramework {
             this.Write(this.ToStringHelper.ToStringWithCulture(DbContextNamespace));
             this.Write(" {\n    using Microsoft.EntityFrameworkCore;\n\n    partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(DbContextName));
-            this.Write(" {\n    \n");
- /* DbSetプロパティの生成 */ 
+            this.Write(" {\n");
  foreach (var entityClass in EntityClasses) { 
             this.Write("        public DbSet<");
             this.Write(this.ToStringHelper.ToStringWithCulture(entityClass.RuntimeFullName));
@@ -32,55 +31,7 @@ namespace HalApplicationBuilder.EntityFramework {
             this.Write(this.ToStringHelper.ToStringWithCulture(entityClass.DbSetName));
             this.Write(" { get; set; }\n");
  }
-            this.Write("\n");
- /* OnModelCreatingの定義 */ 
-            this.Write("        protected override void OnModelCreating(ModelBuilder modelBuilder) {\n");
- foreach (var entityClass in EntityClasses) { 
-            this.Write("            modelBuilder.Entity<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entityClass.RuntimeFullName));
-            this.Write(">(entity => {\n");
- /* 主キー定義 */ 
-            this.Write("                entity.HasKey(e => new {\n");
- foreach (var prop in entityClass.PKColumns) { 
-            this.Write("                    e.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(",\n");
- }
-            this.Write("                });\n");
- /* ナビゲーションプロパティ定義 */ 
- foreach (var manyToOne in entityClass.GetManyToOne()) { 
-            this.Write("                ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(manyToOne));
-            this.Write("\n");
- }
- foreach (var oneToOne in entityClass.GetOneToOne()) { 
-            this.Write("                ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(oneToOne));
-            this.Write("\n");
- }
-            this.Write("            });\n");
- }
-            this.Write("        }\n    }\n}\n\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(EntityNamespace));
-            this.Write(" {\n    using System;\n    using System.Collections.Generic;\n\n");
- /*Entityクラスの生成*/ 
- foreach (var entityClass in EntityClasses) { 
-            this.Write("    public partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entityClass.ClassName));
-            this.Write(" {\n");
- foreach (var prop in entityClass.GetAllDbProperties()) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Virtual ? "virtual " : ""));
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
-            this.Write("\n");
- }
-            this.Write("    }\n");
- }
-            this.Write("\n}");
+            this.Write("    }\n}\n");
             return this.GenerationEnvironment.ToString();
         }
         
@@ -88,7 +39,7 @@ namespace HalApplicationBuilder.EntityFramework {
         }
     }
     
-    public class EFCoreSourceTemplateBase {
+    public class DbSetTemplateBase {
         
         private global::System.Text.StringBuilder builder;
         

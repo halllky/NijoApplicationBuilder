@@ -8,13 +8,7 @@ namespace <#=DbContextNamespace#> {
     using Microsoft.EntityFrameworkCore;
 
     partial class <#=DbContextName#> {
-    
-<# /* DbSetプロパティの生成 */ #>
-<# foreach (var entityClass in EntityClasses) { #>
-        public DbSet<<#=entityClass.RuntimeFullName#>> <#=entityClass.DbSetName#> { get; set; }
-<# }#>
 
-<# /* OnModelCreatingの定義 */ #>
         protected override void OnModelCreating(ModelBuilder modelBuilder) {
 <# foreach (var entityClass in EntityClasses) { #>
             modelBuilder.Entity<<#=entityClass.RuntimeFullName#>>(entity => {
@@ -35,19 +29,4 @@ namespace <#=DbContextNamespace#> {
 <# }#>
         }
     }
-}
-
-namespace <#=EntityNamespace#> {
-    using System;
-    using System.Collections.Generic;
-
-<# /*Entityクラスの生成*/ #>
-<# foreach (var entityClass in EntityClasses) { #>
-    public partial class <#=entityClass.ClassName#> {
-<# foreach (var prop in entityClass.GetAllDbProperties()) { #>
-        public <#=prop.Virtual ? "virtual " : ""#><#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }<#=prop.Initializer == null ? "" : $" = {prop.Initializer};"#>
-<# }#>
-    }
-<# }#>
-
 }

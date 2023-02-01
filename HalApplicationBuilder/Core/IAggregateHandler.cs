@@ -1,6 +1,6 @@
 ﻿using System;
 namespace HalApplicationBuilder.Core {
-    public interface IApplicationModule {
+    public interface IAggregateHandler {
         void HandleAggregate(Aggregate aggregate);
         void HandleSearchCondition(UIModel.SearchConditionClass searchCondition);
         void HandleSearchResult(UIModel.SearchResultClass searchResult);
