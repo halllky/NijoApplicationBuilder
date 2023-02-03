@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace HalApplicationBuilder.Core.Runtime {
     public class RuntimeContext {
-        public RuntimeContext(Assembly schemaAssembly, Assembly runtimeAssembly, IServiceProvider service) {
+        internal RuntimeContext(Assembly schemaAssembly, Assembly runtimeAssembly, IServiceProvider service) {
             SchemaAssembly = schemaAssembly;
             RuntimeAssembly = runtimeAssembly;
 

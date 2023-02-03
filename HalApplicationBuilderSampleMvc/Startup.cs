@@ -39,12 +39,12 @@ namespace HalApplicationBuilderSampleMvc {
             // SaveやDetailでDbContextをダイレクトに参照しているため
             services.AddScoped<DbContext>(provider => provider.GetService<EntityFramework.SampleDbContext>());
 
-            var dllPath = "/__local__/20221211_haldoc_csharp/haldoc/HalApplicationBuilderSampleSchema/bin/Debug/net5.0/HalApplicationBuilderSampleSchema.dll";
-            HalApplicationBuilder.Program.ConfigureServices(services, dllPath);
+            var schemaAssembly = Assembly.LoadFile("/__local__/20221211_haldoc_csharp/haldoc/HalApplicationBuilderSampleSchema/bin/Debug/net5.0/HalApplicationBuilderSampleSchema.dll");
+            HalApplicationBuilder.HalApp.Configure(services, schemaAssembly);
             services.AddScoped(provider => {
-                var schemaAssembly = Assembly.LoadFile(dllPath);
+                var halapp = provider.GetRequiredService<HalApplicationBuilder.HalApp>();
                 var runtimeAssembly = Assembly.GetExecutingAssembly();
-                return new RuntimeContext(schemaAssembly, runtimeAssembly, provider);
+                return halapp.GetRuntimeContext(runtimeAssembly);
             });
 
             // HTMLのエンコーディングをUTF-8にする(日本語のHTMLエンコード防止)

@@ -19,7 +19,6 @@
     <Folder Include="Core\" />
     <Folder Include="AspNetMvc\" />
     <Folder Include="EntityFramework\" />
-    <Folder Include="Impl\" />
     <Folder Include="DotnetEx\" />
     <Folder Include="AspNetMvc\TagHelpers\" />
     <Folder Include="Core\Members\" />
