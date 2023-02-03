@@ -10,8 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace HalApplicationBuilder.Core.Runtime {
     public class RuntimeContext {
-        internal RuntimeContext(Assembly schemaAssembly, Assembly runtimeAssembly, IServiceProvider service) {
-            SchemaAssembly = schemaAssembly;
+        internal RuntimeContext(Assembly runtimeAssembly, IServiceProvider service) {
             RuntimeAssembly = runtimeAssembly;
 
             ApplicationSchema = service.GetRequiredService<Core.IApplicationSchema>();
@@ -22,7 +21,6 @@ namespace HalApplicationBuilder.Core.Runtime {
 
         public string ApplicationName => "サンプルアプリケーション";
 
-        internal Assembly SchemaAssembly { get; }
         internal Assembly RuntimeAssembly { get; }
         internal Core.Config Config { get; }
         internal Core.IApplicationSchema ApplicationSchema { get; }
