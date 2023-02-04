@@ -34,11 +34,11 @@
 ### 0.プロジェクトの準備
 - プロジェクトを作成
   - .NET Core MVC
+  - HalApplicationBuilderプロジェクトへの参照を加える
 - NuGetパッケージを追加
   - Microsoft.EntityFrameworkCore
   - DB用のパッケージ(例: Microsoft.EntityFrameworkCore.Sqlite)
 - DbContextクラスをpartialで作成
-  -
 
 ### 1.プログラマが集約定義等を作成する
 

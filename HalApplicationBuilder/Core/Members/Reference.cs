@@ -17,7 +17,8 @@ namespace HalApplicationBuilder.Core.Members {
             get {
                 if (_refTarget == null) {
                     var type = UnderlyingPropertyInfo.PropertyType.GetGenericArguments()[0];
-                    _refTarget = AppSchema.FindByType(type);
+                    var targetAttributeId = UnderlyingPropertyInfo.GetCustomAttribute<RefTargetIdAttribute>();
+                    _refTarget = AppSchema.FindByTypeOrAggregateId(type, targetAttributeId);
                     if (_refTarget == null) throw new InvalidOperationException($"{UnderlyingPropertyInfo.Name} の型 {type.FullName} の集約が定義されていません。");
                 }
                 return _refTarget;

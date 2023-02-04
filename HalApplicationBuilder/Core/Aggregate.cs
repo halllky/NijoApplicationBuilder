@@ -17,6 +17,12 @@ namespace HalApplicationBuilder.Core {
         private readonly IAggregateMemberFactory _memberFactory;
         internal Type UnderlyingType { get; }
 
+        /// <summary>
+        /// <see cref="RefTo{T}"/> が示す型と対応する集約が複数ある場合、
+        /// どの集約に対する参照なのかが特定できないので、その解決策
+        /// </summary>
+        internal AggregateIdAttribute AggregateId => UnderlyingType.GetCustomAttribute<AggregateIdAttribute>();
+
         public string Name => UnderlyingType.Name;
         public Guid GUID => UnderlyingType.GUID;
 

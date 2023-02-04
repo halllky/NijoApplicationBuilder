@@ -18,18 +18,21 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
+    <PackageReference Include="Selenium.WebDriver" Version="4.8.0" />
+    <PackageReference Include="Selenium.Support" Version="4.8.0" />
+    <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="109.0.5414.7400" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\HalApplicationBuilder\HalApplicationBuilder.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Remove="appsettings.json" />
+    <Folder Include="Tests\" />
+    <Folder Include="Tests\正常系\" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="appsettings.json" Condition="'$(ExcludeConfigFilesFromBuildOutput)'=='true'">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

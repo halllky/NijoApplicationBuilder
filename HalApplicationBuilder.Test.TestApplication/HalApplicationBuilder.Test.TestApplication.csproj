@@ -11,4 +11,12 @@
   <ItemGroup>
     <Folder Include="EntityFramework\" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HalApplicationBuilder\HalApplicationBuilder.csproj">
+      <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
+    </ProjectReference>
+    <ProjectReference Include="..\HalApplicationBuilder.Test\HalApplicationBuilder.Test.csproj">
+      <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
+    </ProjectReference>
+  </ItemGroup>
 </Project>
