@@ -31,6 +31,15 @@
 ### 開発フロー
 ![summary](./README.drawio.svg)
 
+### 0.プロジェクトの準備
+- プロジェクトを作成
+  - .NET Core MVC
+- NuGetパッケージを追加
+  - Microsoft.EntityFrameworkCore
+  - DB用のパッケージ(例: Microsoft.EntityFrameworkCore.Sqlite)
+- DbContextクラスをpartialで作成
+  -
+
 ### 1.プログラマが集約定義等を作成する
 
 #### 属性
