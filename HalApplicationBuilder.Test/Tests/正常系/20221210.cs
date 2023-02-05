@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using HalApplicationBuilder;
 
-namespace HalApplicationBuilderSampleSchema {
+namespace HalApplicationBuilder.Test.Tests.正常系 {
     [Aggregate]
     public class 商品 {
         [Key]
