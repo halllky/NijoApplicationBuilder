@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Test
 {
-    public class CmdProcess
+    public class ExternalProcess
     {
-        public CmdProcess(string workingDirectory = null)
+        public ExternalProcess(string workingDirectory = null)
         {
             WorkingDirectory = workingDirectory;
         }
