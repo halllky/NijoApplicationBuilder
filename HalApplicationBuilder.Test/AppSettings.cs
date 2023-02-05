@@ -21,7 +21,7 @@ namespace HalApplicationBuilder.Test {
         private readonly IConfiguration _configuration;
 
         public string GetTestAppCsprojDir() {
-            var setting = _configuration.GetSection("HalApplicationBuiilder.Test.TestApplication")["CsprojDir"];
+            var setting = _configuration.GetSection("HalApplicationBuiilder.Test.DistMvc")["CsprojDir"];
             return Path.Combine(Directory.GetCurrentDirectory(), setting);
         }
     }

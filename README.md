@@ -33,7 +33,7 @@
 
 ### 0.プロジェクトの準備
 - プロジェクトを作成
-  - .NET Core MVC
+  - `dotnet new mvc`
   - HalApplicationBuilderプロジェクトへの参照を加える
 - NuGetパッケージを追加
   - Microsoft.EntityFrameworkCore
