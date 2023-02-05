@@ -1,13 +1,9 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.809.9
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HalApplicationBuilder", "HalApplicationBuilder\HalApplicationBuilder.csproj", "{E1447BCD-245D-4364-993F-1D4536AC5788}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HalApplicationBuilderSampleMvc", "HalApplicationBuilderSampleMvc\HalApplicationBuilderSampleMvc.csproj", "{ED4D699D-D081-4F56-B7F2-409796BF671F}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HalApplicationBuilderSampleSchema", "HalApplicationBuilderSampleSchema\HalApplicationBuilderSampleSchema.csproj", "{9937D845-D8BF-43A2-8A24-5815CE8B6DDC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HalApplicationBuilder.Test", "HalApplicationBuilder.Test\HalApplicationBuilder.Test.csproj", "{000F09FC-1AD7-4E10-9BB5-6940CC438132}"
 EndProject
@@ -23,14 +19,6 @@ Global
 		{E1447BCD-245D-4364-993F-1D4536AC5788}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E1447BCD-245D-4364-993F-1D4536AC5788}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E1447BCD-245D-4364-993F-1D4536AC5788}.Release|Any CPU.Build.0 = Release|Any CPU
-		{ED4D699D-D081-4F56-B7F2-409796BF671F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{ED4D699D-D081-4F56-B7F2-409796BF671F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{ED4D699D-D081-4F56-B7F2-409796BF671F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{ED4D699D-D081-4F56-B7F2-409796BF671F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9937D845-D8BF-43A2-8A24-5815CE8B6DDC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9937D845-D8BF-43A2-8A24-5815CE8B6DDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9937D845-D8BF-43A2-8A24-5815CE8B6DDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9937D845-D8BF-43A2-8A24-5815CE8B6DDC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{000F09FC-1AD7-4E10-9BB5-6940CC438132}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{000F09FC-1AD7-4E10-9BB5-6940CC438132}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{000F09FC-1AD7-4E10-9BB5-6940CC438132}.Release|Any CPU.ActiveCfg = Release|Any CPU
