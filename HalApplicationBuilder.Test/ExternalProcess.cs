@@ -6,19 +6,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HalApplicationBuilder.Test
-{
-    public class ExternalProcess
-    {
-        public ExternalProcess(string workingDirectory = null)
-        {
+namespace HalApplicationBuilder.Test {
+    public class ExternalProcess {
+        public ExternalProcess(string workingDirectory = null) {
             WorkingDirectory = workingDirectory;
         }
 
         public string WorkingDirectory { get; }
 
-        public string Start(string filename, params string[] args)
-        {
+        public string Start(string filename, params string[] args) {
             using var process = new Process();
             process.StartInfo.WorkingDirectory = WorkingDirectory;
             process.StartInfo.FileName = filename;
@@ -44,17 +40,16 @@ namespace HalApplicationBuilder.Test
 
             Console.WriteLine($"PROCESS END:   {filename} {string.Join(" ", args)}");
 
-            if (process.ExitCode != 0 || standardError.Length > 0)
-            {
+            if (process.ExitCode != 0 || standardError.Length > 0) {
                 throw new InvalidOperationException(
-                  $"プロセス\"{filename}\"の実行時にエラーが発生しました。" + Environment.NewLine +
-                  $"実行時引数: " + string.Join(" ", args) + Environment.NewLine +
-                  $"終了コード: " + process.ExitCode.ToString() + Environment.NewLine +
-                  $"========== standard output =========" + Environment.NewLine +
-                  standardOutput.ToString() + Environment.NewLine +
-                  $"========== standard error ==========" + Environment.NewLine +
-                  standardError.ToString() + Environment.NewLine +
-                  $"====================================" + Environment.NewLine);
+                    $"プロセス\"{filename}\"の実行時にエラーが発生しました。" + Environment.NewLine +
+                    $"実行時引数: " + string.Join(" ", args) + Environment.NewLine +
+                    $"終了コード: " + process.ExitCode.ToString() + Environment.NewLine +
+                    $"========== standard output =========" + Environment.NewLine +
+                    standardOutput.ToString() + Environment.NewLine +
+                    $"========== standard error ==========" + Environment.NewLine +
+                    standardError.ToString() + Environment.NewLine +
+                    $"====================================" + Environment.NewLine);
             }
 
             return standardOutput.ToString();
