@@ -3,6 +3,8 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using HalApplicationBuilder.DotnetEx;
 
+#pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければなりません
+
 namespace HalApplicationBuilder.Test.Tests.正常系 {
 
     [Aggregate]

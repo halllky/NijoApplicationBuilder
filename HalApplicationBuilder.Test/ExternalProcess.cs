@@ -8,11 +8,11 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Test {
     public class ExternalProcess {
-        public ExternalProcess(string workingDirectory = null) {
+        public ExternalProcess(string? workingDirectory = null) {
             WorkingDirectory = workingDirectory;
         }
 
-        public string WorkingDirectory { get; }
+        public string? WorkingDirectory { get; }
 
         public string Start(string filename, params string[] args) {
             using var process = new Process();

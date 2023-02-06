@@ -21,7 +21,10 @@ namespace HalApplicationBuilder.Test {
         private readonly IConfiguration _configuration;
 
         public string GetTestAppCsprojDir() {
-            var setting = _configuration.GetSection("HalApplicationBuiilder.Test.DistMvc")["CsprojDir"];
+            const string SECTION = "HalApplicationBuiilder.Test.DistMvc";
+            const string KEY = "CsprojDir";
+            var setting = _configuration.GetSection(SECTION)[KEY];
+            if (setting == null) throw new InvalidOperationException($"Missing cofig: \"{SECTION}\": {{ \"{{KEY}}\": ... }}");
             return Path.Combine(Directory.GetCurrentDirectory(), setting);
         }
     }

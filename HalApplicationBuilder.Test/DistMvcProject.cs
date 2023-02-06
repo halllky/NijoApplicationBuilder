@@ -45,7 +45,7 @@ namespace HalApplicationBuilder.Test {
                     Assembly.GetExecutingAssembly(),
                     typeof(Tests.正常系.ルート集約1).Namespace);
                 var provider = serviceCollection.BuildServiceProvider();
-                var halapp = provider.GetService<HalApp>();
+                var halapp = provider.GetRequiredService<HalApp>();
 
                 halapp.GenerateCode();
             }
