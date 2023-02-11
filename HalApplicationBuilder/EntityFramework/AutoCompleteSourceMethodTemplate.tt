@@ -17,7 +17,7 @@ namespace <#=DbContextNamespace#> {
         /// <summary>
         /// オートコンプリートのデータソースを読み込む
         /// </summary>
-        public IEnumerable<<#=item.EntityClassName#>> <#=item.MethodName#>(string keyword = null) {
+        public IEnumerable<<#=item.EntityClassName#>> <#=item.MethodName#>(string? keyword = null) {
             var query = (IQueryable<<#=item.EntityClassName#>>)this.<#=item.DbSetName#>;
 <# /*キーワードを当てに行くカラムが特定できている場合*/ #>
 <# if (item.NameColumnName != null) { #>

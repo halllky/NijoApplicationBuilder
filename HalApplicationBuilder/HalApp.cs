@@ -18,7 +18,7 @@ namespace HalApplicationBuilder {
                 .Where(type => type.GetCustomAttribute<AggregateAttribute>() != null);
 
             if (!string.IsNullOrWhiteSpace(@namespace)) {
-                rootAggregateTypes = rootAggregateTypes.Where(type => type.Namespace == @namespace);
+                rootAggregateTypes = rootAggregateTypes.Where(type => type.Namespace.StartsWith(@namespace));
             }
 
             Configure(serviceCollection, config, rootAggregateTypes.ToArray());
@@ -57,7 +57,8 @@ namespace HalApplicationBuilder {
             var config = _services.GetRequiredService<Config>();
 
             var efSourceDir = Path.Combine(config.OutProjectDir, config.EntityFrameworkDirectoryRelativePath);
-            if (!Directory.Exists(efSourceDir)) Directory.CreateDirectory(efSourceDir);
+            if (Directory.Exists(efSourceDir)) Directory.Delete(efSourceDir, recursive: true);
+            Directory.CreateDirectory(efSourceDir);
 
             log?.WriteLine("コード自動生成: Entity定義");
             using (var sw = new StreamWriter(Path.Combine(efSourceDir, "Entities.cs"), append: false, encoding: Encoding.UTF8)) {
@@ -99,9 +100,9 @@ namespace HalApplicationBuilder {
 
             log?.WriteLine("コード自動生成: MVC Model");
             var modelDir = Path.Combine(config.OutProjectDir, config.MvcModelDirectoryRelativePath);
-            var modelFile = Path.Combine(modelDir, "Models.cs");
-            if (!Directory.Exists(modelDir)) Directory.CreateDirectory(modelDir);
-            using (var sw = new StreamWriter(modelFile, append: false, encoding: Encoding.UTF8)) {
+            if (Directory.Exists(modelDir)) Directory.Delete(modelDir, recursive: true);
+            Directory.CreateDirectory(modelDir);
+            using (var sw = new StreamWriter(Path.Combine(modelDir, "Models.cs"), append: false, encoding: Encoding.UTF8)) {
                 var source = new AspNetMvc.MvcModels();
                 sw.Write(source.TransformText(
                     _services.GetRequiredService<IApplicationSchema>(),
@@ -111,10 +112,8 @@ namespace HalApplicationBuilder {
 
             //stream?.WriteLine("コード自動生成: MVC View - 既存ファイル削除");
             var viewDir = Path.Combine(config.OutProjectDir, config.MvcViewDirectoryRelativePath);
-            if (!Directory.Exists(viewDir)) Directory.CreateDirectory(viewDir);
-            //foreach (var file in Directory.GetFiles(viewDir)) {
-            //    File.Delete(file);
-            //}
+            if (Directory.Exists(viewDir)) Directory.Delete(viewDir, recursive: true);
+            Directory.CreateDirectory(viewDir);
 
             log?.WriteLine("コード自動生成: MVC View - MultiView");
             foreach (var aggregate in _services.GetRequiredService<IApplicationSchema>().RootAggregates()) {
@@ -157,9 +156,9 @@ namespace HalApplicationBuilder {
 
             log?.WriteLine("コード自動生成: MVC Controller");
             var controllerDir = Path.Combine(config.OutProjectDir, config.MvcControllerDirectoryRelativePath);
-            var controllerFile = Path.Combine(controllerDir, "Controllers.cs");
-            if (!Directory.Exists(controllerDir)) Directory.CreateDirectory(controllerDir);
-            using (var sw = new StreamWriter(controllerFile, append: false, encoding: Encoding.UTF8)) {
+            if (Directory.Exists(controllerDir)) Directory.Delete(controllerDir, recursive: true);
+            Directory.CreateDirectory(controllerDir);
+            using (var sw = new StreamWriter(Path.Combine(controllerDir, "Controllers.cs"), append: false, encoding: Encoding.UTF8)) {
                 var source = new AspNetMvc.Controller();
                 sw.Write(source.TransformText(
                     _services.GetRequiredService<IApplicationSchema>(),

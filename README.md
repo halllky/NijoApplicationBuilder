@@ -40,6 +40,16 @@
   - DB用のパッケージ(例: Microsoft.EntityFrameworkCore.Sqlite)
 - DbContextクラスをpartialで作成
 
+```cs
+using Microsoft.EntityFrameworkCore;
+
+namespace YourProjectNameSpace {
+    public partial class YourDbContext : DbContext {
+        public YourDbContext(DbContextOptions<YourDbContext> options) : base(options) { }
+    }
+}
+```
+
 ### 1.プログラマが集約定義等を作成する
 
 #### 属性

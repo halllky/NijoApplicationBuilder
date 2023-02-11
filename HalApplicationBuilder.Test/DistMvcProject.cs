@@ -1,7 +1,11 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Firefox;
 
 namespace HalApplicationBuilder.Test {
     public class DistMvcProject {
@@ -36,14 +40,14 @@ namespace HalApplicationBuilder.Test {
             }
         }
 
-        public void GenerateCode() {
+        public void GenerateCode(string? @namespace) {
             lock (_lockObject) {
                 var serviceCollection = new ServiceCollection();
                 HalApp.Configure(
                     serviceCollection,
                     GetConfig(),
                     Assembly.GetExecutingAssembly(),
-                    typeof(Tests.正常系.ルート集約1).Namespace);
+                    @namespace);
                 var provider = serviceCollection.BuildServiceProvider();
                 var halapp = provider.GetRequiredService<HalApp>();
 
@@ -52,13 +56,64 @@ namespace HalApplicationBuilder.Test {
         }
         public void BuildProject() {
             lock (_lockObject) {
-                var csprojDir = AppSettings.Load().GetTestAppCsprojDir();
-                var cmd = new ExternalProcess(csprojDir);
+                using var cmd = new ExternalProcess() {
+                    WorkingDirectory = AppSettings.Load().GetTestAppCsprojDir(),
+                };
                 try {
-                    cmd.Start("dotnet", "build");
+                    cmd.StartSync("dotnet", "build");
                 } catch (Exception ex) {
                     throw new Exception("Failure to build test project.", ex);
                 }
+            }
+        }
+
+        public class WebProcess : IDisposable {
+            public static WebProcess Run() {
+
+                var dotnetProcess = new ExternalProcess {
+                    WorkingDirectory = AppSettings.Load().GetTestAppCsprojDir(),
+                };
+                dotnetProcess.Start("dotnet", "run", "--no-build");
+
+                var timeout = DateTime.Now.AddSeconds(10);
+                while (DateTime.Now <= timeout) {
+                    foreach (var webProcess in Process.GetProcessesByName(WEB_PROCESS_NAME)) {
+                        return new WebProcess(dotnetProcess!, webProcess);
+                    }
+                    Thread.Sleep(100);
+                }
+
+                throw new TimeoutException($"Process '{WEB_PROCESS_NAME}' not found.");
+            }
+            private const string WEB_PROCESS_NAME = "HalApplicationBuilder.Test.DistMvc";
+
+            private WebProcess(ExternalProcess dotnetProcess, Process webProcess) {
+                _dotnetProcess = dotnetProcess;
+                _webProcess = webProcess;
+            }
+            private readonly ExternalProcess _dotnetProcess;
+            private readonly Process _webProcess;
+
+            private Uri? _rootUrl;
+            public Uri GetRootURL() {
+                if (_rootUrl == null) {
+                    var url = _dotnetProcess.FindStandardOut(new Regex(@"^\s*Now listening on: (http.*)"), 10);
+                    if (url == null) throw new InvalidOperationException($"テストアプリケーションのURLを特定できません。");
+                    _rootUrl = new Uri(url);
+                }
+                return _rootUrl;
+            }
+
+            public IWebDriver GetFireFoxDriver() {
+                var driver = new FirefoxDriver();
+                driver.Navigate().GoToUrl(GetRootURL());
+                return driver;
+            }
+
+            public void Dispose() {
+                _webProcess.Kill();
+                _webProcess.Dispose();
+                _dotnetProcess.Dispose();
             }
         }
     }

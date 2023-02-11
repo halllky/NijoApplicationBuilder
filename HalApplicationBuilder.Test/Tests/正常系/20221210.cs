@@ -5,7 +5,7 @@ using HalApplicationBuilder;
 
 #pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければなりません
 
-namespace HalApplicationBuilder.Test.Tests.正常系 {
+namespace HalApplicationBuilder.Test.Tests.正常系._20221210試用版 {
     [Aggregate]
     public class 商品 {
         [Key]
