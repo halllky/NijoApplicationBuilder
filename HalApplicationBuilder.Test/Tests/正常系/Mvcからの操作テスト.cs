@@ -10,8 +10,7 @@ namespace HalApplicationBuilder.Test.Tests.正常系 {
             // DistMvcProject.Instance.BuildProject();
             using var web = DistMvcProject.WebProcess.Run();
             using var driver = web.GetFireFoxDriver();
-            Console.WriteLine(driver.Title);
-            Assert.Equal("サンプルプロジェクト", "サンプルプロジェクト");
+            Assert.Equal("Home Page - HalApplicationBuilder.Test.DistMvc", driver.Title);
         }
     }
 }
