@@ -35,10 +35,25 @@
 - プロジェクトを作成
   - `dotnet new mvc`
   - HalApplicationBuilderプロジェクトへの参照を加える
+  - `_Layout.cshtml` を指定の内容に書き換え
+  - tailwindcssを有効にする
+    - `npm init -y`
+    - `npm i autoprefixer postcss postcss-cli tailwindcss`
+    - `app.css` を指定の内容で作成
+    - `tailwind.config.js` を指定の内容で作成
+    - `postcss.config.js` を指定の内容で作成
 - NuGetパッケージを追加
   - Microsoft.EntityFrameworkCore
   - DB用のパッケージ(例: Microsoft.EntityFrameworkCore.Sqlite)
+  - Microsoft.EntityFrameworkCore.Proxies
+    - ナビゲーションプロパティアクセス時に自動で遅延ロードするため(UseLazyLoadingProxies)
 - DbContextクラスをpartialで作成
+- `IServiceCollection` に必要なサービスを登録する
+  - `RuntimeContext`
+  - そのプロジェクトのDbContext
+  - `Microsoft.EntityFrameworkCore.DbContext`
+    - 上記プロジェクト用DbContextを返すだけでOK
+  - `HalApplicationBuilder.Core.DBModel.SelectStatement.IParamGenerator`
 
 ```cs
 using Microsoft.EntityFrameworkCore;

@@ -3,6 +3,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Firefox;
@@ -35,12 +37,12 @@ namespace HalApplicationBuilder.Test {
         public Assembly GetAssembly() {
             lock (_lockObject) {
                 var csprojDir = AppSettings.Load().GetTestAppCsprojDir();
-                var path = Path.Combine(csprojDir, "bin", "Debug", "net5.0", "HalApplicationBuilder.Test.DistMvc.dll");
+                var path = Path.Combine(csprojDir, "bin", "Debug", "net7.0", "HalApplicationBuilder.Test.DistMvc.dll");
                 return Assembly.LoadFile(path);
             }
         }
 
-        public void GenerateCode(string? @namespace) {
+        public DistMvcProject GenerateCode(string? @namespace) {
             lock (_lockObject) {
                 var serviceCollection = new ServiceCollection();
                 HalApp.Configure(
@@ -53,8 +55,9 @@ namespace HalApplicationBuilder.Test {
 
                 halapp.GenerateCode();
             }
+            return this;
         }
-        public void BuildProject() {
+        public DistMvcProject BuildProject() {
             lock (_lockObject) {
                 using var cmd = new ExternalProcess() {
                     WorkingDirectory = AppSettings.Load().GetTestAppCsprojDir(),
@@ -65,7 +68,10 @@ namespace HalApplicationBuilder.Test {
                     throw new Exception("Failure to build test project.", ex);
                 }
             }
+            return this;
         }
+
+        public WebProcess RunWebProcess() => WebProcess.Run();
 
         public class WebProcess : IDisposable {
             public static WebProcess Run() {
