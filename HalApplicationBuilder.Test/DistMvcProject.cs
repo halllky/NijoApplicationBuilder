@@ -2,12 +2,15 @@
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
 using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Firefox;
+using static HalApplicationBuilder.Core.DBModel.SelectStatement;
 
 namespace HalApplicationBuilder.Test {
     public class DistMvcProject {
@@ -57,69 +60,97 @@ namespace HalApplicationBuilder.Test {
             }
             return this;
         }
-        public DistMvcProject BuildProject() {
-            lock (_lockObject) {
-                using var cmd = new ExternalProcess() {
-                    WorkingDirectory = AppSettings.Load().GetTestAppCsprojDir(),
-                };
-                try {
-                    cmd.StartSync("dotnet", "build");
-                } catch (Exception ex) {
-                    throw new Exception("Failure to build test project.", ex);
-                }
-            }
-            return this;
-        }
 
         public WebProcess RunWebProcess() => WebProcess.Run();
 
-        public class WebProcess : IDisposable {
-            public static WebProcess Run() {
+        public class WebProcess : IDisposable
+        {
+            public static WebProcess Run()
+            {
+                var process = new Process();
+                process.StartInfo.WorkingDirectory = "../../../../HalApplicationBuilder.Test.DistMvc";
+                process.StartInfo.FileName = "dotnet";
+                process.StartInfo.ArgumentList.Add("run");
 
-                var dotnetProcess = new ExternalProcess {
-                    WorkingDirectory = AppSettings.Load().GetTestAppCsprojDir(),
+                process.StartInfo.UseShellExecute = false;
+
+                process.StartInfo.RedirectStandardInput = true;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.RedirectStandardError = true;
+                process.StartInfo.StandardInputEncoding = Encoding.UTF8;
+                process.StartInfo.StandardErrorEncoding = Encoding.UTF8;
+                process.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+
+                var stdOut = new StringBuilder();
+                process.OutputDataReceived += (sender, e) =>
+                {
+                    stdOut.AppendLine("STDOUT:: " + e.Data);
+                    Console.WriteLine("STDOUT:: " + e.Data);
                 };
-                dotnetProcess.Start("dotnet", "run", "--no-build");
+                process.ErrorDataReceived += (sender, e) =>
+                {
+                    Console.WriteLine("STDERR:: " + e.Data);
+                };
 
-                var timeout = DateTime.Now.AddSeconds(10);
-                while (DateTime.Now <= timeout) {
-                    foreach (var webProcess in Process.GetProcessesByName(WEB_PROCESS_NAME)) {
-                        return new WebProcess(dotnetProcess!, webProcess);
-                    }
-                    Thread.Sleep(100);
-                }
+                process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
 
-                throw new TimeoutException($"Process '{WEB_PROCESS_NAME}' not found.");
+                Thread.Sleep(10 * 1000);
+
+                return new WebProcess(process, stdOut);
             }
-            private const string WEB_PROCESS_NAME = "HalApplicationBuilder.Test.DistMvc";
 
-            private WebProcess(ExternalProcess dotnetProcess, Process webProcess) {
-                _dotnetProcess = dotnetProcess;
-                _webProcess = webProcess;
+            private WebProcess(Process process, StringBuilder stdOut)
+            {
+                _process = process;
+                _stdOut = stdOut;
             }
-            private readonly ExternalProcess _dotnetProcess;
-            private readonly Process _webProcess;
 
+            private readonly StringBuilder _stdOut;
             private Uri? _rootUrl;
-            public Uri GetRootURL() {
-                if (_rootUrl == null) {
-                    var url = _dotnetProcess.FindStandardOut(new Regex(@"^\s*Now listening on: (http.*)"), 10);
-                    if (url == null) throw new InvalidOperationException($"テストアプリケーションのURLを特定できません。");
-                    _rootUrl = new Uri(url);
+            public Uri GetRootURL()
+            {
+                if (_rootUrl != null) return _rootUrl;
+
+                var regex = new Regex(@"Now listening on: (http.*)");
+                var str = _stdOut.ToString().Split(Environment.NewLine);
+                foreach (var line in str)
+                {
+                    var match = regex.Match(line);
+                    if (match.Success)
+                    {
+                        _rootUrl = new Uri(match.Groups[1].Value);
+                        return _rootUrl;
+                    }
                 }
-                return _rootUrl;
+
+                throw new InvalidOperationException($"テストアプリケーションのURLを特定できません。");
             }
 
-            public IWebDriver GetFireFoxDriver() {
+            public IWebDriver GetChromeDriver()
+            {
+                var driver = new ChromeDriver();
+                driver.Navigate().GoToUrl(GetRootURL());
+                return driver;
+            }
+            public IWebDriver GetFireFoxDriver()
+            {
                 var driver = new FirefoxDriver();
                 driver.Navigate().GoToUrl(GetRootURL());
                 return driver;
             }
 
-            public void Dispose() {
-                _webProcess.Kill();
-                _webProcess.Dispose();
-                _dotnetProcess.Dispose();
+            private readonly Process _process;
+            private bool _disposed = false;
+            public void Dispose()
+            {
+                if (!_disposed)
+                {
+                    _process.Kill(entireProcessTree: true);
+                    _process.Dispose();
+                    _disposed = true;
+                }
             }
         }
     }

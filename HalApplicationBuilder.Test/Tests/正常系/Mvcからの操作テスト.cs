@@ -9,9 +9,8 @@ namespace HalApplicationBuilder.Test.Tests.正常系 {
         public void 登録検索更新削除() {
             using var web = DistMvcProject.Instance
                 .GenerateCode(typeof(_20221210試用版.商品).Namespace)
-                .BuildProject()
                 .RunWebProcess();
-            using var driver = web.GetFireFoxDriver();
+            using var driver = web.GetChromeDriver();
 
             // トップページ
             var shohinLink = driver.FindElement(By.LinkText("商品"));
