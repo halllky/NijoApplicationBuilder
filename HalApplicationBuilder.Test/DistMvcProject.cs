@@ -81,48 +81,52 @@ namespace HalApplicationBuilder.Test {
                 process.StartInfo.StandardErrorEncoding = Encoding.UTF8;
                 process.StartInfo.StandardOutputEncoding = Encoding.UTF8;
 
-                var stdOut = new StringBuilder();
-                process.OutputDataReceived += (sender, e) =>
-                {
-                    stdOut.AppendLine("STDOUT:: " + e.Data);
-                    Console.WriteLine("STDOUT:: " + e.Data);
-                };
-                process.ErrorDataReceived += (sender, e) =>
-                {
-                    Console.WriteLine("STDERR:: " + e.Data);
-                };
-
+                var webPrcess = new WebProcess(process);
                 process.Start();
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
 
-                Thread.Sleep(10 * 1000);
-
-                return new WebProcess(process, stdOut);
+                return webPrcess;
             }
 
-            private WebProcess(Process process, StringBuilder stdOut)
+            private WebProcess(Process process)
             {
                 _process = process;
-                _stdOut = stdOut;
+                _process.OutputDataReceived += StdOutReceived;
+                _process.ErrorDataReceived += StdErrReceived;
             }
 
-            private readonly StringBuilder _stdOut;
+
+            private void StdOutReceived(object sender, DataReceivedEventArgs e)
+            {
+                _stdOut.AppendLine("STDOUT:: " + e.Data);
+                Console.WriteLine("STDOUT:: " + e.Data);
+            }
+            private void StdErrReceived(object sender, DataReceivedEventArgs e)
+            {
+                _stdOut.AppendLine("STDERR:: " + e.Data);
+                Console.WriteLine("STDERR:: " + e.Data);
+            }
+
+            private readonly StringBuilder _stdOut = new();
+
+
             private Uri? _rootUrl;
             public Uri GetRootURL()
             {
                 if (_rootUrl != null) return _rootUrl;
 
                 var regex = new Regex(@"Now listening on: (http.*)");
-                var str = _stdOut.ToString().Split(Environment.NewLine);
-                foreach (var line in str)
+                var timeout = DateTime.Now.AddSeconds(30);
+                while (DateTime.Now <= timeout)
                 {
-                    var match = regex.Match(line);
+                    var match = regex.Match(_stdOut.ToString());
                     if (match.Success)
                     {
                         _rootUrl = new Uri(match.Groups[1].Value);
                         return _rootUrl;
                     }
+                    Thread.Sleep(1000);
                 }
 
                 throw new InvalidOperationException($"テストアプリケーションのURLを特定できません。");

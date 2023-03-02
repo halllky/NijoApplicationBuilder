@@ -93,7 +93,7 @@ namespace HalApplicationBuilder.AspNetMvc {
         [HttpPost]
         public virtual IActionResult Update(SingleView.Model<TInstanceModel> model) {
             if (RuntimeContext.UpdateInstance(model.Item, out var id, out var errors)) {
-                return RedirectToAction(nameof(Detail), new { id });
+                return RedirectToAction(nameof(Detail), new { id = id.StringValue });
             } else {
                 foreach (var err in errors) ModelState.AddModelError("", err);
                 return View(SingleViewName, model);
