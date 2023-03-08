@@ -29,7 +29,7 @@
 ---
 ## ドキュメント
 ### 開発フロー
-![summary](./README.drawio.svg)
+![summary](README_files/README.drawio.svg)
 
 ### 0.プロジェクトの準備
 - プロジェクトを作成
