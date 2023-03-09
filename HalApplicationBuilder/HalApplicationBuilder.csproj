@@ -4,25 +4,25 @@
 		<TargetFramework>net7.0</TargetFramework>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.0"/>
-		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.2"/>
-		<PackageReference Include="System.CodeDom" Version="7.0.0"/>
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.ViewFeatures" Version="2.2.0"/>
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0"/>
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="7.0.2"/>
-		<PackageReference Include="Microsoft.AspNetCore.Razor" Version="2.2.0"/>
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.2"/>
+		<PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.2" />
+		<PackageReference Include="System.CodeDom" Version="7.0.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.ViewFeatures" Version="2.2.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="7.0.2" />
+		<PackageReference Include="Microsoft.AspNetCore.Razor" Version="2.2.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.2" />
 	</ItemGroup>
 	<ItemGroup>
-		<Folder Include="Core\"/>
-		<Folder Include="AspNetMvc\"/>
-		<Folder Include="EntityFramework\"/>
-		<Folder Include="DotnetEx\"/>
-		<Folder Include="AspNetMvc\TagHelpers\"/>
-		<Folder Include="Core\Members\"/>
-		<Folder Include="Core\DBModel\"/>
-		<Folder Include="Core\UIModel\"/>
-		<Folder Include="Core\Runtime\"/>
+		<Folder Include="Core\" />
+		<Folder Include="AspNetMvc\" />
+		<Folder Include="EntityFramework\" />
+		<Folder Include="DotnetEx\" />
+		<Folder Include="AspNetMvc\TagHelpers\" />
+		<Folder Include="Core\Members\" />
+		<Folder Include="Core\DBModel\" />
+		<Folder Include="Core\UIModel\" />
+		<Folder Include="Core\Runtime\" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Update="Core\AggregateInstanceTemplate.tt">
@@ -93,13 +93,20 @@
 			<Generator>TextTemplatingFilePreprocessor</Generator>
 			<LastGenOutput>OnModelCreatingTemplate.cs</LastGenOutput>
 		</None>
+		<None Update="DotnetEx\T4Template.tt">
+		  <Generator>TextTemplatingFileGenerator</Generator>
+		</None>
+		<None Update="EntityFramework\EntityClassTemplate.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>EntityClassTemplate.cs</LastGenOutput>
+		</None>
 	</ItemGroup>
 	<ItemGroup>
-		<Compile Remove="Runtime\MultiView\MultiViewTemplate.cs"/>
-		<Compile Remove="Impl\SchalarValueSearchCondition.cs"/>
-		<Compile Remove="Impl\ReferenceInstanceTemplate.cs"/>
-		<Compile Remove="Impl\VariationSearchConditionTemplate.cs"/>
-		<Compile Remove="Impl\VariationInstanceTemplate.cs"/>
+		<Compile Remove="Runtime\MultiView\MultiViewTemplate.cs" />
+		<Compile Remove="Impl\SchalarValueSearchCondition.cs" />
+		<Compile Remove="Impl\ReferenceInstanceTemplate.cs" />
+		<Compile Remove="Impl\VariationSearchConditionTemplate.cs" />
+		<Compile Remove="Impl\VariationInstanceTemplate.cs" />
 	</ItemGroup>
 	<ItemGroup>
 		<Compile Update="CodeGenerating\MultiView\MultiViewTemplate.cs">
@@ -155,6 +162,9 @@
 		</Compile>
 		<Compile Update="EntityFramework\OnModelCreatingTemplate.cs">
 			<DependentUpon>OnModelCreatingTemplate.tt</DependentUpon>
+		</Compile>
+		<Compile Update="EntityFramework\EntityClassTemplate.cs">
+		  <DependentUpon>EntityClassTemplate.tt</DependentUpon>
 		</Compile>
 	</ItemGroup>
 </Project>

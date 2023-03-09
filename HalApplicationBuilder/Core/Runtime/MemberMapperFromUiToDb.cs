@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using HalApplicationBuilder.Core.Members;
 
 namespace HalApplicationBuilder.Core.Runtime {
@@ -123,13 +124,16 @@ namespace HalApplicationBuilder.Core.Runtime {
 
         void IMemberVisitor.Visit(Reference member) {
             var dbEntity = context.DbSchema.GetDbEntity(member.RefTarget);
+
             var uiProp = uiInstance.GetType().GetProperty(member.InstanceModelPropName);
             var referenceDto = (UIModel.ReferenceDTO)uiProp.GetValue(uiInstance);
+
             var parsed = UIModel.InstanceKey.TryParse(referenceDto.InstanceKey, dbEntity, out var instanceKey);
+
             var dbType = dbInstance.GetType();
             foreach (var column in member.RefPKs) {
                 var dbProp = dbType.GetProperty(column.PropertyName);
-                var value = parsed ? instanceKey.ValuesDictionary[column] : null;
+                var value = parsed ? instanceKey.ValuesDictionary[column.FK] : null;
                 dbProp.SetValue(dbInstance, value);
             }
         }

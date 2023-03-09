@@ -68,7 +68,7 @@ namespace HalApplicationBuilder.Core.Members {
 
         public override IEnumerable<MvcModelProperty> CreateSearchResultModels() {
             yield return new MvcModelProperty {
-                CSharpTypeName = "string",
+                CSharpTypeName = "int?",
                 PropertyName = SearchResultPropName,
             };
         }

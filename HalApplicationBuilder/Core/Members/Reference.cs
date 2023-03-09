@@ -29,16 +29,17 @@ namespace HalApplicationBuilder.Core.Members {
             yield break;
         }
 
-        private IReadOnlyList<DbColumn> _refPKs;
-        internal IReadOnlyList<DbColumn> RefPKs {
+        private IReadOnlyList<ForeignKeyColumn> _refPKs;
+        internal IReadOnlyList<ForeignKeyColumn> RefPKs {
             get {
                 if (_refPKs == null) {
                     _refPKs = DbSchema
                         .GetDbEntity(RefTarget)
                         .PKColumns
-                        .Select(foreignKey => new DbColumn {
+                        .Select(foreignKey => new ForeignKeyColumn {
                             CSharpTypeName = foreignKey.CSharpTypeName,
                             PropertyName = $"{Name}_{foreignKey.PropertyName}",
+                            FK = foreignKey,
                         })
                         .ToList();
                 }

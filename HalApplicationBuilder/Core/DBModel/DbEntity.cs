@@ -174,4 +174,8 @@ namespace HalApplicationBuilder.Core.DBModel {
     public class IndexColumn : DbColumn{
 
     }
+
+    public class ForeignKeyColumn : DbColumn {
+        public DbColumn FK { get; set; }
+    }
 }

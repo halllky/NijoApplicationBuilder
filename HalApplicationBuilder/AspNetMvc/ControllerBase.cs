@@ -124,7 +124,7 @@ namespace HalApplicationBuilder.AspNetMvc {
 
             // name属性用
             var index = $"[{currentArrayCount}]";
-            ViewData.TemplateInfo.HtmlFieldPrefix = modelPath + index;
+            ViewData.TemplateInfo.HtmlFieldPrefix = $"{nameof(SingleView.Model<UIInstanceBase>.Item)}.{modelPath + index}";
 
             return PartialView(partialView.AspViewPath, instance);
         }
