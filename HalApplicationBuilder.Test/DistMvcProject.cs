@@ -135,14 +135,30 @@ namespace HalApplicationBuilder.Test {
             public IWebDriver GetChromeDriver()
             {
                 var driver = new ChromeDriver();
-                driver.Navigate().GoToUrl(GetRootURL());
-                return driver;
+                try
+                {
+                    driver.Navigate().GoToUrl(GetRootURL());
+                    return driver;
+                }
+                catch
+                {
+                    driver?.Dispose();
+                    throw;
+                }
             }
             public IWebDriver GetFireFoxDriver()
             {
                 var driver = new FirefoxDriver();
-                driver.Navigate().GoToUrl(GetRootURL());
-                return driver;
+                try
+                {
+                    driver.Navigate().GoToUrl(GetRootURL());
+                    return driver;
+                }
+                catch
+                {
+                    driver?.Dispose();
+                    throw;
+                }
             }
 
             private readonly Process _process;
