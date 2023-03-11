@@ -102,6 +102,7 @@ namespace HalApplicationBuilder.Core.Runtime {
 
             var searchResult = (IEnumerable)method.Invoke(dbContext, new object[] { searchCondition });
             foreach (var item in searchResult) {
+                ((SearchResultBase)item).__halapp__InstanceKey = InstanceKey.Create(item, dbEntity).StringValue;
                 yield return item;
             }
         }
