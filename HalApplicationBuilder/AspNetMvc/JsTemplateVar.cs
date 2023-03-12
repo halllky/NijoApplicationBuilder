@@ -1,5 +1,6 @@
 ﻿using System;
 using HalApplicationBuilder.Core.UIModel;
+using HalApplicationBuilder.Core.Runtime;
 
 namespace HalApplicationBuilder.AspNetMvc {
     partial class JsTemplate {

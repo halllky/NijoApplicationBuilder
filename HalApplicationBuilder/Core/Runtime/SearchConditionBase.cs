@@ -1,5 +1,5 @@
 ﻿using System;
-namespace HalApplicationBuilder.Core.UIModel {
+namespace HalApplicationBuilder.Core.Runtime {
     public class SearchConditionBase {
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 20;

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using HalApplicationBuilder.Core.UIModel;
+using HalApplicationBuilder.Core.Runtime;
 
 namespace HalApplicationBuilder.AspNetMvc {
     public class MvcModels {

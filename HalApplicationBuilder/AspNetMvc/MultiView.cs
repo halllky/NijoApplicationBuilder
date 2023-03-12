@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using HalApplicationBuilder.Core.UIModel;
+using HalApplicationBuilder.Core.Runtime;
 
 namespace HalApplicationBuilder.AspNetMvc {
     public class MultiView {
