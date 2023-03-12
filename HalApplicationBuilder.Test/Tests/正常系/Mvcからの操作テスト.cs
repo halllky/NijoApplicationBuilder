@@ -3,10 +3,12 @@ using Xunit;
 using OpenQA.Selenium;
 
 namespace HalApplicationBuilder.Test.Tests.正常系 {
+
+    [Collection("Mvc使用統合テスト")]
     public class Mvc経由の操作テスト {
 
         [Fact]
-        public void 登録検索更新削除() {
+        public void 正常系テスト_README用の単純な集約定義() {
             using var web = DistMvcProject.Instance
                 .GenerateCode(typeof(_20221210試用版.商品).Namespace)
                 .RunWebProcess();
@@ -70,6 +72,21 @@ namespace HalApplicationBuilder.Test.Tests.正常系 {
             Assert.Equal("001", bodyCells[1].Text);
             Assert.Equal("商品001", bodyCells[2].Text);
             Assert.Equal("1", bodyCells[3].Text);
+        }
+
+        [Fact]
+        public void 正常系テスト_パターン網羅された集約定義()
+        {
+            using var web = DistMvcProject.Instance
+                .GenerateCode(typeof(HalApplicationBuilder.Test.Tests.正常系.ルート集約1).Namespace)
+                .RunWebProcess();
+            using var driver = web.GetChromeDriver();
+
+            // トップページ
+            var shohinLink = driver.FindElement(By.LinkText("ルート集約1"));
+            shohinLink.Click();
+
+            throw new NotImplementedException();
         }
     }
 }
