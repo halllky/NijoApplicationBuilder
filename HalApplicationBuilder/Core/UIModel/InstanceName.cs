@@ -11,7 +11,7 @@ namespace HalApplicationBuilder.Core.UIModel {
             var name = "";
             foreach (var col in dbEntity.InstanceNameColumns) {
                 var prop = type.GetProperty(col.PropertyName);
-                name += prop.GetValue(dbInstance);
+                name += prop?.GetValue(dbInstance);
             }
             return new InstanceName { Value = name };
         }

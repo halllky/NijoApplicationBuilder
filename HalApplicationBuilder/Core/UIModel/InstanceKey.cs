@@ -16,7 +16,7 @@ namespace HalApplicationBuilder.Core.UIModel {
             var dict = dbEntity.PKColumns
                 .Select(col => {
                     var prop = type.GetProperty(col.PropertyName);
-                    var value = prop.GetValue(dbInstance);
+                    var value = prop?.GetValue(dbInstance);
                     return new { col, value };
                 })
                 .ToDictionary(x => x.col, x => x.value);
