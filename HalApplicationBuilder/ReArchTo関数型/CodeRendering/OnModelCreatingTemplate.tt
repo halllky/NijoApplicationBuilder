@@ -1,0 +1,35 @@
+<#@ template language="C#" linePragmas="false" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+
+namespace <#=_config.DbContextNamespace#> {
+    using Microsoft.EntityFrameworkCore;
+
+    partial class <#=_config.DbContextName#> {
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder) {
+<# foreach (var entity in _dbEntities) { #>
+            modelBuilder.Entity<<#=entity.CSharpTypeName#>>(ett => {
+<# /* 主キー定義 */ #>
+                ett.HasKey(e => new {
+<# foreach (var pk in entity.PrimaryKeys) { #>
+                    e.<#=pk.PropertyName#>,
+<# } #>
+                });
+<# /* ナビゲーションプロパティ定義 */ #>
+<# foreach (var navigation in entity.NavigationProperties) { #>
+<# if (navigation.IsPrincipal && navigation.IsManyToOne) { #>
+                ett.HasMany(e => e.<#=navigation.PropertyName#>)
+                   .WithOne(e => e.<#=navigation.OpponentName#>);
+<# } else if (navigation.IsPrincipal && !navigation.IsManyToOne) { #>
+                ett.HasOne(e => e.<#=navigation.PropertyName#>)
+                   .WithOne(e => e.<#=navigation.OpponentName#>);
+<# } #>
+            });
+<# } #>
+<# } #>
+        }
+    }
+}
