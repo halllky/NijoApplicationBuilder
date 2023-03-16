@@ -21,7 +21,7 @@
     <div class="border mt-2 p-2">
 
 <# PushIndent("        "); #>
-<# _rootAggregate.RenderSearchCondition(new RenderingContext(this)); #>
+<# _rootAggregate.RenderSearchCondition(new RenderingContext(this, $"@Model.{nameof(Runtime.AspNetMvc.MultiViewModel<Runtime.SearchConditionBase, Runtime.SearchResultBase>.SearchCondition)}")); #>
 <# PopIndent(); #>
 
         <button asp-action="<#=MvcControllerTemplate.SEARCH_ACTION_NAME#>" class="halapp-btn-primary">検索</button>

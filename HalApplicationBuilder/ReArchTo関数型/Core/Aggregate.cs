@@ -11,6 +11,10 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
 {
     internal class Aggregate : ValueObject
     {
+        internal static Aggregate AsChild(Type underlyingType, AggregateMember parent) {
+            return new Aggregate(underlyingType, parent, null);
+        }
+
         internal static Aggregate AsRef(Type underlyingType, AggregateMember? refSource) {
             return new Aggregate(underlyingType, null, refSource);
         }

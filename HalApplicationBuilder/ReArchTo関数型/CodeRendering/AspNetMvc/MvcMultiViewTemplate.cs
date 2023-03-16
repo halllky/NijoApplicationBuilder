@@ -38,7 +38,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
 
 ");
  PushIndent("        "); 
- _rootAggregate.RenderSearchCondition(new RenderingContext(this)); 
+ _rootAggregate.RenderSearchCondition(new RenderingContext(this, $"@Model.{nameof(Runtime.AspNetMvc.MultiViewModel<Runtime.SearchConditionBase, Runtime.SearchResultBase>.SearchCondition)}")); 
  PopIndent(); 
             this.Write("\n        <button asp-action=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(MvcControllerTemplate.SEARCH_ACTION_NAME));

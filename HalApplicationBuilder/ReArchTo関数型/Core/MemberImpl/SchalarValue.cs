@@ -30,6 +30,11 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             return false;
         }
 
+        internal override IEnumerable<Aggregate> GetChildAggregates()
+        {
+            yield break;
+        }
+
         internal override void BuildSearchMethod(SearchMethodDTO method)
         {
             throw new NotImplementedException();

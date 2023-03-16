@@ -14,7 +14,11 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
         }
 
         internal IEnumerable<Aggregate> GetDescendants() {
-            throw new NotImplementedException();
+            foreach (var member in GetMembers()) {
+                foreach (var child in member.GetChildAggregates()) {
+                    yield return child;
+                }
+            }
         }
 
         internal CodeRendering.SearchMethodDTO BuildSearchMethod(Config config, string paramVarName, string queryVarName)

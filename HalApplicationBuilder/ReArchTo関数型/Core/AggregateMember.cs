@@ -14,11 +14,13 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
             Owner = owner;
         }
 
-        private readonly PropertyInfo _underlyingProp;
+        protected readonly PropertyInfo _underlyingProp;
 
         internal Aggregate Owner { get; }
 
         internal bool IsPrimary => _underlyingProp.GetCustomAttribute<KeyAttribute>() != null;
+
+        internal abstract IEnumerable<Aggregate> GetChildAggregates();
 
         internal abstract IEnumerable<RenderedProerty> ToDbEntityMember();
         internal abstract IEnumerable<RenderedProerty> ToSearchConditionMember();

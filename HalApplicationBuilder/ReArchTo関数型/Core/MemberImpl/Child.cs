@@ -13,6 +13,13 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
     internal class Child : AggregateMember {
         internal Child(PropertyInfo propertyInfo, Aggregate owner) : base(propertyInfo, owner) { }
 
+        internal override IEnumerable<Aggregate> GetChildAggregates()
+        {
+            yield return Aggregate.AsChild(
+                _underlyingProp.PropertyType.GetGenericArguments()[0],
+                this);
+        }
+
         internal override void BuildSearchMethod(SearchMethodDTO method)
         {
             throw new NotImplementedException();

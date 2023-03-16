@@ -5,8 +5,9 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering
 {
     internal class RenderingContext
     {
-        internal RenderingContext(ITemplate template) {
+        internal RenderingContext(ITemplate template, string rootObjectName) {
             Template = template;
+            _root = rootObjectName;
         }
 
         private readonly string _root;

@@ -11,6 +11,26 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
     internal class Variation : AggregateMember {
         internal Variation(PropertyInfo propertyInfo, Aggregate owner) : base(propertyInfo, owner) { }
 
+        internal override IEnumerable<Aggregate> GetChildAggregates() {
+            var childType = _underlyingProp.PropertyType.GetGenericArguments()[0];
+            var attrs = _underlyingProp.GetCustomAttributes<VariationAttribute>().ToArray();
+
+            // バリエーションが存在するかチェック
+            if (!attrs.Any())
+                throw new InvalidOperationException($"{childType.Name} の派生型が定義されていない");
+
+            // 型の妥当性チェック
+            var cannotAssignable = attrs.Where(x => !childType.IsAssignableFrom(x.Type)).ToArray();
+            if (cannotAssignable.Any()) {
+                var typeNames = string.Join(", ", cannotAssignable.Select(x => x.Type.Name));
+                throw new InvalidOperationException($"{childType.Name} の派生型でない: {typeNames}");
+            }
+
+            foreach (var attr in attrs) {
+                yield return Aggregate.AsChild(attr.Type, this);
+            }
+        }
+
         internal override void BuildSearchMethod(SearchMethodDTO method)
         {
             throw new NotImplementedException();

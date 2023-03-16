@@ -10,6 +10,11 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
     internal class Reference : AggregateMember {
         internal Reference(PropertyInfo propertyInfo, Aggregate owner) : base(propertyInfo, owner) { }
 
+        internal override IEnumerable<Aggregate> GetChildAggregates()
+        {
+            yield break;
+        }
+
         internal override void BuildSearchMethod(SearchMethodDTO method)
         {
             throw new NotImplementedException();

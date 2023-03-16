@@ -12,7 +12,7 @@
     }
 
 <# PushIndent("    "); #>
-<# _aggregate.RenderAspNetMvcPartialView(new RenderingContext(this)); #>
+<# _aggregate.RenderAspNetMvcPartialView(new RenderingContext(this, "@Model")); #>
 <# PopIndent(); #>
 
 <# foreach (var field in _hiddenFields) { #>
