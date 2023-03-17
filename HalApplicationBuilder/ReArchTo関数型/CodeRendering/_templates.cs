@@ -19,7 +19,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering {
     partial class EntityClassTemplate {
         internal EntityClassTemplate(Core.Config config, IEnumerable<Core.Aggregate> aggregates) {
             _config = config;
-            _dbEntities = aggregates.Select(a => a.ToDbEntity(config));
+            _dbEntities = aggregates.Select(a => a.ToDbEntity());
         }
         private readonly Core.Config _config;
         private readonly IEnumerable<CodeRendering.RenderedEFCoreEntity> _dbEntities;
@@ -28,7 +28,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering {
     partial class OnModelCreatingTemplate {
         internal OnModelCreatingTemplate(Core.Config config, IEnumerable<Core.Aggregate> aggregates) {
             _config = config;
-            _dbEntities = aggregates.Select(a => a.ToDbEntity(config));
+            _dbEntities = aggregates.Select(a => a.ToDbEntity());
         }
         private readonly Core.Config _config;
         private readonly IEnumerable<CodeRendering.RenderedEFCoreEntity> _dbEntities;

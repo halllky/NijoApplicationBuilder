@@ -2,14 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using HalApplicationBuilder.Core.DBModel;
-using HalApplicationBuilder.Core.Runtime;
-using HalApplicationBuilder.Core.UIModel;
 using HalApplicationBuilder.ReArchTo関数型.CodeRendering;
 
 namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
     internal class Variation : AggregateMember {
-        internal Variation(PropertyInfo propertyInfo, Aggregate owner) : base(propertyInfo, owner) { }
+        internal Variation(Config config, PropertyInfo propertyInfo, Aggregate owner) : base(config, propertyInfo, owner) { }
 
         internal override IEnumerable<Aggregate> GetChildAggregates() {
             var childType = _underlyingProp.PropertyType.GetGenericArguments()[0];
@@ -27,7 +24,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             }
 
             foreach (var attr in attrs) {
-                yield return Aggregate.AsChild(attr.Type, this);
+                yield return Aggregate.AsChild(_config, attr.Type, this);
             }
         }
 
@@ -56,9 +53,30 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             throw new NotImplementedException();
         }
 
-        internal override IEnumerable<RenderedProerty> ToDbEntityMember()
-        {
-            throw new NotImplementedException();
+        private string DbPropName => _underlyingProp.Name;
+        internal string NavigationPropName(RenderedEFCoreEntity variationDbEntity) => $"{DbPropName}__{variationDbEntity.ClassName}";
+
+        internal override IEnumerable<RenderedProerty> ToDbEntityMember() {
+            // 区分値
+            yield return new RenderedProerty {
+                Virtual = false,
+                CSharpTypeName = "int?",
+                PropertyName = DbPropName,
+                Initializer = null,
+            };
+            // ナビゲーションプロパティ
+            foreach (var variation in GetChildAggregates()) {
+                var variationDbEntity = variation.ToDbEntity();
+                yield return new NavigationProerty {
+                    Virtual = true,
+                    CSharpTypeName = variationDbEntity.CSharpTypeName,
+                    PropertyName = NavigationPropName(variationDbEntity),
+                    Initializer = null,
+                    IsManyToOne = false,
+                    IsPrincipal = true,
+                    OpponentName = Aggregate.PARENT_NAVIGATION_PROPERTY_NAME,
+                };
+            }
         }
 
         internal override IEnumerable<RenderedProerty> ToInstanceModelMember()

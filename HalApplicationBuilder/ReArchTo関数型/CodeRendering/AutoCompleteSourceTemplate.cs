@@ -26,7 +26,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering {
             this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextName));
             this.Write(" {\n\n");
  foreach (var aggregate in _aggregates) { 
- var method = aggregate.BuildAutoCompleteSourceMethod(_config); 
+ var method = aggregate.BuildAutoCompleteSourceMethod(); 
             this.Write("        /// <summary>\n        /// オートコンプリートのデータソースを読み込む\n        /// </summary>\n  " +
                     "      public IEnumerable<");
             this.Write(this.ToStringHelper.ToStringWithCulture(method.EntityClassName));

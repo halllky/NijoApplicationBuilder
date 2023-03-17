@@ -9,11 +9,13 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
 {
     internal abstract class AggregateMember : ValueObject
     {
-        internal AggregateMember(PropertyInfo underlyingProp, Aggregate owner) {
+        internal AggregateMember(Config config, PropertyInfo underlyingProp, Aggregate owner) {
+            _config = config;
             _underlyingProp = underlyingProp;
             Owner = owner;
         }
 
+        protected readonly Config _config;
         protected readonly PropertyInfo _underlyingProp;
 
         internal Aggregate Owner { get; }

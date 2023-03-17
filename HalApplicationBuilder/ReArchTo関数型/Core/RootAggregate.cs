@@ -6,11 +6,11 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
 {
     internal class RootAggregate : Aggregate
     {
-        internal static RootAggregate FromReflection(Type underlyingType) {
-            return new RootAggregate(underlyingType);
+        internal static RootAggregate FromReflection(Config config, Type underlyingType) {
+            return new RootAggregate(config, underlyingType);
         }
 
-        private RootAggregate(Type underlyingType) : base(underlyingType, null, null) {
+        private RootAggregate(Config config, Type underlyingType) : base(config, underlyingType, null, null) {
         }
 
         internal IEnumerable<Aggregate> GetDescendants() {
@@ -27,7 +27,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
                 MethodName = $"Search_{_underlyingType.Name}",
                 ParamVarName = paramVarName,
                 QueryVarName = queryVarName,
-                DbSetName = ToDbEntity(config).DbSetName,
+                DbSetName = ToDbEntity().DbSetName,
                 SearchConditionClassName = ToSearchConditionClass(config).CSharpTypeName,
                 SearchResultClassName = ToSearchResultClass(config).CSharpTypeName,
             };

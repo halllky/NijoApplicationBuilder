@@ -9,7 +9,7 @@ namespace <#=_config.DbContextNamespace#> {
 
     partial class <#=_config.DbContextName#> {
 <# foreach (var aggregate in _aggregates) { #>
-<# var entity = aggregate.ToDbEntity(_config); #>
+<# var entity = aggregate.ToDbEntity(); #>
         public DbSet<<#=entity.CSharpTypeName#>> <#=entity.DbSetName#> { get; set; }
 <# }#>
     }

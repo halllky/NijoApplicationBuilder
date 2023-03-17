@@ -15,7 +15,7 @@ namespace HalApplicationBuilder.ReArchTo関数型
             serviceCollection.AddScoped(_ => config);
             serviceCollection.AddScoped(provider => {
                 var aggregates = rootAggregateTypes
-                    .Select(t => RootAggregate.FromReflection(t))
+                    .Select(t => RootAggregate.FromReflection(config, t))
                     .ToArray();
                 return new HalApp(provider, aggregates);
             });
@@ -30,7 +30,7 @@ namespace HalApplicationBuilder.ReArchTo関数型
                     rootAggregateTypes = rootAggregateTypes.Where(type => type.Namespace?.StartsWith(@namespace) == true);
                 }
                 var aggregates = rootAggregateTypes
-                    .Select(t => RootAggregate.FromReflection(t))
+                    .Select(t => RootAggregate.FromReflection(config, t))
                     .ToArray();
                 return new HalApp(provider, aggregates);
             });

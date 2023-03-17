@@ -14,7 +14,7 @@ namespace <#=_config.DbContextNamespace#> {
     partial class <#=_config.DbContextName#> {
 
 <# foreach (var aggregate in _aggregates) { #>
-<# var method = aggregate.BuildAutoCompleteSourceMethod(_config); #>
+<# var method = aggregate.BuildAutoCompleteSourceMethod(); #>
         /// <summary>
         /// オートコンプリートのデータソースを読み込む
         /// </summary>

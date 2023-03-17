@@ -24,7 +24,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering {
             this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextName));
             this.Write(" {\n");
  foreach (var aggregate in _aggregates) { 
- var entity = aggregate.ToDbEntity(_config); 
+ var entity = aggregate.ToDbEntity(); 
             this.Write("        public DbSet<");
             this.Write(this.ToStringHelper.ToStringWithCulture(entity.CSharpTypeName));
             this.Write("> ");
