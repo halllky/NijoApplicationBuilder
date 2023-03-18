@@ -32,6 +32,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
 
         internal abstract void BuildSearchMethod(CodeRendering.SearchMethodDTO method);
         internal abstract void RenderMvcSearchConditionView(CodeRendering.RenderingContext context);
+        internal abstract void RenderAspNetMvcPartialView(CodeRendering.RenderingContext context);
 
         internal abstract IEnumerable<string> GetInstanceKeysFromInstanceModel(object uiInstance);
         internal abstract IEnumerable<string> GetInstanceKeysFromSearchResult(object searchResult);

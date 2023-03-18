@@ -25,6 +25,27 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             // 何もしない
         }
 
+        internal override void RenderAspNetMvcPartialView(RenderingContext context) {
+
+            var childAggregate = GetChildAggregates().Single();
+            var i = new CodeRendering.AspNetMvc.LoopVar(context.ObjectPath);
+            var children = context.ObjectPath.Nest(InstanceModelPropName).Path;
+            var childrenAspFor = context.ObjectPath.Nest(InstanceModelPropName).AspForPath;
+            var partialView = new CodeRendering.AspNetMvc.InstancePartialViewTemplate(_config, childAggregate).FileName;
+
+            context.Template.WriteLine($"@for (var {i} = 0; {i} < {children}.Count; {i}++) {{");
+            context.Template.WriteLine($"    <partial name=\"{partialView}\" for=\"{childrenAspFor}[{i}]\" />");
+            context.Template.WriteLine($"}}");
+
+            context.Template.WriteLine($"<input");
+            context.Template.WriteLine($"    type=\"button\"");
+            context.Template.WriteLine($"    value=\"追加\"");
+            context.Template.WriteLine($"    class=\"halapp-btn-secondary {CodeRendering.AspNetMvc.JsTemplate.ADD_CHILD_BTN}\"");
+            context.Template.WriteLine($"    {CodeRendering.AspNetMvc.JsTemplate.AGGREGATE_TREE_PATH_ATTR}=\"{childAggregate.GetUniquePath()}\"");
+            context.Template.WriteLine($"    {CodeRendering.AspNetMvc.JsTemplate.AGGREGATE_MODEL_PATH_ATTR}=\"{childrenAspFor}\"");
+            context.Template.WriteLine($"    />");
+        }
+
         internal override IEnumerable<string> GetInstanceKeysFromInstanceModel(object uiInstance)
         {
             throw new NotImplementedException();

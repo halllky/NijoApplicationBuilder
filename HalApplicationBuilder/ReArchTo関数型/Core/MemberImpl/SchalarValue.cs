@@ -153,6 +153,13 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             }
         }
 
+        internal override void RenderAspNetMvcPartialView(RenderingContext context) {
+            var value = context.ObjectPath
+                .Nest(InstanceModelPropName)
+                .AspForPath;
+            context.Template.WriteLine($"<input asp-for=\"{value}\" class=\"border\" />");
+        }
+
         internal override IEnumerable<string> GetInstanceKeysFromInstanceModel(object uiInstance)
         {
             throw new NotImplementedException();

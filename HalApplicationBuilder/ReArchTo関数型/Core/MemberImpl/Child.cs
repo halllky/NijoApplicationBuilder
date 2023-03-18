@@ -29,7 +29,13 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
         }
 
         internal override void RenderMvcSearchConditionView(RenderingContext context) {
-            GetChildAggregates().Single().RenderSearchCondition(context);
+            var nested = context.Nest(SearchConditionPropName);
+            GetChildAggregates().Single().RenderSearchCondition(nested);
+        }
+
+        internal override void RenderAspNetMvcPartialView(RenderingContext context) {
+            var nested = context.Nest(InstanceModelPropName);
+            GetChildAggregates().Single().RenderAspNetMvcPartialView(nested);
         }
 
         internal override IEnumerable<string> GetInstanceKeysFromInstanceModel(object uiInstance)

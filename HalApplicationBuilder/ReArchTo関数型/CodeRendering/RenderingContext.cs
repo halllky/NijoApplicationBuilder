@@ -12,6 +12,10 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering
 
         internal ITemplate Template { get; }
         internal ObjectPath ObjectPath { get; }
+
+        internal RenderingContext Nest(string obj) {
+            return new RenderingContext(Template, ObjectPath.Nest(obj));
+        }
     }
 }
 

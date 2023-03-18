@@ -57,6 +57,26 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             }
         }
 
+        internal override void RenderAspNetMvcPartialView(RenderingContext context) {
+
+            foreach (var variation in GetVariations()) {
+                var type = context.ObjectPath.Nest(InstanceModelTypeSwitchPropName).AspForPath;
+                var nested = context.Nest(SearchConditionPropName(variation));
+
+                context.Template.WriteLine($"<div>");
+                context.Template.WriteLine($"    <label>");
+                context.Template.WriteLine($"        <input type=\"radio\" asp-for=\"{type}\" value=\"{variation.Key}\" />");
+                context.Template.WriteLine($"        {variation.Value.Name}");
+                context.Template.WriteLine($"    </label>");
+
+                context.Template.PushIndent($"    ");
+                variation.Value.RenderAspNetMvcPartialView(nested);
+                context.Template.PopIndent();
+
+                context.Template.WriteLine($"</div>");
+            }
+        }
+
         internal override IEnumerable<string> GetInstanceKeysFromInstanceModel(object uiInstance)
         {
             throw new NotImplementedException();

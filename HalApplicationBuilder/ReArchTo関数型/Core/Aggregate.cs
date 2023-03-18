@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
+using HalApplicationBuilder.Core;
 using HalApplicationBuilder.Core.DBModel;
 using HalApplicationBuilder.DotnetEx;
 using HalApplicationBuilder.ReArchTo関数型.CodeRendering;
+using Newtonsoft.Json.Linq;
 
 namespace HalApplicationBuilder.ReArchTo関数型.Core
 {
@@ -39,6 +41,14 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
         internal AggregateMember? Parent { get; }
         internal AggregateMember? Before { get; }
 
+        private RootAggregate GetRoot() {
+            var aggregate = (Aggregate?)this;
+            while (true) {
+                if (aggregate is RootAggregate root) return root;
+                if (aggregate == null) throw new InvalidOperationException("ルート集約特定失敗");
+                aggregate = aggregate?.Parent?.Owner;
+            }
+        }
         private protected IEnumerable<AggregateMember> GetMembers() {
             foreach (var prop in _underlyingType.GetProperties(BindingFlags.Public | BindingFlags.Instance)) {
                 if (prop.GetCustomAttribute<NotMappedAttribute>() != null) continue;
@@ -176,7 +186,39 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
         }
 
         internal void RenderAspNetMvcPartialView(CodeRendering.RenderingContext context) {
-            throw new NotImplementedException();
+
+            context.Template.WriteLine($"<div class=\"flex flex-col\">");
+
+            foreach (var member in GetMembers()) {
+                context.Template.WriteLine($"    <div class=\"flex flex-col md:flex-row mb-1\">");
+                context.Template.WriteLine($"        <label class=\"w-32 select-none\">");
+                context.Template.WriteLine($"            {member.DisplayName}");
+                context.Template.WriteLine($"        </label>");
+                context.Template.WriteLine($"        <div class=\"flex-1\">");
+
+                context.Template.PushIndent("            ");
+                member.RenderAspNetMvcPartialView(context);
+                context.Template.PopIndent();
+
+                context.Template.WriteLine($"        </div>");
+                context.Template.WriteLine($"    </div>");
+            }
+
+            context.Template.WriteLine($"</div>");
+        }
+
+        /// <summary>
+        /// スキーマ内で集約を一意に識別するための文字列
+        /// </summary>
+        internal string GetUniquePath() {
+            var list = new List<string>();
+            var member = Parent;
+            while (member != null) {
+                list.Insert(0, member.DisplayName);
+                member = member.Owner.Parent;
+            }
+            list.Insert(0, GetRoot().Name);
+            return string.Join(".", list);
         }
 
         protected override IEnumerable<object?> ValueObjectIdentifiers()
