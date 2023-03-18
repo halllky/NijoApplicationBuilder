@@ -75,6 +75,9 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
         private readonly Core.Config _config;
         private readonly IEnumerable<Core.RootAggregate> _rootAggregates;
 
+        private static string GetControllerName(RootAggregate rootAggregate) {
+            return $"{rootAggregate.Name}Controller";
+        }
         private string GetMultiViewName(RootAggregate rootAggregate) {
             return $"~/{Path.Combine(_config.MvcViewDirectoryRelativePath, new MvcMultiViewTemplate(_config, rootAggregate).FileName)}";
         }

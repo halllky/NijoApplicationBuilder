@@ -21,8 +21,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
             }
         }
 
-        internal CodeRendering.SearchMethodDTO BuildSearchMethod(string paramVarName, string queryVarName, string lambdaVarName)
-        {
+        internal CodeRendering.SearchMethodDTO BuildSearchMethod(string paramVarName, string queryVarName, string lambdaVarName) {
             var dto = new CodeRendering.SearchMethodDTO {
                 MethodName = $"Search_{_underlyingType.Name}",
                 ParamVarName = paramVarName,
@@ -36,10 +35,6 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
                 member.BuildSearchMethod(dto);
             }
             return dto;
-        }
-
-        internal CodeRendering.RenderedClass ToController() {
-            throw new NotImplementedException();
         }
     }
 }

@@ -25,13 +25,12 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
                     "ostics;\n    using System.Linq;\n    using System.Threading.Tasks;\n    using Micro" +
                     "soft.AspNetCore.Mvc;\n    using Microsoft.Extensions.Logging;\n    \n");
  foreach (var rootAggregate in _rootAggregates) { 
- var controller = rootAggregate.ToController(); 
             this.Write("    public partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(controller.ClassName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetControllerName(rootAggregate)));
             this.Write(" : ");
             this.Write(this.ToStringHelper.ToStringWithCulture(typeof(Runtime.AspNetMvc.ControllerBase<Runtime.SearchConditionBase, Runtime.SearchResultBase, Runtime.UIInstanceBase>).FullName));
             this.Write(" {\n        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(controller.ClassName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetControllerName(rootAggregate)));
             this.Write("(IServiceProvider services) : base(services) {}\n    \n        protected override s" +
                     "tring MultiViewName => \"");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetMultiViewName(rootAggregate)));

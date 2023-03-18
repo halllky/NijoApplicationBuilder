@@ -21,9 +21,8 @@ namespace <#=_config.MvcControllerNamespace#> {
     using Microsoft.Extensions.Logging;
     
 <# foreach (var rootAggregate in _rootAggregates) { #>
-<# var controller = rootAggregate.ToController(); #>
-    public partial class <#=controller.ClassName#> : <#=typeof(Runtime.AspNetMvc.ControllerBase<Runtime.SearchConditionBase, Runtime.SearchResultBase, Runtime.UIInstanceBase>).FullName#> {
-        public <#=controller.ClassName#>(IServiceProvider services) : base(services) {}
+    public partial class <#=GetControllerName(rootAggregate)#> : <#=typeof(Runtime.AspNetMvc.ControllerBase<Runtime.SearchConditionBase, Runtime.SearchResultBase, Runtime.UIInstanceBase>).FullName#> {
+        public <#=GetControllerName(rootAggregate)#>(IServiceProvider services) : base(services) {}
     
         protected override string MultiViewName => "<#=GetMultiViewName(rootAggregate)#>";
         protected override string CreateViewName => "<#=GetCreateViewName(rootAggregate)#>";
