@@ -11,6 +11,11 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
         }
 
         internal string Value { get; }
+
+        public override string ToString()
+        {
+            return Value;
+        }
     }
 }
 

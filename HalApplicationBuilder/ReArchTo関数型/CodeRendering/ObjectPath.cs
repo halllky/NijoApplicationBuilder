@@ -8,21 +8,21 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering
     {
         internal ObjectPath(string? rootObjectName = null) {
             _rootObjectName = rootObjectName;
-            _stack = new Stack<string>();
+            _path = new List<string>();
         }
-        private ObjectPath(string? rootObjectName, Stack<string> stack) {
+        private ObjectPath(string? rootObjectName, IReadOnlyList<string> path) {
             _rootObjectName = rootObjectName;
-            _stack = stack;
+            _path = path;
         }
         private readonly string? _rootObjectName;
-        private readonly Stack<string> _stack;
+        private readonly IReadOnlyList<string> _path;
 
-        internal int CurrentDepth => _stack.Count;
+        internal int CurrentDepth => _path.Count;
 
         /// <summary>
         /// ルートオブジェクトからのパス
         /// </summary>
-        internal string Path => $"{_rootObjectName}.{string.Join(".", _stack)}";
+        internal string Path => $"{_rootObjectName}.{string.Join(".", _path)}";
         /// <summary>
         /// ルートオブジェクトからのパス（asp-forにバインドするために先頭の"Model"を除外したもの）
         /// </summary>
@@ -31,9 +31,9 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering
             : Path;
 
         internal ObjectPath Nest(string prop) {
-            var stack = new Stack<string>(_stack);
-            stack.Push(prop);
-            return new ObjectPath(_rootObjectName, stack);
+            var path = new List<string>(_path);
+            path.Add(prop);
+            return new ObjectPath(_rootObjectName, path);
         }
     }
 }

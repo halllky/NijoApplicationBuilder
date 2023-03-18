@@ -28,7 +28,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
             this.Write("    public partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetControllerName(rootAggregate)));
             this.Write(" : ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(typeof(Runtime.AspNetMvc.ControllerBase<Runtime.SearchConditionBase, Runtime.SearchResultBase, Runtime.UIInstanceBase>).FullName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetBaseClassFullName(rootAggregate)));
             this.Write(" {\n        public ");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetControllerName(rootAggregate)));
             this.Write("(IServiceProvider services) : base(services) {}\n    \n        protected override s" +

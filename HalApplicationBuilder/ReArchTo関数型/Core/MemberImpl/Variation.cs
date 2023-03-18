@@ -97,9 +97,9 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             throw new NotImplementedException();
         }
 
-        internal override IEnumerable<RenderedProerty> ToDbEntityMember() {
+        internal override IEnumerable<RenderedProperty> ToDbEntityMember() {
             // 区分値
-            yield return new RenderedProerty {
+            yield return new RenderedProperty {
                 Virtual = false,
                 CSharpTypeName = "int?",
                 PropertyName = DbPropName,
@@ -107,26 +107,26 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             // ナビゲーションプロパティ
             foreach (var variation in GetChildAggregates()) {
                 var variationDbEntity = variation.ToDbEntity();
-                yield return new NavigationProerty {
+                yield return new NavigationProperty {
                     Virtual = true,
                     CSharpTypeName = variationDbEntity.CSharpTypeName,
                     PropertyName = NavigationPropName(variationDbEntity),
-                    IsManyToOne = false,
+                    Multiplicity = NavigationProperty.E_Multiplicity.HasOneWithOne,
                     IsPrincipal = true,
                     OpponentName = Aggregate.PARENT_NAVIGATION_PROPERTY_NAME,
                 };
             }
         }
 
-        internal override IEnumerable<RenderedProerty> ToInstanceModelMember() {
+        internal override IEnumerable<RenderedProperty> ToInstanceModelMember() {
             // 区分値
-            yield return new RenderedProerty {
+            yield return new RenderedProperty {
                 CSharpTypeName = "int?",
                 PropertyName = InstanceModelTypeSwitchPropName,
             };
             // 各区分の詳細値
             foreach (var variation in GetVariations()) {
-                yield return new RenderedProerty {
+                yield return new RenderedProperty {
                     CSharpTypeName = variation.Value.ToUiInstanceClass().CSharpTypeName,
                     PropertyName = InstanceModelTypeDetailPropName(variation),
                     Initializer = "new()",
@@ -134,9 +134,9 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             }
         }
 
-        internal override IEnumerable<RenderedProerty> ToSearchConditionMember() {
+        internal override IEnumerable<RenderedProperty> ToSearchConditionMember() {
             foreach (var variation in GetVariations()) {
-                yield return new RenderedProerty {
+                yield return new RenderedProperty {
                     PropertyName = SearchConditionPropName(variation),
                     CSharpTypeName = "bool",
                     Initializer = "true",
@@ -144,8 +144,8 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             }
         }
 
-        internal override IEnumerable<RenderedProerty> ToSearchResultMember() {
-            yield return new RenderedProerty {
+        internal override IEnumerable<RenderedProperty> ToSearchResultMember() {
+            yield return new RenderedProperty {
                 CSharpTypeName = "int?",
                 PropertyName = SearchResultPropName,
             };

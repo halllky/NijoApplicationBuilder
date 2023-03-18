@@ -40,6 +40,24 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering {
  }
             this.Write("    }\n");
  }
+            this.Write("\n");
+ /* 被参照ナビゲーションプロパティ */ 
+ foreach (var entity in _referredDbEntities) { 
+            this.Write("    public partial class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(entity.ClassName));
+            this.Write(" {\n");
+ foreach (var prop in entity.Properties) { 
+            this.Write("        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Virtual ? "virtual " : ""));
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
+            this.Write(" ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write(" { get; set; }");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
+            this.Write("\n");
+ }
+            this.Write("    }\n");
+ }
             this.Write("\n}\n");
             return this.GenerationEnvironment.ToString();
         }

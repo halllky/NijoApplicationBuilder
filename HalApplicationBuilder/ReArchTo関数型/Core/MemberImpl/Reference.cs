@@ -8,8 +8,8 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
     internal class Reference : AggregateMember {
         internal Reference(Config config, PropertyInfo propertyInfo, Aggregate owner) : base(config, propertyInfo, owner) { }
 
-        private Aggregate GetRefTarget() {
-            return Aggregate.AsRef(_config, _underlyingProp.PropertyType.GetGenericArguments()[0], this);
+        internal ReferredAggregate GetRefTarget() {
+            return new ReferredAggregate(_config, _underlyingProp.PropertyType.GetGenericArguments()[0], this);
         }
 
         internal override IEnumerable<Aggregate> GetChildAggregates()
@@ -84,20 +84,21 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             throw new NotImplementedException();
         }
 
-        internal override IEnumerable<RenderedProerty> ToDbEntityMember() {
-            var refTargetDbEntity = GetRefTarget().ToDbEntity();
+        internal override IEnumerable<RenderedProperty> ToDbEntityMember() {
+            var refTarget = GetRefTarget();
+            var refTargetDbEntity = refTarget.ToDbEntity();
             // 参照先DBの主キー
             foreach (var foreignKey in refTargetDbEntity.PrimaryKeys) {
                 yield return foreignKey;
             }
             // ナビゲーションプロパティ
-            yield return new NavigationProerty {
+            yield return new NavigationProperty {
                 Virtual = true,
                 CSharpTypeName = refTargetDbEntity.CSharpTypeName,
                 PropertyName = _underlyingProp.Name,
-                IsManyToOne = false,
+                Multiplicity = NavigationProperty.E_Multiplicity.HasOneWithMany,
                 IsPrincipal = true,
-                OpponentName = $"{_underlyingProp.Name}_Refered",
+                OpponentName = refTarget.GetEFCoreEntiyHavingOnlyReferredNavigationProp().Properties.Single().PropertyName,
             };
         }
 
@@ -105,24 +106,24 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
         private string SearchResultPropName => _underlyingProp.Name;
         private string InstanceModelPropName => _underlyingProp.Name;
 
-        internal override IEnumerable<RenderedProerty> ToInstanceModelMember() {
-            yield return new RenderedProerty {
+        internal override IEnumerable<RenderedProperty> ToInstanceModelMember() {
+            yield return new RenderedProperty {
                 CSharpTypeName = typeof(Runtime.ReferenceDTO).FullName!,
                 PropertyName = InstanceModelPropName,
                 Initializer = $"new() {{ {nameof(Runtime.ReferenceDTO.AggreageteGuid)} = new Guid(\"{GetRefTarget().GUID}\") }}",
             };
         }
 
-        internal override IEnumerable<RenderedProerty> ToSearchConditionMember() {
-            yield return new RenderedProerty {
+        internal override IEnumerable<RenderedProperty> ToSearchConditionMember() {
+            yield return new RenderedProperty {
                 CSharpTypeName = typeof(Runtime.ReferenceDTO).FullName!,
                 PropertyName = SearchConditonPropName,
                 Initializer = "new()",
             };
         }
 
-        internal override IEnumerable<RenderedProerty> ToSearchResultMember() {
-            yield return new RenderedProerty {
+        internal override IEnumerable<RenderedProperty> ToSearchResultMember() {
+            yield return new RenderedProperty {
                 CSharpTypeName = "string",
                 PropertyName = SearchResultPropName,
             };

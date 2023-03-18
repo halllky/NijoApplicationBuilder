@@ -25,10 +25,10 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
 
         internal abstract IEnumerable<Aggregate> GetChildAggregates();
 
-        internal abstract IEnumerable<RenderedProerty> ToDbEntityMember();
-        internal abstract IEnumerable<RenderedProerty> ToSearchConditionMember();
-        internal abstract IEnumerable<RenderedProerty> ToSearchResultMember();
-        internal abstract IEnumerable<RenderedProerty> ToInstanceModelMember();
+        internal abstract IEnumerable<RenderedProperty> ToDbEntityMember();
+        internal abstract IEnumerable<RenderedProperty> ToSearchConditionMember();
+        internal abstract IEnumerable<RenderedProperty> ToSearchResultMember();
+        internal abstract IEnumerable<RenderedProperty> ToInstanceModelMember();
 
         internal abstract void BuildSearchMethod(CodeRendering.SearchMethodDTO method);
         internal abstract void RenderMvcSearchConditionView(CodeRendering.RenderingContext context);

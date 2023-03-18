@@ -20,15 +20,20 @@ namespace <#=_config.DbContextNamespace#> {
                 });
 <# /* ナビゲーションプロパティ定義 */ #>
 <# foreach (var navigation in entity.NavigationProperties) { #>
-<# if (navigation.IsPrincipal && navigation.IsManyToOne) { #>
+<# if (navigation.IsPrincipal) { #>
+<#     if (navigation.Multiplicity.HasFlag(NavigationProperty.E_Multiplicity.HasMany)) { #>
                 ett.HasMany(e => e.<#=navigation.PropertyName#>)
-                   .WithOne(e => e.<#=navigation.OpponentName#>);
-<# } else if (navigation.IsPrincipal && !navigation.IsManyToOne) { #>
+<#     } else {#>
                 ett.HasOne(e => e.<#=navigation.PropertyName#>)
+<#     } #>
+<#     if (navigation.Multiplicity.HasFlag(NavigationProperty.E_Multiplicity.WithMany)) { #>
+                   .WithMany(e => e.<#=navigation.OpponentName#>);
+<#     } else {#>
                    .WithOne(e => e.<#=navigation.OpponentName#>);
+<#     } #>
+<# } #>
 <# } #>
             });
-<# } #>
 <# } #>
         }
     }

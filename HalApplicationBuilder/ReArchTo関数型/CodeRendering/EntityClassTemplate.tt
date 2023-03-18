@@ -20,4 +20,13 @@ namespace <#=_config.EntityNamespace#> {
     }
 <# }#>
 
+<# /* 被参照ナビゲーションプロパティ */ #>
+<# foreach (var entity in _referredDbEntities) { #>
+    public partial class <#=entity.ClassName#> {
+<# foreach (var prop in entity.Properties) { #>
+        public <#=prop.Virtual ? "virtual " : ""#><#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }<#=prop.Initializer == null ? "" : $" = {prop.Initializer};"#>
+<# }#>
+    }
+<# }#>
+
 }

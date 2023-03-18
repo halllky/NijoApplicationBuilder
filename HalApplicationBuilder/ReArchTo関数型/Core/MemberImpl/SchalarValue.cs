@@ -180,25 +180,25 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             throw new NotImplementedException();
         }
 
-        internal override IEnumerable<RenderedProerty> ToDbEntityMember() {
-            yield return new RenderedProerty {
+        internal override IEnumerable<RenderedProperty> ToDbEntityMember() {
+            yield return new RenderedProperty {
                 CSharpTypeName = GetCSharpTypeName(),
                 PropertyName = DbColumnPropName,
             };
         }
 
-        internal override IEnumerable<RenderedProerty> ToInstanceModelMember() {
-            yield return new RenderedProerty {
+        internal override IEnumerable<RenderedProperty> ToInstanceModelMember() {
+            yield return new RenderedProperty {
                 CSharpTypeName = GetCSharpTypeName(),
                 PropertyName = InstanceModelPropName,
             };
         }
 
-        internal override IEnumerable<RenderedProerty> ToSearchConditionMember() {
+        internal override IEnumerable<RenderedProperty> ToSearchConditionMember() {
             var type = GetPropertyTypeExceptNullable();
             if (new[] { typeof(int), typeof(float), typeof(decimal), typeof(DateTime) }.Contains(type)) {
                 // 範囲検索
-                yield return new RenderedProerty {
+                yield return new RenderedProperty {
                     CSharpTypeName = $"{typeof(FromTo).Namespace}.{nameof(FromTo)}<{GetSearchConditionCSharpTypeName()}>",
                     PropertyName = SearchConditonPropName,
                     Initializer = "new()",
@@ -206,22 +206,22 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
 
             } else if (type.IsEnum) {
                 // enumドロップダウン
-                yield return new RenderedProerty {
+                yield return new RenderedProperty {
                     CSharpTypeName = type.FullName ?? throw new InvalidOperationException($"type.FullNameを取得できない: {_underlyingProp.Name}"),
                     PropertyName = SearchConditonPropName,
                 };
 
             } else {
                 // ただのinput
-                yield return new RenderedProerty {
+                yield return new RenderedProperty {
                     CSharpTypeName = GetSearchConditionCSharpTypeName(),
                     PropertyName = SearchConditonPropName,
                 };
             }
         }
 
-        internal override IEnumerable<RenderedProerty> ToSearchResultMember() {
-            yield return new RenderedProerty {
+        internal override IEnumerable<RenderedProperty> ToSearchResultMember() {
+            yield return new RenderedProperty {
                 CSharpTypeName = GetCSharpTypeName(),
                 PropertyName = SearchResultPropName,
             };

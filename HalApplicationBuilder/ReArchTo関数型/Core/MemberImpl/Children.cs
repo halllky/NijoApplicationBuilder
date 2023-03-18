@@ -69,34 +69,34 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
         private string NavigationPropName => _underlyingProp.Name;
         private string InstanceModelPropName => _underlyingProp.Name;
 
-        internal override IEnumerable<RenderedProerty> ToDbEntityMember() {
+        internal override IEnumerable<RenderedProperty> ToDbEntityMember() {
             // ナビゲーションプロパティ
             var childType = GetChildAggregates().Single().ToDbEntity().CSharpTypeName;
-            yield return new NavigationProerty {
+            yield return new NavigationProperty {
                 Virtual = true,
                 CSharpTypeName = $"ICollection<{childType}>",
                 PropertyName = NavigationPropName,
                 Initializer = $"new HashSet<{childType}>()",
-                IsManyToOne = true,
+                Multiplicity = NavigationProperty.E_Multiplicity.HasManyWithOne,
                 IsPrincipal = true,
                 OpponentName = Aggregate.PARENT_NAVIGATION_PROPERTY_NAME,
             };
         }
 
-        internal override IEnumerable<RenderedProerty> ToInstanceModelMember() {
+        internal override IEnumerable<RenderedProperty> ToInstanceModelMember() {
             var item = GetChildAggregates().Single().ToUiInstanceClass().CSharpTypeName;
-            yield return new RenderedProerty {
+            yield return new RenderedProperty {
                 CSharpTypeName = $"List<{item}>",
                 PropertyName = InstanceModelPropName,
                 Initializer = "new()",
             };
         }
 
-        internal override IEnumerable<RenderedProerty> ToSearchConditionMember() {
+        internal override IEnumerable<RenderedProperty> ToSearchConditionMember() {
             yield break;
         }
 
-        internal override IEnumerable<RenderedProerty> ToSearchResultMember() {
+        internal override IEnumerable<RenderedProperty> ToSearchResultMember() {
             yield break;
         }
     }

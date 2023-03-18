@@ -10,7 +10,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
             return new RootAggregate(config, underlyingType);
         }
 
-        private RootAggregate(Config config, Type underlyingType) : base(config, underlyingType, null, null) {
+        private RootAggregate(Config config, Type underlyingType) : base(config, underlyingType, null) {
         }
 
         internal IEnumerable<Aggregate> GetDescendants() {

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using HalApplicationBuilder.ReArchTo関数型.Core;
-using HalApplicationBuilder.AspNetMvc;
 
 namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering {
 
@@ -19,10 +18,15 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering {
     partial class EntityClassTemplate {
         internal EntityClassTemplate(Core.Config config, IEnumerable<Core.Aggregate> aggregates) {
             _config = config;
-            _dbEntities = aggregates.Select(a => a.ToDbEntity());
+            _dbEntities = aggregates
+                .Select(a => a.ToDbEntity());
+            _referredDbEntities = aggregates
+                .SelectMany(a => a.EnumerateRefTargetsRecursively())
+                .Select(refTarget => refTarget.GetEFCoreEntiyHavingOnlyReferredNavigationProp());
         }
         private readonly Core.Config _config;
         private readonly IEnumerable<CodeRendering.RenderedEFCoreEntity> _dbEntities;
+        private readonly IEnumerable<CodeRendering.RenderedClass> _referredDbEntities;
     }
 
     partial class OnModelCreatingTemplate {
@@ -75,8 +79,14 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
         private readonly Core.Config _config;
         private readonly IEnumerable<Core.RootAggregate> _rootAggregates;
 
-        private static string GetControllerName(RootAggregate rootAggregate) {
-            return $"{rootAggregate.Name}Controller";
+        private static string GetBaseClassFullName(Aggregate aggregate) {
+            return $"{typeof(ControllerBase).Namespace}.{nameof(ControllerBase)}"
+                + $"<{aggregate.ToSearchConditionClass().CSharpTypeName},"
+                + $" {aggregate.ToSearchResultClass().CSharpTypeName},"
+                + $" {aggregate.ToUiInstanceClass().CSharpTypeName}>";
+        }
+        private static string GetControllerName(Aggregate aggregate) {
+            return $"{aggregate.Name}Controller";
         }
         private string GetMultiViewName(RootAggregate rootAggregate) {
             return $"~/{Path.Combine(_config.MvcViewDirectoryRelativePath, new MvcMultiViewTemplate(_config, rootAggregate).FileName)}";
@@ -103,8 +113,8 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
 
             var searchCondition = rootAggregate.ToSearchConditionClass();
             var searchResult = rootAggregate.ToSearchResultClass();
-            var modelType = typeof(Runtime.AspNetMvc.MultiViewModel<,>);
-            _modelTypeFullname = $"{modelType.FullName}<{searchCondition.CSharpTypeName}, {searchResult.CSharpTypeName}>";
+            var modelType = typeof(Runtime.AspNetMvc.MultiViewModel<,>).Namespace + "." + nameof(Runtime.AspNetMvc.MultiViewModel<object, object>);
+            _modelTypeFullname = $"{modelType}<{searchCondition.CSharpTypeName}, {searchResult.CSharpTypeName}>";
 
             FileName = $"{rootAggregate.Name}__MultiView.cshtml";
         }
@@ -121,10 +131,9 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
         internal MvcSingleViewTemplate(Core.Config config, Core.RootAggregate rootAggregate) {
             _config = config;
 
-            var searchCondition = rootAggregate.ToSearchConditionClass();
-            var searchResult = rootAggregate.ToSearchResultClass();
-            var modelType = typeof(Runtime.AspNetMvc.SingleViewModel<>);
-            _modelTypeFullname = $"{modelType.FullName}<{searchCondition.CSharpTypeName}, {searchResult.CSharpTypeName}>";
+            var instanceClass = rootAggregate.ToUiInstanceClass();
+            var modelType = typeof(Runtime.AspNetMvc.SingleViewModel<>).Namespace + "." + nameof(Runtime.AspNetMvc.SingleViewModel<Runtime.UIInstanceBase>);
+            _modelTypeFullname = $"{modelType}<{instanceClass.CSharpTypeName}>";
 
             _partialViewName = new InstancePartialViewTemplate(config, rootAggregate).FileName;
 
@@ -144,10 +153,9 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
         internal MvcCreateViewTemplate(Core.Config config, Core.RootAggregate rootAggregate) {
             _config = config;
 
-            var searchCondition = rootAggregate.ToSearchConditionClass();
-            var searchResult = rootAggregate.ToSearchResultClass();
-            var modelType = typeof(Runtime.AspNetMvc.CreateViewModel<>);
-            _modelTypeFullname = $"{modelType.FullName}<{searchCondition.CSharpTypeName}, {searchResult.CSharpTypeName}>";
+            var instanceClass = rootAggregate.ToUiInstanceClass();
+            var modelType = typeof(Runtime.AspNetMvc.CreateViewModel<>).Namespace + "." + nameof(Runtime.AspNetMvc.CreateViewModel<Runtime.UIInstanceBase>);
+            _modelTypeFullname = $"{modelType}<{instanceClass.CSharpTypeName}>";
 
             _partialViewName = new InstancePartialViewTemplate(config, rootAggregate).FileName;
 
@@ -168,15 +176,12 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
             _config = config;
             _aggregate = aggregate;
 
-            var searchCondition = aggregate.ToSearchConditionClass();
-            var searchResult = aggregate.ToSearchResultClass();
-            var multiViewModel = typeof(Runtime.AspNetMvc.MultiViewModel<,>);
-            _modelTypeFullname = $"{multiViewModel.FullName}<{searchCondition.CSharpTypeName}, {searchResult.CSharpTypeName}>";
-
             _hiddenFields = new[] {
                 ($"{nameof(Runtime.UIInstanceBase.halapp_fields)}.{nameof(Runtime.HalappViewState.IsRoot)}", ""),
                 ($"{nameof(Runtime.UIInstanceBase.halapp_fields)}.{nameof(Runtime.HalappViewState.Removed)}", JsTemplate.REMOVE_HIDDEN_FIELD),
             };
+
+            _modelTypeFullname = aggregate.ToUiInstanceClass().CSharpTypeName;
 
             _showRemoveButton = $"Model.{nameof(Runtime.UIInstanceBase.halapp_fields)}.{nameof(Runtime.HalappViewState.IsRoot)} == false";
 
@@ -187,9 +192,9 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
 
         private readonly Core.Config _config;
         private readonly Core.Aggregate _aggregate;
-        private readonly string _modelTypeFullname;
         private readonly IEnumerable<(string AspFor, string Class)> _hiddenFields;
         private readonly string _showRemoveButton;
+        private readonly string _modelTypeFullname;
     }
 }
 

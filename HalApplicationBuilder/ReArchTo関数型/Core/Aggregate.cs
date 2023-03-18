@@ -14,23 +14,17 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
     internal class Aggregate : ValueObject
     {
         internal static Aggregate AsChild(Config config, Type underlyingType, AggregateMember parent) {
-            return new Aggregate(config, underlyingType, parent, null);
-        }
-
-        internal static Aggregate AsRef(Config config, Type underlyingType, AggregateMember? refSource) {
-            return new Aggregate(config, underlyingType, null, refSource);
+            return new Aggregate(config, underlyingType, parent);
         }
 
         private protected Aggregate(
             Config config,
             Type underlyingType,
-            AggregateMember? parent,
-            AggregateMember? before)
+            AggregateMember? parent)
         {
             _config = config;
             _underlyingType = underlyingType;
             Parent = parent;
-            Before = before;
         }
         private protected readonly Config _config;
         private protected readonly Type _underlyingType;
@@ -39,7 +33,6 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
         internal string Name => _underlyingType.Name;
 
         internal AggregateMember? Parent { get; }
-        internal AggregateMember? Before { get; }
 
         private RootAggregate GetRoot() {
             var aggregate = (Aggregate?)this;
@@ -89,28 +82,30 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
                 .SelectMany(m => m.ToDbEntityMember(), (m, prop) => new { m.IsPrimary, prop });
 
             var pks = props
-                .Where(p => p.IsPrimary && p.prop is not NavigationProerty)
+                .Where(p => p.IsPrimary && p.prop is not NavigationProperty)
                 .Select(p => p.prop);
             var nonPks = props
-                .Where(p => !p.IsPrimary && p.prop is not NavigationProerty)
+                .Where(p => !p.IsPrimary && p.prop is not NavigationProperty)
                 .Select(p => p.prop);
             var navigations = props
-                .Where(p => p.prop is NavigationProerty)
+                .Where(p => p.prop is NavigationProperty)
                 .Select(p => p.prop)
-                .Cast<NavigationProerty>();
+                .Cast<NavigationProperty>();
 
             // 親へのナビゲーションプロパティ
             if (Parent != null) {
-                navigations = navigations.Concat(new[] {new NavigationProerty {
+                navigations = navigations.Concat(new[] {new NavigationProperty {
                      Virtual = true,
                      CSharpTypeName = Parent.Owner.ToDbEntity().CSharpTypeName,
                      PropertyName = PARENT_NAVIGATION_PROPERTY_NAME,
                      Initializer = null,
                      IsPrincipal = false,
-                     IsManyToOne = false,
+                     Multiplicity = NavigationProperty.E_Multiplicity.HasOneWithMany,
                      OpponentName = "未設定",
                 } });
             }
+
+            /* 被参照RefのナビゲーションプロパティはRefの方でpartialでレンダリングしているのでここには無い */
 
             return new RenderedEFCoreEntity {
                 ClassName = Name,
@@ -219,6 +214,15 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
             }
             list.Insert(0, GetRoot().Name);
             return string.Join(".", list);
+        }
+
+        /// <summary>
+        /// この集約が参照している集約を列挙する
+        /// </summary>
+        internal IEnumerable<ReferredAggregate> EnumerateRefTargetsRecursively() {
+            return GetMembers()
+                .Where(m => m is MemberImpl.Reference)
+                .Select(m => ((MemberImpl.Reference)m).GetRefTarget());
         }
 
         protected override IEnumerable<object?> ValueObjectIdentifiers()

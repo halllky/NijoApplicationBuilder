@@ -38,21 +38,28 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering {
             this.Write("                });\n");
  /* ナビゲーションプロパティ定義 */ 
  foreach (var navigation in entity.NavigationProperties) { 
- if (navigation.IsPrincipal && navigation.IsManyToOne) { 
+ if (navigation.IsPrincipal) { 
+     if (navigation.Multiplicity.HasFlag(NavigationProperty.E_Multiplicity.HasMany)) { 
             this.Write("                ett.HasMany(e => e.");
             this.Write(this.ToStringHelper.ToStringWithCulture(navigation.PropertyName));
-            this.Write(")\n                   .WithOne(e => e.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(navigation.OpponentName));
-            this.Write(");\n");
- } else if (navigation.IsPrincipal && !navigation.IsManyToOne) { 
+            this.Write(")\n");
+     } else {
             this.Write("                ett.HasOne(e => e.");
             this.Write(this.ToStringHelper.ToStringWithCulture(navigation.PropertyName));
-            this.Write(")\n                   .WithOne(e => e.");
+            this.Write(")\n");
+     } 
+     if (navigation.Multiplicity.HasFlag(NavigationProperty.E_Multiplicity.WithMany)) { 
+            this.Write("                   .WithMany(e => e.");
             this.Write(this.ToStringHelper.ToStringWithCulture(navigation.OpponentName));
             this.Write(");\n");
+     } else {
+            this.Write("                   .WithOne(e => e.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(navigation.OpponentName));
+            this.Write(");\n");
+     } 
+ } 
  } 
             this.Write("            });\n");
- } 
  } 
             this.Write("        }\n    }\n}\n");
             return this.GenerationEnvironment.ToString();

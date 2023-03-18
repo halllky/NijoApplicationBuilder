@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering
 {
-    internal class RenderedProerty
+    internal class RenderedProperty
     {
         internal bool Virtual { get; init; }
         internal required string CSharpTypeName { get; init; }
@@ -12,10 +12,20 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering
         internal string? Initializer { get; init; }
     }
 
-    internal class NavigationProerty : RenderedProerty {
+    internal class NavigationProperty : RenderedProperty {
         internal required string OpponentName { get; init; }
         internal required bool IsPrincipal { get; init; }
-        internal required bool IsManyToOne { get; init; }
+        internal required E_Multiplicity Multiplicity { get; init; }
+
+        [Flags]
+        internal enum E_Multiplicity {
+            WithMany = 1,
+            HasMany = 2,
+            HasOneWithOne = 0,
+            HasOneWithMany = 1,
+            HasManyWithOne = 2,
+            HasManyWithMany = 3,
+        }
     }
 }
 
