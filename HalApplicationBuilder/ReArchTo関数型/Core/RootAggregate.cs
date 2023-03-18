@@ -21,15 +21,15 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
             }
         }
 
-        internal CodeRendering.SearchMethodDTO BuildSearchMethod(Config config, string paramVarName, string queryVarName)
+        internal CodeRendering.SearchMethodDTO BuildSearchMethod(string paramVarName, string queryVarName)
         {
             var dto = new CodeRendering.SearchMethodDTO {
                 MethodName = $"Search_{_underlyingType.Name}",
                 ParamVarName = paramVarName,
                 QueryVarName = queryVarName,
                 DbSetName = ToDbEntity().DbSetName,
-                SearchConditionClassName = ToSearchConditionClass(config).CSharpTypeName,
-                SearchResultClassName = ToSearchResultClass(config).CSharpTypeName,
+                SearchConditionClassName = ToSearchConditionClass().CSharpTypeName,
+                SearchResultClassName = ToSearchResultClass().CSharpTypeName,
             };
             foreach (var member in GetMembers()) {
                 member.BuildSearchMethod(dto);
@@ -41,7 +41,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
             throw new NotImplementedException();
         }
 
-        internal CodeRendering.RenderedClass ToController(Config config) {
+        internal CodeRendering.RenderedClass ToController() {
             throw new NotImplementedException();
         }
     }

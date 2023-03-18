@@ -58,19 +58,30 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             };
         }
 
-        internal override IEnumerable<RenderedProerty> ToInstanceModelMember()
-        {
-            throw new NotImplementedException();
+        internal override IEnumerable<RenderedProerty> ToInstanceModelMember() {
+            yield return new RenderedProerty {
+                CSharpTypeName = GetChildAggregates().Single().ToUiInstanceClass().CSharpTypeName,
+                PropertyName = InstanceModelPropName,
+                Initializer = "new()",
+            };
         }
 
-        internal override IEnumerable<RenderedProerty> ToSearchConditionMember()
-        {
-            throw new NotImplementedException();
+        internal override IEnumerable<RenderedProerty> ToSearchConditionMember() {
+            yield return new RenderedProerty {
+                CSharpTypeName = GetChildAggregates().Single().ToSearchConditionClass().CSharpTypeName,
+                PropertyName = SearchConditionPropName,
+                Initializer = "new()",
+            };
         }
 
-        internal override IEnumerable<RenderedProerty> ToSearchResultMember()
-        {
-            throw new NotImplementedException();
+        internal override IEnumerable<RenderedProerty> ToSearchResultMember() {
+            foreach (var childProp in GetChildAggregates().Single().ToSearchResultClass().Properties) {
+                yield return new RenderedProerty {
+                    PropertyName = SearchResultPropName(childProp),
+                    CSharpTypeName = childProp.CSharpTypeName,
+                    Initializer = childProp.Initializer,
+                };
+            }
         }
     }
 }

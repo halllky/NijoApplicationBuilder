@@ -56,7 +56,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
                 <tr>
                     <th></th>
 ");
- var searchResult = _rootAggregate.ToSearchResultClass(_config); 
+ var searchResult = _rootAggregate.ToSearchResultClass(); 
  foreach (var prop in searchResult.Properties) { 
             this.Write("                    <th>\n                        ");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));

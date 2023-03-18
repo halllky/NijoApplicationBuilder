@@ -98,8 +98,8 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
             _config = config;
             _rootAggregate = rootAggregate;
 
-            var searchCondition = rootAggregate.ToSearchConditionClass(config);
-            var searchResult = rootAggregate.ToSearchResultClass(config);
+            var searchCondition = rootAggregate.ToSearchConditionClass();
+            var searchResult = rootAggregate.ToSearchResultClass();
             var modelType = typeof(Runtime.AspNetMvc.MultiViewModel<,>);
             _modelTypeFullname = $"{modelType.FullName}<{searchCondition.CSharpTypeName}, {searchResult.CSharpTypeName}>";
 
@@ -118,8 +118,8 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
         internal MvcSingleViewTemplate(Core.Config config, Core.RootAggregate rootAggregate) {
             _config = config;
 
-            var searchCondition = rootAggregate.ToSearchConditionClass(config);
-            var searchResult = rootAggregate.ToSearchResultClass(config);
+            var searchCondition = rootAggregate.ToSearchConditionClass();
+            var searchResult = rootAggregate.ToSearchResultClass();
             var modelType = typeof(Runtime.AspNetMvc.SingleViewModel<>);
             _modelTypeFullname = $"{modelType.FullName}<{searchCondition.CSharpTypeName}, {searchResult.CSharpTypeName}>";
 
@@ -141,8 +141,8 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
         internal MvcCreateViewTemplate(Core.Config config, Core.RootAggregate rootAggregate) {
             _config = config;
 
-            var searchCondition = rootAggregate.ToSearchConditionClass(config);
-            var searchResult = rootAggregate.ToSearchResultClass(config);
+            var searchCondition = rootAggregate.ToSearchConditionClass();
+            var searchResult = rootAggregate.ToSearchResultClass();
             var modelType = typeof(Runtime.AspNetMvc.CreateViewModel<>);
             _modelTypeFullname = $"{modelType.FullName}<{searchCondition.CSharpTypeName}, {searchResult.CSharpTypeName}>";
 
@@ -165,8 +165,8 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
             _config = config;
             _aggregate = aggregate;
 
-            var searchCondition = aggregate.ToSearchConditionClass(config);
-            var searchResult = aggregate.ToSearchResultClass(config);
+            var searchCondition = aggregate.ToSearchConditionClass();
+            var searchResult = aggregate.ToSearchResultClass();
             var multiViewModel = typeof(Runtime.AspNetMvc.MultiViewModel<,>);
             _modelTypeFullname = $"{multiViewModel.FullName}<{searchCondition.CSharpTypeName}, {searchResult.CSharpTypeName}>";
 

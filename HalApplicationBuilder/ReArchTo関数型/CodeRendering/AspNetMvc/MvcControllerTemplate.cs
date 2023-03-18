@@ -25,7 +25,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
                     "ostics;\n    using System.Linq;\n    using System.Threading.Tasks;\n    using Micro" +
                     "soft.AspNetCore.Mvc;\n    using Microsoft.Extensions.Logging;\n    \n");
  foreach (var rootAggregate in _rootAggregates) { 
- var controller = rootAggregate.ToController(_config); 
+ var controller = rootAggregate.ToController(); 
             this.Write("    public partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(controller.ClassName));
             this.Write(" : ");

@@ -25,7 +25,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
  foreach (var aggregate in _aggregates) { 
             this.Write("\n");
  /* 検索条件DTO */ 
- var searchCondition = aggregate.ToSearchConditionClass(_config); 
+ var searchCondition = aggregate.ToSearchConditionClass(); 
             this.Write("    public class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(searchCondition.ClassName));
             this.Write(" : ");
@@ -42,7 +42,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
  }
             this.Write("    }\n\n");
  /* 検索結果DTO */ 
- var searchResult = aggregate.ToSearchResultClass(_config); 
+ var searchResult = aggregate.ToSearchResultClass(); 
             this.Write("    public class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(searchResult.ClassName));
             this.Write(" : ");
@@ -59,7 +59,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
  }
             this.Write("    }\n\n");
  /* シングルビューDTO */ 
- var uiInstance = aggregate.ToUiInstanceClass(_config); 
+ var uiInstance = aggregate.ToUiInstanceClass(); 
             this.Write("    public class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(uiInstance.ClassName));
             this.Write(" : ");

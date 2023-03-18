@@ -6,10 +6,10 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering
 {
     internal class RenderedProerty
     {
-        internal required bool Virtual { get; init; }
+        internal bool Virtual { get; init; }
         internal required string CSharpTypeName { get; init; }
         internal required string PropertyName { get; init; }
-        internal required string? Initializer { get; init; }
+        internal string? Initializer { get; init; }
     }
 
     internal class NavigationProerty : RenderedProerty {

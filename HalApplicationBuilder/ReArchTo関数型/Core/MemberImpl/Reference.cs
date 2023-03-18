@@ -53,26 +53,37 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
                 Virtual = true,
                 CSharpTypeName = refTargetDbEntity.CSharpTypeName,
                 PropertyName = _underlyingProp.Name,
-                Initializer = null,
                 IsManyToOne = false,
                 IsPrincipal = true,
                 OpponentName = $"{_underlyingProp.Name}_Refered",
             };
         }
 
-        internal override IEnumerable<RenderedProerty> ToInstanceModelMember()
-        {
-            throw new NotImplementedException();
+        private string SearchConditonPropName => _underlyingProp.Name;
+        private string SearchResultPropName => _underlyingProp.Name;
+        private string InstanceModelPropName => _underlyingProp.Name;
+
+        internal override IEnumerable<RenderedProerty> ToInstanceModelMember() {
+            yield return new RenderedProerty {
+                CSharpTypeName = typeof(Runtime.ReferenceDTO).FullName!,
+                PropertyName = InstanceModelPropName,
+                Initializer = $"new() {{ {nameof(Runtime.ReferenceDTO.AggreageteGuid)} = new Guid(\"{GetRefTarget().GUID}\") }}",
+            };
         }
 
-        internal override IEnumerable<RenderedProerty> ToSearchConditionMember()
-        {
-            throw new NotImplementedException();
+        internal override IEnumerable<RenderedProerty> ToSearchConditionMember() {
+            yield return new RenderedProerty {
+                CSharpTypeName = typeof(Runtime.ReferenceDTO).FullName!,
+                PropertyName = SearchConditonPropName,
+                Initializer = "new()",
+            };
         }
 
-        internal override IEnumerable<RenderedProerty> ToSearchResultMember()
-        {
-            throw new NotImplementedException();
+        internal override IEnumerable<RenderedProerty> ToSearchResultMember() {
+            yield return new RenderedProerty {
+                CSharpTypeName = "string",
+                PropertyName = SearchResultPropName,
+            };
         }
     }
 }

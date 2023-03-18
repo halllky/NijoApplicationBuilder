@@ -13,7 +13,7 @@ namespace <#=_config.MvcModelNamespace#> {
 <# foreach (var aggregate in _aggregates) { #>
 
 <# /* 検索条件DTO */ #>
-<# var searchCondition = aggregate.ToSearchConditionClass(_config); #>
+<# var searchCondition = aggregate.ToSearchConditionClass(); #>
     public class <#=searchCondition.ClassName#> : <#=typeof(Runtime.SearchConditionBase).FullName#> {
 <# foreach (var prop in searchCondition.Properties) { #>
         public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }<#=prop.Initializer == null ? "" : $" = {prop.Initializer};"#>
@@ -21,7 +21,7 @@ namespace <#=_config.MvcModelNamespace#> {
     }
 
 <# /* 検索結果DTO */ #>
-<# var searchResult = aggregate.ToSearchResultClass(_config); #>
+<# var searchResult = aggregate.ToSearchResultClass(); #>
     public class <#=searchResult.ClassName#> : <#=typeof(Runtime.SearchResultBase).FullName#> {
 <# foreach (var prop in searchResult.Properties) { #>
         public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }<#=prop.Initializer == null ? "" : $" = {prop.Initializer};"#>
@@ -29,7 +29,7 @@ namespace <#=_config.MvcModelNamespace#> {
     }
 
 <# /* シングルビューDTO */ #>
-<# var uiInstance = aggregate.ToUiInstanceClass(_config); #>
+<# var uiInstance = aggregate.ToUiInstanceClass(); #>
     public class <#=uiInstance.ClassName#> : <#=typeof(Runtime.UIInstanceBase).FullName#> {
 <# foreach (var prop in uiInstance.Properties) { #>
         public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }<#=prop.Initializer == null ? "" : $" = {prop.Initializer};"#>

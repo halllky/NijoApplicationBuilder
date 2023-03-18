@@ -42,7 +42,8 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             throw new NotImplementedException();
         }
 
-        internal string NavigationPropName => _underlyingProp.Name;
+        private string NavigationPropName => _underlyingProp.Name;
+        private string InstanceModelPropName => _underlyingProp.Name;
 
         internal override IEnumerable<RenderedProerty> ToDbEntityMember() {
             // ナビゲーションプロパティ
@@ -58,19 +59,21 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             };
         }
 
-        internal override IEnumerable<RenderedProerty> ToInstanceModelMember()
-        {
-            throw new NotImplementedException();
+        internal override IEnumerable<RenderedProerty> ToInstanceModelMember() {
+            var item = GetChildAggregates().Single().ToUiInstanceClass().CSharpTypeName;
+            yield return new RenderedProerty {
+                CSharpTypeName = $"List<{item}>",
+                PropertyName = InstanceModelPropName,
+                Initializer = "new()",
+            };
         }
 
-        internal override IEnumerable<RenderedProerty> ToSearchConditionMember()
-        {
-            throw new NotImplementedException();
+        internal override IEnumerable<RenderedProerty> ToSearchConditionMember() {
+            yield break;
         }
 
-        internal override IEnumerable<RenderedProerty> ToSearchResultMember()
-        {
-            throw new NotImplementedException();
+        internal override IEnumerable<RenderedProerty> ToSearchResultMember() {
+            yield break;
         }
     }
 }

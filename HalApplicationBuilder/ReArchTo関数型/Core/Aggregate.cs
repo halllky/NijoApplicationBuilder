@@ -33,6 +33,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
         private protected readonly Config _config;
         private protected readonly Type _underlyingType;
 
+        internal Guid GUID => _underlyingType.GUID;
         internal string Name => _underlyingType.Name;
 
         internal AggregateMember? Parent { get; }
@@ -115,7 +116,13 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
         //internal override IEnumerable<RenderedProerty> ToDbEntityRecursively(ObjectGraphContext context) { }
 
         internal RenderedClass ToUiInstanceClass() {
-            throw new NotImplementedException();
+            var className = Name;
+            var props = GetMembers().SelectMany(m => m.ToInstanceModelMember());
+            return new RenderedClass {
+                ClassName = className,
+                CSharpTypeName = $"{_config.MvcModelNamespace}.{className}",
+                Properties = props,
+            };
         }
         internal RenderedClass ToSearchConditionClass() {
             var className = $"{Name}__SearchCondition";
@@ -127,7 +134,13 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
             };
         }
         internal RenderedClass ToSearchResultClass() {
-            throw new NotImplementedException();
+            var className = $"{Name}__SearchResult";
+            var props = GetMembers().SelectMany(m => m.ToSearchResultMember());
+            return new RenderedClass {
+                ClassName = className,
+                CSharpTypeName = $"{_config.MvcModelNamespace}.{className}",
+                Properties = props,
+            };
         }
 
         internal CodeRendering.EFCore.AutoCompleteSourceDTO BuildAutoCompleteSourceMethod() {

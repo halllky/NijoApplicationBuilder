@@ -36,7 +36,7 @@
             <thead class="border-b">
                 <tr>
                     <th></th>
-<# var searchResult = _rootAggregate.ToSearchResultClass(_config); #>
+<# var searchResult = _rootAggregate.ToSearchResultClass(); #>
 <# foreach (var prop in searchResult.Properties) { #>
                     <th>
                         <#=prop.PropertyName#>
