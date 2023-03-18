@@ -31,9 +31,10 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             return GetVariations().Values;
         }
 
-        internal override void BuildSearchMethod(SearchMethodDTO method)
-        {
-            throw new NotImplementedException();
+        internal override void BuildSearchMethod(SearchMethodDTO method) {
+            method.SelectClause.Add($"{SearchResultPropName} = {method.SelectLambdaVarName}.{SearchResultPropName},");
+
+            // TODO: WHERE句の組み立て
         }
 
         internal override IEnumerable<string> GetInstanceKeysFromInstanceModel(object uiInstance)

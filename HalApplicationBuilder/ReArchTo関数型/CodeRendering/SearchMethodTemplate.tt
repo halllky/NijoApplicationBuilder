@@ -14,7 +14,7 @@ namespace <#=_config.DbContextNamespace#> {
     partial class <#=_config.DbContextName#> {
 
 <# foreach (var rootAggregate in _rootAggregates) { #>
-<# var method = rootAggregate.BuildSearchMethod("param", "e"); #>
+<# var method = rootAggregate.BuildSearchMethod("param", "query", "e"); #>
         public IEnumerable<<#=method.SearchResultClassName#>> <#=method.MethodName#>(<#=method.SearchConditionClassName#> param) {
             var query = this.<#=method.DbSetName#>.Select(e => new <#=method.SearchResultClassName#> {
 <# foreach (var line in method.SelectClause) { #>

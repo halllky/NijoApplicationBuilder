@@ -26,7 +26,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering {
             this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextName));
             this.Write(" {\n\n");
  foreach (var rootAggregate in _rootAggregates) { 
- var method = rootAggregate.BuildSearchMethod("param", "e"); 
+ var method = rootAggregate.BuildSearchMethod("param", "query", "e"); 
             this.Write("        public IEnumerable<");
             this.Write(this.ToStringHelper.ToStringWithCulture(method.SearchResultClassName));
             this.Write("> ");

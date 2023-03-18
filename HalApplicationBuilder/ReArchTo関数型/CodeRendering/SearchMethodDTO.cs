@@ -7,6 +7,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering
     {
         internal required string ParamVarName { get; init; }
         internal required string QueryVarName { get; init; }
+        internal required string SelectLambdaVarName { get; init; }
 
         internal required string SearchResultClassName { get; init; }
         internal required string SearchConditionClassName { get; init; }

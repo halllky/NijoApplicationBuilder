@@ -21,12 +21,13 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
             }
         }
 
-        internal CodeRendering.SearchMethodDTO BuildSearchMethod(string paramVarName, string queryVarName)
+        internal CodeRendering.SearchMethodDTO BuildSearchMethod(string paramVarName, string queryVarName, string lambdaVarName)
         {
             var dto = new CodeRendering.SearchMethodDTO {
                 MethodName = $"Search_{_underlyingType.Name}",
                 ParamVarName = paramVarName,
                 QueryVarName = queryVarName,
+                SelectLambdaVarName = lambdaVarName,
                 DbSetName = ToDbEntity().DbSetName,
                 SearchConditionClassName = ToSearchConditionClass().CSharpTypeName,
                 SearchResultClassName = ToSearchResultClass().CSharpTypeName,

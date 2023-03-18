@@ -17,9 +17,8 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
                 this);
         }
 
-        internal override void BuildSearchMethod(SearchMethodDTO method)
-        {
-            throw new NotImplementedException();
+        internal override void BuildSearchMethod(SearchMethodDTO method) {
+            // 何もしない
         }
 
         internal override IEnumerable<string> GetInstanceKeysFromInstanceModel(object uiInstance)

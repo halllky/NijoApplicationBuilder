@@ -72,14 +72,39 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
         internal string SearchResultPropName => _underlyingProp.Name;
         internal string InstanceModelPropName => _underlyingProp.Name;
 
-        internal override IEnumerable<Aggregate> GetChildAggregates()
-        {
+        internal override IEnumerable<Aggregate> GetChildAggregates() {
             yield break;
         }
 
-        internal override void BuildSearchMethod(SearchMethodDTO method)
-        {
-            throw new NotImplementedException();
+        internal override void BuildSearchMethod(SearchMethodDTO method) {
+            // SELECT句の組み立て
+            method.SelectClause.Add($"{SearchResultPropName} = {method.SelectLambdaVarName}.{SearchResultPropName},");
+
+            // WHERE句の組み立て
+            var type = GetPropertyTypeExceptNullable();
+            var query = method.QueryVarName;
+            if (IsRangeSearchCondition()) {
+                var valueFrom = $"{method.ParamVarName}.{SearchConditonPropName}.{nameof(FromTo.From)}";
+                var valueTo = $"{method.ParamVarName}.{SearchConditonPropName}.{nameof(FromTo.To)}";
+                method.WhereClause.Add($"if ({valueFrom} != null) {{");
+                method.WhereClause.Add($"    {query} = {query}.Where(e => e.{DbColumnPropName} >= {valueFrom});");
+                method.WhereClause.Add($"}}");
+                method.WhereClause.Add($"if ({valueTo} != null) {{");
+                method.WhereClause.Add($"    {query} = {query}.Where(e => e.{DbColumnPropName} <= {valueTo});");
+                method.WhereClause.Add($"}}");
+
+            } else if (type == typeof(string)) {
+                var value = $"{method.ParamVarName}.{SearchConditonPropName}";
+                method.WhereClause.Add($"if (!string.{nameof(string.IsNullOrWhiteSpace)}({value})) {{");
+                method.WhereClause.Add($"    {query} = {query}.Where(e => e.{DbColumnPropName}.{nameof(string.Contains)}({value}));");
+                method.WhereClause.Add($"}}");
+
+            } else {
+                var value = $"{method.ParamVarName}.{SearchConditonPropName}";
+                method.WhereClause.Add($"if ({value} != null) {{");
+                method.WhereClause.Add($"    {query} = {query}.Where(e => e.{DbColumnPropName} == {value});");
+                method.WhereClause.Add($"}}");
+            }
         }
 
         internal override IEnumerable<string> GetInstanceKeysFromInstanceModel(object uiInstance)
