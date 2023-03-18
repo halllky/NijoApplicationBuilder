@@ -1,0 +1,95 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering
+{
+    internal class ObjectPath
+    {
+        internal ObjectPath(string? rootObjectName = null) {
+            _rootObjectName = rootObjectName;
+            _stack = new Stack<string>();
+        }
+        private ObjectPath(string? rootObjectName, Stack<string> stack) {
+            _rootObjectName = rootObjectName;
+            _stack = stack;
+        }
+        private readonly string? _rootObjectName;
+        private readonly Stack<string> _stack;
+
+        internal int CurrentDepth => _stack.Count;
+
+        /// <summary>
+        /// ルートオブジェクトからのパス
+        /// </summary>
+        internal string Path => $"{_rootObjectName}.{string.Join(".", _stack)}";
+        /// <summary>
+        /// ルートオブジェクトからのパス（asp-forにバインドするために先頭の"Model"を除外したもの）
+        /// </summary>
+        internal string AspForPath => _rootObjectName?.StartsWith("Model") == true
+            ? Path.Substring("Model.".Length)
+            : Path;
+
+        internal ObjectPath Nest(string prop) {
+            var stack = new Stack<string>(_stack);
+            stack.Push(prop);
+            return new ObjectPath(_rootObjectName, stack);
+        }
+    }
+}
+
+// ↓ 参考
+//public class ViewRenderingContext {
+//    internal ViewRenderingContext(IViewModelProvider viewModelProvider, params string[] ancestors) {
+//        ViewModelProvider = viewModelProvider;
+//        _ancestors = ancestors;
+//    }
+
+//    public IViewModelProvider ViewModelProvider { get; }
+//    private readonly IReadOnlyList<string> _ancestors;
+
+//    /// <summary>
+//    /// ルートオブジェクトからのパス
+//    /// </summary>
+//    internal string Path => string.Join(".", _ancestors);
+//    /// <summary>
+//    /// ルートオブジェクトからのパス（asp-forにバインドするために先頭の"Model"を除外したもの）
+//    /// </summary>
+//    internal string AspForPath => _ancestors[0] == "Model"
+//        ? string.Join(".", _ancestors.Skip(1))
+//        : string.Join(".", _ancestors);
+//    /// <summary>
+//    /// 配列添字"[i]"を除いた配列自体のパス
+//    /// </summary>
+//    internal string CollectionPath => _ancestors.Last().EndsWith("]")
+//        ? Path.Substring(0, Path.LastIndexOf("["))
+//        : throw new InvalidOperationException($"{Path} は配列でない");
+//    /// <summary>
+//    /// 配列添字"[i]"を除いた配列自体のパス（asp-forバインド用）
+//    /// </summary>
+//    internal string AspForCollectionPath => _ancestors.Last().EndsWith("]")
+//        ? AspForPath.Substring(0, AspForPath.LastIndexOf("["))
+//        : throw new InvalidOperationException($"{Path} は配列でない");
+
+//    /// <summary>
+//    /// 配列の添字。現在レンダリング中のオブジェクトの深さが1なら"i"、2なら"j"、…と以下延々と続く
+//    /// </summary>
+//    internal string LoopVar {
+//        get {
+//            // zまで使い切ることはないだろう
+//            if (_ancestors.Count > 18) throw new InvalidOperationException("ループ変数名を使い切りました。'z'より深いオブジェクトをレンダリングするにはプログラム改修が必要です。");
+//            return char.ConvertFromUtf32(_ancestors.Count + 104); // 深さ1のときループ変数名"i"
+//        }
+//    }
+
+//    /// <summary>
+//    /// 入れ子を1段深くする
+//    /// </summary>
+//    /// <param name="propertyName">このプロパティの子としてネストする</param>
+//    /// <param name="isCollection">コレクションなら添字つき</param>
+//    internal ViewRenderingContext Nest(string propertyName, bool isCollection = false) {
+//        var nested = isCollection ? $"{propertyName}[{LoopVar}]" : propertyName;
+//        return new ViewRenderingContext(ViewModelProvider, _ancestors.Concat(new[] { nested }).ToArray());
+//    }
+//}
+

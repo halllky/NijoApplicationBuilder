@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
+using HalApplicationBuilder.Core.Members;
 using HalApplicationBuilder.DotnetEx;
 using HalApplicationBuilder.ReArchTo関数型.CodeRendering;
 
@@ -104,6 +105,51 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
                 method.WhereClause.Add($"if ({value} != null) {{");
                 method.WhereClause.Add($"    {query} = {query}.Where(e => e.{DbColumnPropName} == {value});");
                 method.WhereClause.Add($"}}");
+            }
+        }
+
+        internal override void RenderMvcSearchConditionView(RenderingContext context) {
+            var type = GetPropertyTypeExceptNullable();
+
+            if (IsRangeSearchCondition()) {
+                // 範囲検索
+                var from = context.ObjectPath
+                    .Nest(SearchConditonPropName)
+                    .Nest(nameof(FromTo.From))
+                    .AspForPath;
+                var to = context.ObjectPath
+                    .Nest(SearchConditonPropName)
+                    .Nest(nameof(FromTo.To))
+                    .AspForPath;
+                context.Template.WriteLine($"<input asp-for=\"{from}\" class=\"border\" />");
+                context.Template.WriteLine($"〜");
+                context.Template.WriteLine($"<input asp-for=\"{to}\" class=\"border\" />");
+
+            } else if (type.IsEnum) {
+                // enumドロップダウン
+                var searchCondition = context.ObjectPath
+                    .Nest(SearchConditonPropName)
+                    .AspForPath;
+                var enumTypeName = GetSearchConditionCSharpTypeName();
+                var options = new List<KeyValuePair<string, string>>();
+                if (IsNullable()) options.Add(KeyValuePair.Create("", ""));
+
+                context.Template.WriteLine($"<select asp-for=\"{searchCondition}\" asp-items=\"@Html.GetEnumSelectList(typeof({enumTypeName}))\">");
+                context.Template.PushIndent("    ");
+                foreach (var opt in options) {
+                    context.Template.WriteLine($"<option selected=\"selected\" value=\"{opt.Key}\">");
+                    context.Template.WriteLine($"    {opt.Value}");
+                    context.Template.WriteLine($"</option>");
+                }
+                context.Template.PopIndent();
+                context.Template.WriteLine($"</select>");
+
+            } else {
+                // ただのinput
+                var searchCondition = context.ObjectPath
+                    .Nest(SearchConditonPropName)
+                    .AspForPath;
+                context.Template.WriteLine($"<input asp-for=\"{searchCondition}\" class=\"border\" />");
             }
         }
 

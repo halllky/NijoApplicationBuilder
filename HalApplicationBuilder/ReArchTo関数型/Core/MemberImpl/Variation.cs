@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using HalApplicationBuilder.Core.Members;
 using HalApplicationBuilder.ReArchTo関数型.CodeRendering;
 
 namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
@@ -27,6 +26,16 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             return attrs.ToDictionary(attr => attr.Key, attr => Aggregate.AsChild(_config, attr.Type, this));
         }
 
+        private string DbPropName => _underlyingProp.Name;
+        private string NavigationPropName(RenderedEFCoreEntity variationDbEntity) => $"{DbPropName}__{variationDbEntity.ClassName}";
+
+        /// <summary>アンダースコア2連だと ArgumentException: The name of an HTML field cannot be null or empty... になる</summary>
+        private string SearchConditionPropName(KeyValuePair<int, Aggregate> variation) => $"{_underlyingProp.Name}_{variation.Value.Name}";
+        private string SearchResultPropName => _underlyingProp.Name;
+        private string InstanceModelTypeSwitchPropName => _underlyingProp.Name;
+        private string InstanceModelTypeDetailPropName(KeyValuePair<int, Aggregate> variation) => $"{_underlyingProp.Name}_{variation.Value.Name}";
+
+
         internal override IEnumerable<Aggregate> GetChildAggregates() {
             return GetVariations().Values;
         }
@@ -35,6 +44,17 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             method.SelectClause.Add($"{SearchResultPropName} = {method.SelectLambdaVarName}.{SearchResultPropName},");
 
             // TODO: WHERE句の組み立て
+        }
+
+        internal override void RenderMvcSearchConditionView(RenderingContext context) {
+            foreach (var variation in GetVariations()) {
+                var key = context.ObjectPath.Nest(SearchConditionPropName(variation)).AspForPath;
+
+                context.Template.WriteLine($"<label>");
+                context.Template.WriteLine($"    <input type=\"checkbox\" asp-for=\"{key}\">");
+                context.Template.WriteLine($"    {variation.Value.Name}");
+                context.Template.WriteLine($"</label>");
+            }
         }
 
         internal override IEnumerable<string> GetInstanceKeysFromInstanceModel(object uiInstance)
@@ -56,15 +76,6 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
         {
             throw new NotImplementedException();
         }
-
-        private string DbPropName => _underlyingProp.Name;
-        private string NavigationPropName(RenderedEFCoreEntity variationDbEntity) => $"{DbPropName}__{variationDbEntity.ClassName}";
-
-        /// <summary>アンダースコア2連だと ArgumentException: The name of an HTML field cannot be null or empty... になる</summary>
-        private string SearchConditionPropName(KeyValuePair<int, Aggregate> variation) => $"{_underlyingProp.Name}_{variation.Value.Name}";
-        private string SearchResultPropName => _underlyingProp.Name;
-        private string InstanceModelTypeSwitchPropName => _underlyingProp.Name;
-        private string InstanceModelTypeDetailPropName(KeyValuePair<int, Aggregate> variation) => $"{_underlyingProp.Name}_{variation.Value.Name}";
 
         internal override IEnumerable<RenderedProerty> ToDbEntityMember() {
             // 区分値

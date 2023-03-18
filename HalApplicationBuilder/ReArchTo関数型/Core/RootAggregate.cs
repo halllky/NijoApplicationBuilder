@@ -38,10 +38,6 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
             return dto;
         }
 
-        internal void RenderSearchCondition(CodeRendering.RenderingContext context) {
-            throw new NotImplementedException();
-        }
-
         internal CodeRendering.RenderedClass ToController() {
             throw new NotImplementedException();
         }

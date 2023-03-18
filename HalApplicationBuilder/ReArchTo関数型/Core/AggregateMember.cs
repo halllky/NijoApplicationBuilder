@@ -20,6 +20,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
 
         internal Aggregate Owner { get; }
 
+        internal string DisplayName => _underlyingProp.GetCustomAttribute<DisplayAttribute>()?.Name ?? _underlyingProp.Name;
         internal bool IsPrimary => _underlyingProp.GetCustomAttribute<KeyAttribute>() != null;
 
         internal abstract IEnumerable<Aggregate> GetChildAggregates();
@@ -30,6 +31,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
         internal abstract IEnumerable<RenderedProerty> ToInstanceModelMember();
 
         internal abstract void BuildSearchMethod(CodeRendering.SearchMethodDTO method);
+        internal abstract void RenderMvcSearchConditionView(CodeRendering.RenderingContext context);
 
         internal abstract IEnumerable<string> GetInstanceKeysFromInstanceModel(object uiInstance);
         internal abstract IEnumerable<string> GetInstanceKeysFromSearchResult(object searchResult);

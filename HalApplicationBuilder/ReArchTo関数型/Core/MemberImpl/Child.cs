@@ -28,6 +28,10 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             // TODO: WHERE句の組み立て
         }
 
+        internal override void RenderMvcSearchConditionView(RenderingContext context) {
+            GetChildAggregates().Single().RenderSearchCondition(context);
+        }
+
         internal override IEnumerable<string> GetInstanceKeysFromInstanceModel(object uiInstance)
         {
             throw new NotImplementedException();

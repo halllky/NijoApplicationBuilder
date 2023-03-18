@@ -153,6 +153,28 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
             return dto;
         }
 
+        internal void RenderSearchCondition(CodeRendering.RenderingContext context) {
+
+            context.Template.WriteLine($"<div class=\"flex flex-col\">");
+
+            foreach (var member in GetMembers()) {
+                context.Template.WriteLine($"    <div class=\"flex flex-col md:flex-row mb-1\">");
+                context.Template.WriteLine($"        <label class=\"w-32 select-none\">");
+                context.Template.WriteLine($"            {member.DisplayName}");
+                context.Template.WriteLine($"        </label>");
+                context.Template.WriteLine($"        <div class=\"flex-1\">");
+
+                context.Template.PushIndent("            ");
+                member.RenderMvcSearchConditionView(context);
+                context.Template.PopIndent();
+
+                context.Template.WriteLine($"        </div>");
+                context.Template.WriteLine($"    </div>");
+            }
+
+            context.Template.WriteLine($"</div>");
+        }
+
         internal void RenderAspNetMvcPartialView(CodeRendering.RenderingContext context) {
             throw new NotImplementedException();
         }

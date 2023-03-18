@@ -21,6 +21,10 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             // 何もしない
         }
 
+        internal override void RenderMvcSearchConditionView(RenderingContext context) {
+            // 何もしない
+        }
+
         internal override IEnumerable<string> GetInstanceKeysFromInstanceModel(object uiInstance)
         {
             throw new NotImplementedException();

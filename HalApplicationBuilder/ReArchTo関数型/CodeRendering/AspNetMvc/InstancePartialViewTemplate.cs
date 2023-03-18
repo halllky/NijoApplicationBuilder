@@ -28,7 +28,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
             this.Write(this.ToStringHelper.ToStringWithCulture(JsTemplate.REMOVE_BTN));
             this.Write(" halapp-btn-secondary\" />\n    }\n\n");
  PushIndent("    "); 
- _aggregate.RenderAspNetMvcPartialView(new RenderingContext(this, "@Model")); 
+ _aggregate.RenderAspNetMvcPartialView(new RenderingContext(this, new ObjectPath("Model"))); 
  PopIndent(); 
             this.Write("\n");
  foreach (var field in _hiddenFields) { 

@@ -22,6 +22,27 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             // TODO: WHERE句の組み立て
         }
 
+        internal override void RenderMvcSearchConditionView(RenderingContext context) {
+            var key = context.ObjectPath
+                .Nest(SearchConditonPropName)
+                .Nest(nameof(Runtime.ReferenceDTO.InstanceKey))
+                .AspForPath;
+            var text = context.ObjectPath
+                .Nest(SearchConditonPropName)
+                .Nest(nameof(Runtime.ReferenceDTO.InstanceName))
+                .AspForPath;
+            var guid = context.ObjectPath
+                .Nest(SearchConditonPropName)
+                .Nest(nameof(Runtime.ReferenceDTO.AggreageteGuid))
+                .AspForPath;
+
+            context.Template.WriteLine($"<div>");
+            context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{key}\" class=\"{AspNetMvc.JsTemplate.AUTOCOMPLETE_VALUE}\" />");
+            context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{guid}\" class=\"{AspNetMvc.JsTemplate.AGGREGATE_GUID}\" />");
+            context.Template.WriteLine($"    <input asp-for=\"{text}\" class=\"{AspNetMvc.JsTemplate.AUTOCOMPLETE_INPUT}\" />");
+            context.Template.WriteLine($"<div>");
+        }
+
         internal override IEnumerable<string> GetInstanceKeysFromInstanceModel(object uiInstance)
         {
             throw new NotImplementedException();

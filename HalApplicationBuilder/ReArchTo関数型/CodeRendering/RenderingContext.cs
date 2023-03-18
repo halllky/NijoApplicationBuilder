@@ -5,17 +5,13 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering
 {
     internal class RenderingContext
     {
-        internal RenderingContext(ITemplate template, string rootObjectName) {
+        internal RenderingContext(ITemplate template, ObjectPath path) {
             Template = template;
-            _root = rootObjectName;
+            ObjectPath = path;
         }
 
-        private readonly string _root;
         internal ITemplate Template { get; }
-
-        internal RenderingContext Nest(AggregateMember member) {
-            throw new NotImplementedException();
-        }
+        internal ObjectPath ObjectPath { get; }
     }
 }
 
