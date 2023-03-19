@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
+using System.Text.Json;
 using HalApplicationBuilder.DotnetEx;
 using HalApplicationBuilder.ReArchTo関数型.CodeRendering;
 
@@ -34,11 +35,14 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
         internal abstract void RenderMvcSearchConditionView(CodeRendering.RenderingContext context);
         internal abstract void RenderAspNetMvcPartialView(CodeRendering.RenderingContext context);
 
-        internal abstract IEnumerable<string> GetInstanceKeysFromInstanceModel(object uiInstance);
-        internal abstract IEnumerable<string> GetInstanceKeysFromSearchResult(object searchResult);
+        internal abstract IEnumerable<object> GetInstanceKeysFromInstanceModel(object uiInstance);
+        internal abstract IEnumerable<object> GetInstanceKeysFromSearchResult(object searchResult);
+        internal abstract IEnumerable<object> GetInstanceKeysFromAutoCompleteItem(object autoCompelteItem);
 
-        internal abstract void MapDbToUi(object dbInstance, object uiInstance);
-        internal abstract void MapUiToDb(object uiInstance, object dbInstance);
+        internal abstract bool TryDequeueSerializedInstanceKey(Queue<JsonElement> jsonElements, IList<object> objects);
+
+        internal abstract void MapDbToUi(object dbInstance, object uiInstance, Runtime.IInstanceConvertingContext context);
+        internal abstract void MapUiToDb(object uiInstance, object dbInstance, Runtime.IInstanceConvertingContext context);
 
         protected sealed override IEnumerable<object?> ValueObjectIdentifiers()
         {

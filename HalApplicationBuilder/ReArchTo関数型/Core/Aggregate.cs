@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
-using HalApplicationBuilder.Core;
-using HalApplicationBuilder.Core.DBModel;
+using System.Text.Json;
 using HalApplicationBuilder.DotnetEx;
 using HalApplicationBuilder.ReArchTo関数型.CodeRendering;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Newtonsoft.Json.Linq;
 
 namespace HalApplicationBuilder.ReArchTo関数型.Core
@@ -148,15 +148,22 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
             };
         }
 
+        internal System.Reflection.MethodInfo GetAutoCompleteMethod(System.Reflection.Assembly runtimeAssembly, Microsoft.EntityFrameworkCore.DbContext dbContext) {
+            var dbContextType = dbContext.GetType();
+            var method = dbContextType.GetMethod(GetAutoCompleteSourceMethodName());
+            if (method == null) throw new InvalidOperationException($"{dbContextType.Name} にメソッド {GetAutoCompleteSourceMethodName()} が存在しません。");
+            return method;
+        }
         internal CodeRendering.EFCore.AutoCompleteSourceDTO BuildAutoCompleteSourceMethod() {
             var dbEntity = ToDbEntity();
             var dto = new CodeRendering.EFCore.AutoCompleteSourceDTO {
                 DbSetName = dbEntity.DbSetName,
                 EntityClassName = dbEntity.CSharpTypeName,
-                MethodName = $"LoadAutoCompleteSource_{Name}",
+                MethodName = GetAutoCompleteSourceMethodName(),
             };
             return dto;
         }
+        private string GetAutoCompleteSourceMethodName() => $"LoadAutoCompleteSource_{Name}";
 
         internal void RenderSearchCondition(CodeRendering.RenderingContext context) {
 
@@ -200,6 +207,65 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
             }
 
             context.Template.WriteLine($"</div>");
+        }
+
+        internal Runtime.InstanceKey CreateInstanceKeyFromUiInstnace(object uiInstance) {
+            var values = GetMembers()
+                .Where(m => m.IsPrimary)
+                .SelectMany(m => m.GetInstanceKeysFromInstanceModel(uiInstance))
+                .ToList();
+            return new Runtime.InstanceKey(this, values);
+        }
+        internal Runtime.InstanceKey CreateInstanceKeyFromSearchResult(object searchResult) {
+            var values = GetMembers()
+                .Where(m => m.IsPrimary)
+                .SelectMany(m => m.GetInstanceKeysFromSearchResult(searchResult))
+                .ToList();
+            return new Runtime.InstanceKey(this, values);
+        }
+        internal Runtime.InstanceKey CreateInstanceKeyFromAutoCompleteItem(object autoCompelteItem) {
+            var values = GetMembers()
+                .Where(m => m.IsPrimary)
+                .SelectMany(m => m.GetInstanceKeysFromAutoCompleteItem(autoCompelteItem))
+                .ToList();
+            return new Runtime.InstanceKey(this, values);
+        }
+
+        internal bool TryParseInstanceKey(string stringValue, out Runtime.InstanceKey instanceKey) {
+            if (string.IsNullOrWhiteSpace(stringValue)) {
+                instanceKey = Runtime.InstanceKey.Empty;
+                return false;
+            }
+
+            JsonElement[] jsonValues;
+            try {
+                jsonValues = JsonSerializer.Deserialize<JsonElement[]>(stringValue) ?? Array.Empty<JsonElement>();
+            } catch (JsonException) {
+                instanceKey = Runtime.InstanceKey.Empty;
+                return false;
+            }
+
+            var queue = new Queue<JsonElement>(jsonValues);
+            var values = new List<object>();
+            foreach (var member in GetMembers().Where(m => m.IsPrimary)) {
+                if (!member.TryDequeueSerializedInstanceKey(queue, values)) {
+                    instanceKey = Runtime.InstanceKey.Empty;
+                    return false;
+                }
+            }
+            instanceKey = new Runtime.InstanceKey(this, values);
+            return true;
+        }
+
+        internal void MapUiToDb(object uiInstance, object dbInstance, Runtime.IInstanceConvertingContext context) {
+            foreach (var member in GetMembers()) {
+                member.MapUiToDb(uiInstance, dbInstance, context);
+            }
+        }
+        internal void MapDbToUi(object dbInstance, object uiInstance, Runtime.IInstanceConvertingContext context) {
+            foreach (var member in GetMembers()) {
+                member.MapDbToUi(dbInstance, uiInstance, context);
+            }
         }
 
         /// <summary>

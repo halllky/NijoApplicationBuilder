@@ -21,9 +21,15 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
             }
         }
 
+        internal System.Reflection.MethodInfo GetSearchMethod(System.Reflection.Assembly runtimeAssembly, Microsoft.EntityFrameworkCore.DbContext dbContext) {
+            var dbContextType = dbContext.GetType();
+            var method = dbContextType.GetMethod(GetSearchMethodName());
+            if (method == null) throw new InvalidOperationException($"{dbContextType.Name} にメソッド {GetSearchMethodName()} が存在しません。");
+            return method;
+        }
         internal CodeRendering.SearchMethodDTO BuildSearchMethod(string paramVarName, string queryVarName, string lambdaVarName) {
             var dto = new CodeRendering.SearchMethodDTO {
-                MethodName = $"Search_{_underlyingType.Name}",
+                MethodName = GetSearchMethodName(),
                 ParamVarName = paramVarName,
                 QueryVarName = queryVarName,
                 SelectLambdaVarName = lambdaVarName,
@@ -36,6 +42,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
             }
             return dto;
         }
+        private string GetSearchMethodName() => $"Search_{_underlyingType.Name}";
     }
 }
 
