@@ -167,7 +167,7 @@ namespace HalApplicationBuilder.ReArchTo関数型
 
             log?.WriteLine("コード自動生成: JS");
             {
-                var view = new AspNetMvc.JsTemplate();
+                var view = new CodeRendering.AspNetMvc.JsTemplate();
                 var filename = Path.Combine(viewDir, CodeRendering.AspNetMvc.JsTemplate.FILE_NAME);
                 using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
                 sw.Write(view.TransformText());

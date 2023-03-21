@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using HalApplicationBuilder.Core.DBModel;
 using HalApplicationBuilder.ReArchTo関数型.CodeRendering;
 using HalApplicationBuilder.ReArchTo関数型.Runtime;
 

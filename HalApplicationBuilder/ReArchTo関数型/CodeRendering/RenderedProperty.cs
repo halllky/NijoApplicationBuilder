@@ -1,5 +1,4 @@
 using System;
-using HalApplicationBuilder.Core.UIModel;
 using System.Collections.Generic;
 
 namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering

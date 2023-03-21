@@ -10,7 +10,6 @@ using Microsoft.Extensions.DependencyInjection;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Firefox;
-using static HalApplicationBuilder.Core.DBModel.SelectStatement;
 
 namespace HalApplicationBuilder.Test {
     public class DistMvcProject {

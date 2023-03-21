@@ -18,15 +18,7 @@
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.2" />
 	</ItemGroup>
 	<ItemGroup>
-		<Folder Include="Core\" />
-		<Folder Include="AspNetMvc\" />
-		<Folder Include="EntityFramework\" />
 		<Folder Include="DotnetEx\" />
-		<Folder Include="AspNetMvc\TagHelpers\" />
-		<Folder Include="Core\Members\" />
-		<Folder Include="Core\DBModel\" />
-		<Folder Include="Core\UIModel\" />
-		<Folder Include="Core\Runtime\" />
 		<Folder Include="ReArchTo関数型\Core\" />
 		<Folder Include="ReArchTo関数型\CodeRendering\" />
 		<Folder Include="ReArchTo関数型\Runtime\" />
@@ -53,41 +45,9 @@
 			<Generator>TextTemplatingFilePreprocessor</Generator>
 			<LastGenOutput>ControllerTemplate.cs</LastGenOutput>
 		</None>
-		<None Update="AspNetMvc\ControllerTemplate.tt">
-			<Generator>TextTemplatingFilePreprocessor</Generator>
-			<LastGenOutput>ControllerTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="AspNetMvc\CreateViewTemplate.tt">
-			<Generator>TextTemplatingFilePreprocessor</Generator>
-			<LastGenOutput>CreateViewTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="AspNetMvc\MultiViewTemplate.tt">
-			<Generator>TextTemplatingFilePreprocessor</Generator>
-			<LastGenOutput>MultiViewTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="AspNetMvc\MvcModelsTemplate.tt">
-			<Generator>TextTemplatingFilePreprocessor</Generator>
-			<LastGenOutput>MvcModelsTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="AspNetMvc\SingleViewTemplate.tt">
-			<Generator>TextTemplatingFilePreprocessor</Generator>
-			<LastGenOutput>SingleViewTemplate.cs</LastGenOutput>
-		</None>
 		<None Update="AspNetMvc\AggregatePartialViewTemplate.tt">
 			<Generator>TextTemplatingFilePreprocessor</Generator>
 			<LastGenOutput>AggregatePartialViewTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="AspNetMvc\JsTemplate.tt">
-			<Generator>TextTemplatingFilePreprocessor</Generator>
-			<LastGenOutput>JsTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="AspNetMvc\InstancePartialViewTemplate.tt">
-			<Generator>TextTemplatingFilePreprocessor</Generator>
-			<LastGenOutput>InstancePartialViewTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="AspNetMvc\PartialViewOfInstanceTemplate.tt">
-			<Generator>TextTemplatingFilePreprocessor</Generator>
-			<LastGenOutput>PartialViewOfInstanceTemplate.cs</LastGenOutput>
 		</None>
 		<None Update="EntityFramework\LoadAutoCompleteSourceTemplate.tt">
 			<Generator>TextTemplatingFilePreprocessor</Generator>
@@ -97,28 +57,8 @@
 			<Generator>TextTemplatingFilePreprocessor</Generator>
 			<LastGenOutput>EntityClassTemplate.cs</LastGenOutput>
 		</None>
-		<None Update="EntityFramework\AutoCompleteSourceMethodTemplate.tt">
-			<Generator>TextTemplatingFilePreprocessor</Generator>
-			<LastGenOutput>AutoCompleteSourceMethodTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="EntityFramework\SearchMethodTemplate.tt">
-			<Generator>TextTemplatingFilePreprocessor</Generator>
-			<LastGenOutput>SearchMethodTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="EntityFramework\DbSetTemplate.tt">
-			<Generator>TextTemplatingFilePreprocessor</Generator>
-			<LastGenOutput>DbSetTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="EntityFramework\OnModelCreatingTemplate.tt">
-			<Generator>TextTemplatingFilePreprocessor</Generator>
-			<LastGenOutput>OnModelCreatingTemplate.cs</LastGenOutput>
-		</None>
 		<None Update="DotnetEx\T4Template.tt">
 		  <Generator>TextTemplatingFileGenerator</Generator>
-		</None>
-		<None Update="EntityFramework\EntityClassTemplate.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>EntityClassTemplate.cs</LastGenOutput>
 		</None>
 		<None Update="ReArchTo関数型\CodeRendering\AspNetMvc\MvcModelsTemplate.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
@@ -164,6 +104,10 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>InstancePartialViewTemplate.cs</LastGenOutput>
 		</None>
+		<None Update="ReArchTo関数型\CodeRendering\AspNetMvc\JsTemplate.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>JsTemplate.cs</LastGenOutput>
+		</None>
 	</ItemGroup>
 	<ItemGroup>
 		<Compile Remove="Runtime\MultiView\MultiViewTemplate.cs" />
@@ -182,53 +126,14 @@
 		<Compile Update="Runtime\AspNetMvc\ControllersTemplate.cs">
 			<DependentUpon>ControllerTemplate.tt</DependentUpon>
 		</Compile>
-		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="AspNetMvc\ControllerTemplate.cs">
-			<DependentUpon>ControllerTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="AspNetMvc\CreateViewTemplate.cs">
-			<DependentUpon>CreateViewTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="AspNetMvc\MultiViewTemplate.cs">
-			<DependentUpon>MultiViewTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="AspNetMvc\MvcModelsTemplate.cs">
-			<DependentUpon>MvcModelsTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="AspNetMvc\SingleViewTemplate.cs">
-			<DependentUpon>SingleViewTemplate.tt</DependentUpon>
-		</Compile>
 		<Compile Update="AspNetMvc\AggregatePartialViewTemplate.cs">
 			<DependentUpon>AggregatePartialViewTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Update="AspNetMvc\JsTemplate.cs">
-			<DependentUpon>JsTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Update="AspNetMvc\InstancePartialViewTemplate.cs">
-			<DependentUpon>InstancePartialViewTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Update="AspNetMvc\PartialViewOfInstanceTemplate.cs">
-			<DependentUpon>PartialViewOfInstanceTemplate.tt</DependentUpon>
 		</Compile>
 		<Compile Update="EntityFramework\LoadAutoCompleteSourceTemplate.cs">
 			<DependentUpon>AutoGeneratedMethodsTemplate.tt</DependentUpon>
 		</Compile>
 		<Compile Update="EntityFramework\EFCoreEntityTemplate.cs">
 			<DependentUpon>EntityClassTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Update="EntityFramework\AutoCompleteSourceMethodTemplate.cs">
-			<DependentUpon>AutoCompleteSourceMethodTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Update="EntityFramework\SearchMethodTemplate.cs">
-			<DependentUpon>SearchMethodTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Update="EntityFramework\DbSetTemplate.cs">
-			<DependentUpon>DbSetTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Update="EntityFramework\OnModelCreatingTemplate.cs">
-			<DependentUpon>OnModelCreatingTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Update="EntityFramework\EntityClassTemplate.cs">
-		  <DependentUpon>EntityClassTemplate.tt</DependentUpon>
 		</Compile>
 		<Compile Update="ReArchTo関数型\CodeRendering\MvcMultiViewTemplate.cs">
 		  <DependentUpon>MvcMultiViewTemplate.tt</DependentUpon>
@@ -265,6 +170,9 @@
 		</Compile>
 		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="ReArchTo関数型\CodeRendering\AspNetMvc\InstancePartialViewTemplate.cs">
 		  <DependentUpon>InstancePartialViewTemplate.tt</DependentUpon>
+		</Compile>
+		<Compile Update="ReArchTo関数型\CodeRendering\AspNetMvc\JsTemplate.cs">
+		  <DependentUpon>JsTemplate.tt</DependentUpon>
 		</Compile>
 	</ItemGroup>
 	<ProjectExtensions>

@@ -40,9 +40,6 @@ builder.Services.AddDbContext<HalApplicationBuilder.Test.DistMvc.EntityFramework
     Microsoft.EntityFrameworkCore.ProxiesExtensions.UseLazyLoadingProxies(option);
     Microsoft.EntityFrameworkCore.SqliteDbContextOptionsBuilderExtensions.UseSqlite(option, connStr);
 });
-builder.Services.AddScoped<HalApplicationBuilder.Core.DBModel.SelectStatement.IParamGenerator>(_ => {
-    return new SqliteParamGenerator();
-});
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();

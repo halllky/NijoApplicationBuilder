@@ -4,6 +4,7 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.ReArchTo関数型.CodeRendering;
+using HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc;
 using HalApplicationBuilder.ReArchTo関数型.Runtime;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
@@ -40,9 +41,9 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
                 .AspForPath;
 
             context.Template.WriteLine($"<div>");
-            context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{key}\" class=\"{AspNetMvc.JsTemplate.AUTOCOMPLETE_VALUE}\" />");
-            context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{guid}\" class=\"{AspNetMvc.JsTemplate.AGGREGATE_GUID}\" />");
-            context.Template.WriteLine($"    <input asp-for=\"{text}\" class=\"{AspNetMvc.JsTemplate.AUTOCOMPLETE_INPUT}\" />");
+            context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{key}\" class=\"{JsTemplate.AUTOCOMPLETE_VALUE}\" />");
+            context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{guid}\" class=\"{JsTemplate.AGGREGATE_GUID}\" />");
+            context.Template.WriteLine($"    <input asp-for=\"{text}\" class=\"{JsTemplate.AUTOCOMPLETE_INPUT}\" />");
             context.Template.WriteLine($"<div>");
         }
 
@@ -61,9 +62,9 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
                 .AspForPath;
 
             context.Template.WriteLine($"<div>");
-            context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{key}\" class=\"{AspNetMvc.JsTemplate.AUTOCOMPLETE_VALUE}\" />");
-            context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{guid}\" class=\"{AspNetMvc.JsTemplate.AGGREGATE_GUID}\" />");
-            context.Template.WriteLine($"    <input asp-for=\"{text}\" class=\"{AspNetMvc.JsTemplate.AUTOCOMPLETE_INPUT}\" />");
+            context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{key}\" class=\"{JsTemplate.AUTOCOMPLETE_VALUE}\" />");
+            context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{guid}\" class=\"{JsTemplate.AGGREGATE_GUID}\" />");
+            context.Template.WriteLine($"    <input asp-for=\"{text}\" class=\"{JsTemplate.AUTOCOMPLETE_INPUT}\" />");
             context.Template.WriteLine($"<div>");
         }
 

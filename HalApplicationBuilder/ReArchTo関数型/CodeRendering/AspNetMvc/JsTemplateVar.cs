@@ -1,6 +1,4 @@
 ﻿using System;
-using HalApplicationBuilder.Core.UIModel;
-using HalApplicationBuilder.Core.Runtime;
 
 namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering.AspNetMvc {
     using ControllerBase = Runtime.AspNetMvc.ControllerBase<Runtime.SearchConditionBase, Runtime.SearchResultBase, Runtime.UIInstanceBase>;
