@@ -1,60 +1,91 @@
-﻿using System;
+using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Reflection;
+using System.Linq;
+using System.IO;
 using System.Text;
-using HalApplicationBuilder.Core;
-using HalApplicationBuilder.Core.DBModel;
-using HalApplicationBuilder.Core.UIModel;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.Extensions.DependencyModel;
 using Microsoft.Extensions.DependencyInjection;
+using HalApplicationBuilder.Core;
+using HalApplicationBuilder.Runtime.AspNetMvc;
 
-namespace HalApplicationBuilder {
-    public sealed class HalApp : IApplicationSchema, IDbSchema, IViewModelProvider {
+namespace HalApplicationBuilder
+{
+    public class HalApp {
 
-        public static void Configure(IServiceCollection serviceCollection, Config config, Assembly assembly, string @namespace = null) {
-            var rootAggregateTypes = assembly
-                .GetTypes()
-                .Where(type => type.GetCustomAttribute<AggregateAttribute>() != null);
-
-            if (!string.IsNullOrWhiteSpace(@namespace)) {
-                rootAggregateTypes = rootAggregateTypes.Where(type => type.Namespace.StartsWith(@namespace));
-            }
-
-            Configure(serviceCollection, config, rootAggregateTypes.ToArray());
-        }
+        #region Configure
         public static void Configure(IServiceCollection serviceCollection, Config config, Type[] rootAggregateTypes) {
+            Configure(
+                serviceCollection,
+                null,
+                config,
+                () => rootAggregateTypes.Select(t => RootAggregate.FromReflection(config, t)));
+        }
+        public static void Configure(IServiceCollection serviceCollection, Config config, Assembly assembly, string? @namespace = null) {
+            Configure(serviceCollection, null, config, assembly, @namespace);
+        }
+        public static void Configure(IServiceCollection serviceCollection, Assembly? runtimeAssembly, Config config, Assembly assembly, string? @namespace = null) {
+            Configure(
+                serviceCollection,
+                runtimeAssembly,
+                config,
+                () => {
+                    var types = assembly
+                        .GetTypes()
+                        .Where(type => type.GetCustomAttribute<AggregateAttribute>() != null);
+                    if (!string.IsNullOrWhiteSpace(@namespace)) {
+                        types = types.Where(type => type.Namespace?.StartsWith(@namespace) == true);
+                    }
+                    return types.Select(t => RootAggregate.FromReflection(config, t));
+                });
+
+        }
+        private static void Configure(IServiceCollection serviceCollection, Assembly? runtimeAssembly, Config config, Func<IEnumerable<RootAggregate>> rootAggregateBuidler) {
             serviceCollection.AddScoped(_ => config);
-            serviceCollection.AddScoped(provider => new HalApp(rootAggregateTypes, provider));
-            serviceCollection.AddScoped<IAggregateMemberFactory>(provider => new Core.Members.AggregateMemberFactory(provider));
-            serviceCollection.AddScoped<IApplicationSchema>(provider => provider.GetRequiredService<HalApp>());
-            serviceCollection.AddScoped<IViewModelProvider>(provider => provider.GetRequiredService<HalApp>());
-            serviceCollection.AddScoped<IDbSchema>(provider => provider.GetRequiredService<HalApp>());
+            serviceCollection.AddScoped(provider => {
+                var rootAggregates = rootAggregateBuidler().ToArray();
+                return new HalApp(provider, rootAggregates);
+            });
+            if (runtimeAssembly != null) {
+                serviceCollection.AddScoped(provider => {
+                    var rootAggregates = rootAggregateBuidler().ToArray();
+                    return new HalApp.RuntimeService(provider, runtimeAssembly, rootAggregates);
+                });
+            }
         }
+        #endregion Configure
 
-        private HalApp(Type[] rootAggregateTypes, IServiceProvider serviceProvider) {
-            _rootAggregateTypes = rootAggregateTypes;
+
+        private HalApp(IServiceProvider serviceProvider, RootAggregate[] rootAggregates) {
             _services = serviceProvider;
+            _rootAggregates = rootAggregates;
         }
 
-        private readonly Type[] _rootAggregateTypes;
         private readonly IServiceProvider _services;
+        private readonly RootAggregate[] _rootAggregates;
 
 
+        #region CodeGenerating
         /// <summary>
         /// コードの自動生成を実行します。
         /// </summary>
-        public void GenerateCode(TextWriter log = null) {
+        public void GenerateCode(TextWriter? log = null) {
 
-            var validator = new AggregateValidator(_services);
-            if (validator.HasError(error => log?.WriteLine(error))) {
-                log?.WriteLine("コード自動生成終了");
-                return;
-            }
+            //var validator = new AggregateValidator(_services);
+            //if (validator.HasError(error => log?.WriteLine(error))) {
+            //    log?.WriteLine("コード自動生成終了");
+            //    return;
+            //}
 
             log?.WriteLine($"コード自動生成開始");
 
             var config = _services.GetRequiredService<Config>();
+            var allAggregates = _rootAggregates
+                .Concat(_rootAggregates.SelectMany(a => a.GetDescendants()))
+                .ToArray();
 
             var efSourceDir = Path.Combine(config.OutProjectDir, config.EntityFrameworkDirectoryRelativePath);
             if (Directory.Exists(efSourceDir)) Directory.Delete(efSourceDir, recursive: true);
@@ -62,96 +93,68 @@ namespace HalApplicationBuilder {
 
             log?.WriteLine("コード自動生成: Entity定義");
             using (var sw = new StreamWriter(Path.Combine(efSourceDir, "Entities.cs"), append: false, encoding: Encoding.UTF8)) {
-                sw.Write(EntityFramework.EntityClassRenderer.Render(
-                    _services.GetRequiredService<IApplicationSchema>(),
-                    _services.GetRequiredService<IDbSchema>(),
-                    config));
+                sw.Write(new CodeRendering.EntityClassTemplate(config, allAggregates).TransformText());
             }
             log?.WriteLine("コード自動生成: DbSet");
             using (var sw = new StreamWriter(Path.Combine(efSourceDir, "DbSet.cs"), append: false, encoding: Encoding.UTF8)) {
-                sw.Write(EntityFramework.DbSetRenderer.Render(
-                    _services.GetRequiredService<IApplicationSchema>(),
-                    _services.GetRequiredService<IDbSchema>(),
-                    config));
+                sw.Write(new CodeRendering.DbSetTemplate(config, allAggregates).TransformText());
             }
             log?.WriteLine("コード自動生成: OnModelCreating");
             using (var sw = new StreamWriter(Path.Combine(efSourceDir, "OnModelCreating.cs"), append: false, encoding: Encoding.UTF8)) {
-                sw.Write(EntityFramework.OnModelCreatingRenderer.Render(
-                    _services.GetRequiredService<IApplicationSchema>(),
-                    _services.GetRequiredService<IDbSchema>(),
-                    config));
+                sw.Write(new CodeRendering.OnModelCreatingTemplate(config, allAggregates).TransformText());
             }
             log?.WriteLine("コード自動生成: Search");
             using (var sw = new StreamWriter(Path.Combine(efSourceDir, "Search.cs"), append: false, encoding: Encoding.UTF8)) {
-                sw.Write(EntityFramework.SearchMethodRenderer.Render(
-                    _services.GetRequiredService<IApplicationSchema>(),
-                    _services.GetRequiredService<IDbSchema>(),
-                    _services.GetRequiredService<IViewModelProvider>(),
-                    config));
+                sw.Write(new CodeRendering.SearchMethodTemplate(config, _rootAggregates).TransformText());
             }
             log?.WriteLine("コード自動生成: AutoCompleteSource");
             using (var sw = new StreamWriter(Path.Combine(efSourceDir, "AutoCompleteSource.cs"), append: false, encoding: Encoding.UTF8)) {
-                sw.Write(EntityFramework.AutoCompleteSourceMethodRenderer.Render(
-                    _services.GetRequiredService<IApplicationSchema>(),
-                    _services.GetRequiredService<IDbSchema>(),
-                    _services.GetRequiredService<IViewModelProvider>(),
-                    config));
+                sw.Write(new CodeRendering.AutoCompleteSourceTemplate(config, allAggregates).TransformText());
             }
 
-            log?.WriteLine("コード自動生成: MVC Model");
             var modelDir = Path.Combine(config.OutProjectDir, config.MvcModelDirectoryRelativePath);
             if (Directory.Exists(modelDir)) Directory.Delete(modelDir, recursive: true);
             Directory.CreateDirectory(modelDir);
+
+            log?.WriteLine("コード自動生成: MVC Model");
             using (var sw = new StreamWriter(Path.Combine(modelDir, "Models.cs"), append: false, encoding: Encoding.UTF8)) {
-                var source = new AspNetMvc.MvcModels();
-                sw.Write(source.TransformText(
-                    _services.GetRequiredService<IApplicationSchema>(),
-                    _services.GetRequiredService<IViewModelProvider>(),
-                    config));
+                sw.Write(new CodeRendering.AspNetMvc.MvcModelsTemplate(config, allAggregates).TransformText());
             }
 
-            //stream?.WriteLine("コード自動生成: MVC View - 既存ファイル削除");
             var viewDir = Path.Combine(config.OutProjectDir, config.MvcViewDirectoryRelativePath);
             if (Directory.Exists(viewDir)) Directory.Delete(viewDir, recursive: true);
             Directory.CreateDirectory(viewDir);
 
             log?.WriteLine("コード自動生成: MVC View - MultiView");
-            foreach (var aggregate in _services.GetRequiredService<IApplicationSchema>().RootAggregates()) {
-                var view = new AspNetMvc.MultiView(aggregate);
+            foreach (var rootAggregate in _rootAggregates) {
+                var view = new CodeRendering.AspNetMvc.MvcMultiViewTemplate(config, rootAggregate);
                 var filename = Path.Combine(viewDir, view.FileName);
                 using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
-                sw.Write(view.TransformText(_services.GetRequiredService<IViewModelProvider>()));
+                sw.Write(view.TransformText());
             }
 
             log?.WriteLine("コード自動生成: MVC View - SingleView");
-            foreach (var aggregate in _services.GetRequiredService<IApplicationSchema>().RootAggregates()) {
-                var view = new AspNetMvc.SingleView(aggregate);
+            foreach (var rootAggregate in _rootAggregates) {
+                var view = new CodeRendering.AspNetMvc.MvcSingleViewTemplate(config, rootAggregate);
                 var filename = Path.Combine(viewDir, view.FileName);
                 using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
-                sw.Write(view.TransformText(
-                    _services.GetRequiredService<IViewModelProvider>(),
-                    config));
+                sw.Write(view.TransformText());
             }
 
             log?.WriteLine("コード自動生成: MVC View - CreateView");
-            foreach (var aggregate in _services.GetRequiredService<IApplicationSchema>().RootAggregates()) {
-                var view = new AspNetMvc.CreateView(aggregate);
+            foreach (var rootAggregate in _rootAggregates) {
+                var view = new CodeRendering.AspNetMvc.MvcCreateViewTemplate(config, rootAggregate);
                 var filename = Path.Combine(viewDir, view.FileName);
                 using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
-                sw.Write(view.TransformText(
-                    _services.GetRequiredService<IViewModelProvider>(),
-                    config));
+                sw.Write(view.TransformText());
             }
 
             log?.WriteLine("コード自動生成: MVC View - 集約部分ビュー");
-            foreach (var aggregate in _services.GetRequiredService<IApplicationSchema>().AllAggregates()) {
-                var view = new AspNetMvc.InstancePartialView(
-                    aggregate,
-                    config);
+            foreach (var aggregate in allAggregates) {
+                var view = new CodeRendering.AspNetMvc.InstancePartialViewTemplate(config, aggregate);
                 var filename = Path.Combine(viewDir, view.FileName);
                 using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
-                sw.Write(view.TransformText(
-                    _services.GetRequiredService<IViewModelProvider>()));
+                sw.Write(view.TransformText());
             }
 
             log?.WriteLine("コード自動生成: MVC Controller");
@@ -159,195 +162,237 @@ namespace HalApplicationBuilder {
             if (Directory.Exists(controllerDir)) Directory.Delete(controllerDir, recursive: true);
             Directory.CreateDirectory(controllerDir);
             using (var sw = new StreamWriter(Path.Combine(controllerDir, "Controllers.cs"), append: false, encoding: Encoding.UTF8)) {
-                var source = new AspNetMvc.Controller();
-                sw.Write(source.TransformText(
-                    _services.GetRequiredService<IApplicationSchema>(),
-                    _services.GetRequiredService<IViewModelProvider>(),
-                    config));
+                sw.Write(new CodeRendering.AspNetMvc.MvcControllerTemplate(config, _rootAggregates).TransformText());
             }
 
             log?.WriteLine("コード自動生成: JS");
             {
-                var view = new AspNetMvc.JsTemplate();
-                var filename = Path.Combine(viewDir, AspNetMvc.JsTemplate.FILE_NAME);
+                var view = new CodeRendering.AspNetMvc.JsTemplate();
+                var filename = Path.Combine(viewDir, CodeRendering.AspNetMvc.JsTemplate.FILE_NAME);
                 using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
                 sw.Write(view.TransformText());
             }
 
             log?.WriteLine("コード自動生成終了");
         }
+        #endregion CodeGenerating
 
 
-        /// <summary>
-        /// 実行時コンテキストを取得します。
-        /// </summary>
-        public Core.Runtime.RuntimeContext GetRuntimeContext(Assembly runtimeAssembly) {
-            return new Core.Runtime.RuntimeContext(runtimeAssembly, _services);
-        }
+        #region Runtime
 
-
-        #region ApplicationSchema
-        private HashSet<Aggregate> _appSchema;
-        private Dictionary<string, Aggregate> _pathMapping;
-        private IReadOnlySet<Aggregate> AppSchema {
-            get {
-                if (_appSchema == null) BuildAggregates();
-                return _appSchema;
-            }
-        }
-        private IReadOnlyDictionary<string, Aggregate> PathMapping {
-            get {
-                if (_pathMapping == null) BuildAggregates();
-                return _pathMapping;
-            }
-        }
-        private void BuildAggregates() {
-            var memberFactory = _services.GetRequiredService<IAggregateMemberFactory>();
-            var rootAggregates = _rootAggregateTypes.Select(type => new Aggregate(type, null, memberFactory));
-
-            _appSchema = new HashSet<Aggregate>();
-            foreach (var aggregate in rootAggregates) {
-                _appSchema.Add(aggregate);
-
-                foreach (var descendant in aggregate.GetDescendants()) {
-                    _appSchema.Add(descendant);
-                }
+        public class RuntimeService : Runtime.IInstanceConvertingContext {
+            internal RuntimeService(IServiceProvider serviceProvider, Assembly runtimeAssembly, RootAggregate[] rootAggregates) {
+                _service = serviceProvider;
+                _runtimeAssembly = runtimeAssembly;
+                _rootAggregates = rootAggregates;
             }
 
-            _pathMapping = _appSchema
-                .GroupBy(aggregate => new AggregatePath(aggregate))
-                .ToDictionary(path => path.Key.Value, path => path.First());
-        }
+            public string ApplicationName => "サンプルアプリケーション";
 
-        IEnumerable<Aggregate> IApplicationSchema.AllAggregates() {
-            return AppSchema;
-        }
-        IEnumerable<Aggregate> IApplicationSchema.RootAggregates() {
-            return AppSchema.Where(a => a.Parent == null);
-        }
-        Aggregate IApplicationSchema.FindByTypeOrAggregateId(Type type, RefTargetIdAttribute aggregateId) {
-            var foundByType = AppSchema.Where(a => a.UnderlyingType == type).ToArray();
-            if (foundByType.Length <= 1)
-                return foundByType.SingleOrDefault();
-            else {
-                if (aggregateId == null)
-                    throw new InvalidOperationException(
-                        $"There are several aggregates corresponding to type '{type.Name}'. " +
-                        $"Please add {nameof(RefTargetIdAttribute)} to {nameof(RefTo<object>)} property " +
-                        $"and add {nameof(AggregateIdAttribute)} to aggregate.");
-                return AppSchema.SingleOrDefault(aggregate => aggregate.AggregateId?.Value == aggregateId.Value);
+            private readonly IServiceProvider _service;
+            private readonly Assembly _runtimeAssembly;
+            private readonly RootAggregate[] _rootAggregates;
+
+            private Config GetConfig() {
+                return _service.GetRequiredService<Config>();
             }
-        }
-        Aggregate IApplicationSchema.FindByPath(string aggregatePath) {
-            return PathMapping[aggregatePath];
-        }
-        #endregion ApplicationSchema
-
-
-        #region DbSchema
-        private Dictionary<Aggregate, DbEntity> _dbEntities;
-        private IReadOnlyDictionary<Aggregate, DbEntity> DbEntities {
-            get {
-                if (_dbEntities == null) {
-                    var config = _services.GetRequiredService<Config>();
-                    var aggregates = ((IApplicationSchema)this).AllAggregates()
-                        .OrderBy(a => a.GetAncestors().Count())
-                        .ToList();
-                    _dbEntities = new Dictionary<Aggregate, DbEntity>();
-                    foreach (var aggregate in aggregates) {
-                        var parent = aggregate.Parent == null
-                            ? null
-                            : _dbEntities[aggregate.Parent.Owner];
-                        var child = new DbEntity(aggregate, parent, config);
-                        _dbEntities.Add(aggregate, child);
-                        parent?.children.Add(child);
+            private IEnumerable<Aggregate> GetAllAggregates() {
+                foreach (var root in _rootAggregates) {
+                    yield return root;
+                    foreach (var descendant in root.GetDescendants()) {
+                        yield return descendant;
                     }
                 }
-                return _dbEntities;
             }
-        }
+            private Microsoft.EntityFrameworkCore.DbContext GetDbContext() {
+                var dbContext = _service.GetRequiredService<DbContext>();
+                return dbContext;
+            }
 
-        DbEntity IDbSchema.GetDbEntity(Aggregate aggregate) {
-            return DbEntities[aggregate];
-        }
-        #endregion DbSchema
+            internal Core.RootAggregate? FindRootAggregate(Type runtimeType) {
+                return _rootAggregates.SingleOrDefault(a => {
+                    if (runtimeType.FullName == a.ToUiInstanceClass().CSharpTypeName) return true;
+                    if (runtimeType.FullName == a.ToSearchResultClass().CSharpTypeName) return true;
+                    if (runtimeType.FullName == a.ToSearchConditionClass().CSharpTypeName) return true;
+                    return false;
+                });
+            }
+            internal Core.Aggregate? FindAggregate(Type runtimeType) {
+                return GetAllAggregates().SingleOrDefault(a => {
+                    if (runtimeType.FullName == a.ToUiInstanceClass().CSharpTypeName) return true;
+                    if (runtimeType.FullName == a.ToSearchResultClass().CSharpTypeName) return true;
+                    if (runtimeType.FullName == a.ToSearchConditionClass().CSharpTypeName) return true;
+                    return false;
+                });
+            }
+            internal Core.Aggregate? FindAggregate(string aggregateTreePath) {
+                return GetAllAggregates().SingleOrDefault(a => {
+                    if (aggregateTreePath == a.GetUniquePath()) return true;
+                    return false;
+                });
+            }
+            internal Core.Aggregate? FindAggregate(Guid aggregateGuid) {
+                return GetAllAggregates().SingleOrDefault(a => {
+                    if (aggregateGuid == a.GUID) return true;
+                    return false;
+                });
+            }
 
+            public IEnumerable<Runtime.MenuItem> GetRootNavigations() {
+                return _rootAggregates.Select(aggregate => new Runtime.MenuItem {
+                    LinkText = aggregate.Name,
+                    AspController = aggregate.Name,
+                });
+            }
 
-        #region ViewModelProvider
-        private Dictionary<Aggregate, SearchConditionClass> _searchConditions;
-        private Dictionary<Aggregate, SearchResultClass> _searchResults;
-        private Dictionary<Aggregate, MvcModel> _instanceModels;
+            public object CreateInstance(string typeName) {
+                var instance = _runtimeAssembly.CreateInstance(typeName);
+                if (instance == null) throw new ArgumentException($"実行時アセンブリ内に型 {typeName} が存在しません。");
+                return instance;
+            }
+            public object CreateSearchCondition(Type searchConditionType) {
+                return Activator.CreateInstance(searchConditionType)!;
+            }
+            public object CreateUIInstance(Type uiInstanceType) {
+                // TODO: KeyがGUIDならここで採番
+                return Activator.CreateInstance(uiInstanceType)!;
+            }
+            public object CreateUIInstance(string aggregateTreePath) {
+                var aggregate = GetAllAggregates().Single(a => a.GetUniquePath() == aggregateTreePath);
+                if (aggregate == null) throw new ArgumentException($"{aggregateTreePath} と対応する集約が見つかりません。");
 
-        private IReadOnlyDictionary<Aggregate, SearchConditionClass> SearchConditions {
-            get {
-                if (_searchConditions == null) {
+                var typeName = aggregate.ToUiInstanceClass().CSharpTypeName;
+                var type = _runtimeAssembly.GetType(typeName);
+                if (type == null) throw new ArgumentException($"実行時アセンブリ内に型 {typeName} が存在しません。");
 
-                    var config = _services.GetRequiredService<Config>();
-                    var aggregates = ((IApplicationSchema)this).AllAggregates()
-                        .OrderBy(a => a.GetAncestors().Count())
-                        .ToList();
+                return CreateUIInstance(type);
+            }
 
-                    _searchConditions = new Dictionary<Aggregate, SearchConditionClass>();
-                    foreach (var aggregate in aggregates) {
-                        _searchConditions.Add(aggregate, new SearchConditionClass {
-                            Source = aggregate,
-                            Config = config,
-                        });
-                    }
+            public IEnumerable Search<TSearchCondition>(TSearchCondition? searchCondition) {
+                var aggregate = FindRootAggregate(typeof(TSearchCondition));
+                if (aggregate == null) throw new ArgumentException($"型 {typeof(TSearchCondition).Name} と対応する集約が見つかりません。");
+
+                var dbContext = GetDbContext();
+                var method = aggregate.GetSearchMethod(_runtimeAssembly, dbContext);
+                var param = searchCondition ?? CreateSearchCondition(typeof(TSearchCondition));
+
+                var searchResult = (IEnumerable)method.Invoke(dbContext, new object[] { param })!;
+
+                foreach (var item in searchResult) {
+                    ((Runtime.SearchResultBase)item).__halapp__InstanceKey = aggregate.CreateInstanceKeyFromSearchResult(item).StringValue;
+                    yield return item;
                 }
-                return _searchConditions;
             }
-        }
-        private IReadOnlyDictionary<Aggregate, SearchResultClass> SearchResults {
-            get {
-                if (_searchResults == null) {
 
-                    var config = _services.GetRequiredService<Config>();
-                    var aggregates = ((IApplicationSchema)this).AllAggregates()
-                        .OrderBy(a => a.GetAncestors().Count())
-                        .ToList();
+            public bool TrySaveNewInstance<TUIInstance>(TUIInstance uiInstance, out string instanceKey, out ICollection<string> errors) where TUIInstance : Runtime.UIInstanceBase {
+                var aggregate = FindRootAggregate(typeof(TUIInstance));
+                if (aggregate == null) throw new ArgumentException($"型 {typeof(TUIInstance).Name} と対応する集約が見つかりません。");
 
-                    _searchResults = new Dictionary<Aggregate, SearchResultClass>();
-                    foreach (var aggregate in aggregates) {
-                        _searchResults.Add(aggregate, new SearchResultClass {
-                            Source = aggregate,
-                            Config = config,
-                        });
-                    }
+                var dbInstance = CreateInstance(aggregate.ToDbEntity().CSharpTypeName);
+                aggregate.MapUiToDb(uiInstance, dbInstance, this);
+                var dbContext = GetDbContext();
+
+                try {
+                    dbContext.Add(dbInstance);
+                    dbContext.SaveChanges();
+                } catch (InvalidOperationException ex) {
+                    errors = new[] { ex.Message };
+                    instanceKey = string.Empty;
+                    return false;
+                } catch (DbUpdateException ex) {
+                    errors = new[] { ex.Message };
+                    instanceKey = string.Empty;
+                    return false;
                 }
-                return _searchResults;
+
+                instanceKey = aggregate.CreateInstanceKeyFromUiInstnace(uiInstance).StringValue;
+                errors = Array.Empty<string>();
+                return true;
             }
-        }
-        private IReadOnlyDictionary<Aggregate, MvcModel> InstanceModels {
-            get {
-                if (_instanceModels == null) {
 
-                    var config = _services.GetRequiredService<Config>();
-                    var aggregates = ((IApplicationSchema)this).AllAggregates()
-                        .OrderBy(a => a.GetAncestors().Count())
-                        .ToList();
+            public TUIInstance? FindInstance<TUIInstance>(string instanceKey, out string instanceName) {
+                var key = Runtime.InstanceKey.FromSerializedString(instanceKey);
 
-                    _instanceModels = new Dictionary<Aggregate, MvcModel>();
-                    foreach (var aggregate in aggregates) {
-                        _instanceModels.Add(aggregate, new InstanceModelClass {
-                            Source = aggregate,
-                            Config = config,
-                        });
-                    }
+                var aggregate = FindRootAggregate(typeof(TUIInstance));
+                if (aggregate == null) throw new ArgumentException($"型 {typeof(TUIInstance).Name} と対応する集約が見つかりません。");
+
+                var entityTypeName = aggregate.ToDbEntity().CSharpTypeName;
+                var entityType = _runtimeAssembly.GetType(entityTypeName);
+                if (entityType == null) throw new ArgumentException($"実行時アセンブリ内に型 {entityTypeName} が存在しません。");
+
+                var dbContext = GetDbContext();
+                var dbInstance = dbContext.Find(entityType, key.GetFlattenObjectValues());
+                if (dbInstance == null) {
+                    instanceName = string.Empty;
+                    return default;
                 }
-                return _instanceModels;
+
+                instanceName = Runtime.InstanceName.Create(dbInstance, aggregate).Value;
+
+                var uiInstance = CreateInstance(aggregate.ToUiInstanceClass().CSharpTypeName);
+                aggregate.MapDbToUi(dbInstance, uiInstance, this);
+                return (TUIInstance)uiInstance;
+            }
+
+            public bool TryUpdate<TUIInstance>(TUIInstance uiInstance, out string instanceKey, out ICollection<string> errors) where TUIInstance : Runtime.UIInstanceBase {
+                var aggregate = FindRootAggregate(typeof(TUIInstance));
+                if (aggregate == null) throw new ArgumentException($"型 {typeof(TUIInstance).Name} と対応する集約が見つかりません。");
+
+                // Find
+                var key = aggregate.CreateInstanceKeyFromUiInstnace(uiInstance);
+                instanceKey = key.StringValue;
+
+                var entityTypeName = aggregate.ToDbEntity().CSharpTypeName;
+                var entityType = _runtimeAssembly.GetType(entityTypeName);
+                if (entityType == null) throw new ArgumentException($"実行時アセンブリ内に型 {entityTypeName} が存在しません。");
+
+                var dbContext = GetDbContext();
+                var dbInstance = dbContext.Find(entityType, key.ObjectValue);
+                if (dbInstance == null) {
+                    errors = new[] { "更新対象のデータが見つかりません。" };
+                    return false;
+                }
+
+                // Update
+                aggregate.MapUiToDb(uiInstance, dbInstance, this);
+
+                // Save
+                try {
+                    dbContext.Update(dbInstance);
+                    dbContext.SaveChanges();
+                } catch (InvalidOperationException ex) {
+                    errors = new[] { ex.Message };
+                    return false;
+                } catch (DbUpdateException ex) {
+                    errors = new[] { ex.Message };
+                    return false;
+                }
+
+                errors = Array.Empty<string>();
+                return true;
+            }
+
+            public void DeleteInstance<TUIInstance>(TUIInstance uiInstance) where TUIInstance : Runtime.UIInstanceBase {
+                // TODO
+            }
+
+            public IEnumerable<Runtime.AspNetMvc.AutoCompleteSource> LoadAutoCompleteDataSource(Guid aggregateGuid, string term) {
+                var aggregate = FindAggregate(aggregateGuid);
+                if (aggregate == null) throw new ArgumentException($"ID {aggregateGuid} と対応する集約が見つかりません。");
+
+                var dbContext = GetDbContext();
+                var method = aggregate.GetAutoCompleteMethod(_runtimeAssembly, dbContext);
+                var result = (IEnumerable)method.Invoke(dbContext, new object[] { term })!;
+
+                foreach (var item in result) {
+                    yield return new AutoCompleteSource {
+                        InstanceKey = aggregate.CreateInstanceKeyFromAutoCompleteItem(item).StringValue,
+                        InstanceName = Runtime.InstanceName.Create(item, aggregate).Value,
+                    };
+                }
             }
         }
-
-        MvcModel IViewModelProvider.GetInstanceModel(Aggregate aggregate) {
-            return InstanceModels[aggregate];
-        }
-        SearchConditionClass IViewModelProvider.GetSearchConditionModel(Aggregate aggregate) {
-            return SearchConditions[aggregate];
-        }
-        SearchResultClass IViewModelProvider.GetSearchResultModel(Aggregate aggregate) {
-            return SearchResults[aggregate];
-        }
-        #endregion ViewModelProvider
+        #endregion Runtime
     }
 }
+

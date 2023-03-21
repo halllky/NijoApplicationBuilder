@@ -1,0 +1,69 @@
+<#@ template language="C#" linePragmas="false" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+
+@model <#=_modelTypeFullname#>;
+@{
+    // ViewData["Title"] = ;
+}
+
+<div class="flex gap-3 items-center">
+    <h1 class="font-bold text-[18px] select-none">
+        <!-- PageTitle -->
+    </h1>
+    <a asp-action="New" class="halapp-btn-link">新規作成</a>
+</div>
+
+<form>
+    @* 検索条件欄 *@
+    <div class="border mt-2 p-2">
+
+<# PushIndent("        "); #>
+<# _rootAggregate.RenderSearchCondition(new RenderingContext(this, new ObjectPath($"Model.{nameof(Runtime.AspNetMvc.MultiViewModel<Runtime.SearchConditionBase, Runtime.SearchResultBase>.SearchCondition)}"))); #>
+<# PopIndent(); #>
+
+        <button asp-action="<#=MvcControllerTemplate.SEARCH_ACTION_NAME#>" class="halapp-btn-primary">検索</button>
+        <button asp-action="<#=MvcControllerTemplate.CLEAR_ACTION_NAME#>" class="halapp-btn-secondary">クリア</button>
+    </div>
+    
+    @* 検索結果欄 *@
+    <div class="mt-2">
+        <div style="display: flex; justify-content: flex-end">
+        </div>
+        <table class="table table-sm text-left w-full border">
+            <thead class="border-b">
+                <tr>
+                    <th></th>
+<# var searchResult = _rootAggregate.ToSearchResultClass(); #>
+<# foreach (var prop in searchResult.Properties) { #>
+                    <th>
+                        <#=prop.PropertyName#>
+                    </th>
+<# } #>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.SearchResult.Count; i++)
+                {
+                    <tr>
+                        <td>
+                            <a asp-action="<#=MvcControllerTemplate.LINK_TO_SINGLE_VIEW_ACTION_NAME#>"
+                               asp-route-id="<#=BoundIdPropertyPathName#>"
+                               class="halapp-btn-link">
+                                詳細
+                            </a>
+                        </td>
+<# foreach (var prop in searchResult.Properties) { #>
+                        <td>
+                            @Model.SearchResult[i].<#=prop.PropertyName#>
+                        </td>
+<# } #>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</form>
+

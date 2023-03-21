@@ -6,9 +6,9 @@ namespace HalApplicationBuilder.DotnetEx {
 
     public abstract class ValueObject {
 
-        protected abstract IEnumerable<object> ValueObjectIdentifiers();
+        protected abstract IEnumerable<object?> ValueObjectIdentifiers();
 
-        public override bool Equals(object obj) {
+        public override bool Equals(object? obj) {
             if (obj == null) return false;
             if (obj.GetType() != GetType()) return false;
             return ValueObjectIdentifiers().SequenceEqual(((ValueObject)obj).ValueObjectIdentifiers());
@@ -18,11 +18,11 @@ namespace HalApplicationBuilder.DotnetEx {
                 .Select(x => x != null ? x.GetHashCode() : 0)
                 .Aggregate((x, y) => x ^ y);
         }
-        public static bool operator ==(ValueObject left, ValueObject right) {
+        public static bool operator ==(ValueObject? left, ValueObject? right) {
             if (left is null ^ right is null) return false;
-            return ReferenceEquals(left, right) || left.Equals(right);
+            return ReferenceEquals(left, right) || left!.Equals(right);
         }
-        public static bool operator !=(ValueObject left, ValueObject right) {
+        public static bool operator !=(ValueObject? left, ValueObject? right) {
             return !(left == right);
         }
     }

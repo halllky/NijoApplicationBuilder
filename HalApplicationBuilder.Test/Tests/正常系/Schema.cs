@@ -16,15 +16,22 @@ namespace HalApplicationBuilder.Test.Tests.正常系 {
 
         public decimal 非主キー { get; set; }
 
-        public Child<子_キーあり> Childキーあり { get; set; }
-        public Child<子_キーなし> Childキーなし { get; set; }
+        public Child<子_キーあり> Childキーあり1 { get; set; }
+        public Child<子_キーあり> Childキーあり2 { get; set; }
+        public Child<子_キーなし> Childキーなし1 { get; set; }
+        public Child<子_キーなし> Childキーなし2 { get; set; }
 
-        public Children<子_キーあり> Childrenキーあり { get; set; }
-        public Children<子_キーなし> Childrenキーなし { get; set; }
+        public Children<子_キーあり> Childrenキーあり1 { get; set; }
+        public Children<子_キーあり> Childrenキーあり2 { get; set; }
+        public Children<子_キーなし> Childrenキーなし1 { get; set; }
+        public Children<子_キーなし> Childrenキーなし2 { get; set; }
 
         [Variation(0, typeof(子VariationImpl_Keyあり))]
         [Variation(1, typeof(子VariationImpl_Keyなし))]
-        public Child<I子Variation> 子Variation { get; set; }
+        public Child<I子Variation> 子Variation1 { get; set; }
+        [Variation(0, typeof(子VariationImpl_Keyあり))]
+        [Variation(1, typeof(子VariationImpl_Keyなし))]
+        public Child<I子Variation> 子Variation2 { get; set; }
     }
 
     public class 子_キーあり {
@@ -35,15 +42,22 @@ namespace HalApplicationBuilder.Test.Tests.正常系 {
 
         public int? 非主キー { get; set; }
 
-        public Child<孫_キーあり> 孫キーあり単数 { get; set; }
-        public Child<孫_キーなし> 孫キーなし単数 { get; set; }
+        public Child<孫_キーあり> 孫キーあり単数1 { get; set; }
+        public Child<孫_キーあり> 孫キーあり単数2 { get; set; }
+        public Child<孫_キーなし> 孫キーなし単数1 { get; set; }
+        public Child<孫_キーなし> 孫キーなし単数2 { get; set; }
 
-        public Children<孫_キーあり> 孫キーあり複数 { get; set; }
-        public Children<孫_キーなし> 孫キーなし複数 { get; set; }
+        public Children<孫_キーあり> 孫キーあり複数1 { get; set; }
+        public Children<孫_キーあり> 孫キーあり複数2 { get; set; }
+        public Children<孫_キーなし> 孫キーなし複数1 { get; set; }
+        public Children<孫_キーなし> 孫キーなし複数2 { get; set; }
 
         [Variation(0, typeof(孫VariationImpl_Keyあり))]
         [Variation(1, typeof(孫VariationImpl_Keyなし))]
-        public Child<I孫Variation> 孫Variation { get; set; }
+        public Child<I孫Variation> 孫Variation1 { get; set; }
+        [Variation(0, typeof(孫VariationImpl_Keyあり))]
+        [Variation(1, typeof(孫VariationImpl_Keyなし))]
+        public Child<I孫Variation> 孫Variation2 { get; set; }
     }
     public enum Enumキー {
         EnumValue0,
@@ -52,17 +66,26 @@ namespace HalApplicationBuilder.Test.Tests.正常系 {
     public class 子_キーなし {
         public float? 非主キー { get; set; }
 
-        [AggregateId("agg-1")]
-        public Child<孫_キーあり> 孫キーあり単数 { get; set; }
-        public Child<孫_キーなし> 孫キーなし単数 { get; set; }
+        [AggregateId("agg-1-1")]
+        public Child<孫_キーあり> 孫キーあり単数1 { get; set; }
+        [AggregateId("agg-1-2")]
+        public Child<孫_キーあり> 孫キーあり単数2 { get; set; }
+        public Child<孫_キーなし> 孫キーなし単数1 { get; set; }
+        public Child<孫_キーなし> 孫キーなし単数2 { get; set; }
 
-        public Children<孫_キーあり> 孫キーあり複数 { get; set; }
-        [AggregateId("agg-2")]
-        public Children<孫_キーなし> 孫キーなし複数 { get; set; }
+        public Children<孫_キーあり> 孫キーあり複数1 { get; set; }
+        public Children<孫_キーあり> 孫キーあり複数2 { get; set; }
+        [AggregateId("agg-2-1")]
+        public Children<孫_キーなし> 孫キーなし複数1 { get; set; }
+        [AggregateId("agg-2-2")]
+        public Children<孫_キーなし> 孫キーなし複数2 { get; set; }
 
         [Variation(0, typeof(孫VariationImpl_Keyあり))]
         [Variation(1, typeof(孫VariationImpl_Keyなし))]
-        public Child<I孫Variation> 孫Variation { get; set; }
+        public Child<I孫Variation> 孫Variation1 { get; set; }
+        [Variation(0, typeof(孫VariationImpl_Keyあり))]
+        [Variation(1, typeof(孫VariationImpl_Keyなし))]
+        public Child<I孫Variation> 孫Variation2 { get; set; }
     }
     public interface I子Variation {
         public decimal 共通項目 { get; set; }
