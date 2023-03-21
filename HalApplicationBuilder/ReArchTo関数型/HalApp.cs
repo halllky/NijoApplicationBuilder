@@ -187,6 +187,8 @@ namespace HalApplicationBuilder.ReArchTo関数型
                 _rootAggregates = rootAggregates;
             }
 
+            public string ApplicationName => "サンプルアプリケーション";
+
             private readonly IServiceProvider _service;
             private readonly Assembly _runtimeAssembly;
             private readonly RootAggregate[] _rootAggregates;
@@ -233,6 +235,13 @@ namespace HalApplicationBuilder.ReArchTo関数型
                 return GetAllAggregates().SingleOrDefault(a => {
                     if (aggregateGuid == a.GUID) return true;
                     return false;
+                });
+            }
+
+            public IEnumerable<Runtime.MenuItem> GetRootNavigations() {
+                return _rootAggregates.Select(aggregate => new Runtime.MenuItem {
+                    LinkText = aggregate.Name,
+                    AspController = aggregate.Name,
                 });
             }
 
@@ -302,18 +311,17 @@ namespace HalApplicationBuilder.ReArchTo関数型
             }
 
             public TUIInstance? FindInstance<TUIInstance>(string instanceKey, out string instanceName) {
+                var key = Runtime.InstanceKey.FromSerializedString(instanceKey);
+
                 var aggregate = FindRootAggregate(typeof(TUIInstance));
                 if (aggregate == null) throw new ArgumentException($"型 {typeof(TUIInstance).Name} と対応する集約が見つかりません。");
-
-                if (!aggregate.TryParseInstanceKey(instanceKey, out var key))
-                    throw new ArgumentException($"'{instanceKey}' は {aggregate.Name} のキーとして不正です。");
 
                 var entityTypeName = aggregate.ToDbEntity().CSharpTypeName;
                 var entityType = _runtimeAssembly.GetType(entityTypeName);
                 if (entityType == null) throw new ArgumentException($"実行時アセンブリ内に型 {entityTypeName} が存在しません。");
 
                 var dbContext = GetDbContext();
-                var dbInstance = dbContext.Find(entityType, key.ObjectValue);
+                var dbInstance = dbContext.Find(entityType, key.GetFlattenObjectValues());
                 if (dbInstance == null) {
                     instanceName = string.Empty;
                     return default;

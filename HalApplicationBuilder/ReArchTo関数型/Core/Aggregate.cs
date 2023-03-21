@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
-using System.Text.Json;
 using HalApplicationBuilder.DotnetEx;
 using HalApplicationBuilder.ReArchTo関数型.CodeRendering;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
@@ -209,52 +208,62 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
             context.Template.WriteLine($"</div>");
         }
 
+        internal Runtime.InstanceKey CreateInstanceKeyFromDbInstnace(object dbInstance) {
+            var values = GetMembers()
+                .Where(m => m.IsPrimary)
+                .Select(m => m.GetInstanceKeyFromDbInstance(dbInstance));
+            return Runtime.InstanceKey.FromObjects(values);
+        }
         internal Runtime.InstanceKey CreateInstanceKeyFromUiInstnace(object uiInstance) {
             var values = GetMembers()
                 .Where(m => m.IsPrimary)
-                .SelectMany(m => m.GetInstanceKeysFromInstanceModel(uiInstance))
-                .ToList();
-            return new Runtime.InstanceKey(this, values);
+                .Select(m => m.GetInstanceKeyFromUiInstance(uiInstance));
+            return Runtime.InstanceKey.FromObjects(values);
         }
         internal Runtime.InstanceKey CreateInstanceKeyFromSearchResult(object searchResult) {
             var values = GetMembers()
                 .Where(m => m.IsPrimary)
-                .SelectMany(m => m.GetInstanceKeysFromSearchResult(searchResult))
-                .ToList();
-            return new Runtime.InstanceKey(this, values);
+                .Select(m => m.GetInstanceKeyFromSearchResult(searchResult));
+            return Runtime.InstanceKey.FromObjects(values);
         }
         internal Runtime.InstanceKey CreateInstanceKeyFromAutoCompleteItem(object autoCompelteItem) {
             var values = GetMembers()
                 .Where(m => m.IsPrimary)
-                .SelectMany(m => m.GetInstanceKeysFromAutoCompleteItem(autoCompelteItem))
-                .ToList();
-            return new Runtime.InstanceKey(this, values);
+                .Select(m => m.GetInstanceKeyFromAutoCompleteItem(autoCompelteItem));
+            return Runtime.InstanceKey.FromObjects(values);
         }
 
-        internal bool TryParseInstanceKey(string stringValue, out Runtime.InstanceKey instanceKey) {
-            if (string.IsNullOrWhiteSpace(stringValue)) {
-                instanceKey = Runtime.InstanceKey.Empty;
-                return false;
+        internal void MapInstanceKeyToDbInstance(string instanceKey, object dbInstance) {
+            var pk = GetMembers().Where(m => m.IsPrimary).ToArray();
+            var key = Runtime.InstanceKey.FromSerializedString(instanceKey);
+            if (pk.Length != key.ObjectValue.Length) throw new ArgumentException(null, nameof(instanceKey));
+            for (int i = 0; i < pk.Length; i++) {
+                pk[i].MapInstanceKeyToDbInstance(key.ObjectValue[i], dbInstance);
             }
-
-            JsonElement[] jsonValues;
-            try {
-                jsonValues = JsonSerializer.Deserialize<JsonElement[]>(stringValue) ?? Array.Empty<JsonElement>();
-            } catch (JsonException) {
-                instanceKey = Runtime.InstanceKey.Empty;
-                return false;
+        }
+        internal void MapInstanceKeyToUiInstance(string instanceKey, object uiInstance) {
+            var pk = GetMembers().Where(m => m.IsPrimary).ToArray();
+            var key = Runtime.InstanceKey.FromSerializedString(instanceKey);
+            if (pk.Length != key.ObjectValue.Length) throw new ArgumentException(null, nameof(instanceKey));
+            for (int i = 0; i < pk.Length; i++) {
+                pk[i].MapInstanceKeyToUiInstance(key.ObjectValue[i], uiInstance);
             }
-
-            var queue = new Queue<JsonElement>(jsonValues);
-            var values = new List<object>();
-            foreach (var member in GetMembers().Where(m => m.IsPrimary)) {
-                if (!member.TryDequeueSerializedInstanceKey(queue, values)) {
-                    instanceKey = Runtime.InstanceKey.Empty;
-                    return false;
-                }
+        }
+        internal void MapInstanceKeyToSearchResult(string instanceKey, object searchResult) {
+            var pk = GetMembers().Where(m => m.IsPrimary).ToArray();
+            var key = Runtime.InstanceKey.FromSerializedString(instanceKey);
+            if (pk.Length != key.ObjectValue.Length) throw new ArgumentException(null, nameof(instanceKey));
+            for (int i = 0; i < pk.Length; i++) {
+                pk[i].MapInstanceKeyToSearchResult(key.ObjectValue[i], searchResult);
             }
-            instanceKey = new Runtime.InstanceKey(this, values);
-            return true;
+        }
+        internal void MapInstanceKeyToAutoCompleteItem(string instanceKey, object autoCompelteItem) {
+            var pk = GetMembers().Where(m => m.IsPrimary).ToArray();
+            var key = Runtime.InstanceKey.FromSerializedString(instanceKey);
+            if (pk.Length != key.ObjectValue.Length) throw new ArgumentException(null, nameof(instanceKey));
+            for (int i = 0; i < pk.Length; i++) {
+                pk[i].MapInstanceKeyToAutoCompleteItem(key.ObjectValue[i], autoCompelteItem);
+            }
         }
 
         internal void MapUiToDb(object uiInstance, object dbInstance, Runtime.IInstanceConvertingContext context) {

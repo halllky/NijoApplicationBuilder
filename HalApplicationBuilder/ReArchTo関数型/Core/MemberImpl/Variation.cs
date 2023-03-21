@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using HalApplicationBuilder.Core.DBModel;
 using HalApplicationBuilder.ReArchTo関数型.CodeRendering;
+using HalApplicationBuilder.ReArchTo関数型.Runtime;
 
 namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
     internal class Variation : AggregateMember {
@@ -77,24 +79,114 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             }
         }
 
-        internal override IEnumerable<string> GetInstanceKeysFromInstanceModel(object uiInstance)
-        {
-            throw new NotImplementedException();
+        internal override object? GetInstanceKeyFromDbInstance(object dbInstance) {
+            var prop = dbInstance.GetType().GetProperty(DbPropName);
+            if (prop == null) throw new ArgumentException(null, nameof(dbInstance));
+            return prop.GetValue(dbInstance);
+        }
+        internal override void MapInstanceKeyToDbInstance(object? instanceKey, object dbInstance) {
+            var prop = dbInstance.GetType().GetProperty(DbPropName);
+            if (prop == null) throw new ArgumentException(null, nameof(dbInstance));
+            prop.SetValue(dbInstance, instanceKey);
         }
 
-        internal override IEnumerable<string> GetInstanceKeysFromSearchResult(object searchResult)
-        {
-            throw new NotImplementedException();
+        internal override object? GetInstanceKeyFromUiInstance(object uiInstance) {
+            var prop = uiInstance.GetType().GetProperty(InstanceModelTypeSwitchPropName);
+            if (prop == null) throw new ArgumentException(null, nameof(uiInstance));
+            return prop.GetValue(uiInstance);
+        }
+        internal override void MapInstanceKeyToUiInstance(object? instanceKey, object uiInstance) {
+            var prop = uiInstance.GetType().GetProperty(InstanceModelTypeSwitchPropName);
+            if (prop == null) throw new ArgumentException(null, nameof(uiInstance));
+            prop.SetValue(uiInstance, instanceKey);
         }
 
-        internal override void MapDbToUi(object dbInstance, object uiInstance)
-        {
-            throw new NotImplementedException();
+        internal override object? GetInstanceKeyFromSearchResult(object searchResult) {
+            var prop = searchResult.GetType().GetProperty(SearchResultPropName);
+            if (prop == null) throw new ArgumentException(null, nameof(searchResult));
+            return prop.GetValue(searchResult);
+        }
+        internal override void MapInstanceKeyToSearchResult(object? instanceKey, object searchResult) {
+            var prop = searchResult.GetType().GetProperty(SearchResultPropName);
+            if (prop == null) throw new ArgumentException(null, nameof(searchResult));
+            prop.SetValue(searchResult, instanceKey);
         }
 
-        internal override void MapUiToDb(object uiInstance, object dbInstance)
-        {
-            throw new NotImplementedException();
+        internal override object? GetInstanceKeyFromAutoCompleteItem(object autoCompelteItem) {
+            var prop = autoCompelteItem.GetType().GetProperty(DbPropName);
+            if (prop == null) throw new ArgumentException(null, nameof(autoCompelteItem));
+            return prop.GetValue(autoCompelteItem);
+        }
+        internal override void MapInstanceKeyToAutoCompleteItem(object? instanceKey, object autoCompelteItem) {
+            var prop = autoCompelteItem.GetType().GetProperty(DbPropName);
+            if (prop == null) throw new ArgumentException(null, nameof(autoCompelteItem));
+            prop.SetValue(autoCompelteItem, instanceKey);
+        }
+
+        internal override void MapDbToUi(object dbInstance, object uiInstance, IInstanceConvertingContext context) {
+            // 区分値
+            var dbIntProp = dbInstance.GetType().GetProperty(DbPropName);
+            var uiIntProp = uiInstance.GetType().GetProperty(InstanceModelTypeSwitchPropName);
+            if (dbIntProp == null) throw new ArgumentException(null, nameof(dbInstance));
+            if (uiIntProp == null) throw new ArgumentException(null, nameof(uiInstance));
+
+            var value = dbIntProp.GetValue(dbInstance);
+            uiIntProp.SetValue(uiInstance, value);
+
+            // ナビゲーションプロパティ => UI子要素
+            foreach (var variation in GetVariations()) {
+                var dbEntity = variation.Value.ToDbEntity();
+                var navigationProp = dbInstance.GetType().GetProperty(NavigationPropName(dbEntity));
+                var uiChildProp = uiInstance.GetType().GetProperty(InstanceModelTypeDetailPropName(variation));
+                if (navigationProp == null) throw new ArgumentException(null, nameof(dbInstance));
+                if (uiChildProp == null) throw new ArgumentException(null, nameof(uiInstance));
+
+                var uiChild = uiChildProp.GetValue(uiInstance);
+                if (uiChild == null) {
+                    uiChild = context.CreateInstance(variation.Value.ToUiInstanceClass().CSharpTypeName);
+                    uiChildProp.SetValue(uiInstance, uiChild);
+                }
+                var navigation = navigationProp.GetValue(dbInstance);
+                if (navigation == null) {
+                    navigation = context.CreateInstance(dbEntity.CSharpTypeName);
+                    navigationProp.SetValue(dbInstance, navigation);
+                }
+
+                variation.Value.MapDbToUi(navigation, uiChild, context);
+            }
+        }
+
+        internal override void MapUiToDb(object uiInstance, object dbInstance, IInstanceConvertingContext context) {
+            // 区分値
+            var dbIntProp = dbInstance.GetType().GetProperty(DbPropName);
+            var uiIntProp = uiInstance.GetType().GetProperty(InstanceModelTypeSwitchPropName);
+            if (dbIntProp == null) throw new ArgumentException(null, nameof(dbInstance));
+            if (uiIntProp == null) throw new ArgumentException(null, nameof(uiInstance));
+
+            var value = uiIntProp.GetValue(uiInstance);
+            dbIntProp.SetValue(dbInstance, value);
+
+            // UI子要素 => ナビゲーションプロパティ
+            foreach (var variation in GetVariations()) {
+                var dbEntity = variation.Value.ToDbEntity();
+                var navigationProp = dbInstance.GetType().GetProperty(NavigationPropName(dbEntity));
+                var uiChildProp = uiInstance.GetType().GetProperty(InstanceModelTypeDetailPropName(variation));
+                if (navigationProp == null) throw new ArgumentException(null, nameof(dbInstance));
+                if (uiChildProp == null) throw new ArgumentException(null, nameof(uiInstance));
+
+                var uiChild = uiChildProp.GetValue(uiInstance);
+                if (uiChild == null) {
+                    uiChild = context.CreateInstance(variation.Value.ToUiInstanceClass().CSharpTypeName);
+                    uiChildProp.SetValue(uiInstance, uiChild);
+                }
+                var navigation = navigationProp.GetValue(dbInstance);
+                if (navigation == null) {
+                    navigation = context.CreateInstance(dbEntity.CSharpTypeName);
+                    navigationProp.SetValue(dbInstance, navigation);
+                }
+
+                variation.Value.MapUiToDb(uiChild, navigation, context);
+            }
         }
 
         internal override IEnumerable<RenderedProperty> ToDbEntityMember() {

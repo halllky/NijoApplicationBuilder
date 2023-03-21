@@ -6,6 +6,7 @@ using System.Reflection;
 using HalApplicationBuilder.Core.Members;
 using HalApplicationBuilder.DotnetEx;
 using HalApplicationBuilder.ReArchTo関数型.CodeRendering;
+using HalApplicationBuilder.ReArchTo関数型.Runtime;
 
 namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
     internal class SchalarValue : AggregateMember {
@@ -160,24 +161,68 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             context.Template.WriteLine($"<input asp-for=\"{value}\" class=\"border\" />");
         }
 
-        internal override IEnumerable<string> GetInstanceKeysFromInstanceModel(object uiInstance)
-        {
-            throw new NotImplementedException();
+        internal override object? GetInstanceKeyFromDbInstance(object dbInstance) {
+            var prop = dbInstance.GetType().GetProperty(DbColumnPropName);
+            if (prop == null) throw new ArgumentException(null, nameof(dbInstance));
+            return prop.GetValue(dbInstance);
+        }
+        internal override void MapInstanceKeyToDbInstance(object? instanceKey, object dbInstance) {
+            var prop = dbInstance.GetType().GetProperty(DbColumnPropName);
+            if (prop == null) throw new ArgumentException(null, nameof(dbInstance));
+            prop.SetValue(dbInstance, instanceKey);
         }
 
-        internal override IEnumerable<string> GetInstanceKeysFromSearchResult(object searchResult)
-        {
-            throw new NotImplementedException();
+        internal override object? GetInstanceKeyFromUiInstance(object uiInstance) {
+            var prop = uiInstance.GetType().GetProperty(InstanceModelPropName);
+            if (prop == null) throw new ArgumentException(null, nameof(uiInstance));
+            return prop.GetValue(uiInstance);
+        }
+        internal override void MapInstanceKeyToUiInstance(object? instanceKey, object uiInstance) {
+            var prop = uiInstance.GetType().GetProperty(InstanceModelPropName);
+            if (prop == null) throw new ArgumentException(null, nameof(uiInstance));
+            prop.SetValue(uiInstance, instanceKey);
         }
 
-        internal override void MapDbToUi(object dbInstance, object uiInstance)
-        {
-            throw new NotImplementedException();
+        internal override object? GetInstanceKeyFromSearchResult(object searchResult) {
+            var prop = searchResult.GetType().GetProperty(SearchResultPropName);
+            if (prop == null) throw new ArgumentException(null, nameof(searchResult));
+            return prop.GetValue(searchResult);
+        }
+        internal override void MapInstanceKeyToSearchResult(object? instanceKey, object searchResult) {
+            var prop = searchResult.GetType().GetProperty(SearchResultPropName);
+            if (prop == null) throw new ArgumentException(null, nameof(searchResult));
+            prop.SetValue(searchResult, instanceKey);
         }
 
-        internal override void MapUiToDb(object uiInstance, object dbInstance)
-        {
-            throw new NotImplementedException();
+        internal override object? GetInstanceKeyFromAutoCompleteItem(object autoCompelteItem) {
+            var prop = autoCompelteItem.GetType().GetProperty(DbColumnPropName);
+            if (prop == null) throw new ArgumentException(null, nameof(autoCompelteItem));
+            return prop.GetValue(autoCompelteItem);
+        }
+        internal override void MapInstanceKeyToAutoCompleteItem(object? instanceKey, object autoCompelteItem) {
+            var prop = autoCompelteItem.GetType().GetProperty(DbColumnPropName);
+            if (prop == null) throw new ArgumentException(null, nameof(autoCompelteItem));
+            prop.SetValue(autoCompelteItem, instanceKey);
+        }
+
+        internal override void MapDbToUi(object dbInstance, object uiInstance, IInstanceConvertingContext context) {
+            var dbProp = dbInstance.GetType().GetProperty(DbColumnPropName);
+            var uiProp = uiInstance.GetType().GetProperty(InstanceModelPropName);
+            if (dbProp == null) throw new ArgumentException(null, nameof(dbInstance));
+            if (uiProp == null) throw new ArgumentException(null, nameof(uiInstance));
+
+            var value = dbProp.GetValue(dbInstance);
+            uiProp.SetValue(uiInstance, value);
+        }
+
+        internal override void MapUiToDb(object uiInstance, object dbInstance, IInstanceConvertingContext context) {
+            var dbProp = dbInstance.GetType().GetProperty(DbColumnPropName);
+            var uiProp = uiInstance.GetType().GetProperty(InstanceModelPropName);
+            if (dbProp == null) throw new ArgumentException(null, nameof(dbInstance));
+            if (uiProp == null) throw new ArgumentException(null, nameof(uiInstance));
+
+            var value = uiProp.GetValue(uiInstance);
+            dbProp.SetValue(dbInstance, value);
         }
 
         internal override IEnumerable<RenderedProperty> ToDbEntityMember() {

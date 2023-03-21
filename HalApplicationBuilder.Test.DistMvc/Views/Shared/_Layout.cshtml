@@ -1,4 +1,4 @@
-﻿@inject HalApplicationBuilder.Core.Runtime.RuntimeContext runtimeContext;
+﻿@inject HalApplicationBuilder.ReArchTo関数型.HalApp.RuntimeService runtimeService;
 
 <!DOCTYPE html>
 <html lang="ja" class="h-full w-full">
@@ -13,10 +13,10 @@
     @*ルートナビゲーション*@
     <nav class="flex gap-3 mx-2 justify-start items-center border-b border-gray-400">
         <h1 class="font-bold text-[24px]">
-            <a href="/">@runtimeContext.ApplicationName</a>
+            <a href="/">@runtimeService.ApplicationName</a>
         </h1>
 
-        @foreach (var menuItem in runtimeContext.GetRootNavigations())
+        @foreach (var menuItem in runtimeService.GetRootNavigations())
         {
             <div class="flex items-center cursor-pointer">
                 <a asp-area=""

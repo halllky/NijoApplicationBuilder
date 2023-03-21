@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.ReArchTo関数型.CodeRendering;
+using HalApplicationBuilder.ReArchTo関数型.Runtime;
 
 namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
     internal class Children : AggregateMember {
@@ -46,24 +47,78 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             context.Template.WriteLine($"    />");
         }
 
-        internal override IEnumerable<string> GetInstanceKeysFromInstanceModel(object uiInstance)
-        {
-            throw new NotImplementedException();
+
+        internal override object? GetInstanceKeyFromDbInstance(object dbInstance) {
+            throw new InvalidOperationException($"ChildrenをKeyに設定することはできない"); // ここが呼ばれることはない
+        }
+        internal override object? GetInstanceKeyFromUiInstance(object uiInstance) {
+            throw new InvalidOperationException($"ChildrenをKeyに設定することはできない"); // ここが呼ばれることはない
+        }
+        internal override object? GetInstanceKeyFromSearchResult(object searchResult) {
+            throw new InvalidOperationException($"ChildrenをKeyに設定することはできない"); // ここが呼ばれることはない
+        }
+        internal override object? GetInstanceKeyFromAutoCompleteItem(object autoCompelteItem) {
+            throw new InvalidOperationException($"ChildrenをKeyに設定することはできない"); // ここが呼ばれることはない
+        }
+        internal override void MapInstanceKeyToDbInstance(object? instanceKey, object dbInstance) {
+            throw new InvalidOperationException($"ChildrenをKeyに設定することはできない"); // ここが呼ばれることはない
+        }
+        internal override void MapInstanceKeyToUiInstance(object? instanceKey, object uiInstance) {
+            throw new InvalidOperationException($"ChildrenをKeyに設定することはできない"); // ここが呼ばれることはない
+        }
+        internal override void MapInstanceKeyToSearchResult(object? instanceKey, object searchResult) {
+            throw new InvalidOperationException($"ChildrenをKeyに設定することはできない"); // ここが呼ばれることはない
+        }
+        internal override void MapInstanceKeyToAutoCompleteItem(object? instanceKey, object autoCompelteItem) {
+            throw new InvalidOperationException($"ChildrenをKeyに設定することはできない"); // ここが呼ばれることはない
         }
 
-        internal override IEnumerable<string> GetInstanceKeysFromSearchResult(object searchResult)
-        {
-            throw new NotImplementedException();
+        internal override void MapDbToUi(object dbInstance, object uiInstance, IInstanceConvertingContext context) {
+            var dbProp = dbInstance.GetType().GetProperty(NavigationPropName);
+            var uiProp = uiInstance.GetType().GetProperty(InstanceModelPropName);
+            if (dbProp == null) throw new ArgumentException(null, nameof(dbInstance));
+            if (uiProp == null) throw new ArgumentException(null, nameof(uiInstance));
+
+            // Clear,Addメソッドはジェネリック型の方のICollectionにしかないのでリフレクションを使って呼び出す
+            var clear = uiProp.PropertyType.GetMethod(nameof(ICollection<object>.Clear));
+            var add = uiProp.PropertyType.GetMethod(nameof(ICollection<object>.Add));
+            if (clear == null) throw new ArgumentException(null, nameof(uiInstance));
+            if (add == null) throw new ArgumentException(null, nameof(uiInstance));
+
+            var uiChildren = uiProp.GetValue(uiInstance)!;
+            clear.Invoke(uiChildren, Array.Empty<object>());
+
+            var dbChildren = (IEnumerable)dbProp.GetValue(dbInstance)!;
+            var childAggregate = GetChildAggregates().Single();
+            foreach (var dbChild in dbChildren) {
+                var uiChild = context.CreateInstance(childAggregate.ToUiInstanceClass().CSharpTypeName);
+                childAggregate.MapDbToUi(dbChild, uiChild, context);
+                add.Invoke(uiChildren, new[] { uiChild });
+            }
         }
 
-        internal override void MapDbToUi(object dbInstance, object uiInstance)
-        {
-            throw new NotImplementedException();
-        }
+        internal override void MapUiToDb(object uiInstance, object dbInstance, IInstanceConvertingContext context) {
+            var dbProp = dbInstance.GetType().GetProperty(NavigationPropName);
+            var uiProp = uiInstance.GetType().GetProperty(InstanceModelPropName);
+            if (dbProp == null) throw new ArgumentException(null, nameof(dbInstance));
+            if (uiProp == null) throw new ArgumentException(null, nameof(uiInstance));
 
-        internal override void MapUiToDb(object uiInstance, object dbInstance)
-        {
-            throw new NotImplementedException();
+            // Clear,Addメソッドはジェネリック型の方のICollectionにしかないのでリフレクションを使って呼び出す
+            var clear = dbProp.PropertyType.GetMethod(nameof(ICollection<object>.Clear));
+            var add = dbProp.PropertyType.GetMethod(nameof(ICollection<object>.Add));
+            if (clear == null) throw new ArgumentException(null, nameof(dbInstance));
+            if (add == null) throw new ArgumentException(null, nameof(dbInstance));
+
+            var dbChildren = dbProp.GetValue(dbInstance)!;
+            clear.Invoke(dbChildren, Array.Empty<object>());
+
+            var childAggregate = GetChildAggregates().Single();
+            var uiChildren = (IEnumerable)uiProp.GetValue(uiInstance)!;
+            foreach (var uiChild in uiChildren) {
+                var dbChild = context.CreateInstance(childAggregate.ToDbEntity().CSharpTypeName);
+                childAggregate.MapUiToDb(uiChild, dbChild, context);
+                add.Invoke(dbChildren, new[] { dbChild });
+            }
         }
 
         private string NavigationPropName => _underlyingProp.Name;

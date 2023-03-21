@@ -4,7 +4,10 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
+using HalApplicationBuilder.Core.Members;
 using HalApplicationBuilder.ReArchTo関数型.CodeRendering;
+using HalApplicationBuilder.ReArchTo関数型.Runtime;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Model;
 
 namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
     internal class Child : AggregateMember {
@@ -38,24 +41,83 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
             GetChildAggregates().Single().RenderAspNetMvcPartialView(nested);
         }
 
-        internal override IEnumerable<string> GetInstanceKeysFromInstanceModel(object uiInstance)
-        {
-            throw new NotImplementedException();
+        internal override object? GetInstanceKeyFromDbInstance(object dbInstance) {
+            throw new InvalidOperationException($"ChildをKeyに設定することはできない"); // ここが呼ばれることはない
+        }
+        internal override void MapInstanceKeyToDbInstance(object? instanceKey, object dbInstance) {
+            throw new InvalidOperationException($"ChildをKeyに設定することはできない"); // ここが呼ばれることはない
         }
 
-        internal override IEnumerable<string> GetInstanceKeysFromSearchResult(object searchResult)
-        {
-            throw new NotImplementedException();
+        internal override object? GetInstanceKeyFromUiInstance(object uiInstance) {
+            throw new InvalidOperationException($"ChildをKeyに設定することはできない"); // ここが呼ばれることはない
         }
 
-        internal override void MapDbToUi(object dbInstance, object uiInstance)
-        {
-            throw new NotImplementedException();
+        internal override object? GetInstanceKeyFromSearchResult(object searchResult) {
+            throw new InvalidOperationException($"ChildをKeyに設定することはできない"); // ここが呼ばれることはない
         }
 
-        internal override void MapUiToDb(object uiInstance, object dbInstance)
-        {
-            throw new NotImplementedException();
+        internal override object? GetInstanceKeyFromAutoCompleteItem(object autoCompelteItem) {
+            throw new InvalidOperationException($"ChildをKeyに設定することはできない"); // ここが呼ばれることはない
+        }
+
+        internal override void MapInstanceKeyToUiInstance(object? instanceKey, object uiInstance) {
+            throw new InvalidOperationException($"ChildをKeyに設定することはできない"); // ここが呼ばれることはない
+        }
+
+        internal override void MapInstanceKeyToSearchResult(object? instanceKey, object searchResult) {
+            throw new InvalidOperationException($"ChildをKeyに設定することはできない"); // ここが呼ばれることはない
+        }
+
+        internal override void MapInstanceKeyToAutoCompleteItem(object? instanceKey, object autoCompelteItem) {
+            throw new InvalidOperationException($"ChildをKeyに設定することはできない"); // ここが呼ばれることはない
+        }
+
+        internal override void MapDbToUi(object dbInstance, object uiInstance, IInstanceConvertingContext context) {
+            var child = GetChildAggregates().Single();
+            var dbEntity = child.ToDbEntity();
+
+            // ナビゲーションプロパティ => UI子要素
+            var navigationProp = dbInstance.GetType().GetProperty(NavigationPropName);
+            var uiChildProp = uiInstance.GetType().GetProperty(InstanceModelPropName);
+            if (navigationProp == null) throw new ArgumentException(null, nameof(dbInstance));
+            if (uiChildProp == null) throw new ArgumentException(null, nameof(uiInstance));
+
+            var uiChild = uiChildProp.GetValue(uiInstance);
+            if (uiChild == null) {
+                uiChild = context.CreateInstance(child.ToUiInstanceClass().CSharpTypeName);
+                uiChildProp.SetValue(uiInstance, uiChild);
+            }
+            var navigation = navigationProp.GetValue(dbInstance);
+            if (navigation == null) {
+                navigation = context.CreateInstance(dbEntity.CSharpTypeName);
+                navigationProp.SetValue(dbInstance, navigation);
+            }
+
+            child.MapDbToUi(navigation, uiChild, context);
+        }
+
+        internal override void MapUiToDb(object uiInstance, object dbInstance, IInstanceConvertingContext context) {
+            var child = GetChildAggregates().Single();
+            var dbEntity = child.ToDbEntity();
+
+            // UI子要素 => ナビゲーションプロパティ
+            var navigationProp = dbInstance.GetType().GetProperty(NavigationPropName);
+            var uiChildProp = uiInstance.GetType().GetProperty(InstanceModelPropName);
+            if (navigationProp == null) throw new ArgumentException(null, nameof(dbInstance));
+            if (uiChildProp == null) throw new ArgumentException(null, nameof(uiInstance));
+
+            var uiChild = uiChildProp.GetValue(uiInstance);
+            if (uiChild == null) {
+                uiChild = context.CreateInstance(child.ToUiInstanceClass().CSharpTypeName);
+                uiChildProp.SetValue(uiInstance, uiChild);
+            }
+            var navigation = navigationProp.GetValue(dbInstance);
+            if (navigation == null) {
+                navigation = context.CreateInstance(dbEntity.CSharpTypeName);
+                navigationProp.SetValue(dbInstance, navigation);
+            }
+
+            child.MapUiToDb(uiChild, navigation, context);
         }
 
         internal override IEnumerable<RenderedProperty> ToDbEntityMember() {
