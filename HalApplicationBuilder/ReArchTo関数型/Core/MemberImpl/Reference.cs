@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.ReArchTo関数型.CodeRendering;
 using HalApplicationBuilder.ReArchTo関数型.Runtime;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
     internal class Reference : AggregateMember {
@@ -187,9 +188,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
                 refDto.InstanceName = string.Empty;
             } else {
                 var refTarget = GetRefTarget();
-                var refUiInstance = context.CreateInstance(refTarget.ToUiInstanceClass().CSharpTypeName);
-                refTarget.MapDbToUi(navigation, refUiInstance, context); // TODO: ここで再帰的な呼び出しを行うと復元するオブジェクトの数が多くなりすぎるため、 Aggregate.CreateInstanceKeyFromDbInstnaceを作る
-                refDto.InstanceKey = refTarget.CreateInstanceKeyFromUiInstnace(refUiInstance).StringValue;
+                refDto.InstanceKey = refTarget.CreateInstanceKeyFromDbInstnace(navigation).StringValue;
                 refDto.InstanceName = Runtime.InstanceName.Create(navigation, refTarget).Value;
             }
         }
@@ -206,13 +205,18 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
         internal override IEnumerable<RenderedProperty> ToDbEntityMember() {
             var refTarget = GetRefTarget();
             var refTargetDbEntity = refTarget.ToDbEntity();
+
             // 参照先DBの主キー
-            foreach (var foreignKey in refTargetDbEntity.PrimaryKeys) {
-                yield return new RenderedProperty {
+            var foreignKeys = refTargetDbEntity.PrimaryKeys
+                .Select(foreignKey => new RenderedProperty {
                     CSharpTypeName = foreignKey.CSharpTypeName,
                     PropertyName = ForeignKeyColumnPropName(foreignKey),
-                };
+                })
+                .ToArray();
+            foreach (var foreignKey in foreignKeys) {
+                yield return foreignKey;
             }
+
             // ナビゲーションプロパティ
             yield return new NavigationProperty {
                 Virtual = true,
@@ -221,6 +225,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
                 Multiplicity = NavigationProperty.E_Multiplicity.HasOneWithMany,
                 IsPrincipal = true,
                 OpponentName = refTarget.GetEFCoreEntiyHavingOnlyReferredNavigationProp().Properties.Single().PropertyName,
+                ForeignKeys = foreignKeys,
             };
         }
 

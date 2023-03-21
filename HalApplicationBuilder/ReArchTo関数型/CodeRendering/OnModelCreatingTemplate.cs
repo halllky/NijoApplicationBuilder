@@ -51,12 +51,19 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering {
      if (navigation.Multiplicity.HasFlag(NavigationProperty.E_Multiplicity.WithMany)) { 
             this.Write("                   .WithMany(e => e.");
             this.Write(this.ToStringHelper.ToStringWithCulture(navigation.OpponentName));
-            this.Write(");\n");
+            this.Write(")\n");
      } else {
             this.Write("                   .WithOne(e => e.");
             this.Write(this.ToStringHelper.ToStringWithCulture(navigation.OpponentName));
-            this.Write(");\n");
+            this.Write(")\n");
      } 
+            this.Write("                   .HasForeignKey(e => new {\n");
+     foreach (var fk in navigation.ForeignKeys) { 
+            this.Write("                       e.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(fk.PropertyName));
+            this.Write(",\n");
+     } 
+            this.Write("                   });\n");
  } 
  } 
             this.Write("            });\n");

@@ -206,6 +206,7 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
                     Multiplicity = NavigationProperty.E_Multiplicity.HasOneWithOne,
                     IsPrincipal = true,
                     OpponentName = Aggregate.PARENT_NAVIGATION_PROPERTY_NAME,
+                    ForeignKeys = variationDbEntity.PrimaryKeys.Where(pk => pk is RenderedParentPkProperty),
                 };
             }
         }

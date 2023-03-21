@@ -27,10 +27,15 @@ namespace <#=_config.DbContextNamespace#> {
                 ett.HasOne(e => e.<#=navigation.PropertyName#>)
 <#     } #>
 <#     if (navigation.Multiplicity.HasFlag(NavigationProperty.E_Multiplicity.WithMany)) { #>
-                   .WithMany(e => e.<#=navigation.OpponentName#>);
+                   .WithMany(e => e.<#=navigation.OpponentName#>)
 <#     } else {#>
-                   .WithOne(e => e.<#=navigation.OpponentName#>);
+                   .WithOne(e => e.<#=navigation.OpponentName#>)
 <#     } #>
+                   .HasForeignKey(e => new {
+<#     foreach (var fk in navigation.ForeignKeys) { #>
+                       e.<#=fk.PropertyName#>,
+<#     } #>
+                   });
 <# } #>
 <# } #>
             });

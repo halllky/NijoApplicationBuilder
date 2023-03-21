@@ -91,8 +91,16 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
                 .Select(p => p.prop)
                 .Cast<NavigationProperty>();
 
-            // 親へのナビゲーションプロパティ
+
             if (Parent != null) {
+                // 親の主キー
+                var parentPK = Parent.Owner.ToDbEntity().PrimaryKeys.Select(ppk => new RenderedParentPkProperty {
+                    CSharpTypeName = ppk.CSharpTypeName,
+                    PropertyName = $"Parent_{ppk.PropertyName}",
+                });
+                pks = parentPK.Union(pks);
+
+                // 親へのナビゲーションプロパティ
                 navigations = navigations.Concat(new[] {new NavigationProperty {
                      Virtual = true,
                      CSharpTypeName = Parent.Owner.ToDbEntity().CSharpTypeName,
@@ -100,7 +108,8 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
                      Initializer = null,
                      IsPrincipal = false,
                      Multiplicity = NavigationProperty.E_Multiplicity.HasOneWithMany,
-                     OpponentName = "未設定",
+                     OpponentName = "参照されないので設定不要",
+                     ForeignKeys = Enumerable.Empty<RenderedProperty>(), // 参照されないので設定不要
                 } });
             }
 
@@ -115,9 +124,6 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
                 NavigationProperties = navigations,
             };
         }
-
-        // TODO: とりあえずこれなしで実装を進めていって、必要になったタイミングで考える
-        //internal override IEnumerable<RenderedProerty> ToDbEntityRecursively(ObjectGraphContext context) { }
 
         internal RenderedClass ToUiInstanceClass() {
             var className = Name;

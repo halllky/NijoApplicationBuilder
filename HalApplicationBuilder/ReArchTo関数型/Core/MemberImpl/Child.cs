@@ -122,11 +122,16 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
 
         internal override IEnumerable<RenderedProperty> ToDbEntityMember() {
             // ナビゲーションプロパティ
-            yield return new RenderedProperty {
+            var childDbEntity = GetChildAggregates().Single().ToDbEntity();
+            yield return new NavigationProperty {
                 Virtual = true,
-                CSharpTypeName = GetChildAggregates().Single().ToDbEntity().CSharpTypeName,
+                CSharpTypeName = childDbEntity.CSharpTypeName,
                 PropertyName = NavigationPropName,
                 Initializer = null,
+                IsPrincipal = true,
+                Multiplicity = NavigationProperty.E_Multiplicity.HasManyWithOne,
+                ForeignKeys = childDbEntity.PrimaryKeys.Where(pk => pk is RenderedParentPkProperty),
+                OpponentName = Aggregate.PARENT_NAVIGATION_PROPERTY_NAME,
             };
         }
 

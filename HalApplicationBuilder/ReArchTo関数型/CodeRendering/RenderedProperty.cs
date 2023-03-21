@@ -12,10 +12,14 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering
         internal string? Initializer { get; init; }
     }
 
+    internal class RenderedParentPkProperty : RenderedProperty {
+    }
+
     internal class NavigationProperty : RenderedProperty {
         internal required string OpponentName { get; init; }
         internal required bool IsPrincipal { get; init; }
         internal required E_Multiplicity Multiplicity { get; init; }
+        internal required IEnumerable<RenderedProperty> ForeignKeys { get; init; }
 
         [Flags]
         internal enum E_Multiplicity {
