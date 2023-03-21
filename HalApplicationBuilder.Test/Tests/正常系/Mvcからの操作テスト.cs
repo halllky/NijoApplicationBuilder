@@ -1,5 +1,6 @@
 ﻿using System;
 using Xunit;
+using Xunit.Abstractions;
 using OpenQA.Selenium;
 
 namespace HalApplicationBuilder.Test.Tests.正常系 {
@@ -7,12 +8,17 @@ namespace HalApplicationBuilder.Test.Tests.正常系 {
     [Collection("Mvc使用統合テスト")]
     public class Mvc経由の操作テスト {
 
+        public Mvc経由の操作テスト(ITestOutputHelper console) {
+            _console = console;
+        }
+        private readonly ITestOutputHelper _console;
+
         [Fact]
         public void 正常系テスト_README用の単純な集約定義() {
-            using var web = DistMvcProject.Instance
-                .GenerateCode(typeof(_20221210試用版.商品).Namespace)
-                .RunWebProcess();
-            using var driver = web.GetChromeDriver();
+            using var project = DistMvcProject.Use(_console);
+            project.GenerateCode(typeof(_20221210試用版.商品).Namespace);
+            project.Build();
+            using var driver = project.Run();
 
             // トップページ
             var shohinLink = driver.FindElement(By.LinkText("商品"));
@@ -75,12 +81,11 @@ namespace HalApplicationBuilder.Test.Tests.正常系 {
         }
 
         [Fact]
-        public void 正常系テスト_パターン網羅された集約定義()
-        {
-            using var web = DistMvcProject.Instance
-                .GenerateCode(typeof(HalApplicationBuilder.Test.Tests.正常系.ルート集約1).Namespace)
-                .RunWebProcess();
-            using var driver = web.GetChromeDriver();
+        public void 正常系テスト_パターン網羅された集約定義() {
+            using var project = DistMvcProject.Use(_console);
+            project.GenerateCode(typeof(HalApplicationBuilder.Test.Tests.正常系.ルート集約1).Namespace);
+            project.Build();
+            using var driver = project.Run();
 
             // トップページ
             var shohinLink = driver.FindElement(By.LinkText("ルート集約1"));
