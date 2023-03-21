@@ -19,22 +19,17 @@
 	</ItemGroup>
 	<ItemGroup>
 		<Folder Include="DotnetEx\" />
-		<Folder Include="ReArchTo関数型\Core\" />
-		<Folder Include="ReArchTo関数型\CodeRendering\" />
-		<Folder Include="ReArchTo関数型\Runtime\" />
-		<Folder Include="ReArchTo関数型\Core\MemberImpl\" />
-		<Folder Include="ReArchTo関数型\Runtime\AspNetMvc\" />
-		<Folder Include="ReArchTo関数型\CodeRendering\AspNetMvc\" />
+		<Folder Include="CodeRendering\" />
+		<Folder Include="Core\" />
+		<Folder Include="Runtime\" />
 	</ItemGroup>
 	<ItemGroup>
 	  <None Remove="ReArch\" />
 	  <None Remove="ReArch\Core\" />
-	  <None Remove="ReArchTo関数型\CodeRendering\" />
-	  <None Remove="ReArchTo関数型\Runtime\" />
-	  <None Remove="ReArchTo関数型\Core\MemberImpl\" />
-	  <None Remove="ReArchTo関数型\Runtime\AspNetMvc\" />
-	  <None Remove="ReArchTo関数型\CodeRendering\AspNetMvc\" />
-	  <None Remove="ReArchTo関数型\CodeRendering\EntityFramework\" />
+	  <None Remove="CodeRendering\EntityFramework\" />
+	  <None Remove="CodeRendering\" />
+	  <None Remove="Core\" />
+	  <None Remove="Runtime\" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Update="Core\AggregateInstanceTemplate.tt">
@@ -60,53 +55,53 @@
 		<None Update="DotnetEx\T4Template.tt">
 		  <Generator>TextTemplatingFileGenerator</Generator>
 		</None>
-		<None Update="ReArchTo関数型\CodeRendering\AspNetMvc\MvcModelsTemplate.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>MvcModelsTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="ReArchTo関数型\CodeRendering\AspNetMvc\MvcMultiViewTemplate.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>MvcMultiViewTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="ReArchTo関数型\CodeRendering\AutoCompleteSourceTemplate.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>AutoCompleteSourceTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="ReArchTo関数型\CodeRendering\DbSetTemplate.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>DbSetTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="ReArchTo関数型\CodeRendering\EntityClassTemplate.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>EntityClassTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="ReArchTo関数型\CodeRendering\OnModelCreatingTemplate.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>OnModelCreatingTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="ReArchTo関数型\CodeRendering\SearchMethodTemplate.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>SearchMethodTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="ReArchTo関数型\CodeRendering\AspNetMvc\MvcControllerTemplate.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>MvcControllerTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="ReArchTo関数型\CodeRendering\AspNetMvc\MvcSingleViewTemplate.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>MvcSingleViewTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="ReArchTo関数型\CodeRendering\AspNetMvc\MvcCreateViewTemplate.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>MvcCreateViewTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="ReArchTo関数型\CodeRendering\AspNetMvc\InstancePartialViewTemplate.tt">
+		<None Update="CodeRendering\AspNetMvc\InstancePartialViewTemplate.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>InstancePartialViewTemplate.cs</LastGenOutput>
 		</None>
-		<None Update="ReArchTo関数型\CodeRendering\AspNetMvc\JsTemplate.tt">
+		<None Update="CodeRendering\AspNetMvc\JsTemplate.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>JsTemplate.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering\AspNetMvc\MvcControllerTemplate.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>MvcControllerTemplate.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering\AspNetMvc\MvcCreateViewTemplate.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>MvcCreateViewTemplate.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering\AspNetMvc\MvcModelsTemplate.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>MvcModelsTemplate.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering\AspNetMvc\MvcMultiViewTemplate.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>MvcMultiViewTemplate.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering\AspNetMvc\MvcSingleViewTemplate.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>MvcSingleViewTemplate.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering\AutoCompleteSourceTemplate.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>AutoCompleteSourceTemplate.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering\DbSetTemplate.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>DbSetTemplate.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering\EntityClassTemplate.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>EntityClassTemplate.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering\OnModelCreatingTemplate.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>OnModelCreatingTemplate.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering\SearchMethodTemplate.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>SearchMethodTemplate.cs</LastGenOutput>
 		</None>
 	</ItemGroup>
 	<ItemGroup>
@@ -135,44 +130,44 @@
 		<Compile Update="EntityFramework\EFCoreEntityTemplate.cs">
 			<DependentUpon>EntityClassTemplate.tt</DependentUpon>
 		</Compile>
-		<Compile Update="ReArchTo関数型\CodeRendering\MvcMultiViewTemplate.cs">
+		<Compile Update="CodeRendering\MvcMultiViewTemplate.cs">
 		  <DependentUpon>MvcMultiViewTemplate.tt</DependentUpon>
 		</Compile>
-		<Compile Update="ReArchTo関数型\CodeRendering\AspNetMvc\MvcModelsTemplate.cs">
-		  <DependentUpon>MvcModelsTemplate.tt</DependentUpon>
+		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\AspNetMvc\InstancePartialViewTemplate.cs">
+		  <DependentUpon>..\..\CodeRendering\AspNetMvc\InstancePartialViewTemplate.tt</DependentUpon>
 		</Compile>
-		<Compile Update="ReArchTo関数型\CodeRendering\AspNetMvc\MvcMultiViewTemplate.cs">
-		  <DependentUpon>MvcMultiViewTemplate.tt</DependentUpon>
+		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\AspNetMvc\JsTemplate.cs">
+		  <DependentUpon>..\..\CodeRendering\AspNetMvc\JsTemplate.tt</DependentUpon>
 		</Compile>
-		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="ReArchTo関数型\CodeRendering\AutoCompleteSourceTemplate.cs">
+		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\AspNetMvc\MvcControllerTemplate.cs">
+		  <DependentUpon>..\..\CodeRendering\AspNetMvc\MvcControllerTemplate.tt</DependentUpon>
+		</Compile>
+		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\AspNetMvc\MvcCreateViewTemplate.cs">
+		  <DependentUpon>..\..\CodeRendering\AspNetMvc\MvcCreateViewTemplate.tt</DependentUpon>
+		</Compile>
+		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\AspNetMvc\MvcModelsTemplate.cs">
+		  <DependentUpon>..\..\CodeRendering\AspNetMvc\MvcModelsTemplate.tt</DependentUpon>
+		</Compile>
+		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\AspNetMvc\MvcMultiViewTemplate.cs">
+		  <DependentUpon>..\..\CodeRendering\AspNetMvc\MvcMultiViewTemplate.tt</DependentUpon>
+		</Compile>
+		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\AspNetMvc\MvcSingleViewTemplate.cs">
+		  <DependentUpon>..\..\CodeRendering\AspNetMvc\MvcSingleViewTemplate.tt</DependentUpon>
+		</Compile>
+		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\AutoCompleteSourceTemplate.cs">
 		  <DependentUpon>AutoCompleteSourceTemplate.tt</DependentUpon>
 		</Compile>
-		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="ReArchTo関数型\CodeRendering\DbSetTemplate.cs">
-		  <DependentUpon>DbSetTemplate.tt</DependentUpon>
+		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\DbSetTemplate.cs">
+		  <DependentUpon>..\CodeRendering\DbSetTemplate.tt</DependentUpon>
 		</Compile>
-		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="ReArchTo関数型\CodeRendering\EntityClassTemplate.cs">
-		  <DependentUpon>EntityClassTemplate.tt</DependentUpon>
+		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\EntityClassTemplate.cs">
+		  <DependentUpon>..\CodeRendering\EntityClassTemplate.tt</DependentUpon>
 		</Compile>
-		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="ReArchTo関数型\CodeRendering\OnModelCreatingTemplate.cs">
-		  <DependentUpon>OnModelCreatingTemplate.tt</DependentUpon>
+		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\OnModelCreatingTemplate.cs">
+		  <DependentUpon>..\CodeRendering\OnModelCreatingTemplate.tt</DependentUpon>
 		</Compile>
-		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="ReArchTo関数型\CodeRendering\SearchMethodTemplate.cs">
-		  <DependentUpon>SearchMethodTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Update="ReArchTo関数型\CodeRendering\AspNetMvc\MvcControllerTemplate.cs">
-		  <DependentUpon>MvcControllerTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Update="ReArchTo関数型\CodeRendering\AspNetMvc\MvcSingleViewTemplate.cs">
-		  <DependentUpon>MvcSingleViewTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Update="ReArchTo関数型\CodeRendering\AspNetMvc\MvcCreateViewTemplate.cs">
-		  <DependentUpon>MvcCreateViewTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="ReArchTo関数型\CodeRendering\AspNetMvc\InstancePartialViewTemplate.cs">
-		  <DependentUpon>InstancePartialViewTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Update="ReArchTo関数型\CodeRendering\AspNetMvc\JsTemplate.cs">
-		  <DependentUpon>JsTemplate.tt</DependentUpon>
+		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\SearchMethodTemplate.cs">
+		  <DependentUpon>..\CodeRendering\SearchMethodTemplate.tt</DependentUpon>
 		</Compile>
 	</ItemGroup>
 	<ProjectExtensions>
