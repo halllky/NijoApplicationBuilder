@@ -203,10 +203,12 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
                     Virtual = true,
                     CSharpTypeName = variationDbEntity.CSharpTypeName,
                     PropertyName = NavigationPropName(variationDbEntity),
-                    Multiplicity = NavigationProperty.E_Multiplicity.HasOneWithOne,
-                    IsPrincipal = true,
-                    OpponentName = Aggregate.PARENT_NAVIGATION_PROPERTY_NAME,
-                    ForeignKeys = variationDbEntity.PrimaryKeys.Where(pk => pk is RenderedParentPkProperty),
+                    OnModelCreating = new OnModelCreatingDTO {
+                        Multiplicity = OnModelCreatingDTO.E_Multiplicity.HasOneWithOne,
+                        OpponentName = Aggregate.PARENT_NAVIGATION_PROPERTY_NAME,
+                        ForeignKeys = variationDbEntity.PrimaryKeys.Where(pk => pk is RenderedParentPkProperty),
+                        OnDelete = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade,
+                    },
                 };
             }
         }

@@ -128,10 +128,12 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
                 CSharpTypeName = childDbEntity.CSharpTypeName,
                 PropertyName = NavigationPropName,
                 Initializer = null,
-                IsPrincipal = true,
-                Multiplicity = NavigationProperty.E_Multiplicity.HasManyWithOne,
-                ForeignKeys = childDbEntity.PrimaryKeys.Where(pk => pk is RenderedParentPkProperty),
-                OpponentName = Aggregate.PARENT_NAVIGATION_PROPERTY_NAME,
+                OnModelCreating = new OnModelCreatingDTO {
+                    Multiplicity = OnModelCreatingDTO.E_Multiplicity.HasManyWithOne,
+                    OpponentName = Aggregate.PARENT_NAVIGATION_PROPERTY_NAME,
+                    ForeignKeys = childDbEntity.PrimaryKeys.Where(pk => pk is RenderedParentPkProperty),
+                    OnDelete = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade,
+                },
             };
         }
 

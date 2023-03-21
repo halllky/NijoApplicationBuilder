@@ -101,15 +101,12 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core
                 pks = parentPK.Union(pks);
 
                 // 親へのナビゲーションプロパティ
-                navigations = navigations.Concat(new[] {new NavigationProperty {
+                navigations = navigations.Concat(new[] { new NavigationProperty {
                      Virtual = true,
                      CSharpTypeName = Parent.Owner.ToDbEntity().CSharpTypeName,
                      PropertyName = PARENT_NAVIGATION_PROPERTY_NAME,
                      Initializer = null,
-                     IsPrincipal = false,
-                     Multiplicity = NavigationProperty.E_Multiplicity.HasOneWithMany,
-                     OpponentName = "参照されないので設定不要",
-                     ForeignKeys = Enumerable.Empty<RenderedProperty>(), // 参照されないので設定不要
+                     OnModelCreating = null,
                 } });
             }
 

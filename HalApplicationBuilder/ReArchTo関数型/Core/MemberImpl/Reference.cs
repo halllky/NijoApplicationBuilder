@@ -222,10 +222,12 @@ namespace HalApplicationBuilder.ReArchTo関数型.Core.MemberImpl {
                 Virtual = true,
                 CSharpTypeName = refTargetDbEntity.CSharpTypeName,
                 PropertyName = NavigationPropName,
-                Multiplicity = NavigationProperty.E_Multiplicity.HasOneWithMany,
-                IsPrincipal = true,
-                OpponentName = refTarget.GetEFCoreEntiyHavingOnlyReferredNavigationProp().Properties.Single().PropertyName,
-                ForeignKeys = foreignKeys,
+                OnModelCreating = new OnModelCreatingDTO {
+                    Multiplicity = OnModelCreatingDTO.E_Multiplicity.HasOneWithMany,
+                    OpponentName = refTarget.GetEFCoreEntiyHavingOnlyReferredNavigationProp().Properties.Single().PropertyName,
+                    ForeignKeys = foreignKeys,
+                    OnDelete = Microsoft.EntityFrameworkCore.DeleteBehavior.Restrict,
+                },
             };
         }
 

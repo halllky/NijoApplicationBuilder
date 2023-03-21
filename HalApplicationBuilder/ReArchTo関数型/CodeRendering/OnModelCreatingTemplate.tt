@@ -20,22 +20,23 @@ namespace <#=_config.DbContextNamespace#> {
                 });
 <# /* ナビゲーションプロパティ定義 */ #>
 <# foreach (var navigation in entity.NavigationProperties) { #>
-<# if (navigation.IsPrincipal) { #>
-<#     if (navigation.Multiplicity.HasFlag(NavigationProperty.E_Multiplicity.HasMany)) { #>
+<# if (navigation.OnModelCreating != null) { #>
+<#     if (navigation.OnModelCreating.Multiplicity.HasFlag(OnModelCreatingDTO.E_Multiplicity.HasMany)) { #>
                 ett.HasMany(e => e.<#=navigation.PropertyName#>)
 <#     } else {#>
                 ett.HasOne(e => e.<#=navigation.PropertyName#>)
 <#     } #>
-<#     if (navigation.Multiplicity.HasFlag(NavigationProperty.E_Multiplicity.WithMany)) { #>
-                   .WithMany(e => e.<#=navigation.OpponentName#>)
+<#     if (navigation.OnModelCreating.Multiplicity.HasFlag(OnModelCreatingDTO.E_Multiplicity.WithMany)) { #>
+                   .WithMany(e => e.<#=navigation.OnModelCreating.OpponentName#>)
 <#     } else {#>
-                   .WithOne(e => e.<#=navigation.OpponentName#>)
+                   .WithOne(e => e.<#=navigation.OnModelCreating.OpponentName#>)
 <#     } #>
                    .HasForeignKey(e => new {
-<#     foreach (var fk in navigation.ForeignKeys) { #>
+<#     foreach (var fk in navigation.OnModelCreating.ForeignKeys) { #>
                        e.<#=fk.PropertyName#>,
 <#     } #>
-                   });
+                   })
+                   .OnDelete(DeleteBehavior.<#=navigation.OnModelCreating.OnDelete.ToString()#>);
 <# } #>
 <# } #>
             });

@@ -38,8 +38,8 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering {
             this.Write("                });\n");
  /* ナビゲーションプロパティ定義 */ 
  foreach (var navigation in entity.NavigationProperties) { 
- if (navigation.IsPrincipal) { 
-     if (navigation.Multiplicity.HasFlag(NavigationProperty.E_Multiplicity.HasMany)) { 
+ if (navigation.OnModelCreating != null) { 
+     if (navigation.OnModelCreating.Multiplicity.HasFlag(OnModelCreatingDTO.E_Multiplicity.HasMany)) { 
             this.Write("                ett.HasMany(e => e.");
             this.Write(this.ToStringHelper.ToStringWithCulture(navigation.PropertyName));
             this.Write(")\n");
@@ -48,22 +48,24 @@ namespace HalApplicationBuilder.ReArchTo関数型.CodeRendering {
             this.Write(this.ToStringHelper.ToStringWithCulture(navigation.PropertyName));
             this.Write(")\n");
      } 
-     if (navigation.Multiplicity.HasFlag(NavigationProperty.E_Multiplicity.WithMany)) { 
+     if (navigation.OnModelCreating.Multiplicity.HasFlag(OnModelCreatingDTO.E_Multiplicity.WithMany)) { 
             this.Write("                   .WithMany(e => e.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(navigation.OpponentName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(navigation.OnModelCreating.OpponentName));
             this.Write(")\n");
      } else {
             this.Write("                   .WithOne(e => e.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(navigation.OpponentName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(navigation.OnModelCreating.OpponentName));
             this.Write(")\n");
      } 
             this.Write("                   .HasForeignKey(e => new {\n");
-     foreach (var fk in navigation.ForeignKeys) { 
+     foreach (var fk in navigation.OnModelCreating.ForeignKeys) { 
             this.Write("                       e.");
             this.Write(this.ToStringHelper.ToStringWithCulture(fk.PropertyName));
             this.Write(",\n");
      } 
-            this.Write("                   });\n");
+            this.Write("                   })\n                   .OnDelete(DeleteBehavior.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(navigation.OnModelCreating.OnDelete.ToString()));
+            this.Write(");\n");
  } 
  } 
             this.Write("            });\n");
