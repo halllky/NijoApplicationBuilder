@@ -7,34 +7,43 @@ using HalApplicationBuilder.Runtime;
 
 namespace HalApplicationBuilder.Core.MemberImpl {
     internal class Variation : AggregateMember {
-        internal Variation(Config config, PropertyInfo propertyInfo, Aggregate owner) : base(config, propertyInfo, owner) { }
+        internal Variation(Config config, string displayName, bool isPrimary, Aggregate owner, IEnumerable<KeyValuePair<int, IAggregateSetting>> variations) : base(config, displayName, isPrimary, owner) {
+            if (!variations.Any())
+                throw new InvalidOperationException($"{displayName} の派生型が1つも定義されていない");
 
-        private IReadOnlyDictionary<int, Aggregate> GetVariations() {
-            var childType = _underlyingProp.PropertyType.GetGenericArguments()[0];
-            var attrs = _underlyingProp.GetCustomAttributes<VariationAttribute>();
-
-            // バリエーションが存在するかチェック
-            if (!attrs.Any())
-                throw new InvalidOperationException($"{childType.Name} の派生型が定義されていない");
-
-            // 型の妥当性チェック
-            var cannotAssignable = attrs.Where(x => !childType.IsAssignableFrom(x.Type)).ToArray();
-            if (cannotAssignable.Any()) {
-                var typeNames = string.Join(", ", cannotAssignable.Select(x => x.Type.Name));
-                throw new InvalidOperationException($"{childType.Name} の派生型でない: {typeNames}");
-            }
-
-            return attrs.ToDictionary(attr => attr.Key, attr => Aggregate.AsChild(_config, attr.Type, this));
+            _variations = variations;
         }
 
-        private string DbPropName => _underlyingProp.Name;
+        private readonly IEnumerable<KeyValuePair<int, IAggregateSetting>> _variations;
+
+        private IReadOnlyDictionary<int, Aggregate> GetVariations() {
+            //var childType = _underlyingProp.PropertyType.GetGenericArguments()[0];
+            //var attrs = _underlyingProp.GetCustomAttributes<VariationAttribute>();
+
+            //// バリエーションが存在するかチェック
+            //if (!attrs.Any())
+            //    throw new InvalidOperationException($"{childType.Name} の派生型が定義されていない");
+
+            //// 型の妥当性チェック
+            //var cannotAssignable = attrs.Where(x => !childType.IsAssignableFrom(x.Type)).ToArray();
+            //if (cannotAssignable.Any()) {
+            //    var typeNames = string.Join(", ", cannotAssignable.Select(x => x.Type.Name));
+            //    throw new InvalidOperationException($"{childType.Name} の派生型でない: {typeNames}");
+            //}
+
+            //return attrs.ToDictionary(attr => attr.Key, attr => Aggregate.AsChild(_config, attr.Type, this));
+
+            return _variations.ToDictionary(v => v.Key, v => Aggregate.AsChild(_config, v.Value, this));
+        }
+
+        private string DbPropName => DisplayName;
         private string NavigationPropName(RenderedEFCoreEntity variationDbEntity) => $"{DbPropName}__{variationDbEntity.ClassName}";
 
         /// <summary>アンダースコア2連だと ArgumentException: The name of an HTML field cannot be null or empty... になる</summary>
-        private string SearchConditionPropName(KeyValuePair<int, Aggregate> variation) => $"{_underlyingProp.Name}_{variation.Value.Name}";
-        private string SearchResultPropName => _underlyingProp.Name;
-        private string InstanceModelTypeSwitchPropName => _underlyingProp.Name;
-        private string InstanceModelTypeDetailPropName(KeyValuePair<int, Aggregate> variation) => $"{_underlyingProp.Name}_{variation.Value.Name}";
+        private string SearchConditionPropName(KeyValuePair<int, Aggregate> variation) => $"{DisplayName}_{variation.Value.Name}";
+        private string SearchResultPropName => DisplayName;
+        private string InstanceModelTypeSwitchPropName => DisplayName;
+        private string InstanceModelTypeDetailPropName(KeyValuePair<int, Aggregate> variation) => $"{DisplayName}_{variation.Value.Name}";
 
 
         internal override IEnumerable<Aggregate> GetChildAggregates() {

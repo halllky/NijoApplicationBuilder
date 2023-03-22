@@ -6,11 +6,7 @@ namespace HalApplicationBuilder.Core
 {
     internal class RootAggregate : Aggregate
     {
-        internal static RootAggregate FromReflection(Config config, Type underlyingType) {
-            return new RootAggregate(config, underlyingType);
-        }
-
-        private RootAggregate(Config config, Type underlyingType) : base(config, underlyingType, null) {
+        internal RootAggregate(Config config, IAggregateSetting setting) : base(config, setting, null) {
         }
 
         internal IEnumerable<Aggregate> GetDescendants() {
@@ -42,7 +38,7 @@ namespace HalApplicationBuilder.Core
             }
             return dto;
         }
-        private string GetSearchMethodName() => $"Search_{_underlyingType.Name}";
+        private string GetSearchMethodName() => $"Search_{Name}";
     }
 }
 

@@ -12,24 +12,32 @@ namespace HalApplicationBuilder.Core
 {
     internal class Aggregate : ValueObject
     {
-        internal static Aggregate AsChild(Config config, Type underlyingType, AggregateMember parent) {
-            return new Aggregate(config, underlyingType, parent);
+        internal static Aggregate AsChild(Config config, IAggregateSetting setting, AggregateMember parent) {
+            return new Aggregate(config, setting, parent);
         }
 
         private protected Aggregate(
             Config config,
-            Type underlyingType,
+            IAggregateSetting setting,
             AggregateMember? parent)
         {
             _config = config;
-            _underlyingType = underlyingType;
+            _aggregateSetting = setting;
             Parent = parent;
         }
         private protected readonly Config _config;
-        private protected readonly Type _underlyingType;
+        private protected readonly IAggregateSetting _aggregateSetting;
 
-        internal Guid GUID => _underlyingType.GUID;
-        internal string Name => _underlyingType.Name;
+        internal Guid GUID {
+            get {
+                byte[] stringBytes = System.Text.Encoding.UTF8.GetBytes(_aggregateSetting.DisplayName);
+                byte[] hashedBytes = System.Security.Cryptography.MD5.Create().ComputeHash(stringBytes);
+                byte[] guidBytes = new byte[16];
+                Array.Copy(hashedBytes, 0, guidBytes, 0, 16);
+                return new Guid(guidBytes);
+            }
+        }
+        internal string Name => _aggregateSetting.DisplayName;
 
         internal AggregateMember? Parent { get; }
 
@@ -42,37 +50,7 @@ namespace HalApplicationBuilder.Core
             }
         }
         private protected IEnumerable<AggregateMember> GetMembers() {
-            foreach (var prop in _underlyingType.GetProperties(BindingFlags.Public | BindingFlags.Instance)) {
-                if (prop.GetCustomAttribute<NotMappedAttribute>() != null) continue;
-
-                if (MemberImpl.SchalarValue.IsPrimitive(prop.PropertyType)) {
-                    yield return new MemberImpl.SchalarValue(_config, prop, this);
-
-                } else if (prop.PropertyType.IsGenericType
-                    && prop.PropertyType.GetGenericTypeDefinition() == typeof(Child<>)) {
-
-                    var childType = prop.PropertyType.GetGenericArguments()[0];
-                    var variations = prop.GetCustomAttributes<VariationAttribute>();
-
-                    if (!childType.IsAbstract && !variations.Any())
-                        yield return new MemberImpl.Child(_config, prop, this);
-
-                    else if (childType.IsAbstract && variations.Any())
-                        yield return new MemberImpl.Variation(_config, prop, this);
-
-                    else
-                        throw new InvalidOperationException($"抽象型ならバリエーション必須、抽象型でないなら{nameof(VariationAttribute)}指定不可");
-                } else if (prop.PropertyType.IsGenericType
-                    && prop.PropertyType.GetGenericTypeDefinition() == typeof(Children<>)) {
-                    yield return new MemberImpl.Children(_config, prop, this);
-                } else if (prop.PropertyType.IsGenericType
-                    && prop.PropertyType.GetGenericTypeDefinition() == typeof(RefTo<>)) {
-                    yield return new MemberImpl.Reference(_config, prop, this);
-
-                } else {
-                    throw new InvalidOperationException($"{Name} の {prop.Name} の型 {prop.PropertyType.Name} は非対応");
-                }
-            }
+            return _aggregateSetting.GetMembers(this);
         }
 
         internal const string PARENT_NAVIGATION_PROPERTY_NAME = "Parent";
@@ -306,7 +284,7 @@ namespace HalApplicationBuilder.Core
         protected override IEnumerable<object?> ValueObjectIdentifiers()
         {
             yield return Parent;
-            yield return _underlyingType;
+            yield return _aggregateSetting;
         }
     }
 }

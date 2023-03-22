@@ -9,19 +9,19 @@ namespace HalApplicationBuilder.Core
 {
     internal abstract class AggregateMember : ValueObject
     {
-        internal AggregateMember(Config config, PropertyInfo underlyingProp, Aggregate owner) {
+        internal AggregateMember(Config config, string displayName, bool isPrimary, Aggregate owner) {
             _config = config;
-            _underlyingProp = underlyingProp;
+            DisplayName = displayName;
+            IsPrimary = isPrimary;
             Owner = owner;
         }
 
         protected readonly Config _config;
-        protected readonly PropertyInfo _underlyingProp;
 
         internal Aggregate Owner { get; }
 
-        internal string DisplayName => _underlyingProp.GetCustomAttribute<DisplayAttribute>()?.Name ?? _underlyingProp.Name;
-        internal bool IsPrimary => _underlyingProp.GetCustomAttribute<KeyAttribute>() != null;
+        internal string DisplayName { get; }
+        internal bool IsPrimary { get; }
 
         internal abstract IEnumerable<Aggregate> GetChildAggregates();
 
@@ -53,7 +53,7 @@ namespace HalApplicationBuilder.Core
         protected sealed override IEnumerable<object?> ValueObjectIdentifiers()
         {
             yield return Owner;
-            yield return _underlyingProp;
+            yield return DisplayName;
         }
     }
 }

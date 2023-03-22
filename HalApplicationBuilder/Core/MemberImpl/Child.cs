@@ -10,19 +10,19 @@ using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Model;
 
 namespace HalApplicationBuilder.Core.MemberImpl {
     internal class Child : AggregateMember {
-        internal Child(Config config, PropertyInfo propertyInfo, Aggregate owner) : base(config, propertyInfo, owner) { }
+        internal Child(Config config, string displayName, bool isPrimary, Aggregate owner, IAggregateSetting childType) : base(config, displayName, isPrimary, owner) {
+            _childType = childType;
+        }
 
-        private string NavigationPropName => _underlyingProp.Name;
-        private string SearchConditionPropName => _underlyingProp.Name;
+        private readonly IAggregateSetting _childType;
+
+        private string NavigationPropName => DisplayName;
+        private string SearchConditionPropName => DisplayName;
         private string SearchResultPropName(RenderedProperty childProp) => childProp.PropertyName; // TODO 親子でプロパティ名が重複する場合を考慮する
-        private string InstanceModelPropName => _underlyingProp.Name;
+        private string InstanceModelPropName => DisplayName;
 
-        internal override IEnumerable<Aggregate> GetChildAggregates()
-        {
-            yield return Aggregate.AsChild(
-                _config,
-                _underlyingProp.PropertyType.GetGenericArguments()[0],
-                this);
+        internal override IEnumerable<Aggregate> GetChildAggregates() {
+            yield return Aggregate.AsChild(_config, _childType, this);
         }
 
         internal override void BuildSearchMethod(SearchMethodDTO method) {

@@ -9,7 +9,6 @@ using HalApplicationBuilder.Runtime;
 
 namespace HalApplicationBuilder.Core.MemberImpl {
     internal class SchalarValue : AggregateMember {
-        internal SchalarValue(Config config, PropertyInfo propertyInfo, Aggregate owner) : base(config, propertyInfo, owner) { }
 
         internal static bool IsPrimitive(Type type) {
             if (type == typeof(string)) return true;
@@ -27,14 +26,21 @@ namespace HalApplicationBuilder.Core.MemberImpl {
 
             return false;
         }
+
+        internal SchalarValue(Config config, string displayName, bool isPrimary, Aggregate owner, Type propertyType) : base(config, displayName, isPrimary, owner) {
+            _propertyType = propertyType;
+        }
+
+        private readonly Type _propertyType;
+
         private bool IsNullable() {
-            return _underlyingProp.PropertyType.IsGenericType
-                && _underlyingProp.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>);
+            return _propertyType.IsGenericType
+                && _propertyType.GetGenericTypeDefinition() == typeof(Nullable<>);
         }
         private Type GetPropertyTypeExceptNullable() {
             return IsNullable()
-                ? _underlyingProp.PropertyType.GetGenericArguments()[0]
-                : _underlyingProp.PropertyType;
+                ? _propertyType.GetGenericArguments()[0]
+                : _propertyType;
         }
         private string GetCSharpTypeName() {
             var type = GetPropertyTypeExceptNullable();
@@ -46,7 +52,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             else if (type == typeof(float)) valueTypeName = "float";
             else if (type == typeof(decimal)) valueTypeName = "decimal";
             else if (type == typeof(DateTime)) valueTypeName = "DateTime";
-            else throw new InvalidOperationException($"不正な型: {_underlyingProp.Name} - {type.Name}");
+            else throw new InvalidOperationException($"不正な型: {DisplayName} - {type.Name}");
 
             var question = IsNullable() ? "?" : null;
 
@@ -68,10 +74,10 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             return new[] { typeof(int), typeof(float), typeof(decimal), typeof(DateTime) }.Contains(type);
         }
 
-        private string DbColumnPropName => _underlyingProp.GetCustomAttribute<ColumnAttribute>()?.Name ?? _underlyingProp.Name;
-        internal string SearchConditonPropName => _underlyingProp.Name;
-        internal string SearchResultPropName => _underlyingProp.Name;
-        internal string InstanceModelPropName => _underlyingProp.Name;
+        private string DbColumnPropName => DisplayName;
+        internal string SearchConditonPropName => DisplayName;
+        internal string SearchResultPropName => DisplayName;
+        internal string InstanceModelPropName => DisplayName;
 
         internal override IEnumerable<Aggregate> GetChildAggregates() {
             yield break;
@@ -251,7 +257,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             } else if (type.IsEnum) {
                 // enumドロップダウン
                 yield return new RenderedProperty {
-                    CSharpTypeName = type.FullName ?? throw new InvalidOperationException($"type.FullNameを取得できない: {_underlyingProp.Name}"),
+                    CSharpTypeName = type.FullName ?? throw new InvalidOperationException($"type.FullNameを取得できない: {DisplayName}"),
                     PropertyName = SearchConditonPropName,
                 };
 

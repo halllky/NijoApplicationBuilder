@@ -10,10 +10,14 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace HalApplicationBuilder.Core.MemberImpl {
     internal class Reference : AggregateMember {
-        internal Reference(Config config, PropertyInfo propertyInfo, Aggregate owner) : base(config, propertyInfo, owner) { }
+        internal Reference(Config config, string displayName, bool isPrimary, Aggregate owner, IAggregateSetting refTarget) : base(config, displayName, isPrimary, owner) {
+            _refTarget = refTarget;
+        }
+
+        private readonly IAggregateSetting _refTarget;
 
         internal ReferredAggregate GetRefTarget() {
-            return new ReferredAggregate(_config, _underlyingProp.PropertyType.GetGenericArguments()[0], this);
+            return new ReferredAggregate(_config, _refTarget, this);
         }
 
         internal override IEnumerable<Aggregate> GetChildAggregates()
@@ -232,12 +236,12 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             };
         }
 
-        private string ForeignKeyColumnPropName(RenderedProperty fk) => $"{_underlyingProp.Name}_{fk.PropertyName}";
-        private string NavigationPropName => _underlyingProp.Name;
-        private string SearchConditonPropName => _underlyingProp.Name;
-        private string SearchResultInstanceNamePropName => _underlyingProp.Name;
-        private string SearchResultForeignKeyPropName(RenderedProperty fk) => $"{_underlyingProp.Name}_{fk.PropertyName}";
-        private string InstanceModelPropName => _underlyingProp.Name;
+        private string ForeignKeyColumnPropName(RenderedProperty fk) => $"{DisplayName}_{fk.PropertyName}";
+        private string NavigationPropName => DisplayName;
+        private string SearchConditonPropName => DisplayName;
+        private string SearchResultInstanceNamePropName => DisplayName;
+        private string SearchResultForeignKeyPropName(RenderedProperty fk) => $"{DisplayName}_{fk.PropertyName}";
+        private string InstanceModelPropName => DisplayName;
 
         internal override IEnumerable<RenderedProperty> ToInstanceModelMember() {
             yield return new RenderedProperty {

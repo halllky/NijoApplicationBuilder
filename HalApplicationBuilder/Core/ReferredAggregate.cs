@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace HalApplicationBuilder.Core {
     internal class ReferredAggregate : Aggregate
     {
-        internal ReferredAggregate(Config config, Type underlyingType, MemberImpl.Reference referredBy) : base(config, underlyingType, null)
+        internal ReferredAggregate(Config config, IAggregateSetting setting, MemberImpl.Reference referredBy) : base(config, setting, null)
         {
             _referredBy = referredBy;
         }
