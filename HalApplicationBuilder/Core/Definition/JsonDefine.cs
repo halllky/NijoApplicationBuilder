@@ -10,7 +10,7 @@ namespace HalApplicationBuilder.Core.Definition {
             if (schema == null) throw new FormatException($"集約定義のJSONの形式が不正です。");
             return Create(config, schema);
         }
-        private static IEnumerable<IAggregateDefine> Create(Config config, Serialized.AppSchemaJson schema) {
+        internal static IEnumerable<IAggregateDefine> Create(Config config, Serialized.AppSchemaJson schema) {
             if (schema.Aggregates == null) throw new FormatException($"集約定義のJSONの形式が不正です。");
             foreach (var rootAggregate in schema.Aggregates) {
                 yield return new JsonDefine(config, rootAggregate, schema);
@@ -38,7 +38,7 @@ namespace HalApplicationBuilder.Core.Definition {
 
         private Aggregate GetAggregateByUniquePath(string uniquePath) {
             var found = Create(_config, _schema)
-                .Select(setting => new RootAggregate(_config, setting))
+                .Select(def => new RootAggregate(_config, def))
                 .SelectMany(root => root.GetDescendantsAndSelf())
                 .SingleOrDefault(aggregate => aggregate.GetUniquePath() == uniquePath);
             if (found == null)

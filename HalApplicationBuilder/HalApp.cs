@@ -41,7 +41,20 @@ namespace HalApplicationBuilder
                     }
                     return types.Select(t => new RootAggregate(config, new Core.Definition.ReflectionDefine(config, t)));
                 });
+        }
+        public static void Configure(IServiceCollection serviceCollection, Assembly? runtimeAssembly, string halappJsonPath) {
+            using var stream = new FileStream(halappJsonPath, FileMode.Open, FileAccess.Read);
+            var schema = System.Text.Json.JsonSerializer.Deserialize<Serialized.AppSchemaJson>(stream);
+            if (schema == null) throw new InvalidOperationException();
 
+            var config = Core.Config.FromJson(schema.Config);
+            Configure(
+                serviceCollection,
+                runtimeAssembly,
+                config,
+                () => Core.Definition.JsonDefine
+                    .Create(config, schema)
+                    .Select(def => new RootAggregate(config, def)));
         }
         private static void Configure(IServiceCollection serviceCollection, Assembly? runtimeAssembly, Config config, Func<IEnumerable<RootAggregate>> rootAggregateBuidler) {
             serviceCollection.AddScoped(_ => config);
@@ -88,10 +101,11 @@ namespace HalApplicationBuilder
                 .ToArray();
 
             log?.WriteLine("コード自動生成: スキーマ定義");
-            var schema = new Serialized.AppSchemaJson {
-                Aggregates = _rootAggregates.Select(a => a.ToJson()).ToArray(),
-            };
             using (var sw = new StreamWriter(Path.Combine(config.OutProjectDir, "halapp.json"), append: false, encoding: Encoding.UTF8)) {
+                var schema = new Serialized.AppSchemaJson {
+                    Config = config.ToJson(onlyRuntimeConfig: true),
+                    Aggregates = _rootAggregates.Select(a => a.ToJson()).ToArray(),
+                };
                 sw.Write(System.Text.Json.JsonSerializer.Serialize(schema, new System.Text.Json.JsonSerializerOptions {
                     Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All), // 日本語用
                     WriteIndented = true,

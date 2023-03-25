@@ -185,7 +185,7 @@ namespace HalApplicationBuilder.Test {
                 Thread.Sleep(1000);
             }
 
-            throw new InvalidOperationException($"テストアプリケーションのURLを特定できません。");
+            throw new InvalidOperationException($"テストアプリケーションのURLを特定できません。起動に失敗している可能性があります。");
         }
 
         private void StdOutReceived(object sender, DataReceivedEventArgs e) {
