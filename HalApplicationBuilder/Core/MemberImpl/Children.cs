@@ -9,11 +9,11 @@ using HalApplicationBuilder.Serialized;
 
 namespace HalApplicationBuilder.Core.MemberImpl {
     internal class Children : AggregateMember {
-        internal Children(Config config, string displayName, bool isPrimary, Aggregate owner, IAggregateSetting childType) : base(config, displayName, isPrimary, owner) {
+        internal Children(Config config, string displayName, bool isPrimary, Aggregate owner, IAggregateDefine childType) : base(config, displayName, isPrimary, owner) {
             _childType = childType;
         }
 
-        private readonly IAggregateSetting _childType;
+        private readonly IAggregateDefine _childType;
 
         internal override IEnumerable<Aggregate> GetChildAggregates()
         {
@@ -166,7 +166,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 Kind = JSON_KEY,
                 Name = this.DisplayName,
                 Children = this.GetChildAggregates().Single().ToJson(),
-                IsPrimary = this.IsPrimary,
+                IsPrimary = this.IsPrimary ? true : null,
             };
         }
     }

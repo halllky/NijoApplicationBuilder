@@ -2,18 +2,21 @@ using System;
 using System.Collections.Generic;
 
 namespace HalApplicationBuilder.Core {
-    internal class ReferredAggregate : Aggregate
-    {
-        internal ReferredAggregate(Config config, IAggregateSetting setting, MemberImpl.Reference referredBy) : base(config, setting, null)
-        {
-            _referredBy = referredBy;
+    /// <summary>
+    /// 集約から別の集約への参照関係
+    /// </summary>
+    internal class ReferenceRelation {
+        internal ReferenceRelation(MemberImpl.Reference source) {
+            Source = source;
+            Target = source.GetRefTarget();
         }
 
-        private readonly MemberImpl.Reference _referredBy;
+        internal MemberImpl.Reference Source { get; }
+        internal Aggregate Target { get; }
 
         internal CodeRendering.RenderedClass GetEFCoreEntiyHavingOnlyReferredNavigationProp() {
-            var refFrom = _referredBy.Owner.ToDbEntity();
-            var refTo = ToDbEntity();
+            var refFrom = Source.Owner.ToDbEntity();
+            var refTo = Target.ToDbEntity();
             return new CodeRendering.RenderedClass {
                 ClassName = refTo.ClassName,
                 CSharpTypeName = refTo.CSharpTypeName,
@@ -21,11 +24,11 @@ namespace HalApplicationBuilder.Core {
                     new CodeRendering.RenderedProperty {
                         Virtual = true,
                         CSharpTypeName = $"ICollection<{refFrom.CSharpTypeName}>",
-                        PropertyName = $"{_referredBy.Owner.Name}_Refered",
+                        PropertyName = $"{Source.Owner.Name}_Refered",
                         Initializer = $"new HashSet<{refFrom.CSharpTypeName}>()",
                     },
                 },
             };
         }
     }
-} 
+}

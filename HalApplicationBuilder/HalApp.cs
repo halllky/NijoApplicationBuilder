@@ -22,7 +22,7 @@ namespace HalApplicationBuilder
                 serviceCollection,
                 null,
                 config,
-                () => rootAggregateTypes.Select(t => new RootAggregate(config, IAggregateSetting.FromReflection(config, t))));
+                () => rootAggregateTypes.Select(t => new RootAggregate(config, new Core.Definition.ReflectionDefine(config, t))));
         }
         public static void Configure(IServiceCollection serviceCollection, Config config, Assembly assembly, string? @namespace = null) {
             Configure(serviceCollection, null, config, assembly, @namespace);
@@ -39,7 +39,7 @@ namespace HalApplicationBuilder
                     if (!string.IsNullOrWhiteSpace(@namespace)) {
                         types = types.Where(type => type.Namespace?.StartsWith(@namespace) == true);
                     }
-                    return types.Select(t => new RootAggregate(config, IAggregateSetting.FromReflection(config, t)));
+                    return types.Select(t => new RootAggregate(config, new Core.Definition.ReflectionDefine(config, t)));
                 });
 
         }
@@ -87,9 +87,16 @@ namespace HalApplicationBuilder
                 .SelectMany(a => a.GetDescendantsAndSelf())
                 .ToArray();
 
-            log?.WriteLine("コード自動生成: 集約定義");
+            log?.WriteLine("コード自動生成: スキーマ定義");
+            var schema = new Serialized.AppSchemaJson {
+                Aggregates = _rootAggregates.Select(a => a.ToJson()).ToArray(),
+            };
             using (var sw = new StreamWriter(Path.Combine(config.OutProjectDir, "halapp.json"), append: false, encoding: Encoding.UTF8)) {
-                sw.Write(System.Text.Json.JsonSerializer.Serialize(_rootAggregates.Select(a => a.ToJson()).ToArray()));
+                sw.Write(System.Text.Json.JsonSerializer.Serialize(schema, new System.Text.Json.JsonSerializerOptions {
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All), // 日本語用
+                    WriteIndented = true,
+                    DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull, // nullのフィールドをシリアライズしない
+                }));
             }
 
             var efSourceDir = Path.Combine(config.OutProjectDir, config.EntityFrameworkDirectoryRelativePath);

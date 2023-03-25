@@ -11,11 +11,11 @@ using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Model;
 
 namespace HalApplicationBuilder.Core.MemberImpl {
     internal class Child : AggregateMember {
-        internal Child(Config config, string displayName, bool isPrimary, Aggregate owner, IAggregateSetting childType) : base(config, displayName, isPrimary, owner) {
+        internal Child(Config config, string displayName, bool isPrimary, Aggregate owner, IAggregateDefine childType) : base(config, displayName, isPrimary, owner) {
             _childType = childType;
         }
 
-        private readonly IAggregateSetting _childType;
+        private readonly IAggregateDefine _childType;
 
         private string NavigationPropName => DisplayName;
         private string SearchConditionPropName => DisplayName;
@@ -169,7 +169,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 Kind = JSON_KEY,
                 Name = this.DisplayName,
                 Child = this.GetChildAggregates().Single().ToJson(),
-                IsPrimary = this.IsPrimary,
+                IsPrimary = this.IsPrimary ? true : null,
             };
         }
     }

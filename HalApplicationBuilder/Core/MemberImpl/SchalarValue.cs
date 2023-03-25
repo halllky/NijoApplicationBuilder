@@ -314,7 +314,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             return new MemberJson {
                 Kind = kind,
                 Name = this.DisplayName,
-                IsPrimary = this.IsPrimary,
+                IsPrimary = this.IsPrimary ? true : null,
                 IsNullable = this.IsNullable(),
             };
         }

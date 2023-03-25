@@ -8,14 +8,14 @@ using HalApplicationBuilder.Serialized;
 
 namespace HalApplicationBuilder.Core.MemberImpl {
     internal class Variation : AggregateMember {
-        internal Variation(Config config, string displayName, bool isPrimary, Aggregate owner, IEnumerable<KeyValuePair<int, IAggregateSetting>> variations) : base(config, displayName, isPrimary, owner) {
+        internal Variation(Config config, string displayName, bool isPrimary, Aggregate owner, IEnumerable<KeyValuePair<int, IAggregateDefine>> variations) : base(config, displayName, isPrimary, owner) {
             if (!variations.Any())
                 throw new InvalidOperationException($"{displayName} の派生型が1つも定義されていない");
 
             _variations = variations;
         }
 
-        private readonly IEnumerable<KeyValuePair<int, IAggregateSetting>> _variations;
+        private readonly IEnumerable<KeyValuePair<int, IAggregateDefine>> _variations;
 
         private IReadOnlyDictionary<int, Aggregate> GetVariations() {
             //var childType = _underlyingProp.PropertyType.GetGenericArguments()[0];
@@ -261,7 +261,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 Kind = JSON_KEY,
                 Name = this.DisplayName,
                 Variations = this.GetVariations().Select(v => v.Value.ToJson()).ToArray(),
-                IsPrimary = this.IsPrimary,
+                IsPrimary = this.IsPrimary ? true : null,
             };
         }
     }

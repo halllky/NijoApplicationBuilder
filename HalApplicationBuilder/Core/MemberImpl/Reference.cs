@@ -11,14 +11,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace HalApplicationBuilder.Core.MemberImpl {
     internal class Reference : AggregateMember {
-        internal Reference(Config config, string displayName, bool isPrimary, Aggregate owner, Func<IAggregateSetting> getRefTarget) : base(config, displayName, isPrimary, owner) {
+        internal Reference(Config config, string displayName, bool isPrimary, Aggregate owner, Func<Aggregate> getRefTarget) : base(config, displayName, isPrimary, owner) {
             _getRefTarget = getRefTarget;
         }
 
-        private readonly Func<IAggregateSetting> _getRefTarget;
-
-        internal ReferredAggregate GetRefTarget() {
-            return new ReferredAggregate(_config, _getRefTarget.Invoke(), this);
+        private readonly Func<Aggregate> _getRefTarget;
+        internal Aggregate GetRefTarget() {
+            return _getRefTarget.Invoke();
         }
 
         internal override IEnumerable<Aggregate> GetChildAggregates()
@@ -224,13 +223,14 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             }
 
             // ナビゲーションプロパティ
+            var relation = new ReferenceRelation(this);
             yield return new NavigationProperty {
                 Virtual = true,
                 CSharpTypeName = refTargetDbEntity.CSharpTypeName,
                 PropertyName = NavigationPropName,
                 OnModelCreating = new OnModelCreatingDTO {
                     Multiplicity = OnModelCreatingDTO.E_Multiplicity.HasOneWithMany,
-                    OpponentName = refTarget.GetEFCoreEntiyHavingOnlyReferredNavigationProp().Properties.Single().PropertyName,
+                    OpponentName = relation.GetEFCoreEntiyHavingOnlyReferredNavigationProp().Properties.Single().PropertyName,
                     ForeignKeys = foreignKeys,
                     OnDelete = Microsoft.EntityFrameworkCore.DeleteBehavior.Restrict,
                 },
@@ -282,7 +282,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 Kind = JSON_KEY,
                 Name = this.DisplayName,
                 RefTarget = this.GetRefTarget().GetUniquePath(),
-                IsPrimary = this.IsPrimary,
+                IsPrimary = this.IsPrimary ? true : null,
             };
         }
     }

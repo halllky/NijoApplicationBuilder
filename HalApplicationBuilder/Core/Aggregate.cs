@@ -12,45 +12,34 @@ namespace HalApplicationBuilder.Core
 {
     internal class Aggregate : ValueObject
     {
-        internal static Aggregate AsChild(Config config, IAggregateSetting setting, AggregateMember parent) {
+        internal static Aggregate AsChild(Config config, IAggregateDefine setting, AggregateMember parent) {
             return new Aggregate(config, setting, parent);
         }
 
-        private protected Aggregate(
-            Config config,
-            IAggregateSetting setting,
-            AggregateMember? parent)
-        {
+        private protected Aggregate(Config config, IAggregateDefine def, AggregateMember? parent) {
             _config = config;
-            Setting = setting;
+            _def = def;
             Parent = parent;
         }
         private protected readonly Config _config;
-        internal IAggregateSetting Setting { get; }
+        private protected readonly IAggregateDefine _def;
 
         internal Guid GUID {
             get {
-                byte[] stringBytes = System.Text.Encoding.UTF8.GetBytes(Setting.DisplayName);
+                byte[] stringBytes = System.Text.Encoding.UTF8.GetBytes(_def.DisplayName);
                 byte[] hashedBytes = System.Security.Cryptography.MD5.Create().ComputeHash(stringBytes);
                 byte[] guidBytes = new byte[16];
                 Array.Copy(hashedBytes, 0, guidBytes, 0, 16);
                 return new Guid(guidBytes);
             }
         }
-        internal string Name => Setting.DisplayName;
+        internal string Name => _def.DisplayName;
+        internal string PhysicalName => System.Web.HttpUtility.HtmlEncode(Name);
 
         internal AggregateMember? Parent { get; }
 
-        private RootAggregate GetRoot() {
-            var aggregate = (Aggregate?)this;
-            while (true) {
-                if (aggregate is RootAggregate root) return root;
-                if (aggregate == null) throw new InvalidOperationException("ルート集約特定失敗");
-                aggregate = aggregate?.Parent?.Owner;
-            }
-        }
         private protected IEnumerable<AggregateMember> GetMembers() {
-            return Setting.GetMembers(this);
+            return _def.GetMembers(this);
         }
 
         internal const string PARENT_NAVIGATION_PROPERTY_NAME = "Parent";
@@ -258,18 +247,34 @@ namespace HalApplicationBuilder.Core
             }
         }
 
+        internal const string UNIQUE_PATH_SEPARATOR = "/";
         /// <summary>
         /// スキーマ内で集約を一意に識別するための文字列
         /// </summary>
         internal string GetUniquePath() {
             var list = new List<string>();
+
+            // ルート集約からこの集約までの経路をパスに加える
             var member = Parent;
             while (member != null) {
-                list.Insert(0, member.DisplayName);
+                list.Insert(0, member.PhysicalName);
                 member = member.Owner.Parent;
             }
-            list.Insert(0, GetRoot().Name);
-            return string.Join(".", list);
+
+            // ルート集約の名前をパスに加える
+            RootAggregate root;
+            var aggregate = (Aggregate?)this;
+            while (true) {
+                if (aggregate is RootAggregate r) {
+                    root = r;
+                    break;
+                }
+                if (aggregate == null) throw new InvalidOperationException("ルート集約特定失敗");
+                aggregate = aggregate?.Parent?.Owner;
+            }
+            list.Insert(0, root.PhysicalName);
+
+            return string.Join(UNIQUE_PATH_SEPARATOR, list);
         }
 
         internal Serialized.AggregateJson ToJson() {
@@ -282,16 +287,16 @@ namespace HalApplicationBuilder.Core
         /// <summary>
         /// この集約が参照している集約を列挙する
         /// </summary>
-        internal IEnumerable<ReferredAggregate> EnumerateRefTargetsRecursively() {
+        internal IEnumerable<ReferenceRelation> EnumerateRefTargetsRecursively() {
             return GetMembers()
                 .Where(m => m is MemberImpl.Reference)
-                .Select(m => ((MemberImpl.Reference)m).GetRefTarget());
+                .Select(m => new ReferenceRelation((MemberImpl.Reference)m));
         }
 
         protected override IEnumerable<object?> ValueObjectIdentifiers()
         {
             yield return Parent;
-            yield return Setting.DisplayName;
+            yield return _def.DisplayName;
         }
     }
 }

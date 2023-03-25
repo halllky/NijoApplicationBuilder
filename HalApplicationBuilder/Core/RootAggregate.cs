@@ -6,7 +6,7 @@ namespace HalApplicationBuilder.Core
 {
     internal class RootAggregate : Aggregate
     {
-        internal RootAggregate(Config config, IAggregateSetting setting) : base(config, setting, null) {
+        internal RootAggregate(Config config, IAggregateDefine setting) : base(config, setting, null) {
         }
 
         internal IEnumerable<Aggregate> GetDescendantsAndSelf() {
