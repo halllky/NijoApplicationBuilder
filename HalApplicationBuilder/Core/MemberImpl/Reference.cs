@@ -248,7 +248,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             yield return new RenderedProperty {
                 CSharpTypeName = typeof(Runtime.ReferenceDTO).FullName!,
                 PropertyName = InstanceModelPropName,
-                Initializer = $"new() {{ {nameof(Runtime.ReferenceDTO.AggreageteGuid)} = new Guid(\"{GetRefTarget().GUID}\") }}",
+                Initializer = $"new() {{ {nameof(Runtime.ReferenceDTO.AggreageteGuid)} = new Guid(\"{GetRefTarget().GetGuid()}\") }}",
             };
         }
 

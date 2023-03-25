@@ -86,7 +86,7 @@ namespace HalApplicationBuilder.CodeRendering.AspNetMvc {
                 + $" {aggregate.ToUiInstanceClass().CSharpTypeName}>";
         }
         private static string GetControllerName(Aggregate aggregate) {
-            return $"{aggregate.Name}Controller";
+            return $"{aggregate.GetDisplayName()}Controller";
         }
         private string GetMultiViewName(RootAggregate rootAggregate) {
             return $"~/{Path.Combine(_config.MvcViewDirectoryRelativePath, new MvcMultiViewTemplate(_config, rootAggregate).FileName)}";
@@ -116,7 +116,7 @@ namespace HalApplicationBuilder.CodeRendering.AspNetMvc {
             var modelType = typeof(Runtime.AspNetMvc.MultiViewModel<,>).Namespace + "." + nameof(Runtime.AspNetMvc.MultiViewModel<object, object>);
             _modelTypeFullname = $"{modelType}<{searchCondition.CSharpTypeName}, {searchResult.CSharpTypeName}>";
 
-            FileName = $"{rootAggregate.Name}__MultiView.cshtml";
+            FileName = $"{rootAggregate.GetFileSafeName()}__MultiView.cshtml";
         }
         internal string FileName { get; }
 
@@ -139,7 +139,7 @@ namespace HalApplicationBuilder.CodeRendering.AspNetMvc {
 
             _boundObjectName = nameof(Runtime.AspNetMvc.SingleViewModel<Runtime.UIInstanceBase>.Item);
 
-            FileName = $"{rootAggregate.Name}__SingleView.cshtml";
+            FileName = $"{rootAggregate.GetFileSafeName()}__SingleView.cshtml";
         }
         internal string FileName { get; }
 
@@ -161,7 +161,7 @@ namespace HalApplicationBuilder.CodeRendering.AspNetMvc {
 
             _boundObjectName = nameof(Runtime.AspNetMvc.CreateViewModel<Runtime.UIInstanceBase>.Item);
 
-            FileName = $"{rootAggregate.Name}__CreateView.cshtml";
+            FileName = $"{rootAggregate.GetFileSafeName()}__CreateView.cshtml";
         }
         internal string FileName { get; }
 
@@ -185,7 +185,7 @@ namespace HalApplicationBuilder.CodeRendering.AspNetMvc {
 
             _showRemoveButton = $"Model.{nameof(Runtime.UIInstanceBase.halapp_fields)}.{nameof(Runtime.HalappViewState.IsRoot)} == false";
 
-            FileName = $"_{aggregate.Name}__Partial.cshtml"; ;
+            FileName = $"_{aggregate.GetFileSafeName()}__Partial.cshtml"; ;
         }
 
         internal string FileName { get; }

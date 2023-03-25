@@ -5,12 +5,11 @@ using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.DotnetEx;
 using HalApplicationBuilder.CodeRendering;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Newtonsoft.Json.Linq;
+using System.Text.RegularExpressions;
 
 namespace HalApplicationBuilder.Core
 {
-    internal class Aggregate : ValueObject
+    internal partial class Aggregate : ValueObject
     {
         internal static Aggregate AsChild(Config config, IAggregateDefine setting, AggregateMember parent) {
             return new Aggregate(config, setting, parent);
@@ -24,17 +23,13 @@ namespace HalApplicationBuilder.Core
         private protected readonly Config _config;
         private protected readonly IAggregateDefine _def;
 
-        internal Guid GUID {
-            get {
-                byte[] stringBytes = System.Text.Encoding.UTF8.GetBytes(_def.DisplayName);
-                byte[] hashedBytes = System.Security.Cryptography.MD5.Create().ComputeHash(stringBytes);
-                byte[] guidBytes = new byte[16];
-                Array.Copy(hashedBytes, 0, guidBytes, 0, 16);
-                return new Guid(guidBytes);
-            }
-        }
-        internal string Name => _def.DisplayName;
-        internal string PhysicalName => System.Web.HttpUtility.HtmlEncode(Name);
+        internal Guid GetGuid() => new HashedString(GetUniquePath()).Guid;
+        internal string GetDisplayName() => _def.DisplayName;
+        internal string GetCSharpSafeName() => $"{MyRegex().Replace(GetDisplayName(), "")}_{MyRegex().Replace(GetGuid().ToString(), "")}";
+        internal string GetFileSafeName() => new HashedString(GetUniquePath()).ToFileSafe();
+        /// <summary>C#の型名やメンバー名に使えない文字を除去する正規表現</summary>
+        [GeneratedRegex("[^\\w\\sぁ-んァ-ン一-龯]")]
+        private static partial Regex MyRegex();
 
         internal AggregateMember? Parent { get; }
 
@@ -80,9 +75,9 @@ namespace HalApplicationBuilder.Core
             /* 被参照RefのナビゲーションプロパティはRefの方でpartialでレンダリングしているのでここには無い */
 
             return new RenderedEFCoreEntity {
-                ClassName = Name,
-                CSharpTypeName = $"{_config.EntityNamespace}.{Name}",
-                DbSetName = Name,
+                ClassName = GetCSharpSafeName(),
+                CSharpTypeName = $"{_config.EntityNamespace}.{GetCSharpSafeName()}",
+                DbSetName = GetCSharpSafeName(),
                 PrimaryKeys = pks,
                 NonPrimaryKeys = nonPks,
                 NavigationProperties = navigations,
@@ -90,16 +85,15 @@ namespace HalApplicationBuilder.Core
         }
 
         internal RenderedClass ToUiInstanceClass() {
-            var className = Name;
             var props = GetMembers().SelectMany(m => m.ToInstanceModelMember());
             return new RenderedClass {
-                ClassName = className,
-                CSharpTypeName = $"{_config.MvcModelNamespace}.{className}",
+                ClassName = GetCSharpSafeName(),
+                CSharpTypeName = $"{_config.MvcModelNamespace}.{GetCSharpSafeName()}",
                 Properties = props,
             };
         }
         internal RenderedClass ToSearchConditionClass() {
-            var className = $"{Name}__SearchCondition";
+            var className = $"{GetCSharpSafeName()}__SearchCondition";
             var props = GetMembers().SelectMany(m => m.ToSearchConditionMember());
             return new RenderedClass {
                 ClassName = className,
@@ -108,7 +102,7 @@ namespace HalApplicationBuilder.Core
             };
         }
         internal RenderedClass ToSearchResultClass() {
-            var className = $"{Name}__SearchResult";
+            var className = $"{GetCSharpSafeName()}__SearchResult";
             var props = GetMembers().SelectMany(m => m.ToSearchResultMember());
             return new RenderedClass {
                 ClassName = className,
@@ -117,7 +111,7 @@ namespace HalApplicationBuilder.Core
             };
         }
 
-        internal System.Reflection.MethodInfo GetAutoCompleteMethod(System.Reflection.Assembly runtimeAssembly, Microsoft.EntityFrameworkCore.DbContext dbContext) {
+        internal MethodInfo GetAutoCompleteMethod(Assembly runtimeAssembly, Microsoft.EntityFrameworkCore.DbContext dbContext) {
             var dbContextType = dbContext.GetType();
             var method = dbContextType.GetMethod(GetAutoCompleteSourceMethodName());
             if (method == null) throw new InvalidOperationException($"{dbContextType.Name} にメソッド {GetAutoCompleteSourceMethodName()} が存在しません。");
@@ -132,9 +126,9 @@ namespace HalApplicationBuilder.Core
             };
             return dto;
         }
-        private string GetAutoCompleteSourceMethodName() => $"LoadAutoCompleteSource_{Name}";
+        private string GetAutoCompleteSourceMethodName() => $"LoadAutoCompleteSource_{GetCSharpSafeName()}";
 
-        internal void RenderSearchCondition(CodeRendering.RenderingContext context) {
+        internal void RenderSearchCondition(RenderingContext context) {
 
             context.Template.WriteLine($"<div class=\"flex flex-col\">");
 
@@ -156,7 +150,7 @@ namespace HalApplicationBuilder.Core
             context.Template.WriteLine($"</div>");
         }
 
-        internal void RenderAspNetMvcPartialView(CodeRendering.RenderingContext context) {
+        internal void RenderAspNetMvcPartialView(RenderingContext context) {
 
             context.Template.WriteLine($"<div class=\"flex flex-col\">");
 
@@ -257,7 +251,7 @@ namespace HalApplicationBuilder.Core
             // ルート集約からこの集約までの経路をパスに加える
             var member = Parent;
             while (member != null) {
-                list.Insert(0, member.PhysicalName);
+                list.Insert(0, member.DisplayName);
                 member = member.Owner.Parent;
             }
 
@@ -272,14 +266,17 @@ namespace HalApplicationBuilder.Core
                 if (aggregate == null) throw new InvalidOperationException("ルート集約特定失敗");
                 aggregate = aggregate?.Parent?.Owner;
             }
-            list.Insert(0, root.PhysicalName);
+            list.Insert(0, root.GetDisplayName());
 
-            return string.Join(UNIQUE_PATH_SEPARATOR, list);
+            return string.Join(
+                UNIQUE_PATH_SEPARATOR,
+                list.Select(displayName => System.Web.HttpUtility.HtmlEncode(displayName)));
         }
 
         internal Serialized.AggregateJson ToJson() {
             return new Serialized.AggregateJson {
-                Name = Name,
+                Guid = GetGuid(),
+                Name = GetDisplayName(),
                 Members = GetMembers().Select(m => m.ToJson()).ToArray(),
             };
         }
@@ -297,6 +294,11 @@ namespace HalApplicationBuilder.Core
         {
             yield return Parent;
             yield return _def.DisplayName;
+        }
+
+        public override string ToString()
+        {
+            return GetUniquePath();
         }
     }
 }

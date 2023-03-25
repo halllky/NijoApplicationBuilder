@@ -259,15 +259,15 @@ namespace HalApplicationBuilder
             }
             internal Core.Aggregate? FindAggregate(Guid aggregateGuid) {
                 return GetAllAggregates().SingleOrDefault(a => {
-                    if (aggregateGuid == a.GUID) return true;
+                    if (aggregateGuid == a.GetGuid()) return true;
                     return false;
                 });
             }
 
             public IEnumerable<Runtime.MenuItem> GetRootNavigations() {
                 return _rootAggregates.Select(aggregate => new Runtime.MenuItem {
-                    LinkText = aggregate.Name,
-                    AspController = aggregate.Name,
+                    LinkText = aggregate.GetDisplayName(),
+                    AspController = aggregate.GetDisplayName(),
                 });
             }
 

@@ -23,8 +23,6 @@ namespace HalApplicationBuilder.Core
         internal string DisplayName { get; }
         internal bool IsPrimary { get; }
 
-        internal string PhysicalName => System.Web.HttpUtility.HtmlEncode(DisplayName);
-
         internal abstract IEnumerable<Aggregate> GetChildAggregates();
 
         // AggregateMember => ClassDef

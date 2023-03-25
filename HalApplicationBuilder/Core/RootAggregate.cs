@@ -44,7 +44,7 @@ namespace HalApplicationBuilder.Core
             }
             return dto;
         }
-        private string GetSearchMethodName() => $"Search_{Name}";
+        private string GetSearchMethodName() => $"Search_{GetCSharpSafeName()}";
     }
 }
 

@@ -41,10 +41,10 @@ namespace HalApplicationBuilder.Core.MemberImpl {
         private string NavigationPropName(RenderedEFCoreEntity variationDbEntity) => $"{DbPropName}__{variationDbEntity.ClassName}";
 
         /// <summary>アンダースコア2連だと ArgumentException: The name of an HTML field cannot be null or empty... になる</summary>
-        private string SearchConditionPropName(KeyValuePair<int, Aggregate> variation) => $"{DisplayName}_{variation.Value.Name}";
+        private string SearchConditionPropName(KeyValuePair<int, Aggregate> variation) => $"{DisplayName}_{variation.Value.GetCSharpSafeName()}";
         private string SearchResultPropName => DisplayName;
         private string InstanceModelTypeSwitchPropName => DisplayName;
-        private string InstanceModelTypeDetailPropName(KeyValuePair<int, Aggregate> variation) => $"{DisplayName}_{variation.Value.Name}";
+        private string InstanceModelTypeDetailPropName(KeyValuePair<int, Aggregate> variation) => $"{DisplayName}_{variation.Value.GetCSharpSafeName()}";
 
 
         internal override IEnumerable<Aggregate> GetChildAggregates() {
@@ -63,7 +63,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
 
                 context.Template.WriteLine($"<label>");
                 context.Template.WriteLine($"    <input type=\"checkbox\" asp-for=\"{key}\">");
-                context.Template.WriteLine($"    {variation.Value.Name}");
+                context.Template.WriteLine($"    {variation.Value.GetDisplayName()}");
                 context.Template.WriteLine($"</label>");
             }
         }
@@ -77,7 +77,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 context.Template.WriteLine($"<div>");
                 context.Template.WriteLine($"    <label>");
                 context.Template.WriteLine($"        <input type=\"radio\" asp-for=\"{type}\" value=\"{variation.Key}\" />");
-                context.Template.WriteLine($"        {variation.Value.Name}");
+                context.Template.WriteLine($"        {variation.Value.GetDisplayName()}");
                 context.Template.WriteLine($"    </label>");
 
                 context.Template.PushIndent($"    ");
