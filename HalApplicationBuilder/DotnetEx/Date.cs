@@ -9,12 +9,12 @@ namespace HalApplicationBuilder.DotnetEx {
 
         public DateTime? Value { get; }
 
-        protected override IEnumerable<object> ValueObjectIdentifiers() {
+        protected override IEnumerable<object?> ValueObjectIdentifiers() {
             yield return Value;
         }
 
         public override string ToString() {
-            return Value?.ToShortDateString();
+            return Value?.ToShortDateString() ?? string.Empty;
         }
     }
 }
