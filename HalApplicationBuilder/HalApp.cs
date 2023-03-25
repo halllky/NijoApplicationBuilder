@@ -84,8 +84,13 @@ namespace HalApplicationBuilder
 
             var config = _services.GetRequiredService<Config>();
             var allAggregates = _rootAggregates
-                .Concat(_rootAggregates.SelectMany(a => a.GetDescendants()))
+                .SelectMany(a => a.GetDescendantsAndSelf())
                 .ToArray();
+
+            log?.WriteLine("コード自動生成: 集約定義");
+            using (var sw = new StreamWriter(Path.Combine(config.OutProjectDir, "halapp.json"), append: false, encoding: Encoding.UTF8)) {
+                sw.Write(System.Text.Json.JsonSerializer.Serialize(_rootAggregates.Select(a => a.ToJson()).ToArray()));
+            }
 
             var efSourceDir = Path.Combine(config.OutProjectDir, config.EntityFrameworkDirectoryRelativePath);
             if (Directory.Exists(efSourceDir)) Directory.Delete(efSourceDir, recursive: true);

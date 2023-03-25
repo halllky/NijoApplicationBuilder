@@ -6,6 +6,7 @@ using System.Reflection;
 using HalApplicationBuilder.DotnetEx;
 using HalApplicationBuilder.CodeRendering;
 using HalApplicationBuilder.Runtime;
+using HalApplicationBuilder.Serialized;
 
 namespace HalApplicationBuilder.Core.MemberImpl {
     internal class SchalarValue : AggregateMember {
@@ -29,6 +30,11 @@ namespace HalApplicationBuilder.Core.MemberImpl {
 
         internal SchalarValue(Config config, string displayName, bool isPrimary, Aggregate owner, Type propertyType) : base(config, displayName, isPrimary, owner) {
             _propertyType = propertyType;
+        }
+        internal SchalarValue(Config config, string displayName, bool isPrimary, Aggregate owner, Type propertyTypeWithoutNullable, bool isNullable) : base(config, displayName, isPrimary, owner) {
+            _propertyType = isNullable && propertyTypeWithoutNullable != typeof(string)
+                ? typeof(Nullable<>).MakeGenericType(propertyTypeWithoutNullable)
+                : propertyTypeWithoutNullable;
         }
 
         private readonly Type _propertyType;
@@ -274,6 +280,42 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             yield return new RenderedProperty {
                 CSharpTypeName = GetCSharpTypeName(),
                 PropertyName = SearchResultPropName,
+            };
+        }
+
+        private const string ENUM_PREFIX = "enum::";
+        internal static Type? TryParseTypeName(string kind) {
+            if (kind == "string") return typeof(string);
+            if (kind == "bool") return typeof(bool);
+            if (kind == "int") return typeof(int);
+            if (kind == "float") return typeof(float);
+            if (kind == "decimal") return typeof(decimal);
+            if (kind == "datetime") return typeof(DateTime);
+            if (kind.StartsWith(ENUM_PREFIX)) {
+                var assembly = Assembly.GetEntryAssembly(); // TODO: enumは必ずしもEntryAssemblyにあるとは限らない
+                if (assembly == null) return null;
+                var enumType = assembly.GetType(kind.Substring(ENUM_PREFIX.Length));
+                return enumType;
+            }
+            return null;
+        }
+        internal override MemberJson ToJson() {
+            string kind;
+            var type = GetPropertyTypeExceptNullable();
+            if (type == typeof(string)) kind = "string";
+            else if (type == typeof(bool)) kind = "bool";
+            else if (type == typeof(int)) kind = "int";
+            else if (type == typeof(float)) kind = "float";
+            else if (type == typeof(decimal)) kind = "decimal";
+            else if (type == typeof(DateTime)) kind = "datetime";
+            else if (type.IsEnum) kind = ENUM_PREFIX + type.FullName;
+            else throw new InvalidOperationException();
+
+            return new MemberJson {
+                Kind = kind,
+                Name = this.DisplayName,
+                IsPrimary = this.IsPrimary,
+                IsNullable = this.IsNullable(),
             };
         }
     }

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.CodeRendering;
 using HalApplicationBuilder.Runtime;
+using HalApplicationBuilder.Serialized;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Model;
 
 namespace HalApplicationBuilder.Core.MemberImpl {
@@ -160,6 +161,16 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                     Initializer = childProp.Initializer,
                 };
             }
+        }
+
+        internal const string JSON_KEY = "child";
+        internal override MemberJson ToJson() {
+            return new MemberJson {
+                Kind = JSON_KEY,
+                Name = this.DisplayName,
+                Child = this.GetChildAggregates().Single().ToJson(),
+                IsPrimary = this.IsPrimary,
+            };
         }
     }
 }

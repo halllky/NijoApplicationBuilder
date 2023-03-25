@@ -50,6 +50,9 @@ namespace HalApplicationBuilder.Core
         internal abstract void MapDbToUi(object dbInstance, object uiInstance, Runtime.IInstanceConvertingContext context);
         internal abstract void MapUiToDb(object uiInstance, object dbInstance, Runtime.IInstanceConvertingContext context);
 
+        // Serialize
+        internal abstract Serialized.MemberJson ToJson();
+
         protected sealed override IEnumerable<object?> ValueObjectIdentifiers()
         {
             yield return Owner;

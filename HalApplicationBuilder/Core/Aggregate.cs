@@ -22,22 +22,22 @@ namespace HalApplicationBuilder.Core
             AggregateMember? parent)
         {
             _config = config;
-            _aggregateSetting = setting;
+            Setting = setting;
             Parent = parent;
         }
         private protected readonly Config _config;
-        private protected readonly IAggregateSetting _aggregateSetting;
+        internal IAggregateSetting Setting { get; }
 
         internal Guid GUID {
             get {
-                byte[] stringBytes = System.Text.Encoding.UTF8.GetBytes(_aggregateSetting.DisplayName);
+                byte[] stringBytes = System.Text.Encoding.UTF8.GetBytes(Setting.DisplayName);
                 byte[] hashedBytes = System.Security.Cryptography.MD5.Create().ComputeHash(stringBytes);
                 byte[] guidBytes = new byte[16];
                 Array.Copy(hashedBytes, 0, guidBytes, 0, 16);
                 return new Guid(guidBytes);
             }
         }
-        internal string Name => _aggregateSetting.DisplayName;
+        internal string Name => Setting.DisplayName;
 
         internal AggregateMember? Parent { get; }
 
@@ -50,7 +50,7 @@ namespace HalApplicationBuilder.Core
             }
         }
         private protected IEnumerable<AggregateMember> GetMembers() {
-            return _aggregateSetting.GetMembers(this);
+            return Setting.GetMembers(this);
         }
 
         internal const string PARENT_NAVIGATION_PROPERTY_NAME = "Parent";
@@ -272,6 +272,13 @@ namespace HalApplicationBuilder.Core
             return string.Join(".", list);
         }
 
+        internal Serialized.AggregateJson ToJson() {
+            return new Serialized.AggregateJson {
+                Name = Name,
+                Members = GetMembers().Select(m => m.ToJson()).ToArray(),
+            };
+        }
+
         /// <summary>
         /// この集約が参照している集約を列挙する
         /// </summary>
@@ -284,7 +291,7 @@ namespace HalApplicationBuilder.Core
         protected override IEnumerable<object?> ValueObjectIdentifiers()
         {
             yield return Parent;
-            yield return _aggregateSetting;
+            yield return Setting.DisplayName;
         }
     }
 }

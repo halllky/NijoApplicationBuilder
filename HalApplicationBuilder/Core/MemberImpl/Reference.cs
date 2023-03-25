@@ -6,18 +6,19 @@ using System.Reflection;
 using HalApplicationBuilder.CodeRendering;
 using HalApplicationBuilder.CodeRendering.AspNetMvc;
 using HalApplicationBuilder.Runtime;
+using HalApplicationBuilder.Serialized;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace HalApplicationBuilder.Core.MemberImpl {
     internal class Reference : AggregateMember {
-        internal Reference(Config config, string displayName, bool isPrimary, Aggregate owner, IAggregateSetting refTarget) : base(config, displayName, isPrimary, owner) {
-            _refTarget = refTarget;
+        internal Reference(Config config, string displayName, bool isPrimary, Aggregate owner, Func<IAggregateSetting> getRefTarget) : base(config, displayName, isPrimary, owner) {
+            _getRefTarget = getRefTarget;
         }
 
-        private readonly IAggregateSetting _refTarget;
+        private readonly Func<IAggregateSetting> _getRefTarget;
 
         internal ReferredAggregate GetRefTarget() {
-            return new ReferredAggregate(_config, _refTarget, this);
+            return new ReferredAggregate(_config, _getRefTarget.Invoke(), this);
         }
 
         internal override IEnumerable<Aggregate> GetChildAggregates()
@@ -272,6 +273,16 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             yield return new RenderedProperty {
                 CSharpTypeName = "string",
                 PropertyName = SearchResultInstanceNamePropName,
+            };
+        }
+
+        internal const string JSON_KEY = "ref";
+        internal override MemberJson ToJson() {
+            return new MemberJson {
+                Kind = JSON_KEY,
+                Name = this.DisplayName,
+                RefTarget = this.GetRefTarget().GetUniquePath(),
+                IsPrimary = this.IsPrimary,
             };
         }
     }

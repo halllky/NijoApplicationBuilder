@@ -9,6 +9,12 @@ namespace HalApplicationBuilder.Core
         internal RootAggregate(Config config, IAggregateSetting setting) : base(config, setting, null) {
         }
 
+        internal IEnumerable<Aggregate> GetDescendantsAndSelf() {
+            yield return this;
+            foreach (var descendant in GetDescendants()) {
+                yield return descendant;
+            }
+        }
         internal IEnumerable<Aggregate> GetDescendants() {
             foreach (var member in GetMembers()) {
                 foreach (var child in member.GetChildAggregates()) {

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.CodeRendering;
 using HalApplicationBuilder.Runtime;
+using HalApplicationBuilder.Serialized;
 
 namespace HalApplicationBuilder.Core.MemberImpl {
     internal class Children : AggregateMember {
@@ -157,6 +158,16 @@ namespace HalApplicationBuilder.Core.MemberImpl {
 
         internal override IEnumerable<RenderedProperty> ToSearchResultMember() {
             yield break;
+        }
+
+        internal const string JSON_KEY = "children";
+        internal override MemberJson ToJson() {
+            return new MemberJson {
+                Kind = JSON_KEY,
+                Name = this.DisplayName,
+                Children = this.GetChildAggregates().Single().ToJson(),
+                IsPrimary = this.IsPrimary,
+            };
         }
     }
 }

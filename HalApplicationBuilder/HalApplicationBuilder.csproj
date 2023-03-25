@@ -22,6 +22,7 @@
 		<Folder Include="CodeRendering\" />
 		<Folder Include="Core\" />
 		<Folder Include="Runtime\" />
+		<Folder Include="Serialized\" />
 	</ItemGroup>
 	<ItemGroup>
 	  <None Remove="ReArch\" />
@@ -30,6 +31,7 @@
 	  <None Remove="CodeRendering\" />
 	  <None Remove="Core\" />
 	  <None Remove="Runtime\" />
+	  <None Remove="Serialized\" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Update="Core\AggregateInstanceTemplate.tt">

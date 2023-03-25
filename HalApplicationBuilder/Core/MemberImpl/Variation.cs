@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.CodeRendering;
 using HalApplicationBuilder.Runtime;
+using HalApplicationBuilder.Serialized;
 
 namespace HalApplicationBuilder.Core.MemberImpl {
     internal class Variation : AggregateMember {
@@ -251,6 +252,16 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             yield return new RenderedProperty {
                 CSharpTypeName = "int?",
                 PropertyName = SearchResultPropName,
+            };
+        }
+
+        internal const string JSON_KEY = "variation";
+        internal override MemberJson ToJson() {
+            return new MemberJson {
+                Kind = JSON_KEY,
+                Name = this.DisplayName,
+                Variations = this.GetVariations().Select(v => v.Value.ToJson()).ToArray(),
+                IsPrimary = this.IsPrimary,
             };
         }
     }
