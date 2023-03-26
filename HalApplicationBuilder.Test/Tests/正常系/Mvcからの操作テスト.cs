@@ -83,7 +83,7 @@ namespace HalApplicationBuilder.Test.Tests.正常系 {
         [Fact]
         public void 正常系テスト_パターン網羅された集約定義() {
             using var project = DistMvcProject.Use(_console);
-            project.GenerateCode(typeof(HalApplicationBuilder.Test.Tests.正常系.ルート集約1).Namespace);
+            project.GenerateCode(typeof(HalApplicationBuilder.Test.Tests.正常系.網羅パターン.ルート集約1).Namespace);
             project.Build();
             using var driver = project.Run();
 

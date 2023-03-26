@@ -5,7 +5,7 @@ using HalApplicationBuilder.DotnetEx;
 
 #pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければなりません
 
-namespace HalApplicationBuilder.Test.Tests.正常系 {
+namespace HalApplicationBuilder.Test.Tests.正常系.網羅パターン {
 
     [Aggregate]
     public class ルート集約1 {
@@ -124,6 +124,13 @@ namespace HalApplicationBuilder.Test.Tests.正常系 {
 
     [Aggregate]
     public class ルート集約2 {
+        [Key]
+        public RefTo<ルート集約1> 外部参照主キー1A { get; set; }
+        [Key]
+        public RefTo<ルート集約1> 外部参照主キー1B { get; set; }
+    }
+    [Aggregate]
+    public class ルート集約3 {
         [Key]
         public RefTo<ルート集約1> 外部参照主キー1A { get; set; }
         [Key]

@@ -24,7 +24,7 @@ namespace HalApplicationBuilder.Core {
                     new CodeRendering.RenderedProperty {
                         Virtual = true,
                         CSharpTypeName = $"ICollection<{refFrom.CSharpTypeName}>",
-                        PropertyName = $"{Source.GetCSharpSafeName()}_Refered",
+                        PropertyName = $"Refered_{Source.Owner.GetCSharpSafeName()}_{Source.GetCSharpSafeName()}",
                         Initializer = $"new HashSet<{refFrom.CSharpTypeName}>()",
                     },
                 },
