@@ -1,5 +1,6 @@
 using System;
 using HalApplicationBuilder.Core;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace HalApplicationBuilder.Serialized {
@@ -18,7 +19,7 @@ namespace HalApplicationBuilder.Serialized {
         [JsonPropertyName("children")]
         public AggregateJson? Children { get; set; }
         [JsonPropertyName("variations")]
-        public AggregateJson[]? Variations { get; set; }
+        public Dictionary<int, AggregateJson>? Variations { get; set; }
         [JsonPropertyName("refTarget")]
         public string? RefTarget { get; set; }
     }

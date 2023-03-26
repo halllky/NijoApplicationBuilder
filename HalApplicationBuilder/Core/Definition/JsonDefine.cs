@@ -79,6 +79,13 @@ namespace HalApplicationBuilder.Core.Definition {
                     var children = new JsonDefine(_config, member.Children, _schema);
                     yield return new MemberImpl.Children(_config, displayName, isPrimary, owner, children);
 
+                } else if (member.Kind == MemberImpl.Variation.JSON_KEY) {
+                    if (member.Variations == null) throw new FormatException($"variationsが空です。");
+                    var variations = member.Variations.ToDictionary(
+                        v => v.Key,
+                        v => (IAggregateDefine)new JsonDefine(_config, v.Value, _schema));
+                    yield return new MemberImpl.Variation(_config, displayName, isPrimary, owner, variations);
+
                 } else {
                     throw new FormatException($"不正な種類です: {member.Kind}");
                 }

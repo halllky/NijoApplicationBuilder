@@ -260,7 +260,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             return new MemberJson {
                 Kind = JSON_KEY,
                 Name = this.DisplayName,
-                Variations = this.GetVariations().Select(v => v.Value.ToJson()).ToArray(),
+                Variations = this.GetVariations().ToDictionary(v => v.Key, v => v.Value.ToJson()),
                 IsPrimary = this.IsPrimary ? true : null,
             };
         }
