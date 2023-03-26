@@ -32,6 +32,14 @@ namespace HalApplicationBuilder.Core
         private static partial Regex MyRegex();
 
         internal AggregateMember? Parent { get; }
+        internal IEnumerable<Aggregate> GetDescendants() {
+            foreach (var child in GetMembers().SelectMany(m => m.GetChildAggregates())) {
+                yield return child;
+                foreach (var grandChild in child.GetDescendants()) {
+                    yield return grandChild;
+                }
+            }
+        }
 
         private protected IEnumerable<AggregateMember> GetMembers() {
             return _def.GetMembers(this);

@@ -15,13 +15,6 @@ namespace HalApplicationBuilder.Core
                 yield return descendant;
             }
         }
-        internal IEnumerable<Aggregate> GetDescendants() {
-            foreach (var member in GetMembers()) {
-                foreach (var child in member.GetChildAggregates()) {
-                    yield return child;
-                }
-            }
-        }
 
         internal System.Reflection.MethodInfo GetSearchMethod(System.Reflection.Assembly runtimeAssembly, Microsoft.EntityFrameworkCore.DbContext dbContext) {
             var dbContextType = dbContext.GetType();
