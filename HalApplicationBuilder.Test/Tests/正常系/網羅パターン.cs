@@ -66,18 +66,14 @@ namespace HalApplicationBuilder.Test.Tests.正常系.網羅パターン {
     public class 子_キーなし {
         public float? 非主キー { get; set; }
 
-        [AggregateId("agg-1-1")]
         public Child<孫_キーあり> 孫キーあり単数1 { get; set; }
-        [AggregateId("agg-1-2")]
         public Child<孫_キーあり> 孫キーあり単数2 { get; set; }
         public Child<孫_キーなし> 孫キーなし単数1 { get; set; }
         public Child<孫_キーなし> 孫キーなし単数2 { get; set; }
 
         public Children<孫_キーあり> 孫キーあり複数1 { get; set; }
         public Children<孫_キーあり> 孫キーあり複数2 { get; set; }
-        [AggregateId("agg-2-1")]
         public Children<孫_キーなし> 孫キーなし複数1 { get; set; }
-        [AggregateId("agg-2-2")]
         public Children<孫_キーなし> 孫キーなし複数2 { get; set; }
 
         [Variation(0, typeof(孫VariationImpl_Keyあり))]
