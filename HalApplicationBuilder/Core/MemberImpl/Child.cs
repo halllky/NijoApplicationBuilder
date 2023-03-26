@@ -135,7 +135,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 PropertyName = NavigationPropName,
                 Initializer = null,
                 OnModelCreating = new OnModelCreatingDTO {
-                    Multiplicity = OnModelCreatingDTO.E_Multiplicity.HasManyWithOne,
+                    Multiplicity = OnModelCreatingDTO.E_Multiplicity.HasOneWithOne,
                     OpponentName = Aggregate.PARENT_NAVIGATION_PROPERTY_NAME,
                     ForeignKeys = childDbEntity.PrimaryKeys.Where(pk => pk is RenderedParentPkProperty),
                     OnDelete = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade,
