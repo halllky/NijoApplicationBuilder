@@ -19,7 +19,13 @@ namespace HalApplicationBuilder.Core.MemberImpl {
 
         private string NavigationPropName => DisplayName;
         private string SearchConditionPropName => DisplayName;
-        private string SearchResultPropName(RenderedProperty childProp) => childProp.PropertyName; // TODO 親子でプロパティ名が重複する場合を考慮する
+        private string SearchResultPropName(RenderedProperty childProp) {
+            // 親子の間でメンバー名が重複する場合の考慮
+            var path = GetMemberPath().Path;
+            return path.Any()
+                ? $"{string.Join("_", path.Select(m => m.DisplayName))}_{childProp.PropertyName}"
+                : childProp.PropertyName;
+        }
         private string InstanceModelPropName => DisplayName;
 
         internal override IEnumerable<Aggregate> GetChildAggregates() {

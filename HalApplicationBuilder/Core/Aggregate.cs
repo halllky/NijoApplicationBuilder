@@ -255,30 +255,16 @@ namespace HalApplicationBuilder.Core
         /// </summary>
         internal string GetUniquePath() {
             var list = new List<string>();
-
-            // ルート集約からこの集約までの経路をパスに加える
-            var member = Parent;
-            while (member != null) {
-                list.Insert(0, member.DisplayName);
-                member = member.Owner.Parent;
+            if (Parent == null) {
+                list.Add(GetDisplayName());
+            } else {
+                var memberPath = Parent.GetMemberPath();
+                list.Add(memberPath.Root.GetDisplayName());
+                list.AddRange(memberPath.Path.Select(m => m.DisplayName));
             }
-
-            // ルート集約の名前をパスに加える
-            RootAggregate root;
-            var aggregate = (Aggregate?)this;
-            while (true) {
-                if (aggregate is RootAggregate r) {
-                    root = r;
-                    break;
-                }
-                if (aggregate == null) throw new InvalidOperationException("ルート集約特定失敗");
-                aggregate = aggregate?.Parent?.Owner;
-            }
-            list.Insert(0, root.GetDisplayName());
-
             return string.Join(
                 UNIQUE_PATH_SEPARATOR,
-                list.Select(displayName => System.Web.HttpUtility.HtmlEncode(displayName)));
+                list.Select(name => System.Web.HttpUtility.HtmlEncode(name)));
         }
 
         internal Serialized.AggregateJson ToJson() {

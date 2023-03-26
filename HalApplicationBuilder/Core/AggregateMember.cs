@@ -23,6 +23,33 @@ namespace HalApplicationBuilder.Core
         internal string DisplayName { get; }
         internal bool IsPrimary { get; }
 
+        internal class MemberPath {
+            internal required RootAggregate Root { get; init; }
+            /// <summary>よりルートに近いほうから順番</summary>
+            internal required IReadOnlyList<AggregateMember> Path { get; init; }
+        }
+        internal MemberPath GetMemberPath() {
+            var path = new List<AggregateMember>();
+            var member = this;
+            while (member != null) {
+                path.Insert(0, member);
+                member = member.Owner.Parent;
+            }
+
+            RootAggregate root;
+            var aggregate = (Aggregate?)Owner;
+            while (true) {
+                if (aggregate is RootAggregate r) {
+                    root = r;
+                    break;
+                }
+                if (aggregate == null) throw new InvalidOperationException("ルート集約特定失敗");
+                aggregate = aggregate?.Parent?.Owner;
+            }
+
+            return new MemberPath { Root = root, Path = path };
+        }
+
         internal abstract IEnumerable<Aggregate> GetChildAggregates();
 
         // AggregateMember => ClassDef
