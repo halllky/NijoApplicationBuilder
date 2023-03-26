@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.DotnetEx;
 using HalApplicationBuilder.CodeRendering;
-using System.Text.RegularExpressions;
 
 namespace HalApplicationBuilder.Core
 {
@@ -25,11 +24,8 @@ namespace HalApplicationBuilder.Core
 
         internal Guid GetGuid() => new HashedString(GetUniquePath()).Guid;
         internal string GetDisplayName() => _def.DisplayName;
-        internal string GetCSharpSafeName() => $"{MyRegex().Replace(GetDisplayName(), "")}_{MyRegex().Replace(GetGuid().ToString(), "")}";
+        internal string GetCSharpSafeName() => $"{GetDisplayName().ToCSharpSafe()}_{GetGuid().ToString().ToCSharpSafe()}";
         internal string GetFileSafeName() => new HashedString(GetUniquePath()).ToFileSafe();
-        /// <summary>C#の型名やメンバー名に使えない文字を除去する正規表現</summary>
-        [GeneratedRegex("[^\\w\\sぁ-んァ-ン一-龯]")]
-        private static partial Regex MyRegex();
 
         internal AggregateMember? Parent { get; }
         internal IEnumerable<Aggregate> GetDescendants() {

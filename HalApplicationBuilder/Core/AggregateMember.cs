@@ -21,6 +21,7 @@ namespace HalApplicationBuilder.Core
         internal Aggregate Owner { get; }
 
         internal string DisplayName { get; }
+        internal string GetCSharpSafeName() => DisplayName.ToCSharpSafe();
         internal bool IsPrimary { get; }
 
         internal class MemberPath {
