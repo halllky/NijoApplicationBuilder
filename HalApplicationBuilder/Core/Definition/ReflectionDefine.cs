@@ -40,7 +40,7 @@ namespace HalApplicationBuilder.Core.Definition {
                 var isPrimary = prop.GetCustomAttribute<KeyAttribute>() != null;
 
                 if (MemberImpl.SchalarValue.IsPrimitive(prop.PropertyType)) {
-                    yield return new MemberImpl.SchalarValue(_config, displayName, isPrimary, owner, prop.PropertyType);
+                    yield return new MemberImpl.SchalarValue(_config, displayName, isPrimary, owner, prop);
 
                 } else if (prop.PropertyType.IsGenericType
                     && prop.PropertyType.GetGenericTypeDefinition() == typeof(Child<>)) {

@@ -28,25 +28,33 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             return false;
         }
 
-        internal SchalarValue(Config config, string displayName, bool isPrimary, Aggregate owner, Type propertyType) : base(config, displayName, isPrimary, owner) {
-            _propertyType = propertyType;
+        internal SchalarValue(Config config, string displayName, bool isPrimary, Aggregate owner, PropertyInfo prop) : base(config, displayName, isPrimary, owner) {
+            _propertyType = prop.PropertyType;
+
+            if (prop.PropertyType.IsGenericType && prop.PropertyType == typeof(Nullable<>))
+                IsNullable = true;
+            else if (prop.PropertyType == typeof(string)
+                // "string?" のnull許容演算子はランタイム時に自動生成されるため名称で探すしかない
+                && prop.GetCustomAttributesData().Any(x => x.AttributeType.FullName == "System.Runtime.CompilerServices.NullableAttribute"))
+                IsNullable = true;
+            else
+                IsNullable = false;
         }
         internal SchalarValue(Config config, string displayName, bool isPrimary, Aggregate owner, Type propertyTypeWithoutNullable, bool isNullable) : base(config, displayName, isPrimary, owner) {
             _propertyType = isNullable && propertyTypeWithoutNullable != typeof(string)
                 ? typeof(Nullable<>).MakeGenericType(propertyTypeWithoutNullable)
                 : propertyTypeWithoutNullable;
+            IsNullable = isNullable;
         }
 
         private readonly Type _propertyType;
 
-        private bool IsNullable() {
-            return _propertyType.IsGenericType
-                && _propertyType.GetGenericTypeDefinition() == typeof(Nullable<>);
-        }
+        private bool IsNullable { get; }
         private Type GetPropertyTypeExceptNullable() {
-            return IsNullable()
-                ? _propertyType.GetGenericArguments()[0]
-                : _propertyType;
+            if (_propertyType.IsGenericType && _propertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                return _propertyType.GetGenericArguments()[0];
+            else
+                return _propertyType;
         }
         private string GetCSharpTypeName() {
             var type = GetPropertyTypeExceptNullable();
@@ -60,7 +68,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             else if (type == typeof(DateTime)) valueTypeName = "DateTime";
             else throw new InvalidOperationException($"不正な型: {DisplayName} - {type.Name}");
 
-            var question = IsNullable() ? "?" : null;
+            var question = IsNullable ? "?" : null;
 
             return valueTypeName + question;
         }
@@ -144,7 +152,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                     .AspForPath;
                 var enumTypeName = GetSearchConditionCSharpTypeName();
                 var options = new List<KeyValuePair<string, string>>();
-                if (IsNullable()) options.Add(KeyValuePair.Create("", ""));
+                if (IsNullable) options.Add(KeyValuePair.Create("", ""));
 
                 context.Template.WriteLine($"<select asp-for=\"{searchCondition}\" asp-items=\"@Html.GetEnumSelectList(typeof({enumTypeName}))\">");
                 context.Template.PushIndent("    ");
@@ -240,7 +248,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             yield return new RenderedProperty {
                 CSharpTypeName = GetCSharpTypeName(),
                 PropertyName = DbColumnPropName,
-                Nullable = IsNullable(),
+                Nullable = IsNullable,
             };
         }
 
@@ -316,7 +324,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 Kind = kind,
                 Name = this.DisplayName,
                 IsPrimary = this.IsPrimary ? true : null,
-                IsNullable = this.IsNullable(),
+                IsNullable = this.IsNullable,
             };
         }
     }
