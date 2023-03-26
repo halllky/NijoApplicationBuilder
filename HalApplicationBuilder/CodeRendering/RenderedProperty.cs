@@ -9,6 +9,9 @@ namespace HalApplicationBuilder.CodeRendering
         internal required string CSharpTypeName { get; init; }
         internal required string PropertyName { get; init; }
         internal string? Initializer { get; init; }
+
+        // For DBColumn
+        internal bool? Nullable { get; init; }
     }
 
     internal class RenderedParentPkProperty : RenderedProperty {

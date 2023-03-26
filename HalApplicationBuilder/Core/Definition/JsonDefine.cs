@@ -67,7 +67,7 @@ namespace HalApplicationBuilder.Core.Definition {
                 } else if (member.Kind == MemberImpl.Reference.JSON_KEY) {
                     if (string.IsNullOrWhiteSpace(member.RefTarget)) throw new FormatException($"refTargetが空です。");
                     var getRefTarget = () => GetAggregateByUniquePath(member.RefTarget);
-                    yield return new MemberImpl.Reference(_config, displayName, isPrimary, owner, getRefTarget);
+                    yield return new MemberImpl.Reference(_config, displayName, isPrimary, isNullable, owner, getRefTarget);
 
                 } else if (member.Kind == MemberImpl.Child.JSON_KEY) {
                     if (member.Child == null) throw new FormatException($"childが空です。");

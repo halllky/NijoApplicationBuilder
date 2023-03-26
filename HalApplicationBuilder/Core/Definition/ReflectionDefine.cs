@@ -66,8 +66,9 @@ namespace HalApplicationBuilder.Core.Definition {
 
                 } else if (prop.PropertyType.IsGenericType
                     && prop.PropertyType.GetGenericTypeDefinition() == typeof(RefTo<>)) {
+                    var nullable = !isPrimary && prop.GetCustomAttribute<RequiredAttribute>() == null;
                     var getRefTarget = () => GetAggregateByRefTargetType(prop.PropertyType.GetGenericArguments()[0]);
-                    yield return new MemberImpl.Reference(_config, displayName, isPrimary, owner, getRefTarget);
+                    yield return new MemberImpl.Reference(_config, displayName, isPrimary, nullable, owner, getRefTarget);
 
                 } else {
                     throw new InvalidOperationException($"{DisplayName} の {prop.Name} の型 {prop.PropertyType.Name} は非対応");

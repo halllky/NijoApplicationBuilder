@@ -18,6 +18,13 @@ namespace <#=_config.DbContextNamespace#> {
                     e.<#=pk.PropertyName#>,
 <# } #>
                 });
+
+<# /* 通常のプロパティの定義 */ #>
+<# foreach (var col in entity.PrimaryKeys.Concat(entity.NonPrimaryKeys)) { #>
+                ett.Property(e => e.<#=col.PropertyName#>)
+                   .IsRequired(<#=col.Nullable == true ? "false" : "true"#>);
+<# } #>
+
 <# /* ナビゲーションプロパティ定義 */ #>
 <# foreach (var navigation in entity.NavigationProperties) { #>
 <# if (navigation.OnModelCreating != null) { #>

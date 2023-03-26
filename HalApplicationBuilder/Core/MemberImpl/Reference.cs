@@ -11,11 +11,14 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace HalApplicationBuilder.Core.MemberImpl {
     internal class Reference : AggregateMember {
-        internal Reference(Config config, string displayName, bool isPrimary, Aggregate owner, Func<Aggregate> getRefTarget) : base(config, displayName, isPrimary, owner) {
+        internal Reference(Config config, string displayName, bool isPrimary, bool isNullable, Aggregate owner, Func<Aggregate> getRefTarget) : base(config, displayName, isPrimary, owner) {
             _getRefTarget = getRefTarget;
+            _isNullable = isNullable;
         }
 
         private readonly Func<Aggregate> _getRefTarget;
+        private readonly bool _isNullable;
+
         internal Aggregate GetRefTarget() {
             return _getRefTarget.Invoke();
         }
@@ -220,6 +223,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 .Select(foreignKey => new RenderedProperty {
                     CSharpTypeName = foreignKey.CSharpTypeName,
                     PropertyName = ForeignKeyColumnPropName(foreignKey),
+                    Nullable = _isNullable,
                 })
                 .ToArray();
             foreach (var foreignKey in foreignKeys) {
@@ -287,6 +291,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 Name = this.DisplayName,
                 RefTarget = this.GetRefTarget().GetUniquePath(),
                 IsPrimary = this.IsPrimary ? true : null,
+                IsNullable = this._isNullable,
             };
         }
     }

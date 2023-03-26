@@ -35,7 +35,16 @@ namespace HalApplicationBuilder.CodeRendering {
             this.Write(this.ToStringHelper.ToStringWithCulture(pk.PropertyName));
             this.Write(",\n");
  } 
-            this.Write("                });\n");
+            this.Write("                });\n\n");
+ /* 通常のプロパティの定義 */ 
+ foreach (var col in entity.PrimaryKeys.Concat(entity.NonPrimaryKeys)) { 
+            this.Write("                ett.Property(e => e.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(col.PropertyName));
+            this.Write(")\n                   .IsRequired(");
+            this.Write(this.ToStringHelper.ToStringWithCulture(col.Nullable == true ? "false" : "true"));
+            this.Write(");\n");
+ } 
+            this.Write("\n");
  /* ナビゲーションプロパティ定義 */ 
  foreach (var navigation in entity.NavigationProperties) { 
  if (navigation.OnModelCreating != null) { 

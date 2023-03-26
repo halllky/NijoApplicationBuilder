@@ -240,6 +240,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             yield return new RenderedProperty {
                 CSharpTypeName = GetCSharpTypeName(),
                 PropertyName = DbColumnPropName,
+                Nullable = IsNullable(),
             };
         }
 
