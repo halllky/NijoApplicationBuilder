@@ -5,7 +5,7 @@ using System.Text.Unicode;
 var builder = WebApplication.CreateBuilder(args);
 
 var runtimeRootDir = System.IO.Directory.GetCurrentDirectory();
-HalApplicationBuilder.HalApp.Configure(
+HalApplicationBuilder.RuntimeService.Configure(
     builder.Services,
     System.Reflection.Assembly.GetExecutingAssembly(),
     System.IO.Path.Combine(runtimeRootDir, "halapp.json"));

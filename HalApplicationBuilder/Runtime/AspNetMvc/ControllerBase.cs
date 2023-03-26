@@ -16,10 +16,10 @@ namespace HalApplicationBuilder.Runtime.AspNetMvc {
 
         public ControllerBase(IServiceProvider services) {
             ServiceProvider = services;
-            HalApp = services.GetRequiredService<HalApp.RuntimeService>();
+            HalApp = services.GetRequiredService<RuntimeService>();
         }
         protected IServiceProvider ServiceProvider { get; }
-        protected HalApp.RuntimeService HalApp { get; }
+        protected RuntimeService HalApp { get; }
 
 
         #region MultiView

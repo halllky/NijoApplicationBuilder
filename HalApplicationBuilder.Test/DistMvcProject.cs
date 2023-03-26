@@ -73,17 +73,9 @@ namespace HalApplicationBuilder.Test {
         };
 
         public DistMvcProject GenerateCode(string? @namespace) {
-            var serviceCollection = new ServiceCollection();
-            HalApplicationBuilder.HalApp.Configure(
-                serviceCollection,
-                GetConfig(),
-                Assembly.GetExecutingAssembly(),
-                @namespace);
-            var provider = serviceCollection.BuildServiceProvider();
-            var halapp = provider.GetRequiredService<HalApplicationBuilder.HalApp>();
-
-            halapp.GenerateCode(Console.Out);
-
+            HalApplicationBuilder.CodeGenerator
+                .FromAssembly(Assembly.GetExecutingAssembly(), @namespace)
+                .GenerateCode(GetConfig(), Console.Out);
             return this;
         }
 
