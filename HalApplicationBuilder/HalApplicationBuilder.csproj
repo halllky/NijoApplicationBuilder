@@ -168,7 +168,7 @@
 		  <DependentUpon>..\CodeRendering\EntityClassTemplate.tt</DependentUpon>
 		</Compile>
 		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\OnModelCreatingTemplate.cs">
-		  <DependentUpon>..\CodeRendering\OnModelCreatingTemplate.tt</DependentUpon>
+		  <DependentUpon>OnModelCreatingTemplate.tt</DependentUpon>
 		</Compile>
 		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\SearchMethodTemplate.cs">
 		  <DependentUpon>..\CodeRendering\SearchMethodTemplate.tt</DependentUpon>

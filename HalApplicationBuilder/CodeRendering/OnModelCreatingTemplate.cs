@@ -57,7 +57,14 @@ namespace HalApplicationBuilder.CodeRendering {
             this.Write(this.ToStringHelper.ToStringWithCulture(navigation.OnModelCreating.OpponentName));
             this.Write(")\n");
      } 
+     if (navigation.OnModelCreating.Multiplicity.HasFlag(OnModelCreatingDTO.E_Multiplicity.HasOneWithOne)) { 
+                 /* HasOneWithOneのときは型引数が要るらしい */ 
+            this.Write("                   .HasForeignKey<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(navigation.CSharpTypeName));
+            this.Write(">(e => new {\n");
+     } else {
             this.Write("                   .HasForeignKey(e => new {\n");
+     } 
      foreach (var fk in navigation.OnModelCreating.ForeignKeys) { 
             this.Write("                       e.");
             this.Write(this.ToStringHelper.ToStringWithCulture(fk.PropertyName));

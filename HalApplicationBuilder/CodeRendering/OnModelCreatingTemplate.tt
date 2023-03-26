@@ -31,7 +31,12 @@ namespace <#=_config.DbContextNamespace#> {
 <#     } else {#>
                    .WithOne(e => e.<#=navigation.OnModelCreating.OpponentName#>)
 <#     } #>
+<#     if (navigation.OnModelCreating.Multiplicity.HasFlag(OnModelCreatingDTO.E_Multiplicity.HasOneWithOne)) { #>
+<#                 /* HasOneWithOneのときは型引数が要るらしい */ #>
+                   .HasForeignKey<<#=navigation.CSharpTypeName#>>(e => new {
+<#     } else {#>
                    .HasForeignKey(e => new {
+<#     } #>
 <#     foreach (var fk in navigation.OnModelCreating.ForeignKeys) { #>
                        e.<#=fk.PropertyName#>,
 <#     } #>

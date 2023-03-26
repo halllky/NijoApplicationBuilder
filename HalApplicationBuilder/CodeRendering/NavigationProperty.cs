@@ -15,12 +15,15 @@ namespace HalApplicationBuilder.CodeRendering {
 
         [Flags]
         internal enum E_Multiplicity {
-            WithMany = 1,
+            HasOne = 1,
             HasMany = 2,
-            HasOneWithOne = 0,
-            HasOneWithMany = 1,
-            HasManyWithOne = 2,
-            HasManyWithMany = 3,
+            WithOne = 4,
+            WithMany = 8,
+
+            HasOneWithOne = 5,
+            HasOneWithMany = 9,
+            HasManyWithOne = 6,
+            HasManyWithMany = 10,
         }
     }
 }
