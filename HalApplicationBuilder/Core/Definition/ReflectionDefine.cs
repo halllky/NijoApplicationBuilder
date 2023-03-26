@@ -7,14 +7,30 @@ using System.Reflection;
 
 namespace HalApplicationBuilder.Core.Definition {
     internal class ReflectionDefine : IAggregateDefine {
-        internal ReflectionDefine(Config config, Type aggregateType) {
+        internal ReflectionDefine(Config config, Type aggregateType, IEnumerable<Type> rootAggregateTypes) {
             _config = config;
             _aggregateType = aggregateType;
+            _rootAggregateTypes = rootAggregateTypes;
         }
         private readonly Config _config;
         private readonly Type _aggregateType;
+        private readonly IEnumerable<Type> _rootAggregateTypes;
 
         public string DisplayName => _aggregateType.Name;
+
+        private Aggregate GetAggregateByRefTargetType(Type refTargetType) {
+            var matches = _rootAggregateTypes
+                .Select(root => new RootAggregate(_config, new ReflectionDefine(_config, root, _rootAggregateTypes)))
+                .SelectMany(rootAggregate => rootAggregate.GetDescendantsAndSelf())
+                .Where(aggregate => ((ReflectionDefine)aggregate.Def)._aggregateType == refTargetType)
+                .ToArray();
+            if (matches.Length == 0)
+                throw new InvalidOperationException($"'{refTargetType.Name}' と対応する集約が見つかりません。");
+            if (matches.Length >= 2)
+                throw new InvalidOperationException($"'{refTargetType.Name}' と対応する集約が複数見つかりました。");
+
+            return matches.Single();
+        }
 
         public IEnumerable<AggregateMember> GetMembers(Aggregate owner) {
             foreach (var prop in _aggregateType.GetProperties(BindingFlags.Public | BindingFlags.Instance)) {
@@ -33,11 +49,11 @@ namespace HalApplicationBuilder.Core.Definition {
                     var variations = prop.GetCustomAttributes<VariationAttribute>();
 
                     if (!childType.IsAbstract && !variations.Any()) {
-                        var childSetting = new ReflectionDefine(_config, childType);
+                        var childSetting = new ReflectionDefine(_config, childType, _rootAggregateTypes);
                         yield return new MemberImpl.Child(_config, displayName, isPrimary, owner, childSetting);
 
                     } else if (childType.IsAbstract && variations.Any()) {
-                        var variationSettings = variations.ToDictionary(v => v.Key, v => (IAggregateDefine)new ReflectionDefine(_config, v.Type));
+                        var variationSettings = variations.ToDictionary(v => v.Key, v => (IAggregateDefine)new ReflectionDefine(_config, v.Type, _rootAggregateTypes));
                         yield return new MemberImpl.Variation(_config, displayName, isPrimary, owner, variationSettings);
 
                     } else {
@@ -45,20 +61,13 @@ namespace HalApplicationBuilder.Core.Definition {
                     }
                 } else if (prop.PropertyType.IsGenericType
                     && prop.PropertyType.GetGenericTypeDefinition() == typeof(Children<>)) {
-                    var childSetting = new ReflectionDefine(_config, prop.PropertyType.GetGenericArguments()[0]);
+                    var childSetting = new ReflectionDefine(_config, prop.PropertyType.GetGenericArguments()[0], _rootAggregateTypes);
                     yield return new MemberImpl.Children(_config, displayName, isPrimary, owner, childSetting);
 
                 } else if (prop.PropertyType.IsGenericType
                     && prop.PropertyType.GetGenericTypeDefinition() == typeof(RefTo<>)) {
-                    yield return new MemberImpl.Reference(
-                        _config,
-                        displayName,
-                        isPrimary,
-                        owner,
-                        () => {
-                            var def = new ReflectionDefine(_config, prop.PropertyType.GetGenericArguments()[0]);
-                            return new RootAggregate(_config, def); // TODO: 子要素への参照が考慮されていない
-                        });
+                    var getRefTarget = () => GetAggregateByRefTargetType(prop.PropertyType.GetGenericArguments()[0]);
+                    yield return new MemberImpl.Reference(_config, displayName, isPrimary, owner, getRefTarget);
 
                 } else {
                     throw new InvalidOperationException($"{DisplayName} の {prop.Name} の型 {prop.PropertyType.Name} は非対応");

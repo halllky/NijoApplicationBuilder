@@ -16,14 +16,14 @@ namespace HalApplicationBuilder.Core
 
         private protected Aggregate(Config config, IAggregateDefine def, AggregateMember? parent) {
             _config = config;
-            _def = def;
+            Def = def;
             Parent = parent;
         }
         private protected readonly Config _config;
-        private protected readonly IAggregateDefine _def;
+        internal IAggregateDefine Def { get; }
 
         internal Guid GetGuid() => new HashedString(GetUniquePath()).Guid;
-        internal string GetDisplayName() => _def.DisplayName;
+        internal string GetDisplayName() => Def.DisplayName;
         internal string GetCSharpSafeName() => $"{GetDisplayName().ToCSharpSafe()}_{GetGuid().ToString().ToCSharpSafe()}";
         internal string GetFileSafeName() => new HashedString(GetUniquePath()).ToFileSafe();
 
@@ -38,7 +38,7 @@ namespace HalApplicationBuilder.Core
         }
 
         private protected IEnumerable<AggregateMember> GetMembers() {
-            return _def.GetMembers(this);
+            return Def.GetMembers(this);
         }
 
         internal const string PARENT_NAVIGATION_PROPERTY_NAME = "Parent";
@@ -283,7 +283,7 @@ namespace HalApplicationBuilder.Core
         protected override IEnumerable<object?> ValueObjectIdentifiers()
         {
             yield return Parent;
-            yield return _def.DisplayName;
+            yield return Def.DisplayName;
         }
 
         public override string ToString()

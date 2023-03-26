@@ -135,7 +135,28 @@ namespace HalApplicationBuilder.Test.Tests.正常系.網羅パターン {
         public RefTo<ルート集約1> 外部参照主キー1A { get; set; }
         [Key]
         public RefTo<ルート集約1> 外部参照主キー1B { get; set; }
+
+        public Children<集約3の子> 集約3の子 { get; set; }
     }
+
+    public class 集約3の子 {
+    }
+
+    [Aggregate]
+    public class ルート集約4a {
+        [Key]
+        public RefTo<集約3の子> 外部子要素参照主キー1A { get; set; }
+        [Key]
+        public RefTo<集約3の子> 外部子要素参照主キー1B { get; set; }
+    }
+    [Aggregate]
+    public class ルート集約4b {
+        [Key]
+        public RefTo<集約3の子> 外部子要素参照主キー1A { get; set; }
+        [Key]
+        public RefTo<集約3の子> 外部子要素参照主キー1B { get; set; }
+    }
+
     //[Aggregate]
     //public class ルート集約3 {
     //    [Key]

@@ -22,7 +22,7 @@ namespace HalApplicationBuilder
                 serviceCollection,
                 null,
                 config,
-                () => rootAggregateTypes.Select(t => new RootAggregate(config, new Core.Definition.ReflectionDefine(config, t))));
+                () => rootAggregateTypes.Select(t => new RootAggregate(config, new Core.Definition.ReflectionDefine(config, t, rootAggregateTypes))));
         }
         public static void Configure(IServiceCollection serviceCollection, Config config, Assembly assembly, string? @namespace = null) {
             Configure(serviceCollection, null, config, assembly, @namespace);
@@ -39,7 +39,7 @@ namespace HalApplicationBuilder
                     if (!string.IsNullOrWhiteSpace(@namespace)) {
                         types = types.Where(type => type.Namespace?.StartsWith(@namespace) == true);
                     }
-                    return types.Select(t => new RootAggregate(config, new Core.Definition.ReflectionDefine(config, t)));
+                    return types.Select(t => new RootAggregate(config, new Core.Definition.ReflectionDefine(config, t, types)));
                 });
         }
         public static void Configure(IServiceCollection serviceCollection, Assembly? runtimeAssembly, string halappJsonPath) {
