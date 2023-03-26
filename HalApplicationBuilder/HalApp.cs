@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyModel;
 using Microsoft.Extensions.DependencyInjection;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.Runtime.AspNetMvc;
+using HalApplicationBuilder.DotnetEx;
 
 namespace HalApplicationBuilder
 {
@@ -322,11 +323,11 @@ namespace HalApplicationBuilder
                     dbContext.Add(dbInstance);
                     dbContext.SaveChanges();
                 } catch (InvalidOperationException ex) {
-                    errors = new[] { ex.Message };
+                    errors = ex.GetMessagesRecursively().ToArray();
                     instanceKey = string.Empty;
                     return false;
                 } catch (DbUpdateException ex) {
-                    errors = new[] { ex.Message };
+                    errors = ex.GetMessagesRecursively().ToArray();
                     instanceKey = string.Empty;
                     return false;
                 }
