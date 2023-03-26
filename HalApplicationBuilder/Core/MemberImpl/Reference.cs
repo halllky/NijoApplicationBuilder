@@ -51,7 +51,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{key}\" class=\"{JsTemplate.AUTOCOMPLETE_VALUE}\" />");
             context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{guid}\" class=\"{JsTemplate.AGGREGATE_GUID}\" />");
             context.Template.WriteLine($"    <input asp-for=\"{text}\" class=\"{JsTemplate.AUTOCOMPLETE_INPUT}\" />");
-            context.Template.WriteLine($"<div>");
+            context.Template.WriteLine($"</div>");
         }
 
         internal override void RenderAspNetMvcPartialView(RenderingContext context) {
@@ -72,7 +72,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{key}\" class=\"{JsTemplate.AUTOCOMPLETE_VALUE}\" />");
             context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{guid}\" class=\"{JsTemplate.AGGREGATE_GUID}\" />");
             context.Template.WriteLine($"    <input asp-for=\"{text}\" class=\"{JsTemplate.AUTOCOMPLETE_INPUT}\" />");
-            context.Template.WriteLine($"<div>");
+            context.Template.WriteLine($"</div>");
         }
 
         internal override object? GetInstanceKeyFromDbInstance(object dbInstance) {
