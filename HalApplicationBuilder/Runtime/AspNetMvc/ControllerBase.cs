@@ -75,9 +75,12 @@ namespace HalApplicationBuilder.Runtime.AspNetMvc {
         }
 
         [HttpGet]
-        public virtual IActionResult Detail(string id) {
-            var instance = HalApp.FindInstance<TInstanceModel>(id, out var name);
+        public virtual IActionResult Detail(string? id) {
+            if (string.IsNullOrWhiteSpace(id)) {
+                return BadRequest();
+            }
 
+            var instance = HalApp.FindInstance<TInstanceModel>(id, out var name);
             if (instance == null) {
                 return NotFound();
             }

@@ -339,6 +339,7 @@ namespace HalApplicationBuilder
 
             public TUIInstance? FindInstance<TUIInstance>(string instanceKey, out string instanceName) {
                 var key = Runtime.InstanceKey.FromSerializedString(instanceKey);
+                if (key == null) throw new ArgumentException($"文字列 '{instanceKey}' から検索キーを取得できません。");
 
                 var aggregate = FindRootAggregate(typeof(TUIInstance));
                 if (aggregate == null) throw new ArgumentException($"型 {typeof(TUIInstance).Name} と対応する集約が見つかりません。");

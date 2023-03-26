@@ -204,34 +204,50 @@ namespace HalApplicationBuilder.Core
         internal void MapInstanceKeyToDbInstance(string instanceKey, object dbInstance) {
             var pk = GetMembers().Where(m => m.IsPrimary).ToArray();
             var key = Runtime.InstanceKey.FromSerializedString(instanceKey);
-            if (pk.Length != key.ObjectValue.Length) throw new ArgumentException(null, nameof(instanceKey));
+
+            if (key != null && pk.Length != key.ObjectValue.Length)
+                throw new ArgumentException(null, nameof(instanceKey));
+
             for (int i = 0; i < pk.Length; i++) {
-                pk[i].MapInstanceKeyToDbInstance(key.ObjectValue[i], dbInstance);
+                pk[i].MapInstanceKeyToDbInstance(key?.ObjectValue[i], dbInstance);
             }
         }
         internal void MapInstanceKeyToUiInstance(string instanceKey, object uiInstance) {
             var pk = GetMembers().Where(m => m.IsPrimary).ToArray();
             var key = Runtime.InstanceKey.FromSerializedString(instanceKey);
-            if (pk.Length != key.ObjectValue.Length) throw new ArgumentException(null, nameof(instanceKey));
+
+            if (key != null && pk.Length != key.ObjectValue.Length)
+                throw new ArgumentException(null, nameof(instanceKey));
+
             for (int i = 0; i < pk.Length; i++) {
-                pk[i].MapInstanceKeyToUiInstance(key.ObjectValue[i], uiInstance);
+                pk[i].MapInstanceKeyToUiInstance(key?.ObjectValue[i], uiInstance);
             }
         }
         internal void MapInstanceKeyToSearchResult(string instanceKey, object searchResult) {
             var pk = GetMembers().Where(m => m.IsPrimary).ToArray();
             var key = Runtime.InstanceKey.FromSerializedString(instanceKey);
-            if (pk.Length != key.ObjectValue.Length) throw new ArgumentException(null, nameof(instanceKey));
+
+            if (key != null && pk.Length != key.ObjectValue.Length)
+                throw new ArgumentException(null, nameof(instanceKey));
+
             for (int i = 0; i < pk.Length; i++) {
-                pk[i].MapInstanceKeyToSearchResult(key.ObjectValue[i], searchResult);
+                pk[i].MapInstanceKeyToSearchResult(key?.ObjectValue[i], searchResult);
             }
         }
         internal void MapInstanceKeyToAutoCompleteItem(string instanceKey, object autoCompelteItem) {
             var pk = GetMembers().Where(m => m.IsPrimary).ToArray();
             var key = Runtime.InstanceKey.FromSerializedString(instanceKey);
-            if (pk.Length != key.ObjectValue.Length) throw new ArgumentException(null, nameof(instanceKey));
+
+            if (key != null && pk.Length != key.ObjectValue.Length)
+                throw new ArgumentException(null, nameof(instanceKey));
+
             for (int i = 0; i < pk.Length; i++) {
-                pk[i].MapInstanceKeyToAutoCompleteItem(key.ObjectValue[i], autoCompelteItem);
+                pk[i].MapInstanceKeyToAutoCompleteItem(key?.ObjectValue[i], autoCompelteItem);
             }
+        }
+
+        internal Runtime.InstanceKey CreateEmptyInstanceKey() {
+            return Runtime.InstanceKey.Empty(ToDbEntity().PrimaryKeys.Count());
         }
 
         internal void MapUiToDb(object uiInstance, object dbInstance, Runtime.IInstanceConvertingContext context) {

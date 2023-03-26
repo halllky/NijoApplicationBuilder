@@ -102,7 +102,9 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             if (prop == null) throw new ArgumentException(null, nameof(uiInstance));
 
             var refDto = (Runtime.ReferenceDTO)prop.GetValue(uiInstance)!;
-            var instanceKey = Runtime.InstanceKey.FromSerializedString(refDto.InstanceKey);
+            var instanceKey = Runtime.InstanceKey
+                .FromSerializedString(refDto.InstanceKey)
+                ?? GetRefTarget().CreateEmptyInstanceKey();
             return instanceKey.ObjectValue;
         }
         internal override void MapInstanceKeyToUiInstance(object? instanceKey, object uiInstance) {
@@ -189,7 +191,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             var navigation = navigationProp.GetValue(dbInstance);
 
             if (navigation == null) {
-                refDto.InstanceKey = InstanceKey.Empty.StringValue;
+                refDto.InstanceKey = GetRefTarget().CreateEmptyInstanceKey().StringValue;
                 refDto.InstanceName = string.Empty;
             } else {
                 var refTarget = GetRefTarget();
@@ -202,7 +204,9 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             var refDtoProp = uiInstance.GetType().GetProperty(InstanceModelPropName);
             if (refDtoProp == null) throw new ArgumentException(null, nameof(uiInstance));
             var refDto = (ReferenceDTO)refDtoProp.GetValue(uiInstance)!;
-            var instanceKey = Runtime.InstanceKey.FromSerializedString(refDto.InstanceKey);
+            var instanceKey = Runtime.InstanceKey
+                .FromSerializedString(refDto.InstanceKey)
+                ?? GetRefTarget().CreateEmptyInstanceKey();
 
             this.MapInstanceKeyToDbInstance(instanceKey.ObjectValue, dbInstance);
         }

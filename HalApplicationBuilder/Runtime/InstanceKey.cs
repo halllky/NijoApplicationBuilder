@@ -10,14 +10,17 @@ namespace HalApplicationBuilder.Runtime {
     /// </summary>
     internal class InstanceKey : ValueObject {
 
-        internal static InstanceKey Empty => new InstanceKey("[]", Array.Empty<object>());
+        internal static InstanceKey Empty(int keyCount) => FromObjects(new object?[keyCount]);
 
         internal static InstanceKey FromObjects(IEnumerable<object?> values) {
             var objArray = values.ToArray();
             var serialized = JsonSerializer.Serialize(objArray);
             return new InstanceKey(serialized, objArray);
         }
-        internal static InstanceKey FromSerializedString(string stringValue) {
+        internal static InstanceKey? FromSerializedString(string? stringValue) {
+
+            if (string.IsNullOrWhiteSpace(stringValue)) return null;
+
             object? ToObject(JsonElement jsonElement) {
                 switch (jsonElement.ValueKind) {
                     case JsonValueKind.Array:
