@@ -13,6 +13,7 @@ namespace HalApplicationBuilder.Core.Definition {
         internal static IEnumerable<IAggregateDefine> Create(Config config, XDocument xDocument) {
             if (xDocument.Root == null) throw new FormatException($"集約定義のXMLの形式が不正です。");
             foreach (var element in xDocument.Root.Elements()) {
+                if (element.Name.LocalName == "_Enum") continue;
                 yield return new XmlDefine(config, element, xDocument);
             }
         }
@@ -43,46 +44,44 @@ namespace HalApplicationBuilder.Core.Definition {
             foreach (var innerElement in _aggregateElement.Elements()) {
                 var displayName = innerElement.Name.LocalName;
 
-                var key = innerElement.Attribute("Key")?.Value.Trim().ToLower();
-                var @null = innerElement.Attribute("Null")?.Value.Trim().ToLower();
-                if (key != null && key != "true" && key != "false")
-                    throw new InvalidOperationException($"{displayName} のKey属性の値が不正です。trueまたはfalseのいずれかを指定してください。");
-                if (@null != null && @null != "true" && @null != "false")
-                    throw new InvalidOperationException($"{displayName} のNull属性の値が不正です。trueまたはfalseのいずれかを指定してください。");
+                var isPrimary = innerElement.Attribute("key") != null;
+                var isNullable = innerElement.Attribute("nullable") != null;
 
-                var isPrimary = key == "true";
-                var isNullable = @null == "true";
-
-                var kind = innerElement.Attribute("Kind")?.Value.Trim().ToLower();
-                if (string.IsNullOrWhiteSpace(kind))
-                    throw new InvalidOperationException($"{displayName} のKind属性が未設定です。");
-
-                var schalarType = MemberImpl.SchalarValue.TryParseTypeName(kind);
-                if (schalarType != null) {
+                var type = innerElement.Attribute("type");
+                if (type != null) {
+                    var schalarType = MemberImpl.SchalarValue.TryParseTypeName(type.Value.Trim().ToLower());
+                    if (schalarType == null) throw new InvalidOperationException($"{displayName}のtype属性の値'{type.Value}'が不正です。");
                     yield return new MemberImpl.SchalarValue(_config, displayName, isPrimary, owner, schalarType, isNullable);
 
-                } else if (kind == "ref") {
-                    var to = innerElement.Attribute("To")?.Value;
-                    if (string.IsNullOrWhiteSpace(to)) throw new FormatException($"Kind属性がrefの'{displayName}'にはTo属性が必須です。");
-                    var getRefTarget = () => GetAggregateByUniquePath(to);
-                    yield return new MemberImpl.Reference(_config, displayName, isPrimary, isNullable, owner, getRefTarget);
-
-                } else if (kind == "child") {
-                    var child = new XmlDefine(_config, innerElement, _xDocument);
-                    yield return new MemberImpl.Child(_config, displayName, isPrimary, owner, child);
-
-                } else if (kind == "children") {
-                    var children = new XmlDefine(_config, innerElement, _xDocument);
-                    yield return new MemberImpl.Children(_config, displayName, isPrimary, owner, children);
-
-                } else if (kind == "variation") {
-                    var variations = innerElement.Elements().ToDictionary(
-                        el => int.Parse(el.Attribute("Key")?.Value ?? ""),
-                        el => (IAggregateDefine)new XmlDefine(_config, el, _xDocument));
-                    yield return new MemberImpl.Variation(_config, displayName, isPrimary, owner, variations);
-
                 } else {
-                    throw new InvalidOperationException($"{displayName} のKind属性が不正です: '{kind}'");
+                    var isRef = innerElement.Attribute("refTo") != null;
+                    var isChildren = innerElement.Attribute("multiple") != null;
+                    var isVariation = innerElement.Attribute("variation") != null;
+                    if ((isRef && isChildren) || (isRef && isVariation) || (isChildren && isVariation)) {
+                        throw new InvalidOperationException($"isRef属性,multiple属性,variation属性を同時に指定することはできません({displayName})。");
+
+                    } else if (isRef) {
+                        var to = innerElement.Attribute("refTo")?.Value;
+                        if (string.IsNullOrWhiteSpace(to)) throw new FormatException($"type属性がrefの'{displayName}'にはto属性が必須です。");
+                        var getRefTarget = () => GetAggregateByUniquePath(to);
+                        yield return new MemberImpl.Reference(_config, displayName, isPrimary, isNullable, owner, getRefTarget);
+
+                    } else if (isChildren) {
+                        var children = new XmlDefine(_config, innerElement, _xDocument);
+                        yield return new MemberImpl.Children(_config, displayName, isPrimary, owner, children);
+
+                    } else if (isVariation) {
+                        var variations = innerElement.Elements().Select((el, index) => {
+                            var key = index + 1;
+                            var value = (IAggregateDefine)new XmlDefine(_config, el, _xDocument);
+                            return KeyValuePair.Create(key, value);
+                        });
+                        yield return new MemberImpl.Variation(_config, displayName, isPrimary, owner, variations);
+
+                    } else {
+                        var child = new XmlDefine(_config, innerElement, _xDocument);
+                        yield return new MemberImpl.Child(_config, displayName, isPrimary, owner, child);
+                    }
                 }
             }
         }
