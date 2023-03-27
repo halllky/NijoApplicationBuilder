@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Xml.Linq;
+
 namespace HalApplicationBuilder.Core {
     public class Config {
         public required string OutProjectDir { get; init; }
@@ -52,6 +54,31 @@ namespace HalApplicationBuilder.Core {
                 MvcModelNamespace = json.MvcModelNamespace ?? string.Empty,
 
                 MvcViewDirectoryRelativePath = json.MvcViewDirectoryRelativePath ?? string.Empty,
+            };
+        }
+        public static Config FromXml(string xml) {
+            var xDocument = XDocument.Parse(xml);
+            if (xDocument.Root == null) throw new FormatException($"設定ファイルのXMLの形式が不正です。");
+
+            var codeGen = xDocument.Root.Element("_CodeGen");
+            var rel = codeGen?.Element("OutDirRelativePath");
+            var ns = codeGen?.Element("Namespace");
+
+            return new Config {
+                OutProjectDir = codeGen?.Element("OutDirRoot")?.Value ?? string.Empty,
+
+                EntityFrameworkDirectoryRelativePath = rel?.Element("EFCore")?.Value ?? string.Empty,
+                EntityNamespace = ns?.Element("EntityNamespace")?.Value ?? string.Empty,
+                DbContextNamespace = ns?.Element("DbContextNamespace")?.Value ?? string.Empty,
+                DbContextName = codeGen?.Element("DbContextName")?.Value ?? string.Empty,
+
+                MvcControllerDirectoryRelativePath = rel?.Element("MvcController")?.Value ?? string.Empty,
+                MvcControllerNamespace = ns?.Element("MvcControllerNamespace")?.Value ?? string.Empty,
+
+                MvcModelDirectoryRelativePath = rel?.Element("MvcModel")?.Value ?? string.Empty,
+                MvcModelNamespace = ns?.Element("MvcModelNamespace")?.Value ?? string.Empty,
+
+                MvcViewDirectoryRelativePath = rel?.Element("MvcView")?.Value ?? string.Empty,
             };
         }
     }
