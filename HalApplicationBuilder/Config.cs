@@ -56,21 +56,22 @@ namespace HalApplicationBuilder.Core {
                 MvcViewDirectoryRelativePath = json.MvcViewDirectoryRelativePath ?? string.Empty,
             };
         }
+        internal const string XML_CONFIG_SECTION_NAME = "_Config";
         public static Config FromXml(string xml) {
             var xDocument = XDocument.Parse(xml);
             if (xDocument.Root == null) throw new FormatException($"設定ファイルのXMLの形式が不正です。");
 
-            var codeGen = xDocument.Root.Element("_CodeGen");
-            var rel = codeGen?.Element("OutDirRelativePath");
-            var ns = codeGen?.Element("Namespace");
+            var configSection = xDocument.Root.Element(XML_CONFIG_SECTION_NAME);
+            var rel = configSection?.Element("OutDirRelativePath");
+            var ns = configSection?.Element("Namespace");
 
             return new Config {
-                OutProjectDir = codeGen?.Element("OutDirRoot")?.Value ?? string.Empty,
+                OutProjectDir = configSection?.Element("OutDirRoot")?.Value ?? string.Empty,
 
                 EntityFrameworkDirectoryRelativePath = rel?.Element("EFCore")?.Value ?? string.Empty,
                 EntityNamespace = ns?.Element("EntityNamespace")?.Value ?? string.Empty,
                 DbContextNamespace = ns?.Element("DbContextNamespace")?.Value ?? string.Empty,
-                DbContextName = codeGen?.Element("DbContextName")?.Value ?? string.Empty,
+                DbContextName = configSection?.Element("DbContextName")?.Value ?? string.Empty,
 
                 MvcControllerDirectoryRelativePath = rel?.Element("MvcController")?.Value ?? string.Empty,
                 MvcControllerNamespace = ns?.Element("MvcControllerNamespace")?.Value ?? string.Empty,

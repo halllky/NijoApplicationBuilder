@@ -82,6 +82,7 @@ namespace HalApplicationBuilder {
                 .ToArray();
 
             log?.WriteLine("コード自動生成: スキーマ定義");
+            Directory.CreateDirectory(config.OutProjectDir);
             using (var sw = new StreamWriter(Path.Combine(config.OutProjectDir, "halapp.json"), append: false, encoding: Encoding.UTF8)) {
                 var schema = new Serialized.AppSchemaJson {
                     Config = config.ToJson(onlyRuntimeConfig: true),

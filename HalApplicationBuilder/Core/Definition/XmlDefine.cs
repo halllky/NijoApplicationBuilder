@@ -13,7 +13,7 @@ namespace HalApplicationBuilder.Core.Definition {
         internal static IEnumerable<IAggregateDefine> Create(Config config, XDocument xDocument) {
             if (xDocument.Root == null) throw new FormatException($"集約定義のXMLの形式が不正です。");
             foreach (var element in xDocument.Root.Elements()) {
-                if (element.Name.LocalName == "_Enum") continue;
+                if (element.Name.LocalName == Config.XML_CONFIG_SECTION_NAME) continue;
                 yield return new XmlDefine(config, element, xDocument);
             }
         }

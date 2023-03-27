@@ -4,13 +4,13 @@
 
   <!--アプリケーションのデータ構造を定義してください。-->
 
-  <!--列挙体を定義してください。-->
-  <_Enum>
+  <_Config>
+    <!--列挙体を定義してください。-->
+    <Enum>
 
-  </_Enum>
+    </Enum>
 
-  <!--ソースコードの自動生成に関する設定-->
-  <_CodeGen>
+    <!--ソースコードの自動生成に関する設定-->
     <!--出力先ディレクトリ-->
     <OutDirRoot>./YourApplicationDirectory</OutDirRoot>
     <OutDirRelativePath>
@@ -30,5 +30,6 @@
 
     <!--DbContextクラス名-->
     <DbContextName>YourDbContextClassName</DbContextName>
-  </_CodeGen>
+
+  </_Config>
 </YourApplicationName>
