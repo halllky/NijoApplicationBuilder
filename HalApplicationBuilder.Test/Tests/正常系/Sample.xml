@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<サンプルアプリケーション>
+  <商品>
+    <商品コード Kind="string" Key="true" />
+    <商品名 Kind="string" Name="true" />
+    <単価 Kind="int" />
+  </商品>
+  <売上>
+    <ID Kind="string" Key="true" />
+    <売上日時 Kind="DateTime" />
+    <明細 Kind="children">
+      <商品 Kind="ref" To="商品" Key="true" />
+      <数量 Kind="int" />
+    </明細>
+  </売上>
+</サンプルアプリケーション>

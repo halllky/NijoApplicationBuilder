@@ -49,6 +49,18 @@ namespace HalApplicationBuilder {
                 });
             });
         }
+        /// <summary>
+        /// 引数のXML文字列を集約定義として、コード生成機能をもったオブジェクトを返します。
+        /// </summary>
+        /// <param name="xml">XML（ファイル名ではなくXMLそのもの）</param>
+        /// <returns>コード生成機能をもったオブジェクト</returns>
+        public static CodeGenerator FromXml(string xml) {
+            return new CodeGenerator(config => {
+                return Core.Definition.XmlDefine
+                    .Create(config, xml)
+                    .Select(def => new RootAggregate(config, def));
+            });
+        }
 
         internal CodeGenerator(Func<Config, IEnumerable<RootAggregate>> func) {
             _rootAggregateBuilder = func;
