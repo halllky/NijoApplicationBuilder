@@ -20,17 +20,20 @@ namespace HalApplicationBuilder.CodeRendering.AspNetMvc {
             this.GenerationEnvironment = null;
             this.Write("\n@model ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_modelTypeFullname));
-            this.Write(";\n@{\n    // ViewData[\"Title\"] = ;\n}\n\n<h1 class=\"font-bold text-[18px] select-none" +
-                    "\">\n    <!-- PageTitle -->\n</h1>\n\n<div asp-validation-summary=\"All\" class=\"mt-2 t" +
-                    "ext-xs text-red-600 dark:text-red-400\"></div>\n\n<form id=\"");
+            this.Write(";\n@{\n    ViewData[\"Title\"] = \"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_pageTitle));
+            this.Write("\";\n}\n\n<h1 class=\"halapp-page-title\">\n    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_pageTitle));
+            this.Write("\n</h1>\n\n<div asp-validation-summary=\"All\" class=\"mt-2 text-xs text-red-600 dark:t" +
+                    "ext-red-400\"></div>\n\n<form id=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(JsTemplate.FORM_ID));
-            this.Write("\" class=\"mt-2\">\n    <partial name=\"");
+            this.Write("\" class=\"mt-2\">\n    <div class=\"halapp-card-aggregate\">\n        <partial name=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(_partialViewName));
             this.Write("\" for=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(_boundObjectName));
-            this.Write("\" />\n    <div id=\"");
+            this.Write("\" />\n    </div>\n    <div id=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(JsTemplate.FORM_FOOTER_ID));
-            this.Write("\">\n        <button asp-action=\"");
+            this.Write("\" class=\"mt-2\">\n        <button asp-action=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(MvcControllerTemplate.CREATE_ACTION_NAME));
             this.Write("\" formmethod=\"post\" class=\"halapp-btn-primary\">作成</button>\n    </div>\n</form>\n");
             return this.GenerationEnvironment.ToString();

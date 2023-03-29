@@ -15,4 +15,16 @@
   .halapp-btn-link {
     @apply underline decoration-1;
   }
+  /* MultiViewの検索条件欄など */
+  .halapp-card-aggregate {
+    @apply border mt-2 p-2 bg-slate-50;
+  }
+
+  .halapp-page-title {
+    @apply font-bold text-[18px] select-none opacity-50;
+  }
+
+  .halapp-label-member-key {
+    @apply select-none opacity-50;
+  }
 }

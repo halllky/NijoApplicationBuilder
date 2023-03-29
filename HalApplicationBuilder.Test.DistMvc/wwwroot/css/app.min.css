@@ -516,6 +516,28 @@ video {
   text-decoration-line: underline;
   text-decoration-thickness: 1px;
 }
+/* MultiViewの検索条件欄など */
+.halapp-card-aggregate {
+  margin-top: 0.5rem;
+  border-width: 1px;
+  --tw-bg-opacity: 1;
+  background-color: rgb(248 250 252 / var(--tw-bg-opacity));
+  padding: 0.5rem;
+}
+.halapp-page-title {
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  font-size: 18px;
+  font-weight: 700;
+  opacity: 0.5;
+}
+.halapp-label-member-key {
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  opacity: 0.5;
+}
 .m-2 {
   margin: 0.5rem;
 }
@@ -525,6 +547,9 @@ video {
 }
 .mb-1 {
   margin-bottom: 0.25rem;
+}
+.ml-2 {
+  margin-left: 0.5rem;
 }
 .mt-2 {
   margin-top: 0.5rem;
@@ -553,11 +578,6 @@ video {
 .cursor-pointer {
   cursor: pointer;
 }
-.select-none {
-  -webkit-user-select: none;
-     -moz-user-select: none;
-          user-select: none;
-}
 .flex-col {
   flex-direction: column;
 }
@@ -580,17 +600,11 @@ video {
   --tw-border-opacity: 1;
   border-color: rgb(156 163 175 / var(--tw-border-opacity));
 }
-.p-2 {
-  padding: 0.5rem;
-}
 .text-left {
   text-align: left;
 }
 .text-center {
   text-align: center;
-}
-.text-\[18px\] {
-  font-size: 18px;
 }
 .text-\[24px\] {
   font-size: 24px;

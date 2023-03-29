@@ -111,6 +111,8 @@ namespace HalApplicationBuilder.CodeRendering.AspNetMvc {
             _config = config;
             _rootAggregate = rootAggregate;
 
+            _pageTitle = rootAggregate.GetDisplayName();
+
             var searchCondition = rootAggregate.ToSearchConditionClass();
             var searchResult = rootAggregate.ToSearchResultClass();
             var modelType = typeof(Runtime.AspNetMvc.MultiViewModel<,>).Namespace + "." + nameof(Runtime.AspNetMvc.MultiViewModel<object, object>);
@@ -119,7 +121,7 @@ namespace HalApplicationBuilder.CodeRendering.AspNetMvc {
             FileName = $"{rootAggregate.GetFileSafeName()}__MultiView.cshtml";
         }
         internal string FileName { get; }
-
+        private readonly string _pageTitle;
         private readonly Core.Config _config;
         private readonly Core.RootAggregate _rootAggregate;
         private readonly string _modelTypeFullname;
@@ -130,6 +132,8 @@ namespace HalApplicationBuilder.CodeRendering.AspNetMvc {
     partial class MvcSingleViewTemplate {
         internal MvcSingleViewTemplate(Core.Config config, Core.RootAggregate rootAggregate) {
             _config = config;
+
+            _pageTitle = rootAggregate.GetDisplayName() + " 詳細";
 
             var instanceClass = rootAggregate.ToUiInstanceClass();
             var modelType = typeof(Runtime.AspNetMvc.SingleViewModel<>).Namespace + "." + nameof(Runtime.AspNetMvc.SingleViewModel<Runtime.UIInstanceBase>);
@@ -144,6 +148,7 @@ namespace HalApplicationBuilder.CodeRendering.AspNetMvc {
         internal string FileName { get; }
 
         private readonly Core.Config _config;
+        private readonly string _pageTitle;
         private readonly string _boundObjectName;
         private readonly string _modelTypeFullname;
         private readonly string _partialViewName;
@@ -152,6 +157,8 @@ namespace HalApplicationBuilder.CodeRendering.AspNetMvc {
     partial class MvcCreateViewTemplate {
         internal MvcCreateViewTemplate(Core.Config config, Core.RootAggregate rootAggregate) {
             _config = config;
+
+            _pageTitle = rootAggregate.GetDisplayName() + " 新規作成";
 
             var instanceClass = rootAggregate.ToUiInstanceClass();
             var modelType = typeof(Runtime.AspNetMvc.CreateViewModel<>).Namespace + "." + nameof(Runtime.AspNetMvc.CreateViewModel<Runtime.UIInstanceBase>);
@@ -166,6 +173,7 @@ namespace HalApplicationBuilder.CodeRendering.AspNetMvc {
         internal string FileName { get; }
 
         private readonly Core.Config _config;
+        private readonly string _pageTitle;
         private readonly string _boundObjectName;
         private readonly string _modelTypeFullname;
         private readonly string _partialViewName;

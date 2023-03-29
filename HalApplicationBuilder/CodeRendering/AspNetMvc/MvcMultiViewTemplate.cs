@@ -20,23 +20,13 @@ namespace HalApplicationBuilder.CodeRendering.AspNetMvc {
             this.GenerationEnvironment = null;
             this.Write("\n@model ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_modelTypeFullname));
-            this.Write(@";
-@{
-    // ViewData[""Title""] = ;
-}
-
-<div class=""flex gap-3 items-center"">
-    <h1 class=""font-bold text-[18px] select-none"">
-        <!-- PageTitle -->
-    </h1>
-    <a asp-action=""New"" class=""halapp-btn-link"">新規作成</a>
-</div>
-
-<form>
-    @* 検索条件欄 *@
-    <div class=""border mt-2 p-2"">
-
-");
+            this.Write(";\n@{\n    ViewData[\"Title\"] = \"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_pageTitle));
+            this.Write("\";\n}\n\n<div class=\"flex gap-3 items-center\">\n    <h1 class=\"halapp-page-title\">\n  " +
+                    "      ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_pageTitle));
+            this.Write("\n    </h1>\n    <a asp-action=\"New\" class=\"ml-2 halapp-btn-link\">+ 追加</a>\n</div>\n\n" +
+                    "<form>\n    @* 検索条件欄 *@\n    <div class=\"halapp-card-aggregate\">\n\n");
  PushIndent("        "); 
  _rootAggregate.RenderSearchCondition(new RenderingContext(this, new ObjectPath($"Model.{nameof(Runtime.AspNetMvc.MultiViewModel<Runtime.SearchConditionBase, Runtime.SearchResultBase>.SearchCondition)}"))); 
  PopIndent(); 

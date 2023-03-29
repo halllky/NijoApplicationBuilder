@@ -6,19 +6,19 @@
 
 @model <#=_modelTypeFullname#>;
 @{
-    // ViewData["Title"] = ;
+    ViewData["Title"] = "<#=_pageTitle#>";
 }
 
 <div class="flex gap-3 items-center">
-    <h1 class="font-bold text-[18px] select-none">
-        <!-- PageTitle -->
+    <h1 class="halapp-page-title">
+        <#=_pageTitle#>
     </h1>
-    <a asp-action="New" class="halapp-btn-link">新規作成</a>
+    <a asp-action="New" class="ml-2 halapp-btn-link">+ 追加</a>
 </div>
 
 <form>
     @* 検索条件欄 *@
-    <div class="border mt-2 p-2">
+    <div class="halapp-card-aggregate">
 
 <# PushIndent("        "); #>
 <# _rootAggregate.RenderSearchCondition(new RenderingContext(this, new ObjectPath($"Model.{nameof(Runtime.AspNetMvc.MultiViewModel<Runtime.SearchConditionBase, Runtime.SearchResultBase>.SearchCondition)}"))); #>

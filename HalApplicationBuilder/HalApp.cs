@@ -76,14 +76,17 @@ namespace HalApplicationBuilder {
 
             log?.WriteLine($"コード自動生成開始");
 
+            var rootDir = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), config.OutProjectDir));
+            log?.WriteLine($"ルートディレクトリ: {rootDir}");
+            Directory.CreateDirectory(rootDir);
+
             var _rootAggregates = _rootAggregateBuilder.Invoke(config);
             var allAggregates = _rootAggregates
                 .SelectMany(a => a.GetDescendantsAndSelf())
                 .ToArray();
 
             log?.WriteLine("コード自動生成: スキーマ定義");
-            Directory.CreateDirectory(config.OutProjectDir);
-            using (var sw = new StreamWriter(Path.Combine(config.OutProjectDir, "halapp.json"), append: false, encoding: Encoding.UTF8)) {
+            using (var sw = new StreamWriter(Path.Combine(rootDir, "halapp.json"), append: false, encoding: Encoding.UTF8)) {
                 var schema = new Serialized.AppSchemaJson {
                     Config = config.ToJson(onlyRuntimeConfig: true),
                     Aggregates = _rootAggregates.Select(a => a.ToJson()).ToArray(),
@@ -95,7 +98,7 @@ namespace HalApplicationBuilder {
                 }));
             }
 
-            var efSourceDir = Path.Combine(config.OutProjectDir, config.EntityFrameworkDirectoryRelativePath);
+            var efSourceDir = Path.Combine(rootDir, config.EntityFrameworkDirectoryRelativePath);
             if (Directory.Exists(efSourceDir)) Directory.Delete(efSourceDir, recursive: true);
             Directory.CreateDirectory(efSourceDir);
 
@@ -120,7 +123,7 @@ namespace HalApplicationBuilder {
                 sw.Write(new CodeRendering.AutoCompleteSourceTemplate(config, allAggregates).TransformText());
             }
 
-            var modelDir = Path.Combine(config.OutProjectDir, config.MvcModelDirectoryRelativePath);
+            var modelDir = Path.Combine(rootDir, config.MvcModelDirectoryRelativePath);
             if (Directory.Exists(modelDir)) Directory.Delete(modelDir, recursive: true);
             Directory.CreateDirectory(modelDir);
 
@@ -129,7 +132,7 @@ namespace HalApplicationBuilder {
                 sw.Write(new CodeRendering.AspNetMvc.MvcModelsTemplate(config, allAggregates).TransformText());
             }
 
-            var viewDir = Path.Combine(config.OutProjectDir, config.MvcViewDirectoryRelativePath);
+            var viewDir = Path.Combine(rootDir, config.MvcViewDirectoryRelativePath);
             if (Directory.Exists(viewDir)) Directory.Delete(viewDir, recursive: true);
             Directory.CreateDirectory(viewDir);
 
@@ -166,7 +169,7 @@ namespace HalApplicationBuilder {
             }
 
             log?.WriteLine("コード自動生成: MVC Controller");
-            var controllerDir = Path.Combine(config.OutProjectDir, config.MvcControllerDirectoryRelativePath);
+            var controllerDir = Path.Combine(rootDir, config.MvcControllerDirectoryRelativePath);
             if (Directory.Exists(controllerDir)) Directory.Delete(controllerDir, recursive: true);
             Directory.CreateDirectory(controllerDir);
             using (var sw = new StreamWriter(Path.Combine(controllerDir, "Controllers.cs"), append: false, encoding: Encoding.UTF8)) {

@@ -50,7 +50,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             context.Template.WriteLine($"<div>");
             context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{key}\" class=\"{JsTemplate.AUTOCOMPLETE_VALUE}\" />");
             context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{guid}\" class=\"{JsTemplate.AGGREGATE_GUID}\" />");
-            context.Template.WriteLine($"    <input asp-for=\"{text}\" class=\"{JsTemplate.AUTOCOMPLETE_INPUT}\" />");
+            context.Template.WriteLine($"    <input asp-for=\"{text}\" class=\"border {JsTemplate.AUTOCOMPLETE_INPUT}\" />");
             context.Template.WriteLine($"</div>");
         }
 
@@ -71,7 +71,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             context.Template.WriteLine($"<div>");
             context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{key}\" class=\"{JsTemplate.AUTOCOMPLETE_VALUE}\" />");
             context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{guid}\" class=\"{JsTemplate.AGGREGATE_GUID}\" />");
-            context.Template.WriteLine($"    <input asp-for=\"{text}\" class=\"{JsTemplate.AUTOCOMPLETE_INPUT}\" />");
+            context.Template.WriteLine($"    <input asp-for=\"{text}\" class=\"border {JsTemplate.AUTOCOMPLETE_INPUT}\" />");
             context.Template.WriteLine($"</div>");
         }
 
@@ -248,7 +248,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
         private string ForeignKeyColumnPropName(RenderedProperty fk) => $"{DisplayName}_{fk.PropertyName}";
         private string NavigationPropName => DisplayName;
         private string SearchConditonPropName => DisplayName;
-        private string SearchResultInstanceNamePropName => DisplayName;
+        private string SearchResultInstanceNamePropName => DisplayName + "_名称";
         private string SearchResultForeignKeyPropName(RenderedProperty fk) => $"{DisplayName}_{fk.PropertyName}";
         private string InstanceModelPropName => DisplayName;
 
@@ -264,7 +264,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             yield return new RenderedProperty {
                 CSharpTypeName = typeof(Runtime.ReferenceDTO).FullName!,
                 PropertyName = SearchConditonPropName,
-                Initializer = "new()",
+                Initializer = $"new() {{ {nameof(Runtime.ReferenceDTO.AggreageteGuid)} = new Guid(\"{GetRefTarget().GetGuid()}\") }}",
             };
         }
 

@@ -6,18 +6,20 @@
 
 @model <#=_modelTypeFullname#>;
 @{
-    // ViewData["Title"] = ;
+    ViewData["Title"] = "<#=_pageTitle#>";
 }
 
-<h1 class="font-bold text-[18px] select-none">
-    <!-- PageTitle -->
+<h1 class="halapp-page-title">
+    <#=_pageTitle#>
 </h1>
 
 <div asp-validation-summary="All" class="mt-2 text-xs text-red-600 dark:text-red-400"></div>
 
 <form id="<#=JsTemplate.FORM_ID#>" class="mt-2">
-    <partial name="<#=_partialViewName#>" for="<#=_boundObjectName#>" />
-    <div id="<#=JsTemplate.FORM_FOOTER_ID#>">
+    <div class="halapp-card-aggregate">
+        <partial name="<#=_partialViewName#>" for="<#=_boundObjectName#>" />
+    </div>
+    <div id="<#=JsTemplate.FORM_FOOTER_ID#>" class="mt-2">
         <button asp-action="<#=MvcControllerTemplate.CREATE_ACTION_NAME#>" formmethod="post" class="halapp-btn-primary">作成</button>
     </div>
 </form>

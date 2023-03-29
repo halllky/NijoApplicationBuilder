@@ -149,16 +149,16 @@
 		  <DependentUpon>..\..\CodeRendering\AspNetMvc\MvcControllerTemplate.tt</DependentUpon>
 		</Compile>
 		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\AspNetMvc\MvcCreateViewTemplate.cs">
-		  <DependentUpon>..\..\CodeRendering\AspNetMvc\MvcCreateViewTemplate.tt</DependentUpon>
+		  <DependentUpon>MvcCreateViewTemplate.tt</DependentUpon>
 		</Compile>
 		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\AspNetMvc\MvcModelsTemplate.cs">
 		  <DependentUpon>..\..\CodeRendering\AspNetMvc\MvcModelsTemplate.tt</DependentUpon>
 		</Compile>
 		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\AspNetMvc\MvcMultiViewTemplate.cs">
-		  <DependentUpon>..\..\CodeRendering\AspNetMvc\MvcMultiViewTemplate.tt</DependentUpon>
+		  <DependentUpon>MvcMultiViewTemplate.tt</DependentUpon>
 		</Compile>
 		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\AspNetMvc\MvcSingleViewTemplate.cs">
-		  <DependentUpon>..\..\CodeRendering\AspNetMvc\MvcSingleViewTemplate.tt</DependentUpon>
+		  <DependentUpon>MvcSingleViewTemplate.tt</DependentUpon>
 		</Compile>
 		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\AutoCompleteSourceTemplate.cs">
 		  <DependentUpon>AutoCompleteSourceTemplate.tt</DependentUpon>

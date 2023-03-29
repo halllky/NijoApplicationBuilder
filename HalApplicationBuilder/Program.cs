@@ -25,7 +25,7 @@ namespace HalApplicationBuilder {
                 var config = Core.Config.FromXml(xmlContent);
                 CodeGenerator
                     .FromXml(xmlContent)
-                    .GenerateCode(config);
+                    .GenerateCode(config, Console.Out);
             }, xmlFilename);
 
             var rootCommand = new RootCommand("HalApplicationBuilder");

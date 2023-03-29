@@ -138,7 +138,7 @@ namespace HalApplicationBuilder.Core
 
             foreach (var member in GetMembers()) {
                 context.Template.WriteLine($"    <div class=\"flex flex-col md:flex-row mb-1\">");
-                context.Template.WriteLine($"        <label class=\"w-32 select-none\">");
+                context.Template.WriteLine($"        <label class=\"w-32 halapp-label-member-key\">");
                 context.Template.WriteLine($"            {member.DisplayName}");
                 context.Template.WriteLine($"        </label>");
                 context.Template.WriteLine($"        <div class=\"flex-1\">");
@@ -160,7 +160,7 @@ namespace HalApplicationBuilder.Core
 
             foreach (var member in GetMembers()) {
                 context.Template.WriteLine($"    <div class=\"flex flex-col md:flex-row mb-1\">");
-                context.Template.WriteLine($"        <label class=\"w-32 select-none\">");
+                context.Template.WriteLine($"        <label class=\"w-32 halapp-label-member-key \">");
                 context.Template.WriteLine($"            {member.DisplayName}");
                 context.Template.WriteLine($"        </label>");
                 context.Template.WriteLine($"        <div class=\"flex-1\">");
