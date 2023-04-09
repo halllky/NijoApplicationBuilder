@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Xunit;
 using Xunit.Abstractions;
 using OpenQA.Selenium;
@@ -25,7 +25,7 @@ namespace HalApplicationBuilder.Test.Tests.正常系 {
             shohinLink.Click();
 
             // 商品一覧画面
-            var newPageLink = driver.FindElement(By.LinkText("新規作成"));
+            var newPageLink = driver.FindElement(By.LinkText("+ 追加"));
             newPageLink.Click();
 
             // 商品新規作成画面
