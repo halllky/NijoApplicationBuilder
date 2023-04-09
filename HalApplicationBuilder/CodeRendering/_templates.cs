@@ -89,13 +89,13 @@ namespace HalApplicationBuilder.CodeRendering.AspNetMvc {
             return $"{aggregate.GetDisplayName()}Controller";
         }
         private string GetMultiViewName(RootAggregate rootAggregate) {
-            return $"~/{Path.Combine(_config.MvcViewDirectoryRelativePath, new MvcMultiViewTemplate(_config, rootAggregate).FileName)}";
+            return $"~/{_config.MvcViewDirectoryRelativePath}/{new MvcMultiViewTemplate(_config, rootAggregate).FileName}";
         }
         private string GetSingleViewName(RootAggregate rootAggregate) {
-            return $"~/{Path.Combine(_config.MvcViewDirectoryRelativePath, new MvcSingleViewTemplate(_config, rootAggregate).FileName)}";
+            return $"~/{_config.MvcViewDirectoryRelativePath}/{new MvcSingleViewTemplate(_config, rootAggregate).FileName}";
         }
         private string GetCreateViewName(RootAggregate rootAggregate) {
-            return $"~/{Path.Combine(_config.MvcViewDirectoryRelativePath, new MvcCreateViewTemplate(_config, rootAggregate).FileName)}";
+            return $"~/{_config.MvcViewDirectoryRelativePath}/{new MvcCreateViewTemplate(_config, rootAggregate).FileName}";
         }
 
         internal const string CLEAR_ACTION_NAME = nameof(ControllerBase.Clear);
