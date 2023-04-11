@@ -78,7 +78,32 @@ namespace HalApplicationBuilder {
 
             var rootDir = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), config.OutProjectDir));
             log?.WriteLine($"ルートディレクトリ: {rootDir}");
-            Directory.CreateDirectory(rootDir);
+
+            if (!Directory.Exists(rootDir)) {
+                log?.WriteLine($"ASP.NET MVC Core プロジェクトを作成します");
+
+                Directory.CreateDirectory(rootDir);
+
+                var dotnetNewMvc = new System.Diagnostics.Process();
+                dotnetNewMvc.StartInfo.WorkingDirectory = rootDir;
+                dotnetNewMvc.StartInfo.FileName = "dotnet";
+                dotnetNewMvc.StartInfo.ArgumentList.Add("new");
+                dotnetNewMvc.StartInfo.ArgumentList.Add("mvc");
+                dotnetNewMvc.StartInfo.RedirectStandardOutput = true;
+                dotnetNewMvc.StartInfo.RedirectStandardError = true;
+                dotnetNewMvc.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+                dotnetNewMvc.StartInfo.StandardErrorEncoding = Encoding.UTF8;
+
+                dotnetNewMvc.Start();
+                dotnetNewMvc.WaitForExit();
+
+                if (dotnetNewMvc.ExitCode != 0) {
+                    log?.WriteLine($"ASP.NET MVC Core プロジェクトの作成に失敗しました。" + Environment.NewLine + dotnetNewMvc.StandardError.ReadToEnd());
+                    return;
+                }
+
+                log?.WriteLine(dotnetNewMvc.StandardOutput.ReadToEnd());
+            }
 
             var _rootAggregates = _rootAggregateBuilder.Invoke(config);
             var allAggregates = _rootAggregates
