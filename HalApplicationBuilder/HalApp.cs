@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.Runtime.AspNetMvc;
 using HalApplicationBuilder.DotnetEx;
+using System.Xml;
 
 namespace HalApplicationBuilder {
 
@@ -79,30 +80,82 @@ namespace HalApplicationBuilder {
             var rootDir = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), config.OutProjectDir));
             log?.WriteLine($"ルートディレクトリ: {rootDir}");
 
+            // プロジェクト初回作成時
             if (!Directory.Exists(rootDir)) {
-                log?.WriteLine($"ASP.NET MVC Core プロジェクトを作成します");
+                var project = $"halapp.temp.{Path.GetRandomFileName()}";
+                var tempDir = Path.Combine(Directory.GetCurrentDirectory(), project);
 
-                Directory.CreateDirectory(rootDir);
+                string Cmd(string filename, params string[] args) {
+                    using var cmd = new System.Diagnostics.Process();
+                    cmd.StartInfo.WorkingDirectory = tempDir;
+                    cmd.StartInfo.FileName = filename;
+                    foreach (var arg in args) cmd.StartInfo.ArgumentList.Add(arg);
+                    cmd.StartInfo.RedirectStandardOutput = true;
+                    cmd.StartInfo.RedirectStandardError = true;
+                    cmd.StartInfo.StandardOutputEncoding = Console.OutputEncoding;
+                    cmd.StartInfo.StandardErrorEncoding = Console.OutputEncoding;
 
-                var dotnetNewMvc = new System.Diagnostics.Process();
-                dotnetNewMvc.StartInfo.WorkingDirectory = rootDir;
-                dotnetNewMvc.StartInfo.FileName = "dotnet";
-                dotnetNewMvc.StartInfo.ArgumentList.Add("new");
-                dotnetNewMvc.StartInfo.ArgumentList.Add("mvc");
-                dotnetNewMvc.StartInfo.RedirectStandardOutput = true;
-                dotnetNewMvc.StartInfo.RedirectStandardError = true;
-                dotnetNewMvc.StartInfo.StandardOutputEncoding = Encoding.UTF8;
-                dotnetNewMvc.StartInfo.StandardErrorEncoding = Encoding.UTF8;
+                    cmd.Start();
+                    cmd.WaitForExit();
 
-                dotnetNewMvc.Start();
-                dotnetNewMvc.WaitForExit();
+                    var error = cmd.StandardError.ReadToEnd();
+                    if (cmd.ExitCode != 0 || !string.IsNullOrWhiteSpace(error)) {
+                        throw new InvalidOperationException("ERROR!: " + error);
+                    }
 
-                if (dotnetNewMvc.ExitCode != 0) {
-                    log?.WriteLine($"ASP.NET MVC Core プロジェクトの作成に失敗しました。" + Environment.NewLine + dotnetNewMvc.StandardError.ReadToEnd());
-                    return;
+                    return cmd.StandardOutput.ReadToEnd();
                 }
 
-                log?.WriteLine(dotnetNewMvc.StandardOutput.ReadToEnd());
+                try {
+                    Directory.CreateDirectory(tempDir);
+
+                    // dotnet CLI でプロジェクトを新規作成
+                    log?.WriteLine($"ASP.NET MVC Core プロジェクトを作成します。");
+                    log?.WriteLine(Cmd("dotnet", "new", "mvc", "--output", ".", "--name", config.ApplicationName));
+
+                    log?.WriteLine($"Microsoft.EntityFrameworkCore パッケージへの参照を追加します。");
+                    log?.WriteLine(Cmd("dotnet", "add", "package", "Microsoft.EntityFrameworkCore"));
+
+                    log?.WriteLine($"Microsoft.EntityFrameworkCore.Proxies パッケージへの参照を追加します。");
+                    log?.WriteLine(Cmd("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Proxies"));
+
+                    log?.WriteLine($"Microsoft.EntityFrameworkCore.Sqlite パッケージへの参照を追加します。");
+                    log?.WriteLine(Cmd("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Sqlite"));
+
+                    // halapp.dll への参照を加える。実行時にRuntimeContextを参照しているため
+                    log?.WriteLine($"halapp.dll を参照に追加します。");
+                    const string HALAPP_DLL = "halapp.dll";
+                    var halappDllDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
+                    var halappDllPath = Path.Combine(halappDllDir, HALAPP_DLL);
+                    var halappDllDist = Path.Combine(tempDir, HALAPP_DLL);
+
+                    File.Copy(halappDllPath, halappDllDist, true);
+
+                    var csproj = Path.Combine(tempDir, $"{config.ApplicationName}.csproj");
+                    var doc = new XmlDocument();
+                    doc.LoadXml(csproj);
+
+                    var projectNode = doc.SelectSingleNode("//Project")!;
+                    var itemGroup = doc.CreateElement("ItemGroup");
+                    var reference = doc.CreateElement("Reference");
+                    var hintPath = doc.CreateElement("HintPath");
+
+                    reference.SetAttribute("Include", "Halapp");
+                    hintPath.InnerText = $".\\{HALAPP_DLL}";
+
+                    reference.AppendChild(hintPath);
+                    itemGroup.AppendChild(reference);
+                    projectNode.AppendChild(itemGroup);
+
+                    doc.Save(csproj);
+
+                    // ここまでの処理がすべて成功したら一時ディレクトリを本来のディレクトリ名に変更
+                    if (Directory.Exists(rootDir)) throw new InvalidOperationException($"プロジェクトディレクトリを {rootDir} に移動できません。");
+                    Directory.Move(tempDir, rootDir);
+
+                } finally {
+                    if (Directory.Exists(tempDir)) Directory.Delete(tempDir, recursive: true);
+                }
             }
 
             var _rootAggregates = _rootAggregateBuilder.Invoke(config);
@@ -233,7 +286,7 @@ namespace HalApplicationBuilder {
             });
             serviceCollection.AddScoped(provider => {
                 var schema = provider.GetRequiredService<Serialized.AppSchemaJson>();
-                return Core.Config.FromJson(schema.Config);
+                return Core.Config.FromJson(schema);
             });
             serviceCollection.AddScoped(provider => {
                 var schema = provider.GetRequiredService<Serialized.AppSchemaJson>();

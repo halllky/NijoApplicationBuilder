@@ -1,8 +1,10 @@
-﻿using System;
+using System;
 using System.Xml.Linq;
 
 namespace HalApplicationBuilder.Core {
     public class Config {
+        public required string ApplicationName { get; init; }
+
         public required string OutProjectDir { get; init; }
 
         public required string EntityFrameworkDirectoryRelativePath { get; init; }
@@ -37,23 +39,26 @@ namespace HalApplicationBuilder.Core {
                 MvcViewDirectoryRelativePath = MvcViewDirectoryRelativePath,
             };
         }
-        public static Config FromJson(Serialized.ConfigJson? json) {
+        public static Config FromJson(Serialized.AppSchemaJson? json) {
             if (json == null) throw new ArgumentNullException(nameof(json));
+            if (json.Config == null) throw new ArgumentNullException(nameof(json.Config));
             return new Config {
-                OutProjectDir = json.OutProjectDir ?? string.Empty,
+                ApplicationName = json.Name ?? string.Empty,
 
-                EntityFrameworkDirectoryRelativePath = json.EntityFrameworkDirectoryRelativePath ?? string.Empty,
-                EntityNamespace = json.EntityNamespace ?? string.Empty,
-                DbContextNamespace = json.DbContextNamespace ?? string.Empty,
-                DbContextName = json.DbContextName ?? string.Empty,
+                OutProjectDir = json.Config.OutProjectDir ?? string.Empty,
 
-                MvcControllerDirectoryRelativePath = json.MvcControllerDirectoryRelativePath ?? string.Empty,
-                MvcControllerNamespace = json.MvcControllerNamespace ?? string.Empty,
+                EntityFrameworkDirectoryRelativePath = json.Config.EntityFrameworkDirectoryRelativePath ?? string.Empty,
+                EntityNamespace = json.Config.EntityNamespace ?? string.Empty,
+                DbContextNamespace = json.Config.DbContextNamespace ?? string.Empty,
+                DbContextName = json.Config.DbContextName ?? string.Empty,
 
-                MvcModelDirectoryRelativePath = json.MvcModelDirectoryRelativePath ?? string.Empty,
-                MvcModelNamespace = json.MvcModelNamespace ?? string.Empty,
+                MvcControllerDirectoryRelativePath = json.Config.MvcControllerDirectoryRelativePath ?? string.Empty,
+                MvcControllerNamespace = json.Config.MvcControllerNamespace ?? string.Empty,
 
-                MvcViewDirectoryRelativePath = json.MvcViewDirectoryRelativePath ?? string.Empty,
+                MvcModelDirectoryRelativePath = json.Config.MvcModelDirectoryRelativePath ?? string.Empty,
+                MvcModelNamespace = json.Config.MvcModelNamespace ?? string.Empty,
+
+                MvcViewDirectoryRelativePath = json.Config.MvcViewDirectoryRelativePath ?? string.Empty,
             };
         }
         internal const string XML_CONFIG_SECTION_NAME = "_Config";
@@ -66,6 +71,8 @@ namespace HalApplicationBuilder.Core {
             var ns = configSection?.Element("Namespace");
 
             return new Config {
+                ApplicationName = xDocument.Root.Name.LocalName,
+
                 OutProjectDir = configSection?.Element("OutDirRoot")?.Value ?? string.Empty,
 
                 EntityFrameworkDirectoryRelativePath = rel?.Element("EFCore")?.Value ?? string.Empty,
