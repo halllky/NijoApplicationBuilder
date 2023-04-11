@@ -14,6 +14,7 @@ namespace HalApplicationBuilder {
 
             var xmlFilename = new Argument<string?>();
 
+            // -------------------
             var gen = new Command(name: "gen", description: "ソースコードの自動生成を実行します。") {
                 xmlFilename,
             };
@@ -28,8 +29,24 @@ namespace HalApplicationBuilder {
                     .GenerateCode(config, Console.Out);
             }, xmlFilename);
 
+            // -------------------
+            var template = new Command(name: "template", description: "アプリケーション定義ファイルのテンプレートを生成します。");
+            template.SetHandler(() => {
+                var thisAssembly = Assembly.GetExecutingAssembly();
+                var aaa = thisAssembly.GetManifestResourceNames();
+                var source = thisAssembly.GetManifestResourceStream("HalApplicationBuilder.Template.xml")!;
+                using var sourceReader = new StreamReader(source);
+                
+                var outFileName = Path.Combine(Directory.GetCurrentDirectory(), "template.xml");
+                if (File.Exists(outFileName)) throw new InvalidOperationException($"同名のファイルがすでに存在します: {outFileName}");
+                using var outFile = new StreamWriter(outFileName, append: false, encoding: Encoding.UTF8);
+                outFile.WriteLine(sourceReader.ReadToEnd());
+            });
+
+            // -------------------
             var rootCommand = new RootCommand("HalApplicationBuilder");
             rootCommand.AddCommand(gen);
+            rootCommand.AddCommand(template);
             return await rootCommand.InvokeAsync(args);
         }
     }

@@ -36,6 +36,7 @@
 	  <None Remove="Runtime\" />
 	  <None Remove="Serialized\" />
 	  <None Remove="Core\Definition\" />
+	  <None Remove="Template.xml" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Update="Core\AggregateInstanceTemplate.tt">
@@ -175,6 +176,9 @@
 		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\SearchMethodTemplate.cs">
 		  <DependentUpon>..\CodeRendering\SearchMethodTemplate.tt</DependentUpon>
 		</Compile>
+	</ItemGroup>
+	<ItemGroup>
+	  <EmbeddedResource Include="Template.xml" />
 	</ItemGroup>
 	<ProjectExtensions>
 	  <MonoDevelop>

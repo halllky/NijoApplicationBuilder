@@ -34,7 +34,7 @@ q# :cherry_blossom: HalApplicationBuilder
 ### 0.プロジェクトの準備
 - プロジェクトを作成
   - `dotnet new mvc`
-  - HalApplicationBuilderプロジェクトへの参照を加える
+  - HalApplicationBuilderのdllへの参照を加える
   - `_Layout.cshtml` を指定の内容に書き換え
   - tailwindcssを有効にする
     - `npm init -y`
@@ -48,6 +48,7 @@ q# :cherry_blossom: HalApplicationBuilder
   - Microsoft.EntityFrameworkCore.Proxies
     - ナビゲーションプロパティアクセス時に自動で遅延ロードするため(UseLazyLoadingProxies)
 - DbContextクラスをpartialで作成
+  - `DbContextOptions` を引数にとるコンストラクタが必須
 - `IServiceCollection` に必要なサービスを登録する
   - `RuntimeContext`
   - そのプロジェクトのDbContext
