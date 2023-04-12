@@ -6,6 +6,15 @@ using HalApplicationBuilder.Core;
 
 namespace HalApplicationBuilder.CodeRendering {
 
+    partial class DbContextTemplate {
+        internal DbContextTemplate(Core.Config config) {
+            _nameSpaceName = config.DbContextNamespace;
+            _dbContextName = config.DbContextName;
+        }
+        private readonly string _nameSpaceName;
+        private readonly string _dbContextName;
+    }
+
     partial class DbSetTemplate {
         internal DbSetTemplate(Core.Config config, IEnumerable<Core.Aggregate> aggregates) {
             _config = config;

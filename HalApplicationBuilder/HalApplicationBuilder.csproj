@@ -22,7 +22,6 @@
 	</ItemGroup>
 	<ItemGroup>
 		<Folder Include="DotnetEx\" />
-		<Folder Include="CodeRendering\" />
 		<Folder Include="Core\" />
 		<Folder Include="Runtime\" />
 		<Folder Include="Serialized\" />
@@ -40,6 +39,18 @@
 	  <None Remove="Template.xml" />
 	</ItemGroup>
 	<ItemGroup>
+		<None Update="CodeRendering\DbContextTemplate.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>DbContextTemplate.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering\AspNetMvc\LayoutCshtmlTemplate.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>LayoutCshtmlTemplate.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering\DefaultRuntimeConfigTemplate.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>DefaultRuntimeConfigTemplate.cs</LastGenOutput>
+		</None>
 		<None Update="Core\AggregateInstanceTemplate.tt">
 			<Generator>TextTemplatingFilePreprocessor</Generator>
 			<LastGenOutput>AggregateInstanceTemplate.cs</LastGenOutput>
@@ -123,6 +134,21 @@
 		<Compile Update="CodeGenerating\MultiView\MultiViewTemplate.cs">
 			<DependentUpon>MultiViewTemplate.tt</DependentUpon>
 		</Compile>
+		<Compile Update="CodeRendering\DbContextTemplate.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>DbContextTemplate.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering\AspNetMvc\LayoutCshtmlTemplate.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>LayoutCshtmlTemplate.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering\DefaultRuntimeConfigTemplate.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>DefaultRuntimeConfigTemplate.tt</DependentUpon>
+		</Compile>
 		<Compile Update="Core\AggregateInstanceTemplate.cs">
 			<DependentUpon>AggregateInstanceTemplate.tt</DependentUpon>
 		</Compile>
@@ -180,6 +206,16 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <EmbeddedResource Include="Template.xml" />
+	</ItemGroup>
+	<ItemGroup>
+	  <None Include="CodeRendering\DbContextTemplate.cs">
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	    <DependentUpon>DbContextTemplate.tt</DependentUpon>
+	  </None>
+	</ItemGroup>
+	<ItemGroup>
+	  <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
 	</ItemGroup>
 	<ProjectExtensions>
 	  <MonoDevelop>

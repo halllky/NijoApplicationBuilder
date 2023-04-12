@@ -14,6 +14,7 @@ using HalApplicationBuilder.Runtime.AspNetMvc;
 using HalApplicationBuilder.DotnetEx;
 using System.Xml;
 using System.Threading;
+using System.Text.RegularExpressions;
 
 namespace HalApplicationBuilder {
 
@@ -150,6 +151,49 @@ namespace HalApplicationBuilder {
                     var reference = itemGroup.AddItem("Reference", "MyAssembly");
                     reference.AddMetadata("HintPath", $".\\{HALAPP_DLL}");
                     csproj.Save();
+
+                    // ソースコード生成
+                    var dbContextFileName = $"{config.DbContextName}.cs";
+                    log?.WriteLine($"{dbContextFileName} ファイルを作成します。");
+                    var dbContextDir = Path.Combine(tempDir, "EntityFramework");
+                    Directory.CreateDirectory(dbContextDir);
+                    using (var sw = new StreamWriter(Path.Combine(dbContextDir, dbContextFileName), append: false, encoding: Encoding.UTF8)) {
+                        sw.Write(new CodeRendering.DbContextTemplate(config).TransformText());
+                    }
+
+                    const string LAYOUT_CSHTML = "_Layout.cshtml";
+                    log?.WriteLine($"{LAYOUT_CSHTML} ファイルを書き換えます。");
+                    var layoutCshtmlDir = Path.Combine(tempDir, "Views", "Shared");
+                    using (var sw = new StreamWriter(Path.Combine(layoutCshtmlDir, LAYOUT_CSHTML), append: false, encoding: Encoding.UTF8)) {
+                        sw.Write(new CodeRendering.AspNetMvc.LayoutCshtmlTemplate().TransformText());
+                    }
+
+                    // Program.cs書き換え
+                    log?.WriteLine($"HalappDefaultConfigure.cs ファイルを作成します。");
+                    using (var sw = new StreamWriter(Path.Combine(tempDir, "HalappDefaultConfigure.cs"), append: false, encoding: Encoding.UTF8)) {
+                        sw.Write(new CodeRendering.DefaultRuntimeConfigTemplate().TransformText());
+                    }
+                    log?.WriteLine($"Program.cs ファイルを書き換えます。");
+                    var insertLines = new[] {
+                        $"",
+                        $"/* HalApplicationBuilder によって自動生成されたコード ここから */",
+                        $"var runtimeRootDir = System.IO.Directory.GetCurrentDirectory();",
+                        $"HalApplicationBuilder.Runtime.HalAppDefaultConfigurer.Configure(builder.Services, runtimeRootDir);",
+
+                        $"// HTMLのエンコーディングをUTF-8にする(日本語のHTMLエンコード防止)",
+                        $"builder.Services.Configure<Microsoft.Extensions.WebEncoders.WebEncoderOptions>(options => {{",
+                        $"    options.TextEncoderSettings = new System.Text.Encodings.Web.TextEncoderSettings(System.Text.Unicode.UnicodeRanges.All);",
+                        $"}});",
+                        $"/* HalApplicationBuilder によって自動生成されたコード ここまで */",
+                        $"",
+                    };
+                    var regex = new Regex(@"^.*[a-zA-Z]+ builder = .+;$");
+                    var programCsPath = Path.Combine(tempDir, "Program.cs");
+                    var lines = File.ReadAllLines(programCsPath).ToList();
+                    var position = lines.FindIndex(line => regex.IsMatch(line));
+                    if (position == -1) throw new InvalidOperationException("Program.cs の中にIServiceCollectionを持つオブジェクトを初期化する行が見つかりません。");
+                    lines.InsertRange(position + 1, insertLines);
+                    File.WriteAllLines(programCsPath, lines);
 
                     // ここまでの処理がすべて成功したら一時ディレクトリを本来のディレクトリ名に変更
                     if (Directory.Exists(rootDir)) throw new InvalidOperationException($"プロジェクトディレクトリを {rootDir} に移動できません。");

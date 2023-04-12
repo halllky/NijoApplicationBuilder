@@ -1,6 +1,4 @@
-using Microsoft.Extensions.WebEncoders;
-using System.Text.Encodings.Web;
-using System.Text.Unicode;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,8 +9,8 @@ HalApplicationBuilder.RuntimeService.Configure(
     System.IO.Path.Combine(runtimeRootDir, "halapp.json"));
 
 // HTMLのエンコーディングをUTF-8にする(日本語のHTMLエンコード防止)
-builder.Services.Configure<WebEncoderOptions>(options => {
-    options.TextEncoderSettings = new TextEncoderSettings(UnicodeRanges.All);
+builder.Services.Configure<Microsoft.Extensions.WebEncoders.WebEncoderOptions>(options => {
+    options.TextEncoderSettings = new System.Text.Encodings.Web.TextEncoderSettings(System.Text.Unicode.UnicodeRanges.All);
 });
 // SaveやDetailでDbContextをダイレクトに参照しているため // TODO: configの情報からHalApp内でやるべきでは
 builder.Services.AddScoped<Microsoft.EntityFrameworkCore.DbContext>(provider => {

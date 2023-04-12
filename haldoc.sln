@@ -3,19 +3,16 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HalApplicationBuilder", "HalApplicationBuilder\HalApplicationBuilder.csproj", "{F29A08C6-7DEF-4E75-980F-5BE6694E96A5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HalApplicationBuilder", "HalApplicationBuilder\HalApplicationBuilder.csproj", "{F29A08C6-7DEF-4E75-980F-5BE6694E96A5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HalApplicationBuilder.Test.DistMvc", "HalApplicationBuilder.Test.DistMvc\HalApplicationBuilder.Test.DistMvc.csproj", "{EFA824EB-5B8A-4A0C-AE33-C176ACA643BE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HalApplicationBuilder.Test.DistMvc", "HalApplicationBuilder.Test.DistMvc\HalApplicationBuilder.Test.DistMvc.csproj", "{EFA824EB-5B8A-4A0C-AE33-C176ACA643BE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HalApplicationBuilder.Test", "HalApplicationBuilder.Test\HalApplicationBuilder.Test.csproj", "{39CAB5C4-6EA6-4005-BF4D-B91D03628E52}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HalApplicationBuilder.Test", "HalApplicationBuilder.Test\HalApplicationBuilder.Test.csproj", "{39CAB5C4-6EA6-4005-BF4D-B91D03628E52}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{F29A08C6-7DEF-4E75-980F-5BE6694E96A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -30,5 +27,11 @@ Global
 		{39CAB5C4-6EA6-4005-BF4D-B91D03628E52}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{39CAB5C4-6EA6-4005-BF4D-B91D03628E52}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{39CAB5C4-6EA6-4005-BF4D-B91D03628E52}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C97BEF06-EBCE-4C21-B1CE-D45547BEF3EC}
 	EndGlobalSection
 EndGlobal
