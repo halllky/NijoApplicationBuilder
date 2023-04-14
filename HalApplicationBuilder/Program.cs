@@ -30,17 +30,15 @@ namespace HalApplicationBuilder {
             }, xmlFilename);
 
             // -------------------
-            var template = new Command(name: "template", description: "アプリケーション定義ファイルのテンプレートを生成します。");
+            var template = new Command(name: "template", description: "アプリケーション定義ファイルのテンプレートを表示します。");
             template.SetHandler(() => {
                 var thisAssembly = Assembly.GetExecutingAssembly();
-                var aaa = thisAssembly.GetManifestResourceNames();
                 var source = thisAssembly.GetManifestResourceStream("HalApplicationBuilder.Template.xml")!;
                 using var sourceReader = new StreamReader(source);
 
-                var outFileName = Path.Combine(Directory.GetCurrentDirectory(), "template.xml");
-                if (File.Exists(outFileName)) throw new InvalidOperationException($"同名のファイルがすでに存在します: {outFileName}");
-                using var outFile = new StreamWriter(outFileName, append: false, encoding: Encoding.UTF8);
-                outFile.WriteLine(sourceReader.ReadToEnd());
+                while (!sourceReader.EndOfStream) {
+                    Console.WriteLine(sourceReader.ReadLine());
+                }
             });
 
             // -------------------
