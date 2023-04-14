@@ -6,15 +6,14 @@ using System.Linq;
 using System.IO;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Microsoft.Extensions.DependencyModel;
 using Microsoft.Extensions.DependencyInjection;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.Runtime.AspNetMvc;
 using HalApplicationBuilder.DotnetEx;
-using System.Xml;
 using System.Threading;
 using System.Text.RegularExpressions;
+using System.Runtime.InteropServices;
+using Newtonsoft.Json.Linq;
 
 namespace HalApplicationBuilder {
 
@@ -89,9 +88,18 @@ namespace HalApplicationBuilder {
 
                 void Cmd(string filename, params string[] args) {
                     using var cmd = new System.Diagnostics.Process();
+
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                        // windowsでnvmを使うとき直にnpmを実行できないためcmd経由で実行する
+                        cmd.StartInfo.FileName = "cmd";
+                        cmd.StartInfo.ArgumentList.Add("/c");
+                        cmd.StartInfo.ArgumentList.Add($"{filename} {string.Join(" ", args)}");
+                    } else {
+                        cmd.StartInfo.WorkingDirectory = tempDir;
+                        cmd.StartInfo.FileName = filename;
+                        foreach (var arg in args) cmd.StartInfo.ArgumentList.Add(arg);
+                    }
                     cmd.StartInfo.WorkingDirectory = tempDir;
-                    cmd.StartInfo.FileName = filename;
-                    foreach (var arg in args) cmd.StartInfo.ArgumentList.Add(arg);
                     cmd.StartInfo.RedirectStandardOutput = true;
                     cmd.StartInfo.RedirectStandardError = true;
                     cmd.StartInfo.StandardOutputEncoding = Console.OutputEncoding;
@@ -190,10 +198,37 @@ namespace HalApplicationBuilder {
                     var regex = new Regex(@"^.*[a-zA-Z]+ builder = .+;$");
                     var programCsPath = Path.Combine(tempDir, "Program.cs");
                     var lines = File.ReadAllLines(programCsPath).ToList();
-                    var position = lines.FindIndex(line => regex.IsMatch(line));
+                    var position = lines.FindIndex(regex.IsMatch);
                     if (position == -1) throw new InvalidOperationException("Program.cs の中にIServiceCollectionを持つオブジェクトを初期化する行が見つかりません。");
                     lines.InsertRange(position + 1, insertLines);
                     File.WriteAllLines(programCsPath, lines);
+
+                    // tailwindcssを有効にする
+                    log?.WriteLine($"package.jsonを作成します。");
+                    Cmd("npm", "init", "-y");
+                    var packageJsonPath = Path.Combine(tempDir, "package.json");
+                    var packageJson = JObject.Parse(File.ReadAllText(packageJsonPath));
+                    var scripts = new JObject();
+                    scripts["buildcss"] = "postcss wwwroot/css/app.css -o wwwroot/css/app.min.css";
+                    packageJson.SelectToken("name").Replace($"halapp-{Guid.NewGuid()}");
+                    packageJson.SelectToken("scripts").Replace(scripts);
+                    File.WriteAllText(packageJsonPath, packageJson.ToString());
+
+                    log?.WriteLine($"必要な Node.js パッケージをインストールします。");
+                    Cmd("npm", "install", "tailwindcss", "postcss", "postcss-cli", "autoprefixer");
+
+                    log?.WriteLine($"app.cssファイルを生成します。");
+                    using (var sw = new StreamWriter(Path.Combine(tempDir, "wwwroot", "css", "app.css"), append: false, encoding: Encoding.UTF8)) {
+                        sw.Write(new CodeRendering.AspNetMvc.app_css().TransformText());
+                    }
+                    log?.WriteLine($"postcss.config.jsファイルを生成します。");
+                    using (var sw = new StreamWriter(Path.Combine(tempDir, "postcss.config.js"), append: false, encoding: Encoding.UTF8)) {
+                        sw.Write(new CodeRendering.AspNetMvc.postcss_config_js().TransformText());
+                    }
+                    log?.WriteLine($"tailwind.config.jsファイルを生成します。");
+                    using (var sw = new StreamWriter(Path.Combine(tempDir, "tailwind.config.js"), append: false, encoding: Encoding.UTF8)) {
+                        sw.Write(new CodeRendering.AspNetMvc.tailwind_config_js().TransformText());
+                    }
 
                     // ここまでの処理がすべて成功したら一時ディレクトリを本来のディレクトリ名に変更
                     if (Directory.Exists(rootDir)) throw new InvalidOperationException($"プロジェクトディレクトリを {rootDir} に移動できません。");

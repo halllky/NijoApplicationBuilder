@@ -39,6 +39,18 @@
 	  <None Remove="Template.xml" />
 	</ItemGroup>
 	<ItemGroup>
+		<None Update="CodeRendering\AspNetMvc\app_css.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>app_css.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering\AspNetMvc\postcss_config_js.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>postcss_config_js.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering\AspNetMvc\tailwind_config_js.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>tailwind_config_js.cs</LastGenOutput>
+		</None>
 		<None Update="CodeRendering\DbContextTemplate.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>DbContextTemplate.cs</LastGenOutput>
@@ -133,6 +145,21 @@
 	<ItemGroup>
 		<Compile Update="CodeGenerating\MultiView\MultiViewTemplate.cs">
 			<DependentUpon>MultiViewTemplate.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering\AspNetMvc\app_css.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>app_css.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering\AspNetMvc\postcss_config_js.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>postcss_config_js.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering\AspNetMvc\tailwind_config_js.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>tailwind_config_js.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering\DbContextTemplate.cs">
 		  <DesignTime>True</DesignTime>

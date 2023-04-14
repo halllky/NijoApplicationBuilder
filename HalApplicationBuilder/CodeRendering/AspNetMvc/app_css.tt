@@ -1,0 +1,35 @@
+<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .halapp-btn-primary {
+    @apply px-2 py-1 bg-stone-700 text-white font-semibold rounded-lg shadow-md hover:bg-stone-800 focus:ring-1 focus:ring-stone-400 focus:ring-opacity-75;
+  }
+
+  .halapp-btn-secondary {
+    @apply px-2 py-1 bg-transparent hover:bg-stone-800 hover:bg-opacity-25 rounded-lg ring-1 ring-inset ring-stone-800 ring-opacity-75;
+  }
+
+  .halapp-btn-link {
+    @apply underline decoration-1;
+  }
+  /* MultiViewの検索条件欄など */
+  .halapp-card-aggregate {
+    @apply border mt-2 p-2 bg-slate-50;
+  }
+
+  .halapp-page-title {
+    @apply font-bold text-[18px] select-none opacity-50;
+  }
+
+  .halapp-label-member-key {
+    @apply select-none opacity-50;
+  }
+}
