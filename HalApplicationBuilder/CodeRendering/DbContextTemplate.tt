@@ -8,6 +8,18 @@ using Microsoft.EntityFrameworkCore;
 namespace <#=_nameSpaceName#> {
 
     public partial class <#=_dbContextName#> : DbContext {
-        public <#=_dbContextName#>(DbContextOptions<<#=_dbContextName#>> options) : base(options) { }
+        public <#=_dbContextName#>(DbContextOptions<<#=_dbContextName#>> options) : base(options) {
+#if DEBUG
+            // for hot reload
+            if (!_migrated) {
+                Database.EnsureCreated();
+                Database.Migrate();
+                _migrated = true;
+            }
+#endif
+        }
+#if DEBUG
+        private static bool _migrated = false;
+#endif
     }
 }

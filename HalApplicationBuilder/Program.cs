@@ -27,18 +27,15 @@ namespace HalApplicationBuilder {
             var xmlFilename = new Argument<string?>();
 
             var gen = new Command(name: "gen", description: "ソースコードの自動生成を実行します。") { xmlFilename };
-            var build = new Command(name: "build", description: "プロジェクトのビルドを行います。") { xmlFilename };
             var debug = new Command(name: "debug", description: "プロジェクトのデバッグを開始します。") { xmlFilename };
             var template = new Command(name: "template", description: "アプリケーション定義ファイルのテンプレートを表示します。");
 
             gen.SetHandler(xmlFilename => Gen(xmlFilename, cancellationTokenSource.Token), xmlFilename);
-            build.SetHandler(xmlFilename => Build(xmlFilename, cancellationTokenSource.Token), xmlFilename);
             debug.SetHandler(xmlFilename => Debug(xmlFilename, cancellationTokenSource.Token), xmlFilename);
             template.SetHandler(() => Template(cancellationTokenSource.Token));
 
             var rootCommand = new RootCommand("HalApplicationBuilder");
             rootCommand.AddCommand(gen);
-            rootCommand.AddCommand(build);
             rootCommand.AddCommand(debug);
             rootCommand.AddCommand(template);
             return await rootCommand.InvokeAsync(args);
@@ -55,18 +52,6 @@ namespace HalApplicationBuilder {
                 .GenerateCode(config, Console.Out, cancellationToken);
         }
 
-        private static void Build(string? xmlFilename, CancellationToken cancellationToken) {
-            if (xmlFilename == null) throw new InvalidOperationException($"対象XMLを指定してください。");
-            var xmlFullpath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), xmlFilename));
-            var xmlContent = File.ReadAllText(xmlFullpath);
-            var config = Core.Config.FromXml(xmlContent);
-            var workingDirectory = Path.Combine(Directory.GetCurrentDirectory(), config.OutProjectDir);
-            var process = new DotnetEx.ExternalProcess(workingDirectory, cancellationToken);
-
-            // process.Start("dotnet", "build");
-            process.Start("npm", "run", CodeGenerator.PACKAGE_JSON_CSS_BUILD_SCRIPT_NAME);
-        }
-
         private static void Debug(string? xmlFilename, CancellationToken cancellationToken) {
             if (xmlFilename == null) throw new InvalidOperationException($"対象XMLを指定してください。");
             var xmlFullpath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), xmlFilename));
@@ -80,7 +65,6 @@ namespace HalApplicationBuilder {
             using var watcher = new FileSystemWatcher(Path.GetDirectoryName(xmlFullpath)!, xmlFilename);
             watcher.Changed += (sender, e) => {
                 Gen(xmlFilename, cancellationToken);
-                Build(xmlFilename, cancellationToken);
             };
 
             watcher.EnableRaisingEvents = true;

@@ -112,16 +112,25 @@ namespace HalApplicationBuilder {
 
                     File.Copy(halappDllPath, halappDllDist, true);
 
-                    // csprojファイルを編集して halapp.dll への参照を追加する（dll参照は dotnet add でサポートされていないため）
+                    // csprojファイルを編集
                     var csprojPath = Path.Combine(tempDir, $"{config.ApplicationName}.csproj");
                     var projectOption = new Microsoft.Build.Definition.ProjectOptions {
                         // Referenceを追加するだけなので Microsoft.NET.Sdk.Web が無くてもエラーにならないようにしたい
                         LoadSettings = Microsoft.Build.Evaluation.ProjectLoadSettings.IgnoreMissingImports,
                     };
                     var csproj = Microsoft.Build.Evaluation.Project.FromFile(csprojPath, projectOption);
+
+                    // halapp.dll への参照を追加する（dll参照は dotnet add でサポートされていないため）
                     var itemGroup = csproj.Xml.AddItemGroup();
                     var reference = itemGroup.AddItem("Reference", "MyAssembly");
                     reference.AddMetadata("HintPath", $".\\{HALAPP_DLL}");
+
+                    // ビルド後にcssをビルドするコマンドが走るようにする
+                    var target = csproj.Xml.AddTarget("PostBuild");
+                    target.AfterTargets = "PostBuildEvent";
+                    var exec = target.AddTask("Exec");
+                    exec.SetParameter("Command", $"npm run {PACKAGE_JSON_CSS_BUILD_SCRIPT_NAME}");
+
                     csproj.Save();
 
                     // ソースコード生成
@@ -315,6 +324,6 @@ namespace HalApplicationBuilder {
             }
         }
 
-        internal const string PACKAGE_JSON_CSS_BUILD_SCRIPT_NAME = "buildcss";
+        private const string PACKAGE_JSON_CSS_BUILD_SCRIPT_NAME = "buildcss";
     }
 }
