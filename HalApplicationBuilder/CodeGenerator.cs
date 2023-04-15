@@ -173,7 +173,7 @@ namespace HalApplicationBuilder {
                     var packageJsonPath = Path.Combine(tempDir, "package.json");
                     var packageJson = JObject.Parse(File.ReadAllText(packageJsonPath));
                     var scripts = new JObject();
-                    scripts["buildcss"] = "postcss wwwroot/css/app.css -o wwwroot/css/app.min.css";
+                    scripts[PACKAGE_JSON_CSS_BUILD_SCRIPT_NAME] = "postcss wwwroot/css/app.css -o wwwroot/css/app.min.css";
                     packageJson.SelectToken("name").Replace($"halapp-{Guid.NewGuid()}");
                     packageJson.SelectToken("scripts").Replace(scripts);
                     File.WriteAllText(packageJsonPath, packageJson.ToString());
@@ -314,5 +314,7 @@ namespace HalApplicationBuilder {
                 }
             }
         }
+
+        internal const string PACKAGE_JSON_CSS_BUILD_SCRIPT_NAME = "buildcss";
     }
 }
