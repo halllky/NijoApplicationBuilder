@@ -82,56 +82,27 @@ namespace HalApplicationBuilder {
                 var project = $"halapp.temp.{Path.GetRandomFileName()}";
                 var tempDir = Path.Combine(Directory.GetCurrentDirectory(), project);
 
-                void Cmd(string filename, params string[] args) {
-                    using var cmd = new System.Diagnostics.Process();
-
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                        // windowsでnvmを使うとき直にnpmを実行できないためcmd経由で実行する
-                        cmd.StartInfo.FileName = "cmd";
-                        cmd.StartInfo.ArgumentList.Add("/c");
-                        cmd.StartInfo.ArgumentList.Add($"{filename} {string.Join(" ", args)}");
-                    } else {
-                        cmd.StartInfo.WorkingDirectory = tempDir;
-                        cmd.StartInfo.FileName = filename;
-                        foreach (var arg in args) cmd.StartInfo.ArgumentList.Add(arg);
-                    }
-                    cmd.StartInfo.WorkingDirectory = tempDir;
-                    cmd.StartInfo.RedirectStandardOutput = true;
-                    cmd.StartInfo.RedirectStandardError = true;
-                    cmd.StartInfo.StandardOutputEncoding = Console.OutputEncoding;
-                    cmd.StartInfo.StandardErrorEncoding = Console.OutputEncoding;
-                    cmd.OutputDataReceived += (sender, e) => log?.WriteLine(e.Data);
-                    cmd.ErrorDataReceived += (sender, e) => log?.WriteLine(e.Data);
-
-                    cmd.Start();
-                    cmd.BeginOutputReadLine();
-                    cmd.BeginErrorReadLine();
-                    while (!cmd.HasExited) {
-                        Thread.Sleep(100);
-                    }
-
-                    if (cmd.ExitCode != 0) {
-                        throw new InvalidOperationException($"外部コマンド( {filename} {string.Join(" ", args)})実行時にエラーが発生しました。");
-                    }
-
-                    return;
+                void DeleteTempDirectory() {
+                    Console.WriteLine("一時ディレクトリを削除します。");
+                    if (Directory.Exists(tempDir)) Directory.Delete(tempDir, recursive: true);
                 }
+                Program.OnCancelKeyPress.Push(DeleteTempDirectory);
 
                 try {
                     Directory.CreateDirectory(tempDir);
 
                     // dotnet CLI でプロジェクトを新規作成
                     log?.WriteLine($"ASP.NET MVC Core プロジェクトを作成します。");
-                    Cmd("dotnet", "new", "mvc", "--output", ".", "--name", config.ApplicationName);
+                    Program.Cmd(tempDir, "dotnet", "new", "mvc", "--output", ".", "--name", config.ApplicationName);
 
                     log?.WriteLine($"Microsoft.EntityFrameworkCore パッケージへの参照を追加します。");
-                    Cmd("dotnet", "add", "package", "Microsoft.EntityFrameworkCore");
+                    Program.Cmd(tempDir, "dotnet", "add", "package", "Microsoft.EntityFrameworkCore");
 
                     log?.WriteLine($"Microsoft.EntityFrameworkCore.Proxies パッケージへの参照を追加します。");
-                    Cmd("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Proxies");
+                    Program.Cmd(tempDir, "dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Proxies");
 
                     log?.WriteLine($"Microsoft.EntityFrameworkCore.Sqlite パッケージへの参照を追加します。");
-                    Cmd("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Sqlite");
+                    Program.Cmd(tempDir, "dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Sqlite");
 
                     // halapp.dll への参照を加える。実行時にRuntimeContextを参照しているため
                     log?.WriteLine($"halapp.dll を参照に追加します。");
@@ -147,7 +118,7 @@ namespace HalApplicationBuilder {
                     // csprojファイルを編集して halapp.dll への参照を追加する（dll参照は dotnet add でサポートされていないため）
                     var csprojPath = Path.Combine(tempDir, $"{config.ApplicationName}.csproj");
                     var projectOption = new Microsoft.Build.Definition.ProjectOptions {
-                        //　Referenceを追加するだけなので Microsoft.NET.Sdk.Web が無くてもエラーにならないようにしたい
+                        // Referenceを追加するだけなので Microsoft.NET.Sdk.Web が無くてもエラーにならないようにしたい
                         LoadSettings = Microsoft.Build.Evaluation.ProjectLoadSettings.IgnoreMissingImports,
                     };
                     var csproj = Microsoft.Build.Evaluation.Project.FromFile(csprojPath, projectOption);
@@ -201,7 +172,7 @@ namespace HalApplicationBuilder {
 
                     // tailwindcssを有効にする
                     log?.WriteLine($"package.jsonを作成します。");
-                    Cmd("npm", "init", "-y");
+                    Program.Cmd(tempDir, "npm", "init", "-y");
                     var packageJsonPath = Path.Combine(tempDir, "package.json");
                     var packageJson = JObject.Parse(File.ReadAllText(packageJsonPath));
                     var scripts = new JObject();
@@ -211,7 +182,7 @@ namespace HalApplicationBuilder {
                     File.WriteAllText(packageJsonPath, packageJson.ToString());
 
                     log?.WriteLine($"必要な Node.js パッケージをインストールします。");
-                    Cmd("npm", "install", "tailwindcss", "postcss", "postcss-cli", "autoprefixer");
+                    Program.Cmd(tempDir, "npm", "install", "tailwindcss", "postcss", "postcss-cli", "autoprefixer");
 
                     log?.WriteLine($"app.cssファイルを生成します。");
                     using (var sw = new StreamWriter(Path.Combine(tempDir, "wwwroot", "css", "app.css"), append: false, encoding: Encoding.UTF8)) {
@@ -231,7 +202,7 @@ namespace HalApplicationBuilder {
                     Directory.Move(tempDir, rootDir);
 
                 } finally {
-                    if (Directory.Exists(tempDir)) Directory.Delete(tempDir, recursive: true);
+                    DeleteTempDirectory();
                 }
             }
 
