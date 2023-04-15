@@ -70,39 +70,36 @@ namespace HalApplicationBuilder {
         /// </summary>
         /// <param name="config">コード生成に関する設定</param>
         /// <param name="log">このオブジェクトを指定した場合、コード生成の詳細を記録します。</param>
-        public void GenerateCode(Config config, TextWriter? log = null) {
+        /// <param name="cancellationToken">このオブジェクトを指定した場合、処理を途中でキャンセルすることが可能になります。</param>
+        public void GenerateCode(Config config, TextWriter? log = null, CancellationToken? cancellationToken = null) {
 
             log?.WriteLine($"コード自動生成開始");
 
             var rootDir = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), config.OutProjectDir));
             log?.WriteLine($"ルートディレクトリ: {rootDir}");
 
-            // プロジェクト初回作成時
-            if (!Directory.Exists(rootDir)) {
-                var project = $"halapp.temp.{Path.GetRandomFileName()}";
-                var tempDir = Path.Combine(Directory.GetCurrentDirectory(), project);
+            string? tempDir = null;
+            try {
+                // プロジェクト初回作成時
+                if (!Directory.Exists(rootDir)) {
+                    var project = $"halapp.temp.{Path.GetRandomFileName()}";
+                    tempDir = Path.Combine(Directory.GetCurrentDirectory(), project);
 
-                void DeleteTempDirectory() {
-                    Console.WriteLine("一時ディレクトリを削除します。");
-                    if (Directory.Exists(tempDir)) Directory.Delete(tempDir, recursive: true);
-                }
-                Program.OnCancelKeyPress.Push(DeleteTempDirectory);
-
-                try {
                     Directory.CreateDirectory(tempDir);
+                    var process = new DotnetEx.ExternalProcess(tempDir, cancellationToken);
 
                     // dotnet CLI でプロジェクトを新規作成
                     log?.WriteLine($"ASP.NET MVC Core プロジェクトを作成します。");
-                    Program.Cmd(tempDir, "dotnet", "new", "mvc", "--output", ".", "--name", config.ApplicationName);
+                    process.Start("dotnet", "new", "mvc", "--output", ".", "--name", config.ApplicationName);
 
                     log?.WriteLine($"Microsoft.EntityFrameworkCore パッケージへの参照を追加します。");
-                    Program.Cmd(tempDir, "dotnet", "add", "package", "Microsoft.EntityFrameworkCore");
+                    process.Start("dotnet", "add", "package", "Microsoft.EntityFrameworkCore");
 
                     log?.WriteLine($"Microsoft.EntityFrameworkCore.Proxies パッケージへの参照を追加します。");
-                    Program.Cmd(tempDir, "dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Proxies");
+                    process.Start("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Proxies");
 
                     log?.WriteLine($"Microsoft.EntityFrameworkCore.Sqlite パッケージへの参照を追加します。");
-                    Program.Cmd(tempDir, "dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Sqlite");
+                    process.Start("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Sqlite");
 
                     // halapp.dll への参照を加える。実行時にRuntimeContextを参照しているため
                     log?.WriteLine($"halapp.dll を参照に追加します。");
@@ -172,7 +169,7 @@ namespace HalApplicationBuilder {
 
                     // tailwindcssを有効にする
                     log?.WriteLine($"package.jsonを作成します。");
-                    Program.Cmd(tempDir, "npm", "init", "-y");
+                    process.Start("npm", "init", "-y");
                     var packageJsonPath = Path.Combine(tempDir, "package.json");
                     var packageJson = JObject.Parse(File.ReadAllText(packageJsonPath));
                     var scripts = new JObject();
@@ -182,7 +179,7 @@ namespace HalApplicationBuilder {
                     File.WriteAllText(packageJsonPath, packageJson.ToString());
 
                     log?.WriteLine($"必要な Node.js パッケージをインストールします。");
-                    Program.Cmd(tempDir, "npm", "install", "tailwindcss", "postcss", "postcss-cli", "autoprefixer");
+                    process.Start("npm", "install", "tailwindcss", "postcss", "postcss-cli", "autoprefixer");
 
                     log?.WriteLine($"app.cssファイルを生成します。");
                     using (var sw = new StreamWriter(Path.Combine(tempDir, "wwwroot", "css", "app.css"), append: false, encoding: Encoding.UTF8)) {
@@ -200,117 +197,122 @@ namespace HalApplicationBuilder {
                     // ここまでの処理がすべて成功したら一時ディレクトリを本来のディレクトリ名に変更
                     if (Directory.Exists(rootDir)) throw new InvalidOperationException($"プロジェクトディレクトリを {rootDir} に移動できません。");
                     Directory.Move(tempDir, rootDir);
+                }
 
-                } finally {
-                    DeleteTempDirectory();
+                var _rootAggregates = _rootAggregateBuilder.Invoke(config);
+                var allAggregates = _rootAggregates
+                    .SelectMany(a => a.GetDescendantsAndSelf())
+                    .ToArray();
+
+                log?.WriteLine("コード自動生成: スキーマ定義");
+                using (var sw = new StreamWriter(Path.Combine(rootDir, "halapp.json"), append: false, encoding: Encoding.UTF8)) {
+                    var schema = new Serialized.AppSchemaJson {
+                        Config = config.ToJson(onlyRuntimeConfig: true),
+                        Aggregates = _rootAggregates.Select(a => a.ToJson()).ToArray(),
+                    };
+                    sw.Write(System.Text.Json.JsonSerializer.Serialize(schema, new System.Text.Json.JsonSerializerOptions {
+                        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All), // 日本語用
+                        WriteIndented = true,
+                        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull, // nullのフィールドをシリアライズしない
+                    }));
+                }
+
+                var efSourceDir = Path.Combine(rootDir, config.EntityFrameworkDirectoryRelativePath);
+                if (Directory.Exists(efSourceDir)) Directory.Delete(efSourceDir, recursive: true);
+                Directory.CreateDirectory(efSourceDir);
+
+                log?.WriteLine("コード自動生成: Entity定義");
+                using (var sw = new StreamWriter(Path.Combine(efSourceDir, "Entities.cs"), append: false, encoding: Encoding.UTF8)) {
+                    sw.Write(new CodeRendering.EntityClassTemplate(config, allAggregates).TransformText());
+                }
+                log?.WriteLine("コード自動生成: DbSet");
+                using (var sw = new StreamWriter(Path.Combine(efSourceDir, "DbSet.cs"), append: false, encoding: Encoding.UTF8)) {
+                    sw.Write(new CodeRendering.DbSetTemplate(config, allAggregates).TransformText());
+                }
+                log?.WriteLine("コード自動生成: OnModelCreating");
+                using (var sw = new StreamWriter(Path.Combine(efSourceDir, "OnModelCreating.cs"), append: false, encoding: Encoding.UTF8)) {
+                    sw.Write(new CodeRendering.OnModelCreatingTemplate(config, allAggregates).TransformText());
+                }
+                log?.WriteLine("コード自動生成: Search");
+                using (var sw = new StreamWriter(Path.Combine(efSourceDir, "Search.cs"), append: false, encoding: Encoding.UTF8)) {
+                    sw.Write(new CodeRendering.SearchMethodTemplate(config, _rootAggregates).TransformText());
+                }
+                log?.WriteLine("コード自動生成: AutoCompleteSource");
+                using (var sw = new StreamWriter(Path.Combine(efSourceDir, "AutoCompleteSource.cs"), append: false, encoding: Encoding.UTF8)) {
+                    sw.Write(new CodeRendering.AutoCompleteSourceTemplate(config, allAggregates).TransformText());
+                }
+
+                var modelDir = Path.Combine(rootDir, config.MvcModelDirectoryRelativePath);
+                if (Directory.Exists(modelDir)) Directory.Delete(modelDir, recursive: true);
+                Directory.CreateDirectory(modelDir);
+
+                log?.WriteLine("コード自動生成: MVC Model");
+                using (var sw = new StreamWriter(Path.Combine(modelDir, "Models.cs"), append: false, encoding: Encoding.UTF8)) {
+                    sw.Write(new CodeRendering.AspNetMvc.MvcModelsTemplate(config, allAggregates).TransformText());
+                }
+
+                var viewDir = Path.Combine(rootDir, config.MvcViewDirectoryRelativePath);
+                if (Directory.Exists(viewDir)) Directory.Delete(viewDir, recursive: true);
+                Directory.CreateDirectory(viewDir);
+
+                log?.WriteLine("コード自動生成: MVC View - MultiView");
+                foreach (var rootAggregate in _rootAggregates) {
+                    var view = new CodeRendering.AspNetMvc.MvcMultiViewTemplate(config, rootAggregate);
+                    var filename = Path.Combine(viewDir, view.FileName);
+                    using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
+                    sw.Write(view.TransformText());
+                }
+
+                log?.WriteLine("コード自動生成: MVC View - SingleView");
+                foreach (var rootAggregate in _rootAggregates) {
+                    var view = new CodeRendering.AspNetMvc.MvcSingleViewTemplate(config, rootAggregate);
+                    var filename = Path.Combine(viewDir, view.FileName);
+                    using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
+                    sw.Write(view.TransformText());
+                }
+
+                log?.WriteLine("コード自動生成: MVC View - CreateView");
+                foreach (var rootAggregate in _rootAggregates) {
+                    var view = new CodeRendering.AspNetMvc.MvcCreateViewTemplate(config, rootAggregate);
+                    var filename = Path.Combine(viewDir, view.FileName);
+                    using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
+                    sw.Write(view.TransformText());
+                }
+
+                log?.WriteLine("コード自動生成: MVC View - 集約部分ビュー");
+                foreach (var aggregate in allAggregates) {
+                    var view = new CodeRendering.AspNetMvc.InstancePartialViewTemplate(config, aggregate);
+                    var filename = Path.Combine(viewDir, view.FileName);
+                    using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
+                    sw.Write(view.TransformText());
+                }
+
+                log?.WriteLine("コード自動生成: MVC Controller");
+                var controllerDir = Path.Combine(rootDir, config.MvcControllerDirectoryRelativePath);
+                if (Directory.Exists(controllerDir)) Directory.Delete(controllerDir, recursive: true);
+                Directory.CreateDirectory(controllerDir);
+                using (var sw = new StreamWriter(Path.Combine(controllerDir, "Controllers.cs"), append: false, encoding: Encoding.UTF8)) {
+                    sw.Write(new CodeRendering.AspNetMvc.MvcControllerTemplate(config, _rootAggregates).TransformText());
+                }
+
+                log?.WriteLine("コード自動生成: JS");
+                {
+                    var view = new CodeRendering.AspNetMvc.JsTemplate();
+                    var filename = Path.Combine(viewDir, CodeRendering.AspNetMvc.JsTemplate.FILE_NAME);
+                    using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
+                    sw.Write(view.TransformText());
+                }
+
+                log?.WriteLine("コード自動生成終了");
+
+            } catch (OperationCanceledException) {
+                Console.WriteLine("キャンセルされました。");
+
+            } finally {
+                if (tempDir != null && Directory.Exists(tempDir)) {
+                    Directory.Delete(tempDir, recursive: true);
                 }
             }
-
-            var _rootAggregates = _rootAggregateBuilder.Invoke(config);
-            var allAggregates = _rootAggregates
-                .SelectMany(a => a.GetDescendantsAndSelf())
-                .ToArray();
-
-            log?.WriteLine("コード自動生成: スキーマ定義");
-            using (var sw = new StreamWriter(Path.Combine(rootDir, "halapp.json"), append: false, encoding: Encoding.UTF8)) {
-                var schema = new Serialized.AppSchemaJson {
-                    Config = config.ToJson(onlyRuntimeConfig: true),
-                    Aggregates = _rootAggregates.Select(a => a.ToJson()).ToArray(),
-                };
-                sw.Write(System.Text.Json.JsonSerializer.Serialize(schema, new System.Text.Json.JsonSerializerOptions {
-                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All), // 日本語用
-                    WriteIndented = true,
-                    DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull, // nullのフィールドをシリアライズしない
-                }));
-            }
-
-            var efSourceDir = Path.Combine(rootDir, config.EntityFrameworkDirectoryRelativePath);
-            if (Directory.Exists(efSourceDir)) Directory.Delete(efSourceDir, recursive: true);
-            Directory.CreateDirectory(efSourceDir);
-
-            log?.WriteLine("コード自動生成: Entity定義");
-            using (var sw = new StreamWriter(Path.Combine(efSourceDir, "Entities.cs"), append: false, encoding: Encoding.UTF8)) {
-                sw.Write(new CodeRendering.EntityClassTemplate(config, allAggregates).TransformText());
-            }
-            log?.WriteLine("コード自動生成: DbSet");
-            using (var sw = new StreamWriter(Path.Combine(efSourceDir, "DbSet.cs"), append: false, encoding: Encoding.UTF8)) {
-                sw.Write(new CodeRendering.DbSetTemplate(config, allAggregates).TransformText());
-            }
-            log?.WriteLine("コード自動生成: OnModelCreating");
-            using (var sw = new StreamWriter(Path.Combine(efSourceDir, "OnModelCreating.cs"), append: false, encoding: Encoding.UTF8)) {
-                sw.Write(new CodeRendering.OnModelCreatingTemplate(config, allAggregates).TransformText());
-            }
-            log?.WriteLine("コード自動生成: Search");
-            using (var sw = new StreamWriter(Path.Combine(efSourceDir, "Search.cs"), append: false, encoding: Encoding.UTF8)) {
-                sw.Write(new CodeRendering.SearchMethodTemplate(config, _rootAggregates).TransformText());
-            }
-            log?.WriteLine("コード自動生成: AutoCompleteSource");
-            using (var sw = new StreamWriter(Path.Combine(efSourceDir, "AutoCompleteSource.cs"), append: false, encoding: Encoding.UTF8)) {
-                sw.Write(new CodeRendering.AutoCompleteSourceTemplate(config, allAggregates).TransformText());
-            }
-
-            var modelDir = Path.Combine(rootDir, config.MvcModelDirectoryRelativePath);
-            if (Directory.Exists(modelDir)) Directory.Delete(modelDir, recursive: true);
-            Directory.CreateDirectory(modelDir);
-
-            log?.WriteLine("コード自動生成: MVC Model");
-            using (var sw = new StreamWriter(Path.Combine(modelDir, "Models.cs"), append: false, encoding: Encoding.UTF8)) {
-                sw.Write(new CodeRendering.AspNetMvc.MvcModelsTemplate(config, allAggregates).TransformText());
-            }
-
-            var viewDir = Path.Combine(rootDir, config.MvcViewDirectoryRelativePath);
-            if (Directory.Exists(viewDir)) Directory.Delete(viewDir, recursive: true);
-            Directory.CreateDirectory(viewDir);
-
-            log?.WriteLine("コード自動生成: MVC View - MultiView");
-            foreach (var rootAggregate in _rootAggregates) {
-                var view = new CodeRendering.AspNetMvc.MvcMultiViewTemplate(config, rootAggregate);
-                var filename = Path.Combine(viewDir, view.FileName);
-                using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
-                sw.Write(view.TransformText());
-            }
-
-            log?.WriteLine("コード自動生成: MVC View - SingleView");
-            foreach (var rootAggregate in _rootAggregates) {
-                var view = new CodeRendering.AspNetMvc.MvcSingleViewTemplate(config, rootAggregate);
-                var filename = Path.Combine(viewDir, view.FileName);
-                using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
-                sw.Write(view.TransformText());
-            }
-
-            log?.WriteLine("コード自動生成: MVC View - CreateView");
-            foreach (var rootAggregate in _rootAggregates) {
-                var view = new CodeRendering.AspNetMvc.MvcCreateViewTemplate(config, rootAggregate);
-                var filename = Path.Combine(viewDir, view.FileName);
-                using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
-                sw.Write(view.TransformText());
-            }
-
-            log?.WriteLine("コード自動生成: MVC View - 集約部分ビュー");
-            foreach (var aggregate in allAggregates) {
-                var view = new CodeRendering.AspNetMvc.InstancePartialViewTemplate(config, aggregate);
-                var filename = Path.Combine(viewDir, view.FileName);
-                using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
-                sw.Write(view.TransformText());
-            }
-
-            log?.WriteLine("コード自動生成: MVC Controller");
-            var controllerDir = Path.Combine(rootDir, config.MvcControllerDirectoryRelativePath);
-            if (Directory.Exists(controllerDir)) Directory.Delete(controllerDir, recursive: true);
-            Directory.CreateDirectory(controllerDir);
-            using (var sw = new StreamWriter(Path.Combine(controllerDir, "Controllers.cs"), append: false, encoding: Encoding.UTF8)) {
-                sw.Write(new CodeRendering.AspNetMvc.MvcControllerTemplate(config, _rootAggregates).TransformText());
-            }
-
-            log?.WriteLine("コード自動生成: JS");
-            {
-                var view = new CodeRendering.AspNetMvc.JsTemplate();
-                var filename = Path.Combine(viewDir, CodeRendering.AspNetMvc.JsTemplate.FILE_NAME);
-                using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
-                sw.Write(view.TransformText());
-            }
-
-            log?.WriteLine("コード自動生成終了");
         }
     }
 }
