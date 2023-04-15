@@ -4,11 +4,10 @@ using System.CommandLine;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
+using HalApplicationBuilder.Core;
 
 namespace HalApplicationBuilder {
     public class Program {
@@ -42,6 +41,13 @@ namespace HalApplicationBuilder {
         }
 
 
+        private static Config ReadConfig(string? xmlFilename) {
+            if (xmlFilename == null) throw new InvalidOperationException($"対象XMLを指定してください。");
+            var xmlFullpath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), xmlFilename));
+            var xmlContent = File.ReadAllText(xmlFullpath);
+            return Core.Config.FromXml(xmlContent);
+        }
+
         private static void Gen(string? xmlFilename, CancellationToken cancellationToken) {
             if (xmlFilename == null) throw new InvalidOperationException($"対象XMLを指定してください。");
             var xmlFullpath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), xmlFilename));
@@ -52,26 +58,67 @@ namespace HalApplicationBuilder {
                 .GenerateCode(config, Console.Out, cancellationToken);
         }
 
-        private static void Debug(string? xmlFilename, CancellationToken cancellationToken) {
-            if (xmlFilename == null) throw new InvalidOperationException($"対象XMLを指定してください。");
-            var xmlFullpath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), xmlFilename));
-            var xmlContent = File.ReadAllText(xmlFullpath);
-            var config = Core.Config.FromXml(xmlContent);
+        private static void Build(string? xmlFilename, CancellationToken cancellationToken) {
+            var config = ReadConfig(xmlFilename);
             var workingDirectory = Path.Combine(Directory.GetCurrentDirectory(), config.OutProjectDir);
 
             var process = new DotnetEx.ExternalProcess(workingDirectory, cancellationToken);
-            var task = process.StartAsync("dotnet", "watch", "run");
+            process.Start("dotnet", "build");
+        }
 
-            using var watcher = new FileSystemWatcher(Path.GetDirectoryName(xmlFullpath)!, xmlFilename);
-            watcher.Changed += (sender, e) => {
+        private static void Debug(string? xmlFilename, CancellationToken cancellationToken) {
+            var config = ReadConfig(xmlFilename);
+            var workingDirectory = Path.Combine(Directory.GetCurrentDirectory(), config.OutProjectDir);
+
+            // dotnet run
+            CancellationTokenSource? runTokenSource = null;
+            void StartRunning() {
+                if (runTokenSource != null) {
+                    runTokenSource.Cancel(true);
+                }
+                runTokenSource = new CancellationTokenSource();
+                var runProcess = new DotnetEx.ExternalProcess(workingDirectory!, runTokenSource.Token);
+                var task = runProcess.StartAsync("dotnet", "watch", "run");
+            }
+            void StopRunning() {
+                if (runTokenSource != null) {
+                    runTokenSource.Cancel(true);
+                }
+            }
+
+            // build task
+            void Update() {
                 Gen(xmlFilename, cancellationToken);
+                Build(xmlFilename, cancellationToken);
+                AddMigration(xmlFilename, true, cancellationToken);
+            }
+
+            // watching xml
+            var xmlFullpath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), xmlFilename!));
+            using var watcher = new FileSystemWatcher(Path.GetDirectoryName(xmlFullpath)!, xmlFilename!);
+            watcher.Changed += (sender, e) => {
+                StopRunning();
+                Update();
+                StartRunning();
             };
 
+            // start
+            Update();
+            StartRunning();
             watcher.EnableRaisingEvents = true;
 
             while (!cancellationToken.IsCancellationRequested) {
                 Thread.Sleep(100);
             }
+        }
+
+        private static void AddMigration(string? xmlFilename, bool noBuild, CancellationToken cancellationToken) {
+            var config = ReadConfig(xmlFilename);
+            var workingDirectory = Path.Combine(Directory.GetCurrentDirectory(), config.OutProjectDir);
+
+            var process = new DotnetEx.ExternalProcess(workingDirectory, cancellationToken);
+            var migrationId = Guid.NewGuid().ToString();
+            process.Start("dotnet", "ef", "migrations", "add", migrationId, noBuild ? "--no-build" : "");
         }
 
         private static void Template(CancellationToken cancellationToken) {

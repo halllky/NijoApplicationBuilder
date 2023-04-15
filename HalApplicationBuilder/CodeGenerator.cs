@@ -98,6 +98,9 @@ namespace HalApplicationBuilder {
                     log?.WriteLine($"Microsoft.EntityFrameworkCore.Proxies パッケージへの参照を追加します。");
                     process.Start("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Proxies");
 
+                    log?.WriteLine($"Microsoft.EntityFrameworkCore.Design パッケージへの参照を追加します。"); // migration add に必要
+                    process.Start("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Design");
+
                     log?.WriteLine($"Microsoft.EntityFrameworkCore.Sqlite パッケージへの参照を追加します。");
                     process.Start("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Sqlite");
 

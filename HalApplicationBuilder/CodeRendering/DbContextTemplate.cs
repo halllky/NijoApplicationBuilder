@@ -37,22 +37,7 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(this.ToStringHelper.ToStringWithCulture(_dbContextName));
             this.Write("(DbContextOptions<");
             this.Write(this.ToStringHelper.ToStringWithCulture(_dbContextName));
-            this.Write(@"> options) : base(options) {
-#if DEBUG
-            // for hot reload
-            if (!_migrated) {
-                Database.EnsureCreated();
-                Database.Migrate();
-                _migrated = true;
-            }
-#endif
-        }
-#if DEBUG
-        private static bool _migrated = false;
-#endif
-    }
-}
-");
+            this.Write("> options) : base(options) { }\n    }\n}\n");
             return this.GenerationEnvironment.ToString();
         }
     }

@@ -32,6 +32,10 @@ q# :cherry_blossom: HalApplicationBuilder
 ![summary](README_files/README.drawio.svg)
 
 ### 0.プロジェクトの準備
+- 以下を使えるようにしておく
+  - dotnet
+  - dotnet ef
+  - npm
 - プロジェクトを作成
   - `dotnet new mvc`
   - HalApplicationBuilderのdllへの参照を加える
