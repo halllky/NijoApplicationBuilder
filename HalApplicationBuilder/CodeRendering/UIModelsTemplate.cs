@@ -18,7 +18,7 @@ namespace HalApplicationBuilder.CodeRendering
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class DbSetTemplate : DbSetTemplateBase
+    public partial class UIModelsTemplate : UIModelsTemplateBase
     {
         /// <summary>
         /// Create the template output
@@ -29,21 +29,68 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write("\n");
             this.Write("\n");
             this.Write("\n");
-            this.Write("\n\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextNamespace));
-            this.Write(" {\n    using Microsoft.EntityFrameworkCore;\n\n    partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextName));
-            this.Write(" {\n");
+            this.Write("\n\n#pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなけれ" +
+                    "ばなりません\n\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_config.MvcModelNamespace));
+            this.Write(" {\n    using System;\n    using System.Collections.Generic;\n\n");
  foreach (var aggregate in _aggregates) { 
+            this.Write("\n\n");
+ /* 検索条件DTO */ 
             this.Write("\n");
- var entity = aggregate.ToDbEntity(); 
-            this.Write("\n        public DbSet<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entity.CSharpTypeName));
-            this.Write("> ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entity.DbSetName));
-            this.Write(" { get; set; }\n");
+ var searchCondition = aggregate.ToSearchConditionClass(); 
+            this.Write("\n    public class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(searchCondition.ClassName));
+            this.Write(" : ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(typeof(Runtime.SearchConditionBase).FullName));
+            this.Write(" {\n");
+ foreach (var prop in searchCondition.Properties) { 
+            this.Write("\n        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
+            this.Write(" ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write(" { get; set; }");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
+            this.Write("\n");
  }
-            this.Write("\n    }\n}\n");
+            this.Write("\n    }\n\n");
+ /* 検索結果DTO */ 
+            this.Write("\n");
+ var searchResult = aggregate.ToSearchResultClass(); 
+            this.Write("\n    public class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(searchResult.ClassName));
+            this.Write(" : ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(typeof(Runtime.SearchResultBase).FullName));
+            this.Write(" {\n");
+ foreach (var prop in searchResult.Properties) { 
+            this.Write("\n        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
+            this.Write(" ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write(" { get; set; }");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
+            this.Write("\n");
+ }
+            this.Write("\n    }\n\n");
+ /* シングルビューDTO */ 
+            this.Write("\n");
+ var uiInstance = aggregate.ToUiInstanceClass(); 
+            this.Write("\n    public class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(uiInstance.ClassName));
+            this.Write(" : ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(typeof(Runtime.UIInstanceBase).FullName));
+            this.Write(" {\n");
+ foreach (var prop in uiInstance.Properties) { 
+            this.Write("\n        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
+            this.Write(" ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write(" { get; set; }");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
+            this.Write("\n");
+ }
+            this.Write("\n    }\n");
+ }
+            this.Write("\n\n}\n");
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -52,7 +99,7 @@ namespace HalApplicationBuilder.CodeRendering
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class DbSetTemplateBase
+    public class UIModelsTemplateBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

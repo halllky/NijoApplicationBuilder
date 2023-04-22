@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,6 +25,9 @@ namespace HalApplicationBuilder.Core.MemberImpl {
         }
 
         internal override void RenderMvcSearchConditionView(RenderingContext context) {
+            // 何もしない
+        }
+        internal override void RenderReactSearchConditionView(RenderingContext context) {
             // 何もしない
         }
 
@@ -140,13 +143,15 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                     ForeignKeys = childDbEntity.PrimaryKeys.Where(pk => pk is RenderedParentPkProperty),
                     OnDelete = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade,
                 },
+                TypeScriptTypeName = string.Empty, // 不要なプロパティ
             };
         }
 
         internal override IEnumerable<RenderedProperty> ToInstanceModelMember() {
-            var item = GetChildAggregates().Single().ToUiInstanceClass().CSharpTypeName;
+            var child = GetChildAggregates().Single().ToUiInstanceClass();
             yield return new RenderedProperty {
-                CSharpTypeName = $"List<{item}>",
+                TypeScriptTypeName = $"{child.TypeScriptTypeName}[]",
+                CSharpTypeName = $"List<{child.CSharpTypeName}>",
                 PropertyName = InstanceModelPropName,
                 Initializer = "new()",
             };

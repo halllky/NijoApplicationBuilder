@@ -7,7 +7,7 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering
+namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
 {
     using System.Linq;
     using System.Text;
@@ -18,32 +18,95 @@ namespace HalApplicationBuilder.CodeRendering
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class DbSetTemplate : DbSetTemplateBase
+    public partial class ReactComponentTemplate : ReactComponentTemplateBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextNamespace));
-            this.Write(" {\n    using Microsoft.EntityFrameworkCore;\n\n    partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextName));
-            this.Write(" {\n");
- foreach (var aggregate in _aggregates) { 
-            this.Write("\n");
- var entity = aggregate.ToDbEntity(); 
-            this.Write("\n        public DbSet<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entity.CSharpTypeName));
-            this.Write("> ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entity.DbSetName));
-            this.Write(" { get; set; }\n");
- }
-            this.Write("\n    }\n}\n");
+            this.Write(@"import React, { useState } from 'react';
+import { useCtrlS } from '../hooks/useCtrlS';
+import { useAppContext } from '../hooks/AppContext';
+import { AgGridReact } from 'ag-grid-react';
+import { Link } from 'react-router-dom';
+import { ArrowPathIcon, BookmarkIcon, ChevronDownIcon, ChevronRightIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { IconButton } from '../components/IconButton';
+import { ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_searchCondition.ClassName));
+            this.Write(", ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_searchResult.ClassName));
+            this.Write(", ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_uiInstance.ClassName));
+            this.Write(" } from \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetImportFromTypes()));
+            this.Write("\';\r\n\r\nexport const use");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_searchResult.ClassName));
+            this.Write("Query = () => {\r\n\r\n}\r\n\r\nexport const ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(MultiViewComponentName));
+            this.Write(@" = () => {
+
+    const [expanded, setExpanded] = useState(false)
+
+    const [, dispatch] = useAppContext()
+    useCtrlS(() => {
+        dispatch({ type: 'pushMsg', msg: '保存しました。' })
+    })
+
+    return (
+        <div className=""ag-theme-alpine compact h-full w-full"">
+
+            <div className=""flex flex-row justify-start items-center p-1 space-x-1"">
+                <div className='flex flex-row items-center cursor-pointer' onClick={() => setExpanded(!expanded)}>
+                    {expanded
+                        ? <ChevronDownIcon className=""w-4 mr-2"" />
+                        : <ChevronRightIcon className=""w-4 mr-2"" />}
+                    <span className='text-sm select-none'>検索</span>
+                </div>
+                <div className='flex-1' />
+                <IconButton outline icon={ArrowPathIcon}>再読込</IconButton>
+                <IconButton outline icon={BookmarkIcon}>この検索条件を保存</IconButton>
+            </div>
+
+            {expanded &&
+                <div className='flex flex-col items-start space-y-1 p-2'>
+");
+ PushIndent("                    "); 
+ _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath($"Model.{nameof(Runtime.AspNetMvc.MultiViewModel<Runtime.SearchConditionBase, Runtime.SearchResultBase>.SearchCondition)}"))); 
+ PopIndent(); 
+            this.Write(@"                    <div className='flex flex-row justify-end space-x-1'>
+                        <IconButton icon={MagnifyingGlassIcon}>検索</IconButton>
+                        <IconButton outline>クリア</IconButton>
+                    </div>
+                </div>
+            }
+
+            <AgGridReact
+                rowData={[]}
+                columnDefs={columnDefs}
+                multiSortKey='ctrl'
+                undoRedoCellEditing
+                undoRedoCellEditingLimit={20}>
+            </AgGridReact>
+        </div>
+    )
+}
+
+const columnDefs = [
+    {
+        resizable: true,
+        cellRenderer: ({ data }: any) => {
+            // console.log(data)
+            return <Link to=""/"" className=""text-blue-400"">詳細</Link>
+        },
+    },
+");
+ foreach (var prop in _searchResult.Properties) { 
+            this.Write("    { field: \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write("\', resizable: true, sortable: true, editable: true },\r\n");
+ } 
+            this.Write("]\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -52,7 +115,7 @@ namespace HalApplicationBuilder.CodeRendering
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class DbSetTemplateBase
+    public class ReactComponentTemplateBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

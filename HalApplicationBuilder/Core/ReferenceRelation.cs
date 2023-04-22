@@ -26,6 +26,8 @@ namespace HalApplicationBuilder.Core {
                         CSharpTypeName = $"ICollection<{refFrom.CSharpTypeName}>",
                         PropertyName = $"Refered_{Source.Owner.GetCSharpSafeName()}_{Source.GetCSharpSafeName()}",
                         Initializer = $"new HashSet<{refFrom.CSharpTypeName}>()",
+
+                        TypeScriptTypeName = string.Empty, // 不要なプロパティ
                     },
                 },
             };

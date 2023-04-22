@@ -7,9 +7,9 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Text.RegularExpressions;
-using System.Runtime.InteropServices;
 using Newtonsoft.Json.Linq;
 using HalApplicationBuilder.Core;
+using HalApplicationBuilder.CodeRendering.ReactAndWebApi;
 
 namespace HalApplicationBuilder {
 
@@ -65,268 +65,396 @@ namespace HalApplicationBuilder {
         }
         private readonly Func<Config, IEnumerable<RootAggregate>> _rootAggregateBuilder;
 
-        /// <summary>
-        /// コードの自動生成を実行します。
-        /// </summary>
-        /// <param name="config">コード生成に関する設定</param>
-        /// <param name="log">このオブジェクトを指定した場合、コード生成の詳細を記録します。</param>
-        /// <param name="cancellationToken">このオブジェクトを指定した場合、処理を途中でキャンセルすることが可能になります。</param>
-        public void GenerateCode(Config config, TextWriter? log = null, CancellationToken? cancellationToken = null) {
+        public void GenerateAspNetCoreMvc(Config config, TextWriter? log, CancellationToken? cancellationToken) {
+            var generator = new AspNetCoreMvcGenerator(config, log, cancellationToken, _rootAggregateBuilder);
+            generator.GenerateCode();
+        }
+        public void GenerateReactAndWebApi(Config config, TextWriter? log, CancellationToken? cancellationToken) {
+            var generator = new ReactAndWebApiGenerator(config, log, cancellationToken, _rootAggregateBuilder);
+            generator.GenerateCode();
+        }
 
-            log?.WriteLine($"コード自動生成開始");
+        private abstract class GeneratorBase {
+            internal GeneratorBase(
+                Config config,
+                TextWriter? log,
+                CancellationToken? cancellationToken,
+                Func<Config, IEnumerable<RootAggregate>> rootAggregateBuilder) {
+                _config = config;
+                _log = log;
+                _cancellationToken = cancellationToken;
+                _rootAggregateBuilder = rootAggregateBuilder;
+            }
 
-            var rootDir = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), config.OutProjectDir));
-            log?.WriteLine($"ルートディレクトリ: {rootDir}");
+            protected readonly Config _config;
+            protected readonly TextWriter? _log;
+            private readonly CancellationToken? _cancellationToken;
+            private readonly Func<Config, IEnumerable<RootAggregate>> _rootAggregateBuilder;
 
-            string? tempDir = null;
-            try {
-                // プロジェクト初回作成時
-                if (!Directory.Exists(rootDir)) {
-                    var project = $"halapp.temp.{Path.GetRandomFileName()}";
-                    tempDir = Path.Combine(Directory.GetCurrentDirectory(), project);
+            protected abstract string DotNetNew { get; }
+            protected abstract void ModifyCsproj(Microsoft.Build.Evaluation.Project csproj);
+            protected abstract void GenerateInitCode(DotnetEx.ExternalProcess process);
+            protected abstract void GenerateNonInitCode(string rootDir, IEnumerable<Aggregate> allAggregates, IEnumerable<RootAggregate> rootAggregates);
 
-                    Directory.CreateDirectory(tempDir);
-                    var process = new DotnetEx.ExternalProcess(tempDir, cancellationToken);
+            /// <summary>
+            /// コードの自動生成を実行します。
+            /// </summary>
+            /// <param name="config">コード生成に関する設定</param>
+            /// <param name="log">このオブジェクトを指定した場合、コード生成の詳細を記録します。</param>
+            /// <param name="cancellationToken">このオブジェクトを指定した場合、処理を途中でキャンセルすることが可能になります。</param>
+            public void GenerateCode() {
 
-                    // dotnet CLI でプロジェクトを新規作成
-                    log?.WriteLine($"ASP.NET MVC Core プロジェクトを作成します。");
-                    process.Start("dotnet", "new", "mvc", "--output", ".", "--name", config.ApplicationName);
+                _log?.WriteLine($"コード自動生成開始");
 
-                    log?.WriteLine($"Microsoft.EntityFrameworkCore パッケージへの参照を追加します。");
-                    process.Start("dotnet", "add", "package", "Microsoft.EntityFrameworkCore");
+                var rootDir = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), _config.OutProjectDir));
+                _log?.WriteLine($"ルートディレクトリ: {rootDir}");
 
-                    log?.WriteLine($"Microsoft.EntityFrameworkCore.Proxies パッケージへの参照を追加します。");
-                    process.Start("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Proxies");
+                string? tempDir = null;
+                try {
+                    // プロジェクト初回作成時
+                    if (!Directory.Exists(rootDir)) {
+                        var project = $"halapp.temp.{Path.GetRandomFileName()}";
+                        tempDir = Path.Combine(Directory.GetCurrentDirectory(), project);
 
-                    log?.WriteLine($"Microsoft.EntityFrameworkCore.Design パッケージへの参照を追加します。"); // migration add に必要
-                    process.Start("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Design");
+                        Directory.CreateDirectory(tempDir);
+                        var process = new DotnetEx.ExternalProcess(tempDir, _cancellationToken);
 
-                    log?.WriteLine($"Microsoft.EntityFrameworkCore.Sqlite パッケージへの参照を追加します。");
-                    process.Start("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Sqlite");
+                        // dotnet CLI でプロジェクトを新規作成
+                        _log?.WriteLine($"プロジェクトを作成します。");
+                        process.Start("dotnet", "new", DotNetNew, "--output", ".", "--name", _config.ApplicationName);
 
-                    // halapp.dll への参照を加える。実行時にRuntimeContextを参照しているため
-                    log?.WriteLine($"halapp.dll を参照に追加します。");
+                        _log?.WriteLine($"Microsoft.EntityFrameworkCore パッケージへの参照を追加します。");
+                        process.Start("dotnet", "add", "package", "Microsoft.EntityFrameworkCore");
 
-                    // dllをプロジェクトディレクトリにコピー
-                    const string HALAPP_DLL = "halapp.dll";
-                    var halappDllDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
-                    var halappDllPath = Path.Combine(halappDllDir, HALAPP_DLL);
-                    var halappDllDist = Path.Combine(tempDir, HALAPP_DLL);
+                        _log?.WriteLine($"Microsoft.EntityFrameworkCore.Proxies パッケージへの参照を追加します。");
+                        process.Start("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Proxies");
 
-                    File.Copy(halappDllPath, halappDllDist, true);
+                        _log?.WriteLine($"Microsoft.EntityFrameworkCore.Design パッケージへの参照を追加します。"); // migration add に必要
+                        process.Start("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Design");
 
-                    // csprojファイルを編集
-                    var csprojPath = Path.Combine(tempDir, $"{config.ApplicationName}.csproj");
-                    var projectOption = new Microsoft.Build.Definition.ProjectOptions {
-                        // Referenceを追加するだけなので Microsoft.NET.Sdk.Web が無くてもエラーにならないようにしたい
-                        LoadSettings = Microsoft.Build.Evaluation.ProjectLoadSettings.IgnoreMissingImports,
-                    };
-                    var csproj = Microsoft.Build.Evaluation.Project.FromFile(csprojPath, projectOption);
+                        _log?.WriteLine($"Microsoft.EntityFrameworkCore.Sqlite パッケージへの参照を追加します。");
+                        process.Start("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Sqlite");
 
-                    // halapp.dll への参照を追加する（dll参照は dotnet add でサポートされていないため）
-                    var itemGroup = csproj.Xml.AddItemGroup();
-                    var reference = itemGroup.AddItem("Reference", "MyAssembly");
-                    reference.AddMetadata("HintPath", $".\\{HALAPP_DLL}");
+                        // halapp.dll への参照を加える。実行時にRuntimeContextを参照しているため
+                        _log?.WriteLine($"halapp.dll を参照に追加します。");
 
-                    // ビルド後にcssをビルドするコマンドが走るようにする
-                    var target = csproj.Xml.AddTarget("PostBuild");
-                    target.AfterTargets = "PostBuildEvent";
-                    var exec = target.AddTask("Exec");
-                    exec.SetParameter("Command", $"npm run {PACKAGE_JSON_CSS_BUILD_SCRIPT_NAME}");
+                        // dllをプロジェクトディレクトリにコピー
+                        const string HALAPP_DLL = "halapp.dll";
+                        var halappDllDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
+                        var halappDllPath = Path.Combine(halappDllDir, HALAPP_DLL);
+                        var halappDllDist = Path.Combine(tempDir, HALAPP_DLL);
 
-                    csproj.Save();
+                        File.Copy(halappDllPath, halappDllDist, true);
 
-                    // ソースコード生成
-                    var dbContextFileName = $"{config.DbContextName}.cs";
-                    log?.WriteLine($"{dbContextFileName} ファイルを作成します。");
-                    var dbContextDir = Path.Combine(tempDir, "EntityFramework");
-                    Directory.CreateDirectory(dbContextDir);
-                    using (var sw = new StreamWriter(Path.Combine(dbContextDir, dbContextFileName), append: false, encoding: Encoding.UTF8)) {
-                        sw.Write(new CodeRendering.DbContextTemplate(config).TransformText());
+                        // csprojファイルを編集
+                        var csprojPath = Path.Combine(tempDir, $"{_config.ApplicationName}.csproj");
+                        var projectOption = new Microsoft.Build.Definition.ProjectOptions {
+                            // Referenceを追加するだけなので Microsoft.NET.Sdk.Web が無くてもエラーにならないようにしたい
+                            LoadSettings = Microsoft.Build.Evaluation.ProjectLoadSettings.IgnoreMissingImports,
+                        };
+                        var csproj = Microsoft.Build.Evaluation.Project.FromFile(csprojPath, projectOption);
+
+                        // halapp.dll への参照を追加する（dll参照は dotnet add でサポートされていないため）
+                        var itemGroup = csproj.Xml.AddItemGroup();
+                        var reference = itemGroup.AddItem("Reference", "MyAssembly");
+                        reference.AddMetadata("HintPath", $".\\{HALAPP_DLL}");
+
+                        // その他csproj編集
+                        ModifyCsproj(csproj);
+                        csproj.Save();
+
+                        // Program.cs書き換え
+                        _log?.WriteLine($"HalappDefaultConfigure.cs ファイルを作成します。");
+                        using (var sw = new StreamWriter(Path.Combine(tempDir, "HalappDefaultConfigure.cs"), append: false, encoding: Encoding.UTF8)) {
+                            sw.Write(new CodeRendering.DefaultRuntimeConfigTemplate().TransformText());
+                        }
+                        _log?.WriteLine($"Program.cs ファイルを書き換えます。");
+                        var insertLines = new[] {
+                            $"",
+                            $"/* HalApplicationBuilder によって自動生成されたコード ここから */",
+                            $"var runtimeRootDir = System.IO.Directory.GetCurrentDirectory();",
+                            $"HalApplicationBuilder.Runtime.HalAppDefaultConfigurer.Configure(builder.Services, runtimeRootDir);",
+
+                            $"// HTMLのエンコーディングをUTF-8にする(日本語のHTMLエンコード防止)",
+                            $"builder.Services.Configure<Microsoft.Extensions.WebEncoders.WebEncoderOptions>(options => {{",
+                            $"    options.TextEncoderSettings = new System.Text.Encodings.Web.TextEncoderSettings(System.Text.Unicode.UnicodeRanges.All);",
+                            $"}});",
+                            $"/* HalApplicationBuilder によって自動生成されたコード ここまで */",
+                            $"",
+                        };
+                        var regex = new Regex(@"^.*[a-zA-Z]+ builder = .+;$");
+                        var programCsPath = Path.Combine(tempDir, "Program.cs");
+                        var lines = File.ReadAllLines(programCsPath).ToList();
+                        var position = lines.FindIndex(regex.IsMatch);
+                        if (position == -1) throw new InvalidOperationException("Program.cs の中にIServiceCollectionを持つオブジェクトを初期化する行が見つかりません。");
+                        lines.InsertRange(position + 1, insertLines);
+                        File.WriteAllLines(programCsPath, lines);
+
+                        // DbContext生成
+                        var dbContextFileName = $"{_config.DbContextName}.cs";
+                        _log?.WriteLine($"{dbContextFileName} ファイルを作成します。");
+                        var dbContextDir = Path.Combine(tempDir, "EntityFramework");
+                        Directory.CreateDirectory(dbContextDir);
+                        using (var sw = new StreamWriter(Path.Combine(dbContextDir, dbContextFileName), append: false, encoding: Encoding.UTF8)) {
+                            sw.Write(new CodeRendering.DbContextTemplate(_config).TransformText());
+                        }
+
+                        // その他
+                        GenerateInitCode(process);
+
+                        // ここまでの処理がすべて成功したら一時ディレクトリを本来のディレクトリ名に変更
+                        if (Directory.Exists(rootDir)) throw new InvalidOperationException($"プロジェクトディレクトリを {rootDir} に移動できません。");
+                        Directory.Move(tempDir, rootDir);
                     }
 
-                    const string LAYOUT_CSHTML = "_Layout.cshtml";
-                    log?.WriteLine($"{LAYOUT_CSHTML} ファイルを書き換えます。");
-                    var layoutCshtmlDir = Path.Combine(tempDir, "Views", "Shared");
-                    using (var sw = new StreamWriter(Path.Combine(layoutCshtmlDir, LAYOUT_CSHTML), append: false, encoding: Encoding.UTF8)) {
-                        sw.Write(new CodeRendering.AspNetMvc.LayoutCshtmlTemplate().TransformText());
+                    var _rootAggregates = _rootAggregateBuilder.Invoke(_config);
+                    var allAggregates = _rootAggregates
+                        .SelectMany(a => a.GetDescendantsAndSelf())
+                        .ToArray();
+
+                    _log?.WriteLine("コード自動生成: スキーマ定義");
+                    using (var sw = new StreamWriter(Path.Combine(rootDir, "halapp.json"), append: false, encoding: Encoding.UTF8)) {
+                        var schema = new Serialized.AppSchemaJson {
+                            Config = _config.ToJson(onlyRuntimeConfig: true),
+                            Aggregates = _rootAggregates.Select(a => a.ToJson()).ToArray(),
+                        };
+                        sw.Write(System.Text.Json.JsonSerializer.Serialize(schema, new System.Text.Json.JsonSerializerOptions {
+                            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All), // 日本語用
+                            WriteIndented = true,
+                            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull, // nullのフィールドをシリアライズしない
+                        }));
                     }
 
-                    // Program.cs書き換え
-                    log?.WriteLine($"HalappDefaultConfigure.cs ファイルを作成します。");
-                    using (var sw = new StreamWriter(Path.Combine(tempDir, "HalappDefaultConfigure.cs"), append: false, encoding: Encoding.UTF8)) {
-                        sw.Write(new CodeRendering.DefaultRuntimeConfigTemplate().TransformText());
-                    }
-                    log?.WriteLine($"Program.cs ファイルを書き換えます。");
-                    var insertLines = new[] {
-                        $"",
-                        $"/* HalApplicationBuilder によって自動生成されたコード ここから */",
-                        $"var runtimeRootDir = System.IO.Directory.GetCurrentDirectory();",
-                        $"HalApplicationBuilder.Runtime.HalAppDefaultConfigurer.Configure(builder.Services, runtimeRootDir);",
+                    var modelDir = Path.Combine(rootDir, _config.MvcModelDirectoryRelativePath);
+                    if (Directory.Exists(modelDir)) Directory.Delete(modelDir, recursive: true);
+                    Directory.CreateDirectory(modelDir);
 
-                        $"// HTMLのエンコーディングをUTF-8にする(日本語のHTMLエンコード防止)",
-                        $"builder.Services.Configure<Microsoft.Extensions.WebEncoders.WebEncoderOptions>(options => {{",
-                        $"    options.TextEncoderSettings = new System.Text.Encodings.Web.TextEncoderSettings(System.Text.Unicode.UnicodeRanges.All);",
-                        $"}});",
-                        $"/* HalApplicationBuilder によって自動生成されたコード ここまで */",
-                        $"",
-                    };
-                    var regex = new Regex(@"^.*[a-zA-Z]+ builder = .+;$");
-                    var programCsPath = Path.Combine(tempDir, "Program.cs");
-                    var lines = File.ReadAllLines(programCsPath).ToList();
-                    var position = lines.FindIndex(regex.IsMatch);
-                    if (position == -1) throw new InvalidOperationException("Program.cs の中にIServiceCollectionを持つオブジェクトを初期化する行が見つかりません。");
-                    lines.InsertRange(position + 1, insertLines);
-                    File.WriteAllLines(programCsPath, lines);
-
-                    // tailwindcssを有効にする
-                    log?.WriteLine($"package.jsonを作成します。");
-                    process.Start("npm", "init", "-y");
-                    var packageJsonPath = Path.Combine(tempDir, "package.json");
-                    var packageJson = JObject.Parse(File.ReadAllText(packageJsonPath));
-                    var scripts = new JObject();
-                    scripts[PACKAGE_JSON_CSS_BUILD_SCRIPT_NAME] = "postcss wwwroot/css/app.css -o wwwroot/css/app.min.css";
-                    packageJson.SelectToken("name").Replace($"halapp-{Guid.NewGuid()}");
-                    packageJson.SelectToken("scripts").Replace(scripts);
-                    File.WriteAllText(packageJsonPath, packageJson.ToString());
-
-                    log?.WriteLine($"必要な Node.js パッケージをインストールします。");
-                    process.Start("npm", "install", "tailwindcss", "postcss", "postcss-cli", "autoprefixer");
-
-                    log?.WriteLine($"app.cssファイルを生成します。");
-                    using (var sw = new StreamWriter(Path.Combine(tempDir, "wwwroot", "css", "app.css"), append: false, encoding: Encoding.UTF8)) {
-                        sw.Write(new CodeRendering.AspNetMvc.app_css().TransformText());
-                    }
-                    log?.WriteLine($"postcss.config.jsファイルを生成します。");
-                    using (var sw = new StreamWriter(Path.Combine(tempDir, "postcss.config.js"), append: false, encoding: Encoding.UTF8)) {
-                        sw.Write(new CodeRendering.AspNetMvc.postcss_config_js().TransformText());
-                    }
-                    log?.WriteLine($"tailwind.config.jsファイルを生成します。");
-                    using (var sw = new StreamWriter(Path.Combine(tempDir, "tailwind.config.js"), append: false, encoding: Encoding.UTF8)) {
-                        sw.Write(new CodeRendering.AspNetMvc.tailwind_config_js().TransformText());
+                    _log?.WriteLine("コード自動生成: UI Model");
+                    using (var sw = new StreamWriter(Path.Combine(modelDir, "Models.cs"), append: false, encoding: Encoding.UTF8)) {
+                        sw.Write(new CodeRendering.UIModelsTemplate(_config, allAggregates).TransformText());
                     }
 
-                    // ここまでの処理がすべて成功したら一時ディレクトリを本来のディレクトリ名に変更
-                    if (Directory.Exists(rootDir)) throw new InvalidOperationException($"プロジェクトディレクトリを {rootDir} に移動できません。");
-                    Directory.Move(tempDir, rootDir);
+                    var efSourceDir = Path.Combine(rootDir, _config.EntityFrameworkDirectoryRelativePath);
+                    if (Directory.Exists(efSourceDir)) Directory.Delete(efSourceDir, recursive: true);
+                    Directory.CreateDirectory(efSourceDir);
+
+                    _log?.WriteLine("コード自動生成: Entity定義");
+                    using (var sw = new StreamWriter(Path.Combine(efSourceDir, "Entities.cs"), append: false, encoding: Encoding.UTF8)) {
+                        sw.Write(new CodeRendering.EntityClassTemplate(_config, allAggregates).TransformText());
+                    }
+                    _log?.WriteLine("コード自動生成: DbSet");
+                    using (var sw = new StreamWriter(Path.Combine(efSourceDir, "DbSet.cs"), append: false, encoding: Encoding.UTF8)) {
+                        sw.Write(new CodeRendering.DbSetTemplate(_config, allAggregates).TransformText());
+                    }
+                    _log?.WriteLine("コード自動生成: OnModelCreating");
+                    using (var sw = new StreamWriter(Path.Combine(efSourceDir, "OnModelCreating.cs"), append: false, encoding: Encoding.UTF8)) {
+                        sw.Write(new CodeRendering.OnModelCreatingTemplate(_config, allAggregates).TransformText());
+                    }
+                    _log?.WriteLine("コード自動生成: Search");
+                    using (var sw = new StreamWriter(Path.Combine(efSourceDir, "Search.cs"), append: false, encoding: Encoding.UTF8)) {
+                        sw.Write(new CodeRendering.SearchMethodTemplate(_config, _rootAggregates).TransformText());
+                    }
+                    _log?.WriteLine("コード自動生成: AutoCompleteSource");
+                    using (var sw = new StreamWriter(Path.Combine(efSourceDir, "AutoCompleteSource.cs"), append: false, encoding: Encoding.UTF8)) {
+                        sw.Write(new CodeRendering.AutoCompleteSourceTemplate(_config, allAggregates).TransformText());
+                    }
+
+                    GenerateNonInitCode(rootDir, allAggregates, _rootAggregates);
+
+                    _log?.WriteLine("コード自動生成終了");
+
+                } catch (OperationCanceledException) {
+                    Console.WriteLine("キャンセルされました。");
+
+                } finally {
+                    if (tempDir != null && Directory.Exists(tempDir)) {
+                        Directory.Delete(tempDir, recursive: true);
+                    }
+                }
+            }
+        }
+
+        private class AspNetCoreMvcGenerator : GeneratorBase {
+            private const string PACKAGE_JSON_CSS_BUILD_SCRIPT_NAME = "buildcss";
+
+            internal AspNetCoreMvcGenerator(
+                Config config,
+                TextWriter? log,
+                CancellationToken? cancellationToken,
+                Func<Config, IEnumerable<RootAggregate>> rootAggregateBuilder)
+                : base(config, log, cancellationToken, rootAggregateBuilder) {
+            }
+
+            protected override string DotNetNew => "mvc";
+
+            protected override void ModifyCsproj(Microsoft.Build.Evaluation.Project csproj) {
+                // ビルド後にcssをビルドするコマンドが走るようにする
+                var target = csproj.Xml.AddTarget("PostBuild");
+                target.AfterTargets = "PostBuildEvent";
+                var exec = target.AddTask("Exec");
+                exec.SetParameter("Command", $"npm run {PACKAGE_JSON_CSS_BUILD_SCRIPT_NAME}");
+            }
+
+            protected override void GenerateInitCode(DotnetEx.ExternalProcess process) {
+
+                const string LAYOUT_CSHTML = "_Layout.cshtml";
+                _log?.WriteLine($"{LAYOUT_CSHTML} ファイルを書き換えます。");
+                var layoutCshtmlDir = Path.Combine(process.WorkingDirectory, "Views", "Shared");
+                using (var sw = new StreamWriter(Path.Combine(layoutCshtmlDir, LAYOUT_CSHTML), append: false, encoding: Encoding.UTF8)) {
+                    sw.Write(new CodeRendering.AspNetMvc.LayoutCshtmlTemplate().TransformText());
                 }
 
-                var _rootAggregates = _rootAggregateBuilder.Invoke(config);
-                var allAggregates = _rootAggregates
-                    .SelectMany(a => a.GetDescendantsAndSelf())
-                    .ToArray();
+                // tailwindcssを有効にする
+                _log?.WriteLine($"package.jsonを作成します。");
+                process.Start("npm", "init", "-y");
+                var packageJsonPath = Path.Combine(process.WorkingDirectory, "package.json");
+                var packageJson = JObject.Parse(File.ReadAllText(packageJsonPath));
+                var scripts = new JObject();
+                scripts[PACKAGE_JSON_CSS_BUILD_SCRIPT_NAME] = "postcss wwwroot/css/app.css -o wwwroot/css/app.min.css";
+                packageJson.SelectToken("name").Replace($"halapp-{Guid.NewGuid()}");
+                packageJson.SelectToken("scripts").Replace(scripts);
+                File.WriteAllText(packageJsonPath, packageJson.ToString());
 
-                log?.WriteLine("コード自動生成: スキーマ定義");
-                using (var sw = new StreamWriter(Path.Combine(rootDir, "halapp.json"), append: false, encoding: Encoding.UTF8)) {
-                    var schema = new Serialized.AppSchemaJson {
-                        Config = config.ToJson(onlyRuntimeConfig: true),
-                        Aggregates = _rootAggregates.Select(a => a.ToJson()).ToArray(),
-                    };
-                    sw.Write(System.Text.Json.JsonSerializer.Serialize(schema, new System.Text.Json.JsonSerializerOptions {
-                        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All), // 日本語用
-                        WriteIndented = true,
-                        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull, // nullのフィールドをシリアライズしない
-                    }));
-                }
+                _log?.WriteLine($"必要な Node.js パッケージをインストールします。");
+                process.Start("npm", "install", "tailwindcss", "postcss", "postcss-cli", "autoprefixer");
 
-                var efSourceDir = Path.Combine(rootDir, config.EntityFrameworkDirectoryRelativePath);
-                if (Directory.Exists(efSourceDir)) Directory.Delete(efSourceDir, recursive: true);
-                Directory.CreateDirectory(efSourceDir);
+                _log?.WriteLine($"app.cssファイルを生成します。");
+                using (var sw = new StreamWriter(Path.Combine(process.WorkingDirectory, "wwwroot", "css", "app.css"), append: false, encoding: Encoding.UTF8)) {
+                    sw.Write(new CodeRendering.AspNetMvc.app_css().TransformText());
+                }
+                _log?.WriteLine($"postcss.config.jsファイルを生成します。");
+                using (var sw = new StreamWriter(Path.Combine(process.WorkingDirectory, "postcss.config.js"), append: false, encoding: Encoding.UTF8)) {
+                    sw.Write(new CodeRendering.AspNetMvc.postcss_config_js().TransformText());
+                }
+                _log?.WriteLine($"tailwind.config.jsファイルを生成します。");
+                using (var sw = new StreamWriter(Path.Combine(process.WorkingDirectory, "tailwind.config.js"), append: false, encoding: Encoding.UTF8)) {
+                    sw.Write(new CodeRendering.AspNetMvc.tailwind_config_js().TransformText());
+                }
+            }
 
-                log?.WriteLine("コード自動生成: Entity定義");
-                using (var sw = new StreamWriter(Path.Combine(efSourceDir, "Entities.cs"), append: false, encoding: Encoding.UTF8)) {
-                    sw.Write(new CodeRendering.EntityClassTemplate(config, allAggregates).TransformText());
-                }
-                log?.WriteLine("コード自動生成: DbSet");
-                using (var sw = new StreamWriter(Path.Combine(efSourceDir, "DbSet.cs"), append: false, encoding: Encoding.UTF8)) {
-                    sw.Write(new CodeRendering.DbSetTemplate(config, allAggregates).TransformText());
-                }
-                log?.WriteLine("コード自動生成: OnModelCreating");
-                using (var sw = new StreamWriter(Path.Combine(efSourceDir, "OnModelCreating.cs"), append: false, encoding: Encoding.UTF8)) {
-                    sw.Write(new CodeRendering.OnModelCreatingTemplate(config, allAggregates).TransformText());
-                }
-                log?.WriteLine("コード自動生成: Search");
-                using (var sw = new StreamWriter(Path.Combine(efSourceDir, "Search.cs"), append: false, encoding: Encoding.UTF8)) {
-                    sw.Write(new CodeRendering.SearchMethodTemplate(config, _rootAggregates).TransformText());
-                }
-                log?.WriteLine("コード自動生成: AutoCompleteSource");
-                using (var sw = new StreamWriter(Path.Combine(efSourceDir, "AutoCompleteSource.cs"), append: false, encoding: Encoding.UTF8)) {
-                    sw.Write(new CodeRendering.AutoCompleteSourceTemplate(config, allAggregates).TransformText());
-                }
+            protected override void GenerateNonInitCode(string rootDir, IEnumerable<Aggregate> allAggregates, IEnumerable<RootAggregate> rootAggregates) {
 
-                var modelDir = Path.Combine(rootDir, config.MvcModelDirectoryRelativePath);
-                if (Directory.Exists(modelDir)) Directory.Delete(modelDir, recursive: true);
-                Directory.CreateDirectory(modelDir);
-
-                log?.WriteLine("コード自動生成: MVC Model");
-                using (var sw = new StreamWriter(Path.Combine(modelDir, "Models.cs"), append: false, encoding: Encoding.UTF8)) {
-                    sw.Write(new CodeRendering.AspNetMvc.MvcModelsTemplate(config, allAggregates).TransformText());
-                }
-
-                var viewDir = Path.Combine(rootDir, config.MvcViewDirectoryRelativePath);
+                var viewDir = Path.Combine(rootDir, _config.MvcViewDirectoryRelativePath);
                 if (Directory.Exists(viewDir)) Directory.Delete(viewDir, recursive: true);
                 Directory.CreateDirectory(viewDir);
 
-                log?.WriteLine("コード自動生成: MVC View - MultiView");
-                foreach (var rootAggregate in _rootAggregates) {
-                    var view = new CodeRendering.AspNetMvc.MvcMultiViewTemplate(config, rootAggregate);
+                _log?.WriteLine("コード自動生成: MVC View - MultiView");
+                foreach (var rootAggregate in rootAggregates) {
+                    var view = new CodeRendering.AspNetMvc.MvcMultiViewTemplate(_config, rootAggregate);
                     var filename = Path.Combine(viewDir, view.FileName);
                     using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
                     sw.Write(view.TransformText());
                 }
 
-                log?.WriteLine("コード自動生成: MVC View - SingleView");
-                foreach (var rootAggregate in _rootAggregates) {
-                    var view = new CodeRendering.AspNetMvc.MvcSingleViewTemplate(config, rootAggregate);
+                _log?.WriteLine("コード自動生成: MVC View - SingleView");
+                foreach (var rootAggregate in rootAggregates) {
+                    var view = new CodeRendering.AspNetMvc.MvcSingleViewTemplate(_config, rootAggregate);
                     var filename = Path.Combine(viewDir, view.FileName);
                     using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
                     sw.Write(view.TransformText());
                 }
 
-                log?.WriteLine("コード自動生成: MVC View - CreateView");
-                foreach (var rootAggregate in _rootAggregates) {
-                    var view = new CodeRendering.AspNetMvc.MvcCreateViewTemplate(config, rootAggregate);
+                _log?.WriteLine("コード自動生成: MVC View - CreateView");
+                foreach (var rootAggregate in rootAggregates) {
+                    var view = new CodeRendering.AspNetMvc.MvcCreateViewTemplate(_config, rootAggregate);
                     var filename = Path.Combine(viewDir, view.FileName);
                     using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
                     sw.Write(view.TransformText());
                 }
 
-                log?.WriteLine("コード自動生成: MVC View - 集約部分ビュー");
+                _log?.WriteLine("コード自動生成: MVC View - 集約部分ビュー");
                 foreach (var aggregate in allAggregates) {
-                    var view = new CodeRendering.AspNetMvc.InstancePartialViewTemplate(config, aggregate);
+                    var view = new CodeRendering.AspNetMvc.InstancePartialViewTemplate(_config, aggregate);
                     var filename = Path.Combine(viewDir, view.FileName);
                     using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
                     sw.Write(view.TransformText());
                 }
 
-                log?.WriteLine("コード自動生成: MVC Controller");
-                var controllerDir = Path.Combine(rootDir, config.MvcControllerDirectoryRelativePath);
+                _log?.WriteLine("コード自動生成: MVC Controller");
+                var controllerDir = Path.Combine(rootDir, _config.MvcControllerDirectoryRelativePath);
                 if (Directory.Exists(controllerDir)) Directory.Delete(controllerDir, recursive: true);
                 Directory.CreateDirectory(controllerDir);
                 using (var sw = new StreamWriter(Path.Combine(controllerDir, "Controllers.cs"), append: false, encoding: Encoding.UTF8)) {
-                    sw.Write(new CodeRendering.AspNetMvc.MvcControllerTemplate(config, _rootAggregates).TransformText());
+                    sw.Write(new CodeRendering.AspNetMvc.MvcControllerTemplate(_config, rootAggregates).TransformText());
                 }
 
-                log?.WriteLine("コード自動生成: JS");
+                _log?.WriteLine("コード自動生成: JS");
                 {
                     var view = new CodeRendering.AspNetMvc.JsTemplate();
                     var filename = Path.Combine(viewDir, CodeRendering.AspNetMvc.JsTemplate.FILE_NAME);
                     using var sw = new StreamWriter(filename, append: false, encoding: Encoding.UTF8);
                     sw.Write(view.TransformText());
                 }
-
-                log?.WriteLine("コード自動生成終了");
-
-            } catch (OperationCanceledException) {
-                Console.WriteLine("キャンセルされました。");
-
-            } finally {
-                if (tempDir != null && Directory.Exists(tempDir)) {
-                    Directory.Delete(tempDir, recursive: true);
-                }
             }
         }
 
-        private const string PACKAGE_JSON_CSS_BUILD_SCRIPT_NAME = "buildcss";
+        private class ReactAndWebApiGenerator : GeneratorBase {
+
+            internal ReactAndWebApiGenerator(
+                Config config,
+                TextWriter? log,
+                CancellationToken? cancellationToken,
+                Func<Config, IEnumerable<RootAggregate>> rootAggregateBuilder)
+                : base(config, log, cancellationToken, rootAggregateBuilder) {
+            }
+
+            protected override string DotNetNew => "webapi";
+
+            protected override void ModifyCsproj(Microsoft.Build.Evaluation.Project csproj) {
+                // 特になにもしない
+            }
+
+            protected override void GenerateInitCode(DotnetEx.ExternalProcess process) {
+                _log?.WriteLine($"React.jsアプリケーションを作成します。");
+
+                // プロジェクトテンプレートのコピー
+                var halappDllDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
+                var projectTemplateDir = Path.Combine(halappDllDir, "CodeRendering", "ReactAndWebApi", "project-template");
+                var reactDir = Path.Combine(process.WorkingDirectory, REACT_DIR);
+                DotnetEx.IO.CopyDirectory(projectTemplateDir, reactDir);
+
+                var npmProcess = new DotnetEx.ExternalProcess(reactDir, process.CancellationToken);
+                npmProcess.Start("npm", "ci");
+            }
+
+            protected override void GenerateNonInitCode(string rootDir, IEnumerable<Aggregate> allAggregates, IEnumerable<RootAggregate> rootAggregates) {
+
+                // Web API
+                using (var sw = new StreamWriter(Path.Combine(rootDir, "Controllers", "__AutoGenerated.cs"), append: false, encoding: Encoding.UTF8)) {
+                    var template = new WebApiControllerTemplate(_config, rootAggregates);
+                    sw.Write(template.TransformText());
+                }
+
+                // React.js
+                var tsDir = Path.Combine(rootDir, REACT_DIR, "src", "__AutoGenerated");
+                if (Directory.Exists(tsDir)) Directory.Delete(tsDir, recursive: true);
+                Directory.CreateDirectory(tsDir);
+
+                // 集約定義
+                _log?.WriteLine("コード自動生成: TypeScript型定義");
+                using (var sw = new StreamWriter(Path.Combine(tsDir, ReactTypeDefTemplate.FILE_NAME), append: false, encoding: Encoding.UTF8)) {
+                    var template = new ReactTypeDefTemplate(allAggregates);
+                    sw.Write(template.TransformText());
+                }
+                // コンポーネント
+                foreach (var rootAggregate in rootAggregates) {
+                    var template = new ReactComponentTemplate(rootAggregate);
+                    using var sw = new StreamWriter(Path.Combine(tsDir, template.FileName), append: false, encoding: Encoding.UTF8);
+                    sw.Write(template.TransformText());
+                }
+                // menu.tsx
+                using (var sw = new StreamWriter(Path.Combine(tsDir, menuItems.FILE_NAME), append: false, encoding: Encoding.UTF8)) {
+                    var template = new menuItems(rootAggregates);
+                    sw.Write(template.TransformText());
+                }
+                // index.ts
+                using (var sw = new StreamWriter(Path.Combine(tsDir, index.FILE_NAME), append: false, encoding: Encoding.UTF8)) {
+                    var template = new index(rootAggregates);
+                    sw.Write(template.TransformText());
+                }
+            }
+
+            private const string REACT_DIR = "ClientApp";
+        }
     }
 }

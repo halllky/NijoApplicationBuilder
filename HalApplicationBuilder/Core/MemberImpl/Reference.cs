@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -51,6 +51,11 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{key}\" class=\"{JsTemplate.AUTOCOMPLETE_VALUE}\" />");
             context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{guid}\" class=\"{JsTemplate.AGGREGATE_GUID}\" />");
             context.Template.WriteLine($"    <input asp-for=\"{text}\" class=\"border {JsTemplate.AUTOCOMPLETE_INPUT}\" />");
+            context.Template.WriteLine($"</div>");
+        }
+        internal override void RenderReactSearchConditionView(RenderingContext context) {
+            context.Template.WriteLine($"<div>");
+            context.Template.WriteLine($"    TODO autocomplete");
             context.Template.WriteLine($"</div>");
         }
 
@@ -224,6 +229,8 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                     CSharpTypeName = foreignKey.CSharpTypeName,
                     PropertyName = ForeignKeyColumnPropName(foreignKey),
                     Nullable = _isNullable,
+
+                    TypeScriptTypeName = foreignKey.TypeScriptTypeName,
                 })
                 .ToArray();
             foreach (var foreignKey in foreignKeys) {
@@ -242,6 +249,8 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                     ForeignKeys = foreignKeys,
                     OnDelete = Microsoft.EntityFrameworkCore.DeleteBehavior.Restrict,
                 },
+
+                TypeScriptTypeName = string.Empty, // 不要なプロパティ
             };
         }
 
@@ -257,6 +266,8 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 CSharpTypeName = typeof(Runtime.ReferenceDTO).FullName!,
                 PropertyName = InstanceModelPropName,
                 Initializer = $"new() {{ {nameof(Runtime.ReferenceDTO.AggreageteGuid)} = new Guid(\"{GetRefTarget().GetGuid()}\") }}",
+
+                TypeScriptTypeName = ReferenceDTO.TS_TYPE_NAME,
             };
         }
 
@@ -265,6 +276,8 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 CSharpTypeName = typeof(Runtime.ReferenceDTO).FullName!,
                 PropertyName = SearchConditonPropName,
                 Initializer = $"new() {{ {nameof(Runtime.ReferenceDTO.AggreageteGuid)} = new Guid(\"{GetRefTarget().GetGuid()}\") }}",
+
+                TypeScriptTypeName = ReferenceDTO.TS_TYPE_NAME,
             };
         }
 
@@ -274,6 +287,8 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 yield return new RenderedProperty {
                     CSharpTypeName = fk.CSharpTypeName,
                     PropertyName = SearchResultForeignKeyPropName(fk),
+
+                    TypeScriptTypeName = fk.TypeScriptTypeName,
                 };
             }
 
@@ -281,6 +296,8 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             yield return new RenderedProperty {
                 CSharpTypeName = "string",
                 PropertyName = SearchResultInstanceNamePropName,
+
+                TypeScriptTypeName = "string",
             };
         }
 

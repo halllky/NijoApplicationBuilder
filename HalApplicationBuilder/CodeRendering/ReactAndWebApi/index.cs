@@ -7,7 +7,7 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering
+namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
 {
     using System.Linq;
     using System.Text;
@@ -18,32 +18,21 @@ namespace HalApplicationBuilder.CodeRendering
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class DbSetTemplate : DbSetTemplateBase
+    public partial class index : indexBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextNamespace));
-            this.Write(" {\n    using Microsoft.EntityFrameworkCore;\n\n    partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextName));
-            this.Write(" {\n");
- foreach (var aggregate in _aggregates) { 
-            this.Write("\n");
- var entity = aggregate.ToDbEntity(); 
-            this.Write("\n        public DbSet<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entity.CSharpTypeName));
-            this.Write("> ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entity.DbSetName));
-            this.Write(" { get; set; }\n");
- }
-            this.Write("\n    }\n}\n");
+            this.Write("\r\nexport * from \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetImportFromMenuItems()));
+            this.Write("\'\r\n");
+ foreach (var root in _rootAggregates) { 
+            this.Write("export * from \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetImport(root)));
+            this.Write("\'\r\n");
+ } 
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -52,7 +41,7 @@ namespace HalApplicationBuilder.CodeRendering
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class DbSetTemplateBase
+    public class indexBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

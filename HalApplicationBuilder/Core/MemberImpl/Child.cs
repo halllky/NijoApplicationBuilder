@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -40,6 +40,10 @@ namespace HalApplicationBuilder.Core.MemberImpl {
         internal override void RenderMvcSearchConditionView(RenderingContext context) {
             var nested = context.Nest(SearchConditionPropName);
             GetChildAggregates().Single().RenderSearchCondition(nested);
+        }
+        internal override void RenderReactSearchConditionView(RenderingContext context) {
+            var nested = context.Nest(SearchConditionPropName);
+            GetChildAggregates().Single().RenderReactSearchCondition(nested);
         }
 
         internal override void RenderAspNetMvcPartialView(RenderingContext context) {
@@ -140,20 +144,25 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                     ForeignKeys = childDbEntity.PrimaryKeys.Where(pk => pk is RenderedParentPkProperty),
                     OnDelete = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade,
                 },
+                TypeScriptTypeName = string.Empty, // 不要なプロパティ
             };
         }
 
         internal override IEnumerable<RenderedProperty> ToInstanceModelMember() {
+            var childClass = GetChildAggregates().Single().ToUiInstanceClass();
             yield return new RenderedProperty {
-                CSharpTypeName = GetChildAggregates().Single().ToUiInstanceClass().CSharpTypeName,
+                CSharpTypeName = childClass.CSharpTypeName,
+                TypeScriptTypeName = childClass.TypeScriptTypeName,
                 PropertyName = InstanceModelPropName,
                 Initializer = "new()",
             };
         }
 
         internal override IEnumerable<RenderedProperty> ToSearchConditionMember() {
+            var childClass = GetChildAggregates().Single().ToSearchConditionClass();
             yield return new RenderedProperty {
-                CSharpTypeName = GetChildAggregates().Single().ToSearchConditionClass().CSharpTypeName,
+                CSharpTypeName = childClass.CSharpTypeName,
+                TypeScriptTypeName = childClass.TypeScriptTypeName,
                 PropertyName = SearchConditionPropName,
                 Initializer = "new()",
             };
@@ -164,6 +173,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 yield return new RenderedProperty {
                     PropertyName = SearchResultPropName(childProp),
                     CSharpTypeName = childProp.CSharpTypeName,
+                    TypeScriptTypeName= childProp.TypeScriptTypeName,
                     Initializer = childProp.Initializer,
                 };
             }

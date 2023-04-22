@@ -7,43 +7,114 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering
+namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
 {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
+    using HalApplicationBuilder;
     using System;
     
     /// <summary>
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class DbSetTemplate : DbSetTemplateBase
+    public partial class WebApiControllerTemplate : WebApiControllerTemplateBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextNamespace));
-            this.Write(" {\n    using Microsoft.EntityFrameworkCore;\n\n    partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextName));
-            this.Write(" {\n");
- foreach (var aggregate in _aggregates) { 
-            this.Write("\n");
- var entity = aggregate.ToDbEntity(); 
-            this.Write("\n        public DbSet<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entity.CSharpTypeName));
-            this.Write("> ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entity.DbSetName));
-            this.Write(" { get; set; }\n");
- }
-            this.Write("\n    }\n}\n");
+            this.Write("using Microsoft.AspNetCore.Mvc;\r\n\r\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_config.MvcControllerNamespace));
+            this.Write(";\r\n\r\n");
+ foreach (var rootAggregate in _rootAggregates) { 
+ var controllerName = GetControllerName(rootAggregate); 
+ var dbContextTypeName = $"{_config.DbContextNamespace}.{_config.DbContextName}"; 
+ var uiInstance = rootAggregate.ToUiInstanceClass().CSharpTypeName; 
+ var search = rootAggregate.BuildSearchMethod("param", "query", "e"); 
+            this.Write("\r\n[ApiController]\r\n[Route(\"[controller]\")]\r\npublic class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(controllerName));
+            this.Write(" : ControllerBase {\r\n    public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(controllerName));
+            this.Write("(\r\n        ILogger<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(controllerName));
+            this.Write("> logger,\r\n        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(dbContextTypeName));
+            this.Write(" dbContext,\r\n        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(typeof(RuntimeService).FullName));
+            this.Write(" runtimeService) {\r\n        _logger = logger;\r\n        _dbContext = dbContext;\r\n " +
+                    "       _runtimeService = runtimeService;\r\n    }\r\n    private readonly ILogger<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(controllerName));
+            this.Write("> _logger;\r\n    private readonly ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(dbContextTypeName));
+            this.Write(" _dbContext;\r\n    private readonly ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(typeof(RuntimeService).FullName));
+            this.Write(" _runtimeService;\r\n\r\n    [HttpGet(\"list\")]\r\n    public IEnumerable<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(search.SearchResultClassName));
+            this.Write("> Search([FromQuery] ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(search.SearchConditionClassName));
+            this.Write(" param) {\r\n        return _dbContext.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(search.MethodName));
+            this.Write("(param);\r\n    }\r\n    [HttpPost(\"create\")]\r\n    public HttpResponseMessage Create(" +
+                    "");
+            this.Write(this.ToStringHelper.ToStringWithCulture(uiInstance));
+            this.Write(" param) {\r\n        var success = _runtimeService.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(RuntimeService.TrySaveNewInstance)));
+            this.Write(@"(param, out var instanceKey, out var errors);
+        if (success) {
+            return new HttpResponseMessage {
+                StatusCode = System.Net.HttpStatusCode.Created,
+                Content = new StringContent(instanceKey),
+            };
+        } else {
+            return new HttpResponseMessage {
+                StatusCode = System.Net.HttpStatusCode.BadRequest,
+                Content = JsonContent.Create(errors),
+            };
+        }
+    }
+    [HttpGet(""detail/{instanceKey}"")]
+    public HttpResponseMessage Find(string instanceKey) {
+        var instance = _runtimeService.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(RuntimeService.FindInstance)));
+            this.Write("<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(uiInstance));
+            this.Write(@">(instanceKey, out var _);
+        if (instance != null) {
+            return new HttpResponseMessage {
+                StatusCode = System.Net.HttpStatusCode.Found,
+                Content = JsonContent.Create(instance),
+            };
+        } else {
+            return new HttpResponseMessage {
+                StatusCode = System.Net.HttpStatusCode.NotFound,
+            };
+        }
+    }
+    [HttpPost(""update"")]
+    public HttpResponseMessage Update(");
+            this.Write(this.ToStringHelper.ToStringWithCulture(uiInstance));
+            this.Write(" param) {\r\n        var success = _runtimeService.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(RuntimeService.TryUpdate)));
+            this.Write(@"(param, out var instanceKey, out var errors);
+        if (success) {
+            return new HttpResponseMessage {
+                StatusCode = System.Net.HttpStatusCode.OK,
+                Content = new StringContent(instanceKey),
+            };
+        } else {
+            return new HttpResponseMessage {
+                StatusCode = System.Net.HttpStatusCode.BadRequest,
+                Content = JsonContent.Create(errors),
+            };
+        }
+    }
+}
+
+");
+ } 
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -52,7 +123,7 @@ namespace HalApplicationBuilder.CodeRendering
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class DbSetTemplateBase
+    public class WebApiControllerTemplateBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

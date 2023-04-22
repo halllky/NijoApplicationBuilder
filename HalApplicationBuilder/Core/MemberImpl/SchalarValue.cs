@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
@@ -56,6 +56,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             else
                 return _propertyType;
         }
+
         private string GetCSharpTypeName() {
             var type = GetPropertyTypeExceptNullable();
             string valueTypeName;
@@ -72,17 +73,46 @@ namespace HalApplicationBuilder.Core.MemberImpl {
 
             return valueTypeName + question;
         }
+        private string GetTypeScriptTypeName() {
+            var type = GetPropertyTypeExceptNullable();
+            string valueTypeName;
+            if (type.IsEnum) valueTypeName = string.Join(" | ", Enum.GetNames(type).Select(name => $"'{name}'"));
+            else if (type == typeof(string)) valueTypeName = "string";
+            else if (type == typeof(bool)) valueTypeName = "boolean";
+            else if (type == typeof(int)) valueTypeName = "number";
+            else if (type == typeof(float)) valueTypeName = "number";
+            else if (type == typeof(decimal)) valueTypeName = "number";
+            else if (type == typeof(DateTime)) valueTypeName = "Date";
+            else throw new InvalidOperationException($"不正な型: {DisplayName} - {type.Name}");
+
+            var question = IsNullable ? " | undefined" : null;
+
+            return valueTypeName + question;
+        }
+
         private string GetSearchConditionCSharpTypeName() {
             var type = GetPropertyTypeExceptNullable();
             if (type.IsEnum) return type.FullName + "?";
-            if (type == typeof(string)) return "string";
-            if (type == typeof(bool)) return "bool";
+            if (type == typeof(string)) return "string?";
+            if (type == typeof(bool)) return "bool?";
             if (type == typeof(int)) return "int?";
             if (type == typeof(float)) return "float?";
             if (type == typeof(decimal)) return "decimal?";
             if (type == typeof(DateTime)) return "DateTime?";
             return type.FullName!;
         }
+        private string GetSearchConditionTypeScriptTypeName() {
+            var type = GetPropertyTypeExceptNullable();
+            if (type.IsEnum) return string.Join(" | ", Enum.GetNames(type).Select(name => $"'{name}'"));
+            if (type == typeof(string)) return "string";
+            if (type == typeof(bool)) return "boolean";
+            if (type == typeof(int)) return "number | undefined";
+            if (type == typeof(float)) return "number | undefined";
+            if (type == typeof(decimal)) return "number | undefined";
+            if (type == typeof(DateTime)) return "Date | undefined";
+            return type.FullName!;
+        }
+
         private bool IsRangeSearchCondition() {
             var type = GetPropertyTypeExceptNullable();
             return new[] { typeof(int), typeof(float), typeof(decimal), typeof(DateTime) }.Contains(type);
@@ -172,6 +202,44 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 context.Template.WriteLine($"<input asp-for=\"{searchCondition}\" class=\"border\" />");
             }
         }
+        internal override void RenderReactSearchConditionView(RenderingContext context) {
+            var type = GetPropertyTypeExceptNullable();
+
+            if (IsRangeSearchCondition()) {
+                // 範囲検索
+                var from = context.ObjectPath
+                    .Nest(SearchConditonPropName)
+                    .Nest(nameof(FromTo.From))
+                    .AspForPath;
+                var to = context.ObjectPath
+                    .Nest(SearchConditonPropName)
+                    .Nest(nameof(FromTo.To))
+                    .AspForPath;
+                context.Template.WriteLine($"<input type=\"text\" className=\"border\" />");
+                context.Template.WriteLine($"〜");
+                context.Template.WriteLine($"<input type=\"text\" className=\"border\" />");
+
+            } else if (type.IsEnum) {
+                // enumドロップダウン
+                var options = new List<KeyValuePair<string, string>>();
+                if (IsNullable) options.Add(KeyValuePair.Create("", ""));
+
+                context.Template.WriteLine($"<select className=\"border\">");
+                foreach (var opt in options) {
+                    context.Template.WriteLine($"    <option selected=\"selected\" value=\"{opt.Key}\">");
+                    context.Template.WriteLine($"        {opt.Value}");
+                    context.Template.WriteLine($"    </option>");
+                }
+                context.Template.WriteLine($"</select>");
+
+            } else {
+                // ただのinput
+                var searchCondition = context.ObjectPath
+                    .Nest(SearchConditonPropName)
+                    .AspForPath;
+                context.Template.WriteLine($"<input type=\"text\" className=\"border\" />");
+            }
+        }
 
         internal override void RenderAspNetMvcPartialView(RenderingContext context) {
             var value = context.ObjectPath
@@ -249,6 +317,8 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 CSharpTypeName = GetCSharpTypeName(),
                 PropertyName = DbColumnPropName,
                 Nullable = IsNullable,
+
+                TypeScriptTypeName = GetTypeScriptTypeName(),
             };
         }
 
@@ -256,6 +326,8 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             yield return new RenderedProperty {
                 CSharpTypeName = GetCSharpTypeName(),
                 PropertyName = InstanceModelPropName,
+
+                TypeScriptTypeName = GetTypeScriptTypeName(),
             };
         }
 
@@ -263,16 +335,20 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             var type = GetPropertyTypeExceptNullable();
             if (new[] { typeof(int), typeof(float), typeof(decimal), typeof(DateTime) }.Contains(type)) {
                 // 範囲検索
+                var tsType = GetSearchConditionTypeScriptTypeName();
                 yield return new RenderedProperty {
                     CSharpTypeName = $"{typeof(FromTo).Namespace}.{nameof(FromTo)}<{GetSearchConditionCSharpTypeName()}>",
                     PropertyName = SearchConditonPropName,
                     Initializer = "new()",
+
+                    TypeScriptTypeName = $"{{ from: {tsType} ,to: {tsType} }}",
                 };
 
             } else if (type.IsEnum) {
                 // enumドロップダウン
                 yield return new RenderedProperty {
                     CSharpTypeName = type.FullName ?? throw new InvalidOperationException($"type.FullNameを取得できない: {DisplayName}"),
+                    TypeScriptTypeName = GetTypeScriptTypeName(),
                     PropertyName = SearchConditonPropName,
                 };
 
@@ -280,6 +356,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 // ただのinput
                 yield return new RenderedProperty {
                     CSharpTypeName = GetSearchConditionCSharpTypeName(),
+                    TypeScriptTypeName = GetTypeScriptTypeName(),
                     PropertyName = SearchConditonPropName,
                 };
             }
@@ -288,6 +365,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
         internal override IEnumerable<RenderedProperty> ToSearchResultMember() {
             yield return new RenderedProperty {
                 CSharpTypeName = GetCSharpTypeName(),
+                TypeScriptTypeName = GetTypeScriptTypeName(),
                 PropertyName = SearchResultPropName,
             };
         }

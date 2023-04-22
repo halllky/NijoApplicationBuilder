@@ -10,24 +10,24 @@ using System.Threading.Tasks;
 namespace HalApplicationBuilder.DotnetEx {
     internal class ExternalProcess {
         internal ExternalProcess(string workingDirectory, CancellationToken? cancellationToken = null) {
-            _workingDirectory = workingDirectory;
-            _cancellationToken = cancellationToken;
+            WorkingDirectory = workingDirectory;
+            CancellationToken = cancellationToken;
         }
 
-        private readonly string _workingDirectory;
-        private readonly CancellationToken? _cancellationToken;
+        internal string WorkingDirectory { get; }
+        internal CancellationToken? CancellationToken { get; }
 
         internal void Start(string filename, params string[] args) {
             using var process = CreateProcess(filename, args);
             try {
-                _cancellationToken?.ThrowIfCancellationRequested();
+                CancellationToken?.ThrowIfCancellationRequested();
 
                 process.Start();
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
 
                 while (!process.HasExited) {
-                    _cancellationToken?.ThrowIfCancellationRequested();
+                    CancellationToken?.ThrowIfCancellationRequested();
                     Thread.Sleep(100);
                 }
                 if (process.ExitCode != 0) {
@@ -49,20 +49,20 @@ namespace HalApplicationBuilder.DotnetEx {
         }
 
         internal async Task StartAsync(string filename, params string[] args) {
-            if (_cancellationToken == null)
-                throw new InvalidOperationException($"{nameof(StartAsync)}の場合は{nameof(_cancellationToken)}必須");
+            if (CancellationToken == null)
+                throw new InvalidOperationException($"{nameof(StartAsync)}の場合は{nameof(CancellationToken)}必須");
 
             await Task.Run(() => {
                 using var process = CreateProcess(filename, args);
                 try {
-                    _cancellationToken?.ThrowIfCancellationRequested();
+                    CancellationToken?.ThrowIfCancellationRequested();
 
                     process.Start();
                     process.BeginOutputReadLine();
                     process.BeginErrorReadLine();
 
                     while (!process.HasExited) {
-                        _cancellationToken?.ThrowIfCancellationRequested();
+                        CancellationToken?.ThrowIfCancellationRequested();
                         Thread.Sleep(100);
                     }
                 } catch (OperationCanceledException) {
@@ -84,7 +84,7 @@ namespace HalApplicationBuilder.DotnetEx {
                 process.StartInfo.FileName = filename;
                 foreach (var arg in args) process.StartInfo.ArgumentList.Add(arg);
             }
-            process.StartInfo.WorkingDirectory = _workingDirectory;
+            process.StartInfo.WorkingDirectory = WorkingDirectory;
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
             process.StartInfo.StandardOutputEncoding = Console.OutputEncoding;

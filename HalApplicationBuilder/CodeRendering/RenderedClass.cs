@@ -7,6 +7,7 @@ namespace HalApplicationBuilder.CodeRendering
         internal required string CSharpTypeName { get; init; }
         internal required string ClassName { get; init; }
         internal required IEnumerable<RenderedProperty> Properties { get; init; }
+        internal string TypeScriptTypeName => ClassName;
     }
 
     internal class RenderedEFCoreEntity {

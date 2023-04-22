@@ -24,12 +24,13 @@ namespace HalApplicationBuilder {
             };
 
             var xmlFilename = new Argument<string?>();
+            var mvc =new Option<bool>("mvc");
 
             var gen = new Command(name: "gen", description: "ソースコードの自動生成を実行します。") { xmlFilename };
             var debug = new Command(name: "debug", description: "プロジェクトのデバッグを開始します。") { xmlFilename };
             var template = new Command(name: "template", description: "アプリケーション定義ファイルのテンプレートを表示します。");
 
-            gen.SetHandler(xmlFilename => Gen(xmlFilename, cancellationTokenSource.Token), xmlFilename);
+            gen.SetHandler((xmlFilename, mvc) => Gen(xmlFilename, mvc, cancellationTokenSource.Token), xmlFilename, mvc);
             debug.SetHandler(xmlFilename => Debug(xmlFilename, cancellationTokenSource.Token), xmlFilename);
             template.SetHandler(() => Template(cancellationTokenSource.Token));
 
@@ -48,14 +49,17 @@ namespace HalApplicationBuilder {
             return Core.Config.FromXml(xmlContent);
         }
 
-        private static void Gen(string? xmlFilename, CancellationToken cancellationToken) {
+        private static void Gen(string? xmlFilename, bool mvc, CancellationToken cancellationToken) {
             if (xmlFilename == null) throw new InvalidOperationException($"対象XMLを指定してください。");
             var xmlFullpath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), xmlFilename));
             var xmlContent = File.ReadAllText(xmlFullpath);
             var config = Core.Config.FromXml(xmlContent);
-            CodeGenerator
-                .FromXml(xmlContent)
-                .GenerateCode(config, Console.Out, cancellationToken);
+            var generator = CodeGenerator.FromXml(xmlContent);
+            if (mvc) {
+                generator.GenerateAspNetCoreMvc(config, Console.Out, cancellationToken);
+            } else {
+                generator.GenerateReactAndWebApi(config, Console.Out, cancellationToken);
+            }
         }
 
         private static void Build(string? xmlFilename, CancellationToken cancellationToken) {
@@ -88,7 +92,7 @@ namespace HalApplicationBuilder {
 
             // build task
             void Update() {
-                Gen(xmlFilename, cancellationToken);
+                Gen(xmlFilename, false, cancellationToken);
                 Build(xmlFilename, cancellationToken);
                 AddMigration(xmlFilename, true, cancellationToken);
             }

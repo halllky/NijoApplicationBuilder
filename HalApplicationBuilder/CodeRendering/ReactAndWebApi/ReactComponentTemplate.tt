@@ -1,0 +1,77 @@
+<#@ template language="C#" linePragmas="false" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+import React, { useState } from 'react';
+import { useCtrlS } from '../hooks/useCtrlS';
+import { useAppContext } from '../hooks/AppContext';
+import { AgGridReact } from 'ag-grid-react';
+import { Link } from 'react-router-dom';
+import { ArrowPathIcon, BookmarkIcon, ChevronDownIcon, ChevronRightIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { IconButton } from '../components/IconButton';
+import { <#=_searchCondition.ClassName#>, <#=_searchResult.ClassName#>, <#=_uiInstance.ClassName#> } from '<#=GetImportFromTypes()#>';
+
+export const use<#=_searchResult.ClassName#>Query = () => {
+
+}
+
+export const <#=MultiViewComponentName#> = () => {
+
+    const [expanded, setExpanded] = useState(false)
+
+    const [, dispatch] = useAppContext()
+    useCtrlS(() => {
+        dispatch({ type: 'pushMsg', msg: '保存しました。' })
+    })
+
+    return (
+        <div className="ag-theme-alpine compact h-full w-full">
+
+            <div className="flex flex-row justify-start items-center p-1 space-x-1">
+                <div className='flex flex-row items-center cursor-pointer' onClick={() => setExpanded(!expanded)}>
+                    {expanded
+                        ? <ChevronDownIcon className="w-4 mr-2" />
+                        : <ChevronRightIcon className="w-4 mr-2" />}
+                    <span className='text-sm select-none'>検索</span>
+                </div>
+                <div className='flex-1' />
+                <IconButton outline icon={ArrowPathIcon}>再読込</IconButton>
+                <IconButton outline icon={BookmarkIcon}>この検索条件を保存</IconButton>
+            </div>
+
+            {expanded &&
+                <div className='flex flex-col items-start space-y-1 p-2'>
+<# PushIndent("                    "); #>
+<# _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath($"Model.{nameof(Runtime.AspNetMvc.MultiViewModel<Runtime.SearchConditionBase, Runtime.SearchResultBase>.SearchCondition)}"))); #>
+<# PopIndent(); #>
+                    <div className='flex flex-row justify-end space-x-1'>
+                        <IconButton icon={MagnifyingGlassIcon}>検索</IconButton>
+                        <IconButton outline>クリア</IconButton>
+                    </div>
+                </div>
+            }
+
+            <AgGridReact
+                rowData={[]}
+                columnDefs={columnDefs}
+                multiSortKey='ctrl'
+                undoRedoCellEditing
+                undoRedoCellEditingLimit={20}>
+            </AgGridReact>
+        </div>
+    )
+}
+
+const columnDefs = [
+    {
+        resizable: true,
+        cellRenderer: ({ data }: any) => {
+            // console.log(data)
+            return <Link to="/" className="text-blue-400">詳細</Link>
+        },
+    },
+<# foreach (var prop in _searchResult.Properties) { #>
+    { field: '<#=prop.PropertyName#>', resizable: true, sortable: true, editable: true },
+<# } #>
+]

@@ -77,7 +77,7 @@ namespace HalApplicationBuilder.Test {
         public DistMvcProject GenerateCodeFromNamespace(string? @namespace) {
             HalApplicationBuilder.CodeGenerator
                 .FromAssembly(Assembly.GetExecutingAssembly(), @namespace)
-                .GenerateCode(GetConfig(), Console.Out);
+                .GenerateAspNetCoreMvc(GetConfig(), Console.Out, null);
             return this;
         }
         public DistMvcProject GenerateCodeFromXml(string xmlFileName) {
@@ -86,7 +86,7 @@ namespace HalApplicationBuilder.Test {
             var xml = sr.ReadToEnd();
             HalApplicationBuilder.CodeGenerator
                 .FromXml(xml)
-                .GenerateCode(GetConfig(), Console.Out);
+                .GenerateAspNetCoreMvc(GetConfig(), Console.Out, null);
             return this;
         }
 

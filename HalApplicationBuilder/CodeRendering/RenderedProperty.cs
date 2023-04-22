@@ -12,6 +12,9 @@ namespace HalApplicationBuilder.CodeRendering
 
         // For DBColumn
         internal bool? Nullable { get; init; }
+
+        // For React
+        internal required string TypeScriptTypeName { get; init; }
     }
 
     internal class RenderedParentPkProperty : RenderedProperty {

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.DotnetEx;
 using HalApplicationBuilder.CodeRendering;
+using System.Text;
 
 namespace HalApplicationBuilder.Core
 {
@@ -63,6 +64,8 @@ namespace HalApplicationBuilder.Core
                 var parentPK = Parent.Owner.ToDbEntity().PrimaryKeys.Select(ppk => new RenderedParentPkProperty {
                     CSharpTypeName = ppk.CSharpTypeName,
                     PropertyName = $"Parent_{ppk.PropertyName}",
+
+                    TypeScriptTypeName = string.Empty, // 不要なプロパティ
                 });
                 pks = parentPK.Union(pks);
 
@@ -73,6 +76,8 @@ namespace HalApplicationBuilder.Core
                      PropertyName = PARENT_NAVIGATION_PROPERTY_NAME,
                      Initializer = null,
                      OnModelCreating = null,
+
+                     TypeScriptTypeName = string.Empty, // 不要なプロパティ
                 } });
             }
 
@@ -152,6 +157,30 @@ namespace HalApplicationBuilder.Core
             }
 
             context.Template.WriteLine($"</div>");
+        }
+        internal void RenderReactSearchCondition(RenderingContext context) {
+
+            // 横幅は最も長い名前をもつメンバー名で決める
+            var members = GetMembers().ToArray();
+            var maxByteCount = members.Any()
+                ? members.Max(m => m.DisplayName.Length)
+                : 0;
+            var flexBasis = $"basis-{(maxByteCount + 1) * 4}";
+
+            foreach (var member in members) {
+                context.Template.WriteLine($"<div className=\"self-stretch flex flex-row\">");
+                context.Template.WriteLine($"    <label className=\"{flexBasis} text-sm select-none\">");
+                context.Template.WriteLine($"        {member.DisplayName}");
+                context.Template.WriteLine($"    </label>");
+                context.Template.WriteLine($"    <div className=\"flex-1\">");
+
+                context.Template.PushIndent("        ");
+                member.RenderReactSearchConditionView(context);
+                context.Template.PopIndent();
+
+                context.Template.WriteLine($"    </div>");
+                context.Template.WriteLine($"</div>");
+            }
         }
 
         internal void RenderAspNetMvcPartialView(RenderingContext context) {

@@ -7,43 +7,74 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering
+namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
 {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
+    using HalApplicationBuilder.Runtime;
     using System;
     
     /// <summary>
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class DbSetTemplate : DbSetTemplateBase
+    public partial class ReactTypeDefTemplate : ReactTypeDefTemplateBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextNamespace));
-            this.Write(" {\n    using Microsoft.EntityFrameworkCore;\n\n    partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextName));
-            this.Write(" {\n");
+            this.Write("\r\nexport type ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ReferenceDTO.TS_TYPE_NAME));
+            this.Write(" = {\r\n    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ReferenceDTO.TS_KEY_PROP_NAME));
+            this.Write(": string\r\n    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ReferenceDTO.TS_NAME_PROP_NAME));
+            this.Write(": string\r\n}\r\n\r\n");
  foreach (var aggregate in _aggregates) { 
-            this.Write("\n");
- var entity = aggregate.ToDbEntity(); 
-            this.Write("\n        public DbSet<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entity.CSharpTypeName));
-            this.Write("> ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entity.DbSetName));
-            this.Write(" { get; set; }\n");
- }
-            this.Write("\n    }\n}\n");
+            this.Write("\r\n");
+ /* 検索条件型 */ 
+ var searchCondition = aggregate.ToSearchConditionClass(); 
+            this.Write("export type ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(searchCondition.ClassName));
+            this.Write(" = {\r\n");
+ foreach (var prop in searchCondition.Properties) { 
+            this.Write("    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write(": ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.TypeScriptTypeName));
+            this.Write("\r\n");
+ } 
+            this.Write("}\r\n\r\n");
+ /* 検索結果型 */ 
+ var searchResult = aggregate.ToSearchResultClass(); 
+            this.Write("export type ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(searchResult.ClassName));
+            this.Write(" = {\r\n");
+ foreach (var prop in searchResult.Properties) { 
+            this.Write("    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write(": ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.TypeScriptTypeName));
+            this.Write("\r\n");
+ } 
+            this.Write("}\r\n\r\n");
+ /* シングルビュー型 */ 
+ var uiInstance = aggregate.ToUiInstanceClass(); 
+            this.Write("export type ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(uiInstance.ClassName));
+            this.Write(" = {\r\n");
+ foreach (var prop in uiInstance.Properties) { 
+            this.Write("    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write(": ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.TypeScriptTypeName));
+            this.Write("\r\n");
+ } 
+            this.Write("}\r\n\r\n");
+ } 
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -52,7 +83,7 @@ namespace HalApplicationBuilder.CodeRendering
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class DbSetTemplateBase
+    public class ReactTypeDefTemplateBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

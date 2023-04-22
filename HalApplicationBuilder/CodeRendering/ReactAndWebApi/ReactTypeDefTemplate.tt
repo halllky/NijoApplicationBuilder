@@ -1,0 +1,39 @@
+<#@ template language="C#" linePragmas="false" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="HalApplicationBuilder.Runtime" #>
+
+export type <#=ReferenceDTO.TS_TYPE_NAME#> = {
+    <#=ReferenceDTO.TS_KEY_PROP_NAME#>: string
+    <#=ReferenceDTO.TS_NAME_PROP_NAME#>: string
+}
+
+<# foreach (var aggregate in _aggregates) { #>
+
+<# /* 検索条件型 */ #>
+<# var searchCondition = aggregate.ToSearchConditionClass(); #>
+export type <#=searchCondition.ClassName#> = {
+<# foreach (var prop in searchCondition.Properties) { #>
+    <#=prop.PropertyName#>: <#=prop.TypeScriptTypeName#>
+<# } #>
+}
+
+<# /* 検索結果型 */ #>
+<# var searchResult = aggregate.ToSearchResultClass(); #>
+export type <#=searchResult.ClassName#> = {
+<# foreach (var prop in searchResult.Properties) { #>
+    <#=prop.PropertyName#>: <#=prop.TypeScriptTypeName#>
+<# } #>
+}
+
+<# /* シングルビュー型 */ #>
+<# var uiInstance = aggregate.ToUiInstanceClass(); #>
+export type <#=uiInstance.ClassName#> = {
+<# foreach (var prop in uiInstance.Properties) { #>
+    <#=prop.PropertyName#>: <#=prop.TypeScriptTypeName#>
+<# } #>
+}
+
+<# } #>

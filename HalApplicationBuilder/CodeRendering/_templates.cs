@@ -37,6 +37,14 @@ namespace HalApplicationBuilder.CodeRendering {
         private readonly IEnumerable<CodeRendering.RenderedEFCoreEntity> _dbEntities;
         private readonly IEnumerable<CodeRendering.RenderedClass> _referredDbEntities;
     }
+    partial class UIModelsTemplate {
+        internal UIModelsTemplate(Core.Config config, IEnumerable<Core.Aggregate> aggregates) {
+            _config = config;
+            _aggregates = aggregates;
+        }
+        private readonly Core.Config _config;
+        private readonly IEnumerable<Core.Aggregate> _aggregates;
+    }
 
     partial class OnModelCreatingTemplate {
         internal OnModelCreatingTemplate(Core.Config config, IEnumerable<Core.Aggregate> aggregates) {
@@ -69,15 +77,6 @@ namespace HalApplicationBuilder.CodeRendering {
 
 namespace HalApplicationBuilder.CodeRendering.AspNetMvc {
     using ControllerBase = Runtime.AspNetMvc.ControllerBase<Runtime.SearchConditionBase, Runtime.SearchResultBase, Runtime.UIInstanceBase>;
-
-    partial class MvcModelsTemplate {
-        internal MvcModelsTemplate(Core.Config config, IEnumerable<Core.Aggregate> aggregates) {
-            _config = config;
-            _aggregates = aggregates;
-        }
-        private readonly Core.Config _config;
-        private readonly IEnumerable<Core.Aggregate> _aggregates;
-    }
 
     partial class MvcControllerTemplate {
         internal MvcControllerTemplate(Core.Config config, IEnumerable<Core.RootAggregate> rootAggregates) {
@@ -215,3 +214,89 @@ namespace HalApplicationBuilder.CodeRendering.AspNetMvc {
     }
 }
 
+namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
+
+    partial class WebApiControllerTemplate {
+        internal WebApiControllerTemplate(Config config, IEnumerable<RootAggregate> rootAggregates) {
+            _config = config;
+            _rootAggregates = rootAggregates;
+        }
+        private readonly Config _config;
+        private readonly IEnumerable<RootAggregate> _rootAggregates;
+
+        private static string GetControllerName(RootAggregate rootAggregate) {
+            return $"{rootAggregate.GetCSharpSafeName()}Controller";
+        }
+    }
+
+    partial class ReactTypeDefTemplate {
+        internal ReactTypeDefTemplate(IEnumerable<Aggregate> aggregates) {
+            _aggregates = aggregates;
+        }
+        private readonly IEnumerable<Aggregate> _aggregates;
+
+        internal const string FILE_NAME = "halapp.types.ts";
+    }
+
+    partial class ReactComponentTemplate : ITemplate {
+        internal ReactComponentTemplate(RootAggregate rootAggregate) {
+            _rootAggregate = rootAggregate;
+            _searchCondition = rootAggregate.ToSearchConditionClass();
+            _searchResult = rootAggregate.ToSearchResultClass();
+            _uiInstance = rootAggregate.ToUiInstanceClass();
+
+            FileName = $"{rootAggregate.GetFileSafeName()}.tsx";
+        }
+
+        internal string FileName { get; }
+        internal string MultiViewComponentName => $"{_rootAggregate.GetCSharpSafeName()}MultiView";
+
+        private readonly RootAggregate _rootAggregate;
+        private readonly RenderedClass _searchCondition;
+        private readonly RenderedClass _searchResult;
+        private readonly RenderedClass _uiInstance;
+
+        private static string GetImportFromTypes() {
+            return $"./{Path.GetFileNameWithoutExtension(ReactTypeDefTemplate.FILE_NAME)}";
+        }
+    }
+
+#pragma warning disable IDE1006 // 命名スタイル
+    partial class menuItems {
+#pragma warning restore IDE1006 // 命名スタイル
+        internal menuItems(IEnumerable<RootAggregate> rootAggregates) {
+            _rootAggregates = rootAggregates;
+        }
+
+        private readonly IEnumerable<RootAggregate> _rootAggregates;
+
+        private static string GetImport(RootAggregate rootAggregate) {
+            return $"./{Path.GetFileNameWithoutExtension(new ReactComponentTemplate(rootAggregate).FileName)}";
+        }
+        private static string GetUrl(RootAggregate rootAggregate) {
+            return $"/{rootAggregate.GetGuid()}";
+        }
+        private static string GetMultiViewComponentName(RootAggregate rootAggregate) {
+            return new ReactComponentTemplate(rootAggregate).MultiViewComponentName;
+        }
+        internal const string FILE_NAME = "menuItems.tsx";
+    }
+
+#pragma warning disable IDE1006 // 命名スタイル
+    partial class index {
+#pragma warning restore IDE1006 // 命名スタイル
+        internal index(IEnumerable<RootAggregate> rootAggregates) {
+            _rootAggregates = rootAggregates;
+        }
+
+        private readonly IEnumerable<RootAggregate> _rootAggregates;
+
+        private static string GetImportFromMenuItems() {
+            return $"./{Path.GetFileNameWithoutExtension(menuItems.FILE_NAME)}";
+        }
+        private static string GetImport(RootAggregate rootAggregate) {
+            return $"./{Path.GetFileNameWithoutExtension(new ReactComponentTemplate(rootAggregate).FileName)}";
+        }
+        internal const string FILE_NAME = "index.ts";
+    }
+}
