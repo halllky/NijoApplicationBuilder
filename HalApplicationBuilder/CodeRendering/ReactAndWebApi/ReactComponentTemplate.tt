@@ -9,6 +9,7 @@ import { useAppContext } from './hooks/AppContext';
 import { AgGridReact } from 'ag-grid-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
+import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
 import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon, BookmarkSquareIcon } from '@heroicons/react/24/outline';
 import { IconButton } from './components/IconButton';
 import { <#=_searchCondition.ClassName#>, <#=_searchResult.ClassName#>, <#=_uiInstance.ClassName#> } from '<#=GetImportFromTypes()#>';
@@ -20,23 +21,32 @@ export const <#=MultiViewComponentName#> = () => {
         dispatch({ type: 'pushMsg', msg: '保存しました。' })
     })
 
-    const [expanded, setExpanded] = useState(true)
-
-    const [editedParam, setEditedParam] = useState<<#=_searchCondition.ClassName#>>({} as <#=_searchCondition.ClassName#>) // TODO
-    const [commitedParam, setCommitedParam] = useState<<#=_searchCondition.ClassName#>>({} as <#=_searchCondition.ClassName#>) // TODO
+    const [param, setParam] = useState<<#=_searchCondition.ClassName#>>({} as <#=_searchCondition.ClassName#>) // TODO
+    const { register, handleSubmit, reset } = useForm()
+    const onSearch: SubmitHandler<FieldValues> = useCallback(data => {
+        setParam(data as <#=_searchCondition.ClassName#>)
+    }, [])
+    const onClear = useCallback((e: React.MouseEvent) => {
+        reset()
+        e.preventDefault()
+    }, [])
     const { data, isLoading, error } = useQuery({
-        queryKey: ['<#=_rootAggregate.GetGuid()#>', JSON.stringify(commitedParam)],
+        queryKey: ['<#=_rootAggregate.GetGuid()#>', JSON.stringify(param)],
         queryFn: async () => {
-            const queryParam = new URLSearchParams(commitedParam).toString()
-            const response = await fetch(`${apiDomain}/<#=_rootAggregate.GetCSharpSafeName()#>/list?${queryParam}`) // TODO バックエンドのURLと合わせる
+            const json = JSON.stringify(param)
+            const encoded = window.encodeURI(json)
+            const response = await fetch(`${apiDomain}/<#=_rootAggregate.GetCSharpSafeName()#>/list?param=${encoded}`)
             if (!response.ok) throw new Error('Network response was not OK.')
             return (await response.json()) as <#=_searchResult.ClassName#>[]
         },
     })
+
     const navigate = useNavigate()
     const toCreateView = useCallback(() => {
         navigate('<#=CreateViewUrl#>')
     }, [])
+
+    const [expanded, setExpanded] = useState(true)
     
     if (error) return <p>Error: {JSON.stringify(error)}</p>
 
@@ -57,17 +67,17 @@ export const <#=MultiViewComponentName#> = () => {
             </div>
 
             {expanded &&
-                <div className='flex flex-col space-y-1 py-1'>
+                <form className='flex flex-col space-y-1 py-1' onSubmit={handleSubmit(onSearch)}>
 <# PushIndent("                    "); #>
 <# _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("searchCondition"))); #>
 <# PopIndent(); #>
                     <div className='flex flex-row justify-start space-x-1'>
                         <IconButton icon={MagnifyingGlassIcon}>検索</IconButton>
-                        <IconButton outline>クリア</IconButton>
+                        <IconButton outline onClick={onClear}>クリア</IconButton>
                         <div className="flex-1"></div>
                         <IconButton outline icon={BookmarkIcon}>この検索条件を保存</IconButton>
                     </div>
-                </div>
+                </form>
             }
 
             <AgGridReact
@@ -96,6 +106,8 @@ const columnDefs = [
 
 export const <#=CreateViewComponentName#> = () => {
 
+    const { register } = useForm()
+
     return (
         <div className="flex flex-col justify-start space-y-1">
             <h1 className="text-base font-semibold select-none py-1">
@@ -112,6 +124,8 @@ export const <#=CreateViewComponentName#> = () => {
 }
 
 export const <#=SingleViewComponentName#> = () => {
+
+    const { register } = useForm()
 
     return (
         <div className="flex flex-col justify-start space-y-1">

@@ -41,7 +41,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             var nested = context.Nest(SearchConditionPropName);
             GetChildAggregates().Single().RenderSearchCondition(nested);
         }
-        internal override void RenderReactComponent(RenderingContext context) {
+        internal override void RenderReactSearchCondition(RenderingContext context) {
             var nested = context.Nest(SearchConditionPropName);
             GetChildAggregates().Single().RenderReactSearchCondition(nested);
         }
@@ -49,6 +49,10 @@ namespace HalApplicationBuilder.Core.MemberImpl {
         internal override void RenderAspNetMvcPartialView(RenderingContext context) {
             var nested = context.Nest(InstanceModelPropName);
             GetChildAggregates().Single().RenderAspNetMvcPartialView(nested);
+        }
+        internal override void RenderReactComponent(RenderingContext context) {
+            var nested = context.Nest(SearchConditionPropName);
+            GetChildAggregates().Single().RenderReactComponent(nested);
         }
 
         internal override object? GetInstanceKeyFromDbInstance(object dbInstance) {

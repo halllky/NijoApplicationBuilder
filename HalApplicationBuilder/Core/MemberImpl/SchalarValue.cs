@@ -202,6 +202,44 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 context.Template.WriteLine($"<input asp-for=\"{searchCondition}\" class=\"border\" />");
             }
         }
+        internal override void RenderReactSearchCondition(RenderingContext context) {
+            var type = GetPropertyTypeExceptNullable();
+
+            if (IsRangeSearchCondition()) {
+                // 範囲検索
+                var from = context.ObjectPath
+                    .Nest(SearchConditonPropName)
+                    .Nest(nameof(FromTo.From))
+                    .PathWithoutRoot;
+                var to = context.ObjectPath
+                    .Nest(SearchConditonPropName)
+                    .Nest(nameof(FromTo.To))
+                    .PathWithoutRoot;
+                context.Template.WriteLine($"<input type=\"text\" className=\"border\" {{...register('{from}')}} />");
+                context.Template.WriteLine($"〜");
+                context.Template.WriteLine($"<input type=\"text\" className=\"border\" {{...register('{to}')}} />");
+
+            } else if (type.IsEnum) {
+                // enumドロップダウン
+                var options = new List<KeyValuePair<string, string>>();
+                if (IsNullable) options.Add(KeyValuePair.Create("", ""));
+
+                context.Template.WriteLine($"<select className=\"border\">");
+                foreach (var opt in options) {
+                    context.Template.WriteLine($"    <option selected=\"selected\" value=\"{opt.Key}\">");
+                    context.Template.WriteLine($"        {opt.Value}");
+                    context.Template.WriteLine($"    </option>");
+                }
+                context.Template.WriteLine($"</select>");
+
+            } else {
+                // ただのinput
+                var searchCondition = context.ObjectPath
+                    .Nest(SearchConditonPropName)
+                    .PathWithoutRoot;
+                context.Template.WriteLine($"<input type=\"text\" className=\"border\" {{...register('{searchCondition}')}} />");
+            }
+        }
         internal override void RenderReactComponent(RenderingContext context) {
             var type = GetPropertyTypeExceptNullable();
 

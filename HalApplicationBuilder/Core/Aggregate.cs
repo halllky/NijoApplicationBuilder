@@ -200,7 +200,7 @@ namespace HalApplicationBuilder.Core
                 context.Template.WriteLine($"    <div className=\"flex-1\">");
 
                 context.Template.PushIndent("        ");
-                member.RenderReactComponent(context);
+                member.RenderReactSearchCondition(context);
                 context.Template.PopIndent();
 
                 context.Template.WriteLine($"    </div>");

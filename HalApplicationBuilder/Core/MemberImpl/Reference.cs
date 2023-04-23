@@ -53,7 +53,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             context.Template.WriteLine($"    <input asp-for=\"{text}\" class=\"border {JsTemplate.AUTOCOMPLETE_INPUT}\" />");
             context.Template.WriteLine($"</div>");
         }
-        internal override void RenderReactComponent(RenderingContext context) {
+        internal override void RenderReactSearchCondition(RenderingContext context) {
             context.Template.WriteLine($"<div>");
             context.Template.WriteLine($"    TODO autocomplete");
             context.Template.WriteLine($"</div>");
@@ -77,6 +77,11 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{key}\" class=\"{JsTemplate.AUTOCOMPLETE_VALUE}\" />");
             context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{guid}\" class=\"{JsTemplate.AGGREGATE_GUID}\" />");
             context.Template.WriteLine($"    <input asp-for=\"{text}\" class=\"border {JsTemplate.AUTOCOMPLETE_INPUT}\" />");
+            context.Template.WriteLine($"</div>");
+        }
+        internal override void RenderReactComponent(RenderingContext context) {
+            context.Template.WriteLine($"<div>");
+            context.Template.WriteLine($"    TODO autocomplete");
             context.Template.WriteLine($"</div>");
         }
 

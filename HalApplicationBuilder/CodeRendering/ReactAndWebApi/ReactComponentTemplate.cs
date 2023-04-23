@@ -24,6 +24,7 @@ import { useAppContext } from './hooks/AppContext';
 import { AgGridReact } from 'ag-grid-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
+import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
 import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon, BookmarkSquareIcon } from '@heroicons/react/24/outline';
 import { IconButton } from './components/IconButton';
 import { ");
@@ -36,39 +37,34 @@ import { ");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetImportFromTypes()));
             this.Write("\';\r\n\r\nexport const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(MultiViewComponentName));
-            this.Write(@" = () => {
-
-    const [{ apiDomain }, dispatch] = useAppContext()
-    useCtrlS(() => {
-        dispatch({ type: 'pushMsg', msg: '保存しました。' })
-    })
-
-    const [expanded, setExpanded] = useState(true)
-
-    const [editedParam, setEditedParam] = useState<");
+            this.Write(" = () => {\r\n\r\n    const [{ apiDomain }, dispatch] = useAppContext()\r\n    useCtrlS" +
+                    "(() => {\r\n        dispatch({ type: \'pushMsg\', msg: \'保存しました。\' })\r\n    })\r\n\r\n    c" +
+                    "onst [param, setParam] = useState<");
             this.Write(this.ToStringHelper.ToStringWithCulture(_searchCondition.ClassName));
             this.Write(">({} as ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_searchCondition.ClassName));
-            this.Write(") // TODO\r\n    const [commitedParam, setCommitedParam] = useState<");
+            this.Write(") // TODO\r\n    const { register, handleSubmit, reset } = useForm()\r\n    const onS" +
+                    "earch: SubmitHandler<FieldValues> = useCallback(data => {\r\n        setParam(data" +
+                    " as ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_searchCondition.ClassName));
-            this.Write(">({} as ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_searchCondition.ClassName));
-            this.Write(") // TODO\r\n    const { data, isLoading, error } = useQuery({\r\n        queryKey: [" +
-                    "\'");
+            this.Write(")\r\n    }, [])\r\n    const onClear = useCallback((e: React.MouseEvent) => {\r\n      " +
+                    "  reset()\r\n        e.preventDefault()\r\n    }, [])\r\n    const { data, isLoading, " +
+                    "error } = useQuery({\r\n        queryKey: [\'");
             this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetGuid()));
-            this.Write("\', JSON.stringify(commitedParam)],\r\n        queryFn: async () => {\r\n            c" +
-                    "onst queryParam = new URLSearchParams(commitedParam).toString()\r\n            con" +
-                    "st response = await fetch(`${apiDomain}/");
+            this.Write("\', JSON.stringify(param)],\r\n        queryFn: async () => {\r\n            const jso" +
+                    "n = JSON.stringify(param)\r\n            const encoded = window.encodeURI(json)\r\n " +
+                    "           const response = await fetch(`${apiDomain}/");
             this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetCSharpSafeName()));
-            this.Write("/list?${queryParam}`) // TODO バックエンドのURLと合わせる\r\n            if (!response.ok) thro" +
-                    "w new Error(\'Network response was not OK.\')\r\n            return (await response." +
-                    "json()) as ");
+            this.Write("/list?param=${encoded}`)\r\n            if (!response.ok) throw new Error(\'Network " +
+                    "response was not OK.\')\r\n            return (await response.json()) as ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_searchResult.ClassName));
-            this.Write("[]\r\n        },\r\n    })\r\n    const navigate = useNavigate()\r\n    const toCreateVie" +
-                    "w = useCallback(() => {\r\n        navigate(\'");
+            this.Write("[]\r\n        },\r\n    })\r\n\r\n    const navigate = useNavigate()\r\n    const toCreateV" +
+                    "iew = useCallback(() => {\r\n        navigate(\'");
             this.Write(this.ToStringHelper.ToStringWithCulture(CreateViewUrl));
             this.Write(@"')
     }, [])
+
+    const [expanded, setExpanded] = useState(true)
     
     if (error) return <p>Error: {JSON.stringify(error)}</p>
 
@@ -91,18 +87,18 @@ import { ");
             </div>
 
             {expanded &&
-                <div className='flex flex-col space-y-1 py-1'>
+                <form className='flex flex-col space-y-1 py-1' onSubmit={handleSubmit(onSearch)}>
 ");
  PushIndent("                    "); 
  _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("searchCondition"))); 
  PopIndent(); 
             this.Write(@"                    <div className='flex flex-row justify-start space-x-1'>
                         <IconButton icon={MagnifyingGlassIcon}>検索</IconButton>
-                        <IconButton outline>クリア</IconButton>
+                        <IconButton outline onClick={onClear}>クリア</IconButton>
                         <div className=""flex-1""></div>
                         <IconButton outline icon={BookmarkIcon}>この検索条件を保存</IconButton>
                     </div>
-                </div>
+                </form>
             }
 
             <AgGridReact
@@ -132,9 +128,9 @@ const columnDefs = [
  } 
             this.Write("]\r\n\r\nexport const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(CreateViewComponentName));
-            this.Write(" = () => {\r\n\r\n    return (\r\n        <div className=\"flex flex-col justify-start s" +
-                    "pace-y-1\">\r\n            <h1 className=\"text-base font-semibold select-none py-1\"" +
-                    ">\r\n                <Link to=\"");
+            this.Write(" = () => {\r\n\r\n    const { register } = useForm()\r\n\r\n    return (\r\n        <div cl" +
+                    "assName=\"flex flex-col justify-start space-y-1\">\r\n            <h1 className=\"tex" +
+                    "t-base font-semibold select-none py-1\">\r\n                <Link to=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(MultiViewUrl));
             this.Write("\">");
             this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetDisplayName()));
@@ -146,8 +142,8 @@ const columnDefs = [
             this.Write("            </div>\r\n            <IconButton icon={BookmarkSquareIcon} className=\"" +
                     "self-start\">保存</IconButton>\r\n        </div>\r\n    )\r\n}\r\n\r\nexport const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(SingleViewComponentName));
-            this.Write(" = () => {\r\n\r\n    return (\r\n        <div className=\"flex flex-col justify-start s" +
-                    "pace-y-1\">\r\n");
+            this.Write(" = () => {\r\n\r\n    const { register } = useForm()\r\n\r\n    return (\r\n        <div cl" +
+                    "assName=\"flex flex-col justify-start space-y-1\">\r\n");
  PushIndent("            "); 
  _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("instance"))); 
  PopIndent(); 

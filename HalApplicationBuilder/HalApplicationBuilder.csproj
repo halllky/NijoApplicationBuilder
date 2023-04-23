@@ -178,6 +178,12 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>SearchMethodTemplate.cs</LastGenOutput>
 		</None>
+		<None Update="CodeRendering\ReactAndWebApi\project-template\aspnetcore-react.js">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="CodeRendering\ReactAndWebApi\project-template\aspnetcore-https.js">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 	<ItemGroup>
 		<Compile Remove="Runtime\MultiView\MultiViewTemplate.cs" />

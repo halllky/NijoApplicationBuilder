@@ -29,6 +29,10 @@ namespace HalApplicationBuilder.CodeRendering
         internal string AspForPath => _rootObjectName?.StartsWith("Model") == true
             ? Path.Substring("Model.".Length)
             : Path;
+        /// <summary>
+        /// ルートオブジェクトからのパス（ルートオブジェクト名を除外したもの）
+        /// </summary>
+        internal string PathWithoutRoot => string.Join(".", _path);
 
         internal ObjectPath Nest(string prop) {
             var path = new List<string>(_path);

@@ -67,7 +67,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 context.Template.WriteLine($"</label>");
             }
         }
-        internal override void RenderReactComponent(RenderingContext context) {
+        internal override void RenderReactSearchCondition(RenderingContext context) {
             foreach (var variation in GetVariations()) {
                 context.Template.WriteLine($"<label>");
                 context.Template.WriteLine($"    <input type=\"checkbox\">");
@@ -94,6 +94,9 @@ namespace HalApplicationBuilder.Core.MemberImpl {
 
                 context.Template.WriteLine($"</div>");
             }
+        }
+        internal override void RenderReactComponent(RenderingContext context) {
+            throw new NotImplementedException();
         }
 
         internal override object? GetInstanceKeyFromDbInstance(object dbInstance) {

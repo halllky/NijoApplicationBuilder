@@ -72,12 +72,17 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
             this.Write(this.ToStringHelper.ToStringWithCulture(typeof(RuntimeService).FullName));
             this.Write(" _runtimeService;\r\n\r\n    [HttpGet(\"list\")]\r\n    public IEnumerable<");
             this.Write(this.ToStringHelper.ToStringWithCulture(search.SearchResultClassName));
-            this.Write("> Search([FromQuery] ");
+            this.Write("> Search([FromQuery] string param) {\r\n        var json = System.Web.HttpUtility.U" +
+                    "rlDecode(param);\r\n        var condition = string.IsNullOrWhiteSpace(json)\r\n     " +
+                    "       ? new ");
             this.Write(this.ToStringHelper.ToStringWithCulture(search.SearchConditionClassName));
-            this.Write(" param) {\r\n        return _dbContext.");
+            this.Write("()\r\n            : System.Text.Json.JsonSerializer.Deserialize<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(search.SearchConditionClassName));
+            this.Write(">(json)!;\r\n        return _dbContext.");
             this.Write(this.ToStringHelper.ToStringWithCulture(search.MethodName));
-            this.Write("(param);\r\n    }\r\n    [HttpPost(\"create\")]\r\n    public HttpResponseMessage Create(" +
-                    "");
+            this.Write("(condition ?? new ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(search.SearchConditionClassName));
+            this.Write("());\r\n    }\r\n    [HttpPost(\"create\")]\r\n    public HttpResponseMessage Create(");
             this.Write(this.ToStringHelper.ToStringWithCulture(uiInstance));
             this.Write(" param) {\r\n        var success = _runtimeService.");
             this.Write(this.ToStringHelper.ToStringWithCulture(nameof(RuntimeService.TrySaveNewInstance)));

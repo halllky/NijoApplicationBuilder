@@ -58,8 +58,12 @@ public class <#=controllerName#> : ControllerBase {
     private readonly <#=typeof(RuntimeService).FullName#> _runtimeService;
 
     [HttpGet("list")]
-    public IEnumerable<<#=search.SearchResultClassName#>> Search([FromQuery] <#=search.SearchConditionClassName#> param) {
-        return _dbContext.<#=search.MethodName#>(param);
+    public IEnumerable<<#=search.SearchResultClassName#>> Search([FromQuery] string param) {
+        var json = System.Web.HttpUtility.UrlDecode(param);
+        var condition = string.IsNullOrWhiteSpace(json)
+            ? new <#=search.SearchConditionClassName#>()
+            : System.Text.Json.JsonSerializer.Deserialize<<#=search.SearchConditionClassName#>>(json)!;
+        return _dbContext.<#=search.MethodName#>(condition ?? new <#=search.SearchConditionClassName#>());
     }
     [HttpPost("create")]
     public HttpResponseMessage Create(<#=uiInstance#> param) {

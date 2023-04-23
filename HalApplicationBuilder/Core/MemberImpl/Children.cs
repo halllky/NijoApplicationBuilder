@@ -27,7 +27,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
         internal override void RenderMvcSearchConditionView(RenderingContext context) {
             // 何もしない
         }
-        internal override void RenderReactComponent(RenderingContext context) {
+        internal override void RenderReactSearchCondition(RenderingContext context) {
             // 何もしない
         }
 
@@ -50,6 +50,9 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             context.Template.WriteLine($"    {CodeRendering.AspNetMvc.JsTemplate.AGGREGATE_TREE_PATH_ATTR}=\"{childAggregate.GetUniquePath()}\"");
             context.Template.WriteLine($"    {CodeRendering.AspNetMvc.JsTemplate.AGGREGATE_MODEL_PATH_ATTR}=\"{childrenAspFor}\"");
             context.Template.WriteLine($"    />");
+        }
+        internal override void RenderReactComponent(RenderingContext context) {
+            throw new NotImplementedException();
         }
 
 
