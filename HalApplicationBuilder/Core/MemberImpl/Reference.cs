@@ -267,7 +267,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 PropertyName = InstanceModelPropName,
                 Initializer = $"new() {{ {nameof(Runtime.ReferenceDTO.AggreageteGuid)} = new Guid(\"{GetRefTarget().GetGuid()}\") }}",
 
-                TypeScriptTypeName = ReferenceDTO.TS_TYPE_NAME,
+                TypeScriptTypeName = "string", // TSオブジェクトにはinstanceKeyだけを保持する。名称はReactQueryでクライアント側ローカルキャッシュから取得させる
             };
         }
 
@@ -277,7 +277,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 PropertyName = SearchConditonPropName,
                 Initializer = $"new() {{ {nameof(Runtime.ReferenceDTO.AggreageteGuid)} = new Guid(\"{GetRefTarget().GetGuid()}\") }}",
 
-                TypeScriptTypeName = ReferenceDTO.TS_TYPE_NAME,
+                TypeScriptTypeName = "string", // TSオブジェクトにはinstanceKeyだけを保持する。名称はReactQueryでクライアント側ローカルキャッシュから取得させる
             };
         }
 

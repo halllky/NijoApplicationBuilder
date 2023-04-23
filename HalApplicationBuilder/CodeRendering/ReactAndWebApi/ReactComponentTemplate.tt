@@ -8,28 +8,38 @@ import { useCtrlS } from './hooks/useCtrlS';
 import { useAppContext } from './hooks/AppContext';
 import { AgGridReact } from 'ag-grid-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from 'react-query';
 import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon, BookmarkSquareIcon } from '@heroicons/react/24/outline';
 import { IconButton } from './components/IconButton';
 import { <#=_searchCondition.ClassName#>, <#=_searchResult.ClassName#>, <#=_uiInstance.ClassName#> } from '<#=GetImportFromTypes()#>';
-
-<# var queryHook = $"use{_rootAggregate.GetCSharpSafeName()}Query"; #>
-export const <#=queryHook#> = () => {
-
-}
 
 export const <#=MultiViewComponentName#> = () => {
 
     const [expanded, setExpanded] = useState(true)
 
+    const [editedParam, setEditedParam] = useState<<#=_searchCondition.ClassName#>>({} as <#=_searchCondition.ClassName#>) // TODO
+    const [commitedParam, setCommitedParam] = useState<<#=_searchCondition.ClassName#>>({} as <#=_searchCondition.ClassName#>) // TODO
+    const { data, isLoading, error } = useQuery({
+        queryKey: ['<#=_rootAggregate.GetGuid()#>', JSON.stringify(commitedParam)],
+        queryFn: async () => {
+            const queryParam = new URLSearchParams(commitedParam).toString()
+            const response = await fetch(`https://localhost:7275/<#=_rootAggregate.GetCSharpSafeName()#>/list?${queryParam}`) // TODO バックエンドのURLと合わせる
+            if (!response.ok) throw new Error('Network response was not OK.')
+            return (await response.json()) as <#=_searchResult.ClassName#>[]
+        },
+    })
+
     const [, dispatch] = useAppContext()
     useCtrlS(() => {
         dispatch({ type: 'pushMsg', msg: '保存しました。' })
     })
-    
+
     const navigate = useNavigate()
     const toCreateView = useCallback(() => {
         navigate('<#=CreateViewUrl#>')
     }, [])
+    
+    if (error) return <p>Error: {JSON.stringify(error)}</p>
 
     return (
         <div className="ag-theme-alpine compact h-full w-full">
@@ -62,7 +72,7 @@ export const <#=MultiViewComponentName#> = () => {
             }
 
             <AgGridReact
-                rowData={[]}
+                rowData={isLoading ? [] : data}
                 columnDefs={columnDefs}
                 multiSortKey='ctrl'
                 undoRedoCellEditing

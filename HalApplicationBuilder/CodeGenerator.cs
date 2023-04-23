@@ -169,25 +169,42 @@ namespace HalApplicationBuilder {
                             sw.Write(new CodeRendering.DefaultRuntimeConfigTemplate().TransformText());
                         }
                         _log?.WriteLine($"Program.cs ファイルを書き換えます。");
-                        var insertLines = new[] {
+                        var programCsPath = Path.Combine(tempDir, "Program.cs");
+                        var lines = File.ReadAllLines(programCsPath).ToList();
+                        var regex1 = new Regex(@"^.*[a-zA-Z]+ builder = .+;$");
+                        var position1 = lines.FindIndex(regex1.IsMatch);
+                        if (position1 == -1) throw new InvalidOperationException("Program.cs の中にIServiceCollectionを持つオブジェクトを初期化する行が見つかりません。");
+                        lines.InsertRange(position1 + 1, new[] {
                             $"",
                             $"/* HalApplicationBuilder によって自動生成されたコード ここから */",
                             $"var runtimeRootDir = System.IO.Directory.GetCurrentDirectory();",
                             $"HalApplicationBuilder.Runtime.HalAppDefaultConfigurer.Configure(builder.Services, runtimeRootDir);",
-
                             $"// HTMLのエンコーディングをUTF-8にする(日本語のHTMLエンコード防止)",
                             $"builder.Services.Configure<Microsoft.Extensions.WebEncoders.WebEncoderOptions>(options => {{",
                             $"    options.TextEncoderSettings = new System.Text.Encodings.Web.TextEncoderSettings(System.Text.Unicode.UnicodeRanges.All);",
                             $"}});",
+                            $"// npm start で実行されるポートがASP.NETのそれと別なので",
+                            $"builder.Services.AddCors(options => {{",
+                            $"    options.AddDefaultPolicy(builder => {{",
+                            $"        builder.AllowAnyOrigin()",
+                            $"            .AllowAnyMethod()",
+                            $"            .AllowAnyHeader();",
+                            $"    }});",
+                            $"}});",
                             $"/* HalApplicationBuilder によって自動生成されたコード ここまで */",
                             $"",
-                        };
-                        var regex = new Regex(@"^.*[a-zA-Z]+ builder = .+;$");
-                        var programCsPath = Path.Combine(tempDir, "Program.cs");
-                        var lines = File.ReadAllLines(programCsPath).ToList();
-                        var position = lines.FindIndex(regex.IsMatch);
-                        if (position == -1) throw new InvalidOperationException("Program.cs の中にIServiceCollectionを持つオブジェクトを初期化する行が見つかりません。");
-                        lines.InsertRange(position + 1, insertLines);
+                        });
+                        var regex2 = new Regex(@"^.*[a-zA-Z]+ app = .+;$");
+                        var position2 = lines.FindIndex(regex1.IsMatch);
+                        if (position2 == -1) throw new InvalidOperationException("Program.cs の中にappを持つオブジェクトを初期化する行が見つかりません。");
+                        lines.InsertRange(position2 + 1, new[] {
+                            $"",
+                            $"/* HalApplicationBuilder によって自動生成されたコード ここから */",
+                            $"// 前述AddCorsの設定をするならこちらも必要",
+                            $"app.UseCors();",
+                            $"/* HalApplicationBuilder によって自動生成されたコード ここまで */",
+                            $"",
+                        });
                         File.WriteAllLines(programCsPath, lines);
 
                         // DbContext生成

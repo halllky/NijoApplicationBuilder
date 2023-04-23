@@ -26,12 +26,37 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
         /// </summary>
         public virtual string TransformText()
         {
+ var dbContextTypeName = $"{_config.DbContextNamespace}.{_config.DbContextName}"; 
             this.Write("using Microsoft.AspNetCore.Mvc;\r\n\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_config.MvcControllerNamespace));
-            this.Write(";\r\n\r\n");
+            this.Write(";\r\n\r\n#if DEBUG\r\n[ApiController]\r\n[Route(\"[controller]\")]\r\npublic class HalappDebu" +
+                    "gController {\r\n    public HalappDebugController(\r\n        ILogger<HalappDebugCon" +
+                    "troller> logger,\r\n        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(dbContextTypeName));
+            this.Write(" dbContext,\r\n        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(typeof(RuntimeService).FullName));
+            this.Write(" runtimeService) {\r\n        _logger = logger;\r\n        _dbContext = dbContext;\r\n " +
+                    "       _runtimeService = runtimeService;\r\n    }\r\n    private readonly ILogger<Ha" +
+                    "lappDebugController> _logger;\r\n    private readonly ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(dbContextTypeName));
+            this.Write(" _dbContext;\r\n    private readonly ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(typeof(RuntimeService).FullName));
+            this.Write(@" _runtimeService;
+
+    [HttpPut(""recreate-database"")]
+    public HttpResponseMessage RecreateDatabase() {
+        _dbContext.Database.EnsureDeleted();
+        _dbContext.Database.EnsureCreated();
+        return new HttpResponseMessage {
+            StatusCode = System.Net.HttpStatusCode.OK,
+        };
+    }
+}
+#endif
+
+");
  foreach (var rootAggregate in _rootAggregates) { 
  var controllerName = GetControllerName(rootAggregate); 
- var dbContextTypeName = $"{_config.DbContextNamespace}.{_config.DbContextName}"; 
  var uiInstance = rootAggregate.ToUiInstanceClass().CSharpTypeName; 
  var search = rootAggregate.BuildSearchMethod("param", "query", "e"); 
             this.Write("\r\n[ApiController]\r\n[Route(\"[controller]\")]\r\npublic class ");

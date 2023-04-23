@@ -30,6 +30,7 @@ import { useCtrlS } from './hooks/useCtrlS';
 import { useAppContext } from './hooks/AppContext';
 import { AgGridReact } from 'ag-grid-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from 'react-query';
 import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon, BookmarkSquareIcon } from '@heroicons/react/24/outline';
 import { IconButton } from './components/IconButton';
 import { ");
@@ -40,27 +41,37 @@ import { ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_uiInstance.ClassName));
             this.Write(" } from \'");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetImportFromTypes()));
-            this.Write("\';\r\n\r\n");
- var queryHook = $"use{_rootAggregate.GetCSharpSafeName()}Query"; 
-            this.Write("export const ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(queryHook));
-            this.Write(" = () => {\r\n\r\n}\r\n\r\nexport const ");
+            this.Write("\';\r\n\r\nexport const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(MultiViewComponentName));
-            this.Write(@" = () => {
-
-    const [expanded, setExpanded] = useState(true)
-
-    const [, dispatch] = useAppContext()
-    useCtrlS(() => {
-        dispatch({ type: 'pushMsg', msg: '保存しました。' })
-    })
-    
-    const navigate = useNavigate()
-    const toCreateView = useCallback(() => {
-        navigate('");
+            this.Write(" = () => {\r\n\r\n    const [expanded, setExpanded] = useState(true)\r\n\r\n    const [ed" +
+                    "itedParam, setEditedParam] = useState<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_searchCondition.ClassName));
+            this.Write(">({} as ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_searchCondition.ClassName));
+            this.Write(") // TODO\r\n    const [commitedParam, setCommitedParam] = useState<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_searchCondition.ClassName));
+            this.Write(">({} as ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_searchCondition.ClassName));
+            this.Write(") // TODO\r\n    const { data, isLoading, error } = useQuery({\r\n        queryKey: [" +
+                    "\'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetGuid()));
+            this.Write("\', JSON.stringify(commitedParam)],\r\n        queryFn: async () => {\r\n            c" +
+                    "onst queryParam = new URLSearchParams(commitedParam).toString()\r\n            con" +
+                    "st response = await fetch(`https://localhost:7275/");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetCSharpSafeName()));
+            this.Write("/list?${queryParam}`) // TODO バックエンドのURLと合わせる\r\n            if (!response.ok) thro" +
+                    "w new Error(\'Network response was not OK.\')\r\n            return (await response." +
+                    "json()) as ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_searchResult.ClassName));
+            this.Write("[]\r\n        },\r\n    })\r\n\r\n    const [, dispatch] = useAppContext()\r\n    useCtrlS(" +
+                    "() => {\r\n        dispatch({ type: \'pushMsg\', msg: \'保存しました。\' })\r\n    })\r\n\r\n    co" +
+                    "nst navigate = useNavigate()\r\n    const toCreateView = useCallback(() => {\r\n    " +
+                    "    navigate(\'");
             this.Write(this.ToStringHelper.ToStringWithCulture(CreateViewUrl));
             this.Write(@"')
     }, [])
+    
+    if (error) return <p>Error: {JSON.stringify(error)}</p>
 
     return (
         <div className=""ag-theme-alpine compact h-full w-full"">
@@ -96,7 +107,7 @@ import { ");
             }
 
             <AgGridReact
-                rowData={[]}
+                rowData={isLoading ? [] : data}
                 columnDefs={columnDefs}
                 multiSortKey='ctrl'
                 undoRedoCellEditing

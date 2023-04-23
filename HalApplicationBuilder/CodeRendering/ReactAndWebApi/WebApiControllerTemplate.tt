@@ -4,13 +4,40 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 <#@ import namespace="HalApplicationBuilder" #>
+<# var dbContextTypeName = $"{_config.DbContextNamespace}.{_config.DbContextName}"; #>
 using Microsoft.AspNetCore.Mvc;
 
 namespace <#=_config.MvcControllerNamespace#>;
 
+#if DEBUG
+[ApiController]
+[Route("[controller]")]
+public class HalappDebugController {
+    public HalappDebugController(
+        ILogger<HalappDebugController> logger,
+        <#=dbContextTypeName#> dbContext,
+        <#=typeof(RuntimeService).FullName#> runtimeService) {
+        _logger = logger;
+        _dbContext = dbContext;
+        _runtimeService = runtimeService;
+    }
+    private readonly ILogger<HalappDebugController> _logger;
+    private readonly <#=dbContextTypeName#> _dbContext;
+    private readonly <#=typeof(RuntimeService).FullName#> _runtimeService;
+
+    [HttpPut("recreate-database")]
+    public HttpResponseMessage RecreateDatabase() {
+        _dbContext.Database.EnsureDeleted();
+        _dbContext.Database.EnsureCreated();
+        return new HttpResponseMessage {
+            StatusCode = System.Net.HttpStatusCode.OK,
+        };
+    }
+}
+#endif
+
 <# foreach (var rootAggregate in _rootAggregates) { #>
 <# var controllerName = GetControllerName(rootAggregate); #>
-<# var dbContextTypeName = $"{_config.DbContextNamespace}.{_config.DbContextName}"; #>
 <# var uiInstance = rootAggregate.ToUiInstanceClass().CSharpTypeName; #>
 <# var search = rootAggregate.BuildSearchMethod("param", "query", "e"); #>
 
