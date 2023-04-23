@@ -15,6 +15,11 @@ import { <#=_searchCondition.ClassName#>, <#=_searchResult.ClassName#>, <#=_uiIn
 
 export const <#=MultiViewComponentName#> = () => {
 
+    const [{ apiDomain }, dispatch] = useAppContext()
+    useCtrlS(() => {
+        dispatch({ type: 'pushMsg', msg: '保存しました。' })
+    })
+
     const [expanded, setExpanded] = useState(true)
 
     const [editedParam, setEditedParam] = useState<<#=_searchCondition.ClassName#>>({} as <#=_searchCondition.ClassName#>) // TODO
@@ -23,17 +28,11 @@ export const <#=MultiViewComponentName#> = () => {
         queryKey: ['<#=_rootAggregate.GetGuid()#>', JSON.stringify(commitedParam)],
         queryFn: async () => {
             const queryParam = new URLSearchParams(commitedParam).toString()
-            const response = await fetch(`https://localhost:7275/<#=_rootAggregate.GetCSharpSafeName()#>/list?${queryParam}`) // TODO バックエンドのURLと合わせる
+            const response = await fetch(`${apiDomain}/<#=_rootAggregate.GetCSharpSafeName()#>/list?${queryParam}`) // TODO バックエンドのURLと合わせる
             if (!response.ok) throw new Error('Network response was not OK.')
             return (await response.json()) as <#=_searchResult.ClassName#>[]
         },
     })
-
-    const [, dispatch] = useAppContext()
-    useCtrlS(() => {
-        dispatch({ type: 'pushMsg', msg: '保存しました。' })
-    })
-
     const navigate = useNavigate()
     const toCreateView = useCallback(() => {
         navigate('<#=CreateViewUrl#>')

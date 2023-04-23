@@ -31,6 +31,7 @@ public class HalappDebugController {
         _dbContext.Database.EnsureCreated();
         return new HttpResponseMessage {
             StatusCode = System.Net.HttpStatusCode.OK,
+            Content = new StringContent("DBを再作成しました。"),
         };
     }
 }
