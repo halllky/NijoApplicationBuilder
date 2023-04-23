@@ -25,13 +25,13 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write(@"import React, { useState } from 'react';
-import { useCtrlS } from '../hooks/useCtrlS';
-import { useAppContext } from '../hooks/AppContext';
+            this.Write(@"import React, { useState, useCallback } from 'react';
+import { useCtrlS } from './hooks/useCtrlS';
+import { useAppContext } from './hooks/AppContext';
 import { AgGridReact } from 'ag-grid-react';
-import { Link } from 'react-router-dom';
-import { ArrowPathIcon, BookmarkIcon, ChevronDownIcon, ChevronRightIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import { IconButton } from '../components/IconButton';
+import { Link, useNavigate } from 'react-router-dom';
+import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon, BookmarkSquareIcon } from '@heroicons/react/24/outline';
+import { IconButton } from './components/IconButton';
 import { ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_searchCondition.ClassName));
             this.Write(", ");
@@ -40,43 +40,57 @@ import { ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_uiInstance.ClassName));
             this.Write(" } from \'");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetImportFromTypes()));
-            this.Write("\';\r\n\r\nexport const use");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_searchResult.ClassName));
-            this.Write("Query = () => {\r\n\r\n}\r\n\r\nexport const ");
+            this.Write("\';\r\n\r\n");
+ var queryHook = $"use{_rootAggregate.GetCSharpSafeName()}Query"; 
+            this.Write("export const ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(queryHook));
+            this.Write(" = () => {\r\n\r\n}\r\n\r\nexport const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(MultiViewComponentName));
             this.Write(@" = () => {
 
-    const [expanded, setExpanded] = useState(false)
+    const [expanded, setExpanded] = useState(true)
 
     const [, dispatch] = useAppContext()
     useCtrlS(() => {
         dispatch({ type: 'pushMsg', msg: '保存しました。' })
     })
+    
+    const navigate = useNavigate()
+    const toCreateView = useCallback(() => {
+        navigate('");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CreateViewUrl));
+            this.Write(@"')
+    }, [])
 
     return (
         <div className=""ag-theme-alpine compact h-full w-full"">
 
-            <div className=""flex flex-row justify-start items-center p-1 space-x-1"">
-                <div className='flex flex-row items-center cursor-pointer' onClick={() => setExpanded(!expanded)}>
+            <div className=""flex flex-row justify-start items-center space-x-1"">
+                <div className='flex flex-row items-center space-x-1 cursor-pointer' onClick={() => setExpanded(!expanded)}>
+                    <h1 className=""text-base font-semibold select-none py-1"">
+                        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetDisplayName()));
+            this.Write(@"
+                    </h1>
                     {expanded
-                        ? <ChevronDownIcon className=""w-4 mr-2"" />
-                        : <ChevronRightIcon className=""w-4 mr-2"" />}
-                    <span className='text-sm select-none'>検索</span>
+                        ? <ChevronDownIcon className=""w-4"" />
+                        : <ChevronUpIcon className=""w-4"" />}
                 </div>
-                <div className='flex-1' />
-                <IconButton outline icon={ArrowPathIcon}>再読込</IconButton>
-                <IconButton outline icon={BookmarkIcon}>この検索条件を保存</IconButton>
+                <div className='flex-1'></div>
+                <IconButton icon={PlusIcon} onClick={toCreateView}>新規作成</IconButton>
             </div>
 
             {expanded &&
-                <div className='flex flex-col items-start space-y-1 p-2'>
+                <div className='flex flex-col space-y-1 py-1'>
 ");
  PushIndent("                    "); 
- _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath($"Model.{nameof(Runtime.AspNetMvc.MultiViewModel<Runtime.SearchConditionBase, Runtime.SearchResultBase>.SearchCondition)}"))); 
+ _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("searchCondition"))); 
  PopIndent(); 
-            this.Write(@"                    <div className='flex flex-row justify-end space-x-1'>
+            this.Write(@"                    <div className='flex flex-row justify-start space-x-1'>
                         <IconButton icon={MagnifyingGlassIcon}>検索</IconButton>
                         <IconButton outline>クリア</IconButton>
+                        <div className=""flex-1""></div>
+                        <IconButton outline icon={BookmarkIcon}>この検索条件を保存</IconButton>
                     </div>
                 </div>
             }
@@ -106,7 +120,28 @@ const columnDefs = [
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
             this.Write("\', resizable: true, sortable: true, editable: true },\r\n");
  } 
-            this.Write("]\r\n");
+            this.Write("]\r\n\r\nexport const ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CreateViewComponentName));
+            this.Write(" = () => {\r\n\r\n    return (\r\n        <div className=\"flex flex-col justify-start s" +
+                    "pace-y-1\">\r\n            <h1 className=\"text-base font-semibold select-none py-1\"" +
+                    ">\r\n                <Link to=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(MultiViewUrl));
+            this.Write("\">");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetDisplayName()));
+            this.Write("</Link> &#047; 新規作成\r\n            </h1>\r\n            <div className=\"flex-1 flex f" +
+                    "lex-col space-y-1\">\r\n");
+ PushIndent("                "); 
+ _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("instance"))); 
+ PopIndent(); 
+            this.Write("            </div>\r\n            <IconButton icon={BookmarkSquareIcon} className=\"" +
+                    "self-start\">保存</IconButton>\r\n        </div>\r\n    )\r\n}\r\n\r\nexport const ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(SingleViewComponentName));
+            this.Write(" = () => {\r\n\r\n    return (\r\n        <div className=\"flex flex-col justify-start s" +
+                    "pace-y-1\">\r\n");
+ PushIndent("            "); 
+ _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("instance"))); 
+ PopIndent(); 
+            this.Write("        </div>\r\n    )\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

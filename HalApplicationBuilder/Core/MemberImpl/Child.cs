@@ -41,7 +41,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             var nested = context.Nest(SearchConditionPropName);
             GetChildAggregates().Single().RenderSearchCondition(nested);
         }
-        internal override void RenderReactSearchConditionView(RenderingContext context) {
+        internal override void RenderReactComponent(RenderingContext context) {
             var nested = context.Nest(SearchConditionPropName);
             GetChildAggregates().Single().RenderReactSearchCondition(nested);
         }

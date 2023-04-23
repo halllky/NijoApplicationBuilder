@@ -29,20 +29,37 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
  foreach (var root in _rootAggregates) { 
             this.Write("import { ");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetMultiViewComponentName(root)));
+            this.Write(", ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetCreateViewComponentName(root)));
+            this.Write(", ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetSingleViewComponentName(root)));
             this.Write(" } from \'");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetImport(root)));
             this.Write("\'\r\n");
  } 
-            this.Write("\r\ntype MenuItem = {\r\n  text: string\r\n  url: string\r\n  el: JSX.Element\r\n}\r\n\r\nexpor" +
-                    "t const menuItems: MenuItem[] = [\r\n");
+            this.Write("\r\nexport const routes: { url: string, el: JSX.Element }[] = [\r\n");
  foreach (var root in _rootAggregates) { 
-            this.Write("    { text: \'");
-            this.Write(this.ToStringHelper.ToStringWithCulture(root.GetDisplayName()));
-            this.Write("\', url: \'");
-            this.Write(this.ToStringHelper.ToStringWithCulture(GetUrl(root)));
+            this.Write("    { url: \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetMultiViewUrl(root)));
             this.Write("\', el: <");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetMultiViewComponentName(root)));
+            this.Write(" /> },\r\n    { url: \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetCreateViewUrl(root)));
+            this.Write("\', el: <");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetCreateViewComponentName(root)));
+            this.Write(" /> },\r\n    { url: \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetSingleViewUrl(root)));
+            this.Write("\', el: <");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetSingleViewComponentName(root)));
             this.Write(" /> },\r\n");
+ } 
+            this.Write("]\r\nexport const menuItems: { url: string, text: string }[] = [\r\n");
+ foreach (var root in _rootAggregates) { 
+            this.Write("    { url: \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetMultiViewUrl(root)));
+            this.Write("\', text: \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(root.GetDisplayName()));
+            this.Write("\' },\r\n");
  } 
             this.Write("]\r\n");
             return this.GenerationEnvironment.ToString();

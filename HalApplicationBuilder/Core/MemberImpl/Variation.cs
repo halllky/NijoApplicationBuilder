@@ -67,7 +67,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 context.Template.WriteLine($"</label>");
             }
         }
-        internal override void RenderReactSearchConditionView(RenderingContext context) {
+        internal override void RenderReactComponent(RenderingContext context) {
             foreach (var variation in GetVariations()) {
                 context.Template.WriteLine($"<label>");
                 context.Template.WriteLine($"    <input type=\"checkbox\">");

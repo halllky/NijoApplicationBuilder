@@ -250,15 +250,17 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
 
         internal string FileName { get; }
         internal string MultiViewComponentName => $"{_rootAggregate.GetCSharpSafeName()}MultiView";
+        internal string CreateViewComponentName => $"{_rootAggregate.GetCSharpSafeName()}CreateView";
+        internal string SingleViewComponentName => $"{_rootAggregate.GetCSharpSafeName()}SingleView";
+        private string MultiViewUrl => menuItems.GetMultiViewUrl(_rootAggregate);
+        private string CreateViewUrl => menuItems.GetCreateViewUrl(_rootAggregate);
 
         private readonly RootAggregate _rootAggregate;
         private readonly RenderedClass _searchCondition;
         private readonly RenderedClass _searchResult;
         private readonly RenderedClass _uiInstance;
 
-        private static string GetImportFromTypes() {
-            return $"./{Path.GetFileNameWithoutExtension(ReactTypeDefTemplate.FILE_NAME)}";
-        }
+        private static string GetImportFromTypes() => $"./{Path.GetFileNameWithoutExtension(ReactTypeDefTemplate.FILE_NAME)}";
     }
 
 #pragma warning disable IDE1006 // 命名スタイル
@@ -273,12 +275,12 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
         private static string GetImport(RootAggregate rootAggregate) {
             return $"./{Path.GetFileNameWithoutExtension(new ReactComponentTemplate(rootAggregate).FileName)}";
         }
-        private static string GetUrl(RootAggregate rootAggregate) {
-            return $"/{rootAggregate.GetGuid()}";
-        }
-        private static string GetMultiViewComponentName(RootAggregate rootAggregate) {
-            return new ReactComponentTemplate(rootAggregate).MultiViewComponentName;
-        }
+        internal static string GetMultiViewUrl(RootAggregate rootAggregate) => $"/{rootAggregate.GetGuid()}";
+        internal static string GetCreateViewUrl(RootAggregate rootAggregate) => $"/{rootAggregate.GetGuid()}/new";
+        internal static string GetSingleViewUrl(RootAggregate rootAggregate) => $"/{rootAggregate.GetGuid()}/detail/{{id}}";
+        private static string GetMultiViewComponentName(RootAggregate rootAggregate) => new ReactComponentTemplate(rootAggregate).MultiViewComponentName;
+        private static string GetCreateViewComponentName(RootAggregate rootAggregate) => new ReactComponentTemplate(rootAggregate).CreateViewComponentName;
+        private static string GetSingleViewComponentName(RootAggregate rootAggregate) => new ReactComponentTemplate(rootAggregate).SingleViewComponentName;
         internal const string FILE_NAME = "menuItems.tsx";
     }
 

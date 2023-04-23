@@ -5,17 +5,18 @@
 <#@ import namespace="System.Collections.Generic" #>
 
 <# foreach (var root in _rootAggregates) { #>
-import { <#=GetMultiViewComponentName(root)#> } from '<#=GetImport(root)#>'
+import { <#=GetMultiViewComponentName(root)#>, <#=GetCreateViewComponentName(root)#>, <#=GetSingleViewComponentName(root)#> } from '<#=GetImport(root)#>'
 <# } #>
 
-type MenuItem = {
-  text: string
-  url: string
-  el: JSX.Element
-}
-
-export const menuItems: MenuItem[] = [
+export const routes: { url: string, el: JSX.Element }[] = [
 <# foreach (var root in _rootAggregates) { #>
-    { text: '<#=root.GetDisplayName()#>', url: '<#=GetUrl(root)#>', el: <<#=GetMultiViewComponentName(root)#> /> },
+    { url: '<#=GetMultiViewUrl(root)#>', el: <<#=GetMultiViewComponentName(root)#> /> },
+    { url: '<#=GetCreateViewUrl(root)#>', el: <<#=GetCreateViewComponentName(root)#> /> },
+    { url: '<#=GetSingleViewUrl(root)#>', el: <<#=GetSingleViewComponentName(root)#> /> },
+<# } #>
+]
+export const menuItems: { url: string, text: string }[] = [
+<# foreach (var root in _rootAggregates) { #>
+    { url: '<#=GetMultiViewUrl(root)#>', text: '<#=root.GetDisplayName()#>' },
 <# } #>
 ]

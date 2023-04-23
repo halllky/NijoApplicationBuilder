@@ -62,8 +62,8 @@ namespace HalApplicationBuilder.Core
         // AggregateMember => Code Template
         internal abstract void BuildSearchMethod(CodeRendering.SearchMethodDTO method);
         internal abstract void RenderMvcSearchConditionView(CodeRendering.RenderingContext context);
-        internal abstract void RenderReactSearchConditionView(RenderingContext context);
         internal abstract void RenderAspNetMvcPartialView(CodeRendering.RenderingContext context);
+        internal abstract void RenderReactComponent(RenderingContext context);
 
         // Runtime Instance <=> InstanceKey
         internal abstract object? GetInstanceKeyFromDbInstance(object dbInstance);

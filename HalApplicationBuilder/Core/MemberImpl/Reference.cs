@@ -53,7 +53,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             context.Template.WriteLine($"    <input asp-for=\"{text}\" class=\"border {JsTemplate.AUTOCOMPLETE_INPUT}\" />");
             context.Template.WriteLine($"</div>");
         }
-        internal override void RenderReactSearchConditionView(RenderingContext context) {
+        internal override void RenderReactComponent(RenderingContext context) {
             context.Template.WriteLine($"<div>");
             context.Template.WriteLine($"    TODO autocomplete");
             context.Template.WriteLine($"</div>");

@@ -1,9 +1,2 @@
-
-type MenuItem = {
-  text: string
-  url: string
-  el: JSX.Element
-}
-
-export const menuItems: MenuItem[] = [
-]
+export const routes: { url: string, el: JSX.Element }[] = []
+export const menuItems: { url: string, text: string }[] = []

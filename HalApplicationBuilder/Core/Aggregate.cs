@@ -158,31 +158,6 @@ namespace HalApplicationBuilder.Core
 
             context.Template.WriteLine($"</div>");
         }
-        internal void RenderReactSearchCondition(RenderingContext context) {
-
-            // 横幅は最も長い名前をもつメンバー名で決める
-            var members = GetMembers().ToArray();
-            var maxByteCount = members.Any()
-                ? members.Max(m => m.DisplayName.Length)
-                : 0;
-            var flexBasis = $"basis-{(maxByteCount + 1) * 4}";
-
-            foreach (var member in members) {
-                context.Template.WriteLine($"<div className=\"self-stretch flex flex-row\">");
-                context.Template.WriteLine($"    <label className=\"{flexBasis} text-sm select-none\">");
-                context.Template.WriteLine($"        {member.DisplayName}");
-                context.Template.WriteLine($"    </label>");
-                context.Template.WriteLine($"    <div className=\"flex-1\">");
-
-                context.Template.PushIndent("        ");
-                member.RenderReactSearchConditionView(context);
-                context.Template.PopIndent();
-
-                context.Template.WriteLine($"    </div>");
-                context.Template.WriteLine($"</div>");
-            }
-        }
-
         internal void RenderAspNetMvcPartialView(RenderingContext context) {
 
             context.Template.WriteLine($"<div class=\"flex flex-col\">");
@@ -203,6 +178,51 @@ namespace HalApplicationBuilder.Core
             }
 
             context.Template.WriteLine($"</div>");
+        }
+
+        /// <summary>
+        /// メンバーのうち最も長い名前を持つものの文字数から、Tailwind CSS におけるflex basisの値を算出する
+        /// </summary>
+        /// <returns>CSSクラス名</returns>
+        private string CalculateFlexBasis() {
+            var maxByteCount = GetMembers()
+                .DefaultIfEmpty()
+                .Max(member => member!.DisplayName.Length);
+            return $"basis-{(maxByteCount + 1) * 4}";
+        }
+        internal void RenderReactSearchCondition(RenderingContext context) {
+            var flexBasis = CalculateFlexBasis();
+            foreach (var member in GetMembers()) {
+                context.Template.WriteLine($"<div className=\"self-stretch flex flex-row\">");
+                context.Template.WriteLine($"    <label className=\"{flexBasis} text-sm select-none\">");
+                context.Template.WriteLine($"        {member.DisplayName}");
+                context.Template.WriteLine($"    </label>");
+                context.Template.WriteLine($"    <div className=\"flex-1\">");
+
+                context.Template.PushIndent("        ");
+                member.RenderReactComponent(context);
+                context.Template.PopIndent();
+
+                context.Template.WriteLine($"    </div>");
+                context.Template.WriteLine($"</div>");
+            }
+        }
+        internal void RenderReactComponent(RenderingContext context) {
+            var flexBasis = CalculateFlexBasis();
+            foreach (var member in GetMembers()) {
+                context.Template.WriteLine($"<div className=\"self-stretch flex flex-row\">");
+                context.Template.WriteLine($"    <label className=\"{flexBasis} text-sm select-none\">");
+                context.Template.WriteLine($"        {member.DisplayName}");
+                context.Template.WriteLine($"    </label>");
+                context.Template.WriteLine($"    <div className=\"flex-1\">");
+
+                context.Template.PushIndent("        ");
+                member.RenderReactComponent(context);
+                context.Template.PopIndent();
+
+                context.Template.WriteLine($"    </div>");
+                context.Template.WriteLine($"</div>");
+            }
         }
 
         internal Runtime.InstanceKey CreateInstanceKeyFromDbInstnace(object dbInstance) {

@@ -202,7 +202,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
                 context.Template.WriteLine($"<input asp-for=\"{searchCondition}\" class=\"border\" />");
             }
         }
-        internal override void RenderReactSearchConditionView(RenderingContext context) {
+        internal override void RenderReactComponent(RenderingContext context) {
             var type = GetPropertyTypeExceptNullable();
 
             if (IsRangeSearchCondition()) {

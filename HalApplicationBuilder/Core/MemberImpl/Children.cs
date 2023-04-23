@@ -27,7 +27,7 @@ namespace HalApplicationBuilder.Core.MemberImpl {
         internal override void RenderMvcSearchConditionView(RenderingContext context) {
             // 何もしない
         }
-        internal override void RenderReactSearchConditionView(RenderingContext context) {
+        internal override void RenderReactComponent(RenderingContext context) {
             // 何もしない
         }
 
