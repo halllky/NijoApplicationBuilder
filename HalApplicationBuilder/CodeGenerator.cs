@@ -195,8 +195,8 @@ namespace HalApplicationBuilder {
                             $"",
                         });
                         var regex2 = new Regex(@"^.*[a-zA-Z]+ app = .+;$");
-                        var position2 = lines.FindIndex(regex1.IsMatch);
-                        if (position2 == -1) throw new InvalidOperationException("Program.cs の中にappを持つオブジェクトを初期化する行が見つかりません。");
+                        var position2 = lines.FindIndex(regex2.IsMatch);
+                        if (position2 == -1) throw new InvalidOperationException("Program.cs の中にappオブジェクトを初期化する行が見つかりません。");
                         lines.InsertRange(position2 + 1, new[] {
                             $"",
                             $"/* HalApplicationBuilder によって自動生成されたコード ここから */",
