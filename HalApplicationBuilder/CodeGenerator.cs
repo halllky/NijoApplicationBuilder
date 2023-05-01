@@ -74,7 +74,7 @@ namespace HalApplicationBuilder {
             generator.GenerateCode();
         }
 
-        private abstract class GeneratorBase {
+        internal abstract class GeneratorBase {
             internal GeneratorBase(
                 Config config,
                 TextWriter? log,
@@ -405,7 +405,7 @@ namespace HalApplicationBuilder {
             }
         }
 
-        private class ReactAndWebApiGenerator : GeneratorBase {
+        internal class ReactAndWebApiGenerator : GeneratorBase {
 
             internal ReactAndWebApiGenerator(
                 Config config,
@@ -509,7 +509,7 @@ namespace HalApplicationBuilder {
                 DeleteNotGeneratedFiles(tsDir);
             }
 
-            private const string REACT_DIR = "ClientApp";
+            internal const string REACT_DIR = "ClientApp";
         }
     }
 }

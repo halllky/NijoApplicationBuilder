@@ -72,17 +72,20 @@ namespace HalApplicationBuilder {
 
         private static void Debug(string? xmlFilename, CancellationToken cancellationToken) {
             var config = ReadConfig(xmlFilename);
-            var workingDirectory = Path.Combine(Directory.GetCurrentDirectory(), config.OutProjectDir);
+            var projectDir = Path.Combine(Directory.GetCurrentDirectory(), config.OutProjectDir);
+            var npmRoot = Path.Combine(projectDir, CodeGenerator.ReactAndWebApiGenerator.REACT_DIR);
 
-            // dotnet run
+            // dotnet run & npm start
             CancellationTokenSource? runTokenSource = null;
             void StartRunning() {
                 if (runTokenSource != null) {
                     runTokenSource.Cancel(true);
                 }
                 runTokenSource = new CancellationTokenSource();
-                var runProcess = new DotnetEx.ExternalProcess(workingDirectory!, runTokenSource.Token);
-                var task = runProcess.StartAsync("dotnet", "watch", "run");
+                var dotnetWatch = new DotnetEx.ExternalProcess(projectDir, runTokenSource.Token);
+                var npmStart = new DotnetEx.ExternalProcess(npmRoot, runTokenSource.Token);
+                var task1 = dotnetWatch.StartAsync("dotnet", "watch", "run");
+                var task2 = npmStart.StartAsync("npm", "start");
             }
             void StopRunning() {
                 if (runTokenSource != null) {
