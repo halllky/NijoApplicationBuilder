@@ -65,13 +65,13 @@ namespace HalApplicationBuilder {
         }
         private readonly Func<Config, IEnumerable<RootAggregate>> _rootAggregateBuilder;
 
-        public void GenerateAspNetCoreMvc(Config config, TextWriter? log, CancellationToken? cancellationToken) {
+        public void GenerateAspNetCoreMvc(string rootDir, Config config, TextWriter? log, CancellationToken? cancellationToken) {
             var generator = new AspNetCoreMvcGenerator(config, log, cancellationToken, _rootAggregateBuilder);
-            generator.GenerateCode();
+            generator.GenerateCode(rootDir);
         }
-        public void GenerateReactAndWebApi(Config config, TextWriter? log, CancellationToken? cancellationToken) {
+        public void GenerateReactAndWebApi(string rootDir, Config config, TextWriter? log, CancellationToken? cancellationToken) {
             var generator = new ReactAndWebApiGenerator(config, log, cancellationToken, _rootAggregateBuilder);
-            generator.GenerateCode();
+            generator.GenerateCode(rootDir);
         }
 
         internal abstract class GeneratorBase {
@@ -102,12 +102,9 @@ namespace HalApplicationBuilder {
             /// <param name="config">コード生成に関する設定</param>
             /// <param name="log">このオブジェクトを指定した場合、コード生成の詳細を記録します。</param>
             /// <param name="cancellationToken">このオブジェクトを指定した場合、処理を途中でキャンセルすることが可能になります。</param>
-            public void GenerateCode() {
+            public void GenerateCode(string rootDir) {
 
                 _log?.WriteLine($"コード自動生成開始");
-
-                var rootDir = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), _config.OutProjectDir));
-                _log?.WriteLine($"ルートディレクトリ: {rootDir}");
 
                 string? tempDir = null;
                 try {

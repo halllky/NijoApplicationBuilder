@@ -42,38 +42,42 @@ namespace HalApplicationBuilder {
         }
 
 
-        private static Config ReadConfig(string? xmlFilename) {
+        private static Config ReadConfig(
+            string? xmlFilename,
+            out string xmlContent,
+            out string xmlDir,
+            out string projectRoot) {
+
             if (xmlFilename == null) throw new InvalidOperationException($"対象XMLを指定してください。");
-            var xmlFullpath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), xmlFilename));
-            var xmlContent = File.ReadAllText(xmlFullpath);
-            return Core.Config.FromXml(xmlContent);
+            var xmlFullPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), xmlFilename));
+            xmlContent = File.ReadAllText(xmlFullPath);
+            var config = Core.Config.FromXml(xmlContent);
+
+            xmlDir = Path.GetDirectoryName(xmlFullPath) ?? throw new DirectoryNotFoundException();
+            projectRoot = Path.Combine(xmlDir, config.OutProjectDir);
+
+            return config;
         }
 
         private static void Gen(string? xmlFilename, bool mvc, CancellationToken cancellationToken) {
-            if (xmlFilename == null) throw new InvalidOperationException($"対象XMLを指定してください。");
-            var xmlFullpath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), xmlFilename));
-            var xmlContent = File.ReadAllText(xmlFullpath);
-            var config = Core.Config.FromXml(xmlContent);
+            var config = ReadConfig(xmlFilename, out var xmlContent, out var _, out var projectRoot);
             var generator = CodeGenerator.FromXml(xmlContent);
             if (mvc) {
-                generator.GenerateAspNetCoreMvc(config, Console.Out, cancellationToken);
+                generator.GenerateAspNetCoreMvc(projectRoot, config, Console.Out, cancellationToken);
             } else {
-                generator.GenerateReactAndWebApi(config, Console.Out, cancellationToken);
+                generator.GenerateReactAndWebApi(projectRoot, config, Console.Out, cancellationToken);
             }
         }
 
         private static void Build(string? xmlFilename, CancellationToken cancellationToken) {
-            var config = ReadConfig(xmlFilename);
-            var workingDirectory = Path.Combine(Directory.GetCurrentDirectory(), config.OutProjectDir);
-
-            var process = new DotnetEx.ExternalProcess(workingDirectory, cancellationToken);
+            var config = ReadConfig(xmlFilename, out var _, out var _, out var projectRoot);
+            var process = new DotnetEx.ExternalProcess(projectRoot, cancellationToken);
             process.Start("dotnet", "build");
         }
 
         private static void Debug(string? xmlFilename, CancellationToken cancellationToken) {
-            var config = ReadConfig(xmlFilename);
-            var projectDir = Path.Combine(Directory.GetCurrentDirectory(), config.OutProjectDir);
-            var npmRoot = Path.Combine(projectDir, CodeGenerator.ReactAndWebApiGenerator.REACT_DIR);
+            var config = ReadConfig(xmlFilename, out var _, out var xmlDir, out var projectRoot);
+            var npmRoot = Path.Combine(projectRoot, CodeGenerator.ReactAndWebApiGenerator.REACT_DIR);
 
             // dotnet run & npm start
             CancellationTokenSource? runTokenSource = null;
@@ -82,7 +86,7 @@ namespace HalApplicationBuilder {
                     runTokenSource.Cancel(true);
                 }
                 runTokenSource = new CancellationTokenSource();
-                var dotnetWatch = new DotnetEx.ExternalProcess(projectDir, runTokenSource.Token);
+                var dotnetWatch = new DotnetEx.ExternalProcess(projectRoot, runTokenSource.Token);
                 var npmStart = new DotnetEx.ExternalProcess(npmRoot, runTokenSource.Token);
                 var task1 = dotnetWatch.StartAsync("dotnet", "watch", "run");
                 var task2 = npmStart.StartAsync("npm", "start");
@@ -101,8 +105,7 @@ namespace HalApplicationBuilder {
             }
 
             // watching xml
-            var xmlFullpath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), xmlFilename!));
-            using var watcher = new FileSystemWatcher(Path.GetDirectoryName(xmlFullpath)!, xmlFilename!);
+            using var watcher = new FileSystemWatcher(xmlDir);
             watcher.Changed += (sender, e) => {
                 StopRunning();
                 Update();
@@ -120,10 +123,8 @@ namespace HalApplicationBuilder {
         }
 
         private static void AddMigration(string? xmlFilename, bool noBuild, CancellationToken cancellationToken) {
-            var config = ReadConfig(xmlFilename);
-            var workingDirectory = Path.Combine(Directory.GetCurrentDirectory(), config.OutProjectDir);
-
-            var process = new DotnetEx.ExternalProcess(workingDirectory, cancellationToken);
+            var config = ReadConfig(xmlFilename, out var _, out var _, out var projectRoot);
+            var process = new DotnetEx.ExternalProcess(projectRoot, cancellationToken);
             var migrationId = Guid.NewGuid().ToString();
             process.Start("dotnet", "ef", "migrations", "add", migrationId, noBuild ? "--no-build" : "");
         }
