@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Builder;
+using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -38,7 +40,14 @@ namespace HalApplicationBuilder {
             rootCommand.AddCommand(gen);
             rootCommand.AddCommand(debug);
             rootCommand.AddCommand(template);
-            return await rootCommand.InvokeAsync(args);
+
+            var parser = new CommandLineBuilder(rootCommand)
+                .UseExceptionHandler((ex, _) => {
+                    cancellationTokenSource.Cancel();
+                    Console.Error.WriteLine(ex.ToString());
+                })
+                .Build();
+            return await parser.InvokeAsync(args);
         }
 
 
@@ -67,12 +76,6 @@ namespace HalApplicationBuilder {
             } else {
                 generator.GenerateReactAndWebApi(projectRoot, config, Console.Out, cancellationToken);
             }
-        }
-
-        private static void Build(string? xmlFilename, CancellationToken cancellationToken) {
-            var config = ReadConfig(xmlFilename, out var _, out var _, out var projectRoot);
-            var process = new DotnetEx.ExternalProcess(projectRoot, cancellationToken);
-            process.Start("dotnet", "build");
         }
 
         private static void Debug(string? xmlFilename, CancellationToken cancellationToken) {

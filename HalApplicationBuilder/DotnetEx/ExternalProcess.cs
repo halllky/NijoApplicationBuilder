@@ -81,11 +81,14 @@ namespace HalApplicationBuilder.DotnetEx {
                     }
                 });
             }
+            private readonly object _lock = new object();
             internal void Stop() {
-                if (_process == null) return;
-                _process.Kill(entireProcessTree: true);
-                _process.Dispose();
-                _process = null;
+                lock (_lock) {
+                    if (_process == null) return;
+                    _process.Kill(entireProcessTree: true);
+                    _process.Dispose();
+                    _process = null;
+                }
             }
             public void Dispose() {
                 Stop();
