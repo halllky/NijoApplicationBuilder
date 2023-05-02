@@ -18,7 +18,7 @@ namespace HalApplicationBuilder.DotnetEx {
         internal CancellationToken? CancellationToken { get; }
 
         internal void Start(string filename, params string[] args) {
-            using var process = CreateProcess(filename, args);
+            using var process = CreateProcess(WorkingDirectory, filename, args);
             try {
                 CancellationToken?.ThrowIfCancellationRequested();
 
@@ -48,31 +48,51 @@ namespace HalApplicationBuilder.DotnetEx {
             }
         }
 
-        internal async Task StartAsync(string filename, params string[] args) {
-            if (CancellationToken == null)
-                throw new InvalidOperationException($"{nameof(StartAsync)}の場合は{nameof(CancellationToken)}必須");
+        internal class BackgroundExternalProcess : IDisposable {
 
-            await Task.Run(() => {
-                using var process = CreateProcess(filename, args);
-                try {
-                    CancellationToken?.ThrowIfCancellationRequested();
+            internal BackgroundExternalProcess() { }
 
-                    process.Start();
-                    process.BeginOutputReadLine();
-                    process.BeginErrorReadLine();
+            internal required CancellationToken CancellationToken { get; init; }
+            internal required string WorkingDirectory { get; init; }
+            internal required string Filename { get; init; }
+            internal required string[] Args { get; init; }
 
-                    while (!process.HasExited) {
-                        CancellationToken?.ThrowIfCancellationRequested();
-                        Thread.Sleep(100);
+            private Process? _process = null;
+
+            internal void Restart() {
+                var _ = Task.Run(() => {
+                    try {
+                        Stop();
+
+                        _process = CreateProcess(WorkingDirectory, Filename, Args);
+                        CancellationToken.ThrowIfCancellationRequested();
+
+                        _process.Start();
+                        _process.BeginOutputReadLine();
+                        _process.BeginErrorReadLine();
+
+                        while (!_process.HasExited) {
+                            CancellationToken.ThrowIfCancellationRequested();
+                            Thread.Sleep(100);
+                        }
+                    } catch (OperationCanceledException) {
+                        Stop();
+                        throw;
                     }
-                } catch (OperationCanceledException) {
-                    process.Kill(entireProcessTree: true);
-                    throw;
-                }
-            });
+                });
+            }
+            internal void Stop() {
+                if (_process == null) return;
+                _process.Kill(entireProcessTree: true);
+                _process.Dispose();
+                _process = null;
+            }
+            public void Dispose() {
+                Stop();
+            }
         }
 
-        private Process CreateProcess(string filename, params string[] args) {
+        private static Process CreateProcess(string workingDirectory, string filename, params string[] args) {
             var process = new System.Diagnostics.Process();
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
@@ -84,7 +104,7 @@ namespace HalApplicationBuilder.DotnetEx {
                 process.StartInfo.FileName = filename;
                 foreach (var arg in args) process.StartInfo.ArgumentList.Add(arg);
             }
-            process.StartInfo.WorkingDirectory = WorkingDirectory;
+            process.StartInfo.WorkingDirectory = workingDirectory;
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
             process.StartInfo.StandardOutputEncoding = Console.OutputEncoding;

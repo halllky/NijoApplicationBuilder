@@ -76,57 +76,71 @@ namespace HalApplicationBuilder {
         }
 
         private static void Debug(string? xmlFilename, CancellationToken cancellationToken) {
+            if (xmlFilename == null) throw new InvalidOperationException($"対象XMLを指定してください。");
+
             var config = ReadConfig(xmlFilename, out var _, out var xmlDir, out var projectRoot);
+
+            using var dotnetRun = new DotnetEx.ExternalProcess.BackgroundExternalProcess {
+                CancellationToken = cancellationToken,
+                WorkingDirectory = projectRoot,
+                Filename = "dotnet",
+                Args = new[] { "run" },
+            };
+
+            void RebuildDotnet() {
+                dotnetRun.Stop();
+                var migrationId = Guid.NewGuid().ToString().Replace("-", "");
+                var migrationProcess = new DotnetEx.ExternalProcess(projectRoot!, cancellationToken);
+                migrationProcess.Start("dotnet", "ef", "migrations", "add", migrationId);
+                migrationProcess.Start("dotnet", "ef", "database", "update");
+                dotnetRun.Restart();
+            }
+
             var npmRoot = Path.Combine(projectRoot, CodeGenerator.ReactAndWebApiGenerator.REACT_DIR);
-
-            // dotnet run & npm start
-            CancellationTokenSource? runTokenSource = null;
-            void StartRunning() {
-                if (runTokenSource != null) {
-                    runTokenSource.Cancel(true);
-                }
-                runTokenSource = new CancellationTokenSource();
-                var dotnetWatch = new DotnetEx.ExternalProcess(projectRoot, runTokenSource.Token);
-                var npmStart = new DotnetEx.ExternalProcess(npmRoot, runTokenSource.Token);
-                var task1 = dotnetWatch.StartAsync("dotnet", "watch", "run");
-                var task2 = npmStart.StartAsync("npm", "start");
-            }
-            void StopRunning() {
-                if (runTokenSource != null) {
-                    runTokenSource.Cancel(true);
-                }
-            }
-
-            // build task
-            void Update() {
-                Gen(xmlFilename, false, cancellationToken);
-                Build(xmlFilename, cancellationToken);
-                AddMigration(xmlFilename, true, cancellationToken);
-            }
+            using var npmStart = new DotnetEx.ExternalProcess.BackgroundExternalProcess {
+                CancellationToken = cancellationToken,
+                WorkingDirectory = npmRoot,
+                Filename = "npm",
+                Args = new[] { "start" },
+            };
 
             // watching xml
             using var watcher = new FileSystemWatcher(xmlDir);
-            watcher.Changed += (sender, e) => {
-                StopRunning();
-                Update();
-                StartRunning();
+
+            // ソース自動生成処理が1秒間に何度も走らないようにするための仕組み
+            var INTERVAL = TimeSpan.FromSeconds(1);
+            watcher.Filter = xmlFilename;
+            DateTime? lastExecutionTime = null;
+            Timer? timer = null;
+
+            void OnChangeXml() {
+                // ソースファイル再生成 & npm watch による自動更新
+                Gen(xmlFilename, false, cancellationToken);
+
+                // dotnetの更新
+                RebuildDotnet();
+
+                lastExecutionTime = DateTime.Now;
+                timer?.Dispose();
+                timer = null;
+            }
+            watcher.Changed += (_, _) => {
+                if (lastExecutionTime == null || ((DateTime.Now - lastExecutionTime) >= INTERVAL)) {
+                    OnChangeXml();
+                } else {
+                    timer ??= new Timer(_ => OnChangeXml(), null, Timeout.Infinite, Timeout.Infinite);
+                    timer.Change(INTERVAL, TimeSpan.Zero);
+                }
             };
 
             // start
-            Update();
-            StartRunning();
+            npmStart.Restart();
+            RebuildDotnet(); 
             watcher.EnableRaisingEvents = true;
 
             while (!cancellationToken.IsCancellationRequested) {
                 Thread.Sleep(100);
             }
-        }
-
-        private static void AddMigration(string? xmlFilename, bool noBuild, CancellationToken cancellationToken) {
-            var config = ReadConfig(xmlFilename, out var _, out var _, out var projectRoot);
-            var process = new DotnetEx.ExternalProcess(projectRoot, cancellationToken);
-            var migrationId = Guid.NewGuid().ToString();
-            process.Start("dotnet", "ef", "migrations", "add", migrationId, noBuild ? "--no-build" : "");
         }
 
         private static void Template(CancellationToken cancellationToken) {
