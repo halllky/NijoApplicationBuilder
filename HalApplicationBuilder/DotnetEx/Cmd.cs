@@ -33,13 +33,10 @@ namespace HalApplicationBuilder.DotnetEx {
             }
         }
         private void Execute(Queue<string>? output, string filename, params string[] args) {
-            using var process = CreateProcess(WorkingDirectory, filename, args);
-
-            if (output != null) {
-                process.OutputDataReceived += (_, e) => {
-                    if (!string.IsNullOrWhiteSpace(e.Data)) output.Enqueue(e.Data);
-                };
-            }
+            DataReceivedEventHandler stdout = output == null
+                ? (_, e) => Console.WriteLine(e.Data)
+                : (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) output.Enqueue(e.Data); };
+            using var process = CreateProcess(WorkingDirectory, filename, args, stdout);
 
             try {
                 CancellationToken?.ThrowIfCancellationRequested();
@@ -84,7 +81,7 @@ namespace HalApplicationBuilder.DotnetEx {
                     try {
                         Stop();
 
-                        _process = CreateProcess(WorkingDirectory, Filename, Args);
+                        _process = CreateProcess(WorkingDirectory, Filename, Args, (_, e) => Console.WriteLine(e.Data));
                         CancellationToken.ThrowIfCancellationRequested();
 
                         _process.Start();
@@ -115,12 +112,14 @@ namespace HalApplicationBuilder.DotnetEx {
             }
         }
 
-        private static Process CreateProcess(string workingDirectory, string filename, params string[] args) {
+        private static Process CreateProcess(string workingDirectory, string filename, string[] args, DataReceivedEventHandler stdout) {
             var process = new System.Diagnostics.Process();
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                // windowsでnvmを使うとき直にnpmを実行できないためcmd経由で実行する
-                process.StartInfo.FileName = "cmd";
+                // powershell経由で実行する。
+                // - windowsでnvmを使うとき直にnpmを実行できないため
+                // - cmdだと、npm start を終了するときCtrl+Cを2回やらないといけない（1回だけだと "Terminate batch job? (Y/N)" が出るためWebサーバーが止まらない）
+                process.StartInfo.FileName = "powershell";
                 process.StartInfo.ArgumentList.Add("/c");
                 process.StartInfo.ArgumentList.Add($"{filename} {string.Join(" ", args)}");
             } else {
@@ -132,7 +131,7 @@ namespace HalApplicationBuilder.DotnetEx {
             process.StartInfo.RedirectStandardError = true;
             process.StartInfo.StandardOutputEncoding = Console.OutputEncoding;
             process.StartInfo.StandardErrorEncoding = Console.OutputEncoding;
-            process.OutputDataReceived += (sender, e) => Console.WriteLine(e.Data);
+            process.OutputDataReceived += stdout;
             process.ErrorDataReceived += (sender, e) => Console.WriteLine(e.Data);
 
             return process;
