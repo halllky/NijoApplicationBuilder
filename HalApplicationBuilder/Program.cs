@@ -63,7 +63,9 @@ namespace HalApplicationBuilder {
 
             if (xmlFilename == null) throw new InvalidOperationException($"対象XMLを指定してください。");
             var xmlFullPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), xmlFilename));
-            xmlContent = File.ReadAllText(xmlFullPath);
+            using var stream = new FileStream(xmlFullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var reader = new StreamReader(stream);
+            xmlContent = reader.ReadToEnd();
             var config = Core.Config.FromXml(xmlContent);
 
             xmlDir = Path.GetDirectoryName(xmlFullPath) ?? throw new DirectoryNotFoundException();
@@ -137,10 +139,11 @@ namespace HalApplicationBuilder {
 
             // watching xml
             using var watcher = new FileSystemWatcher(xmlDir);
+            watcher.NotifyFilter = NotifyFilters.LastWrite;
+            watcher.Filter = xmlFilename;
 
             // ソース自動生成処理が1秒間に何度も走らないようにするための仕組み
             var INTERVAL = TimeSpan.FromSeconds(1);
-            watcher.Filter = xmlFilename;
             DateTime? lastExecutionTime = null;
             Timer? timer = null;
 
