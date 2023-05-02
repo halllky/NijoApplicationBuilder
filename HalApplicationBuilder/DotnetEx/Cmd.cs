@@ -9,13 +9,10 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.DotnetEx {
     internal class Cmd {
-        internal Cmd(string workingDirectory, CancellationToken? cancellationToken = null) {
-            WorkingDirectory = workingDirectory;
-            CancellationToken = cancellationToken;
-        }
 
-        internal string WorkingDirectory { get; }
-        internal CancellationToken? CancellationToken { get; }
+        internal required string WorkingDirectory { get; init; }
+        internal CancellationToken? CancellationToken { get; init; }
+        internal bool Verbose { get; init; }
 
         internal void Exec(string filename, params string[] args) {
             Execute(null, filename, args);
@@ -33,9 +30,15 @@ namespace HalApplicationBuilder.DotnetEx {
             }
         }
         private void Execute(Queue<string>? output, string filename, params string[] args) {
-            DataReceivedEventHandler stdout = output == null
-                ? (_, e) => Console.WriteLine(e.Data)
-                : (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) output.Enqueue(e.Data); };
+
+            DataReceivedEventHandler? stdout;
+            if (output != null)
+                stdout = (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) output.Enqueue(e.Data); };
+            else if (Verbose)
+                stdout = OutToConsole;
+            else
+                stdout = null;
+
             using var process = CreateProcess(WorkingDirectory, filename, args, stdout);
 
             try {
@@ -69,10 +72,11 @@ namespace HalApplicationBuilder.DotnetEx {
 
         internal class Background : IDisposable {
 
-            internal required CancellationToken CancellationToken { get; init; }
             internal required string WorkingDirectory { get; init; }
             internal required string Filename { get; init; }
             internal required string[] Args { get; init; }
+            internal required CancellationToken CancellationToken { get; init; }
+            internal bool Verbose { get; init; }
 
             private Process? _process = null;
 
@@ -81,7 +85,8 @@ namespace HalApplicationBuilder.DotnetEx {
                     try {
                         Stop();
 
-                        _process = CreateProcess(WorkingDirectory, Filename, Args, (_, e) => Console.WriteLine(e.Data));
+                        DataReceivedEventHandler? stdout = Verbose ? OutToConsole : null;
+                        _process = CreateProcess(WorkingDirectory, Filename, Args, stdout);
                         CancellationToken.ThrowIfCancellationRequested();
 
                         _process.Start();
@@ -112,7 +117,7 @@ namespace HalApplicationBuilder.DotnetEx {
             }
         }
 
-        private static Process CreateProcess(string workingDirectory, string filename, string[] args, DataReceivedEventHandler stdout) {
+        private static Process CreateProcess(string workingDirectory, string filename, string[] args, DataReceivedEventHandler? stdout) {
             var process = new System.Diagnostics.Process();
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
@@ -131,10 +136,22 @@ namespace HalApplicationBuilder.DotnetEx {
             process.StartInfo.RedirectStandardError = true;
             process.StartInfo.StandardOutputEncoding = Console.OutputEncoding;
             process.StartInfo.StandardErrorEncoding = Console.OutputEncoding;
-            process.OutputDataReceived += stdout;
-            process.ErrorDataReceived += (sender, e) => Console.WriteLine(e.Data);
+            if (stdout != null) process.OutputDataReceived += stdout;
+            process.ErrorDataReceived += OutToStdError;
 
             return process;
+        }
+
+        private static void OutToConsole(object sender, DataReceivedEventArgs e) {
+            var originalColor = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.WriteLine(e.Data);
+            Console.ForegroundColor = originalColor;
+        }
+        private static void OutToStdError(object sender, DataReceivedEventArgs e) {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.Error.WriteLine(e.Data);
+            Console.ResetColor();
         }
     }
 }

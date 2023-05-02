@@ -65,12 +65,12 @@ namespace HalApplicationBuilder {
         }
         private readonly Func<Config, IEnumerable<RootAggregate>> _rootAggregateBuilder;
 
-        public void GenerateAspNetCoreMvc(string rootDir, Config config, TextWriter? log, CancellationToken? cancellationToken) {
-            var generator = new AspNetCoreMvcGenerator(config, log, cancellationToken, _rootAggregateBuilder);
+        public void GenerateAspNetCoreMvc(string rootDir, Config config, bool verbose, TextWriter? log, CancellationToken? cancellationToken) {
+            var generator = new AspNetCoreMvcGenerator(config, log, cancellationToken, _rootAggregateBuilder, verbose);
             generator.GenerateCode(rootDir);
         }
-        public void GenerateReactAndWebApi(string rootDir, Config config, TextWriter? log, CancellationToken? cancellationToken) {
-            var generator = new ReactAndWebApiGenerator(config, log, cancellationToken, _rootAggregateBuilder);
+        public void GenerateReactAndWebApi(string rootDir, Config config, bool verbose, TextWriter? log, CancellationToken? cancellationToken) {
+            var generator = new ReactAndWebApiGenerator(config, log, cancellationToken, _rootAggregateBuilder, verbose);
             generator.GenerateCode(rootDir);
         }
 
@@ -79,15 +79,18 @@ namespace HalApplicationBuilder {
                 Config config,
                 TextWriter? log,
                 CancellationToken? cancellationToken,
-                Func<Config, IEnumerable<RootAggregate>> rootAggregateBuilder) {
+                Func<Config, IEnumerable<RootAggregate>> rootAggregateBuilder,
+                bool verbose) {
                 _config = config;
                 _log = log;
                 _cancellationToken = cancellationToken;
                 _rootAggregateBuilder = rootAggregateBuilder;
+                _verbose = verbose;
             }
 
             protected readonly Config _config;
             protected readonly TextWriter? _log;
+            protected readonly bool _verbose;
             private readonly CancellationToken? _cancellationToken;
             private readonly Func<Config, IEnumerable<RootAggregate>> _rootAggregateBuilder;
 
@@ -114,7 +117,11 @@ namespace HalApplicationBuilder {
                         tempDir = Path.Combine(Directory.GetCurrentDirectory(), project);
 
                         Directory.CreateDirectory(tempDir);
-                        var cmd = new DotnetEx.Cmd(tempDir, _cancellationToken);
+                        var cmd = new DotnetEx.Cmd {
+                            WorkingDirectory = tempDir,
+                            CancellationToken = _cancellationToken,
+                            Verbose = _verbose,
+                        };
 
                         // dotnet CLI でプロジェクトを新規作成
                         _log?.WriteLine($"プロジェクトを作成します。");
@@ -297,8 +304,9 @@ namespace HalApplicationBuilder {
                 Config config,
                 TextWriter? log,
                 CancellationToken? cancellationToken,
-                Func<Config, IEnumerable<RootAggregate>> rootAggregateBuilder)
-                : base(config, log, cancellationToken, rootAggregateBuilder) {
+                Func<Config, IEnumerable<RootAggregate>> rootAggregateBuilder,
+                bool verbose)
+                : base(config, log, cancellationToken, rootAggregateBuilder, verbose) {
             }
 
             protected override string DotNetNew => "mvc";
@@ -410,8 +418,9 @@ namespace HalApplicationBuilder {
                 Config config,
                 TextWriter? log,
                 CancellationToken? cancellationToken,
-                Func<Config, IEnumerable<RootAggregate>> rootAggregateBuilder)
-                : base(config, log, cancellationToken, rootAggregateBuilder) {
+                Func<Config, IEnumerable<RootAggregate>> rootAggregateBuilder,
+                bool verbose)
+                : base(config, log, cancellationToken, rootAggregateBuilder, verbose) {
             }
 
             protected override string DotNetNew => "webapi";
@@ -429,7 +438,11 @@ namespace HalApplicationBuilder {
                 var reactDir = Path.Combine(cmd.WorkingDirectory, REACT_DIR);
                 DotnetEx.IO.CopyDirectory(projectTemplateDir, reactDir);
 
-                var npmProcess = new DotnetEx.Cmd(reactDir, cmd.CancellationToken);
+                var npmProcess = new DotnetEx.Cmd {
+                    WorkingDirectory = reactDir,
+                    CancellationToken = cmd.CancellationToken,
+                    Verbose = _verbose,
+                };
                 npmProcess.Exec("npm", "ci");
             }
 

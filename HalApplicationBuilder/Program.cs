@@ -26,14 +26,15 @@ namespace HalApplicationBuilder {
             };
 
             var xmlFilename = new Argument<string?>();
-            var mvc =new Option<bool>("mvc");
+            var mvc = new Option<bool>("--mvc");
+            var verbose = new Option<bool>("--verbose");
 
-            var gen = new Command(name: "gen", description: "ソースコードの自動生成を実行します。") { xmlFilename };
-            var debug = new Command(name: "debug", description: "プロジェクトのデバッグを開始します。") { xmlFilename };
+            var gen = new Command(name: "gen", description: "ソースコードの自動生成を実行します。") { xmlFilename, verbose };
+            var debug = new Command(name: "debug", description: "プロジェクトのデバッグを開始します。") { xmlFilename, verbose };
             var template = new Command(name: "template", description: "アプリケーション定義ファイルのテンプレートを表示します。");
 
-            gen.SetHandler((xmlFilename, mvc) => Gen(xmlFilename, mvc, cancellationTokenSource.Token), xmlFilename, mvc);
-            debug.SetHandler(xmlFilename => Debug(xmlFilename, cancellationTokenSource.Token), xmlFilename);
+            gen.SetHandler((xmlFilename, mvc, verbose) => Gen(xmlFilename, mvc, verbose, cancellationTokenSource.Token), xmlFilename, mvc, verbose);
+            debug.SetHandler((xmlFilename, verbose) => Debug(xmlFilename, verbose, cancellationTokenSource.Token), xmlFilename, verbose);
             template.SetHandler(() => Template(cancellationTokenSource.Token));
 
             var rootCommand = new RootCommand("HalApplicationBuilder");
@@ -42,9 +43,12 @@ namespace HalApplicationBuilder {
             rootCommand.AddCommand(template);
 
             var parser = new CommandLineBuilder(rootCommand)
+                .UseDefaults()
                 .UseExceptionHandler((ex, _) => {
                     cancellationTokenSource.Cancel();
+                    Console.ForegroundColor = ConsoleColor.Red;
                     Console.Error.WriteLine(ex.ToString());
+                    Console.ResetColor();
                 })
                 .Build();
             return await parser.InvokeAsync(args);
@@ -68,17 +72,17 @@ namespace HalApplicationBuilder {
             return config;
         }
 
-        private static void Gen(string? xmlFilename, bool mvc, CancellationToken cancellationToken) {
+        private static void Gen(string? xmlFilename, bool mvc, bool verbose, CancellationToken cancellationToken) {
             var config = ReadConfig(xmlFilename, out var xmlContent, out var _, out var projectRoot);
             var generator = CodeGenerator.FromXml(xmlContent);
             if (mvc) {
-                generator.GenerateAspNetCoreMvc(projectRoot, config, Console.Out, cancellationToken);
+                generator.GenerateAspNetCoreMvc(projectRoot, config, verbose, Console.Out, cancellationToken);
             } else {
-                generator.GenerateReactAndWebApi(projectRoot, config, Console.Out, cancellationToken);
+                generator.GenerateReactAndWebApi(projectRoot, config, verbose, Console.Out, cancellationToken);
             }
         }
 
-        private static void Debug(string? xmlFilename, CancellationToken cancellationToken) {
+        private static void Debug(string? xmlFilename, bool verbose, CancellationToken cancellationToken) {
             if (xmlFilename == null) throw new InvalidOperationException($"対象XMLを指定してください。");
 
             var config = ReadConfig(xmlFilename, out var _, out var xmlDir, out var projectRoot);
@@ -88,9 +92,14 @@ namespace HalApplicationBuilder {
                 WorkingDirectory = projectRoot,
                 Filename = "dotnet",
                 Args = new[] { "run" },
+                Verbose = verbose,
             };
 
-            var migration = new DotnetEx.Cmd(projectRoot!, cancellationToken);
+            var migration = new DotnetEx.Cmd {
+                WorkingDirectory= projectRoot!,
+                CancellationToken = cancellationToken,
+                Verbose = verbose,
+            };
             var previousMigrationId = migration
                 .ReadOutputs("dotnet", "ef", "migrations", "list")
                 .LastOrDefault();
@@ -123,6 +132,7 @@ namespace HalApplicationBuilder {
                 WorkingDirectory = npmRoot,
                 Filename = "npm",
                 Args = new[] { "start" },
+                Verbose = verbose,
             };
 
             // watching xml
@@ -136,7 +146,7 @@ namespace HalApplicationBuilder {
 
             void OnChangeXml() {
                 // ソースファイル再生成 & npm watch による自動更新
-                Gen(xmlFilename, false, cancellationToken);
+                Gen(xmlFilename, false, verbose, cancellationToken);
 
                 // dotnetの更新
                 RebuildDotnet();
