@@ -90,12 +90,30 @@ namespace HalApplicationBuilder {
                 Args = new[] { "run" },
             };
 
+            var migration = new DotnetEx.Cmd(projectRoot!, cancellationToken);
+            var previousMigrationId = migration
+                .ReadOutputs("dotnet", "ef", "migrations", "list")
+                .LastOrDefault();
+            var nextMigrationId = Guid
+                .NewGuid()
+                .ToString()
+                .Replace("-", "");
+            var migratedInThisProcess = false;
+
             void RebuildDotnet() {
                 dotnetRun.Stop();
-                var migrationId = Guid.NewGuid().ToString().Replace("-", "");
-                var migrationProcess = new DotnetEx.Cmd(projectRoot!, cancellationToken);
-                migrationProcess.Exec("dotnet", "ef", "migrations", "add", migrationId);
-                migrationProcess.Exec("dotnet", "ef", "database", "update");
+
+                // 集約定義を書き換えるたびにマイグレーションが積み重なっていってしまうため、
+                // 1回のhalapp debugで作成されるマイグレーションは1つまでとする
+                if (migratedInThisProcess && !string.IsNullOrWhiteSpace(previousMigrationId)) {
+                    Console.WriteLine($"DB定義を右記地点に巻き戻します: {previousMigrationId}");
+                    migration.Exec("dotnet", "ef", "database", "update", previousMigrationId);
+                    migration.Exec("dotnet", "ef", "migrations", "remove");
+                }
+
+                migration.Exec("dotnet", "ef", "migrations", "add", nextMigrationId);
+                migration.Exec("dotnet", "ef", "database", "update", nextMigrationId);
+                migratedInThisProcess = true;
                 dotnetRun.Restart();
             }
 
