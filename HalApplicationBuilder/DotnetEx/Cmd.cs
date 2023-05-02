@@ -42,15 +42,13 @@ namespace HalApplicationBuilder.DotnetEx {
             using var process = CreateProcess(WorkingDirectory, filename, args, stdout);
 
             try {
-                CancellationToken?.ThrowIfCancellationRequested();
-
                 process.Start();
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
 
                 while (!process.HasExited) {
-                    CancellationToken?.ThrowIfCancellationRequested();
                     Thread.Sleep(100);
+                    CancellationToken?.ThrowIfCancellationRequested();
                 }
                 if (process.ExitCode != 0) {
                     throw new InvalidOperationException($"外部コマンド( {filename} {string.Join(" ", args)})実行時にエラーが発生しました。");
@@ -62,8 +60,6 @@ namespace HalApplicationBuilder.DotnetEx {
                 // Killの完了前に新規プロジェクト作成時の一時ディレクトリの削除処理が走ってしまい
                 // 削除できなくて失敗することがあるので少し待つ
                 Thread.Sleep(1000);
-
-                throw;
 
             } catch (Exception ex) {
                 throw new Exception($"EXCEPTION: '{filename} {string.Join(" ", args)}'", ex);
@@ -87,19 +83,17 @@ namespace HalApplicationBuilder.DotnetEx {
 
                         DataReceivedEventHandler? stdout = Verbose ? OutToConsole : null;
                         _process = CreateProcess(WorkingDirectory, Filename, Args, stdout);
-                        CancellationToken.ThrowIfCancellationRequested();
 
                         _process.Start();
                         _process.BeginOutputReadLine();
                         _process.BeginErrorReadLine();
 
                         while (!_process.HasExited) {
-                            CancellationToken.ThrowIfCancellationRequested();
                             Thread.Sleep(100);
+                            CancellationToken.ThrowIfCancellationRequested();
                         }
                     } catch (OperationCanceledException) {
                         Stop();
-                        throw;
                     }
                 });
             }
@@ -107,7 +101,13 @@ namespace HalApplicationBuilder.DotnetEx {
             internal void Stop() {
                 lock (_lock) {
                     if (_process == null) return;
-                    _process.Kill(entireProcessTree: true);
+                    try {
+                        if (!_process.HasExited) _process.Kill(entireProcessTree: true);
+                    } catch (InvalidOperationException ex) when (ex.Message == "No process is associated with this object.") {
+                        // Processインスタンスが作成されてからStartする前にDisposeされると
+                        // HasExitedを参照することはできずにこの例外が発生する。
+                        // 開始されていないのでKillできなくとも問題ないと判断し、無視して先に進む
+                    }
                     _process.Dispose();
                     _process = null;
                 }
