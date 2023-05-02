@@ -93,7 +93,7 @@ namespace HalApplicationBuilder {
 
             protected abstract string DotNetNew { get; }
             protected abstract void ModifyCsproj(Microsoft.Build.Evaluation.Project csproj);
-            protected abstract void GenerateInitCode(DotnetEx.ExternalProcess process);
+            protected abstract void GenerateInitCode(DotnetEx.Cmd cmd);
             protected abstract void GenerateNonInitCode(string rootDir, IEnumerable<Aggregate> allAggregates, IEnumerable<RootAggregate> rootAggregates);
 
             /// <summary>
@@ -114,23 +114,23 @@ namespace HalApplicationBuilder {
                         tempDir = Path.Combine(Directory.GetCurrentDirectory(), project);
 
                         Directory.CreateDirectory(tempDir);
-                        var process = new DotnetEx.ExternalProcess(tempDir, _cancellationToken);
+                        var cmd = new DotnetEx.Cmd(tempDir, _cancellationToken);
 
                         // dotnet CLI でプロジェクトを新規作成
                         _log?.WriteLine($"プロジェクトを作成します。");
-                        process.Start("dotnet", "new", DotNetNew, "--output", ".", "--name", _config.ApplicationName);
+                        cmd.Exec("dotnet", "new", DotNetNew, "--output", ".", "--name", _config.ApplicationName);
 
                         _log?.WriteLine($"Microsoft.EntityFrameworkCore パッケージへの参照を追加します。");
-                        process.Start("dotnet", "add", "package", "Microsoft.EntityFrameworkCore");
+                        cmd.Exec("dotnet", "add", "package", "Microsoft.EntityFrameworkCore");
 
                         _log?.WriteLine($"Microsoft.EntityFrameworkCore.Proxies パッケージへの参照を追加します。");
-                        process.Start("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Proxies");
+                        cmd.Exec("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Proxies");
 
                         _log?.WriteLine($"Microsoft.EntityFrameworkCore.Design パッケージへの参照を追加します。"); // migration add に必要
-                        process.Start("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Design");
+                        cmd.Exec("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Design");
 
                         _log?.WriteLine($"Microsoft.EntityFrameworkCore.Sqlite パッケージへの参照を追加します。");
-                        process.Start("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Sqlite");
+                        cmd.Exec("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Sqlite");
 
                         // halapp.dll への参照を加える。実行時にRuntimeContextを参照しているため
                         _log?.WriteLine($"halapp.dll を参照に追加します。");
@@ -216,7 +216,7 @@ namespace HalApplicationBuilder {
                         }
 
                         // その他
-                        GenerateInitCode(process);
+                        GenerateInitCode(cmd);
 
                         // ここまでの処理がすべて成功したら一時ディレクトリを本来のディレクトリ名に変更
                         if (Directory.Exists(rootDir)) throw new InvalidOperationException($"プロジェクトディレクトリを {rootDir} に移動できません。");
@@ -311,19 +311,19 @@ namespace HalApplicationBuilder {
                 exec.SetParameter("Command", $"npm run {PACKAGE_JSON_CSS_BUILD_SCRIPT_NAME}");
             }
 
-            protected override void GenerateInitCode(DotnetEx.ExternalProcess process) {
+            protected override void GenerateInitCode(DotnetEx.Cmd cmd) {
 
                 const string LAYOUT_CSHTML = "_Layout.cshtml";
                 _log?.WriteLine($"{LAYOUT_CSHTML} ファイルを書き換えます。");
-                var layoutCshtmlDir = Path.Combine(process.WorkingDirectory, "Views", "Shared");
+                var layoutCshtmlDir = Path.Combine(cmd.WorkingDirectory, "Views", "Shared");
                 using (var sw = new StreamWriter(Path.Combine(layoutCshtmlDir, LAYOUT_CSHTML), append: false, encoding: Encoding.UTF8)) {
                     sw.Write(new CodeRendering.AspNetMvc.LayoutCshtmlTemplate().TransformText());
                 }
 
                 // tailwindcssを有効にする
                 _log?.WriteLine($"package.jsonを作成します。");
-                process.Start("npm", "init", "-y");
-                var packageJsonPath = Path.Combine(process.WorkingDirectory, "package.json");
+                cmd.Exec("npm", "init", "-y");
+                var packageJsonPath = Path.Combine(cmd.WorkingDirectory, "package.json");
                 var packageJson = JObject.Parse(File.ReadAllText(packageJsonPath));
                 var scripts = new JObject();
                 scripts[PACKAGE_JSON_CSS_BUILD_SCRIPT_NAME] = "postcss wwwroot/css/app.css -o wwwroot/css/app.min.css";
@@ -332,18 +332,18 @@ namespace HalApplicationBuilder {
                 File.WriteAllText(packageJsonPath, packageJson.ToString());
 
                 _log?.WriteLine($"必要な Node.js パッケージをインストールします。");
-                process.Start("npm", "install", "tailwindcss", "postcss", "postcss-cli", "autoprefixer");
+                cmd.Exec("npm", "install", "tailwindcss", "postcss", "postcss-cli", "autoprefixer");
 
                 _log?.WriteLine($"app.cssファイルを生成します。");
-                using (var sw = new StreamWriter(Path.Combine(process.WorkingDirectory, "wwwroot", "css", "app.css"), append: false, encoding: Encoding.UTF8)) {
+                using (var sw = new StreamWriter(Path.Combine(cmd.WorkingDirectory, "wwwroot", "css", "app.css"), append: false, encoding: Encoding.UTF8)) {
                     sw.Write(new CodeRendering.AspNetMvc.app_css().TransformText());
                 }
                 _log?.WriteLine($"postcss.config.jsファイルを生成します。");
-                using (var sw = new StreamWriter(Path.Combine(process.WorkingDirectory, "postcss.config.js"), append: false, encoding: Encoding.UTF8)) {
+                using (var sw = new StreamWriter(Path.Combine(cmd.WorkingDirectory, "postcss.config.js"), append: false, encoding: Encoding.UTF8)) {
                     sw.Write(new CodeRendering.AspNetMvc.postcss_config_js().TransformText());
                 }
                 _log?.WriteLine($"tailwind.config.jsファイルを生成します。");
-                using (var sw = new StreamWriter(Path.Combine(process.WorkingDirectory, "tailwind.config.js"), append: false, encoding: Encoding.UTF8)) {
+                using (var sw = new StreamWriter(Path.Combine(cmd.WorkingDirectory, "tailwind.config.js"), append: false, encoding: Encoding.UTF8)) {
                     sw.Write(new CodeRendering.AspNetMvc.tailwind_config_js().TransformText());
                 }
             }
@@ -420,17 +420,17 @@ namespace HalApplicationBuilder {
                 // 特になにもしない
             }
 
-            protected override void GenerateInitCode(DotnetEx.ExternalProcess process) {
+            protected override void GenerateInitCode(DotnetEx.Cmd cmd) {
                 _log?.WriteLine($"React.jsアプリケーションを作成します。");
 
                 // プロジェクトテンプレートのコピー
                 var halappDllDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
                 var projectTemplateDir = Path.Combine(halappDllDir, "CodeRendering", "ReactAndWebApi", "project-template");
-                var reactDir = Path.Combine(process.WorkingDirectory, REACT_DIR);
+                var reactDir = Path.Combine(cmd.WorkingDirectory, REACT_DIR);
                 DotnetEx.IO.CopyDirectory(projectTemplateDir, reactDir);
 
-                var npmProcess = new DotnetEx.ExternalProcess(reactDir, process.CancellationToken);
-                npmProcess.Start("npm", "ci");
+                var npmProcess = new DotnetEx.Cmd(reactDir, cmd.CancellationToken);
+                npmProcess.Exec("npm", "ci");
             }
 
             protected override void GenerateNonInitCode(string rootDir, IEnumerable<Aggregate> allAggregates, IEnumerable<RootAggregate> rootAggregates) {

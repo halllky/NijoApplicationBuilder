@@ -7,7 +7,7 @@
 <script>
     const setHalappFunctions = targetElementJQueryObject => {
         targetElementJQueryObject.find('.<#=ADD_CHILD_BTN#>').on('click', event => {
-            const controllerName = '@(Context.Request.RouteValues["controller"].ToString())';
+            const controllerName = '@(Context.Request.RouteValues["controller"]?.ToString())';
             const button = $(event.target);
             const <#=AGGREGATE_TREE_PATH_ARG#> = button.attr('<#=AGGREGATE_TREE_PATH_ATTR#>');
             const <#=AGGREGATE_MODEL_PATH_ARG#> = button.attr('<#=AGGREGATE_MODEL_PATH_ATTR#>');

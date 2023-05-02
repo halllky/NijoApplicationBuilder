@@ -83,7 +83,7 @@ namespace HalApplicationBuilder {
 
             var config = ReadConfig(xmlFilename, out var _, out var xmlDir, out var projectRoot);
 
-            using var dotnetRun = new DotnetEx.ExternalProcess.BackgroundExternalProcess {
+            using var dotnetRun = new DotnetEx.Cmd.Background {
                 CancellationToken = cancellationToken,
                 WorkingDirectory = projectRoot,
                 Filename = "dotnet",
@@ -93,14 +93,14 @@ namespace HalApplicationBuilder {
             void RebuildDotnet() {
                 dotnetRun.Stop();
                 var migrationId = Guid.NewGuid().ToString().Replace("-", "");
-                var migrationProcess = new DotnetEx.ExternalProcess(projectRoot!, cancellationToken);
-                migrationProcess.Start("dotnet", "ef", "migrations", "add", migrationId);
-                migrationProcess.Start("dotnet", "ef", "database", "update");
+                var migrationProcess = new DotnetEx.Cmd(projectRoot!, cancellationToken);
+                migrationProcess.Exec("dotnet", "ef", "migrations", "add", migrationId);
+                migrationProcess.Exec("dotnet", "ef", "database", "update");
                 dotnetRun.Restart();
             }
 
             var npmRoot = Path.Combine(projectRoot, CodeGenerator.ReactAndWebApiGenerator.REACT_DIR);
-            using var npmStart = new DotnetEx.ExternalProcess.BackgroundExternalProcess {
+            using var npmStart = new DotnetEx.Cmd.Background {
                 CancellationToken = cancellationToken,
                 WorkingDirectory = npmRoot,
                 Filename = "npm",

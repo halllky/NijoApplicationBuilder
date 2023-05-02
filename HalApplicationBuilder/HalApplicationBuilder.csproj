@@ -278,7 +278,9 @@
 		  <DependentUpon>..\..\CodeRendering\AspNetMvc\InstancePartialViewTemplate.tt</DependentUpon>
 		</Compile>
 		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\AspNetMvc\JsTemplate.cs">
-		  <DependentUpon>..\..\CodeRendering\AspNetMvc\JsTemplate.tt</DependentUpon>
+		  <DependentUpon>JsTemplate.tt</DependentUpon>
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
 		</Compile>
 		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\AspNetMvc\MvcControllerTemplate.cs">
 		  <DependentUpon>..\..\CodeRendering\AspNetMvc\MvcControllerTemplate.tt</DependentUpon>

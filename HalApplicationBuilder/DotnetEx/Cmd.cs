@@ -8,8 +8,8 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.DotnetEx {
-    internal class ExternalProcess {
-        internal ExternalProcess(string workingDirectory, CancellationToken? cancellationToken = null) {
+    internal class Cmd {
+        internal Cmd(string workingDirectory, CancellationToken? cancellationToken = null) {
             WorkingDirectory = workingDirectory;
             CancellationToken = cancellationToken;
         }
@@ -17,8 +17,30 @@ namespace HalApplicationBuilder.DotnetEx {
         internal string WorkingDirectory { get; }
         internal CancellationToken? CancellationToken { get; }
 
-        internal void Start(string filename, params string[] args) {
+        internal void Exec(string filename, params string[] args) {
+            Execute(null, filename, args);
+        }
+        internal string ReadOutput(string filename, params string[] args) {
+            var output = new Queue<string>();
+            Execute(output, filename, args);
+            return string.Join(Environment.NewLine, output);
+        }
+        internal IEnumerable<string> ReadOutputs(string filename, params string[] args) {
+            var output = new Queue<string>();
+            Execute(output, filename, args);
+            while (output.Count > 0) {
+                yield return output.Dequeue();
+            }
+        }
+        private void Execute(Queue<string>? output, string filename, params string[] args) {
             using var process = CreateProcess(WorkingDirectory, filename, args);
+
+            if (output != null) {
+                process.OutputDataReceived += (_, e) => {
+                    if (!string.IsNullOrWhiteSpace(e.Data)) output.Enqueue(e.Data);
+                };
+            }
+
             try {
                 CancellationToken?.ThrowIfCancellationRequested();
 
@@ -48,9 +70,7 @@ namespace HalApplicationBuilder.DotnetEx {
             }
         }
 
-        internal class BackgroundExternalProcess : IDisposable {
-
-            internal BackgroundExternalProcess() { }
+        internal class Background : IDisposable {
 
             internal required CancellationToken CancellationToken { get; init; }
             internal required string WorkingDirectory { get; init; }
