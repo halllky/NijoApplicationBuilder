@@ -136,25 +136,27 @@ namespace HalApplicationBuilder {
                         _log?.WriteLine($"halapp.dll を参照に追加します。");
 
                         // dllをプロジェクトディレクトリにコピー
-                        const string HALAPP_DLL = "halapp.dll";
-                        var halappDllDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
-                        var halappDllPath = Path.Combine(halappDllDir, HALAPP_DLL);
-                        var halappDllDist = Path.Combine(tempDir, HALAPP_DLL);
+                        const string HALAPP_DLL_DIR = "halapp-resource";
+                        var halappDirCopySource = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
+                        var halappDirCopyDist = Path.Combine(tempDir, HALAPP_DLL_DIR);
+                        DotnetEx.IO.CopyDirectory(halappDirCopySource, halappDirCopyDist);
 
-                        File.Copy(halappDllPath, halappDllDist, true);
-
-                        // csprojファイルを編集
+                        // csprojファイルを編集: csprojファイルを開く
                         var csprojPath = Path.Combine(tempDir, $"{_config.ApplicationName}.csproj");
                         var projectOption = new Microsoft.Build.Definition.ProjectOptions {
                             // Referenceを追加するだけなので Microsoft.NET.Sdk.Web が無くてもエラーにならないようにしたい
                             LoadSettings = Microsoft.Build.Evaluation.ProjectLoadSettings.IgnoreMissingImports,
                         };
                         var csproj = Microsoft.Build.Evaluation.Project.FromFile(csprojPath, projectOption);
-
-                        // halapp.dll への参照を追加する（dll参照は dotnet add でサポートされていないため）
                         var itemGroup = csproj.Xml.AddItemGroup();
-                        var reference = itemGroup.AddItem("Reference", "MyAssembly");
-                        reference.AddMetadata("HintPath", $".\\{HALAPP_DLL}");
+
+                        // csprojファイルを編集: halapp.dll への参照を追加する（dll参照は dotnet add でサポートされていないため）
+                        var reference = itemGroup.AddItem("Reference", include: "halapp");
+                        reference.AddMetadata("HintPath", Path.Combine(HALAPP_DLL_DIR, "halapp.dll"));
+
+                        // csprojファイルを編集: ビルド時に halapp.dll が含まれるディレクトリがコピーされるようにする
+                        var none = itemGroup.AddItem("None", Path.Combine(HALAPP_DLL_DIR, "**", "*.*"));
+                        none.AddMetadata("CopyToOutputDirectory", "Always");
 
                         // その他csproj編集
                         ModifyCsproj(csproj);
