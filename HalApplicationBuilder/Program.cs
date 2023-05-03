@@ -63,9 +63,10 @@ namespace HalApplicationBuilder {
 
             if (xmlFilename == null) throw new InvalidOperationException($"対象XMLを指定してください。");
             var xmlFullPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), xmlFilename));
-            using var stream = new FileStream(xmlFullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using var reader = new StreamReader(stream);
-            xmlContent = reader.ReadToEnd();
+            using (var stream = DotnetEx.IO.OpenFileWithRetry(xmlFullPath))
+            using (var reader = new StreamReader(stream)) {
+                xmlContent = reader.ReadToEnd();
+            }
             var config = Core.Config.FromXml(xmlContent);
 
             xmlDir = Path.GetDirectoryName(xmlFullPath) ?? throw new DirectoryNotFoundException();
@@ -89,20 +90,13 @@ namespace HalApplicationBuilder {
 
             var config = ReadConfig(xmlFilename, out var _, out var xmlDir, out var projectRoot);
 
-            using var dotnetRun = new DotnetEx.Cmd.Background {
-                CancellationToken = cancellationToken,
-                WorkingDirectory = projectRoot,
-                Filename = "dotnet",
-                Args = new[] { "run" },
-                Verbose = verbose,
-            };
-
-            var migration = new DotnetEx.Cmd {
-                WorkingDirectory= projectRoot!,
+            // migration用設定
+            var migrationList = new DotnetEx.Cmd {
+                WorkingDirectory = projectRoot!,
                 CancellationToken = cancellationToken,
                 Verbose = verbose,
             };
-            var previousMigrationId = migration
+            var previousMigrationId = migrationList
                 .ReadOutputs("dotnet", "ef", "migrations", "list")
                 .LastOrDefault();
             var nextMigrationId = Guid
@@ -111,69 +105,120 @@ namespace HalApplicationBuilder {
                 .Replace("-", "");
             var migratedInThisProcess = false;
 
-            void RebuildDotnet() {
-                dotnetRun.Stop();
+            // 以下の2種類のキャンセルがあるので統合する
+            // - ユーザーの操作による halapp debug 全体のキャンセル
+            // - 集約定義ファイル更新によるビルドのキャンセル
+            CancellationTokenSource? rebuildCancellation = null;
+            CancellationTokenSource? linkedTokenSource = null;
 
-                // 集約定義を書き換えるたびにマイグレーションが積み重なっていってしまうため、
-                // 1回のhalapp debugで作成されるマイグレーションは1つまでとする
-                if (migratedInThisProcess && !string.IsNullOrWhiteSpace(previousMigrationId)) {
-                    Console.WriteLine($"DB定義を右記地点に巻き戻します: {previousMigrationId}");
-                    migration.Exec("dotnet", "ef", "database", "update", previousMigrationId);
-                    migration.Exec("dotnet", "ef", "migrations", "remove");
+            // バックグラウンド処理の宣言
+            DotnetEx.Cmd.Background? dotnetRun = null;
+            DotnetEx.Cmd.Background? npmStart = null;
+
+            // ファイル変更監視用オブジェクト
+            FileSystemWatcher? watcher = null;
+
+            try {
+                var changed = false;
+
+                // halapp debug 中ずっと同じインスタンスが使われるものを初期化する
+                watcher = new FileSystemWatcher(xmlDir);
+                watcher.Filter = xmlFilename;
+                watcher.NotifyFilter = NotifyFilters.LastWrite;
+                watcher.Changed += (_, _) => {
+                    changed = true;
+                    rebuildCancellation?.Cancel();
+                };
+
+                npmStart = new DotnetEx.Cmd.Background {
+                    WorkingDirectory = Path.Combine(projectRoot, CodeGenerator.ReactAndWebApiGenerator.REACT_DIR),
+                    Filename = "npm",
+                    Args = new[] { "start" },
+                    CancellationToken = cancellationToken,
+                    Verbose = verbose,
+                };
+
+                // 監視開始
+                watcher.EnableRaisingEvents = true;
+                npmStart.Restart();
+
+                // リビルドの度に実行される処理
+                while (true) {
+                    dotnetRun?.Dispose();
+                    rebuildCancellation?.Dispose();
+                    linkedTokenSource?.Dispose();
+
+                    rebuildCancellation = new CancellationTokenSource();
+                    linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
+                        cancellationToken,
+                        rebuildCancellation.Token);
+
+                    try {
+                        // ソースファイル再生成 & npm watch による自動更新
+                        Gen(xmlFilename, false, verbose, linkedTokenSource.Token);
+
+                        linkedTokenSource.Token.ThrowIfCancellationRequested();
+
+                        // DB定義の更新
+                        var migration = new DotnetEx.Cmd {
+                            WorkingDirectory = projectRoot!,
+                            CancellationToken = linkedTokenSource.Token,
+                            Verbose = verbose,
+                        };
+
+                        // 集約定義を書き換えるたびにマイグレーションが積み重なっていってしまうため、
+                        // 1回のhalapp debugで作成されるマイグレーションは1つまでとする
+                        if (migratedInThisProcess && !string.IsNullOrWhiteSpace(previousMigrationId)) {
+                            Console.WriteLine($"DB定義を右記地点に巻き戻します: {previousMigrationId}");
+                            migration.Exec("dotnet", "ef", "database", "update", previousMigrationId);
+                            migration.Exec("dotnet", "ef", "migrations", "remove");
+
+                            linkedTokenSource.Token.ThrowIfCancellationRequested();
+                        }
+
+                        migration.Exec("dotnet", "ef", "migrations", "add", nextMigrationId);
+                        migration.Exec("dotnet", "ef", "database", "update", nextMigrationId);
+
+                        linkedTokenSource.Token.ThrowIfCancellationRequested();
+
+                    } catch (OperationCanceledException ex) when (ex.CancellationToken == rebuildCancellation?.Token) {
+                        // 実行中のビルドを中断してもう一度最初から
+                        break;
+                    } catch (Exception ex) {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.Error.WriteLine(ex.ToString());
+                        Console.ResetColor();
+                    }
+
+                    changed = false;
+                    migratedInThisProcess = true;
+
+                    // ビルドが完了したので dotnet run を再開
+                    dotnetRun = new DotnetEx.Cmd.Background {
+                        WorkingDirectory = projectRoot,
+                        Filename = "dotnet",
+                        Args = new[] { "run", "--no-build" },
+                        CancellationToken = linkedTokenSource.Token,
+                        Verbose = verbose,
+                    };
+                    dotnetRun.Restart();
+
+                    // 次の更新まで待機
+                    while (changed == false) {
+                        Thread.Sleep(100);
+                        cancellationToken.ThrowIfCancellationRequested();
+                    }
                 }
 
-                migration.Exec("dotnet", "ef", "migrations", "add", nextMigrationId);
-                migration.Exec("dotnet", "ef", "database", "update", nextMigrationId);
-                migratedInThisProcess = true;
-                dotnetRun.Restart();
-            }
+            } catch (OperationCanceledException) {
+                // 何もしない
 
-            var npmRoot = Path.Combine(projectRoot, CodeGenerator.ReactAndWebApiGenerator.REACT_DIR);
-            using var npmStart = new DotnetEx.Cmd.Background {
-                CancellationToken = cancellationToken,
-                WorkingDirectory = npmRoot,
-                Filename = "npm",
-                Args = new[] { "start" },
-                Verbose = verbose,
-            };
-
-            // watching xml
-            using var watcher = new FileSystemWatcher(xmlDir);
-            watcher.NotifyFilter = NotifyFilters.LastWrite;
-            watcher.Filter = xmlFilename;
-
-            // ソース自動生成処理が1秒間に何度も走らないようにするための仕組み
-            var INTERVAL = TimeSpan.FromSeconds(1);
-            DateTime? lastExecutionTime = null;
-            Timer? timer = null;
-
-            void OnChangeXml() {
-                // ソースファイル再生成 & npm watch による自動更新
-                Gen(xmlFilename, false, verbose, cancellationToken);
-
-                // dotnetの更新
-                RebuildDotnet();
-
-                lastExecutionTime = DateTime.Now;
-                timer?.Dispose();
-                timer = null;
-            }
-            watcher.Changed += (_, _) => {
-                if (lastExecutionTime == null || ((DateTime.Now - lastExecutionTime) >= INTERVAL)) {
-                    OnChangeXml();
-                } else {
-                    timer ??= new Timer(_ => OnChangeXml(), null, Timeout.Infinite, Timeout.Infinite);
-                    timer.Change(INTERVAL, TimeSpan.Zero);
-                }
-            };
-
-            // start
-            npmStart.Restart();
-            RebuildDotnet(); 
-            watcher.EnableRaisingEvents = true;
-
-            while (!cancellationToken.IsCancellationRequested) {
-                Thread.Sleep(100);
+            } finally {
+                rebuildCancellation?.Dispose();
+                linkedTokenSource?.Dispose();
+                dotnetRun?.Dispose();
+                npmStart?.Dispose();
+                watcher?.Dispose();
             }
         }
 

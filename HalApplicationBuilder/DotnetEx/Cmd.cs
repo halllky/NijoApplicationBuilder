@@ -15,6 +15,7 @@ namespace HalApplicationBuilder.DotnetEx {
         internal bool Verbose { get; init; }
 
         internal void Exec(string filename, params string[] args) {
+            Console.WriteLine($"{filename} {string.Join(" ", args)}");
             Execute(null, filename, args);
         }
         internal string ReadOutput(string filename, params string[] args) {
@@ -76,40 +77,58 @@ namespace HalApplicationBuilder.DotnetEx {
 
             private Process? _process = null;
 
+            /// <summary>複数回Restartしたときに古いTaskが残り続けてしまうのを避けるためのもの</summary>
+            private CancellationTokenSource? _taskCanceller = null;
+
             internal void Restart() {
+                Console.WriteLine($"{Filename} {string.Join(" ", Args)}");
+
+                Stop();
+
+                CancellationToken ct;
+                lock (_lock) {
+                    DataReceivedEventHandler? stdout = Verbose ? OutToConsole : null;
+                    _process = CreateProcess(WorkingDirectory, Filename, Args, stdout);
+
+                    _process.Start();
+                    _process.BeginOutputReadLine();
+                    _process.BeginErrorReadLine();
+
+                    _taskCanceller = new CancellationTokenSource();
+                    ct = _taskCanceller.Token;
+                }
+
                 var _ = Task.Run(() => {
                     try {
-                        Stop();
-
-                        DataReceivedEventHandler? stdout = Verbose ? OutToConsole : null;
-                        _process = CreateProcess(WorkingDirectory, Filename, Args, stdout);
-
-                        _process.Start();
-                        _process.BeginOutputReadLine();
-                        _process.BeginErrorReadLine();
-
                         while (!_process.HasExited) {
                             Thread.Sleep(100);
+                            ct.ThrowIfCancellationRequested();
                             CancellationToken.ThrowIfCancellationRequested();
                         }
                     } catch (OperationCanceledException) {
                         Stop();
                     }
-                });
+                }, ct);
             }
             private readonly object _lock = new object();
             internal void Stop() {
                 lock (_lock) {
-                    if (_process == null) return;
-                    try {
-                        if (!_process.HasExited) _process.Kill(entireProcessTree: true);
-                    } catch (InvalidOperationException ex) when (ex.Message == "No process is associated with this object.") {
-                        // Processインスタンスが作成されてからStartする前にDisposeされると
-                        // HasExitedを参照することはできずにこの例外が発生する。
-                        // 開始されていないのでKillできなくとも問題ないと判断し、無視して先に進む
+                    if (_taskCanceller != null) {
+                        _taskCanceller.Cancel();
+                        _taskCanceller.Dispose();
+                        _taskCanceller = null;
                     }
-                    _process.Dispose();
-                    _process = null;
+                    if (_process != null) {
+                        try {
+                            if (!_process.HasExited) _process.Kill(entireProcessTree: true);
+                        } catch (InvalidOperationException ex) when (ex.Message == "No process is associated with this object.") {
+                            // Processインスタンスが作成されてからStartする前にDisposeされると
+                            // HasExitedを参照することはできずにこの例外が発生する。
+                            // 開始されていないのでKillできなくとも問題ないと判断し、無視して先に進む
+                        }
+                        _process.Dispose();
+                        _process = null;
+                    }
                 }
             }
             public void Dispose() {
@@ -143,10 +162,9 @@ namespace HalApplicationBuilder.DotnetEx {
         }
 
         private static void OutToConsole(object sender, DataReceivedEventArgs e) {
-            var originalColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.WriteLine(e.Data);
-            Console.ForegroundColor = originalColor;
+            Console.ResetColor();
         }
         private static void OutToStdError(object sender, DataReceivedEventArgs e) {
             Console.ForegroundColor = ConsoleColor.Red;
