@@ -249,9 +249,9 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
         }
 
         internal string FileName { get; }
-        internal string MultiViewComponentName => $"{_rootAggregate.GetCSharpSafeName()}MultiView";
-        internal string CreateViewComponentName => $"{_rootAggregate.GetCSharpSafeName()}CreateView";
-        internal string SingleViewComponentName => $"{_rootAggregate.GetCSharpSafeName()}SingleView";
+        internal string MultiViewComponentName => $"HalappMultiViewOF{_rootAggregate.GetGuid().ToString().Replace("-", "")}";
+        internal string CreateViewComponentName => $"HalappCreateViewOF{_rootAggregate.GetGuid().ToString().Replace("-", "")}";
+        internal string SingleViewComponentName => $"HalappSingleViewOF{_rootAggregate.GetGuid().ToString().Replace("-", "")}";
         private string MultiViewUrl => menuItems.GetMultiViewUrl(_rootAggregate);
         private string CreateViewUrl => menuItems.GetCreateViewUrl(_rootAggregate);
 

@@ -165,19 +165,22 @@ namespace HalApplicationBuilder {
                             CancellationToken = linkedTokenSource.Token,
                             Verbose = verbose,
                         };
+                        migration.Exec("dotnet", "build");
 
                         // 集約定義を書き換えるたびにマイグレーションが積み重なっていってしまうため、
                         // 1回のhalapp debugで作成されるマイグレーションは1つまでとする
                         if (migratedInThisProcess && !string.IsNullOrWhiteSpace(previousMigrationId)) {
                             Console.WriteLine($"DB定義を右記地点に巻き戻します: {previousMigrationId}");
-                            migration.Exec("dotnet", "ef", "database", "update", previousMigrationId);
-                            migration.Exec("dotnet", "ef", "migrations", "remove");
+                            migration.Exec("dotnet", "ef", "database", "update", previousMigrationId, "--no-build");
+                            migration.Exec("dotnet", "ef", "migrations", "remove", "--no-build");
+                            migration.Exec("dotnet", "build");
 
                             linkedTokenSource.Token.ThrowIfCancellationRequested();
                         }
 
-                        migration.Exec("dotnet", "ef", "migrations", "add", nextMigrationId);
-                        migration.Exec("dotnet", "ef", "database", "update", nextMigrationId);
+                        migration.Exec("dotnet", "ef", "migrations", "add", nextMigrationId, "--no-build");
+                        migration.Exec("dotnet", "build");
+                        migration.Exec("dotnet", "ef", "database", "update", nextMigrationId, "--no-build");
 
                         linkedTokenSource.Token.ThrowIfCancellationRequested();
 

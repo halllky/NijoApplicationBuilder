@@ -480,9 +480,11 @@ namespace HalApplicationBuilder {
                     File.SetLastWriteTime(outFile, DateTime.Now);
                 }
 
+                var utf8withoutBOM = new UTF8Encoding(false);
+
                 // 集約定義
                 _log?.WriteLine("コード自動生成: 集約のTypeScript型定義");
-                using (var sw = new StreamWriter(Path.Combine(tsDir, ReactTypeDefTemplate.FILE_NAME), append: false, encoding: Encoding.UTF8)) {
+                using (var sw = new StreamWriter(Path.Combine(tsDir, ReactTypeDefTemplate.FILE_NAME), append: false, encoding: utf8withoutBOM)) {
                     var template = new ReactTypeDefTemplate(allAggregates);
                     sw.Write(template.TransformText());
                 }
@@ -490,18 +492,18 @@ namespace HalApplicationBuilder {
                 _log?.WriteLine("コード自動生成: 集約のReactコンポーネント");
                 foreach (var rootAggregate in rootAggregates) {
                     var template = new ReactComponentTemplate(rootAggregate);
-                    using var sw = new StreamWriter(Path.Combine(tsDir, template.FileName), append: false, encoding: Encoding.UTF8);
+                    using var sw = new StreamWriter(Path.Combine(tsDir, template.FileName), append: false, encoding: utf8withoutBOM);
                     sw.Write(template.TransformText());
                 }
 
                 _log?.WriteLine("コード自動生成: index.ts等");
                 // menu.tsx
-                using (var sw = new StreamWriter(Path.Combine(tsDir, menuItems.FILE_NAME), append: false, encoding: Encoding.UTF8)) {
+                using (var sw = new StreamWriter(Path.Combine(tsDir, menuItems.FILE_NAME), append: false, encoding: utf8withoutBOM)) {
                     var template = new menuItems(rootAggregates);
                     sw.Write(template.TransformText());
                 }
                 // index.ts
-                using (var sw = new StreamWriter(Path.Combine(tsDir, index.FILE_NAME), append: false, encoding: Encoding.UTF8)) {
+                using (var sw = new StreamWriter(Path.Combine(tsDir, index.FILE_NAME), append: false, encoding: utf8withoutBOM)) {
                     var template = new index(rootAggregates);
                     sw.Write(template.TransformText());
                 }

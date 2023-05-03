@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import { useAppContext } from '../hooks/AppContext';
 import { IconButton } from './IconButton';
 
@@ -14,7 +14,7 @@ export const Dashboard = () => {
         dispatch({ type: 'pushMsg', msg: await response.text() })
       })
     }
-  }, [apiDomain])
+  }, [apiDomain, dispatch])
 
   return (
     <div>

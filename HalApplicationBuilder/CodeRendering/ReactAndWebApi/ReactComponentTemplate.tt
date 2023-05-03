@@ -12,7 +12,7 @@ import { useQuery } from 'react-query';
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
 import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon, BookmarkSquareIcon } from '@heroicons/react/24/outline';
 import { IconButton } from './components/IconButton';
-import { <#=_searchCondition.ClassName#>, <#=_searchResult.ClassName#>, <#=_uiInstance.ClassName#> } from '<#=GetImportFromTypes()#>';
+import { <#=_searchCondition.ClassName#>, <#=_searchResult.ClassName#>/*, <#=_uiInstance.ClassName#> */ } from '<#=GetImportFromTypes()#>';
 
 export const <#=MultiViewComponentName#> = () => {
 
@@ -29,7 +29,7 @@ export const <#=MultiViewComponentName#> = () => {
     const onClear = useCallback((e: React.MouseEvent) => {
         reset()
         e.preventDefault()
-    }, [])
+    }, [reset])
     const { data, isLoading, error } = useQuery({
         queryKey: ['<#=_rootAggregate.GetGuid()#>', JSON.stringify(param)],
         queryFn: async () => {
@@ -44,7 +44,7 @@ export const <#=MultiViewComponentName#> = () => {
     const navigate = useNavigate()
     const toCreateView = useCallback(() => {
         navigate('<#=CreateViewUrl#>')
-    }, [])
+    }, [navigate])
 
     const [expanded, setExpanded] = useState(true)
     
