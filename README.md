@@ -1,78 +1,77 @@
-q# :cherry_blossom: HalApplicationBuilder
-データモデル駆動のローコードアプリケーション作成フレームワーク。
+# HalApplicationBuilder
+データモデルを指定すると以下のものを作成してくれるローコードアプリケーション作成ツール。
+- RDB定義（EntityFrameworkCore）
+- WebAPI（ASP.NET Core Web API）
+- GUI（React）
 
-## 特徴
-データ構造を定義するだけで、データベース定義や、それなりの画面を自動生成します。
+## :cherry_blossom: 特徴
+### データ構造を定義するだけで、データベース定義や、それなりの画面を自動生成します。
 
-例：データ構造定義
+例えば、このようなデータ構造を定義すると…
 
-![](README_files/2023-01-21-14-33-12.png)
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<MySampleApplication>
+  <商品>
+    <商品コード type="string" key="" />
+    <商品名 type="string" />
+    <単価 type="int" />
+  </商品>
+  <売上>
+    <ID type="string" key="" />
+    <売上日時 type="datetime" />
+    <明細 multiple="">
+      <商品 refTo="商品" key="" />
+      <数量 type="int" />
+    </明細>
+  </売上>
+</MySampleApplication>
+```
 
-↓
+↓ このようなReactのGUIやDB定義を自動生成します。
+
+自動生成された画面
+
+![](README_files/2023-05-03_222729.png)
 
 自動生成されたデータベース
 
-![](README_files/2023-01-21-14-47-39.png)
+![](README_files/2023-05-03_223142.png)
 
-自動生成された画面（一覧検索画面）
+### 1対多の明細データや多様な型の子要素など、複雑なデータ構造を実現可能。
 
-![](README_files/2023-01-21-14-49-04.png)
-
-自動生成された画面（登録更新画面）
-
-![](README_files/2023-01-21-14-56-49.png)
-
-1対多の明細データや多様な型の子要素など、複雑なデータ構造を実現可能。
-
-[スクラッチ開発に近い、ソースコードレベルのAPIを提供](#開発フロー)。高い拡張性。C#やSQLやHTMLを直接編集できる開発者向き。
+### スクラッチ開発に近い拡張性。C#やSQLやHTMLを直接編集できる開発者向き。
 
 ---
-## ドキュメント
-### 開発フロー
-![summary](README_files/README.drawio.svg)
 
-### 0.プロジェクトの準備
-- 以下を使えるようにしておく
-  - dotnet
-  - dotnet ef
-  - npm
-- プロジェクトを作成
-  - `dotnet new mvc`
-  - HalApplicationBuilderのdllへの参照を加える
-  - `_Layout.cshtml` を指定の内容に書き換え
-  - tailwindcssを有効にする
-    - `npm init -y`
-    - `npm i autoprefixer postcss postcss-cli tailwindcss`
-    - `app.css` を指定の内容で作成
-    - `tailwind.config.js` を指定の内容で作成
-    - `postcss.config.js` を指定の内容で作成
-- NuGetパッケージを追加
-  - Microsoft.EntityFrameworkCore
-  - DB用のパッケージ(例: Microsoft.EntityFrameworkCore.Sqlite)
-  - Microsoft.EntityFrameworkCore.Proxies
-    - ナビゲーションプロパティアクセス時に自動で遅延ロードするため(UseLazyLoadingProxies)
-- DbContextクラスをpartialで作成
-  - `DbContextOptions` を引数にとるコンストラクタが必須
-- `IServiceCollection` に必要なサービスを登録する
-  - `RuntimeContext`
-  - そのプロジェクトのDbContext
-  - `Microsoft.EntityFrameworkCore.DbContext`
-    - 上記プロジェクト用DbContextを返すだけでOK
-  - `HalApplicationBuilder.Core.DBModel.SelectStatement.IParamGenerator`
+## :cherry_blossom: Get Started
+以下を使えるようにしておく
 
-```cs
-using Microsoft.EntityFrameworkCore;
+- dotnet
+  - 公式サイトからダウンロードしてください。
+- dotnet ef
+  - `dotnet tool install --global dotnet-ef` でダウンロードしてください。
+- npm
+  - 公式サイトからダウンロードしてください。
 
-namespace YourProjectNameSpace {
-    public partial class YourDbContext : DbContext {
-        public YourDbContext(DbContextOptions<YourDbContext> options) : base(options) { }
-    }
-}
+新しいアプリケーションを作成する
+
+```bash
+halapp gen YourApplicationName
 ```
 
-### 1.プログラマが集約定義等を作成する
+デバッグを開始する
 
-#### 属性
+```bash
+cd YourApplicationName
+halapp debug
+```
+
+`halapp.xml` を編集する（お好みのテキストエディタで可）
+
+---
+## :cherry_blossom: Documentation
+### 属性
 
 | 属性             | 設定対象             | 説明                                                                                               |
 | :--------------- | :------------------- | :------------------------------------------------------------------------------------------------- |
@@ -82,7 +81,7 @@ namespace YourProjectNameSpace {
 | `[Variation]`    | `Child<>` プロパティ | [バリエーション型子要素](#バリエーション型子要素)を参照。                                          |
 | `[NotMapped]`    | プロパティ           | HalApplicationBuilderがソースの自動生成などで当該プロパティを無視するようになる                    |
 
-#### プロパティに使用できる型
+### プロパティに使用できる型
 
 | 型           | 説明               |
 | :----------- | :----------------- |
@@ -97,17 +96,5 @@ namespace YourProjectNameSpace {
 | `Children<>` | 子要素（複数）。   |
 | `RefTo<>`    | 他データへの参照。 |
 
-#### バリエーション型子要素
+### バリエーション型子要素
 執筆中
-
-### 2.HalApplicationBuilderが各種ソースを自動生成する
-### 3.生成されたソースでは足りない画面や機能を一から作成する
-### 4.DB定義を更新する
-### 5.アプリケーション実行
-
----
-## デバッグ方法
-- スキーマを変更する（サンプルアプリの場合は `HalApplicationBuilderSampleSchema` を変更）
-- ソース自動生成を実行する（サンプルアプリの場合は `HalApplicationBuilder` のProgram.cs実行）
-- Tailwindのビルド（`HalApplicationBuilderSampleMvc` のルートディレクトリで `npm run buildcss` を実行）
-- `HalApplicationBuilderSampleMvc` をデバッグ実行する
