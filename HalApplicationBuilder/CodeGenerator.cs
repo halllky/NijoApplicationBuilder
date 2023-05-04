@@ -59,6 +59,9 @@ namespace HalApplicationBuilder {
                     .Select(def => new RootAggregate(config, def));
             });
         }
+        internal static CodeGenerator FromAppSchema(AppSchema appSchema) {
+            return new CodeGenerator(appSchema.GetRootAggregates);
+        }
 
         internal CodeGenerator(Func<Config, IEnumerable<RootAggregate>> func) {
             _rootAggregateBuilder = func;
