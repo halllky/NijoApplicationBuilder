@@ -37,7 +37,9 @@ namespace HalApplicationBuilder.Runtime {
 
             // SaveやDetailでDbContextをダイレクトに参照しているため
             services.AddScoped<Microsoft.EntityFrameworkCore.DbContext>(provider => {
-                var dbContext = provider.GetRequiredService<HalApplicationBuilder.Test.DistMvc.EntityFramework.MyDbContext>();
+                var dbContext = provider.GetRequiredService<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_dbContextFullName));
+            this.Write(@">();
 #if DEBUG
                 // for hot reload
                 Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.Migrate(dbContext.Database);
@@ -45,7 +47,9 @@ namespace HalApplicationBuilder.Runtime {
                 return dbContext;
             });
 
-            services.AddDbContext<HalApplicationBuilder.Test.DistMvc.EntityFramework.MyDbContext>(option => {
+            services.AddDbContext<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_dbContextFullName));
+            this.Write(@">(option => {
                 var connStr = $""Data Source=\""{System.IO.Path.Combine(runtimeRootDir, ""bin"", ""Debug"", ""debug.sqlite3"")}\"""";
                 Microsoft.EntityFrameworkCore.ProxiesExtensions.UseLazyLoadingProxies(option);
                 Microsoft.EntityFrameworkCore.SqliteDbContextOptionsBuilderExtensions.UseSqlite(option, connStr);

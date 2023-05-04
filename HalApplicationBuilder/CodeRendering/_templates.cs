@@ -6,6 +6,13 @@ using HalApplicationBuilder.Core;
 
 namespace HalApplicationBuilder.CodeRendering {
 
+    partial class DefaultRuntimeConfigTemplate {
+        internal DefaultRuntimeConfigTemplate(Core.Config config) {
+            _dbContextFullName = $"{config.DbContextNamespace}.{config.DbContextName}";
+        }
+        private readonly string _dbContextFullName;
+    }
+
     partial class DbContextTemplate {
         internal DbContextTemplate(Core.Config config) {
             _nameSpaceName = config.DbContextNamespace;
