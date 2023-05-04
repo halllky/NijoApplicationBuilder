@@ -75,19 +75,14 @@ namespace HalApplicationBuilder.Test {
         };
 
         public DistMvcProject GenerateCodeFromNamespace(string? @namespace) {
-            HalApplicationBuilder.CodeGenerator
-                .FromAssembly(Assembly.GetExecutingAssembly(), @namespace)
-                .GenerateAspNetCoreMvc("temp1", GetConfig(), false, Console.Out, null);
-            return this;
+            throw new NotImplementedException();
         }
         public DistMvcProject GenerateCodeFromXml(string xmlFileName) {
             var fullpath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "../../../", xmlFileName));
             using var sr = new StreamReader(fullpath);
             var xml = sr.ReadToEnd();
-            HalApplicationBuilder.CodeGenerator
-                .FromXml(xml)
-                .GenerateAspNetCoreMvc("temp2", GetConfig(), false, Console.Out, null);
-            return this;
+
+            throw new NotImplementedException();
         }
 
         public DistMvcProject Build() {

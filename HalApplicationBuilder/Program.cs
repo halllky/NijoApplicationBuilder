@@ -51,10 +51,14 @@ namespace HalApplicationBuilder {
             var parser = new CommandLineBuilder(rootCommand)
                 .UseDefaults()
                 .UseExceptionHandler((ex, _) => {
-                    cancellationTokenSource.Cancel();
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.Error.WriteLine(ex.ToString());
-                    Console.ResetColor();
+                    if (ex is OperationCanceledException) {
+                        Console.Error.WriteLine("キャンセルされました。");
+                    } else {
+                        cancellationTokenSource.Cancel();
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.Error.WriteLine(ex.ToString());
+                        Console.ResetColor();
+                    }
                 })
                 .Build();
             return await parser.InvokeAsync(args);
