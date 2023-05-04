@@ -82,68 +82,52 @@ namespace HalApplicationBuilder.Core {
 
         private const string DBCONTEXT_NAME = "DbContextName";
 
-        public string ToXml() {
-            var xmlDoc = new XmlDocument();
+        public XElement ToXmlWithRoot() {
+            var root = new XElement(ApplicationName);
 
-            var root = xmlDoc.CreateElement(ApplicationName);
-            xmlDoc.AppendChild(root);
-
-            var configElement = xmlDoc.CreateElement(XML_CONFIG_SECTION_NAME);
-            root.AppendChild(configElement);
+            var configElement = new XElement(XML_CONFIG_SECTION_NAME);
+            root.Add(configElement);
 
             // セクション: 出力先ディレクトリ
-            var outDirRootElement = xmlDoc.CreateElement(SECTION_OUT_DIR_ROOT);
-            outDirRootElement.InnerText = OutProjectDir;
-            configElement.AppendChild(outDirRootElement);
+            var outDirRootElement = new XElement(SECTION_OUT_DIR_ROOT, OutProjectDir);
+            configElement.Add(outDirRootElement);
 
             // セクション: 相対パス
-            var outDirRelativePathElement = xmlDoc.CreateElement(SECTION_RELATIVE_PATHS);
-            configElement.AppendChild(outDirRelativePathElement);
+            var outDirRelativePathElement = new XElement(SECTION_RELATIVE_PATHS);
+            configElement.Add(outDirRelativePathElement);
 
-            var efCoreElement = xmlDoc.CreateElement(RELATIVEPATH_EFCORE);
-            efCoreElement.InnerText = EntityFrameworkDirectoryRelativePath;
-            outDirRelativePathElement.AppendChild(efCoreElement);
+            var efCoreElement = new XElement(RELATIVEPATH_EFCORE, EntityFrameworkDirectoryRelativePath);
+            var mvcModelElement = new XElement(RELATIVEPATH_MVC_MODEL, MvcModelDirectoryRelativePath);
+            var mvcViewElement = new XElement(RELATIVEPATH_MVC_VIEW, MvcViewDirectoryRelativePath);
+            var mvcControllerElement = new XElement(RELATIVEPATH_MVC_CONTROLLER, MvcControllerDirectoryRelativePath);
 
-            var mvcModelElement = xmlDoc.CreateElement(RELATIVEPATH_MVC_MODEL);
-            mvcModelElement.InnerText = MvcModelDirectoryRelativePath;
-            outDirRelativePathElement.AppendChild(mvcModelElement);
-
-            var mvcViewElement = xmlDoc.CreateElement(RELATIVEPATH_MVC_VIEW);
-            mvcViewElement.InnerText = MvcViewDirectoryRelativePath;
-            outDirRelativePathElement.AppendChild(mvcViewElement);
-
-            var mvcControllerElement = xmlDoc.CreateElement(RELATIVEPATH_MVC_CONTROLLER);
-            mvcControllerElement.InnerText = MvcControllerDirectoryRelativePath;
-            outDirRelativePathElement.AppendChild(mvcControllerElement);
+            outDirRelativePathElement.Add(efCoreElement);
+            outDirRelativePathElement.Add(mvcModelElement);
+            outDirRelativePathElement.Add(mvcViewElement);
+            outDirRelativePathElement.Add(mvcControllerElement);
 
             // セクション: 名前空間
-            var namespaceElement = xmlDoc.CreateElement(SECTION_NAMESPACES);
-            configElement.AppendChild(namespaceElement);
+            var namespaceElement = new XElement(SECTION_NAMESPACES);
+            configElement.Add(namespaceElement);
 
-            var dbContextNamespaceElement = xmlDoc.CreateElement(NAMESPACE_DBCONTEXT);
-            dbContextNamespaceElement.InnerText = DbContextNamespace;
-            namespaceElement.AppendChild(dbContextNamespaceElement);
+            var dbContextNamespaceElement = new XElement(NAMESPACE_DBCONTEXT, DbContextNamespace);
+            var entityNamespaceElement = new XElement(NAMESPACE_EFCORE_ENTITY, EntityNamespace);
+            var mvcModelNamespaceElement = new XElement(NAMESPACE_MVC_MODEL, MvcModelNamespace);
+            var mvcControllerNamespaceElement = new XElement(NAMESPACE_MVC_CONTROLLER, MvcControllerNamespace);
 
-            var entityNamespaceElement = xmlDoc.CreateElement(NAMESPACE_EFCORE_ENTITY);
-            entityNamespaceElement.InnerText = EntityNamespace;
-            namespaceElement.AppendChild(entityNamespaceElement);
+            namespaceElement.Add(dbContextNamespaceElement);
+            namespaceElement.Add(entityNamespaceElement);
+            namespaceElement.Add(mvcModelNamespaceElement);
+            namespaceElement.Add(mvcControllerNamespaceElement);
 
-            var mvcModelNamespaceElement = xmlDoc.CreateElement(NAMESPACE_MVC_MODEL);
-            mvcModelNamespaceElement.InnerText = MvcModelNamespace;
-            namespaceElement.AppendChild(mvcModelNamespaceElement);
+            // セクション: DBコンテキスト名
+            var dbContextNameElement = new XElement(DBCONTEXT_NAME, DbContextName);
+            configElement.Add(dbContextNameElement);
 
-            var mvcControllerNamespaceElement = xmlDoc.CreateElement(NAMESPACE_MVC_CONTROLLER);
-            mvcControllerNamespaceElement.InnerText = MvcControllerNamespace;
-            namespaceElement.AppendChild(mvcControllerNamespaceElement);
-
-            var dbContextNameElement = xmlDoc.CreateElement(DBCONTEXT_NAME);
-            dbContextNameElement.InnerText = DbContextName;
-            configElement.AppendChild(dbContextNameElement);
-
-            return xmlDoc.OuterXml;
+            return root;
         }
-        public static Config FromXml(string xml) {
-            var xDocument = XDocument.Parse(xml);
+
+        public static Config FromXml(XDocument xDocument) {
             if (xDocument.Root == null) throw new FormatException($"設定ファイルのXMLの形式が不正です。");
 
             var configSection = xDocument.Root.Element(XML_CONFIG_SECTION_NAME);

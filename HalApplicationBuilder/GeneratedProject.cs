@@ -10,6 +10,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace HalApplicationBuilder {
     public class GeneratedProject {
@@ -186,9 +187,9 @@ namespace HalApplicationBuilder {
 
                 // halapp.xmlの作成
                 var xmlPath = Path.Combine(tempDir, HALAPP_XML_NAME);
-                var xmlContent = config.ToXml();
+                var xmlContent = new XDocument(config.ToXmlWithRoot());
                 using (var sw = new StreamWriter(xmlPath, append: false, encoding: new UTF8Encoding(false))) {
-                    sw.WriteLine(xmlContent);
+                    sw.WriteLine(xmlContent.ToString());
                 }
 
                 // ここまでの処理がすべて成功したら一時ディレクトリを本来のディレクトリ名に変更
@@ -224,12 +225,13 @@ namespace HalApplicationBuilder {
         }
 
         private string ProjectRoot { get; }
-        private AppSchema GetSchema() {
+        private AppSchema ReadSchema() {
             var xmlFullPath = Path.Combine(ProjectRoot, HALAPP_XML_NAME);
             using var stream = DotnetEx.IO.OpenFileWithRetry(xmlFullPath);
             using var reader = new StreamReader(stream);
             var xmlContent = reader.ReadToEnd();
-            var appSchema = AppSchema.FromXml(xmlContent);
+            var xDocument = XDocument.Parse(xmlContent);
+            var appSchema = AppSchema.FromXml(xDocument);
             return appSchema;
         }
         private Config ReadConfig() {
@@ -237,7 +239,8 @@ namespace HalApplicationBuilder {
             using var stream = DotnetEx.IO.OpenFileWithRetry(xmlFullPath);
             using var reader = new StreamReader(stream);
             var xmlContent = reader.ReadToEnd();
-            var config = Core.Config.FromXml(xmlContent);
+            var xDocument = XDocument.Parse(xmlContent);
+            var config = Core.Config.FromXml(xDocument);
             return config;
         }
 
@@ -276,7 +279,7 @@ namespace HalApplicationBuilder {
             log?.WriteLine($"コード自動生成開始");
 
             var config = ReadConfig();
-            var rootAggregates = GetSchema().GetRootAggregates(config).ToArray();
+            var rootAggregates = ReadSchema().GetRootAggregates(config).ToArray();
             var allAggregates = rootAggregates
                 .SelectMany(a => a.GetDescendantsAndSelf())
                 .ToArray();

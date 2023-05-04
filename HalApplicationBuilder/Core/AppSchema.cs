@@ -5,15 +5,16 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace HalApplicationBuilder.Core {
     internal class AppSchema {
         /// <summary>
         /// 集約定義XMLからスキーマを構築します。
         /// </summary>
-        internal static AppSchema FromXml(string xmlContent) {
+        internal static AppSchema FromXml(XDocument xDoc) {
             return new AppSchema(config => Core.Definition.XmlDefine
-                .Create(config, xmlContent)
+                .EnumerateAggregateDefines(config, xDoc)
                 .Select(def => new RootAggregate(config, def)));
         }
         /// <summary>

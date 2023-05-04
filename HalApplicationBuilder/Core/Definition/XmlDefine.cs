@@ -6,11 +6,7 @@ using System.Xml.Linq;
 
 namespace HalApplicationBuilder.Core.Definition {
     internal class XmlDefine : IAggregateDefine {
-        internal static IEnumerable<IAggregateDefine> Create(Config config, string xml) {
-            var xDocument = XDocument.Parse(xml);
-            return Create(config, xDocument);
-        }
-        internal static IEnumerable<IAggregateDefine> Create(Config config, XDocument xDocument) {
+        internal static IEnumerable<IAggregateDefine> EnumerateAggregateDefines(Config config, XDocument xDocument) {
             if (xDocument.Root == null) throw new FormatException($"集約定義のXMLの形式が不正です。");
             foreach (var element in xDocument.Root.Elements()) {
                 if (element.Name.LocalName == Config.XML_CONFIG_SECTION_NAME) continue;
@@ -31,7 +27,7 @@ namespace HalApplicationBuilder.Core.Definition {
         public string DisplayName => _aggregateElement.Name.LocalName;
 
         private Aggregate GetAggregateByUniquePath(string uniquePath) {
-            var found = Create(_config, _xDocument)
+            var found = EnumerateAggregateDefines(_config, _xDocument)
                 .Select(def => new RootAggregate(_config, def))
                 .SelectMany(root => root.GetDescendantsAndSelf())
                 .SingleOrDefault(aggregate => aggregate.GetUniquePath() == uniquePath);
