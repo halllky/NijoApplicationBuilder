@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using HalApplicationBuilder.DotnetEx;
 using HalApplicationBuilder.CodeRendering;
+using HalApplicationBuilder.CodeRendering.EFCore;
 
 namespace HalApplicationBuilder.Core
 {
@@ -60,10 +61,8 @@ namespace HalApplicationBuilder.Core
         internal abstract IEnumerable<RenderedProperty> ToInstanceModelMember();
 
         // AggregateMember => Code Template
-        internal abstract void BuildSearchMethod(CodeRendering.SearchMethodDTO method);
-        internal abstract void RenderMvcSearchConditionView(CodeRendering.RenderingContext context);
+        internal abstract void BuildSearchMethod(SearchMethodDTO method);
         internal abstract void RenderReactSearchCondition(RenderingContext context);
-        internal abstract void RenderAspNetMvcPartialView(CodeRendering.RenderingContext context);
         internal abstract void RenderReactComponent(RenderingContext context);
 
         // Runtime Instance <=> InstanceKey

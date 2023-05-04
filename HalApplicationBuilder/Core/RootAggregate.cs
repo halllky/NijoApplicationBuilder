@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using HalApplicationBuilder.CodeRendering;
+using HalApplicationBuilder.CodeRendering.EFCore;
 
 namespace HalApplicationBuilder.Core
 {
@@ -22,8 +22,8 @@ namespace HalApplicationBuilder.Core
             if (method == null) throw new InvalidOperationException($"{dbContextType.Name} にメソッド {GetSearchMethodName()} が存在しません。");
             return method;
         }
-        internal CodeRendering.SearchMethodDTO BuildSearchMethod(string paramVarName, string queryVarName, string lambdaVarName) {
-            var dto = new CodeRendering.SearchMethodDTO {
+        internal SearchMethodDTO BuildSearchMethod(string paramVarName, string queryVarName, string lambdaVarName) {
+            var dto = new CodeRendering.EFCore.SearchMethodDTO {
                 MethodName = GetSearchMethodName(),
                 ParamVarName = paramVarName,
                 QueryVarName = queryVarName,

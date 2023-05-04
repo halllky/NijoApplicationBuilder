@@ -7,7 +7,7 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering
+namespace HalApplicationBuilder.CodeRendering.EFCore
 {
     using System.Linq;
     using System.Text;
@@ -25,25 +25,20 @@ namespace HalApplicationBuilder.CodeRendering
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n\nnamespace ");
+            this.Write("\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextNamespace));
-            this.Write(" {\n    using Microsoft.EntityFrameworkCore;\n\n    partial class ");
+            this.Write(" {\r\n    using Microsoft.EntityFrameworkCore;\r\n\r\n    partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextName));
-            this.Write(" {\n");
+            this.Write(" {\r\n");
  foreach (var aggregate in _aggregates) { 
-            this.Write("\n");
  var entity = aggregate.ToDbEntity(); 
-            this.Write("\n        public DbSet<");
+            this.Write("        public DbSet<");
             this.Write(this.ToStringHelper.ToStringWithCulture(entity.CSharpTypeName));
             this.Write("> ");
             this.Write(this.ToStringHelper.ToStringWithCulture(entity.DbSetName));
-            this.Write(" { get; set; }\n");
+            this.Write(" { get; set; }\r\n");
  }
-            this.Write("\n    }\n}\n");
+            this.Write("    }\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

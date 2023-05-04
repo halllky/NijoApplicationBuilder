@@ -7,8 +7,10 @@ using HalApplicationBuilder.DotnetEx;
 using HalApplicationBuilder.CodeRendering;
 using HalApplicationBuilder.Runtime;
 using HalApplicationBuilder.Serialized;
+using HalApplicationBuilder.CodeRendering.EFCore;
 
-namespace HalApplicationBuilder.Core.MemberImpl {
+namespace HalApplicationBuilder.Core.MemberImpl
+{
     internal class SchalarValue : AggregateMember {
 
         internal static bool IsPrimitive(Type type) {
@@ -158,50 +160,6 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             }
         }
 
-        internal override void RenderMvcSearchConditionView(RenderingContext context) {
-            var type = GetPropertyTypeExceptNullable();
-
-            if (IsRangeSearchCondition()) {
-                // 範囲検索
-                var from = context.ObjectPath
-                    .Nest(SearchConditonPropName)
-                    .Nest(nameof(FromTo.From))
-                    .AspForPath;
-                var to = context.ObjectPath
-                    .Nest(SearchConditonPropName)
-                    .Nest(nameof(FromTo.To))
-                    .AspForPath;
-                context.Template.WriteLine($"<input asp-for=\"{from}\" class=\"border\" />");
-                context.Template.WriteLine($"〜");
-                context.Template.WriteLine($"<input asp-for=\"{to}\" class=\"border\" />");
-
-            } else if (type.IsEnum) {
-                // enumドロップダウン
-                var searchCondition = context.ObjectPath
-                    .Nest(SearchConditonPropName)
-                    .AspForPath;
-                var enumTypeName = GetSearchConditionCSharpTypeName();
-                var options = new List<KeyValuePair<string, string>>();
-                if (IsNullable) options.Add(KeyValuePair.Create("", ""));
-
-                context.Template.WriteLine($"<select asp-for=\"{searchCondition}\" asp-items=\"@Html.GetEnumSelectList(typeof({enumTypeName}))\">");
-                context.Template.PushIndent("    ");
-                foreach (var opt in options) {
-                    context.Template.WriteLine($"<option selected=\"selected\" value=\"{opt.Key}\">");
-                    context.Template.WriteLine($"    {opt.Value}");
-                    context.Template.WriteLine($"</option>");
-                }
-                context.Template.PopIndent();
-                context.Template.WriteLine($"</select>");
-
-            } else {
-                // ただのinput
-                var searchCondition = context.ObjectPath
-                    .Nest(SearchConditonPropName)
-                    .AspForPath;
-                context.Template.WriteLine($"<input asp-for=\"{searchCondition}\" class=\"border\" />");
-            }
-        }
         internal override void RenderReactSearchCondition(RenderingContext context) {
             var type = GetPropertyTypeExceptNullable();
 
@@ -245,14 +203,6 @@ namespace HalApplicationBuilder.Core.MemberImpl {
 
             if (IsRangeSearchCondition()) {
                 // 範囲検索
-                var from = context.ObjectPath
-                    .Nest(SearchConditonPropName)
-                    .Nest(nameof(FromTo.From))
-                    .AspForPath;
-                var to = context.ObjectPath
-                    .Nest(SearchConditonPropName)
-                    .Nest(nameof(FromTo.To))
-                    .AspForPath;
                 context.Template.WriteLine($"<input type=\"text\" className=\"border\" />");
                 context.Template.WriteLine($"〜");
                 context.Template.WriteLine($"<input type=\"text\" className=\"border\" />");
@@ -272,18 +222,8 @@ namespace HalApplicationBuilder.Core.MemberImpl {
 
             } else {
                 // ただのinput
-                var searchCondition = context.ObjectPath
-                    .Nest(SearchConditonPropName)
-                    .AspForPath;
                 context.Template.WriteLine($"<input type=\"text\" className=\"border\" />");
             }
-        }
-
-        internal override void RenderAspNetMvcPartialView(RenderingContext context) {
-            var value = context.ObjectPath
-                .Nest(InstanceModelPropName)
-                .AspForPath;
-            context.Template.WriteLine($"<input asp-for=\"{value}\" class=\"border\" />");
         }
 
         internal override object? GetInstanceKeyFromDbInstance(object dbInstance) {

@@ -154,7 +154,7 @@ namespace HalApplicationBuilder {
                 var dbContextDir = Path.Combine(tempDir, "EntityFramework");
                 Directory.CreateDirectory(dbContextDir);
                 using (var sw = new StreamWriter(Path.Combine(dbContextDir, dbContextFileName), append: false, encoding: Encoding.UTF8)) {
-                    sw.Write(new CodeRendering.DbContextTemplate(config).TransformText());
+                    sw.Write(new CodeRendering.EFCore.DbContextTemplate(config).TransformText());
                 }
 
                 // React.js アプリケーションを作成
@@ -309,23 +309,23 @@ namespace HalApplicationBuilder {
 
             log?.WriteLine("コード自動生成: Entity定義");
             using (var sw = new StreamWriter(Path.Combine(efSourceDir, "Entities.cs"), append: false, encoding: Encoding.UTF8)) {
-                sw.Write(new CodeRendering.EntityClassTemplate(config, allAggregates).TransformText());
+                sw.Write(new CodeRendering.EFCore.EntityClassTemplate(config, allAggregates).TransformText());
             }
             log?.WriteLine("コード自動生成: DbSet");
             using (var sw = new StreamWriter(Path.Combine(efSourceDir, "DbSet.cs"), append: false, encoding: Encoding.UTF8)) {
-                sw.Write(new CodeRendering.DbSetTemplate(config, allAggregates).TransformText());
+                sw.Write(new CodeRendering.EFCore.DbSetTemplate(config, allAggregates).TransformText());
             }
             log?.WriteLine("コード自動生成: OnModelCreating");
             using (var sw = new StreamWriter(Path.Combine(efSourceDir, "OnModelCreating.cs"), append: false, encoding: Encoding.UTF8)) {
-                sw.Write(new CodeRendering.OnModelCreatingTemplate(config, allAggregates).TransformText());
+                sw.Write(new CodeRendering.EFCore.OnModelCreatingTemplate(config, allAggregates).TransformText());
             }
             log?.WriteLine("コード自動生成: Search");
             using (var sw = new StreamWriter(Path.Combine(efSourceDir, "Search.cs"), append: false, encoding: Encoding.UTF8)) {
-                sw.Write(new CodeRendering.SearchMethodTemplate(config, rootAggregates).TransformText());
+                sw.Write(new CodeRendering.EFCore.SearchMethodTemplate(config, rootAggregates).TransformText());
             }
             log?.WriteLine("コード自動生成: AutoCompleteSource");
             using (var sw = new StreamWriter(Path.Combine(efSourceDir, "AutoCompleteSource.cs"), append: false, encoding: Encoding.UTF8)) {
-                sw.Write(new CodeRendering.AutoCompleteSourceTemplate(config, allAggregates).TransformText());
+                sw.Write(new CodeRendering.EFCore.AutoCompleteSourceTemplate(config, allAggregates).TransformText());
             }
 
             // Web API

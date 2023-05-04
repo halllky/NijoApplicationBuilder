@@ -6,6 +6,7 @@ using System.Reflection;
 using HalApplicationBuilder.DotnetEx;
 using HalApplicationBuilder.CodeRendering;
 using System.Text;
+using HalApplicationBuilder.CodeRendering.EFCore;
 
 namespace HalApplicationBuilder.Core
 {
@@ -136,49 +137,6 @@ namespace HalApplicationBuilder.Core
             return dto;
         }
         private string GetAutoCompleteSourceMethodName() => $"LoadAutoCompleteSource_{GetCSharpSafeName()}";
-
-        internal void RenderSearchCondition(RenderingContext context) {
-
-            context.Template.WriteLine($"<div class=\"flex flex-col\">");
-
-            foreach (var member in GetMembers()) {
-                context.Template.WriteLine($"    <div class=\"flex flex-col md:flex-row mb-1\">");
-                context.Template.WriteLine($"        <label class=\"w-32 halapp-label-member-key\">");
-                context.Template.WriteLine($"            {member.DisplayName}");
-                context.Template.WriteLine($"        </label>");
-                context.Template.WriteLine($"        <div class=\"flex-1\">");
-
-                context.Template.PushIndent("            ");
-                member.RenderMvcSearchConditionView(context);
-                context.Template.PopIndent();
-
-                context.Template.WriteLine($"        </div>");
-                context.Template.WriteLine($"    </div>");
-            }
-
-            context.Template.WriteLine($"</div>");
-        }
-        internal void RenderAspNetMvcPartialView(RenderingContext context) {
-
-            context.Template.WriteLine($"<div class=\"flex flex-col\">");
-
-            foreach (var member in GetMembers()) {
-                context.Template.WriteLine($"    <div class=\"flex flex-col md:flex-row mb-1\">");
-                context.Template.WriteLine($"        <label class=\"w-32 halapp-label-member-key \">");
-                context.Template.WriteLine($"            {member.DisplayName}");
-                context.Template.WriteLine($"        </label>");
-                context.Template.WriteLine($"        <div class=\"flex-1\">");
-
-                context.Template.PushIndent("            ");
-                member.RenderAspNetMvcPartialView(context);
-                context.Template.PopIndent();
-
-                context.Template.WriteLine($"        </div>");
-                context.Template.WriteLine($"    </div>");
-            }
-
-            context.Template.WriteLine($"</div>");
-        }
 
         /// <summary>
         /// メンバーのうち最も長い名前を持つものの文字数から、Tailwind CSS におけるflex basisの値を算出する

@@ -7,7 +7,7 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering.AspNetMvc
+namespace HalApplicationBuilder.CodeRendering.EFCore
 {
     using System.Linq;
     using System.Text;
@@ -18,109 +18,35 @@ namespace HalApplicationBuilder.CodeRendering.AspNetMvc
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class JsTemplate : JsTemplateBase
+    public partial class AutoCompleteSourceTemplate : AutoCompleteSourceTemplateBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n\n<script>\n    const setHalappFunctions = targetElementJQueryObject => {\n        " +
-                    "targetElementJQueryObject.find(\'.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ADD_CHILD_BTN));
-            this.Write("\').on(\'click\', event => {\n            const controllerName = \'@(Context.Request.R" +
-                    "outeValues[\"controller\"]?.ToString())\';\n            const button = $(event.targe" +
-                    "t);\n            const ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AGGREGATE_TREE_PATH_ARG));
-            this.Write(" = button.attr(\'");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AGGREGATE_TREE_PATH_ATTR));
-            this.Write("\');\n            const ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AGGREGATE_MODEL_PATH_ARG));
-            this.Write(" = button.attr(\'");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AGGREGATE_MODEL_PATH_ATTR));
-            this.Write("\');\n            const ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ADD_CHILD_ARG_2));
-            this.Write(" = button.siblings().length;\n            $.ajax({\n                type: \'GET\',\n  " +
-                    "              url: `/${controllerName}/");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ADD_CHILD_CTL));
-            this.Write("`,\n                data: {\n                    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AGGREGATE_TREE_PATH_ARG));
-            this.Write(",\n                    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AGGREGATE_MODEL_PATH_ARG));
-            this.Write(",\n                    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ADD_CHILD_ARG_2));
-            this.Write(@",
-                },
-            }).then((data, textStatus, jqXHR) => {
-                const partialView = $($.parseHTML(data));
-                partialView.insertBefore(button);
-                setHalappFunctions(partialView);
-            }).catch(err => {
-                console.trace('ERROR!!', err);
-            });
-        });
-        
-        targetElementJQueryObject.find('.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(REMOVE_BTN));
-            this.Write("\').on(\'click\', event => {\n            const button = $(event.target);\n           " +
-                    " const hiddenField = button.siblings(\'.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(REMOVE_HIDDEN_FIELD));
-            this.Write("\');\n            hiddenField.val(\'true\');\n            button.parent().css(\'display" +
-                    "\', \'none\');\n        });\n        \n        targetElementJQueryObject.find(\'.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AUTOCOMPLETE_INPUT));
-            this.Write(@"').each((_, el) => {
-            const element = $(el);
-            element.autocomplete({
-                minLength: 0, @* 0文字入力以上でサジェスチョン有効 *@
-                source: ({ term }, response) => {
-                    const controllerName = '@(Context.Request.RouteValues[""controller""].ToString())';
-                    const aggregateGuid = element.siblings('.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AGGREGATE_GUID));
-            this.Write("\').val();\n                    $.ajax({\n                        type: \'GET\',\n     " +
-                    "                   url: `/${controllerName}/");
-            this.Write(this.ToStringHelper.ToStringWithCulture(NAMEOF_AUTOCOMPLETE_ACTION));
-            this.Write(@"`,
-                        data: { aggregateGuid, term },
-                    }).done(data => {
-                        response(data);
-                    }).fail(res => {
-                        console.error(res.responseJSON); // TODO エラーハンドリング
-                        response([]);
-                    });
-                },
-                @* 矢印キー上下で選択肢を移動したときに発火 *@
-                focus: (event, ui) => {
-                    const hiddenField = element.siblings('.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AUTOCOMPLETE_VALUE));
-            this.Write(@"');
-                    $(event.target).val(ui.item.label);
-                    hiddenField.val(ui.item.value);
-                    return false; @* input(text)にvalueでなくlabelを表示するため既定の処理を殺す *@
-                },
-                @* 選択確定時に発火 *@
-                select: (event, ui) => {
-                    const hiddenField = element.siblings('.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AUTOCOMPLETE_VALUE));
-            this.Write(@"');
-                    $(event.target).val(ui.item.label);
-                    hiddenField.val(ui.item.value);
-                    return false; @* input(text)にvalueでなくlabelを表示するため既定の処理を殺す *@
-                },
-            });
-        });
-    }
-        
-    setHalappFunctions($(document));
-    
-    // const formFooter = $('#");
-            this.Write(this.ToStringHelper.ToStringWithCulture(FORM_FOOTER_ID));
-            this.Write("\');\n    // const form = $(\'#");
-            this.Write(this.ToStringHelper.ToStringWithCulture(FORM_ID));
-            this.Write("\');\n</script>\r\n");
+            this.Write("\r\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextNamespace));
+            this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
+                    "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n\r\n" +
+                    "    partial class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextName));
+            this.Write(" {\r\n\r\n");
+ foreach (var aggregate in _aggregates) { 
+ var method = aggregate.BuildAutoCompleteSourceMethod(); 
+            this.Write("        /// <summary>\r\n        /// オートコンプリートのデータソースを読み込む\r\n        /// </summary>\r" +
+                    "\n        public IEnumerable<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(method.EntityClassName));
+            this.Write("> ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(method.MethodName));
+            this.Write("(string? keyword = null) {\r\n            var query = (IQueryable<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(method.EntityClassName));
+            this.Write(">)this.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(method.DbSetName));
+            this.Write(";\r\n            return query\r\n                .Take(100 + 1)\r\n                .ToA" +
+                    "rray();\r\n        }\r\n");
+ } 
+            this.Write("\r\n    }\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -129,7 +55,7 @@ namespace HalApplicationBuilder.CodeRendering.AspNetMvc
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class JsTemplateBase
+    public class AutoCompleteSourceTemplateBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

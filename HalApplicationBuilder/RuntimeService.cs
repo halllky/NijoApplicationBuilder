@@ -1,6 +1,5 @@
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
-using HalApplicationBuilder.Runtime.AspNetMvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -236,22 +235,6 @@ namespace HalApplicationBuilder {
 
         public void DeleteInstance<TUIInstance>(TUIInstance uiInstance) where TUIInstance : Runtime.UIInstanceBase {
             // TODO
-        }
-
-        public IEnumerable<AutoCompleteSource> LoadAutoCompleteDataSource(Guid aggregateGuid, string term) {
-            var aggregate = FindAggregate(aggregateGuid);
-            if (aggregate == null) throw new ArgumentException($"ID {aggregateGuid} と対応する集約が見つかりません。");
-
-            var dbContext = GetDbContext();
-            var method = aggregate.GetAutoCompleteMethod(_runtimeAssembly, dbContext);
-            var result = (IEnumerable)method.Invoke(dbContext, new object[] { term })!;
-
-            foreach (var item in result) {
-                yield return new AutoCompleteSource {
-                    InstanceKey = aggregate.CreateInstanceKeyFromAutoCompleteItem(item).StringValue,
-                    InstanceName = Runtime.InstanceName.Create(item, aggregate).Value,
-                };
-            }
         }
     }
 }

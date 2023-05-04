@@ -7,7 +7,7 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering
+namespace HalApplicationBuilder.CodeRendering.EFCore
 {
     using System.Linq;
     using System.Text;
@@ -18,61 +18,22 @@ namespace HalApplicationBuilder.CodeRendering
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class EntityClassTemplate : EntityClassTemplateBase
+    public partial class DbContextTemplate : DbContextTemplateBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n\n#pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなけれ" +
-                    "ばなりません\n\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_config.EntityNamespace));
-            this.Write(" {\n    using System;\n    using System.Collections.Generic;\n\n");
- /*Entityクラスの生成*/ 
-            this.Write("\n");
- foreach (var entity in _dbEntities) { 
-            this.Write("\n    public partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entity.ClassName));
-            this.Write(" {\n");
- var props = entity.PrimaryKeys.Union(entity.NonPrimaryKeys).Union(entity.NavigationProperties); 
-            this.Write("\n");
- foreach (var prop in props) { 
-            this.Write("\n        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Virtual ? "virtual " : ""));
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
-            this.Write("\n");
- }
-            this.Write("\n    }\n");
- }
-            this.Write("\n\n");
- /* 被参照ナビゲーションプロパティ */ 
-            this.Write("\n");
- foreach (var entity in _referredDbEntities) { 
-            this.Write("\n    public partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(entity.ClassName));
-            this.Write(" {\n");
- foreach (var prop in entity.Properties) { 
-            this.Write("\n        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Virtual ? "virtual " : ""));
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
-            this.Write("\n");
- }
-            this.Write("\n    }\n");
- }
-            this.Write("\n\n}\n");
+            this.Write("using Microsoft.EntityFrameworkCore;\r\n\r\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_nameSpaceName));
+            this.Write(" {\r\n\r\n    public partial class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_dbContextName));
+            this.Write(" : DbContext {\r\n        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_dbContextName));
+            this.Write("(DbContextOptions<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_dbContextName));
+            this.Write("> options) : base(options) { }\r\n    }\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -81,7 +42,7 @@ namespace HalApplicationBuilder.CodeRendering
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class EntityClassTemplateBase
+    public class DbContextTemplateBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

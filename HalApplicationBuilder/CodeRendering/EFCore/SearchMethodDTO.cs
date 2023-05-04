@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
 
-namespace HalApplicationBuilder.CodeRendering
-{
-    internal class SearchMethodDTO
-    {
+namespace HalApplicationBuilder.CodeRendering.EFCore {
+
+    internal class SearchMethodDTO {
         internal required string ParamVarName { get; init; }
         internal required string QueryVarName { get; init; }
         internal required string SelectLambdaVarName { get; init; }

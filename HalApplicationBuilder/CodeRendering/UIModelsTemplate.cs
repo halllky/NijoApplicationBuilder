@@ -25,72 +25,65 @@ namespace HalApplicationBuilder.CodeRendering
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n");
-            this.Write("\n\n#pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなけれ" +
-                    "ばなりません\n\nnamespace ");
+            this.Write("\r\n#pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなけれ" +
+                    "ばなりません\r\n\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_config.MvcModelNamespace));
-            this.Write(" {\n    using System;\n    using System.Collections.Generic;\n\n");
+            this.Write(" {\r\n    using System;\r\n    using System.Collections.Generic;\r\n\r\n");
  foreach (var aggregate in _aggregates) { 
-            this.Write("\n\n");
+            this.Write("\r\n");
  /* 検索条件DTO */ 
-            this.Write("\n");
  var searchCondition = aggregate.ToSearchConditionClass(); 
-            this.Write("\n    public class ");
+            this.Write("    public class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(searchCondition.ClassName));
             this.Write(" : ");
             this.Write(this.ToStringHelper.ToStringWithCulture(typeof(Runtime.SearchConditionBase).FullName));
-            this.Write(" {\n");
+            this.Write(" {\r\n");
  foreach (var prop in searchCondition.Properties) { 
-            this.Write("\n        public ");
+            this.Write("        public ");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
             this.Write(" ");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
             this.Write(" { get; set; }");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
-            this.Write("\n");
+            this.Write("\r\n");
  }
-            this.Write("\n    }\n\n");
+            this.Write("    }\r\n\r\n");
  /* 検索結果DTO */ 
-            this.Write("\n");
  var searchResult = aggregate.ToSearchResultClass(); 
-            this.Write("\n    public class ");
+            this.Write("    public class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(searchResult.ClassName));
             this.Write(" : ");
             this.Write(this.ToStringHelper.ToStringWithCulture(typeof(Runtime.SearchResultBase).FullName));
-            this.Write(" {\n");
+            this.Write(" {\r\n");
  foreach (var prop in searchResult.Properties) { 
-            this.Write("\n        public ");
+            this.Write("        public ");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
             this.Write(" ");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
             this.Write(" { get; set; }");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
-            this.Write("\n");
+            this.Write("\r\n");
  }
-            this.Write("\n    }\n\n");
+            this.Write("    }\r\n\r\n");
  /* シングルビューDTO */ 
-            this.Write("\n");
  var uiInstance = aggregate.ToUiInstanceClass(); 
-            this.Write("\n    public class ");
+            this.Write("    public class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(uiInstance.ClassName));
             this.Write(" : ");
             this.Write(this.ToStringHelper.ToStringWithCulture(typeof(Runtime.UIInstanceBase).FullName));
-            this.Write(" {\n");
+            this.Write(" {\r\n");
  foreach (var prop in uiInstance.Properties) { 
-            this.Write("\n        public ");
+            this.Write("        public ");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
             this.Write(" ");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
             this.Write(" { get; set; }");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.Initializer == null ? "" : $" = {prop.Initializer};"));
-            this.Write("\n");
+            this.Write("\r\n");
  }
-            this.Write("\n    }\n");
+            this.Write("    }\r\n");
  }
-            this.Write("\n\n}\n");
+            this.Write("\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

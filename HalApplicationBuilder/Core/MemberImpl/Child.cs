@@ -5,11 +5,13 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.CodeRendering;
+using HalApplicationBuilder.CodeRendering.EFCore;
 using HalApplicationBuilder.Runtime;
 using HalApplicationBuilder.Serialized;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Model;
 
-namespace HalApplicationBuilder.Core.MemberImpl {
+namespace HalApplicationBuilder.Core.MemberImpl
+{
     internal class Child : AggregateMember {
         internal Child(Config config, string displayName, bool isPrimary, Aggregate owner, IAggregateDefine childType) : base(config, displayName, isPrimary, owner) {
             _childType = childType;
@@ -37,18 +39,9 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             // TODO: WHERE句の組み立て
         }
 
-        internal override void RenderMvcSearchConditionView(RenderingContext context) {
-            var nested = context.Nest(SearchConditionPropName);
-            GetChildAggregates().Single().RenderSearchCondition(nested);
-        }
         internal override void RenderReactSearchCondition(RenderingContext context) {
             var nested = context.Nest(SearchConditionPropName);
             GetChildAggregates().Single().RenderReactSearchCondition(nested);
-        }
-
-        internal override void RenderAspNetMvcPartialView(RenderingContext context) {
-            var nested = context.Nest(InstanceModelPropName);
-            GetChildAggregates().Single().RenderAspNetMvcPartialView(nested);
         }
         internal override void RenderReactComponent(RenderingContext context) {
             var nested = context.Nest(SearchConditionPropName);

@@ -7,58 +7,102 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering.AspNetMvc
+namespace HalApplicationBuilder.CodeRendering.EFCore
 {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
     using System;
-    
+
     /// <summary>
     /// Class to produce the template output
     /// </summary>
-    
-    #line 1 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering\AspNetMvc\tailwind_config_js.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class tailwind_config_js : tailwind_config_jsBase
+    public partial class OnModelCreatingTemplate : OnModelCreatingTemplateBase
     {
-#line hidden
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write(@"
-
-const colors = require('tailwindcss/colors');
-
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  purge: {
-    enabled: true,
-    content: [
-      './**/*.{razor,cshtml,html}'
-    ],
-  },
-  darkMode: false,
-  variants: {
-    extend: {},
-  },
-  plugins: [],
-}
-");
+            this.Write("\r\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextNamespace));
+            this.Write(" {\r\n    using Microsoft.EntityFrameworkCore;\r\n\r\n    partial class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextName));
+            this.Write(" {\r\n\r\n        protected override void OnModelCreating(ModelBuilder modelBuilder) " +
+                    "{\r\n");
+ foreach (var entity in _dbEntities) { 
+            this.Write("            modelBuilder.Entity<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(entity.CSharpTypeName));
+            this.Write(">(ett => {\r\n");
+ /* 主キー定義 */ 
+            this.Write("                ett.HasKey(e => new {\r\n");
+ foreach (var pk in entity.PrimaryKeys) { 
+            this.Write("                    e.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(pk.PropertyName));
+            this.Write(",\r\n");
+ } 
+            this.Write("                });\r\n\r\n");
+ /* 通常のプロパティの定義 */ 
+ foreach (var col in entity.PrimaryKeys.Concat(entity.NonPrimaryKeys)) { 
+            this.Write("                ett.Property(e => e.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(col.PropertyName));
+            this.Write(")\r\n                   .IsRequired(");
+            this.Write(this.ToStringHelper.ToStringWithCulture(col.Nullable == true ? "false" : "true"));
+            this.Write(");\r\n");
+ } 
+            this.Write("\r\n");
+ /* ナビゲーションプロパティ定義 */ 
+ foreach (var navigation in entity.NavigationProperties) { 
+ if (navigation.OnModelCreating != null) { 
+     if (navigation.OnModelCreating.Multiplicity.HasFlag(OnModelCreatingDTO.E_Multiplicity.HasMany)) { 
+            this.Write("                ett.HasMany(e => e.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(navigation.PropertyName));
+            this.Write(")\r\n");
+     } else {
+            this.Write("                ett.HasOne(e => e.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(navigation.PropertyName));
+            this.Write(")\r\n");
+     } 
+     if (navigation.OnModelCreating.Multiplicity.HasFlag(OnModelCreatingDTO.E_Multiplicity.WithMany)) { 
+            this.Write("                   .WithMany(e => e.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(navigation.OnModelCreating.OpponentName));
+            this.Write(")\r\n");
+     } else {
+            this.Write("                   .WithOne(e => e.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(navigation.OnModelCreating.OpponentName));
+            this.Write(")\r\n");
+     } 
+     if (navigation.OnModelCreating.Multiplicity.HasFlag(OnModelCreatingDTO.E_Multiplicity.HasOneWithOne)) { 
+                 /* HasOneWithOneのときは型引数が要るらしい */ 
+            this.Write("                   .HasForeignKey<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(navigation.CSharpTypeName));
+            this.Write(">(e => new {\r\n");
+     } else {
+            this.Write("                   .HasForeignKey(e => new {\r\n");
+     } 
+     foreach (var fk in navigation.OnModelCreating.ForeignKeys) { 
+            this.Write("                       e.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(fk.PropertyName));
+            this.Write(",\r\n");
+     } 
+            this.Write("                   })\r\n                   .OnDelete(DeleteBehavior.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(navigation.OnModelCreating.OnDelete.ToString()));
+            this.Write(");\r\n");
+ } 
+ } 
+            this.Write("            });\r\n");
+ } 
+            this.Write("        }\r\n    }\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }
-    
-    #line default
-    #line hidden
     #region Base class
     /// <summary>
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class tailwind_config_jsBase
+    public class OnModelCreatingTemplateBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

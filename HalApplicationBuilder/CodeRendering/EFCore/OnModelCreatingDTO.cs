@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace HalApplicationBuilder.CodeRendering {
-
-    internal class NavigationProperty : RenderedProperty {
-        internal required OnModelCreatingDTO? OnModelCreating { get; init; }
-    }
+namespace HalApplicationBuilder.CodeRendering.EFCore {
 
     internal class OnModelCreatingDTO {
         internal required string OpponentName { get; init; }
@@ -27,4 +26,3 @@ namespace HalApplicationBuilder.CodeRendering {
         }
     }
 }
-

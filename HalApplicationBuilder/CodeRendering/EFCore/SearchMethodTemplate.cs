@@ -7,7 +7,7 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering.AspNetMvc
+namespace HalApplicationBuilder.CodeRendering.EFCore
 {
     using System.Linq;
     using System.Text;
@@ -17,61 +17,62 @@ namespace HalApplicationBuilder.CodeRendering.AspNetMvc
     /// <summary>
     /// Class to produce the template output
     /// </summary>
-    
-    #line 1 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering\AspNetMvc\app_css.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class app_css : app_cssBase
+    public partial class SearchMethodTemplate : SearchMethodTemplateBase
     {
-#line hidden
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write(@"
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer components {
-  .halapp-btn-primary {
-    @apply px-2 py-1 bg-stone-700 text-white font-semibold rounded-lg shadow-md hover:bg-stone-800 focus:ring-1 focus:ring-stone-400 focus:ring-opacity-75;
-  }
-
-  .halapp-btn-secondary {
-    @apply px-2 py-1 bg-transparent hover:bg-stone-800 hover:bg-opacity-25 rounded-lg ring-1 ring-inset ring-stone-800 ring-opacity-75;
-  }
-
-  .halapp-btn-link {
-    @apply underline decoration-1;
-  }
-  /* MultiViewの検索条件欄など */
-  .halapp-card-aggregate {
-    @apply border mt-2 p-2 bg-slate-50;
-  }
-
-  .halapp-page-title {
-    @apply font-bold text-[18px] select-none opacity-50;
-  }
-
-  .halapp-label-member-key {
-    @apply select-none opacity-50;
-  }
-}
-");
+            this.Write("\r\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextNamespace));
+            this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
+                    "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n\r\n" +
+                    "    partial class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextName));
+            this.Write(" {\r\n\r\n");
+ foreach (var rootAggregate in _rootAggregates) { 
+ var method = rootAggregate.BuildSearchMethod("param", "query", "e"); 
+            this.Write("        public IEnumerable<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(method.SearchResultClassName));
+            this.Write("> ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(method.MethodName));
+            this.Write("(");
+            this.Write(this.ToStringHelper.ToStringWithCulture(method.SearchConditionClassName));
+            this.Write(" param) {\r\n            var query = this.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(method.DbSetName));
+            this.Write(".Select(e => new ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(method.SearchResultClassName));
+            this.Write(" {\r\n");
+ foreach (var line in method.SelectClause) { 
+            this.Write("                ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(line));
+            this.Write("\r\n");
+ } 
+            this.Write("            });\r\n\r\n");
+ foreach (var line in method.WhereClause) { 
+            this.Write("            ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(line));
+            this.Write("\r\n");
+ } 
+            this.Write("\r\n            var page = param.GetPageObject();\r\n            query = query\r\n     " +
+                    "           .Skip(page.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(DotnetEx.Page.SqlOffset)));
+            this.Write(")\r\n                .Take(page.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(DotnetEx.Page.SqlLimit)));
+            this.Write(");\r\n\r\n            return query.AsEnumerable();\r\n        }\r\n");
+ } 
+            this.Write("\r\n    }\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }
-    
-    #line default
-    #line hidden
     #region Base class
     /// <summary>
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class app_cssBase
+    public class SearchMethodTemplateBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

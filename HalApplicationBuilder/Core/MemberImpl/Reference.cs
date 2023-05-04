@@ -4,12 +4,13 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.CodeRendering;
-using HalApplicationBuilder.CodeRendering.AspNetMvc;
+using HalApplicationBuilder.CodeRendering.EFCore;
 using HalApplicationBuilder.Runtime;
 using HalApplicationBuilder.Serialized;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
-namespace HalApplicationBuilder.Core.MemberImpl {
+namespace HalApplicationBuilder.Core.MemberImpl
+{
     internal class Reference : AggregateMember {
         internal Reference(Config config, string displayName, bool isPrimary, bool isNullable, Aggregate owner, Func<Aggregate> getRefTarget) : base(config, displayName, isPrimary, owner) {
             _getRefTarget = getRefTarget;
@@ -33,50 +34,9 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             // TODO: WHERE句の組み立て
         }
 
-        internal override void RenderMvcSearchConditionView(RenderingContext context) {
-            var key = context.ObjectPath
-                .Nest(SearchConditonPropName)
-                .Nest(nameof(Runtime.ReferenceDTO.InstanceKey))
-                .AspForPath;
-            var text = context.ObjectPath
-                .Nest(SearchConditonPropName)
-                .Nest(nameof(Runtime.ReferenceDTO.InstanceName))
-                .AspForPath;
-            var guid = context.ObjectPath
-                .Nest(SearchConditonPropName)
-                .Nest(nameof(Runtime.ReferenceDTO.AggreageteGuid))
-                .AspForPath;
-
-            context.Template.WriteLine($"<div>");
-            context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{key}\" class=\"{JsTemplate.AUTOCOMPLETE_VALUE}\" />");
-            context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{guid}\" class=\"{JsTemplate.AGGREGATE_GUID}\" />");
-            context.Template.WriteLine($"    <input asp-for=\"{text}\" class=\"border {JsTemplate.AUTOCOMPLETE_INPUT}\" />");
-            context.Template.WriteLine($"</div>");
-        }
         internal override void RenderReactSearchCondition(RenderingContext context) {
             context.Template.WriteLine($"<div>");
             context.Template.WriteLine($"    TODO autocomplete");
-            context.Template.WriteLine($"</div>");
-        }
-
-        internal override void RenderAspNetMvcPartialView(RenderingContext context) {
-            var key = context.ObjectPath
-                .Nest(SearchConditonPropName)
-                .Nest(nameof(Runtime.ReferenceDTO.InstanceKey))
-                .AspForPath;
-            var text = context.ObjectPath
-                .Nest(SearchConditonPropName)
-                .Nest(nameof(Runtime.ReferenceDTO.InstanceName))
-                .AspForPath;
-            var guid = context.ObjectPath
-                .Nest(SearchConditonPropName)
-                .Nest(nameof(Runtime.ReferenceDTO.AggreageteGuid))
-                .AspForPath;
-
-            context.Template.WriteLine($"<div>");
-            context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{key}\" class=\"{JsTemplate.AUTOCOMPLETE_VALUE}\" />");
-            context.Template.WriteLine($"    <input type=\"hidden\" asp-for=\"{guid}\" class=\"{JsTemplate.AGGREGATE_GUID}\" />");
-            context.Template.WriteLine($"    <input asp-for=\"{text}\" class=\"border {JsTemplate.AUTOCOMPLETE_INPUT}\" />");
             context.Template.WriteLine($"</div>");
         }
         internal override void RenderReactComponent(RenderingContext context) {

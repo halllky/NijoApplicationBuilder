@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using HalApplicationBuilder.CodeRendering;
+using HalApplicationBuilder.CodeRendering.EFCore;
 using HalApplicationBuilder.Runtime;
 using HalApplicationBuilder.Serialized;
 
-namespace HalApplicationBuilder.Core.MemberImpl {
+namespace HalApplicationBuilder.Core.MemberImpl
+{
     internal class Variation : AggregateMember {
         internal Variation(Config config, string displayName, bool isPrimary, Aggregate owner, IEnumerable<KeyValuePair<int, IAggregateDefine>> variations) : base(config, displayName, isPrimary, owner) {
             if (!variations.Any())
@@ -57,42 +59,12 @@ namespace HalApplicationBuilder.Core.MemberImpl {
             // TODO: WHERE句の組み立て
         }
 
-        internal override void RenderMvcSearchConditionView(RenderingContext context) {
-            foreach (var variation in GetVariations()) {
-                var key = context.ObjectPath.Nest(SearchConditionPropName(variation)).AspForPath;
-
-                context.Template.WriteLine($"<label>");
-                context.Template.WriteLine($"    <input type=\"checkbox\" asp-for=\"{key}\">");
-                context.Template.WriteLine($"    {variation.Value.GetDisplayName()}");
-                context.Template.WriteLine($"</label>");
-            }
-        }
         internal override void RenderReactSearchCondition(RenderingContext context) {
             foreach (var variation in GetVariations()) {
                 context.Template.WriteLine($"<label>");
                 context.Template.WriteLine($"    <input type=\"checkbox\">");
                 context.Template.WriteLine($"    {variation.Value.GetDisplayName()}");
                 context.Template.WriteLine($"</label>");
-            }
-        }
-
-        internal override void RenderAspNetMvcPartialView(RenderingContext context) {
-
-            foreach (var variation in GetVariations()) {
-                var type = context.ObjectPath.Nest(InstanceModelTypeSwitchPropName).AspForPath;
-                var nested = context.Nest(SearchConditionPropName(variation));
-
-                context.Template.WriteLine($"<div>");
-                context.Template.WriteLine($"    <label>");
-                context.Template.WriteLine($"        <input type=\"radio\" asp-for=\"{type}\" value=\"{variation.Key}\" />");
-                context.Template.WriteLine($"        {variation.Value.GetDisplayName()}");
-                context.Template.WriteLine($"    </label>");
-
-                context.Template.PushIndent($"    ");
-                variation.Value.RenderAspNetMvcPartialView(nested);
-                context.Template.PopIndent();
-
-                context.Template.WriteLine($"</div>");
             }
         }
         internal override void RenderReactComponent(RenderingContext context) {
