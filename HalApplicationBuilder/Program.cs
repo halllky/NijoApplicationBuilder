@@ -26,7 +26,7 @@ namespace HalApplicationBuilder {
                 e.Cancel = true;
             };
 
-            var xmlFilename = new Argument<string?>();
+            var xmlFilename = new Argument<string?>(() => null);
             var applicationName = new Argument<string?>();
             var mvc = new Option<bool>("--mvc", description: "非推奨 deprecated");
             var verbose = new Option<bool>("--verbose");
@@ -115,7 +115,24 @@ namespace HalApplicationBuilder {
         }
 
         private static void Gen(string? xmlFilename, bool mvc, bool verbose, CancellationToken cancellationToken) {
-            var config = ReadConfig(xmlFilename, out var xmlContent, out var _, out var projectRoot);
+
+            // コンフィグxmlの読み込み
+            Config config;
+            string xmlContent;
+            string projectRoot;
+            if (string.IsNullOrWhiteSpace(xmlFilename)) {
+                // カレントディレクトリの halapp.xml という名前のファイルを探す
+                config = ReadConfig(HALAPP_XML, out xmlContent, out _, out projectRoot);
+
+            } else if (Directory.Exists(xmlFilename)) {
+                // ディレクトリ名が指定された場合は halapp.xml という名前のファイルを決め打ちで探しに行く
+                var xmlPath = Path.Combine(xmlFilename, HALAPP_XML);
+                config = ReadConfig(xmlPath, out xmlContent, out _, out projectRoot);
+
+            } else {
+                config = ReadConfig(xmlFilename, out xmlContent, out _, out projectRoot);
+            }
+
             var generator = CodeGenerator.FromXml(xmlContent);
             if (mvc) {
                 generator.GenerateAspNetCoreMvc(projectRoot, config, verbose, Console.Out, cancellationToken);
@@ -125,7 +142,16 @@ namespace HalApplicationBuilder {
         }
 
         private static void Debug(string? xmlFilename, bool verbose, CancellationToken cancellationToken) {
-            if (xmlFilename == null) throw new InvalidOperationException($"対象XMLを指定してください。");
+
+            // コンフィグxmlパスが未指定の場合の読みかえ
+            if (string.IsNullOrWhiteSpace(xmlFilename)) {
+                // カレントディレクトリの halapp.xml という名前のファイルを探す
+                xmlFilename = HALAPP_XML;
+
+            } else if (Directory.Exists(xmlFilename)) {
+                // ディレクトリ名が指定された場合は halapp.xml という名前のファイルを決め打ちで探しに行く
+                xmlFilename = Path.Combine(xmlFilename, HALAPP_XML);
+            }
 
             var config = ReadConfig(xmlFilename, out var _, out var xmlDir, out var projectRoot);
 
