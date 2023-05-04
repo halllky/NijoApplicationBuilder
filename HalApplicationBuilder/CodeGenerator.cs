@@ -172,7 +172,7 @@ namespace HalApplicationBuilder {
                         // Program.cs書き換え
                         _log?.WriteLine($"HalappDefaultConfigure.cs ファイルを作成します。");
                         using (var sw = new StreamWriter(Path.Combine(tempDir, "HalappDefaultConfigure.cs"), append: false, encoding: Encoding.UTF8)) {
-                            sw.Write(new CodeRendering.DefaultRuntimeConfigTemplate().TransformText());
+                            sw.Write(new CodeRendering.DefaultRuntimeConfigTemplate(_config).TransformText());
                         }
                         _log?.WriteLine($"Program.cs ファイルを書き換えます。");
                         var programCsPath = Path.Combine(tempDir, "Program.cs");
