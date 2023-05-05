@@ -15,12 +15,7 @@ namespace HalApplicationBuilder.Runtime {
 
             // SaveやDetailでDbContextをダイレクトに参照しているため
             services.AddScoped<Microsoft.EntityFrameworkCore.DbContext>(provider => {
-                var dbContext = provider.GetRequiredService<<#=_dbContextFullName#>>();
-#if DEBUG
-                // for hot reload
-                Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.Migrate(dbContext.Database);
-#endif
-                return dbContext;
+                return provider.GetRequiredService<<#=_dbContextFullName#>>();
             });
 
             services.AddDbContext<<#=_dbContextFullName#>>(option => {
