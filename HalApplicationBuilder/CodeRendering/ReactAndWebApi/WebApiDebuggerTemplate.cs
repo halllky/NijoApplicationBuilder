@@ -19,7 +19,7 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class WebApiControllerTemplate : WebApiControllerTemplateBase
+    public partial class WebApiDebuggerTemplate : WebApiDebuggerTemplateBase
     {
         /// <summary>
         /// Create the template output
@@ -29,97 +29,32 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
  var dbContextTypeName = $"{_config.DbContextNamespace}.{_config.DbContextName}"; 
             this.Write("using Microsoft.AspNetCore.Mvc;\r\n\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_config.MvcControllerNamespace));
-            this.Write(";\r\n\r\n");
- foreach (var rootAggregate in _rootAggregates) { 
- var controllerName = GetControllerName(rootAggregate); 
- var uiInstance = rootAggregate.ToUiInstanceClass().CSharpTypeName; 
- var search = rootAggregate.BuildSearchMethod("param", "query", "e"); 
-            this.Write("\r\n[ApiController]\r\n[Route(\"[controller]\")]\r\npublic class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(controllerName));
-            this.Write(" : ControllerBase {\r\n    public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(controllerName));
-            this.Write("(\r\n        ILogger<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(controllerName));
-            this.Write("> logger,\r\n        ");
+            this.Write(";\r\n\r\n#if DEBUG\r\n[ApiController]\r\n[Route(\"[controller]\")]\r\npublic class HalappDebu" +
+                    "gController {\r\n    public HalappDebugController(\r\n        ILogger<HalappDebugCon" +
+                    "troller> logger,\r\n        ");
             this.Write(this.ToStringHelper.ToStringWithCulture(dbContextTypeName));
             this.Write(" dbContext,\r\n        ");
             this.Write(this.ToStringHelper.ToStringWithCulture(typeof(RuntimeService).FullName));
             this.Write(" runtimeService) {\r\n        _logger = logger;\r\n        _dbContext = dbContext;\r\n " +
-                    "       _runtimeService = runtimeService;\r\n    }\r\n    private readonly ILogger<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(controllerName));
-            this.Write("> _logger;\r\n    private readonly ");
+                    "       _runtimeService = runtimeService;\r\n    }\r\n    private readonly ILogger<Ha" +
+                    "lappDebugController> _logger;\r\n    private readonly ");
             this.Write(this.ToStringHelper.ToStringWithCulture(dbContextTypeName));
             this.Write(" _dbContext;\r\n    private readonly ");
             this.Write(this.ToStringHelper.ToStringWithCulture(typeof(RuntimeService).FullName));
-            this.Write(" _runtimeService;\r\n\r\n    [HttpGet(\"list\")]\r\n    public IEnumerable<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(search.SearchResultClassName));
-            this.Write("> Search([FromQuery] string param) {\r\n        var json = System.Web.HttpUtility.U" +
-                    "rlDecode(param);\r\n        var condition = string.IsNullOrWhiteSpace(json)\r\n     " +
-                    "       ? new ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(search.SearchConditionClassName));
-            this.Write("()\r\n            : System.Text.Json.JsonSerializer.Deserialize<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(search.SearchConditionClassName));
-            this.Write(">(json)!;\r\n        return _dbContext.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(search.MethodName));
-            this.Write("(condition ?? new ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(search.SearchConditionClassName));
-            this.Write("());\r\n    }\r\n    [HttpPost(\"create\")]\r\n    public HttpResponseMessage Create(");
-            this.Write(this.ToStringHelper.ToStringWithCulture(uiInstance));
-            this.Write(" param) {\r\n        var success = _runtimeService.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(RuntimeService.TrySaveNewInstance)));
-            this.Write(@"(param, out var instanceKey, out var errors);
-        if (success) {
-            return new HttpResponseMessage {
-                StatusCode = System.Net.HttpStatusCode.Created,
-                Content = new StringContent(instanceKey),
-            };
-        } else {
-            return new HttpResponseMessage {
-                StatusCode = System.Net.HttpStatusCode.BadRequest,
-                Content = JsonContent.Create(errors),
-            };
-        }
-    }
-    [HttpGet(""detail/{instanceKey}"")]
-    public HttpResponseMessage Find(string instanceKey) {
-        var instance = _runtimeService.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(RuntimeService.FindInstance)));
-            this.Write("<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(uiInstance));
-            this.Write(@">(instanceKey, out var _);
-        if (instance != null) {
-            return new HttpResponseMessage {
-                StatusCode = System.Net.HttpStatusCode.Found,
-                Content = JsonContent.Create(instance),
-            };
-        } else {
-            return new HttpResponseMessage {
-                StatusCode = System.Net.HttpStatusCode.NotFound,
-            };
-        }
-    }
-    [HttpPost(""update"")]
-    public HttpResponseMessage Update(");
-            this.Write(this.ToStringHelper.ToStringWithCulture(uiInstance));
-            this.Write(" param) {\r\n        var success = _runtimeService.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(RuntimeService.TryUpdate)));
-            this.Write(@"(param, out var instanceKey, out var errors);
-        if (success) {
-            return new HttpResponseMessage {
-                StatusCode = System.Net.HttpStatusCode.OK,
-                Content = new StringContent(instanceKey),
-            };
-        } else {
-            return new HttpResponseMessage {
-                StatusCode = System.Net.HttpStatusCode.BadRequest,
-                Content = JsonContent.Create(errors),
-            };
-        }
+            this.Write(@" _runtimeService;
+
+    [HttpPut(""recreate-database"")]
+    public HttpResponseMessage RecreateDatabase() {
+        _dbContext.Database.EnsureDeleted();
+        _dbContext.Database.EnsureCreated();
+        return new HttpResponseMessage {
+            StatusCode = System.Net.HttpStatusCode.OK,
+            Content = new StringContent(""DBÇçƒçÏê¨ÇµÇ‹ÇµÇΩÅB""),
+        };
     }
 }
-
+#endif
 ");
- } 
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -128,7 +63,7 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class WebApiControllerTemplateBase
+    public class WebApiDebuggerTemplateBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

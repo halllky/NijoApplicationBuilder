@@ -87,6 +87,13 @@ namespace HalApplicationBuilder.CodeRendering.EFCore {
 
 namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
 
+    partial class WebApiDebuggerTemplate {
+        internal WebApiDebuggerTemplate(Config config) {
+            _config = config;
+        }
+        private readonly Config _config;
+    }
+
     partial class WebApiControllerTemplate {
         internal WebApiControllerTemplate(Config config, IEnumerable<RootAggregate> rootAggregates) {
             _config = config;

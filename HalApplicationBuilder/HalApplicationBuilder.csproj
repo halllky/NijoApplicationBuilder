@@ -86,6 +86,10 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>ReactTypeDefTemplate.cs</LastGenOutput>
 		</None>
+		<None Update="CodeRendering\ReactAndWebApi\WebApiDebuggerTemplate.tt">
+		  <LastGenOutput>WebApiDebuggerTemplate.cs</LastGenOutput>
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		</None>
 		<None Update="CodeRendering\ReactAndWebApi\WebApiControllerTemplate.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>WebApiControllerTemplate.cs</LastGenOutput>
@@ -180,6 +184,11 @@
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>ReactTypeDefTemplate.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering\ReactAndWebApi\WebApiDebuggerTemplate.cs">
+		  <DependentUpon>WebApiDebuggerTemplate.tt</DependentUpon>
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
 		</Compile>
 		<Compile Update="CodeRendering\ReactAndWebApi\WebApiControllerTemplate.cs">
 		  <DesignTime>True</DesignTime>
