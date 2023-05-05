@@ -151,7 +151,7 @@ const columnDefs = [
             body: JSON.stringify(data),
         })
         if (response.ok) {
-            const instanceKey = await response.text()
+            const { instanceKey } = JSON.parse(await response.text())
             const encoded = window.encodeURI(instanceKey)
             navigate(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(SingleViewUrl));
@@ -174,9 +174,29 @@ const columnDefs = [
             this.Write("            </div>\r\n            <IconButton icon={BookmarkSquareIcon} className=\"" +
                     "self-start\">•Û‘¶</IconButton>\r\n        </form>\r\n    )\r\n}\r\n\r\nexport const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(SingleViewComponentName));
-            this.Write(" = () => {\r\n\r\n    const { register } = useForm()\r\n    const { instanceKey } = use" +
-                    "Params()\r\n\r\n    return (\r\n        <div className=\"flex flex-col justify-start sp" +
-                    "ace-y-1\">\r\n");
+            this.Write(@" = () => {
+
+    const [{ apiDomain },] = useAppContext()
+    const { instanceKey } = useParams()
+    const { register } = useForm({
+        defaultValues: async () => {
+            if (!instanceKey) return undefined
+            const encoded = window.encodeURI(instanceKey)
+            const response = await fetch(`${apiDomain}/");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetCSharpSafeName()));
+            this.Write(@"/detail/${encoded}`)
+            if (response.ok) {
+                const data = await response.text()
+                return JSON.parse(data)
+            } else {
+                return undefined
+            }
+        },
+    })
+
+    return (
+        <div className=""flex flex-col justify-start space-y-1"">
+");
  PushIndent("            "); 
  _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("instance"))); 
  PopIndent(); 

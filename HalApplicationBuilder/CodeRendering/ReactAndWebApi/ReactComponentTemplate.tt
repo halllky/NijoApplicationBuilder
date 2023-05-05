@@ -118,7 +118,7 @@ export const <#=CreateViewComponentName#> = () => {
             body: JSON.stringify(data),
         })
         if (response.ok) {
-            const instanceKey = await response.text()
+            const { instanceKey } = JSON.parse(await response.text())
             const encoded = window.encodeURI(instanceKey)
             navigate(`<#=SingleViewUrl#>/${encoded}`)
         }
@@ -141,8 +141,21 @@ export const <#=CreateViewComponentName#> = () => {
 
 export const <#=SingleViewComponentName#> = () => {
 
-    const { register } = useForm()
+    const [{ apiDomain },] = useAppContext()
     const { instanceKey } = useParams()
+    const { register } = useForm({
+        defaultValues: async () => {
+            if (!instanceKey) return undefined
+            const encoded = window.encodeURI(instanceKey)
+            const response = await fetch(`${apiDomain}/<#=_rootAggregate.GetCSharpSafeName()#>/detail/${encoded}`)
+            if (response.ok) {
+                const data = await response.text()
+                return JSON.parse(data)
+            } else {
+                return undefined
+            }
+        },
+    })
 
     return (
         <div className="flex flex-col justify-start space-y-1">

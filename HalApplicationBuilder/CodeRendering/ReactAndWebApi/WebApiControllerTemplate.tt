@@ -6,6 +6,7 @@
 <#@ import namespace="HalApplicationBuilder" #>
 <# var dbContextTypeName = $"{_config.DbContextNamespace}.{_config.DbContextName}"; #>
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace <#=_config.MvcControllerNamespace#>;
 
@@ -30,7 +31,7 @@ public class <#=controllerName#> : ControllerBase {
     private readonly <#=typeof(RuntimeService).FullName#> _runtimeService;
 
     [HttpGet("list")]
-    public IEnumerable<<#=search.SearchResultClassName#>> Search([FromQuery] string param) {
+    public IActionResult Search([FromQuery] string param) {
         var json = System.Web.HttpUtility.UrlDecode(param);
         var condition = string.IsNullOrWhiteSpace(json)
             ? new <#=search.SearchConditionClassName#>()
@@ -38,45 +39,45 @@ public class <#=controllerName#> : ControllerBase {
         var searchResult = _dbContext
             .<#=search.MethodName#>(condition)
             .AsEnumerable();
-        return searchResult;
+        return JsonContent(searchResult);
     }
     [HttpPost("create")]
-    public string Create(<#=uiInstance#> param) {
+    public IActionResult Create(<#=uiInstance#> param) {
         var success = _runtimeService.<#=nameof(RuntimeService.TrySaveNewInstance)#>(param, out var instanceKey, out var errors);
         if (success) {
-            return instanceKey;
+            return Ok(new { instanceKey });
         } else {
-            return "ERROR!"; // TODO
+            return BadRequest(errors);
         }
     }
     [HttpGet("detail/{instanceKey}")]
-    public HttpResponseMessage Find(string instanceKey) {
+    public IActionResult Find(string instanceKey) {
         var instance = _runtimeService.<#=nameof(RuntimeService.FindInstance)#><<#=uiInstance#>>(instanceKey, out var _);
-        if (instance != null) {
-            return new HttpResponseMessage {
-                StatusCode = System.Net.HttpStatusCode.Found,
-                Content = JsonContent.Create(instance),
-            };
+        if (instance == null) {
+            return NotFound();
         } else {
-            return new HttpResponseMessage {
-                StatusCode = System.Net.HttpStatusCode.NotFound,
-            };
+            return JsonContent(instance);
         }
     }
     [HttpPost("update")]
-    public HttpResponseMessage Update(<#=uiInstance#> param) {
+    public IActionResult Update(<#=uiInstance#> param) {
         var success = _runtimeService.<#=nameof(RuntimeService.TryUpdate)#>(param, out var instanceKey, out var errors);
         if (success) {
-            return new HttpResponseMessage {
-                StatusCode = System.Net.HttpStatusCode.OK,
-                Content = new StringContent(instanceKey),
-            };
+            return Ok(new { instanceKey });
         } else {
-            return new HttpResponseMessage {
-                StatusCode = System.Net.HttpStatusCode.BadRequest,
-                Content = JsonContent.Create(errors),
-            };
+            return BadRequest(errors);
         }
+    }
+
+    private ContentResult JsonContent<T>(T obj) {
+        var options = new JsonSerializerOptions {
+            // レスポンスに大文字が含まれるとき、大文字のまま返す。
+            // react hook form や ag-grid では大文字小文字を区別しているため
+            PropertyNameCaseInsensitive = true,
+        };
+        var json = JsonSerializer.Serialize(obj, options);
+
+        return Content(json, "application/json");
     }
 }
 

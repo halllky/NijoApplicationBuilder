@@ -27,7 +27,7 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
         public virtual string TransformText()
         {
  var dbContextTypeName = $"{_config.DbContextNamespace}.{_config.DbContextName}"; 
-            this.Write("using Microsoft.AspNetCore.Mvc;\r\n\r\nnamespace ");
+            this.Write("using Microsoft.AspNetCore.Mvc;\r\nusing System.Text.Json;\r\n\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_config.MvcControllerNamespace));
             this.Write(";\r\n\r\n");
  foreach (var rootAggregate in _rootAggregates) { 
@@ -51,63 +51,56 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
             this.Write(this.ToStringHelper.ToStringWithCulture(dbContextTypeName));
             this.Write(" _dbContext;\r\n    private readonly ");
             this.Write(this.ToStringHelper.ToStringWithCulture(typeof(RuntimeService).FullName));
-            this.Write(" _runtimeService;\r\n\r\n    [HttpGet(\"list\")]\r\n    public IEnumerable<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(search.SearchResultClassName));
-            this.Write("> Search([FromQuery] string param) {\r\n        var json = System.Web.HttpUtility.U" +
-                    "rlDecode(param);\r\n        var condition = string.IsNullOrWhiteSpace(json)\r\n     " +
-                    "       ? new ");
+            this.Write(" _runtimeService;\r\n\r\n    [HttpGet(\"list\")]\r\n    public IActionResult Search([From" +
+                    "Query] string param) {\r\n        var json = System.Web.HttpUtility.UrlDecode(para" +
+                    "m);\r\n        var condition = string.IsNullOrWhiteSpace(json)\r\n            ? new " +
+                    "");
             this.Write(this.ToStringHelper.ToStringWithCulture(search.SearchConditionClassName));
             this.Write("()\r\n            : System.Text.Json.JsonSerializer.Deserialize<");
             this.Write(this.ToStringHelper.ToStringWithCulture(search.SearchConditionClassName));
             this.Write(">(json)!;\r\n        var searchResult = _dbContext\r\n            .");
             this.Write(this.ToStringHelper.ToStringWithCulture(search.MethodName));
-            this.Write("(condition)\r\n            .AsEnumerable();\r\n        return searchResult;\r\n    }\r\n " +
-                    "   [HttpPost(\"create\")]\r\n    public string Create(");
+            this.Write("(condition)\r\n            .AsEnumerable();\r\n        return JsonContent(searchResul" +
+                    "t);\r\n    }\r\n    [HttpPost(\"create\")]\r\n    public IActionResult Create(");
             this.Write(this.ToStringHelper.ToStringWithCulture(uiInstance));
             this.Write(" param) {\r\n        var success = _runtimeService.");
             this.Write(this.ToStringHelper.ToStringWithCulture(nameof(RuntimeService.TrySaveNewInstance)));
             this.Write(@"(param, out var instanceKey, out var errors);
         if (success) {
-            return instanceKey;
+            return Ok(new { instanceKey });
         } else {
-            return ""ERROR!""; // TODO
+            return BadRequest(errors);
         }
     }
     [HttpGet(""detail/{instanceKey}"")]
-    public HttpResponseMessage Find(string instanceKey) {
+    public IActionResult Find(string instanceKey) {
         var instance = _runtimeService.");
             this.Write(this.ToStringHelper.ToStringWithCulture(nameof(RuntimeService.FindInstance)));
             this.Write("<");
             this.Write(this.ToStringHelper.ToStringWithCulture(uiInstance));
-            this.Write(@">(instanceKey, out var _);
-        if (instance != null) {
-            return new HttpResponseMessage {
-                StatusCode = System.Net.HttpStatusCode.Found,
-                Content = JsonContent.Create(instance),
-            };
-        } else {
-            return new HttpResponseMessage {
-                StatusCode = System.Net.HttpStatusCode.NotFound,
-            };
-        }
-    }
-    [HttpPost(""update"")]
-    public HttpResponseMessage Update(");
+            this.Write(">(instanceKey, out var _);\r\n        if (instance == null) {\r\n            return N" +
+                    "otFound();\r\n        } else {\r\n            return JsonContent(instance);\r\n       " +
+                    " }\r\n    }\r\n    [HttpPost(\"update\")]\r\n    public IActionResult Update(");
             this.Write(this.ToStringHelper.ToStringWithCulture(uiInstance));
             this.Write(" param) {\r\n        var success = _runtimeService.");
             this.Write(this.ToStringHelper.ToStringWithCulture(nameof(RuntimeService.TryUpdate)));
             this.Write(@"(param, out var instanceKey, out var errors);
         if (success) {
-            return new HttpResponseMessage {
-                StatusCode = System.Net.HttpStatusCode.OK,
-                Content = new StringContent(instanceKey),
-            };
+            return Ok(new { instanceKey });
         } else {
-            return new HttpResponseMessage {
-                StatusCode = System.Net.HttpStatusCode.BadRequest,
-                Content = JsonContent.Create(errors),
-            };
+            return BadRequest(errors);
         }
+    }
+
+    private ContentResult JsonContent<T>(T obj) {
+        var options = new JsonSerializerOptions {
+            // レスポンスに大文字が含まれるとき、大文字のまま返す。
+            // react hook form や ag-grid では大文字小文字を区別しているため
+            PropertyNameCaseInsensitive = true,
+        };
+        var json = JsonSerializer.Serialize(obj, options);
+
+        return Content(json, ""application/json"");
     }
 }
 
