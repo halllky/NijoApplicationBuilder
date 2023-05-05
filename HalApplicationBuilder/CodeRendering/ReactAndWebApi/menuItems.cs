@@ -48,7 +48,7 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
             this.Write("\', el: <");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetCreateViewComponentName(root)));
             this.Write(" /> },\r\n    { url: \'");
-            this.Write(this.ToStringHelper.ToStringWithCulture(GetSingleViewUrl(root)));
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetSingleViewUrlForRouter(root)));
             this.Write("\', el: <");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetSingleViewComponentName(root)));
             this.Write(" /> },\r\n");

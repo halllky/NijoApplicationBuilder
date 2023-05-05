@@ -59,25 +59,18 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
             this.Write(this.ToStringHelper.ToStringWithCulture(search.SearchConditionClassName));
             this.Write("()\r\n            : System.Text.Json.JsonSerializer.Deserialize<");
             this.Write(this.ToStringHelper.ToStringWithCulture(search.SearchConditionClassName));
-            this.Write(">(json)!;\r\n        return _dbContext.");
+            this.Write(">(json)!;\r\n        var searchResult = _dbContext\r\n            .");
             this.Write(this.ToStringHelper.ToStringWithCulture(search.MethodName));
-            this.Write("(condition ?? new ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(search.SearchConditionClassName));
-            this.Write("());\r\n    }\r\n    [HttpPost(\"create\")]\r\n    public HttpResponseMessage Create(");
+            this.Write("(condition)\r\n            .AsEnumerable();\r\n        return searchResult;\r\n    }\r\n " +
+                    "   [HttpPost(\"create\")]\r\n    public string Create(");
             this.Write(this.ToStringHelper.ToStringWithCulture(uiInstance));
             this.Write(" param) {\r\n        var success = _runtimeService.");
             this.Write(this.ToStringHelper.ToStringWithCulture(nameof(RuntimeService.TrySaveNewInstance)));
             this.Write(@"(param, out var instanceKey, out var errors);
         if (success) {
-            return new HttpResponseMessage {
-                StatusCode = System.Net.HttpStatusCode.Created,
-                Content = new StringContent(instanceKey),
-            };
+            return instanceKey;
         } else {
-            return new HttpResponseMessage {
-                StatusCode = System.Net.HttpStatusCode.BadRequest,
-                Content = JsonContent.Create(errors),
-            };
+            return ""ERROR!""; // TODO
         }
     }
     [HttpGet(""detail/{instanceKey}"")]

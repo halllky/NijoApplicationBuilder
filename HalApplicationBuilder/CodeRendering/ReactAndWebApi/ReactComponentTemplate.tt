@@ -7,7 +7,7 @@ import React, { useState, useCallback } from 'react';
 import { useCtrlS } from '../hooks/useCtrlS';
 import { useAppContext } from '../hooks/AppContext';
 import { AgGridReact } from 'ag-grid-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
 import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon, BookmarkSquareIcon } from '@heroicons/react/24/outline';
@@ -106,10 +106,26 @@ const columnDefs = [
 
 export const <#=CreateViewComponentName#> = () => {
 
-    const { register } = useForm()
+    const { register, handleSubmit } = useForm()
+    const navigate = useNavigate()
+    const [{ apiDomain },] = useAppContext()
+    const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
+        const response = await fetch(`${apiDomain}/<#=_rootAggregate.GetCSharpSafeName()#>/create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        if (response.ok) {
+            const instanceKey = await response.text()
+            const encoded = window.encodeURI(instanceKey)
+            navigate(`<#=SingleViewUrl#>/${encoded}`)
+        }
+    }, [apiDomain, navigate])
 
     return (
-        <div className="flex flex-col justify-start space-y-1">
+        <form className="flex flex-col justify-start space-y-1" onSubmit={handleSubmit(onSave)}>
             <h1 className="text-base font-semibold select-none py-1">
                 <Link to="<#=MultiViewUrl#>"><#=_rootAggregate.GetDisplayName()#></Link> &#047; 新規作成
             </h1>
@@ -119,13 +135,14 @@ export const <#=CreateViewComponentName#> = () => {
 <# PopIndent(); #>
             </div>
             <IconButton icon={BookmarkSquareIcon} className="self-start">保存</IconButton>
-        </div>
+        </form>
     )
 }
 
 export const <#=SingleViewComponentName#> = () => {
 
     const { register } = useForm()
+    const { instanceKey } = useParams()
 
     return (
         <div className="flex flex-col justify-start space-y-1">

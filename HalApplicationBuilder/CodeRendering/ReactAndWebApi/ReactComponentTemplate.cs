@@ -29,7 +29,7 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
 import { useCtrlS } from '../hooks/useCtrlS';
 import { useAppContext } from '../hooks/AppContext';
 import { AgGridReact } from 'ag-grid-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
 import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon, BookmarkSquareIcon } from '@heroicons/react/24/outline';
@@ -135,9 +135,34 @@ const columnDefs = [
  } 
             this.Write("]\r\n\r\nexport const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(CreateViewComponentName));
-            this.Write(" = () => {\r\n\r\n    const { register } = useForm()\r\n\r\n    return (\r\n        <div cl" +
-                    "assName=\"flex flex-col justify-start space-y-1\">\r\n            <h1 className=\"tex" +
-                    "t-base font-semibold select-none py-1\">\r\n                <Link to=\"");
+            this.Write(@" = () => {
+
+    const { register, handleSubmit } = useForm()
+    const navigate = useNavigate()
+    const [{ apiDomain },] = useAppContext()
+    const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
+        const response = await fetch(`${apiDomain}/");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetCSharpSafeName()));
+            this.Write(@"/create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        if (response.ok) {
+            const instanceKey = await response.text()
+            const encoded = window.encodeURI(instanceKey)
+            navigate(`");
+            this.Write(this.ToStringHelper.ToStringWithCulture(SingleViewUrl));
+            this.Write(@"/${encoded}`)
+        }
+    }, [apiDomain, navigate])
+
+    return (
+        <form className=""flex flex-col justify-start space-y-1"" onSubmit={handleSubmit(onSave)}>
+            <h1 className=""text-base font-semibold select-none py-1"">
+                <Link to=""");
             this.Write(this.ToStringHelper.ToStringWithCulture(MultiViewUrl));
             this.Write("\">");
             this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetDisplayName()));
@@ -147,10 +172,11 @@ const columnDefs = [
  _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("instance"))); 
  PopIndent(); 
             this.Write("            </div>\r\n            <IconButton icon={BookmarkSquareIcon} className=\"" +
-                    "self-start\">•Û‘¶</IconButton>\r\n        </div>\r\n    )\r\n}\r\n\r\nexport const ");
+                    "self-start\">•Û‘¶</IconButton>\r\n        </form>\r\n    )\r\n}\r\n\r\nexport const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(SingleViewComponentName));
-            this.Write(" = () => {\r\n\r\n    const { register } = useForm()\r\n\r\n    return (\r\n        <div cl" +
-                    "assName=\"flex flex-col justify-start space-y-1\">\r\n");
+            this.Write(" = () => {\r\n\r\n    const { register } = useForm()\r\n    const { instanceKey } = use" +
+                    "Params()\r\n\r\n    return (\r\n        <div className=\"flex flex-col justify-start sp" +
+                    "ace-y-1\">\r\n");
  PushIndent("            "); 
  _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("instance"))); 
  PopIndent(); 

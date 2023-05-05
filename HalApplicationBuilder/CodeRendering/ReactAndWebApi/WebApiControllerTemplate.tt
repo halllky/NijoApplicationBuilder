@@ -35,21 +35,18 @@ public class <#=controllerName#> : ControllerBase {
         var condition = string.IsNullOrWhiteSpace(json)
             ? new <#=search.SearchConditionClassName#>()
             : System.Text.Json.JsonSerializer.Deserialize<<#=search.SearchConditionClassName#>>(json)!;
-        return _dbContext.<#=search.MethodName#>(condition ?? new <#=search.SearchConditionClassName#>());
+        var searchResult = _dbContext
+            .<#=search.MethodName#>(condition)
+            .AsEnumerable();
+        return searchResult;
     }
     [HttpPost("create")]
-    public HttpResponseMessage Create(<#=uiInstance#> param) {
+    public string Create(<#=uiInstance#> param) {
         var success = _runtimeService.<#=nameof(RuntimeService.TrySaveNewInstance)#>(param, out var instanceKey, out var errors);
         if (success) {
-            return new HttpResponseMessage {
-                StatusCode = System.Net.HttpStatusCode.Created,
-                Content = new StringContent(instanceKey),
-            };
+            return instanceKey;
         } else {
-            return new HttpResponseMessage {
-                StatusCode = System.Net.HttpStatusCode.BadRequest,
-                Content = JsonContent.Create(errors),
-            };
+            return "ERROR!"; // TODO
         }
     }
     [HttpGet("detail/{instanceKey}")]

@@ -12,7 +12,7 @@ export const routes: { url: string, el: JSX.Element }[] = [
 <# foreach (var root in _rootAggregates) { #>
     { url: '<#=GetMultiViewUrl(root)#>', el: <<#=GetMultiViewComponentName(root)#> /> },
     { url: '<#=GetCreateViewUrl(root)#>', el: <<#=GetCreateViewComponentName(root)#> /> },
-    { url: '<#=GetSingleViewUrl(root)#>', el: <<#=GetSingleViewComponentName(root)#> /> },
+    { url: '<#=GetSingleViewUrlForRouter(root)#>', el: <<#=GetSingleViewComponentName(root)#> /> },
 <# } #>
 ]
 export const menuItems: { url: string, text: string }[] = [

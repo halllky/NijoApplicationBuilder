@@ -132,6 +132,7 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
         internal string SingleViewComponentName => $"HalappSingleViewOF{_rootAggregate.GetGuid().ToString().Replace("-", "")}";
         private string MultiViewUrl => menuItems.GetMultiViewUrl(_rootAggregate);
         private string CreateViewUrl => menuItems.GetCreateViewUrl(_rootAggregate);
+        private string SingleViewUrl => menuItems.GetSingleViewUrl(_rootAggregate);
 
         private readonly RootAggregate _rootAggregate;
         private readonly RenderedClass _searchCondition;
@@ -155,7 +156,8 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
         }
         internal static string GetMultiViewUrl(RootAggregate rootAggregate) => $"/{rootAggregate.GetGuid()}";
         internal static string GetCreateViewUrl(RootAggregate rootAggregate) => $"/{rootAggregate.GetGuid()}/new";
-        internal static string GetSingleViewUrl(RootAggregate rootAggregate) => $"/{rootAggregate.GetGuid()}/detail/{{id}}";
+        internal static string GetSingleViewUrl(RootAggregate rootAggregate) => $"/{rootAggregate.GetGuid()}/detail";
+        internal static string GetSingleViewUrlForRouter(RootAggregate rootAggregate) => $"{GetSingleViewUrl(rootAggregate)}/:instanceKey";
         private static string GetMultiViewComponentName(RootAggregate rootAggregate) => new ReactComponentTemplate(rootAggregate).MultiViewComponentName;
         private static string GetCreateViewComponentName(RootAggregate rootAggregate) => new ReactComponentTemplate(rootAggregate).CreateViewComponentName;
         private static string GetSingleViewComponentName(RootAggregate rootAggregate) => new ReactComponentTemplate(rootAggregate).SingleViewComponentName;
