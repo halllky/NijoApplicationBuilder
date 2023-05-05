@@ -26,7 +26,7 @@ function App() {
               <SideMenu />
             </Panel>
             <PanelResizeHandle className='w-1' />
-            <Panel>
+            <Panel className="flex [&>*]:flex-1 items-stretch pr-1 pt-1 pb-1">
               <Routes>
                 <Route path='/' element={<Dashboard />} />
                 {routes.map(route =>

@@ -76,10 +76,10 @@ import { ");
     if (error) return <p>Error: {JSON.stringify(error)}</p>
 
     return (
-        <div className=""ag-theme-alpine compact h-full w-full"">
+        <div className=""ag-theme-alpine compact flex flex-col space-y-1"">
 
             <div className=""flex flex-row justify-start items-center space-x-1"">
-                <div className='flex flex-row items-center space-x-1 cursor-pointer' onClick={() => setExpanded(!expanded)}>
+                <div className='flex-1 flex flex-row items-center space-x-1 cursor-pointer' onClick={() => setExpanded(!expanded)}>
                     <h1 className=""text-base font-semibold select-none py-1"">
                         ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetDisplayName()));
@@ -89,26 +89,24 @@ import { ");
                         ? <ChevronDownIcon className=""w-4"" />
                         : <ChevronUpIcon className=""w-4"" />}
                 </div>
-                <div className='flex-1'></div>
                 <IconButton icon={PlusIcon} onClick={toCreateView}>新規作成</IconButton>
             </div>
 
-            {expanded &&
-                <form className='flex flex-col space-y-1 py-1' onSubmit={handleSubmit(onSearch)}>
+            <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1`} onSubmit={handleSubmit(onSearch)}>
 ");
- PushIndent("                    "); 
+ PushIndent("                "); 
  _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("searchCondition"))); 
  PopIndent(); 
-            this.Write(@"                    <div className='flex flex-row justify-start space-x-1'>
-                        <IconButton icon={MagnifyingGlassIcon}>検索</IconButton>
-                        <IconButton outline onClick={onClear}>クリア</IconButton>
-                        <div className=""flex-1""></div>
-                        <IconButton outline icon={BookmarkIcon}>この検索条件を保存</IconButton>
-                    </div>
-                </form>
-            }
+            this.Write(@"                <div className='flex flex-row justify-start space-x-1'>
+                    <IconButton icon={MagnifyingGlassIcon}>検索</IconButton>
+                    <IconButton outline onClick={onClear}>クリア</IconButton>
+                    <div className=""flex-1""></div>
+                    <IconButton outline icon={BookmarkIcon}>この検索条件を保存</IconButton>
+                </div>
+            </form>
 
             <AgGridReact
+                className=""flex-1""
                 rowData={isLoading ? [] : data}
                 columnDefs={columnDefs}
                 multiSortKey='ctrl'
@@ -146,9 +144,7 @@ const columnDefs = [
             this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetCSharpSafeName()));
             this.Write(@"/create`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
         })
         if (response.ok) {
@@ -167,8 +163,8 @@ const columnDefs = [
             this.Write(this.ToStringHelper.ToStringWithCulture(MultiViewUrl));
             this.Write("\">");
             this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetDisplayName()));
-            this.Write("</Link> &#047; 新規作成\r\n            </h1>\r\n            <div className=\"flex-1 flex f" +
-                    "lex-col space-y-1\">\r\n");
+            this.Write("</Link>\r\n                &nbsp;&#047;&nbsp;\r\n                新規作成\r\n            </" +
+                    "h1>\r\n            <div className=\"flex flex-col space-y-1\">\r\n");
  PushIndent("                "); 
  _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("instance"))); 
  PopIndent(); 
@@ -177,9 +173,9 @@ const columnDefs = [
             this.Write(this.ToStringHelper.ToStringWithCulture(SingleViewComponentName));
             this.Write(@" = () => {
 
-    const [{ apiDomain },] = useAppContext()
+    const [{ apiDomain }, dispatch] = useAppContext()
     const { instanceKey } = useParams()
-    const { register } = useForm({
+    const { register, handleSubmit } = useForm({
         defaultValues: async () => {
             if (!instanceKey) return undefined
             const encoded = window.encodeURI(instanceKey)
@@ -194,14 +190,33 @@ const columnDefs = [
             }
         },
     })
+    const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
+        const response = await fetch(`${apiDomain}/");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetCSharpSafeName()));
+            this.Write(@"/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        })
+        if (response.ok) {
+            dispatch({ type: 'pushMsg', msg: '更新しました。' })
+        }
+    }, [apiDomain])
 
     return (
-        <div className=""flex flex-col justify-start space-y-1"">
-");
+        <form className=""flex flex-col justify-start space-y-1"" onSubmit={handleSubmit(onSave)}>
+            <h1 className=""text-base font-semibold select-none py-1"">
+                <Link to=""");
+            this.Write(this.ToStringHelper.ToStringWithCulture(MultiViewUrl));
+            this.Write("\">");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetDisplayName()));
+            this.Write("</Link>\r\n                &nbsp;&#047;&nbsp;\r\n                <span className=\"sel" +
+                    "ect-all\">TODO:INSTANCENAME</span>\r\n            </h1>\r\n");
  PushIndent("            "); 
  _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("instance"))); 
  PopIndent(); 
-            this.Write("        </div>\r\n    )\r\n}\r\n");
+            this.Write("            <IconButton icon={BookmarkSquareIcon} className=\"self-start\">更新</Icon" +
+                    "Button>\r\n        </form>\r\n    )\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

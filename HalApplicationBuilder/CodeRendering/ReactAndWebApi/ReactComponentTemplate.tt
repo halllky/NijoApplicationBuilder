@@ -51,10 +51,10 @@ export const <#=MultiViewComponentName#> = () => {
     if (error) return <p>Error: {JSON.stringify(error)}</p>
 
     return (
-        <div className="ag-theme-alpine compact h-full w-full">
+        <div className="ag-theme-alpine compact flex flex-col space-y-1">
 
             <div className="flex flex-row justify-start items-center space-x-1">
-                <div className='flex flex-row items-center space-x-1 cursor-pointer' onClick={() => setExpanded(!expanded)}>
+                <div className='flex-1 flex flex-row items-center space-x-1 cursor-pointer' onClick={() => setExpanded(!expanded)}>
                     <h1 className="text-base font-semibold select-none py-1">
                         <#=_rootAggregate.GetDisplayName()#>
                     </h1>
@@ -62,25 +62,23 @@ export const <#=MultiViewComponentName#> = () => {
                         ? <ChevronDownIcon className="w-4" />
                         : <ChevronUpIcon className="w-4" />}
                 </div>
-                <div className='flex-1'></div>
                 <IconButton icon={PlusIcon} onClick={toCreateView}>新規作成</IconButton>
             </div>
 
-            {expanded &&
-                <form className='flex flex-col space-y-1 py-1' onSubmit={handleSubmit(onSearch)}>
-<# PushIndent("                    "); #>
+            <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1`} onSubmit={handleSubmit(onSearch)}>
+<# PushIndent("                "); #>
 <# _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("searchCondition"))); #>
 <# PopIndent(); #>
-                    <div className='flex flex-row justify-start space-x-1'>
-                        <IconButton icon={MagnifyingGlassIcon}>検索</IconButton>
-                        <IconButton outline onClick={onClear}>クリア</IconButton>
-                        <div className="flex-1"></div>
-                        <IconButton outline icon={BookmarkIcon}>この検索条件を保存</IconButton>
-                    </div>
-                </form>
-            }
+                <div className='flex flex-row justify-start space-x-1'>
+                    <IconButton icon={MagnifyingGlassIcon}>検索</IconButton>
+                    <IconButton outline onClick={onClear}>クリア</IconButton>
+                    <div className="flex-1"></div>
+                    <IconButton outline icon={BookmarkIcon}>この検索条件を保存</IconButton>
+                </div>
+            </form>
 
             <AgGridReact
+                className="flex-1"
                 rowData={isLoading ? [] : data}
                 columnDefs={columnDefs}
                 multiSortKey='ctrl'
@@ -112,9 +110,7 @@ export const <#=CreateViewComponentName#> = () => {
     const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
         const response = await fetch(`${apiDomain}/<#=_rootAggregate.GetCSharpSafeName()#>/create`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
         })
         if (response.ok) {
@@ -127,9 +123,11 @@ export const <#=CreateViewComponentName#> = () => {
     return (
         <form className="flex flex-col justify-start space-y-1" onSubmit={handleSubmit(onSave)}>
             <h1 className="text-base font-semibold select-none py-1">
-                <Link to="<#=MultiViewUrl#>"><#=_rootAggregate.GetDisplayName()#></Link> &#047; 新規作成
+                <Link to="<#=MultiViewUrl#>"><#=_rootAggregate.GetDisplayName()#></Link>
+                &nbsp;&#047;&nbsp;
+                新規作成
             </h1>
-            <div className="flex-1 flex flex-col space-y-1">
+            <div className="flex flex-col space-y-1">
 <# PushIndent("                "); #>
 <# _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("instance"))); #>
 <# PopIndent(); #>
@@ -141,9 +139,9 @@ export const <#=CreateViewComponentName#> = () => {
 
 export const <#=SingleViewComponentName#> = () => {
 
-    const [{ apiDomain },] = useAppContext()
+    const [{ apiDomain }, dispatch] = useAppContext()
     const { instanceKey } = useParams()
-    const { register } = useForm({
+    const { register, handleSubmit } = useForm({
         defaultValues: async () => {
             if (!instanceKey) return undefined
             const encoded = window.encodeURI(instanceKey)
@@ -156,12 +154,28 @@ export const <#=SingleViewComponentName#> = () => {
             }
         },
     })
+    const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
+        const response = await fetch(`${apiDomain}/<#=_rootAggregate.GetCSharpSafeName()#>/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        })
+        if (response.ok) {
+            dispatch({ type: 'pushMsg', msg: '更新しました。' })
+        }
+    }, [apiDomain])
 
     return (
-        <div className="flex flex-col justify-start space-y-1">
+        <form className="flex flex-col justify-start space-y-1" onSubmit={handleSubmit(onSave)}>
+            <h1 className="text-base font-semibold select-none py-1">
+                <Link to="<#=MultiViewUrl#>"><#=_rootAggregate.GetDisplayName()#></Link>
+                &nbsp;&#047;&nbsp;
+                <span className="select-all">TODO:INSTANCENAME</span>
+            </h1>
 <# PushIndent("            "); #>
 <# _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("instance"))); #>
 <# PopIndent(); #>
-        </div>
+            <IconButton icon={BookmarkSquareIcon} className="self-start">更新</IconButton>
+        </form>
     )
 }
