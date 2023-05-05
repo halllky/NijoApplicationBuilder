@@ -366,13 +366,21 @@ namespace HalApplicationBuilder {
             log?.WriteLine("コード自動生成: 集約のReactコンポーネント");
             var reactPageDir = Path.Combine(tsDir, REACT_PAGE_DIR);
             if (!Directory.Exists(reactPageDir)) Directory.CreateDirectory(reactPageDir);
-            foreach (var file in Directory.GetFiles(reactPageDir)) {
-                File.Delete(file);
-            }
+            var updatetdReactFiles = new HashSet<string>();
             foreach (var rootAggregate in rootAggregates) {
                 var template = new ReactComponentTemplate(rootAggregate);
-                using var sw = new StreamWriter(Path.Combine(reactPageDir, template.FileName), append: false, encoding: utf8withoutBOM);
+                var filepath = Path.Combine(reactPageDir, template.FileName);
+                using var sw = new StreamWriter(filepath, append: false, encoding: utf8withoutBOM);
                 sw.Write(template.TransformText());
+
+                updatetdReactFiles.Add(filepath);
+            }
+
+            var deleteFiles = Directory
+                .GetFiles(reactPageDir)
+                .Where(file => !updatetdReactFiles.Contains(file));
+            foreach (var filepath in deleteFiles) {
+                File.Delete(filepath);
             }
 
             log?.WriteLine("コード自動生成: index.ts等");
@@ -386,8 +394,6 @@ namespace HalApplicationBuilder {
                 var template = new index(rootAggregates);
                 sw.Write(template.TransformText());
             }
-
-            // TODO: 元々自動生成先フォルダに存在したが今回の生成では無くなっているファイルを削除
 
             log?.WriteLine("コード自動生成終了");
         }
