@@ -515,9 +515,12 @@ namespace HalApplicationBuilder {
                         };
                         dotnetRun.Restart();
 
-                    } catch (OperationCanceledException ex) when (ex.CancellationToken == rebuildCancellation?.Token) {
-                        // 実行中のビルドを中断してもう一度最初から
-                        break;
+                    } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
+                        throw; // デバッグ自体を中断
+
+                    } catch (OperationCanceledException) when (rebuildCancellation.IsCancellationRequested) {
+                        continue; // 実行中のビルドを中断してもう一度最初から
+
                     } catch (Exception ex) {
                         Console.ForegroundColor = ConsoleColor.Red;
                         Console.Error.WriteLine(ex.ToString());
@@ -532,6 +535,9 @@ namespace HalApplicationBuilder {
                         cancellationToken.ThrowIfCancellationRequested();
                     }
                 }
+
+            } catch (OperationCanceledException) {
+                Console.WriteLine("デバッグを中断します。");
 
             } finally {
                 rebuildCancellation?.Dispose();
