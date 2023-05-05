@@ -26,14 +26,14 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
         public virtual string TransformText()
         {
             this.Write(@"import React, { useState, useCallback } from 'react';
-import { useCtrlS } from './hooks/useCtrlS';
-import { useAppContext } from './hooks/AppContext';
+import { useCtrlS } from '../hooks/useCtrlS';
+import { useAppContext } from '../hooks/AppContext';
 import { AgGridReact } from 'ag-grid-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
 import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon, BookmarkSquareIcon } from '@heroicons/react/24/outline';
-import { IconButton } from './components/IconButton';
+import { IconButton } from '../components/IconButton';
 import { ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_searchCondition.ClassName));
             this.Write(", ");

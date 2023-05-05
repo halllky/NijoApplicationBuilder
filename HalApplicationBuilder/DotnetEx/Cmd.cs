@@ -62,6 +62,8 @@ namespace HalApplicationBuilder.DotnetEx {
                 // 削除できなくて失敗することがあるので少し待つ
                 Thread.Sleep(1000);
 
+                throw;
+
             } catch (Exception ex) {
                 throw new Exception($"EXCEPTION: '{filename} {string.Join(" ", args)}'", ex);
             }

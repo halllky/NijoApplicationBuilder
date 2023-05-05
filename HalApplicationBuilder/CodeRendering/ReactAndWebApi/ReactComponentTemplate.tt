@@ -4,14 +4,14 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 import React, { useState, useCallback } from 'react';
-import { useCtrlS } from './hooks/useCtrlS';
-import { useAppContext } from './hooks/AppContext';
+import { useCtrlS } from '../hooks/useCtrlS';
+import { useAppContext } from '../hooks/AppContext';
 import { AgGridReact } from 'ag-grid-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
 import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon, BookmarkSquareIcon } from '@heroicons/react/24/outline';
-import { IconButton } from './components/IconButton';
+import { IconButton } from '../components/IconButton';
 import { <#=_searchCondition.ClassName#>, <#=_searchResult.ClassName#>/*, <#=_uiInstance.ClassName#> */ } from '<#=GetImportFromTypes()#>';
 
 export const <#=MultiViewComponentName#> = () => {

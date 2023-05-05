@@ -131,7 +131,7 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
         private readonly RenderedClass _searchResult;
         private readonly RenderedClass _uiInstance;
 
-        private static string GetImportFromTypes() => $"./{Path.GetFileNameWithoutExtension(ReactTypeDefTemplate.FILE_NAME)}";
+        private static string GetImportFromTypes() => $"../{Path.GetFileNameWithoutExtension(ReactTypeDefTemplate.FILE_NAME)}";
     }
 
 #pragma warning disable IDE1006 // 命名スタイル
@@ -144,7 +144,7 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
         private readonly IEnumerable<RootAggregate> _rootAggregates;
 
         private static string GetImport(RootAggregate rootAggregate) {
-            return $"./{Path.GetFileNameWithoutExtension(new ReactComponentTemplate(rootAggregate).FileName)}";
+            return $"./{GeneratedProject.REACT_PAGE_DIR}/{Path.GetFileNameWithoutExtension(new ReactComponentTemplate(rootAggregate).FileName)}";
         }
         internal static string GetMultiViewUrl(RootAggregate rootAggregate) => $"/{rootAggregate.GetGuid()}";
         internal static string GetCreateViewUrl(RootAggregate rootAggregate) => $"/{rootAggregate.GetGuid()}/new";
@@ -168,7 +168,7 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
             return $"./{Path.GetFileNameWithoutExtension(menuItems.FILE_NAME)}";
         }
         private static string GetImport(RootAggregate rootAggregate) {
-            return $"./{Path.GetFileNameWithoutExtension(new ReactComponentTemplate(rootAggregate).FileName)}";
+            return $"./{GeneratedProject.REACT_PAGE_DIR}/{Path.GetFileNameWithoutExtension(new ReactComponentTemplate(rootAggregate).FileName)}";
         }
         internal const string FILE_NAME = "index.ts";
     }
