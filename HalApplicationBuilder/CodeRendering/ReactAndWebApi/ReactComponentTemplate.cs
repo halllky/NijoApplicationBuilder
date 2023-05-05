@@ -122,12 +122,13 @@ import { ");
 const columnDefs = [
     {
         resizable: true,
-        cellRenderer: ({ data }: any) => {
-            // console.log(data)
-            return <Link to=""/"" className=""text-blue-400"">Ú×</Link>
-        },
-    },
-");
+        cellRenderer: ({ data }: { data: { ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.SearchResultBase.__halapp__InstanceKey)));
+            this.Write(": string } }) => {\r\n            const encoded = window.encodeURI(data.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.SearchResultBase.__halapp__InstanceKey)));
+            this.Write(")\r\n            return <Link to={`");
+            this.Write(this.ToStringHelper.ToStringWithCulture(SingleViewUrl));
+            this.Write("/${encoded}`} className=\"text-blue-400\">Ú×</Link>\r\n        },\r\n    },\r\n");
  foreach (var prop in _searchResult.Properties) { 
             this.Write("    { field: \'");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));

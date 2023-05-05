@@ -10,6 +10,7 @@ namespace <#=_config.DbContextNamespace#> {
     using System.Collections.Generic;
     using System.Linq;
     using Microsoft.EntityFrameworkCore;
+    using Microsoft.EntityFrameworkCore.Infrastructure;
 
     partial class <#=_config.DbContextName#> {
 
@@ -31,7 +32,8 @@ namespace <#=_config.DbContextNamespace#> {
                 .Skip(page.<#=nameof(DotnetEx.Page.SqlOffset)#>)
                 .Take(page.<#=nameof(DotnetEx.Page.SqlLimit)#>);
 
-            return query.AsEnumerable();
+            var runtimeService = this.GetService<HalApplicationBuilder.RuntimeService>()!;
+            return runtimeService.AppendInstanceKey(query);
         }
 <# } #>
 

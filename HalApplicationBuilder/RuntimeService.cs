@@ -1,5 +1,6 @@
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
+using HalApplicationBuilder.Runtime;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -140,6 +141,16 @@ namespace HalApplicationBuilder {
 
             foreach (var item in searchResult) {
                 ((Runtime.SearchResultBase)item).__halapp__InstanceKey = aggregate.CreateInstanceKeyFromSearchResult(item).StringValue;
+                yield return item;
+            }
+        }
+        /// <summary>TODO 苦肉の策。もっと良いやり方がある</summary>
+        public IEnumerable<TSearchResult> AppendInstanceKey<TSearchResult>(IEnumerable<TSearchResult> searchResults) where TSearchResult : SearchResultBase {
+            var aggregate = FindRootAggregate(typeof(TSearchResult));
+            if (aggregate == null) throw new ArgumentException($"型 {typeof(TSearchResult).Name} と対応する集約が見つかりません。");
+
+            foreach (var item in searchResults) {
+                item.__halapp__InstanceKey = aggregate.CreateInstanceKeyFromSearchResult(item).StringValue;
                 yield return item;
             }
         }

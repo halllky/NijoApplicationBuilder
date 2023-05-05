@@ -94,9 +94,9 @@ export const <#=MultiViewComponentName#> = () => {
 const columnDefs = [
     {
         resizable: true,
-        cellRenderer: ({ data }: any) => {
-            // console.log(data)
-            return <Link to="/" className="text-blue-400">詳細</Link>
+        cellRenderer: ({ data }: { data: { <#=nameof(Runtime.SearchResultBase.__halapp__InstanceKey)#>: string } }) => {
+            const encoded = window.encodeURI(data.<#=nameof(Runtime.SearchResultBase.__halapp__InstanceKey)#>)
+            return <Link to={`<#=SingleViewUrl#>/${encoded}`} className="text-blue-400">詳細</Link>
         },
     },
 <# foreach (var prop in _searchResult.Properties) { #>

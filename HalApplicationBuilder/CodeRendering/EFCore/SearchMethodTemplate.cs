@@ -28,8 +28,8 @@ namespace HalApplicationBuilder.CodeRendering.EFCore
             this.Write("\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextNamespace));
             this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
-                    "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n\r\n" +
-                    "    partial class ");
+                    "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n  " +
+                    "  using Microsoft.EntityFrameworkCore.Infrastructure;\r\n\r\n    partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextName));
             this.Write(" {\r\n\r\n");
  foreach (var rootAggregate in _rootAggregates) { 
@@ -61,7 +61,9 @@ namespace HalApplicationBuilder.CodeRendering.EFCore
             this.Write(this.ToStringHelper.ToStringWithCulture(nameof(DotnetEx.Page.SqlOffset)));
             this.Write(")\r\n                .Take(page.");
             this.Write(this.ToStringHelper.ToStringWithCulture(nameof(DotnetEx.Page.SqlLimit)));
-            this.Write(");\r\n\r\n            return query.AsEnumerable();\r\n        }\r\n");
+            this.Write(");\r\n\r\n            var runtimeService = this.GetService<HalApplicationBuilder.Runt" +
+                    "imeService>()!;\r\n            return runtimeService.AppendInstanceKey(query);\r\n  " +
+                    "      }\r\n");
  } 
             this.Write("\r\n    }\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
