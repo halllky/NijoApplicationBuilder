@@ -8,23 +8,32 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.DotnetEx {
     internal static class IO {
-        internal static void CopyDirectory(string source, string dist) {
+        internal static void CopyDirectory(string source, string dist, bool deleteOnlyDist = false) {
 
             if (!Directory.Exists(dist)) {
                 Directory.CreateDirectory(dist);
                 File.SetAttributes(dist, File.GetAttributes(source));
             }
 
+            var deleteTarget = Directory.GetFiles(dist).ToHashSet();
+
             var sourceFiles = Directory.GetFiles(source);
             foreach (var sourceFile in sourceFiles) {
                 var distFile = Path.Combine(dist, Path.GetFileName(sourceFile));
                 File.Copy(sourceFile, distFile, true);
+                deleteTarget.Remove(distFile);
             }
 
             var childDirctories = Directory.GetDirectories(source);
             foreach (string sourceChildDir in childDirctories) {
                 var distChildDir = Path.Combine(dist, Path.GetFileName(sourceChildDir));
                 CopyDirectory(sourceChildDir, distChildDir);
+            }
+
+            if (deleteOnlyDist) {
+                foreach (var distFile in deleteTarget) {
+                    if (File.Exists(distFile)) File.Delete(distFile);
+                }
             }
         }
 
