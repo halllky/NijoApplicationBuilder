@@ -76,7 +76,7 @@ halapp debug --verbose
 - `dotnet run` が実行されているURL
 
 ブラウザを開いて上記のnpmのURLにアクセスする
-画面のメインメニューから「設定」を開き、APサーバー欄に上記で控えたdotnetのURLを入力する
+画面のメインメニューから「設定」を開き、サーバーURL欄に上記で控えたdotnetのURLを入力する
 
 前述の手順で作成した `YourApplicationName` フォルダの中にある `halapp.xml` ファイルを編集すると、画面とDBに反映される。XMLの編集はお好みのテキストエディタで可
 
