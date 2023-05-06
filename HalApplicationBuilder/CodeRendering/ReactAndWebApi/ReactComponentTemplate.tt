@@ -10,8 +10,10 @@ import { AgGridReact } from 'ag-grid-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
+import { UUID } from 'uuidjs'
 import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon, BookmarkSquareIcon } from '@heroicons/react/24/outline';
 import { IconButton } from '../components/IconButton';
+import { InlineMessageBar, BarMessage } from '../components/InlineMessageBar';
 import { <#=_searchCondition.ClassName#>, <#=_searchResult.ClassName#>/*, <#=_uiInstance.ClassName#> */ } from '<#=GetImportFromTypes()#>';
 
 export const <#=MultiViewComponentName#> = () => {
@@ -30,7 +32,7 @@ export const <#=MultiViewComponentName#> = () => {
         reset()
         e.preventDefault()
     }, [reset])
-    const { data, isLoading, error } = useQuery({
+    const { data, isFetching } = useQuery({
         queryKey: ['<#=_rootAggregate.GetGuid()#>', JSON.stringify(param)],
         queryFn: async () => {
             const json = JSON.stringify(param)
@@ -38,6 +40,9 @@ export const <#=MultiViewComponentName#> = () => {
             const response = await fetch(`${apiDomain}/<#=_rootAggregate.GetCSharpSafeName()#>/list?param=${encoded}`)
             if (!response.ok) throw new Error('Network response was not OK.')
             return (await response.json()) as <#=_searchResult.ClassName#>[]
+        },
+        onError: error => {
+            dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
         },
     })
 
@@ -47,8 +52,8 @@ export const <#=MultiViewComponentName#> = () => {
     }, [navigate])
 
     const [expanded, setExpanded] = useState(true)
-    
-    if (error) return <p>Error: {JSON.stringify(error)}</p>
+
+    if (isFetching) return <></>
 
     return (
         <div className="ag-theme-alpine compact flex flex-col space-y-1">
@@ -79,7 +84,7 @@ export const <#=MultiViewComponentName#> = () => {
 
             <AgGridReact
                 className="flex-1"
-                rowData={isLoading ? [] : data}
+                rowData={data || []}
                 columnDefs={columnDefs}
                 multiSortKey='ctrl'
                 undoRedoCellEditing
@@ -107,6 +112,7 @@ export const <#=CreateViewComponentName#> = () => {
     const { register, handleSubmit } = useForm()
     const navigate = useNavigate()
     const [{ apiDomain },] = useAppContext()
+    const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
     const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
         const response = await fetch(`${apiDomain}/<#=_rootAggregate.GetCSharpSafeName()#>/create`, {
             method: 'POST',
@@ -114,11 +120,15 @@ export const <#=CreateViewComponentName#> = () => {
             body: JSON.stringify(data),
         })
         if (response.ok) {
+            setErrorMessages([])
             const { instanceKey } = JSON.parse(await response.text())
             const encoded = window.encodeURI(instanceKey)
             navigate(`<#=SingleViewUrl#>/${encoded}`)
+        } else {
+            const errors: string[] = JSON.parse(await response.text())
+            setErrorMessages([...errorMessages, ...errors.map(text => ({ uuid: UUID.generate(), text }))])
         }
-    }, [apiDomain, navigate])
+    }, [apiDomain, navigate, errorMessages])
 
     return (
         <form className="flex flex-col justify-start space-y-1" onSubmit={handleSubmit(onSave)}>
@@ -127,6 +137,7 @@ export const <#=CreateViewComponentName#> = () => {
                 &nbsp;&#047;&nbsp;
                 新規作成
             </h1>
+            <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
             <div className="flex flex-col space-y-1">
 <# PushIndent("                "); #>
 <# _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("instance"))); #>
@@ -140,20 +151,24 @@ export const <#=CreateViewComponentName#> = () => {
 export const <#=SingleViewComponentName#> = () => {
 
     const [{ apiDomain }, dispatch] = useAppContext()
+
     const { instanceKey } = useParams()
-    const { register, handleSubmit } = useForm({
-        defaultValues: async () => {
-            if (!instanceKey) return undefined
-            const encoded = window.encodeURI(instanceKey)
-            const response = await fetch(`${apiDomain}/<#=_rootAggregate.GetCSharpSafeName()#>/detail/${encoded}`)
-            if (response.ok) {
-                const data = await response.text()
-                return JSON.parse(data)
-            } else {
-                return undefined
-            }
-        },
-    })
+    const [fetched, setFetched] = useState(false)
+    const defaultValues = useCallback(async () => {
+        if (!instanceKey) return undefined
+        const encoded = window.encodeURI(instanceKey)
+        const response = await fetch(`${apiDomain}/<#=_rootAggregate.GetCSharpSafeName()#>/detail/${encoded}`)
+        setFetched(true)
+        if (response.ok) {
+            const data = await response.text()
+            return JSON.parse(data)
+        } else {
+            return undefined
+        }
+    }, [instanceKey])
+
+    const { register, handleSubmit } = useForm({ defaultValues })
+    const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
     const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
         const response = await fetch(`${apiDomain}/<#=_rootAggregate.GetCSharpSafeName()#>/update`, {
             method: 'POST',
@@ -161,9 +176,15 @@ export const <#=SingleViewComponentName#> = () => {
             body: JSON.stringify(data),
         })
         if (response.ok) {
+            setErrorMessages([])
             dispatch({ type: 'pushMsg', msg: '更新しました。' })
+        } else {
+            const errors: string[] = JSON.parse(await response.text())
+            setErrorMessages([...errorMessages, ...errors.map(text => ({ uuid: UUID.generate(), text }))])
         }
-    }, [apiDomain])
+    }, [apiDomain, errorMessages])
+
+    if (!fetched) return <></>
 
     return (
         <form className="flex flex-col justify-start space-y-1" onSubmit={handleSubmit(onSave)}>
@@ -172,6 +193,7 @@ export const <#=SingleViewComponentName#> = () => {
                 &nbsp;&#047;&nbsp;
                 <span className="select-all">TODO:INSTANCENAME</span>
             </h1>
+            <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
 <# PushIndent("            "); #>
 <# _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("instance"))); #>
 <# PopIndent(); #>

@@ -32,8 +32,10 @@ import { AgGridReact } from 'ag-grid-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
+import { UUID } from 'uuidjs'
 import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon, BookmarkSquareIcon } from '@heroicons/react/24/outline';
 import { IconButton } from '../components/IconButton';
+import { InlineMessageBar, BarMessage } from '../components/InlineMessageBar';
 import { ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_searchCondition.ClassName));
             this.Write(", ");
@@ -55,8 +57,8 @@ import { ");
                     " as ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_searchCondition.ClassName));
             this.Write(")\r\n    }, [])\r\n    const onClear = useCallback((e: React.MouseEvent) => {\r\n      " +
-                    "  reset()\r\n        e.preventDefault()\r\n    }, [reset])\r\n    const { data, isLoad" +
-                    "ing, error } = useQuery({\r\n        queryKey: [\'");
+                    "  reset()\r\n        e.preventDefault()\r\n    }, [reset])\r\n    const { data, isFetc" +
+                    "hing } = useQuery({\r\n        queryKey: [\'");
             this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetGuid()));
             this.Write("\', JSON.stringify(param)],\r\n        queryFn: async () => {\r\n            const jso" +
                     "n = JSON.stringify(param)\r\n            const encoded = window.encodeURI(json)\r\n " +
@@ -65,15 +67,17 @@ import { ");
             this.Write("/list?param=${encoded}`)\r\n            if (!response.ok) throw new Error(\'Network " +
                     "response was not OK.\')\r\n            return (await response.json()) as ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_searchResult.ClassName));
-            this.Write("[]\r\n        },\r\n    })\r\n\r\n    const navigate = useNavigate()\r\n    const toCreateV" +
-                    "iew = useCallback(() => {\r\n        navigate(\'");
+            this.Write("[]\r\n        },\r\n        onError: error => {\r\n            dispatch({ type: \'pushMs" +
+                    "g\', msg: `ERROR!: ${JSON.stringify(error)}` })\r\n        },\r\n    })\r\n\r\n    const " +
+                    "navigate = useNavigate()\r\n    const toCreateView = useCallback(() => {\r\n        " +
+                    "navigate(\'");
             this.Write(this.ToStringHelper.ToStringWithCulture(CreateViewUrl));
             this.Write(@"')
     }, [navigate])
 
     const [expanded, setExpanded] = useState(true)
-    
-    if (error) return <p>Error: {JSON.stringify(error)}</p>
+
+    if (isFetching) return <></>
 
     return (
         <div className=""ag-theme-alpine compact flex flex-col space-y-1"">
@@ -107,7 +111,7 @@ import { ");
 
             <AgGridReact
                 className=""flex-1""
-                rowData={isLoading ? [] : data}
+                rowData={data || []}
                 columnDefs={columnDefs}
                 multiSortKey='ctrl'
                 undoRedoCellEditing
@@ -139,6 +143,7 @@ const columnDefs = [
     const { register, handleSubmit } = useForm()
     const navigate = useNavigate()
     const [{ apiDomain },] = useAppContext()
+    const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
     const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
         const response = await fetch(`${apiDomain}/");
             this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetCSharpSafeName()));
@@ -148,13 +153,17 @@ const columnDefs = [
             body: JSON.stringify(data),
         })
         if (response.ok) {
+            setErrorMessages([])
             const { instanceKey } = JSON.parse(await response.text())
             const encoded = window.encodeURI(instanceKey)
             navigate(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(SingleViewUrl));
             this.Write(@"/${encoded}`)
+        } else {
+            const errors: string[] = JSON.parse(await response.text())
+            setErrorMessages([...errorMessages, ...errors.map(text => ({ uuid: UUID.generate(), text }))])
         }
-    }, [apiDomain, navigate])
+    }, [apiDomain, navigate, errorMessages])
 
     return (
         <form className=""flex flex-col justify-start space-y-1"" onSubmit={handleSubmit(onSave)}>
@@ -164,7 +173,8 @@ const columnDefs = [
             this.Write("\">");
             this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetDisplayName()));
             this.Write("</Link>\r\n                &nbsp;&#047;&nbsp;\r\n                新規作成\r\n            </" +
-                    "h1>\r\n            <div className=\"flex flex-col space-y-1\">\r\n");
+                    "h1>\r\n            <InlineMessageBar value={errorMessages} onChange={setErrorMessa" +
+                    "ges} />\r\n            <div className=\"flex flex-col space-y-1\">\r\n");
  PushIndent("                "); 
  _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("instance"))); 
  PopIndent(); 
@@ -174,22 +184,26 @@ const columnDefs = [
             this.Write(@" = () => {
 
     const [{ apiDomain }, dispatch] = useAppContext()
+
     const { instanceKey } = useParams()
-    const { register, handleSubmit } = useForm({
-        defaultValues: async () => {
-            if (!instanceKey) return undefined
-            const encoded = window.encodeURI(instanceKey)
-            const response = await fetch(`${apiDomain}/");
+    const [fetched, setFetched] = useState(false)
+    const defaultValues = useCallback(async () => {
+        if (!instanceKey) return undefined
+        const encoded = window.encodeURI(instanceKey)
+        const response = await fetch(`${apiDomain}/");
             this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetCSharpSafeName()));
             this.Write(@"/detail/${encoded}`)
-            if (response.ok) {
-                const data = await response.text()
-                return JSON.parse(data)
-            } else {
-                return undefined
-            }
-        },
-    })
+        setFetched(true)
+        if (response.ok) {
+            const data = await response.text()
+            return JSON.parse(data)
+        } else {
+            return undefined
+        }
+    }, [instanceKey])
+
+    const { register, handleSubmit } = useForm({ defaultValues })
+    const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
     const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
         const response = await fetch(`${apiDomain}/");
             this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetCSharpSafeName()));
@@ -199,9 +213,15 @@ const columnDefs = [
             body: JSON.stringify(data),
         })
         if (response.ok) {
+            setErrorMessages([])
             dispatch({ type: 'pushMsg', msg: '更新しました。' })
+        } else {
+            const errors: string[] = JSON.parse(await response.text())
+            setErrorMessages([...errorMessages, ...errors.map(text => ({ uuid: UUID.generate(), text }))])
         }
-    }, [apiDomain])
+    }, [apiDomain, errorMessages])
+
+    if (!fetched) return <></>
 
     return (
         <form className=""flex flex-col justify-start space-y-1"" onSubmit={handleSubmit(onSave)}>
@@ -211,7 +231,8 @@ const columnDefs = [
             this.Write("\">");
             this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetDisplayName()));
             this.Write("</Link>\r\n                &nbsp;&#047;&nbsp;\r\n                <span className=\"sel" +
-                    "ect-all\">TODO:INSTANCENAME</span>\r\n            </h1>\r\n");
+                    "ect-all\">TODO:INSTANCENAME</span>\r\n            </h1>\r\n            <InlineMessage" +
+                    "Bar value={errorMessages} onChange={setErrorMessages} />\r\n");
  PushIndent("            "); 
  _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("instance"))); 
  PopIndent(); 
