@@ -1,4 +1,4 @@
-export const Dashboard = () => {
+export const MyAccount = () => {
 
   return (
     <div>

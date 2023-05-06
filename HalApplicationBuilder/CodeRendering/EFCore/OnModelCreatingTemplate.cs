@@ -13,7 +13,7 @@ namespace HalApplicationBuilder.CodeRendering.EFCore
     using System.Text;
     using System.Collections.Generic;
     using System;
-
+    
     /// <summary>
     /// Class to produce the template output
     /// </summary>

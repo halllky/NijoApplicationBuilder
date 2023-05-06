@@ -11,6 +11,7 @@ namespace HalApplicationBuilder.CodeRendering {
             _dbContextFullName = $"{config.DbContextNamespace}.{config.DbContextName}";
         }
         private readonly string _dbContextFullName;
+        internal const string HALAPP_RUNTIME_SERVER_SETTING_JSON = "halapp-runtime-config.json";
     }
 
     partial class UIModelsTemplate {

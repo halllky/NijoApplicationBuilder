@@ -1,4 +1,4 @@
-export const Dashboard = () => {
+export const UnCommitChanges = () => {
 
   return (
     <div>

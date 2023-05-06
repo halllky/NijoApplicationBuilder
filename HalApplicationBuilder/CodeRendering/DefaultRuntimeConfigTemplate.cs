@@ -41,16 +41,28 @@ namespace HalApplicationBuilder.Runtime {
             this.Write(this.ToStringHelper.ToStringWithCulture(_dbContextFullName));
             this.Write(">();\r\n            });\r\n\r\n            services.AddDbContext<");
             this.Write(this.ToStringHelper.ToStringWithCulture(_dbContextFullName));
-            this.Write(@">(option => {
-                var connStr = $""Data Source=\""{System.IO.Path.Combine(runtimeRootDir, ""bin"", ""Debug"", ""debug.sqlite3"")}\"""";
+            this.Write(">((provider, option) => {\r\n                var setting = provider.GetRequiredServ" +
+                    "ice<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))));
+            this.Write(">();\r\n                var connStr = setting.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.RuntimeSettings.Server.GetActiveConnectionString)));
+            this.Write(@"();
                 Microsoft.EntityFrameworkCore.ProxiesExtensions.UseLazyLoadingProxies(option);
                 Microsoft.EntityFrameworkCore.SqliteDbContextOptionsBuilderExtensions.UseSqlite(option, connStr);
             });
-        }
-    }
 
-}
-");
+            services.AddScoped(_ => {
+                var filename = """);
+            this.Write(this.ToStringHelper.ToStringWithCulture(HALAPP_RUNTIME_SERVER_SETTING_JSON));
+            this.Write("\";\r\n                if (System.IO.File.Exists(filename)) {\r\n                    u" +
+                    "sing var stream = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare." +
+                    "ReadWrite);\r\n                    var parsed = System.Text.Json.JsonSerializer.De" +
+                    "serialize<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))));
+            this.Write(">(stream);\r\n                    return parsed!;\r\n                } else {\r\n      " +
+                    "              return new ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))));
+            this.Write("();\r\n                }\r\n            });\r\n        }\r\n    }\r\n\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

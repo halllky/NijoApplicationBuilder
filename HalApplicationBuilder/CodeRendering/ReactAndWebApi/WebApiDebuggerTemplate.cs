@@ -27,23 +27,32 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
         public virtual string TransformText()
         {
  var dbContextTypeName = $"{_config.DbContextNamespace}.{_config.DbContextName}"; 
-            this.Write("using Microsoft.AspNetCore.Mvc;\r\n\r\nnamespace ");
+            this.Write("using Microsoft.AspNetCore.Mvc;\r\nusing System.Text.Json;\r\n\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_config.MvcControllerNamespace));
             this.Write(";\r\n\r\n#if DEBUG\r\n[ApiController]\r\n[Route(\"[controller]\")]\r\npublic class HalappDebu" +
-                    "gController {\r\n    public HalappDebugController(\r\n        ILogger<HalappDebugCon" +
-                    "troller> logger,\r\n        ");
+                    "gController : ControllerBase {\r\n    public HalappDebugController(\r\n        ILogg" +
+                    "er<HalappDebugController> logger,\r\n        ");
             this.Write(this.ToStringHelper.ToStringWithCulture(dbContextTypeName));
             this.Write(" dbContext,\r\n        ");
             this.Write(this.ToStringHelper.ToStringWithCulture(typeof(RuntimeService).FullName));
-            this.Write(" runtimeService) {\r\n        _logger = logger;\r\n        _dbContext = dbContext;\r\n " +
-                    "       _runtimeService = runtimeService;\r\n    }\r\n    private readonly ILogger<Ha" +
-                    "lappDebugController> _logger;\r\n    private readonly ");
+            this.Write(" runtimeService,\r\n        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))));
+            this.Write(@"? secretSettings) {
+        _logger = logger;
+        _dbContext = dbContext;
+        _runtimeService = runtimeService;
+        _secretSettings = secretSettings;
+    }
+    private readonly ILogger<HalappDebugController> _logger;
+    private readonly ");
             this.Write(this.ToStringHelper.ToStringWithCulture(dbContextTypeName));
             this.Write(" _dbContext;\r\n    private readonly ");
             this.Write(this.ToStringHelper.ToStringWithCulture(typeof(RuntimeService).FullName));
-            this.Write(@" _runtimeService;
+            this.Write(" _runtimeService;\r\n    private readonly ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))));
+            this.Write(@"? _secretSettings;
 
-    [HttpPut(""recreate-database"")]
+    [HttpPost(""recreate-database"")]
     public HttpResponseMessage RecreateDatabase() {
         _dbContext.Database.EnsureDeleted();
         _dbContext.Database.EnsureCreated();
@@ -51,6 +60,33 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
             StatusCode = System.Net.HttpStatusCode.OK,
             Content = new StringContent(""DBを再作成しました。""),
         };
+    }
+    
+    [HttpGet(""secret-settings"")]
+    public IActionResult GetSecretSettings() {
+        return JsonContent(_secretSettings ?? new ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))));
+            this.Write("());\r\n    }\r\n    [HttpPost(\"secret-settings\")]\r\n    public IActionResult SetSecre" +
+                    "tSettings([FromBody] ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))));
+            this.Write(" settings) {\r\n        var json = System.Text.Json.JsonSerializer.Serialize<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))));
+            this.Write(">(settings);\r\n        using var sw = new System.IO.StreamWriter(\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(DefaultRuntimeConfigTemplate.HALAPP_RUNTIME_SERVER_SETTING_JSON));
+            this.Write(@""", false, new System.Text.UTF8Encoding(false));
+        sw.WriteLine(json);
+        return Ok();
+    }
+    
+    private ContentResult JsonContent<T>(T obj) {
+        var options = new JsonSerializerOptions {
+            // レスポンスに大文字が含まれるとき、大文字のまま返す。
+            // react hook form や ag-grid では大文字小文字を区別しているため
+            PropertyNameCaseInsensitive = true,
+        };
+        var json = JsonSerializer.Serialize(obj, options);
+
+        return Content(json, ""application/json"");
     }
 }
 #endif

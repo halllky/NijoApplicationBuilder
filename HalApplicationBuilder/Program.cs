@@ -42,6 +42,8 @@ namespace HalApplicationBuilder {
             debug.SetHandler((path, verbose) => {
                 GeneratedProject
                     .Open(path)
+                    .CopyHalapDll()
+                    .UpdateReactSource()
                     .StartDebugging(verbose, cancellationTokenSource.Token, Console.Out);
             }, path, verbose);
 

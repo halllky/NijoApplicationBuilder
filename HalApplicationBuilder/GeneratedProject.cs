@@ -105,11 +105,18 @@ namespace HalApplicationBuilder {
 
                 csproj.Save();
 
-                // Program.cs書き換え
-                log?.WriteLine($"HalappDefaultConfigure.cs ファイルを作成します。");
-                using (var sw = new StreamWriter(Path.Combine(tempDir, "HalappDefaultConfigure.cs"), append: false, encoding: Encoding.UTF8)) {
-                    sw.Write(new CodeRendering.DefaultRuntimeConfigTemplate(config).TransformText());
+                // 設定ファイル作成
+                using (var sw = new StreamWriter(CodeRendering.DefaultRuntimeConfigTemplate.HALAPP_RUNTIME_SERVER_SETTING_JSON, false, new UTF8Encoding(false))) {
+                    var json = System.Text.Json.JsonSerializer.Serialize(new Runtime.RuntimeSettings.Server {
+                        CurrentDB = "SQLITE",
+                        ConnectionStrings = new Dictionary<string, string> {
+                            { "SQLITE", @"Data Source=\""bin/Debug/debug.sqlite3\""" },
+                        },
+                    });
+                    sw.WriteLine(json);
                 }
+
+                // Program.cs書き換え
                 log?.WriteLine($"Program.cs ファイルを書き換えます。");
                 var programCsPath = Path.Combine(tempDir, "Program.cs");
                 var lines = File.ReadAllLines(programCsPath).ToList();
@@ -279,6 +286,11 @@ namespace HalApplicationBuilder {
             var allAggregates = rootAggregates
                 .SelectMany(a => a.GetDescendantsAndSelf())
                 .ToArray();
+
+            log?.WriteLine("コード自動生成: DI設定");
+            using (var sw = new StreamWriter(Path.Combine(ProjectRoot, "HalappDefaultConfigure.cs"), append: false, encoding: Encoding.UTF8)) {
+                sw.Write(new CodeRendering.DefaultRuntimeConfigTemplate(config).TransformText());
+            }
 
             log?.WriteLine("コード自動生成: スキーマ定義");
             using (var sw = new StreamWriter(Path.Combine(ProjectRoot, "halapp.json"), append: false, encoding: Encoding.UTF8)) {

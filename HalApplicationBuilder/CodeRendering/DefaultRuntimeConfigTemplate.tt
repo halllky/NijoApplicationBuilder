@@ -18,10 +18,22 @@ namespace HalApplicationBuilder.Runtime {
                 return provider.GetRequiredService<<#=_dbContextFullName#>>();
             });
 
-            services.AddDbContext<<#=_dbContextFullName#>>(option => {
-                var connStr = $"Data Source=\"{System.IO.Path.Combine(runtimeRootDir, "bin", "Debug", "debug.sqlite3")}\"";
+            services.AddDbContext<<#=_dbContextFullName#>>((provider, option) => {
+                var setting = provider.GetRequiredService<<#=DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))#>>();
+                var connStr = setting.<#=nameof(Runtime.RuntimeSettings.Server.GetActiveConnectionString)#>();
                 Microsoft.EntityFrameworkCore.ProxiesExtensions.UseLazyLoadingProxies(option);
                 Microsoft.EntityFrameworkCore.SqliteDbContextOptionsBuilderExtensions.UseSqlite(option, connStr);
+            });
+
+            services.AddScoped(_ => {
+                var filename = "<#=HALAPP_RUNTIME_SERVER_SETTING_JSON#>";
+                if (System.IO.File.Exists(filename)) {
+                    using var stream = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    var parsed = System.Text.Json.JsonSerializer.Deserialize<<#=DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))#>>(stream);
+                    return parsed!;
+                } else {
+                    return new <#=DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))#>();
+                }
             });
         }
     }

@@ -203,7 +203,7 @@ const columnDefs = [
         } else {
             return undefined
         }
-    }, [instanceKey])
+    }, [instanceKey, apiDomain])
 
     const { register, handleSubmit } = useForm({ defaultValues })
     const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
@@ -222,7 +222,7 @@ const columnDefs = [
             const errors: string[] = JSON.parse(await response.text())
             setErrorMessages([...errorMessages, ...errors.map(text => ({ uuid: UUID.generate(), text }))])
         }
-    }, [apiDomain, errorMessages])
+    }, [apiDomain, errorMessages, dispatch])
 
     if (!fetched) return <></>
 

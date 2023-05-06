@@ -164,7 +164,7 @@ export const <#=SingleViewComponentName#> = () => {
         } else {
             return undefined
         }
-    }, [instanceKey])
+    }, [instanceKey, apiDomain])
 
     const { register, handleSubmit } = useForm({ defaultValues })
     const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
@@ -181,7 +181,7 @@ export const <#=SingleViewComponentName#> = () => {
             const errors: string[] = JSON.parse(await response.text())
             setErrorMessages([...errorMessages, ...errors.map(text => ({ uuid: UUID.generate(), text }))])
         }
-    }, [apiDomain, errorMessages])
+    }, [apiDomain, errorMessages, dispatch])
 
     if (!fetched) return <></>
 

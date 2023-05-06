@@ -14,7 +14,7 @@ export const SideMenu = () => {
                 <Link to='/' className="p-1 ellipsis-ex font-semibold select-none">
                     サンプルアプリケーション
                 </Link>
-                <nav className="flex-1 border-t border-neutral-400 overflow-y-auto leading-none">
+                <nav className="flex-1 overflow-y-auto leading-none">
                     {menuItems.map(item =>
                         <SideMenuLink key={item.url} url={item.url}>{item.text}</SideMenuLink>
                     )}
@@ -25,9 +25,9 @@ export const SideMenu = () => {
 
             <Panel className="flex flex-col">
                 <nav className="flex-1 overflow-y-auto leading-none">
-                    <SideMenuLink url="/" icon={ArrowsUpDownIcon}>変更</SideMenuLink>
-                    <SideMenuLink url="/" icon={Cog6ToothIcon}>設定</SideMenuLink>
-                    <SideMenuLink url="/" icon={UserCircleIcon}>テスト太郎</SideMenuLink>
+                    <SideMenuLink url="/changes" icon={ArrowsUpDownIcon}>変更</SideMenuLink>
+                    <SideMenuLink url="/settings" icon={Cog6ToothIcon}>設定</SideMenuLink>
+                    <SideMenuLink url="/account" icon={UserCircleIcon}>テスト太郎</SideMenuLink>
                 </nav>
                 <span className="p-1 text-sm">
                     ver. <CopyableText>0.9.0.0</CopyableText>
