@@ -361,7 +361,7 @@ namespace HalApplicationBuilder {
             var utf8withoutBOM = new UTF8Encoding(false);
             log?.WriteLine("コード自動生成: 集約のTypeScript型定義");
             using (var sw = new StreamWriter(Path.Combine(tsDir, ReactTypeDefTemplate.FILE_NAME), append: false, encoding: utf8withoutBOM)) {
-                var template = new ReactTypeDefTemplate(allAggregates);
+                var template = new ReactTypeDefTemplate();
                 sw.Write(template.TransformText());
             }
             // コンポーネント

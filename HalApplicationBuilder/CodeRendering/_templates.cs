@@ -108,20 +108,13 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
     }
 
     partial class ReactTypeDefTemplate {
-        internal ReactTypeDefTemplate(IEnumerable<Aggregate> aggregates) {
-            _aggregates = aggregates;
-        }
-        private readonly IEnumerable<Aggregate> _aggregates;
-
         internal const string FILE_NAME = "halapp.types.ts";
     }
 
     partial class ReactComponentTemplate : ITemplate {
         internal ReactComponentTemplate(RootAggregate rootAggregate) {
             _rootAggregate = rootAggregate;
-            _searchCondition = rootAggregate.ToSearchConditionClass();
             _searchResult = rootAggregate.ToSearchResultClass();
-            _uiInstance = rootAggregate.ToUiInstanceClass();
 
             FileName = $"{rootAggregate.GetFileSafeName()}.tsx";
         }
@@ -135,11 +128,7 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
         private string SingleViewUrl => menuItems.GetSingleViewUrl(_rootAggregate);
 
         private readonly RootAggregate _rootAggregate;
-        private readonly RenderedClass _searchCondition;
         private readonly RenderedClass _searchResult;
-        private readonly RenderedClass _uiInstance;
-
-        private static string GetImportFromTypes() => $"../{Path.GetFileNameWithoutExtension(ReactTypeDefTemplate.FILE_NAME)}";
     }
 
 #pragma warning disable IDE1006 // 命名スタイル

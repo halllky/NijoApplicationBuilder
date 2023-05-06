@@ -65,8 +65,6 @@ namespace HalApplicationBuilder.Core
                 var parentPK = Parent.Owner.ToDbEntity().PrimaryKeys.Select(ppk => new RenderedParentPkProperty {
                     CSharpTypeName = ppk.CSharpTypeName,
                     PropertyName = $"Parent_{ppk.PropertyName}",
-
-                    TypeScriptTypeName = string.Empty, // 不要なプロパティ
                 });
                 pks = parentPK.Union(pks);
 
@@ -77,8 +75,6 @@ namespace HalApplicationBuilder.Core
                      PropertyName = PARENT_NAVIGATION_PROPERTY_NAME,
                      Initializer = null,
                      OnModelCreating = null,
-
-                     TypeScriptTypeName = string.Empty, // 不要なプロパティ
                 } });
             }
 

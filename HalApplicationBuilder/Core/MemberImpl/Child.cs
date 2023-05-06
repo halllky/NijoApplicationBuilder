@@ -141,7 +141,6 @@ namespace HalApplicationBuilder.Core.MemberImpl
                     ForeignKeys = childDbEntity.PrimaryKeys.Where(pk => pk is RenderedParentPkProperty),
                     OnDelete = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade,
                 },
-                TypeScriptTypeName = string.Empty, // 不要なプロパティ
             };
         }
 
@@ -149,7 +148,6 @@ namespace HalApplicationBuilder.Core.MemberImpl
             var childClass = GetChildAggregates().Single().ToUiInstanceClass();
             yield return new RenderedProperty {
                 CSharpTypeName = childClass.CSharpTypeName,
-                TypeScriptTypeName = childClass.TypeScriptTypeName,
                 PropertyName = InstanceModelPropName,
                 Initializer = "new()",
             };
@@ -159,7 +157,6 @@ namespace HalApplicationBuilder.Core.MemberImpl
             var childClass = GetChildAggregates().Single().ToSearchConditionClass();
             yield return new RenderedProperty {
                 CSharpTypeName = childClass.CSharpTypeName,
-                TypeScriptTypeName = childClass.TypeScriptTypeName,
                 PropertyName = SearchConditionPropName,
                 Initializer = "new()",
             };
@@ -170,7 +167,6 @@ namespace HalApplicationBuilder.Core.MemberImpl
                 yield return new RenderedProperty {
                     PropertyName = SearchResultPropName(childProp),
                     CSharpTypeName = childProp.CSharpTypeName,
-                    TypeScriptTypeName= childProp.TypeScriptTypeName,
                     Initializer = childProp.Initializer,
                 };
             }

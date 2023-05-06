@@ -36,41 +36,44 @@ import { UUID } from 'uuidjs'
 import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon, BookmarkSquareIcon } from '@heroicons/react/24/outline';
 import { IconButton } from '../components/IconButton';
 import { InlineMessageBar, BarMessage } from '../components/InlineMessageBar';
-import { ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_searchCondition.ClassName));
-            this.Write(", ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_searchResult.ClassName));
-            this.Write("/*, ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_uiInstance.ClassName));
-            this.Write(" */ } from \'");
-            this.Write(this.ToStringHelper.ToStringWithCulture(GetImportFromTypes()));
-            this.Write("\';\r\n\r\nexport const ");
+
+export const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(MultiViewComponentName));
-            this.Write(" = () => {\r\n\r\n    const [{ apiDomain }, dispatch] = useAppContext()\r\n    useCtrlS" +
-                    "(() => {\r\n        dispatch({ type: \'pushMsg\', msg: \'ï€ë∂ÇµÇ‹ÇµÇΩÅB\' })\r\n    })\r\n\r\n    c" +
-                    "onst [param, setParam] = useState<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_searchCondition.ClassName));
-            this.Write(">({} as ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_searchCondition.ClassName));
-            this.Write(") // TODO\r\n    const { register, handleSubmit, reset } = useForm()\r\n    const onS" +
-                    "earch: SubmitHandler<FieldValues> = useCallback(data => {\r\n        setParam(data" +
-                    " as ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_searchCondition.ClassName));
-            this.Write(")\r\n    }, [])\r\n    const onClear = useCallback((e: React.MouseEvent) => {\r\n      " +
-                    "  reset()\r\n        e.preventDefault()\r\n    }, [reset])\r\n    const { data, isFetc" +
-                    "hing } = useQuery({\r\n        queryKey: [\'");
+            this.Write(@" = () => {
+
+    const [{ apiDomain }, dispatch] = useAppContext()
+    useCtrlS(() => {
+        dispatch({ type: 'pushMsg', msg: 'ï€ë∂ÇµÇ‹ÇµÇΩÅB' })
+    })
+
+    const [param, setParam] = useState<FieldValues>({})
+    const { register, handleSubmit, reset } = useForm()
+    const onSearch: SubmitHandler<FieldValues> = useCallback(data => {
+        setParam(data)
+    }, [])
+    const onClear = useCallback((e: React.MouseEvent) => {
+        reset()
+        e.preventDefault()
+    }, [reset])
+    const { data, isFetching } = useQuery({
+        queryKey: ['");
             this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetGuid()));
             this.Write("\', JSON.stringify(param)],\r\n        queryFn: async () => {\r\n            const jso" +
                     "n = JSON.stringify(param)\r\n            const encoded = window.encodeURI(json)\r\n " +
                     "           const response = await fetch(`${apiDomain}/");
             this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetCSharpSafeName()));
-            this.Write("/list?param=${encoded}`)\r\n            if (!response.ok) throw new Error(\'Network " +
-                    "response was not OK.\')\r\n            return (await response.json()) as ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_searchResult.ClassName));
-            this.Write("[]\r\n        },\r\n        onError: error => {\r\n            dispatch({ type: \'pushMs" +
-                    "g\', msg: `ERROR!: ${JSON.stringify(error)}` })\r\n        },\r\n    })\r\n\r\n    const " +
-                    "navigate = useNavigate()\r\n    const toCreateView = useCallback(() => {\r\n        " +
-                    "navigate(\'");
+            this.Write(@"/list?param=${encoded}`)
+            if (!response.ok) throw new Error('Network response was not OK.')
+            return await response.json()
+        },
+        onError: error => {
+            dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
+        },
+    })
+
+    const navigate = useNavigate()
+    const toCreateView = useCallback(() => {
+        navigate('");
             this.Write(this.ToStringHelper.ToStringWithCulture(CreateViewUrl));
             this.Write(@"')
     }, [navigate])

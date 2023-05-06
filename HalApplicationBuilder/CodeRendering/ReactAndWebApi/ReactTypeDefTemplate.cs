@@ -32,49 +32,7 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
             this.Write(this.ToStringHelper.ToStringWithCulture(ReferenceDTO.TS_KEY_PROP_NAME));
             this.Write(": string\r\n    ");
             this.Write(this.ToStringHelper.ToStringWithCulture(ReferenceDTO.TS_NAME_PROP_NAME));
-            this.Write(": string\r\n}\r\n\r\n");
- foreach (var aggregate in _aggregates) { 
-            this.Write("\r\n");
- /* åüçıèåèå^ */ 
- var searchCondition = aggregate.ToSearchConditionClass(); 
-            this.Write("export type ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(searchCondition.ClassName));
-            this.Write(" = {\r\n");
- foreach (var prop in searchCondition.Properties) { 
-            this.Write("    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(": ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.TypeScriptTypeName));
-            this.Write("\r\n");
- } 
-            this.Write("}\r\n\r\n");
- /* åüçıåãâ å^ */ 
- var searchResult = aggregate.ToSearchResultClass(); 
-            this.Write("export type ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(searchResult.ClassName));
-            this.Write(" = {\r\n");
- foreach (var prop in searchResult.Properties) { 
-            this.Write("    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(": ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.TypeScriptTypeName));
-            this.Write("\r\n");
- } 
-            this.Write("}\r\n\r\n");
- /* ÉVÉìÉOÉãÉrÉÖÅ[å^ */ 
- var uiInstance = aggregate.ToUiInstanceClass(); 
-            this.Write("export type ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(uiInstance.ClassName));
-            this.Write(" = {\r\n");
- foreach (var prop in uiInstance.Properties) { 
-            this.Write("    ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(": ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.TypeScriptTypeName));
-            this.Write("\r\n");
- } 
-            this.Write("}\r\n\r\n");
- } 
+            this.Write(": string\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

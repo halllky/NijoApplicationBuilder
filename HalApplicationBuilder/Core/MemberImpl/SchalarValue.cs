@@ -75,22 +75,6 @@ namespace HalApplicationBuilder.Core.MemberImpl
 
             return valueTypeName + question;
         }
-        private string GetTypeScriptTypeName() {
-            var type = GetPropertyTypeExceptNullable();
-            string valueTypeName;
-            if (type.IsEnum) valueTypeName = string.Join(" | ", Enum.GetNames(type).Select(name => $"'{name}'"));
-            else if (type == typeof(string)) valueTypeName = "string";
-            else if (type == typeof(bool)) valueTypeName = "boolean";
-            else if (type == typeof(int)) valueTypeName = "number";
-            else if (type == typeof(float)) valueTypeName = "number";
-            else if (type == typeof(decimal)) valueTypeName = "number";
-            else if (type == typeof(DateTime)) valueTypeName = "Date";
-            else throw new InvalidOperationException($"不正な型: {DisplayName} - {type.Name}");
-
-            var question = IsNullable ? " | undefined" : null;
-
-            return valueTypeName + question;
-        }
 
         private string GetSearchConditionCSharpTypeName() {
             var type = GetPropertyTypeExceptNullable();
@@ -295,8 +279,6 @@ namespace HalApplicationBuilder.Core.MemberImpl
                 CSharpTypeName = GetCSharpTypeName(),
                 PropertyName = DbColumnPropName,
                 Nullable = IsNullable,
-
-                TypeScriptTypeName = GetTypeScriptTypeName(),
             };
         }
 
@@ -304,8 +286,6 @@ namespace HalApplicationBuilder.Core.MemberImpl
             yield return new RenderedProperty {
                 CSharpTypeName = GetCSharpTypeName(),
                 PropertyName = InstanceModelPropName,
-
-                TypeScriptTypeName = GetTypeScriptTypeName(),
             };
         }
 
@@ -318,15 +298,12 @@ namespace HalApplicationBuilder.Core.MemberImpl
                     CSharpTypeName = $"{typeof(FromTo).Namespace}.{nameof(FromTo)}<{GetSearchConditionCSharpTypeName()}>",
                     PropertyName = SearchConditonPropName,
                     Initializer = "new()",
-
-                    TypeScriptTypeName = $"{{ from: {tsType} ,to: {tsType} }}",
                 };
 
             } else if (type.IsEnum) {
                 // enumドロップダウン
                 yield return new RenderedProperty {
                     CSharpTypeName = type.FullName ?? throw new InvalidOperationException($"type.FullNameを取得できない: {DisplayName}"),
-                    TypeScriptTypeName = GetTypeScriptTypeName(),
                     PropertyName = SearchConditonPropName,
                 };
 
@@ -334,7 +311,6 @@ namespace HalApplicationBuilder.Core.MemberImpl
                 // ただのinput
                 yield return new RenderedProperty {
                     CSharpTypeName = GetSearchConditionCSharpTypeName(),
-                    TypeScriptTypeName = GetTypeScriptTypeName(),
                     PropertyName = SearchConditonPropName,
                 };
             }
@@ -343,7 +319,6 @@ namespace HalApplicationBuilder.Core.MemberImpl
         internal override IEnumerable<RenderedProperty> ToSearchResultMember() {
             yield return new RenderedProperty {
                 CSharpTypeName = GetCSharpTypeName(),
-                TypeScriptTypeName = GetTypeScriptTypeName(),
                 PropertyName = SearchResultPropName,
             };
         }

@@ -14,7 +14,6 @@ import { UUID } from 'uuidjs'
 import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon, BookmarkSquareIcon } from '@heroicons/react/24/outline';
 import { IconButton } from '../components/IconButton';
 import { InlineMessageBar, BarMessage } from '../components/InlineMessageBar';
-import { <#=_searchCondition.ClassName#>, <#=_searchResult.ClassName#>/*, <#=_uiInstance.ClassName#> */ } from '<#=GetImportFromTypes()#>';
 
 export const <#=MultiViewComponentName#> = () => {
 
@@ -23,10 +22,10 @@ export const <#=MultiViewComponentName#> = () => {
         dispatch({ type: 'pushMsg', msg: '保存しました。' })
     })
 
-    const [param, setParam] = useState<<#=_searchCondition.ClassName#>>({} as <#=_searchCondition.ClassName#>) // TODO
+    const [param, setParam] = useState<FieldValues>({})
     const { register, handleSubmit, reset } = useForm()
     const onSearch: SubmitHandler<FieldValues> = useCallback(data => {
-        setParam(data as <#=_searchCondition.ClassName#>)
+        setParam(data)
     }, [])
     const onClear = useCallback((e: React.MouseEvent) => {
         reset()
@@ -39,7 +38,7 @@ export const <#=MultiViewComponentName#> = () => {
             const encoded = window.encodeURI(json)
             const response = await fetch(`${apiDomain}/<#=_rootAggregate.GetCSharpSafeName()#>/list?param=${encoded}`)
             if (!response.ok) throw new Error('Network response was not OK.')
-            return (await response.json()) as <#=_searchResult.ClassName#>[]
+            return await response.json()
         },
         onError: error => {
             dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })

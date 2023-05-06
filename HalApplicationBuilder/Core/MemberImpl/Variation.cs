@@ -186,7 +186,6 @@ namespace HalApplicationBuilder.Core.MemberImpl
             yield return new RenderedProperty {
                 Virtual = false,
                 CSharpTypeName = "int?",
-                TypeScriptTypeName = "number | undefined",
                 PropertyName = DbPropName,
             };
             // ナビゲーションプロパティ
@@ -202,7 +201,6 @@ namespace HalApplicationBuilder.Core.MemberImpl
                         ForeignKeys = variationDbEntity.PrimaryKeys.Where(pk => pk is RenderedParentPkProperty),
                         OnDelete = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade,
                     },
-                    TypeScriptTypeName = string.Empty, // 不要なプロパティ
                 };
             }
         }
@@ -211,7 +209,6 @@ namespace HalApplicationBuilder.Core.MemberImpl
             // 区分値
             yield return new RenderedProperty {
                 CSharpTypeName = "int?",
-                TypeScriptTypeName = "number | undefined",
                 PropertyName = InstanceModelTypeSwitchPropName,
             };
             // 各区分の詳細値
@@ -219,7 +216,6 @@ namespace HalApplicationBuilder.Core.MemberImpl
                 var childClass = variation.Value.ToUiInstanceClass();
                 yield return new RenderedProperty {
                     CSharpTypeName = childClass.CSharpTypeName,
-                    TypeScriptTypeName = childClass.TypeScriptTypeName,
                     PropertyName = InstanceModelTypeDetailPropName(variation),
                     Initializer = "new()",
                 };
@@ -231,7 +227,6 @@ namespace HalApplicationBuilder.Core.MemberImpl
                 yield return new RenderedProperty {
                     PropertyName = SearchConditionPropName(variation),
                     CSharpTypeName = "bool",
-                    TypeScriptTypeName = "boolean",
                     Initializer = "true",
                 };
             }
@@ -240,7 +235,6 @@ namespace HalApplicationBuilder.Core.MemberImpl
         internal override IEnumerable<RenderedProperty> ToSearchResultMember() {
             yield return new RenderedProperty {
                 CSharpTypeName = "int?",
-                TypeScriptTypeName = "number | undefined",
                 PropertyName = SearchResultPropName,
             };
         }

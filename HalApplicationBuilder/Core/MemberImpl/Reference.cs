@@ -194,8 +194,6 @@ namespace HalApplicationBuilder.Core.MemberImpl
                     CSharpTypeName = foreignKey.CSharpTypeName,
                     PropertyName = ForeignKeyColumnPropName(foreignKey),
                     Nullable = _isNullable,
-
-                    TypeScriptTypeName = foreignKey.TypeScriptTypeName,
                 })
                 .ToArray();
             foreach (var foreignKey in foreignKeys) {
@@ -214,8 +212,6 @@ namespace HalApplicationBuilder.Core.MemberImpl
                     ForeignKeys = foreignKeys,
                     OnDelete = Microsoft.EntityFrameworkCore.DeleteBehavior.Restrict,
                 },
-
-                TypeScriptTypeName = string.Empty, // 不要なプロパティ
             };
         }
 
@@ -230,9 +226,7 @@ namespace HalApplicationBuilder.Core.MemberImpl
             yield return new RenderedProperty {
                 CSharpTypeName = typeof(Runtime.ReferenceDTO).FullName!,
                 PropertyName = InstanceModelPropName,
-                Initializer = $"new() {{ {nameof(Runtime.ReferenceDTO.AggreageteGuid)} = new Guid(\"{GetRefTarget().GetGuid()}\") }}",
-
-                TypeScriptTypeName = "string", // TSオブジェクトにはinstanceKeyだけを保持する。名称はReactQueryでクライアント側ローカルキャッシュから取得させる
+                Initializer = $"new() {{ {nameof(Runtime.ReferenceDTO.AggreageteGuid)} = new Guid(\"{GetRefTarget().GetGuid()}\") }}", // TSオブジェクトにはinstanceKeyだけを保持する。名称はReactQueryでクライアント側ローカルキャッシュから取得させる
             };
         }
 
@@ -240,9 +234,7 @@ namespace HalApplicationBuilder.Core.MemberImpl
             yield return new RenderedProperty {
                 CSharpTypeName = typeof(Runtime.ReferenceDTO).FullName!,
                 PropertyName = SearchConditonPropName,
-                Initializer = $"new() {{ {nameof(Runtime.ReferenceDTO.AggreageteGuid)} = new Guid(\"{GetRefTarget().GetGuid()}\") }}",
-
-                TypeScriptTypeName = "string", // TSオブジェクトにはinstanceKeyだけを保持する。名称はReactQueryでクライアント側ローカルキャッシュから取得させる
+                Initializer = $"new() {{ {nameof(Runtime.ReferenceDTO.AggreageteGuid)} = new Guid(\"{GetRefTarget().GetGuid()}\") }}", // TSオブジェクトにはinstanceKeyだけを保持する。名称はReactQueryでクライアント側ローカルキャッシュから取得させる
             };
         }
 
@@ -252,8 +244,6 @@ namespace HalApplicationBuilder.Core.MemberImpl
                 yield return new RenderedProperty {
                     CSharpTypeName = fk.CSharpTypeName,
                     PropertyName = SearchResultForeignKeyPropName(fk),
-
-                    TypeScriptTypeName = fk.TypeScriptTypeName,
                 };
             }
 
@@ -261,8 +251,6 @@ namespace HalApplicationBuilder.Core.MemberImpl
             yield return new RenderedProperty {
                 CSharpTypeName = "string",
                 PropertyName = SearchResultInstanceNamePropName,
-
-                TypeScriptTypeName = "string",
             };
         }
 

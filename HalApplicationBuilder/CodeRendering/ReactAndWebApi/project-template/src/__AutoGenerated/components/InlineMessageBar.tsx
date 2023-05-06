@@ -19,7 +19,7 @@ export const InlineMessageBar = ({ value, onChange }: {
     return (
         <ul className="w-full flex flex-col items-stretch">
             {value?.map(msg =>
-                <li key={msg.uuid} className="flex justify-between p-0.5 bg-rose-100 border border-rose-200">
+                <li key={msg.uuid} className="flex justify-between p-0.5 bg-rose-50 border border-rose-100">
                     <span className="text-sm text-rose-700">{msg.text}</span>
                     <IconButton icon={XMarkIcon} className="text-rose-700" onClick={() => handleDelete(msg)} />
                 </li>
