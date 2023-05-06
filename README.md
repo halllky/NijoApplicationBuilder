@@ -57,7 +57,7 @@
 新しいアプリケーションを作成する
 
 ```bash
-halapp gen YourApplicationName
+halapp create YourApplicationName
 ```
 
 デバッグを開始する
@@ -67,7 +67,7 @@ cd YourApplicationName
 halapp debug
 ```
 
-`halapp.xml` を編集する（お好みのテキストエディタで可）
+デバッグを開始した状態で `halapp.xml` を編集する（お好みのテキストエディタで可）
 
 ---
 ## :cherry_blossom: Documentation
