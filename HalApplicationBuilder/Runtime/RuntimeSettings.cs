@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
@@ -22,19 +23,29 @@ namespace HalApplicationBuilder.Runtime {
         /// </summary>
         public class Server {
             /// <summary>
-            /// 現在接続中のDBの名前。 <see cref="ConnectionStrings"/> のいずれかのキーと一致
+            /// 現在接続中のDBの名前。 <see cref="DbProfiles"/> のいずれかのキーと一致
             /// </summary>
             [JsonPropertyName("currentDb")]
-            public string? CurrentDB { get; set; }
+            public string? CurrentDb { get; set; }
             [JsonPropertyName("db")]
-            public Dictionary<string, string> ConnectionStrings { get; set; } = new();
+            public List<DbProfile> DbProfiles { get; set; } = new();
 
             public string GetActiveConnectionString() {
-                if (string.IsNullOrWhiteSpace(CurrentDB))
+                if (string.IsNullOrWhiteSpace(CurrentDb))
                     throw new InvalidOperationException("接続文字列が未指定です。");
-                if (!ConnectionStrings.TryGetValue(CurrentDB, out var connStr))
-                    throw new InvalidOperationException($"接続文字列 '{CurrentDB}' は無効です。");
-                return connStr;
+
+                var db = DbProfiles.FirstOrDefault(db => db.Name == CurrentDb);
+                if (db == null)
+                    throw new InvalidOperationException($"接続文字列 '{CurrentDb}' は無効です。");
+
+                return db.ConnStr;
+            }
+
+            public class DbProfile {
+                [JsonPropertyName("name")]
+                public string Name { get; set; } = string.Empty;
+                [JsonPropertyName("connStr")]
+                public string ConnStr { get; set; } = string.Empty;
             }
         }
     }

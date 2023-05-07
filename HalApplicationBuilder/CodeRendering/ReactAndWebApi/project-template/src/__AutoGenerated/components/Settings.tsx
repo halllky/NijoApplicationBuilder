@@ -80,8 +80,8 @@ export const SettingsScreen = () => {
                 {fields.map((field, index) => (
                   <div key={field.id} className="flex items-center space-x-1">
                     <input {...register(`currentDb`)} type="radio" value={index} />
-                    <input {...register(`db.${index}.key`, { required: true })} className="border basis-32 min-w-0" />
-                    <input {...register(`db.${index}.value`, { required: true })} className="border flex-1" />
+                    <input {...register(`db.${index}.name`, { required: true })} className="border basis-32 min-w-0" />
+                    <input {...register(`db.${index}.connStr`, { required: true })} className="border flex-1" />
                     <IconButton icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }} />
                   </div>
                 ))}
@@ -105,31 +105,19 @@ export const SettingsScreen = () => {
 }
 
 const fieldValuesToObject = (data: FieldValues) => {
-  const dbArray = data['db'] as { key: string, value: string }[]
+  const db = data['db'] as { name: string, connStr: string }[]
   const strCurrentDb = data['currentDb'] as string | null
-  const db = dbArray.reduce((obj, item) => { obj[item.key] = item.value; return obj }, {} as { [key: string]: string })
-
-  let currentDb: string | null
-  if (strCurrentDb === null || strCurrentDb === undefined) {
-    currentDb = null
-  } else if (Object.keys(db).length !== dbArray.length) {
-    currentDb = null
-  } else {
-    const index = Number.parseInt(strCurrentDb)
-    if (index >= 0 && index < dbArray.length) {
-      currentDb = dbArray[index].key
-    } else {
-      currentDb = null
-    }
-  }
+  const numCurrentDb = strCurrentDb == null ? NaN : Number.parseInt(strCurrentDb)
+  const currentDb = isNaN(numCurrentDb) ? null : db[numCurrentDb]?.name
 
   return { db, currentDb }
 }
 
 const objectToFieldValues = (obj: { [key: string]: {} }): any => {
-  const db = Object.entries(obj['db']).map(([key, value]) => ({ key, value }))
-  const numCurrentDb = db.findIndex(item => item.key === obj['currentDb'])
+  const db = obj['db'] as { name: string, connStr: string }[]
+  const numCurrentDb = db.findIndex(item => item.name === obj['currentDb'])
   const currentDb = numCurrentDb === -1 ? null : String(numCurrentDb)
+
   return { db, currentDb }
 }
 

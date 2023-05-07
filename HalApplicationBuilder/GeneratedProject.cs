@@ -106,11 +106,12 @@ namespace HalApplicationBuilder {
                 csproj.Save();
 
                 // 設定ファイル作成
-                using (var sw = new StreamWriter(CodeRendering.DefaultRuntimeConfigTemplate.HALAPP_RUNTIME_SERVER_SETTING_JSON, false, new UTF8Encoding(false))) {
+                var runtimeSetting = Path.Combine(tempDir, CodeRendering.DefaultRuntimeConfigTemplate.HALAPP_RUNTIME_SERVER_SETTING_JSON);
+                using (var sw = new StreamWriter(runtimeSetting, false, new UTF8Encoding(false))) {
                     var json = System.Text.Json.JsonSerializer.Serialize(new Runtime.RuntimeSettings.Server {
-                        CurrentDB = "SQLITE",
-                        ConnectionStrings = new Dictionary<string, string> {
-                            { "SQLITE", @"Data Source=\""bin/Debug/debug.sqlite3\""" },
+                        CurrentDb = "SQLITE",
+                        DbProfiles = new List<Runtime.RuntimeSettings.Server.DbProfile> {
+                            new Runtime.RuntimeSettings.Server.DbProfile { Name = "SQLITE", ConnStr = @"Data Source=\""bin/Debug/debug.sqlite3\""" },
                         },
                     });
                     sw.WriteLine(json);
@@ -166,6 +167,8 @@ namespace HalApplicationBuilder {
                 }
 
                 // Migrationが1件もないと最初のデバッグ時におかしな挙動になるので、空のMigrationを作成しておく
+                log?.WriteLine($"データベースを作成します。");
+                cmd.Exec("dotnet", "build");
                 cmd.Exec("dotnet", "ef", "migrations", "add", "init");
                 cmd.Exec("dotnet", "ef", "database", "update");
 
@@ -400,6 +403,7 @@ namespace HalApplicationBuilder {
             return this;
         }
 
+        #region DEBUG COMMAND
         /// <summary>
         /// デバッグを開始します。
         /// </summary>
@@ -408,21 +412,7 @@ namespace HalApplicationBuilder {
             if (!IsValidDirectory(log)) return;
 
             var config = ReadConfig();
-
-            // migration用設定
-            var migrationList = new DotnetEx.Cmd {
-                WorkingDirectory = ProjectRoot,
-                CancellationToken = cancellationToken,
-                Verbose = verbose,
-            };
-            var previousMigrationId = migrationList
-                .ReadOutputs("dotnet", "ef", "migrations", "list")
-                .LastOrDefault()
-                ?? string.Empty;
-            var nextMigrationId = Guid
-                .NewGuid()
-                .ToString()
-                .Replace("-", "");
+            var migrator = DebugMigrator.CheckPoint(ProjectRoot, verbose);
 
             // 以下の2種類のキャンセルがあるので統合する
             // - ユーザーの操作による halapp debug 全体のキャンセル
@@ -479,27 +469,8 @@ namespace HalApplicationBuilder {
                         linkedTokenSource.Token.ThrowIfCancellationRequested();
 
                         // DB定義の更新
-                        var migration = new DotnetEx.Cmd {
-                            WorkingDirectory = ProjectRoot,
-                            CancellationToken = linkedTokenSource.Token,
-                            Verbose = verbose,
-                        };
-                        migration.Exec("dotnet", "build");
-
-                        // 集約定義を書き換えるたびにマイグレーションが積み重なっていってしまうため、
-                        // 1回のhalapp debugで作成されるマイグレーションは1つまでとする
-                        var latestMigrationId = migrationList
-                            .ReadOutputs("dotnet", "ef", "migrations", "list")
-                            .LastOrDefault()
-                            ?? string.Empty;
-                        if (latestMigrationId != previousMigrationId) {
-                            Console.WriteLine($"DB定義を右記地点に巻き戻します: {previousMigrationId}");
-                            migration.Exec("dotnet", "ef", "database", "update", previousMigrationId);
-                            migration.Exec("dotnet", "ef", "migrations", "remove");
-                        }
-
-                        migration.Exec("dotnet", "ef", "migrations", "add", nextMigrationId);
-                        migration.Exec("dotnet", "ef", "database", "update", nextMigrationId);
+                        migrator.ResetToVersionDebugStarted()
+                                .CreateNewMigration();
 
                         linkedTokenSource.Token.ThrowIfCancellationRequested();
 
@@ -543,8 +514,100 @@ namespace HalApplicationBuilder {
                 dotnetRun?.Dispose();
                 npmStart?.Dispose();
                 watcher?.Dispose();
+                migrator?.Dispose();
             }
         }
+
+        /// <summary>
+        /// halapp debug ではマイグレーションを add => remove => add => remove ... と何度も繰り返し、
+        /// またデバッグ終了時に開始時のバージョンに戻す動きをしなければならないので、
+        /// その複雑な動きを簡素化するためのクラス
+        /// </summary>
+        private class DebugMigrator : IDisposable {
+            /// <summary>
+            /// このメソッドが呼ばれた時点の最新のmigrationを起点とする。
+            /// </summary>
+            internal static DebugMigrator CheckPoint(string projectRoot, bool verbose) {
+                var cmd = new DotnetEx.Cmd {
+                    WorkingDirectory = projectRoot,
+                    Verbose = verbose,
+                };
+                string baseMigrationId;
+                while (true) {
+                    baseMigrationId = cmd
+                        .ReadOutputs("dotnet", "ef", "migrations", "list")
+                        .Last();
+                    if (baseMigrationId == "No migrations were found.") {
+                        throw new InvalidOperationException("There is no migration. Create manually.");
+                    } else if (baseMigrationId.Trim().EndsWith("(Pending)")) {
+                        cmd.Exec("dotnet", "ef", "database", "update");
+                        continue;
+                    }
+                    break;
+                }
+                var nextMigrationId = Guid
+                    .NewGuid()
+                    .ToString()
+                    .Replace("-", "");
+
+                return new DebugMigrator {
+                    Cmd = cmd,
+                    BaseMigrationId = baseMigrationId,
+                    NextMigrationId = nextMigrationId
+                };
+            }
+
+            private DebugMigrator() { }
+
+            internal required Cmd Cmd { get; init; }
+            internal required string BaseMigrationId { get; init; }
+            internal required string NextMigrationId { get; init; }
+
+            private readonly object _lock = new object();
+            private bool _disposed;
+
+            internal string GetLatestMigrationId() {
+                if (_disposed) throw new InvalidOperationException("This object is disposed.");
+                lock (_lock) {
+                    return Cmd
+                        .ReadOutputs("dotnet", "ef", "migrations", "list")
+                        .Last();
+                }
+            }
+            internal DebugMigrator ResetToVersionDebugStarted() {
+                if (_disposed) throw new InvalidOperationException("This object is disposed.");
+                lock (_lock) {
+                    var updated = false;
+                    while (GetLatestMigrationId() != BaseMigrationId) {
+                        if (!updated) {
+                            Cmd.Exec("dotnet", "ef", "database", "update", BaseMigrationId);
+                            updated = true;
+                        }
+                        Cmd.Exec("dotnet", "ef", "migrations", "remove");
+                    }
+                    return this;
+                }
+            }
+            internal DebugMigrator CreateNewMigration() {
+                if (_disposed) throw new InvalidOperationException("This object is disposed.");
+                lock (_lock) {
+                    if (GetLatestMigrationId() != BaseMigrationId)
+                        throw new InvalidOperationException($"{nameof(CreateNewMigration)} を実行する前に {nameof(ResetToVersionDebugStarted)} を実行してデバッグ開始時のバージョンに戻す必要があります。");
+
+                    Cmd.Exec("dotnet", "ef", "migrations", "add", NextMigrationId);
+                    Cmd.Exec("dotnet", "ef", "database", "update");
+
+                    return this;
+                }
+            }
+            public void Dispose() {
+                if (!_disposed) {
+                    ResetToVersionDebugStarted();
+                    _disposed = true;
+                }
+            }
+        }
+        #endregion DEBUG COMMAND
 
         /// <summary>
         /// halapp.dllとその依存先をプロジェクトディレクトリにコピー
