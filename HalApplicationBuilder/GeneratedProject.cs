@@ -26,7 +26,7 @@ namespace HalApplicationBuilder {
         /// <param name="applicationName">アプリケーション名</param>
         /// <param name="verbose">ログの詳細出力を行うかどうか</param>
         /// <returns>作成されたプロジェクトを表すオブジェクト</returns>
-        public static GeneratedProject Create(string? applicationName, bool verbose, CancellationToken cancellationToken, TextWriter? log = null) {
+        public static GeneratedProject Create(string? applicationName, bool verbose, bool keepTempIferror, CancellationToken cancellationToken, TextWriter? log = null) {
 
             if (string.IsNullOrWhiteSpace(applicationName))
                 throw new InvalidOperationException($"Please specify name of new application. example 'halapp create my-new-app'");
@@ -41,15 +41,16 @@ namespace HalApplicationBuilder {
             var ramdomName = $"halapp.temp.{Path.GetRandomFileName()}";
             var tempDir = Path.Combine(Directory.GetCurrentDirectory(), ramdomName);
 
+            var error = false;
             try {
-                Directory.CreateDirectory(tempDir);
-
                 var tempProject = new GeneratedProject(tempDir);
                 var setupManager = tempProject.StartSetup(verbose, cancellationToken, log);
 
-                setupManager.DotnetNew();
+                Directory.CreateDirectory(tempDir);
 
                 setupManager.EnsureCreateHalappXml(applicationName);
+
+                setupManager.DotnetNew();
 
                 setupManager.EditProgramCs();
                 setupManager.EnsureCreateDbContext();
@@ -57,10 +58,11 @@ namespace HalApplicationBuilder {
 
                 setupManager.AddNugetPackages();
                 setupManager.AddReferenceToHalappDll();
-                setupManager.InstallNodeModules();
 
                 setupManager.EnsureCreateRuntimeSettingFile();
                 setupManager.EnsureCreateDatabase();
+
+                setupManager.InstallNodeModules();
 
                 // ここまでの処理がすべて成功したら一時ディレクトリを本来のディレクトリ名に変更
                 if (Directory.Exists(projectRoot)) throw new InvalidOperationException($"プロジェクトディレクトリを {projectRoot} に移動できません。");
@@ -70,9 +72,15 @@ namespace HalApplicationBuilder {
 
                 return new GeneratedProject(projectRoot);
 
+            } catch {
+                error = true;
+                throw;
+
             } finally {
-                if (Directory.Exists(tempDir))
+                if (Directory.Exists(tempDir)
+                    && (keepTempIferror == false || error == false)) {
                     Directory.Delete(tempDir, true);
+                }
             }
         }
         /// <summary>
@@ -461,16 +469,24 @@ namespace HalApplicationBuilder {
             /// 実行時設定ファイルを規定値で作成します。
             /// </summary>
             public SetupManager EnsureCreateRuntimeSettingFile() {
-                var runtimeSetting = Path.Combine(_project.ProjectRoot, CodeRendering.DefaultRuntimeConfigTemplate.HALAPP_RUNTIME_SERVER_SETTING_JSON);
-                if (!File.Exists(runtimeSetting)) {
+                var runtimeSettingPath = Path.Combine(_project.ProjectRoot, CodeRendering.DefaultRuntimeConfigTemplate.HALAPP_RUNTIME_SERVER_SETTING_JSON);
+                if (!File.Exists(runtimeSettingPath)) {
                     _log?.WriteLine($"{CodeRendering.DefaultRuntimeConfigTemplate.HALAPP_RUNTIME_SERVER_SETTING_JSON} ファイルを作成します。");
-                    using var sw = new StreamWriter(runtimeSetting, false, new UTF8Encoding(false));
-                    var json = System.Text.Json.JsonSerializer.Serialize(new Runtime.RuntimeSettings.Server {
+
+                    var runtimeSetting = new Runtime.RuntimeSettings.Server {
                         CurrentDb = "SQLITE",
                         DbProfiles = new List<Runtime.RuntimeSettings.Server.DbProfile> {
-                            new Runtime.RuntimeSettings.Server.DbProfile { Name = "SQLITE", ConnStr = @"Data Source=\""bin/Debug/debug.sqlite3\""" },
+                            new Runtime.RuntimeSettings.Server.DbProfile { Name = "SQLITE", ConnStr = @"Data Source=""bin/Debug/debug.sqlite3""" },
                         },
-                    });
+                    };
+                    var jsonOption = new System.Text.Json.JsonSerializerOptions {
+                        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All),
+                        WriteIndented = true,
+                    };
+                    var json = System.Text.Json.JsonSerializer.Serialize(runtimeSetting, jsonOption);
+                    json = json.Replace("\\u0022", "\\\""); // ダブルクォートを\u0022ではなく\"で出力したい
+
+                    using var sw = new StreamWriter(runtimeSettingPath, false, new UTF8Encoding(false));
                     sw.WriteLine(json);
                 }
                 return this;
