@@ -15,22 +15,23 @@ namespace HalApplicationBuilder.DotnetEx {
         internal bool Verbose { get; init; }
 
         internal void Exec(string filename, params string[] args) {
+            ExecWithRetry(0, filename, args);
+        }
+        internal void ExecWithRetry(int retry, string filename, params string[] args) {
             Console.WriteLine($"{filename} {string.Join(" ", args)}");
-            Execute(null, filename, args);
+            Execute(retry, null, filename, args);
         }
-        internal string ReadOutput(string filename, params string[] args) {
-            var output = new Queue<string>();
-            Execute(output, filename, args);
-            return string.Join(Environment.NewLine, output);
+        internal IEnumerable<string> ReadOutput(string filename, params string[] args) {
+            return ReadOutputWithRetry(0, filename, args);
         }
-        internal IEnumerable<string> ReadOutputs(string filename, params string[] args) {
+        internal IEnumerable<string> ReadOutputWithRetry(int retry, string filename, params string[] args) {
             var output = new Queue<string>();
-            Execute(output, filename, args);
+            Execute(retry, output, filename, args);
             while (output.Count > 0) {
                 yield return output.Dequeue();
             }
         }
-        private void Execute(Queue<string>? output, string filename, params string[] args) {
+        private void Execute(int retry, Queue<string>? output, string filename, params string[] args) {
 
             DataReceivedEventHandler? stdout;
             if (output != null)
@@ -40,32 +41,40 @@ namespace HalApplicationBuilder.DotnetEx {
             else
                 stdout = null;
 
-            using var process = CreateProcess(WorkingDirectory, filename, args, stdout);
+            while (true) {
+                using var process = CreateProcess(WorkingDirectory, filename, args, stdout);
+                try {
+                    process.Start();
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
 
-            try {
-                process.Start();
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
+                    while (!process.HasExited) {
+                        Thread.Sleep(100);
+                        CancellationToken?.ThrowIfCancellationRequested();
+                    }
+                    if (process.ExitCode != 0) {
+                        throw new InvalidOperationException($"Exit Code is not Zero: {process.ExitCode}");
+                    }
+                    break;
 
-                while (!process.HasExited) {
-                    Thread.Sleep(100);
-                    CancellationToken?.ThrowIfCancellationRequested();
+                } catch (OperationCanceledException) {
+                    process.Kill(entireProcessTree: true);
+
+                    // Killの完了前に新規プロジェクト作成時の一時ディレクトリの削除処理が走ってしまい
+                    // 削除できなくて失敗することがあるので少し待つ
+                    Thread.Sleep(1000);
+
+                    throw;
+
+                } catch (Exception ex) {
+                    if (retry > 0) {
+                        Console.WriteLine($"ERROR({filename} {string.Join(" ", args)})\nNow retrying...");
+                        retry--;
+                        continue;
+                    } else {
+                        throw new InvalidOperationException($"ERROR({filename} {string.Join(" ", args)})", ex);
+                    }
                 }
-                if (process.ExitCode != 0) {
-                    throw new InvalidOperationException($"外部コマンド( {filename} {string.Join(" ", args)})実行時にエラーが発生しました。");
-                }
-
-            } catch (OperationCanceledException) {
-                process.Kill(entireProcessTree: true);
-
-                // Killの完了前に新規プロジェクト作成時の一時ディレクトリの削除処理が走ってしまい
-                // 削除できなくて失敗することがあるので少し待つ
-                Thread.Sleep(1000);
-
-                throw;
-
-            } catch (Exception ex) {
-                throw new Exception($"EXCEPTION: '{filename} {string.Join(" ", args)}'", ex);
             }
         }
 
