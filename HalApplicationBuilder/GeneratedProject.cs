@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace HalApplicationBuilder {
-    public class GeneratedProject {
+    public sealed class GeneratedProject {
 
         private const string HALAPP_XML_NAME = "halapp.xml";
         private const string REACT_DIR = "ClientApp";
@@ -147,13 +147,11 @@ namespace HalApplicationBuilder {
             return errors.Count == 0;
         }
 
+        #region CODE GENERATING
         public SetupManager StartSetup(bool verbose, CancellationToken cancellationToken, TextWriter? log = null) {
             return new SetupManager(this, verbose, cancellationToken, log);
         }
-
-
-        #region CODE GENERATING
-        public class SetupManager {
+        public sealed class SetupManager {
             internal SetupManager(GeneratedProject project, bool verbose, CancellationToken cancellationToken, TextWriter? log = null) {
                 // 個別のメソッドに都度引数を渡すのが面倒なのでクラスにまとめた
                 _project = project;
