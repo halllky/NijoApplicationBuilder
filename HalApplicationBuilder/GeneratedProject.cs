@@ -64,6 +64,16 @@ namespace HalApplicationBuilder {
 
                 setupManager.InstallNodeModules();
 
+                // git initial commit
+                var cmd = new Cmd {
+                    WorkingDirectory = tempDir,
+                    CancellationToken = cancellationToken,
+                    Verbose = verbose,
+                };
+                cmd.Exec("git", "init");
+                cmd.Exec("git", "add", ".");
+                cmd.Exec("git", "commit", "-m", "init");
+
                 // ここまでの処理がすべて成功したら一時ディレクトリを本来のディレクトリ名に変更
                 if (Directory.Exists(projectRoot)) throw new InvalidOperationException($"プロジェクトディレクトリを {projectRoot} に移動できません。");
                 Directory.Move(tempDir, projectRoot);
@@ -181,6 +191,14 @@ namespace HalApplicationBuilder {
 
                 var config = _project.ReadConfig();
                 _cmd.Exec("dotnet", "new", "webapi", "--output", ".", "--name", config.ApplicationName);
+
+                // Create .gitignore file
+                _cmd.Exec("dotnet", "new", "gitignore");
+                var filename = Path.Combine(_project.ProjectRoot, ".gitignore");
+                var gitignore = File.ReadAllLines(filename).ToList();
+                gitignore.Insert(0, "# HalApplicationBuilder");
+                gitignore.Insert(1, $"/{HALAPP_DLL_COPY_TARGET}/*");
+                File.WriteAllLines(filename, gitignore);
 
                 return this;
             }
