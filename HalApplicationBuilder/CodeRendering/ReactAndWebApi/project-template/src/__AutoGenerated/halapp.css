@@ -32,6 +32,9 @@ code {
 }
 
 /* tailwind */
+.page-content-root {
+  @apply flex flex-col justify-start space-y-1 overflow-auto;
+}
 .ellipsis-ex {
   @apply overflow-hidden whitespace-nowrap text-ellipsis;
 }

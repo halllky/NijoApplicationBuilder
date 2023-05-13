@@ -83,7 +83,7 @@ export const ");
     if (isFetching) return <></>
 
     return (
-        <div className=""ag-theme-alpine compact flex flex-col space-y-1"">
+        <div className=""page-content-root ag-theme-alpine compact"">
 
             <div className=""flex flex-row justify-start items-center space-x-1"">
                 <div className='flex-1 flex flex-row items-center space-x-1 cursor-pointer' onClick={() => setExpanded(!expanded)}>
@@ -169,7 +169,7 @@ const columnDefs = [
     }, [apiDomain, navigate, errorMessages])
 
     return (
-        <form className=""flex flex-col justify-start space-y-1"" onSubmit={handleSubmit(onSave)}>
+        <form className=""page-content-root"" onSubmit={handleSubmit(onSave)}>
             <h1 className=""text-base font-semibold select-none py-1"">
                 <Link to=""");
             this.Write(this.ToStringHelper.ToStringWithCulture(MultiViewUrl));
@@ -227,7 +227,7 @@ const columnDefs = [
     if (!fetched) return <></>
 
     return (
-        <form className=""flex flex-col justify-start space-y-1"" onSubmit={handleSubmit(onSave)}>
+        <form className=""page-content-root"" onSubmit={handleSubmit(onSave)}>
             <h1 className=""text-base font-semibold select-none py-1"">
                 <Link to=""");
             this.Write(this.ToStringHelper.ToStringWithCulture(MultiViewUrl));

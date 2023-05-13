@@ -3,6 +3,9 @@
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
+import './halapp.css';
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-alpine.css';
 
 export * from '<#=GetImportFromMenuItems()#>'
 <# foreach (var root in _rootAggregates) { #>

@@ -63,7 +63,7 @@ export const SettingsScreen = () => {
   }, [settingErrors])
 
   return (
-    <div className="flex flex-col space-y-1">
+    <div className="page-content-root">
 
       <SettingSection title="基本設定">
         <Setting label="サーバーURL">
