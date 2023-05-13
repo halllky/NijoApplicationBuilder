@@ -76,7 +76,7 @@ export const SettingsScreen = () => {
       {process.env.NODE_ENV === 'development' &&
         <SettingSection
           title="シークレット設定（開発環境でのみ有効）"
-          sholder={<IconButton outline icon={ArrowPathIcon} onClick={reload}>再読み込み</IconButton>}
+          sholder={<IconButton hideText icon={ArrowPathIcon} onClick={reload}>再読み込み</IconButton>}
         >
           <InlineMessageBar value={settingErrors} onChange={setSettingErrors} />
           <form onSubmit={handleSubmit(onSaveSettings, onError)}>
@@ -90,10 +90,10 @@ export const SettingsScreen = () => {
                     <IconButton icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }} />
                   </div>
                 ))}
-                <IconButton outline icon={PlusIcon} onClick={e => { append(e); e.preventDefault() }} className="self-start">追加</IconButton>
+                <IconButton underline icon={PlusIcon} onClick={e => { append(e); e.preventDefault() }} className="self-start">追加</IconButton>
               </div>
             </Setting>
-            <IconButton icon={BookmarkSquareIcon}>保存</IconButton>
+            <IconButton fill icon={BookmarkSquareIcon}>保存</IconButton>
           </form>
         </SettingSection>}
 
@@ -101,7 +101,7 @@ export const SettingsScreen = () => {
         <SettingSection title="デバッグ用コマンド（開発環境でのみ有効）">
           <InlineMessageBar value={commandErrors} onChange={setCommandErrors} />
           <Setting label="DB再作成">
-            <IconButton onClick={recreateDatabase}>実行</IconButton>
+            <IconButton fill onClick={recreateDatabase}>実行</IconButton>
           </Setting>
         </SettingSection>}
 
@@ -133,7 +133,7 @@ const SettingSection = ({ title, sholder, children }: {
 }) => {
   return (
     <section className="flex flex-col items-stretch space-y-2 border border-neutral-300 p-2">
-      <div className="flex">
+      <div className="flex items-center">
         {title && <h2 className="text-sm opacity-50 font-semibold select-none">{title}</h2>}
         <div className="flex-1"></div>
         {sholder}
