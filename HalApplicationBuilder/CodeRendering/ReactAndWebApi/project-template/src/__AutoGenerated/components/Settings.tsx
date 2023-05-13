@@ -1,4 +1,4 @@
-import { BookmarkSquareIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, BookmarkSquareIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useCallback, useState } from 'react';
 import { FieldValues, SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { UUID } from 'uuidjs';
@@ -30,7 +30,7 @@ export const SettingsScreen = () => {
   // --------------------------------------
 
   const [settingErrors, setSettingErrors] = useState([] as BarMessage[])
-  const defaultValues = useCallback(async () => {
+  const loadSettings = useCallback(async () => {
     const response = await fetch(`${apiDomain}/HalappDebug/secret-settings`)
     if (response.ok) {
       const data = await response.text()
@@ -41,9 +41,11 @@ export const SettingsScreen = () => {
       return {}
     }
   }, [settingErrors, apiDomain])
-
-  const { control, register, handleSubmit } = useForm({ defaultValues })
+  const { control, register, handleSubmit, reset } = useForm({ defaultValues: loadSettings })
   const { fields, append, remove } = useFieldArray({ name: 'db', control })
+  const reload = useCallback(async () => {
+    reset(await loadSettings())
+  }, [loadSettings, reset])
 
   const onSaveSettings: SubmitHandler<FieldValues> = useCallback(data => {
     fetch(`${apiDomain}/HalappDebug/secret-settings`, {
@@ -72,7 +74,10 @@ export const SettingsScreen = () => {
       </SettingSection>
 
       {process.env.NODE_ENV === 'development' &&
-        <SettingSection title="シークレット設定（開発環境でのみ有効）">
+        <SettingSection
+          title="シークレット設定（開発環境でのみ有効）"
+          sholder={<IconButton outline icon={ArrowPathIcon} onClick={reload}>再読み込み</IconButton>}
+        >
           <InlineMessageBar value={settingErrors} onChange={setSettingErrors} />
           <form onSubmit={handleSubmit(onSaveSettings, onError)}>
             <Setting label="接続先DB" multiRow>
@@ -121,13 +126,18 @@ const objectToFieldValues = (obj: { [key: string]: {} }): any => {
   return { db, currentDb }
 }
 
-const SettingSection = ({ title, children }: {
+const SettingSection = ({ title, sholder, children }: {
   title?: string
+  sholder?: React.ReactNode
   children?: React.ReactNode
 }) => {
   return (
     <section className="flex flex-col items-stretch space-y-2 border border-neutral-300 p-2">
-      {title && <h2 className="text-sm opacity-50 font-semibold select-none">{title}</h2>}
+      <div className="flex">
+        {title && <h2 className="text-sm opacity-50 font-semibold select-none">{title}</h2>}
+        <div className="flex-1"></div>
+        {sholder}
+      </div>
       {children}
     </section>
   )
