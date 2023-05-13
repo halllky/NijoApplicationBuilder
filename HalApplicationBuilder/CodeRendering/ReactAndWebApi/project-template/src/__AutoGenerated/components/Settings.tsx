@@ -80,20 +80,26 @@ export const SettingsScreen = () => {
         >
           <InlineMessageBar value={settingErrors} onChange={setSettingErrors} />
           <form onSubmit={handleSubmit(onSaveSettings, onError)}>
-            <Setting label="接続先DB" multiRow>
+            <Setting
+              label={<div className="flex items-center">
+                接続先DB
+                <IconButton underline icon={PlusIcon} onClick={e => { append(e); e.preventDefault() }} className="self-start inline-flex ml-1">追加</IconButton>
+              </div>}
+              multiRow
+            >
               <div className="flex-1 flex flex-col items-stretch space-y-1">
                 {fields.map((field, index) => (
                   <div key={field.id} className="flex items-center space-x-1">
                     <input {...register(`currentDb`)} type="radio" value={index} />
                     <input {...register(`db.${index}.name`, { required: true })} className="border basis-32 min-w-0" />
                     <input {...register(`db.${index}.connStr`, { required: true })} className="border flex-1" />
-                    <IconButton hideText icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }}>削除</IconButton>
+                    <IconButton underline icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }}>削除</IconButton>
                   </div>
                 ))}
-                <IconButton underline icon={PlusIcon} onClick={e => { append(e); e.preventDefault() }} className="self-start">追加</IconButton>
+                
               </div>
             </Setting>
-            <IconButton fill icon={BookmarkSquareIcon}>保存</IconButton>
+            <IconButton fill icon={BookmarkSquareIcon} className="mt-2">保存</IconButton>
           </form>
         </SettingSection>}
 
@@ -134,7 +140,7 @@ const SettingSection = ({ title, sholder, children }: {
   return (
     <section className="flex flex-col items-stretch space-y-2 border border-neutral-300 p-2">
       <div className="flex justify-start items-center">
-        {title && <h2 className="text-sm opacity-50 font-semibold select-none">{title}</h2>}
+        {title && <h2 className="text-sm font-semibold select-none">{title}</h2>}
         {sholder}
       </div>
       {children}
@@ -143,13 +149,13 @@ const SettingSection = ({ title, sholder, children }: {
 }
 
 const Setting = ({ label, children, multiRow }: {
-  label?: string
+  label?: React.ReactNode
   children?: React.ReactNode
   multiRow?: true
 }) => {
   return (
     <div className={`flex flex-row space-x-2 ${(multiRow ? 'items-start' : 'items-center')}`}>
-      <span className="text-sm opacity-50 select-none basis-32">
+      <span className="text-sm select-none basis-32">
         {label}
       </span>
       {children}

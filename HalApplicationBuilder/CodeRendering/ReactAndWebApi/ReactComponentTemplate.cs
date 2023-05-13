@@ -83,10 +83,10 @@ export const ");
     if (isFetching) return <></>
 
     return (
-        <div className=""page-content-root ag-theme-alpine compact"">
+        <div className=""page-content-root"">
 
-            <div className=""flex flex-row justify-start items-center space-x-1"">
-                <div className='flex flex-row items-center space-x-1 cursor-pointer' onClick={() => setExpanded(!expanded)}>
+            <div className=""flex flex-row justify-start items-center space-x-2"">
+                <div className='flex-1 flex flex-row items-center space-x-1 cursor-pointer' onClick={() => setExpanded(!expanded)}>
                     <h1 className=""text-base font-semibold select-none py-1"">
                         ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetDisplayName()));
@@ -97,6 +97,7 @@ export const ");
                         : <ChevronUpIcon className=""w-4"" />}
                 </div>
                 <IconButton underline icon={PlusIcon} onClick={toCreateView}>V‹Kì¬</IconButton>
+                <IconButton underline icon={BookmarkIcon}>‚±‚ÌŒŸõğŒ‚ğ•Û‘¶</IconButton>
             </div>
 
             <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1`} onSubmit={handleSubmit(onSearch)}>
@@ -107,19 +108,18 @@ export const ");
             this.Write(@"                <div className='flex flex-row justify-start space-x-1'>
                     <IconButton fill icon={MagnifyingGlassIcon}>ŒŸõ</IconButton>
                     <IconButton outline onClick={onClear}>ƒNƒŠƒA</IconButton>
-                    <div className=""flex-1""></div>
-                    <IconButton underline icon={BookmarkIcon}>‚±‚ÌŒŸõğŒ‚ğ•Û‘¶</IconButton>
                 </div>
             </form>
 
-            <AgGridReact
-                className=""flex-1""
-                rowData={data || []}
-                columnDefs={columnDefs}
-                multiSortKey='ctrl'
-                undoRedoCellEditing
-                undoRedoCellEditingLimit={20}>
-            </AgGridReact>
+            <div className=""ag-theme-alpine compact flex-1"">
+                <AgGridReact
+                    rowData={data || []}
+                    columnDefs={columnDefs}
+                    multiSortKey='ctrl'
+                    undoRedoCellEditing
+                    undoRedoCellEditingLimit={20}>
+                </AgGridReact>
+            </div>
         </div>
     )
 }
