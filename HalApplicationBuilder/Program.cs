@@ -36,11 +36,13 @@ namespace HalApplicationBuilder {
             var fix = new Command(name: "fix", description: "コード自動生成処理をかけなおします。") { path, verbose };
 
             create.SetHandler((applicationName, verbose, keepTempIferror) => {
+                if (!CheckIfToolIsAvailable(cancellationTokenSource.Token, "dotnet", "npm", "git")) return;
                 GeneratedProject
                     .Create(applicationName, verbose, keepTempIferror, cancellationTokenSource.Token, Console.Out);
             }, applicationName, verbose, keepTempIferror);
 
             debug.SetHandler((path, verbose) => {
+                if (!CheckIfToolIsAvailable(cancellationTokenSource.Token, "dotnet", "npm")) return;
                 var project = GeneratedProject.Open(path);
                 project.StartSetup(verbose, cancellationTokenSource.Token, Console.Out)
                        .AddReferenceToHalappDll();
@@ -48,6 +50,7 @@ namespace HalApplicationBuilder {
             }, path, verbose);
 
             fix.SetHandler((path, verbose) => {
+                if (!CheckIfToolIsAvailable(cancellationTokenSource.Token, "dotnet", "npm")) return;
                 GeneratedProject
                     .Open(path)
                     .StartSetup(verbose, cancellationTokenSource.Token, Console.Out)
@@ -78,6 +81,30 @@ namespace HalApplicationBuilder {
                 })
                 .Build();
             return await parser.InvokeAsync(args);
+        }
+
+
+        /// <summary>
+        /// 外部ツールが使用可能かどうかを検査する（'--version' コマンドを実行することで確認）
+        /// </summary>
+        private static bool CheckIfToolIsAvailable(CancellationToken cancellationToken, params string[] names) {
+            var ok = true;
+            foreach (var name in names) {
+                try {
+                    var cmd = new DotnetEx.Cmd {
+                        WorkingDirectory = ".",
+                        CancellationToken = cancellationToken,
+                        Verbose = false,
+                    };
+                    cmd.Exec(name, "--version");
+                } catch (OperationCanceledException) {
+                    throw;
+                } catch {
+                    Console.Error.WriteLine($"Command line tool '{name}' is not available. Please install it from the official website of '{name}'.");
+                    ok = false;
+                }
+            }
+            return ok;
         }
     }
 }
