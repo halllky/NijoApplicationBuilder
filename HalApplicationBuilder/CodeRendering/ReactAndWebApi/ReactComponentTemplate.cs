@@ -86,7 +86,7 @@ export const ");
         <div className=""page-content-root ag-theme-alpine compact"">
 
             <div className=""flex flex-row justify-start items-center space-x-1"">
-                <div className='flex-1 flex flex-row items-center space-x-1 cursor-pointer' onClick={() => setExpanded(!expanded)}>
+                <div className='flex flex-row items-center space-x-1 cursor-pointer' onClick={() => setExpanded(!expanded)}>
                     <h1 className=""text-base font-semibold select-none py-1"">
                         ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetDisplayName()));
@@ -96,7 +96,7 @@ export const ");
                         ? <ChevronDownIcon className=""w-4"" />
                         : <ChevronUpIcon className=""w-4"" />}
                 </div>
-                <IconButton icon={PlusIcon} onClick={toCreateView}>新規作成</IconButton>
+                <IconButton underline icon={PlusIcon} onClick={toCreateView}>新規作成</IconButton>
             </div>
 
             <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1`} onSubmit={handleSubmit(onSearch)}>
@@ -105,10 +105,10 @@ export const ");
  _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("searchCondition"))); 
  PopIndent(); 
             this.Write(@"                <div className='flex flex-row justify-start space-x-1'>
-                    <IconButton icon={MagnifyingGlassIcon}>検索</IconButton>
+                    <IconButton fill icon={MagnifyingGlassIcon}>検索</IconButton>
                     <IconButton outline onClick={onClear}>クリア</IconButton>
                     <div className=""flex-1""></div>
-                    <IconButton outline icon={BookmarkIcon}>この検索条件を保存</IconButton>
+                    <IconButton underline icon={BookmarkIcon}>この検索条件を保存</IconButton>
                 </div>
             </form>
 
@@ -127,6 +127,7 @@ export const ");
 const columnDefs = [
     {
         resizable: true,
+        width: 50,
         cellRenderer: ({ data }: { data: { ");
             this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.SearchResultBase.__halapp__InstanceKey)));
             this.Write(": string } }) => {\r\n            const encoded = window.encodeURI(data.");
@@ -175,14 +176,14 @@ const columnDefs = [
             this.Write(this.ToStringHelper.ToStringWithCulture(MultiViewUrl));
             this.Write("\">");
             this.Write(this.ToStringHelper.ToStringWithCulture(_rootAggregate.GetDisplayName()));
-            this.Write("</Link>\r\n                &nbsp;&#047;&nbsp;\r\n                新規作成\r\n            </" +
-                    "h1>\r\n            <InlineMessageBar value={errorMessages} onChange={setErrorMessa" +
-                    "ges} />\r\n            <div className=\"flex flex-col space-y-1\">\r\n");
+            this.Write("</Link>&nbsp;新規作成\r\n            </h1>\r\n            <InlineMessageBar value={errorM" +
+                    "essages} onChange={setErrorMessages} />\r\n            <div className=\"flex flex-c" +
+                    "ol space-y-1\">\r\n");
  PushIndent("                "); 
  _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("instance"))); 
  PopIndent(); 
-            this.Write("            </div>\r\n            <IconButton icon={BookmarkSquareIcon} className=\"" +
-                    "self-start\">保存</IconButton>\r\n        </form>\r\n    )\r\n}\r\n\r\nexport const ");
+            this.Write("            </div>\r\n            <IconButton fill icon={BookmarkSquareIcon} classN" +
+                    "ame=\"self-start\">保存</IconButton>\r\n        </form>\r\n    )\r\n}\r\n\r\nexport const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(SingleViewComponentName));
             this.Write(@" = () => {
 
@@ -239,8 +240,8 @@ const columnDefs = [
  PushIndent("            "); 
  _rootAggregate.RenderReactSearchCondition(new RenderingContext(this, new ObjectPath("instance"))); 
  PopIndent(); 
-            this.Write("            <IconButton icon={BookmarkSquareIcon} className=\"self-start\">更新</Icon" +
-                    "Button>\r\n        </form>\r\n    )\r\n}\r\n");
+            this.Write("            <IconButton fill icon={BookmarkSquareIcon} className=\"self-start\">更新<" +
+                    "/IconButton>\r\n        </form>\r\n    )\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

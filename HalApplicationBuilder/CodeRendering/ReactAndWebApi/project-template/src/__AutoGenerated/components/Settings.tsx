@@ -76,7 +76,7 @@ export const SettingsScreen = () => {
       {process.env.NODE_ENV === 'development' &&
         <SettingSection
           title="シークレット設定（開発環境でのみ有効）"
-          sholder={<IconButton hideText icon={ArrowPathIcon} onClick={reload}>再読み込み</IconButton>}
+          sholder={<IconButton underline icon={ArrowPathIcon} onClick={reload}>再読み込み</IconButton>}
         >
           <InlineMessageBar value={settingErrors} onChange={setSettingErrors} />
           <form onSubmit={handleSubmit(onSaveSettings, onError)}>
@@ -87,7 +87,7 @@ export const SettingsScreen = () => {
                     <input {...register(`currentDb`)} type="radio" value={index} />
                     <input {...register(`db.${index}.name`, { required: true })} className="border basis-32 min-w-0" />
                     <input {...register(`db.${index}.connStr`, { required: true })} className="border flex-1" />
-                    <IconButton icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }} />
+                    <IconButton hideText icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }}>削除</IconButton>
                   </div>
                 ))}
                 <IconButton underline icon={PlusIcon} onClick={e => { append(e); e.preventDefault() }} className="self-start">追加</IconButton>
@@ -133,9 +133,8 @@ const SettingSection = ({ title, sholder, children }: {
 }) => {
   return (
     <section className="flex flex-col items-stretch space-y-2 border border-neutral-300 p-2">
-      <div className="flex items-center">
+      <div className="flex justify-start items-center">
         {title && <h2 className="text-sm opacity-50 font-semibold select-none">{title}</h2>}
-        <div className="flex-1"></div>
         {sholder}
       </div>
       {children}

@@ -17,7 +17,7 @@ export const IconButton = (args: {
   } else if (args.outline) {
     className = `flex flex-row justify-center items-center select-none ${args.className} space-x-2 px-2 py-1 border border-neutral-600`
   } else if (args.underline) {
-    className = `flex flex-row justify-center items-center select-none ${args.className} px-1 border-b border-neutral-500`
+    className = `flex flex-row justify-center items-center select-none ${args.className} pr-1 border-b border-neutral-500`
   } else {
     className = `flex flex-row justify-center items-center select-none ${args.className} space-x-2`
   }

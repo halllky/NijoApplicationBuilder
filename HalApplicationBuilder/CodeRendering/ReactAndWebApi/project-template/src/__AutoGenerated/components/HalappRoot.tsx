@@ -9,6 +9,7 @@ import { UnCommitChanges } from './UnCommitChanges'
 import { routes } from '..';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import React from 'react';
+import { LOCAL_STORAGE_KEYS } from '../hooks/localStorageKeys';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,7 +28,7 @@ function HalappRoot({ children }: {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AppContextProvider>
-          <PanelGroup direction='horizontal'>
+          <PanelGroup direction='horizontal' autoSaveId={LOCAL_STORAGE_KEYS.SIDEBAR_SIZE_X}>
             <Panel defaultSize={20}>
               <SideMenu />
             </Panel>
