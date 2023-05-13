@@ -30,7 +30,7 @@ namespace HalApplicationBuilder.Runtime {
                 if (System.IO.File.Exists(filename)) {
                     using var stream = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                     var parsed = System.Text.Json.JsonSerializer.Deserialize<<#=DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))#>>(stream);
-                    return parsed!;
+                    return parsed ?? <#=DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))#>.<#=nameof(Runtime.RuntimeSettings.Server.GetDefault)#>();
                 } else {
                     return new <#=DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))#>();
                 }

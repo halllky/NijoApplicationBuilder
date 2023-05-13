@@ -59,8 +59,11 @@ namespace HalApplicationBuilder.Runtime {
                     "ReadWrite);\r\n                    var parsed = System.Text.Json.JsonSerializer.De" +
                     "serialize<");
             this.Write(this.ToStringHelper.ToStringWithCulture(DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))));
-            this.Write(">(stream);\r\n                    return parsed!;\r\n                } else {\r\n      " +
-                    "              return new ");
+            this.Write(">(stream);\r\n                    return parsed ?? ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))));
+            this.Write(".");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.RuntimeSettings.Server.GetDefault)));
+            this.Write("();\r\n                } else {\r\n                    return new ");
             this.Write(this.ToStringHelper.ToStringWithCulture(DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))));
             this.Write("();\r\n                }\r\n            });\r\n        }\r\n    }\r\n\r\n}\r\n");
             return this.GenerationEnvironment.ToString();

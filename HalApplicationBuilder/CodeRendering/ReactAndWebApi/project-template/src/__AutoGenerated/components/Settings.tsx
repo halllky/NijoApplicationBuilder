@@ -105,7 +105,7 @@ export const SettingsScreen = () => {
 }
 
 const fieldValuesToObject = (data: FieldValues) => {
-  const db = data['db'] as { name: string, connStr: string }[]
+  const db = (data['db'] as { name: string, connStr: string }[]).map(({ name, connStr }) => ({ name, connStr }))
   const strCurrentDb = data['currentDb'] as string | null
   const numCurrentDb = strCurrentDb == null ? NaN : Number.parseInt(strCurrentDb)
   const currentDb = isNaN(numCurrentDb) ? null : db[numCurrentDb]?.name

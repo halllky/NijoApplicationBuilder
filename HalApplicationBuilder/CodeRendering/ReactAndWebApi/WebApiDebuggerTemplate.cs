@@ -27,35 +27,29 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
         public virtual string TransformText()
         {
  var dbContextTypeName = $"{_config.DbContextNamespace}.{_config.DbContextName}"; 
-            this.Write("using Microsoft.AspNetCore.Mvc;\r\nusing System.Text.Json;\r\n\r\nnamespace ");
+            this.Write("using Microsoft.AspNetCore.Mvc;\r\nusing System.Text.Json;\r\nusing Microsoft.EntityF" +
+                    "rameworkCore;\r\n\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_config.MvcControllerNamespace));
-            this.Write(";\r\n\r\n#if DEBUG\r\n[ApiController]\r\n[Route(\"[controller]\")]\r\npublic class HalappDebu" +
-                    "gController : ControllerBase {\r\n    public HalappDebugController(\r\n        ILogg" +
-                    "er<HalappDebugController> logger,\r\n        ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(dbContextTypeName));
-            this.Write(" dbContext,\r\n        ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(typeof(RuntimeService).FullName));
-            this.Write(" runtimeService,\r\n        ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))));
-            this.Write(@"? secretSettings) {
+            this.Write(@";
+
+#if DEBUG
+[ApiController]
+[Route(""[controller]"")]
+public class HalappDebugController : ControllerBase {
+    public HalappDebugController(ILogger<HalappDebugController> logger, IServiceProvider provider) {
         _logger = logger;
-        _dbContext = dbContext;
-        _runtimeService = runtimeService;
-        _secretSettings = secretSettings;
+        _provider = provider;
     }
     private readonly ILogger<HalappDebugController> _logger;
-    private readonly ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(dbContextTypeName));
-            this.Write(" _dbContext;\r\n    private readonly ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(typeof(RuntimeService).FullName));
-            this.Write(" _runtimeService;\r\n    private readonly ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))));
-            this.Write(@"? _secretSettings;
+    private readonly IServiceProvider _provider;
 
     [HttpPost(""recreate-database"")]
     public HttpResponseMessage RecreateDatabase() {
-        _dbContext.Database.EnsureDeleted();
-        _dbContext.Database.EnsureCreated();
+        var dbContext = _provider.GetRequiredService<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(dbContextTypeName));
+            this.Write(@">();
+        dbContext.Database.EnsureDeleted();
+        dbContext.Database.Migrate();
         return new HttpResponseMessage {
             StatusCode = System.Net.HttpStatusCode.OK,
             Content = new StringContent(""DBを再作成しました。""),
@@ -64,33 +58,19 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
     
     [HttpGet(""secret-settings"")]
     public IActionResult GetSecretSettings() {
-        return JsonContent(_secretSettings ?? new ");
+        var runtimeSetting = _provider.GetRequiredService<");
             this.Write(this.ToStringHelper.ToStringWithCulture(DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))));
-            this.Write("());\r\n    }\r\n    [HttpPost(\"secret-settings\")]\r\n    public IActionResult SetSecre" +
-                    "tSettings([FromBody] ");
+            this.Write(">();\r\n        return Content(runtimeSetting.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.RuntimeSettings.Server.ToJson)));
+            this.Write("(), \"application/json\");\r\n    }\r\n    [HttpPost(\"secret-settings\")]\r\n    public IA" +
+                    "ctionResult SetSecretSettings([FromBody] ");
             this.Write(this.ToStringHelper.ToStringWithCulture(DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))));
-            this.Write(" settings) {\r\n        var json = System.Text.Json.JsonSerializer.Serialize<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))));
-            this.Write(">(settings);\r\n        using var sw = new System.IO.StreamWriter(\"");
+            this.Write(" settings) {\r\n        var json = settings.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.RuntimeSettings.Server.ToJson)));
+            this.Write("();\r\n        using var sw = new System.IO.StreamWriter(\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(DefaultRuntimeConfigTemplate.HALAPP_RUNTIME_SERVER_SETTING_JSON));
-            this.Write(@""", false, new System.Text.UTF8Encoding(false));
-        sw.WriteLine(json);
-        return Ok();
-    }
-    
-    private ContentResult JsonContent<T>(T obj) {
-        var options = new JsonSerializerOptions {
-            // レスポンスに大文字が含まれるとき、大文字のまま返す。
-            // react hook form や ag-grid では大文字小文字を区別しているため
-            PropertyNameCaseInsensitive = true,
-        };
-        var json = JsonSerializer.Serialize(obj, options);
-
-        return Content(json, ""application/json"");
-    }
-}
-#endif
-");
+            this.Write("\", false, new System.Text.UTF8Encoding(false));\r\n        sw.WriteLine(json);\r\n   " +
+                    "     return Ok();\r\n    }\r\n}\r\n#endif\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

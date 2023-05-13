@@ -7,6 +7,7 @@
 <# var dbContextTypeName = $"{_config.DbContextNamespace}.{_config.DbContextName}"; #>
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 
 namespace <#=_config.MvcControllerNamespace#>;
 
@@ -14,25 +15,18 @@ namespace <#=_config.MvcControllerNamespace#>;
 [ApiController]
 [Route("[controller]")]
 public class HalappDebugController : ControllerBase {
-    public HalappDebugController(
-        ILogger<HalappDebugController> logger,
-        <#=dbContextTypeName#> dbContext,
-        <#=typeof(RuntimeService).FullName#> runtimeService,
-        <#=DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))#>? secretSettings) {
+    public HalappDebugController(ILogger<HalappDebugController> logger, IServiceProvider provider) {
         _logger = logger;
-        _dbContext = dbContext;
-        _runtimeService = runtimeService;
-        _secretSettings = secretSettings;
+        _provider = provider;
     }
     private readonly ILogger<HalappDebugController> _logger;
-    private readonly <#=dbContextTypeName#> _dbContext;
-    private readonly <#=typeof(RuntimeService).FullName#> _runtimeService;
-    private readonly <#=DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))#>? _secretSettings;
+    private readonly IServiceProvider _provider;
 
     [HttpPost("recreate-database")]
     public HttpResponseMessage RecreateDatabase() {
-        _dbContext.Database.EnsureDeleted();
-        _dbContext.Database.EnsureCreated();
+        var dbContext = _provider.GetRequiredService<<#=dbContextTypeName#>>();
+        dbContext.Database.EnsureDeleted();
+        dbContext.Database.Migrate();
         return new HttpResponseMessage {
             StatusCode = System.Net.HttpStatusCode.OK,
             Content = new StringContent("DBを再作成しました。"),
@@ -41,25 +35,15 @@ public class HalappDebugController : ControllerBase {
     
     [HttpGet("secret-settings")]
     public IActionResult GetSecretSettings() {
-        return JsonContent(_secretSettings ?? new <#=DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))#>());
+        var runtimeSetting = _provider.GetRequiredService<<#=DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))#>>();
+        return Content(runtimeSetting.<#=nameof(Runtime.RuntimeSettings.Server.ToJson)#>(), "application/json");
     }
     [HttpPost("secret-settings")]
     public IActionResult SetSecretSettings([FromBody] <#=DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))#> settings) {
-        var json = System.Text.Json.JsonSerializer.Serialize<<#=DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.RuntimeSettings.Server))#>>(settings);
+        var json = settings.<#=nameof(Runtime.RuntimeSettings.Server.ToJson)#>();
         using var sw = new System.IO.StreamWriter("<#=DefaultRuntimeConfigTemplate.HALAPP_RUNTIME_SERVER_SETTING_JSON#>", false, new System.Text.UTF8Encoding(false));
         sw.WriteLine(json);
         return Ok();
-    }
-    
-    private ContentResult JsonContent<T>(T obj) {
-        var options = new JsonSerializerOptions {
-            // レスポンスに大文字が含まれるとき、大文字のまま返す。
-            // react hook form や ag-grid では大文字小文字を区別しているため
-            PropertyNameCaseInsensitive = true,
-        };
-        var json = JsonSerializer.Serialize(obj, options);
-
-        return Content(json, "application/json");
     }
 }
 #endif
