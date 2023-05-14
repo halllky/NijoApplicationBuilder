@@ -26,7 +26,10 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
         public virtual string TransformText()
         {
             this.Write("import \'./halapp.css\';\r\nimport \'ag-grid-community/styles/ag-grid.css\';\r\nimport \'a" +
-                    "g-grid-community/styles/ag-theme-alpine.css\';\r\n\r\nexport * from \'");
+                    "g-grid-community/styles/ag-theme-alpine.css\';\r\n\r\nexport const THIS_APPLICATION_N" +
+                    "AME = \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_applicationName));
+            this.Write("\' as const\r\n\r\nexport * from \'");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetImportFromMenuItems()));
             this.Write("\'\r\n");
  foreach (var root in _rootAggregates) { 

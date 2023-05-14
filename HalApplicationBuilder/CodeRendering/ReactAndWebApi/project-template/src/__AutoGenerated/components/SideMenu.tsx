@@ -2,7 +2,7 @@ import React from "react"
 import { Link } from "react-router-dom"
 import { ArrowsUpDownIcon, CircleStackIcon, Cog6ToothIcon, UserCircleIcon } from "@heroicons/react/24/outline"
 import { CopyableText } from "./CopyableText"
-import { menuItems } from ".."
+import { menuItems, THIS_APPLICATION_NAME } from ".."
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import { NavLink, useLocation } from "react-router-dom"
 import { LOCAL_STORAGE_KEYS } from "../hooks/localStorageKeys"
@@ -13,7 +13,7 @@ export const SideMenu = () => {
 
       <Panel className="flex flex-col">
         <Link to='/' className="p-1 ellipsis-ex font-semibold select-none">
-          サンプルアプリケーション
+          {THIS_APPLICATION_NAME}
         </Link>
         <nav className="flex-1 overflow-y-auto leading-none">
           {menuItems.map(item =>

@@ -157,10 +157,12 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
 #pragma warning disable IDE1006 // 命名スタイル
     partial class index {
 #pragma warning restore IDE1006 // 命名スタイル
-        internal index(IEnumerable<RootAggregate> rootAggregates) {
+        internal index(Config config, IEnumerable<RootAggregate> rootAggregates) {
+            _applicationName = config.ApplicationName;
             _rootAggregates = rootAggregates;
         }
 
+        private readonly string _applicationName;
         private readonly IEnumerable<RootAggregate> _rootAggregates;
 
         private static string GetImportFromMenuItems() {
