@@ -7,7 +7,7 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering.EFCore
+namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
 {
     using System.Linq;
     using System.Text;
@@ -18,35 +18,66 @@ namespace HalApplicationBuilder.CodeRendering.EFCore
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class AutoCompleteSourceTemplate : AutoCompleteSourceTemplateBase
+    public partial class ComboBoxTemplate : ComboBoxTemplateBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("\r\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextNamespace));
-            this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
-                    "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n\r\n" +
-                    "    partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_config.DbContextName));
-            this.Write(" {\r\n\r\n");
- foreach (var aggregate in _aggregates) { 
- var method = aggregate.BuildAutoCompleteSourceMethod(); 
-            this.Write("        /// <summary>\r\n        /// オートコンプリートのデータソースを読み込む\r\n        /// </summary>\r" +
-                    "\n        public IEnumerable<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(method.EntityClassName));
-            this.Write("> ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(method.MethodName));
-            this.Write("(string? keyword = null) {\r\n            var query = (IQueryable<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(method.EntityClassName));
-            this.Write(">)this.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(method.DbSetName));
-            this.Write(";\r\n            return query\r\n                .Take(100 + 1)\r\n                .ToA" +
-                    "rray();\r\n        }\r\n");
+            this.Write("import { forwardRef, ForwardedRef, useState } from \"react\"\r\nimport { useQuery } f" +
+                    "rom \"react-query\"\r\nimport { Combobox } from \"@headlessui/react\"\r\nimport { useApp" +
+                    "Context } from \"../hooks/AppContext\"\r\nimport { ReferenceDTO } from \"../halapp.ty" +
+                    "pes\"\r\n\r\n");
+ foreach (var aggregate in _rootAggregates) { 
+            this.Write("/** ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(aggregate.GetDisplayName()));
+            this.Write("のコンボボックス */\r\nconst ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetComboBoxName(aggregate)));
+            this.Write(@" = forwardRef(({ value, onChange }: {
+  value?: ReferenceDTO
+  onChange?: (v: ReferenceDTO | undefined) => void
+}, ref: ForwardedRef<HTMLElement>) => {
+
+  const [{ apiDomain }, dispatch] = useAppContext()
+  const [keyword, setKeyword] = useState('')
+  const { data } = useQuery({
+    queryKey: ['");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetQueryKey(aggregate)));
+            this.Write("\'],\r\n    queryFn: async () => {\r\n      const encoded = window.encodeURI(keyword)\r" +
+                    "\n      const response = await fetch(`${apiDomain}/");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetUrlSubDomain(aggregate)));
+            this.Write(@"/list-by-keyword?keyword=${encoded}`)
+      if (!response.ok) throw new Error('Network response was not OK.')
+      return (await response.json()) as ReferenceDTO[]
+    },
+    onError: error => {
+      dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
+    },
+  })
+
+  return (
+    <Combobox ref={ref} value={value} onChange={onChange}>
+      <Combobox.Input onChange={(event) => setKeyword(event.target.value)} />
+      <Combobox.Options>
+        {data?.map(referenceDto => (
+          <Combobox.Option key={referenceDto.instanceKey} value={referenceDto.instanceKey}>
+            {referenceDto.instanceName}
+          </Combobox.Option>
+        ))}
+      </Combobox.Options>
+    </Combobox>
+  )
+})
+");
  } 
-            this.Write("\r\n    }\r\n}\r\n");
+            this.Write("\r\nexport const ComboBoxes = {\r\n");
+ foreach (var aggregate in _rootAggregates) { 
+            this.Write("  ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetComboBoxName(aggregate)));
+            this.Write(",\r\n");
+ } 
+            this.Write("}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -55,7 +86,7 @@ namespace HalApplicationBuilder.CodeRendering.EFCore
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class AutoCompleteSourceTemplateBase
+    public class ComboBoxTemplateBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { FieldValues, SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { UUID } from 'uuidjs';
 import { useAppContext } from '../hooks/AppContext';
-import { HalInput } from './HalInput';
+import { InputForms } from './InputForms';
 import { IconButton } from './IconButton';
 import { InlineMessageBar, BarMessage } from './InlineMessageBar';
 
@@ -70,7 +70,7 @@ export const SettingsScreen = () => {
 
       <SettingSection title="基本設定">
         <Setting label="サーバーURL">
-          <HalInput.Word value={apiDomain} onChange={e => dispatch({ type: 'changeDomain', value: e.target.value })} className="w-full" />
+          <InputForms.Word value={apiDomain} onChange={e => dispatch({ type: 'changeDomain', value: e.target.value })} className="w-full" />
         </Setting>
       </SettingSection>
 
@@ -92,8 +92,8 @@ export const SettingsScreen = () => {
                 {fields.map((field, index) => (
                   <div key={field.id} className="flex items-center space-x-1">
                     <input {...register(`currentDb`)} type="radio" value={index} />
-                    <HalInput.Word {...register(`db.${index}.name`, { required: true })} className="basis-32 min-w-0" />
-                    <HalInput.Word {...register(`db.${index}.connStr`, { required: true })} className="flex-1" />
+                    <InputForms.Word {...register(`db.${index}.name`, { required: true })} className="basis-32 min-w-0" />
+                    <InputForms.Word {...register(`db.${index}.connStr`, { required: true })} className="flex-1" />
                     <IconButton underline icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }}>削除</IconButton>
                   </div>
                 ))}

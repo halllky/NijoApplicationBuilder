@@ -10,10 +10,16 @@ namespace HalApplicationBuilder.Core
 {
     internal abstract class AggregateMember : ValueObject
     {
-        internal AggregateMember(Config config, string displayName, bool isPrimary, Aggregate owner) {
+        internal AggregateMember(
+            Config config,
+            string displayName,
+            bool isPrimary,
+            bool isInstanceName,
+            Aggregate owner) {
             _config = config;
             DisplayName = displayName;
             IsPrimary = isPrimary;
+            IsInstanceName = isInstanceName;
             Owner = owner;
         }
 
@@ -24,6 +30,7 @@ namespace HalApplicationBuilder.Core
         internal string DisplayName { get; }
         internal string GetCSharpSafeName() => DisplayName.ToCSharpSafe();
         internal bool IsPrimary { get; }
+        internal bool IsInstanceName { get; }
 
         internal class MemberPath {
             internal required RootAggregate Root { get; init; }

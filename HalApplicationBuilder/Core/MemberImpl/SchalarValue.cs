@@ -30,7 +30,7 @@ namespace HalApplicationBuilder.Core.MemberImpl
             return false;
         }
 
-        internal SchalarValue(Config config, string displayName, bool isPrimary, Aggregate owner, PropertyInfo prop) : base(config, displayName, isPrimary, owner) {
+        internal SchalarValue(Config config, string displayName, bool isPrimary, bool isInstanceName, Aggregate owner, PropertyInfo prop) : base(config, displayName, isPrimary, isInstanceName, owner) {
             _propertyType = prop.PropertyType;
 
             if (prop.PropertyType.IsGenericType && prop.PropertyType == typeof(Nullable<>))
@@ -42,7 +42,7 @@ namespace HalApplicationBuilder.Core.MemberImpl
             else
                 IsNullable = false;
         }
-        internal SchalarValue(Config config, string displayName, bool isPrimary, Aggregate owner, Type propertyTypeWithoutNullable, bool isNullable) : base(config, displayName, isPrimary, owner) {
+        internal SchalarValue(Config config, string displayName, bool isPrimary, bool isInstanceName, Aggregate owner, Type propertyTypeWithoutNullable, bool isNullable) : base(config, displayName, isPrimary, isInstanceName, owner) {
             _propertyType = isNullable && propertyTypeWithoutNullable != typeof(string)
                 ? typeof(Nullable<>).MakeGenericType(propertyTypeWithoutNullable)
                 : propertyTypeWithoutNullable;

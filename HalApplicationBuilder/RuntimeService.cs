@@ -145,13 +145,21 @@ namespace HalApplicationBuilder {
             }
         }
         /// <summary>TODO 苦肉の策。もっと良いやり方がある</summary>
-        public IEnumerable<TSearchResult> AppendInstanceKey<TSearchResult>(IEnumerable<TSearchResult> searchResults) where TSearchResult : SearchResultBase {
+        public void AppendInstanceKey<TSearchResult>(IEnumerable<TSearchResult> searchResults) where TSearchResult : SearchResultBase {
             var aggregate = FindRootAggregate(typeof(TSearchResult));
             if (aggregate == null) throw new ArgumentException($"型 {typeof(TSearchResult).Name} と対応する集約が見つかりません。");
 
             foreach (var item in searchResults) {
                 item.__halapp__InstanceKey = aggregate.CreateInstanceKeyFromSearchResult(item).StringValue;
-                yield return item;
+            }
+        }
+        /// <summary>TODO 苦肉の策。もっと良いやり方がある</summary>
+        public void AppendInstanceName<TSearchResult>(IEnumerable<TSearchResult> searchResults) where TSearchResult : SearchResultBase {
+            var aggregate = FindRootAggregate(typeof(TSearchResult));
+            if (aggregate == null) throw new ArgumentException($"型 {typeof(TSearchResult).Name} と対応する集約が見つかりません。");
+
+            foreach (var item in searchResults) {
+                item.__halapp__InstanceName = aggregate.CreateInstanceNameFromSearchResult(item).Value;
             }
         }
 
@@ -199,7 +207,7 @@ namespace HalApplicationBuilder {
                 return default;
             }
 
-            instanceName = Runtime.InstanceName.Create(dbInstance, aggregate).Value;
+            instanceName = Runtime.InstanceName.FromDbEntity(dbInstance, aggregate).Value;
 
             var uiInstance = CreateInstance(aggregate.ToUiInstanceClass().CSharpTypeName);
             aggregate.MapDbToUi(dbInstance, uiInstance, this);

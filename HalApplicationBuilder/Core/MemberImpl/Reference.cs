@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 namespace HalApplicationBuilder.Core.MemberImpl
 {
     internal class Reference : AggregateMember {
-        internal Reference(Config config, string displayName, bool isPrimary, bool isNullable, Aggregate owner, Func<Aggregate> getRefTarget) : base(config, displayName, isPrimary, owner) {
+        internal Reference(Config config, string displayName, bool isPrimary, bool isInstanceName, bool isNullable, Aggregate owner, Func<Aggregate> getRefTarget) : base(config, displayName, isPrimary, isInstanceName, owner) {
             _getRefTarget = getRefTarget;
             _isNullable = isNullable;
         }
@@ -169,7 +169,7 @@ namespace HalApplicationBuilder.Core.MemberImpl
             } else {
                 var refTarget = GetRefTarget();
                 refDto.InstanceKey = refTarget.CreateInstanceKeyFromDbInstnace(navigation).StringValue;
-                refDto.InstanceName = Runtime.InstanceName.Create(navigation, refTarget).Value;
+                refDto.InstanceName = Runtime.InstanceName.FromDbEntity(navigation, refTarget).Value;
             }
         }
 

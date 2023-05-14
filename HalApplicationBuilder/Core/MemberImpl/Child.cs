@@ -13,7 +13,7 @@ using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Model;
 namespace HalApplicationBuilder.Core.MemberImpl
 {
     internal class Child : AggregateMember {
-        internal Child(Config config, string displayName, bool isPrimary, Aggregate owner, IAggregateDefine childType) : base(config, displayName, isPrimary, owner) {
+        internal Child(Config config, string displayName, bool isPrimary, bool isInstanceName, Aggregate owner, IAggregateDefine childType) : base(config, displayName, isPrimary, isInstanceName, owner) {
             _childType = childType;
         }
 

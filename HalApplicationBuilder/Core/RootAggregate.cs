@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using HalApplicationBuilder.CodeRendering.EFCore;
+using HalApplicationBuilder.Runtime;
 
 namespace HalApplicationBuilder.Core
 {

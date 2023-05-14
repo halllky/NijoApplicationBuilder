@@ -38,9 +38,10 @@ namespace HalApplicationBuilder.Core.Definition {
 
                 var displayName = prop.Name;
                 var isPrimary = prop.GetCustomAttribute<KeyAttribute>() != null;
+                var isInstanceName = prop.GetCustomAttribute<InstanceNameAttribute>() != null;
 
                 if (MemberImpl.SchalarValue.IsPrimitive(prop.PropertyType)) {
-                    yield return new MemberImpl.SchalarValue(_config, displayName, isPrimary, owner, prop);
+                    yield return new MemberImpl.SchalarValue(_config, displayName, isPrimary, isInstanceName, owner, prop);
 
                 } else if (prop.PropertyType.IsGenericType
                     && prop.PropertyType.GetGenericTypeDefinition() == typeof(Child<>)) {
@@ -50,11 +51,11 @@ namespace HalApplicationBuilder.Core.Definition {
 
                     if (!childType.IsAbstract && !variations.Any()) {
                         var childSetting = new ReflectionDefine(_config, childType, _rootAggregateTypes);
-                        yield return new MemberImpl.Child(_config, displayName, isPrimary, owner, childSetting);
+                        yield return new MemberImpl.Child(_config, displayName, isPrimary, isInstanceName, owner, childSetting);
 
                     } else if (childType.IsAbstract && variations.Any()) {
                         var variationSettings = variations.ToDictionary(v => v.Key, v => (IAggregateDefine)new ReflectionDefine(_config, v.Type, _rootAggregateTypes));
-                        yield return new MemberImpl.Variation(_config, displayName, isPrimary, owner, variationSettings);
+                        yield return new MemberImpl.Variation(_config, displayName, isPrimary, isInstanceName, owner, variationSettings);
 
                     } else {
                         throw new InvalidOperationException($"抽象型ならバリエーション必須、抽象型でないなら{nameof(VariationAttribute)}指定不可");
@@ -62,13 +63,13 @@ namespace HalApplicationBuilder.Core.Definition {
                 } else if (prop.PropertyType.IsGenericType
                     && prop.PropertyType.GetGenericTypeDefinition() == typeof(Children<>)) {
                     var childSetting = new ReflectionDefine(_config, prop.PropertyType.GetGenericArguments()[0], _rootAggregateTypes);
-                    yield return new MemberImpl.Children(_config, displayName, isPrimary, owner, childSetting);
+                    yield return new MemberImpl.Children(_config, displayName, isPrimary, isInstanceName, owner, childSetting);
 
                 } else if (prop.PropertyType.IsGenericType
                     && prop.PropertyType.GetGenericTypeDefinition() == typeof(RefTo<>)) {
                     var nullable = !isPrimary && prop.GetCustomAttribute<RequiredAttribute>() == null;
                     var getRefTarget = () => GetAggregateByRefTargetType(prop.PropertyType.GetGenericArguments()[0]);
-                    yield return new MemberImpl.Reference(_config, displayName, isPrimary, nullable, owner, getRefTarget);
+                    yield return new MemberImpl.Reference(_config, displayName, isPrimary, isInstanceName, nullable, owner, getRefTarget);
 
                 } else {
                     throw new InvalidOperationException($"{DisplayName} の {prop.Name} の型 {prop.PropertyType.Name} は非対応");

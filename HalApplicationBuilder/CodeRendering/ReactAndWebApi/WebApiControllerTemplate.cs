@@ -61,7 +61,27 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
             this.Write(">(json)!;\r\n        var searchResult = _dbContext\r\n            .");
             this.Write(this.ToStringHelper.ToStringWithCulture(search.MethodName));
             this.Write("(condition)\r\n            .AsEnumerable();\r\n        return JsonContent(searchResul" +
-                    "t);\r\n    }\r\n    [HttpPost(\"create\")]\r\n    public IActionResult Create(");
+                    "t);\r\n    }\r\n    [HttpGet(\"lsit-by-keyword\")]\r\n    public IActionResult SearchByK" +
+                    "eyword([FromQuery] string keyword) {\r\n        var condition = new ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(search.SearchConditionClassName));
+            this.Write("();\r\n        // TODO keyword‚ð[‚Ä‚é\r\n        var data = _dbContext\r\n            .");
+            this.Write(this.ToStringHelper.ToStringWithCulture(search.MethodName));
+            this.Write("(condition)\r\n            .AsEnumerable();\r\n\r\n        var guid = new Guid(\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(rootAggregate.GetGuid()));
+            this.Write("\");\r\n        var refDtos = data.Select(item => new ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.ReferenceDTO))));
+            this.Write(" {\r\n            ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.ReferenceDTO.AggreageteGuid)));
+            this.Write(" = guid,\r\n            ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.ReferenceDTO.InstanceKey)));
+            this.Write(" = item.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.SearchResultBase.__halapp__InstanceKey)));
+            this.Write(",\r\n            ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.ReferenceDTO.InstanceName)));
+            this.Write(" = item.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.SearchResultBase.__halapp__InstanceName)));
+            this.Write(",\r\n        });\r\n        return JsonContent(refDtos);\r\n    }\r\n    [HttpPost(\"creat" +
+                    "e\")]\r\n    public IActionResult Create(");
             this.Write(this.ToStringHelper.ToStringWithCulture(uiInstance));
             this.Write(" param) {\r\n        var success = _runtimeService.");
             this.Write(this.ToStringHelper.ToStringWithCulture(nameof(RuntimeService.TrySaveNewInstance)));

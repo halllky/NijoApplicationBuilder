@@ -62,8 +62,9 @@ namespace HalApplicationBuilder.CodeRendering.EFCore
             this.Write(")\r\n                .Take(page.");
             this.Write(this.ToStringHelper.ToStringWithCulture(nameof(DotnetEx.Page.SqlLimit)));
             this.Write(");\r\n\r\n            var runtimeService = this.GetService<HalApplicationBuilder.Runt" +
-                    "imeService>()!;\r\n            return runtimeService.AppendInstanceKey(query);\r\n  " +
-                    "      }\r\n");
+                    "imeService>()!;\r\n            runtimeService.AppendInstanceKey(query);\r\n         " +
+                    "   runtimeService.AppendInstanceName(query);\r\n            return query;\r\n       " +
+                    " }\r\n");
  } 
             this.Write("\r\n    }\r\n}\r\n");
             return this.GenerationEnvironment.ToString();

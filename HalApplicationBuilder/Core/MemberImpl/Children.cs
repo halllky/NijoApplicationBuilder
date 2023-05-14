@@ -11,7 +11,7 @@ using HalApplicationBuilder.Serialized;
 namespace HalApplicationBuilder.Core.MemberImpl
 {
     internal class Children : AggregateMember {
-        internal Children(Config config, string displayName, bool isPrimary, Aggregate owner, IAggregateDefine childType) : base(config, displayName, isPrimary, owner) {
+        internal Children(Config config, string displayName, bool isPrimary, bool isInstanceName, Aggregate owner, IAggregateDefine childType) : base(config, displayName, isPrimary, isInstanceName, owner) {
             _childType = childType;
         }
 

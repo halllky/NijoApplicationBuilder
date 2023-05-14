@@ -41,6 +41,22 @@ public class <#=controllerName#> : ControllerBase {
             .AsEnumerable();
         return JsonContent(searchResult);
     }
+    [HttpGet("lsit-by-keyword")]
+    public IActionResult SearchByKeyword([FromQuery] string keyword) {
+        var condition = new <#=search.SearchConditionClassName#>();
+        // TODO keywordを充てる
+        var data = _dbContext
+            .<#=search.MethodName#>(condition)
+            .AsEnumerable();
+
+        var guid = new Guid("<#=rootAggregate.GetGuid()#>");
+        var refDtos = data.Select(item => new <#=DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.ReferenceDTO))#> {
+            <#=nameof(Runtime.ReferenceDTO.AggreageteGuid)#> = guid,
+            <#=nameof(Runtime.ReferenceDTO.InstanceKey)#> = item.<#=nameof(Runtime.SearchResultBase.__halapp__InstanceKey)#>,
+            <#=nameof(Runtime.ReferenceDTO.InstanceName)#> = item.<#=nameof(Runtime.SearchResultBase.__halapp__InstanceName)#>,
+        });
+        return JsonContent(refDtos);
+    }
     [HttpPost("create")]
     public IActionResult Create(<#=uiInstance#> param) {
         var success = _runtimeService.<#=nameof(RuntimeService.TrySaveNewInstance)#>(param, out var instanceKey, out var errors);

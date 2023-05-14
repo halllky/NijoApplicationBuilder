@@ -7,6 +7,7 @@ using HalApplicationBuilder.DotnetEx;
 using HalApplicationBuilder.CodeRendering;
 using System.Text;
 using HalApplicationBuilder.CodeRendering.EFCore;
+using HalApplicationBuilder.Runtime;
 
 namespace HalApplicationBuilder.Core
 {
@@ -123,15 +124,6 @@ namespace HalApplicationBuilder.Core
             if (method == null) throw new InvalidOperationException($"{dbContextType.Name} にメソッド {GetAutoCompleteSourceMethodName()} が存在しません。");
             return method;
         }
-        internal CodeRendering.EFCore.AutoCompleteSourceDTO BuildAutoCompleteSourceMethod() {
-            var dbEntity = ToDbEntity();
-            var dto = new CodeRendering.EFCore.AutoCompleteSourceDTO {
-                DbSetName = dbEntity.DbSetName,
-                EntityClassName = dbEntity.CSharpTypeName,
-                MethodName = GetAutoCompleteSourceMethodName(),
-            };
-            return dto;
-        }
         private string GetAutoCompleteSourceMethodName() => $"LoadAutoCompleteSource_{GetCSharpSafeName()}";
 
         /// <summary>
@@ -202,6 +194,14 @@ namespace HalApplicationBuilder.Core
                 .Where(m => m.IsPrimary)
                 .Select(m => m.GetInstanceKeyFromAutoCompleteItem(autoCompelteItem));
             return Runtime.InstanceKey.FromObjects(values);
+        }
+
+        internal Runtime.InstanceName CreateInstanceNameFromSearchResult(object searchResult) {
+            var values = GetMembers()
+                .Where(m => m.IsInstanceName)
+                // TODO InstanceKey用メソッドの使いまわし
+                .Select(m => m.GetInstanceKeyFromSearchResult(searchResult));
+            return Runtime.InstanceName.FromSearchResult(values, this);
         }
 
         internal void MapInstanceKeyToDbInstance(string instanceKey, object dbInstance) {

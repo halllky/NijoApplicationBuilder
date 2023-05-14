@@ -10,7 +10,7 @@ using HalApplicationBuilder.Serialized;
 namespace HalApplicationBuilder.Core.MemberImpl
 {
     internal class Variation : AggregateMember {
-        internal Variation(Config config, string displayName, bool isPrimary, Aggregate owner, IEnumerable<KeyValuePair<int, IAggregateDefine>> variations) : base(config, displayName, isPrimary, owner) {
+        internal Variation(Config config, string displayName, bool isPrimary, bool isInstanceName, Aggregate owner, IEnumerable<KeyValuePair<int, IAggregateDefine>> variations) : base(config, displayName, isPrimary, isInstanceName, owner) {
             if (!variations.Any())
                 throw new InvalidOperationException($"{displayName} の派生型が1つも定義されていない");
 

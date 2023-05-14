@@ -12,6 +12,8 @@ namespace HalApplicationBuilder.Serialized {
         public string? Kind { get; set; }
         [JsonPropertyName("primary")]
         public bool? IsPrimary { get; set; }
+        [JsonPropertyName("isInstanceName")]
+        public bool? IsInstanceName { get; set;}
         [JsonPropertyName("nullable")]
         public bool? IsNullable { get; set; }
         [JsonPropertyName("child")]

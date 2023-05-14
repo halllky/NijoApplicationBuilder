@@ -75,15 +75,6 @@ namespace HalApplicationBuilder.CodeRendering.EFCore {
         private readonly Core.Config _config;
         private readonly IEnumerable<Core.RootAggregate> _rootAggregates;
     }
-
-    partial class AutoCompleteSourceTemplate {
-        internal AutoCompleteSourceTemplate(Core.Config config, IEnumerable<Core.Aggregate> aggregates) {
-            _config = config;
-            _aggregates = aggregates;
-        }
-        private readonly Core.Config _config;
-        private readonly IEnumerable<Core.Aggregate> _aggregates;
-    }
 }
 
 namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
@@ -130,6 +121,18 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
 
         private readonly RootAggregate _rootAggregate;
         private readonly RenderedClass _searchResult;
+    }
+
+    partial class ComboBoxTemplate {
+        internal ComboBoxTemplate(IEnumerable<RootAggregate> rootAggregates) {
+            _rootAggregates = rootAggregates;
+        }
+        private readonly IEnumerable<RootAggregate> _rootAggregates;
+
+        internal const string FILE_NAME = "InputForms2.tsx";
+        internal static string GetComboBoxName(Aggregate aggregate) => $"ComboBox{aggregate.GetGuid().ToString().Replace("-", "")}";
+        private static string GetQueryKey(Aggregate aggregate) => $"{aggregate.GetGuid()}/autocomplete";
+        private static string GetUrlSubDomain(Aggregate aggregate) => aggregate.GetCSharpSafeName();
     }
 
 #pragma warning disable IDE1006 // 命名スタイル

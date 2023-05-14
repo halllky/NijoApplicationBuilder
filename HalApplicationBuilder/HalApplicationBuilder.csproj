@@ -56,6 +56,10 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>index.cs</LastGenOutput>
 		</None>
+		<None Update="CodeRendering\ReactAndWebApi\ComboBoxTemplate.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>ComboBoxTemplate.cs</LastGenOutput>
+		</None>
 		<None Update="CodeRendering\ReactAndWebApi\menuItems.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>menuItems.cs</LastGenOutput>
@@ -117,10 +121,6 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>UIModelsTemplate.cs</LastGenOutput>
 		</None>
-		<None Update="CodeRendering\EFCore\AutoCompleteSourceTemplate.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>AutoCompleteSourceTemplate.cs</LastGenOutput>
-		</None>
 		<None Update="CodeRendering\EFCore\DbSetTemplate.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>DbSetTemplate.cs</LastGenOutput>
@@ -170,6 +170,11 @@
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>index.tt</DependentUpon>
 		</Compile>
+		<Compile Update="CodeRendering\ReactAndWebApi\ComboBoxTemplate.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>ComboBoxTemplate.tt</DependentUpon>
+		</Compile>
 		<Compile Update="CodeRendering\ReactAndWebApi\menuItems.cs">
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
@@ -214,11 +219,6 @@
 		</Compile>
 		<Compile Update="CodeRendering\MvcMultiViewTemplate.cs">
 		  <DependentUpon>MvcMultiViewTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\EFCore\AutoCompleteSourceTemplate.cs">
-		  <DependentUpon>AutoCompleteSourceTemplate.tt</DependentUpon>
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
 		</Compile>
 		<Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="CodeRendering\EFCore\DbSetTemplate.cs">
 		  <DependentUpon>DbSetTemplate.tt</DependentUpon>

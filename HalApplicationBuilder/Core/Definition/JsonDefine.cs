@@ -58,33 +58,34 @@ namespace HalApplicationBuilder.Core.Definition {
 
                 var displayName = member.Name;
                 var isPrimary = member.IsPrimary == true;
+                var isInstanceName = member.IsInstanceName == true;
                 var isNullable = member.IsNullable == true;
 
                 var schalarType = MemberImpl.SchalarValue.TryParseTypeName(member.Kind);
                 if (schalarType != null) {
-                    yield return new MemberImpl.SchalarValue(_config, displayName, isPrimary, owner, schalarType, isNullable);
+                    yield return new MemberImpl.SchalarValue(_config, displayName, isPrimary, isInstanceName, owner, schalarType, isNullable);
 
                 } else if (member.Kind == MemberImpl.Reference.JSON_KEY) {
                     if (string.IsNullOrWhiteSpace(member.RefTarget)) throw new FormatException($"refTargetが空です。");
                     var getRefTarget = () => GetAggregateByUniquePath(member.RefTarget);
-                    yield return new MemberImpl.Reference(_config, displayName, isPrimary, isNullable, owner, getRefTarget);
+                    yield return new MemberImpl.Reference(_config, displayName, isPrimary, isInstanceName, isNullable, owner, getRefTarget);
 
                 } else if (member.Kind == MemberImpl.Child.JSON_KEY) {
                     if (member.Child == null) throw new FormatException($"childが空です。");
                     var child = new JsonDefine(_config, member.Child, _schema);
-                    yield return new MemberImpl.Child(_config, displayName, isPrimary, owner, child);
+                    yield return new MemberImpl.Child(_config, displayName, isPrimary, isInstanceName, owner, child);
 
                 } else if (member.Kind == MemberImpl.Children.JSON_KEY) {
                     if (member.Children == null) throw new FormatException($"childrenが空です。");
                     var children = new JsonDefine(_config, member.Children, _schema);
-                    yield return new MemberImpl.Children(_config, displayName, isPrimary, owner, children);
+                    yield return new MemberImpl.Children(_config, displayName, isPrimary, isInstanceName, owner, children);
 
                 } else if (member.Kind == MemberImpl.Variation.JSON_KEY) {
                     if (member.Variations == null) throw new FormatException($"variationsが空です。");
                     var variations = member.Variations.ToDictionary(
                         v => v.Key,
                         v => (IAggregateDefine)new JsonDefine(_config, v.Value, _schema));
-                    yield return new MemberImpl.Variation(_config, displayName, isPrimary, owner, variations);
+                    yield return new MemberImpl.Variation(_config, displayName, isPrimary, isInstanceName, owner, variations);
 
                 } else {
                     throw new FormatException($"不正な種類です: {member.Kind}");

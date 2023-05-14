@@ -41,13 +41,14 @@ namespace HalApplicationBuilder.Core.Definition {
                 var displayName = innerElement.Name.LocalName;
 
                 var isPrimary = innerElement.Attribute("key") != null;
+                var isInstanceName = innerElement.Attribute("name") != null;
                 var isNullable = innerElement.Attribute("nullable") != null;
 
                 var type = innerElement.Attribute("type");
                 if (type != null) {
                     var schalarType = MemberImpl.SchalarValue.TryParseTypeName(type.Value.Trim().ToLower());
                     if (schalarType == null) throw new InvalidOperationException($"{displayName}のtype属性の値'{type.Value}'が不正です。");
-                    yield return new MemberImpl.SchalarValue(_config, displayName, isPrimary, owner, schalarType, isNullable);
+                    yield return new MemberImpl.SchalarValue(_config, displayName, isPrimary, isInstanceName, owner, schalarType, isNullable);
 
                 } else {
                     var isRef = innerElement.Attribute("refTo") != null;
@@ -60,11 +61,11 @@ namespace HalApplicationBuilder.Core.Definition {
                         var to = innerElement.Attribute("refTo")?.Value;
                         if (string.IsNullOrWhiteSpace(to)) throw new FormatException($"type属性がrefの'{displayName}'にはto属性が必須です。");
                         var getRefTarget = () => GetAggregateByUniquePath(to);
-                        yield return new MemberImpl.Reference(_config, displayName, isPrimary, isNullable, owner, getRefTarget);
+                        yield return new MemberImpl.Reference(_config, displayName, isPrimary, isInstanceName, isNullable, owner, getRefTarget);
 
                     } else if (isChildren) {
                         var children = new XmlDefine(_config, innerElement, _xDocument);
-                        yield return new MemberImpl.Children(_config, displayName, isPrimary, owner, children);
+                        yield return new MemberImpl.Children(_config, displayName, isPrimary, isInstanceName, owner, children);
 
                     } else if (isVariation) {
                         var variations = innerElement.Elements().Select((el, index) => {
@@ -72,11 +73,11 @@ namespace HalApplicationBuilder.Core.Definition {
                             var value = (IAggregateDefine)new XmlDefine(_config, el, _xDocument);
                             return KeyValuePair.Create(key, value);
                         });
-                        yield return new MemberImpl.Variation(_config, displayName, isPrimary, owner, variations);
+                        yield return new MemberImpl.Variation(_config, displayName, isPrimary, isInstanceName, owner, variations);
 
                     } else {
                         var child = new XmlDefine(_config, innerElement, _xDocument);
-                        yield return new MemberImpl.Child(_config, displayName, isPrimary, owner, child);
+                        yield return new MemberImpl.Child(_config, displayName, isPrimary, isInstanceName, owner, child);
                     }
                 }
             }

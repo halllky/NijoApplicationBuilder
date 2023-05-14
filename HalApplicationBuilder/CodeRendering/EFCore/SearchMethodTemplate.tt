@@ -33,7 +33,9 @@ namespace <#=_config.DbContextNamespace#> {
                 .Take(page.<#=nameof(DotnetEx.Page.SqlLimit)#>);
 
             var runtimeService = this.GetService<HalApplicationBuilder.RuntimeService>()!;
-            return runtimeService.AppendInstanceKey(query);
+            runtimeService.AppendInstanceKey(query);
+            runtimeService.AppendInstanceName(query);
+            return query;
         }
 <# } #>
 
