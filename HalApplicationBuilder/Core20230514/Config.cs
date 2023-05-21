@@ -2,7 +2,7 @@ using System;
 using System.Xml;
 using System.Xml.Linq;
 
-namespace HalApplicationBuilder.Core20230514 {
+namespace HalApplicationBuilder.Core {
     public class Config {
         public required string ApplicationName { get; init; }
 

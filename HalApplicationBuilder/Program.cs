@@ -6,11 +6,14 @@ using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
+
+[assembly: InternalsVisibleTo("HalApplicationBuilder.Test")]
 
 namespace HalApplicationBuilder {
     public class Program {
