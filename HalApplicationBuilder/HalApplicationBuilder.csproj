@@ -9,6 +9,11 @@
 	  <WarningLevel>4</WarningLevel>
 	</PropertyGroup>
 	<ItemGroup>
+	  <Compile Remove="Core20230514\Relations\**" />
+	  <EmbeddedResource Remove="Core20230514\Relations\**" />
+	  <None Remove="Core20230514\Relations\**" />
+	</ItemGroup>
+	<ItemGroup>
 		<PackageReference Include="Microsoft.Build" Version="17.5.0" />
 		<PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.2" />
@@ -21,7 +26,6 @@
 		<PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
 	</ItemGroup>
 	<ItemGroup>
-		<Folder Include="Core20230514\Relations\" />
 		<Folder Include="Runtime\" />
 		<Folder Include="Serialized\" />
 		<Folder Include="Core\Definition\" />
@@ -42,6 +46,10 @@
 		<None Update="CodeRendering20230514\EFCore\Search.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>Search.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering20230514\Util\FromTo.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>FromTo.cs</LastGenOutput>
 		</None>
 		<None Update="CodeRendering\EFCore\DbContextTemplate.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
@@ -164,6 +172,11 @@
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>Search.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering20230514\Util\FromTo.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>FromTo.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering\EFCore\DbContextTemplate.cs">
 		  <DesignTime>True</DesignTime>

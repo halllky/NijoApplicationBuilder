@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Core20230514 {
     internal class Aggregate : ValueObject, IGraphNode {
-        internal Aggregate(AggregatePath path, IReadOnlyCollection<IAggregateMember> members) {
+        internal Aggregate(AggregatePath path, IReadOnlyCollection<Member> members) {
             Id = new NodeId(path.Value);
             Path = path;
             Members = members;
@@ -17,10 +17,21 @@ namespace HalApplicationBuilder.Core20230514 {
         internal AggregatePath Path { get; }
         internal string DisplayName => Path.BaseName;
         internal string UniqueId => new HashedString(Path.Value).Guid.ToString().Replace("-", "");
-        internal IReadOnlyCollection<IAggregateMember> Members { get; }
+        internal IReadOnlyCollection<Member> Members { get; }
 
         protected override IEnumerable<object?> ValueObjectIdentifiers() {
             yield return Id;
+        }
+
+        public override string ToString() => $"Aggregate[{Path.Value}]";
+
+        internal class Member {
+            internal required string Name { get; init; }
+            internal required IAggregateMemberType Type { get; init; }
+            internal required bool IsPrimary { get; init; }
+            internal required bool IsInstanceName { get; init; }
+
+            public override string ToString() => Name;
         }
     }
 }

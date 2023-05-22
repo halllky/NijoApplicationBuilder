@@ -5,10 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Core20230514.AggregateMembers {
-    public class Id : IAggregateMember {
-        public PropertyDefinition ToPropertyDefinition() => new PropertyDefinition {
-            CSharpTypeName = "string",
-            
-        };
+    public class Id : CategorizeType {
+        public override SearchBehavior SearchBehavior => SearchBehavior.Strict;
+        public override string GetCSharpTypeName() => "string";
     }
 }

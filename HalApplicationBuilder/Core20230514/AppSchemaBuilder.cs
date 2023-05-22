@@ -65,6 +65,8 @@ namespace HalApplicationBuilder.Core20230514 {
                             Name = innerElement.Name.LocalName,
                             OwnerFullPath = aggregatePath.Value,
                             TargetFullPath = refTo.Value,
+                            IsPrimary = key != null,
+                            IsInstanceName = name != null,
                         });
                     } else {
                         ParseAsAggregate(innerElement, parent: aggregatePath);
@@ -98,6 +100,7 @@ namespace HalApplicationBuilder.Core20230514 {
             }
 
             foreach (var xElement in xDocument.Root.Elements()) {
+                if (xElement.Name.LocalName == Config.XML_CONFIG_SECTION_NAME) continue;
                 ParseAsAggregate(xElement, parent: null);
             }
             builder = schemaBuilder;
@@ -147,10 +150,15 @@ namespace HalApplicationBuilder.Core20230514 {
             var relations = new HashSet<GraphEdgeInfo>();
 
             foreach (var def in _aggregateDefs) {
-                var members = new List<IAggregateMember>();
+                var members = new List<Aggregate.Member>();
                 foreach (var member in def.Members) {
-                    if (memberTypeResolver.TryResolve(member.Type, out var schalarValue)) {
-                        members.Add(schalarValue);
+                    if (memberTypeResolver.TryResolve(member.Type, out var memberType)) {
+                        members.Add(new Aggregate.Member {
+                            Name = member.Name,
+                            Type = memberType,
+                            IsPrimary = member.IsPrimary,
+                            IsInstanceName = member.IsInstanceName,
+                        });
                     } else {
                         errors.Add($"Type name '{member.Type}' of '{member.Name}' is invalid.");
                     }
@@ -165,10 +173,15 @@ namespace HalApplicationBuilder.Core20230514 {
                     continue;
                 }
                 var path = parentPath.GetChildAggregatePath(def.Name);
-                var members = new List<IAggregateMember>();
+                var members = new List<Aggregate.Member>();
                 foreach (var member in def.Members) {
-                    if (memberTypeResolver.TryResolve(member.Type, out var schalarValue)) {
-                        members.Add(schalarValue);
+                    if (memberTypeResolver.TryResolve(member.Type, out var memberType)) {
+                        members.Add(new Aggregate.Member {
+                            Name = member.Name,
+                            Type = memberType,
+                            IsPrimary = member.IsPrimary,
+                            IsInstanceName = member.IsInstanceName,
+                        });
                     } else {
                         errors.Add($"Type name '{member.Type}' of '{member.Name}' is invalid.");
                     }
@@ -193,10 +206,15 @@ namespace HalApplicationBuilder.Core20230514 {
                     continue;
                 }
                 var path = parentPath.GetChildAggregatePath(def.Name);
-                var members = new List<IAggregateMember>();
+                var members = new List<Aggregate.Member>();
                 foreach (var member in def.Members) {
-                    if (memberTypeResolver.TryResolve(member.Type, out var schalarValue)) {
-                        members.Add(schalarValue);
+                    if (memberTypeResolver.TryResolve(member.Type, out var memberType)) {
+                        members.Add(new Aggregate.Member {
+                            Name = member.Name,
+                            Type = memberType,
+                            IsPrimary = member.IsPrimary,
+                            IsInstanceName = member.IsInstanceName,
+                        });
                     } else {
                         errors.Add($"Type name of '{member.Name}' is invalid: '{member.Type}'");
                     }
@@ -222,10 +240,15 @@ namespace HalApplicationBuilder.Core20230514 {
 
                 foreach (var variation in def.Variations) {
                     var path = parentPath.GetChildAggregatePath(variation.Name);
-                    var members = new List<IAggregateMember>();
+                    var members = new List<Aggregate.Member>();
                     foreach (var member in variation.Members) {
-                        if (memberTypeResolver.TryResolve(member.Type, out var schalarValue)) {
-                            members.Add(schalarValue);
+                        if (memberTypeResolver.TryResolve(member.Type, out var memberType)) {
+                            members.Add(new Aggregate.Member {
+                                Name = member.Name,
+                                Type = memberType,
+                                IsPrimary = member.IsPrimary,
+                                IsInstanceName = member.IsInstanceName,
+                            });
                         } else {
                             errors.Add($"Type name '{member.Type}' of '{member.Name}' is invalid.");
                         }
@@ -259,6 +282,8 @@ namespace HalApplicationBuilder.Core20230514 {
                     RelationName = def.Name,
                     Attributes = new Dictionary<string, object> {
                         { AppSchema.REL_ATTR_RELATION_TYPE, AppSchema.REL_ATTRVALUE_REFERENCE },
+                        { AppSchema.REL_ATTR_IS_PRIMARY, def.IsPrimary },
+                        { AppSchema.REL_ATTR_IS_INSTANCE_NAME, def.IsInstanceName },
                     },
                 };
                 relations.Add(relation);
@@ -322,6 +347,8 @@ namespace HalApplicationBuilder.Core20230514 {
             public string Name { get; set; } = "";
             public string OwnerFullPath { get; set; } = "";
             public string TargetFullPath { get; set; } = "";
+            public bool IsPrimary { get; set; }
+            public bool IsInstanceName { get; set; }
         }
     }
 }

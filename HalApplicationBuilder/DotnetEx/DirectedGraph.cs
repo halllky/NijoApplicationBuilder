@@ -136,6 +136,8 @@ namespace HalApplicationBuilder.DotnetEx {
         /// <see cref="In"/> + <see cref="Out"/>
         /// </summary>
         internal IEnumerable<GraphEdge<T>> InAndOut => In.Union(Out);
+
+        public override string ToString() => $"GraphNode[{Item.Id}]";
     }
     /// <summary>
     /// 隣接ノード
@@ -203,9 +205,7 @@ namespace HalApplicationBuilder.DotnetEx {
             }
         }
 
-        public override string ToString() {
-            return $"{_info.Initial} == {_info.RelationName} ==> {_info.Terminal}";
-        }
+        public override string ToString() => $"{_info.Initial} == {_info.RelationName} ==> {_info.Terminal}";
     }
     #endregion COMPUTED
 

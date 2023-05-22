@@ -13,8 +13,8 @@ namespace <#=_ctx.Config.DbContextNamespace#> {
 
     partial class <#=_ctx.Config.DbContextName#> {
 <# foreach (var method in BuildSearchMethods()) { #>
-        public <#=method.ReturnType#> <#=method.MethodName#>(<#=method.ArgType#> param) {
-            var query = this.<#=method.DbSetName#>.Select(e => new <#=method.ReturnItemType#> {
+        public <#=method.ReturnType#> <#=method.MethodName#>(<#=method.ArgType#> <#=PARAM#>) {
+            var <#=QUERY#> = this.<#=method.DbSetName#>.Select(<#=E#> => new <#=method.ReturnItemType#> {
 <# foreach (var line in method.SelectClause) { #>
                 <#=line#>
 <# } #>
@@ -24,15 +24,15 @@ namespace <#=_ctx.Config.DbContextNamespace#> {
             <#=line#>
 <# } #>
 
-            var page = param.GetPageObject();
-            query = query
+            var page = <#=PARAM#>.GetPageObject();
+            <#=QUERY#> = <#=QUERY#>
                 .Skip(page.<#=nameof(DotnetEx.Page.SqlOffset)#>)
                 .Take(page.<#=nameof(DotnetEx.Page.SqlLimit)#>);
 
             var runtimeService = this.GetService<HalApplicationBuilder.RuntimeService>()!;
-            runtimeService.AppendInstanceKey(query);
-            runtimeService.AppendInstanceName(query);
-            return query;
+            runtimeService.AppendInstanceKey(<#=QUERY#>);
+            runtimeService.AppendInstanceName(<#=QUERY#>);
+            return <#=QUERY#>.AsEnumerable();
         }
 <# } #>
     }

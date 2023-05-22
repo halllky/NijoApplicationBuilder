@@ -7,7 +7,7 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering20230514.EFCore
+namespace HalApplicationBuilder.CodeRendering20230514.Util
 {
     using System.Linq;
     using System.Text;
@@ -17,79 +17,114 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore
     /// <summary>
     /// Class to produce the template output
     /// </summary>
+    
+    #line 1 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\FromTo.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class Search : SearchBase
+    public partial class FromTo : FromToBase
     {
+#line hidden
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("namespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextNamespace));
-            this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
-                    "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n  " +
-                    "  using Microsoft.EntityFrameworkCore.Infrastructure;\r\n\r\n    partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
-            this.Write(" {\r\n");
- foreach (var method in BuildSearchMethods()) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(method.ReturnType));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(method.MethodName));
-            this.Write("(");
-            this.Write(this.ToStringHelper.ToStringWithCulture(method.ArgType));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PARAM));
-            this.Write(") {\r\n            var ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(QUERY));
-            this.Write(" = this.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(method.DbSetName));
-            this.Write(".Select(");
-            this.Write(this.ToStringHelper.ToStringWithCulture(E));
-            this.Write(" => new ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(method.ReturnItemType));
-            this.Write(" {\r\n");
- foreach (var line in method.SelectClause) { 
-            this.Write("                ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(line));
-            this.Write("\r\n");
- } 
-            this.Write("            });\r\n\r\n");
- foreach (var line in method.WhereClause) { 
-            this.Write("            ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(line));
-            this.Write("\r\n");
- } 
-            this.Write("\r\n            var page = ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PARAM));
-            this.Write(".GetPageObject();\r\n            ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(QUERY));
-            this.Write(" = ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(QUERY));
-            this.Write("\r\n                .Skip(page.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(DotnetEx.Page.SqlOffset)));
-            this.Write(")\r\n                .Take(page.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(DotnetEx.Page.SqlLimit)));
-            this.Write(");\r\n\r\n            var runtimeService = this.GetService<HalApplicationBuilder.Runt" +
-                    "imeService>()!;\r\n            runtimeService.AppendInstanceKey(");
-            this.Write(this.ToStringHelper.ToStringWithCulture(QUERY));
-            this.Write(");\r\n            runtimeService.AppendInstanceName(");
-            this.Write(this.ToStringHelper.ToStringWithCulture(QUERY));
-            this.Write(");\r\n            return ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(QUERY));
-            this.Write(".AsEnumerable();\r\n        }\r\n");
- } 
-            this.Write("    }\r\n}\r\n");
+            this.Write("using System;\r\nnamespace ");
+            
+            #line 7 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\FromTo.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(_namespace));
+            
+            #line default
+            #line hidden
+            this.Write(" {\r\n    public partial class ");
+            
+            #line 8 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\FromTo.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(CLASSNAME));
+            
+            #line default
+            #line hidden
+            this.Write(" {\r\n        public virtual object? ");
+            
+            #line 9 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\FromTo.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(FROM));
+            
+            #line default
+            #line hidden
+            this.Write(" { get; set; }\r\n        public virtual object? ");
+            
+            #line 10 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\FromTo.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(TO));
+            
+            #line default
+            #line hidden
+            this.Write(" { get; set; }\r\n    }\r\n    public partial class ");
+            
+            #line 12 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\FromTo.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(CLASSNAME));
+            
+            #line default
+            #line hidden
+            this.Write("<T> : ");
+            
+            #line 12 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\FromTo.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(CLASSNAME));
+            
+            #line default
+            #line hidden
+            this.Write(" {\r\n        public new T? ");
+            
+            #line 13 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\FromTo.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(FROM));
+            
+            #line default
+            #line hidden
+            this.Write(" {\r\n            get => (T?)base.");
+            
+            #line 14 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\FromTo.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(FROM));
+            
+            #line default
+            #line hidden
+            this.Write(";\r\n            set => base.");
+            
+            #line 15 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\FromTo.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(FROM));
+            
+            #line default
+            #line hidden
+            this.Write(" = value;\r\n        }\r\n        public new T? ");
+            
+            #line 17 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\FromTo.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(TO));
+            
+            #line default
+            #line hidden
+            this.Write(" {\r\n            get => (T?)base.");
+            
+            #line 18 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\FromTo.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(TO));
+            
+            #line default
+            #line hidden
+            this.Write(";\r\n            set => base.");
+            
+            #line 19 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\FromTo.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(TO));
+            
+            #line default
+            #line hidden
+            this.Write(" = value;\r\n        }\r\n    }\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }
+    
+    #line default
+    #line hidden
     #region Base class
     /// <summary>
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class SearchBase
+    public class FromToBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

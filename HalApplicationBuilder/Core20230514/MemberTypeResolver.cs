@@ -16,13 +16,13 @@ namespace HalApplicationBuilder.Core20230514 {
         }
 
         private MemberTypeResolver() { }
-        private readonly Dictionary<string, IAggregateMember> _registered = new();
+        private readonly Dictionary<string, IAggregateMemberType> _registered = new();
 
-        public MemberTypeResolver Register(string typeName, IAggregateMember member) {
+        public MemberTypeResolver Register(string typeName, IAggregateMemberType member) {
             _registered[typeName] = member;
             return this;
         }
-        internal bool TryResolve(string typeName, out IAggregateMember member) {
+        internal bool TryResolve(string typeName, out IAggregateMemberType member) {
 #pragma warning disable CS8601 // Null 参照代入の可能性があります。
             if (_registered.TryGetValue(typeName, out member)) {
 #pragma warning restore CS8601 // Null 参照代入の可能性があります。

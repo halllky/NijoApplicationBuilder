@@ -1,3 +1,4 @@
+using HalApplicationBuilder.DotnetEx;
 using System;
 using System.Xml;
 using System.Xml.Linq;
@@ -7,6 +8,8 @@ namespace HalApplicationBuilder.Core20230514 {
         public required string ApplicationName { get; init; }
 
         public required string OutProjectDir { get; init; }
+
+        public string RootNamespace => ApplicationName.ToCSharpSafe();
 
         public required string EntityFrameworkDirectoryRelativePath { get; init; }
         public required string EntityNamespace { get; init; }

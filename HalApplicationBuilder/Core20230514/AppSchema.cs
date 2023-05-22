@@ -12,6 +12,8 @@ namespace HalApplicationBuilder.Core20230514 {
         internal const string REL_ATTRVALUE_REFERENCE = "reference";
 
         internal const string REL_ATTR_MULTIPLE = "multiple";
+        internal const string REL_ATTR_IS_PRIMARY = "is-primary";
+        internal const string REL_ATTR_IS_INSTANCE_NAME = "is-instance-name";
 
         internal static AppSchema Empty() => new(DirectedGraph<Aggregate>.Empty());
 

@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Core20230514.AggregateMembers {
-    public class Word : IAggregateMember {
+    public class Word : CategorizeType {
+        public override SearchBehavior SearchBehavior => SearchBehavior.Ambiguous;
+        public override string GetCSharpTypeName() => "string";
     }
 }
