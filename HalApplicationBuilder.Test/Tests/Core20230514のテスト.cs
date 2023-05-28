@@ -23,6 +23,12 @@ namespace HalApplicationBuilder.Test.Tests {
                 Schema = appSchema,
             };
             var selectMethod = new CodeRendering20230514.EFCore.Search(codeRenderingContext).TransformText();
+            var entity = new CodeRendering20230514.EFCore.Entities(codeRenderingContext).TransformText();
+            var dbContext = new CodeRendering20230514.EFCore.DbContext(codeRenderingContext).TransformText();
+            var reactComponents = CodeRendering20230514.ReactAndWebApi.ReactComponent
+                .All(codeRenderingContext)
+                .Select(component => component.TransformText())
+                .ToArray();
 
             Assert.True(successToCreateBuidler);
             Assert.True(successToBuildSchema);
@@ -75,13 +81,11 @@ namespace HalApplicationBuilder.Test.Tests {
   </機能>
 
   <_Config>
-    <Enum>
-      <!--列挙体を定義してください。-->
-      <機能種別>
-        <参照系機能 />
-        <更新系機能 />
-      </機能種別>
-    </Enum>
+    <!--列挙体を定義してください。-->
+    <機能種別>
+      <参照系機能 />
+      <更新系機能 />
+    </機能種別>
 
     <!--ソースコードの自動生成に関する設定: 出力先ディレクトリ-->
     <OutDirRoot>./dist</OutDirRoot>

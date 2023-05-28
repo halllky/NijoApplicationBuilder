@@ -11,6 +11,10 @@ namespace HalApplicationBuilder.Core20230514 {
             Id = new NodeId(path.Value);
             Path = path;
             Members = members;
+
+            foreach (var member in members) {
+                member.Owner = this;
+            }
         }
 
         public NodeId Id { get; }
@@ -26,6 +30,10 @@ namespace HalApplicationBuilder.Core20230514 {
         public override string ToString() => $"Aggregate[{Path.Value}]";
 
         internal class Member {
+#pragma warning disable CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入っていなければなりません。Null 許容として宣言することをご検討ください。
+            internal Aggregate Owner { get; set; }
+#pragma warning restore CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入っていなければなりません。Null 許容として宣言することをご検討ください。
+
             internal required string Name { get; init; }
             internal required IAggregateMemberType Type { get; init; }
             internal required bool IsPrimary { get; init; }

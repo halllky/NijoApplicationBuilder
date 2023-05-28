@@ -147,7 +147,7 @@ namespace HalApplicationBuilder.Core20230514 {
             if (memberTypeResolver == null) memberTypeResolver = MemberTypeResolver.Default();
 
             var aggregates = new List<Aggregate>();
-            var relations = new HashSet<GraphEdgeInfo>();
+            var relations = new Dictionary<(NodeId, string, NodeId), GraphEdgeInfo>();
 
             foreach (var def in _aggregateDefs) {
                 var members = new List<Aggregate.Member>();
@@ -192,12 +192,12 @@ namespace HalApplicationBuilder.Core20230514 {
                     Terminal = new NodeId(path.Value),
                     RelationName = def.Name,
                     Attributes = new Dictionary<string, object> {
-                        { AppSchema.REL_ATTR_RELATION_TYPE, AppSchema.REL_ATTRVALUE_PARENT_CHILD },
-                        { AppSchema.REL_ATTR_MULTIPLE, true },
+                        { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD },
+                        { DirectedEdgeExtensions.REL_ATTR_MULTIPLE, true },
                     },
                 };
                 aggregates.Add(aggregate);
-                relations.Add(relation);
+                relations[(relation.Initial, relation.RelationName, relation.Terminal)] = relation;
             }
 
             foreach (var def in _childDefs) {
@@ -225,11 +225,11 @@ namespace HalApplicationBuilder.Core20230514 {
                     Terminal = new NodeId(path.Value),
                     RelationName = def.Name,
                     Attributes = new Dictionary<string, object> {
-                        { AppSchema.REL_ATTR_RELATION_TYPE, AppSchema.REL_ATTRVALUE_PARENT_CHILD },
+                        { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD },
                     },
                 };
                 aggregates.Add(aggregate);
-                relations.Add(relation);
+                relations[(relation.Initial, relation.RelationName, relation.Terminal)] = relation;
             }
 
             foreach (var def in _variationDefs) {
@@ -259,11 +259,11 @@ namespace HalApplicationBuilder.Core20230514 {
                         Terminal = new NodeId(path.Value),
                         RelationName = def.Name,
                         Attributes = new Dictionary<string, object> {
-                            { AppSchema.REL_ATTR_RELATION_TYPE, AppSchema.REL_ATTRVALUE_PARENT_CHILD },
+                            { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD },
                         },
                     };
                     aggregates.Add(aggregate);
-                    relations.Add(relation);
+                    relations[(relation.Initial, relation.RelationName, relation.Terminal)] = relation;
                 }
             }
 
@@ -281,12 +281,12 @@ namespace HalApplicationBuilder.Core20230514 {
                     Terminal = new NodeId(targetPath.Value),
                     RelationName = def.Name,
                     Attributes = new Dictionary<string, object> {
-                        { AppSchema.REL_ATTR_RELATION_TYPE, AppSchema.REL_ATTRVALUE_REFERENCE },
-                        { AppSchema.REL_ATTR_IS_PRIMARY, def.IsPrimary },
-                        { AppSchema.REL_ATTR_IS_INSTANCE_NAME, def.IsInstanceName },
+                        { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_REFERENCE },
+                        { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, def.IsPrimary },
+                        { DirectedEdgeExtensions.REL_ATTR_IS_INSTANCE_NAME, def.IsInstanceName },
                     },
                 };
-                relations.Add(relation);
+                relations[(relation.Initial, relation.RelationName, relation.Terminal)] = relation;
             }
 
             var aggregateDict = new Dictionary<AggregatePath, Aggregate>();
@@ -300,7 +300,7 @@ namespace HalApplicationBuilder.Core20230514 {
                 errors.Add($"Aggregate path duplicates: {dup.Key}");
             }
 
-            if (!DirectedGraph<Aggregate>.TryCreate(aggregates, relations, out var graph, out var errors1)) {
+            if (!DirectedGraph<Aggregate>.TryCreate(aggregates, relations.Values, out var graph, out var errors1)) {
                 foreach (var err in errors1) errors.Add(err);
             }
 
@@ -349,6 +349,102 @@ namespace HalApplicationBuilder.Core20230514 {
             public string TargetFullPath { get; set; } = "";
             public bool IsPrimary { get; set; }
             public bool IsInstanceName { get; set; }
+        }
+    }
+
+    internal static class DirectedEdgeExtensions {
+        internal const string REL_ATTR_RELATION_TYPE = "relationType";
+        internal const string REL_ATTRVALUE_PARENT_CHILD = "child";
+        internal const string REL_ATTRVALUE_REFERENCE = "reference";
+
+        internal const string REL_ATTR_MULTIPLE = "multiple";
+        internal const string REL_ATTR_IS_PRIMARY = "is-primary";
+        internal const string REL_ATTR_IS_INSTANCE_NAME = "is-instance-name";
+
+        // ----------------------------- DirectedGraph extensions -----------------------------
+
+        internal static IEnumerable<GraphNode<EFCoreEntity>> RootEntities(this DirectedGraph<EFCoreEntity> graph) {
+            return graph.Where(entity => entity.IsRoot());
+        }
+
+        // ----------------------------- GraphNode extensions -----------------------------
+
+        internal static GraphNode<T>? GetParent<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+            var edge = graphNode.In.SingleOrDefault(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                                                && (string)type == REL_ATTRVALUE_PARENT_CHILD);
+            return edge?.Initial;
+        }
+        internal static bool IsRoot<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+            return graphNode.GetParent() == null;
+        }
+
+        internal static bool IsChildrenMemberOf<T>(this GraphNode<T> graphNode, GraphNode<T> parent) where T : IGraphNode {
+            return graphNode.Source != null
+                && graphNode.Source.IsChildren()
+                && graphNode.Source.Initial == parent;
+        }
+        internal static bool IsChildMemberOf<T>(this GraphNode<T> graphNode, GraphNode<T> parent) where T : IGraphNode {
+            return graphNode.Source != null
+                && graphNode.Source.IsChild()
+                && graphNode.Source.Initial == parent;
+        }
+        internal static bool IsVariationMemberOf<T>(this GraphNode<T> graphNode, GraphNode<T> parent) where T : IGraphNode {
+            throw new NotImplementedException();
+        }
+        internal static bool IsRefMemberOf<T>(this GraphNode<T> graphNode, GraphNode<T> parent) where T : IGraphNode {
+            return graphNode.Source != null
+                && graphNode.Source.IsRef()
+                && graphNode.Source.Initial == parent;
+        }
+
+        internal static IEnumerable<GraphEdge<T>> GetChildrenMembers<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+            return graphNode.Out.Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                                                && (string)type == REL_ATTRVALUE_PARENT_CHILD
+                                                && edge.Attributes.ContainsKey(REL_ATTR_MULTIPLE));
+        }
+        internal static IEnumerable<GraphEdge<T>> GetChildMembers<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+            return graphNode.Out.Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                                                && (string)type == REL_ATTRVALUE_PARENT_CHILD
+                                                && !edge.Attributes.ContainsKey(REL_ATTR_MULTIPLE));
+        }
+        internal static IEnumerable<GraphEdge<T>> GetVariationMembers<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+            // TODO
+            yield break;
+        }
+        internal static IEnumerable<GraphEdge<T>> GetRefMembers<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+            return graphNode.Out.Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                                                && (string)type == REL_ATTRVALUE_REFERENCE);
+        }
+        internal static IEnumerable<GraphEdge<T>> GetReferrings<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+            return graphNode.In.Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                                                && (string)type == REL_ATTRVALUE_REFERENCE);
+        }
+
+        // ----------------------------- GraphEdge extensions -----------------------------
+
+        internal static bool IsPrimary<T>(this GraphEdge<T> graphEdge) where T : IGraphNode {
+            return graphEdge.Attributes.TryGetValue(REL_ATTR_IS_PRIMARY, out var bln) && (bool)bln;
+        }
+        internal static bool IsInstanceName<T>(this GraphEdge<T> graphEdge) where T : IGraphNode {
+            return graphEdge.Attributes.TryGetValue(REL_ATTR_IS_INSTANCE_NAME, out var bln) && (bool)bln;
+        }
+        internal static bool IsChildren<T>(this GraphEdge<T> graphEdge) where T : IGraphNode {
+            return graphEdge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                && (string)type == REL_ATTRVALUE_PARENT_CHILD
+                && graphEdge.Attributes.ContainsKey(REL_ATTR_MULTIPLE);
+        }
+        internal static bool IsChild<T>(this GraphEdge<T> graphEdge) where T : IGraphNode {
+            return graphEdge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                && (string)type == REL_ATTRVALUE_PARENT_CHILD
+                && !graphEdge.Attributes.ContainsKey(REL_ATTR_MULTIPLE);
+        }
+        internal static bool IsVariation<T>(this GraphEdge<T> graphEdge) where T : IGraphNode {
+            // TODO
+            return false;
+        }
+        internal static bool IsRef<T>(this GraphEdge<T> graphEdge) where T : IGraphNode {
+            return graphEdge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                && (string)type == REL_ATTRVALUE_REFERENCE;
         }
     }
 }

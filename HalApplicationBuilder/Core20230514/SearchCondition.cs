@@ -9,58 +9,50 @@ namespace HalApplicationBuilder.Core20230514 {
     internal class SearchCondition {
 
         internal SearchCondition(GraphNode<EFCoreEntity> efCoreEntity) {
-            _efCoreEntity = efCoreEntity;
+            EFCoreEntity = efCoreEntity;
         }
 
-        private readonly GraphNode<EFCoreEntity> _efCoreEntity;
+        internal GraphNode<EFCoreEntity> EFCoreEntity { get; }
 
         internal IEnumerable<Member> GetMembers() {
-            IEnumerable<Member> EnumerateRecursively(GraphNode<EFCoreEntity> dbEntity) {
-                var dbEntityAsNeighbor = dbEntity as NeighborNode<EFCoreEntity>;
-                var thisIsRef = dbEntityAsNeighbor != null
-                    && (string)dbEntityAsNeighbor.Source.Attributes[AppSchema.REL_ATTR_RELATION_TYPE] == AppSchema.REL_ATTRVALUE_REFERENCE;
-                var path = dbEntityAsNeighbor != null
-                    ? dbEntityAsNeighbor.PathFromEntry().Select(edge => edge.RelationName).ToArray()
-                    : Array.Empty<string>();
+            IEnumerable<Member> EnumerateRecursively(GraphNode<EFCoreEntity> dbEntity, bool asRef) {
+                var path = dbEntity.PathFromEntry().Select(edge => edge.RelationName).ToArray();
 
-                foreach (var member in dbEntity.Item.GetMembers()) {
-                    if (thisIsRef
-                        && !member.CorrespondingAggregateMember.IsPrimary
-                        && !member.CorrespondingAggregateMember.IsInstanceName) continue;
+                foreach (var member in dbEntity.Item.GetColumns()) {
+                    if (asRef && !member.IsPrimary && !member.IsInstanceName) continue;
 
                     yield return new Member {
                         Owner = this,
                         CorrespondingDbMember = member,
                         Name = string.Join("_", path.Union(new[] { member.PropertyName })),
-                        Type = member.CorrespondingAggregateMember.Type,
+                        Type = member.MemberType,
                     };
                 }
 
                 // 参照、子集約
-                foreach (var edge in dbEntity.Out) {
-                    // 隣の集約まで辿る条件
-                    var enumerate = false;
-                    if (thisIsRef) {
-                        if ((string)edge.Attributes[AppSchema.REL_ATTR_RELATION_TYPE] == AppSchema.REL_ATTRVALUE_REFERENCE
-                            && (bool)edge.Attributes[AppSchema.REL_ATTR_IS_PRIMARY])
-                            enumerate = true;
-                    } else {
-                        if ((string)edge.Attributes[AppSchema.REL_ATTR_RELATION_TYPE] == AppSchema.REL_ATTRVALUE_REFERENCE)
-                            enumerate = true;
-                        if ((string)edge.Attributes[AppSchema.REL_ATTR_RELATION_TYPE] == AppSchema.REL_ATTRVALUE_PARENT_CHILD
-                            && !edge.Attributes.ContainsKey(AppSchema.REL_ATTR_MULTIPLE))
-                            enumerate = true;
+                if (asRef) {
+                    foreach (var member in dbEntity
+                        .GetRefMembers()
+                        .Where(edge => edge.IsPrimary())
+                        .SelectMany(edge => EnumerateRecursively(edge.Terminal, asRef: true))) {
+                        yield return member;
                     }
-                    if (!enumerate) continue;
-
-                    // 再帰処理
-                    foreach (var member in EnumerateRecursively(edge.Terminal)) {
+                }
+                if (!asRef) {
+                    foreach (var member in dbEntity
+                        .GetRefMembers()
+                        .SelectMany(edge => EnumerateRecursively(edge.Terminal, asRef: true))) {
+                        yield return member;
+                    }
+                    foreach (var member in dbEntity
+                        .GetChildMembers()
+                        .SelectMany(edge => EnumerateRecursively(edge.Terminal, asRef: false))) {
                         yield return member;
                     }
                 }
             }
 
-            return EnumerateRecursively(_efCoreEntity);
+            return EnumerateRecursively(EFCoreEntity, asRef: false);
         }
 
 

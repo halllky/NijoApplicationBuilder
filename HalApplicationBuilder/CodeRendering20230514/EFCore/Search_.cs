@@ -36,39 +36,31 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
 
             // ------------------- SELECT句 -------------------
             IEnumerable<string> BuildSelectClauseRecursively(GraphNode<EFCoreEntity> dbEntity) {
-                var childOrRef = dbEntity as NeighborNode<EFCoreEntity>;
-                var path = childOrRef != null
-                    ? childOrRef.PathFromEntry().Select(edge => edge.RelationName).ToArray()
-                    : Array.Empty<string>();
+                var path = dbEntity.PathFromEntry().Select(edge => edge.RelationName).ToArray();
 
                 // 集約自身のメンバー
-                foreach (var member in dbEntity.Item.Source.Members) {
+                foreach (var member in dbEntity.Item.Aggregate.Item.Members) {
                     // 参照の場合はインスタンス名のみSELECTする
-                    if (childOrRef != null && !(bool)childOrRef.Source.Attributes[AppSchema.REL_ATTR_IS_INSTANCE_NAME]) continue;
+                    if (dbEntity.Source != null
+                        && dbEntity.Source.IsRef()
+                        && !member.IsInstanceName) continue;
 
                     var pathToMember = path.Union(new[] { member.Name });
                     yield return $"{string.Join("_", pathToMember)} = {E}.{string.Join(".", pathToMember)},";
                 }
 
                 // 子要素（除: Children）と参照先を再帰処理
-                foreach (var edge in dbEntity.Out) {
-                    if ((string)edge.Attributes[AppSchema.REL_ATTR_RELATION_TYPE] == AppSchema.REL_ATTRVALUE_REFERENCE
-                        || (string)edge.Attributes[AppSchema.REL_ATTR_RELATION_TYPE] == AppSchema.REL_ATTRVALUE_PARENT_CHILD
-                        && !edge.Attributes.ContainsKey(AppSchema.REL_ATTR_MULTIPLE)) {
-
-                        foreach (var line in BuildSelectClauseRecursively(edge.Terminal)) {
-                            yield return line;
-                        }
-                    }
+                foreach (var edge in dbEntity.GetChildMembers()) {
+                    foreach (var line in BuildSelectClauseRecursively(edge.Terminal)) yield return line;
+                }
+                foreach (var edge in dbEntity.GetRefMembers()) {
+                    foreach (var line in BuildSelectClauseRecursively(edge.Terminal)) yield return line;
                 }
             }
 
             // ------------------- WHERE句 -------------------
             IEnumerable<string> BuildWhereClauseRecursively(SearchCondition searchCondition, GraphNode<EFCoreEntity> dbEntity) {
-                var childOrRef = dbEntity as NeighborNode<EFCoreEntity>;
-                var path = childOrRef != null
-                    ? childOrRef.PathFromEntry().Select(edge => edge.RelationName).ToArray()
-                    : Array.Empty<string>();
+                var path = dbEntity.PathFromEntry().Select(edge => edge.RelationName).ToArray();
 
                 foreach (var scMember in searchCondition.GetMembers()) {
                     var pathToMember = string.Join(".", path.Union(new[] { scMember.CorrespondingDbMember.PropertyName }));
@@ -99,13 +91,8 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
             }
 
             // ------------------- その他 -------------------
-            foreach (var dbEntity in _graph) {
-                // ルート集約以外なら処理中断
-                if (dbEntity.In.Any(edge => (string)edge.Attributes[AppSchema.REL_ATTR_RELATION_TYPE] == AppSchema.REL_ATTRVALUE_PARENT_CHILD)) {
-                    continue;
-                }
-
-                var name = dbEntity.Item.Source.DisplayName.ToCSharpSafe();
+            foreach (var dbEntity in _graph.Where(dbEntity => dbEntity.IsRoot())) {
+                var name = dbEntity.Item.Aggregate.Item.DisplayName.ToCSharpSafe();
                 var searchResult = $"{_ctx.Config.EntityNamespace}.{name}SearchResult";
                 var searchConditionClass = new SearchCondition(dbEntity);
 

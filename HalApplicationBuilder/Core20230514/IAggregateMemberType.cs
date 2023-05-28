@@ -8,6 +8,7 @@ namespace HalApplicationBuilder.Core20230514 {
     public interface IAggregateMemberType {
         SearchBehavior SearchBehavior { get; }
         string GetCSharpTypeName();
+        IEnumerable<string> UserInterface(IGuiForm ui);
     }
     /// <summary>
     /// 検索処理の挙動
@@ -35,6 +36,7 @@ namespace HalApplicationBuilder.Core20230514 {
     public abstract class CategorizeType : IAggregateMemberType {
         public abstract SearchBehavior SearchBehavior { get; }
         public abstract string GetCSharpTypeName();
+        public abstract IEnumerable<string> UserInterface(IGuiForm ui);
     }
 
 
@@ -44,6 +46,7 @@ namespace HalApplicationBuilder.Core20230514 {
     public abstract class SchalarType : IAggregateMemberType {
         public SearchBehavior SearchBehavior => SearchBehavior.Range;
         public abstract string GetCSharpTypeName();
+        public abstract IEnumerable<string> UserInterface(IGuiForm ui);
         //object? Min { get; }
         //object? Max { get; }
     }

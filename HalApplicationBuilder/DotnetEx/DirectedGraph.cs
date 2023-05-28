@@ -83,7 +83,7 @@ namespace HalApplicationBuilder.DotnetEx {
 
         public IEnumerator<GraphNode<T>> GetEnumerator() {
             foreach (var node in Items.Values) {
-                yield return new GraphNode<T>(node, this);
+                yield return new GraphNode<T>(node, this, null);
             }
         }
         IEnumerator IEnumerable.GetEnumerator() {
@@ -96,10 +96,11 @@ namespace HalApplicationBuilder.DotnetEx {
     /// <summary>
     /// 有向グラフの頂点
     /// </summary>
-    internal class GraphNode<T> where T : IGraphNode {
-        internal GraphNode(T item, DirectedGraph<T> graph) {
+    internal class GraphNode<T> : ValueObject where T : IGraphNode {
+        internal GraphNode(T item, DirectedGraph<T> graph, GraphEdge<T>? source) {
             _graph = graph;
             Item = item;
+            Source = source;
         }
         protected readonly DirectedGraph<T> _graph;
 
@@ -137,37 +138,38 @@ namespace HalApplicationBuilder.DotnetEx {
         /// </summary>
         internal IEnumerable<GraphEdge<T>> InAndOut => In.Union(Out);
 
-        public override string ToString() => $"GraphNode[{Item.Id}]";
-    }
-    /// <summary>
-    /// 隣接ノード
-    /// </summary>
-    internal class NeighborNode<T> : GraphNode<T> where T : IGraphNode {
-        internal NeighborNode(T item, DirectedGraph<T> graph, GraphEdge<T> source) : base(item, graph) {
-            Source = source;
-        }
-        internal GraphEdge<T> Source { get; }
+        /// <summary>
+        /// この頂点がどの経路を辿って生成されたか。Entryの最初の頂点の場合はnull
+        /// </summary>
+        internal GraphEdge<T>? Source { get; }
 
         /// <summary>
         /// エントリーからの辺の一覧を返します。
         /// </summary>
         internal IEnumerable<GraphEdge<T>> PathFromEntry() {
             var list = new List<GraphEdge<T>>();
-            var node = (GraphNode<T>)this;
+            var node = this;
             while (true) {
-                if (node is not NeighborNode<T> neighborNode) break;
-                list.Add(neighborNode.Source);
-                node = neighborNode.Source.Source;
+                if (node.Source == null) break;
+                list.Add(node.Source);
+                node = node.Source.Source;
             }
             list.Reverse();
             return list;
+        }
+
+        public override string ToString() => $"GraphNode[{Item.Id}]";
+
+        protected override IEnumerable<object?> ValueObjectIdentifiers() {
+            yield return _graph;
+            yield return Item.Id;
         }
     }
 
     /// <summary>
     /// 有向グラフの辺
     /// </summary>
-    internal class GraphEdge<T> where T : IGraphNode {
+    internal class GraphEdge<T> : ValueObject where T : IGraphNode {
         internal GraphEdge(GraphEdgeInfo info, DirectedGraph<T> graph, GraphNode<T> source) {
             _graph = graph;
             _info = info;
@@ -191,7 +193,7 @@ namespace HalApplicationBuilder.DotnetEx {
         /// </summary>
         internal GraphNode<T> Initial {
             get {
-                _initial ??= new NeighborNode<T>(_graph.Items[_info.Initial], _graph, this);
+                _initial ??= new GraphNode<T>(_graph.Items[_info.Initial], _graph, this);
                 return _initial;
             }
         }
@@ -200,12 +202,17 @@ namespace HalApplicationBuilder.DotnetEx {
         /// </summary>
         internal GraphNode<T> Terminal {
             get {
-                _terminal ??= new NeighborNode<T>(_graph.Items[_info.Terminal], _graph, this);
+                _terminal ??= new GraphNode<T>(_graph.Items[_info.Terminal], _graph, this);
                 return _terminal;
             }
         }
 
         public override string ToString() => $"{_info.Initial} == {_info.RelationName} ==> {_info.Terminal}";
+
+        protected override IEnumerable<object?> ValueObjectIdentifiers() {
+            yield return _info;
+            yield return _graph;
+        }
     }
     #endregion COMPUTED
 
@@ -227,17 +234,11 @@ namespace HalApplicationBuilder.DotnetEx {
     internal interface IGraphNode {
         NodeId Id { get; }
     }
-    internal sealed class GraphEdgeInfo : ValueObject {
+    internal sealed class GraphEdgeInfo {
         internal required NodeId Initial { get; init; }
         internal required NodeId Terminal { get; init; }
         internal required string RelationName { get; init; }
         internal IReadOnlyDictionary<string, object> Attributes { get; init; } = new Dictionary<string, object>();
-
-        protected override IEnumerable<object?> ValueObjectIdentifiers() {
-            yield return Initial;
-            yield return Terminal;
-            yield return RelationName;
-        }
     }
     #endregion VALUE
 }
