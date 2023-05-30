@@ -13,7 +13,7 @@ namespace HalApplicationBuilder.Core20230514 {
         #region XML
         internal static bool FromXml(XDocument xDocument, out AppSchemaBuilder builder, out ICollection<string> errors) {
             if (xDocument.Root == null) throw new FormatException($"Xml doesn't have contents.");
-            var schemaBuilder = new AppSchemaBuilder();
+            var schemaBuilder = new AppSchemaBuilder { ApplicationName = xDocument.Root.Name.LocalName };
             var errorList = new List<string>();
 
             IEnumerable<XElement> GetSelfAndAncestors(XElement xElement) {
@@ -113,6 +113,8 @@ namespace HalApplicationBuilder.Core20230514 {
         private const string XML_ATTR_REFTO = "refTo";
         private const string XML_ATTR_MULTIPLE = "multiple";
         #endregion XML
+
+        internal required string ApplicationName { get; init; }
 
         private readonly List<AggregateDef> _aggregateDefs = new List<AggregateDef>();
         private readonly List<ChildDef> _childDefs = new List<ChildDef>();
@@ -309,7 +311,7 @@ namespace HalApplicationBuilder.Core20230514 {
                 return false;
             }
 
-            appSchema = new AppSchema(graph);
+            appSchema = new AppSchema(ApplicationName, graph);
             return true;
         }
 

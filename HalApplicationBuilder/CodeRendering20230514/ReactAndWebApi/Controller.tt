@@ -1,0 +1,85 @@
+<#@ template language="C#" linePragmas="false" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="HalApplicationBuilder" #>
+<# var dbContextTypeName = $"{_ctx.Config.DbContextNamespace}.{_ctx.Config.DbContextName}"; #>
+using Microsoft.AspNetCore.Mvc;
+
+namespace <#=_ctx.Config.RootNamespace#> {
+
+    [ApiController]
+    [Route("[controller]")]
+    public class <#=ClassName#> : ControllerBase {
+        public <#=ClassName#>(ILogger<<#=ClassName#>> logger, <#=dbContextTypeName#> dbContext) {
+            _logger = logger;
+            _dbContext = dbContext;
+        }
+        private readonly ILogger<<#=ClassName#>> _logger;
+        private readonly <#=dbContextTypeName#> _dbContext;
+
+        [HttpGet("<#=SEARCH_ACTION_NAME#>")]
+        public IActionResult Search([FromQuery] string param) {
+            var json = System.Web.HttpUtility.UrlDecode(param);
+            var condition = string.IsNullOrWhiteSpace(json)
+                ? new <#=_searchMethod.ArgType#>()
+                : System.Text.Json.JsonSerializer.Deserialize<<#=_searchMethod.ArgType#>>(json)!;
+            var searchResult = _dbContext
+                .<#=_searchMethod.MethodName#>(condition)
+                .AsEnumerable();
+            return this.JsonContent(searchResult);
+        }
+        [HttpGet("<#=KEYWORDSEARCH_ACTION_NAME#>")]
+        public IActionResult SearchByKeyword([FromQuery] string keyword) {
+            // TODO
+            throw new NotImplementedException();
+            // var condition = new <#=_searchMethod.ArgType#>();
+            // // TODO keywordを充てる
+            // var data = _dbContext
+            //     .<#=_searchMethod.MethodName#>(condition)
+            //     .AsEnumerable();
+            // 
+            // var guid = new Guid("★rootAggregate.GetGuid()★");
+            // var refDtos = data.Select(item => new <#=DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.ReferenceDTO))#> {
+            //     <#=nameof(Runtime.ReferenceDTO.AggreageteGuid)#> = guid,
+            //     <#=nameof(Runtime.ReferenceDTO.InstanceKey)#> = item.<#=nameof(Runtime.SearchResultBase.__halapp__InstanceKey)#>,
+            //     <#=nameof(Runtime.ReferenceDTO.InstanceName)#> = item.<#=nameof(Runtime.SearchResultBase.__halapp__InstanceName)#>,
+            // });
+            // return this.JsonContent(refDtos);
+        }
+        [HttpPost("<#=CREATE_ACTION_NAME#>")]
+        public IActionResult Create(<#=_aggregateInstance.ClassName#> param) {
+            // TODO
+            throw new NotImplementedException();
+            // var success = _runtimeService.<#=nameof(RuntimeService.TrySaveNewInstance)#>(param, out var instanceKey, out var errors);
+            // if (success) {
+            //     return Ok(new { instanceKey });
+            // } else {
+            //     return BadRequest(errors);
+            // }
+        }
+        [HttpGet("<#=FIND_ACTION_NAME#>/{instanceKey}")]
+        public IActionResult Find(string instanceKey) {
+            // TODO
+            throw new NotImplementedException();
+            // var instance = _runtimeService.<#=nameof(RuntimeService.FindInstance)#><★uiInstance★>(instanceKey, out var _);
+            // if (instance == null) {
+            //     return NotFound();
+            // } else {
+            //     return this.JsonContent(instance);
+            // }
+        }
+        [HttpPost("<#=UPDATE_ACTION_NAME#>")]
+        public IActionResult Update(<#=_aggregateInstance.ClassName#> param) {
+            // TODO
+            throw new NotImplementedException();
+            // var success = _runtimeService.<#=nameof(RuntimeService.TryUpdate)#>(param, out var instanceKey, out var errors);
+            // if (success) {
+            //     return Ok(new { instanceKey });
+            // } else {
+            //     return BadRequest(errors);
+            // }
+        }
+    }
+}

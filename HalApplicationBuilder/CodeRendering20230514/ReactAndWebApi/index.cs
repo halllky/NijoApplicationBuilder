@@ -7,55 +7,38 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering20230514.EFCore
+namespace HalApplicationBuilder.CodeRendering20230514.ReactAndWebApi
 {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
-    using HalApplicationBuilder.Core20230514;
     using System;
     
     /// <summary>
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class Entities : EntitiesBase
+    public partial class index : indexBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("#pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければな" +
-                    "りません\r\n\r\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
-            this.Write(" {\r\n    using System;\r\n    using System.Collections.Generic;\r\n\r\n");
- foreach (var dbEntity in _ctx.Schema.ToEFCoreGraph()) { 
-            this.Write("    public partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(dbEntity.Item.ClassName));
-            this.Write(" {\r\n");
- foreach (var col in dbEntity.Item.GetColumns()) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.Initializer == null ? "" : $" = {col.Initializer};"));
-            this.Write("\r\n");
+            this.Write("import \'./halapp.css\';\r\nimport \'ag-grid-community/styles/ag-grid.css\';\r\nimport \'a" +
+                    "g-grid-community/styles/ag-theme-alpine.css\';\r\n\r\nexport const THIS_APPLICATION_N" +
+                    "AME = \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Schema.ApplicationName));
+            this.Write("\' as const\r\n\r\nexport * from \'./");
+            this.Write(this.ToStringHelper.ToStringWithCulture(menuItems.IMPORT_NAME));
+            this.Write("\'\r\n");
+ foreach (var cmp in GetReactComponents()) { 
+            this.Write("export * from \'./");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_reactPageDir));
+            this.Write("/");
+            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.ImportName));
+            this.Write("\'\r\n");
  } 
-            this.Write("\r\n");
- foreach (var nav in EnumerateNavigationProperties(dbEntity)) { 
-            this.Write("        public virtual ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.Initializer == null ? "" : $" = {nav.Initializer};"));
-            this.Write("\r\n");
- } 
-            this.Write("    }\r\n");
- } 
-            this.Write("}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -64,7 +47,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class EntitiesBase
+    public class indexBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

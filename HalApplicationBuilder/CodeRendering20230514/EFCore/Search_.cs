@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
-    partial class Search {
+    partial class Search : ITemplate {
         internal Search(CodeRenderingContext ctx) {
             _ctx = ctx;
             _graph = ctx.Schema.ToEFCoreGraph();
@@ -21,21 +21,39 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
         /// <summary>lambda expression argument</summary>
         private const string E = "e";
 
-        private class SearchMethod {
-            public required string ReturnType { get; init; }
-            public required string ReturnItemType { get; init; }
-            public required string MethodName { get; init; }
-            public required string ArgType { get; init; }
-            public required string DbSetName { get; init; }
-            public required IEnumerable<string> SelectClause { get; init; }
-            public required IEnumerable<string> WhereClause { get; init; }
+        private readonly DirectedGraph<EFCoreEntity> _graph;
+
+        public string FileName => $"{_ctx.Config.DbContextName.ToFileNameSafe()}.Search.cs";
+
+        private IEnumerable<MethodInfo> BuildSearchMethods() {
+            return _graph
+                .Where(dbEntity => dbEntity.IsRoot())
+                .Select(dbEntity => new MethodInfo(dbEntity, _ctx));
         }
 
-        private readonly DirectedGraph<EFCoreEntity> _graph;
-        private IEnumerable<SearchMethod> BuildSearchMethods() {
+        internal class MethodInfo {
+            internal MethodInfo(GraphNode<EFCoreEntity> dbEntity, CodeRenderingContext ctx) {
+                _dbEntity = dbEntity;
+                _ctx = ctx;
+            }
 
-            // ------------------- SELECT句 -------------------
-            IEnumerable<string> BuildSelectClauseRecursively(GraphNode<EFCoreEntity> dbEntity) {
+            private readonly GraphNode<EFCoreEntity> _dbEntity;
+            private readonly CodeRenderingContext _ctx;
+
+            internal string ReturnType => $"IEnumerable<{ReturnItemType}>";
+            internal string ReturnItemType => $"{_ctx.Config.RootNamespace}.{new SearchResult(_dbEntity).ClassName}";
+            internal string MethodName => $"Search{_dbEntity.Item.Aggregate.Item.DisplayName.ToCSharpSafe()}";
+            internal string ArgType => $"{_ctx.Config.RootNamespace}.{new SearchCondition(_dbEntity).ClassName}";
+            internal string DbSetName => _dbEntity.Item.Aggregate.Item.DisplayName.ToCSharpSafe();
+
+            internal IEnumerable<string> SelectClause() {
+                return BuildSelectClauseRecursively(_dbEntity);
+            }
+            internal IEnumerable<string> WhereClause() {
+                return BuildWhereClauseRecursively(new SearchCondition(_dbEntity), _dbEntity);
+            }
+
+            private static IEnumerable<string> BuildSelectClauseRecursively(GraphNode<EFCoreEntity> dbEntity) {
                 var path = dbEntity.PathFromEntry().Select(edge => edge.RelationName).ToArray();
 
                 // 集約自身のメンバー
@@ -58,8 +76,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
                 }
             }
 
-            // ------------------- WHERE句 -------------------
-            IEnumerable<string> BuildWhereClauseRecursively(SearchCondition searchCondition, GraphNode<EFCoreEntity> dbEntity) {
+            private static IEnumerable<string> BuildWhereClauseRecursively(SearchCondition searchCondition, GraphNode<EFCoreEntity> dbEntity) {
                 var path = dbEntity.PathFromEntry().Select(edge => edge.RelationName).ToArray();
 
                 foreach (var scMember in searchCondition.GetMembers()) {
@@ -83,31 +100,17 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
 
                         case SearchBehavior.Strict:
                         default:
-                            yield return $"if ({PARAM}.{scMember.Name} != default)";
-                            yield return $"    {QUERY} = {QUERY}.Where(x => x.{pathToMember} == {PARAM}.{scMember.Name});";
+                            var type = scMember.Type.GetCSharpTypeName();
+                            if (type == "string" || type == "string?") {
+                                yield return $"if (!string.IsNullOrWhiteSpace({PARAM}.{scMember.Name}))";
+                                yield return $"    {QUERY} = {QUERY}.Where(x => x.{pathToMember} == {PARAM}.{scMember.Name});";
+                            } else {
+                                yield return $"if ({PARAM}.{scMember.Name} != default)";
+                                yield return $"    {QUERY} = {QUERY}.Where(x => x.{pathToMember} == {PARAM}.{scMember.Name});";
+                            }
                             break;
                     }
                 }
-            }
-
-            // ------------------- その他 -------------------
-            foreach (var dbEntity in _graph.Where(dbEntity => dbEntity.IsRoot())) {
-                var name = dbEntity.Item.Aggregate.Item.DisplayName.ToCSharpSafe();
-                var searchResult = $"{_ctx.Config.EntityNamespace}.{name}SearchResult";
-                var searchConditionClass = new SearchCondition(dbEntity);
-
-                yield return new SearchMethod {
-                    MethodName = $"Search{name}",
-
-                    ReturnType = $"IEnumerable<{searchResult}>",
-                    ReturnItemType = searchResult,
-                    ArgType = $"{_ctx.Config.EntityNamespace}.{name}SearchCondition",
-
-                    DbSetName = name,
-
-                    SelectClause = BuildSelectClauseRecursively(dbEntity),
-                    WhereClause = BuildWhereClauseRecursively(searchConditionClass, dbEntity),
-                };
             }
         }
     }

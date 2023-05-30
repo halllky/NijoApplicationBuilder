@@ -11,7 +11,7 @@ namespace <#=_ctx.Config.EntityNamespace#> {
     using System.Collections.Generic;
 
 <# foreach (var dbEntity in _ctx.Schema.ToEFCoreGraph()) { #>
-    partial class <#=dbEntity.Item.ClassName#> {
+    public partial class <#=dbEntity.Item.ClassName#> {
 <# foreach (var col in dbEntity.Item.GetColumns()) { #>
         public <#=col.CSharpTypeName#> <#=col.PropertyName#> { get; set; }<#=col.Initializer == null ? "" : $" = {col.Initializer};"#>
 <# } #>

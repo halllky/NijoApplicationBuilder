@@ -7,13 +7,16 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Core20230514 {
     internal class AppSchema {
-        internal static AppSchema Empty() => new(DirectedGraph<Aggregate>.Empty());
+        internal static AppSchema Empty() => new(string.Empty, DirectedGraph<Aggregate>.Empty());
 
-        internal AppSchema(DirectedGraph<Aggregate> directedGraph) {
+        internal AppSchema(string appName, DirectedGraph<Aggregate> directedGraph) {
+            ApplicationName = appName;
             _graph = directedGraph;
         }
 
         private readonly DirectedGraph<Aggregate> _graph;
+
+        public object ApplicationName { get; }
 
         internal IEnumerable<GraphNode<Aggregate>> AllAggregates() {
             return _graph;

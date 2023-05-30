@@ -7,11 +7,13 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
-    partial class Entities {
+    partial class Entities : ITemplate {
         internal Entities(CodeRenderingContext ctx) {
             _ctx = ctx;
         }
         private readonly CodeRenderingContext _ctx;
+
+        public string FileName => "Entities.cs";
 
         private IEnumerable<NavigationProperty.Item> EnumerateNavigationProperties(GraphNode<EFCoreEntity> dbEntity) {
             foreach (var nav in dbEntity.GetNavigationProperties(_ctx.Config)) {

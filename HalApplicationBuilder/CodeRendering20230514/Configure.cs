@@ -7,55 +7,62 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering20230514.EFCore
+namespace HalApplicationBuilder.CodeRendering20230514
 {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
-    using HalApplicationBuilder.Core20230514;
     using System;
     
     /// <summary>
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class Entities : EntitiesBase
+    public partial class Configure : ConfigureBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("#pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければな" +
-                    "りません\r\n\r\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
-            this.Write(" {\r\n    using System;\r\n    using System.Collections.Generic;\r\n\r\n");
- foreach (var dbEntity in _ctx.Schema.ToEFCoreGraph()) { 
-            this.Write("    public partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(dbEntity.Item.ClassName));
-            this.Write(" {\r\n");
- foreach (var col in dbEntity.Item.GetColumns()) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.Initializer == null ? "" : $" = {col.Initializer};"));
-            this.Write("\r\n");
- } 
-            this.Write("\r\n");
- foreach (var nav in EnumerateNavigationProperties(dbEntity)) { 
-            this.Write("        public virtual ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.Initializer == null ? "" : $" = {nav.Initializer};"));
-            this.Write("\r\n");
- } 
-            this.Write("    }\r\n");
- } 
-            this.Write("}\r\n");
+            this.Write("\r\nnamespace HalApplicationBuilder.Runtime {\r\n\r\n    internal static class HalAppDe" +
+                    "faultConfigurer {\r\n        internal static void Configure(IServiceCollection ser" +
+                    "vices, string runtimeRootDir) {\r\n\r\n");
+          /* SaveやDetailでDbContextをダイレクトに参照しているため */ 
+            this.Write("            services.AddScoped<Microsoft.EntityFrameworkCore.DbContext>(provider " +
+                    "=> {\r\n                return provider.GetRequiredService<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextNamespace));
+            this.Write(".");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
+            this.Write(">();\r\n            });\r\n\r\n            services.AddDbContext<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextNamespace));
+            this.Write(".");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
+            this.Write(">((provider, option) => {\r\n                var setting = provider.GetRequiredServ" +
+                    "ice<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(RuntimeServerSettings));
+            this.Write(">();\r\n                var connStr = setting.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Util.RuntimeSettings.GET_ACTIVE_CONNSTR));
+            this.Write(@"();
+                Microsoft.EntityFrameworkCore.ProxiesExtensions.UseLazyLoadingProxies(option);
+                Microsoft.EntityFrameworkCore.SqliteDbContextOptionsBuilderExtensions.UseSqlite(option, connStr);
+            });
+
+            services.AddScoped(_ => {
+                var filename = """);
+            this.Write(this.ToStringHelper.ToStringWithCulture(Util.RuntimeSettings.JSON_FILE_NAME));
+            this.Write("\";\r\n                if (System.IO.File.Exists(filename)) {\r\n                    u" +
+                    "sing var stream = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare." +
+                    "ReadWrite);\r\n                    var parsed = System.Text.Json.JsonSerializer.De" +
+                    "serialize<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(RuntimeServerSettings));
+            this.Write(">(stream);\r\n                    return parsed ?? ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(RuntimeServerSettings));
+            this.Write(".");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Util.RuntimeSettings.GET_DEFAULT));
+            this.Write("();\r\n                } else {\r\n                    return new ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(RuntimeServerSettings));
+            this.Write("();\r\n                }\r\n            });\r\n        }\r\n    }\r\n\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -64,7 +71,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class EntitiesBase
+    public class ConfigureBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

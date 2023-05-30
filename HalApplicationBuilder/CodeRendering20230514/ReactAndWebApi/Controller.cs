@@ -7,55 +7,106 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering20230514.EFCore
+namespace HalApplicationBuilder.CodeRendering20230514.ReactAndWebApi
 {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
-    using HalApplicationBuilder.Core20230514;
+    using HalApplicationBuilder;
     using System;
     
     /// <summary>
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class Entities : EntitiesBase
+    public partial class Controller : ControllerBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("#pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければな" +
-                    "りません\r\n\r\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
-            this.Write(" {\r\n    using System;\r\n    using System.Collections.Generic;\r\n\r\n");
- foreach (var dbEntity in _ctx.Schema.ToEFCoreGraph()) { 
-            this.Write("    public partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(dbEntity.Item.ClassName));
-            this.Write(" {\r\n");
- foreach (var col in dbEntity.Item.GetColumns()) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.Initializer == null ? "" : $" = {col.Initializer};"));
-            this.Write("\r\n");
- } 
-            this.Write("\r\n");
- foreach (var nav in EnumerateNavigationProperties(dbEntity)) { 
-            this.Write("        public virtual ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.Initializer == null ? "" : $" = {nav.Initializer};"));
-            this.Write("\r\n");
- } 
-            this.Write("    }\r\n");
- } 
-            this.Write("}\r\n");
+ var dbContextTypeName = $"{_ctx.Config.DbContextNamespace}.{_ctx.Config.DbContextName}"; 
+            this.Write("using Microsoft.AspNetCore.Mvc;\r\n\r\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.RootNamespace));
+            this.Write(" {\r\n\r\n    [ApiController]\r\n    [Route(\"[controller]\")]\r\n    public class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ClassName));
+            this.Write(" : ControllerBase {\r\n        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ClassName));
+            this.Write("(ILogger<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ClassName));
+            this.Write("> logger, ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(dbContextTypeName));
+            this.Write(" dbContext) {\r\n            _logger = logger;\r\n            _dbContext = dbContext;" +
+                    "\r\n        }\r\n        private readonly ILogger<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ClassName));
+            this.Write("> _logger;\r\n        private readonly ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(dbContextTypeName));
+            this.Write(" _dbContext;\r\n\r\n        [HttpGet(\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(SEARCH_ACTION_NAME));
+            this.Write("\")]\r\n        public IActionResult Search([FromQuery] string param) {\r\n           " +
+                    " var json = System.Web.HttpUtility.UrlDecode(param);\r\n            var condition " +
+                    "= string.IsNullOrWhiteSpace(json)\r\n                ? new ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_searchMethod.ArgType));
+            this.Write("()\r\n                : System.Text.Json.JsonSerializer.Deserialize<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_searchMethod.ArgType));
+            this.Write(">(json)!;\r\n            var searchResult = _dbContext\r\n                .");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_searchMethod.MethodName));
+            this.Write("(condition)\r\n                .AsEnumerable();\r\n            return this.JsonConten" +
+                    "t(searchResult);\r\n        }\r\n        [HttpGet(\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(KEYWORDSEARCH_ACTION_NAME));
+            this.Write("\")]\r\n        public IActionResult SearchByKeyword([FromQuery] string keyword) {\r\n" +
+                    "            // TODO\r\n            throw new NotImplementedException();\r\n         " +
+                    "   // var condition = new ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_searchMethod.ArgType));
+            this.Write("();\r\n            // // TODO keywordを充てる\r\n            // var data = _dbContext\r\n  " +
+                    "          //     .");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_searchMethod.MethodName));
+            this.Write("(condition)\r\n            //     .AsEnumerable();\r\n            // \r\n            //" +
+                    " var guid = new Guid(\"★rootAggregate.GetGuid()★\");\r\n            // var refDtos =" +
+                    " data.Select(item => new ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.ReferenceDTO))));
+            this.Write(" {\r\n            //     ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.ReferenceDTO.AggreageteGuid)));
+            this.Write(" = guid,\r\n            //     ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.ReferenceDTO.InstanceKey)));
+            this.Write(" = item.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.SearchResultBase.__halapp__InstanceKey)));
+            this.Write(",\r\n            //     ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.ReferenceDTO.InstanceName)));
+            this.Write(" = item.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.SearchResultBase.__halapp__InstanceName)));
+            this.Write(",\r\n            // });\r\n            // return this.JsonContent(refDtos);\r\n        " +
+                    "}\r\n        [HttpPost(\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CREATE_ACTION_NAME));
+            this.Write("\")]\r\n        public IActionResult Create(");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.ClassName));
+            this.Write(" param) {\r\n            // TODO\r\n            throw new NotImplementedException();\r" +
+                    "\n            // var success = _runtimeService.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(RuntimeService.TrySaveNewInstance)));
+            this.Write("(param, out var instanceKey, out var errors);\r\n            // if (success) {\r\n   " +
+                    "         //     return Ok(new { instanceKey });\r\n            // } else {\r\n      " +
+                    "      //     return BadRequest(errors);\r\n            // }\r\n        }\r\n        [H" +
+                    "ttpGet(\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(FIND_ACTION_NAME));
+            this.Write("/{instanceKey}\")]\r\n        public IActionResult Find(string instanceKey) {\r\n     " +
+                    "       // TODO\r\n            throw new NotImplementedException();\r\n            //" +
+                    " var instance = _runtimeService.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(RuntimeService.FindInstance)));
+            this.Write("<★uiInstance★>(instanceKey, out var _);\r\n            // if (instance == null) {\r\n" +
+                    "            //     return NotFound();\r\n            // } else {\r\n            //  " +
+                    "   return this.JsonContent(instance);\r\n            // }\r\n        }\r\n        [Htt" +
+                    "pPost(\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(UPDATE_ACTION_NAME));
+            this.Write("\")]\r\n        public IActionResult Update(");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.ClassName));
+            this.Write(" param) {\r\n            // TODO\r\n            throw new NotImplementedException();\r" +
+                    "\n            // var success = _runtimeService.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(RuntimeService.TryUpdate)));
+            this.Write("(param, out var instanceKey, out var errors);\r\n            // if (success) {\r\n   " +
+                    "         //     return Ok(new { instanceKey });\r\n            // } else {\r\n      " +
+                    "      //     return BadRequest(errors);\r\n            // }\r\n        }\r\n    }\r\n}\r\n" +
+                    "");
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -64,7 +115,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class EntitiesBase
+    public class ControllerBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

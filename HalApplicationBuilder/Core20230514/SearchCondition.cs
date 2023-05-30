@@ -13,6 +13,7 @@ namespace HalApplicationBuilder.Core20230514 {
         }
 
         internal GraphNode<EFCoreEntity> EFCoreEntity { get; }
+        internal string ClassName => $"{EFCoreEntity.Item.Aggregate.Item.DisplayName.ToCSharpSafe()}SearchCondition";
 
         internal IEnumerable<Member> GetMembers() {
             IEnumerable<Member> EnumerateRecursively(GraphNode<EFCoreEntity> dbEntity, bool asRef) {

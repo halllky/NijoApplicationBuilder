@@ -91,7 +91,7 @@ export const ");
                 <div className='flex-1 flex flex-row items-center space-x-1 cursor-pointer' onClick={() => setExpanded(!expanded)}>
                     <h1 className=""text-base font-semibold select-none py-1"">
                         ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_agg.Item.DisplayName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(Aggregate.Item.DisplayName));
             this.Write(@"
                     </h1>
                     {expanded
@@ -177,7 +177,7 @@ const columnDefs = [
                 <Link to=""");
             this.Write(this.ToStringHelper.ToStringWithCulture(MultiViewUrl));
             this.Write("\">");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_agg.Item.DisplayName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(Aggregate.Item.DisplayName));
             this.Write("</Link>&nbsp;êVãKçÏê¨\r\n            </h1>\r\n            <InlineMessageBar value={errorM" +
                     "essages} onChange={setErrorMessages} />\r\n            <div className=\"flex flex-c" +
                     "ol space-y-1\">\r\n");
@@ -235,7 +235,7 @@ const columnDefs = [
                 <Link to=""");
             this.Write(this.ToStringHelper.ToStringWithCulture(MultiViewUrl));
             this.Write("\">");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_agg.Item.DisplayName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(Aggregate.Item.DisplayName));
             this.Write("</Link>\r\n                &nbsp;&#047;&nbsp;\r\n                <span className=\"sel" +
                     "ect-all\">TODO:INSTANCENAME</span>\r\n            </h1>\r\n            <InlineMessage" +
                     "Bar value={errorMessages} onChange={setErrorMessages} />\r\n");

@@ -50,13 +50,13 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore
             this.Write(" => new ");
             this.Write(this.ToStringHelper.ToStringWithCulture(method.ReturnItemType));
             this.Write(" {\r\n");
- foreach (var line in method.SelectClause) { 
+ foreach (var line in method.SelectClause()) { 
             this.Write("                ");
             this.Write(this.ToStringHelper.ToStringWithCulture(line));
             this.Write("\r\n");
  } 
             this.Write("            });\r\n\r\n");
- foreach (var line in method.WhereClause) { 
+ foreach (var line in method.WhereClause()) { 
             this.Write("            ");
             this.Write(this.ToStringHelper.ToStringWithCulture(line));
             this.Write("\r\n");
@@ -103,7 +103,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore
         /// <summary>
         /// The string builder that generation-time code is using to assemble generated output
         /// </summary>
-        protected System.Text.StringBuilder GenerationEnvironment
+        public System.Text.StringBuilder GenerationEnvironment
         {
             get
             {

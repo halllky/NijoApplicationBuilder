@@ -7,64 +7,150 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering20230514.EFCore
+namespace HalApplicationBuilder.CodeRendering20230514.Util
 {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
-    using HalApplicationBuilder.Core20230514;
     using System;
     
     /// <summary>
     /// Class to produce the template output
     /// </summary>
+    
+    #line 1 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\RuntimeSettings.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class Entities : EntitiesBase
+    public partial class RuntimeSettings : RuntimeSettingsBase
     {
+#line hidden
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("#pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければな" +
-                    "りません\r\n\r\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
-            this.Write(" {\r\n    using System;\r\n    using System.Collections.Generic;\r\n\r\n");
- foreach (var dbEntity in _ctx.Schema.ToEFCoreGraph()) { 
-            this.Write("    public partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(dbEntity.Item.ClassName));
-            this.Write(" {\r\n");
- foreach (var col in dbEntity.Item.GetColumns()) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.CSharpTypeName));
+            this.Write("using System;\r\nusing System.Collections.Generic;\r\nusing System.Linq;\r\nusing Syste" +
+                    "m.Text;\r\nusing System.Text.Json;\r\nusing System.Text.Json.Serialization;\r\n\r\nnames" +
+                    "pace ");
+            
+            #line 13 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\RuntimeSettings.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.RootNamespace));
+            
+            #line default
+            #line hidden
+            this.Write(@" {
+    public static class RuntimeSettings {
+
+        /// <summary>
+        /// 実行時クライアント側設定
+        /// </summary>
+        public class Client {
+            [JsonPropertyName(""server"")]
+            public string? ApServerUri { get; set; }
+        }
+
+        /// <summary>
+        /// 実行時サーバー側設定。機密情報を含んでよい。
+        /// 本番環境ではサーバー管理者のみ閲覧編集可能、デバッグ環境では画面から閲覧編集可能。
+        /// </summary>
+        public class ");
+            
+            #line 28 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\RuntimeSettings.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(SERVER));
+            
+            #line default
+            #line hidden
+            this.Write(@" {
+            /// <summary>
+            /// 現在接続中のDBの名前。 <see cref=""DbProfiles""/> のいずれかのキーと一致
+            /// </summary>
+            [JsonPropertyName(""currentDb"")]
+            public string? CurrentDb { get; set; }
+
+            [JsonPropertyName(""db"")]
+            public List<DbProfile> DbProfiles { get; set; } = new();
+            public class DbProfile {
+                [JsonPropertyName(""name"")]
+                public string Name { get; set; } = string.Empty;
+                [JsonPropertyName(""connStr"")]
+                public string ConnStr { get; set; } = string.Empty;
+            }
+
+            public string ");
+            
+            #line 44 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\RuntimeSettings.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(GET_ACTIVE_CONNSTR));
+            
+            #line default
+            #line hidden
+            this.Write(@"() {
+                if (string.IsNullOrWhiteSpace(CurrentDb))
+                    throw new InvalidOperationException(""接続文字列が未指定です。"");
+
+                var db = DbProfiles.FirstOrDefault(db => db.Name == CurrentDb);
+                if (db == null) throw new InvalidOperationException($""接続文字列 '{CurrentDb}' は無効です。"");
+
+                return db.ConnStr;
+            }
+            public string ");
+            
+            #line 53 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\RuntimeSettings.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(TO_JSON));
+            
+            #line default
+            #line hidden
+            this.Write(@"() {
+                var json = JsonSerializer.Serialize(this, new JsonSerializerOptions {
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All),
+                    WriteIndented = true,
+                });
+                json = json.Replace(""\\u0022"", ""\\\""""); // ダブルクォートを\u0022ではなく\""で出力したい
+
+                return json;
+            }
+
+            public static ");
+            
+            #line 63 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\RuntimeSettings.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(SERVER));
+            
+            #line default
+            #line hidden
             this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.Initializer == null ? "" : $" = {col.Initializer};"));
-            this.Write("\r\n");
- } 
-            this.Write("\r\n");
- foreach (var nav in EnumerateNavigationProperties(dbEntity)) { 
-            this.Write("        public virtual ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.Initializer == null ? "" : $" = {nav.Initializer};"));
-            this.Write("\r\n");
- } 
-            this.Write("    }\r\n");
- } 
-            this.Write("}\r\n");
+            
+            #line 63 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\RuntimeSettings.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(GET_DEFAULT));
+            
+            #line default
+            #line hidden
+            this.Write("() => new ");
+            
+            #line 63 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\RuntimeSettings.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(SERVER));
+            
+            #line default
+            #line hidden
+            this.Write(@" {
+                CurrentDb = ""SQLITE"",
+                DbProfiles = new List<DbProfile> {
+                    new DbProfile { Name = ""SQLITE"", ConnStr = @""Data Source=""""bin/Debug/debug.sqlite3"""""" },
+                },
+            };
+        }
+    }
+}
+");
             return this.GenerationEnvironment.ToString();
         }
     }
+    
+    #line default
+    #line hidden
     #region Base class
     /// <summary>
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class EntitiesBase
+    public class RuntimeSettingsBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

@@ -7,55 +7,63 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering20230514.EFCore
+namespace HalApplicationBuilder.CodeRendering20230514.ReactAndWebApi
 {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
-    using HalApplicationBuilder.Core20230514;
     using System;
     
     /// <summary>
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class Entities : EntitiesBase
+    public partial class menuItems : menuItemsBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("#pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければな" +
-                    "りません\r\n\r\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
-            this.Write(" {\r\n    using System;\r\n    using System.Collections.Generic;\r\n\r\n");
- foreach (var dbEntity in _ctx.Schema.ToEFCoreGraph()) { 
-            this.Write("    public partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(dbEntity.Item.ClassName));
-            this.Write(" {\r\n");
- foreach (var col in dbEntity.Item.GetColumns()) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.Initializer == null ? "" : $" = {col.Initializer};"));
             this.Write("\r\n");
+ foreach (var cmp in GetReactComponents()) { 
+            this.Write("import { ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.MultiViewComponentName));
+            this.Write(", ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.CreateViewComponentName));
+            this.Write(", ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.SingleViewComponentName));
+            this.Write(" } from \'./");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_reactPageDir));
+            this.Write("/");
+            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.ImportName));
+            this.Write("\'\r\n");
  } 
-            this.Write("\r\n");
- foreach (var nav in EnumerateNavigationProperties(dbEntity)) { 
-            this.Write("        public virtual ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.Initializer == null ? "" : $" = {nav.Initializer};"));
-            this.Write("\r\n");
+            this.Write("\r\nexport const routes: { url: string, el: JSX.Element }[] = [\r\n");
+ foreach (var cmp in GetReactComponents()) { 
+            this.Write("    { url: \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.MultiViewUrl));
+            this.Write("\', el: <");
+            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.MultiViewComponentName));
+            this.Write(" /> },\r\n    { url: \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.CreateViewUrl));
+            this.Write("\', el: <");
+            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.CreateViewComponentName));
+            this.Write(" /> },\r\n    { url: \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.SingleViewUrl));
+            this.Write("\', el: <");
+            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.SingleViewComponentName));
+            this.Write(" /> },\r\n");
  } 
-            this.Write("    }\r\n");
+            this.Write("]\r\nexport const menuItems: { url: string, text: string }[] = [\r\n");
+ foreach (var cmp in GetReactComponents()) { 
+            this.Write("    { url: \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.MultiViewUrl));
+            this.Write("\', text: \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.Aggregate.Item.DisplayName));
+            this.Write("\' },\r\n");
  } 
-            this.Write("}\r\n");
+            this.Write("]\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -64,7 +72,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class EntitiesBase
+    public class menuItemsBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

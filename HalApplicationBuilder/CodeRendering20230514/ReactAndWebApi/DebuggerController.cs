@@ -7,55 +7,70 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering20230514.EFCore
+namespace HalApplicationBuilder.CodeRendering20230514.ReactAndWebApi
 {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
-    using HalApplicationBuilder.Core20230514;
+    using HalApplicationBuilder;
     using System;
     
     /// <summary>
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class Entities : EntitiesBase
+    public partial class DebuggerController : DebuggerControllerBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("#pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければな" +
-                    "りません\r\n\r\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
-            this.Write(" {\r\n    using System;\r\n    using System.Collections.Generic;\r\n\r\n");
- foreach (var dbEntity in _ctx.Schema.ToEFCoreGraph()) { 
-            this.Write("    public partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(dbEntity.Item.ClassName));
-            this.Write(" {\r\n");
- foreach (var col in dbEntity.Item.GetColumns()) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.Initializer == null ? "" : $" = {col.Initializer};"));
-            this.Write("\r\n");
- } 
-            this.Write("\r\n");
- foreach (var nav in EnumerateNavigationProperties(dbEntity)) { 
-            this.Write("        public virtual ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.Initializer == null ? "" : $" = {nav.Initializer};"));
-            this.Write("\r\n");
- } 
-            this.Write("    }\r\n");
- } 
-            this.Write("}\r\n");
+ var dbContextTypeName = $"{_ctx.Config.DbContextNamespace}.{_ctx.Config.DbContextName}"; 
+            this.Write("using Microsoft.AspNetCore.Mvc;\r\nusing System.Text.Json;\r\nusing Microsoft.EntityF" +
+                    "rameworkCore;\r\n\r\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.RootNamespace));
+            this.Write(@";
+
+#if DEBUG
+[ApiController]
+[Route(""[controller]"")]
+public class HalappDebugController : ControllerBase {
+    public HalappDebugController(ILogger<HalappDebugController> logger, IServiceProvider provider) {
+        _logger = logger;
+        _provider = provider;
+    }
+    private readonly ILogger<HalappDebugController> _logger;
+    private readonly IServiceProvider _provider;
+
+    [HttpPost(""recreate-database"")]
+    public HttpResponseMessage RecreateDatabase() {
+        var dbContext = _provider.GetRequiredService<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextNamespace));
+            this.Write(".");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
+            this.Write(@">();
+        dbContext.Database.EnsureDeleted();
+        dbContext.Database.Migrate();
+        return new HttpResponseMessage {
+            StatusCode = System.Net.HttpStatusCode.OK,
+            Content = new StringContent(""DBを再作成しました。""),
+        };
+    }
+    
+    [HttpGet(""secret-settings"")]
+    public IActionResult GetSecretSettings() {
+        var runtimeSetting = _provider.GetRequiredService<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(RuntimeServerSettings));
+            this.Write(">();\r\n        return this.JsonContent(runtimeSetting);\r\n    }\r\n    [HttpPost(\"sec" +
+                    "ret-settings\")]\r\n    public IActionResult SetSecretSettings([FromBody] ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(RuntimeServerSettings));
+            this.Write(" settings) {\r\n        var json = settings.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Util.RuntimeSettings.TO_JSON));
+            this.Write("();\r\n        using var sw = new System.IO.StreamWriter(\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Util.RuntimeSettings.JSON_FILE_NAME));
+            this.Write("\", false, new System.Text.UTF8Encoding(false));\r\n        sw.WriteLine(json);\r\n   " +
+                    "     return Ok();\r\n    }\r\n}\r\n#endif\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -64,7 +79,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class EntitiesBase
+    public class DebuggerControllerBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

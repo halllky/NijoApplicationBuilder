@@ -12,6 +12,7 @@ namespace HalApplicationBuilder.Core20230514 {
         }
 
         private readonly GraphNode<EFCoreEntity> _efCoreEntity;
+        internal string ClassName => $"{_efCoreEntity.Item.Aggregate.Item.DisplayName.ToCSharpSafe()}SearchResult";
 
         internal const string INSTANCE_KEY_PROP_NAME = "__halapp__InstanceKey";
 

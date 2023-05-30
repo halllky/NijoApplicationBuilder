@@ -8,13 +8,15 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
-    partial class DbContext {
+    partial class DbContext : ITemplate {
         internal DbContext(CodeRenderingContext ctx) {
             _ctx = ctx;
         }
         private readonly CodeRenderingContext _ctx;
 
         private const string ENTITY = "entt";
+
+        public string FileName => $"{_ctx.Config.DbContextName.ToFileNameSafe()}.cs";
 
         private IEnumerable<string> RenderNavigationPropertyOnModelCreating(GraphNode<EFCoreEntity> dbEntity) {
 

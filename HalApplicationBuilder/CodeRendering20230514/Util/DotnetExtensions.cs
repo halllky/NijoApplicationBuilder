@@ -7,64 +7,63 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering20230514.EFCore
+namespace HalApplicationBuilder.CodeRendering20230514.Util
 {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
-    using HalApplicationBuilder.Core20230514;
     using System;
     
     /// <summary>
     /// Class to produce the template output
     /// </summary>
+    
+    #line 1 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\DotnetExtensions.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class Entities : EntitiesBase
+    public partial class DotnetExtensions : DotnetExtensionsBase
     {
+#line hidden
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("#pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければな" +
-                    "りません\r\n\r\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
-            this.Write(" {\r\n    using System;\r\n    using System.Collections.Generic;\r\n\r\n");
- foreach (var dbEntity in _ctx.Schema.ToEFCoreGraph()) { 
-            this.Write("    public partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(dbEntity.Item.ClassName));
-            this.Write(" {\r\n");
- foreach (var col in dbEntity.Item.GetColumns()) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.Initializer == null ? "" : $" = {col.Initializer};"));
-            this.Write("\r\n");
- } 
-            this.Write("\r\n");
- foreach (var nav in EnumerateNavigationProperties(dbEntity)) { 
-            this.Write("        public virtual ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.Initializer == null ? "" : $" = {nav.Initializer};"));
-            this.Write("\r\n");
- } 
-            this.Write("    }\r\n");
- } 
-            this.Write("}\r\n");
+            this.Write("using System;\r\nusing System.Collections;\r\nusing System.Collections.Generic;\r\nusin" +
+                    "g System.Linq;\r\nusing System.Text.Json;\r\nusing Microsoft.AspNetCore.Mvc;\r\n\r\nname" +
+                    "space ");
+            
+            #line 13 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\HalApplicationBuilder\CodeRendering20230514\Util\DotnetExtensions.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(_namespace));
+            
+            #line default
+            #line hidden
+            this.Write(@" {
+    public static class DotnetExtensions {
+        public static IActionResult JsonContent<T>(this ControllerBase controller, T obj) {
+            var options = new JsonSerializerOptions {
+                // レスポンスに大文字が含まれるとき、大文字のまま返す。
+                // react hook form や ag-grid では大文字小文字を区別しているため
+                PropertyNameCaseInsensitive = true,
+            };
+            var json = JsonSerializer.Serialize(obj, options);
+
+            return controller.Content(json, ""application/json"");
+        }
+    }
+}
+");
             return this.GenerationEnvironment.ToString();
         }
     }
+    
+    #line default
+    #line hidden
     #region Base class
     /// <summary>
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class EntitiesBase
+    public class DotnetExtensionsBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

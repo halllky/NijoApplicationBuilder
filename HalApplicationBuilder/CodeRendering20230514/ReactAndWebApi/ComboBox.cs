@@ -7,55 +7,68 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering20230514.EFCore
+namespace HalApplicationBuilder.CodeRendering20230514.ReactAndWebApi
 {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
-    using HalApplicationBuilder.Core20230514;
     using System;
     
     /// <summary>
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class Entities : EntitiesBase
+    public partial class ComboBox : ComboBoxBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("#pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければな" +
-                    "りません\r\n\r\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
-            this.Write(" {\r\n    using System;\r\n    using System.Collections.Generic;\r\n\r\n");
- foreach (var dbEntity in _ctx.Schema.ToEFCoreGraph()) { 
-            this.Write("    public partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(dbEntity.Item.ClassName));
-            this.Write(" {\r\n");
- foreach (var col in dbEntity.Item.GetColumns()) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.Initializer == null ? "" : $" = {col.Initializer};"));
-            this.Write("\r\n");
- } 
-            this.Write("\r\n");
- foreach (var nav in EnumerateNavigationProperties(dbEntity)) { 
-            this.Write("        public virtual ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.Initializer == null ? "" : $" = {nav.Initializer};"));
-            this.Write("\r\n");
- } 
-            this.Write("    }\r\n");
- } 
-            this.Write("}\r\n");
+            this.Write(@"import { forwardRef, ForwardedRef, useState } from ""react""
+import { useQuery } from ""react-query""
+import { Combobox } from ""@headlessui/react""
+import { useAppContext } from ""../hooks/AppContext""
+import { ReferenceDTO } from ""../halapp.types""
+
+export const ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ComponentName));
+            this.Write(@" = forwardRef(({ value, onChange }: {
+  value?: ReferenceDTO
+  onChange?: (v: ReferenceDTO | undefined) => void
+}, ref: ForwardedRef<HTMLElement>) => {
+
+  const [{ apiDomain }, dispatch] = useAppContext()
+  const [keyword, setKeyword] = useState('')
+  const { data } = useQuery({
+    queryKey: ['");
+            this.Write(this.ToStringHelper.ToStringWithCulture(UseQueryKey));
+            this.Write("\'],\r\n    queryFn: async () => {\r\n      const encoded = window.encodeURI(keyword)\r" +
+                    "\n      const response = await fetch(`${apiDomain}");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Api));
+            this.Write(@"?keyword=${encoded}`)
+      if (!response.ok) throw new Error('Network response was not OK.')
+      return (await response.json()) as ReferenceDTO[]
+    },
+    onError: error => {
+      dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
+    },
+  })
+
+  return (
+    <Combobox ref={ref} value={value} onChange={onChange}>
+      <Combobox.Input onChange={(event) => setKeyword(event.target.value)} />
+      <Combobox.Options>
+        {data?.map(referenceDto => (
+          <Combobox.Option key={referenceDto.instanceKey} value={referenceDto.instanceKey}>
+            {referenceDto.instanceName}
+          </Combobox.Option>
+        ))}
+      </Combobox.Options>
+    </Combobox>
+  )
+})
+");
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -64,7 +77,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class EntitiesBase
+    public class ComboBoxBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;
