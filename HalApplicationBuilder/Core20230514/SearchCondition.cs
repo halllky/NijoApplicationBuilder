@@ -15,6 +15,9 @@ namespace HalApplicationBuilder.Core20230514 {
         internal GraphNode<EFCoreEntity> EFCoreEntity { get; }
         internal string ClassName => $"{EFCoreEntity.Item.Aggregate.Item.DisplayName.ToCSharpSafe()}SearchCondition";
 
+        internal const string BASE_CLASS_NAME = "SearchConditionBase";
+        internal const string PAGE_PROP_NAME = "__halapp__Page";
+
         internal IEnumerable<Member> GetMembers() {
             IEnumerable<Member> EnumerateRecursively(GraphNode<EFCoreEntity> dbEntity, bool asRef) {
                 var path = dbEntity.PathFromEntry().Select(edge => edge.RelationName).ToArray();

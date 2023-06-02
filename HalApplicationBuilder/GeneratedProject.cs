@@ -209,12 +209,16 @@ namespace HalApplicationBuilder {
                             utilDir.Generate(new CodeRendering20230514.Util.RuntimeSettings(ctx));
                             utilDir.Generate(new CodeRendering20230514.Util.DotnetExtensions(ctx.Config));
                             utilDir.Generate(new CodeRendering20230514.Util.FromTo(ctx.Config));
+                            utilDir.Generate(new CodeRendering20230514.Util.InstanceKey(ctx));
                             utilDir.DeleteOtherFiles();
                         });
                         genDir.Directory("Web", controllerDir => {
-                            controllerDir.Generate(new ApiInterface(ctx));
-                            foreach (var template in Controller.All(ctx)) controllerDir.Generate(template);
+                            controllerDir.Generate(new CodeRendering20230514.Presentation.ApiInterface(ctx));
+                            controllerDir.Generate(new CodeRendering20230514.Presentation.AggregateInstanceBase(ctx));
+                            controllerDir.Generate(new CodeRendering20230514.Presentation.SearchConditionBase(ctx));
+                            controllerDir.Generate(new CodeRendering20230514.Presentation.SearchResultBase(ctx));
                             controllerDir.Generate(new DebuggerController(ctx));
+                            foreach (var template in Controller.All(ctx)) controllerDir.Generate(template);
                             controllerDir.DeleteOtherFiles();
                         });
                         genDir.Directory("EntityFramework", efDir => {

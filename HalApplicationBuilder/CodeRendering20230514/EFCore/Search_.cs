@@ -1,3 +1,4 @@
+using HalApplicationBuilder.CodeRendering20230514.Util;
 using HalApplicationBuilder.Core20230514;
 using HalApplicationBuilder.DotnetEx;
 using System;
@@ -14,12 +15,10 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
         }
         private readonly CodeRenderingContext _ctx;
 
-        /// <summary>method argument</summary>
         private const string PARAM = "param";
-        /// <summary>IQueryable created from DbSet</summary>
         private const string QUERY = "query";
-        /// <summary>lambda expression argument</summary>
         private const string E = "e";
+        private static string PAGE => SearchCondition.PAGE_PROP_NAME;
 
         private readonly DirectedGraph<EFCoreEntity> _graph;
 
@@ -47,13 +46,25 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
             internal string DbSetName => _dbEntity.Item.Aggregate.Item.DisplayName.ToCSharpSafe();
 
             internal IEnumerable<string> SelectClause() {
-                return BuildSelectClauseRecursively(_dbEntity);
-            }
-            internal IEnumerable<string> WhereClause() {
-                return BuildWhereClauseRecursively(new SearchCondition(_dbEntity), _dbEntity);
-            }
+                // Instance Key
+                var pk = _dbEntity.Item
+                    .GetColumns()
+                    .Where(col => col.IsPrimary)
+                    .ToArray();
+                for (int i = 0; i < pk.Length; i++) {
+                    yield return $"__halapp_Key_{i} = {E}.{pk[i].PropertyName},";
+                }
 
-            private static IEnumerable<string> BuildSelectClauseRecursively(GraphNode<EFCoreEntity> dbEntity) {
+                // Instance Key 以外
+                foreach (var x in BuildSelectClauseRecursively(_dbEntity)) {
+                    yield return $"{x.Left} = {E}.{x.Right},";
+                }
+            }
+            private class SelectClauseLine {
+                internal required string Left { get; init; }
+                internal required string Right { get; init; }
+            }
+            private static IEnumerable<SelectClauseLine> BuildSelectClauseRecursively(GraphNode<EFCoreEntity> dbEntity) {
                 var path = dbEntity.PathFromEntry().Select(edge => edge.RelationName).ToArray();
 
                 // 集約自身のメンバー
@@ -64,7 +75,10 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
                         && !member.IsInstanceName) continue;
 
                     var pathToMember = path.Union(new[] { member.Name });
-                    yield return $"{string.Join("_", pathToMember)} = {E}.{string.Join(".", pathToMember)},";
+                    yield return new SelectClauseLine {
+                        Left = string.Join("_", pathToMember),
+                        Right = string.Join(".", pathToMember),
+                    };
                 }
 
                 // 子要素（除: Children）と参照先を再帰処理
@@ -76,6 +90,9 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
                 }
             }
 
+            internal IEnumerable<string> WhereClause() {
+                return BuildWhereClauseRecursively(new SearchCondition(_dbEntity), _dbEntity);
+            }
             private static IEnumerable<string> BuildWhereClauseRecursively(SearchCondition searchCondition, GraphNode<EFCoreEntity> dbEntity) {
                 var path = dbEntity.PathFromEntry().Select(edge => edge.RelationName).ToArray();
 
@@ -110,6 +127,24 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
                             }
                             break;
                     }
+                }
+            }
+
+            internal IEnumerable<string> EnumerableSection() {
+                // Instance Key
+                var pk = _dbEntity.Item
+                    .GetColumns()
+                    .Where(col => col.IsPrimary);
+
+                yield return $"{SearchResult.INSTANCE_KEY_PROP_NAME} = {InstanceKey.CLASS_NAME}.{InstanceKey.CREATE}(new object?[] {{";
+                for (int i = 0; i < pk.Count(); i++) {
+                    yield return $"    {E}.__halapp_Key_{i},";
+                }
+                yield return $"}}),";
+
+                // Instance Key 以外
+                foreach (var x in BuildSelectClauseRecursively(_dbEntity)) {
+                    yield return $"{x.Left} = {E}.{x.Left},";
                 }
             }
         }

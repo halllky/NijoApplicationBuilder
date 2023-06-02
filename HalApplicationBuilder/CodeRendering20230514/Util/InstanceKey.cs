@@ -7,7 +7,7 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering20230514.EFCore
+namespace HalApplicationBuilder.CodeRendering20230514.Util
 {
     using System.Linq;
     using System.Text;
@@ -18,75 +18,29 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class Search : SearchBase
+    public partial class InstanceKey : InstanceKeyBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("namespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextNamespace));
+            this.Write("\r\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_namespace));
             this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
-                    "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n  " +
-                    "  using Microsoft.EntityFrameworkCore.Infrastructure;\r\n\r\n    partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
-            this.Write(" {\r\n");
- foreach (var method in BuildSearchMethods()) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(method.ReturnType));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(method.MethodName));
-            this.Write("(");
-            this.Write(this.ToStringHelper.ToStringWithCulture(method.ArgType));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PARAM));
-            this.Write(") {\r\n            var ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(QUERY));
-            this.Write(" = this.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(method.DbSetName));
-            this.Write(".Select(");
-            this.Write(this.ToStringHelper.ToStringWithCulture(E));
-            this.Write(" => new {\r\n");
- foreach (var line in method.SelectClause()) { 
-            this.Write("                ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(line));
-            this.Write("\r\n");
- } 
-            this.Write("            });\r\n\r\n");
- foreach (var line in method.WhereClause()) { 
-            this.Write("            ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(line));
-            this.Write("\r\n");
- } 
-            this.Write("\r\n            if (");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PARAM));
-            this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PAGE));
-            this.Write(" != null) {\r\n                const int PAGE_SIZE = 20;\r\n                var skip " +
-                    "= ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PARAM));
-            this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PAGE));
-            this.Write(".Value * PAGE_SIZE;\r\n                ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(QUERY));
-            this.Write(" = ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(QUERY));
-            this.Write(".Skip(skip).Take(PAGE_SIZE);\r\n            }\r\n\r\n            return ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(QUERY));
-            this.Write(".AsEnumerable().Select(");
-            this.Write(this.ToStringHelper.ToStringWithCulture(E));
-            this.Write(" => new ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(method.ReturnItemType));
-            this.Write(" {\r\n");
- foreach (var line in method.EnumerableSection()) { 
-            this.Write("                ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(line));
-            this.Write("\r\n");
- } 
-            this.Write("            });\r\n        }\r\n");
- } 
-            this.Write("    }\r\n}\r\n");
+                    "s.Generic;\r\n    using System.Linq;\r\n    using System.Text.Json;\r\n\r\n    public cl" +
+                    "ass ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CLASS_NAME));
+            this.Write(" {\r\n        public static string ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CREATE));
+            this.Write(@"(IEnumerable<object?> values) {
+            return JsonSerializer.Serialize(values, new JsonSerializerOptions {
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All),
+            });
+        }
+    }
+}
+");
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -95,7 +49,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class SearchBase
+    public class InstanceKeyBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

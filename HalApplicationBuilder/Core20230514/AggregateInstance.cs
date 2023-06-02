@@ -14,6 +14,7 @@ namespace HalApplicationBuilder.Core20230514 {
         private readonly GraphNode<EFCoreEntity> _dbEntity;
 
         internal string ClassName => $"{_dbEntity.Item.Aggregate.Item.DisplayName.ToCSharpSafe()}Instance";
+        internal const string BASE_CLASS_NAME = "AggregateInstanceBase";
 
         internal IEnumerable<Member> GetMembers() {
             foreach (var member in _dbEntity.Item.GetColumns()) {

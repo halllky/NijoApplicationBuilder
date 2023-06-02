@@ -6,10 +6,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HalApplicationBuilder.CodeRendering20230514.ReactAndWebApi {
-    partial class ApiInterface : ITemplate {
+namespace HalApplicationBuilder.CodeRendering20230514.Presentation
+{
+    partial class ApiInterface : ITemplate
+    {
 
-        internal ApiInterface(CodeRenderingContext ctx) {
+        internal ApiInterface(CodeRenderingContext ctx)
+        {
             _ctx = ctx;
         }
         private readonly CodeRenderingContext _ctx;

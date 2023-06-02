@@ -7,86 +7,78 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering20230514.EFCore
+namespace HalApplicationBuilder.CodeRendering20230514.Presentation
 {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
+    using HalApplicationBuilder.Core20230514;
     using System;
     
     /// <summary>
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class Search : SearchBase
+    public partial class ApiInterface : ApiInterfaceBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("namespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextNamespace));
-            this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
-                    "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n  " +
-                    "  using Microsoft.EntityFrameworkCore.Infrastructure;\r\n\r\n    partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
+            this.Write("\r\n#pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなけれ" +
+                    "ばなりません\r\n#pragma warning disable IDE1006 // 命名スタイル\r\n\r\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.RootNamespace));
+            this.Write(" {\r\n    using System;\r\n    using System.Collections.Generic;\r\n\r\n");
+ foreach (var dbEntity in _ctx.Schema.ToEFCoreGraph()) { 
+ var searchCondition = new SearchCondition(dbEntity); 
+ var searchResult = new SearchResult(dbEntity); 
+ var aggregateInstance = new AggregateInstance(dbEntity); 
+            this.Write("\r\n");
+ /* 検索条件DTO */ 
+            this.Write("    public class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(searchCondition.ClassName));
+            this.Write(" : ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(SearchCondition.BASE_CLASS_NAME));
             this.Write(" {\r\n");
- foreach (var method in BuildSearchMethods()) { 
+ foreach (var prop in searchCondition.GetMembers()) { 
             this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(method.ReturnType));
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Type.GetCSharpTypeName()));
             this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(method.MethodName));
-            this.Write("(");
-            this.Write(this.ToStringHelper.ToStringWithCulture(method.ArgType));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PARAM));
-            this.Write(") {\r\n            var ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(QUERY));
-            this.Write(" = this.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(method.DbSetName));
-            this.Write(".Select(");
-            this.Write(this.ToStringHelper.ToStringWithCulture(E));
-            this.Write(" => new {\r\n");
- foreach (var line in method.SelectClause()) { 
-            this.Write("                ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(line));
-            this.Write("\r\n");
- } 
-            this.Write("            });\r\n\r\n");
- foreach (var line in method.WhereClause()) { 
-            this.Write("            ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(line));
-            this.Write("\r\n");
- } 
-            this.Write("\r\n            if (");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PARAM));
-            this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PAGE));
-            this.Write(" != null) {\r\n                const int PAGE_SIZE = 20;\r\n                var skip " +
-                    "= ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PARAM));
-            this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PAGE));
-            this.Write(".Value * PAGE_SIZE;\r\n                ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(QUERY));
-            this.Write(" = ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(QUERY));
-            this.Write(".Skip(skip).Take(PAGE_SIZE);\r\n            }\r\n\r\n            return ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(QUERY));
-            this.Write(".AsEnumerable().Select(");
-            this.Write(this.ToStringHelper.ToStringWithCulture(E));
-            this.Write(" => new ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(method.ReturnItemType));
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Name));
+            this.Write(" { get; set; }\r\n");
+ }
+            this.Write("    }\r\n\r\n");
+ /* 検索結果DTO */ 
+            this.Write("    public class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(searchResult.ClassName));
+            this.Write(" : ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(SearchResult.BASE_CLASS_NAME));
             this.Write(" {\r\n");
- foreach (var line in method.EnumerableSection()) { 
-            this.Write("                ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(line));
-            this.Write("\r\n");
- } 
-            this.Write("            });\r\n        }\r\n");
- } 
-            this.Write("    }\r\n}\r\n");
+ foreach (var prop in searchResult.GetMembers()) { 
+            this.Write("        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Type.GetCSharpTypeName()));
+            this.Write(" ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Name));
+            this.Write(" { get; set; }\r\n");
+ }
+            this.Write("    }\r\n\r\n");
+ /* シングルビューDTO */ 
+            this.Write("    public class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(aggregateInstance.ClassName));
+            this.Write(" : ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance.BASE_CLASS_NAME));
+            this.Write(" {\r\n");
+ foreach (var prop in aggregateInstance.GetMembers()) { 
+            this.Write("        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
+            this.Write(" ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write(" { get; set; }\r\n");
+ }
+            this.Write("    }\r\n");
+ }
+            this.Write("\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -95,7 +87,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class SearchBase
+    public class ApiInterfaceBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

@@ -14,14 +14,11 @@ namespace HalApplicationBuilder.Core20230514 {
         private readonly GraphNode<EFCoreEntity> _efCoreEntity;
         internal string ClassName => $"{_efCoreEntity.Item.Aggregate.Item.DisplayName.ToCSharpSafe()}SearchResult";
 
+        internal const string BASE_CLASS_NAME = "SearchResultBase";
         internal const string INSTANCE_KEY_PROP_NAME = "__halapp__InstanceKey";
+        internal const string INSTANCE_NAME_PROP_NAME = "__halapp__InstanceName";
 
         internal IEnumerable<Member> GetMembers() {
-            yield return new Member {
-                Owner = this,
-                Name = INSTANCE_KEY_PROP_NAME,
-                Type = new AggregateMembers.Id(), // TODO
-            };
             foreach (var member in GetMembersRecursively(_efCoreEntity)) {
                 yield return member;
             }

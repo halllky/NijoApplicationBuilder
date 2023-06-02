@@ -18,21 +18,21 @@ namespace <#=_ctx.Config.RootNamespace#> {
 <# var aggregateInstance = new AggregateInstance(dbEntity); #>
 
 <# /* 検索条件DTO */ #>
-    public class <#=searchCondition.ClassName#> {
+    public class <#=searchCondition.ClassName#> : <#=SearchCondition.BASE_CLASS_NAME#> {
 <# foreach (var prop in searchCondition.GetMembers()) { #>
         public <#=prop.Type.GetCSharpTypeName()#> <#=prop.Name#> { get; set; }
 <# }#>
     }
 
 <# /* 検索結果DTO */ #>
-    public class <#=searchResult.ClassName#> {
+    public class <#=searchResult.ClassName#> : <#=SearchResult.BASE_CLASS_NAME#> {
 <# foreach (var prop in searchResult.GetMembers()) { #>
         public <#=prop.Type.GetCSharpTypeName()#> <#=prop.Name#> { get; set; }
 <# }#>
     }
 
 <# /* シングルビューDTO */ #>
-    public class <#=aggregateInstance.ClassName#> {
+    public class <#=aggregateInstance.ClassName#> : <#=AggregateInstance.BASE_CLASS_NAME#> {
 <# foreach (var prop in aggregateInstance.GetMembers()) { #>
         public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }
 <# }#>

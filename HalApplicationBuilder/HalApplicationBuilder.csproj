@@ -59,9 +59,21 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>Search.cs</LastGenOutput>
 		</None>
-		<None Update="CodeRendering20230514\ReactAndWebApi\ApiInterface.tt">
+		<None Update="CodeRendering20230514\Presentation\AggregateInstanceBase.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>AggregateInstanceBase.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering20230514\Presentation\ApiInterface.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>ApiInterface.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering20230514\Presentation\SearchConditionBase.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>SearchConditionBase.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering20230514\Presentation\SearchResultBase.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>SearchResultBase.cs</LastGenOutput>
 		</None>
 		<None Update="CodeRendering20230514\ReactAndWebApi\ComboBox.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
@@ -94,6 +106,10 @@
 		<None Update="CodeRendering20230514\Util\FromTo.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>FromTo.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering20230514\Util\InstanceKey.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>InstanceKey.cs</LastGenOutput>
 		</None>
 		<None Update="CodeRendering20230514\Util\RuntimeSettings.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
@@ -236,10 +252,25 @@
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>Search.tt</DependentUpon>
 		</Compile>
-		<Compile Update="CodeRendering20230514\ReactAndWebApi\ApiInterface.cs">
+		<Compile Update="CodeRendering20230514\Presentation\AggregateInstanceBase.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>AggregateInstanceBase.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering20230514\Presentation\ApiInterface.cs">
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>ApiInterface.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering20230514\Presentation\SearchConditionBase.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>SearchConditionBase.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering20230514\Presentation\SearchResultBase.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>SearchResultBase.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering20230514\ReactAndWebApi\ComboBox.cs">
 		  <DesignTime>True</DesignTime>
@@ -280,6 +311,11 @@
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>FromTo.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering20230514\Util\InstanceKey.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>InstanceKey.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering20230514\Util\RuntimeSettings.cs">
 		  <DesignTime>True</DesignTime>

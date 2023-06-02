@@ -7,72 +7,33 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering20230514.ReactAndWebApi
+namespace HalApplicationBuilder.CodeRendering20230514.Presentation
 {
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
-    using HalApplicationBuilder.Core20230514;
     using System;
     
     /// <summary>
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class ApiInterface : ApiInterfaceBase
+    public partial class SearchResultBase : SearchResultBaseBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("\r\n#pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなけれ" +
-                    "ばなりません\r\n#pragma warning disable IDE1006 // 命名スタイル\r\n\r\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.RootNamespace));
-            this.Write(" {\r\n    using System;\r\n    using System.Collections.Generic;\r\n\r\n");
- foreach (var dbEntity in _ctx.Schema.ToEFCoreGraph()) { 
- var searchCondition = new SearchCondition(dbEntity); 
- var searchResult = new SearchResult(dbEntity); 
- var aggregateInstance = new AggregateInstance(dbEntity); 
-            this.Write("\r\n");
- /* 検索条件DTO */ 
-            this.Write("    public class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(searchCondition.ClassName));
-            this.Write(" {\r\n");
- foreach (var prop in searchCondition.GetMembers()) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Type.GetCSharpTypeName()));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Name));
-            this.Write(" { get; set; }\r\n");
- }
-            this.Write("    }\r\n\r\n");
- /* 検索結果DTO */ 
-            this.Write("    public class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(searchResult.ClassName));
-            this.Write(" {\r\n");
- foreach (var prop in searchResult.GetMembers()) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Type.GetCSharpTypeName()));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Name));
-            this.Write(" { get; set; }\r\n");
- }
-            this.Write("    }\r\n\r\n");
- /* シングルビューDTO */ 
-            this.Write("    public class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(aggregateInstance.ClassName));
-            this.Write(" {\r\n");
- foreach (var prop in aggregateInstance.GetMembers()) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write(" { get; set; }\r\n");
- }
-            this.Write("    }\r\n");
- }
-            this.Write("\r\n}\r\n");
+            this.Write("\r\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Namespace));
+            this.Write(" {\r\n    public abstract class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CLASS_NAME));
+            this.Write(" {\r\n        public string ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(INSTANCE_KEY));
+            this.Write(" { get; set; }\r\n        public string ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(INSTANCE_NAME));
+            this.Write(" { get; set; }\r\n    }\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -81,7 +42,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.ReactAndWebApi
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class ApiInterfaceBase
+    public class SearchResultBaseBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;
