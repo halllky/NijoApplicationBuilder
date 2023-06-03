@@ -29,7 +29,9 @@ namespace HalApplicationBuilder.CodeRendering20230514.ReactAndWebApi
  var dbContextTypeName = $"{_ctx.Config.DbContextNamespace}.{_ctx.Config.DbContextName}"; 
             this.Write("using Microsoft.AspNetCore.Mvc;\r\n\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.RootNamespace));
-            this.Write(" {\r\n\r\n    [ApiController]\r\n    [Route(\"[controller]\")]\r\n    public class ");
+            this.Write(" {\r\n\r\n    [ApiController]\r\n    [Route(\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(SUBDOMAIN));
+            this.Write("/[controller]\")]\r\n    public class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(ClassName));
             this.Write(" : ControllerBase {\r\n        public ");
             this.Write(this.ToStringHelper.ToStringWithCulture(ClassName));

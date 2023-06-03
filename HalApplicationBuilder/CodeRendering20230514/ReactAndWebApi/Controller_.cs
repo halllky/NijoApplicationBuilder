@@ -42,7 +42,9 @@ namespace HalApplicationBuilder.CodeRendering20230514.ReactAndWebApi {
         private const string FIND_ACTION_NAME = "detail";
         private const string KEYWORDSEARCH_ACTION_NAME = "list-by-keyword";
 
-        internal string SubDomain => $"api/{_agg.Item.DisplayName.ToCSharpSafe()}";
+        private const string SUBDOMAIN = "api";
+
+        internal string SubDomain => $"{SUBDOMAIN}/{_agg.Item.DisplayName.ToCSharpSafe()}";
         internal string SearchCommandApi => $"/{SubDomain}/{SEARCH_ACTION_NAME}";
         internal string CreateCommandApi => $"/{SubDomain}/{CREATE_ACTION_NAME}";
         internal string UpdateCommandApi => $"/{SubDomain}/{UPDATE_ACTION_NAME}";

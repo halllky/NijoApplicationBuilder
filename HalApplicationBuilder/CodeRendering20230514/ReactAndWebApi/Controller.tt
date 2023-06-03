@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace <#=_ctx.Config.RootNamespace#> {
 
     [ApiController]
-    [Route("[controller]")]
+    [Route("<#=SUBDOMAIN#>/[controller]")]
     public class <#=ClassName#> : ControllerBase {
         public <#=ClassName#>(ILogger<<#=ClassName#>> logger, <#=dbContextTypeName#> dbContext) {
             _logger = logger;
