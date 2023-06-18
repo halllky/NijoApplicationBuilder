@@ -83,7 +83,7 @@ namespace HalApplicationBuilder.DotnetEx {
             internal required string WorkingDirectory { get; init; }
             internal required string Filename { get; init; }
             internal required string[] Args { get; init; }
-            internal required CancellationToken CancellationToken { get; init; }
+            internal required CancellationToken? CancellationToken { get; init; }
             internal bool Verbose { get; init; }
 
             private Process? _process = null;
@@ -114,7 +114,7 @@ namespace HalApplicationBuilder.DotnetEx {
                         while (!_process.HasExited) {
                             Thread.Sleep(100);
                             ct.ThrowIfCancellationRequested();
-                            CancellationToken.ThrowIfCancellationRequested();
+                            CancellationToken?.ThrowIfCancellationRequested();
                         }
                     } catch (OperationCanceledException) {
                         Stop();

@@ -19,19 +19,16 @@ namespace HalApplicationBuilder.Test {
             return XDocument.Parse(LoadXmlString());
         }
         public HalappProject CreateProject() {
-            using var tokenSource = new CancellationTokenSource();
             var project = HalappProject.Create(
                 applicationName: LoadXDocument().Root!.Name.LocalName,
                 verbose: false,
                 keepTempIferror: false,
-                cancellationToken: tokenSource.Token,
                 log: Console.Out);
 
             var xmlPath = project.GetAggregateSchemaPath();
             File.WriteAllText(xmlPath, LoadXmlString());
 
-            project.StartSetup(false, tokenSource.Token)
-                   .EnsureCreateRuntimeSettingFile();
+            project.EnsureCreateRuntimeSettingFile();
 
             return project;
         }
