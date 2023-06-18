@@ -13,7 +13,7 @@ namespace HalApplicationBuilder.Test.Tests {
         [Theory]
         [ClassData(typeof(TestArgsBuilder))]
         public void Test(TestArgs args) {
-            var project = args.CreateProject();
+            var project = args.OpenProject();
             project.Build();
         }
     }

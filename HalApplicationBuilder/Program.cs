@@ -40,8 +40,9 @@ namespace HalApplicationBuilder {
 
             create.SetHandler((applicationName, verbose, keepTempIferror) => {
                 if (!CheckIfToolIsAvailable(cancellationTokenSource.Token, "dotnet", "npm", "git")) return;
-                HalappProject
-                    .Create(applicationName, keepTempIferror, cancellationTokenSource.Token, Console.Out, verbose);
+                if (string.IsNullOrEmpty(applicationName)) throw new ArgumentException($"Application name is required.");
+                var projectRootDir = Path.Combine(Directory.GetCurrentDirectory(), applicationName);
+                HalappProject.Create(projectRootDir, applicationName, keepTempIferror, cancellationTokenSource.Token, Console.Out, verbose);
             }, applicationName, verbose, keepTempIferror);
 
             debug.SetHandler((path, verbose) => {

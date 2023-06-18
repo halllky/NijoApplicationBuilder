@@ -33,7 +33,7 @@ namespace HalApplicationBuilder {
         /// <param name="applicationName">アプリケーション名</param>
         /// <param name="verbose">ログの詳細出力を行うかどうか</param>
         /// <returns>作成されたプロジェクトを表すオブジェクト</returns>
-        public static HalappProject Create(string? applicationName, bool keepTempIferror, CancellationToken? cancellationToken = null, TextWriter? log = null, bool verbose = false) {
+        public static HalappProject Create(string projectRootDir, string? applicationName, bool keepTempIferror, CancellationToken? cancellationToken = null, TextWriter? log = null, bool verbose = false) {
 
             if (string.IsNullOrWhiteSpace(applicationName))
                 throw new InvalidOperationException($"Please specify name of new application. example 'halapp create my-new-app'");
@@ -41,12 +41,10 @@ namespace HalApplicationBuilder {
             if (Path.GetInvalidFileNameChars().Any(applicationName.Contains))
                 throw new InvalidOperationException($"'{applicationName}' contains invalid characters for a file name.");
 
-            var projectRoot = Path.Combine(Directory.GetCurrentDirectory(), applicationName);
-            if (Directory.Exists(projectRoot))
-                throw new InvalidOperationException($"'{projectRoot}' is already exists.");
+            if (Directory.Exists(projectRootDir))
+                throw new InvalidOperationException($"'{projectRootDir}' is already exists.");
 
-            var ramdomName = $"halapp.temp.{Path.GetRandomFileName()}";
-            var tempDir = Path.Combine(Directory.GetCurrentDirectory(), ramdomName);
+            var tempDir = Directory.CreateTempSubdirectory("halapp.temp.").FullName;
 
             var error = false;
             try {
@@ -67,8 +65,6 @@ namespace HalApplicationBuilder {
                 tempProject.EnsureCreateRuntimeSettingFile();
                 tempProject.EnsureCreateDatabase();
 
-                tempProject.InstallNodeModules();
-
                 // git initial commit
                 var cmd = new Cmd {
                     WorkingDirectory = tempDir,
@@ -80,21 +76,24 @@ namespace HalApplicationBuilder {
                 cmd.Exec("git", "commit", "-m", "init");
 
                 // ここまでの処理がすべて成功したら一時ディレクトリを本来のディレクトリ名に変更
-                if (Directory.Exists(projectRoot)) throw new InvalidOperationException($"プロジェクトディレクトリを {projectRoot} に移動できません。");
-                Directory.Move(tempDir, projectRoot);
+                if (Directory.Exists(projectRootDir)) throw new InvalidOperationException($"プロジェクトディレクトリを {projectRootDir} に移動できません。");
+                Directory.Move(tempDir, projectRootDir);
 
                 log?.WriteLine("プロジェクト作成完了");
 
-                return new HalappProject2(projectRoot, cancellationToken, log, verbose);
+                return new HalappProject2(projectRootDir, cancellationToken, log, verbose);
 
             } catch {
                 error = true;
                 throw;
 
             } finally {
-                if (Directory.Exists(tempDir)
-                    && (keepTempIferror == false || error == false)) {
-                    Directory.Delete(tempDir, true);
+                if (Directory.Exists(tempDir) && (keepTempIferror == false || error == false)) {
+                    try {
+                        Directory.Delete(tempDir, true);
+                    } catch (Exception ex) {
+                        log?.WriteLine(new Exception("Failure to delete temp directory.", ex).ToString());
+                    }
                 }
             }
         }
@@ -130,7 +129,6 @@ namespace HalApplicationBuilder {
         protected readonly bool _verbose;
         protected readonly CancellationToken? _cancellationToken;
         protected readonly TextWriter? _log;
-
         private protected readonly Cmd _cmd;
 
         private protected string ProjectRoot { get; }
@@ -178,12 +176,10 @@ namespace HalApplicationBuilder {
             return errors.Count == 0;
         }
 
-        #region CODE GENERATING
-
         /// <summary>
         /// dotnet new コマンドを実行します。
         /// </summary>
-        public HalappProject DotnetNew() {
+        internal HalappProject DotnetNew() {
             _log?.WriteLine($"プロジェクトを作成します。");
 
             var config = ReadConfig();
@@ -203,7 +199,7 @@ namespace HalApplicationBuilder {
         /// Program.cs ファイルを編集し、必要なソースコードを追記します。
         /// </summary>
         /// <returns></returns>
-        public HalappProject EditProgramCs() {
+        internal HalappProject EditProgramCs() {
             _log?.WriteLine($"Program.cs ファイルを書き換えます。");
             var programCsPath = Path.Combine(ProjectRoot, "Program.cs");
             var lines = File.ReadAllLines(programCsPath).ToList();
@@ -412,7 +408,7 @@ namespace HalApplicationBuilder {
         /// <summary>
         /// 必要なNuGetパッケージを参照に加えます。
         /// </summary>
-        public HalappProject AddNugetPackages() {
+        internal HalappProject AddNugetPackages() {
             _log?.WriteLine($"Microsoft.EntityFrameworkCore パッケージへの参照を追加します。");
             _cmd.Exec("dotnet", "add", "package", "Microsoft.EntityFrameworkCore");
 
@@ -430,7 +426,7 @@ namespace HalApplicationBuilder {
         /// <summary>
         /// halapp.dllとその依存先をプロジェクトディレクトリにコピーする。実行時にRuntimeContextを参照しているため
         /// </summary>
-        public HalappProject AddReferenceToHalappDll() {
+        internal virtual HalappProject AddReferenceToHalappDll() {
             _log?.WriteLine($"halapp.dll を参照に追加します。");
 
             // dllのコピー
@@ -464,7 +460,7 @@ namespace HalApplicationBuilder {
         /// <summary>
         /// halapp.xml が無い場合作成します。
         /// </summary>
-        public HalappProject EnsureCreateHalappXml(string applicationName) {
+        internal HalappProject EnsureCreateHalappXml(string applicationName) {
             var xmlPath = GetAggregateSchemaPath();
 
             if (!File.Exists(xmlPath)) {
@@ -523,10 +519,11 @@ namespace HalApplicationBuilder {
 
             return this;
         }
+
         /// <summary>
-        /// 必要なnpmモジュールを node_moduels にインストールします。
+        /// 必要なnpmモジュールをインストールします。
         /// </summary>
-        public HalappProject InstallNodeModules() {
+        public HalappProject InstallDependencies() {
             var npmProcess = new DotnetEx.Cmd {
                 WorkingDirectory = Path.Combine(ProjectRoot, REACT_DIR),
                 CancellationToken = _cmd.CancellationToken,
@@ -534,17 +531,19 @@ namespace HalApplicationBuilder {
             };
             npmProcess.Exec("npm", "ci");
 
+            // dotnetはビルド時に自動的にインストールされるので何もしない
+
             return this;
         }
-        #endregion CODE GENERATING
 
-        #region DEBUG COMMAND
         /// <summary>
         /// プロジェクトをビルドします。
         /// </summary>
         public void Build() {
             UpdateAutoGeneratedCode();
             _cmd.Exec("dotnet", "build");
+
+            // TODO npm build
         }
         /// <summary>
         /// デバッグを開始します。
@@ -575,6 +574,8 @@ namespace HalApplicationBuilder {
             FileSystemWatcher? watcher = null;
 
             try {
+                InstallDependencies();
+
                 var changed = false;
 
                 watcher = new FileSystemWatcher(ProjectRoot);
@@ -712,13 +713,19 @@ namespace HalApplicationBuilder {
                 internal bool Pending { get; set; }
             }
         }
-        #endregion DEBUG COMMAND
     }
+
+
 
     internal class HalappProject2 : HalappProject {
 
         internal HalappProject2(string projetctRoot, CancellationToken? cancellationToken, TextWriter? log, bool verbose) : base(projetctRoot, cancellationToken, log, verbose) {
 
+        }
+
+        internal override HalappProject AddReferenceToHalappDll() {
+            // 2ではhalapp.dllへの依存を排除しているので何もしない
+            return this;
         }
 
         public override HalappProject UpdateAutoGeneratedCode() {

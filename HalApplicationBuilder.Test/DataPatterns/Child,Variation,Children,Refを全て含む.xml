@@ -17,9 +17,9 @@
   <ユースケース>
     <ユースケースID type="id" key="" />
     <概要 type="sentence" />
-    <主体 refTo="アクター" />
+    <主体 refTo="/アクター" />
     <関連機能 multiple="">
-      <機能 refTo="機能" key="" />
+      <機能 refTo="/機能" key="" />
     </関連機能>
   </ユースケース>
 
