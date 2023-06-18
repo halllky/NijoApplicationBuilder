@@ -14,6 +14,7 @@ using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
 
 [assembly: InternalsVisibleTo("HalApplicationBuilder.Test")]
+[assembly: InternalsVisibleTo("HalApplicationBuilder.IntegrationTest")]
 
 namespace HalApplicationBuilder {
     public class Program {
