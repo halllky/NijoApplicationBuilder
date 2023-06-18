@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<RDRA>
+  <親集約>
+    <親集約ID type="id" key="" />
+    <親集約名 type="word" />
+    <子集約>
+      <子集約ID type="id" key="" />
+      <子集約名 type="word" />
+    </子集約>
+  </親集約>
+</RDRA>

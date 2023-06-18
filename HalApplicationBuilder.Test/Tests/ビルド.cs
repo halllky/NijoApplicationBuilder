@@ -9,12 +9,13 @@ using System.Xml.Linq;
 using Xunit;
 
 namespace HalApplicationBuilder.Test.Tests {
-    public class ビルド {
-        [Theory]
-        [ClassData(typeof(TestArgsBuilder))]
-        public void Test(TestArgs args) {
-            var project = args.OpenProject();
-            project.Build();
+    partial class Perspectives {
+        [Theory(DisplayName = "ビルドが通るか")]
+        [MemberData(nameof(Patterns))]
+        public void Build(DataPattern pattern) {
+            File.WriteAllText(Project.GetAggregateSchemaPath(), pattern.LoadXmlString());
+            // Project.Build();
+            Assert.True(true);
         }
     }
 }

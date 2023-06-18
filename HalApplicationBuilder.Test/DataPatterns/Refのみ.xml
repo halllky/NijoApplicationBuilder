@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<RDRA>
+  <参照先>
+    <参照先集約ID type="id" key="" />
+    <参照先集約名 type="word" />
+  </参照先>
+  <参照元>
+    <参照元集約ID type="id" key="" />
+    <参照元集約名 type="word" />
+    <参照 refTo="/参照先" />
+  </参照元>
+</RDRA>
