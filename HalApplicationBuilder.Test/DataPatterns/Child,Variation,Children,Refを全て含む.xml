@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<RDRA>
+  
+  <アクター>
+    <アクターID type="id" key="" />
+    <アクター名 type="word" />
+    <種別>
+      <人>
+        <自社か社外か type="word" />
+      </人>
+      <外部システム>
+      </外部システム>
+    </種別>
+  </アクター>
+  
+  <ユースケース>
+    <ユースケースID type="id" key="" />
+    <概要 type="sentence" />
+    <主体 refTo="アクター" />
+    <関連機能 multiple="">
+      <機能 refTo="機能" key="" />
+    </関連機能>
+  </ユースケース>
+
+  <機能>
+    <機能ID type="id" key="" />
+    <機能名 type="word" />
+    <参照更新の別 type="word" />
+    <非機能要件>
+      <レスポンス type="sentence" />
+      <セキュリティ type="sentence" />
+    </非機能要件>
+  </機能>
+  
+</RDRA>
