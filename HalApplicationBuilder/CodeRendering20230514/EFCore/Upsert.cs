@@ -7,7 +7,7 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering20230514.Presentation
+namespace HalApplicationBuilder.CodeRendering20230514.EFCore
 {
     using System.Linq;
     using System.Text;
@@ -18,23 +18,36 @@ namespace HalApplicationBuilder.CodeRendering20230514.Presentation
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class SearchResultBase : SearchResultBaseBase
+    public partial class Upsert : UpsertBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("\r\n#pragma warning disable CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入ってい" +
-                    "なければなりません。Null 許容として宣言することをご検討ください。\r\n\r\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Namespace));
-            this.Write(" {\r\n    public abstract class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(CLASS_NAME));
-            this.Write(" {\r\n        public string ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(INSTANCE_KEY));
-            this.Write(" { get; set; }\r\n        public string ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(INSTANCE_NAME));
-            this.Write(" { get; set; }\r\n    }\r\n}\r\n");
+            this.Write("namespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextNamespace));
+            this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
+                    "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n  " +
+                    "  using Microsoft.EntityFrameworkCore.Infrastructure;\r\n\r\n    partial class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
+            this.Write(" {\r\n    \r\n");
+ foreach (var method in BuildMethods()) { 
+            this.Write("        public void ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(METHOD_NAME));
+            this.Write("(IEnumerable<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(method.ArgType));
+            this.Write("> items) {\r\n            foreach (var item in items) ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(METHOD_NAME));
+            this.Write("(item);\r\n        }\r\n        public void ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(METHOD_NAME));
+            this.Write("(");
+            this.Write(this.ToStringHelper.ToStringWithCulture(method.ArgType));
+            this.Write(" ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ITEM));
+            this.Write(") {\r\n        }\r\n");
+ } 
+            this.Write("\r\n    }\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -43,7 +56,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.Presentation
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class SearchResultBaseBase
+    public class UpsertBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

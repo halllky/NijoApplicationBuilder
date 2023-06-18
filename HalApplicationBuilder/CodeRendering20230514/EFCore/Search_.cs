@@ -11,7 +11,6 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
     partial class Search : ITemplate {
         internal Search(CodeRenderingContext ctx) {
             _ctx = ctx;
-            _graph = ctx.Schema.ToEFCoreGraph();
         }
         private readonly CodeRenderingContext _ctx;
 
@@ -20,12 +19,11 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
         private const string E = "e";
         private static string PAGE => SearchCondition.PAGE_PROP_NAME;
 
-        private readonly DirectedGraph<EFCoreEntity> _graph;
-
         public string FileName => $"{_ctx.Config.DbContextName.ToFileNameSafe()}.Search.cs";
 
         private IEnumerable<MethodInfo> BuildSearchMethods() {
-            return _graph
+            return _ctx.Schema
+                .ToEFCoreGraph()
                 .Where(dbEntity => dbEntity.IsRoot())
                 .Select(dbEntity => new MethodInfo(dbEntity, _ctx));
         }
@@ -140,7 +138,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
                 for (int i = 0; i < pk.Count(); i++) {
                     yield return $"    {E}.__halapp_Key_{i},";
                 }
-                yield return $"}}),";
+                yield return $"}}).ToString(),";
 
                 // Instance Key 以外
                 foreach (var x in BuildSelectClauseRecursively(_dbEntity)) {

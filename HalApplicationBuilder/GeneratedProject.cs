@@ -225,6 +225,7 @@ namespace HalApplicationBuilder {
                             efDir.Generate(new DbContext(ctx));
                             efDir.Generate(new Entities(ctx));
                             efDir.Generate(new Search(ctx));
+                            efDir.Generate(new Find(ctx));
                             efDir.DeleteOtherFiles();
                         });
                         genDir.DeleteOtherFiles();

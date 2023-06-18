@@ -49,21 +49,21 @@ namespace HalApplicationBuilder.CodeRendering20230514.ReactAndWebApi
             this.Write("\")]\r\n        public IActionResult Search([FromQuery] string param) {\r\n           " +
                     " var json = System.Web.HttpUtility.UrlDecode(param);\r\n            var condition " +
                     "= string.IsNullOrWhiteSpace(json)\r\n                ? new ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_searchMethod.ArgType));
+            this.Write(this.ToStringHelper.ToStringWithCulture(SearchArgType));
             this.Write("()\r\n                : System.Text.Json.JsonSerializer.Deserialize<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_searchMethod.ArgType));
+            this.Write(this.ToStringHelper.ToStringWithCulture(SearchArgType));
             this.Write(">(json)!;\r\n            var searchResult = _dbContext\r\n                .");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_searchMethod.MethodName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(Search));
             this.Write("(condition)\r\n                .AsEnumerable();\r\n            return this.JsonConten" +
                     "t(searchResult);\r\n        }\r\n        [HttpGet(\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(KEYWORDSEARCH_ACTION_NAME));
             this.Write("\")]\r\n        public IActionResult SearchByKeyword([FromQuery] string keyword) {\r\n" +
                     "            // TODO\r\n            throw new NotImplementedException();\r\n         " +
                     "   // var condition = new ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_searchMethod.ArgType));
+            this.Write(this.ToStringHelper.ToStringWithCulture(SearchArgType));
             this.Write("();\r\n            // // TODO keyword‚ð[‚Ä‚é\r\n            // var data = _dbContext\r\n  " +
                     "          //     .");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_searchMethod.MethodName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(Search));
             this.Write("(condition)\r\n            //     .AsEnumerable();\r\n            // \r\n            //" +
                     " var guid = new Guid(\"šrootAggregate.GetGuid()š\");\r\n            // var refDtos =" +
                     " data.Select(item => new ");
@@ -81,8 +81,8 @@ namespace HalApplicationBuilder.CodeRendering20230514.ReactAndWebApi
             this.Write(",\r\n            // });\r\n            // return this.JsonContent(refDtos);\r\n        " +
                     "}\r\n        [HttpPost(\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(CREATE_ACTION_NAME));
-            this.Write("\")]\r\n        public IActionResult Create(");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.ClassName));
+            this.Write("\")]\r\n        public IActionResult Create([FromBody] ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance));
             this.Write(" param) {\r\n            // TODO\r\n            throw new NotImplementedException();\r" +
                     "\n            // var success = _runtimeService.");
             this.Write(this.ToStringHelper.ToStringWithCulture(nameof(RuntimeService.TrySaveNewInstance)));
@@ -92,16 +92,14 @@ namespace HalApplicationBuilder.CodeRendering20230514.ReactAndWebApi
                     "ttpGet(\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(FIND_ACTION_NAME));
             this.Write("/{instanceKey}\")]\r\n        public IActionResult Find(string instanceKey) {\r\n     " +
-                    "       // TODO\r\n            throw new NotImplementedException();\r\n            //" +
-                    " var instance = _runtimeService.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(RuntimeService.FindInstance)));
-            this.Write("<šuiInstanceš>(instanceKey, out var _);\r\n            // if (instance == null) {\r\n" +
-                    "            //     return NotFound();\r\n            // } else {\r\n            //  " +
-                    "   return this.JsonContent(instance);\r\n            // }\r\n        }\r\n        [Htt" +
-                    "pPost(\"");
+                    "       var instance = _dbContext.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Find));
+            this.Write("(instanceKey);\r\n            if (instance == null) {\r\n                return NotFo" +
+                    "und();\r\n            } else {\r\n                return this.JsonContent(instance);" +
+                    "\r\n            }\r\n        }\r\n        [HttpPost(\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(UPDATE_ACTION_NAME));
             this.Write("\")]\r\n        public IActionResult Update(");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.ClassName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance));
             this.Write(" param) {\r\n            // TODO\r\n            throw new NotImplementedException();\r" +
                     "\n            // var success = _runtimeService.");
             this.Write(this.ToStringHelper.ToStringWithCulture(nameof(RuntimeService.TryUpdate)));

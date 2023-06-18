@@ -25,7 +25,9 @@ namespace HalApplicationBuilder.CodeRendering20230514.Presentation
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("\r\nnamespace ");
+            this.Write("\r\n#pragma warning disable CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入ってい" +
+                    "なければなりません。Null 許容として宣言することをご検討ください。\r\n#pragma warning disable IDE1006 // 命名スタイル\r\n" +
+                    "\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(Namespace));
             this.Write(" {\r\n    public abstract class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(CLASS_NAME));

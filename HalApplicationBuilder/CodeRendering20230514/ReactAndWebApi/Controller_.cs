@@ -20,21 +20,21 @@ namespace HalApplicationBuilder.CodeRendering20230514.ReactAndWebApi {
             _ctx = ctx;
             _agg = dbEntity.Item.Aggregate;
             _dbEntity = dbEntity;
-            _searchResult = new SearchResult(dbEntity);
-
-            _searchMethod = new Search.MethodInfo(dbEntity, ctx);
-            _aggregateInstance = new AggregateInstance(dbEntity);
         }
 
         private readonly CodeRenderingContext _ctx;
         private readonly GraphNode<Aggregate> _agg;
         private readonly GraphNode<EFCoreEntity> _dbEntity;
-        private readonly SearchResult _searchResult;
-        private readonly Search.MethodInfo _searchMethod;
-        private readonly AggregateInstance _aggregateInstance;
+
+        private string AggregateInstance => new AggregateInstance(_dbEntity).ClassName;
 
         public string FileName => $"{_agg.Item.DisplayName.ToFileNameSafe()}Controller.cs";
         internal string ClassName => $"{_agg.Item.DisplayName.ToCSharpSafe()}Controller";
+
+        private string Search => new Search.MethodInfo(_dbEntity, _ctx).MethodName;
+        private string SearchArgType => new Search.MethodInfo(_dbEntity, _ctx).ArgType;
+
+        private string Find => new Find.MethodInfo(_dbEntity, _ctx).MethodName;
 
         private const string SEARCH_ACTION_NAME = "list";
         private const string CREATE_ACTION_NAME = "create";

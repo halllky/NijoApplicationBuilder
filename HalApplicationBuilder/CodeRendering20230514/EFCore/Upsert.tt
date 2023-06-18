@@ -1,0 +1,25 @@
+<#@ template language="C#" linePragmas="false" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+namespace <#=_ctx.Config.DbContextNamespace#> {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Linq;
+    using Microsoft.EntityFrameworkCore;
+    using Microsoft.EntityFrameworkCore.Infrastructure;
+
+    partial class <#=_ctx.Config.DbContextName#> {
+    
+<# foreach (var method in BuildMethods()) { #>
+        public void <#=METHOD_NAME#>(IEnumerable<<#=method.ArgType#>> items) {
+            foreach (var item in items) <#=METHOD_NAME#>(item);
+        }
+        public void <#=METHOD_NAME#>(<#=method.ArgType#> <#=ITEM#>) {
+        }
+<# } #>
+
+    }
+}

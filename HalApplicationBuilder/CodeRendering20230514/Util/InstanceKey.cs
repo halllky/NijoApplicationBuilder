@@ -31,16 +31,70 @@ namespace HalApplicationBuilder.CodeRendering20230514.Util
                     "s.Generic;\r\n    using System.Linq;\r\n    using System.Text.Json;\r\n\r\n    public cl" +
                     "ass ");
             this.Write(this.ToStringHelper.ToStringWithCulture(CLASS_NAME));
-            this.Write(" {\r\n        public static string ");
+            this.Write(" {\r\n    \r\n        public static ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CLASS_NAME));
+            this.Write(" Empty(int keyCount = 0) => ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CREATE));
+            this.Write("(new object?[keyCount]);\r\n\r\n        public static ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CLASS_NAME));
+            this.Write(" ");
             this.Write(this.ToStringHelper.ToStringWithCulture(CREATE));
             this.Write(@"(IEnumerable<object?> values) {
-            return JsonSerializer.Serialize(values, new JsonSerializerOptions {
+            var objArray = values.ToArray();
+            var json = JsonSerializer.Serialize(objArray, new JsonSerializerOptions {
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All),
             });
-        }
-    }
-}
-");
+            return new ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CLASS_NAME));
+            this.Write("(json, objArray);\r\n        }\r\n        public static bool ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(TRY_PARSE));
+            this.Write("(string str, out ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CLASS_NAME));
+            this.Write(@" instanceKey) {
+            object? ToObject(JsonElement jsonElement) {
+                switch (jsonElement.ValueKind) {
+                    case JsonValueKind.Array:
+                        return jsonElement
+                            .EnumerateArray()
+                            .Select(x => ToObject(x))
+                            .ToArray();
+
+                    case JsonValueKind.True:
+                    case JsonValueKind.False:
+                        return jsonElement.GetBoolean();
+
+                    case JsonValueKind.Number:
+                        return jsonElement.GetDouble();
+
+                    case JsonValueKind.String:
+                        return jsonElement.GetString();
+
+                    case JsonValueKind.Null:
+                    case JsonValueKind.Undefined:
+                        return null;
+
+                    case JsonValueKind.Object:
+                    default:
+                        throw new InvalidOperationException();
+                }
+            }
+                        
+            if (string.IsNullOrWhiteSpace(str)) {
+                instanceKey = Empty();
+                return false;
+            }
+            var deserialized = JsonSerializer.Deserialize<JsonElement[]>(str)!;
+            var objArray = deserialized.Select(jsonElement => ToObject(jsonElement)).ToArray();
+            instanceKey = new ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CLASS_NAME));
+            this.Write("(str, objArray);\r\n            return true;\r\n        }\r\n\r\n        private ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CLASS_NAME));
+            this.Write("(string json, object?[] values) {\r\n            ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(OBJECT_ARRAY));
+            this.Write(" = values;\r\n            _json = json;\r\n        }\r\n        internal object?[] ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(OBJECT_ARRAY));
+            this.Write(" { get; }\r\n        private readonly string _json;\r\n\r\n        public override stri" +
+                    "ng ToString() {\r\n            return _json;\r\n        }\r\n    }\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

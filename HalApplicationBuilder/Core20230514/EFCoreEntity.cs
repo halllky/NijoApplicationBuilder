@@ -28,7 +28,6 @@ namespace HalApplicationBuilder.Core20230514 {
                     IsInstanceName = member.IsInstanceName,
                     MemberType = member.Type,
                     CSharpTypeName = member.Type.GetCSharpTypeName(),
-                    Initializer = "default",
                     RequiredAtDB = member.IsPrimary, // TODO XMLでrequired属性を定義できるようにする
                 };
             }

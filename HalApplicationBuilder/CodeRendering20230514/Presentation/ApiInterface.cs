@@ -76,7 +76,31 @@ namespace HalApplicationBuilder.CodeRendering20230514.Presentation
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
             this.Write(" { get; set; }\r\n");
  }
-            this.Write("    }\r\n");
+            this.Write("\r\n        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
+            this.Write(".");
+            this.Write(this.ToStringHelper.ToStringWithCulture(dbEntity.Item.ClassName));
+            this.Write(" ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance.TO_DB_ENTITY_METHOD_NAME));
+            this.Write("() {\r\n");
+ PushIndent("            "); 
+ ToDbEntity(dbEntity); 
+ PopIndent(); 
+            this.Write("        }\r\n\r\n        public static ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(aggregateInstance.ClassName));
+            this.Write(" ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance.FROM_DB_ENTITY_METHOD_NAME));
+            this.Write("(");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
+            this.Write(".");
+            this.Write(this.ToStringHelper.ToStringWithCulture(dbEntity.Item.ClassName));
+            this.Write(" ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(E));
+            this.Write(") {\r\n");
+ PushIndent("            "); 
+ FromDbEntity(dbEntity); 
+ PopIndent(); 
+            this.Write("        }\r\n    }\r\n");
  }
             this.Write("\r\n}\r\n");
             return this.GenerationEnvironment.ToString();

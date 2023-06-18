@@ -31,7 +31,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore
                     "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n  " +
                     "  using Microsoft.EntityFrameworkCore.Infrastructure;\r\n\r\n    partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
-            this.Write(" {\r\n");
+            this.Write(" {\r\n\r\n");
  foreach (var method in BuildSearchMethods()) { 
             this.Write("        public ");
             this.Write(this.ToStringHelper.ToStringWithCulture(method.ReturnType));
@@ -86,7 +86,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore
  } 
             this.Write("            });\r\n        }\r\n");
  } 
-            this.Write("    }\r\n}\r\n");
+            this.Write("\r\n    }\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

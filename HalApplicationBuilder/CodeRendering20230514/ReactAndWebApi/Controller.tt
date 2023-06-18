@@ -23,10 +23,10 @@ namespace <#=_ctx.Config.RootNamespace#> {
         public IActionResult Search([FromQuery] string param) {
             var json = System.Web.HttpUtility.UrlDecode(param);
             var condition = string.IsNullOrWhiteSpace(json)
-                ? new <#=_searchMethod.ArgType#>()
-                : System.Text.Json.JsonSerializer.Deserialize<<#=_searchMethod.ArgType#>>(json)!;
+                ? new <#=SearchArgType#>()
+                : System.Text.Json.JsonSerializer.Deserialize<<#=SearchArgType#>>(json)!;
             var searchResult = _dbContext
-                .<#=_searchMethod.MethodName#>(condition)
+                .<#=Search#>(condition)
                 .AsEnumerable();
             return this.JsonContent(searchResult);
         }
@@ -34,10 +34,10 @@ namespace <#=_ctx.Config.RootNamespace#> {
         public IActionResult SearchByKeyword([FromQuery] string keyword) {
             // TODO
             throw new NotImplementedException();
-            // var condition = new <#=_searchMethod.ArgType#>();
+            // var condition = new <#=SearchArgType#>();
             // // TODO keywordを充てる
             // var data = _dbContext
-            //     .<#=_searchMethod.MethodName#>(condition)
+            //     .<#=Search#>(condition)
             //     .AsEnumerable();
             // 
             // var guid = new Guid("★rootAggregate.GetGuid()★");
@@ -49,7 +49,7 @@ namespace <#=_ctx.Config.RootNamespace#> {
             // return this.JsonContent(refDtos);
         }
         [HttpPost("<#=CREATE_ACTION_NAME#>")]
-        public IActionResult Create(<#=_aggregateInstance.ClassName#> param) {
+        public IActionResult Create([FromBody] <#=AggregateInstance#> param) {
             // TODO
             throw new NotImplementedException();
             // var success = _runtimeService.<#=nameof(RuntimeService.TrySaveNewInstance)#>(param, out var instanceKey, out var errors);
@@ -61,17 +61,15 @@ namespace <#=_ctx.Config.RootNamespace#> {
         }
         [HttpGet("<#=FIND_ACTION_NAME#>/{instanceKey}")]
         public IActionResult Find(string instanceKey) {
-            // TODO
-            throw new NotImplementedException();
-            // var instance = _runtimeService.<#=nameof(RuntimeService.FindInstance)#><★uiInstance★>(instanceKey, out var _);
-            // if (instance == null) {
-            //     return NotFound();
-            // } else {
-            //     return this.JsonContent(instance);
-            // }
+            var instance = _dbContext.<#=Find#>(instanceKey);
+            if (instance == null) {
+                return NotFound();
+            } else {
+                return this.JsonContent(instance);
+            }
         }
         [HttpPost("<#=UPDATE_ACTION_NAME#>")]
-        public IActionResult Update(<#=_aggregateInstance.ClassName#> param) {
+        public IActionResult Update(<#=AggregateInstance#> param) {
             // TODO
             throw new NotImplementedException();
             // var success = _runtimeService.<#=nameof(RuntimeService.TryUpdate)#>(param, out var instanceKey, out var errors);

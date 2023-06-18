@@ -36,6 +36,18 @@ namespace <#=_ctx.Config.RootNamespace#> {
 <# foreach (var prop in aggregateInstance.GetMembers()) { #>
         public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }
 <# }#>
+
+        public <#=_ctx.Config.EntityNamespace#>.<#=dbEntity.Item.ClassName#> <#=AggregateInstance.TO_DB_ENTITY_METHOD_NAME#>() {
+<# PushIndent("            "); #>
+<# ToDbEntity(dbEntity); #>
+<# PopIndent(); #>
+        }
+
+        public static <#=aggregateInstance.ClassName#> <#=AggregateInstance.FROM_DB_ENTITY_METHOD_NAME#>(<#=_ctx.Config.EntityNamespace#>.<#=dbEntity.Item.ClassName#> <#=E#>) {
+<# PushIndent("            "); #>
+<# FromDbEntity(dbEntity); #>
+<# PopIndent(); #>
+        }
     }
 <# }#>
 

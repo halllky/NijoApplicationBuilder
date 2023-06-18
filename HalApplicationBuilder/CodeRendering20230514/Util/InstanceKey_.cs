@@ -18,6 +18,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.Util {
 
         internal const string CLASS_NAME = "InstanceKey";
         internal const string CREATE = "Create";
-
+        internal const string TRY_PARSE = "TryParse";
+        internal const string OBJECT_ARRAY = "ObjectArray";
     }
 }

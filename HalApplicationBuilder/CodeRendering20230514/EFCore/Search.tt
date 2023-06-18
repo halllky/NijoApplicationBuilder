@@ -12,6 +12,7 @@ namespace <#=_ctx.Config.DbContextNamespace#> {
     using Microsoft.EntityFrameworkCore.Infrastructure;
 
     partial class <#=_ctx.Config.DbContextName#> {
+
 <# foreach (var method in BuildSearchMethods()) { #>
         public <#=method.ReturnType#> <#=method.MethodName#>(<#=method.ArgType#> <#=PARAM#>) {
             var <#=QUERY#> = this.<#=method.DbSetName#>.Select(<#=E#> => new {
@@ -37,5 +38,6 @@ namespace <#=_ctx.Config.DbContextNamespace#> {
             });
         }
 <# } #>
+
     }
 }

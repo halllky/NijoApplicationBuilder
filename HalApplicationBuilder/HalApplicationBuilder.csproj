@@ -55,9 +55,17 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>Entities.cs</LastGenOutput>
 		</None>
+		<None Update="CodeRendering20230514\EFCore\Find.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>Find.cs</LastGenOutput>
+		</None>
 		<None Update="CodeRendering20230514\EFCore\Search.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>Search.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering20230514\EFCore\Upsert.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>Upsert.cs</LastGenOutput>
 		</None>
 		<None Update="CodeRendering20230514\Presentation\AggregateInstanceBase.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
@@ -247,10 +255,20 @@
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>Entities.tt</DependentUpon>
 		</Compile>
+		<Compile Update="CodeRendering20230514\EFCore\Find.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>Find.tt</DependentUpon>
+		</Compile>
 		<Compile Update="CodeRendering20230514\EFCore\Search.cs">
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>Search.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering20230514\EFCore\Upsert.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>Upsert.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering20230514\Presentation\AggregateInstanceBase.cs">
 		  <DesignTime>True</DesignTime>
