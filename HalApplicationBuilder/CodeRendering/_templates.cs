@@ -145,7 +145,7 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
         private readonly IEnumerable<RootAggregate> _rootAggregates;
 
         private static string GetImport(RootAggregate rootAggregate) {
-            return $"./{GeneratedProject.REACT_PAGE_DIR}/{Path.GetFileNameWithoutExtension(new ReactComponentTemplate(rootAggregate).FileName)}";
+            return $"./{HalappProject.REACT_PAGE_DIR}/{Path.GetFileNameWithoutExtension(new ReactComponentTemplate(rootAggregate).FileName)}";
         }
         internal static string GetMultiViewUrl(RootAggregate rootAggregate) => $"/{rootAggregate.GetGuid()}";
         internal static string GetCreateViewUrl(RootAggregate rootAggregate) => $"/{rootAggregate.GetGuid()}/new";
@@ -172,7 +172,7 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
             return $"./{Path.GetFileNameWithoutExtension(menuItems.FILE_NAME)}";
         }
         private static string GetImport(RootAggregate rootAggregate) {
-            return $"./{GeneratedProject.REACT_PAGE_DIR}/{Path.GetFileNameWithoutExtension(new ReactComponentTemplate(rootAggregate).FileName)}";
+            return $"./{HalappProject.REACT_PAGE_DIR}/{Path.GetFileNameWithoutExtension(new ReactComponentTemplate(rootAggregate).FileName)}";
         }
         internal const string FILE_NAME = "index.ts";
     }

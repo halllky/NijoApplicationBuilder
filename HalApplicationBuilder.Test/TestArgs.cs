@@ -18,9 +18,9 @@ namespace HalApplicationBuilder.Test {
         public XDocument LoadXDocument() {
             return XDocument.Parse(LoadXmlString());
         }
-        public GeneratedProject CreateProject() {
+        public HalappProject CreateProject() {
             using var tokenSource = new CancellationTokenSource();
-            var project = GeneratedProject.Create(
+            var project = HalappProject.Create(
                 applicationName: LoadXDocument().Root!.Name.LocalName,
                 verbose: false,
                 keepTempIferror: false,
