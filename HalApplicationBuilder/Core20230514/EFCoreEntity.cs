@@ -79,7 +79,9 @@ namespace HalApplicationBuilder.Core20230514 {
                     Owner = owner,
                     CSharpTypeName = oppositeIsMany ? $"ICollection<{entityClass}>" : entityClass,
                     Initializer = oppositeIsMany ? $"new HashSet<{entityClass}>()" : null,
-                    PropertyName = graphEdge.RelationName,
+                    PropertyName = (graphEdge.IsChild() || graphEdge.IsChildren() || graphEdge.IsVariation()) && owner == graphEdge.Terminal
+                        ? "Parent"
+                        : graphEdge.RelationName,
                     OppositeIsMany = oppositeIsMany,
                     ForeignKeys = opposite.Item
                         .GetColumns()

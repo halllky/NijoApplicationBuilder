@@ -19,10 +19,10 @@ namespace HalApplicationBuilder.IntegrationTest {
             Console.OutputEncoding = Encoding.UTF8;
 
             // 依存先パッケージのインストールにかかる時間とデータ量を削減するために全テストで1つのディレクトリを共有する
-            var dir = Path.Combine(Directory.GetCurrentDirectory(), "DIST_PROJECT");
+            var dir = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..", "..", "自動テストで作成されたプロジェクト");
             Project = Directory.Exists(dir)
                 ? HalappProject.Open(dir, log: Console.Out, verbose: true)
-                : HalappProject.Create(dir, "TestApplication", false, log: Console.Out, verbose: true);
+                : HalappProject.Create(dir, "自動テストで作成されたプロジェクト", false, log: Console.Out, verbose: true);
         }
 
         [OneTimeTearDown]

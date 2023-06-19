@@ -738,7 +738,7 @@ namespace HalApplicationBuilder {
             using var reader = new StreamReader(stream);
             var xmlContent = reader.ReadToEnd();
             var xDocument = XDocument.Parse(xmlContent);
-            var config = Core20230514.Config.FromXml(xDocument);
+            var config = Core20230514.Config.GetDefault(xDocument.Root!.Name.LocalName);
 
             if (!Core20230514.AppSchemaBuilder.FromXml(xDocument, out var builder, out var errors)) {
                 throw new InvalidOperationException(errors.Join(Environment.NewLine));
