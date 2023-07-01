@@ -39,13 +39,13 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
 
             internal string ReturnType => $"IEnumerable<{ReturnItemType}>";
             internal string ReturnItemType => $"{_ctx.Config.RootNamespace}.{new SearchResult(_dbEntity).ClassName}";
-            internal string MethodName => $"Search{_dbEntity.Item.Aggregate.Item.DisplayName.ToCSharpSafe()}";
+            internal string MethodName => $"Search{_dbEntity.GetCorrespondingAggregate().Item.DisplayName.ToCSharpSafe()}";
             internal string ArgType => $"{_ctx.Config.RootNamespace}.{new SearchCondition(_dbEntity).ClassName}";
-            internal string DbSetName => _dbEntity.Item.Aggregate.Item.DisplayName.ToCSharpSafe();
+            internal string DbSetName => _dbEntity.GetCorrespondingAggregate().Item.DisplayName.ToCSharpSafe();
 
             internal IEnumerable<string> SelectClause() {
                 // Instance Key
-                var pk = _dbEntity.Item
+                var pk = _dbEntity
                     .GetColumns()
                     .Where(col => col.IsPrimary)
                     .ToArray();
@@ -66,7 +66,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
                 var path = dbEntity.PathFromEntry().Select(edge => edge.RelationName).ToArray();
 
                 // 集約自身のメンバー
-                foreach (var member in dbEntity.Item.Aggregate.Item.Members) {
+                foreach (var member in dbEntity.GetCorrespondingAggregate().Item.Members) {
                     // 参照の場合はインスタンス名のみSELECTする
                     if (dbEntity.Source != null
                         && dbEntity.Source.IsRef()
@@ -81,10 +81,10 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
 
                 // 子要素（除: Children）と参照先を再帰処理
                 foreach (var edge in dbEntity.GetChildMembers()) {
-                    foreach (var line in BuildSelectClauseRecursively(edge.Terminal)) yield return line;
+                    foreach (var line in BuildSelectClauseRecursively(edge.Terminal.As<EFCoreEntity>())) yield return line;
                 }
                 foreach (var edge in dbEntity.GetRefMembers()) {
-                    foreach (var line in BuildSelectClauseRecursively(edge.Terminal)) yield return line;
+                    foreach (var line in BuildSelectClauseRecursively(edge.Terminal.As<EFCoreEntity>())) yield return line;
                 }
             }
 
@@ -130,7 +130,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
 
             internal IEnumerable<string> EnumerableSection() {
                 // Instance Key
-                var pk = _dbEntity.Item
+                var pk = _dbEntity
                     .GetColumns()
                     .Where(col => col.IsPrimary);
 

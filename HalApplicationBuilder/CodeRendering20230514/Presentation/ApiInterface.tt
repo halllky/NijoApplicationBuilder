@@ -39,18 +39,18 @@ namespace <#=_ctx.Config.RootNamespace#> {
         public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }
 <# }#>
 
-        public <#=_ctx.Config.EntityNamespace#>.<#=aggregateInstance.Item.CorrespondingDbEntity.Item.ClassName#> <#=AggregateInstance.TO_DB_ENTITY_METHOD_NAME#>() {
+        public <#=_ctx.Config.EntityNamespace#>.<#=aggregateInstance.GetDbEntity().Item.ClassName#> <#=AggregateInstance.TO_DB_ENTITY_METHOD_NAME#>() {
 <# PushIndent("            "); #>
 <# ToDbEntity(aggregateInstance); #>
 <# PopIndent(); #>
         }
 
-        public static <#=aggregateInstance.Item.ClassName#> <#=AggregateInstance.FROM_DB_ENTITY_METHOD_NAME#>(<#=_ctx.Config.EntityNamespace#>.<#=aggregateInstance.Item.ClassName#> <#=E#>) {
+        public static <#=aggregateInstance.Item.ClassName#> <#=AggregateInstance.FROM_DB_ENTITY_METHOD_NAME#>(<#=_ctx.Config.EntityNamespace#>.<#=aggregateInstance.GetDbEntity().Item.ClassName#> <#=E#>) {
 <# PushIndent("            "); #>
 <# FromDbEntity(aggregateInstance); #>
 <# PopIndent(); #>
         }
-<# }#>
     }
 
+<# }#>
 }

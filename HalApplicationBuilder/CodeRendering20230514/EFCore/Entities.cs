@@ -34,7 +34,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore
             this.Write("    public partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(dbEntity.Item.ClassName));
             this.Write(" {\r\n");
- foreach (var col in dbEntity.Item.GetColumns()) { 
+ foreach (var col in dbEntity.GetColumns()) { 
             this.Write("        public ");
             this.Write(this.ToStringHelper.ToStringWithCulture(col.CSharpTypeName));
             this.Write(" ");

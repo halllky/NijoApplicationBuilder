@@ -18,7 +18,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.ReactAndWebApi {
 
         internal Controller(GraphNode<EFCoreEntity> dbEntity, CodeRenderingContext ctx) {
             _ctx = ctx;
-            _agg = dbEntity.Item.Aggregate;
+            _agg = dbEntity.GetCorrespondingAggregate();
             _dbEntity = dbEntity;
         }
 
@@ -26,7 +26,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.ReactAndWebApi {
         private readonly GraphNode<Aggregate> _agg;
         private readonly GraphNode<EFCoreEntity> _dbEntity;
 
-        private string AggregateInstance => new AggregateInstance(_dbEntity).ClassName;
+        private string AggregateInstance => _dbEntity.GetUiInstance().Item.ClassName;
 
         public string FileName => $"{_agg.Item.DisplayName.ToFileNameSafe()}Controller.cs";
         internal string ClassName => $"{_agg.Item.DisplayName.ToCSharpSafe()}Controller";

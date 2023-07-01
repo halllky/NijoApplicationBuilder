@@ -12,7 +12,7 @@ namespace HalApplicationBuilder.Core20230514 {
         }
 
         private readonly GraphNode<EFCoreEntity> _efCoreEntity;
-        internal string ClassName => $"{_efCoreEntity.Item.Aggregate.Item.DisplayName.ToCSharpSafe()}SearchResult";
+        internal string ClassName => $"{_efCoreEntity.GetCorrespondingAggregate().Item.DisplayName.ToCSharpSafe()}SearchResult";
 
         internal const string BASE_CLASS_NAME = "SearchResultBase";
         internal const string INSTANCE_KEY_PROP_NAME = "__halapp__InstanceKey";
@@ -24,7 +24,7 @@ namespace HalApplicationBuilder.Core20230514 {
             }
         }
         private IEnumerable<Member> GetMembersRecursively(GraphNode<EFCoreEntity> dbEntity) {
-            foreach (var member in dbEntity.Item.Aggregate.Item.Members) {
+            foreach (var member in dbEntity.GetCorrespondingAggregate().Item.Members) {
                 yield return new Member {
                     Owner = this,
                     Name = dbEntity
@@ -38,14 +38,14 @@ namespace HalApplicationBuilder.Core20230514 {
 
             var refMembers = dbEntity
                 .GetRefMembers()
-                .SelectMany(edge => GetMembersRecursively(edge.Terminal));
+                .SelectMany(edge => GetMembersRecursively(edge.Terminal.As<EFCoreEntity>()));
             foreach (var member in refMembers) {
                 yield return member;
             }
 
             var childMembers = dbEntity
                 .GetChildMembers()
-                .SelectMany(edge => GetMembersRecursively(edge.Terminal));
+                .SelectMany(edge => GetMembersRecursively(edge.Terminal.As<EFCoreEntity>()));
             foreach (var member in childMembers) {
                 yield return member;
             }

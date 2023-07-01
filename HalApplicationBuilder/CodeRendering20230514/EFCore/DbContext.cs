@@ -12,6 +12,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
+    using HalApplicationBuilder.Core20230514;
     using System;
     
     /// <summary>
@@ -59,14 +60,14 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore
             this.Write("                ");
             this.Write(this.ToStringHelper.ToStringWithCulture(ENTITY));
             this.Write(".HasKey(e => new {\r\n");
- foreach (var pk in dbEntity.Item.GetColumns().Where(x => x.IsPrimary)) { 
+ foreach (var pk in dbEntity.GetColumns().Where(x => x.IsPrimary)) { 
             this.Write("                    e.");
             this.Write(this.ToStringHelper.ToStringWithCulture(pk.PropertyName));
             this.Write(",\r\n");
  } 
             this.Write("                });\r\n\r\n");
  /* 通常のプロパティの定義 */ 
- foreach (var col in dbEntity.Item.GetColumns()) { 
+ foreach (var col in dbEntity.GetColumns()) { 
             this.Write("                ");
             this.Write(this.ToStringHelper.ToStringWithCulture(ENTITY));
             this.Write(".Property(e => e.");

@@ -3,6 +3,7 @@
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="HalApplicationBuilder.Core20230514" #>
 using Microsoft.EntityFrameworkCore;
 
 namespace <#=_ctx.Config.DbContextNamespace#> {
@@ -24,13 +25,13 @@ namespace <#=_ctx.Config.DbContextNamespace#> {
             modelBuilder.Entity<<#=_ctx.Config.EntityNamespace#>.<#=dbEntity.Item.ClassName#>>(<#=ENTITY#> => {
 <# /* 主キー定義 */ #>
                 <#=ENTITY#>.HasKey(e => new {
-<# foreach (var pk in dbEntity.Item.GetColumns().Where(x => x.IsPrimary)) { #>
+<# foreach (var pk in dbEntity.GetColumns().Where(x => x.IsPrimary)) { #>
                     e.<#=pk.PropertyName#>,
 <# } #>
                 });
 
 <# /* 通常のプロパティの定義 */ #>
-<# foreach (var col in dbEntity.Item.GetColumns()) { #>
+<# foreach (var col in dbEntity.GetColumns()) { #>
                 <#=ENTITY#>.Property(e => e.<#=col.PropertyName#>)
                    .IsRequired(<#=col.RequiredAtDB ? "true" : "false"#>);
 <# } #>

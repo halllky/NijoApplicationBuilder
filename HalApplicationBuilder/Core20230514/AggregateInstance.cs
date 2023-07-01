@@ -7,15 +7,17 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Core20230514 {
     internal class AggregateInstance : IGraphNode {
-        internal AggregateInstance(GraphNode<EFCoreEntity> dbEntity) {
-            CorrespondingDbEntity = dbEntity;
+        internal AggregateInstance(Aggregate aggregate) {
+            // TODO aggregateIdにコロンが含まれるケースの対策
+            Id = new NodeId($"INSTANCE::{aggregate.Id}");
+            _aggregate = aggregate;
         }
 
-        internal GraphNode<EFCoreEntity> CorrespondingDbEntity { get; }
+        private readonly Aggregate _aggregate;
 
-        internal string ClassName => $"{CorrespondingDbEntity.Item.Aggregate.Item.DisplayName.ToCSharpSafe()}Instance";
+        internal string ClassName => $"{_aggregate.DisplayName.ToCSharpSafe()}Instance";
 
-        public NodeId Id => CorrespondingDbEntity.Item.Id;
+        public NodeId Id { get; }
 
         internal const string BASE_CLASS_NAME = "AggregateInstanceBase";
         internal const string TO_DB_ENTITY_METHOD_NAME = "ToDbEntity";
@@ -46,7 +48,7 @@ namespace HalApplicationBuilder.Core20230514 {
         }
 
         internal static IEnumerable<AggregateInstance.SchalarProperty> GetSchalarProperties(this GraphNode<AggregateInstance> node, Config config) {
-            foreach (var column in node.Item.CorrespondingDbEntity.Item.GetColumns()) {
+            foreach (var column in node.GetDbEntity().GetColumns()) {
                 yield return new AggregateInstance.SchalarProperty {
                     CorrespondingDbColumn = column,
                     CSharpTypeName = column.CSharpTypeName,
@@ -57,31 +59,34 @@ namespace HalApplicationBuilder.Core20230514 {
 
         internal static IEnumerable<AggregateInstance.ChildAggregateProperty> GetChildAggregateProperties(this GraphNode<AggregateInstance> node, Config config) {
             foreach (var edge in node.GetChildMembers()) {
-                var navigationProperty = new NavigationProperty(edge.Terminal.Item.CorrespondingDbEntity.In.Single(e => e == edge), config);
+                var terminal = edge.Terminal.As<AggregateInstance>();
+                var navigationProperty = new NavigationProperty(terminal.GetDbEntity().In.Single(e => e == edge), config);
                 yield return new AggregateInstance.ChildAggregateProperty {
-                    ChildAggregateInstance = edge.Terminal,
+                    ChildAggregateInstance = terminal,
                     CorrespondingNavigationProperty = navigationProperty,
-                    CSharpTypeName = edge.Terminal.Item.ClassName,
+                    CSharpTypeName = terminal.Item.ClassName,
                     PropertyName = edge.RelationName,
                     Multiple = false,
                 };
             }
             foreach (var edge in node.GetVariationMembers()) {
-                var navigationProperty = new NavigationProperty(edge.Terminal.Item.CorrespondingDbEntity.In.Single(e => e == edge), config);
+                var terminal = edge.Terminal.As<AggregateInstance>();
+                var navigationProperty = new NavigationProperty(terminal.GetDbEntity().In.Single(e => e == edge), config);
                 yield return new AggregateInstance.ChildAggregateProperty {
-                    ChildAggregateInstance = edge.Terminal,
+                    ChildAggregateInstance = terminal,
                     CorrespondingNavigationProperty = navigationProperty,
-                    CSharpTypeName = edge.Terminal.Item.ClassName,
+                    CSharpTypeName = terminal.Item.ClassName,
                     PropertyName = edge.RelationName,
                     Multiple = false,
                 };
             }
             foreach (var edge in node.GetChildrenMembers()) {
-                var navigationProperty = new NavigationProperty(edge.Terminal.Item.CorrespondingDbEntity.In.Single(e => e == edge), config);
+                var terminal = edge.Terminal.As<AggregateInstance>();
+                var navigationProperty = new NavigationProperty(terminal.GetDbEntity().In.Single(e => e == edge), config);
                 yield return new AggregateInstance.ChildAggregateProperty {
-                    ChildAggregateInstance = edge.Terminal,
+                    ChildAggregateInstance = terminal,
                     CorrespondingNavigationProperty = navigationProperty,
-                    CSharpTypeName = $"List<{edge.Terminal.Item.ClassName}>",
+                    CSharpTypeName = $"List<{terminal.Item.ClassName}>",
                     PropertyName = edge.RelationName,
                     Multiple = true,
                 };
@@ -90,9 +95,9 @@ namespace HalApplicationBuilder.Core20230514 {
 
         internal static IEnumerable<AggregateInstance.RefProperty> GetRefProperties(this GraphNode<AggregateInstance> node, Config config) {
             foreach (var edge in node.GetRefMembers()) {
-                var refTarget = new AggregateInstance(edge.Terminal.Item.CorrespondingDbEntity);
+                var terminal = edge.Terminal.As<AggregateInstance>();
                 yield return new AggregateInstance.RefProperty {
-                    RefTarget = refTarget,
+                    RefTarget = terminal.Item,
                     CSharpTypeName = CodeRendering20230514.Presentation.AggregateInstanceKeyNamePair.CLASSNAME,
                     PropertyName = edge.RelationName,
                 };

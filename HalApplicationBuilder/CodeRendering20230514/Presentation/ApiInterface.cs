@@ -81,7 +81,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.Presentation
             this.Write("\r\n        public ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
             this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(aggregateInstance.Item.CorrespondingDbEntity.Item.ClassName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(aggregateInstance.GetDbEntity().Item.ClassName));
             this.Write(" ");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance.TO_DB_ENTITY_METHOD_NAME));
             this.Write("() {\r\n");
@@ -95,16 +95,16 @@ namespace HalApplicationBuilder.CodeRendering20230514.Presentation
             this.Write("(");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
             this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(aggregateInstance.Item.ClassName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(aggregateInstance.GetDbEntity().Item.ClassName));
             this.Write(" ");
             this.Write(this.ToStringHelper.ToStringWithCulture(E));
             this.Write(") {\r\n");
  PushIndent("            "); 
  FromDbEntity(aggregateInstance); 
  PopIndent(); 
-            this.Write("        }\r\n");
+            this.Write("        }\r\n    }\r\n\r\n");
  }
-            this.Write("    }\r\n\r\n}\r\n");
+            this.Write("}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

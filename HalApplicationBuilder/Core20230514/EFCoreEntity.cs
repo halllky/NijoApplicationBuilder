@@ -8,44 +8,17 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Core20230514 {
     internal class EFCoreEntity : IGraphNode {
-        internal EFCoreEntity(GraphNode<Aggregate> aggregate) {
+        internal EFCoreEntity(Aggregate aggregate) {
+            // TODO 集約IDにコロンが含まれるケースの対策
+            Id = new NodeId($"DBENTITY::{aggregate.Id}");
             Aggregate = aggregate;
         }
 
-        public NodeId Id => Aggregate.Item.Id;
-        internal GraphNode<Aggregate> Aggregate { get; }
+        public NodeId Id { get; }
+        private Aggregate Aggregate { get; }
 
-        internal string ClassName => Aggregate.Item.DisplayName.ToCSharpSafe();
+        internal string ClassName => Aggregate.DisplayName.ToCSharpSafe();
         internal string DbSetName => ClassName;
-
-        internal IEnumerable<Member> GetColumns() {
-            // スカラー値
-            foreach (var member in Aggregate.Item.Members) {
-                yield return new Member {
-                    Owner = this,
-                    PropertyName = member.Name,
-                    IsPrimary = member.IsPrimary,
-                    IsInstanceName = member.IsInstanceName,
-                    MemberType = member.Type,
-                    CSharpTypeName = member.Type.GetCSharpTypeName(),
-                    RequiredAtDB = member.IsPrimary, // TODO XMLでrequired属性を定義できるようにする
-                };
-            }
-            // リレーション
-            foreach (var edge in Aggregate.GetVariationMembers()) {
-                // variationの型番号
-                yield return new Member {
-                    Owner = this,
-                    PropertyName = edge.RelationName.ToCSharpSafe(),
-                    IsPrimary = edge.IsPrimary(),
-                    IsInstanceName = edge.IsInstanceName(),
-                    MemberType = new EnumList(),
-                    CSharpTypeName = "int",
-                    Initializer = "default",
-                    RequiredAtDB = true,
-                };
-            }
-        }
 
         internal class Member : ValueObject {
             internal required EFCoreEntity Owner { get; init; }
@@ -69,12 +42,12 @@ namespace HalApplicationBuilder.Core20230514 {
     /// ナビゲーションプロパティ
     /// </summary>
     internal class NavigationProperty : ValueObject {
-        internal NavigationProperty(GraphEdge<EFCoreEntity> graphEdge, Config config) {
+        internal NavigationProperty(GraphEdge graphEdge, Config config) {
             _graphEdge = graphEdge;
 
             Item CreateItem(GraphNode<EFCoreEntity> owner, bool oppositeIsMany) {
                 var opposite = owner == graphEdge.Initial ? graphEdge.Terminal : graphEdge.Initial;
-                var entityClass = $"{config.EntityNamespace}.{opposite.Item.ClassName}";
+                var entityClass = $"{config.EntityNamespace}.{opposite.As<EFCoreEntity>().Item.ClassName}";
                 return new Item {
                     Owner = owner,
                     CSharpTypeName = oppositeIsMany ? $"ICollection<{entityClass}>" : entityClass,
@@ -83,37 +56,37 @@ namespace HalApplicationBuilder.Core20230514 {
                         ? "Parent"
                         : graphEdge.RelationName,
                     OppositeIsMany = oppositeIsMany,
-                    ForeignKeys = owner.Item
+                    ForeignKeys = owner
                         .GetColumns()
                         .Where(m => m.IsPrimary),
                 };
             }
 
             if (graphEdge.IsChild()) {
-                Principal = CreateItem(graphEdge.Initial, oppositeIsMany: false);
-                Relevant = CreateItem(graphEdge.Terminal, oppositeIsMany: false);
+                Principal = CreateItem(graphEdge.Initial.As<EFCoreEntity>(), oppositeIsMany: false);
+                Relevant = CreateItem(graphEdge.Terminal.As<EFCoreEntity>(), oppositeIsMany: false);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
             } else if (graphEdge.IsVariation()) {
-                Principal = CreateItem(graphEdge.Initial, oppositeIsMany: false);
-                Relevant = CreateItem(graphEdge.Terminal, oppositeIsMany: false);
+                Principal = CreateItem(graphEdge.Initial.As<EFCoreEntity>(), oppositeIsMany: false);
+                Relevant = CreateItem(graphEdge.Terminal.As<EFCoreEntity>(), oppositeIsMany: false);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
             } else if (graphEdge.IsChildren()) {
-                Principal = CreateItem(graphEdge.Initial, oppositeIsMany: true);
-                Relevant = CreateItem(graphEdge.Terminal, oppositeIsMany: false);
+                Principal = CreateItem(graphEdge.Initial.As<EFCoreEntity>(), oppositeIsMany: true);
+                Relevant = CreateItem(graphEdge.Terminal.As<EFCoreEntity>(), oppositeIsMany: false);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
             } else if (graphEdge.IsRef()) {
-                Principal = CreateItem(graphEdge.Initial, oppositeIsMany: false);
-                Relevant = CreateItem(graphEdge.Terminal, oppositeIsMany: true);
+                Principal = CreateItem(graphEdge.Initial.As<EFCoreEntity>(), oppositeIsMany: false);
+                Relevant = CreateItem(graphEdge.Terminal.As<EFCoreEntity>(), oppositeIsMany: true);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
             } else {
                 throw new ArgumentException("Graph edge can not be converted to navigation property.", nameof(graphEdge));
             }
         }
-        private readonly GraphEdge<EFCoreEntity> _graphEdge;
+        private readonly GraphEdge _graphEdge;
 
         /// <summary>
         /// 主たるエンティティ側のナビゲーションプロパティ
@@ -140,8 +113,36 @@ namespace HalApplicationBuilder.Core20230514 {
     }
 
     internal static class EFCoreEntityExtensions {
+        internal static IEnumerable<EFCoreEntity.Member> GetColumns(this GraphNode<EFCoreEntity> dbEntity) {
+            // スカラー値
+            foreach (var member in dbEntity.GetCorrespondingAggregate().Item.Members) {
+                yield return new EFCoreEntity.Member {
+                    Owner = dbEntity.Item,
+                    PropertyName = member.Name,
+                    IsPrimary = member.IsPrimary,
+                    IsInstanceName = member.IsInstanceName,
+                    MemberType = member.Type,
+                    CSharpTypeName = member.Type.GetCSharpTypeName(),
+                    RequiredAtDB = member.IsPrimary, // TODO XMLでrequired属性を定義できるようにする
+                };
+            }
+            // リレーション
+            foreach (var edge in dbEntity.GetCorrespondingAggregate().GetVariationMembers()) {
+                // variationの型番号
+                yield return new EFCoreEntity.Member {
+                    Owner = dbEntity.Item,
+                    PropertyName = edge.RelationName.ToCSharpSafe(),
+                    IsPrimary = edge.IsPrimary(),
+                    IsInstanceName = edge.IsInstanceName(),
+                    MemberType = new EnumList(),
+                    CSharpTypeName = "int",
+                    Initializer = "default",
+                    RequiredAtDB = true,
+                };
+            }
+        }
         internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<EFCoreEntity> efCoreEntity, Config config) {
-            foreach (var edge in efCoreEntity.InAndOut) {
+            foreach (var edge in efCoreEntity.GetParentOrChildOrRef()) {
                 yield return new NavigationProperty(edge, config);
             }
         }

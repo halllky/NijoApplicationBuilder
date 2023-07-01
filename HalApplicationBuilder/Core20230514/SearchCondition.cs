@@ -13,7 +13,7 @@ namespace HalApplicationBuilder.Core20230514 {
         }
 
         internal GraphNode<EFCoreEntity> EFCoreEntity { get; }
-        internal string ClassName => $"{EFCoreEntity.Item.Aggregate.Item.DisplayName.ToCSharpSafe()}SearchCondition";
+        internal string ClassName => $"{EFCoreEntity.GetCorrespondingAggregate().Item.DisplayName.ToCSharpSafe()}SearchCondition";
 
         internal const string BASE_CLASS_NAME = "SearchConditionBase";
         internal const string PAGE_PROP_NAME = "__halapp__Page";
@@ -22,7 +22,7 @@ namespace HalApplicationBuilder.Core20230514 {
             IEnumerable<Member> EnumerateRecursively(GraphNode<EFCoreEntity> dbEntity, bool asRef) {
                 var path = dbEntity.PathFromEntry().Select(edge => edge.RelationName).ToArray();
 
-                foreach (var member in dbEntity.Item.GetColumns()) {
+                foreach (var member in dbEntity.GetColumns()) {
                     if (asRef && !member.IsPrimary && !member.IsInstanceName) continue;
 
                     yield return new Member {
@@ -38,19 +38,19 @@ namespace HalApplicationBuilder.Core20230514 {
                     foreach (var member in dbEntity
                         .GetRefMembers()
                         .Where(edge => edge.IsPrimary())
-                        .SelectMany(edge => EnumerateRecursively(edge.Terminal, asRef: true))) {
+                        .SelectMany(edge => EnumerateRecursively(edge.Terminal.As<EFCoreEntity>(), asRef: true))) {
                         yield return member;
                     }
                 }
                 if (!asRef) {
                     foreach (var member in dbEntity
                         .GetRefMembers()
-                        .SelectMany(edge => EnumerateRecursively(edge.Terminal, asRef: true))) {
+                        .SelectMany(edge => EnumerateRecursively(edge.Terminal.As<EFCoreEntity>(), asRef: true))) {
                         yield return member;
                     }
                     foreach (var member in dbEntity
                         .GetChildMembers()
-                        .SelectMany(edge => EnumerateRecursively(edge.Terminal, asRef: false))) {
+                        .SelectMany(edge => EnumerateRecursively(edge.Terminal.As<EFCoreEntity>(), asRef: false))) {
                         yield return member;
                     }
                 }

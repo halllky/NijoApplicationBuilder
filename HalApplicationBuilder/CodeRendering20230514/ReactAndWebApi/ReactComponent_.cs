@@ -19,7 +19,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.ReactAndWebApi {
 
         internal ReactComponent(GraphNode<EFCoreEntity> dbEntity, CodeRenderingContext ctx) {
             _ctx = ctx;
-            Aggregate = dbEntity.Item.Aggregate;
+            Aggregate = dbEntity.GetCorrespondingAggregate();
             _dbEntity = dbEntity;
             _searchCondition = new SearchCondition(dbEntity);
             _searchResult = new SearchResult(dbEntity);

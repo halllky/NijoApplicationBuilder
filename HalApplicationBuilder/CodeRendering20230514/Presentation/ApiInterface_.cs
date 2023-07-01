@@ -22,7 +22,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.Presentation {
             void WriteBody(GraphNode<AggregateInstance> instance, string right) {
                 foreach (var prop in instance.GetSchalarProperties(_ctx.Config)) {
                     var path = new[] { right }
-                        .Concat(instance.Item.CorrespondingDbEntity.PathFromEntry().Select(x => x.RelationName.ToCSharpSafe()))
+                        .Concat(instance.PathFromEntry().Select(x => x.RelationName.ToCSharpSafe()))
                         .Concat(new[] { prop.CorrespondingDbColumn.PropertyName })
                         .Join(".");
                     WriteLine($"{prop.PropertyName} = {path},");
@@ -48,7 +48,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.Presentation {
                 }
             }
 
-            WriteLine($"return new {_ctx.Config.EntityNamespace}.{aggregateInstance.Item.CorrespondingDbEntity.Item.ClassName} {{");
+            WriteLine($"return new {_ctx.Config.EntityNamespace}.{aggregateInstance.GetDbEntity().Item.ClassName} {{");
             PushIndent("    ");
             WriteBody(aggregateInstance, "this");
             PopIndent();

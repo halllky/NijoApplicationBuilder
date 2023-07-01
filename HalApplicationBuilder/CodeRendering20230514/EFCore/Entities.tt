@@ -12,7 +12,7 @@ namespace <#=_ctx.Config.EntityNamespace#> {
 
 <# foreach (var dbEntity in _ctx.Schema.ToEFCoreGraph()) { #>
     public partial class <#=dbEntity.Item.ClassName#> {
-<# foreach (var col in dbEntity.Item.GetColumns()) { #>
+<# foreach (var col in dbEntity.GetColumns()) { #>
         public <#=col.CSharpTypeName#> <#=col.PropertyName#> { get; set; }<#=col.Initializer == null ? "" : $" = {col.Initializer};"#>
 <# } #>
 

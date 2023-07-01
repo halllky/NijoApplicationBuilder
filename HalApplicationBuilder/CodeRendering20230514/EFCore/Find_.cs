@@ -25,7 +25,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
         internal class MethodInfo {
             internal MethodInfo(GraphNode<EFCoreEntity> dbEntity, CodeRenderingContext ctx) {
                 _dbEntity = dbEntity;
-                _instance = new AggregateInstance(dbEntity);
+                _instance = dbEntity.GetUiInstance().Item;
                 _ctx = ctx;
             }
 
@@ -34,7 +34,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
             private readonly CodeRenderingContext _ctx;
 
             internal string ReturnType => _instance.ClassName;
-            internal string MethodName => $"Find{_dbEntity.Item.Aggregate.Item.DisplayName.ToCSharpSafe()}";
+            internal string MethodName => $"Find{_dbEntity.GetCorrespondingAggregate().Item.DisplayName.ToCSharpSafe()}";
             internal string DbSetName => _dbEntity.Item.DbSetName;
             internal string AggregateInstanceTypeFullName => $"{_ctx.Config.RootNamespace}.{_instance.ClassName}";
 
@@ -55,7 +55,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
 
                     // 再帰処理
                     if (!edge.IsRef()) {
-                        foreach (var descendant in IncludeRecursively(edge.Terminal)) {
+                        foreach (var descendant in IncludeRecursively(edge.Terminal.As<EFCoreEntity>())) {
                             yield return descendant;
                         }
                     }

@@ -7,34 +7,30 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Core20230514 {
     internal class AppSchema {
-        internal static AppSchema Empty() => new(string.Empty, DirectedGraph<Aggregate>.Empty());
+        internal static AppSchema Empty() => new(string.Empty, DirectedGraph.Empty());
 
-        internal AppSchema(string appName, DirectedGraph<Aggregate> directedGraph) {
+        internal AppSchema(string appName, DirectedGraph directedGraph) {
             ApplicationName = appName;
             _graph = directedGraph;
         }
 
-        private readonly DirectedGraph<Aggregate> _graph;
+        private readonly DirectedGraph _graph;
 
         public object ApplicationName { get; }
 
         internal IEnumerable<GraphNode<Aggregate>> AllAggregates() {
-            return _graph;
+            return _graph.Only<Aggregate>();
         }
         internal IEnumerable<GraphNode<Aggregate>> RootAggregates() {
             return AllAggregates().Where(aggregate => aggregate.IsRoot());
         }
 
-        internal DirectedGraph<EFCoreEntity> ToEFCoreGraph() {
-            var nodes = AllAggregates().Select(aggregate => new EFCoreEntity(aggregate));
-
-            return DirectedGraph<EFCoreEntity>.Create(nodes, _graph.Edges);
+        internal IEnumerable<GraphNode<EFCoreEntity>> ToEFCoreGraph() {
+            return _graph.Only<EFCoreEntity>();
         }
 
-        internal DirectedGraph<AggregateInstance> ToAggregateInstanceGraph() {
-            var nodes = ToEFCoreGraph().Select(dbEntity => new  AggregateInstance(dbEntity));
-
-            return DirectedGraph<AggregateInstance>.Create(nodes, _graph.Edges);
+        internal IEnumerable<GraphNode<AggregateInstance>> ToAggregateInstanceGraph() {
+            return _graph.Only<AggregateInstance>();
         }
     }
 }
