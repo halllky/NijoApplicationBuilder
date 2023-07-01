@@ -15,7 +15,6 @@ namespace <#=_ctx.Config.RootNamespace#> {
 <# foreach (var dbEntity in _ctx.Schema.ToEFCoreGraph()) { #>
 <# var searchCondition = new SearchCondition(dbEntity); #>
 <# var searchResult = new SearchResult(dbEntity); #>
-<# var aggregateInstance = new AggregateInstance(dbEntity); #>
 
 <# /* 検索条件DTO */ #>
     public class <#=searchCondition.ClassName#> : <#=SearchCondition.BASE_CLASS_NAME#> {
@@ -31,24 +30,27 @@ namespace <#=_ctx.Config.RootNamespace#> {
 <# }#>
     }
 
+<# }#>
+
 <# /* シングルビューDTO */ #>
-    public class <#=aggregateInstance.ClassName#> : <#=AggregateInstance.BASE_CLASS_NAME#> {
-<# foreach (var prop in aggregateInstance.GetMembers()) { #>
+<# foreach (var aggregateInstance in _ctx.Schema.ToAggregateInstanceGraph()) { #>
+    public class <#=aggregateInstance.Item.ClassName#> : <#=AggregateInstance.BASE_CLASS_NAME#> {
+<# foreach (var prop in aggregateInstance.GetProperties(_ctx.Config)) { #>
         public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }
 <# }#>
 
-        public <#=_ctx.Config.EntityNamespace#>.<#=dbEntity.Item.ClassName#> <#=AggregateInstance.TO_DB_ENTITY_METHOD_NAME#>() {
+        public <#=_ctx.Config.EntityNamespace#>.<#=aggregateInstance.Item.CorrespondingDbEntity.Item.ClassName#> <#=AggregateInstance.TO_DB_ENTITY_METHOD_NAME#>() {
 <# PushIndent("            "); #>
-<# ToDbEntity(dbEntity); #>
+<# ToDbEntity(aggregateInstance); #>
 <# PopIndent(); #>
         }
 
-        public static <#=aggregateInstance.ClassName#> <#=AggregateInstance.FROM_DB_ENTITY_METHOD_NAME#>(<#=_ctx.Config.EntityNamespace#>.<#=dbEntity.Item.ClassName#> <#=E#>) {
+        public static <#=aggregateInstance.Item.ClassName#> <#=AggregateInstance.FROM_DB_ENTITY_METHOD_NAME#>(<#=_ctx.Config.EntityNamespace#>.<#=aggregateInstance.Item.ClassName#> <#=E#>) {
 <# PushIndent("            "); #>
-<# FromDbEntity(dbEntity); #>
+<# FromDbEntity(aggregateInstance); #>
 <# PopIndent(); #>
         }
-    }
 <# }#>
+    }
 
 }

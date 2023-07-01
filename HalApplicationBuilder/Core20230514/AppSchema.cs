@@ -30,5 +30,11 @@ namespace HalApplicationBuilder.Core20230514 {
 
             return DirectedGraph<EFCoreEntity>.Create(nodes, _graph.Edges);
         }
+
+        internal DirectedGraph<AggregateInstance> ToAggregateInstanceGraph() {
+            var nodes = ToEFCoreGraph().Select(dbEntity => new  AggregateInstance(dbEntity));
+
+            return DirectedGraph<AggregateInstance>.Create(nodes, _graph.Edges);
+        }
     }
 }

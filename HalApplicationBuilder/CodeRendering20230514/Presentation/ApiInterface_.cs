@@ -17,67 +17,71 @@ namespace HalApplicationBuilder.CodeRendering20230514.Presentation {
         public string FileName => "Api.cs";
         private const string E = "e";
 
-        private void ToDbEntity(GraphNode<EFCoreEntity> dbEntity) {
-            var instance = new AggregateInstance(dbEntity);
-            if (dbEntity.Source == null) {
-                WriteLine($"return new {_ctx.Config.EntityNamespace}.{dbEntity.Item.ClassName} {{");
-            } else {
-                WriteLine($"{dbEntity.Source.RelationName.ToCSharpSafe()} = new {instance.ClassName} {{");
+        private void ToDbEntity(GraphNode<AggregateInstance> aggregateInstance) {
+
+            void WriteBody(GraphNode<AggregateInstance> instance, string right) {
+                foreach (var prop in instance.GetSchalarProperties(_ctx.Config)) {
+                    var path = new[] { right }
+                        .Concat(instance.Item.CorrespondingDbEntity.PathFromEntry().Select(x => x.RelationName.ToCSharpSafe()))
+                        .Concat(new[] { prop.CorrespondingDbColumn.PropertyName })
+                        .Join(".");
+                    WriteLine($"{prop.PropertyName} = {path},");
+                }
+
+                foreach (var child in instance.GetChildAggregateProperties(_ctx.Config)) {
+                    var childProp = child.CorrespondingNavigationProperty.Principal.PropertyName;
+                    var childDbEntity = child.CorrespondingNavigationProperty.Relevant.CSharpTypeName;
+                    if (child.Multiple) {
+                        WriteLine($"{child.PropertyName} = this.{childProp}.Select(x => new {childDbEntity} {{");
+                        PushIndent("    ");
+                        WriteBody(child.ChildAggregateInstance, "x");
+                        PopIndent();
+                        WriteLine($"}}).ToList(),");
+
+                    } else {
+                        WriteLine($"{child.PropertyName} = new {childDbEntity} {{");
+                        PushIndent("    ");
+                        WriteBody(child.ChildAggregateInstance, "this");
+                        PopIndent();
+                        WriteLine($"}},");
+                    }
+                }
             }
 
-            // 自身のメンバー
-            var path = new[] { E }.Concat(dbEntity.PathFromEntry().Select(x => x.RelationName.ToCSharpSafe())).Join(".");
-            foreach (var member in instance.GetMembers()) {
-                WriteLine($"    {member.PropertyName} = {path}.{member.CorrespondingDbColumn.PropertyName},");
-            }
-
-            // 子集約
-            var children = dbEntity.GetChildMembers()
-                .Concat(dbEntity.GetChildrenMembers())
-                .Concat(dbEntity.GetVariationMembers());
-            foreach (var edge in children) {
-                PushIndent("    ");
-                FromDbEntity(edge.Terminal);
-                PopIndent();
-            }
-
-            // 参照
-            // TODO
-
-            if (dbEntity.Source == null)
-                WriteLine($"}};");
-            else
-                WriteLine($"}},");
+            WriteLine($"return new {_ctx.Config.EntityNamespace}.{aggregateInstance.Item.CorrespondingDbEntity.Item.ClassName} {{");
+            PushIndent("    ");
+            WriteBody(aggregateInstance, "this");
+            PopIndent();
+            WriteLine($"}};");
         }
 
-        private void FromDbEntity(GraphNode<EFCoreEntity> dbEntity) {
-            var instance = new AggregateInstance(dbEntity);
-            if (dbEntity.Source == null) {
-                WriteLine($"return new {instance.ClassName} {{");
+        private void FromDbEntity(GraphNode<AggregateInstance> instance) {
+            if (instance.Source == null) {
+                WriteLine($"return new {instance.Item.ClassName} {{");
             } else {
-                WriteLine($"{dbEntity.Source.RelationName.ToCSharpSafe()} = new {instance.ClassName} {{");
+                WriteLine($"{instance.Source.RelationName.ToCSharpSafe()} = new {instance.Item.ClassName} {{");
             }
 
-            // 自身のメンバー
-            var path = new[] { E }.Concat(dbEntity.PathFromEntry().Select(x => x.RelationName.ToCSharpSafe())).Join(".");
-            foreach (var member in instance.GetMembers()) {
-                WriteLine($"    {member.PropertyName} = {path}.{member.CorrespondingDbColumn.PropertyName},");
+            // 自身のプロパティ
+            foreach (var prop in instance.GetSchalarProperties(_ctx.Config)) {
+                var path = new[] { E }
+                    .Concat(instance.PathFromEntry().Select(x => x.RelationName.ToCSharpSafe()))
+                    .Concat(new[] { prop.CorrespondingDbColumn.PropertyName })
+                    .Join(".");
+                WriteLine($"    {prop.PropertyName} = {path},");
             }
 
             // 子集約
-            var children = dbEntity.GetChildMembers()
-                .Concat(dbEntity.GetChildrenMembers())
-                .Concat(dbEntity.GetVariationMembers());
-            foreach (var edge in children) {
+            foreach (var edge in instance.GetChildAggregateProperties(_ctx.Config)) {
                 PushIndent("    ");
-                FromDbEntity(edge.Terminal);
+                FromDbEntity(edge.ChildAggregateInstance);
                 PopIndent();
             }
 
             // 参照
             // TODO
 
-            if (dbEntity.Source == null)
+            if (instance.Source == null)
                 WriteLine($"}};");
             else
                 WriteLine($"}},");

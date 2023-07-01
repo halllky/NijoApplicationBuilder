@@ -83,7 +83,7 @@ namespace HalApplicationBuilder.Core20230514 {
                         ? "Parent"
                         : graphEdge.RelationName,
                     OppositeIsMany = oppositeIsMany,
-                    ForeignKeys = opposite.Item
+                    ForeignKeys = owner.Item
                         .GetColumns()
                         .Where(m => m.IsPrimary),
                 };

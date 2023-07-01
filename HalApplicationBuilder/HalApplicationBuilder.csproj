@@ -71,6 +71,10 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>AggregateInstanceBase.cs</LastGenOutput>
 		</None>
+		<None Update="CodeRendering20230514\Presentation\AggregateInstanceKeyNamePair.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>AggregateInstanceKeyNamePair.cs</LastGenOutput>
+		</None>
 		<None Update="CodeRendering20230514\Presentation\ApiInterface.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>ApiInterface.cs</LastGenOutput>
@@ -274,6 +278,11 @@
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>AggregateInstanceBase.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering20230514\Presentation\AggregateInstanceKeyNamePair.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>AggregateInstanceKeyNamePair.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering20230514\Presentation\ApiInterface.cs">
 		  <DesignTime>True</DesignTime>

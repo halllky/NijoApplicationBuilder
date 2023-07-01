@@ -142,6 +142,12 @@ namespace HalApplicationBuilder.DotnetEx {
         /// この頂点がどの経路を辿って生成されたか。Entryの最初の頂点の場合はnull
         /// </summary>
         internal GraphEdge<T>? Source { get; }
+        /// <summary>
+        /// ここまで辿ってきた経路をリセットした新しいインスタンスを返します。
+        /// </summary>
+        internal GraphNode<T> AsEntry() {
+            return new GraphNode<T>(Item, _graph, null);
+        }
 
         /// <summary>
         /// エントリーからの辺の一覧を返します。
