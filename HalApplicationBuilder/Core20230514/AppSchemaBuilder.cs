@@ -1,4 +1,3 @@
-using HalApplicationBuilder.Core.MemberImpl;
 using HalApplicationBuilder.DotnetEx;
 using System;
 using System.Collections.Generic;

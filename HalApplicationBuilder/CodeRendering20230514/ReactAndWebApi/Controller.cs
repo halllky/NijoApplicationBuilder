@@ -58,38 +58,13 @@ namespace HalApplicationBuilder.CodeRendering20230514.ReactAndWebApi
                     "t(searchResult);\r\n        }\r\n        [HttpGet(\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(KEYWORDSEARCH_ACTION_NAME));
             this.Write("\")]\r\n        public IActionResult SearchByKeyword([FromQuery] string keyword) {\r\n" +
-                    "            // TODO\r\n            throw new NotImplementedException();\r\n         " +
-                    "   // var condition = new ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchArgType));
-            this.Write("();\r\n            // // TODO keyword‚ð[‚Ä‚é\r\n            // var data = _dbContext\r\n  " +
-                    "          //     .");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Search));
-            this.Write("(condition)\r\n            //     .AsEnumerable();\r\n            // \r\n            //" +
-                    " var guid = new Guid(\"šrootAggregate.GetGuid()š\");\r\n            // var refDtos =" +
-                    " data.Select(item => new ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(DotnetEx.TypeExtensions.GetFullName(typeof(Runtime.ReferenceDTO))));
-            this.Write(" {\r\n            //     ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.ReferenceDTO.AggreageteGuid)));
-            this.Write(" = guid,\r\n            //     ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.ReferenceDTO.InstanceKey)));
-            this.Write(" = item.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.SearchResultBase.__halapp__InstanceKey)));
-            this.Write(",\r\n            //     ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.ReferenceDTO.InstanceName)));
-            this.Write(" = item.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(Runtime.SearchResultBase.__halapp__InstanceName)));
-            this.Write(",\r\n            // });\r\n            // return this.JsonContent(refDtos);\r\n        " +
-                    "}\r\n        [HttpPost(\"");
+                    "            // TODO\r\n            throw new NotImplementedException();\r\n        }" +
+                    "\r\n        [HttpPost(\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(CREATE_ACTION_NAME));
             this.Write("\")]\r\n        public IActionResult Create([FromBody] ");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance));
             this.Write(" param) {\r\n            // TODO\r\n            throw new NotImplementedException();\r" +
-                    "\n            // var success = _runtimeService.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(RuntimeService.TrySaveNewInstance)));
-            this.Write("(param, out var instanceKey, out var errors);\r\n            // if (success) {\r\n   " +
-                    "         //     return Ok(new { instanceKey });\r\n            // } else {\r\n      " +
-                    "      //     return BadRequest(errors);\r\n            // }\r\n        }\r\n        [H" +
-                    "ttpGet(\"");
+                    "\n        }\r\n        [HttpGet(\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(FIND_ACTION_NAME));
             this.Write("/{instanceKey}\")]\r\n        public IActionResult Find(string instanceKey) {\r\n     " +
                     "       var instance = _dbContext.");
@@ -101,12 +76,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.ReactAndWebApi
             this.Write("\")]\r\n        public IActionResult Update(");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance));
             this.Write(" param) {\r\n            // TODO\r\n            throw new NotImplementedException();\r" +
-                    "\n            // var success = _runtimeService.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nameof(RuntimeService.TryUpdate)));
-            this.Write("(param, out var instanceKey, out var errors);\r\n            // if (success) {\r\n   " +
-                    "         //     return Ok(new { instanceKey });\r\n            // } else {\r\n      " +
-                    "      //     return BadRequest(errors);\r\n            // }\r\n        }\r\n    }\r\n}\r\n" +
-                    "");
+                    "\n        }\r\n    }\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

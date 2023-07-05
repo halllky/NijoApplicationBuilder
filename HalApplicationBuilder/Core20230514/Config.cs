@@ -1,5 +1,4 @@
 using HalApplicationBuilder.DotnetEx;
-using HalApplicationBuilder.Serialized;
 using System;
 using System.IO;
 using System.Xml;
@@ -25,48 +24,6 @@ namespace HalApplicationBuilder.Core20230514 {
         public required string MvcModelNamespace { get; init; }
 
         public required string MvcViewDirectoryRelativePath { get; init; }
-
-
-        public Serialized.ConfigJson ToJson(bool onlyRuntimeConfig) {
-            return new Serialized.ConfigJson {
-                OutProjectDir = onlyRuntimeConfig ? null : OutProjectDir,
-
-                EntityFrameworkDirectoryRelativePath = EntityFrameworkDirectoryRelativePath,
-                EntityNamespace = EntityNamespace,
-                DbContextNamespace = DbContextNamespace,
-                DbContextName = DbContextName,
-
-                MvcControllerDirectoryRelativePath = MvcControllerDirectoryRelativePath,
-                MvcControllerNamespace = MvcControllerNamespace,
-
-                MvcModelDirectoryRelativePath = MvcModelDirectoryRelativePath,
-                MvcModelNamespace = MvcModelNamespace,
-
-                MvcViewDirectoryRelativePath = MvcViewDirectoryRelativePath,
-            };
-        }
-        public static Config FromJson(Serialized.AppSchemaJson? json) {
-            if (json == null) throw new ArgumentNullException(nameof(json));
-            if (json.Config == null) throw new ArgumentNullException(nameof(json.Config));
-            return new Config {
-                ApplicationName = json.Name ?? string.Empty,
-
-                OutProjectDir = json.Config.OutProjectDir ?? string.Empty,
-
-                EntityFrameworkDirectoryRelativePath = json.Config.EntityFrameworkDirectoryRelativePath ?? string.Empty,
-                EntityNamespace = json.Config.EntityNamespace ?? string.Empty,
-                DbContextNamespace = json.Config.DbContextNamespace ?? string.Empty,
-                DbContextName = json.Config.DbContextName ?? string.Empty,
-
-                MvcControllerDirectoryRelativePath = json.Config.MvcControllerDirectoryRelativePath ?? string.Empty,
-                MvcControllerNamespace = json.Config.MvcControllerNamespace ?? string.Empty,
-
-                MvcModelDirectoryRelativePath = json.Config.MvcModelDirectoryRelativePath ?? string.Empty,
-                MvcModelNamespace = json.Config.MvcModelNamespace ?? string.Empty,
-
-                MvcViewDirectoryRelativePath = json.Config.MvcViewDirectoryRelativePath ?? string.Empty,
-            };
-        }
 
 
         internal const string XML_CONFIG_SECTION_NAME = "_Config";
