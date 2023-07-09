@@ -488,6 +488,24 @@ namespace HalApplicationBuilder {
             }
         }
 
+        internal Core20230514.AppSchema Inspect() {
+            var xmlFullPath = GetAggregateSchemaPath();
+            using var stream = DotnetEx.IO.OpenFileWithRetry(xmlFullPath);
+            using var reader = new StreamReader(stream);
+            var xmlContent = reader.ReadToEnd();
+            var xDocument = XDocument.Parse(xmlContent);
+            var config = Core20230514.Config.GetDefault(xDocument.Root!.Name.LocalName);
+
+            if (!Core20230514.AppSchemaBuilder.FromXml(xDocument, out var builder, out var errors)) {
+                throw new InvalidOperationException(errors.Join(Environment.NewLine));
+            }
+            if (!builder.TryBuild(out var appSchema, out var errors1)) {
+                throw new InvalidOperationException(errors1.Join(Environment.NewLine));
+            }
+
+            return appSchema;
+        }
+
         /// <summary>
         /// dotnet ef のラッパー
         /// </summary>

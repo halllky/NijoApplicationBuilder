@@ -11,26 +11,25 @@ namespace HalApplicationBuilder.Core20230514 {
 
         internal AppSchema(string appName, DirectedGraph directedGraph) {
             ApplicationName = appName;
-            _graph = directedGraph;
+            Graph = directedGraph;
         }
 
-        private readonly DirectedGraph _graph;
-
         public object ApplicationName { get; }
+        internal DirectedGraph Graph { get; }
 
         internal IEnumerable<GraphNode<Aggregate>> AllAggregates() {
-            return _graph.Only<Aggregate>();
+            return Graph.Only<Aggregate>();
         }
         internal IEnumerable<GraphNode<Aggregate>> RootAggregates() {
             return AllAggregates().Where(aggregate => aggregate.IsRoot());
         }
 
         internal IEnumerable<GraphNode<EFCoreEntity>> ToEFCoreGraph() {
-            return _graph.Only<EFCoreEntity>();
+            return Graph.Only<EFCoreEntity>();
         }
 
         internal IEnumerable<GraphNode<AggregateInstance>> ToAggregateInstanceGraph() {
-            return _graph.Only<AggregateInstance>();
+            return Graph.Only<AggregateInstance>();
         }
     }
 }

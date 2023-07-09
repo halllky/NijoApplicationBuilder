@@ -58,9 +58,11 @@ namespace HalApplicationBuilder.Core20230514 {
         }
 
         internal static IEnumerable<AggregateInstance.ChildAggregateProperty> GetChildAggregateProperties(this GraphNode<AggregateInstance> node, Config config) {
+            var initial = node.GetDbEntity().Item.Id;
+
             foreach (var edge in node.GetChildMembers()) {
                 var terminal = edge.Terminal.As<AggregateInstance>();
-                var navigationProperty = new NavigationProperty(terminal.GetDbEntity().In.Single(e => e == edge), config);
+                var navigationProperty = new NavigationProperty(terminal.GetDbEntity().In.Single(e => e.Initial.Item.Id == initial), config);
                 yield return new AggregateInstance.ChildAggregateProperty {
                     ChildAggregateInstance = terminal,
                     CorrespondingNavigationProperty = navigationProperty,
@@ -71,7 +73,7 @@ namespace HalApplicationBuilder.Core20230514 {
             }
             foreach (var edge in node.GetVariationMembers()) {
                 var terminal = edge.Terminal.As<AggregateInstance>();
-                var navigationProperty = new NavigationProperty(terminal.GetDbEntity().In.Single(e => e == edge), config);
+                var navigationProperty = new NavigationProperty(terminal.GetDbEntity().In.Single(e => e.Initial.Item.Id == initial), config);
                 yield return new AggregateInstance.ChildAggregateProperty {
                     ChildAggregateInstance = terminal,
                     CorrespondingNavigationProperty = navigationProperty,
@@ -82,7 +84,7 @@ namespace HalApplicationBuilder.Core20230514 {
             }
             foreach (var edge in node.GetChildrenMembers()) {
                 var terminal = edge.Terminal.As<AggregateInstance>();
-                var navigationProperty = new NavigationProperty(terminal.GetDbEntity().In.Single(e => e == edge), config);
+                var navigationProperty = new NavigationProperty(terminal.GetDbEntity().In.Single(e => e.Initial.Item.Id == initial), config);
                 yield return new AggregateInstance.ChildAggregateProperty {
                     ChildAggregateInstance = terminal,
                     CorrespondingNavigationProperty = navigationProperty,

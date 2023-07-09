@@ -147,9 +147,11 @@ namespace HalApplicationBuilder.Core20230514 {
             errors = new HashSet<string>();
             if (memberTypeResolver == null) memberTypeResolver = MemberTypeResolver.Default();
 
-            var aggregates = new List<Aggregate>();
-            var relations = new Dictionary<(NodeId, string, NodeId), GraphEdgeInfo>();
+            var aggregates = new Dictionary<NodeId, Aggregate>();
+            var aggregateRelations = new Dictionary<(NodeId, string, NodeId), GraphEdgeInfo>();
 
+            // ----------------------------------------------------------------------------------
+            // 集約ノードの作成
             foreach (var def in _aggregateDefs) {
                 var members = new List<Aggregate.Member>();
                 foreach (var member in def.Members) {
@@ -165,7 +167,7 @@ namespace HalApplicationBuilder.Core20230514 {
                     }
                 }
                 var aggregate = new Aggregate(def.FullPath, members);
-                aggregates.Add(aggregate);
+                aggregates.Add(aggregate.Id, aggregate);
             }
 
             foreach (var def in _childrenDefs) {
@@ -197,8 +199,8 @@ namespace HalApplicationBuilder.Core20230514 {
                         { DirectedEdgeExtensions.REL_ATTR_MULTIPLE, true },
                     },
                 };
-                aggregates.Add(aggregate);
-                relations[(relation.Initial, relation.RelationName, relation.Terminal)] = relation;
+                aggregates.Add(aggregate.Id, aggregate);
+                aggregateRelations[(relation.Initial, relation.RelationName, relation.Terminal)] = relation;
             }
 
             foreach (var def in _childDefs) {
@@ -229,8 +231,8 @@ namespace HalApplicationBuilder.Core20230514 {
                         { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD },
                     },
                 };
-                aggregates.Add(aggregate);
-                relations[(relation.Initial, relation.RelationName, relation.Terminal)] = relation;
+                aggregates.Add(aggregate.Id, aggregate);
+                aggregateRelations[(relation.Initial, relation.RelationName, relation.Terminal)] = relation;
             }
 
             foreach (var def in _variationDefs) {
@@ -263,8 +265,8 @@ namespace HalApplicationBuilder.Core20230514 {
                             { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD },
                         },
                     };
-                    aggregates.Add(aggregate);
-                    relations[(relation.Initial, relation.RelationName, relation.Terminal)] = relation;
+                    aggregates.Add(aggregate.Id, aggregate);
+                    aggregateRelations[(relation.Initial, relation.RelationName, relation.Terminal)] = relation;
                 }
             }
 
@@ -287,25 +289,31 @@ namespace HalApplicationBuilder.Core20230514 {
                         { DirectedEdgeExtensions.REL_ATTR_IS_INSTANCE_NAME, def.IsInstanceName },
                     },
                 };
-                relations[(relation.Initial, relation.RelationName, relation.Terminal)] = relation;
+                aggregateRelations[(relation.Initial, relation.RelationName, relation.Terminal)] = relation;
             }
 
+            // ----------------------------------------------------------------------------------
+            // 集約ノードのバリデーション
             var aggregateDict = new Dictionary<AggregatePath, Aggregate>();
-            foreach (var aggregate in aggregates) {
+            foreach (var aggregate in aggregates.Values) {
                 aggregateDict[aggregate.Path] = aggregate; 
             }
-            var duplicates = aggregates
+            var duplicates = aggregates.Values
                 .GroupBy(a => a.Path)
                 .Where(group => group.Count() >= 2);
             foreach (var dup in duplicates) {
                 errors.Add($"Aggregate path duplicates: {dup.Key}");
             }
 
+            // ----------------------------------------------------------------------------------
+            // DBEntityノード、Instanceノードの作成
             var dbEntities = new List<IGraphNode>();
-            foreach (var aggregate in aggregates) {
+            var dbEntityRelations = new Dictionary<(NodeId, string, NodeId), GraphEdgeInfo>();
+            foreach (var aggregate in aggregates.Values) {
                 var dbEntity = new EFCoreEntity(aggregate);
                 dbEntities.Add(dbEntity);
-                relations.Add((dbEntity.Id, "origin", aggregate.Id), new GraphEdgeInfo {
+
+                dbEntityRelations.Add((dbEntity.Id, "origin", aggregate.Id), new GraphEdgeInfo {
                     Initial = dbEntity.Id,
                     Terminal = aggregate.Id,
                     RelationName = "origin",
@@ -313,13 +321,25 @@ namespace HalApplicationBuilder.Core20230514 {
                         { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_AGG_2_ETT },
                     },
                 });
+
+                foreach (var edge in aggregateRelations.Values.Where(e => e.Initial == aggregate.Id)) {
+                    var terminal = new EFCoreEntity(aggregates[edge.Terminal]).Id;
+                    dbEntityRelations.Add((dbEntity.Id, edge.RelationName, terminal), new GraphEdgeInfo {
+                         Initial = dbEntity.Id,
+                         RelationName = edge.RelationName,
+                         Terminal = terminal,
+                         Attributes = new Dictionary<string, object>(edge.Attributes),
+                    });
+                }
             }
 
             var aggregateInstances = new List<IGraphNode>();
-            foreach (var aggregate in aggregates) {
+            var aggregateInstanceRelations = new Dictionary<(NodeId, string, NodeId), GraphEdgeInfo>();
+            foreach (var aggregate in aggregates.Values) {
                 var instance = new AggregateInstance(aggregate);
                 aggregateInstances.Add(instance);
-                relations.Add((instance.Id, "origin", aggregate.Id), new GraphEdgeInfo {
+
+                aggregateInstanceRelations.Add((instance.Id, "origin", aggregate.Id), new GraphEdgeInfo {
                     Initial = instance.Id,
                     Terminal = aggregate.Id,
                     RelationName = "origin",
@@ -327,10 +347,27 @@ namespace HalApplicationBuilder.Core20230514 {
                         { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_AGG_2_INS },
                     },
                 });
+
+                foreach (var edge in aggregateRelations.Values.Where(e => e.Initial == aggregate.Id)) {
+                    var terminal = new AggregateInstance(aggregates[edge.Terminal]).Id;
+                    aggregateInstanceRelations.Add((instance.Id, edge.RelationName, terminal), new GraphEdgeInfo {
+                        Initial = instance.Id,
+                        RelationName = edge.RelationName,
+                        Terminal = terminal,
+                        Attributes = new Dictionary<string, object>(edge.Attributes),
+                    });
+                }
             }
 
-            var allNodes = aggregates.Concat(dbEntities).Concat(aggregateInstances);
-            if (!DirectedGraph.TryCreate(allNodes, relations.Values, out var graph, out var errors1)) {
+            // ----------------------------------------------------------------------------------
+            // グラフを作成して返す
+            var allNodes = aggregates.Values
+                .Concat(dbEntities)
+                .Concat(aggregateInstances);
+            var allEdges = aggregateRelations.Values
+                .Concat(dbEntityRelations.Values)
+                .Concat(aggregateInstanceRelations.Values);
+            if (!DirectedGraph.TryCreate(allNodes, allEdges, out var graph, out var errors1)) {
                 foreach (var err in errors1) errors.Add(err);
             }
             if (errors.Any()) {

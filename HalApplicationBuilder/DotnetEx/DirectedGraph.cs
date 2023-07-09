@@ -87,6 +87,22 @@ namespace HalApplicationBuilder.DotnetEx {
                 .Select(node => node.As<T>());
         }
 
+        public string ToMermaidText() {
+            var builder = new StringBuilder();
+            builder.AppendLine("graph TD;");
+
+            foreach (var edge in Edges) {
+                var id1 = new HashedString(edge.Initial.Value).Guid.ToString();
+                var id2 = new HashedString(edge.Terminal.Value).Guid.ToString();
+                var label1 = edge.Initial.Value.Replace("\"", "");
+                var label2 = edge.Terminal.Value.Replace("\"", "");
+                var relation = edge.RelationName.Replace("\"", "");
+                builder.AppendLine($"  {id1}(\"{label1}\") --\"{relation}\"--> {id2}(\"{label2}\");");
+            }
+
+            return builder.ToString();
+        }
+
         public IEnumerator<GraphNode> GetEnumerator() {
             foreach (var node in Nodes.Values) {
                 yield return new GraphNode(node, this, null);
