@@ -43,7 +43,9 @@ namespace HalApplicationBuilder {
             if (Directory.Exists(projectRootDir))
                 throw new InvalidOperationException($"'{projectRootDir}' is already exists.");
 
-            var tempDir = Directory.CreateTempSubdirectory("halapp.temp.").FullName;
+            var tempDir = keepTempIferror
+                ? projectRootDir
+                : Directory.CreateTempSubdirectory("halapp.temp.").FullName;
 
             var error = false;
             try {
