@@ -1,4 +1,4 @@
-# HalApplicationBuilder
+# HalApplicationBuilder 【開発中 under development】
 データモデルを指定すると以下のものを作成してくれるローコードアプリケーション作成ツール。
 - RDB定義（EntityFrameworkCore）
 - WebAPI（ASP.NET Core Web API）
