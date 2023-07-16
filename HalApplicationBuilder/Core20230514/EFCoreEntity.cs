@@ -50,13 +50,21 @@ namespace HalApplicationBuilder.Core20230514 {
             Item CreateItem(GraphNode<EFCoreEntity> owner, bool oppositeIsMany) {
                 var opposite = owner == initial ? terminal : initial;
                 var entityClass = $"{config.EntityNamespace}.{opposite.As<EFCoreEntity>().Item.ClassName}";
+
+                string propertyName;
+                if (owner == terminal && (graphEdge.IsChild() || graphEdge.IsChildren() || graphEdge.IsVariation())) {
+                    propertyName = "Parent";
+                } else if (owner == terminal && graphEdge.IsRef()) {
+                    propertyName = $"RefferedBy_{initial.Item.ClassName}_{graphEdge.RelationName}";
+                } else {
+                    propertyName = graphEdge.RelationName;
+                }
+
                 return new Item {
                     Owner = owner,
                     CSharpTypeName = oppositeIsMany ? $"ICollection<{entityClass}>" : entityClass,
                     Initializer = oppositeIsMany ? $"new HashSet<{entityClass}>()" : null,
-                    PropertyName = (graphEdge.IsChild() || graphEdge.IsChildren() || graphEdge.IsVariation()) && owner == terminal
-                        ? "Parent"
-                        : graphEdge.RelationName,
+                    PropertyName = propertyName,
                     OppositeIsMany = oppositeIsMany,
                     ForeignKeys = owner
                         .GetColumns()
