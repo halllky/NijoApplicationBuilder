@@ -30,7 +30,7 @@ namespace HalApplicationBuilder.CodeRendering20230514.Presentation {
 
                 foreach (var child in instance.GetChildAggregateProperties(_ctx.Config)) {
                     var childProp = child.CorrespondingNavigationProperty.Principal.PropertyName;
-                    var childDbEntity = child.CorrespondingNavigationProperty.Relevant.CSharpTypeName;
+                    var childDbEntity = child.CorrespondingNavigationProperty.Principal.CSharpTypeName;
                     if (child.Multiple) {
                         WriteLine($"{child.PropertyName} = this.{childProp}.Select(x => new {childDbEntity} {{");
                         PushIndent("    ");
