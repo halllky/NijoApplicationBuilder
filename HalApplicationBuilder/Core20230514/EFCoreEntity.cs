@@ -45,14 +45,16 @@ namespace HalApplicationBuilder.Core20230514 {
         internal NavigationProperty(GraphEdge graphEdge, Config config) {
             _graphEdge = graphEdge;
 
+            var initial = graphEdge.Initial.As<EFCoreEntity>();
+            var terminal = graphEdge.Terminal.As<EFCoreEntity>();
             Item CreateItem(GraphNode<EFCoreEntity> owner, bool oppositeIsMany) {
-                var opposite = owner == graphEdge.Initial ? graphEdge.Terminal : graphEdge.Initial;
+                var opposite = owner == initial ? terminal : initial;
                 var entityClass = $"{config.EntityNamespace}.{opposite.As<EFCoreEntity>().Item.ClassName}";
                 return new Item {
                     Owner = owner,
                     CSharpTypeName = oppositeIsMany ? $"ICollection<{entityClass}>" : entityClass,
                     Initializer = oppositeIsMany ? $"new HashSet<{entityClass}>()" : null,
-                    PropertyName = (graphEdge.IsChild() || graphEdge.IsChildren() || graphEdge.IsVariation()) && owner == graphEdge.Terminal
+                    PropertyName = (graphEdge.IsChild() || graphEdge.IsChildren() || graphEdge.IsVariation()) && owner == terminal
                         ? "Parent"
                         : graphEdge.RelationName,
                     OppositeIsMany = oppositeIsMany,
@@ -63,23 +65,23 @@ namespace HalApplicationBuilder.Core20230514 {
             }
 
             if (graphEdge.IsChild()) {
-                Principal = CreateItem(graphEdge.Initial.As<EFCoreEntity>(), oppositeIsMany: false);
-                Relevant = CreateItem(graphEdge.Terminal.As<EFCoreEntity>(), oppositeIsMany: false);
+                Principal = CreateItem(initial, oppositeIsMany: false);
+                Relevant = CreateItem(terminal, oppositeIsMany: false);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
             } else if (graphEdge.IsVariation()) {
-                Principal = CreateItem(graphEdge.Initial.As<EFCoreEntity>(), oppositeIsMany: false);
-                Relevant = CreateItem(graphEdge.Terminal.As<EFCoreEntity>(), oppositeIsMany: false);
+                Principal = CreateItem(initial, oppositeIsMany: false);
+                Relevant = CreateItem(terminal, oppositeIsMany: false);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
             } else if (graphEdge.IsChildren()) {
-                Principal = CreateItem(graphEdge.Initial.As<EFCoreEntity>(), oppositeIsMany: true);
-                Relevant = CreateItem(graphEdge.Terminal.As<EFCoreEntity>(), oppositeIsMany: false);
+                Principal = CreateItem(initial, oppositeIsMany: true);
+                Relevant = CreateItem(terminal, oppositeIsMany: false);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
             } else if (graphEdge.IsRef()) {
-                Principal = CreateItem(graphEdge.Initial.As<EFCoreEntity>(), oppositeIsMany: false);
-                Relevant = CreateItem(graphEdge.Terminal.As<EFCoreEntity>(), oppositeIsMany: true);
+                Principal = CreateItem(initial, oppositeIsMany: false);
+                Relevant = CreateItem(terminal, oppositeIsMany: true);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
             } else {
