@@ -39,9 +39,9 @@ namespace HalApplicationBuilder.CodeRendering20230514.EFCore {
                 }
 
                 // FK
-                if (nav.Principal.OppositeIsMany && nav.Relevant.OppositeIsMany) {
+                if (!nav.Principal.OppositeIsMany && !nav.Relevant.OppositeIsMany) {
                     // HasOneWithOneのときは型引数が要るらしい
-                    yield return $"    .HasForeignKey<{nav.Principal.Owner.Item.ClassName}>(e => new {{";
+                    yield return $"    .HasForeignKey<{nav.Relevant.Owner.Item.ClassName}>(e => new {{";
                 } else {
                     yield return $"    .HasForeignKey(e => new {{";
                 }
