@@ -28,6 +28,7 @@ namespace HalApplicationBuilder.Core {
                     yield return new Member {
                         Owner = this,
                         CorrespondingDbMember = member,
+                        CorrespondingDbMemberOwner = dbEntity,
                         Name = string.Join("_", path.Union(new[] { member.PropertyName })),
                         Type = member.MemberType,
                     };
@@ -60,16 +61,12 @@ namespace HalApplicationBuilder.Core {
         }
 
 
-        internal class Member : ValueObject {
+        internal class Member {
             internal required SearchCondition Owner { get; init; }
             internal required string Name { get; init; }
             internal required IAggregateMemberType Type { get; init; }
             internal required EFCoreEntity.Member CorrespondingDbMember { get; init; }
-
-            protected override IEnumerable<object?> ValueObjectIdentifiers() {
-                yield return Owner;
-                yield return Name;
-            }
+            internal required GraphNode<EFCoreEntity> CorrespondingDbMemberOwner { get; init; }
         }
     }
 }

@@ -44,106 +44,72 @@ namespace HalApplicationBuilder.CodeRendering.EFCore {
             internal string DbSetName => _dbEntity.GetCorrespondingAggregate().Item.DisplayName.ToCSharpSafe();
 
             internal IEnumerable<string> SelectClause() {
-                // Instance Key
-                var pk = _dbEntity
-                    .GetColumns()
-                    .Where(col => col.IsPrimary)
-                    .ToArray();
-                for (int i = 0; i < pk.Length; i++) {
-                    yield return $"__halapp_Key_{i} = {E}.{pk[i].PropertyName},";
-                }
-
-                // Instance Key 以外
-                foreach (var x in BuildSelectClauseRecursively(_dbEntity)) {
-                    yield return $"{x.Left} = {E}.{x.Right},";
-                }
-            }
-            private class SelectClauseLine {
-                internal required string Left { get; init; }
-                internal required string Right { get; init; }
-            }
-            private static IEnumerable<SelectClauseLine> BuildSelectClauseRecursively(GraphNode<EFCoreEntity> dbEntity) {
-                var path = dbEntity.PathFromEntry().Select(edge => edge.RelationName).ToArray();
-
-                // 集約自身のメンバー
-                foreach (var member in dbEntity.GetCorrespondingAggregate().Item.Members) {
-                    // 参照の場合はインスタンス名のみSELECTする
-                    if (dbEntity.Source != null
-                        && dbEntity.Source.IsRef()
-                        && !member.IsInstanceName) continue;
-
-                    var pathToMember = path.Union(new[] { member.Name });
-                    yield return new SelectClauseLine {
-                        Left = string.Join("_", pathToMember),
-                        Right = string.Join(".", pathToMember),
-                    };
-                }
-
-                // 子要素（除: Children）と参照先を再帰処理
-                foreach (var edge in dbEntity.GetChildMembers()) {
-                    foreach (var line in BuildSelectClauseRecursively(edge.Terminal.As<EFCoreEntity>())) yield return line;
-                }
-                foreach (var edge in dbEntity.GetRefMembers()) {
-                    foreach (var line in BuildSelectClauseRecursively(edge.Terminal.As<EFCoreEntity>())) yield return line;
+                foreach (var m in new SearchResult(_dbEntity).GetMembers()) {
+                    var columnName = m.CorrespondingDbMemberOwner
+                        .PathFromEntry()
+                        .Select(edge => edge.RelationName)
+                        .Union(new[] { m.CorrespondingDbMember.PropertyName })
+                        .Join(".");
+                    yield return $"{m.Name} = {E}.{columnName},";
                 }
             }
 
             internal IEnumerable<string> WhereClause() {
-                return BuildWhereClauseRecursively(new SearchCondition(_dbEntity), _dbEntity);
+                return BuildWhereClauseRecursively(_dbEntity);
             }
-            private static IEnumerable<string> BuildWhereClauseRecursively(SearchCondition searchCondition, GraphNode<EFCoreEntity> dbEntity) {
-                var path = dbEntity.PathFromEntry().Select(edge => edge.RelationName).ToArray();
+            private static IEnumerable<string> BuildWhereClauseRecursively(GraphNode<EFCoreEntity> dbEntity) {
+                var searchCondition = new SearchCondition(dbEntity);
+                var searchResult = new SearchResult(dbEntity);
 
-                foreach (var scMember in searchCondition.GetMembers()) {
-                    var pathToMember = string.Join(".", path.Union(new[] { scMember.CorrespondingDbMember.PropertyName }));
+                foreach (var cond in searchCondition.GetMembers()) {
+                    var res = searchResult.GetMembers().Single(m => m.CorrespondingDbMember == cond.CorrespondingDbMember);
 
-                    switch (scMember.Type.SearchBehavior) {
+                    switch (cond.Type.SearchBehavior) {
                         case SearchBehavior.Ambiguous:
                             // 検索挙動がAmbiguousの場合はプロパティの型はstringで決め打ち
-                            yield return $"if (!string.IsNullOrWhiteSpace({PARAM}.{scMember.Name})) {{";
-                            yield return $"    var trimmed = {PARAM}.{scMember.Name}.Trim();";
-                            yield return $"    {QUERY} = {QUERY}.Where(x => x.{pathToMember}.Contains(trimmed));";
+                            yield return $"if (!string.IsNullOrWhiteSpace({PARAM}.{cond.Name})) {{";
+                            yield return $"    var trimmed = {PARAM}.{cond.Name}.Trim();";
+                            yield return $"    {QUERY} = {QUERY}.Where(x => x.{res.Name}.Contains(trimmed));";
                             yield return $"}}";
                             break;
 
                         case SearchBehavior.Range:
-                            yield return $"if ({PARAM}.{scMember.Name}.{Util.FromTo.FROM} != default)";
-                            yield return $"    {QUERY} = {QUERY}.Where(x => x.{pathToMember} >= {PARAM}.{scMember.Name}.{Util.FromTo.FROM});";
-                            yield return $"if ({PARAM}.{scMember.Name}.{Util.FromTo.TO} != default)";
-                            yield return $"    {QUERY} = {QUERY}.Where(x => x.{pathToMember} <= {PARAM}.{scMember.Name}.{Util.FromTo.TO});";
+                            yield return $"if ({PARAM}.{cond.Name}.{Util.FromTo.FROM} != default) {{";
+                            yield return $"    {QUERY} = {QUERY}.Where(x => x.{res.Name} >= {PARAM}.{cond.Name}.{Util.FromTo.FROM});";
+                            yield return $"}}";
+                            yield return $"if ({PARAM}.{cond.Name}.{Util.FromTo.TO} != default) {{";
+                            yield return $"    {QUERY} = {QUERY}.Where(x => x.{res.Name} <= {PARAM}.{cond.Name}.{Util.FromTo.TO});";
+                            yield return $"}}";
                             break;
 
                         case SearchBehavior.Strict:
                         default:
-                            var type = scMember.Type.GetCSharpTypeName();
+                            var type = cond.Type.GetCSharpTypeName();
                             if (type == "string" || type == "string?") {
-                                yield return $"if (!string.IsNullOrWhiteSpace({PARAM}.{scMember.Name}))";
-                                yield return $"    {QUERY} = {QUERY}.Where(x => x.{pathToMember} == {PARAM}.{scMember.Name});";
+                                yield return $"if (!string.IsNullOrWhiteSpace({PARAM}.{cond.Name})) {{";
+                                yield return $"    {QUERY} = {QUERY}.Where(x => x.{res.Name} == {PARAM}.{cond.Name});";
+                                yield return $"}}";
                             } else {
-                                yield return $"if ({PARAM}.{scMember.Name} != default)";
-                                yield return $"    {QUERY} = {QUERY}.Where(x => x.{pathToMember} == {PARAM}.{scMember.Name});";
+                                yield return $"if ({PARAM}.{cond.Name} != default) {{";
+                                yield return $"    {QUERY} = {QUERY}.Where(x => x.{res.Name} == {PARAM}.{cond.Name});";
+                                yield return $"}}";
                             }
                             break;
                     }
                 }
             }
 
-            internal IEnumerable<string> EnumerableSection() {
-                // Instance Key
-                var pk = _dbEntity
-                    .GetColumns()
-                    .Where(col => col.IsPrimary);
-
-                yield return $"{SearchResult.INSTANCE_KEY_PROP_NAME} = {InstanceKey.CLASS_NAME}.{InstanceKey.CREATE}(new object?[] {{";
-                for (int i = 0; i < pk.Count(); i++) {
-                    yield return $"    {E}.__halapp_Key_{i},";
-                }
-                yield return $"}}).ToString(),";
-
-                // Instance Key 以外
-                foreach (var x in BuildSelectClauseRecursively(_dbEntity)) {
-                    yield return $"{x.Left} = {E}.{x.Left},";
-                }
+            internal IEnumerable<string> EnumerateKeys() {
+                return new SearchResult(_dbEntity)
+                    .GetMembers()
+                    .Where(member => member.IsKey)
+                    .Select(member => member.Name);
+            }
+            internal string? GetInstanceNamePropName() {
+                return new SearchResult(_dbEntity)
+                    .GetMembers()
+                    .SingleOrDefault(member => member.IsName)?
+                    .Name;
             }
         }
     }

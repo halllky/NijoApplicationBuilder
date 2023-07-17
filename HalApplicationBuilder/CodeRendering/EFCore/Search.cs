@@ -12,6 +12,8 @@ namespace HalApplicationBuilder.CodeRendering.EFCore
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
+    using HalApplicationBuilder.Core;
+    using HalApplicationBuilder.CodeRendering.Util;
     using System;
     
     /// <summary>
@@ -47,7 +49,9 @@ namespace HalApplicationBuilder.CodeRendering.EFCore
             this.Write(this.ToStringHelper.ToStringWithCulture(method.DbSetName));
             this.Write(".Select(");
             this.Write(this.ToStringHelper.ToStringWithCulture(E));
-            this.Write(" => new {\r\n");
+            this.Write(" => new ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(method.ReturnItemType));
+            this.Write(" {\r\n");
  foreach (var line in method.SelectClause()) { 
             this.Write("                ");
             this.Write(this.ToStringHelper.ToStringWithCulture(line));
@@ -72,19 +76,35 @@ namespace HalApplicationBuilder.CodeRendering.EFCore
             this.Write(this.ToStringHelper.ToStringWithCulture(QUERY));
             this.Write(" = ");
             this.Write(this.ToStringHelper.ToStringWithCulture(QUERY));
-            this.Write(".Skip(skip).Take(PAGE_SIZE);\r\n            }\r\n\r\n            return ");
+            this.Write(".Skip(skip).Take(PAGE_SIZE);\r\n            }\r\n\r\n            foreach (var item in ");
             this.Write(this.ToStringHelper.ToStringWithCulture(QUERY));
-            this.Write(".AsEnumerable().Select(");
-            this.Write(this.ToStringHelper.ToStringWithCulture(E));
-            this.Write(" => new ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(method.ReturnItemType));
-            this.Write(" {\r\n");
- foreach (var line in method.EnumerableSection()) { 
-            this.Write("                ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(line));
-            this.Write("\r\n");
+            this.Write(") {\r\n                item.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(SearchResult.INSTANCE_KEY_PROP_NAME));
+            this.Write(" = ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.CLASS_NAME));
+            this.Write(".");
+            this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.CREATE));
+            this.Write("(new object?[] {\r\n");
+ foreach (var key in method.EnumerateKeys()) { 
+            this.Write("                    item.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(key));
+            this.Write(",\r\n");
  } 
-            this.Write("            });\r\n        }\r\n");
+            this.Write("                }).ToString();\r\n\r\n");
+ if (method.GetInstanceNamePropName() == null) { 
+            this.Write("                // 表示名に使用するプロパティが定義されていないため、キーを表示名に使用します。\r\n                item.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(SearchResult.INSTANCE_NAME_PROP_NAME));
+            this.Write(" = item.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(SearchResult.INSTANCE_KEY_PROP_NAME));
+            this.Write(";\r\n");
+ } else { 
+            this.Write("                item.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(SearchResult.INSTANCE_NAME_PROP_NAME));
+            this.Write(" = item.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(method.GetInstanceNamePropName()));
+            this.Write(";\r\n");
+ } 
+            this.Write("\r\n                yield return item;\r\n            }\r\n        }\r\n");
  } 
             this.Write("\r\n    }\r\n}\r\n");
             return this.GenerationEnvironment.ToString();

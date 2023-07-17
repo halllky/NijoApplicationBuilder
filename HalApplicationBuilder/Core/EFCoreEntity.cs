@@ -106,13 +106,18 @@ namespace HalApplicationBuilder.Core {
         /// 従たるエンティティ側のナビゲーションプロパティ
         /// </summary>
         internal Item Relevant { get; }
-        internal class Item {
+        internal class Item : ValueObject {
             internal required GraphNode<EFCoreEntity> Owner { get; init; }
             internal required string CSharpTypeName { get; init; }
             internal required string PropertyName { get; init; }
             internal required bool OppositeIsMany { get; init; }
             internal string? Initializer { get; init; }
             internal required IEnumerable<EFCoreEntity.Member> ForeignKeys { get; init; }
+
+            protected override IEnumerable<object?> ValueObjectIdentifiers() {
+                yield return Owner;
+                yield return PropertyName;
+            }
         }
 
         internal Microsoft.EntityFrameworkCore.DeleteBehavior OnPrincipalDeleted { get; init; }
