@@ -2,6 +2,7 @@ using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -39,25 +40,22 @@ namespace HalApplicationBuilder.CodeRendering.EFCore {
             internal string AggregateInstanceTypeFullName => $"{_ctx.Config.RootNamespace}.{_instance.ClassName}";
 
             internal IEnumerable<string> Include() {
-                return IncludeRecursively(_dbEntity);
-            }
-            private static IEnumerable<string> IncludeRecursively(GraphNode<EFCoreEntity> entity) {
-                var includes = entity.GetChildMembers()
-                    .Concat(entity.GetChildrenMembers())
-                    .Concat(entity.GetVariationMembers())
-                    .Concat(entity.GetRefMembers());
-                foreach (var edge in includes) {
-                    var path = edge.Source
-                        .PathFromEntry()
-                        .Select(edge => $".{edge.RelationName}")
-                        .Join("");
-                    yield return $".Include(x => x{path}.{edge.RelationName})";
+                var entities = new HashSet<GraphNode>();
+                void Collect(GraphNode<EFCoreEntity> entity) {
+                    entities.Add(entity);
+                    if (entity.Source == null || !entity.Source.IsRef()) {
+                        foreach (var child in entity.GetChildMembers()) Collect(child.Terminal.As<EFCoreEntity>());
+                        foreach (var child in entity.GetChildrenMembers()) Collect(child.Terminal.As<EFCoreEntity>());
+                        foreach (var refTarget in entity.GetRefMembers()) Collect(refTarget.Terminal.As<EFCoreEntity>());
+                    }
+                }
+                Collect(_dbEntity);
 
-                    // 再帰処理
-                    if (!edge.IsRef()) {
-                        foreach (var descendant in IncludeRecursively(edge.Terminal.As<EFCoreEntity>())) {
-                            yield return descendant;
-                        }
+                foreach (var entity in entities) {
+                    foreach (var edge in entity.PathFromEntry()) {
+                        yield return edge.Source.IsRoot()
+                            ? $".Include(x => x.{edge.RelationName})"
+                            : $".ThenInclude(x => x.{edge.RelationName})";
                     }
                 }
             }
