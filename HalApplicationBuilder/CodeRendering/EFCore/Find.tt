@@ -5,6 +5,8 @@
 <#@ import namespace="System.Collections.Generic" #>
 <#@ import namespace="HalApplicationBuilder.Core" #>
 <#@ import namespace="HalApplicationBuilder.CodeRendering.Util" #>
+#pragma warning disable CS8600 // Null リテラルまたは Null の可能性がある値を Null 非許容型に変換しています。
+
 namespace <#=_ctx.Config.DbContextNamespace#> {
     using System;
     using System.Collections;
@@ -24,7 +26,9 @@ namespace <#=_ctx.Config.DbContextNamespace#> {
 <# foreach (var line in method.Include()) { #>
                 <#=line#>
 <# } #>
-                .Find(instanceKey.<#=InstanceKey.OBJECT_ARRAY#>);
+<# foreach (var line in method.SingleOrDefault($"instanceKey.{InstanceKey.OBJECT_ARRAY}")) { #>
+                <#=line#>
+<# } #>
 
             if (entity == null) return null;
 

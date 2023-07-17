@@ -27,7 +27,8 @@ namespace HalApplicationBuilder.CodeRendering.EFCore
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("namespace ");
+            this.Write("#pragma warning disable CS8600 // Null リテラルまたは Null の可能性がある値を Null 非許容型に変換しています。\r" +
+                    "\n\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextNamespace));
             this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
                     "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n  " +
@@ -52,10 +53,13 @@ namespace HalApplicationBuilder.CodeRendering.EFCore
             this.Write(this.ToStringHelper.ToStringWithCulture(line));
             this.Write("\r\n");
  } 
-            this.Write("                .Find(instanceKey.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.OBJECT_ARRAY));
-            this.Write(");\r\n\r\n            if (entity == null) return null;\r\n\r\n            var aggregateIn" +
-                    "stance = ");
+ foreach (var line in method.SingleOrDefault($"instanceKey.{InstanceKey.OBJECT_ARRAY}")) { 
+            this.Write("                ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(line));
+            this.Write("\r\n");
+ } 
+            this.Write("\r\n            if (entity == null) return null;\r\n\r\n            var aggregateInstan" +
+                    "ce = ");
             this.Write(this.ToStringHelper.ToStringWithCulture(method.AggregateInstanceTypeFullName));
             this.Write(".");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance.FROM_DB_ENTITY_METHOD_NAME));

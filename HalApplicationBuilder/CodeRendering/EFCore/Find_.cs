@@ -61,6 +61,25 @@ namespace HalApplicationBuilder.CodeRendering.EFCore {
                     }
                 }
             }
+
+            internal IEnumerable<string> SingleOrDefault(string paramName) {
+                var keys = _dbEntity
+                    .GetColumns()
+                    .Where(col => col.IsPrimary)
+                    .ToArray();
+
+                for (int i = 0; i < keys.Length; i++) {
+                    var col = keys[i].PropertyName;
+                    var cast = keys[i].CSharpTypeName;
+                    var close = i == keys.Length - 1 ? ");" : "";
+
+                    if (i == 0) {
+                        yield return $".SingleOrDefault(x => x.{col} == ({cast}){paramName}[{i}]{close}";
+                    } else {
+                        yield return $"                   && x.{col} == ({cast}){paramName}[{i}]{close}";
+                    }
+                }
+            }
         }
     }
 }
