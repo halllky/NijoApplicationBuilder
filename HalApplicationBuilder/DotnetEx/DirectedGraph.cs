@@ -202,6 +202,8 @@ namespace HalApplicationBuilder.DotnetEx {
             : base(item, graph, source) { }
 
         internal new T Item => (T)base.Item;
+
+        internal new GraphNode<T> AsEntry() => base.AsEntry().As<T>();
     }
 
     /// <summary>
