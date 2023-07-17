@@ -609,6 +609,7 @@ namespace HalApplicationBuilder {
                         utilDir.Generate(new CodeRendering.Util.DotnetExtensions(ctx.Config));
                         utilDir.Generate(new CodeRendering.Util.FromTo(ctx.Config));
                         utilDir.Generate(new CodeRendering.Util.InstanceKey(ctx));
+                        utilDir.Generate(new CodeRendering.Util.AggregateInstanceKeyNamePair(ctx.Config));
                         utilDir.DeleteOtherFiles();
                     });
                     genDir.Directory("Web", controllerDir => {

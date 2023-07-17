@@ -7,7 +7,7 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering.Presentation
+namespace HalApplicationBuilder.CodeRendering.Util
 {
     using System.Linq;
     using System.Text;
@@ -25,6 +25,15 @@ namespace HalApplicationBuilder.CodeRendering.Presentation
         /// </summary>
         public virtual string TransformText()
         {
+            this.Write("using System;\r\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_namespace));
+            this.Write(" {\r\n    public class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CLASSNAME));
+            this.Write(" {\r\n        public virtual string ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(KEY));
+            this.Write(" { get; set; } = string.Empty;\r\n        public virtual string ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(NAME));
+            this.Write(" { get; set; } = string.Empty;\r\n    }\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

@@ -58,7 +58,7 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>AggregateInstanceBase.cs</LastGenOutput>
 		</None>
-		<None Update="CodeRendering\Presentation\AggregateInstanceKeyNamePair.tt">
+		<None Update="CodeRendering\Util\AggregateInstanceKeyNamePair.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>AggregateInstanceKeyNamePair.cs</LastGenOutput>
 		</None>
@@ -261,7 +261,7 @@
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>AggregateInstanceBase.tt</DependentUpon>
 		</Compile>
-		<Compile Update="CodeRendering\Presentation\AggregateInstanceKeyNamePair.cs">
+		<Compile Update="CodeRendering\Util\AggregateInstanceKeyNamePair.cs">
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>AggregateInstanceKeyNamePair.tt</DependentUpon>

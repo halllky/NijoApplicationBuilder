@@ -88,9 +88,9 @@ namespace HalApplicationBuilder.Core {
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
             } else if (graphEdge.IsRef()) {
-                Principal = CreateItem(initial, oppositeIsMany: false);
-                Relevant = CreateItem(terminal, oppositeIsMany: true);
-                OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
+                Principal = CreateItem(terminal, oppositeIsMany: true);
+                Relevant = CreateItem(initial, oppositeIsMany: false);
+                OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.NoAction;
 
             } else {
                 throw new ArgumentException("Graph edge can not be converted to navigation property.", nameof(graphEdge));

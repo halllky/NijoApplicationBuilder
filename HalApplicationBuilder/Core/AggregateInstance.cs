@@ -1,3 +1,4 @@
+using HalApplicationBuilder.CodeRendering.Util;
 using HalApplicationBuilder.DotnetEx;
 using System;
 using System.Collections.Generic;
@@ -5,7 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HalApplicationBuilder.Core {
+namespace HalApplicationBuilder.Core
+{
     internal class AggregateInstance : IGraphNode {
         internal AggregateInstance(Aggregate aggregate) {
             // TODO aggregateIdにコロンが含まれるケースの対策
@@ -100,7 +102,7 @@ namespace HalApplicationBuilder.Core {
                 var terminal = edge.Terminal.As<AggregateInstance>();
                 yield return new AggregateInstance.RefProperty {
                     RefTarget = terminal.Item,
-                    CSharpTypeName = CodeRendering.Presentation.AggregateInstanceKeyNamePair.CLASSNAME,
+                    CSharpTypeName = AggregateInstanceKeyNamePair.CLASSNAME,
                     PropertyName = edge.RelationName,
                 };
             }
