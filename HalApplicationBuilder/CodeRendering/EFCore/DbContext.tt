@@ -11,13 +11,6 @@ namespace <#=_ctx.Config.DbContextNamespace#> {
     public partial class <#=_ctx.Config.DbContextName#> : DbContext {
         public <#=_ctx.Config.DbContextName#>(DbContextOptions<<#=_ctx.Config.DbContextName#>> options) : base(options) { }
 
-
-<# /* DbSet定義 */ #>
-<# foreach (var dbEntity in _ctx.Schema.ToEFCoreGraph()) { #>
-        public DbSet<<#=_ctx.Config.EntityNamespace#>.<#=dbEntity.Item.ClassName#>> <#=dbEntity.Item.DbSetName#> { get; set; }
-<# }#>
-
-
 <# /* OnModelCreating定義 */ #>
         protected override void OnModelCreating(ModelBuilder modelBuilder) {
 <# foreach (var dbEntity in _ctx.Schema.ToEFCoreGraph()) { #>

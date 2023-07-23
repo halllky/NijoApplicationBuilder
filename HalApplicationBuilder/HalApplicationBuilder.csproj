@@ -30,6 +30,10 @@
 	  <None Remove="Template.xml" />
 	</ItemGroup>
 	<ItemGroup>
+		<None Update="CodeRendering\AggFile.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>AggFile.cs</LastGenOutput>
+		</None>
 		<None Update="CodeRendering\Configure.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>Configure.cs</LastGenOutput>
@@ -38,22 +42,6 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>DbContext.cs</LastGenOutput>
 		</None>
-		<None Update="CodeRendering\EFCore\Entities.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>Entities.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\EFCore\Find.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>Find.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\EFCore\Search.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>Search.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\EFCore\Upsert.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>Upsert.cs</LastGenOutput>
-		</None>
 		<None Update="CodeRendering\Presentation\AggregateInstanceBase.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>AggregateInstanceBase.cs</LastGenOutput>
@@ -61,10 +49,6 @@
 		<None Update="CodeRendering\Util\AggregateInstanceKeyNamePair.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>AggregateInstanceKeyNamePair.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\Presentation\ApiInterface.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>ApiInterface.cs</LastGenOutput>
 		</None>
 		<None Update="CodeRendering\Presentation\SearchConditionBase.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
@@ -77,10 +61,6 @@
 		<None Update="CodeRendering\ReactAndWebApi\ComboBox.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>ComboBox.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\ReactAndWebApi\Controller.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>Controller.cs</LastGenOutput>
 		</None>
 		<None Update="CodeRendering\ReactAndWebApi\DebuggerController.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
@@ -226,6 +206,11 @@
 		<Compile Update="CodeGenerating\MultiView\MultiViewTemplate.cs">
 			<DependentUpon>MultiViewTemplate.tt</DependentUpon>
 		</Compile>
+		<Compile Update="CodeRendering\AggFile.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>AggFile.tt</DependentUpon>
+		</Compile>
 		<Compile Update="CodeRendering\Configure.cs">
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
@@ -236,26 +221,6 @@
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>DbContext.tt</DependentUpon>
 		</Compile>
-		<Compile Update="CodeRendering\EFCore\Entities.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>Entities.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\EFCore\Find.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>Find.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\EFCore\Search.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>Search.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\EFCore\Upsert.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>Upsert.tt</DependentUpon>
-		</Compile>
 		<Compile Update="CodeRendering\Presentation\AggregateInstanceBase.cs">
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
@@ -265,11 +230,6 @@
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>AggregateInstanceKeyNamePair.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\Presentation\ApiInterface.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>ApiInterface.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering\Presentation\SearchConditionBase.cs">
 		  <DesignTime>True</DesignTime>
@@ -285,11 +245,6 @@
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>ComboBox.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\ReactAndWebApi\Controller.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>Controller.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering\ReactAndWebApi\DebuggerController.cs">
 		  <DesignTime>True</DesignTime>

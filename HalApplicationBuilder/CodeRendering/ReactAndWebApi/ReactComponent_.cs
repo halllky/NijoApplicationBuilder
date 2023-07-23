@@ -23,14 +23,14 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
             _dbEntity = dbEntity;
             _searchCondition = new SearchCondition(dbEntity);
             _searchResult = new SearchResult(dbEntity);
-            _controller = new Controller(dbEntity, ctx);
+            _controller = new AggFile.Controller(dbEntity.GetCorrespondingAggregate());
         }
 
         private readonly CodeRenderingContext _ctx;
         private readonly GraphNode<EFCoreEntity> _dbEntity;
         private readonly SearchCondition _searchCondition;
         private readonly SearchResult _searchResult;
-        private readonly Controller _controller;
+        private readonly AggFile.Controller _controller;
 
         internal GraphNode<Aggregate> Aggregate { get; }
 

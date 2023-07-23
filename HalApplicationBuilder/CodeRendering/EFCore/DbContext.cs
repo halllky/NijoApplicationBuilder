@@ -34,18 +34,7 @@ namespace HalApplicationBuilder.CodeRendering.EFCore
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
             this.Write("(DbContextOptions<");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
-            this.Write("> options) : base(options) { }\r\n\r\n\r\n");
- /* DbSet’è‹` */ 
- foreach (var dbEntity in _ctx.Schema.ToEFCoreGraph()) { 
-            this.Write("        public DbSet<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
-            this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(dbEntity.Item.ClassName));
-            this.Write("> ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(dbEntity.Item.DbSetName));
-            this.Write(" { get; set; }\r\n");
- }
-            this.Write("\r\n\r\n");
+            this.Write("> options) : base(options) { }\r\n\r\n");
  /* OnModelCreating’è‹` */ 
             this.Write("        protected override void OnModelCreating(ModelBuilder modelBuilder) {\r\n");
  foreach (var dbEntity in _ctx.Schema.ToEFCoreGraph()) { 

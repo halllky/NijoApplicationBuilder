@@ -23,14 +23,14 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
             _dbEntity = dbEntity;
             _searchCondition = new SearchCondition(dbEntity);
             _searchResult = new SearchResult(dbEntity);
-            _controller = new Controller(dbEntity, ctx);
+            _controller = new AggFile.Controller(dbEntity.GetCorrespondingAggregate());
         }
 
         private readonly CodeRenderingContext _ctx;
         private readonly GraphNode<EFCoreEntity> _dbEntity;
         private readonly SearchCondition _searchCondition;
         private readonly SearchResult _searchResult;
-        private readonly Controller _controller;
+        private readonly AggFile.Controller _controller;
 
         internal GraphNode<Aggregate> Aggregate { get; }
 
@@ -40,6 +40,6 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
         internal string ComponentName => $"ComboBox{Aggregate.Item.DisplayName.ToCSharpSafe()}";
 
         internal string UseQueryKey => $"combo-{Aggregate.Item.UniqueId}";
-        internal string Api => new Controller(_dbEntity, _ctx).KeywordSearchCommandApi;
+        internal string Api => new AggFile.Controller(_dbEntity.GetCorrespondingAggregate()).KeywordSearchCommandApi;
     }
 }
