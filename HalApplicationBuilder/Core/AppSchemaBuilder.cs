@@ -436,6 +436,31 @@ namespace HalApplicationBuilder.Core {
 
         // ----------------------------- GraphNode extensions -----------------------------
 
+        internal static IEnumerable<GraphNode<T>> EnumerateThisAndAncestors<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+            GraphNode<T>? node = graphNode;
+            while (node != null) {
+                yield return node;
+                node = node.GetParent()?.Initial;
+            }
+        }
+        internal static IEnumerable<GraphNode<T>> EnumerateThisAndDescendants<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+            static IEnumerable<GraphNode<T>> GetDescencantsRecursively(GraphNode<T> node) {
+                var children = node.GetChildMembers()
+                    .Concat(node.GetVariationMembers())
+                    .Concat(node.GetChildrenMembers());
+                foreach (var edge in children) {
+                    yield return edge.Terminal;
+                    foreach (var descendant in GetDescencantsRecursively(edge.Terminal)) {
+                        yield return descendant;
+                    }
+                }
+            }
+
+            yield return graphNode;
+            foreach (var desc in GetDescencantsRecursively(graphNode)) {
+                yield return desc;
+            }
+        }
         internal static GraphEdge<T>? GetParent<T>(this GraphNode<T> graphNode) where T : IGraphNode {
             var edge = graphNode.In.SingleOrDefault(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                                                     && (string)type == REL_ATTRVALUE_PARENT_CHILD);
