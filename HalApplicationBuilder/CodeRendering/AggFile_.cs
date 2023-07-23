@@ -61,9 +61,9 @@ namespace HalApplicationBuilder.CodeRendering {
                 void Collect(GraphNode<EFCoreEntity> entity) {
                     entities.Add(entity);
                     if (entity.Source == null || !entity.Source.IsRef()) {
-                        foreach (var child in entity.GetChildMembers()) Collect(child.Terminal.As<EFCoreEntity>());
-                        foreach (var child in entity.GetChildrenMembers()) Collect(child.Terminal.As<EFCoreEntity>());
-                        foreach (var refTarget in entity.GetRefMembers()) Collect(refTarget.Terminal.As<EFCoreEntity>());
+                        foreach (var child in entity.GetChildMembers()) Collect(child.Terminal);
+                        foreach (var child in entity.GetChildrenMembers()) Collect(child.Terminal);
+                        foreach (var refTarget in entity.GetRefMembers()) Collect(refTarget.Terminal);
                     }
                 }
                 Collect(_dbEntity);

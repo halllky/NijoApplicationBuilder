@@ -197,15 +197,6 @@ namespace HalApplicationBuilder.DotnetEx {
             yield return Item.Id;
         }
     }
-    internal class GraphNode<T> : GraphNode where T : IGraphNode {
-        internal GraphNode(T item, DirectedGraph graph, GraphEdge? source)
-            : base(item, graph, source) { }
-
-        internal new T Item => (T)base.Item;
-
-        internal new GraphNode<T> AsEntry() => base.AsEntry().As<T>();
-    }
-
     /// <summary>
     /// 有向グラフの辺
     /// </summary>
@@ -247,12 +238,32 @@ namespace HalApplicationBuilder.DotnetEx {
             }
         }
 
+        internal GraphEdge<T> As<T>() where T : IGraphNode {
+            return new GraphEdge<T>(_info, _graph, Source);
+        }
+
         public override string ToString() => $"{_info.Initial} == {_info.RelationName} ==> {_info.Terminal}";
 
         protected override IEnumerable<object?> ValueObjectIdentifiers() {
             yield return _info;
             yield return _graph;
         }
+    }
+
+    internal class GraphNode<T> : GraphNode where T : IGraphNode {
+        internal GraphNode(T item, DirectedGraph graph, GraphEdge? source)
+            : base(item, graph, source) { }
+
+        internal new T Item => (T)base.Item;
+
+        internal new GraphNode<T> AsEntry() => base.AsEntry().As<T>();
+    }
+    internal class GraphEdge<T> : GraphEdge where T : IGraphNode {
+        internal GraphEdge(GraphEdgeInfo info, DirectedGraph graph, GraphNode source) : base(info, graph, source) {
+        }
+
+        internal new GraphNode<T> Initial => base.Initial.As<T>();
+        internal new GraphNode<T> Terminal => base.Terminal.As<T>();
     }
     #endregion COMPUTED
 

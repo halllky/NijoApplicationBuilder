@@ -157,7 +157,23 @@ namespace HalApplicationBuilder.Core {
             }
         }
         internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<EFCoreEntity> efCoreEntity, Config config) {
-            foreach (var edge in efCoreEntity.GetParentOrChildOrRef()) {
+            var parent = efCoreEntity.GetParent();
+            if (parent != null)
+                yield return new NavigationProperty(parent, config);
+
+            foreach (var edge in efCoreEntity.GetChildMembers()) {
+                yield return new NavigationProperty(edge, config);
+            }
+            foreach (var edge in efCoreEntity.GetVariationMembers()) {
+                yield return new NavigationProperty(edge, config);
+            }
+            foreach (var edge in efCoreEntity.GetChildrenMembers()) {
+                yield return new NavigationProperty(edge, config);
+            }
+            foreach (var edge in efCoreEntity.GetRefMembers()) {
+                yield return new NavigationProperty(edge, config);
+            }
+            foreach (var edge in efCoreEntity.GetReferrings()) {
                 yield return new NavigationProperty(edge, config);
             }
         }

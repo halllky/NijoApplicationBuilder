@@ -39,19 +39,19 @@ namespace HalApplicationBuilder.Core {
                     foreach (var member in dbEntity
                         .GetRefMembers()
                         .Where(edge => edge.IsPrimary())
-                        .SelectMany(edge => EnumerateRecursively(edge.Terminal.As<EFCoreEntity>(), asRef: true))) {
+                        .SelectMany(edge => EnumerateRecursively(edge.Terminal, asRef: true))) {
                         yield return member;
                     }
                 }
                 if (!asRef) {
                     foreach (var member in dbEntity
                         .GetRefMembers()
-                        .SelectMany(edge => EnumerateRecursively(edge.Terminal.As<EFCoreEntity>(), asRef: true))) {
+                        .SelectMany(edge => EnumerateRecursively(edge.Terminal, asRef: true))) {
                         yield return member;
                     }
                     foreach (var member in dbEntity
                         .GetChildMembers()
-                        .SelectMany(edge => EnumerateRecursively(edge.Terminal.As<EFCoreEntity>(), asRef: false))) {
+                        .SelectMany(edge => EnumerateRecursively(edge.Terminal, asRef: false))) {
                         yield return member;
                     }
                 }

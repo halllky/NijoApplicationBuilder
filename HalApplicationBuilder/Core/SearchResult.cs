@@ -38,14 +38,14 @@ namespace HalApplicationBuilder.Core {
 
                 var refMembers = dbEntity
                     .GetRefMembers()
-                    .SelectMany(edge => GetMembersRecursively(edge.Terminal.As<EFCoreEntity>()));
+                    .SelectMany(edge => GetMembersRecursively(edge.Terminal));
                 foreach (var member in refMembers) {
                     yield return member;
                 }
 
                 var childMembers = dbEntity
                     .GetChildMembers()
-                    .SelectMany(edge => GetMembersRecursively(edge.Terminal.As<EFCoreEntity>()));
+                    .SelectMany(edge => GetMembersRecursively(edge.Terminal));
                 foreach (var member in childMembers) {
                     yield return member;
                 }

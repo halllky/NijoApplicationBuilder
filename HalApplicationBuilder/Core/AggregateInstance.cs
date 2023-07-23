@@ -63,34 +63,31 @@ namespace HalApplicationBuilder.Core
             var initial = node.GetDbEntity().Item.Id;
 
             foreach (var edge in node.GetChildMembers()) {
-                var terminal = edge.Terminal.As<AggregateInstance>();
-                var navigationProperty = new NavigationProperty(terminal.GetDbEntity().In.Single(e => e.Initial.Item.Id == initial), config);
+                var navigationProperty = new NavigationProperty(edge.Terminal.GetDbEntity().In.Single(e => e.Initial.Item.Id == initial), config);
                 yield return new AggregateInstance.ChildAggregateProperty {
-                    ChildAggregateInstance = terminal,
+                    ChildAggregateInstance = edge.Terminal,
                     CorrespondingNavigationProperty = navigationProperty,
-                    CSharpTypeName = terminal.Item.ClassName,
+                    CSharpTypeName = edge.Terminal.Item.ClassName,
                     PropertyName = edge.RelationName,
                     Multiple = false,
                 };
             }
             foreach (var edge in node.GetVariationMembers()) {
-                var terminal = edge.Terminal.As<AggregateInstance>();
-                var navigationProperty = new NavigationProperty(terminal.GetDbEntity().In.Single(e => e.Initial.Item.Id == initial), config);
+                var navigationProperty = new NavigationProperty(edge.Terminal.GetDbEntity().In.Single(e => e.Initial.Item.Id == initial), config);
                 yield return new AggregateInstance.ChildAggregateProperty {
-                    ChildAggregateInstance = terminal,
+                    ChildAggregateInstance = edge.Terminal,
                     CorrespondingNavigationProperty = navigationProperty,
-                    CSharpTypeName = terminal.Item.ClassName,
+                    CSharpTypeName = edge.Terminal.Item.ClassName,
                     PropertyName = edge.RelationName,
                     Multiple = false,
                 };
             }
             foreach (var edge in node.GetChildrenMembers()) {
-                var terminal = edge.Terminal.As<AggregateInstance>();
-                var navigationProperty = new NavigationProperty(terminal.GetDbEntity().In.Single(e => e.Initial.Item.Id == initial), config);
+                var navigationProperty = new NavigationProperty(edge.Terminal.GetDbEntity().In.Single(e => e.Initial.Item.Id == initial), config);
                 yield return new AggregateInstance.ChildAggregateProperty {
-                    ChildAggregateInstance = terminal,
+                    ChildAggregateInstance = edge.Terminal,
                     CorrespondingNavigationProperty = navigationProperty,
-                    CSharpTypeName = $"List<{terminal.Item.ClassName}>",
+                    CSharpTypeName = $"List<{edge.Terminal.Item.ClassName}>",
                     PropertyName = edge.RelationName,
                     Multiple = true,
                 };
@@ -99,9 +96,8 @@ namespace HalApplicationBuilder.Core
 
         internal static IEnumerable<AggregateInstance.RefProperty> GetRefProperties(this GraphNode<AggregateInstance> node, Config config) {
             foreach (var edge in node.GetRefMembers()) {
-                var terminal = edge.Terminal.As<AggregateInstance>();
                 yield return new AggregateInstance.RefProperty {
-                    RefTarget = terminal.Item,
+                    RefTarget = edge.Terminal.Item,
                     CSharpTypeName = AggregateInstanceKeyNamePair.CLASSNAME,
                     PropertyName = edge.RelationName,
                 };

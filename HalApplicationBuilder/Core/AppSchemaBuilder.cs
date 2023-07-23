@@ -436,21 +436,16 @@ namespace HalApplicationBuilder.Core {
 
         // ----------------------------- GraphNode extensions -----------------------------
 
-        internal static GraphNode<T>? GetParent<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+        internal static GraphEdge<T>? GetParent<T>(this GraphNode<T> graphNode) where T : IGraphNode {
             var edge = graphNode.In.SingleOrDefault(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                                                     && (string)type == REL_ATTRVALUE_PARENT_CHILD);
             if (edge == null) return null;
             if (edge.Initial.Item is not T) throw new InvalidOperationException($"Parent of '{graphNode.Item.Id}' is not same type to it's child.");
-            return edge.Initial.As<T>();
+            return edge.As<T>();
         }
         internal static bool IsRoot(this GraphNode graphNode) {
             return !graphNode.In.Any(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                                              && (string)type == REL_ATTRVALUE_PARENT_CHILD);
-        }
-
-        internal static IEnumerable<GraphEdge> GetParentOrChildOrRef(this GraphNode graphNode) {
-            return graphNode.InAndOut.Where(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_PARENT_CHILD
-                                                 || (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_REFERENCE);
         }
 
         internal static GraphNode<EFCoreEntity> GetDbEntity(this GraphNode<Aggregate> aggregate) {
@@ -503,27 +498,35 @@ namespace HalApplicationBuilder.Core {
                 && graphNode.Source.Initial == parent;
         }
 
-        internal static IEnumerable<GraphEdge> GetChildrenMembers<T>(this GraphNode<T> graphNode) where T : IGraphNode {
-            return graphNode.Out.Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                                                && (string)type == REL_ATTRVALUE_PARENT_CHILD
-                                                && edge.Attributes.ContainsKey(REL_ATTR_MULTIPLE));
+        internal static IEnumerable<GraphEdge<T>> GetChildrenMembers<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+            return graphNode.Out
+                .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                            && (string)type == REL_ATTRVALUE_PARENT_CHILD
+                            && edge.Attributes.ContainsKey(REL_ATTR_MULTIPLE))
+                .Select(edge => edge.As<T>());
         }
-        internal static IEnumerable<GraphEdge> GetChildMembers<T>(this GraphNode<T> graphNode) where T : IGraphNode {
-            return graphNode.Out.Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                                                && (string)type == REL_ATTRVALUE_PARENT_CHILD
-                                                && !edge.Attributes.ContainsKey(REL_ATTR_MULTIPLE));
+        internal static IEnumerable<GraphEdge<T>> GetChildMembers<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+            return graphNode.Out
+                .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                            && (string)type == REL_ATTRVALUE_PARENT_CHILD
+                            && !edge.Attributes.ContainsKey(REL_ATTR_MULTIPLE))
+                .Select(edge => edge.As<T>());
         }
-        internal static IEnumerable<GraphEdge> GetVariationMembers<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+        internal static IEnumerable<GraphEdge<T>> GetVariationMembers<T>(this GraphNode<T> graphNode) where T : IGraphNode {
             // TODO
             yield break;
         }
-        internal static IEnumerable<GraphEdge> GetRefMembers<T>(this GraphNode<T> graphNode) where T : IGraphNode {
-            return graphNode.Out.Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                                                && (string)type == REL_ATTRVALUE_REFERENCE);
+        internal static IEnumerable<GraphEdge<T>> GetRefMembers<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+            return graphNode.Out
+                .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                            && (string)type == REL_ATTRVALUE_REFERENCE)
+                .Select(edge => edge.As<T>());
         }
-        internal static IEnumerable<GraphEdge> GetReferrings<T>(this GraphNode<T> graphNode) where T : IGraphNode {
-            return graphNode.In.Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                                                && (string)type == REL_ATTRVALUE_REFERENCE);
+        internal static IEnumerable<GraphEdge<T>> GetReferrings<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+            return graphNode.In
+                .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                            && (string)type == REL_ATTRVALUE_REFERENCE)
+                .Select(edge => edge.As<T>());
         }
 
         // ----------------------------- GraphEdge extensions -----------------------------
