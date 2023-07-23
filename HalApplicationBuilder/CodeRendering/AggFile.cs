@@ -29,9 +29,8 @@ namespace HalApplicationBuilder.CodeRendering
         {
             this.Write("#pragma warning disable CS8600 // Null リテラルまたは Null の可能性がある値を Null 非許容型に変換しています。\r" +
                     "\n#pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなけれ" +
-                    "ばなりません\r\n#pragma warning disable IDE1006 // 命名スタイル\r\n\r\n");
- if (_aggregate.IsRoot()) { 
-            this.Write("#region データ新規作成\r\nnamespace ");
+                    "ばなりません\r\n#pragma warning disable IDE1006 // 命名スタイル\r\n\r\n#region データ新規作成\r\nnamespace " +
+                    "");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.RootNamespace));
             this.Write(" {\r\n    using Microsoft.AspNetCore.Mvc;\r\n    using ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
@@ -264,19 +263,19 @@ namespace HalApplicationBuilder.CodeRendering
                     "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n  " +
                     "  using Microsoft.EntityFrameworkCore.Infrastructure;\r\n\r\n    partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
-            this.Write(" {\r\n    }\r\n}\r\n#endregion 更新\r\n\r\n\r\n#region 削除\r\n#endregion 削除\r\n");
- } 
-            this.Write("\r\n\r\n#region データ構造\r\nnamespace ");
+            this.Write(" {\r\n    }\r\n}\r\n#endregion 更新\r\n\r\n\r\n#region 削除\r\n#endregion 削除\r\n\r\n\r\n#region データ構造\r\nna" +
+                    "mespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
             this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
                     "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n  " +
-                    "  using Microsoft.EntityFrameworkCore.Infrastructure;\r\n\r\n    /// <summary>\r\n    " +
-                    "/// ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
+                    "  using Microsoft.EntityFrameworkCore.Infrastructure;\r\n    \r\n");
+ foreach (var ett in _dbEntity.EnumerateThisAndDescendants()) { 
+            this.Write("    /// <summary>\r\n    /// ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ett.GetCorrespondingAggregate().Item.DisplayName));
             this.Write("のデータベースに保存されるデータの形を表すクラスです。\r\n    /// </summary>\r\n    public partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_dbEntity.Item.ClassName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(ett.Item.ClassName));
             this.Write(" {\r\n");
- foreach (var col in _dbEntity.GetColumns()) { 
+ foreach (var col in ett.GetColumns()) { 
             this.Write("        public ");
             this.Write(this.ToStringHelper.ToStringWithCulture(col.CSharpTypeName));
             this.Write(" ");
@@ -286,7 +285,7 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write("\r\n");
  } 
             this.Write("\r\n");
- foreach (var nav in EnumerateNavigationProperties()) { 
+ foreach (var nav in EnumerateNavigationProperties(ett)) { 
             this.Write("        public virtual ");
             this.Write(this.ToStringHelper.ToStringWithCulture(nav.CSharpTypeName));
             this.Write(" ");
@@ -295,34 +294,42 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(this.ToStringHelper.ToStringWithCulture(nav.Initializer == null ? "" : $" = {nav.Initializer};"));
             this.Write("\r\n");
  } 
-            this.Write("    }\r\n\r\n    partial class ");
+            this.Write("    }\r\n");
+ } 
+            this.Write("\r\n    partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
-            this.Write(" {\r\n        public DbSet<");
+            this.Write(" {\r\n");
+ foreach (var ett in _dbEntity.EnumerateThisAndDescendants()) { 
+            this.Write("        public DbSet<");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
             this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_dbEntity.Item.ClassName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(ett.Item.ClassName));
             this.Write("> ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_dbEntity.Item.DbSetName));
-            this.Write(" { get; set; }\r\n    }\r\n}\r\n\r\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ett.Item.DbSetName));
+            this.Write(" { get; set; }\r\n");
+ } 
+            this.Write("    }\r\n}\r\n\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.RootNamespace));
             this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
-                    "s.Generic;\r\n    using System.Linq;\r\n\r\n    /// <summary>\r\n    /// ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
+                    "s.Generic;\r\n    using System.Linq;\r\n\r\n");
+ foreach (var ins in _aggregateInstance.EnumerateThisAndDescendants()) { 
+            this.Write("    /// <summary>\r\n    /// ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ins.GetCorrespondingAggregate().Item.DisplayName));
             this.Write("のデータ1件の詳細を表すクラスです。\r\n    /// </summary>\r\n    public partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(ins.Item.ClassName));
             this.Write(" : ");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance.BASE_CLASS_NAME));
             this.Write(" {\r\n");
- foreach (var prop in _aggregateInstance.GetProperties(_ctx.Config)) { 
+ foreach (var prop in ins.GetProperties(_ctx.Config)) { 
             this.Write("        public ");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
             this.Write(" ");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
             this.Write(" { get; set; }\r\n");
  } 
-            this.Write("    }\r\n    \r\n");
- if (_aggregate.IsRoot()) { 
-            this.Write("    /// <summary>\r\n    /// ");
+            this.Write("    }\r\n");
+ } 
+            this.Write("\r\n    /// <summary>\r\n    /// ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
             this.Write("の一覧検索処理の検索条件を表すクラスです。\r\n    /// </summary>\r\n    public partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_searchCondition.ClassName));
@@ -350,9 +357,7 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.Name));
             this.Write(" { get; set; }\r\n");
  } 
-            this.Write("    }\r\n");
- } 
-            this.Write("}\r\n#endregion データ構造\r\n");
+            this.Write("    }\r\n}\r\n#endregion データ構造\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

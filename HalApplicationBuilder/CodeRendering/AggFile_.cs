@@ -10,6 +10,9 @@ namespace HalApplicationBuilder.CodeRendering {
     partial class AggFile : ITemplate {
 
         internal AggFile(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx) {
+            if (!aggregate.IsRoot())
+                throw new ArgumentException($"{nameof(AggFile)} requires root aggregate.", nameof(aggregate));
+
             _aggregate = aggregate;
             _dbEntity = aggregate.GetDbEntity().AsEntry().As<EFCoreEntity>();
             _aggregateInstance = aggregate.GetInstanceClass().AsEntry().As<AggregateInstance>();
@@ -31,10 +34,10 @@ namespace HalApplicationBuilder.CodeRendering {
         public string FileName => $"{_aggregate.Item.DisplayName.ToFileNameSafe()}.cs";
         private const string E = "e";
 
-        private IEnumerable<NavigationProperty.Item> EnumerateNavigationProperties() {
-            foreach (var nav in _dbEntity.GetNavigationProperties(_ctx.Config)) {
-                if (nav.Principal.Owner == _dbEntity) yield return nav.Principal;
-                if (nav.Relevant.Owner == _dbEntity) yield return nav.Relevant;
+        private IEnumerable<NavigationProperty.Item> EnumerateNavigationProperties(GraphNode<EFCoreEntity> entity) {
+            foreach (var nav in entity.GetNavigationProperties(_ctx.Config)) {
+                if (nav.Principal.Owner == entity) yield return nav.Principal;
+                if (nav.Relevant.Owner == entity) yield return nav.Relevant;
             }
         }
 

@@ -9,7 +9,6 @@
 #pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければなりません
 #pragma warning disable IDE1006 // 命名スタイル
 
-<# if (_aggregate.IsRoot()) { #>
 #region データ新規作成
 namespace <#=_ctx.Config.RootNamespace#> {
     using Microsoft.AspNetCore.Mvc;
@@ -235,7 +234,6 @@ namespace <#=_ctx.Config.EntityNamespace#> {
 
 #region 削除
 #endregion 削除
-<# } #>
 
 
 #region データ構造
@@ -246,22 +244,26 @@ namespace <#=_ctx.Config.EntityNamespace#> {
     using System.Linq;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore.Infrastructure;
-
+    
+<# foreach (var ett in _dbEntity.EnumerateThisAndDescendants()) { #>
     /// <summary>
-    /// <#=_aggregate.Item.DisplayName#>のデータベースに保存されるデータの形を表すクラスです。
+    /// <#=ett.GetCorrespondingAggregate().Item.DisplayName#>のデータベースに保存されるデータの形を表すクラスです。
     /// </summary>
-    public partial class <#=_dbEntity.Item.ClassName#> {
-<# foreach (var col in _dbEntity.GetColumns()) { #>
+    public partial class <#=ett.Item.ClassName#> {
+<# foreach (var col in ett.GetColumns()) { #>
         public <#=col.CSharpTypeName#> <#=col.PropertyName#> { get; set; }<#=col.Initializer == null ? "" : $" = {col.Initializer};"#>
 <# } #>
 
-<# foreach (var nav in EnumerateNavigationProperties()) { #>
+<# foreach (var nav in EnumerateNavigationProperties(ett)) { #>
         public virtual <#=nav.CSharpTypeName#> <#=nav.PropertyName#> { get; set; }<#=nav.Initializer == null ? "" : $" = {nav.Initializer};"#>
 <# } #>
     }
+<# } #>
 
     partial class <#=_ctx.Config.DbContextName#> {
-        public DbSet<<#=_ctx.Config.EntityNamespace#>.<#=_dbEntity.Item.ClassName#>> <#=_dbEntity.Item.DbSetName#> { get; set; }
+<# foreach (var ett in _dbEntity.EnumerateThisAndDescendants()) { #>
+        public DbSet<<#=_ctx.Config.EntityNamespace#>.<#=ett.Item.ClassName#>> <#=ett.Item.DbSetName#> { get; set; }
+<# } #>
     }
 }
 
@@ -271,16 +273,17 @@ namespace <#=_ctx.Config.RootNamespace#> {
     using System.Collections.Generic;
     using System.Linq;
 
+<# foreach (var ins in _aggregateInstance.EnumerateThisAndDescendants()) { #>
     /// <summary>
-    /// <#=_aggregate.Item.DisplayName#>のデータ1件の詳細を表すクラスです。
+    /// <#=ins.GetCorrespondingAggregate().Item.DisplayName#>のデータ1件の詳細を表すクラスです。
     /// </summary>
-    public partial class <#=_aggregateInstance.Item.ClassName#> : <#=AggregateInstance.BASE_CLASS_NAME#> {
-<# foreach (var prop in _aggregateInstance.GetProperties(_ctx.Config)) { #>
+    public partial class <#=ins.Item.ClassName#> : <#=AggregateInstance.BASE_CLASS_NAME#> {
+<# foreach (var prop in ins.GetProperties(_ctx.Config)) { #>
         public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }
 <# } #>
     }
-    
-<# if (_aggregate.IsRoot()) { #>
+<# } #>
+
     /// <summary>
     /// <#=_aggregate.Item.DisplayName#>の一覧検索処理の検索条件を表すクラスです。
     /// </summary>
@@ -298,6 +301,5 @@ namespace <#=_ctx.Config.RootNamespace#> {
         public <#=prop.Type.GetCSharpTypeName()#> <#=prop.Name#> { get; set; }
 <# } #>
     }
-<# } #>
 }
 #endregion データ構造
