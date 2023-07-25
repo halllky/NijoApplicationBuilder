@@ -26,25 +26,11 @@ namespace <#=_ctx.Config.RootNamespace#> {
 
         [HttpPost("<#=Controller.CREATE_ACTION_NAME#>")]
         public virtual IActionResult Create([FromBody] <#=_aggregateInstance.Item.ClassName#> param) {
-            // TODO
-            throw new NotImplementedException();
-        }
-    }
-}
-namespace <#=_ctx.Config.RootNamespace#> {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Linq;
-
-    partial class <#=_aggregateInstance.Item.ClassName#> {
-        /// <summary>
-        /// <#=_aggregate.Item.DisplayName#>のデータ1件の内容をデータベースに保存する形に変換します。
-        /// </summary>
-        public <#=_ctx.Config.EntityNamespace#>.<#=_dbEntity.Item.ClassName#> <#=AggregateInstance.TO_DB_ENTITY_METHOD_NAME#>() {
-<# PushIndent("            "); #>
-<# ToDbEntity(); #>
-<# PopIndent(); #>
+            if (_dbContext.<#=_create.MethodName#>(param, out var created, out var errors)) {
+                return this.JsonContent(created);
+            } else {
+                return BadRequest(string.Join(Environment.NewLine, errors));
+            }
         }
     }
 }
@@ -57,6 +43,22 @@ namespace <#=_ctx.Config.EntityNamespace#> {
     using Microsoft.EntityFrameworkCore.Infrastructure;
 
     partial class <#=_ctx.Config.DbContextName#> {
+        public bool <#=_create.MethodName#>(<#=_aggregateInstance.Item.ClassName#> instance, out <#=_aggregateInstance.Item.ClassName#> created, out ICollection<string> errors) {
+            var dbEntity = instance.<#=AggregateInstance.TO_DB_ENTITY_METHOD_NAME#>();
+            this.Add(dbEntity);
+
+            try {
+                this.SaveChanges();
+            } catch (Exception ex) {
+                created = new <#=_aggregateInstance.Item.ClassName#>();
+                errors = ex.GetMessagesRecursively("  ").ToList();
+                return false;
+            }
+
+            created = <#=_aggregateInstance.Item.ClassName#>.<#=AggregateInstance.FROM_DB_ENTITY_METHOD_NAME#>(dbEntity);
+            errors = new List<string>();
+            return true;
+        }
     }
 }
 #endregion データ新規作成
@@ -185,23 +187,6 @@ namespace <#=_ctx.Config.EntityNamespace#> {
         }
     }
 }
-namespace <#=_ctx.Config.RootNamespace#> {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Linq;
-
-    partial class <#=_aggregateInstance.Item.ClassName#> {
-        /// <summary>
-        /// <#=_aggregate.Item.DisplayName#>のデータベースから取得した内容を画面に表示する形に変換します。
-        /// </summary>
-        public static <#=_aggregateInstance.Item.ClassName#> <#=AggregateInstance.FROM_DB_ENTITY_METHOD_NAME#>(<#=_ctx.Config.EntityNamespace#>.<#=_dbEntity.Item.ClassName#> <#=E#>) {
-<# PushIndent("            "); #>
-<# FromDbEntity(); #>
-<# PopIndent(); #>
-        }
-    }
-}
 #endregion 詳細検索
 
 
@@ -237,41 +222,30 @@ namespace <#=_ctx.Config.EntityNamespace#> {
 
 
 #region データ構造
-namespace <#=_ctx.Config.EntityNamespace#> {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Linq;
-    using Microsoft.EntityFrameworkCore;
-    using Microsoft.EntityFrameworkCore.Infrastructure;
-    
-<# foreach (var ett in _dbEntity.EnumerateThisAndDescendants()) { #>
-    /// <summary>
-    /// <#=ett.GetCorrespondingAggregate().Item.DisplayName#>のデータベースに保存されるデータの形を表すクラスです。
-    /// </summary>
-    public partial class <#=ett.Item.ClassName#> {
-<# foreach (var col in ett.GetColumns()) { #>
-        public <#=col.CSharpTypeName#> <#=col.PropertyName#> { get; set; }<#=col.Initializer == null ? "" : $" = {col.Initializer};"#>
-<# } #>
-
-<# foreach (var nav in EnumerateNavigationProperties(ett)) { #>
-        public virtual <#=nav.CSharpTypeName#> <#=nav.PropertyName#> { get; set; }<#=nav.Initializer == null ? "" : $" = {nav.Initializer};"#>
-<# } #>
-    }
-<# } #>
-
-    partial class <#=_ctx.Config.DbContextName#> {
-<# foreach (var ett in _dbEntity.EnumerateThisAndDescendants()) { #>
-        public DbSet<<#=_ctx.Config.EntityNamespace#>.<#=ett.Item.ClassName#>> <#=ett.Item.DbSetName#> { get; set; }
-<# } #>
-    }
-}
-
 namespace <#=_ctx.Config.RootNamespace#> {
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+
+    partial class <#=_aggregateInstance.Item.ClassName#> {
+        /// <summary>
+        /// <#=_aggregate.Item.DisplayName#>のデータベースから取得した内容を画面に表示する形に変換します。
+        /// </summary>
+        public static <#=_aggregateInstance.Item.ClassName#> <#=AggregateInstance.FROM_DB_ENTITY_METHOD_NAME#>(<#=_ctx.Config.EntityNamespace#>.<#=_dbEntity.Item.ClassName#> <#=E#>) {
+<# PushIndent("            "); #>
+<# FromDbEntity(); #>
+<# PopIndent(); #>
+        }
+        /// <summary>
+        /// <#=_aggregate.Item.DisplayName#>のデータ1件の内容をデータベースに保存する形に変換します。
+        /// </summary>
+        public <#=_ctx.Config.EntityNamespace#>.<#=_dbEntity.Item.ClassName#> <#=AggregateInstance.TO_DB_ENTITY_METHOD_NAME#>() {
+<# PushIndent("            "); #>
+<# ToDbEntity(); #>
+<# PopIndent(); #>
+        }
+    }
 
 <# foreach (var ins in _aggregateInstance.EnumerateThisAndDescendants()) { #>
     /// <summary>
@@ -299,6 +273,36 @@ namespace <#=_ctx.Config.RootNamespace#> {
     public partial class <#=_searchResult.ClassName#> : <#=SearchResult.BASE_CLASS_NAME#> {
 <# foreach (var prop in _searchResult.GetMembers()) { #>
         public <#=prop.Type.GetCSharpTypeName()#> <#=prop.Name#> { get; set; }
+<# } #>
+    }
+}
+
+namespace <#=_ctx.Config.EntityNamespace#> {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Linq;
+    using Microsoft.EntityFrameworkCore;
+    using Microsoft.EntityFrameworkCore.Infrastructure;
+    
+<# foreach (var ett in _dbEntity.EnumerateThisAndDescendants()) { #>
+    /// <summary>
+    /// <#=ett.GetCorrespondingAggregate().Item.DisplayName#>のデータベースに保存されるデータの形を表すクラスです。
+    /// </summary>
+    public partial class <#=ett.Item.ClassName#> {
+<# foreach (var col in ett.GetColumns()) { #>
+        public <#=col.CSharpTypeName#> <#=col.PropertyName#> { get; set; }<#=col.Initializer == null ? "" : $" = {col.Initializer};"#>
+<# } #>
+
+<# foreach (var nav in EnumerateNavigationProperties(ett)) { #>
+        public virtual <#=nav.CSharpTypeName#> <#=nav.PropertyName#> { get; set; }<#=nav.Initializer == null ? "" : $" = {nav.Initializer};"#>
+<# } #>
+    }
+<# } #>
+
+    partial class <#=_ctx.Config.DbContextName#> {
+<# foreach (var ett in _dbEntity.EnumerateThisAndDescendants()) { #>
+        public DbSet<<#=_ctx.Config.EntityNamespace#>.<#=ett.Item.ClassName#>> <#=ett.Item.DbSetName#> { get; set; }
 <# } #>
     }
 }

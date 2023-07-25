@@ -20,11 +20,13 @@ namespace HalApplicationBuilder.CodeRendering {
             _searchCondition = new SearchCondition(_dbEntity);
             _searchResult = new SearchResult(_dbEntity);
             _controller = new Controller(_aggregate);
+            _create = new CreateMethod(_dbEntity, ctx);
             _find = new FindMethod(_dbEntity, ctx);
             _search = new SearchMethod(_dbEntity, ctx);
 
             _ctx = ctx;
         }
+
         private readonly GraphNode<Aggregate> _aggregate;
         private readonly GraphNode<EFCoreEntity> _dbEntity;
         private readonly GraphNode<AggregateInstance> _aggregateInstance;
@@ -41,7 +43,25 @@ namespace HalApplicationBuilder.CodeRendering {
             }
         }
 
-        #region Find
+        #region CREATE
+        private readonly CreateMethod _create;
+        internal class CreateMethod {
+            internal CreateMethod(GraphNode<EFCoreEntity> dbEntity, CodeRenderingContext ctx) {
+                _dbEntity = dbEntity;
+                _instance = dbEntity.GetUiInstance().Item;
+                _ctx = ctx;
+            }
+
+            private readonly GraphNode<EFCoreEntity> _dbEntity;
+            private readonly AggregateInstance _instance;
+            private readonly CodeRenderingContext _ctx;
+
+            internal string ArgType => _instance.ClassName;
+            internal string MethodName => $"Create{_dbEntity.GetCorrespondingAggregate().Item.DisplayName.ToCSharpSafe()}";
+        }
+        #endregion CREATE
+
+        #region FIND
         private readonly FindMethod _find;
         internal class FindMethod {
             internal FindMethod(GraphNode<EFCoreEntity> dbEntity, CodeRenderingContext ctx) {
@@ -99,10 +119,10 @@ namespace HalApplicationBuilder.CodeRendering {
                 }
             }
         }
-        #endregion Find
+        #endregion FIND
 
 
-        #region Search
+        #region SEARCH
         private readonly SearchCondition _searchCondition;
         private readonly SearchResult _searchResult;
         private readonly SearchMethod _search;
@@ -195,10 +215,10 @@ namespace HalApplicationBuilder.CodeRendering {
                     .Name;
             }
         }
-        #endregion Search
+        #endregion SEARCH
 
 
-        #region AggregateInstance
+        #region AGGREGATE INSTANCE
         private void ToDbEntity() {
 
             void WriteBody(GraphNode<AggregateInstance> instance, string right) {
@@ -271,10 +291,10 @@ namespace HalApplicationBuilder.CodeRendering {
             PopIndent();
             WriteLine($"}};");
         }
-        #endregion AggregateInstance
+        #endregion AGGREGATE INSTANCE
 
 
-        #region Controller
+        #region CONTROLLER
         private readonly Controller _controller;
         internal class Controller {
             internal Controller(GraphNode<Aggregate> aggregate) {
@@ -299,6 +319,6 @@ namespace HalApplicationBuilder.CodeRendering {
             internal string UpdateCommandApi => $"/{SubDomain}/{UPDATE_ACTION_NAME}";
             internal string KeywordSearchCommandApi => $"/{SubDomain}/{KEYWORDSEARCH_ACTION_NAME}";
         }
-        #endregion Controller
+        #endregion CONTROLLER
     }
 }
