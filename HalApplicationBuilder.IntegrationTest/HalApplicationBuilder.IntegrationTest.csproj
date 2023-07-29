@@ -10,6 +10,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="E_DataPattern.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>E_DataPattern.tt</DependentUpon>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
     <PackageReference Include="NUnit" Version="3.13.3" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.4.2" />
@@ -19,6 +27,25 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HalApplicationBuilder\HalApplicationBuilder.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="E_DataPattern.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>E_DataPattern.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="E_DataPattern.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>E_DataPattern.tt</DependentUpon>
+    </Compile>
   </ItemGroup>
 
 </Project>

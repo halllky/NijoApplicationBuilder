@@ -1,0 +1,22 @@
+<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Text.RegularExpressions" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs" #>
+<#
+    string ToEnumValue(string fullpath) {
+        var basename = Path.GetFileName(fullpath);
+        var csSafeString = new Regex("[^\\w\\sぁ-んァ-ン一-龯]").Replace(basename, string.Empty);
+        return csSafeString;
+    }
+#>
+namespace HalApplicationBuilder.IntegrationTest {
+    public enum E_DataPattern {
+<# foreach (var file in Directory.GetFiles("HalApplicationBuilder.IntegrationTest\\DataPatterns")) { #>
+        _<#=ToEnumValue(file)#>,
+<# } #>
+    }
+}

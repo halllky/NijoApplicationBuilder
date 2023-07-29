@@ -11,6 +11,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -49,7 +50,7 @@ namespace HalApplicationBuilder {
 
             var error = false;
             try {
-                var tempProject = new HalappProject2(tempDir, cancellationToken, log, verbose);
+                var tempProject = new HalappProject2(tempDir, log, verbose);
 
                 Directory.CreateDirectory(tempDir);
 
@@ -81,7 +82,7 @@ namespace HalApplicationBuilder {
 
                 log?.WriteLine("プロジェクト作成完了");
 
-                return new HalappProject2(projectRootDir, cancellationToken, log, verbose);
+                return new HalappProject2(projectRootDir, log, verbose);
 
             } catch {
                 error = true;
@@ -102,34 +103,26 @@ namespace HalApplicationBuilder {
         /// </summary>
         /// <param name="path">プロジェクトルートディレクトリの絶対パス</param>
         /// <returns>作成されたプロジェクトを表すオブジェクト</returns>
-        public static HalappProject Open(string? path, CancellationToken? cancellationToken = null, TextWriter? log = null, bool verbose = false) {
+        public static HalappProject Open(string? path, TextWriter? log = null, bool verbose = false) {
             if (string.IsNullOrWhiteSpace(path))
-                return new HalappProject2(Directory.GetCurrentDirectory(), cancellationToken, log, verbose);
+                return new HalappProject2(Directory.GetCurrentDirectory(), log, verbose);
             else if (Path.IsPathRooted(path))
-                return new HalappProject2(path, cancellationToken, log, verbose);
+                return new HalappProject2(path, log, verbose);
             else
-                return new HalappProject2(Path.Combine(Directory.GetCurrentDirectory(), path), cancellationToken, log, verbose);
+                return new HalappProject2(Path.Combine(Directory.GetCurrentDirectory(), path), log, verbose);
         }
 
-        private protected HalappProject(string projetctRoot, CancellationToken? cancellationToken, TextWriter? log, bool verbose) {
+        private protected HalappProject(string projetctRoot, TextWriter? log, bool verbose) {
             if (string.IsNullOrWhiteSpace(projetctRoot))
                 throw new ArgumentException($"'{nameof(projetctRoot)}' is required.");
 
             ProjectRoot = projetctRoot;
-            _cancellationToken = cancellationToken;
             _log = log;
             _verbose = verbose;
-            _cmd = new Cmd {
-                WorkingDirectory = projetctRoot,
-                CancellationToken = cancellationToken,
-                Verbose = _verbose,
-            };
         }
 
         protected readonly bool _verbose;
-        protected readonly CancellationToken? _cancellationToken;
         protected readonly TextWriter? _log;
-        private protected readonly Cmd _cmd;
 
         private protected string ProjectRoot { get; }
         private protected Config ReadConfig() {
@@ -175,10 +168,15 @@ namespace HalApplicationBuilder {
             _log?.WriteLine($"プロジェクトを作成します。");
 
             var config = ReadConfig();
-            _cmd.Exec("dotnet", "new", "webapi", "--output", ".", "--name", config.ApplicationName);
+            var cmd = new Cmd {
+                WorkingDirectory = ProjectRoot,
+                Verbose = _verbose,
+            };
+
+            cmd.Exec("dotnet", "new", "webapi", "--output", ".", "--name", config.ApplicationName);
 
             // Create .gitignore file
-            _cmd.Exec("dotnet", "new", "gitignore");
+            cmd.Exec("dotnet", "new", "gitignore");
             var filename = Path.Combine(ProjectRoot, ".gitignore");
             var gitignore = File.ReadAllLines(filename).ToList();
             gitignore.Insert(0, "# HalApplicationBuilder");
@@ -245,17 +243,22 @@ namespace HalApplicationBuilder {
         /// 必要なNuGetパッケージを参照に加えます。
         /// </summary>
         internal HalappProject AddNugetPackages() {
+            var cmd = new Cmd {
+                WorkingDirectory = ProjectRoot,
+                Verbose = _verbose,
+            };
+
             _log?.WriteLine($"Microsoft.EntityFrameworkCore パッケージへの参照を追加します。");
-            _cmd.Exec("dotnet", "add", "package", "Microsoft.EntityFrameworkCore");
+            cmd.Exec("dotnet", "add", "package", "Microsoft.EntityFrameworkCore");
 
             _log?.WriteLine($"Microsoft.EntityFrameworkCore.Proxies パッケージへの参照を追加します。");
-            _cmd.Exec("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Proxies");
+            cmd.Exec("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Proxies");
 
             _log?.WriteLine($"Microsoft.EntityFrameworkCore.Design パッケージへの参照を追加します。"); // migration add に必要
-            _cmd.Exec("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Design");
+            cmd.Exec("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Design");
 
             _log?.WriteLine($"Microsoft.EntityFrameworkCore.Sqlite パッケージへの参照を追加します。");
-            _cmd.Exec("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Sqlite");
+            cmd.Exec("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Sqlite");
 
             return this;
         }
@@ -334,7 +337,6 @@ namespace HalApplicationBuilder {
             var migrator = new DotnetEf(new Cmd {
                 WorkingDirectory = ProjectRoot,
                 Verbose = _verbose,
-                CancellationToken = _cancellationToken,
             });
             if (!migrator.GetMigrations().Any()) {
                 migrator.AddMigration();
@@ -349,7 +351,6 @@ namespace HalApplicationBuilder {
         public HalappProject InstallDependencies() {
             var npmProcess = new DotnetEx.Cmd {
                 WorkingDirectory = Path.Combine(ProjectRoot, REACT_DIR),
-                CancellationToken = _cmd.CancellationToken,
                 Verbose = _verbose,
             };
             npmProcess.Exec("npm", "ci");
@@ -364,23 +365,66 @@ namespace HalApplicationBuilder {
         /// </summary>
         public void Build() {
             UpdateAutoGeneratedCode();
-            _cmd.Exec("dotnet", "build");
+
+            var cmd = new Cmd {
+                WorkingDirectory = ProjectRoot,
+                Verbose = _verbose,
+            };
+            cmd.Exec("dotnet", "build");
 
             // TODO npm build
+        }
+
+        /// <summary>
+        /// プロジェクトを実行します。
+        /// ビルドは行いません。
+        /// 実行中のソースファイルの変更は自動的に反映されません。
+        /// </summary>
+        public async Task Run(CancellationToken cancellationToken) {
+            if (!IsValidDirectory()) return;
+
+            await Task.Run(() => {
+                // TODO 未実装
+                //using var npmStart = new DotnetEx.Cmd.Background {
+                //    WorkingDirectory = Path.Combine(ProjectRoot, REACT_DIR),
+                //    Filename = "npm",
+                //    Args = new[] { "start" },
+                //    CancellationToken = cancellationToken,
+                //    Verbose = _verbose,
+                //};
+                using var dotnetRun = new DotnetEx.Cmd.Background {
+                    WorkingDirectory = ProjectRoot,
+                    Filename = "dotnet",
+                    Args = new[] { "run", "--no-build", "--launch-profile", "https" },
+                    CancellationToken = cancellationToken,
+                    Verbose = _verbose,
+                };
+
+                //npmStart.Restart(); // TODO 未実装
+                dotnetRun.Restart();
+
+                try {
+                    while (true) {
+                        Thread.Sleep(100);
+                        cancellationToken.ThrowIfCancellationRequested();
+                    }
+                } catch (OperationCanceledException) {
+                    // 何もしない
+                }
+            }, cancellationToken);
         }
         /// <summary>
         /// デバッグを開始します。
         /// </summary>
-        public void StartDebugging() {
+        public void StartDebugging(CancellationToken cancellationToken) {
 
             if (!IsValidDirectory()) return;
-            if (_cancellationToken == null) throw new InvalidOperationException($"CancellationToken is required when debug.");
 
             var config = ReadConfig();
             var migrator = new DotnetEf(new Cmd {
                 WorkingDirectory = ProjectRoot,
                 Verbose = _verbose,
-                CancellationToken = _cancellationToken,
+                CancellationToken = cancellationToken,
             });
 
             // 以下の2種類のキャンセルがあるので統合する
@@ -413,7 +457,7 @@ namespace HalApplicationBuilder {
                     WorkingDirectory = Path.Combine(ProjectRoot, REACT_DIR),
                     Filename = "npm",
                     Args = new[] { "start" },
-                    CancellationToken = _cancellationToken,
+                    CancellationToken = cancellationToken,
                     Verbose = _verbose,
                 };
 
@@ -429,7 +473,7 @@ namespace HalApplicationBuilder {
 
                     rebuildCancellation = new CancellationTokenSource();
                     linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
-                        _cancellationToken!.Value,
+                        cancellationToken,
                         rebuildCancellation.Token);
 
                     try {
@@ -455,7 +499,7 @@ namespace HalApplicationBuilder {
                         };
                         dotnetRun.Restart();
 
-                    } catch (OperationCanceledException) when (_cancellationToken!.Value.IsCancellationRequested) {
+                    } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
                         throw; // デバッグ自体を中断
 
                     } catch (OperationCanceledException) when (rebuildCancellation.IsCancellationRequested) {
@@ -472,7 +516,7 @@ namespace HalApplicationBuilder {
                     // 次の更新まで待機
                     while (changed == false) {
                         Thread.Sleep(100);
-                        _cancellationToken!.Value.ThrowIfCancellationRequested();
+                        cancellationToken.ThrowIfCancellationRequested();
                     }
                 }
 
@@ -488,6 +532,52 @@ namespace HalApplicationBuilder {
             }
         }
 
+        /// <summary>
+        /// デバッグ時に起動されるアプリケーションのURLを返します。
+        /// </summary>
+        public Uri GetDebugUrl() {
+            return new Uri(GetDebugApplicationUrl().Split(';')[1]);
+        }
+        /// <summary>
+        /// デバッグ時に起動されるSwagger UIのURLを返します。
+        /// </summary>
+        /// <returns></returns>
+        public Uri GetSwaggerUrl() {
+            return new Uri(new Uri(GetDebugApplicationUrl().Split(';')[0]), "swagger");
+        }
+        /// <summary>
+        /// launchSettings.jsonのhttpsプロファイルのapplicationUrlセクションの値を読み取ります。
+        /// </summary>
+        private string GetDebugApplicationUrl() {
+            var properties = Path.Combine(ProjectRoot, "Properties");
+            if (!Directory.Exists(properties)) throw new DirectoryNotFoundException(properties);
+            var launchSettings = Path.Combine(properties, "launchSettings.json");
+            if (!File.Exists(launchSettings)) throw new FileNotFoundException(launchSettings);
+
+            var json = File.ReadAllText(launchSettings);
+            var obj = JsonSerializer.Deserialize<JsonObject>(json);
+            if (obj == null)
+                throw new InvalidOperationException($"Invalid json: {launchSettings}");
+            if (!obj.TryGetPropertyValue("profiles", out var profiles))
+                throw new InvalidOperationException($"Invalid json: {launchSettings}");
+            if (profiles == null)
+                throw new InvalidOperationException($"Invalid json: {launchSettings}");
+            if (!profiles.AsObject().TryGetPropertyValue("https", out var https))
+                throw new InvalidOperationException($"Invalid json: {launchSettings}");
+            if (https == null)
+                throw new InvalidOperationException($"Invalid json: {launchSettings}");
+            if (!https.AsObject().TryGetPropertyValue("applicationUrl", out var applicationUrl))
+                throw new InvalidOperationException($"Invalid json: {launchSettings}");
+            if (applicationUrl == null)
+                throw new InvalidOperationException($"Invalid json: {launchSettings}");
+
+            return applicationUrl.GetValue<string>();
+        }
+
+        /// <summary>
+        /// デバッグのために、生成されるプロジェクトの詳細をオブジェクトとして返します。
+        /// </summary>
+        /// <exception cref="InvalidOperationException">アプリケーションスキーマが不正な場合</exception>
         internal Core.AppSchema Inspect() {
             var xmlFullPath = GetAggregateSchemaPath();
             using var stream = DotnetEx.IO.OpenFileWithRetry(xmlFullPath);
@@ -560,7 +650,7 @@ namespace HalApplicationBuilder {
 
     internal class HalappProject2 : HalappProject {
 
-        internal HalappProject2(string projetctRoot, CancellationToken? cancellationToken, TextWriter? log, bool verbose) : base(projetctRoot, cancellationToken, log, verbose) {
+        internal HalappProject2(string projetctRoot, TextWriter? log, bool verbose) : base(projetctRoot, log, verbose) {
 
         }
 
