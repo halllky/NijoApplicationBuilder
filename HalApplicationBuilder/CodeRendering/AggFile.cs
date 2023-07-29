@@ -285,19 +285,49 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(this.ToStringHelper.ToStringWithCulture(_find.MethodName));
             this.Write("(key);\r\n            if (afterUpdate == null) {\r\n                updated = new ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
+            this.Write("();\r\n                errors.Add(\"更新後のデータの再読み込みに失敗しました。\");\r\n                return" +
+                    " false;\r\n            }\r\n            updated = afterUpdate;\r\n            return t" +
+                    "rue;\r\n        }\r\n    }\r\n}\r\n#endregion 更新\r\n\r\n\r\n#region 削除\r\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.RootNamespace));
+            this.Write(" {\r\n    using Microsoft.AspNetCore.Mvc;\r\n    using ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
+            this.Write(";\r\n\r\n    partial class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_controller.ClassName));
+            this.Write(" {\r\n        [HttpDelete(\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Controller.DELETE_ACTION_NAME));
+            this.Write("\")]\r\n        public virtual IActionResult Delete(string key) {\r\n            if (_" +
+                    "dbContext.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_delete.MethodName));
+            this.Write("(key, out var errors)) {\r\n                return Ok();\r\n            } else {\r\n   " +
+                    "             return BadRequest(string.Join(Environment.NewLine, errors));\r\n     " +
+                    "       }\r\n        }\r\n    }\r\n}\r\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
+            this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
+                    "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n  " +
+                    "  using Microsoft.EntityFrameworkCore.Infrastructure;\r\n\r\n    partial class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
+            this.Write(" {\r\n        public bool ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_delete.MethodName));
+            this.Write("(string key, out ICollection<string> errors) {\r\n            var instance = this.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_find.MethodName));
+            this.Write("(key);\r\n            if (instance == null) {\r\n                errors = new[] { \"削除" +
+                    "対象のデータが見つかりません。\" };\r\n                return false;\r\n            }\r\n\r\n           " +
+                    " var entity = instance.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance.TO_DB_ENTITY_METHOD_NAME));
             this.Write(@"();
-                errors.Add(""更新後のデータの再読み込みに失敗しました。"");
+            this.Remove(entity);
+            try {
+                this.SaveChanges();
+            } catch (DbUpdateException ex) {
+                errors = ex.GetMessagesRecursively().ToArray();
                 return false;
             }
-            updated = afterUpdate;
+
+            errors = Array.Empty<string>();
             return true;
         }
     }
 }
-#endregion 更新
-
-
-#region 削除
 #endregion 削除
 
 

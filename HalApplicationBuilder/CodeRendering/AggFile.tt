@@ -260,6 +260,51 @@ namespace <#=_ctx.Config.EntityNamespace#> {
 
 
 #region 削除
+namespace <#=_ctx.Config.RootNamespace#> {
+    using Microsoft.AspNetCore.Mvc;
+    using <#=_ctx.Config.EntityNamespace#>;
+
+    partial class <#=_controller.ClassName#> {
+        [HttpDelete("<#=Controller.DELETE_ACTION_NAME#>")]
+        public virtual IActionResult Delete(string key) {
+            if (_dbContext.<#=_delete.MethodName#>(key, out var errors)) {
+                return Ok();
+            } else {
+                return BadRequest(string.Join(Environment.NewLine, errors));
+            }
+        }
+    }
+}
+namespace <#=_ctx.Config.EntityNamespace#> {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Linq;
+    using Microsoft.EntityFrameworkCore;
+    using Microsoft.EntityFrameworkCore.Infrastructure;
+
+    partial class <#=_ctx.Config.DbContextName#> {
+        public bool <#=_delete.MethodName#>(string key, out ICollection<string> errors) {
+            var instance = this.<#=_find.MethodName#>(key);
+            if (instance == null) {
+                errors = new[] { "削除対象のデータが見つかりません。" };
+                return false;
+            }
+
+            var entity = instance.<#=AggregateInstance.TO_DB_ENTITY_METHOD_NAME#>();
+            this.Remove(entity);
+            try {
+                this.SaveChanges();
+            } catch (DbUpdateException ex) {
+                errors = ex.GetMessagesRecursively().ToArray();
+                return false;
+            }
+
+            errors = Array.Empty<string>();
+            return true;
+        }
+    }
+}
 #endregion 削除
 
 

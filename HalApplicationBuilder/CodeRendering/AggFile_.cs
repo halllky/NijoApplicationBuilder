@@ -24,6 +24,7 @@ namespace HalApplicationBuilder.CodeRendering {
             _find = new FindMethod(_dbEntity, ctx);
             _search = new SearchMethod(_dbEntity, ctx);
             _update = new UpdateMethod(_dbEntity, ctx);
+            _delete = new DeleteMethod(_dbEntity, ctx);
 
             _ctx = ctx;
         }
@@ -138,7 +139,6 @@ namespace HalApplicationBuilder.CodeRendering {
             private readonly AggregateInstance _instance;
             private readonly CodeRenderingContext _ctx;
 
-            internal string ArgType => _instance.ClassName;
             internal string MethodName => $"Update{_dbEntity.GetCorrespondingAggregate().Item.DisplayName.ToCSharpSafe()}";
 
             internal void RenderDescendantsAttaching(ITemplate template, string dbContext, string before, string after) {
@@ -196,6 +196,24 @@ namespace HalApplicationBuilder.CodeRendering {
             }
         }
         #endregion UPDATE
+
+
+        #region DELETE
+        private readonly DeleteMethod _delete;
+        internal class DeleteMethod {
+            internal DeleteMethod(GraphNode<EFCoreEntity> dbEntity, CodeRenderingContext ctx) {
+                _dbEntity = dbEntity;
+                _instance = dbEntity.GetUiInstance().Item;
+                _ctx = ctx;
+            }
+
+            private readonly GraphNode<EFCoreEntity> _dbEntity;
+            private readonly AggregateInstance _instance;
+            private readonly CodeRenderingContext _ctx;
+
+            internal string MethodName => $"Delete{_dbEntity.GetCorrespondingAggregate().Item.DisplayName.ToCSharpSafe()}";
+        }
+        #endregion DELETE
 
 
         #region SEARCH
@@ -384,6 +402,7 @@ namespace HalApplicationBuilder.CodeRendering {
             internal const string SEARCH_ACTION_NAME = "list";
             internal const string CREATE_ACTION_NAME = "create";
             internal const string UPDATE_ACTION_NAME = "update";
+            internal const string DELETE_ACTION_NAME = "delete";
             internal const string FIND_ACTION_NAME = "detail";
             internal const string KEYWORDSEARCH_ACTION_NAME = "list-by-keyword";
 
@@ -393,6 +412,7 @@ namespace HalApplicationBuilder.CodeRendering {
             internal string SearchCommandApi => $"/{SubDomain}/{SEARCH_ACTION_NAME}";
             internal string CreateCommandApi => $"/{SubDomain}/{CREATE_ACTION_NAME}";
             internal string UpdateCommandApi => $"/{SubDomain}/{UPDATE_ACTION_NAME}";
+            internal string DeleteCommandApi => $"/{SubDomain}/{DELETE_ACTION_NAME}";
             internal string KeywordSearchCommandApi => $"/{SubDomain}/{KEYWORDSEARCH_ACTION_NAME}";
         }
         #endregion CONTROLLER
