@@ -33,9 +33,9 @@ namespace HalApplicationBuilder.CodeRendering.Presentation
             this.Write(this.ToStringHelper.ToStringWithCulture(CLASS_NAME));
             this.Write(" {\r\n        public string ");
             this.Write(this.ToStringHelper.ToStringWithCulture(INSTANCE_KEY));
-            this.Write(" { get; set; }\r\n        public string ");
+            this.Write(" { get; set; } = string.Empty;\r\n        public string ");
             this.Write(this.ToStringHelper.ToStringWithCulture(INSTANCE_NAME));
-            this.Write(" { get; set; }\r\n    }\r\n}\r\n");
+            this.Write(" { get; set; } = string.Empty;\r\n    }\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

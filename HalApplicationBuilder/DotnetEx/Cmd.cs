@@ -117,6 +117,8 @@ namespace HalApplicationBuilder.DotnetEx {
                             CancellationToken?.ThrowIfCancellationRequested();
                         }
                     } catch (OperationCanceledException) {
+                        // Do nothing
+                    } finally {
                         Stop();
                     }
                 }, ct);
@@ -131,10 +133,9 @@ namespace HalApplicationBuilder.DotnetEx {
                     }
                     if (_process != null) {
                         try {
-                            if (!_process.HasExited) _process.Kill(entireProcessTree: true);
+                            _process.Kill(entireProcessTree: true);
                         } catch (InvalidOperationException ex) when (ex.Message == "No process is associated with this object.") {
-                            // Processインスタンスが作成されてからStartする前にDisposeされると
-                            // HasExitedを参照することはできずにこの例外が発生する。
+                            // Processインスタンスが作成されてからStartする前にDisposeされるとこの例外が発生する。
                             // 開始されていないのでKillできなくとも問題ないと判断し、無視して先に進む
                         }
                         _process.Dispose();

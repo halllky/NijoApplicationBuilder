@@ -9,8 +9,7 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
         [UseDataPatterns]
         public void ビルドが通るか(DataPattern pattern) {
             try {
-                File.WriteAllText(SharedResource.Project.GetAggregateSchemaPath(), pattern.LoadXmlString());
-                SharedResource.Project.Build();
+                SharedResource.Project.Build(pattern);
             } catch {
                 NUnit.Framework.TestContext.Out.WriteLine("--- SCHEMA ---");
                 NUnit.Framework.TestContext.Out.WriteLine(SharedResource.Project.Inspect().Graph.ToMermaidText());

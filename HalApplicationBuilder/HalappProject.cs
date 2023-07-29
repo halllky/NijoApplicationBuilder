@@ -124,7 +124,7 @@ namespace HalApplicationBuilder {
         protected readonly bool _verbose;
         protected readonly TextWriter? _log;
 
-        private protected string ProjectRoot { get; }
+        public string ProjectRoot { get; }
         private protected Config ReadConfig() {
             var xmlFullPath = GetAggregateSchemaPath();
             using var stream = DotnetEx.IO.OpenFileWithRetry(xmlFullPath);
@@ -341,6 +341,7 @@ namespace HalApplicationBuilder {
             if (!migrator.GetMigrations().Any()) {
                 migrator.AddMigration();
             }
+            migrator.Migrate();
 
             return this;
         }
@@ -381,30 +382,32 @@ namespace HalApplicationBuilder {
         /// 実行中のソースファイルの変更は自動的に反映されません。
         /// </summary>
         public async Task Run(CancellationToken cancellationToken) {
+            Console.WriteLine("runのさいしょ");
             if (!IsValidDirectory()) return;
 
+            // TODO 未実装
+            //using var npmStart = new DotnetEx.Cmd.Background {
+            //    WorkingDirectory = Path.Combine(ProjectRoot, REACT_DIR),
+            //    Filename = "npm",
+            //    Args = new[] { "start" },
+            //    CancellationToken = cancellationToken,
+            //    Verbose = _verbose,
+            //};
+            using var dotnetRun = new DotnetEx.Cmd.Background {
+                WorkingDirectory = ProjectRoot,
+                Filename = "dotnet",
+                Args = new[] { "run", "--no-build", "--launch-profile", "https" },
+                CancellationToken = cancellationToken,
+                Verbose = _verbose,
+            };
+
             await Task.Run(() => {
-                // TODO 未実装
-                //using var npmStart = new DotnetEx.Cmd.Background {
-                //    WorkingDirectory = Path.Combine(ProjectRoot, REACT_DIR),
-                //    Filename = "npm",
-                //    Args = new[] { "start" },
-                //    CancellationToken = cancellationToken,
-                //    Verbose = _verbose,
-                //};
-                using var dotnetRun = new DotnetEx.Cmd.Background {
-                    WorkingDirectory = ProjectRoot,
-                    Filename = "dotnet",
-                    Args = new[] { "run", "--no-build", "--launch-profile", "https" },
-                    CancellationToken = cancellationToken,
-                    Verbose = _verbose,
-                };
-
-                //npmStart.Restart(); // TODO 未実装
-                dotnetRun.Restart();
-
                 try {
+                    //npmStart.Restart(); // TODO 未実装
+                    dotnetRun.Restart();
+
                     while (true) {
+                        Console.WriteLine($"Thread.Sleep(100);");
                         Thread.Sleep(100);
                         cancellationToken.ThrowIfCancellationRequested();
                     }
@@ -489,6 +492,7 @@ namespace HalApplicationBuilder {
                             : latestRelease;
                         migrator.RemoveMigrationsUntil(latestReleaseMigration);
                         migrator.AddMigration();
+                        migrator.Migrate();
 
                         dotnetRun = new DotnetEx.Cmd.Background {
                             WorkingDirectory = ProjectRoot,
@@ -607,20 +611,25 @@ namespace HalApplicationBuilder {
             private readonly Cmd _cmd;
 
             internal IEnumerable<Migration> GetMigrations() {
-                var output = _cmd
-                    .ReadOutput(
-                        "dotnet", "ef", "migrations", "list",
-                        "--prefix-output", // ビルド状況やの行頭には "info:" が、マイグレーション名の行頭には "data:" がつくので、その識別のため
-                        "--configuration", "Release"); // このクラスの処理が走っているとき、基本的には dotnet run も並走しているので、Releaseビルドを指定しないとビルド先が競合して失敗してしまう
+                try {
+                    var output = _cmd
+                        .ReadOutput(
+                            "dotnet", "ef", "migrations", "list",
+                            "--prefix-output", // ビルド状況やの行頭には "info:" が、マイグレーション名の行頭には "data:" がつくので、その識別のため
+                            "--configuration", "Release"); // このクラスの処理が走っているとき、基本的には dotnet run も並走しているので、Releaseビルドを指定しないとビルド先が競合して失敗してしまう
 
-                var regex = new Regex(@"^data:\s*([^\s]+)(\s\(Pending\))?$", RegexOptions.Multiline);
-                return output
-                    .Select(line => regex.Match(line))
-                    .Where(match => match.Success)
-                    .Select(match => new Migration {
-                        Name = match.Groups[1].Value,
-                        Pending = match.Groups.Count == 3,
-                    });
+                    var regex = new Regex(@"^data:\s*([^\s]+)(\s\(Pending\))?$", RegexOptions.Multiline);
+                    return output
+                        .Select(line => regex.Match(line))
+                        .Where(match => match.Success)
+                        .Select(match => new Migration {
+                            Name = match.Groups[1].Value,
+                            Pending = match.Groups.Count == 3,
+                        })
+                        .ToArray();
+                } catch (Exception) {
+                    return Enumerable.Empty<Migration>();
+                }
             }
             internal void RemoveMigrationsUntil(string migrationName) {
                 // そのマイグレーションが適用済みだと migrations remove できないので、まず database update する
@@ -636,6 +645,8 @@ namespace HalApplicationBuilder {
                 var nextMigrationId = migrationCount.ToString("000000000000");
 
                 _cmd.Exec("dotnet", "ef", "migrations", "add", nextMigrationId, "--configuration", "Release");
+            }
+            internal void Migrate() {
                 _cmd.Exec("dotnet", "ef", "database", "update", "--configuration", "Release");
             }
 
