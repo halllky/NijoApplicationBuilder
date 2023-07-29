@@ -172,7 +172,7 @@ namespace HalApplicationBuilder.DotnetEx {
         }
 
         /// <summary>
-        /// エントリーからの辺の一覧を返します。
+        /// エントリーからの辺の一覧を返します。よりエントリーに近いほうから順番に返します。
         /// </summary>
         internal IEnumerable<GraphEdge> PathFromEntry() {
             var list = new List<GraphEdge>();

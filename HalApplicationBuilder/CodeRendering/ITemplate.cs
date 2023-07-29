@@ -5,6 +5,8 @@ namespace HalApplicationBuilder.CodeRendering {
 
         void PushIndent(string indent);
         string PopIndent();
+
+        void Write(string textToAppend);
         void WriteLine(string appendToText);
 
         string TransformText();

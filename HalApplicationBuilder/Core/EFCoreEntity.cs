@@ -20,6 +20,8 @@ namespace HalApplicationBuilder.Core {
         internal string ClassName => Aggregate.DisplayName.ToCSharpSafe();
         internal string DbSetName => ClassName;
 
+        internal const string KEYEQUALS = "KeyEquals";
+
         internal class Member : ValueObject {
             internal required EFCoreEntity Owner { get; init; }
             internal required bool IsPrimary { get; init; }

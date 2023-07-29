@@ -198,8 +198,11 @@ namespace <#=_ctx.Config.RootNamespace#> {
     partial class <#=_controller.ClassName#> {
         [HttpPost("<#=Controller.UPDATE_ACTION_NAME#>")]
         public virtual IActionResult Update(<#=_aggregateInstance.Item.ClassName#> param) {
-            // TODO
-            throw new NotImplementedException();
+            if (_dbContext.<#=_update.MethodName#>(param, out var updated, out var errors)) {
+                return this.JsonContent(updated);
+            } else {
+                return BadRequest(string.Join(Environment.NewLine, errors));
+            }
         }
     }
 }
@@ -212,6 +215,45 @@ namespace <#=_ctx.Config.EntityNamespace#> {
     using Microsoft.EntityFrameworkCore.Infrastructure;
 
     partial class <#=_ctx.Config.DbContextName#> {
+        public bool <#=_update.MethodName#>(<#=_aggregateInstance.Item.ClassName#> after, out <#=_aggregateInstance.Item.ClassName#> updated, out ICollection<string> errors) {
+            errors = new List<string>();
+            var key = after.<#=GEINSTANCEKEY_METHOD_NAME#>().ToString();
+
+            var before = this.<#=_find.MethodName#>(key);
+            if (before == null) {
+                updated = new <#=_aggregateInstance.Item.ClassName#>();
+                errors.Add("更新対象のデータが見つかりません。");
+                return false;
+            }
+
+            var beforeDbEntity = before.<#=AggregateInstance.TO_DB_ENTITY_METHOD_NAME#>();
+            var afterDbEntity = after.<#=AggregateInstance.TO_DB_ENTITY_METHOD_NAME#>();
+
+            // Attach
+            this.Entry(beforeDbEntity).State = EntityState.Detached;
+            this.Entry(afterDbEntity).State = EntityState.Modified;
+
+<# PushIndent("            "); #>
+<# _update.RenderDescendantsAttaching(this, "this", "beforeDbEntity", "afterDbEntity"); #>
+<# PopIndent(); #>
+
+            try {
+                this.SaveChanges();
+            } catch (DbUpdateException ex) {
+                updated = new <#=_aggregateInstance.Item.ClassName#>();
+                foreach (var msg in ex.GetMessagesRecursively()) errors.Add(msg);
+                return false;
+            }
+
+            var afterUpdate = this.<#=_find.MethodName#>(key);
+            if (afterUpdate == null) {
+                updated = new <#=_aggregateInstance.Item.ClassName#>();
+                errors.Add("更新後のデータの再読み込みに失敗しました。");
+                return false;
+            }
+            updated = afterUpdate;
+            return true;
+        }
     }
 }
 #endregion 更新
@@ -244,6 +286,13 @@ namespace <#=_ctx.Config.RootNamespace#> {
 <# PushIndent("            "); #>
 <# ToDbEntity(); #>
 <# PopIndent(); #>
+        }
+        public <#=InstanceKey.CLASS_NAME#> <#=GEINSTANCEKEY_METHOD_NAME#>() {
+            return <#=InstanceKey.CLASS_NAME#>.<#=InstanceKey.CREATE#>(new object[] {
+<# foreach (var p in _aggregateInstance.GetSchalarProperties(_ctx.Config).Where(p => p.CorrespondingDbColumn.IsPrimary)) { #>
+                this.<#=p.PropertyName#>,
+<# } #>
+            });
         }
     }
 
@@ -297,6 +346,14 @@ namespace <#=_ctx.Config.EntityNamespace#> {
 <# foreach (var nav in EnumerateNavigationProperties(ett)) { #>
         public virtual <#=nav.CSharpTypeName#> <#=nav.PropertyName#> { get; set; }<#=nav.Initializer == null ? "" : $" = {nav.Initializer};"#>
 <# } #>
+
+        /// <summary>このオブジェクトと比較対象のオブジェクトの主キーが一致するかを返します。</summary>
+        public bool <#=EFCoreEntity.KEYEQUALS#>(<#=ett.Item.ClassName#> entity) {
+<# foreach (var col in ett.GetColumns().Where(c => c.IsPrimary)) { #>
+            if (entity.<#=col.PropertyName#> != this.<#=col.PropertyName#>) return false;
+<# } #>
+            return true;
+        }
     }
 <# } #>
 

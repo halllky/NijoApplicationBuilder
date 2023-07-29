@@ -23,6 +23,7 @@ namespace HalApplicationBuilder.CodeRendering {
             _create = new CreateMethod(_dbEntity, ctx);
             _find = new FindMethod(_dbEntity, ctx);
             _search = new SearchMethod(_dbEntity, ctx);
+            _update = new UpdateMethod(_dbEntity, ctx);
 
             _ctx = ctx;
         }
@@ -35,6 +36,8 @@ namespace HalApplicationBuilder.CodeRendering {
 
         public string FileName => $"{_aggregate.Item.DisplayName.ToFileNameSafe()}.cs";
         private const string E = "e";
+
+        public const string GEINSTANCEKEY_METHOD_NAME = "GetInstanceKey";
 
         private IEnumerable<NavigationProperty.Item> EnumerateNavigationProperties(GraphNode<EFCoreEntity> entity) {
             foreach (var nav in entity.GetNavigationProperties(_ctx.Config)) {
@@ -120,6 +123,79 @@ namespace HalApplicationBuilder.CodeRendering {
             }
         }
         #endregion FIND
+
+
+        #region UPDATE
+        private readonly UpdateMethod _update;
+        internal class UpdateMethod {
+            internal UpdateMethod(GraphNode<EFCoreEntity> dbEntity, CodeRenderingContext ctx) {
+                _dbEntity = dbEntity;
+                _instance = dbEntity.GetUiInstance().Item;
+                _ctx = ctx;
+            }
+
+            private readonly GraphNode<EFCoreEntity> _dbEntity;
+            private readonly AggregateInstance _instance;
+            private readonly CodeRenderingContext _ctx;
+
+            internal string ArgType => _instance.ClassName;
+            internal string MethodName => $"Update{_dbEntity.GetCorrespondingAggregate().Item.DisplayName.ToCSharpSafe()}";
+
+            internal void RenderDescendantsAttaching(ITemplate template, string dbContext, string before, string after) {
+                var descendantDbEntities = _dbEntity.EnumerateDescendants().ToArray();
+                for (int i = 0; i < descendantDbEntities.Length; i++) {
+                    var paths = descendantDbEntities[i].PathFromEntry().ToArray();
+
+                    // before, after それぞれの子孫インスタンスを一次配列に格納する
+                    void RenderEntityArray(bool renderBefore) {
+                        if (paths.Any(path => path.IsChildren())) {
+                            // 子集約までの経路の途中に配列が含まれる場合
+                            template.WriteLine($"var arr{i}_{(renderBefore ? "before" : "after")} = {(renderBefore ? before : after)}");
+
+                            var select = false;
+                            foreach (var path in paths) {
+                                if (select && path.IsChildren()) {
+                                    template.WriteLine($"    .SelectMany(x => x.{path.RelationName})");
+                                } else if (select) {
+                                    template.WriteLine($"    .Select(x => x.{path.RelationName})");
+                                } else {
+                                    template.WriteLine($"    .{path.RelationName}");
+                                    if (path.IsChildren()) select = true;
+                                }
+                            }
+                            template.WriteLine($"    .ToArray();");
+
+                        } else {
+                            // 子集約までの経路の途中に配列が含まれない場合
+                            template.WriteLine($"var arr{i}_{(renderBefore ? "before" : "after")} = new {descendantDbEntities[i].Item.ClassName}[] {{");
+                            template.WriteLine($"    {(renderBefore ? before : after)}.{paths.Select(p => p.RelationName).Join(".")},");
+                            template.WriteLine($"}};");
+                        }
+                    }
+                    RenderEntityArray(true);
+                    RenderEntityArray(false);
+
+                    // ChangeState変更
+                    template.WriteLine($"foreach (var a in arr{i}_after) {{");
+                    template.WriteLine($"    var b = arr{i}_before.SingleOrDefault(b => b.{EFCoreEntity.KEYEQUALS}(a));");
+                    template.WriteLine($"    if (b == null) {{");
+                    template.WriteLine($"        {dbContext}.Entry(a).State = EntityState.Added;");
+                    template.WriteLine($"    }} else {{");
+                    template.WriteLine($"        {dbContext}.Entry(b).State = EntityState.Detached;");
+                    template.WriteLine($"        {dbContext}.Entry(a).State = EntityState.Modified;");
+                    template.WriteLine($"    }}");
+                    template.WriteLine($"}}");
+
+                    template.WriteLine($"foreach (var b in arr{i}_before) {{");
+                    template.WriteLine($"    var a = arr{i}_after.SingleOrDefault(a => a.{EFCoreEntity.KEYEQUALS}(b));");
+                    template.WriteLine($"    if (a == null) {{");
+                    template.WriteLine($"        {dbContext}.Entry(b).State = EntityState.Deleted;");
+                    template.WriteLine($"    }}");
+                    template.WriteLine($"}}");
+                }
+            }
+        }
+        #endregion UPDATE
 
 
         #region SEARCH

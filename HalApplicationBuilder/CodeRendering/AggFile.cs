@@ -241,15 +241,68 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(this.ToStringHelper.ToStringWithCulture(Controller.UPDATE_ACTION_NAME));
             this.Write("\")]\r\n        public virtual IActionResult Update(");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
-            this.Write(" param) {\r\n            // TODO\r\n            throw new NotImplementedException();\r" +
-                    "\n        }\r\n    }\r\n}\r\nnamespace ");
+            this.Write(" param) {\r\n            if (_dbContext.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_update.MethodName));
+            this.Write("(param, out var updated, out var errors)) {\r\n                return this.JsonCont" +
+                    "ent(updated);\r\n            } else {\r\n                return BadRequest(string.Jo" +
+                    "in(Environment.NewLine, errors));\r\n            }\r\n        }\r\n    }\r\n}\r\nnamespace" +
+                    " ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
             this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
                     "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n  " +
                     "  using Microsoft.EntityFrameworkCore.Infrastructure;\r\n\r\n    partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
-            this.Write(" {\r\n    }\r\n}\r\n#endregion 更新\r\n\r\n\r\n#region 削除\r\n#endregion 削除\r\n\r\n\r\n#region データ構造\r\nna" +
-                    "mespace ");
+            this.Write(" {\r\n        public bool ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_update.MethodName));
+            this.Write("(");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
+            this.Write(" after, out ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
+            this.Write(" updated, out ICollection<string> errors) {\r\n            errors = new List<string" +
+                    ">();\r\n            var key = after.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GEINSTANCEKEY_METHOD_NAME));
+            this.Write("().ToString();\r\n\r\n            var before = this.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_find.MethodName));
+            this.Write("(key);\r\n            if (before == null) {\r\n                updated = new ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
+            this.Write("();\r\n                errors.Add(\"更新対象のデータが見つかりません。\");\r\n                return fal" +
+                    "se;\r\n            }\r\n\r\n            var beforeDbEntity = before.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance.TO_DB_ENTITY_METHOD_NAME));
+            this.Write("();\r\n            var afterDbEntity = after.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance.TO_DB_ENTITY_METHOD_NAME));
+            this.Write("();\r\n\r\n            // Attach\r\n            this.Entry(beforeDbEntity).State = Enti" +
+                    "tyState.Detached;\r\n            this.Entry(afterDbEntity).State = EntityState.Mod" +
+                    "ified;\r\n\r\n");
+ PushIndent("            "); 
+ _update.RenderDescendantsAttaching(this, "this", "beforeDbEntity", "afterDbEntity"); 
+ PopIndent(); 
+            this.Write("\r\n            try {\r\n                this.SaveChanges();\r\n            } catch (Db" +
+                    "UpdateException ex) {\r\n                updated = new ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
+            this.Write("();\r\n                foreach (var msg in ex.GetMessagesRecursively()) errors.Add(" +
+                    "msg);\r\n                return false;\r\n            }\r\n\r\n            var afterUpda" +
+                    "te = this.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_find.MethodName));
+            this.Write("(key);\r\n            if (afterUpdate == null) {\r\n                updated = new ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
+            this.Write(@"();
+                errors.Add(""更新後のデータの再読み込みに失敗しました。"");
+                return false;
+            }
+            updated = afterUpdate;
+            return true;
+        }
+    }
+}
+#endregion 更新
+
+
+#region 削除
+#endregion 削除
+
+
+#region データ構造
+namespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.RootNamespace));
             this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
                     "s.Generic;\r\n    using System.Linq;\r\n\r\n    partial class ");
@@ -282,7 +335,21 @@ namespace HalApplicationBuilder.CodeRendering
  PushIndent("            "); 
  ToDbEntity(); 
  PopIndent(); 
-            this.Write("        }\r\n    }\r\n\r\n");
+            this.Write("        }\r\n        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.CLASS_NAME));
+            this.Write(" ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GEINSTANCEKEY_METHOD_NAME));
+            this.Write("() {\r\n            return ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.CLASS_NAME));
+            this.Write(".");
+            this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.CREATE));
+            this.Write("(new object[] {\r\n");
+ foreach (var p in _aggregateInstance.GetSchalarProperties(_ctx.Config).Where(p => p.CorrespondingDbColumn.IsPrimary)) { 
+            this.Write("                this.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(p.PropertyName));
+            this.Write(",\r\n");
+ } 
+            this.Write("            });\r\n        }\r\n    }\r\n\r\n");
  foreach (var ins in _aggregateInstance.EnumerateThisAndDescendants()) { 
             this.Write("    /// <summary>\r\n    /// ");
             this.Write(this.ToStringHelper.ToStringWithCulture(ins.GetCorrespondingAggregate().Item.DisplayName));
@@ -358,7 +425,20 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(this.ToStringHelper.ToStringWithCulture(nav.Initializer == null ? "" : $" = {nav.Initializer};"));
             this.Write("\r\n");
  } 
-            this.Write("    }\r\n");
+            this.Write("\r\n        /// <summary>このオブジェクトと比較対象のオブジェクトの主キーが一致するかを返します。</summary>\r\n        pu" +
+                    "blic bool ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(EFCoreEntity.KEYEQUALS));
+            this.Write("(");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ett.Item.ClassName));
+            this.Write(" entity) {\r\n");
+ foreach (var col in ett.GetColumns().Where(c => c.IsPrimary)) { 
+            this.Write("            if (entity.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(col.PropertyName));
+            this.Write(" != this.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(col.PropertyName));
+            this.Write(") return false;\r\n");
+ } 
+            this.Write("            return true;\r\n        }\r\n    }\r\n");
  } 
             this.Write("\r\n    partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
