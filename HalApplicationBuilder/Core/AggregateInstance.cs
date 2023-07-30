@@ -38,7 +38,7 @@ namespace HalApplicationBuilder.Core
             internal required bool Multiple { get; init; }
         }
         internal class RefProperty : Property {
-            internal required AggregateInstance RefTarget { get; init; }
+            internal required GraphNode<AggregateInstance> RefTarget { get; init; }
         }
     }
 
@@ -100,7 +100,7 @@ namespace HalApplicationBuilder.Core
         internal static IEnumerable<AggregateInstance.RefProperty> GetRefProperties(this GraphNode<AggregateInstance> node, Config config) {
             foreach (var edge in node.GetRefMembers()) {
                 yield return new AggregateInstance.RefProperty {
-                    RefTarget = edge.Terminal.Item,
+                    RefTarget = edge.Terminal,
                     CSharpTypeName = AggregateInstanceKeyNamePair.CLASSNAME,
                     PropertyName = edge.RelationName,
                 };

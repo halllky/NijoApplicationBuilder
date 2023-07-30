@@ -207,12 +207,11 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(this.ToStringHelper.ToStringWithCulture(_find.ReturnType));
             this.Write("? ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_find.MethodName));
-            this.Write("(string serializedInstanceKey) {\r\n            if (!");
+            this.Write("(string serializedInstanceKey) {\r\n            var instanceKey = ");
             this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.CLASS_NAME));
             this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.TRY_PARSE));
-            this.Write("(serializedInstanceKey, out var instanceKey)) {\r\n                return null;\r\n  " +
-                    "          }\r\n            var entity = this.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.PARSE));
+            this.Write("(serializedInstanceKey);\r\n            var entity = this.");
             this.Write(this.ToStringHelper.ToStringWithCulture(_dbEntity.Item.DbSetName));
             this.Write("\r\n");
  foreach (var line in _find.Include()) { 
@@ -399,7 +398,21 @@ namespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(line));
             this.Write("\r\n");
  } 
-            this.Write("        }\r\n    }\r\n\r\n");
+            this.Write("        }\r\n        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePair.CLASSNAME));
+            this.Write(" ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(TOKEYNAMEPAIR_METHOD_NAME));
+            this.Write("() {\r\n            return new ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePair.CLASSNAME));
+            this.Write(" {\r\n                ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePair.KEY));
+            this.Write(" = this.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GETINSTANCEKEY_METHOD_NAME));
+            this.Write("().ToString(),\r\n                ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePair.NAME));
+            this.Write(" = this.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GETINSTANCENAME_METHOD_NAME));
+            this.Write("(),\r\n            };\r\n        }\r\n    }\r\n\r\n");
  foreach (var ins in _aggregateInstance.EnumerateDescendants()) { 
             this.Write("    /// <summary>\r\n    /// ");
             this.Write(this.ToStringHelper.ToStringWithCulture(ins.GetCorrespondingAggregate().Item.DisplayName));

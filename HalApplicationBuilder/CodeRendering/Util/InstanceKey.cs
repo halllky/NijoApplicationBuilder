@@ -46,11 +46,11 @@ namespace HalApplicationBuilder.CodeRendering.Util
             });
             return new ");
             this.Write(this.ToStringHelper.ToStringWithCulture(CLASS_NAME));
-            this.Write("(json, objArray);\r\n        }\r\n        public static bool ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(TRY_PARSE));
-            this.Write("(string str, out ");
+            this.Write("(json, objArray);\r\n        }\r\n        public static ");
             this.Write(this.ToStringHelper.ToStringWithCulture(CLASS_NAME));
-            this.Write(@" instanceKey) {
+            this.Write(" ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(PARSE));
+            this.Write(@"(string str) {
             object? ToObject(JsonElement jsonElement) {
                 switch (jsonElement.ValueKind) {
                     case JsonValueKind.Array:
@@ -80,14 +80,13 @@ namespace HalApplicationBuilder.CodeRendering.Util
             }
                         
             if (string.IsNullOrWhiteSpace(str)) {
-                instanceKey = Empty();
-                return false;
+                return Empty();
             }
             var deserialized = JsonSerializer.Deserialize<JsonElement[]>(str)!;
             var objArray = deserialized.Select(jsonElement => ToObject(jsonElement)).ToArray();
-            instanceKey = new ");
+            return new ");
             this.Write(this.ToStringHelper.ToStringWithCulture(CLASS_NAME));
-            this.Write("(str, objArray);\r\n            return true;\r\n        }\r\n\r\n        private ");
+            this.Write("(str, objArray);\r\n        }\r\n\r\n        private ");
             this.Write(this.ToStringHelper.ToStringWithCulture(CLASS_NAME));
             this.Write("(string json, object?[] values) {\r\n            ");
             this.Write(this.ToStringHelper.ToStringWithCulture(OBJECT_ARRAY));

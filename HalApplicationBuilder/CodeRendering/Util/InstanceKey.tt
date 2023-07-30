@@ -22,7 +22,7 @@ namespace <#=_namespace#> {
             });
             return new <#=CLASS_NAME#>(json, objArray);
         }
-        public static bool <#=TRY_PARSE#>(string str, out <#=CLASS_NAME#> instanceKey) {
+        public static <#=CLASS_NAME#> <#=PARSE#>(string str) {
             object? ToObject(JsonElement jsonElement) {
                 switch (jsonElement.ValueKind) {
                     case JsonValueKind.Array:
@@ -52,13 +52,11 @@ namespace <#=_namespace#> {
             }
                         
             if (string.IsNullOrWhiteSpace(str)) {
-                instanceKey = Empty();
-                return false;
+                return Empty();
             }
             var deserialized = JsonSerializer.Deserialize<JsonElement[]>(str)!;
             var objArray = deserialized.Select(jsonElement => ToObject(jsonElement)).ToArray();
-            instanceKey = new <#=CLASS_NAME#>(str, objArray);
-            return true;
+            return new <#=CLASS_NAME#>(str, objArray);
         }
 
         private <#=CLASS_NAME#>(string json, object?[] values) {

@@ -169,9 +169,7 @@ namespace <#=_ctx.Config.EntityNamespace#> {
         /// <#=_aggregate.Item.DisplayName#>のキー情報から対象データの詳細を検索して返します。
         /// </summary>
         public <#=_find.ReturnType#>? <#=_find.MethodName#>(string serializedInstanceKey) {
-            if (!<#=InstanceKey.CLASS_NAME#>.<#=InstanceKey.TRY_PARSE#>(serializedInstanceKey, out var instanceKey)) {
-                return null;
-            }
+            var instanceKey = <#=InstanceKey.CLASS_NAME#>.<#=InstanceKey.PARSE#>(serializedInstanceKey);
             var entity = this.<#=_dbEntity.Item.DbSetName#>
 <# foreach (var line in _find.Include()) { #>
                 <#=line#>
@@ -350,6 +348,12 @@ namespace <#=_ctx.Config.RootNamespace#> {
 <# foreach (var line in GetInstanceNameProps()) { #>
             <#=line#>
 <# } #>
+        }
+        public <#=AggregateInstanceKeyNamePair.CLASSNAME#> <#=TOKEYNAMEPAIR_METHOD_NAME#>() {
+            return new <#=AggregateInstanceKeyNamePair.CLASSNAME#> {
+                <#=AggregateInstanceKeyNamePair.KEY#> = this.<#=GETINSTANCEKEY_METHOD_NAME#>().ToString(),
+                <#=AggregateInstanceKeyNamePair.NAME#> = this.<#=GETINSTANCENAME_METHOD_NAME#>(),
+            };
         }
     }
 

@@ -49,6 +49,7 @@ namespace HalApplicationBuilder.Core {
                 foreach (var innerElement in el.Elements()) {
                     var type = innerElement.Attribute(XML_ATTR_TYPE);
                     var key = innerElement.Attribute(XML_ATTR_KEY);
+                    var optional = innerElement.Attribute(XML_ATTR_OPTIONAL);
                     var name = innerElement.Attribute(XML_ATTR_NAME);
                     var refTo = innerElement.Attribute(XML_ATTR_REFTO);
 
@@ -58,6 +59,7 @@ namespace HalApplicationBuilder.Core {
                             Type = type.Value,
                             IsPrimary = key != null,
                             IsInstanceName = name != null,
+                            Optional = optional != null,
                         });
                     } else if (refTo != null) {
                         schemaBuilder.AddReference(new ReferenceDef {
@@ -108,6 +110,7 @@ namespace HalApplicationBuilder.Core {
         }
         private const string XML_ATTR_KEY = "key";
         private const string XML_ATTR_NAME = "name";
+        private const string XML_ATTR_OPTIONAL = "optional";
         private const string XML_ATTR_TYPE = "type";
         private const string XML_ATTR_REFTO = "refTo";
         private const string XML_ATTR_MULTIPLE = "multiple";
@@ -161,6 +164,7 @@ namespace HalApplicationBuilder.Core {
                             Type = memberType,
                             IsPrimary = member.IsPrimary,
                             IsInstanceName = member.IsInstanceName,
+                            Optional = member.Optional,
                         });
                     } else {
                         errors.Add($"Type name '{member.Type}' of '{member.Name}' is invalid.");
@@ -184,6 +188,7 @@ namespace HalApplicationBuilder.Core {
                             Type = memberType,
                             IsPrimary = member.IsPrimary,
                             IsInstanceName = member.IsInstanceName,
+                            Optional = member.Optional,
                         });
                     } else {
                         errors.Add($"Type name '{member.Type}' of '{member.Name}' is invalid.");
@@ -217,6 +222,7 @@ namespace HalApplicationBuilder.Core {
                             Type = memberType,
                             IsPrimary = member.IsPrimary,
                             IsInstanceName = member.IsInstanceName,
+                            Optional = member.Optional,
                         });
                     } else {
                         errors.Add($"Type name of '{member.Name}' is invalid: '{member.Type}'");
@@ -251,6 +257,7 @@ namespace HalApplicationBuilder.Core {
                                 Type = memberType,
                                 IsPrimary = member.IsPrimary,
                                 IsInstanceName = member.IsInstanceName,
+                                Optional = member.Optional,
                             });
                         } else {
                             errors.Add($"Type name '{member.Type}' of '{member.Name}' is invalid.");
@@ -387,6 +394,7 @@ namespace HalApplicationBuilder.Core {
             public string Type { get; set; } = "";
             public bool IsPrimary { get; set; }
             public bool IsInstanceName { get; set; }
+            public bool Optional { get; set; }
         }
         internal class ChildDef {
             public string Name { get; set; } = "";

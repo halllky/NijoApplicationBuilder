@@ -38,6 +38,7 @@ namespace HalApplicationBuilder.Core {
             internal required IAggregateMemberType Type { get; init; }
             internal required bool IsPrimary { get; init; }
             internal required bool IsInstanceName { get; init; }
+            internal required bool Optional { get; init; }
 
             public override string ToString() => Name;
         }

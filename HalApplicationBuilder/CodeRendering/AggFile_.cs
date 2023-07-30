@@ -1,4 +1,5 @@
 using HalApplicationBuilder.CodeRendering.Presentation;
+using HalApplicationBuilder.CodeRendering.Util;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
 using System;
@@ -41,6 +42,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
         public const string GETINSTANCEKEY_METHOD_NAME = "GetInstanceKey";
         public const string GETINSTANCENAME_METHOD_NAME = "GetInstanceName";
+        public const string TOKEYNAMEPAIR_METHOD_NAME = "ToKeyNamePair";
 
         private IEnumerable<NavigationProperty.Item> EnumerateNavigationProperties(GraphNode<EFCoreEntity> entity) {
             foreach (var nav in entity.GetNavigationProperties(_ctx.Config)) {
