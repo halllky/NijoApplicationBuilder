@@ -31,6 +31,7 @@ namespace HalApplicationBuilder.Core {
             internal required string PropertyName { get; init; }
             internal string? Initializer { get; init; }
             internal bool RequiredAtDB { get; init; }
+            internal required Member? CorrespondingParentColumn { get; init; }
 
             protected override IEnumerable<object?> ValueObjectIdentifiers() {
                 yield return Owner;
@@ -70,7 +71,7 @@ namespace HalApplicationBuilder.Core {
                     OppositeIsMany = oppositeIsMany,
                     ForeignKeys = owner
                         .GetColumns()
-                        .Where(m => m.IsPrimary),
+                        .Where(m => m.IsPrimary && m.CorrespondingParentColumn?.Owner == opposite.Item),
                 };
             }
 
@@ -131,6 +132,22 @@ namespace HalApplicationBuilder.Core {
 
     internal static class EFCoreEntityExtensions {
         internal static IEnumerable<EFCoreEntity.Member> GetColumns(this GraphNode<EFCoreEntity> dbEntity) {
+            // 親の主キー
+            var parent = dbEntity.GetParent()?.Initial;
+            if (parent != null) {
+                foreach (var parentPkColumn in parent.GetColumns().Where(c => c.IsPrimary)) {
+                    yield return new EFCoreEntity.Member {
+                        Owner = dbEntity.Item,
+                        PropertyName = parentPkColumn.PropertyName,
+                        IsPrimary = true,
+                        IsInstanceName = false,
+                        MemberType = parentPkColumn.MemberType,
+                        CSharpTypeName = parentPkColumn.CSharpTypeName,
+                        RequiredAtDB = true,
+                        CorrespondingParentColumn = parentPkColumn,
+                    };
+                }
+            }
             // スカラー値
             foreach (var member in dbEntity.GetCorrespondingAggregate().Item.Members) {
                 yield return new EFCoreEntity.Member {
@@ -141,6 +158,7 @@ namespace HalApplicationBuilder.Core {
                     MemberType = member.Type,
                     CSharpTypeName = member.Type.GetCSharpTypeName(),
                     RequiredAtDB = member.IsPrimary, // TODO XMLでrequired属性を定義できるようにする
+                    CorrespondingParentColumn = null,
                 };
             }
             // リレーション
@@ -155,6 +173,7 @@ namespace HalApplicationBuilder.Core {
                     CSharpTypeName = "int",
                     Initializer = "default",
                     RequiredAtDB = true,
+                    CorrespondingParentColumn = null,
                 };
             }
         }

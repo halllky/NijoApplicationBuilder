@@ -335,9 +335,21 @@ namespace HalApplicationBuilder.CodeRendering
 namespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.RootNamespace));
             this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
-                    "s.Generic;\r\n    using System.Linq;\r\n\r\n    partial class ");
+                    "s.Generic;\r\n    using System.Linq;\r\n\r\n    /// <summary>\r\n    /// ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.GetCorrespondingAggregate().Item.DisplayName));
+            this.Write("のデータ1件の詳細を表すクラスです。\r\n    /// </summary>\r\n    public partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
-            this.Write(" {\r\n        /// <summary>\r\n        /// ");
+            this.Write(" : ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance.BASE_CLASS_NAME));
+            this.Write(" {\r\n");
+ foreach (var prop in _aggregateInstance.GetProperties(_ctx.Config)) { 
+            this.Write("        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
+            this.Write(" ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write(" { get; set; }\r\n");
+ } 
+            this.Write("\r\n        /// <summary>\r\n        /// ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
             this.Write("のデータベースから取得した内容を画面に表示する形に変換します。\r\n        /// </summary>\r\n        public static ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
@@ -388,13 +400,11 @@ namespace ");
             this.Write("\r\n");
  } 
             this.Write("        }\r\n    }\r\n\r\n");
- foreach (var ins in _aggregateInstance.EnumerateThisAndDescendants()) { 
+ foreach (var ins in _aggregateInstance.EnumerateDescendants()) { 
             this.Write("    /// <summary>\r\n    /// ");
             this.Write(this.ToStringHelper.ToStringWithCulture(ins.GetCorrespondingAggregate().Item.DisplayName));
             this.Write("のデータ1件の詳細を表すクラスです。\r\n    /// </summary>\r\n    public partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(ins.Item.ClassName));
-            this.Write(" : ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance.BASE_CLASS_NAME));
             this.Write(" {\r\n");
  foreach (var prop in ins.GetProperties(_ctx.Config)) { 
             this.Write("        public ");

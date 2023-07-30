@@ -3,10 +3,10 @@
 <RDRA>
   <親集約>
     <親集約ID type="id" key="" />
-    <親集約名 type="word" />
+    <親集約名 type="word" name="" />
     <子集約>
       <子集約ID type="id" key="" />
-      <子集約名 type="word" />
+      <子集約名 type="word" name="" />
     </子集約>
   </親集約>
 </RDRA>

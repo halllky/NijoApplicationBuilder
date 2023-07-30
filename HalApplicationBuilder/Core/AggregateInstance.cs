@@ -51,6 +51,9 @@ namespace HalApplicationBuilder.Core
 
         internal static IEnumerable<AggregateInstance.SchalarProperty> GetSchalarProperties(this GraphNode<AggregateInstance> node, Config config) {
             foreach (var column in node.GetDbEntity().GetColumns()) {
+                // 親子両方で定義されて冗長になってしまうため、親のPKは含めない
+                if (column.CorrespondingParentColumn != null) continue;
+
                 yield return new AggregateInstance.SchalarProperty {
                     CorrespondingDbColumn = column,
                     CSharpTypeName = column.CSharpTypeName,

@@ -315,7 +315,14 @@ namespace <#=_ctx.Config.RootNamespace#> {
     using System.Collections.Generic;
     using System.Linq;
 
-    partial class <#=_aggregateInstance.Item.ClassName#> {
+    /// <summary>
+    /// <#=_aggregateInstance.GetCorrespondingAggregate().Item.DisplayName#>のデータ1件の詳細を表すクラスです。
+    /// </summary>
+    public partial class <#=_aggregateInstance.Item.ClassName#> : <#=AggregateInstance.BASE_CLASS_NAME#> {
+<# foreach (var prop in _aggregateInstance.GetProperties(_ctx.Config)) { #>
+        public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }
+<# } #>
+
         /// <summary>
         /// <#=_aggregate.Item.DisplayName#>のデータベースから取得した内容を画面に表示する形に変換します。
         /// </summary>
@@ -346,11 +353,11 @@ namespace <#=_ctx.Config.RootNamespace#> {
         }
     }
 
-<# foreach (var ins in _aggregateInstance.EnumerateThisAndDescendants()) { #>
+<# foreach (var ins in _aggregateInstance.EnumerateDescendants()) { #>
     /// <summary>
     /// <#=ins.GetCorrespondingAggregate().Item.DisplayName#>のデータ1件の詳細を表すクラスです。
     /// </summary>
-    public partial class <#=ins.Item.ClassName#> : <#=AggregateInstance.BASE_CLASS_NAME#> {
+    public partial class <#=ins.Item.ClassName#> {
 <# foreach (var prop in ins.GetProperties(_ctx.Config)) { #>
         public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }
 <# } #>

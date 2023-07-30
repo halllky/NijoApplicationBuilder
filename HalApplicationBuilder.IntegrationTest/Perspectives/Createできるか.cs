@@ -52,7 +52,57 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                             Assert.That(found, Is.EqualTo(new {
                                 参照元集約ID = "222",
                                 参照元集約名 = "参照元2",
-                                照 = new { InstanceKey = "[\"111\"]", InstanceName = "参照先1" },
+                                参照 = new { InstanceKey = "[\"111\"]", InstanceName = "参照先1" },
+                            }.ToJson()));
+                        }
+                        break;
+
+                    case E_DataPattern._002_Childrenのみxml: {
+                            var createResult1 = await SharedResource.Project.Post("/api/親集約/create", new {
+                                親集約ID = "111",
+                                親集約名 = "親1",
+                                子集約 = new[] {
+                                    new { 子集約ID = "222", 子集約名 = "子2" },
+                                    new { 子集約ID = "333", 子集約名 = "子3" },
+                                },
+                            });
+                            var findResult1 = await SharedResource.Project.Get("/api/親集約/detail/[\"111\"]");
+                            var found = await findResult1.Content.ReadAsJsonAsync();
+
+                            Assert.That(found, Is.EqualTo(new {
+                                親集約ID = "111",
+                                親集約名 = "親1",
+                                子集約 = new[] {
+                                    new { 子集約ID = "222", 子集約名 = "子2" },
+                                    new { 子集約ID = "333", 子集約名 = "子3" },
+                                },
+                                __halapp_InstanceKey = "[\"111\"]",
+                                __halapp_InstanceName = "親1",
+                            }.ToJson()));
+                        }
+                        break;
+
+                    case E_DataPattern._003_Childのみxml: {
+                            var createResult1 = await SharedResource.Project.Post("/api/親集約/create", new {
+                                親集約ID = "111",
+                                親集約名 = "親1",
+                                子集約 = new {
+                                    子集約ID = "222",
+                                    子集約名 = "子2",
+                                },
+                            });
+                            var findResult1 = await SharedResource.Project.Get("/api/親集約/detail/[\"111\"]");
+                            var found = await findResult1.Content.ReadAsJsonAsync();
+
+                            Assert.That(found, Is.EqualTo(new {
+                                親集約ID = "111",
+                                親集約名 = "親1",
+                                子集約 = new {
+                                    子集約ID = "222",
+                                    子集約名 = "子2",
+                                },
+                                __halapp_InstanceKey = "[\"111\"]",
+                                __halapp_InstanceName = "親1",
                             }.ToJson()));
                         }
                         break;

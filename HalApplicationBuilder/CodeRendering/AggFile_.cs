@@ -317,29 +317,37 @@ namespace HalApplicationBuilder.CodeRendering {
         #region AGGREGATE INSTANCE
         private void ToDbEntity() {
 
-            void WriteBody(GraphNode<AggregateInstance> instance, string right) {
-                foreach (var prop in instance.GetSchalarProperties(_ctx.Config)) {
-                    var path = new[] { right }
-                        .Concat(instance.PathFromEntry().Select(x => x.RelationName.ToCSharpSafe()))
-                        .Concat(new[] { prop.CorrespondingDbColumn.PropertyName })
-                        .Join(".");
-                    WriteLine($"{prop.PropertyName} = {path},");
+            void WriteBody(GraphNode<AggregateInstance> instance, string parentPath, string instancePath,  int depth) {
+                // 親のPK
+                var parent = instance.GetParent()?.Initial;
+                if (parent != null) {
+                    var parentPkColumns = instance
+                        .GetDbEntity()
+                        .GetColumns()
+                        .Where(col => col.IsPrimary && col.CorrespondingParentColumn != null);
+                    foreach (var col in parentPkColumns) {
+                        WriteLine($"{col.PropertyName} = {parentPath}.{col.CorrespondingParentColumn!.PropertyName},");
+                    }
                 }
-
+                // 自身のメンバー
+                foreach (var prop in instance.GetSchalarProperties(_ctx.Config)) {
+                    WriteLine($"{prop.PropertyName} = {instancePath}.{prop.CorrespondingDbColumn.PropertyName},");
+                }
+                // 子要素
                 foreach (var child in instance.GetChildAggregateProperties(_ctx.Config)) {
                     var childProp = child.CorrespondingNavigationProperty.Principal.PropertyName;
                     var childDbEntity = $"{_ctx.Config.EntityNamespace}.{child.CorrespondingNavigationProperty.Relevant.Owner.Item.ClassName}";
                     if (child.Multiple) {
-                        WriteLine($"{child.PropertyName} = this.{childProp}.Select(x => new {childDbEntity} {{");
+                        WriteLine($"{child.PropertyName} = this.{childProp}.Select(x{depth} => new {childDbEntity} {{");
                         PushIndent("    ");
-                        WriteBody(child.ChildAggregateInstance.AsEntry(), "x");
+                        WriteBody(child.ChildAggregateInstance.AsEntry(), instancePath, $"x{depth}", depth + 1);
                         PopIndent();
                         WriteLine($"}}).ToList(),");
 
                     } else {
                         WriteLine($"{child.PropertyName} = new {childDbEntity} {{");
                         PushIndent("    ");
-                        WriteBody(child.ChildAggregateInstance, "this");
+                        WriteBody(child.ChildAggregateInstance, instancePath, $"{instancePath}.{child.ChildAggregateInstance.Source!.RelationName}", depth + 1);
                         PopIndent();
                         WriteLine($"}},");
                     }
@@ -348,7 +356,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
             WriteLine($"return new {_ctx.Config.EntityNamespace}.{_dbEntity.Item.ClassName} {{");
             PushIndent("    ");
-            WriteBody(_aggregateInstance, "this");
+            WriteBody(_aggregateInstance, "", "this", 0);
             PopIndent();
             WriteLine($"}};");
         }
