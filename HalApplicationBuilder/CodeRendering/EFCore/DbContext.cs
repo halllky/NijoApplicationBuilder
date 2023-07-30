@@ -34,9 +34,25 @@ namespace HalApplicationBuilder.CodeRendering.EFCore
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
             this.Write("(DbContextOptions<");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
-            this.Write("> options) : base(options) { }\r\n\r\n");
+            this.Write(@"> options) : base(options) { }
+
+        /// <inheritdoc />
+        public override int SaveChanges() {
+            var result = base.SaveChanges();
+
+            // ジャーナルファイル(shm, wal)が自動的にクリーンアップされない件に対応
+            // https://github.com/dotnet/efcore/issues/26422
+            if (this.Database.GetDbConnection() is Microsoft.Data.Sqlite.SqliteConnection conn) {
+                Microsoft.Data.Sqlite.SqliteConnection.ClearPool(conn);
+            }
+
+            return result;
+        }
+
+");
  /* OnModelCreating定義 */ 
-            this.Write("        protected override void OnModelCreating(ModelBuilder modelBuilder) {\r\n");
+            this.Write("        /// <inheritdoc />\r\n        protected override void OnModelCreating(Model" +
+                    "Builder modelBuilder) {\r\n");
  foreach (var dbEntity in _ctx.Schema.ToEFCoreGraph()) { 
             this.Write("\r\n            modelBuilder.Entity<");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));

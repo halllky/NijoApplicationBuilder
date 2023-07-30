@@ -3,7 +3,7 @@
 <RDRA>
   <参照先>
     <参照先集約ID type="id" key="" />
-    <参照先集約名 type="word" />
+    <参照先集約名 type="word" name="" />
   </参照先>
   <参照元>
     <参照元集約ID type="id" key="" />

@@ -28,12 +28,31 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                             var res2 = await SharedResource.Project.Get("/api/集約A/detail/[\"111\"]");
                             var found = await res2.Content.ReadAsJsonAsync();
 
-                            Assert.That(res1.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                            Assert.That(res2.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                             Assert.That(found, Is.EqualTo(new {
                                 ID = "111",
                                 __halapp_InstanceKey = "[\"111\"]",
                                 __halapp_InstanceName = "111",
+                            }.ToJson()));
+                        }
+                        break;
+
+                    case E_DataPattern._001_Refのみxml: {
+                            var createResult1 = await SharedResource.Project.Post("/api/参照先/create", new {
+                                参照先集約ID = "111",
+                                参照先集約名 = "参照先1",
+                            });
+                            var createResult2 = await SharedResource.Project.Post("/api/参照元/create", new {
+                                参照元集約ID = "222",
+                                参照元集約名 = "参照元2",
+                                参照 = new { InstanceKey = "[\"111\"]", InstanceName = "/*なんでもいい*/" },
+                            });
+                            var findResult2 = await SharedResource.Project.Get("/api/参照元/detail/[\"222\"]");
+                            var found = await findResult2.Content.ReadAsJsonAsync();
+
+                            Assert.That(found, Is.EqualTo(new {
+                                参照元集約ID = "222",
+                                参照元集約名 = "参照元2",
+                                照 = new { InstanceKey = "[\"111\"]", InstanceName = "参照先1" },
                             }.ToJson()));
                         }
                         break;
