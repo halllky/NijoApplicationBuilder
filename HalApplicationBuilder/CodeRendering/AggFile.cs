@@ -260,7 +260,7 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
             this.Write(" updated, out ICollection<string> errors) {\r\n            errors = new List<string" +
                     ">();\r\n            var key = after.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(GEINSTANCEKEY_METHOD_NAME));
+            this.Write(this.ToStringHelper.ToStringWithCulture(GETINSTANCEKEY_METHOD_NAME));
             this.Write("().ToString();\r\n\r\n            var before = this.");
             this.Write(this.ToStringHelper.ToStringWithCulture(_find.MethodName));
             this.Write("(key);\r\n            if (before == null) {\r\n                updated = new ");
@@ -368,7 +368,7 @@ namespace ");
             this.Write("        }\r\n        public ");
             this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.CLASS_NAME));
             this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(GEINSTANCEKEY_METHOD_NAME));
+            this.Write(this.ToStringHelper.ToStringWithCulture(GETINSTANCEKEY_METHOD_NAME));
             this.Write("() {\r\n            return ");
             this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.CLASS_NAME));
             this.Write(".");
@@ -379,7 +379,15 @@ namespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(p.PropertyName));
             this.Write(",\r\n");
  } 
-            this.Write("            });\r\n        }\r\n    }\r\n\r\n");
+            this.Write("            });\r\n        }\r\n        public string ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GETINSTANCENAME_METHOD_NAME));
+            this.Write("() {\r\n");
+ foreach (var line in GetInstanceNameProps()) { 
+            this.Write("            ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(line));
+            this.Write("\r\n");
+ } 
+            this.Write("        }\r\n    }\r\n\r\n");
  foreach (var ins in _aggregateInstance.EnumerateThisAndDescendants()) { 
             this.Write("    /// <summary>\r\n    /// ");
             this.Write(this.ToStringHelper.ToStringWithCulture(ins.GetCorrespondingAggregate().Item.DisplayName));

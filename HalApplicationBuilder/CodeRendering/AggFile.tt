@@ -217,7 +217,7 @@ namespace <#=_ctx.Config.EntityNamespace#> {
     partial class <#=_ctx.Config.DbContextName#> {
         public bool <#=_update.MethodName#>(<#=_aggregateInstance.Item.ClassName#> after, out <#=_aggregateInstance.Item.ClassName#> updated, out ICollection<string> errors) {
             errors = new List<string>();
-            var key = after.<#=GEINSTANCEKEY_METHOD_NAME#>().ToString();
+            var key = after.<#=GETINSTANCEKEY_METHOD_NAME#>().ToString();
 
             var before = this.<#=_find.MethodName#>(key);
             if (before == null) {
@@ -332,12 +332,17 @@ namespace <#=_ctx.Config.RootNamespace#> {
 <# ToDbEntity(); #>
 <# PopIndent(); #>
         }
-        public <#=InstanceKey.CLASS_NAME#> <#=GEINSTANCEKEY_METHOD_NAME#>() {
+        public <#=InstanceKey.CLASS_NAME#> <#=GETINSTANCEKEY_METHOD_NAME#>() {
             return <#=InstanceKey.CLASS_NAME#>.<#=InstanceKey.CREATE#>(new object[] {
 <# foreach (var p in _aggregateInstance.GetSchalarProperties(_ctx.Config).Where(p => p.CorrespondingDbColumn.IsPrimary)) { #>
                 this.<#=p.PropertyName#>,
 <# } #>
             });
+        }
+        public string <#=GETINSTANCENAME_METHOD_NAME#>() {
+<# foreach (var line in GetInstanceNameProps()) { #>
+            <#=line#>
+<# } #>
         }
     }
 

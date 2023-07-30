@@ -1,3 +1,4 @@
+using HalApplicationBuilder.CodeRendering.Presentation;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
 using System;
@@ -38,7 +39,8 @@ namespace HalApplicationBuilder.CodeRendering {
         public string FileName => $"{_aggregate.Item.DisplayName.ToFileNameSafe()}.cs";
         private const string E = "e";
 
-        public const string GEINSTANCEKEY_METHOD_NAME = "GetInstanceKey";
+        public const string GETINSTANCEKEY_METHOD_NAME = "GetInstanceKey";
+        public const string GETINSTANCENAME_METHOD_NAME = "GetInstanceName";
 
         private IEnumerable<NavigationProperty.Item> EnumerateNavigationProperties(GraphNode<EFCoreEntity> entity) {
             foreach (var nav in entity.GetNavigationProperties(_ctx.Config)) {
@@ -379,11 +381,38 @@ namespace HalApplicationBuilder.CodeRendering {
                 }
             }
 
-            WriteLine($"return new {_aggregateInstance.Item.ClassName} {{");
+            WriteLine($"var instance = new {_aggregateInstance.Item.ClassName} {{");
             PushIndent("    ");
             WriteBody(_aggregateInstance, E);
             PopIndent();
             WriteLine($"}};");
+            WriteLine($"instance.{AggregateInstanceBase.INSTANCE_KEY} = instance.{GETINSTANCEKEY_METHOD_NAME}().ToString();");
+            WriteLine($"instance.{AggregateInstanceBase.INSTANCE_NAME} = instance.{GETINSTANCENAME_METHOD_NAME}();");
+            WriteLine($"return instance;");
+        }
+
+        private IEnumerable<string> GetInstanceNameProps() {
+            var useKeyInsteadOfName = _aggregateInstance
+                .GetSchalarProperties(_ctx.Config)
+                .Any(p => p.CorrespondingDbColumn.IsInstanceName) == false;
+            var props = useKeyInsteadOfName
+                ? _aggregateInstance
+                    .GetSchalarProperties(_ctx.Config)
+                    .Where(p => p.CorrespondingDbColumn.IsPrimary)
+                    .ToArray()
+                : _aggregateInstance
+                    .GetSchalarProperties(_ctx.Config)
+                    .Where(p => p.CorrespondingDbColumn.IsInstanceName)
+                    .ToArray();
+            if (props.Length == 0) {
+                yield return $"return string.Empty;";
+            } else {
+                for (int i = 0; i < props.Length; i++) {
+                    var head = i == 0 ? "return " : "    + ";
+                    yield return $"{head}this.{props[i].PropertyName}?.ToString()";
+                }
+                yield return $"    ?? string.Empty;";
+            }
         }
         #endregion AGGREGATE INSTANCE
 
