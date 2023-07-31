@@ -7,7 +7,7 @@
   </参照先>
   <参照元>
     <参照元集約ID type="id" key="" />
-    <参照元集約名 type="word" />
+    <参照元集約名 type="word" name="" />
     <参照 refTo="/参照先" />
   </参照元>
 </RDRA>

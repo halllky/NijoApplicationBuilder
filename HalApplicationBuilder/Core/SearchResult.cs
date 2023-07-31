@@ -21,6 +21,9 @@ namespace HalApplicationBuilder.Core {
         internal IEnumerable<Member> GetMembers() {
             IEnumerable<Member> GetMembersRecursively(GraphNode<EFCoreEntity> dbEntity) {
                 foreach (var column in dbEntity.GetColumns()) {
+                    // 参照先の主キーは次のforeachで作成するので省く
+                    if (column.CorrespondingRefTargetColumn != null) continue;
+
                     yield return new Member {
                         IsKey = dbEntity == _efCoreEntity && column.IsPrimary,
                         IsName = dbEntity == _efCoreEntity && column.IsInstanceName,

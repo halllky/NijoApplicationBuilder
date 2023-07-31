@@ -319,7 +319,7 @@ namespace HalApplicationBuilder.CodeRendering {
         #region AGGREGATE INSTANCE
         private void ToDbEntity() {
 
-            void WriteBody(GraphNode<AggregateInstance> instance, string parentPath, string instancePath,  int depth) {
+            void WriteBody(GraphNode<AggregateInstance> instance, string parentPath, string instancePath, int depth) {
                 // 親のPK
                 var parent = instance.GetParent()?.Initial;
                 if (parent != null) {
@@ -333,7 +333,14 @@ namespace HalApplicationBuilder.CodeRendering {
                 }
                 // 自身のメンバー
                 foreach (var prop in instance.GetSchalarProperties(_ctx.Config)) {
-                    WriteLine($"{prop.PropertyName} = {instancePath}.{prop.CorrespondingDbColumn.PropertyName},");
+                    WriteLine($"{prop.CorrespondingDbColumn.PropertyName} = {instancePath}.{prop.PropertyName},");
+                }
+                // Ref
+                foreach (var prop in instance.GetRefProperties(_ctx.Config)) {
+                    for (int i = 0; i < prop.CorrespondingDbColumns.Length; i++) {
+                        var col = prop.CorrespondingDbColumns[i];
+                        WriteLine($"{col.PropertyName} = ({col.CSharpTypeName}){InstanceKey.CLASS_NAME}.{InstanceKey.PARSE}({instancePath}.{prop.PropertyName}.{AggregateInstanceKeyNamePair.KEY}).{InstanceKey.OBJECT_ARRAY}[{i}],");
+                    }
                 }
                 // 子要素
                 foreach (var child in instance.GetChildAggregateProperties(_ctx.Config)) {
@@ -364,27 +371,28 @@ namespace HalApplicationBuilder.CodeRendering {
         }
         private void FromDbEntity() {
 
-            void WriteBody(GraphNode<AggregateInstance> instance, string right) {
+            void WriteBody(GraphNode<AggregateInstance> instance, string parentPath, string instancePath, int depth) {
+                // 自身のメンバー
                 foreach (var prop in instance.GetSchalarProperties(_ctx.Config)) {
-                    var path = new[] { right }
-                        .Concat(instance.PathFromEntry().Select(x => x.RelationName.ToCSharpSafe()))
-                        .Concat(new[] { prop.CorrespondingDbColumn.PropertyName })
-                        .Join(".");
-                    WriteLine($"{prop.PropertyName} = {path},");
+                    WriteLine($"{prop.PropertyName} = {instancePath}.{prop.CorrespondingDbColumn.PropertyName},");
                 }
-
+                // Ref
+                foreach (var prop in instance.GetRefProperties(_ctx.Config)) {
+                    WriteLine($"{prop.PropertyName} = {prop.RefTarget.Item.ClassName}.{AggregateInstance.FROM_DB_ENTITY_METHOD_NAME}({instancePath}.{prop.CorrespondingNavigationProperty.Relevant.PropertyName}).{TOKEYNAMEPAIR_METHOD_NAME}(),");
+                }
+                // 子要素
                 foreach (var child in instance.GetChildAggregateProperties(_ctx.Config)) {
                     if (child.Multiple) {
-                        WriteLine($"{child.PropertyName} = {right}.{child.PropertyName}.Select(x => new {child.ChildAggregateInstance.Item.ClassName} {{");
+                        WriteLine($"{child.PropertyName} = {instancePath}.{child.PropertyName}.Select(x{depth} => new {child.ChildAggregateInstance.Item.ClassName} {{");
                         PushIndent("    ");
-                        WriteBody(child.ChildAggregateInstance.AsEntry(), "x");
+                        WriteBody(child.ChildAggregateInstance.AsEntry(), instancePath, $"x{depth}", depth + 1);
                         PopIndent();
                         WriteLine($"}}).ToList(),");
 
                     } else {
                         WriteLine($"{child.PropertyName} = new {child.ChildAggregateInstance.Item.ClassName} {{");
                         PushIndent("    ");
-                        WriteBody(child.ChildAggregateInstance, E);
+                        WriteBody(child.ChildAggregateInstance, instancePath, $"{instancePath}.{child.CorrespondingNavigationProperty.Principal.PropertyName}", depth + 1);
                         PopIndent();
                         WriteLine($"}},");
                     }
@@ -393,7 +401,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
             WriteLine($"var instance = new {_aggregateInstance.Item.ClassName} {{");
             PushIndent("    ");
-            WriteBody(_aggregateInstance, E);
+            WriteBody(_aggregateInstance, "", E, 0);
             PopIndent();
             WriteLine($"}};");
             WriteLine($"instance.{AggregateInstanceBase.INSTANCE_KEY} = instance.{GETINSTANCEKEY_METHOD_NAME}().ToString();");

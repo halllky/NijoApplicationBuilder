@@ -1,4 +1,5 @@
 using HalApplicationBuilder.DotnetEx;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,9 @@ namespace HalApplicationBuilder.Core {
 
                 foreach (var member in dbEntity.GetColumns()) {
                     if (asRef && !member.IsPrimary && !member.IsInstanceName) continue;
+
+                    // 参照先の主キーは全く異なるロジックで収集しているので省く
+                    if (member.CorrespondingRefTargetColumn != null) continue;
 
                     yield return new Member {
                         Owner = this,

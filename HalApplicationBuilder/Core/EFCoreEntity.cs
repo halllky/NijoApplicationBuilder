@@ -32,6 +32,7 @@ namespace HalApplicationBuilder.Core {
             internal string? Initializer { get; init; }
             internal bool RequiredAtDB { get; init; }
             internal required Member? CorrespondingParentColumn { get; init; }
+            internal required Member? CorrespondingRefTargetColumn { get; init; }
 
             protected override IEnumerable<object?> ValueObjectIdentifiers() {
                 yield return Owner;
@@ -71,7 +72,8 @@ namespace HalApplicationBuilder.Core {
                     OppositeIsMany = oppositeIsMany,
                     ForeignKeys = owner
                         .GetColumns()
-                        .Where(m => m.IsPrimary && m.CorrespondingParentColumn?.Owner == opposite.Item),
+                        .Where(m => m.IsPrimary && m.CorrespondingParentColumn?.Owner == opposite.Item
+                                 || m.CorrespondingRefTargetColumn?.Owner == opposite.Item),
                 };
             }
 
@@ -145,6 +147,7 @@ namespace HalApplicationBuilder.Core {
                         CSharpTypeName = parentPkColumn.CSharpTypeName,
                         RequiredAtDB = true,
                         CorrespondingParentColumn = parentPkColumn,
+                        CorrespondingRefTargetColumn = null,
                     };
                 }
             }
@@ -159,7 +162,24 @@ namespace HalApplicationBuilder.Core {
                     CSharpTypeName = member.Type.GetCSharpTypeName(),
                     RequiredAtDB = member.IsPrimary, // TODO XMLでrequired属性を定義できるようにする
                     CorrespondingParentColumn = null,
+                    CorrespondingRefTargetColumn = null,
                 };
+            }
+            // Ref
+            foreach (var edge in dbEntity.GetRefMembers()) {
+                foreach (var refTargetPk in edge.Terminal.GetColumns().Where(c => c.IsPrimary)) {
+                    yield return new EFCoreEntity.Member {
+                        Owner = dbEntity.Item,
+                        PropertyName = $"{edge.RelationName}_{refTargetPk.PropertyName}",
+                        IsPrimary = edge.IsPrimary(),
+                        IsInstanceName = edge.IsInstanceName(),
+                        MemberType = refTargetPk.MemberType,
+                        CSharpTypeName = refTargetPk.CSharpTypeName,
+                        RequiredAtDB = edge.IsPrimary(), // TODO XMLでrequired属性を定義できるようにする
+                        CorrespondingParentColumn = null,
+                        CorrespondingRefTargetColumn = refTargetPk,
+                    };
+                }
             }
             // リレーション
             foreach (var edge in dbEntity.GetCorrespondingAggregate().GetVariationMembers()) {
@@ -174,6 +194,7 @@ namespace HalApplicationBuilder.Core {
                     Initializer = "default",
                     RequiredAtDB = true,
                     CorrespondingParentColumn = null,
+                    CorrespondingRefTargetColumn = null,
                 };
             }
         }

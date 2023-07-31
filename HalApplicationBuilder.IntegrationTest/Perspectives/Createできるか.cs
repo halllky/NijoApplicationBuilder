@@ -53,6 +53,8 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                                 参照元集約ID = "222",
                                 参照元集約名 = "参照元2",
                                 参照 = new { InstanceKey = "[\"111\"]", InstanceName = "参照先1" },
+                                __halapp_InstanceKey = "[\"222\"]",
+                                __halapp_InstanceName = "参照元2",
                             }.ToJson()));
                         }
                         break;

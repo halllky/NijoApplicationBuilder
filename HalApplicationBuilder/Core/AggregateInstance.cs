@@ -39,6 +39,8 @@ namespace HalApplicationBuilder.Core
         }
         internal class RefProperty : Property {
             internal required GraphNode<AggregateInstance> RefTarget { get; init; }
+            internal required NavigationProperty CorrespondingNavigationProperty { get; init; }
+            internal required EFCoreEntity.Member[] CorrespondingDbColumns { get; init; }
         }
     }
 
@@ -53,6 +55,8 @@ namespace HalApplicationBuilder.Core
             foreach (var column in node.GetDbEntity().GetColumns()) {
                 // 親子両方で定義されて冗長になってしまうため、親のPKは含めない
                 if (column.CorrespondingParentColumn != null) continue;
+                // 参照はKeyNamePairで定義するので、含めない
+                if (column.CorrespondingRefTargetColumn != null) continue;
 
                 yield return new AggregateInstance.SchalarProperty {
                     CorrespondingDbColumn = column,
@@ -99,10 +103,20 @@ namespace HalApplicationBuilder.Core
 
         internal static IEnumerable<AggregateInstance.RefProperty> GetRefProperties(this GraphNode<AggregateInstance> node, Config config) {
             foreach (var edge in node.GetRefMembers()) {
+                var initialDbEntity = edge.Initial.GetDbEntity();
+                var terminalDbEntity = edge.Terminal.GetDbEntity();
+                var edgeAsEfCore = terminalDbEntity.In.Single(x => x.RelationName == edge.RelationName
+                                                                && x.Initial.As<EFCoreEntity>() == initialDbEntity);
                 yield return new AggregateInstance.RefProperty {
                     RefTarget = edge.Terminal,
                     CSharpTypeName = AggregateInstanceKeyNamePair.CLASSNAME,
                     PropertyName = edge.RelationName,
+                    CorrespondingNavigationProperty = new NavigationProperty(edgeAsEfCore, config),
+                    CorrespondingDbColumns = node
+                        .GetDbEntity()
+                        .GetColumns()
+                        .Where(col => col.CorrespondingRefTargetColumn?.Owner == terminalDbEntity.Item)
+                        .ToArray(),
                 };
             }
         }

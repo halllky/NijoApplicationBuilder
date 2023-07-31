@@ -187,7 +187,9 @@ namespace HalApplicationBuilder.DotnetEx {
         }
 
         internal GraphNode<T> As<T>() where T : IGraphNode {
-            return new GraphNode<T>((T)Item, _graph, Source);
+            return this is GraphNode<T> t
+                ? t
+                : new GraphNode<T>((T)Item, _graph, Source);
         }
 
         public override string ToString() => $"GraphNode[{Item.Id}]";

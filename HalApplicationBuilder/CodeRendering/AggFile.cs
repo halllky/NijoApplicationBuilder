@@ -125,7 +125,7 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(" = this.");
             this.Write(this.ToStringHelper.ToStringWithCulture(_search.DbSetName));
             this.Write(".Select(");
-            this.Write(this.ToStringHelper.ToStringWithCulture(E));
+            this.Write(this.ToStringHelper.ToStringWithCulture(SearchMethod.E));
             this.Write(" => new ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_search.ReturnItemType));
             this.Write(" {\r\n");

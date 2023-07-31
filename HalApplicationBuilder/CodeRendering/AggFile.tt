@@ -101,7 +101,7 @@ namespace <#=_ctx.Config.EntityNamespace#> {
         /// <#=_aggregate.Item.DisplayName#>の一覧検索を行います。
         /// </summary>
         public <#=_search.ReturnType#> <#=_search.MethodName#>(<#=_search.ArgType#> <#=SearchMethod.PARAM#>) {
-            var <#=SearchMethod.QUERY#> = this.<#=_search.DbSetName#>.Select(<#=E#> => new <#=_search.ReturnItemType#> {
+            var <#=SearchMethod.QUERY#> = this.<#=_search.DbSetName#>.Select(<#=SearchMethod.E#> => new <#=_search.ReturnItemType#> {
 <# foreach (var line in _search.SelectClause()) { #>
                 <#=line#>
 <# } #>
