@@ -182,13 +182,13 @@ namespace HalApplicationBuilder.Core {
                 }
             }
             // リレーション
-            foreach (var edge in dbEntity.GetCorrespondingAggregate().GetVariationMembers()) {
+            foreach (var group in dbEntity.GetCorrespondingAggregate().GetVariationGroups()) {
                 // variationの型番号
                 yield return new EFCoreEntity.Member {
                     Owner = dbEntity.Item,
-                    PropertyName = edge.RelationName.ToCSharpSafe(),
-                    IsPrimary = edge.IsPrimary(),
-                    IsInstanceName = edge.IsInstanceName(),
+                    PropertyName = group.Key.ToCSharpSafe(),
+                    IsPrimary = false, // TODO Variationを主キーに設定できないの不便では？
+                    IsInstanceName = false,
                     MemberType = new EnumList(),
                     CSharpTypeName = "int",
                     Initializer = "default",

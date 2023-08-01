@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<App>
+<RDRA>
   <親集約>
     <親集約ID type="id" key="" />
     <親集約名 type="word" />
     <種別>
-      <種別A>
+      <種別A switch="1">
         <種別Aのみに存在する属性 type="word" />
       </種別A>
-      <種別B>
+      <種別B switch="2">
       </種別B>
     </種別>
   </親集約>
-</App>
+</RDRA>

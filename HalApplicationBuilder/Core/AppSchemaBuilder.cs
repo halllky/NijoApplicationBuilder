@@ -15,8 +15,7 @@ namespace HalApplicationBuilder.Core {
             var schemaBuilder = new AppSchemaBuilder { ApplicationName = xDocument.Root.Name.LocalName };
             var errorList = new List<string>();
 
-            IEnumerable<XElement> GetSelfAndAncestors(XElement xElement) {
-                yield return xElement;
+            IEnumerable<XElement> GetAncestors(XElement xElement) {
                 var parent = xElement.Parent;
                 while (parent != null && parent != xDocument.Root) {
                     yield return parent;
@@ -38,39 +37,69 @@ namespace HalApplicationBuilder.Core {
                 if (parent == null && multiple)
                     localError.Add($"Root aggregate define '{el.Name}' cann't have '{XML_ATTR_MULTIPLE}' attribute.");
 
-                var ancestorNames = GetSelfAndAncestors(el)
-                    .Reverse()
-                    .Select(xElement => xElement.Name.LocalName);
+                var isVariationContainer = el.Elements().Any(inner => inner.Attribute(XML_ATTR_SWITCH) != null);
+                var strVariationSwitch = el.Attribute(XML_ATTR_SWITCH)?.Value;
+                var isVariation = !isVariationContainer && strVariationSwitch != null;
+                var variationSwitch = -1;
+                if (isVariation && !int.TryParse(strVariationSwitch, out variationSwitch)) {
+                    localError.Add($"Value of '{XML_ATTR_SWITCH}' of '{el.Name}' must be integer.");
+                }
+
+                var ancestorNames = isVariationContainer
+                    ? GetAncestors(el).Reverse().Select(xElement => xElement.Name.LocalName)
+                    : new[] { el }.Union(GetAncestors(el)).Reverse().Select(xElement => xElement.Name.LocalName);
                 if (!AggregatePath.TryCreate(ancestorNames, out var aggregatePath, out var err)) {
                     localError.Add(err);
                 }
 
                 var schalarMembers = new List<SchalarMemberDef>();
-                foreach (var innerElement in el.Elements()) {
-                    var type = innerElement.Attribute(XML_ATTR_TYPE);
-                    var key = innerElement.Attribute(XML_ATTR_KEY);
-                    var optional = innerElement.Attribute(XML_ATTR_OPTIONAL);
-                    var name = innerElement.Attribute(XML_ATTR_NAME);
-                    var refTo = innerElement.Attribute(XML_ATTR_REFTO);
 
-                    if (type != null) {
-                        schalarMembers.Add(new SchalarMemberDef {
-                            Name = innerElement.Name.LocalName,
-                            Type = type.Value,
-                            IsPrimary = key != null,
-                            IsInstanceName = name != null,
-                            Optional = optional != null,
-                        });
-                    } else if (refTo != null) {
-                        schemaBuilder.AddReference(new ReferenceDef {
-                            Name = innerElement.Name.LocalName,
-                            OwnerFullPath = aggregatePath.Value,
-                            TargetFullPath = refTo.Value,
-                            IsPrimary = key != null,
-                            IsInstanceName = name != null,
-                        });
-                    } else {
+                if (isVariationContainer) {
+                    var duplicates = el
+                        .Elements()
+                        .Select(e => e.Attribute(XML_ATTR_SWITCH)?.Value)
+                        .Where(str => str != null)
+                        .Select(str => int.TryParse(str, out var i) ? i : (int?)null)
+                        .GroupBy(i => i)
+                        .Where(group => group.Key != null && group.Count() >= 2);
+                    foreach (var group in duplicates) {
+                        localError.Add($"Value of '{XML_ATTR_SWITCH}' of child of '{el.Name}' duplicates: {group.Key}");
+                    }
+                    foreach (var innerElement in el.Elements()) {
+                        if (innerElement.Attribute(XML_ATTR_SWITCH) == null) {
+                            localError.Add($"Aggregate define '{innerElement.Name}' must have '{XML_ATTR_SWITCH}' attribute.");
+                            continue;
+                        }
                         ParseAsAggregate(innerElement, parent: aggregatePath);
+                    }
+
+                } else {
+                    foreach (var innerElement in el.Elements()) {
+                        var type = innerElement.Attribute(XML_ATTR_TYPE);
+                        var key = innerElement.Attribute(XML_ATTR_KEY);
+                        var optional = innerElement.Attribute(XML_ATTR_OPTIONAL);
+                        var name = innerElement.Attribute(XML_ATTR_NAME);
+                        var refTo = innerElement.Attribute(XML_ATTR_REFTO);
+
+                        if (type != null) {
+                            schalarMembers.Add(new SchalarMemberDef {
+                                Name = innerElement.Name.LocalName,
+                                Type = type.Value,
+                                IsPrimary = key != null,
+                                IsInstanceName = name != null,
+                                Optional = optional != null,
+                            });
+                        } else if (refTo != null) {
+                            schemaBuilder.AddReference(new ReferenceDef {
+                                Name = innerElement.Name.LocalName,
+                                OwnerFullPath = aggregatePath.Value,
+                                TargetFullPath = refTo.Value,
+                                IsPrimary = key != null,
+                                IsInstanceName = name != null,
+                            });
+                        } else {
+                            ParseAsAggregate(innerElement, parent: aggregatePath);
+                        }
                     }
                 }
 
@@ -79,7 +108,9 @@ namespace HalApplicationBuilder.Core {
                     return;
                 }
 
-                if (parent == null) {
+                if (isVariationContainer) {
+                    return;
+                } else if (parent == null) {
                     schemaBuilder.AddAggregate(new AggregateDef {
                         FullPath = aggregatePath,
                         Members = schalarMembers,
@@ -90,6 +121,14 @@ namespace HalApplicationBuilder.Core {
                         Members = schalarMembers,
                         OwnerFullPath = parent.Value,
                     });
+                } else if (isVariation) {
+                    schemaBuilder.AddVariationAggregate(new VariationDef {
+                        Name = el.Name.LocalName,
+                        Members  = schalarMembers,
+                        VariationContainer = el.Parent?.Name.LocalName ?? string.Empty,
+                        VariationSwitch = variationSwitch,
+                        OwnerFullPath = parent.Value,
+                    });
                 } else {
                     schemaBuilder.AddChildAggregate(new ChildDef {
                         Name = el.Name.LocalName,
@@ -97,7 +136,6 @@ namespace HalApplicationBuilder.Core {
                         OwnerFullPath = parent.Value,
                     });
                 }
-                // TODO: variationを解釈していない
             }
 
             foreach (var xElement in xDocument.Root.Elements()) {
@@ -114,6 +152,7 @@ namespace HalApplicationBuilder.Core {
         private const string XML_ATTR_TYPE = "type";
         private const string XML_ATTR_REFTO = "refTo";
         private const string XML_ATTR_MULTIPLE = "multiple";
+        private const string XML_ATTR_SWITCH = "switch";
         #endregion XML
 
         internal required string ApplicationName { get; init; }
@@ -246,35 +285,34 @@ namespace HalApplicationBuilder.Core {
                     errors.Add(err);
                     continue;
                 }
-
-                foreach (var variation in def.Variations) {
-                    var path = parentPath.GetChildAggregatePath(variation.Name);
-                    var members = new List<Aggregate.Member>();
-                    foreach (var member in variation.Members) {
-                        if (memberTypeResolver.TryResolve(member.Type, out var memberType)) {
-                            members.Add(new Aggregate.Member {
-                                Name = member.Name,
-                                Type = memberType,
-                                IsPrimary = member.IsPrimary,
-                                IsInstanceName = member.IsInstanceName,
-                                Optional = member.Optional,
-                            });
-                        } else {
-                            errors.Add($"Type name '{member.Type}' of '{member.Name}' is invalid.");
-                        }
+                var path = parentPath.GetChildAggregatePath(def.Name);
+                var members = new List<Aggregate.Member>();
+                foreach (var member in def.Members) {
+                    if (memberTypeResolver.TryResolve(member.Type, out var memberType)) {
+                        members.Add(new Aggregate.Member {
+                            Name = member.Name,
+                            Type = memberType,
+                            IsPrimary = member.IsPrimary,
+                            IsInstanceName = member.IsInstanceName,
+                            Optional = member.Optional,
+                        });
+                    } else {
+                        errors.Add($"Type name of '{member.Name}' is invalid: '{member.Type}'");
                     }
-                    var aggregate = new Aggregate(path, members);
-                    var relation = new GraphEdgeInfo {
-                        Initial = new NodeId(parentPath.Value),
-                        Terminal = new NodeId(path.Value),
-                        RelationName = def.Name,
-                        Attributes = new Dictionary<string, object> {
-                            { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD },
-                        },
-                    };
-                    aggregates.Add(aggregate.Id, aggregate);
-                    aggregateRelations[(relation.Initial, relation.RelationName, relation.Terminal)] = relation;
                 }
+                var aggregate = new Aggregate(path, members);
+                var relation = new GraphEdgeInfo {
+                    Initial = new NodeId(parentPath.Value),
+                    Terminal = new NodeId(path.Value),
+                    RelationName = $"{def.VariationContainer}_{def.Name}",
+                    Attributes = new Dictionary<string, object> {
+                        { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD },
+                        { DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH, def.VariationSwitch },
+                        { DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, def.VariationContainer },
+                    },
+                };
+                aggregates.Add(aggregate.Id, aggregate);
+                aggregateRelations[(relation.Initial, relation.RelationName, relation.Terminal)] = relation;
             }
 
             foreach (var def in _referencesDefs) {
@@ -404,12 +442,9 @@ namespace HalApplicationBuilder.Core {
         internal class VariationDef {
             public string Name { get; set; } = "";
             public string OwnerFullPath { get; set; } = "";
-            public IList<Item> Variations { get; set; } = new List<Item>();
-
-            internal class Item {
-                public string Name { get; set; } = "";
-                internal IList<SchalarMemberDef> Members { get; set; } = new List<SchalarMemberDef>();
-            }
+            internal IList<SchalarMemberDef> Members { get; set; } = new List<SchalarMemberDef>();
+            public string VariationContainer { get; set; } = "";
+            public int VariationSwitch { get; set; } = -1;
         }
         internal class ChildrenDef {
             public string Name { get; set; } = "";
@@ -433,6 +468,8 @@ namespace HalApplicationBuilder.Core {
         internal const string REL_ATTRVALUE_AGG_2_INS = "aggregate-instance";
 
         internal const string REL_ATTR_MULTIPLE = "multiple";
+        internal const string REL_ATTR_VARIATIONGROUPNAME = "variation-group-name";
+        internal const string REL_ATTR_VARIATIONSWITCH = "switch";
         internal const string REL_ATTR_IS_PRIMARY = "is-primary";
         internal const string REL_ATTR_IS_INSTANCE_NAME = "is-instance-name";
 
@@ -553,12 +590,17 @@ namespace HalApplicationBuilder.Core {
             return graphNode.Out
                 .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                             && (string)type == REL_ATTRVALUE_PARENT_CHILD
-                            && !edge.Attributes.ContainsKey(REL_ATTR_MULTIPLE))
+                            && !edge.Attributes.ContainsKey(REL_ATTR_MULTIPLE)
+                            && !edge.Attributes.ContainsKey(REL_ATTR_VARIATIONGROUPNAME))
                 .Select(edge => edge.As<T>());
         }
         internal static IEnumerable<GraphEdge<T>> GetVariationMembers<T>(this GraphNode<T> graphNode) where T : IGraphNode {
-            // TODO
-            yield break;
+            return graphNode.Out
+                .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                            && (string)type == REL_ATTRVALUE_PARENT_CHILD
+                            && !edge.Attributes.ContainsKey(REL_ATTR_MULTIPLE)
+                            && edge.Attributes.ContainsKey(REL_ATTR_VARIATIONGROUPNAME))
+                .Select(edge => edge.As<T>());
         }
         internal static IEnumerable<GraphEdge<T>> GetRefMembers<T>(this GraphNode<T> graphNode) where T : IGraphNode {
             return graphNode.Out
@@ -571,6 +613,13 @@ namespace HalApplicationBuilder.Core {
                 .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                             && (string)type == REL_ATTRVALUE_REFERENCE)
                 .Select(edge => edge.As<T>());
+        }
+
+        internal static IEnumerable<IGrouping<string, GraphEdge<T>>> GetVariationGroups<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+            return graphNode
+                .GetVariationMembers()
+                .Select(edge => edge.As<T>())
+                .GroupBy(edge => (string)edge.Attributes[REL_ATTR_VARIATIONGROUPNAME]);
         }
 
         // ----------------------------- GraphEdge extensions -----------------------------
@@ -589,15 +638,22 @@ namespace HalApplicationBuilder.Core {
         internal static bool IsChild(this GraphEdge graphEdge) {
             return graphEdge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                 && (string)type == REL_ATTRVALUE_PARENT_CHILD
-                && !graphEdge.Attributes.ContainsKey(REL_ATTR_MULTIPLE);
+                && !graphEdge.Attributes.ContainsKey(REL_ATTR_MULTIPLE)
+                && !graphEdge.Attributes.ContainsKey(REL_ATTR_VARIATIONGROUPNAME);
         }
         internal static bool IsVariation(this GraphEdge graphEdge) {
-            // TODO
-            return false;
+            return graphEdge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                && (string)type == REL_ATTRVALUE_PARENT_CHILD
+                && !graphEdge.Attributes.ContainsKey(REL_ATTR_MULTIPLE)
+                && graphEdge.Attributes.ContainsKey(REL_ATTR_VARIATIONGROUPNAME);
         }
         internal static bool IsRef(this GraphEdge graphEdge) {
             return graphEdge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                 && (string)type == REL_ATTRVALUE_REFERENCE;
+        }
+
+        internal static int GetVariationKey(this GraphEdge graphEdge) {
+            return (int)graphEdge.Attributes[REL_ATTR_VARIATIONSWITCH];
         }
     }
 }
