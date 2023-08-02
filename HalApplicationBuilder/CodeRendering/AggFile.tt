@@ -168,9 +168,12 @@ namespace <#=_ctx.Config.EntityNamespace#> {
         /// <summary>
         /// <#=_aggregate.Item.DisplayName#>のキー情報から対象データの詳細を検索して返します。
         /// </summary>
-        public <#=_find.ReturnType#>? <#=_find.MethodName#>(string serializedInstanceKey) {
+        public <#=_find.ReturnType#>? <#=_find.MethodName#>(string serializedInstanceKey, bool tracks = true) {
             var instanceKey = <#=InstanceKey.CLASS_NAME#>.<#=InstanceKey.PARSE#>(serializedInstanceKey);
-            var entity = this.<#=_dbEntity.Item.DbSetName#>
+            var query = tracks
+                ? this.<#=_dbEntity.Item.DbSetName#>
+                : this.<#=_dbEntity.Item.DbSetName#>.AsNoTracking();
+            var entity = query
 <# foreach (var line in _find.Include()) { #>
                 <#=line#>
 <# } #>
@@ -217,7 +220,7 @@ namespace <#=_ctx.Config.EntityNamespace#> {
             errors = new List<string>();
             var key = after.<#=GETINSTANCEKEY_METHOD_NAME#>().ToString();
 
-            var before = this.<#=_find.MethodName#>(key);
+            var before = this.<#=_find.MethodName#>(key, tracks: false);
             if (before == null) {
                 updated = new <#=_aggregateInstance.Item.ClassName#>();
                 errors.Add("更新対象のデータが見つかりません。");
@@ -228,7 +231,6 @@ namespace <#=_ctx.Config.EntityNamespace#> {
             var afterDbEntity = after.<#=AggregateInstance.TO_DB_ENTITY_METHOD_NAME#>();
 
             // Attach
-            this.Entry(beforeDbEntity).State = EntityState.Detached;
             this.Entry(afterDbEntity).State = EntityState.Modified;
 
 <# PushIndent("            "); #>

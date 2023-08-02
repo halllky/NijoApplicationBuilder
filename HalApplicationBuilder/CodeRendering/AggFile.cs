@@ -207,13 +207,17 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(this.ToStringHelper.ToStringWithCulture(_find.ReturnType));
             this.Write("? ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_find.MethodName));
-            this.Write("(string serializedInstanceKey) {\r\n            var instanceKey = ");
+            this.Write("(string serializedInstanceKey, bool tracks = true) {\r\n            var instanceKey" +
+                    " = ");
             this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.CLASS_NAME));
             this.Write(".");
             this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.PARSE));
-            this.Write("(serializedInstanceKey);\r\n            var entity = this.");
+            this.Write("(serializedInstanceKey);\r\n            var query = tracks\r\n                ? this." +
+                    "");
             this.Write(this.ToStringHelper.ToStringWithCulture(_dbEntity.Item.DbSetName));
-            this.Write("\r\n");
+            this.Write("\r\n                : this.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_dbEntity.Item.DbSetName));
+            this.Write(".AsNoTracking();\r\n            var entity = query\r\n");
  foreach (var line in _find.Include()) { 
             this.Write("                ");
             this.Write(this.ToStringHelper.ToStringWithCulture(line));
@@ -262,16 +266,16 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(this.ToStringHelper.ToStringWithCulture(GETINSTANCEKEY_METHOD_NAME));
             this.Write("().ToString();\r\n\r\n            var before = this.");
             this.Write(this.ToStringHelper.ToStringWithCulture(_find.MethodName));
-            this.Write("(key);\r\n            if (before == null) {\r\n                updated = new ");
+            this.Write("(key, tracks: false);\r\n            if (before == null) {\r\n                updated" +
+                    " = new ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
             this.Write("();\r\n                errors.Add(\"更新対象のデータが見つかりません。\");\r\n                return fal" +
                     "se;\r\n            }\r\n\r\n            var beforeDbEntity = before.");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance.TO_DB_ENTITY_METHOD_NAME));
             this.Write("();\r\n            var afterDbEntity = after.");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance.TO_DB_ENTITY_METHOD_NAME));
-            this.Write("();\r\n\r\n            // Attach\r\n            this.Entry(beforeDbEntity).State = Enti" +
-                    "tyState.Detached;\r\n            this.Entry(afterDbEntity).State = EntityState.Mod" +
-                    "ified;\r\n\r\n");
+            this.Write("();\r\n\r\n            // Attach\r\n            this.Entry(afterDbEntity).State = Entit" +
+                    "yState.Modified;\r\n\r\n");
  PushIndent("            "); 
  _update.RenderDescendantsAttaching(this, "this", "beforeDbEntity", "afterDbEntity"); 
  PopIndent(); 
