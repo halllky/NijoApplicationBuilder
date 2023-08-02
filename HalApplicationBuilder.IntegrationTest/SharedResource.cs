@@ -72,6 +72,8 @@ namespace HalApplicationBuilder.IntegrationTest {
             }
 
             File.Delete(Path.Combine(project.ProjectRoot, "bin", "Debug", "debug.sqlite3"));
+            File.Delete(Path.Combine(project.ProjectRoot, "bin", "Debug", "debug.sqlite3-shm"));
+            File.Delete(Path.Combine(project.ProjectRoot, "bin", "Debug", "debug.sqlite3-wal"));
 
             // DB（このデータパターンの定義に従ったDBを作成）
             try {

@@ -28,6 +28,84 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                     __halapp_InstanceName = "111",
                 }.ToJson()));
 
+
+            }).When(E_DataPattern._002_Childrenのみxml, async () => {
+                var res1 = await SharedResource.Project.Post("/api/親集約/create", new {
+                    親集約ID = "111",
+                    親集約名 = "親1",
+                    子集約 = new[] {
+                        new { 子集約ID = "222", 子集約名 = "子2" },
+                        new { 子集約ID = "333", 子集約名 = "子3" },
+                    },
+                });
+                var res2 = await SharedResource.Project.Post("/api/親集約/update", new {
+                    親集約ID = "111",
+                    親集約名 = "親1（更新）",
+                    子集約 = new[] {
+                        new { 子集約ID = "222", 子集約名 = "子2（更新）" },
+                        //new { 子集約ID = "333", 子集約名 = "子3（削除）" },
+                        new { 子集約ID = "444", 子集約名 = "子4（追加）" },
+                    },
+                });
+                var res3 = await SharedResource.Project.Get("/api/親集約/detail/[\"111\"]");
+                var res3json = await res3.Content.ReadAsJsonAsync();
+
+                Assert.That(res1.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Assert.That(res2.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Assert.That(res3.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Assert.That(res3json, Is.EqualTo(new {
+                    親集約ID = "111",
+                    親集約名 = "親1（更新）",
+                    子集約 = new[] {
+                        new { 子集約ID = "222", 子集約名 = "子2（更新）" },
+                        new { 子集約ID = "444", 子集約名 = "子4（追加）" },
+                    },
+                    __halapp_InstanceKey = "[\"111\"]",
+                    __halapp_InstanceName = "親1（更新）",
+                }.ToJson()));
+
+
+            }).When(E_DataPattern._004_Variationのみxml, async () => {
+                var res1 = await SharedResource.Project.Post("/api/親集約/create", new {
+                    親集約ID = "111",
+                    親集約名 = "親1",
+                    種別 = 1,
+                    種別_種別A = new {
+                        種別Aのみに存在する属性 = "種別A詳細",
+                    },
+                    種別_種別B = new {
+                    },
+                });
+                var res2 = await SharedResource.Project.Post("/api/親集約/update", new {
+                    親集約ID = "111",
+                    親集約名 = "親1（更新後）",
+                    種別 = 2,
+                    種別_種別A = new {
+                        種別Aのみに存在する属性 = "種別A詳細（更新後）",
+                    },
+                    種別_種別B = new {
+                    },
+                });
+                var res3 = await SharedResource.Project.Get("/api/親集約/detail/[\"111\"]");
+                var res3json = await res3.Content.ReadAsJsonAsync();
+
+                Assert.That(res1.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Assert.That(res2.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Assert.That(res3.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Assert.That(res3json, Is.EqualTo(new {
+                    親集約ID = "111",
+                    親集約名 = "親1（更新後）",
+                    種別 = 2,
+                    種別_種別A = new {
+                        種別Aのみに存在する属性 = "種別A詳細（更新後）",
+                    },
+                    種別_種別B = new {
+                    },
+                    __halapp_InstanceKey = "[\"111\"]",
+                    __halapp_InstanceName = "親1（更新後）",
+                }.ToJson()));
+
+
             }).Do(async act => {
                 using var ct = new CancellationTokenSource();
                 Task? task = null;

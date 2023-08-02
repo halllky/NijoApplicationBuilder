@@ -3,7 +3,7 @@
 <RDRA>
   <親集約>
     <親集約ID type="id" key="" />
-    <親集約名 type="word" />
+    <親集約名 type="word" name="" />
     <種別>
       <種別A switch="1">
         <種別Aのみに存在する属性 type="word" />
