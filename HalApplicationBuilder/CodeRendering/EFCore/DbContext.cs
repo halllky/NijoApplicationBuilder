@@ -34,22 +34,7 @@ namespace HalApplicationBuilder.CodeRendering.EFCore
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
             this.Write("(DbContextOptions<");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
-            this.Write(@"> options) : base(options) { }
-
-        /// <inheritdoc />
-        public override int SaveChanges() {
-            var result = base.SaveChanges();
-
-            // ジャーナルファイル(shm, wal)が自動的にクリーンアップされない件に対応
-            // https://github.com/dotnet/efcore/issues/26422
-            if (this.Database.GetDbConnection() is Microsoft.Data.Sqlite.SqliteConnection conn) {
-                Microsoft.Data.Sqlite.SqliteConnection.ClearPool(conn);
-            }
-
-            return result;
-        }
-
-");
+            this.Write("> options) : base(options) { }\r\n\r\n");
  /* OnModelCreating定義 */ 
             this.Write("        /// <inheritdoc />\r\n        protected override void OnModelCreating(Model" +
                     "Builder modelBuilder) {\r\n");

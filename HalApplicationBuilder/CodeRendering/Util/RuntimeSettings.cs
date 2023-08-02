@@ -122,19 +122,25 @@ namespace HalApplicationBuilder.CodeRendering.Util
             
             #line default
             #line hidden
-            this.Write("() => new ");
+            this.Write(@"() {
+                var connStr = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder();
+                connStr.DataSource = ""bin/Debug/debug.sqlite3"";
+                connStr.Pooling = false; // デバッグ終了時にshm, walファイルが残らないようにするため
+
+                return new ");
             
-            #line 63 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\HalApplicationBuilder\CodeRendering\Util\RuntimeSettings.tt"
+            #line 68 "C:\Users\krpzx\OneDrive\ドキュメント\local\20230409_haldoc\haldoc\HalApplicationBuilder\CodeRendering\Util\RuntimeSettings.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(SERVER));
             
             #line default
             #line hidden
             this.Write(@" {
-                CurrentDb = ""SQLITE"",
-                DbProfiles = new List<DbProfile> {
-                    new DbProfile { Name = ""SQLITE"", ConnStr = @""Data Source=""""bin/Debug/debug.sqlite3"""""" },
-                },
-            };
+                    CurrentDb = ""SQLITE"",
+                    DbProfiles = new List<DbProfile> {
+                        new DbProfile { Name = ""SQLITE"", ConnStr = connStr.ToString() },
+                    },
+                };
+            }
         }
     }
 }

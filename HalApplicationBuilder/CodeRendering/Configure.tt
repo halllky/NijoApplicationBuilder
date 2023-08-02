@@ -28,7 +28,11 @@ namespace HalApplicationBuilder.Runtime {
                     var parsed = System.Text.Json.JsonSerializer.Deserialize<<#=RuntimeServerSettings#>>(stream);
                     return parsed ?? <#=RuntimeServerSettings#>.<#=Util.RuntimeSettings.GET_DEFAULT#>();
                 } else {
-                    return new <#=RuntimeServerSettings#>();
+                    var setting = <#=RuntimeServerSettings#>.<#=Util.RuntimeSettings.GET_DEFAULT#>();
+                    File.WriteAllText(filename, System.Text.Json.JsonSerializer.Serialize(setting, new System.Text.Json.JsonSerializerOptions {
+                        WriteIndented = true,
+                    }));
+                    return setting;
                 }
             });
         }

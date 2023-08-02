@@ -60,9 +60,22 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(this.ToStringHelper.ToStringWithCulture(RuntimeServerSettings));
             this.Write(".");
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.RuntimeSettings.GET_DEFAULT));
-            this.Write("();\r\n                } else {\r\n                    return new ");
+            this.Write("();\r\n                } else {\r\n                    var setting = ");
             this.Write(this.ToStringHelper.ToStringWithCulture(RuntimeServerSettings));
-            this.Write("();\r\n                }\r\n            });\r\n        }\r\n    }\r\n\r\n}\r\n");
+            this.Write(".");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Util.RuntimeSettings.GET_DEFAULT));
+            this.Write(@"();
+                    File.WriteAllText(filename, System.Text.Json.JsonSerializer.Serialize(setting, new System.Text.Json.JsonSerializerOptions {
+                        WriteIndented = true,
+                    }));
+                    return setting;
+                }
+            });
+        }
+    }
+
+}
+");
             return this.GenerationEnvironment.ToString();
         }
     }

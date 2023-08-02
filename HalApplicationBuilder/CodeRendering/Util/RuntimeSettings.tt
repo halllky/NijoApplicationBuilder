@@ -60,12 +60,18 @@ namespace <#=_ctx.Config.RootNamespace#> {
                 return json;
             }
 
-            public static <#=SERVER#> <#=GET_DEFAULT#>() => new <#=SERVER#> {
-                CurrentDb = "SQLITE",
-                DbProfiles = new List<DbProfile> {
-                    new DbProfile { Name = "SQLITE", ConnStr = @"Data Source=""bin/Debug/debug.sqlite3""" },
-                },
-            };
+            public static <#=SERVER#> <#=GET_DEFAULT#>() {
+                var connStr = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder();
+                connStr.DataSource = "bin/Debug/debug.sqlite3";
+                connStr.Pooling = false; // デバッグ終了時にshm, walファイルが残らないようにするため
+
+                return new <#=SERVER#> {
+                    CurrentDb = "SQLITE",
+                    DbProfiles = new List<DbProfile> {
+                        new DbProfile { Name = "SQLITE", ConnStr = connStr.ToString() },
+                    },
+                };
+            }
         }
     }
 }
