@@ -31,6 +31,7 @@ namespace HalApplicationBuilder.CodeRendering {
             _ctx = ctx;
         }
 
+
         private readonly GraphNode<Aggregate> _aggregate;
         private readonly GraphNode<EFCoreEntity> _dbEntity;
         private readonly GraphNode<AggregateInstance> _aggregateInstance;
@@ -94,6 +95,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     if (entity.Source == null || !entity.Source.IsRef()) {
                         foreach (var child in entity.GetChildMembers()) Collect(child.Terminal);
                         foreach (var child in entity.GetChildrenMembers()) Collect(child.Terminal);
+                        foreach (var child in entity.GetVariationMembers()) Collect(child.Terminal);
                         foreach (var refTarget in entity.GetRefMembers()) Collect(refTarget.Terminal);
                     }
                 }
@@ -185,7 +187,6 @@ namespace HalApplicationBuilder.CodeRendering {
                     template.WriteLine($"    if (b == null) {{");
                     template.WriteLine($"        {dbContext}.Entry(a).State = EntityState.Added;");
                     template.WriteLine($"    }} else {{");
-                    template.WriteLine($"        {dbContext}.Entry(b).State = EntityState.Detached;");
                     template.WriteLine($"        {dbContext}.Entry(a).State = EntityState.Modified;");
                     template.WriteLine($"    }}");
                     template.WriteLine($"}}");
