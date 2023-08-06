@@ -20,7 +20,7 @@ using static HalApplicationBuilder.HalappProject;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace HalApplicationBuilder {
-    public class HalappProject {
+    public partial class HalappProject {
 
         private protected const string HALAPP_XML_NAME = "halapp.xml";
         private protected const string REACT_DIR = "ClientApp";
@@ -127,11 +127,11 @@ namespace HalApplicationBuilder {
         public string ProjectRoot { get; }
         public Config ReadConfig() {
             var xmlFullPath = GetAggregateSchemaPath();
-            using var stream = DotnetEx.IO.OpenFileWithRetry(xmlFullPath);
+            using var stream = IO.OpenFileWithRetry(xmlFullPath);
             using var reader = new StreamReader(stream);
             var xmlContent = reader.ReadToEnd();
             var xDocument = XDocument.Parse(xmlContent);
-            var config = Core.Config.FromXml(xDocument);
+            var config = Config.FromXml(xDocument);
             return config;
         }
 
@@ -271,7 +271,7 @@ namespace HalApplicationBuilder {
             // dllのコピー
             var halappDirCopySource = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
             var halappDirCopyDist = Path.Combine(ProjectRoot, HALAPP_DLL_COPY_TARGET);
-            DotnetEx.IO.CopyDirectory(halappDirCopySource, halappDirCopyDist, deleteOnlyDist: true);
+            IO.CopyDirectory(halappDirCopySource, halappDirCopyDist, deleteOnlyDist: true);
 
             // csprojファイルを編集: csprojファイルを開く
             const string HALAPP_INCLUDE = "halapp";
@@ -350,7 +350,8 @@ namespace HalApplicationBuilder {
         /// 必要なnpmモジュールをインストールします。
         /// </summary>
         public HalappProject InstallDependencies() {
-            var npmProcess = new DotnetEx.Cmd {
+            var npmProcess = new Cmd
+            {
                 WorkingDirectory = Path.Combine(ProjectRoot, REACT_DIR),
                 Verbose = _verbose,
             };
@@ -379,7 +380,7 @@ namespace HalApplicationBuilder {
         /// <summary>
         /// クライアントサイドプロセスのコマンドを作成します。
         /// </summary>
-        internal DotnetEx.Cmd.Background CreateClientProcess(CancellationToken cancellationToken) {
+        internal BackgroundProcess CreateClientProcess(CancellationToken cancellationToken) {
             if (!IsValidDirectory()) throw new InvalidOperationException("Here is not halapp directory.");
 
             // TODO 未実装
@@ -400,17 +401,20 @@ namespace HalApplicationBuilder {
         /// ビルドは行いません。
         /// 実行中のソースファイルの変更は自動的に反映されません。
         /// </summary>
-        internal DotnetEx.Cmd.Background CreateServerProcess(CancellationToken cancellationToken) {
+        internal BackgroundProcess CreateServerProcess(CancellationToken cancellationToken) {
             if (!IsValidDirectory()) throw new InvalidOperationException("Here is not halapp directory.");
 
-            return new DotnetEx.Cmd.Background {
+            var process = new BackgroundProcess {
                 WorkingDirectory = ProjectRoot,
                 Filename = "dotnet",
                 Args = new[] { "run", "--no-build", "--launch-profile", "https" },
                 CancellationToken = cancellationToken,
-                ReadyIfMatch = new Regex(@"Now listening on:"),
-                Verbose = _verbose,
+                IsReady = e => e.Data != null && AspCoreStartedRegex().IsMatch(e.Data),
             };
+            process.OnStandardOut += Cmd.OutToConsole;
+            process.OnStandardError += Cmd.OutToStdError;
+
+            return process;
         }
         /// <summary>
         /// デバッグを開始します。
@@ -433,8 +437,8 @@ namespace HalApplicationBuilder {
             CancellationTokenSource? linkedTokenSource = null;
 
             // バックグラウンド処理の宣言
-            DotnetEx.Cmd.Background? dotnetRun = null;
-            DotnetEx.Cmd.Background? npmStart = null;
+            BackgroundProcess? dotnetRun = null;
+            BackgroundProcess? npmStart = null;
 
             // ファイル変更監視用オブジェクト
             FileSystemWatcher? watcher = null;
@@ -452,18 +456,17 @@ namespace HalApplicationBuilder {
                     rebuildCancellation?.Cancel();
                 };
 
-                npmStart = new DotnetEx.Cmd.Background {
+                npmStart = new BackgroundProcess {
                     WorkingDirectory = Path.Combine(ProjectRoot, REACT_DIR),
                     Filename = "npm",
                     Args = new[] { "start" },
                     CancellationToken = cancellationToken,
-                    ReadyIfMatch = new Regex(@"."), // TODO
-                    Verbose = _verbose,
+                    IsReady = e => true, // TODO
                 };
 
                 // 監視開始
                 watcher.EnableRaisingEvents = true;
-                await npmStart.Restart();
+                await npmStart.Launch();
 
                 // リビルドの度に実行される処理
                 while (true) {
@@ -491,15 +494,8 @@ namespace HalApplicationBuilder {
                         migrator.AddMigration();
                         migrator.Migrate();
 
-                        dotnetRun = new DotnetEx.Cmd.Background {
-                            WorkingDirectory = ProjectRoot,
-                            Filename = "dotnet",
-                            Args = new[] { "run", "--launch-profile", "https" },
-                            CancellationToken = linkedTokenSource.Token,
-                            ReadyIfMatch = new Regex(@"Now listening on:"),
-                            Verbose = _verbose,
-                        };
-                        await dotnetRun.Restart();
+                        dotnetRun = CreateServerProcess(linkedTokenSource.Token);
+                        await dotnetRun.Launch();
 
                     } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
                         throw; // デバッグ自体を中断
@@ -580,15 +576,15 @@ namespace HalApplicationBuilder {
         /// デバッグのために、生成されるプロジェクトの詳細をオブジェクトとして返します。
         /// </summary>
         /// <exception cref="InvalidOperationException">アプリケーションスキーマが不正な場合</exception>
-        internal Core.AppSchema Inspect() {
+        internal AppSchema Inspect() {
             var xmlFullPath = GetAggregateSchemaPath();
-            using var stream = DotnetEx.IO.OpenFileWithRetry(xmlFullPath);
+            using var stream = IO.OpenFileWithRetry(xmlFullPath);
             using var reader = new StreamReader(stream);
             var xmlContent = reader.ReadToEnd();
             var xDocument = XDocument.Parse(xmlContent);
-            var config = Core.Config.GetDefault(xDocument.Root!.Name.LocalName);
+            var config = Config.GetDefault(xDocument.Root!.Name.LocalName);
 
-            if (!Core.AppSchemaBuilder.FromXml(xDocument, out var builder, out var errors)) {
+            if (!AppSchemaBuilder.FromXml(xDocument, out var builder, out var errors)) {
                 throw new InvalidOperationException(errors.Join(Environment.NewLine));
             }
             if (!builder.TryBuild(out var appSchema, out var errors1)) {
@@ -653,6 +649,9 @@ namespace HalApplicationBuilder {
                 internal bool Pending { get; set; }
             }
         }
+
+        [GeneratedRegex("Now listening on:")]
+        private static partial Regex AspCoreStartedRegex();
     }
 
 

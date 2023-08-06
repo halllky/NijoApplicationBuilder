@@ -79,100 +79,7 @@ namespace HalApplicationBuilder.DotnetEx {
             }
         }
 
-        internal class Background : IDisposable {
-
-            internal required string WorkingDirectory { get; init; }
-            internal required string Filename { get; init; }
-            internal required string[] Args { get; init; }
-            internal required CancellationToken? CancellationToken { get; init; }
-            internal bool Verbose { get; init; }
-
-            private Process? _process = null;
-
-            /// <summary>複数回Restartしたときに古いTaskが残り続けてしまうのを避けるためのもの</summary>
-            private CancellationTokenSource? _taskCanceller = null;
-
-            /// <summary>
-            /// 標準出力にこの表示が出たら準備完了とみなす。
-            /// 例えばWebサーバーが立ち上がる前にHTTPリクエストが投げられてテストが落ちるといったことを防ぐためのもの。
-            /// </summary>
-            internal required Regex ReadyIfMatch { get; init; }
-            private bool _ready = false;
-
-            internal async Task Restart() {
-                Console.WriteLine($"{Filename} {string.Join(" ", Args)}");
-
-                Stop();
-
-                CancellationToken ct;
-                lock (_lock) {
-                    _process = CreateProcess(WorkingDirectory, Filename, Args, OnStdOut);
-
-                    _process.Start();
-                    _process.BeginOutputReadLine();
-                    _process.BeginErrorReadLine();
-
-                    _taskCanceller = new CancellationTokenSource();
-                    ct = _taskCanceller.Token;
-                }
-                await Task.Run(() => {
-                    try {
-                        while (!_ready) {
-                            Thread.Sleep(100);
-                            ct.ThrowIfCancellationRequested();
-                            CancellationToken?.ThrowIfCancellationRequested();
-                        }
-                    } catch (OperationCanceledException) {
-                        // Do nothing
-                    }
-                });
-
-                _ = Task.Run(() => {
-                    try {
-                        while (!_process.HasExited) {
-                            Thread.Sleep(100);
-                            ct.ThrowIfCancellationRequested();
-                            CancellationToken?.ThrowIfCancellationRequested();
-                        }
-                    } catch (OperationCanceledException) {
-                        // Do nothing
-                    } finally {
-                        Stop();
-                    }
-                }, ct);
-            }
-            private readonly object _lock = new object();
-            internal void Stop() {
-                lock (_lock) {
-                    _ready = false;
-                    if (_taskCanceller != null) {
-                        _taskCanceller.Cancel();
-                        _taskCanceller.Dispose();
-                        _taskCanceller = null;
-                    }
-                    if (_process != null) {
-                        try {
-                            Console.WriteLine($"KILLING PROCESS: {Filename} {Args.Join(" ")}");
-                            _process.Kill(entireProcessTree: true);
-                        } catch (InvalidOperationException ex) when (ex.Message == "No process is associated with this object.") {
-                            // Processインスタンスが作成されてからStartする前にDisposeされるとこの例外が発生する。
-                            // 開始されていないのでKillできなくとも問題ないと判断し、無視して先に進む
-                        }
-                        _process.Dispose();
-                        _process = null;
-                    }
-                }
-            }
-            public void Dispose() {
-                Stop();
-            }
-            private void OnStdOut(object sender, DataReceivedEventArgs e) {
-                if (!_ready && e.Data != null && ReadyIfMatch.IsMatch(e.Data)) _ready = true;
-                if (Verbose) OutToConsole(sender, e);
-            }
-        }
-
-        private static Process CreateProcess(string workingDirectory, string filename, string[] args, DataReceivedEventHandler? stdout) {
+        internal static Process CreateProcess(string workingDirectory, string filename, string[] args, DataReceivedEventHandler? stdout = null, DataReceivedEventHandler? stderr = null) {
             var process = new System.Diagnostics.Process();
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
@@ -197,12 +104,12 @@ namespace HalApplicationBuilder.DotnetEx {
             return process;
         }
 
-        private static void OutToConsole(object sender, DataReceivedEventArgs e) {
+        internal static void OutToConsole(object sender, DataReceivedEventArgs e) {
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.WriteLine(e.Data);
             Console.ResetColor();
         }
-        private static void OutToStdError(object sender, DataReceivedEventArgs e) {
+        internal static void OutToStdError(object sender, DataReceivedEventArgs e) {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.Error.WriteLine(e.Data);
             Console.ResetColor();

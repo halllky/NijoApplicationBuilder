@@ -199,7 +199,7 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                 using var dotnetRun = SharedResource.Project.CreateServerProcess(ct.Token);
                 try {
                     SharedResource.Project.Build(pattern);
-                    await dotnetRun.Restart();
+                    await dotnetRun.Launch();
                     await act();
                 } finally {
                     ct.Cancel();
