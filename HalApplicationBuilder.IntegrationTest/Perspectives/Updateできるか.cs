@@ -54,11 +54,14 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                     参照先集約名 = "参照先1（更新）",
                 });
                 var getMoto = await SharedResource.Project.Get("/api/参照元/detail/[\"333\"]");
+
                 Assert.That(getMoto.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                 Assert.That(await getMoto.Content.ReadAsJsonAsync(), Is.EqualTo(new {
                     参照元集約ID = "333",
                     参照元集約名 = "参照元",
                     参照 = new { InstanceKey = "[\"111\"]", InstanceName = "参照先1（更新）" },
+                    __halapp_InstanceKey = "[\"333\"]",
+                    __halapp_InstanceName = "参照元",
                 }.ToJson()));
 
                 // 参照元の更新
@@ -67,12 +70,15 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                     参照元集約名 = "参照元（更新）",
                     参照 = new { InstanceKey = "[\"222\"]", InstanceName = "/*なんでもいい*/" },
                 });
-                getMoto = await SharedResource.Project.Get("/api/参照元/detail/[\"111\"]");
+                getMoto = await SharedResource.Project.Get("/api/参照元/detail/[\"333\"]");
+
                 Assert.That(getMoto.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                 Assert.That(await getMoto.Content.ReadAsJsonAsync(), Is.EqualTo(new {
                     参照元集約ID = "333",
                     参照元集約名 = "参照元（更新）",
                     参照 = new { InstanceKey = "[\"222\"]", InstanceName = "参照先2" },
+                    __halapp_InstanceKey = "[\"333\"]",
+                    __halapp_InstanceName = "参照元（更新）",
                 }.ToJson()));
 
 

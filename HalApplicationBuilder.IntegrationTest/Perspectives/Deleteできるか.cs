@@ -43,16 +43,16 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                 }
 
                 // 参照元の削除
-                var res3 = await SharedResource.Project.Delete("/api/集約A/delete/[\"222\"]");
-                var res4 = await SharedResource.Project.Get("/api/集約A/detail/[\"111\"]");
-                var res5 = await SharedResource.Project.Get("/api/集約A/detail/[\"222\"]");
+                var res3 = await SharedResource.Project.Delete("/api/参照元/delete/[\"222\"]");
+                var res4 = await SharedResource.Project.Get("/api/参照先/detail/[\"111\"]");
+                var res5 = await SharedResource.Project.Get("/api/参照元/detail/[\"222\"]");
                 Assert.That(res3.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                 Assert.That(res4.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                 Assert.That(res5.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
 
                 // 参照先の削除
-                var res6 = await SharedResource.Project.Delete("/api/集約A/delete/[\"111\"]");
-                var res7 = await SharedResource.Project.Get("/api/集約A/detail/[\"111\"]");
+                var res6 = await SharedResource.Project.Delete("/api/参照先/delete/[\"111\"]");
+                var res7 = await SharedResource.Project.Get("/api/参照先/detail/[\"111\"]");
                 Assert.That(res6.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                 Assert.That(res7.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
 
@@ -123,10 +123,10 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                 var res3 = await SharedResource.Project.Get("/api/親集約/detail/[\"111\"]");
                 Assert.That(res2.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                 Assert.That(res3.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
-                if (SharedResource.Project.ExecSql("SELECT * FROM 種別_種別A LIMIT 1").Any()) {
+                if (SharedResource.Project.ExecSql("SELECT * FROM 種別A LIMIT 1").Any()) {
                     Assert.Fail("種別Aテーブルにデータが残っている");
                 }
-                if (SharedResource.Project.ExecSql("SELECT * FROM 種別_種別B LIMIT 1").Any()) {
+                if (SharedResource.Project.ExecSql("SELECT * FROM 種別B LIMIT 1").Any()) {
                     Assert.Fail("種別Bテーブルにデータが残っている");
                 }
 
