@@ -597,22 +597,33 @@ namespace HalApplicationBuilder {
         /// <summary>
         /// dotnet ef のラッパー
         /// </summary>
-        private class DotnetEf {
+        private partial class DotnetEf {
 
-            internal DotnetEf(Cmd cmd) {
-                _cmd = cmd;
+            internal DotnetEf(Cmd terminal) {
+                _terminal = terminal;
             }
-            private readonly Cmd _cmd;
+            private readonly Cmd _terminal;
+
+            private bool _build = false;
+            private void Build() {
+                if (_build) return;
+                _build = true;
+
+                // このクラスの処理が走っているとき、基本的には dotnet run も並走しているので、Releaseビルドを指定しないとビルド先が競合して失敗してしまう
+                _terminal.Exec("dotnet", "build", "--configuration", "Release");
+            }
 
             internal IEnumerable<Migration> GetMigrations() {
                 try {
-                    var output = _cmd
-                        .ReadOutput(
-                            "dotnet", "ef", "migrations", "list",
-                            "--prefix-output", // ビルド状況やの行頭には "info:" が、マイグレーション名の行頭には "data:" がつくので、その識別のため
-                            "--configuration", "Release"); // このクラスの処理が走っているとき、基本的には dotnet run も並走しているので、Releaseビルドを指定しないとビルド先が競合して失敗してしまう
+                    Build();
 
-                    var regex = new Regex(@"^data:\s*([^\s]+)(\s\(Pending\))?$", RegexOptions.Multiline);
+                    var output = _terminal.ReadOutput(
+                        "dotnet", "ef", "migrations", "list",
+                        "--prefix-output", // ビルド状況やの行頭には "info:" が、マイグレーション名の行頭には "data:" がつくので、その識別のため
+                        "--configuration", "Release",
+                        "--no-build"); 
+
+                    var regex = MigrationDataLineRegex();
                     return output
                         .Select(line => regex.Match(line))
                         .Where(match => match.Success)
@@ -626,28 +637,37 @@ namespace HalApplicationBuilder {
                 }
             }
             internal void RemoveMigrationsUntil(string migrationName) {
+                Build();
+
                 // そのマイグレーションが適用済みだと migrations remove できないので、まず database update する
-                _cmd.Exec("dotnet", "ef", "database", "update", migrationName, "--configuration", "Release");
+                _terminal.Exec("dotnet", "ef", "database", "update", migrationName, "--configuration", "Release", "--no-build");
 
                 // リリース済みマイグレーションより後のマイグレーションを消す
                 while (GetMigrations().Last().Name != migrationName) {
-                    _cmd.Exec("dotnet", "ef", "migrations", "remove", "--configuration", "Release");
+                    _terminal.Exec("dotnet", "ef", "migrations", "remove", "--configuration", "Release", "--no-build");
                 }
             }
             internal void AddMigration() {
+                Build();
                 var migrationCount = GetMigrations().Count();
                 var nextMigrationId = migrationCount.ToString("000000000000");
+                _terminal.Exec("dotnet", "ef", "migrations", "add", nextMigrationId, "--configuration", "Release", "--no-build");
 
-                _cmd.Exec("dotnet", "ef", "migrations", "add", nextMigrationId, "--configuration", "Release");
+                // マイグレーションファイルが追加されたことにより再ビルドが必要
+                _build = false;
             }
             internal void Migrate() {
-                _cmd.Exec("dotnet", "ef", "database", "update", "--configuration", "Release");
+                Build();
+                _terminal.Exec("dotnet", "ef", "database", "update", "--configuration", "Release", "--no-build");
             }
 
             internal struct Migration {
                 internal string Name { get; set; }
                 internal bool Pending { get; set; }
             }
+
+            [GeneratedRegex(@"^data:\s*([^\s]+)(\s\(Pending\))?$", RegexOptions.Multiline)]
+            private static partial Regex MigrationDataLineRegex();
         }
 
         [GeneratedRegex("Now listening on:")]
