@@ -53,9 +53,9 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                     親集約ID = "111",
                     親集約名 = "親1",
                     子集約 = new[] {
-                                    new { 子集約ID = "222", 子集約名 = "子2" },
-                                    new { 子集約ID = "333", 子集約名 = "子3" },
-                                },
+                        new { 子集約ID = "222", 子集約名 = "子2" },
+                        new { 子集約ID = "333", 子集約名 = "子3" },
+                    },
                 });
                 var findResult1 = await SharedResource.Project.Get("/api/親集約/detail/[\"111\"]");
                 var found = await findResult1.Content.ReadAsJsonAsync();
@@ -64,9 +64,9 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                     親集約ID = "111",
                     親集約名 = "親1",
                     子集約 = new[] {
-                                    new { 子集約ID = "222", 子集約名 = "子2" },
-                                    new { 子集約ID = "333", 子集約名 = "子3" },
-                                },
+                        new { 子集約ID = "222", 子集約名 = "子2" },
+                        new { 子集約ID = "333", 子集約名 = "子3" },
+                    },
                     __halapp_InstanceKey = "[\"111\"]",
                     __halapp_InstanceName = "親1",
                 }.ToJson()));
@@ -101,10 +101,10 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                     親集約ID = "111",
                     親集約名 = "親1",
                     種別 = 1,
-                    種別A = new {
+                    種別_種別A = new {
                         種別Aのみに存在する属性 = "あああ",
                     },
-                    種別B = new {
+                    種別_種別B = new {
                     },
                 });
                 var findResult1 = await SharedResource.Project.Get("/api/親集約/detail/[\"111\"]");
@@ -114,10 +114,10 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                     親集約ID = "111",
                     親集約名 = "親1",
                     種別 = 1,
-                    種別A = new {
+                    種別_種別A = new {
                         種別Aのみに存在する属性 = "あああ",
                     },
-                    種別B = new {
+                    種別_種別B = new {
                     },
                     __halapp_InstanceKey = "[\"111\"]",
                     __halapp_InstanceName = "親1",

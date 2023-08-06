@@ -162,6 +162,11 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                     種別_種別B = new {
                     },
                 });
+                if (!res1.IsSuccessStatusCode) {
+                    Assert.Warn("テスト前提条件の操作が失敗しています。");
+                    return;
+                }
+
                 var res2 = await SharedResource.Project.Post("/api/親集約/update", new {
                     親集約ID = "111",
                     親集約名 = "親1（更新後）",
@@ -173,12 +178,9 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                     },
                 });
                 var res3 = await SharedResource.Project.Get("/api/親集約/detail/[\"111\"]");
-                var res3json = await res3.Content.ReadAsJsonAsync();
-
-                Assert.That(res1.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                 Assert.That(res2.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                 Assert.That(res3.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                Assert.That(res3json, Is.EqualTo(new {
+                Assert.That(await res3.Content.ReadAsJsonAsync(), Is.EqualTo(new {
                     親集約ID = "111",
                     親集約名 = "親1（更新後）",
                     種別 = 2,

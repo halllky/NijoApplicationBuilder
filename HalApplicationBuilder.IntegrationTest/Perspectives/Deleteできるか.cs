@@ -108,10 +108,10 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                     親集約ID = "111",
                     親集約名 = "親1",
                     種別 = 1,
-                    種別A = new {
+                    種別_種別A = new {
                         種別Aのみに存在する属性 = "あああ",
                     },
-                    種別B = new {
+                    種別_種別B = new {
                     },
                 });
                 if (!res1.IsSuccessStatusCode) {
