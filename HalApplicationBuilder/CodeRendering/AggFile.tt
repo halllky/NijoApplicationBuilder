@@ -50,13 +50,21 @@ namespace <#=_ctx.Config.EntityNamespace#> {
 
             try {
                 this.SaveChanges();
-            } catch (Exception ex) {
+            } catch (DbUpdateException ex) {
                 created = new <#=_aggregateInstance.Item.ClassName#>();
                 errors = ex.GetMessagesRecursively("  ").ToList();
                 return false;
             }
 
-            created = <#=_aggregateInstance.Item.ClassName#>.<#=AggregateInstance.FROM_DB_ENTITY_METHOD_NAME#>(dbEntity);
+            var instanceKey = instance.<#=GETINSTANCEKEY_METHOD_NAME#>().ToString();
+            var afterUpdate = this.<#=_find.MethodName#>(instanceKey);
+            if (afterUpdate == null) {
+                created = new <#=_aggregateInstance.Item.ClassName#>();
+                errors = new[] { "更新後のデータの再読み込みに失敗しました。" };
+                return false;
+            }
+
+            created = afterUpdate;
             errors = new List<string>();
             return true;
         }

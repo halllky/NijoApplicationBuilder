@@ -67,16 +67,33 @@ namespace HalApplicationBuilder.CodeRendering {
                     "");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance.TO_DB_ENTITY_METHOD_NAME));
             this.Write("();\r\n            this.Add(dbEntity);\r\n\r\n            try {\r\n                this.S" +
-                    "aveChanges();\r\n            } catch (Exception ex) {\r\n                created = n" +
-                    "ew ");
+                    "aveChanges();\r\n            } catch (DbUpdateException ex) {\r\n                cre" +
+                    "ated = new ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
             this.Write("();\r\n                errors = ex.GetMessagesRecursively(\"  \").ToList();\r\n        " +
-                    "        return false;\r\n            }\r\n\r\n            created = ");
+                    "        return false;\r\n            }\r\n\r\n            var instanceKey = instance.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GETINSTANCEKEY_METHOD_NAME));
+            this.Write("().ToString();\r\n            var afterUpdate = this.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_find.MethodName));
+            this.Write("(instanceKey);\r\n            if (afterUpdate == null) {\r\n                created =" +
+                    " new ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
-            this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance.FROM_DB_ENTITY_METHOD_NAME));
-            this.Write("(dbEntity);\r\n            errors = new List<string>();\r\n            return true;\r\n" +
-                    "        }\r\n    }\r\n}\r\n#endregion データ新規作成\r\n\r\n\r\n#region 一覧検索\r\nnamespace ");
+            this.Write(@"();
+                errors = new[] { ""更新後のデータの再読み込みに失敗しました。"" };
+                return false;
+            }
+
+            created = afterUpdate;
+            errors = new List<string>();
+            return true;
+        }
+    }
+}
+#endregion データ新規作成
+
+
+#region 一覧検索
+namespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.RootNamespace));
             this.Write(" {\r\n    using Microsoft.AspNetCore.Mvc;\r\n    using ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
