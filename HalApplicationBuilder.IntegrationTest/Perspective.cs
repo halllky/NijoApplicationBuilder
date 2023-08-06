@@ -22,11 +22,20 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                 _describes[pattern] = then;
                 return this;
             }
-            public async Task Do(Func<Func<Task>, Task> scenario) {
-                if (_describes.TryGetValue(_pattern.AsEnum(), out var describe)) {
-                    await scenario(describe);
-                } else {
+            public async Task LaunchTest() {
+                if (!_describes.TryGetValue(_pattern.AsEnum(), out var describe)) {
                     Assert.Warn("期待結果が定義されていません。");
+                    return;
+                }
+
+                using var ct = new CancellationTokenSource();
+                using var dotnetRun = SharedResource.Project.CreateServerProcess(ct.Token);
+                try {
+                    SharedResource.Project.Build(_pattern);
+                    await dotnetRun.Launch();
+                    await describe();
+                } finally {
+                    ct.Cancel();
                 }
             }
         }

@@ -131,17 +131,7 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                 }.ToJson()));
 
 
-            }).Do(async act => {
-                using var ct = new CancellationTokenSource();
-                using var dotnetRun = SharedResource.Project.CreateServerProcess(ct.Token);
-                try {
-                    SharedResource.Project.Build(pattern);
-                    await dotnetRun.Launch();
-                    await act();
-                } finally {
-                    ct.Cancel();
-                }
-            });
+            }).LaunchTest();
         }
     }
 }
