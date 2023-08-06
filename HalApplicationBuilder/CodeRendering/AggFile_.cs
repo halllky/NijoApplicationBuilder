@@ -88,6 +88,7 @@ namespace HalApplicationBuilder.CodeRendering {
             internal string DbSetName => _dbEntity.Item.DbSetName;
             internal string AggregateInstanceTypeFullName => $"{_ctx.Config.RootNamespace}.{_instance.ClassName}";
 
+            [Obsolete]
             internal IEnumerable<string> Include() {
                 var entities = new HashSet<GraphNode>();
                 void Collect(GraphNode<EFCoreEntity> entity) {
@@ -110,6 +111,7 @@ namespace HalApplicationBuilder.CodeRendering {
                 }
             }
 
+            [Obsolete]
             internal IEnumerable<string> SingleOrDefault(string paramName) {
                 var keys = _dbEntity
                     .GetColumns()
@@ -128,6 +130,49 @@ namespace HalApplicationBuilder.CodeRendering {
                     }
                 }
             }
+        }
+        private void RenderDbEntityLoading(string entityVarName, string serializedInstanceKeyVarName, bool tracks) {
+            // Include
+            var descendants = new HashSet<GraphNode>();
+            void Collect(GraphNode<EFCoreEntity> entity) {
+                descendants.Add(entity);
+                if (entity.Source == null || !entity.Source.IsRef()) {
+                    foreach (var child in entity.GetChildMembers()) Collect(child.Terminal);
+                    foreach (var child in entity.GetChildrenMembers()) Collect(child.Terminal);
+                    foreach (var child in entity.GetVariationMembers()) Collect(child.Terminal);
+                    foreach (var refTarget in entity.GetRefMembers()) Collect(refTarget.Terminal);
+                }
+            }
+            Collect(_dbEntity);
+
+            // Rendering
+            WriteLine($"var instanceKey = {InstanceKey.CLASS_NAME}.{InstanceKey.PARSE}({serializedInstanceKeyVarName});");
+            WriteLine($"var {entityVarName} = this.{_dbEntity.Item.DbSetName}");
+
+            if (tracks == false) {
+                WriteLine($"    .AsNoTracking()");
+            }
+
+            foreach (var edge in descendants.SelectMany(entity => entity.PathFromEntry())) {
+                if (edge.Source.IsRoot()) {
+                    WriteLine($"    .Include(x => x.{edge.RelationName})");
+                } else {
+                    WriteLine($"    .ThenInclude(x => x.{edge.RelationName})");
+                }
+            }
+
+            var keys = _dbEntity.GetColumns().Where(col => col.IsPrimary).ToArray();
+            for (int i = 0; i < keys.Length; i++) {
+                var col = keys[i].PropertyName;
+                var cast = keys[i].CSharpTypeName;
+                var close = i == keys.Length - 1 ? ");" : "";
+                if (i == 0) {
+                    WriteLine($"    .SingleOrDefault(x => x.{col} == ({cast})instanceKey.{InstanceKey.OBJECT_ARRAY}[{i}]{close}");
+                } else {
+                    WriteLine($"                       && x.{col} == ({cast})instanceKey.{InstanceKey.OBJECT_ARRAY}[{i}]{close}");
+                }
+            }
+
         }
         #endregion FIND
 

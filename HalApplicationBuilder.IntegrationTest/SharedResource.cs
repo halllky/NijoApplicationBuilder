@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Build.Evaluation;
+using Microsoft.Data.Sqlite;
 using System;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace HalApplicationBuilder.IntegrationTest {
 
@@ -42,7 +44,6 @@ namespace HalApplicationBuilder.IntegrationTest {
     /// テスト用の糖衣構文
     /// </summary>
     public static class HalappProjectExtension {
-        private const string CONN_STR = @"Data Source=""bin/Debug/debug.sqlite3""";
 
         /// <summary>
         /// DataPatternでソースコードやDB定義を更新してビルドをかけます。
@@ -53,16 +54,6 @@ namespace HalApplicationBuilder.IntegrationTest {
 
             project.Build();
 
-            // 実行時設定ファイルの作成
-            var runtimeConfig = Path.Combine(project.ProjectRoot, "halapp-runtime-config.json");
-            var json = new {
-                currentDb = "SQLITE3",
-                db = new[] {
-                    new { name = "SQLITE3", connStr = CONN_STR },
-                },
-            }.ToJson();
-            File.WriteAllText(runtimeConfig, json);
-
             // DB（前のテストで作成されたDBを削除）
             var migrationDir = Path.Combine(project.ProjectRoot, "Migrations");
             if (Directory.Exists(migrationDir)) {
@@ -70,7 +61,6 @@ namespace HalApplicationBuilder.IntegrationTest {
                     File.Delete(file);
                 }
             }
-
             File.Delete(Path.Combine(project.ProjectRoot, "bin", "Debug", "debug.sqlite3"));
             File.Delete(Path.Combine(project.ProjectRoot, "bin", "Debug", "debug.sqlite3-shm"));
             File.Delete(Path.Combine(project.ProjectRoot, "bin", "Debug", "debug.sqlite3-wal"));
@@ -112,6 +102,30 @@ namespace HalApplicationBuilder.IntegrationTest {
 
             using var client = new HttpClient();
             return await client.SendAsync(message);
+        }
+
+        public static async Task<HttpResponseMessage> Delete(this HalappProject project, string path) {
+            var uri = new Uri(project.GetDebugUrl(), path);
+            var message = new HttpRequestMessage(HttpMethod.Delete, uri);
+
+            using var client = new HttpClient();
+            return await client.SendAsync(message);
+        }
+
+        public static IEnumerable<SqliteDataReader> ExecSql(this HalappProject project, string sql) {
+            var dataSource = Path.GetFullPath(Path.Combine(project.ProjectRoot, $"bin/Debug/debug.sqlite3")).Replace("\\", "/");
+            var connStr = new SqliteConnectionStringBuilder();
+            connStr.DataSource = dataSource;
+            connStr.Pooling = false;
+            using var conn = new SqliteConnection(connStr.ToString());
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = sql;
+
+            conn.Open();
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read()) {
+                yield return reader;
+            }
         }
     }
 }

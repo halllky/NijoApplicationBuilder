@@ -168,18 +168,11 @@ namespace <#=_ctx.Config.EntityNamespace#> {
         /// <summary>
         /// <#=_aggregate.Item.DisplayName#>のキー情報から対象データの詳細を検索して返します。
         /// </summary>
-        public <#=_find.ReturnType#>? <#=_find.MethodName#>(string serializedInstanceKey, bool tracks = true) {
-            var instanceKey = <#=InstanceKey.CLASS_NAME#>.<#=InstanceKey.PARSE#>(serializedInstanceKey);
-            var query = tracks
-                ? this.<#=_dbEntity.Item.DbSetName#>
-                : this.<#=_dbEntity.Item.DbSetName#>.AsNoTracking();
-            var entity = query
-<# foreach (var line in _find.Include()) { #>
-                <#=line#>
-<# } #>
-<# foreach (var line in _find.SingleOrDefault($"instanceKey.{InstanceKey.OBJECT_ARRAY}")) { #>
-                <#=line#>
-<# } #>
+        public <#=_find.ReturnType#>? <#=_find.MethodName#>(string serializedInstanceKey) {
+
+<# PushIndent("            "); #>
+<# RenderDbEntityLoading("entity", "serializedInstanceKey", tracks: false); #>
+<# PopIndent(); #>
 
             if (entity == null) return null;
 
@@ -220,14 +213,16 @@ namespace <#=_ctx.Config.EntityNamespace#> {
             errors = new List<string>();
             var key = after.<#=GETINSTANCEKEY_METHOD_NAME#>().ToString();
 
-            var before = this.<#=_find.MethodName#>(key, tracks: false);
-            if (before == null) {
+<# PushIndent("            "); #>
+<# RenderDbEntityLoading("beforeDbEntity", "key", tracks: false); #>
+<# PopIndent(); #>
+
+            if (beforeDbEntity == null) {
                 updated = new <#=_aggregateInstance.Item.ClassName#>();
                 errors.Add("更新対象のデータが見つかりません。");
                 return false;
             }
 
-            var beforeDbEntity = before.<#=AggregateInstance.TO_DB_ENTITY_METHOD_NAME#>();
             var afterDbEntity = after.<#=AggregateInstance.TO_DB_ENTITY_METHOD_NAME#>();
 
             // Attach
@@ -265,7 +260,7 @@ namespace <#=_ctx.Config.RootNamespace#> {
     using <#=_ctx.Config.EntityNamespace#>;
 
     partial class <#=_controller.ClassName#> {
-        [HttpDelete("<#=Controller.DELETE_ACTION_NAME#>")]
+        [HttpDelete("<#=Controller.DELETE_ACTION_NAME#>/{key}")]
         public virtual IActionResult Delete(string key) {
             if (_dbContext.<#=_delete.MethodName#>(key, out var errors)) {
                 return Ok();
@@ -285,13 +280,16 @@ namespace <#=_ctx.Config.EntityNamespace#> {
 
     partial class <#=_ctx.Config.DbContextName#> {
         public bool <#=_delete.MethodName#>(string key, out ICollection<string> errors) {
-            var instance = this.<#=_find.MethodName#>(key);
-            if (instance == null) {
+
+<# PushIndent("            "); #>
+<# RenderDbEntityLoading("entity", "key", tracks: true); #>
+<# PopIndent(); #>
+
+            if (entity == null) {
                 errors = new[] { "削除対象のデータが見つかりません。" };
                 return false;
             }
 
-            var entity = instance.<#=AggregateInstance.TO_DB_ENTITY_METHOD_NAME#>();
             this.Remove(entity);
             try {
                 this.SaveChanges();

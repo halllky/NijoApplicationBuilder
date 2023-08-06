@@ -207,27 +207,10 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(this.ToStringHelper.ToStringWithCulture(_find.ReturnType));
             this.Write("? ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_find.MethodName));
-            this.Write("(string serializedInstanceKey, bool tracks = true) {\r\n            var instanceKey" +
-                    " = ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.CLASS_NAME));
-            this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.PARSE));
-            this.Write("(serializedInstanceKey);\r\n            var query = tracks\r\n                ? this." +
-                    "");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_dbEntity.Item.DbSetName));
-            this.Write("\r\n                : this.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_dbEntity.Item.DbSetName));
-            this.Write(".AsNoTracking();\r\n            var entity = query\r\n");
- foreach (var line in _find.Include()) { 
-            this.Write("                ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(line));
-            this.Write("\r\n");
- } 
- foreach (var line in _find.SingleOrDefault($"instanceKey.{InstanceKey.OBJECT_ARRAY}")) { 
-            this.Write("                ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(line));
-            this.Write("\r\n");
- } 
+            this.Write("(string serializedInstanceKey) {\r\n\r\n");
+ PushIndent("            "); 
+ RenderDbEntityLoading("entity", "serializedInstanceKey", tracks: false); 
+ PopIndent(); 
             this.Write("\r\n            if (entity == null) return null;\r\n\r\n            var aggregateInstan" +
                     "ce = ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_find.AggregateInstanceTypeFullName));
@@ -264,15 +247,14 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(" updated, out ICollection<string> errors) {\r\n            errors = new List<string" +
                     ">();\r\n            var key = after.");
             this.Write(this.ToStringHelper.ToStringWithCulture(GETINSTANCEKEY_METHOD_NAME));
-            this.Write("().ToString();\r\n\r\n            var before = this.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_find.MethodName));
-            this.Write("(key, tracks: false);\r\n            if (before == null) {\r\n                updated" +
-                    " = new ");
+            this.Write("().ToString();\r\n\r\n");
+ PushIndent("            "); 
+ RenderDbEntityLoading("beforeDbEntity", "key", tracks: false); 
+ PopIndent(); 
+            this.Write("\r\n            if (beforeDbEntity == null) {\r\n                updated = new ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
             this.Write("();\r\n                errors.Add(\"更新対象のデータが見つかりません。\");\r\n                return fal" +
-                    "se;\r\n            }\r\n\r\n            var beforeDbEntity = before.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance.TO_DB_ENTITY_METHOD_NAME));
-            this.Write("();\r\n            var afterDbEntity = after.");
+                    "se;\r\n            }\r\n\r\n            var afterDbEntity = after.");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance.TO_DB_ENTITY_METHOD_NAME));
             this.Write("();\r\n\r\n            // Attach\r\n            this.Entry(afterDbEntity).State = Entit" +
                     "yState.Modified;\r\n\r\n");
@@ -298,8 +280,8 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(this.ToStringHelper.ToStringWithCulture(_controller.ClassName));
             this.Write(" {\r\n        [HttpDelete(\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(Controller.DELETE_ACTION_NAME));
-            this.Write("\")]\r\n        public virtual IActionResult Delete(string key) {\r\n            if (_" +
-                    "dbContext.");
+            this.Write("/{key}\")]\r\n        public virtual IActionResult Delete(string key) {\r\n           " +
+                    " if (_dbContext.");
             this.Write(this.ToStringHelper.ToStringWithCulture(_delete.MethodName));
             this.Write("(key, out var errors)) {\r\n                return Ok();\r\n            } else {\r\n   " +
                     "             return BadRequest(string.Join(Environment.NewLine, errors));\r\n     " +
@@ -311,13 +293,16 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
             this.Write(" {\r\n        public bool ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_delete.MethodName));
-            this.Write("(string key, out ICollection<string> errors) {\r\n            var instance = this.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_find.MethodName));
-            this.Write("(key);\r\n            if (instance == null) {\r\n                errors = new[] { \"削除" +
-                    "対象のデータが見つかりません。\" };\r\n                return false;\r\n            }\r\n\r\n           " +
-                    " var entity = instance.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance.TO_DB_ENTITY_METHOD_NAME));
-            this.Write(@"();
+            this.Write("(string key, out ICollection<string> errors) {\r\n\r\n");
+ PushIndent("            "); 
+ RenderDbEntityLoading("entity", "key", tracks: true); 
+ PopIndent(); 
+            this.Write(@"
+            if (entity == null) {
+                errors = new[] { ""削除対象のデータが見つかりません。"" };
+                return false;
+            }
+
             this.Remove(entity);
             try {
                 this.SaveChanges();

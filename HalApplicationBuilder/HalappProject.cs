@@ -125,7 +125,7 @@ namespace HalApplicationBuilder {
         protected readonly TextWriter? _log;
 
         public string ProjectRoot { get; }
-        private protected Config ReadConfig() {
+        public Config ReadConfig() {
             var xmlFullPath = GetAggregateSchemaPath();
             using var stream = DotnetEx.IO.OpenFileWithRetry(xmlFullPath);
             using var reader = new StreamReader(stream);
