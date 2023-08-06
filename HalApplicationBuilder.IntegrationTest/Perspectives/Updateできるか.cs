@@ -29,6 +29,53 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                 }.ToJson()));
 
 
+            }).When(E_DataPattern._001_Refのみxml, async () => {
+                var prepareSaki1 = await SharedResource.Project.Post("/api/参照先/create", new {
+                    参照先集約ID = "111",
+                    参照先集約名 = "参照先1",
+                });
+                var prepareSaki2 = await SharedResource.Project.Post("/api/参照先/create", new {
+                    参照先集約ID = "222",
+                    参照先集約名 = "参照先2",
+                });
+                var prepareMoto = await SharedResource.Project.Post("/api/参照元/create", new {
+                    参照元集約ID = "333",
+                    参照元集約名 = "参照元",
+                    参照 = new { InstanceKey = "[\"111\"]", InstanceName = "/*なんでもいい*/" },
+                });
+                if (!prepareSaki1.IsSuccessStatusCode || !prepareSaki2.IsSuccessStatusCode || !prepareMoto.IsSuccessStatusCode) {
+                    Assert.Warn("テスト前提条件の操作が失敗しています。");
+                    return;
+                }
+
+                // 参照先の名称の変更
+                var updateSaki1 = await SharedResource.Project.Post("/api/参照先/update/", new {
+                    参照先集約ID = "111",
+                    参照先集約名 = "参照先1（更新）",
+                });
+                var getMoto = await SharedResource.Project.Get("/api/参照元/detail/[\"333\"]");
+                Assert.That(getMoto.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Assert.That(await getMoto.Content.ReadAsJsonAsync(), Is.EqualTo(new {
+                    参照元集約ID = "333",
+                    参照元集約名 = "参照元",
+                    参照 = new { InstanceKey = "[\"111\"]", InstanceName = "参照先1（更新）" },
+                }.ToJson()));
+
+                // 参照元の更新
+                var updateMoto = await SharedResource.Project.Post("/api/参照元/update", new {
+                    参照元集約ID = "333",
+                    参照元集約名 = "参照元（更新）",
+                    参照 = new { InstanceKey = "[\"222\"]", InstanceName = "/*なんでもいい*/" },
+                });
+                getMoto = await SharedResource.Project.Get("/api/参照元/detail/[\"111\"]");
+                Assert.That(getMoto.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Assert.That(await getMoto.Content.ReadAsJsonAsync(), Is.EqualTo(new {
+                    参照元集約ID = "333",
+                    参照元集約名 = "参照元（更新）",
+                    参照 = new { InstanceKey = "[\"222\"]", InstanceName = "参照先2" },
+                }.ToJson()));
+
+
             }).When(E_DataPattern._002_Childrenのみxml, async () => {
                 var res1 = await SharedResource.Project.Post("/api/親集約/create", new {
                     親集約ID = "111",
@@ -38,6 +85,11 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                         new { 子集約ID = "333", 子集約名 = "子3" },
                     },
                 });
+                if (!res1.IsSuccessStatusCode) {
+                    Assert.Warn("テスト前提条件の操作が失敗しています。");
+                    return;
+                }
+
                 var res2 = await SharedResource.Project.Post("/api/親集約/update", new {
                     親集約ID = "111",
                     親集約名 = "親1（更新）",
@@ -48,17 +100,51 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                     },
                 });
                 var res3 = await SharedResource.Project.Get("/api/親集約/detail/[\"111\"]");
-                var res3json = await res3.Content.ReadAsJsonAsync();
-
-                Assert.That(res1.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                 Assert.That(res2.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                 Assert.That(res3.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                Assert.That(res3json, Is.EqualTo(new {
+                Assert.That(await res3.Content.ReadAsJsonAsync(), Is.EqualTo(new {
                     親集約ID = "111",
                     親集約名 = "親1（更新）",
                     子集約 = new[] {
                         new { 子集約ID = "222", 子集約名 = "子2（更新）" },
                         new { 子集約ID = "444", 子集約名 = "子4（追加）" },
+                    },
+                    __halapp_InstanceKey = "[\"111\"]",
+                    __halapp_InstanceName = "親1（更新）",
+                }.ToJson()));
+
+
+            }).When(E_DataPattern._003_Childのみxml, async () => {
+                var res1 = await SharedResource.Project.Post("/api/親集約/create", new {
+                    親集約ID = "111",
+                    親集約名 = "親1",
+                    子集約 = new {
+                        子集約ID = "222",
+                        子集約名 = "子2",
+                    },
+                });
+                if (!res1.IsSuccessStatusCode) {
+                    Assert.Warn("テスト前提条件の操作が失敗しています。");
+                    return;
+                }
+
+                var res2 = await SharedResource.Project.Post("/api/親集約/update", new {
+                    親集約ID = "111",
+                    親集約名 = "親1（更新）",
+                    子集約 = new {
+                        子集約ID = "222",
+                        子集約名 = "子2（更新）",
+                    },
+                });
+                var res3 = await SharedResource.Project.Get("/api/親集約/detail/[\"111\"]");
+                Assert.That(res2.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Assert.That(res3.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Assert.That(await res3.Content.ReadAsJsonAsync(), Is.EqualTo(new {
+                    親集約ID = "111",
+                    親集約名 = "親1（更新）",
+                    子集約 = new {
+                        子集約ID = "222",
+                        子集約名 = "子2（更新）",
                     },
                     __halapp_InstanceKey = "[\"111\"]",
                     __halapp_InstanceName = "親1（更新）",

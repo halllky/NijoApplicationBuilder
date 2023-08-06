@@ -25,6 +25,7 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                     __halapp_InstanceName = "111",
                 }.ToJson()));
 
+
             }).When(E_DataPattern._001_Refのみxml, async () => {
                 var createResult1 = await SharedResource.Project.Post("/api/参照先/create", new {
                     参照先集約ID = "111",
@@ -45,6 +46,7 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                     __halapp_InstanceKey = "[\"222\"]",
                     __halapp_InstanceName = "参照元2",
                 }.ToJson()));
+
 
             }).When(E_DataPattern._002_Childrenのみxml, async () => {
                 var createResult1 = await SharedResource.Project.Post("/api/親集約/create", new {
@@ -69,6 +71,7 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                     __halapp_InstanceName = "親1",
                 }.ToJson()));
 
+
             }).When(E_DataPattern._003_Childのみxml, async () => {
                 var createResult1 = await SharedResource.Project.Post("/api/親集約/create", new {
                     親集約ID = "111",
@@ -91,6 +94,35 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                     __halapp_InstanceKey = "[\"111\"]",
                     __halapp_InstanceName = "親1",
                 }.ToJson()));
+
+
+            }).When(E_DataPattern._004_Variationのみxml, async () => {
+                var createResult1 = await SharedResource.Project.Post("/api/親集約/create", new {
+                    親集約ID = "111",
+                    親集約名 = "親1",
+                    種別 = 1,
+                    種別A = new {
+                        種別Aのみに存在する属性 = "あああ",
+                    },
+                    種別B = new {
+                    },
+                });
+                var findResult1 = await SharedResource.Project.Get("/api/親集約/detail/[\"111\"]");
+                var found = await findResult1.Content.ReadAsJsonAsync();
+
+                Assert.That(found, Is.EqualTo(new {
+                    親集約ID = "111",
+                    親集約名 = "親1",
+                    種別 = 1,
+                    種別A = new {
+                        種別Aのみに存在する属性 = "あああ",
+                    },
+                    種別B = new {
+                    },
+                    __halapp_InstanceKey = "[\"111\"]",
+                    __halapp_InstanceName = "親1",
+                }.ToJson()));
+
 
             }).Do(async act => {
                 using var ct = new CancellationTokenSource();
