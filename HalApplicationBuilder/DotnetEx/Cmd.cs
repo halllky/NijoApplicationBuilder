@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -91,15 +92,21 @@ namespace HalApplicationBuilder.DotnetEx {
             /// <summary>複数回Restartしたときに古いTaskが残り続けてしまうのを避けるためのもの</summary>
             private CancellationTokenSource? _taskCanceller = null;
 
-            internal void Restart() {
+            /// <summary>
+            /// 標準出力にこの表示が出たら準備完了とみなす。
+            /// 例えばWebサーバーが立ち上がる前にHTTPリクエストが投げられてテストが落ちるといったことを防ぐためのもの。
+            /// </summary>
+            internal required Regex ReadyIfMatch { get; init; }
+            private bool _ready = false;
+
+            internal async Task Restart() {
                 Console.WriteLine($"{Filename} {string.Join(" ", Args)}");
 
                 Stop();
 
                 CancellationToken ct;
                 lock (_lock) {
-                    DataReceivedEventHandler? stdout = Verbose ? OutToConsole : null;
-                    _process = CreateProcess(WorkingDirectory, Filename, Args, stdout);
+                    _process = CreateProcess(WorkingDirectory, Filename, Args, OnStdOut);
 
                     _process.Start();
                     _process.BeginOutputReadLine();
@@ -108,8 +115,19 @@ namespace HalApplicationBuilder.DotnetEx {
                     _taskCanceller = new CancellationTokenSource();
                     ct = _taskCanceller.Token;
                 }
+                await Task.Run(() => {
+                    try {
+                        while (!_ready) {
+                            Thread.Sleep(100);
+                            ct.ThrowIfCancellationRequested();
+                            CancellationToken?.ThrowIfCancellationRequested();
+                        }
+                    } catch (OperationCanceledException) {
+                        // Do nothing
+                    }
+                });
 
-                var _ = Task.Run(() => {
+                _ = Task.Run(() => {
                     try {
                         while (!_process.HasExited) {
                             Thread.Sleep(100);
@@ -126,6 +144,7 @@ namespace HalApplicationBuilder.DotnetEx {
             private readonly object _lock = new object();
             internal void Stop() {
                 lock (_lock) {
+                    _ready = false;
                     if (_taskCanceller != null) {
                         _taskCanceller.Cancel();
                         _taskCanceller.Dispose();
@@ -133,6 +152,7 @@ namespace HalApplicationBuilder.DotnetEx {
                     }
                     if (_process != null) {
                         try {
+                            Console.WriteLine($"KILLING PROCESS: {Filename} {Args.Join(" ")}");
                             _process.Kill(entireProcessTree: true);
                         } catch (InvalidOperationException ex) when (ex.Message == "No process is associated with this object.") {
                             // Processインスタンスが作成されてからStartする前にDisposeされるとこの例外が発生する。
@@ -145,6 +165,10 @@ namespace HalApplicationBuilder.DotnetEx {
             }
             public void Dispose() {
                 Stop();
+            }
+            private void OnStdOut(object sender, DataReceivedEventArgs e) {
+                if (!_ready && e.Data != null && ReadyIfMatch.IsMatch(e.Data)) _ready = true;
+                if (Verbose) OutToConsole(sender, e);
             }
         }
 

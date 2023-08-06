@@ -196,14 +196,13 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
 
             }).Do(async act => {
                 using var ct = new CancellationTokenSource();
-                Task? task = null;
+                using var dotnetRun = SharedResource.Project.CreateServerProcess(ct.Token);
                 try {
                     SharedResource.Project.Build(pattern);
-                    task = SharedResource.Project.Run(ct.Token);
+                    await dotnetRun.Restart();
                     await act();
                 } finally {
                     ct.Cancel();
-                    if (task != null) await task; // Webプロセスがkillされるのを待つ
                 }
             });
         }

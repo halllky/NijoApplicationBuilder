@@ -377,13 +377,10 @@ namespace HalApplicationBuilder {
         }
 
         /// <summary>
-        /// プロジェクトを実行します。
-        /// ビルドは行いません。
-        /// 実行中のソースファイルの変更は自動的に反映されません。
+        /// クライアントサイドプロセスのコマンドを作成します。
         /// </summary>
-        public async Task Run(CancellationToken cancellationToken) {
-            Console.WriteLine("runのさいしょ");
-            if (!IsValidDirectory()) return;
+        internal DotnetEx.Cmd.Background CreateClientProcess(CancellationToken cancellationToken) {
+            if (!IsValidDirectory()) throw new InvalidOperationException("Here is not halapp directory.");
 
             // TODO 未実装
             //using var npmStart = new DotnetEx.Cmd.Background {
@@ -393,33 +390,32 @@ namespace HalApplicationBuilder {
             //    CancellationToken = cancellationToken,
             //    Verbose = _verbose,
             //};
-            using var dotnetRun = new DotnetEx.Cmd.Background {
+
+            //await npmStart.Restart();
+
+            throw new NotImplementedException();
+        }
+        /// <summary>
+        /// サーバーサイドプロセスのコマンドを作成します。
+        /// ビルドは行いません。
+        /// 実行中のソースファイルの変更は自動的に反映されません。
+        /// </summary>
+        internal DotnetEx.Cmd.Background CreateServerProcess(CancellationToken cancellationToken) {
+            if (!IsValidDirectory()) throw new InvalidOperationException("Here is not halapp directory.");
+
+            return new DotnetEx.Cmd.Background {
                 WorkingDirectory = ProjectRoot,
                 Filename = "dotnet",
                 Args = new[] { "run", "--no-build", "--launch-profile", "https" },
                 CancellationToken = cancellationToken,
+                ReadyIfMatch = new Regex(@"Now listening on:"),
                 Verbose = _verbose,
             };
-
-            await Task.Run(() => {
-                try {
-                    //npmStart.Restart(); // TODO 未実装
-                    dotnetRun.Restart();
-
-                    while (true) {
-                        Console.WriteLine($"Thread.Sleep(100);");
-                        Thread.Sleep(100);
-                        cancellationToken.ThrowIfCancellationRequested();
-                    }
-                } catch (OperationCanceledException) {
-                    // 何もしない
-                }
-            }, cancellationToken);
         }
         /// <summary>
         /// デバッグを開始します。
         /// </summary>
-        public void StartDebugging(CancellationToken cancellationToken) {
+        public async Task StartDebugging(CancellationToken cancellationToken) {
 
             if (!IsValidDirectory()) return;
 
@@ -461,12 +457,13 @@ namespace HalApplicationBuilder {
                     Filename = "npm",
                     Args = new[] { "start" },
                     CancellationToken = cancellationToken,
+                    ReadyIfMatch = new Regex(@"."), // TODO
                     Verbose = _verbose,
                 };
 
                 // 監視開始
                 watcher.EnableRaisingEvents = true;
-                npmStart.Restart();
+                await npmStart.Restart();
 
                 // リビルドの度に実行される処理
                 while (true) {
@@ -499,9 +496,10 @@ namespace HalApplicationBuilder {
                             Filename = "dotnet",
                             Args = new[] { "run", "--launch-profile", "https" },
                             CancellationToken = linkedTokenSource.Token,
+                            ReadyIfMatch = new Regex(@"Now listening on:"),
                             Verbose = _verbose,
                         };
-                        dotnetRun.Restart();
+                        await dotnetRun.Restart();
 
                     } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
                         throw; // デバッグ自体を中断
