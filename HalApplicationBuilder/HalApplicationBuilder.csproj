@@ -42,6 +42,14 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>DbContext.cs</LastGenOutput>
 		</None>
+		<None Update="CodeRendering\WebClient\page.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>page.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering\WebClient\types.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>types.cs</LastGenOutput>
+		</None>
 		<None Update="CodeRendering\Presentation\AggregateInstanceBase.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>AggregateInstanceBase.cs</LastGenOutput>
@@ -220,6 +228,16 @@
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>DbContext.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering\WebClient\page.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>page.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering\WebClient\types.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>types.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering\Presentation\AggregateInstanceBase.cs">
 		  <DesignTime>True</DesignTime>

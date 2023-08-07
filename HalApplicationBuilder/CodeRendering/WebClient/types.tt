@@ -1,0 +1,9 @@
+<#@ template language="C#" linePragmas="false" #>
+<#@ output encoding="utf-8" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<# foreach (var type in GetTsTypes()) { #>
+<# type.Render(this); #>
+<# } #>

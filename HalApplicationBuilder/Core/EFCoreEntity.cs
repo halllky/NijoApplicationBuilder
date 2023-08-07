@@ -28,6 +28,7 @@ namespace HalApplicationBuilder.Core {
             internal required bool IsInstanceName { get; init; }
             internal required IAggregateMemberType MemberType { get; init; }
             internal required string CSharpTypeName { get; init; }
+            internal required string TypeScriptTypename { get; init; }
             internal required string PropertyName { get; init; }
             internal string? Initializer { get; init; }
             internal bool RequiredAtDB { get; init; }
@@ -145,6 +146,7 @@ namespace HalApplicationBuilder.Core {
                         IsInstanceName = false,
                         MemberType = parentPkColumn.MemberType,
                         CSharpTypeName = parentPkColumn.CSharpTypeName,
+                        TypeScriptTypename = parentPkColumn.TypeScriptTypename,
                         RequiredAtDB = true,
                         CorrespondingParentColumn = parentPkColumn,
                         CorrespondingRefTargetColumn = null,
@@ -160,6 +162,7 @@ namespace HalApplicationBuilder.Core {
                     IsInstanceName = member.IsInstanceName,
                     MemberType = member.Type,
                     CSharpTypeName = member.Type.GetCSharpTypeName(),
+                    TypeScriptTypename = member.Type.GetTypeScriptTypeName(),
                     RequiredAtDB = member.IsPrimary, // TODO XMLでrequired属性を定義できるようにする
                     CorrespondingParentColumn = null,
                     CorrespondingRefTargetColumn = null,
@@ -175,6 +178,7 @@ namespace HalApplicationBuilder.Core {
                         IsInstanceName = edge.IsInstanceName(),
                         MemberType = refTargetPk.MemberType,
                         CSharpTypeName = refTargetPk.CSharpTypeName,
+                        TypeScriptTypename = refTargetPk.TypeScriptTypename,
                         RequiredAtDB = edge.IsPrimary(), // TODO XMLでrequired属性を定義できるようにする
                         CorrespondingParentColumn = null,
                         CorrespondingRefTargetColumn = refTargetPk,
@@ -191,6 +195,7 @@ namespace HalApplicationBuilder.Core {
                     IsInstanceName = false,
                     MemberType = new EnumList(),
                     CSharpTypeName = "int",
+                    TypeScriptTypename = "number",
                     Initializer = "default",
                     RequiredAtDB = true,
                     CorrespondingParentColumn = null,

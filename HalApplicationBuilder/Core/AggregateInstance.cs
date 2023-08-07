@@ -27,6 +27,7 @@ namespace HalApplicationBuilder.Core
 
         internal class Property {
             internal required string CSharpTypeName { get; init; }
+            internal required string TypeScriptTypename { get; init; }
             internal required string PropertyName { get; init; }
         }
         internal class SchalarProperty : Property {
@@ -61,6 +62,7 @@ namespace HalApplicationBuilder.Core
                 yield return new AggregateInstance.SchalarProperty {
                     CorrespondingDbColumn = column,
                     CSharpTypeName = column.CSharpTypeName,
+                    TypeScriptTypename = column.TypeScriptTypename,
                     PropertyName = column.PropertyName,
                 };
             }
@@ -75,6 +77,7 @@ namespace HalApplicationBuilder.Core
                     ChildAggregateInstance = edge.Terminal,
                     CorrespondingNavigationProperty = navigationProperty,
                     CSharpTypeName = edge.Terminal.Item.ClassName,
+                    TypeScriptTypename = new AggregateInstanceTS(edge.Terminal, config).TypeName,
                     PropertyName = edge.RelationName,
                     Multiple = false,
                 };
@@ -85,6 +88,7 @@ namespace HalApplicationBuilder.Core
                     ChildAggregateInstance = edge.Terminal,
                     CorrespondingNavigationProperty = navigationProperty,
                     CSharpTypeName = edge.Terminal.Item.ClassName,
+                    TypeScriptTypename = new AggregateInstanceTS(edge.Terminal, config).TypeName,
                     PropertyName = edge.RelationName,
                     Multiple = false,
                 };
@@ -95,6 +99,7 @@ namespace HalApplicationBuilder.Core
                     ChildAggregateInstance = edge.Terminal,
                     CorrespondingNavigationProperty = navigationProperty,
                     CSharpTypeName = $"List<{edge.Terminal.Item.ClassName}>",
+                    TypeScriptTypename = $"{new AggregateInstanceTS(edge.Terminal, config).TypeName}[]",
                     PropertyName = edge.RelationName,
                     Multiple = true,
                 };
@@ -110,6 +115,7 @@ namespace HalApplicationBuilder.Core
                 yield return new AggregateInstance.RefProperty {
                     RefTarget = edge.Terminal,
                     CSharpTypeName = AggregateInstanceKeyNamePair.CLASSNAME,
+                    TypeScriptTypename = AggregateInstanceKeyNamePairTS.DEF,
                     PropertyName = edge.RelationName,
                     CorrespondingNavigationProperty = new NavigationProperty(edgeAsEfCore, config),
                     CorrespondingDbColumns = node
