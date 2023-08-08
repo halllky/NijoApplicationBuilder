@@ -15,6 +15,7 @@ namespace HalApplicationBuilder.Core {
 
         internal GraphNode<EFCoreEntity> EFCoreEntity { get; }
         internal string ClassName => $"{EFCoreEntity.GetCorrespondingAggregate().Item.DisplayName.ToCSharpSafe()}SearchCondition";
+        internal string TypeScriptTypeName => ClassName;
 
         internal const string BASE_CLASS_NAME = "SearchConditionBase";
         internal const string PAGE_PROP_NAME = "__halapp__Page";

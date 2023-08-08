@@ -4,6 +4,11 @@
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
-<# foreach (var type in GetTsTypes()) { #>
-<# type.Render(this); #>
+<# foreach (var (instance, searchCondition, searchResult) in GetAggregateInstances()) { #>
+<# Render(instance); #>
+
+<# Render(searchCondition); #>
+
+<# Render(searchResult); #>
+
 <# } #>

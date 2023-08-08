@@ -18,6 +18,7 @@ namespace HalApplicationBuilder.Core
         private readonly Aggregate _aggregate;
 
         internal string ClassName => $"{_aggregate.DisplayName.ToCSharpSafe()}Instance";
+        internal string TypeScriptTypeName => _aggregate.DisplayName.ToCSharpSafe();
 
         public NodeId Id { get; }
 
@@ -77,7 +78,7 @@ namespace HalApplicationBuilder.Core
                     ChildAggregateInstance = edge.Terminal,
                     CorrespondingNavigationProperty = navigationProperty,
                     CSharpTypeName = edge.Terminal.Item.ClassName,
-                    TypeScriptTypename = new AggregateInstanceTS(edge.Terminal, config).TypeName,
+                    TypeScriptTypename = edge.Terminal.Item.TypeScriptTypeName,
                     PropertyName = edge.RelationName,
                     Multiple = false,
                 };
@@ -88,7 +89,7 @@ namespace HalApplicationBuilder.Core
                     ChildAggregateInstance = edge.Terminal,
                     CorrespondingNavigationProperty = navigationProperty,
                     CSharpTypeName = edge.Terminal.Item.ClassName,
-                    TypeScriptTypename = new AggregateInstanceTS(edge.Terminal, config).TypeName,
+                    TypeScriptTypename = edge.Terminal.Item.TypeScriptTypeName,
                     PropertyName = edge.RelationName,
                     Multiple = false,
                 };
@@ -99,7 +100,7 @@ namespace HalApplicationBuilder.Core
                     ChildAggregateInstance = edge.Terminal,
                     CorrespondingNavigationProperty = navigationProperty,
                     CSharpTypeName = $"List<{edge.Terminal.Item.ClassName}>",
-                    TypeScriptTypename = $"{new AggregateInstanceTS(edge.Terminal, config).TypeName}[]",
+                    TypeScriptTypename = $"{edge.Terminal.Item.TypeScriptTypeName}[]",
                     PropertyName = edge.RelationName,
                     Multiple = true,
                 };

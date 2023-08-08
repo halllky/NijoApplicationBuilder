@@ -25,8 +25,13 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
         /// </summary>
         public virtual string TransformText()
         {
- foreach (var type in GetTsTypes()) { 
- type.Render(this); 
+ foreach (var (instance, searchCondition, searchResult) in GetAggregateInstances()) { 
+ Render(instance); 
+            this.Write("\r\n");
+ Render(searchCondition); 
+            this.Write("\r\n");
+ Render(searchResult); 
+            this.Write("\r\n");
  } 
             return this.GenerationEnvironment.ToString();
         }
