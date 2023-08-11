@@ -31,7 +31,7 @@ export default function () {
             const encoded = window.encodeURI(instanceKey)
             navigate(`<#=GetSingleViewUrl()#>/${encoded}`)
         } else {
-            const errors: string[] = JSON.parse(await response.text())
+            const errors: string[] = Array.from(JSON.parse(await response.text()))
             setErrorMessages([...errorMessages, ...errors.map(text => ({ uuid: UUID.generate(), text }))])
         }
     }, [apiDomain, navigate, errorMessages])

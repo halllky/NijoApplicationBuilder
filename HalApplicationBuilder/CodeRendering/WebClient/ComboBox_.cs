@@ -12,38 +12,22 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
 {
     partial class ComboBox : ITemplate
     {
-        internal static IEnumerable<ComboBox> All(CodeRenderingContext ctx)
-        {
-            return ctx.Schema
-                .ToEFCoreGraph()
-                .RootEntities()
-                .Select(dbEntity => new ComboBox(dbEntity, ctx));
-        }
-
-        internal ComboBox(GraphNode<EFCoreEntity> dbEntity, CodeRenderingContext ctx)
+        internal ComboBox(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx)
         {
             _ctx = ctx;
-            Aggregate = dbEntity.GetCorrespondingAggregate();
-            _dbEntity = dbEntity;
-            _searchCondition = new SearchCondition(dbEntity);
-            _searchResult = new SearchResult(dbEntity);
-            _controller = new AggFile.Controller(dbEntity.GetCorrespondingAggregate());
+            _aggregate = aggregate;
+            _dbEntity = aggregate.GetDbEntity().AsEntry();
         }
 
         private readonly CodeRenderingContext _ctx;
+        private readonly GraphNode<Aggregate> _aggregate;
         private readonly GraphNode<EFCoreEntity> _dbEntity;
-        private readonly SearchCondition _searchCondition;
-        private readonly SearchResult _searchResult;
-        private readonly AggFile.Controller _controller;
 
-        internal GraphNode<Aggregate> Aggregate { get; }
+        public string FileName => $"ComboBox{_aggregate.Item.DisplayName.ToFileNameSafe()}.tsx";
 
-        public string FileName => $"{Aggregate.Item.DisplayName.ToFileNameSafe()}_ComboBox.tsx";
-        internal string ImportName => Path.GetFileNameWithoutExtension(FileName);
+        internal string ComponentName => $"ComboBox{_aggregate.Item.DisplayName.ToCSharpSafe()}";
 
-        internal string ComponentName => $"ComboBox{Aggregate.Item.DisplayName.ToCSharpSafe()}";
-
-        internal string UseQueryKey => $"combo-{Aggregate.Item.UniqueId}";
+        internal string UseQueryKey => $"combo-{_aggregate.Item.UniqueId}";
         internal string Api => new AggFile.Controller(_dbEntity.GetCorrespondingAggregate()).KeywordSearchCommandApi;
     }
 }

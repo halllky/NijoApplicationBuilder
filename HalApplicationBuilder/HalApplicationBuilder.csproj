@@ -114,53 +114,9 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>DefaultRuntimeConfigTemplate.cs</LastGenOutput>
 		</None>
-		<None Update="CodeRendering\ReactAndWebApi\project-template\public\**\*.*">
-		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
-		<None Update="CodeRendering\ReactAndWebApi\project-template\src\**\*.*">
-		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
 		<None Update="CodeRendering\WebClient\index.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>index.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\ReactAndWebApi\ComboBoxTemplate.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>ComboBoxTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\ReactAndWebApi\ReactComponentTemplate.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>ReactComponentTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\ReactAndWebApi\project-template\.gitignore">
-		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
-		<None Update="CodeRendering\ReactAndWebApi\project-template\package-lock.json">
-		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
-		<None Update="CodeRendering\ReactAndWebApi\project-template\package.json">
-		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
-		<None Update="CodeRendering\ReactAndWebApi\project-template\README.md">
-		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
-		<None Update="CodeRendering\ReactAndWebApi\project-template\tailwind.config.js">
-		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
-		<None Update="CodeRendering\ReactAndWebApi\project-template\tsconfig.json">
-		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
-		<None Update="CodeRendering\ReactAndWebApi\ReactTypeDefTemplate.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>ReactTypeDefTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\ReactAndWebApi\WebApiDebuggerTemplate.tt">
-		  <LastGenOutput>WebApiDebuggerTemplate.cs</LastGenOutput>
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		</None>
-		<None Update="CodeRendering\ReactAndWebApi\WebApiControllerTemplate.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>WebApiControllerTemplate.cs</LastGenOutput>
 		</None>
 		<None Update="AspNetMvc\AggregatePartialViewTemplate.tt">
 			<Generator>TextTemplatingFilePreprocessor</Generator>
@@ -196,12 +152,6 @@
 		<None Update="CodeRendering\EFCore\SearchMethodTemplate.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>SearchMethodTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\ReactAndWebApi\project-template\aspnetcore-react.js">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="CodeRendering\ReactAndWebApi\project-template\aspnetcore-https.js">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
 	<ItemGroup>
@@ -324,31 +274,6 @@
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>index.tt</DependentUpon>
 		</Compile>
-		<Compile Update="CodeRendering\ReactAndWebApi\ComboBoxTemplate.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>ComboBoxTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\ReactAndWebApi\ReactComponentTemplate.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>ReactComponentTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\ReactAndWebApi\ReactTypeDefTemplate.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>ReactTypeDefTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\ReactAndWebApi\WebApiDebuggerTemplate.cs">
-		  <DependentUpon>WebApiDebuggerTemplate.tt</DependentUpon>
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		</Compile>
-		<Compile Update="CodeRendering\ReactAndWebApi\WebApiControllerTemplate.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>WebApiControllerTemplate.tt</DependentUpon>
-		</Compile>
 		<Compile Update="CodeRendering\UIModelsTemplate.cs">
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
@@ -397,9 +322,6 @@
     <Content Include="$(ProjectDir)client\*.*" CopyToOutputDirectory="PreserveNewest" LinkBase="client\" />
     <Content Include="$(ProjectDir)client\public\**" CopyToOutputDirectory="PreserveNewest" LinkBase="client\public\" />
     <Content Include="$(ProjectDir)client\src\**" CopyToOutputDirectory="PreserveNewest" LinkBase="client\src\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="CodeRendering\ReactAndWebApi\" />
   </ItemGroup>
 	<ProjectExtensions>
 	  <MonoDevelop>

@@ -69,7 +69,7 @@ export default function () {
             setErrorMessages([])
             dispatch({ type: 'pushMsg', msg: '更新しました。' })
         } else {
-            const errors: string[] = JSON.parse(await response.text())
+            const errors: string[] = Array.from(JSON.parse(await response.text()))
             setErrorMessages([...errorMessages, ...errors.map(text => ({ uuid: UUID.generate(), text }))])
         }
     }, [apiDomain, errorMessages, dispatch])
@@ -86,7 +86,7 @@ export default function () {
             this.Write("</Link>\r\n                &nbsp;&#047;&nbsp;\r\n                <span className=\"sel" +
                     "ect-all\">TODO:INSTANCENAME</span>\r\n            </h1>\r\n            <InlineMessage" +
                     "Bar value={errorMessages} onChange={setErrorMessages} />\r\n");
- PushIndent("                "); 
+ PushIndent("            "); 
  RenderForm(); 
  PopIndent(); 
             this.Write("            <IconButton fill icon={BookmarkSquareIcon} className=\"self-start\">更新<" +

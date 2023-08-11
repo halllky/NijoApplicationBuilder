@@ -44,7 +44,7 @@ export default function () {
             setErrorMessages([])
             dispatch({ type: 'pushMsg', msg: '更新しました。' })
         } else {
-            const errors: string[] = JSON.parse(await response.text())
+            const errors: string[] = Array.from(JSON.parse(await response.text()))
             setErrorMessages([...errorMessages, ...errors.map(text => ({ uuid: UUID.generate(), text }))])
         }
     }, [apiDomain, errorMessages, dispatch])
@@ -59,7 +59,7 @@ export default function () {
                 <span className="select-all">TODO:INSTANCENAME</span>
             </h1>
             <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
-<# PushIndent("                "); #>
+<# PushIndent("            "); #>
 <# RenderForm(); #>
 <# PopIndent(); #>
             <IconButton fill icon={BookmarkSquareIcon} className="self-start">更新</IconButton>

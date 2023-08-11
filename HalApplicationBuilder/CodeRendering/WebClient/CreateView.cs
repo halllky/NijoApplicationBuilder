@@ -56,7 +56,7 @@ export default function () {
             this.Write(this.ToStringHelper.ToStringWithCulture(GetSingleViewUrl()));
             this.Write(@"/${encoded}`)
         } else {
-            const errors: string[] = JSON.parse(await response.text())
+            const errors: string[] = Array.from(JSON.parse(await response.text()))
             setErrorMessages([...errorMessages, ...errors.map(text => ({ uuid: UUID.generate(), text }))])
         }
     }, [apiDomain, navigate, errorMessages])
