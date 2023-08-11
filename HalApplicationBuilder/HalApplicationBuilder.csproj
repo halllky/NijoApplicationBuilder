@@ -86,17 +86,9 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>DebuggerController.cs</LastGenOutput>
 		</None>
-		<None Update="CodeRendering\ReactAndWebApi\index.tt">
+		<None Update="CodeRendering\WebClient\index.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>index.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\ReactAndWebApi\menuItems.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>menuItems.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\ReactAndWebApi\ReactComponent.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>ReactComponent.cs</LastGenOutput>
 		</None>
 		<None Update="CodeRendering\Util\DotnetExtensions.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
@@ -128,17 +120,13 @@
 		<None Update="CodeRendering\ReactAndWebApi\project-template\src\**\*.*">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
-		<None Update="CodeRendering\ReactAndWebApi\index.tt">
+		<None Update="CodeRendering\WebClient\index.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>index.cs</LastGenOutput>
 		</None>
 		<None Update="CodeRendering\ReactAndWebApi\ComboBoxTemplate.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>ComboBoxTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\ReactAndWebApi\menuItems.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>menuItems.cs</LastGenOutput>
 		</None>
 		<None Update="CodeRendering\ReactAndWebApi\ReactComponentTemplate.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
@@ -296,20 +284,10 @@
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>DebuggerController.tt</DependentUpon>
 		</Compile>
-		<Compile Update="CodeRendering\ReactAndWebApi\index.cs">
+		<Compile Update="CodeRendering\WebClient\index.cs">
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>index.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\ReactAndWebApi\menuItems.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>menuItems.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\ReactAndWebApi\ReactComponent.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>ReactComponent.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering\Util\DotnetExtensions.cs">
 		  <DesignTime>True</DesignTime>
@@ -341,7 +319,7 @@
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>DefaultRuntimeConfigTemplate.tt</DependentUpon>
 		</Compile>
-		<Compile Update="CodeRendering\ReactAndWebApi\index.cs">
+		<Compile Update="CodeRendering\WebClient\index.cs">
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>index.tt</DependentUpon>
@@ -350,11 +328,6 @@
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>ComboBoxTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\ReactAndWebApi\menuItems.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>menuItems.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering\ReactAndWebApi\ReactComponentTemplate.cs">
 		  <DesignTime>True</DesignTime>

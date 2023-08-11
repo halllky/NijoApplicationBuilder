@@ -7,7 +7,7 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
+namespace HalApplicationBuilder.CodeRendering.WebClient
 {
     using System.Linq;
     using System.Text;
@@ -18,14 +18,15 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class menuItems : menuItemsBase
+    public partial class index : indexBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("\r\n");
+            this.Write("import \'./halapp.css\';\r\nimport \'ag-grid-community/styles/ag-grid.css\';\r\nimport \'a" +
+                    "g-grid-community/styles/ag-theme-alpine.css\';\r\n\r\n");
  foreach (var component in GetComponents()) { 
             this.Write("import ");
             this.Write(this.ToStringHelper.ToStringWithCulture(component.PhysicalName));
@@ -33,7 +34,9 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
             this.Write(this.ToStringHelper.ToStringWithCulture(component.From));
             this.Write("\'\r\n");
  } 
-            this.Write("\r\nexport const routes: { url: string, el: JSX.Element }[] = [\r\n");
+            this.Write("\r\nexport const THIS_APPLICATION_NAME = \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Schema.ApplicationName));
+            this.Write("\' as const\r\n\r\nexport const routes: { url: string, el: JSX.Element }[] = [\r\n");
  foreach (var component in GetComponents()) { 
             this.Write("    { url: \'");
             this.Write(this.ToStringHelper.ToStringWithCulture(component.Url));
@@ -58,7 +61,7 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class menuItemsBase
+    public class indexBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

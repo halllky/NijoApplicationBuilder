@@ -1,26 +1,26 @@
-using HalApplicationBuilder.CodeRendering.WebClient;
-using HalApplicationBuilder.Core;
-using HalApplicationBuilder.DotnetEx;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using HalApplicationBuilder.CodeRendering.ReactAndWebApi;
+using HalApplicationBuilder.Core;
+using HalApplicationBuilder.DotnetEx;
 
-namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
-    partial class menuItems : ITemplate {
-        internal const string FILE_NAME = "menuItems.tsx";
-        internal static string IMPORT_NAME => Path.GetFileNameWithoutExtension(FILE_NAME);
+namespace HalApplicationBuilder.CodeRendering.WebClient {
+#pragma warning disable IDE1006 // 命名スタイル
+    partial class index : ITemplate {
+#pragma warning restore IDE1006 // 命名スタイル
 
-        public string FileName => FILE_NAME;
-
-        internal menuItems(CodeRenderingContext ctx, Func<GraphNode<Aggregate>, string> dirNameResolver) {
+        internal index(CodeRenderingContext ctx, Func<GraphNode<Aggregate>, string> dirNameResolver) {
             _ctx = ctx;
             _dirNameResolver = dirNameResolver;
         }
         private readonly CodeRenderingContext _ctx;
         private readonly Func<GraphNode<Aggregate>, string> _dirNameResolver;
+
+        public string FileName => "index.tsx";
 
         private IEnumerable<ImportedComponent> GetComponents() {
             foreach (var aggregate in _ctx.Schema.RootAggregates()) {

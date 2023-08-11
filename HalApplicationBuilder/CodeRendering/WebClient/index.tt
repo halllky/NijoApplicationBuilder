@@ -4,10 +4,15 @@
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
+import './halapp.css';
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-alpine.css';
 
 <# foreach (var component in GetComponents()) { #>
 import <#=component.PhysicalName#> from '<#=component.From#>'
 <# } #>
+
+export const THIS_APPLICATION_NAME = '<#=_ctx.Schema.ApplicationName#>' as const
 
 export const routes: { url: string, el: JSX.Element }[] = [
 <# foreach (var component in GetComponents()) { #>
