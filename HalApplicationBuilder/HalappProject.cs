@@ -1,6 +1,5 @@
 using HalApplicationBuilder.CodeRendering;
 using HalApplicationBuilder.CodeRendering.EFCore;
-using HalApplicationBuilder.CodeRendering.ReactAndWebApi;
 using HalApplicationBuilder.CodeRendering.WebClient;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
@@ -18,7 +17,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace HalApplicationBuilder {
+namespace HalApplicationBuilder
+{
     public partial class HalappProject {
 
         private protected const string HALAPP_XML_NAME = "halapp.xml";

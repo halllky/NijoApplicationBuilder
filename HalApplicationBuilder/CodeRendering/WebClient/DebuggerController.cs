@@ -7,7 +7,7 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
+namespace HalApplicationBuilder.CodeRendering.WebClient
 {
     using System.Linq;
     using System.Text;

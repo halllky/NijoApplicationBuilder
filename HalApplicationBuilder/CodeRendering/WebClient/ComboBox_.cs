@@ -8,16 +8,20 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
-    partial class ComboBox : ITemplate {
-        internal static IEnumerable<ComboBox> All(CodeRenderingContext ctx) {
+namespace HalApplicationBuilder.CodeRendering.WebClient
+{
+    partial class ComboBox : ITemplate
+    {
+        internal static IEnumerable<ComboBox> All(CodeRenderingContext ctx)
+        {
             return ctx.Schema
                 .ToEFCoreGraph()
                 .RootEntities()
                 .Select(dbEntity => new ComboBox(dbEntity, ctx));
         }
 
-        internal ComboBox(GraphNode<EFCoreEntity> dbEntity, CodeRenderingContext ctx) {
+        internal ComboBox(GraphNode<EFCoreEntity> dbEntity, CodeRenderingContext ctx)
+        {
             _ctx = ctx;
             Aggregate = dbEntity.GetCorrespondingAggregate();
             _dbEntity = dbEntity;

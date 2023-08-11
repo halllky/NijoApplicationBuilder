@@ -78,11 +78,11 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>SearchResultBase.cs</LastGenOutput>
 		</None>
-		<None Update="CodeRendering\ReactAndWebApi\ComboBox.tt">
+		<None Update="CodeRendering\WebClient\ComboBox.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>ComboBox.cs</LastGenOutput>
 		</None>
-		<None Update="CodeRendering\ReactAndWebApi\DebuggerController.tt">
+		<None Update="CodeRendering\WebClient\DebuggerController.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>DebuggerController.cs</LastGenOutput>
 		</None>
@@ -274,12 +274,12 @@
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>SearchResultBase.tt</DependentUpon>
 		</Compile>
-		<Compile Update="CodeRendering\ReactAndWebApi\ComboBox.cs">
+		<Compile Update="CodeRendering\WebClient\ComboBox.cs">
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>ComboBox.tt</DependentUpon>
 		</Compile>
-		<Compile Update="CodeRendering\ReactAndWebApi\DebuggerController.cs">
+		<Compile Update="CodeRendering\WebClient\DebuggerController.cs">
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>DebuggerController.tt</DependentUpon>
@@ -397,6 +397,9 @@
     <Content Include="$(ProjectDir)client\*.*" CopyToOutputDirectory="PreserveNewest" LinkBase="client\" />
     <Content Include="$(ProjectDir)client\public\**" CopyToOutputDirectory="PreserveNewest" LinkBase="client\public\" />
     <Content Include="$(ProjectDir)client\src\**" CopyToOutputDirectory="PreserveNewest" LinkBase="client\src\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="CodeRendering\ReactAndWebApi\" />
   </ItemGroup>
 	<ProjectExtensions>
 	  <MonoDevelop>

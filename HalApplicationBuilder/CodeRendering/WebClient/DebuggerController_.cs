@@ -4,9 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
-    partial class DebuggerController : ITemplate {
-        internal DebuggerController(CodeRenderingContext ctx) {
+namespace HalApplicationBuilder.CodeRendering.WebClient
+{
+    partial class DebuggerController : ITemplate
+    {
+        internal DebuggerController(CodeRenderingContext ctx)
+        {
             _ctx = ctx;
         }
         private readonly CodeRenderingContext _ctx;
