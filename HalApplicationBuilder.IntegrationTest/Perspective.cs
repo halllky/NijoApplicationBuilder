@@ -29,7 +29,7 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                 }
 
                 using var ct = new CancellationTokenSource();
-                using var dotnetRun = SharedResource.Project.CreateServerProcess(ct.Token);
+                using var dotnetRun = SharedResource.Project.CreateServerProcess(ct.Token, Console.Out);
                 try {
                     SharedResource.Project.Build(_pattern);
                     await dotnetRun.Launch();

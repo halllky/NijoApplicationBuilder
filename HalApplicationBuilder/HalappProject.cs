@@ -3,9 +3,9 @@ using HalApplicationBuilder.CodeRendering.EFCore;
 using HalApplicationBuilder.CodeRendering.ReactAndWebApi;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
-using Microsoft.Build.Evaluation;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -16,14 +16,12 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using static HalApplicationBuilder.HalappProject;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace HalApplicationBuilder {
     public partial class HalappProject {
 
         private protected const string HALAPP_XML_NAME = "halapp.xml";
-        private protected const string REACT_DIR = "ClientApp";
+        private protected const string REACT_DIR = "client";
         internal const string REACT_PAGE_DIR = "pages";
         private protected const string HALAPP_DLL_COPY_TARGET = "halapp-resource";
 
@@ -77,8 +75,10 @@ namespace HalApplicationBuilder {
                 cmd.Exec("git", "commit", "-m", "init");
 
                 // ここまでの処理がすべて成功したら一時ディレクトリを本来のディレクトリ名に変更
-                if (Directory.Exists(projectRootDir)) throw new InvalidOperationException($"プロジェクトディレクトリを {projectRootDir} に移動できません。");
-                Directory.Move(tempDir, projectRootDir);
+                if (tempDir != projectRootDir) {
+                    if (Directory.Exists(projectRootDir)) throw new InvalidOperationException($"プロジェクトディレクトリを {projectRootDir} に移動できません。");
+                    Directory.Move(tempDir, projectRootDir);
+                }
 
                 log?.WriteLine("プロジェクト作成完了");
 
@@ -89,7 +89,7 @@ namespace HalApplicationBuilder {
                 throw;
 
             } finally {
-                if (Directory.Exists(tempDir) && (keepTempIferror == false || error == false)) {
+                if (tempDir != projectRootDir && Directory.Exists(tempDir) && (keepTempIferror == false || error == false)) {
                     try {
                         Directory.Delete(tempDir, true);
                     } catch (Exception ex) {
@@ -350,8 +350,7 @@ namespace HalApplicationBuilder {
         /// 必要なnpmモジュールをインストールします。
         /// </summary>
         public HalappProject InstallDependencies() {
-            var npmProcess = new Cmd
-            {
+            var npmProcess = new Cmd {
                 WorkingDirectory = Path.Combine(ProjectRoot, REACT_DIR),
                 Verbose = _verbose,
             };
@@ -401,7 +400,7 @@ namespace HalApplicationBuilder {
         /// ビルドは行いません。
         /// 実行中のソースファイルの変更は自動的に反映されません。
         /// </summary>
-        internal BackgroundProcess CreateServerProcess(CancellationToken cancellationToken) {
+        internal BackgroundProcess CreateServerProcess(CancellationToken cancellationToken, TextWriter log) {
             if (!IsValidDirectory()) throw new InvalidOperationException("Here is not halapp directory.");
 
             var process = new BackgroundProcess {
@@ -411,8 +410,8 @@ namespace HalApplicationBuilder {
                 CancellationToken = cancellationToken,
                 IsReady = e => e.Data != null && AspCoreStartedRegex().IsMatch(e.Data),
             };
-            process.OnStandardOut += Cmd.OutToConsole;
-            process.OnStandardError += Cmd.OutToStdError;
+            process.OnStandardOut += (sender, e) => log.WriteLine(e.Data);
+            process.OnStandardError += (sender, e) => log.WriteLine(e.Data);
 
             return process;
         }
@@ -494,7 +493,7 @@ namespace HalApplicationBuilder {
                         migrator.AddMigration();
                         migrator.Migrate();
 
-                        dotnetRun = CreateServerProcess(linkedTokenSource.Token);
+                        dotnetRun = CreateServerProcess(linkedTokenSource.Token, Console.Out);
                         await dotnetRun.Launch();
 
                     } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
@@ -710,12 +709,6 @@ namespace HalApplicationBuilder {
                 Config = config,
                 Schema = appSchema,
             };
-            // TODO: Reactのソースの自動生成ができたらコメントアウトを解除して復活させる
-            //var reactProjectTemplate = Path.Combine(
-            //    Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!,
-            //    "CodeRendering",
-            //    "ReactAndWebApi",
-            //    "project-template");
 
             DirectorySetupper.Directory(ProjectRoot, _log, dir => {
 
@@ -748,32 +741,29 @@ namespace HalApplicationBuilder {
                     genDir.DeleteOtherFiles();
                 });
 
-                // TODO: Reactのソースの自動生成ができたらコメントアウトを解除して復活させる
-                //if (!Directory.Exists(Path.Combine(dir.Path, REACT_DIR))) {
-                //    DotnetEx.IO.CopyDirectory(reactProjectTemplate, Path.Combine(dir.Path, REACT_DIR));
-                //}
+                var reactProjectTemplate = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "client");
+                if (!Directory.Exists(Path.Combine(dir.Path, REACT_DIR))) {
+                    DotnetEx.IO.CopyDirectory(reactProjectTemplate, Path.Combine(dir.Path, REACT_DIR));
+                }
 
-                dir.Directory(Path.Combine(REACT_DIR, "src", "__AutoGenerated"), reactDir => {
+                dir.Directory(Path.Combine(REACT_DIR, "src", "__autoGenerated"), reactDir => {
 
-                    // TODO: Reactのソースの自動生成ができたらコメントアウトを解除して復活させる
-                    //reactDir.Generate(Path.Combine(reactProjectTemplate, "src", "__AutoGenerated", "halapp.css"));
-                    //reactDir.Generate(Path.Combine(reactProjectTemplate, "src", "__AutoGenerated", "halapp.types.ts"));
-                    reactDir.Generate(new CodeRendering.ReactAndWebApi.index(ctx, "pages"));
-                    reactDir.Generate(new CodeRendering.ReactAndWebApi.menuItems(ctx, "pages"));
+                    reactDir.CopyFrom(Path.Combine(reactProjectTemplate, "src", "__autoGenerated", "halapp.css"));
+                    reactDir.CopyFrom(Path.Combine(reactProjectTemplate, "src", "__autoGenerated", "halapp.types.ts"));
+                    reactDir.Generate(new index(ctx, "pages"));
+                    reactDir.Generate(new menuItems(ctx, "pages"));
 
-                    // TODO: Reactのソースの自動生成ができたらコメントアウトを解除して復活させる
-                    //reactDir.Directory("components", componentsDir => {
-                    //    var source = Path.Combine(reactProjectTemplate, "src", "__AutoGenerated", "components");
-                    //    foreach (var file in Directory.GetFiles(source)) componentsDir.Generate(file);
-                    //    foreach (var template in ComboBox.All(ctx)) componentsDir.Generate(template);
-                    //    componentsDir.DeleteOtherFiles();
-                    //});
-                    // TODO: Reactのソースの自動生成ができたらコメントアウトを解除して復活させる
-                    //reactDir.Directory("hooks", componentsDir => {
-                    //    var source = Path.Combine(reactProjectTemplate, "src", "__AutoGenerated", "hooks");
-                    //    foreach (var file in Directory.GetFiles(source)) componentsDir.Generate(file);
-                    //    componentsDir.DeleteOtherFiles();
-                    //});
+                    reactDir.Directory("components", componentsDir => {
+                        var source = Path.Combine(reactProjectTemplate, "src", "__autoGenerated", "components");
+                        foreach (var file in Directory.GetFiles(source)) componentsDir.CopyFrom(file);
+                        foreach (var template in ComboBox.All(ctx)) componentsDir.Generate(template);
+                        componentsDir.DeleteOtherFiles();
+                    });
+                    reactDir.Directory("hooks", componentsDir => {
+                        var source = Path.Combine(reactProjectTemplate, "src", "__autoGenerated", "hooks");
+                        foreach (var file in Directory.GetFiles(source)) componentsDir.CopyFrom(file);
+                        componentsDir.DeleteOtherFiles();
+                    });
                     reactDir.Directory("pages", pageDir => {
                         foreach (var template in ReactComponent.All(ctx)) pageDir.Generate(template);
                         pageDir.DeleteOtherFiles();
@@ -818,7 +808,7 @@ namespace HalApplicationBuilder {
                 using var sw = new StreamWriter(file, append: false, encoding: GetEncoding(file));
                 sw.WriteLine(template.TransformText());
             }
-            internal void Generate(string copySourceFile) {
+            internal void CopyFrom(string copySourceFile) {
                 var copyTargetFile = System.IO.Path.Combine(Path, System.IO.Path.GetFileName(copySourceFile));
 
                 _generated.Add(copyTargetFile);

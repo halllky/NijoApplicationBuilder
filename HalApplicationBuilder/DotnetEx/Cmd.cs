@@ -79,7 +79,12 @@ namespace HalApplicationBuilder.DotnetEx {
             }
         }
 
-        internal static Process CreateProcess(string workingDirectory, string filename, string[] args, DataReceivedEventHandler? stdout = null, DataReceivedEventHandler? stderr = null) {
+        internal static Process CreateProcess(
+            string workingDirectory,
+            string filename,
+            string[] args,
+            DataReceivedEventHandler? stdout = null,
+            DataReceivedEventHandler? stderr = null) {
             var process = new System.Diagnostics.Process();
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
@@ -99,17 +104,17 @@ namespace HalApplicationBuilder.DotnetEx {
             process.StartInfo.StandardOutputEncoding = Console.OutputEncoding;
             process.StartInfo.StandardErrorEncoding = Console.OutputEncoding;
             if (stdout != null) process.OutputDataReceived += stdout;
-            process.ErrorDataReceived += OutToStdError;
+            process.ErrorDataReceived += stderr;
 
             return process;
         }
 
-        internal static void OutToConsole(object sender, DataReceivedEventArgs e) {
+        private void OutToConsole(object sender, DataReceivedEventArgs e) {
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.WriteLine(e.Data);
             Console.ResetColor();
         }
-        internal static void OutToStdError(object sender, DataReceivedEventArgs e) {
+        private void OutToStdError(object sender, DataReceivedEventArgs e) {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.Error.WriteLine(e.Data);
             Console.ResetColor();

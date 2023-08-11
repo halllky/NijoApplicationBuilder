@@ -375,6 +375,11 @@
 	<ItemGroup>
 	  <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
 	</ItemGroup>
+  <ItemGroup>
+    <Content Include="$(ProjectDir)client\*.*" CopyToOutputDirectory="PreserveNewest" LinkBase="client\" />
+    <Content Include="$(ProjectDir)client\public\**" CopyToOutputDirectory="PreserveNewest" LinkBase="client\public\" />
+    <Content Include="$(ProjectDir)client\src\**" CopyToOutputDirectory="PreserveNewest" LinkBase="client\src\" />
+  </ItemGroup>
 	<ProjectExtensions>
 	  <MonoDevelop>
 	    <Properties>
