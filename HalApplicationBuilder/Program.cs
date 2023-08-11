@@ -95,7 +95,7 @@ namespace HalApplicationBuilder {
             var ok = true;
             foreach (var name in names) {
                 try {
-                    var cmd = new DotnetEx.Cmd {
+                    var cmd = new DotnetEx.Terminal {
                         WorkingDirectory = ".",
                         CancellationToken = cancellationToken,
                         Verbose = false,

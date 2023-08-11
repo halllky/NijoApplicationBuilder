@@ -33,7 +33,7 @@ namespace HalApplicationBuilder.DotnetEx {
 
             Console.WriteLine($"{Filename} {string.Join(" ", Args)}");
 
-            _process = Cmd.CreateProcess(WorkingDirectory, Filename, Args, OnStdOut, OnStandardError);
+            _process = Terminal.CreateProcess(WorkingDirectory, Filename, Args, OnStdOut, OnStandardError);
 
             _process.Start();
             _process.BeginOutputReadLine();

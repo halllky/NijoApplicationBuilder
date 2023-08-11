@@ -9,30 +9,23 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.DotnetEx {
-    internal class Cmd {
+    internal class Terminal {
 
         internal required string WorkingDirectory { get; init; }
         internal CancellationToken? CancellationToken { get; init; }
         internal bool Verbose { get; init; }
 
         internal void Exec(string filename, params string[] args) {
-            ExecWithRetry(0, filename, args);
-        }
-        internal void ExecWithRetry(int retry, string filename, params string[] args) {
-            Console.WriteLine($"{filename} {string.Join(" ", args)}");
-            Execute(retry, null, filename, args);
+            Execute(null, filename, args);
         }
         internal IEnumerable<string> ReadOutput(string filename, params string[] args) {
-            return ReadOutputWithRetry(0, filename, args);
-        }
-        internal IEnumerable<string> ReadOutputWithRetry(int retry, string filename, params string[] args) {
             var output = new Queue<string>();
-            Execute(retry, output, filename, args);
+            Execute(output, filename, args);
             while (output.Count > 0) {
                 yield return output.Dequeue();
             }
         }
-        private void Execute(int retry, Queue<string>? output, string filename, params string[] args) {
+        private void Execute(Queue<string>? output, string filename, params string[] args) {
 
             DataReceivedEventHandler? stdout;
             if (output != null)
@@ -68,13 +61,7 @@ namespace HalApplicationBuilder.DotnetEx {
                     throw;
 
                 } catch (Exception ex) {
-                    if (retry > 0) {
-                        Console.WriteLine($"ERROR({filename} {string.Join(" ", args)})\nNow retrying...");
-                        retry--;
-                        continue;
-                    } else {
-                        throw new InvalidOperationException($"ERROR({filename} {string.Join(" ", args)})", ex);
-                    }
+                    throw new InvalidOperationException($"ERROR({filename} {string.Join(" ", args)})", ex);
                 }
             }
         }
