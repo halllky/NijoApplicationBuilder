@@ -49,7 +49,6 @@ namespace HalApplicationBuilder {
             debug.SetHandler(async (path, verbose) => {
                 if (!CheckIfToolIsAvailable(cancellationTokenSource.Token, "dotnet", "npm")) return;
                 var project = HalappProject.Open(path, Console.Out, verbose);
-                project.AddReferenceToHalappDll();
                 await project.StartDebugging(cancellationTokenSource.Token);
             }, path, verbose);
 
