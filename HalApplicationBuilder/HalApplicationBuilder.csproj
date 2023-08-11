@@ -27,7 +27,6 @@
 	  <None Remove="Core\" />
 	  <None Remove="Runtime\" />
 	  <None Remove="Serialized\" />
-	  <None Remove="Template.xml" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Update="CodeRendering\AggFile.tt">
@@ -311,9 +310,6 @@
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		</Compile>
-	</ItemGroup>
-	<ItemGroup>
-	  <EmbeddedResource Include="Template.xml" />
 	</ItemGroup>
 	<ItemGroup>
 	  <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
