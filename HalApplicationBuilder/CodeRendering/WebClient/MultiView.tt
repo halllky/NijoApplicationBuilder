@@ -1,0 +1,108 @@
+<#@ template language="C#" linePragmas="false" #>
+<#@ output encoding="utf-8" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="HalApplicationBuilder.CodeRendering.Presentation" #>
+import React, { useState, useCallback } from 'react';
+import { useCtrlS } from '../../hooks/useCtrlS';
+import { useAppContext } from '../../hooks/AppContext';
+import { AgGridReact } from 'ag-grid-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from 'react-query';
+import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
+import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { IconButton } from '../../components/IconButton';
+
+export const <#=ComponentName#> = () => {
+
+    const [{ apiDomain }, dispatch] = useAppContext()
+    useCtrlS(() => {
+        dispatch({ type: 'pushMsg', msg: '保存しました。' })
+    })
+
+    const [param, setParam] = useState<FieldValues>({})
+    const { register, handleSubmit, reset } = useForm()
+    const onSearch: SubmitHandler<FieldValues> = useCallback(data => {
+        setParam(data)
+    }, [])
+    const onClear = useCallback((e: React.MouseEvent) => {
+        reset()
+        e.preventDefault()
+    }, [reset])
+    const { data, isFetching } = useQuery({
+        queryKey: ['<#=UseQueryKey#>', JSON.stringify(param)],
+        queryFn: async () => {
+            const json = JSON.stringify(param)
+            const encoded = window.encodeURI(json)
+            const response = await fetch(`${apiDomain}<#=GetSearchCommandApi()#>?param=${encoded}`)
+            if (!response.ok) throw new Error('Network response was not OK.')
+            return await response.json()
+        },
+        onError: error => {
+            dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
+        },
+    })
+
+    const navigate = useNavigate()
+    const toCreateView = useCallback(() => {
+        navigate('<#=GetCreateViewUrl()#>')
+    }, [navigate])
+
+    const [expanded, setExpanded] = useState(true)
+
+    if (isFetching) return <></>
+
+    return (
+        <div className="page-content-root">
+
+            <div className="flex flex-row justify-start items-center space-x-2">
+                <div className='flex-1 flex flex-row items-center space-x-1 cursor-pointer' onClick={() => setExpanded(!expanded)}>
+                    <h1 className="text-base font-semibold select-none py-1">
+                        <#=_aggregate.Item.DisplayName#>
+                    </h1>
+                    {expanded
+                        ? <ChevronDownIcon className="w-4" />
+                        : <ChevronUpIcon className="w-4" />}
+                </div>
+                <IconButton underline icon={PlusIcon} onClick={toCreateView}>新規作成</IconButton>
+                <IconButton underline icon={BookmarkIcon}>この検索条件を保存</IconButton>
+            </div>
+
+            <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1`} onSubmit={handleSubmit(onSearch)}>
+<# PushIndent("                "); #>
+<# RenderSearchCondition(); #>
+<# PopIndent(); #>
+                <div className='flex flex-row justify-start space-x-1'>
+                    <IconButton fill icon={MagnifyingGlassIcon}>検索</IconButton>
+                    <IconButton outline onClick={onClear}>クリア</IconButton>
+                </div>
+            </form>
+
+            <div className="ag-theme-alpine compact flex-1">
+                <AgGridReact
+                    rowData={data || []}
+                    columnDefs={columnDefs}
+                    multiSortKey='ctrl'
+                    undoRedoCellEditing
+                    undoRedoCellEditingLimit={20}>
+                </AgGridReact>
+            </div>
+        </div>
+    )
+}
+
+const columnDefs = [
+    {
+        resizable: true,
+        width: 50,
+        cellRenderer: ({ data }: { data: { <#=SearchResultBase.INSTANCE_KEY#>: string } }) => {
+            const encoded = window.encodeURI(data.<#=SearchResultBase.INSTANCE_KEY#>)
+            return <Link to={`<#=GetSingleViewUrl()#>/${encoded}`} className="text-blue-400">詳細</Link>
+        },
+    },
+<# foreach (var member in _searchResult.GetMembers()) { #>
+    { field: '<#=member.Name#>', resizable: true, sortable: true, editable: true },
+<# } #>
+]

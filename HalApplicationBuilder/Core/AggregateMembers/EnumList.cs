@@ -9,6 +9,6 @@ namespace HalApplicationBuilder.Core.AggregateMembers {
         public override SearchBehavior SearchBehavior => SearchBehavior.Strict;
         public override string GetCSharpTypeName() => "int?";
         public override string GetTypeScriptTypeName() => "number";
-        public override IEnumerable<string> UserInterface(IGuiForm ui) => ui.Selection();
+        public override IEnumerable<string> RenderUI(IGuiFormRenderer ui) => ui.Selection();
     }
 }

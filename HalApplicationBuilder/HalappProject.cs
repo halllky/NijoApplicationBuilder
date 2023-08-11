@@ -768,7 +768,16 @@ namespace HalApplicationBuilder {
                         componentsDir.DeleteOtherFiles();
                     });
                     reactDir.Directory(REACT_PAGE_DIR, pageDir => {
+
+                        // TODO: 全コンポーネントできたら消す
                         foreach (var template in ReactComponent.All(ctx)) pageDir.Generate(template);
+
+                        foreach (var root in ctx.Schema.RootAggregates()) {
+                            pageDir.Directory(root.Item.DisplayName.ToFileNameSafe(), aggregateDir => {
+                                aggregateDir.Generate(new MultiView(root));
+                            });
+                        }
+
                         pageDir.DeleteOtherFiles();
                     });
                     reactDir.DeleteOtherFiles();

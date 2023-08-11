@@ -16,7 +16,8 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
         private readonly CodeRenderingContext _ctx;
 
-        public string FileName => "types.ts";
+        public string FileName => FILENAME;
+        public const string FILENAME = "types.ts";
 
         private IEnumerable<(GraphNode<AggregateInstance>, SearchCondition, SearchResult)> GetAggregateInstances() {
             return _ctx.Schema

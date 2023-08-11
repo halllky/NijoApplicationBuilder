@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Core {
-    public interface IGuiForm {
+    public interface IGuiFormRenderer {
         IEnumerable<string> TextBox(
             bool multiline = false);
 

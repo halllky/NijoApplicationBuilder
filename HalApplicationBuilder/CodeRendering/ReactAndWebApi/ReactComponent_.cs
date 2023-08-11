@@ -51,7 +51,7 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
         private void RenderSearchCondition() {
             foreach (var member in _searchCondition.GetMembers()) {
                 var renderer = new SearchConditionRenderer(member);
-                foreach (var line in member.Type.UserInterface(renderer)) {
+                foreach (var line in member.Type.RenderUI(renderer)) {
                     WriteLine(line);
                 }
             }
@@ -62,7 +62,7 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
         private void RenderSingleViewContents() {
             foreach (var member in _searchCondition.GetMembers()) {
                 var renderer = new ContentsDetailRenderer(member);
-                foreach (var line in member.Type.UserInterface(renderer)) {
+                foreach (var line in member.Type.RenderUI(renderer)) {
                     WriteLine(line);
                 }
             }
@@ -71,7 +71,7 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
         /// <summary>
         /// 検索条件
         /// </summary>
-        private class SearchConditionRenderer : IGuiForm {
+        private class SearchConditionRenderer : IGuiFormRenderer {
             public SearchConditionRenderer(SearchCondition.Member member) {
                 _member = member;
             }
@@ -142,7 +142,7 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
         /// <summary>
         /// Createビュー兼シングルビュー
         /// </summary>
-        private class ContentsDetailRenderer : IGuiForm {
+        private class ContentsDetailRenderer : IGuiFormRenderer {
 
             public ContentsDetailRenderer(SearchCondition.Member member) {
                 _member = member;
