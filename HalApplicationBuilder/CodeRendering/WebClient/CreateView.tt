@@ -1,0 +1,53 @@
+<#@ template language="C#" linePragmas="false" #>
+<#@ output encoding="utf-8" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+import { useState, useCallback } from 'react';
+import { useAppContext } from '../../hooks/AppContext';
+import { Link, useNavigate } from 'react-router-dom';
+import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
+import { UUID } from 'uuidjs'
+import { BookmarkSquareIcon } from '@heroicons/react/24/outline';
+import { IconButton } from '../../components/IconButton';
+import { InlineMessageBar, BarMessage } from '../../components/InlineMessageBar';
+
+export default function () {
+
+    const { register, handleSubmit } = useForm()
+    const navigate = useNavigate()
+    const [{ apiDomain },] = useAppContext()
+    const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
+    const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
+        const response = await fetch(`${apiDomain}<#=GetCreateCommandApi()#>`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        })
+        if (response.ok) {
+            setErrorMessages([])
+            const { instanceKey } = JSON.parse(await response.text())
+            const encoded = window.encodeURI(instanceKey)
+            navigate(`<#=GetSingleViewUrl()#>/${encoded}`)
+        } else {
+            const errors: string[] = JSON.parse(await response.text())
+            setErrorMessages([...errorMessages, ...errors.map(text => ({ uuid: UUID.generate(), text }))])
+        }
+    }, [apiDomain, navigate, errorMessages])
+
+    return (
+        <form className="page-content-root" onSubmit={handleSubmit(onSave)}>
+            <h1 className="text-base font-semibold select-none py-1">
+                <Link to="<#=GetMultiViewUrl()#>"><#=_aggregate.Item.DisplayName#></Link>&nbsp;新規作成
+            </h1>
+            <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
+            <div className="flex flex-col space-y-1">
+<# PushIndent("                "); #>
+<# RenderForm(); #>
+<# PopIndent(); #>
+            </div>
+            <IconButton fill icon={BookmarkSquareIcon} className="self-start">保存</IconButton>
+        </form>
+    )
+}

@@ -42,6 +42,10 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>DbContext.cs</LastGenOutput>
 		</None>
+		<None Update="CodeRendering\WebClient\CreateView.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>CreateView.cs</LastGenOutput>
+		</None>
 		<None Update="CodeRendering\WebClient\MultiView.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>MultiView.cs</LastGenOutput>
@@ -49,6 +53,10 @@
 		<None Update="CodeRendering\WebClient\page.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>page.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering\WebClient\SingleView.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>SingleView.cs</LastGenOutput>
 		</None>
 		<None Update="CodeRendering\WebClient\types.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
@@ -233,6 +241,11 @@
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>DbContext.tt</DependentUpon>
 		</Compile>
+		<Compile Update="CodeRendering\WebClient\CreateView.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>CreateView.tt</DependentUpon>
+		</Compile>
 		<Compile Update="CodeRendering\WebClient\MultiView.cs">
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
@@ -242,6 +255,11 @@
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>page.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering\WebClient\SingleView.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>SingleView.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering\WebClient\types.cs">
 		  <DesignTime>True</DesignTime>

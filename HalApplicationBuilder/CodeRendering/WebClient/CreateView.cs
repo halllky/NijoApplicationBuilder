@@ -12,132 +12,70 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
-    using HalApplicationBuilder.CodeRendering.Presentation;
     using System;
     
     /// <summary>
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class MultiView : MultiViewBase
+    public partial class CreateView : CreateViewBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write(@"import React, { useState, useCallback } from 'react';
-import { useCtrlS } from '../../hooks/useCtrlS';
+            this.Write(@"import { useState, useCallback } from 'react';
 import { useAppContext } from '../../hooks/AppContext';
-import { AgGridReact } from 'ag-grid-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useQuery } from 'react-query';
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
-import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { UUID } from 'uuidjs'
+import { BookmarkSquareIcon } from '@heroicons/react/24/outline';
 import { IconButton } from '../../components/IconButton';
+import { InlineMessageBar, BarMessage } from '../../components/InlineMessageBar';
 
 export default function () {
 
-    const [{ apiDomain }, dispatch] = useAppContext()
-    useCtrlS(() => {
-        dispatch({ type: 'pushMsg', msg: '保存しました。' })
-    })
-
-    const [param, setParam] = useState<FieldValues>({})
-    const { register, handleSubmit, reset } = useForm()
-    const onSearch: SubmitHandler<FieldValues> = useCallback(data => {
-        setParam(data)
-    }, [])
-    const onClear = useCallback((e: React.MouseEvent) => {
-        reset()
-        e.preventDefault()
-    }, [reset])
-    const { data, isFetching } = useQuery({
-        queryKey: ['");
-            this.Write(this.ToStringHelper.ToStringWithCulture(UseQueryKey));
-            this.Write("\', JSON.stringify(param)],\r\n        queryFn: async () => {\r\n            const jso" +
-                    "n = JSON.stringify(param)\r\n            const encoded = window.encodeURI(json)\r\n " +
-                    "           const response = await fetch(`${apiDomain}");
-            this.Write(this.ToStringHelper.ToStringWithCulture(GetSearchCommandApi()));
-            this.Write(@"?param=${encoded}`)
-            if (!response.ok) throw new Error('Network response was not OK.')
-            return await response.json()
-        },
-        onError: error => {
-            dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
-        },
-    })
-
+    const { register, handleSubmit } = useForm()
     const navigate = useNavigate()
-    const toCreateView = useCallback(() => {
-        navigate('");
-            this.Write(this.ToStringHelper.ToStringWithCulture(GetCreateViewUrl()));
-            this.Write(@"')
-    }, [navigate])
-
-    const [expanded, setExpanded] = useState(true)
-
-    if (isFetching) return <></>
+    const [{ apiDomain },] = useAppContext()
+    const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
+    const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
+        const response = await fetch(`${apiDomain}");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetCreateCommandApi()));
+            this.Write(@"`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        })
+        if (response.ok) {
+            setErrorMessages([])
+            const { instanceKey } = JSON.parse(await response.text())
+            const encoded = window.encodeURI(instanceKey)
+            navigate(`");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetSingleViewUrl()));
+            this.Write(@"/${encoded}`)
+        } else {
+            const errors: string[] = JSON.parse(await response.text())
+            setErrorMessages([...errorMessages, ...errors.map(text => ({ uuid: UUID.generate(), text }))])
+        }
+    }, [apiDomain, navigate, errorMessages])
 
     return (
-        <div className=""page-content-root"">
-
-            <div className=""flex flex-row justify-start items-center space-x-2"">
-                <div className='flex-1 flex flex-row items-center space-x-1 cursor-pointer' onClick={() => setExpanded(!expanded)}>
-                    <h1 className=""text-base font-semibold select-none py-1"">
-                        ");
+        <form className=""page-content-root"" onSubmit={handleSubmit(onSave)}>
+            <h1 className=""text-base font-semibold select-none py-1"">
+                <Link to=""");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetMultiViewUrl()));
+            this.Write("\">");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
-            this.Write(@"
-                    </h1>
-                    {expanded
-                        ? <ChevronDownIcon className=""w-4"" />
-                        : <ChevronUpIcon className=""w-4"" />}
-                </div>
-                <IconButton underline icon={PlusIcon} onClick={toCreateView}>新規作成</IconButton>
-                <IconButton underline icon={BookmarkIcon}>この検索条件を保存</IconButton>
-            </div>
-
-            <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1`} onSubmit={handleSubmit(onSearch)}>
-");
+            this.Write("</Link>&nbsp;新規作成\r\n            </h1>\r\n            <InlineMessageBar value={errorM" +
+                    "essages} onChange={setErrorMessages} />\r\n            <div className=\"flex flex-c" +
+                    "ol space-y-1\">\r\n");
  PushIndent("                "); 
- RenderSearchCondition(); 
+ RenderForm(); 
  PopIndent(); 
-            this.Write(@"                <div className='flex flex-row justify-start space-x-1'>
-                    <IconButton fill icon={MagnifyingGlassIcon}>検索</IconButton>
-                    <IconButton outline onClick={onClear}>クリア</IconButton>
-                </div>
-            </form>
-
-            <div className=""ag-theme-alpine compact flex-1"">
-                <AgGridReact
-                    rowData={data || []}
-                    columnDefs={columnDefs}
-                    multiSortKey='ctrl'
-                    undoRedoCellEditing
-                    undoRedoCellEditingLimit={20}>
-                </AgGridReact>
-            </div>
-        </div>
-    )
-}
-
-const columnDefs = [
-    {
-        resizable: true,
-        width: 50,
-        cellRenderer: ({ data }: { data: { ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchResultBase.INSTANCE_KEY));
-            this.Write(": string } }) => {\r\n            const encoded = window.encodeURI(data.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchResultBase.INSTANCE_KEY));
-            this.Write(")\r\n            return <Link to={`");
-            this.Write(this.ToStringHelper.ToStringWithCulture(GetSingleViewUrl()));
-            this.Write("/${encoded}`} className=\"text-blue-400\">詳細</Link>\r\n        },\r\n    },\r\n");
- foreach (var member in _searchResult.GetMembers()) { 
-            this.Write("    { field: \'");
-            this.Write(this.ToStringHelper.ToStringWithCulture(member.Name));
-            this.Write("\', resizable: true, sortable: true, editable: true },\r\n");
- } 
-            this.Write("]\r\n");
+            this.Write("            </div>\r\n            <IconButton fill icon={BookmarkSquareIcon} classN" +
+                    "ame=\"self-start\">保存</IconButton>\r\n        </form>\r\n    )\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -146,7 +84,7 @@ const columnDefs = [
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class MultiViewBase
+    public class CreateViewBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

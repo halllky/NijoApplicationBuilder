@@ -26,41 +26,27 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
         public virtual string TransformText()
         {
             this.Write("\r\n");
- foreach (var cmp in GetReactComponents()) { 
-            this.Write("import { ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.MultiViewComponentName));
-            this.Write(", ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.CreateViewComponentName));
-            this.Write(", ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.SingleViewComponentName));
-            this.Write(" } from \'./");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_reactPageDir));
-            this.Write("/");
-            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.ImportName));
+ foreach (var component in GetComponents()) { 
+            this.Write("import ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(component.PhysicalName));
+            this.Write(" from \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(component.From));
             this.Write("\'\r\n");
  } 
             this.Write("\r\nexport const routes: { url: string, el: JSX.Element }[] = [\r\n");
- foreach (var cmp in GetReactComponents()) { 
+ foreach (var component in GetComponents()) { 
             this.Write("    { url: \'");
-            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.MultiViewUrl));
+            this.Write(this.ToStringHelper.ToStringWithCulture(component.Url));
             this.Write("\', el: <");
-            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.MultiViewComponentName));
-            this.Write(" /> },\r\n    { url: \'");
-            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.CreateViewUrl));
-            this.Write("\', el: <");
-            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.CreateViewComponentName));
-            this.Write(" /> },\r\n    { url: \'");
-            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.SingleViewUrl));
-            this.Write("\', el: <");
-            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.SingleViewComponentName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(component.PhysicalName));
             this.Write(" /> },\r\n");
  } 
             this.Write("]\r\nexport const menuItems: { url: string, text: string }[] = [\r\n");
- foreach (var cmp in GetReactComponents()) { 
+ foreach (var component in GetComponents().Where(c => c.ShowMenu)) { 
             this.Write("    { url: \'");
-            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.MultiViewUrl));
+            this.Write(this.ToStringHelper.ToStringWithCulture(component.Url));
             this.Write("\', text: \'");
-            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.Aggregate.Item.DisplayName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(component.DisplayName));
             this.Write("\' },\r\n");
  } 
             this.Write("]\r\n");

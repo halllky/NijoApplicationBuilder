@@ -15,7 +15,7 @@ import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
 import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { IconButton } from '../../components/IconButton';
 
-export const <#=ComponentName#> = () => {
+export default function () {
 
     const [{ apiDomain }, dispatch] = useAppContext()
     useCtrlS(() => {

@@ -32,13 +32,6 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi
             this.Write("\' as const\r\n\r\nexport * from \'./");
             this.Write(this.ToStringHelper.ToStringWithCulture(menuItems.IMPORT_NAME));
             this.Write("\'\r\n");
- foreach (var cmp in GetReactComponents()) { 
-            this.Write("export * from \'./");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_reactPageDir));
-            this.Write("/");
-            this.Write(this.ToStringHelper.ToStringWithCulture(cmp.ImportName));
-            this.Write("\'\r\n");
- } 
             return this.GenerationEnvironment.ToString();
         }
     }

@@ -1,3 +1,6 @@
+using HalApplicationBuilder.CodeRendering.WebClient;
+using HalApplicationBuilder.Core;
+using HalApplicationBuilder.DotnetEx;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,15 +15,49 @@ namespace HalApplicationBuilder.CodeRendering.ReactAndWebApi {
 
         public string FileName => FILE_NAME;
 
-        internal menuItems(CodeRenderingContext ctx, string reactPageDir) {
+        internal menuItems(CodeRenderingContext ctx, Func<GraphNode<Aggregate>, string> dirNameResolver) {
             _ctx = ctx;
-            _reactPageDir = reactPageDir;
+            _dirNameResolver = dirNameResolver;
         }
         private readonly CodeRenderingContext _ctx;
-        private readonly string _reactPageDir;
+        private readonly Func<GraphNode<Aggregate>, string> _dirNameResolver;
 
-        private IEnumerable<ReactComponent> GetReactComponents() {
-            return ReactComponent.All(_ctx);
+        private IEnumerable<ImportedComponent> GetComponents() {
+            foreach (var aggregate in _ctx.Schema.RootAggregates()) {
+                var aggregateName = aggregate.Item.DisplayName.ToCSharpSafe();
+
+                var multiView = new MultiView(aggregate, _ctx);
+                yield return new ImportedComponent {
+                    ShowMenu = true,
+                    Url = multiView.Url,
+                    PhysicalName = $"{aggregateName}MultiView",
+                    DisplayName = aggregate.Item.DisplayName,
+                    From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(multiView.FileName)}",
+                };
+                var singleView = new SingleView(aggregate, _ctx);
+                yield return new ImportedComponent {
+                    ShowMenu = false,
+                    Url = singleView.Url,
+                    PhysicalName = $"{aggregateName}SingleView",
+                    DisplayName = aggregate.Item.DisplayName,
+                    From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(singleView.FileName)}",
+                };
+                var createView = new CreateView(aggregate, _ctx);
+                yield return new ImportedComponent {
+                    ShowMenu = false,
+                    Url = createView.Url,
+                    PhysicalName = $"{aggregateName}CreateView",
+                    DisplayName = aggregate.Item.DisplayName,
+                    From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(createView.FileName)}",
+                };
+            }
+        }
+        private class ImportedComponent {
+            internal required bool ShowMenu { get; init; }
+            internal required string Url { get; init; }
+            internal required string PhysicalName { get; init; }
+            internal required string DisplayName { get; init; }
+            internal required string From { get; init; }
         }
     }
 }

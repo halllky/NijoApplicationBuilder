@@ -11,6 +11,3 @@ import 'ag-grid-community/styles/ag-theme-alpine.css';
 export const THIS_APPLICATION_NAME = '<#=_ctx.Schema.ApplicationName#>' as const
 
 export * from './<#=menuItems.IMPORT_NAME#>'
-<# foreach (var cmp in GetReactComponents()) { #>
-export * from './<#=_reactPageDir#>/<#=cmp.ImportName#>'
-<# } #>

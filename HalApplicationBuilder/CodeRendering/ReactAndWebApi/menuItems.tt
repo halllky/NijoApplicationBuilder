@@ -5,19 +5,17 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 
-<# foreach (var cmp in GetReactComponents()) { #>
-import { <#=cmp.MultiViewComponentName#>, <#=cmp.CreateViewComponentName#>, <#=cmp.SingleViewComponentName#> } from './<#=_reactPageDir#>/<#=cmp.ImportName#>'
+<# foreach (var component in GetComponents()) { #>
+import <#=component.PhysicalName#> from '<#=component.From#>'
 <# } #>
 
 export const routes: { url: string, el: JSX.Element }[] = [
-<# foreach (var cmp in GetReactComponents()) { #>
-    { url: '<#=cmp.MultiViewUrl#>', el: <<#=cmp.MultiViewComponentName#> /> },
-    { url: '<#=cmp.CreateViewUrl#>', el: <<#=cmp.CreateViewComponentName#> /> },
-    { url: '<#=cmp.SingleViewUrl#>', el: <<#=cmp.SingleViewComponentName#> /> },
+<# foreach (var component in GetComponents()) { #>
+    { url: '<#=component.Url#>', el: <<#=component.PhysicalName#> /> },
 <# } #>
 ]
 export const menuItems: { url: string, text: string }[] = [
-<# foreach (var cmp in GetReactComponents()) { #>
-    { url: '<#=cmp.MultiViewUrl#>', text: '<#=cmp.Aggregate.Item.DisplayName#>' },
+<# foreach (var component in GetComponents().Where(c => c.ShowMenu)) { #>
+    { url: '<#=component.Url#>', text: '<#=component.DisplayName#>' },
 <# } #>
 ]

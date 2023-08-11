@@ -9,7 +9,8 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.CodeRendering.WebClient {
     partial class MultiView : ITemplate {
-        internal MultiView(GraphNode<Aggregate> aggregate) {
+        internal MultiView(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx) {
+            _ctx = ctx;
             _aggregate = aggregate;
 
             var dbEntity = aggregate.GetDbEntity().AsEntry();
@@ -17,18 +18,18 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             _searchResult = new SearchResult(dbEntity);
         }
 
+        private readonly CodeRenderingContext _ctx;
         private readonly GraphNode<Aggregate> _aggregate;
         private readonly SearchCondition _searchCondition;
         private readonly SearchResult _searchResult;
 
-        public string FileName => "multiView.tsx";
-        internal string ComponentName => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}MultiView";
+        public string FileName => "list.tsx";
         internal string Url => $"/{_aggregate.Item.UniqueId}";
 
         private string UseQueryKey => _aggregate.Item.UniqueId;
 
-        private string GetCreateViewUrl() => new CreateView(_aggregate).Url;
-        private string GetSingleViewUrl() => new SingleView(_aggregate).Url;
+        private string GetCreateViewUrl() => new CreateView(_aggregate, _ctx).Url;
+        private string GetSingleViewUrl() => new SingleView(_aggregate, _ctx).Url;
         private string GetSearchCommandApi() => new AggFile.Controller(_aggregate).SearchCommandApi;
 
         private void RenderSearchCondition() {
@@ -100,7 +101,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 // TODO: RegisterNameを使っていない
                 yield return $"<select className=\"border\">";
                 foreach (var opt in options) {
-                    yield return $"    <option selected=\"selected\" value=\"{opt.Key}\">";
+                    yield return $"    <option selected value=\"{opt.Key}\">";
                     yield return $"        {opt.Value}";
                     yield return $"    </option>";
                 }
