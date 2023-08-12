@@ -30,6 +30,7 @@ import { useQuery } from ""react-query""
 import { Combobox } from ""@headlessui/react""
 import { useAppContext } from ""../hooks/AppContext""
 import { ReferenceDTO } from ""../halapp.types""
+import { useHttpRequest } from ""../hooks/useHttpRequest""
 
 export const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(ComponentName));
@@ -38,17 +39,17 @@ export const ");
   onChange?: (v: ReferenceDTO | undefined) => void
 }, ref: ForwardedRef<HTMLElement>) => {
 
-  const [{ apiDomain }, dispatch] = useAppContext()
+  const [, dispatch] = useAppContext()
+  const { get } = useHttpRequest()
   const [keyword, setKeyword] = useState('')
   const { data } = useQuery({
     queryKey: ['");
             this.Write(this.ToStringHelper.ToStringWithCulture(UseQueryKey));
-            this.Write("\'],\r\n    queryFn: async () => {\r\n      const encoded = window.encodeURI(keyword)\r" +
-                    "\n      const response = await fetch(`${apiDomain}");
+            this.Write("\'],\r\n    queryFn: async () => {\r\n      const response = await get<ReferenceDTO[]>" +
+                    "(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(Api));
-            this.Write(@"?keyword=${encoded}`)
-      if (!response.ok) throw new Error('Network response was not OK.')
-      return (await response.json()) as ReferenceDTO[]
+            this.Write(@"`, { keyword })
+      return response.ok ? response.data : []
     },
     onError: error => {
       dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })

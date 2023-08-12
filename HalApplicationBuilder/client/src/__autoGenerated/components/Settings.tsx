@@ -6,61 +6,49 @@ import { useAppContext } from '../hooks/AppContext';
 import { InputForms } from './InputForms';
 import { IconButton } from './IconButton';
 import { InlineMessageBar, BarMessage } from './InlineMessageBar';
+import { useHttpRequest } from '../hooks/useHttpRequest';
 
 export const SettingsScreen = () => {
 
   const [{ apiDomain }, dispatch] = useAppContext()
+  const { get, post } = useHttpRequest()
 
   // --------------------------------------
 
   const [commandErrors, setCommandErrors] = useState([] as BarMessage[])
-  const recreateDatabase = useCallback(() => {
+  const recreateDatabase = useCallback(async () => {
     if (window.confirm('DBを再作成します。データは全て削除されます。よろしいですか？')) {
-      fetch(`${apiDomain}/HalappDebug/recreate-database`, {
-        method: 'POST',
-      }).then(async response => {
-        setCommandErrors([])
-        dispatch({ type: 'pushMsg', msg: await response.text() })
-      }).catch(err => {
-        const text = err?.message || JSON.stringify(err)
-        setCommandErrors([...commandErrors, { uuid: UUID.generate(), text }])
-      })
+      const response = await post('/HalappDebug/recreate-database')
+      if (!response.ok) setCommandErrors([...commandErrors, ...response.errors])
     }
-  }, [apiDomain, dispatch, commandErrors])
+  }, [post, commandErrors, setCommandErrors])
 
   // --------------------------------------
 
   const [settingErrors, setSettingErrors] = useState([] as BarMessage[])
   const loadSettings = useCallback(async () => {
-    const response = await fetch(`${apiDomain}/HalappDebug/secret-settings`)
+    const response = await get<DbSetting>(`/HalappDebug/secret-settings`)
     if (response.ok) {
-      const data = await response.text()
-      return objectToFieldValues(JSON.parse(data))
+      return objectToFieldValues(response.data)
     } else {
-      const text = await response.text()
-      setSettingErrors([...settingErrors, { uuid: UUID.generate(), text }])
+      setSettingErrors([...settingErrors, ...response.errors])
       return {}
     }
-  }, [settingErrors, apiDomain])
+  }, [get, settingErrors, setSettingErrors])
   const { control, register, handleSubmit, reset } = useForm({ defaultValues: loadSettings })
   const { fields, append, remove } = useFieldArray({ name: 'db', control })
   const reload = useCallback(async () => {
     reset(await loadSettings())
   }, [loadSettings, reset])
 
-  const onSaveSettings: SubmitHandler<FieldValues> = useCallback(data => {
-    fetch(`${apiDomain}/HalappDebug/secret-settings`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(fieldValuesToObject(data))
-    }).then(async response => {
+  const onSaveSettings: SubmitHandler<FieldValues> = useCallback(async data => {
+    const response = await post('/HalappDebug/secret-settings', fieldValuesToObject(data))
+    if (response.ok) {
       setSettingErrors([])
-      dispatch({ type: 'pushMsg', msg: await response.text() })
-    }).catch(err => {
-      const text = JSON.stringify(err)
-      setSettingErrors([...settingErrors, { uuid: UUID.generate(), text }])
-    })
-  }, [settingErrors, apiDomain, dispatch])
+    } else {
+      setSettingErrors([...settingErrors, ...response.errors])
+    }
+  }, [post, settingErrors, setSettingErrors])
   const onError = useCallback(() => {
     setSettingErrors([...settingErrors, { uuid: UUID.generate(), text: 'ERROR!' }])
   }, [settingErrors])
@@ -116,7 +104,11 @@ export const SettingsScreen = () => {
   )
 }
 
-const fieldValuesToObject = (data: FieldValues) => {
+type DbSetting = {
+  currentDb: string | null
+  db: { name: string, connStr: string }[]
+}
+const fieldValuesToObject = (data: FieldValues): DbSetting => {
   const db = (data['db'] as { name: string, connStr: string }[]).map(({ name, connStr }) => ({ name, connStr }))
   const strCurrentDb = data['currentDb'] as string | null
   const numCurrentDb = strCurrentDb == null ? NaN : Number.parseInt(strCurrentDb)
@@ -124,8 +116,7 @@ const fieldValuesToObject = (data: FieldValues) => {
 
   return { db, currentDb }
 }
-
-const objectToFieldValues = (obj: { [key: string]: {} }): any => {
+const objectToFieldValues = (obj: DbSetting): FieldValues => {
   const db = obj['db'] as { name: string, connStr: string }[]
   const numCurrentDb = db.findIndex(item => item.name === obj['currentDb'])
   const currentDb = numCurrentDb === -1 ? null : String(numCurrentDb)

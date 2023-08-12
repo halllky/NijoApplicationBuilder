@@ -9,21 +9,21 @@ import { useQuery } from "react-query"
 import { Combobox } from "@headlessui/react"
 import { useAppContext } from "../hooks/AppContext"
 import { ReferenceDTO } from "../halapp.types"
+import { useHttpRequest } from "../hooks/useHttpRequest"
 
 export const <#=ComponentName#> = forwardRef(({ value, onChange }: {
   value?: ReferenceDTO
   onChange?: (v: ReferenceDTO | undefined) => void
 }, ref: ForwardedRef<HTMLElement>) => {
 
-  const [{ apiDomain }, dispatch] = useAppContext()
+  const [, dispatch] = useAppContext()
+  const { get } = useHttpRequest()
   const [keyword, setKeyword] = useState('')
   const { data } = useQuery({
     queryKey: ['<#=UseQueryKey#>'],
     queryFn: async () => {
-      const encoded = window.encodeURI(keyword)
-      const response = await fetch(`${apiDomain}<#=Api#>?keyword=${encoded}`)
-      if (!response.ok) throw new Error('Network response was not OK.')
-      return (await response.json()) as ReferenceDTO[]
+      const response = await get<ReferenceDTO[]>(`<#=Api#>`, { keyword })
+      return response.ok ? response.data : []
     },
     onError: error => {
       dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })

@@ -450,7 +450,7 @@ namespace HalApplicationBuilder {
                 WorkingDirectory = WebClientProjectRoot,
                 Verbose = _verbose,
             };
-            terminal2.Exec("npm", "build");
+            terminal2.Exec("npm", "run", "build");
         }
 
         /// <summary>

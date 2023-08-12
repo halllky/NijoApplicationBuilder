@@ -30,19 +30,22 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
 import { useCtrlS } from '../../hooks/useCtrlS';
 import { useAppContext } from '../../hooks/AppContext';
 import { AgGridReact } from 'ag-grid-react';
+import { ColDef } from 'ag-grid-community';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
 import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { IconButton } from '../../components/IconButton';
+import { useHttpRequest } from '../../hooks/useHttpRequest';
 
 export default function () {
 
-    const [{ apiDomain }, dispatch] = useAppContext()
+    const [, dispatch] = useAppContext()
     useCtrlS(() => {
         dispatch({ type: 'pushMsg', msg: '保存しました。' })
     })
 
+    const { get } = useHttpRequest()
     const [param, setParam] = useState<FieldValues>({})
     const { register, handleSubmit, reset } = useForm()
     const onSearch: SubmitHandler<FieldValues> = useCallback(data => {
@@ -55,13 +58,11 @@ export default function () {
     const { data, isFetching } = useQuery({
         queryKey: ['");
             this.Write(this.ToStringHelper.ToStringWithCulture(UseQueryKey));
-            this.Write("\', JSON.stringify(param)],\r\n        queryFn: async () => {\r\n            const jso" +
-                    "n = JSON.stringify(param)\r\n            const encoded = window.encodeURI(json)\r\n " +
-                    "           const response = await fetch(`${apiDomain}");
+            this.Write("\', JSON.stringify(param)],\r\n        queryFn: async () => {\r\n            const res" +
+                    "ponse = await get<RowType[]>(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetSearchCommandApi()));
-            this.Write(@"?param=${encoded}`)
-            if (!response.ok) throw new Error('Network response was not OK.')
-            return await response.json()
+            this.Write(@"`, { param })
+            return response.ok ? response.data : []
         },
         onError: error => {
             dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
@@ -121,13 +122,18 @@ export default function () {
     )
 }
 
-const columnDefs = [
-    {
-        resizable: true,
-        width: 50,
-        cellRenderer: ({ data }: { data: { ");
+type RowType = {
+    ");
             this.Write(this.ToStringHelper.ToStringWithCulture(SearchResultBase.INSTANCE_KEY));
-            this.Write(": string } }) => {\r\n            const encoded = window.encodeURI(data.");
+            this.Write(": string\r\n");
+ foreach (var member in _searchResult.GetMembers()) { 
+            this.Write("    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(member.Name));
+            this.Write("?: string | number | boolean\r\n");
+ } 
+            this.Write("}\r\n\r\nconst columnDefs: ColDef<RowType>[] = [\r\n    {\r\n        resizable: true,\r\n  " +
+                    "      width: 50,\r\n        cellRenderer: ({ data }: { data: RowType }) => {\r\n    " +
+                    "        const encoded = window.encodeURI(data.");
             this.Write(this.ToStringHelper.ToStringWithCulture(SearchResultBase.INSTANCE_KEY));
             this.Write(")\r\n            return <Link to={`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetSingleViewUrl()));

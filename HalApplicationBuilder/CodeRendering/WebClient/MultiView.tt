@@ -9,19 +9,22 @@ import React, { useState, useCallback } from 'react';
 import { useCtrlS } from '../../hooks/useCtrlS';
 import { useAppContext } from '../../hooks/AppContext';
 import { AgGridReact } from 'ag-grid-react';
+import { ColDef } from 'ag-grid-community';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
 import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { IconButton } from '../../components/IconButton';
+import { useHttpRequest } from '../../hooks/useHttpRequest';
 
 export default function () {
 
-    const [{ apiDomain }, dispatch] = useAppContext()
+    const [, dispatch] = useAppContext()
     useCtrlS(() => {
         dispatch({ type: 'pushMsg', msg: '保存しました。' })
     })
 
+    const { get } = useHttpRequest()
     const [param, setParam] = useState<FieldValues>({})
     const { register, handleSubmit, reset } = useForm()
     const onSearch: SubmitHandler<FieldValues> = useCallback(data => {
@@ -34,11 +37,8 @@ export default function () {
     const { data, isFetching } = useQuery({
         queryKey: ['<#=UseQueryKey#>', JSON.stringify(param)],
         queryFn: async () => {
-            const json = JSON.stringify(param)
-            const encoded = window.encodeURI(json)
-            const response = await fetch(`${apiDomain}<#=GetSearchCommandApi()#>?param=${encoded}`)
-            if (!response.ok) throw new Error('Network response was not OK.')
-            return await response.json()
+            const response = await get<RowType[]>(`<#=GetSearchCommandApi()#>`, { param })
+            return response.ok ? response.data : []
         },
         onError: error => {
             dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
@@ -93,11 +93,18 @@ export default function () {
     )
 }
 
-const columnDefs = [
+type RowType = {
+    <#=SearchResultBase.INSTANCE_KEY#>: string
+<# foreach (var member in _searchResult.GetMembers()) { #>
+    <#=member.Name#>?: string | number | boolean
+<# } #>
+}
+
+const columnDefs: ColDef<RowType>[] = [
     {
         resizable: true,
         width: 50,
-        cellRenderer: ({ data }: { data: { <#=SearchResultBase.INSTANCE_KEY#>: string } }) => {
+        cellRenderer: ({ data }: { data: RowType }) => {
             const encoded = window.encodeURI(data.<#=SearchResultBase.INSTANCE_KEY#>)
             return <Link to={`<#=GetSingleViewUrl()#>/${encoded}`} className="text-blue-400">詳細</Link>
         },

@@ -29,50 +29,40 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
 import { useAppContext } from '../../hooks/AppContext';
 import { Link, useParams } from 'react-router-dom';
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
-import { UUID } from 'uuidjs'
 import { BookmarkSquareIcon } from '@heroicons/react/24/outline';
 import { IconButton } from '../../components/IconButton';
 import { InlineMessageBar, BarMessage } from '../../components/InlineMessageBar';
+import { useHttpRequest } from '../../hooks/useHttpRequest';
 
 export default function () {
 
-    const [{ apiDomain }, dispatch] = useAppContext()
-
+    const [, dispatch] = useAppContext()
+    
+    const { get, post } = useHttpRequest()
     const { instanceKey } = useParams()
     const [fetched, setFetched] = useState(false)
     const defaultValues = useCallback(async () => {
         if (!instanceKey) return undefined
         const encoded = window.encodeURI(instanceKey)
-        const response = await fetch(`${apiDomain}");
+        const response = await get(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(Url));
             this.Write(@"/${encoded}`)
         setFetched(true)
-        if (response.ok) {
-            const data = await response.text()
-            return JSON.parse(data)
-        } else {
-            return undefined
-        }
-    }, [instanceKey, apiDomain])
+        return response.ok ? response.data : undefined
+    }, [instanceKey])
 
     const { register, handleSubmit } = useForm({ defaultValues })
     const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
     const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-        const response = await fetch(`${apiDomain}");
+        const response = await post(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetUpdateCommandApi()));
-            this.Write(@"`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-        })
+            this.Write(@"`, data)
         if (response.ok) {
             setErrorMessages([])
-            dispatch({ type: 'pushMsg', msg: '更新しました。' })
         } else {
-            const errors: string[] = Array.from(JSON.parse(await response.text()))
-            setErrorMessages([...errorMessages, ...errors.map(text => ({ uuid: UUID.generate(), text }))])
+            setErrorMessages([...errorMessages, ...response.errors])
         }
-    }, [apiDomain, errorMessages, dispatch])
+    }, [errorMessages, dispatch])
 
     if (!fetched) return <></>
 

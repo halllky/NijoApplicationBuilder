@@ -26,40 +26,31 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
         public virtual string TransformText()
         {
             this.Write(@"import { useState, useCallback } from 'react';
-import { useAppContext } from '../../hooks/AppContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
-import { UUID } from 'uuidjs'
 import { BookmarkSquareIcon } from '@heroicons/react/24/outline';
 import { IconButton } from '../../components/IconButton';
 import { InlineMessageBar, BarMessage } from '../../components/InlineMessageBar';
+import { useHttpRequest } from '../../hooks/useHttpRequest';
 
 export default function () {
 
     const { register, handleSubmit } = useForm()
     const navigate = useNavigate()
-    const [{ apiDomain },] = useAppContext()
+    const { post } = useHttpRequest()
     const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
     const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-        const response = await fetch(`${apiDomain}");
+        const response = await post<{ instanceKey: string }>(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetCreateCommandApi()));
-            this.Write(@"`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-        })
-        if (response.ok) {
-            setErrorMessages([])
-            const { instanceKey } = JSON.parse(await response.text())
-            const encoded = window.encodeURI(instanceKey)
-            navigate(`");
+            this.Write("`, data)\r\n        if (response.ok) {\r\n            setErrorMessages([])\r\n         " +
+                    "   const encoded = window.encodeURI(response.data.instanceKey)\r\n            navi" +
+                    "gate(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetSingleViewUrl()));
             this.Write(@"/${encoded}`)
         } else {
-            const errors: string[] = Array.from(JSON.parse(await response.text()))
-            setErrorMessages([...errorMessages, ...errors.map(text => ({ uuid: UUID.generate(), text }))])
+            setErrorMessages([...errorMessages, ...response.errors])
         }
-    }, [apiDomain, navigate, errorMessages])
+    }, [post, navigate, errorMessages, setErrorMessages])
 
     return (
         <form className=""page-content-root"" onSubmit={handleSubmit(onSave)}>
