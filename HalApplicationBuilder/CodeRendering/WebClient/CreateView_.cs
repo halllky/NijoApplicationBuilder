@@ -13,6 +13,8 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             _aggregate = aggregate;
             _dbEntity = aggregate.GetDbEntity().AsEntry();
             _instance = aggregate.GetInstanceClass().AsEntry();
+
+            PropNameWidth = GetPropNameFlexBasis(_instance.GetProperties(ctx.Config));
         }
 
         private readonly CodeRenderingContext _ctx;
@@ -22,20 +24,23 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
         public string FileName => "new.tsx";
         internal string Url => $"/{_aggregate.Item.UniqueId}/new";
+        internal string Route => $"/{_aggregate.Item.UniqueId}/new";
 
         private string GetMultiViewUrl() => new MultiView(_aggregate, _ctx).Url;
         private string GetSingleViewUrl() => new SingleView(_aggregate, _ctx).Url;
         private string GetCreateCommandApi() => new AggFile.Controller(_aggregate).CreateCommandApi;
 
-        private void RenderForm() {
-            foreach (var prop in _instance.GetSchalarProperties(_ctx.Config)) {
-                var renderer = new FormRenderer(prop, _dbEntity);
-                foreach (var line in prop.CorrespondingDbColumn.MemberType.RenderUI(renderer)) {
-                    WriteLine(line);
-                }
+        private string PropNameWidth { get; }
+
+        private IEnumerable<string> RenderForm(AggregateInstance.SchalarProperty prop) {
+            var renderer = new FormRenderer(prop, _dbEntity);
+            foreach (var line in prop.CorrespondingDbColumn.MemberType.RenderUI(renderer)) {
+                yield return line;
             }
         }
 
+
+        #region Formレンダリング
         internal class FormRenderer : IGuiFormRenderer {
 
             internal FormRenderer(AggregateInstance.SchalarProperty prop, GraphNode<EFCoreEntity> owner) {
@@ -61,9 +66,9 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             public IEnumerable<string> TextBox(bool multiline = false) {
                 var name = GetRegisterName();
                 if (multiline)
-                    yield return $"<textarea className=\"border\" {{...register('{name}')}}></textarea>";
+                    yield return $"<textarea {{...register('{name}')}}></textarea>";
                 else
-                    yield return $"<input type=\"text\" className=\"border\" {{...register('{name}')}} />";
+                    yield return $"<input type=\"text\" {{...register('{name}')}} />";
             }
 
             /// <summary>
@@ -71,7 +76,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             /// </summary>
             public IEnumerable<string> Toggle() {
                 var name = GetRegisterName();
-                yield return $"<input type=\"checkbox\" className=\"border\" {{...register('{name}')}} />";
+                yield return $"<input type=\"checkbox\" {{...register('{name}')}} />";
             }
 
             /// <summary>
@@ -84,7 +89,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     options.Add(KeyValuePair.Create("", ""));
 
                 // TODO: RegisterNameを使っていない
-                yield return $"<select className=\"border\">";
+                yield return $"<select>";
                 foreach (var opt in options) {
                     yield return $"    <option selected value=\"{opt.Key}\">";
                     yield return $"        {opt.Value}";
@@ -93,5 +98,18 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 yield return $"</select>";
             }
         }
+        internal static string GetPropNameFlexBasis(IEnumerable<AggregateInstance.Property> props) {
+            var maxCharWidth = props
+                .Select(prop => prop.PropertyName.CalculateCharacterWidth())
+                .DefaultIfEmpty()
+                .Max();
+
+            var a = (maxCharWidth + 1) / 2; // tailwindのbasisはrem基準（全角文字n文字）のため偶数にそろえる
+            var b = a + 1; // ちょっと横幅に余裕をもたせるための +1
+            var c = Math.Min(96, b * 4); // tailwindでは basis-96 が最大なので
+
+            return $"basis-{c}";
+        }
+        #endregion Formレンダリング
     }
 }

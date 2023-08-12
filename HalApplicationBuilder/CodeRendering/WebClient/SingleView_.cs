@@ -13,6 +13,8 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             _aggregate = aggregate;
             _dbEntity = aggregate.GetDbEntity().AsEntry();
             _instance = aggregate.GetInstanceClass().AsEntry();
+
+            PropNameWidth = CreateView.GetPropNameFlexBasis(_instance.GetProperties(ctx.Config));
         }
 
         private readonly CodeRenderingContext _ctx;
@@ -22,16 +24,18 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
         public string FileName => "detail.tsx";
         internal string Url => $"/{_aggregate.Item.UniqueId}/detail";
+        internal string Route => $"/{_aggregate.Item.UniqueId}/detail/:instanceKey";
 
         private string GetMultiViewUrl() => new MultiView(_aggregate, _ctx).Url;
+        private string GetFindCommandApi() => new AggFile.Controller(_aggregate).FindCommandApi;
         private string GetUpdateCommandApi() => new AggFile.Controller(_aggregate).UpdateCommandApi;
 
-        private void RenderForm() {
-            foreach (var prop in _instance.GetSchalarProperties(_ctx.Config)) {
-                var renderer = new CreateView.FormRenderer(prop, _dbEntity);
-                foreach (var line in prop.CorrespondingDbColumn.MemberType.RenderUI(renderer)) {
-                    WriteLine(line);
-                }
+        private string PropNameWidth { get; }
+
+        private IEnumerable<string> RenderForm(AggregateInstance.SchalarProperty prop) {
+            var renderer = new CreateView.FormRenderer(prop, _dbEntity);
+            foreach (var line in prop.CorrespondingDbColumn.MemberType.RenderUI(renderer)) {
+                yield return line;
             }
         }
     }

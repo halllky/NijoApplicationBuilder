@@ -25,6 +25,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
         public string FileName => "list.tsx";
         internal string Url => $"/{_aggregate.Item.UniqueId}";
+        internal string Route => $"/{_aggregate.Item.UniqueId}";
 
         private string UseQueryKey => _aggregate.Item.UniqueId;
 
@@ -35,9 +36,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         private void RenderSearchCondition() {
             foreach (var member in _searchCondition.GetMembers()) {
                 var renderer = new FormRenderer(member);
-                foreach (var line in member.Type.RenderUI(renderer)) {
-                    WriteLine(line);
-                }
+                foreach (var line in member.Type.RenderUI(renderer)) WriteLine(line);
             }
         }
 

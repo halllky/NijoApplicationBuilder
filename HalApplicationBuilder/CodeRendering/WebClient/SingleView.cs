@@ -12,6 +12,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
+    using HalApplicationBuilder.Core;
     using System;
     
     /// <summary>
@@ -45,7 +46,7 @@ export default function () {
         if (!instanceKey) return undefined
         const encoded = window.encodeURI(instanceKey)
         const response = await get(`");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Url));
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetFindCommandApi()));
             this.Write(@"/${encoded}`)
         setFetched(true)
         return response.ok ? response.data : undefined
@@ -73,14 +74,30 @@ export default function () {
             this.Write(this.ToStringHelper.ToStringWithCulture(GetMultiViewUrl()));
             this.Write("\">");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
-            this.Write("</Link>\r\n                &nbsp;&#047;&nbsp;\r\n                <span className=\"sel" +
-                    "ect-all\">TODO:INSTANCENAME</span>\r\n            </h1>\r\n            <InlineMessage" +
-                    "Bar value={errorMessages} onChange={setErrorMessages} />\r\n");
- PushIndent("            "); 
- RenderForm(); 
- PopIndent(); 
-            this.Write("            <IconButton fill icon={BookmarkSquareIcon} className=\"self-start\">更新<" +
-                    "/IconButton>\r\n        </form>\r\n    )\r\n}\r\n");
+            this.Write(@"</Link>
+                &nbsp;&#047;&nbsp;
+                <span className=""select-all"">TODO:INSTANCENAME</span>
+            </h1>
+            <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
+            <div className=""flex flex-col space-y-1 p-1 bg-neutral-200"">
+");
+ foreach (var prop in _instance.GetSchalarProperties(_ctx.Config)) { 
+            this.Write("                <div className=\"flex\">\r\n                    <div className=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(PropNameWidth));
+            this.Write("\">\r\n                        <span className=\"text-sm select-none\">\r\n             " +
+                    "               ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write("\r\n                        </span>\r\n                    </div>\r\n                  " +
+                    "  <div className=\"flex-1\">\r\n");
+ foreach (var line in RenderForm(prop)) { 
+            this.Write("                        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(line));
+            this.Write("\r\n");
+ } 
+            this.Write("                    </div>\r\n                </div>\r\n");
+ } 
+            this.Write("            </div>\r\n            <IconButton fill icon={BookmarkSquareIcon} classN" +
+                    "ame=\"self-start\">更新</IconButton>\r\n        </form>\r\n    )\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

@@ -4,6 +4,7 @@
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="HalApplicationBuilder.Core" #>
 import { useState, useCallback } from 'react';
 import { useAppContext } from '../../hooks/AppContext';
 import { Link, useParams } from 'react-router-dom';
@@ -23,7 +24,7 @@ export default function () {
     const defaultValues = useCallback(async () => {
         if (!instanceKey) return undefined
         const encoded = window.encodeURI(instanceKey)
-        const response = await get(`<#=Url#>/${encoded}`)
+        const response = await get(`<#=GetFindCommandApi()#>/${encoded}`)
         setFetched(true)
         return response.ok ? response.data : undefined
     }, [instanceKey])
@@ -49,9 +50,22 @@ export default function () {
                 <span className="select-all">TODO:INSTANCENAME</span>
             </h1>
             <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
-<# PushIndent("            "); #>
-<# RenderForm(); #>
-<# PopIndent(); #>
+            <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
+<# foreach (var prop in _instance.GetSchalarProperties(_ctx.Config)) { #>
+                <div className="flex">
+                    <div className="<#=PropNameWidth#>">
+                        <span className="text-sm select-none">
+                            <#=prop.PropertyName#>
+                        </span>
+                    </div>
+                    <div className="flex-1">
+<# foreach (var line in RenderForm(prop)) { #>
+                        <#=line#>
+<# } #>
+                    </div>
+                </div>
+<# } #>
+            </div>
             <IconButton fill icon={BookmarkSquareIcon} className="self-start">更新</IconButton>
         </form>
     )

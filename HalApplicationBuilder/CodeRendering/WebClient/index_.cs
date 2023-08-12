@@ -28,7 +28,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 var multiView = new MultiView(aggregate, _ctx);
                 yield return new ImportedComponent {
                     ShowMenu = true,
-                    Url = multiView.Url,
+                    Url = multiView.Route,
                     PhysicalName = $"{aggregateName}MultiView",
                     DisplayName = aggregate.Item.DisplayName,
                     From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(multiView.FileName)}",
@@ -36,7 +36,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 var singleView = new SingleView(aggregate, _ctx);
                 yield return new ImportedComponent {
                     ShowMenu = false,
-                    Url = singleView.Url,
+                    Url = singleView.Route,
                     PhysicalName = $"{aggregateName}SingleView",
                     DisplayName = aggregate.Item.DisplayName,
                     From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(singleView.FileName)}",
@@ -44,7 +44,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 var createView = new CreateView(aggregate, _ctx);
                 yield return new ImportedComponent {
                     ShowMenu = false,
-                    Url = createView.Url,
+                    Url = createView.Route,
                     PhysicalName = $"{aggregateName}CreateView",
                     DisplayName = aggregate.Item.DisplayName,
                     From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(createView.FileName)}",

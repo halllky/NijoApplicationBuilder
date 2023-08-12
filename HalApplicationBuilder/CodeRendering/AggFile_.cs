@@ -506,6 +506,7 @@ namespace HalApplicationBuilder.CodeRendering {
             internal string CreateCommandApi => $"/{SubDomain}/{CREATE_ACTION_NAME}";
             internal string UpdateCommandApi => $"/{SubDomain}/{UPDATE_ACTION_NAME}";
             internal string DeleteCommandApi => $"/{SubDomain}/{DELETE_ACTION_NAME}";
+            internal string FindCommandApi => $"/{SubDomain}/{FIND_ACTION_NAME}";
             internal string KeywordSearchCommandApi => $"/{SubDomain}/{KEYWORDSEARCH_ACTION_NAME}";
         }
         #endregion CONTROLLER

@@ -12,6 +12,8 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
+    using HalApplicationBuilder.Core;
+    using HalApplicationBuilder.CodeRendering.Presentation;
     using System;
     
     /// <summary>
@@ -40,11 +42,14 @@ export default function () {
     const { post } = useHttpRequest()
     const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
     const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-        const response = await post<{ instanceKey: string }>(`");
+        const response = await post<{ ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceBase.INSTANCE_KEY));
+            this.Write(": string }>(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetCreateCommandApi()));
             this.Write("`, data)\r\n        if (response.ok) {\r\n            setErrorMessages([])\r\n         " +
-                    "   const encoded = window.encodeURI(response.data.instanceKey)\r\n            navi" +
-                    "gate(`");
+                    "   const encoded = window.encodeURI(response.data.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceBase.INSTANCE_KEY));
+            this.Write(")\r\n            navigate(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetSingleViewUrl()));
             this.Write(@"/${encoded}`)
         } else {
@@ -61,10 +66,22 @@ export default function () {
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
             this.Write("</Link>&nbsp;新規作成\r\n            </h1>\r\n            <InlineMessageBar value={errorM" +
                     "essages} onChange={setErrorMessages} />\r\n            <div className=\"flex flex-c" +
-                    "ol space-y-1\">\r\n");
- PushIndent("                "); 
- RenderForm(); 
- PopIndent(); 
+                    "ol space-y-1 p-1 bg-neutral-200\">\r\n");
+ foreach (var prop in _instance.GetSchalarProperties(_ctx.Config)) { 
+            this.Write("                <div className=\"flex\">\r\n                    <div className=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(PropNameWidth));
+            this.Write("\">\r\n                        <span className=\"text-sm select-none\">\r\n             " +
+                    "               ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write("\r\n                        </span>\r\n                    </div>\r\n                  " +
+                    "  <div className=\"flex-1\">\r\n");
+ foreach (var line in RenderForm(prop)) { 
+            this.Write("                        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(line));
+            this.Write("\r\n");
+ } 
+            this.Write("                    </div>\r\n                </div>\r\n");
+ } 
             this.Write("            </div>\r\n            <IconButton fill icon={BookmarkSquareIcon} classN" +
                     "ame=\"self-start\">保存</IconButton>\r\n        </form>\r\n    )\r\n}\r\n");
             return this.GenerationEnvironment.ToString();

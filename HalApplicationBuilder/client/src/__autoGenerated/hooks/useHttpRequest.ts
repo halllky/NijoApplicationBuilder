@@ -14,10 +14,10 @@ export const useHttpRequest = () => {
     for (const key of Object.keys(param)) {
       query.append(key, JSON.stringify(param[key]))
     }
-    const fullUrl = `${apiDomain}${url}?${query.toString()}`
+    const queryString = query.toString()
+    const fullUrl = queryString ? `${apiDomain}${url}?${queryString}` : `${apiDomain}${url}`
     const response = await fetch(fullUrl)
     if (response.ok) {
-      dispatch({ type: 'pushMsg', msg: `COMPLETE(${fullUrl})` })
       const data = JSON.parse(await response.text()) as T
       return { ok: true, data }
     } else {
@@ -36,7 +36,6 @@ export const useHttpRequest = () => {
       body: JSON.stringify(data),
     })
     if (response.ok) {
-      dispatch({ type: 'pushMsg', msg: `COMPLETE(${fullUrl})` })
       const data = JSON.parse(await response.text()) as T
       return { ok: true, data }
     } else {
