@@ -4,16 +4,16 @@
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="HalApplicationBuilder.CodeRendering.Util" #>
 import { forwardRef, ForwardedRef, useState } from "react"
 import { useQuery } from "react-query"
 import { Combobox } from "@headlessui/react"
 import { useAppContext } from "../hooks/AppContext"
-import { ReferenceDTO } from "../halapp.types"
 import { useHttpRequest } from "../hooks/useHttpRequest"
 
 export const <#=ComponentName#> = forwardRef(({ value, onChange }: {
-  value?: ReferenceDTO
-  onChange?: (v: ReferenceDTO | undefined) => void
+  value?: <#=AggregateInstanceKeyNamePairTS.DEF#>
+  onChange?: (v: <#=AggregateInstanceKeyNamePairTS.DEF#> | undefined) => void
 }, ref: ForwardedRef<HTMLElement>) => {
 
   const [, dispatch] = useAppContext()
@@ -22,7 +22,7 @@ export const <#=ComponentName#> = forwardRef(({ value, onChange }: {
   const { data } = useQuery({
     queryKey: ['<#=UseQueryKey#>'],
     queryFn: async () => {
-      const response = await get<ReferenceDTO[]>(`<#=Api#>`, { keyword })
+      const response = await get<<#=AggregateInstanceKeyNamePairTS.DEF#>[]>(`<#=Api#>`, { keyword })
       return response.ok ? response.data : []
     },
     onError: error => {
@@ -35,8 +35,8 @@ export const <#=ComponentName#> = forwardRef(({ value, onChange }: {
       <Combobox.Input onChange={(event) => setKeyword(event.target.value)} />
       <Combobox.Options>
         {data?.map(referenceDto => (
-          <Combobox.Option key={referenceDto.instanceKey} value={referenceDto.instanceKey}>
-            {referenceDto.instanceName}
+          <Combobox.Option key={referenceDto.<#=AggregateInstanceKeyNamePairTS.KEY#>} value={referenceDto.<#=AggregateInstanceKeyNamePairTS.KEY#>}>
+            {referenceDto.<#=AggregateInstanceKeyNamePairTS.NAME#>}
           </Combobox.Option>
         ))}
       </Combobox.Options>

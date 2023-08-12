@@ -12,6 +12,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
+    using HalApplicationBuilder.CodeRendering.Util;
     using System;
     
     /// <summary>
@@ -29,24 +30,21 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
 import { useQuery } from ""react-query""
 import { Combobox } from ""@headlessui/react""
 import { useAppContext } from ""../hooks/AppContext""
-import { ReferenceDTO } from ""../halapp.types""
 import { useHttpRequest } from ""../hooks/useHttpRequest""
 
 export const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(ComponentName));
-            this.Write(@" = forwardRef(({ value, onChange }: {
-  value?: ReferenceDTO
-  onChange?: (v: ReferenceDTO | undefined) => void
-}, ref: ForwardedRef<HTMLElement>) => {
-
-  const [, dispatch] = useAppContext()
-  const { get } = useHttpRequest()
-  const [keyword, setKeyword] = useState('')
-  const { data } = useQuery({
-    queryKey: ['");
+            this.Write(" = forwardRef(({ value, onChange }: {\r\n  value?: ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePairTS.DEF));
+            this.Write("\r\n  onChange?: (v: ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePairTS.DEF));
+            this.Write(" | undefined) => void\r\n}, ref: ForwardedRef<HTMLElement>) => {\r\n\r\n  const [, disp" +
+                    "atch] = useAppContext()\r\n  const { get } = useHttpRequest()\r\n  const [keyword, s" +
+                    "etKeyword] = useState(\'\')\r\n  const { data } = useQuery({\r\n    queryKey: [\'");
             this.Write(this.ToStringHelper.ToStringWithCulture(UseQueryKey));
-            this.Write("\'],\r\n    queryFn: async () => {\r\n      const response = await get<ReferenceDTO[]>" +
-                    "(`");
+            this.Write("\'],\r\n    queryFn: async () => {\r\n      const response = await get<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePairTS.DEF));
+            this.Write("[]>(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(Api));
             this.Write(@"`, { keyword })
       return response.ok ? response.data : []
@@ -61,15 +59,14 @@ export const ");
       <Combobox.Input onChange={(event) => setKeyword(event.target.value)} />
       <Combobox.Options>
         {data?.map(referenceDto => (
-          <Combobox.Option key={referenceDto.instanceKey} value={referenceDto.instanceKey}>
-            {referenceDto.instanceName}
-          </Combobox.Option>
-        ))}
-      </Combobox.Options>
-    </Combobox>
-  )
-})
-");
+          <Combobox.Option key={referenceDto.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePairTS.KEY));
+            this.Write("} value={referenceDto.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePairTS.KEY));
+            this.Write("}>\r\n            {referenceDto.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePairTS.NAME));
+            this.Write("}\r\n          </Combobox.Option>\r\n        ))}\r\n      </Combobox.Options>\r\n    </Co" +
+                    "mbobox>\r\n  )\r\n})\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }
