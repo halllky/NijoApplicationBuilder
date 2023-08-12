@@ -17,8 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace HalApplicationBuilder
-{
+namespace HalApplicationBuilder {
     public partial class HalappProject {
 
         private protected const string HALAPP_XML_NAME = "halapp.xml";
@@ -449,27 +448,30 @@ namespace HalApplicationBuilder
             };
             cmd.Exec("dotnet", "build");
 
-            // TODO npm build
+            var terminal2 = new Terminal {
+                WorkingDirectory = Path.Combine(ProjectRoot, REACT_DIR),
+                Verbose = _verbose,
+            };
+            terminal2.Exec("npm", "build");
         }
 
         /// <summary>
         /// クライアントサイドプロセスのコマンドを作成します。
         /// </summary>
-        internal BackgroundProcess CreateClientProcess(CancellationToken cancellationToken) {
+        internal BackgroundProcess CreateClientProcess(CancellationToken cancellationToken, TextWriter log) {
             if (!IsValidDirectory()) throw new InvalidOperationException("Here is not halapp directory.");
 
-            // TODO 未実装
-            //using var npmStart = new DotnetEx.Cmd.Background {
-            //    WorkingDirectory = Path.Combine(ProjectRoot, REACT_DIR),
-            //    Filename = "npm",
-            //    Args = new[] { "start" },
-            //    CancellationToken = cancellationToken,
-            //    Verbose = _verbose,
-            //};
+            var process = new DotnetEx.BackgroundProcess {
+                WorkingDirectory = Path.Combine(ProjectRoot, REACT_DIR),
+                Filename = "npm",
+                Args = new[] { "run", "dev" },
+                CancellationToken = cancellationToken,
+                IsReady = e => e.Data != null && ViteReadyConsole().IsMatch(e.Data), // viteのコンソール表示
+            };
+            process.OnStandardOut += (sender, e) => log.WriteLine(e.Data);
+            process.OnStandardError += (sender, e) => log.WriteLine(e.Data);
 
-            //await npmStart.Restart();
-
-            throw new NotImplementedException();
+            return process;
         }
         /// <summary>
         /// サーバーサイドプロセスのコマンドを作成します。
@@ -531,17 +533,10 @@ namespace HalApplicationBuilder
                     rebuildCancellation?.Cancel();
                 };
 
-                npmStart = new BackgroundProcess {
-                    WorkingDirectory = Path.Combine(ProjectRoot, REACT_DIR),
-                    Filename = "npm",
-                    Args = new[] { "start" },
-                    CancellationToken = cancellationToken,
-                    IsReady = e => true, // TODO
-                };
-
-                // 監視開始
-                watcher.EnableRaisingEvents = true;
+                npmStart = CreateClientProcess(cancellationToken, _log ?? Console.Out);
                 await npmStart.Launch();
+
+                watcher.EnableRaisingEvents = true;
 
                 // リビルドの度に実行される処理
                 while (true) {
@@ -569,7 +564,7 @@ namespace HalApplicationBuilder
                         migrator.AddMigration();
                         migrator.Migrate();
 
-                        dotnetRun = CreateServerProcess(linkedTokenSource.Token, Console.Out);
+                        dotnetRun = CreateServerProcess(linkedTokenSource.Token, _log ?? Console.Out);
                         await dotnetRun.Launch();
 
                     } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
@@ -819,5 +814,8 @@ namespace HalApplicationBuilder
                     : new UTF8Encoding(false);
             }
         }
+
+        [GeneratedRegex("➜")]
+        private static partial Regex ViteReadyConsole();
     }
 }
