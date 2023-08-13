@@ -1,9 +1,11 @@
+using HalApplicationBuilder.CodeRendering.Presentation;
 using HalApplicationBuilder.CodeRendering.Util;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,6 +19,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         private readonly CodeRenderingContext _ctx;
 
         public string FileName => FILENAME;
+        public static string ImportName => Path.GetFileNameWithoutExtension(FILENAME);
         public const string FILENAME = "types.ts";
 
         private IEnumerable<(GraphNode<AggregateInstance>, SearchCondition, SearchResult)> GetAggregateInstances() {
@@ -32,6 +35,10 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         private void Render(GraphNode<AggregateInstance> aggregateInstance) {
 
             void RenderBody(GraphNode<AggregateInstance> instance) {
+
+                WriteLine($"{AggregateInstanceBase.INSTANCE_KEY}?: string");
+                WriteLine($"{AggregateInstanceBase.INSTANCE_NAME}?: string");
+
                 foreach (var prop in instance.GetSchalarProperties(_ctx.Config)) {
                     WriteLine($"{prop.PropertyName}?: {prop.TypeScriptTypename}");
                 }

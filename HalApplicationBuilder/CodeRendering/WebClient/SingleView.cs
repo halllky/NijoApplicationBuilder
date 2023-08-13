@@ -13,6 +13,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
     using System.Text;
     using System.Collections.Generic;
     using HalApplicationBuilder.Core;
+    using HalApplicationBuilder.CodeRendering.Presentation;
     using System;
     
     /// <summary>
@@ -34,6 +35,11 @@ import { BookmarkSquareIcon } from '@heroicons/react/24/outline';
 import { IconButton } from '../../components/IconButton';
 import { InlineMessageBar, BarMessage } from '../../components/InlineMessageBar';
 import { useHttpRequest } from '../../hooks/useHttpRequest';
+import { ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
+            this.Write(" } from \'../../");
+            this.Write(this.ToStringHelper.ToStringWithCulture(types.ImportName));
+            this.Write(@"'
 
 export default function () {
 
@@ -41,15 +47,23 @@ export default function () {
     
     const { get, post } = useHttpRequest()
     const { instanceKey } = useParams()
+    const [instanceName, setInstanceName] = useState<string | undefined>('')
     const [fetched, setFetched] = useState(false)
     const defaultValues = useCallback(async () => {
-        if (!instanceKey) return undefined
-        const encoded = window.encodeURI(instanceKey)
-        const response = await get(`");
+        if (!instanceKey) return {} as ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
+            this.Write("\r\n        const encoded = window.encodeURI(instanceKey)\r\n        const response =" +
+                    " await get(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetFindCommandApi()));
-            this.Write(@"/${encoded}`)
-        setFetched(true)
-        return response.ok ? response.data : undefined
+            this.Write("/${encoded}`)\r\n        setFetched(true)\r\n        if (response.ok) {\r\n            " +
+                    "const responseData = response.data as ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
+            this.Write("\r\n            setInstanceName(responseData.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceBase.INSTANCE_NAME));
+            this.Write(")\r\n            return responseData\r\n        } else {\r\n            return {} as ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
+            this.Write(@"
+        }
     }, [instanceKey])
 
     const { register, handleSubmit } = useForm({ defaultValues })
@@ -76,7 +90,7 @@ export default function () {
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
             this.Write(@"</Link>
                 &nbsp;&#047;&nbsp;
-                <span className=""select-all"">TODO:INSTANCENAME</span>
+                <span className=""select-all"">{instanceName}</span>
             </h1>
             <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
             <div className=""flex flex-col space-y-1 p-1 bg-neutral-200"">
