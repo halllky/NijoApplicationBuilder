@@ -14,7 +14,7 @@ import { BookmarkSquareIcon } from '@heroicons/react/24/outline';
 import { IconButton } from '../../components/IconButton';
 import { InlineMessageBar, BarMessage } from '../../components/InlineMessageBar';
 import { useHttpRequest } from '../../hooks/useHttpRequest';
-import { <#=_instance.Item.TypeScriptTypeName#> } from '../../<#=types.ImportName#>'
+import { <#=_instance.Item.TypeScriptTypeName#> as DataDetail } from '../../<#=types.ImportName#>'
 
 export default function () {
 
@@ -25,29 +25,30 @@ export default function () {
     const [instanceName, setInstanceName] = useState<string | undefined>('')
     const [fetched, setFetched] = useState(false)
     const defaultValues = useCallback(async () => {
-        if (!instanceKey) return {} as <#=_instance.Item.TypeScriptTypeName#>
+        if (!instanceKey) return {} as DataDetail
         const encoded = window.encodeURI(instanceKey)
         const response = await get(`<#=GetFindCommandApi()#>/${encoded}`)
         setFetched(true)
         if (response.ok) {
-            const responseData = response.data as <#=_instance.Item.TypeScriptTypeName#>
+            const responseData = response.data as DataDetail
             setInstanceName(responseData.<#=AggregateInstanceBase.INSTANCE_NAME#>)
             return responseData
         } else {
-            return {} as <#=_instance.Item.TypeScriptTypeName#>
+            return {} as DataDetail
         }
     }, [instanceKey])
 
     const { register, handleSubmit } = useForm({ defaultValues })
     const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
     const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-        const response = await post(`<#=GetUpdateCommandApi()#>`, data)
+        const response = await post<DataDetail>(`<#=GetUpdateCommandApi()#>`, data)
         if (response.ok) {
             setErrorMessages([])
+            dispatch({ type: 'pushMsg', msg: `${response.data.<#=AggregateInstanceBase.INSTANCE_NAME#>}を更新しました。` })
         } else {
             setErrorMessages([...errorMessages, ...response.errors])
         }
-    }, [errorMessages, dispatch])
+    }, [errorMessages, dispatch, post])
 
     if (!fetched) return <></>
 

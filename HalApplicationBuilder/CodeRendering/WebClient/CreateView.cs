@@ -34,28 +34,36 @@ import { BookmarkSquareIcon } from '@heroicons/react/24/outline';
 import { IconButton } from '../../components/IconButton';
 import { InlineMessageBar, BarMessage } from '../../components/InlineMessageBar';
 import { useHttpRequest } from '../../hooks/useHttpRequest';
+import { useAppContext } from ""../../hooks/AppContext""
+import { ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
+            this.Write(" as DataDetail } from \'../../");
+            this.Write(this.ToStringHelper.ToStringWithCulture(types.ImportName));
+            this.Write(@"'
 
 export default function () {
 
     const { register, handleSubmit } = useForm()
     const navigate = useNavigate()
     const { post } = useHttpRequest()
+    const [, dispatch] = useAppContext()
     const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
     const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-        const response = await post<{ ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceBase.INSTANCE_KEY));
-            this.Write(": string }>(`");
+        const response = await post<DataDetail>(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetCreateCommandApi()));
-            this.Write("`, data)\r\n        if (response.ok) {\r\n            setErrorMessages([])\r\n         " +
-                    "   const encoded = window.encodeURI(response.data.");
+            this.Write("`, data)\r\n        if (response.ok) {\r\n            dispatch({ type: \'pushMsg\', msg" +
+                    ": `${response.data.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceBase.INSTANCE_NAME));
+            this.Write("}を作成しました。` })\r\n            setErrorMessages([])\r\n            const encoded = wind" +
+                    "ow.encodeURI(response.data.");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceBase.INSTANCE_KEY));
-            this.Write(")\r\n            navigate(`");
+            this.Write("!)\r\n            navigate(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetSingleViewUrl()));
             this.Write(@"/${encoded}`)
         } else {
             setErrorMessages([...errorMessages, ...response.errors])
         }
-    }, [post, navigate, errorMessages, setErrorMessages])
+    }, [post, navigate, errorMessages, setErrorMessages, dispatch])
 
     return (
         <form className=""page-content-root"" onSubmit={handleSubmit(onSave)}>

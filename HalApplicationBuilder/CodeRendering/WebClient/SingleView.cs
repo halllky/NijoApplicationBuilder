@@ -37,7 +37,7 @@ import { InlineMessageBar, BarMessage } from '../../components/InlineMessageBar'
 import { useHttpRequest } from '../../hooks/useHttpRequest';
 import { ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
-            this.Write(" } from \'../../");
+            this.Write(" as DataDetail } from \'../../");
             this.Write(this.ToStringHelper.ToStringWithCulture(types.ImportName));
             this.Write(@"'
 
@@ -50,34 +50,34 @@ export default function () {
     const [instanceName, setInstanceName] = useState<string | undefined>('')
     const [fetched, setFetched] = useState(false)
     const defaultValues = useCallback(async () => {
-        if (!instanceKey) return {} as ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
-            this.Write("\r\n        const encoded = window.encodeURI(instanceKey)\r\n        const response =" +
-                    " await get(`");
+        if (!instanceKey) return {} as DataDetail
+        const encoded = window.encodeURI(instanceKey)
+        const response = await get(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetFindCommandApi()));
             this.Write("/${encoded}`)\r\n        setFetched(true)\r\n        if (response.ok) {\r\n            " +
-                    "const responseData = response.data as ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
-            this.Write("\r\n            setInstanceName(responseData.");
+                    "const responseData = response.data as DataDetail\r\n            setInstanceName(re" +
+                    "sponseData.");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceBase.INSTANCE_NAME));
-            this.Write(")\r\n            return responseData\r\n        } else {\r\n            return {} as ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
-            this.Write(@"
+            this.Write(@")
+            return responseData
+        } else {
+            return {} as DataDetail
         }
     }, [instanceKey])
 
     const { register, handleSubmit } = useForm({ defaultValues })
     const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
     const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-        const response = await post(`");
+        const response = await post<DataDetail>(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetUpdateCommandApi()));
-            this.Write(@"`, data)
-        if (response.ok) {
-            setErrorMessages([])
+            this.Write("`, data)\r\n        if (response.ok) {\r\n            setErrorMessages([])\r\n         " +
+                    "   dispatch({ type: \'pushMsg\', msg: `${response.data.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceBase.INSTANCE_NAME));
+            this.Write(@"}を更新しました。` })
         } else {
             setErrorMessages([...errorMessages, ...response.errors])
         }
-    }, [errorMessages, dispatch])
+    }, [errorMessages, dispatch, post])
 
     if (!fetched) return <></>
 

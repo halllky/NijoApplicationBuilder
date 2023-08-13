@@ -13,23 +13,27 @@ import { BookmarkSquareIcon } from '@heroicons/react/24/outline';
 import { IconButton } from '../../components/IconButton';
 import { InlineMessageBar, BarMessage } from '../../components/InlineMessageBar';
 import { useHttpRequest } from '../../hooks/useHttpRequest';
+import { useAppContext } from "../../hooks/AppContext"
+import { <#=_instance.Item.TypeScriptTypeName#> as DataDetail } from '../../<#=types.ImportName#>'
 
 export default function () {
 
     const { register, handleSubmit } = useForm()
     const navigate = useNavigate()
     const { post } = useHttpRequest()
+    const [, dispatch] = useAppContext()
     const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
     const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-        const response = await post<{ <#=AggregateInstanceBase.INSTANCE_KEY#>: string }>(`<#=GetCreateCommandApi()#>`, data)
+        const response = await post<DataDetail>(`<#=GetCreateCommandApi()#>`, data)
         if (response.ok) {
+            dispatch({ type: 'pushMsg', msg: `${response.data.<#=AggregateInstanceBase.INSTANCE_NAME#>}を作成しました。` })
             setErrorMessages([])
-            const encoded = window.encodeURI(response.data.<#=AggregateInstanceBase.INSTANCE_KEY#>)
+            const encoded = window.encodeURI(response.data.<#=AggregateInstanceBase.INSTANCE_KEY#>!)
             navigate(`<#=GetSingleViewUrl()#>/${encoded}`)
         } else {
             setErrorMessages([...errorMessages, ...response.errors])
         }
-    }, [post, navigate, errorMessages, setErrorMessages])
+    }, [post, navigate, errorMessages, setErrorMessages, dispatch])
 
     return (
         <form className="page-content-root" onSubmit={handleSubmit(onSave)}>
