@@ -14,7 +14,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             _dbEntity = aggregate.GetDbEntity().AsEntry();
             _instance = aggregate.GetInstanceClass().AsEntry();
 
-            PropNameWidth = GetPropNameFlexBasis(_instance.GetProperties(ctx.Config));
+            PropNameWidth = GetPropNameFlexBasis(_instance.GetProperties(ctx.Config).Select(p => p.PropertyName));
         }
 
         private readonly CodeRenderingContext _ctx;
@@ -98,9 +98,9 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 yield return $"</select>";
             }
         }
-        internal static string GetPropNameFlexBasis(IEnumerable<AggregateInstance.Property> props) {
-            var maxCharWidth = props
-                .Select(prop => prop.PropertyName.CalculateCharacterWidth())
+        internal static string GetPropNameFlexBasis(IEnumerable<string> propNames) {
+            var maxCharWidth = propNames
+                .Select(prop => prop.CalculateCharacterWidth())
                 .DefaultIfEmpty()
                 .Max();
 

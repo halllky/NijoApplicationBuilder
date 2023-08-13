@@ -44,7 +44,7 @@ export default function () {
 <# foreach (var prop in _instance.GetSchalarProperties(_ctx.Config)) { #>
                 <div className="flex">
                     <div className="<#=PropNameWidth#>">
-                        <span className="text-sm select-none">
+                        <span className="text-sm select-none opacity-60">
                             <#=prop.PropertyName#>
                         </span>
                     </div>

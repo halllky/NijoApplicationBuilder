@@ -16,6 +16,8 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             var dbEntity = aggregate.GetDbEntity().AsEntry();
             _searchCondition = new SearchCondition(dbEntity);
             _searchResult = new SearchResult(dbEntity);
+
+            PropNameWidth = CreateView.GetPropNameFlexBasis(_searchCondition.GetMembers().Select(m => m.Name));
         }
 
         private readonly CodeRenderingContext _ctx;
@@ -38,6 +40,13 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 var renderer = new FormRenderer(member);
                 foreach (var line in member.Type.RenderUI(renderer)) WriteLine(line);
             }
+        }
+
+        private string PropNameWidth { get; }
+
+        private IEnumerable<string> RenderForm(SearchCondition.Member member) {
+            var renderer = new FormRenderer(member);
+            foreach (var line in member.Type.RenderUI(renderer)) yield return line;
         }
 
         private class FormRenderer : IGuiFormRenderer {

@@ -95,17 +95,30 @@ export default function () {
                         : <ChevronUpIcon className=""w-4"" />}
                 </div>
                 <IconButton underline icon={PlusIcon} onClick={toCreateView}>新規作成</IconButton>
-                <IconButton underline icon={BookmarkIcon}>この検索条件を保存</IconButton>
             </div>
 
-            <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1`} onSubmit={handleSubmit(onSearch)}>
+            <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1 p-1 bg-neutral-200`} onSubmit={handleSubmit(onSearch)}>
 ");
- PushIndent("                "); 
- RenderSearchCondition(); 
- PopIndent(); 
+ foreach (var member in _searchCondition.GetMembers()) { 
+            this.Write("                <div className=\"flex\">\r\n                    <div className=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(PropNameWidth));
+            this.Write("\">\r\n                        <span className=\"text-sm select-none opacity-60\">\r\n  " +
+                    "                          ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(member.Name));
+            this.Write("\r\n                        </span>\r\n                    </div>\r\n                  " +
+                    "  <div className=\"flex-1\">\r\n");
+ foreach (var line in RenderForm(member)) { 
+            this.Write("                        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(line));
+            this.Write("\r\n");
+ } 
+            this.Write("                    </div>\r\n                </div>\r\n");
+ } 
             this.Write(@"                <div className='flex flex-row justify-start space-x-1'>
                     <IconButton fill icon={MagnifyingGlassIcon}>検索</IconButton>
                     <IconButton outline onClick={onClear}>クリア</IconButton>
+                    <div className='flex-1'></div>
+                    <IconButton underline icon={BookmarkIcon}>この検索条件を保存</IconButton>
                 </div>
             </form>
 

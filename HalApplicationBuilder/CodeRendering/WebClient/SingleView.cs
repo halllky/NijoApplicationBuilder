@@ -94,8 +94,8 @@ export default function () {
  foreach (var prop in _instance.GetSchalarProperties(_ctx.Config)) { 
             this.Write("                <div className=\"flex\">\r\n                    <div className=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(PropNameWidth));
-            this.Write("\">\r\n                        <span className=\"text-sm select-none\">\r\n             " +
-                    "               ");
+            this.Write("\">\r\n                        <span className=\"text-sm select-none opacity-60\">\r\n  " +
+                    "                          ");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
             this.Write("\r\n                        </span>\r\n                    </div>\r\n                  " +
                     "  <div className=\"flex-1\">\r\n");

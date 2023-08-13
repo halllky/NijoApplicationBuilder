@@ -14,7 +14,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             _dbEntity = aggregate.GetDbEntity().AsEntry();
             _instance = aggregate.GetInstanceClass().AsEntry();
 
-            PropNameWidth = CreateView.GetPropNameFlexBasis(_instance.GetProperties(ctx.Config));
+            PropNameWidth = CreateView.GetPropNameFlexBasis(_instance.GetProperties(ctx.Config).Select(p => p.PropertyName));
         }
 
         private readonly CodeRenderingContext _ctx;
