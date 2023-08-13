@@ -13,98 +13,51 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
     using System.Text;
     using System.Collections.Generic;
     using HalApplicationBuilder.Core;
-    using HalApplicationBuilder.CodeRendering.Presentation;
     using System;
     
     /// <summary>
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class SingleView : SingleViewBase
+    public partial class AggregateInstanceFormBody : AggregateInstanceFormBodyBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write(@"import { useState, useCallback } from 'react';
-import { useAppContext } from '../../hooks/AppContext';
-import { Link, useParams } from 'react-router-dom';
-import { FieldValues, SubmitHandler, useForm, FormProvider } from 'react-hook-form';
-import { BookmarkSquareIcon } from '@heroicons/react/24/outline';
-import { IconButton, InlineMessageBar, BarMessage");
-            this.Write(this.ToStringHelper.ToStringWithCulture(CollectCombobox()));
-            this.Write(" } from \'../../components\';\r\nimport { useHttpRequest } from \'../../hooks/useHttpR" +
-                    "equest\';\r\nimport { ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
-            this.Write(" as DataDetail } from \'../../");
-            this.Write(this.ToStringHelper.ToStringWithCulture(types.ImportName));
-            this.Write(@"'
-
-export default function () {
-
-    const [, dispatch] = useAppContext()
-    
-    const { get, post } = useHttpRequest()
-    const { instanceKey } = useParams()
-    const [instanceName, setInstanceName] = useState<string | undefined>('')
-    const [fetched, setFetched] = useState(false)
-    const defaultValues = useCallback(async () => {
-        if (!instanceKey) return {} as DataDetail
-        const encoded = window.encodeURI(instanceKey)
-        const response = await get(`");
-            this.Write(this.ToStringHelper.ToStringWithCulture(GetFindCommandApi()));
-            this.Write("/${encoded}`)\r\n        setFetched(true)\r\n        if (response.ok) {\r\n            " +
-                    "const responseData = response.data as DataDetail\r\n            setInstanceName(re" +
-                    "sponseData.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceBase.INSTANCE_NAME));
-            this.Write(@")
-            return responseData
-        } else {
-            return {} as DataDetail
-        }
-    }, [instanceKey])
-
-    const reactHookFormMethods = useForm({ defaultValues })
-    const register = reactHookFormMethods.register
-    const handleSubmit = reactHookFormMethods.handleSubmit
-
-    const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
-    const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-        const response = await post<DataDetail>(`");
-            this.Write(this.ToStringHelper.ToStringWithCulture(GetUpdateCommandApi()));
-            this.Write("`, data)\r\n        if (response.ok) {\r\n            setErrorMessages([])\r\n         " +
-                    "   dispatch({ type: \'pushMsg\', msg: `${response.data.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceBase.INSTANCE_NAME));
-            this.Write(@"}を更新しました。` })
-        } else {
-            setErrorMessages([...errorMessages, ...response.errors])
-        }
-    }, [errorMessages, dispatch, post])
-
-    if (!fetched) return <></>
-
-    return (
-        <FormProvider {...reactHookFormMethods}>
-            <form className=""page-content-root"" onSubmit={handleSubmit(onSave)}>
-                <h1 className=""text-base font-semibold select-none py-1"">
-                    <Link to=""");
-            this.Write(this.ToStringHelper.ToStringWithCulture(GetMultiViewUrl()));
-            this.Write("\">");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
-            this.Write("</Link>\r\n                    &nbsp;&#047;&nbsp;\r\n                    <span classN" +
-                    "ame=\"select-all\">{instanceName}</span>\r\n                </h1>\r\n                <" +
-                    "div className=\"flex flex-col space-y-1 p-1 bg-neutral-200\">\r\n");
-            this.Write(this.ToStringHelper.ToStringWithCulture(RenderForm("                    ")));
-            this.Write(@"
-                </div>
-                <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
-                <IconButton fill icon={BookmarkSquareIcon} className=""self-start"">更新</IconButton>
-            </form>
-        </FormProvider>
-    )
-}
-");
+ foreach (var prop in _instance.GetProperties(_ctx.Config)) { 
+            this.Write("<div className=\"flex\">\r\n    <div className=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(PropNameWidth));
+            this.Write("\">\r\n        <span className=\"text-sm select-none opacity-60\">\r\n            ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write("\r\n        </span>\r\n    </div>\r\n    <div className=\"flex-1\">\r\n");
+ if (prop is AggregateInstance.SchalarProperty schalarProperty) { 
+ foreach (var line in RenderSchalarProperty(schalarProperty)) { 
+            this.Write("        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(line));
+            this.Write("\r\n");
+ } 
+ } else if (prop is AggregateInstance.RefProperty refProperty) { 
+            this.Write("        <");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetComboboxName(refProperty)));
+            this.Write(" raectHookFormId={\'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetRegisterName(refProperty.PropertyName)));
+            this.Write("\'} />\r\n");
+ } else if (prop is AggregateInstance.ChildProperty childProperty) { 
+            this.Write("        <div className=\"flex flex-col space-y-1 p-1 border border-neutral-300\">\r\n" +
+                    "");
+            this.Write(this.ToStringHelper.ToStringWithCulture(RenderChildAggregateBody(childProperty, "            ")));
+            this.Write("\r\n        </div>\r\n");
+ } else if (prop is AggregateInstance.VariationProperty variationProperty) { 
+            this.Write("        <div className=\"flex flex-col space-y-1 p-1 border border-neutral-300\">\r\n" +
+                    "        </div>\r\n");
+ } else if (prop is AggregateInstance.ChildrenProperty childrenProperty) { 
+            this.Write("        <div className=\"flex flex-col space-y-1 p-1 border border-neutral-300\">\r\n" +
+                    "        </div>\r\n");
+ } 
+            this.Write("    </div>\r\n</div>\r\n");
+ } 
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -113,7 +66,7 @@ export default function () {
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class SingleViewBase
+    public class AggregateInstanceFormBodyBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

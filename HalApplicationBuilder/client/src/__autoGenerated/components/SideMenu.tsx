@@ -9,7 +9,7 @@ import { LOCAL_STORAGE_KEYS } from "../hooks/localStorageKeys"
 
 export const SideMenu = () => {
   return (
-    <PanelGroup direction="vertical" className="bg-neutral-200" autoSaveId={LOCAL_STORAGE_KEYS.SIDEBAR_SIZE_Y}>
+    <PanelGroup direction="vertical" className="bg-neutral-300" autoSaveId={LOCAL_STORAGE_KEYS.SIDEBAR_SIZE_Y}>
 
       <Panel className="flex flex-col">
         <Link to='/' className="p-1 ellipsis-ex font-semibold select-none">

@@ -389,23 +389,35 @@ namespace HalApplicationBuilder.CodeRendering {
                     }
                 }
                 // 子要素
-                foreach (var child in instance.GetChildAggregateProperties(_ctx.Config)) {
+                foreach (var child in instance.GetChildrenProperties(_ctx.Config)) {
                     var childProp = child.CorrespondingNavigationProperty.Principal.PropertyName;
                     var childDbEntity = $"{_ctx.Config.EntityNamespace}.{child.CorrespondingNavigationProperty.Relevant.Owner.Item.ClassName}";
-                    if (child.Multiple) {
-                        WriteLine($"{child.PropertyName} = this.{childProp}.Select(x{depth} => new {childDbEntity} {{");
-                        PushIndent("    ");
-                        WriteBody(child.ChildAggregateInstance.AsEntry(), instancePath, $"x{depth}", depth + 1);
-                        PopIndent();
-                        WriteLine($"}}).ToList(),");
 
-                    } else {
-                        WriteLine($"{child.PropertyName} = new {childDbEntity} {{");
-                        PushIndent("    ");
-                        WriteBody(child.ChildAggregateInstance, instancePath, $"{instancePath}.{child.ChildAggregateInstance.Source!.RelationName}", depth + 1);
-                        PopIndent();
-                        WriteLine($"}},");
-                    }
+                    WriteLine($"{child.PropertyName} = this.{childProp}.Select(x{depth} => new {childDbEntity} {{");
+                    PushIndent("    ");
+                    WriteBody(child.ChildAggregateInstance.AsEntry(), instancePath, $"x{depth}", depth + 1);
+                    PopIndent();
+                    WriteLine($"}}).ToList(),");
+                }
+                foreach (var child in instance.GetChildProperties(_ctx.Config)) {
+                    var childProp = child.CorrespondingNavigationProperty.Principal.PropertyName;
+                    var childDbEntity = $"{_ctx.Config.EntityNamespace}.{child.CorrespondingNavigationProperty.Relevant.Owner.Item.ClassName}";
+
+                    WriteLine($"{child.PropertyName} = new {childDbEntity} {{");
+                    PushIndent("    ");
+                    WriteBody(child.ChildAggregateInstance, instancePath, $"{instancePath}.{child.ChildAggregateInstance.Source!.RelationName}", depth + 1);
+                    PopIndent();
+                    WriteLine($"}},");
+                }
+                foreach (var child in instance.GetVariationProperties(_ctx.Config)) {
+                    var childProp = child.CorrespondingNavigationProperty.Principal.PropertyName;
+                    var childDbEntity = $"{_ctx.Config.EntityNamespace}.{child.CorrespondingNavigationProperty.Relevant.Owner.Item.ClassName}";
+
+                    WriteLine($"{child.PropertyName} = new {childDbEntity} {{");
+                    PushIndent("    ");
+                    WriteBody(child.ChildAggregateInstance, instancePath, $"{instancePath}.{child.ChildAggregateInstance.Source!.RelationName}", depth + 1);
+                    PopIndent();
+                    WriteLine($"}},");
                 }
             }
 
@@ -427,21 +439,26 @@ namespace HalApplicationBuilder.CodeRendering {
                     WriteLine($"{prop.PropertyName} = {prop.RefTarget.Item.ClassName}.{AggregateInstance.FROM_DB_ENTITY_METHOD_NAME}({instancePath}.{prop.CorrespondingNavigationProperty.Relevant.PropertyName}).{TOKEYNAMEPAIR_METHOD_NAME}(),");
                 }
                 // 子要素
-                foreach (var child in instance.GetChildAggregateProperties(_ctx.Config)) {
-                    if (child.Multiple) {
-                        WriteLine($"{child.PropertyName} = {instancePath}.{child.PropertyName}.Select(x{depth} => new {child.ChildAggregateInstance.Item.ClassName} {{");
-                        PushIndent("    ");
-                        WriteBody(child.ChildAggregateInstance.AsEntry(), instancePath, $"x{depth}", depth + 1);
-                        PopIndent();
-                        WriteLine($"}}).ToList(),");
-
-                    } else {
-                        WriteLine($"{child.PropertyName} = new {child.ChildAggregateInstance.Item.ClassName} {{");
-                        PushIndent("    ");
-                        WriteBody(child.ChildAggregateInstance, instancePath, $"{instancePath}.{child.CorrespondingNavigationProperty.Principal.PropertyName}", depth + 1);
-                        PopIndent();
-                        WriteLine($"}},");
-                    }
+                foreach (var child in instance.GetChildrenProperties(_ctx.Config)) {
+                    WriteLine($"{child.PropertyName} = {instancePath}.{child.PropertyName}.Select(x{depth} => new {child.ChildAggregateInstance.Item.ClassName} {{");
+                    PushIndent("    ");
+                    WriteBody(child.ChildAggregateInstance.AsEntry(), instancePath, $"x{depth}", depth + 1);
+                    PopIndent();
+                    WriteLine($"}}).ToList(),");
+                }
+                foreach (var child in instance.GetChildProperties(_ctx.Config)) {
+                    WriteLine($"{child.PropertyName} = new {child.ChildAggregateInstance.Item.ClassName} {{");
+                    PushIndent("    ");
+                    WriteBody(child.ChildAggregateInstance, instancePath, $"{instancePath}.{child.CorrespondingNavigationProperty.Principal.PropertyName}", depth + 1);
+                    PopIndent();
+                    WriteLine($"}},");
+                }
+                foreach (var child in instance.GetVariationProperties(_ctx.Config)) {
+                    WriteLine($"{child.PropertyName} = new {child.ChildAggregateInstance.Item.ClassName} {{");
+                    PushIndent("    ");
+                    WriteBody(child.ChildAggregateInstance, instancePath, $"{instancePath}.{child.CorrespondingNavigationProperty.Principal.PropertyName}", depth + 1);
+                    PopIndent();
+                    WriteLine($"}},");
                 }
             }
 

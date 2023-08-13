@@ -8,17 +8,19 @@
 <#@ import namespace="HalApplicationBuilder.CodeRendering.Presentation" #>
 import { useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
+import { FieldValues, SubmitHandler, useForm, FormProvider } from 'react-hook-form';
 import { BookmarkSquareIcon } from '@heroicons/react/24/outline';
-import { IconButton } from '../../components/IconButton';
-import { InlineMessageBar, BarMessage } from '../../components/InlineMessageBar';
+import { IconButton, InlineMessageBar, BarMessage<#=CollectCombobox()#> } from '../../components';
 import { useHttpRequest } from '../../hooks/useHttpRequest';
 import { useAppContext } from "../../hooks/AppContext"
 import { <#=_instance.Item.TypeScriptTypeName#> as DataDetail } from '../../<#=types.ImportName#>'
 
 export default function () {
 
-    const { register, handleSubmit } = useForm()
+    const reactHookFormMethods = useForm()
+    const register = reactHookFormMethods.register
+    const handleSubmit = reactHookFormMethods.handleSubmit
+
     const navigate = useNavigate()
     const { post } = useHttpRequest()
     const [, dispatch] = useAppContext()
@@ -36,28 +38,17 @@ export default function () {
     }, [post, navigate, errorMessages, setErrorMessages, dispatch])
 
     return (
-        <form className="page-content-root" onSubmit={handleSubmit(onSave)}>
-            <h1 className="text-base font-semibold select-none py-1">
-                <Link to="<#=GetMultiViewUrl()#>"><#=_aggregate.Item.DisplayName#></Link>&nbsp;新規作成
-            </h1>
-            <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
-<# foreach (var prop in _instance.GetSchalarProperties(_ctx.Config)) { #>
-                <div className="flex">
-                    <div className="<#=PropNameWidth#>">
-                        <span className="text-sm select-none opacity-60">
-                            <#=prop.PropertyName#>
-                        </span>
-                    </div>
-                    <div className="flex-1">
-<# foreach (var line in RenderForm(prop)) { #>
-                        <#=line#>
-<# } #>
-                    </div>
+        <FormProvider {...reactHookFormMethods}>
+            <form className="page-content-root" onSubmit={handleSubmit(onSave)}>
+                <h1 className="text-base font-semibold select-none py-1">
+                    <Link to="<#=GetMultiViewUrl()#>"><#=_aggregate.Item.DisplayName#></Link>&nbsp;新規作成
+                </h1>
+                <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
+<#=RenderForm("                    ")#>
                 </div>
-<# } #>
-            </div>
-            <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
-            <IconButton fill icon={BookmarkSquareIcon} className="self-start">保存</IconButton>
-        </form>
+                <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
+                <IconButton fill icon={BookmarkSquareIcon} className="self-start">保存</IconButton>
+            </form>
+        </FormProvider>
     )
 }

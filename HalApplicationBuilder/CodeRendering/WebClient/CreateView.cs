@@ -29,13 +29,12 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
         {
             this.Write(@"import { useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
+import { FieldValues, SubmitHandler, useForm, FormProvider } from 'react-hook-form';
 import { BookmarkSquareIcon } from '@heroicons/react/24/outline';
-import { IconButton } from '../../components/IconButton';
-import { InlineMessageBar, BarMessage } from '../../components/InlineMessageBar';
-import { useHttpRequest } from '../../hooks/useHttpRequest';
-import { useAppContext } from ""../../hooks/AppContext""
-import { ");
+import { IconButton, InlineMessageBar, BarMessage");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CollectCombobox()));
+            this.Write(" } from \'../../components\';\r\nimport { useHttpRequest } from \'../../hooks/useHttpR" +
+                    "equest\';\r\nimport { useAppContext } from \"../../hooks/AppContext\"\r\nimport { ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
             this.Write(" as DataDetail } from \'../../");
             this.Write(this.ToStringHelper.ToStringWithCulture(types.ImportName));
@@ -43,7 +42,10 @@ import { ");
 
 export default function () {
 
-    const { register, handleSubmit } = useForm()
+    const reactHookFormMethods = useForm()
+    const register = reactHookFormMethods.register
+    const handleSubmit = reactHookFormMethods.handleSubmit
+
     const navigate = useNavigate()
     const { post } = useHttpRequest()
     const [, dispatch] = useAppContext()
@@ -66,32 +68,25 @@ export default function () {
     }, [post, navigate, errorMessages, setErrorMessages, dispatch])
 
     return (
-        <form className=""page-content-root"" onSubmit={handleSubmit(onSave)}>
-            <h1 className=""text-base font-semibold select-none py-1"">
-                <Link to=""");
+        <FormProvider {...reactHookFormMethods}>
+            <form className=""page-content-root"" onSubmit={handleSubmit(onSave)}>
+                <h1 className=""text-base font-semibold select-none py-1"">
+                    <Link to=""");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetMultiViewUrl()));
             this.Write("\">");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
-            this.Write("</Link>&nbsp;新規作成\r\n            </h1>\r\n            <div className=\"flex flex-col s" +
-                    "pace-y-1 p-1 bg-neutral-200\">\r\n");
- foreach (var prop in _instance.GetSchalarProperties(_ctx.Config)) { 
-            this.Write("                <div className=\"flex\">\r\n                    <div className=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PropNameWidth));
-            this.Write("\">\r\n                        <span className=\"text-sm select-none opacity-60\">\r\n  " +
-                    "                          ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write("\r\n                        </span>\r\n                    </div>\r\n                  " +
-                    "  <div className=\"flex-1\">\r\n");
- foreach (var line in RenderForm(prop)) { 
-            this.Write("                        ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(line));
-            this.Write("\r\n");
- } 
-            this.Write("                    </div>\r\n                </div>\r\n");
- } 
-            this.Write("            </div>\r\n            <InlineMessageBar value={errorMessages} onChange=" +
-                    "{setErrorMessages} />\r\n            <IconButton fill icon={BookmarkSquareIcon} cl" +
-                    "assName=\"self-start\">保存</IconButton>\r\n        </form>\r\n    )\r\n}\r\n");
+            this.Write("</Link>&nbsp;新規作成\r\n                </h1>\r\n                <div className=\"flex fl" +
+                    "ex-col space-y-1 p-1 bg-neutral-200\">\r\n");
+            this.Write(this.ToStringHelper.ToStringWithCulture(RenderForm("                    ")));
+            this.Write(@"
+                </div>
+                <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
+                <IconButton fill icon={BookmarkSquareIcon} className=""self-start"">保存</IconButton>
+            </form>
+        </FormProvider>
+    )
+}
+");
             return this.GenerationEnvironment.ToString();
         }
     }

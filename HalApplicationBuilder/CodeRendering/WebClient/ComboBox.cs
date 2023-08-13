@@ -28,19 +28,23 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
         {
             this.Write(@"import { forwardRef, ForwardedRef, useState } from ""react""
 import { useQuery } from ""react-query""
+import { useFormContext } from 'react-hook-form';
 import { Combobox } from ""@headlessui/react""
 import { useAppContext } from ""../hooks/AppContext""
 import { useHttpRequest } from ""../hooks/useHttpRequest""
 
 export const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(ComponentName));
-            this.Write(" = forwardRef(({ value, onChange }: {\r\n  value?: ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePairTS.DEF));
-            this.Write("\r\n  onChange?: (v: ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePairTS.DEF));
-            this.Write(" | undefined) => void\r\n}, ref: ForwardedRef<HTMLElement>) => {\r\n\r\n  const [, disp" +
-                    "atch] = useAppContext()\r\n  const { get } = useHttpRequest()\r\n  const [keyword, s" +
-                    "etKeyword] = useState(\'\')\r\n  const { data } = useQuery({\r\n    queryKey: [\'");
+            this.Write(@" = forwardRef(({ raectHookFormId }: {
+  raectHookFormId: string
+}, ref: ForwardedRef<HTMLElement>) => {
+
+  const [, dispatch] = useAppContext()
+  const { get } = useHttpRequest()
+  const [keyword, setKeyword] = useState('')
+  const { register } = useFormContext()
+  const { data } = useQuery({
+    queryKey: ['");
             this.Write(this.ToStringHelper.ToStringWithCulture(UseQueryKey));
             this.Write("\'],\r\n    queryFn: async () => {\r\n      const response = await get<");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePairTS.DEF));
@@ -55,8 +59,11 @@ export const ");
   })
 
   return (
-    <Combobox ref={ref} value={value} onChange={onChange}>
-      <Combobox.Input onChange={(event) => setKeyword(event.target.value)} />
+    <Combobox ref={ref}>
+      <Combobox.Input
+        {...register(raectHookFormId)}
+        onChange={(event) => setKeyword(event.target.value)}
+      />
       <Combobox.Options>
         {data?.map(referenceDto => (
           <Combobox.Option key={referenceDto.");

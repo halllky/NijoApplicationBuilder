@@ -17,7 +17,8 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             _searchCondition = new SearchCondition(dbEntity);
             _searchResult = new SearchResult(dbEntity);
 
-            PropNameWidth = CreateView.GetPropNameFlexBasis(_searchCondition.GetMembers().Select(m => m.Name));
+            var memberNames = _searchCondition.GetMembers().Select(m => m.Name);
+            PropNameWidth = AggregateInstanceFormBody.GetPropNameFlexBasis(memberNames);
         }
 
         private readonly CodeRenderingContext _ctx;
@@ -34,13 +35,6 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         private string GetCreateViewUrl() => new CreateView(_aggregate, _ctx).Url;
         private string GetSingleViewUrl() => new SingleView(_aggregate, _ctx).Url;
         private string GetSearchCommandApi() => new AggFile.Controller(_aggregate).SearchCommandApi;
-
-        private void RenderSearchCondition() {
-            foreach (var member in _searchCondition.GetMembers()) {
-                var renderer = new FormRenderer(member);
-                foreach (var line in member.Type.RenderUI(renderer)) WriteLine(line);
-            }
-        }
 
         private string PropNameWidth { get; }
 

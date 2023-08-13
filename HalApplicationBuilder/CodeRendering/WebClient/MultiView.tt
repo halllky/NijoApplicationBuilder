@@ -12,9 +12,9 @@ import { AgGridReact } from 'ag-grid-react';
 import { ColDef } from 'ag-grid-community';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
-import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
+import { FieldValues, SubmitHandler, useForm, FormProvider } from 'react-hook-form';
 import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { IconButton } from '../../components/IconButton';
+import { IconButton } from '../../components';
 import { useHttpRequest } from '../../hooks/useHttpRequest';
 
 export default function () {
@@ -26,7 +26,12 @@ export default function () {
 
     const { get } = useHttpRequest()
     const [param, setParam] = useState<FieldValues>({})
-    const { register, handleSubmit, reset } = useForm()
+
+    const reactHookFormMethods = useForm()
+    const register = reactHookFormMethods.register
+    const handleSubmit = reactHookFormMethods.handleSubmit
+    const reset = reactHookFormMethods.reset
+
     const onSearch: SubmitHandler<FieldValues> = useCallback(data => {
         setParam(data)
     }, [])
@@ -69,28 +74,30 @@ export default function () {
                 <IconButton underline icon={PlusIcon} onClick={toCreateView}>新規作成</IconButton>
             </div>
 
-            <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1 p-1 bg-neutral-200`} onSubmit={handleSubmit(onSearch)}>
+            <FormProvider {...reactHookFormMethods}>
+                <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1 p-1 bg-neutral-200`} onSubmit={handleSubmit(onSearch)}>
 <# foreach (var member in _searchCondition.GetMembers()) { #>
-                <div className="flex">
-                    <div className="<#=PropNameWidth#>">
-                        <span className="text-sm select-none opacity-60">
-                            <#=member.Name#>
-                        </span>
-                    </div>
-                    <div className="flex-1">
+                    <div className="flex">
+                        <div className="<#=PropNameWidth#>">
+                            <span className="text-sm select-none opacity-60">
+                                <#=member.Name#>
+                            </span>
+                        </div>
+                        <div className="flex-1">
 <# foreach (var line in RenderForm(member)) { #>
-                        <#=line#>
+                            <#=line#>
 <# } #>
+                        </div>
                     </div>
-                </div>
 <# } #>
-                <div className='flex flex-row justify-start space-x-1'>
-                    <IconButton fill icon={MagnifyingGlassIcon}>検索</IconButton>
-                    <IconButton outline onClick={onClear}>クリア</IconButton>
-                    <div className='flex-1'></div>
-                    <IconButton underline icon={BookmarkIcon}>この検索条件を保存</IconButton>
-                </div>
-            </form>
+                    <div className='flex flex-row justify-start space-x-1'>
+                        <IconButton fill icon={MagnifyingGlassIcon}>検索</IconButton>
+                        <IconButton outline onClick={onClear}>クリア</IconButton>
+                        <div className='flex-1'></div>
+                        <IconButton underline icon={BookmarkIcon}>この検索条件を保存</IconButton>
+                    </div>
+                </form>
+            </FormProvider>
 
             <div className="ag-theme-alpine compact flex-1">
                 <AgGridReact

@@ -7,18 +7,19 @@
 <#@ import namespace="HalApplicationBuilder.CodeRendering.Util" #>
 import { forwardRef, ForwardedRef, useState } from "react"
 import { useQuery } from "react-query"
+import { useFormContext } from 'react-hook-form';
 import { Combobox } from "@headlessui/react"
 import { useAppContext } from "../hooks/AppContext"
 import { useHttpRequest } from "../hooks/useHttpRequest"
 
-export const <#=ComponentName#> = forwardRef(({ value, onChange }: {
-  value?: <#=AggregateInstanceKeyNamePairTS.DEF#>
-  onChange?: (v: <#=AggregateInstanceKeyNamePairTS.DEF#> | undefined) => void
+export const <#=ComponentName#> = forwardRef(({ raectHookFormId }: {
+  raectHookFormId: string
 }, ref: ForwardedRef<HTMLElement>) => {
 
   const [, dispatch] = useAppContext()
   const { get } = useHttpRequest()
   const [keyword, setKeyword] = useState('')
+  const { register } = useFormContext()
   const { data } = useQuery({
     queryKey: ['<#=UseQueryKey#>'],
     queryFn: async () => {
@@ -31,8 +32,11 @@ export const <#=ComponentName#> = forwardRef(({ value, onChange }: {
   })
 
   return (
-    <Combobox ref={ref} value={value} onChange={onChange}>
-      <Combobox.Input onChange={(event) => setKeyword(event.target.value)} />
+    <Combobox ref={ref}>
+      <Combobox.Input
+        {...register(raectHookFormId)}
+        onChange={(event) => setKeyword(event.target.value)}
+      />
       <Combobox.Options>
         {data?.map(referenceDto => (
           <Combobox.Option key={referenceDto.<#=AggregateInstanceKeyNamePairTS.KEY#>} value={referenceDto.<#=AggregateInstanceKeyNamePairTS.KEY#>}>

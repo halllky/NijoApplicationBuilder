@@ -11,15 +11,11 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         internal SingleView(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx) {
             _ctx = ctx;
             _aggregate = aggregate;
-            _dbEntity = aggregate.GetDbEntity().AsEntry();
             _instance = aggregate.GetInstanceClass().AsEntry();
-
-            PropNameWidth = CreateView.GetPropNameFlexBasis(_instance.GetProperties(ctx.Config).Select(p => p.PropertyName));
         }
 
         private readonly CodeRenderingContext _ctx;
         private readonly GraphNode<Aggregate> _aggregate;
-        private readonly GraphNode<EFCoreEntity> _dbEntity;
         private readonly GraphNode<AggregateInstance> _instance;
 
         public string FileName => "detail.tsx";
@@ -30,13 +26,19 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         private string GetFindCommandApi() => new AggFile.Controller(_aggregate).FindCommandApi;
         private string GetUpdateCommandApi() => new AggFile.Controller(_aggregate).UpdateCommandApi;
 
-        private string PropNameWidth { get; }
+        private string RenderForm(string indent) {
+            var body = new AggregateInstanceFormBody(_instance, _ctx);
+            body.PushIndent(indent);
+            return body.TransformText();
+        }
 
-        private IEnumerable<string> RenderForm(AggregateInstance.SchalarProperty prop) {
-            var renderer = new CreateView.FormRenderer(prop, _dbEntity);
-            foreach (var line in prop.CorrespondingDbColumn.MemberType.RenderUI(renderer)) {
-                yield return line;
-            }
+        private string CollectCombobox() {
+            return _aggregate
+                .EnumerateThisAndDescendants()
+                .SelectMany(agg => agg.GetRefMembers())
+                .Select(refProp => $", {new ComboBox(refProp.Terminal, _ctx).ComponentName}")
+                .Distinct()
+                .Join(string.Empty);
         }
     }
 }

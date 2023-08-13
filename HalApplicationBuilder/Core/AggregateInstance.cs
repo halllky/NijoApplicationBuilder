@@ -34,10 +34,17 @@ namespace HalApplicationBuilder.Core
         internal class SchalarProperty : Property {
             internal required EFCoreEntity.Member CorrespondingDbColumn { get; init; }
         }
-        internal class ChildAggregateProperty : Property {
+        internal class ChildrenProperty : Property {
             internal required GraphNode<AggregateInstance> ChildAggregateInstance { get; init; }
             internal required NavigationProperty CorrespondingNavigationProperty { get; init; }
-            internal required bool Multiple { get; init; }
+        }
+        internal class ChildProperty : Property {
+            internal required GraphNode<AggregateInstance> ChildAggregateInstance { get; init; }
+            internal required NavigationProperty CorrespondingNavigationProperty { get; init; }
+        }
+        internal class VariationProperty : Property {
+            internal required GraphNode<AggregateInstance> ChildAggregateInstance { get; init; }
+            internal required NavigationProperty CorrespondingNavigationProperty { get; init; }
         }
         internal class RefProperty : Property {
             internal required GraphNode<AggregateInstance> RefTarget { get; init; }
@@ -49,7 +56,9 @@ namespace HalApplicationBuilder.Core
     internal static class AggregateInstanceExtensions {
         internal static IEnumerable<AggregateInstance.Property> GetProperties(this GraphNode<AggregateInstance> node, Config config) {
             foreach (var prop in GetSchalarProperties(node, config)) yield return prop;
-            foreach (var prop in GetChildAggregateProperties(node, config)) yield return prop;
+            foreach (var prop in GetChildrenProperties(node, config)) yield return prop;
+            foreach (var prop in GetChildProperties(node, config)) yield return prop;
+            foreach (var prop in GetVariationProperties(node, config)) yield return prop;
             foreach (var prop in GetRefProperties(node, config)) yield return prop;
         }
 
@@ -69,44 +78,45 @@ namespace HalApplicationBuilder.Core
             }
         }
 
-        internal static IEnumerable<AggregateInstance.ChildAggregateProperty> GetChildAggregateProperties(this GraphNode<AggregateInstance> node, Config config) {
+        internal static IEnumerable<AggregateInstance.ChildrenProperty> GetChildrenProperties(this GraphNode<AggregateInstance> node, Config config) {
             var initial = node.GetDbEntity().Item.Id;
-
-            foreach (var edge in node.GetChildMembers()) {
-                var navigationProperty = new NavigationProperty(edge.Terminal.GetDbEntity().In.Single(e => e.Initial.Item.Id == initial), config);
-                yield return new AggregateInstance.ChildAggregateProperty {
-                    ChildAggregateInstance = edge.Terminal,
-                    CorrespondingNavigationProperty = navigationProperty,
-                    CSharpTypeName = edge.Terminal.Item.ClassName,
-                    TypeScriptTypename = edge.Terminal.Item.TypeScriptTypeName,
-                    PropertyName = edge.RelationName,
-                    Multiple = false,
-                };
-            }
-            foreach (var edge in node.GetVariationMembers()) {
-                var navigationProperty = new NavigationProperty(edge.Terminal.GetDbEntity().In.Single(e => e.Initial.Item.Id == initial), config);
-                yield return new AggregateInstance.ChildAggregateProperty {
-                    ChildAggregateInstance = edge.Terminal,
-                    CorrespondingNavigationProperty = navigationProperty,
-                    CSharpTypeName = edge.Terminal.Item.ClassName,
-                    TypeScriptTypename = edge.Terminal.Item.TypeScriptTypeName,
-                    PropertyName = edge.RelationName,
-                    Multiple = false,
-                };
-            }
             foreach (var edge in node.GetChildrenMembers()) {
                 var navigationProperty = new NavigationProperty(edge.Terminal.GetDbEntity().In.Single(e => e.Initial.Item.Id == initial), config);
-                yield return new AggregateInstance.ChildAggregateProperty {
+                yield return new AggregateInstance.ChildrenProperty {
                     ChildAggregateInstance = edge.Terminal,
                     CorrespondingNavigationProperty = navigationProperty,
                     CSharpTypeName = $"List<{edge.Terminal.Item.ClassName}>",
                     TypeScriptTypename = $"{edge.Terminal.Item.TypeScriptTypeName}[]",
                     PropertyName = edge.RelationName,
-                    Multiple = true,
                 };
             }
         }
-
+        internal static IEnumerable<AggregateInstance.ChildProperty> GetChildProperties(this GraphNode<AggregateInstance> node, Config config) {
+            var initial = node.GetDbEntity().Item.Id;
+            foreach (var edge in node.GetChildMembers()) {
+                var navigationProperty = new NavigationProperty(edge.Terminal.GetDbEntity().In.Single(e => e.Initial.Item.Id == initial), config);
+                yield return new AggregateInstance.ChildProperty {
+                    ChildAggregateInstance = edge.Terminal,
+                    CorrespondingNavigationProperty = navigationProperty,
+                    CSharpTypeName = edge.Terminal.Item.ClassName,
+                    TypeScriptTypename = edge.Terminal.Item.TypeScriptTypeName,
+                    PropertyName = edge.RelationName,
+                };
+            }
+        }
+        internal static IEnumerable<AggregateInstance.VariationProperty> GetVariationProperties(this GraphNode<AggregateInstance> node, Config config) {
+            var initial = node.GetDbEntity().Item.Id;
+            foreach (var edge in node.GetVariationMembers()) {
+                var navigationProperty = new NavigationProperty(edge.Terminal.GetDbEntity().In.Single(e => e.Initial.Item.Id == initial), config);
+                yield return new AggregateInstance.VariationProperty {
+                    ChildAggregateInstance = edge.Terminal,
+                    CorrespondingNavigationProperty = navigationProperty,
+                    CSharpTypeName = edge.Terminal.Item.ClassName,
+                    TypeScriptTypename = edge.Terminal.Item.TypeScriptTypeName,
+                    PropertyName = edge.RelationName,
+                };
+            }
+        }
         internal static IEnumerable<AggregateInstance.RefProperty> GetRefProperties(this GraphNode<AggregateInstance> node, Config config) {
             foreach (var edge in node.GetRefMembers()) {
                 var initialDbEntity = edge.Initial.GetDbEntity();
