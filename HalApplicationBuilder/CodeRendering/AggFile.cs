@@ -56,9 +56,8 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(" param) {\r\n            if (_dbContext.");
             this.Write(this.ToStringHelper.ToStringWithCulture(_create.MethodName));
             this.Write("(param, out var created, out var errors)) {\r\n                return this.JsonCont" +
-                    "ent(created);\r\n            } else {\r\n                return BadRequest(string.Jo" +
-                    "in(Environment.NewLine, errors));\r\n            }\r\n        }\r\n    }\r\n}\r\nnamespace" +
-                    " ");
+                    "ent(created);\r\n            } else {\r\n                return BadRequest(this.Json" +
+                    "Content(errors));\r\n            }\r\n        }\r\n    }\r\n}\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
             this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
                     "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n  " +
@@ -247,9 +246,8 @@ namespace ");
             this.Write(" param) {\r\n            if (_dbContext.");
             this.Write(this.ToStringHelper.ToStringWithCulture(_update.MethodName));
             this.Write("(param, out var updated, out var errors)) {\r\n                return this.JsonCont" +
-                    "ent(updated);\r\n            } else {\r\n                return BadRequest(string.Jo" +
-                    "in(Environment.NewLine, errors));\r\n            }\r\n        }\r\n    }\r\n}\r\nnamespace" +
-                    " ");
+                    "ent(updated);\r\n            } else {\r\n                return BadRequest(this.Json" +
+                    "Content(errors));\r\n            }\r\n        }\r\n    }\r\n}\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
             this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
                     "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n  " +
@@ -301,8 +299,8 @@ namespace ");
                     " if (_dbContext.");
             this.Write(this.ToStringHelper.ToStringWithCulture(_delete.MethodName));
             this.Write("(key, out var errors)) {\r\n                return Ok();\r\n            } else {\r\n   " +
-                    "             return BadRequest(string.Join(Environment.NewLine, errors));\r\n     " +
-                    "       }\r\n        }\r\n    }\r\n}\r\nnamespace ");
+                    "             return BadRequest(this.JsonContent(errors));\r\n            }\r\n      " +
+                    "  }\r\n    }\r\n}\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
             this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
                     "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n  " +

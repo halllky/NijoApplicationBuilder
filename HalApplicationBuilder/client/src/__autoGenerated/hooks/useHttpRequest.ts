@@ -18,12 +18,15 @@ export const useHttpRequest = () => {
     const fullUrl = queryString ? `${apiDomain}${url}?${queryString}` : `${apiDomain}${url}`
     const response = await fetch(fullUrl)
     if (response.ok) {
-      const data = JSON.parse(await response.text()) as T
+      const text = await response.text()
+      const data = JSON.parse(text) as T
       return { ok: true, data }
     } else {
       dispatch({ type: 'pushMsg', msg: `ERROR(${fullUrl})` })
-      const errorText: string[] = Array.from(JSON.parse(await response.text()))
-      const errors: BarMessage[] = errorText.map(text => ({ uuid: UUID.generate(), text }))
+      const text = await response.text()
+      const res: { content: string } = JSON.parse(text)
+      const content: string[] = JSON.parse(res.content)
+      const errors: BarMessage[] = content.map(text => ({ uuid: UUID.generate(), text }))
       return { ok: false, errors }
     }
   }, [apiDomain, dispatch])
@@ -36,12 +39,15 @@ export const useHttpRequest = () => {
       body: JSON.stringify(data),
     })
     if (response.ok) {
-      const data = JSON.parse(await response.text()) as T
+      const text = await response.text()
+      const data = JSON.parse(text) as T
       return { ok: true, data }
     } else {
       dispatch({ type: 'pushMsg', msg: `ERROR(${fullUrl})` })
-      const errorText: string[] = Array.from(JSON.parse(await response.text()))
-      const errors: BarMessage[] = errorText.map(text => ({ uuid: UUID.generate(), text }))
+      const text = await response.text()
+      const res: { content: string } = JSON.parse(text)
+      const content: string[] = JSON.parse(res.content)
+      const errors: BarMessage[] = content.map(text => ({ uuid: UUID.generate(), text }))
       return { ok: false, errors }
     }
   }, [apiDomain, dispatch])

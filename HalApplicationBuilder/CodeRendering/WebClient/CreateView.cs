@@ -72,9 +72,8 @@ export default function () {
             this.Write(this.ToStringHelper.ToStringWithCulture(GetMultiViewUrl()));
             this.Write("\">");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
-            this.Write("</Link>&nbsp;新規作成\r\n            </h1>\r\n            <InlineMessageBar value={errorM" +
-                    "essages} onChange={setErrorMessages} />\r\n            <div className=\"flex flex-c" +
-                    "ol space-y-1 p-1 bg-neutral-200\">\r\n");
+            this.Write("</Link>&nbsp;新規作成\r\n            </h1>\r\n            <div className=\"flex flex-col s" +
+                    "pace-y-1 p-1 bg-neutral-200\">\r\n");
  foreach (var prop in _instance.GetSchalarProperties(_ctx.Config)) { 
             this.Write("                <div className=\"flex\">\r\n                    <div className=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(PropNameWidth));
@@ -90,8 +89,9 @@ export default function () {
  } 
             this.Write("                    </div>\r\n                </div>\r\n");
  } 
-            this.Write("            </div>\r\n            <IconButton fill icon={BookmarkSquareIcon} classN" +
-                    "ame=\"self-start\">保存</IconButton>\r\n        </form>\r\n    )\r\n}\r\n");
+            this.Write("            </div>\r\n            <InlineMessageBar value={errorMessages} onChange=" +
+                    "{setErrorMessages} />\r\n            <IconButton fill icon={BookmarkSquareIcon} cl" +
+                    "assName=\"self-start\">保存</IconButton>\r\n        </form>\r\n    )\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

@@ -30,7 +30,7 @@ namespace <#=_ctx.Config.RootNamespace#> {
             if (_dbContext.<#=_create.MethodName#>(param, out var created, out var errors)) {
                 return this.JsonContent(created);
             } else {
-                return BadRequest(string.Join(Environment.NewLine, errors));
+                return BadRequest(this.JsonContent(errors));
             }
         }
     }
@@ -204,7 +204,7 @@ namespace <#=_ctx.Config.RootNamespace#> {
             if (_dbContext.<#=_update.MethodName#>(param, out var updated, out var errors)) {
                 return this.JsonContent(updated);
             } else {
-                return BadRequest(string.Join(Environment.NewLine, errors));
+                return BadRequest(this.JsonContent(errors));
             }
         }
     }
@@ -274,7 +274,7 @@ namespace <#=_ctx.Config.RootNamespace#> {
             if (_dbContext.<#=_delete.MethodName#>(key, out var errors)) {
                 return Ok();
             } else {
-                return BadRequest(string.Join(Environment.NewLine, errors));
+                return BadRequest(this.JsonContent(errors));
             }
         }
     }

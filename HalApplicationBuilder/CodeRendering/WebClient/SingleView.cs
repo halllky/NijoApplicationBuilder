@@ -88,13 +88,9 @@ export default function () {
             this.Write(this.ToStringHelper.ToStringWithCulture(GetMultiViewUrl()));
             this.Write("\">");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
-            this.Write(@"</Link>
-                &nbsp;&#047;&nbsp;
-                <span className=""select-all"">{instanceName}</span>
-            </h1>
-            <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
-            <div className=""flex flex-col space-y-1 p-1 bg-neutral-200"">
-");
+            this.Write("</Link>\r\n                &nbsp;&#047;&nbsp;\r\n                <span className=\"sel" +
+                    "ect-all\">{instanceName}</span>\r\n            </h1>\r\n            <div className=\"f" +
+                    "lex flex-col space-y-1 p-1 bg-neutral-200\">\r\n");
  foreach (var prop in _instance.GetSchalarProperties(_ctx.Config)) { 
             this.Write("                <div className=\"flex\">\r\n                    <div className=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(PropNameWidth));
@@ -110,8 +106,9 @@ export default function () {
  } 
             this.Write("                    </div>\r\n                </div>\r\n");
  } 
-            this.Write("            </div>\r\n            <IconButton fill icon={BookmarkSquareIcon} classN" +
-                    "ame=\"self-start\">更新</IconButton>\r\n        </form>\r\n    )\r\n}\r\n");
+            this.Write("            </div>\r\n            <InlineMessageBar value={errorMessages} onChange=" +
+                    "{setErrorMessages} />\r\n            <IconButton fill icon={BookmarkSquareIcon} cl" +
+                    "assName=\"self-start\">更新</IconButton>\r\n        </form>\r\n    )\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

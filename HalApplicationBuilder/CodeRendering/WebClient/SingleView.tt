@@ -59,7 +59,6 @@ export default function () {
                 &nbsp;&#047;&nbsp;
                 <span className="select-all">{instanceName}</span>
             </h1>
-            <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
             <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
 <# foreach (var prop in _instance.GetSchalarProperties(_ctx.Config)) { #>
                 <div className="flex">
@@ -76,6 +75,7 @@ export default function () {
                 </div>
 <# } #>
             </div>
+            <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
             <IconButton fill icon={BookmarkSquareIcon} className="self-start">更新</IconButton>
         </form>
     )
