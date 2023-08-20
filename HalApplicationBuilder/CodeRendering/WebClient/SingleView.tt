@@ -17,57 +17,57 @@ import { <#=_instance.Item.TypeScriptTypeName#> as DataDetail } from '../../<#=t
 
 export default function () {
 
-    const [, dispatch] = useAppContext()
-    
-    const { get, post } = useHttpRequest()
-    const { instanceKey } = useParams()
-    const [instanceName, setInstanceName] = useState<string | undefined>('')
-    const [fetched, setFetched] = useState(false)
-    const defaultValues = useCallback(async () => {
-        if (!instanceKey) return {} as DataDetail
-        const encoded = window.encodeURI(instanceKey)
-        const response = await get(`<#=GetFindCommandApi()#>/${encoded}`)
-        setFetched(true)
-        if (response.ok) {
-            const responseData = response.data as DataDetail
-            setInstanceName(responseData.<#=AggregateInstanceBase.INSTANCE_NAME#>)
-            return responseData
-        } else {
-            return {} as DataDetail
-        }
-    }, [instanceKey])
+  const [, dispatch] = useAppContext()
+  
+  const { get, post } = useHttpRequest()
+  const { instanceKey } = useParams()
+  const [instanceName, setInstanceName] = useState<string | undefined>('')
+  const [fetched, setFetched] = useState(false)
+  const defaultValues = useCallback(async () => {
+    if (!instanceKey) return {} as DataDetail
+    const encoded = window.encodeURI(instanceKey)
+    const response = await get(`<#=GetFindCommandApi()#>/${encoded}`)
+    setFetched(true)
+    if (response.ok) {
+      const responseData = response.data as DataDetail
+      setInstanceName(responseData.<#=AggregateInstanceBase.INSTANCE_NAME#>)
+      return responseData
+    } else {
+      return {} as DataDetail
+    }
+  }, [instanceKey])
 
-    const reactHookFormMethods = useForm({ defaultValues })
-    const register = reactHookFormMethods.register
-    const handleSubmit = reactHookFormMethods.handleSubmit
+  const reactHookFormMethods = useForm({ defaultValues })
+  const register = reactHookFormMethods.register
+  const handleSubmit = reactHookFormMethods.handleSubmit
 
-    const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
-    const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-        const response = await post<DataDetail>(`<#=GetUpdateCommandApi()#>`, data)
-        if (response.ok) {
-            setErrorMessages([])
-            dispatch({ type: 'pushMsg', msg: `${response.data.<#=AggregateInstanceBase.INSTANCE_NAME#>}を更新しました。` })
-        } else {
-            setErrorMessages([...errorMessages, ...response.errors])
-        }
-    }, [errorMessages, dispatch, post])
+  const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
+  const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
+    const response = await post<DataDetail>(`<#=GetUpdateCommandApi()#>`, data)
+    if (response.ok) {
+      setErrorMessages([])
+      dispatch({ type: 'pushMsg', msg: `${response.data.<#=AggregateInstanceBase.INSTANCE_NAME#>}を更新しました。` })
+    } else {
+      setErrorMessages([...errorMessages, ...response.errors])
+    }
+  }, [errorMessages, dispatch, post])
 
-    if (!fetched) return <></>
+  if (!fetched) return <></>
 
-    return (
-        <FormProvider {...reactHookFormMethods}>
-            <form className="page-content-root" onSubmit={handleSubmit(onSave)}>
-                <h1 className="text-base font-semibold select-none py-1">
-                    <Link to="<#=GetMultiViewUrl()#>"><#=_aggregate.Item.DisplayName#></Link>
-                    &nbsp;&#047;&nbsp;
-                    <span className="select-all">{instanceName}</span>
-                </h1>
-                <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
-<#=RenderForm("                    ")#>
-                </div>
-                <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
-                <IconButton fill icon={BookmarkSquareIcon} className="self-start">更新</IconButton>
-            </form>
-        </FormProvider>
-    )
+  return (
+    <FormProvider {...reactHookFormMethods}>
+      <form className="page-content-root" onSubmit={handleSubmit(onSave)}>
+        <h1 className="text-base font-semibold select-none py-1">
+          <Link to="<#=GetMultiViewUrl()#>"><#=_aggregate.Item.DisplayName#></Link>
+          &nbsp;&#047;&nbsp;
+          <span className="select-all">{instanceName}</span>
+        </h1>
+        <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
+<#=RenderForm("          ")#>
+        </div>
+        <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
+        <IconButton fill icon={BookmarkSquareIcon} className="self-start">更新</IconButton>
+      </form>
+    </FormProvider>
+  )
 }

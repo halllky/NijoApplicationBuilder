@@ -43,68 +43,61 @@ import { IconButton, InlineMessageBar, BarMessage");
 
 export default function () {
 
-    const [, dispatch] = useAppContext()
-    
-    const { get, post } = useHttpRequest()
-    const { instanceKey } = useParams()
-    const [instanceName, setInstanceName] = useState<string | undefined>('')
-    const [fetched, setFetched] = useState(false)
-    const defaultValues = useCallback(async () => {
-        if (!instanceKey) return {} as DataDetail
-        const encoded = window.encodeURI(instanceKey)
-        const response = await get(`");
+  const [, dispatch] = useAppContext()
+  
+  const { get, post } = useHttpRequest()
+  const { instanceKey } = useParams()
+  const [instanceName, setInstanceName] = useState<string | undefined>('')
+  const [fetched, setFetched] = useState(false)
+  const defaultValues = useCallback(async () => {
+    if (!instanceKey) return {} as DataDetail
+    const encoded = window.encodeURI(instanceKey)
+    const response = await get(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetFindCommandApi()));
-            this.Write("/${encoded}`)\r\n        setFetched(true)\r\n        if (response.ok) {\r\n            " +
-                    "const responseData = response.data as DataDetail\r\n            setInstanceName(re" +
-                    "sponseData.");
+            this.Write("/${encoded}`)\r\n    setFetched(true)\r\n    if (response.ok) {\r\n      const response" +
+                    "Data = response.data as DataDetail\r\n      setInstanceName(responseData.");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceBase.INSTANCE_NAME));
             this.Write(@")
-            return responseData
-        } else {
-            return {} as DataDetail
-        }
-    }, [instanceKey])
+      return responseData
+    } else {
+      return {} as DataDetail
+    }
+  }, [instanceKey])
 
-    const reactHookFormMethods = useForm({ defaultValues })
-    const register = reactHookFormMethods.register
-    const handleSubmit = reactHookFormMethods.handleSubmit
+  const reactHookFormMethods = useForm({ defaultValues })
+  const register = reactHookFormMethods.register
+  const handleSubmit = reactHookFormMethods.handleSubmit
 
-    const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
-    const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-        const response = await post<DataDetail>(`");
+  const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
+  const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
+    const response = await post<DataDetail>(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetUpdateCommandApi()));
-            this.Write("`, data)\r\n        if (response.ok) {\r\n            setErrorMessages([])\r\n         " +
-                    "   dispatch({ type: \'pushMsg\', msg: `${response.data.");
+            this.Write("`, data)\r\n    if (response.ok) {\r\n      setErrorMessages([])\r\n      dispatch({ ty" +
+                    "pe: \'pushMsg\', msg: `${response.data.");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceBase.INSTANCE_NAME));
             this.Write(@"}を更新しました。` })
-        } else {
-            setErrorMessages([...errorMessages, ...response.errors])
-        }
-    }, [errorMessages, dispatch, post])
+    } else {
+      setErrorMessages([...errorMessages, ...response.errors])
+    }
+  }, [errorMessages, dispatch, post])
 
-    if (!fetched) return <></>
+  if (!fetched) return <></>
 
-    return (
-        <FormProvider {...reactHookFormMethods}>
-            <form className=""page-content-root"" onSubmit={handleSubmit(onSave)}>
-                <h1 className=""text-base font-semibold select-none py-1"">
-                    <Link to=""");
+  return (
+    <FormProvider {...reactHookFormMethods}>
+      <form className=""page-content-root"" onSubmit={handleSubmit(onSave)}>
+        <h1 className=""text-base font-semibold select-none py-1"">
+          <Link to=""");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetMultiViewUrl()));
             this.Write("\">");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
-            this.Write("</Link>\r\n                    &nbsp;&#047;&nbsp;\r\n                    <span classN" +
-                    "ame=\"select-all\">{instanceName}</span>\r\n                </h1>\r\n                <" +
-                    "div className=\"flex flex-col space-y-1 p-1 bg-neutral-200\">\r\n");
-            this.Write(this.ToStringHelper.ToStringWithCulture(RenderForm("                    ")));
-            this.Write(@"
-                </div>
-                <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
-                <IconButton fill icon={BookmarkSquareIcon} className=""self-start"">更新</IconButton>
-            </form>
-        </FormProvider>
-    )
-}
-");
+            this.Write("</Link>\r\n          &nbsp;&#047;&nbsp;\r\n          <span className=\"select-all\">{in" +
+                    "stanceName}</span>\r\n        </h1>\r\n        <div className=\"flex flex-col space-y" +
+                    "-1 p-1 bg-neutral-200\">\r\n");
+            this.Write(this.ToStringHelper.ToStringWithCulture(RenderForm("          ")));
+            this.Write("\r\n        </div>\r\n        <InlineMessageBar value={errorMessages} onChange={setEr" +
+                    "rorMessages} />\r\n        <IconButton fill icon={BookmarkSquareIcon} className=\"s" +
+                    "elf-start\">更新</IconButton>\r\n      </form>\r\n    </FormProvider>\r\n  )\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

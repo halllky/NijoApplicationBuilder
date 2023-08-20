@@ -36,41 +36,41 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
 [ApiController]
 [Route(""[controller]"")]
 public class HalappDebugController : ControllerBase {
-    public HalappDebugController(ILogger<HalappDebugController> logger, IServiceProvider provider) {
-        _logger = logger;
-        _provider = provider;
-    }
-    private readonly ILogger<HalappDebugController> _logger;
-    private readonly IServiceProvider _provider;
+  public HalappDebugController(ILogger<HalappDebugController> logger, IServiceProvider provider) {
+    _logger = logger;
+    _provider = provider;
+  }
+  private readonly ILogger<HalappDebugController> _logger;
+  private readonly IServiceProvider _provider;
 
-    [HttpPost(""recreate-database"")]
-    public HttpResponseMessage RecreateDatabase() {
-        var dbContext = _provider.GetRequiredService<");
+  [HttpPost(""recreate-database"")]
+  public HttpResponseMessage RecreateDatabase() {
+    var dbContext = _provider.GetRequiredService<");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextNamespace));
             this.Write(".");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
             this.Write(@">();
-        dbContext.Database.EnsureDeleted();
-        dbContext.Database.Migrate();
-        return new HttpResponseMessage {
-            StatusCode = System.Net.HttpStatusCode.OK,
-            Content = new StringContent(""DBを再作成しました。""),
-        };
-    }
-    
-    [HttpGet(""secret-settings"")]
-    public IActionResult GetSecretSettings() {
-        var runtimeSetting = _provider.GetRequiredService<");
+    dbContext.Database.EnsureDeleted();
+    dbContext.Database.Migrate();
+    return new HttpResponseMessage {
+      StatusCode = System.Net.HttpStatusCode.OK,
+      Content = new StringContent(""DBを再作成しました。""),
+    };
+  }
+  
+  [HttpGet(""secret-settings"")]
+  public IActionResult GetSecretSettings() {
+    var runtimeSetting = _provider.GetRequiredService<");
             this.Write(this.ToStringHelper.ToStringWithCulture(RuntimeServerSettings));
-            this.Write(">();\r\n        return this.JsonContent(runtimeSetting);\r\n    }\r\n    [HttpPost(\"sec" +
-                    "ret-settings\")]\r\n    public IActionResult SetSecretSettings([FromBody] ");
+            this.Write(">();\r\n    return this.JsonContent(runtimeSetting);\r\n  }\r\n  [HttpPost(\"secret-sett" +
+                    "ings\")]\r\n  public IActionResult SetSecretSettings([FromBody] ");
             this.Write(this.ToStringHelper.ToStringWithCulture(RuntimeServerSettings));
-            this.Write(" settings) {\r\n        var json = settings.");
+            this.Write(" settings) {\r\n    var json = settings.");
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.RuntimeSettings.TO_JSON));
-            this.Write("();\r\n        using var sw = new System.IO.StreamWriter(\"");
+            this.Write("();\r\n    using var sw = new System.IO.StreamWriter(\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(Util.RuntimeSettings.JSON_FILE_NAME));
-            this.Write("\", false, new System.Text.UTF8Encoding(false));\r\n        sw.WriteLine(json);\r\n   " +
-                    "     return Ok();\r\n    }\r\n}\r\n#endif\r\n");
+            this.Write("\", false, new System.Text.UTF8Encoding(false));\r\n    sw.WriteLine(json);\r\n    ret" +
+                    "urn Ok();\r\n  }\r\n}\r\n#endif\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

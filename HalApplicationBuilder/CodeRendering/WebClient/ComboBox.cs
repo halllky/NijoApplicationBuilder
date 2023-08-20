@@ -44,36 +44,36 @@ export const ");
   const [keyword, setKeyword] = useState('')
   const { register } = useFormContext()
   const { data } = useQuery({
-    queryKey: ['");
+  queryKey: ['");
             this.Write(this.ToStringHelper.ToStringWithCulture(UseQueryKey));
-            this.Write("\'],\r\n    queryFn: async () => {\r\n      const response = await get<");
+            this.Write("\'],\r\n  queryFn: async () => {\r\n    const response = await get<");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePairTS.DEF));
             this.Write("[]>(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(Api));
             this.Write(@"`, { keyword })
-      return response.ok ? response.data : []
-    },
-    onError: error => {
-      dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
-    },
+    return response.ok ? response.data : []
+  },
+  onError: error => {
+    dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
+  },
   })
 
   return (
-    <Combobox ref={ref}>
-      <Combobox.Input
-        {...register(raectHookFormId)}
-        onChange={(event) => setKeyword(event.target.value)}
-      />
-      <Combobox.Options>
-        {data?.map(referenceDto => (
-          <Combobox.Option key={referenceDto.");
+  <Combobox ref={ref}>
+    <Combobox.Input
+    {...register(raectHookFormId)}
+    onChange={(event) => setKeyword(event.target.value)}
+    />
+    <Combobox.Options>
+    {data?.map(referenceDto => (
+      <Combobox.Option key={referenceDto.");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePairTS.KEY));
             this.Write("} value={referenceDto.");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePairTS.KEY));
-            this.Write("}>\r\n            {referenceDto.");
+            this.Write("}>\r\n      {referenceDto.");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePairTS.NAME));
-            this.Write("}\r\n          </Combobox.Option>\r\n        ))}\r\n      </Combobox.Options>\r\n    </Co" +
-                    "mbobox>\r\n  )\r\n})\r\n");
+            this.Write("}\r\n      </Combobox.Option>\r\n    ))}\r\n    </Combobox.Options>\r\n  </Combobox>\r\n  )" +
+                    "\r\n})\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

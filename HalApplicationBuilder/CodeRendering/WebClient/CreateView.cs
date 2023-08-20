@@ -42,51 +42,45 @@ import { IconButton, InlineMessageBar, BarMessage");
 
 export default function () {
 
-    const reactHookFormMethods = useForm()
-    const register = reactHookFormMethods.register
-    const handleSubmit = reactHookFormMethods.handleSubmit
+  const reactHookFormMethods = useForm()
+  const register = reactHookFormMethods.register
+  const handleSubmit = reactHookFormMethods.handleSubmit
 
-    const navigate = useNavigate()
-    const { post } = useHttpRequest()
-    const [, dispatch] = useAppContext()
-    const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
-    const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-        const response = await post<DataDetail>(`");
+  const navigate = useNavigate()
+  const { post } = useHttpRequest()
+  const [, dispatch] = useAppContext()
+  const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
+  const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
+    const response = await post<DataDetail>(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetCreateCommandApi()));
-            this.Write("`, data)\r\n        if (response.ok) {\r\n            dispatch({ type: \'pushMsg\', msg" +
-                    ": `${response.data.");
+            this.Write("`, data)\r\n    if (response.ok) {\r\n      dispatch({ type: \'pushMsg\', msg: `${respo" +
+                    "nse.data.");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceBase.INSTANCE_NAME));
-            this.Write("}を作成しました。` })\r\n            setErrorMessages([])\r\n            const encoded = wind" +
-                    "ow.encodeURI(response.data.");
+            this.Write("}を作成しました。` })\r\n      setErrorMessages([])\r\n      const encoded = window.encodeURI" +
+                    "(response.data.");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceBase.INSTANCE_KEY));
-            this.Write("!)\r\n            navigate(`");
+            this.Write("!)\r\n      navigate(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetSingleViewUrl()));
             this.Write(@"/${encoded}`)
-        } else {
-            setErrorMessages([...errorMessages, ...response.errors])
-        }
-    }, [post, navigate, errorMessages, setErrorMessages, dispatch])
+    } else {
+      setErrorMessages([...errorMessages, ...response.errors])
+    }
+  }, [post, navigate, errorMessages, setErrorMessages, dispatch])
 
-    return (
-        <FormProvider {...reactHookFormMethods}>
-            <form className=""page-content-root"" onSubmit={handleSubmit(onSave)}>
-                <h1 className=""text-base font-semibold select-none py-1"">
-                    <Link to=""");
+  return (
+    <FormProvider {...reactHookFormMethods}>
+      <form className=""page-content-root"" onSubmit={handleSubmit(onSave)}>
+        <h1 className=""text-base font-semibold select-none py-1"">
+          <Link to=""");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetMultiViewUrl()));
             this.Write("\">");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
-            this.Write("</Link>&nbsp;新規作成\r\n                </h1>\r\n                <div className=\"flex fl" +
-                    "ex-col space-y-1 p-1 bg-neutral-200\">\r\n");
-            this.Write(this.ToStringHelper.ToStringWithCulture(RenderForm("                    ")));
-            this.Write(@"
-                </div>
-                <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
-                <IconButton fill icon={BookmarkSquareIcon} className=""self-start"">保存</IconButton>
-            </form>
-        </FormProvider>
-    )
-}
-");
+            this.Write("</Link>&nbsp;新規作成\r\n        </h1>\r\n        <div className=\"flex flex-col space-y-1" +
+                    " p-1 bg-neutral-200\">\r\n");
+            this.Write(this.ToStringHelper.ToStringWithCulture(RenderForm("          ")));
+            this.Write("\r\n        </div>\r\n        <InlineMessageBar value={errorMessages} onChange={setEr" +
+                    "rorMessages} />\r\n        <IconButton fill icon={BookmarkSquareIcon} className=\"s" +
+                    "elf-start\">保存</IconButton>\r\n      </form>\r\n    </FormProvider>\r\n  )\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

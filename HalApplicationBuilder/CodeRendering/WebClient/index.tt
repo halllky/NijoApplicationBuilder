@@ -16,11 +16,11 @@ export const THIS_APPLICATION_NAME = '<#=_ctx.Schema.ApplicationName#>' as const
 
 export const routes: { url: string, el: JSX.Element }[] = [
 <# foreach (var component in GetComponents()) { #>
-    { url: '<#=component.Url#>', el: <<#=component.PhysicalName#> /> },
+  { url: '<#=component.Url#>', el: <<#=component.PhysicalName#> /> },
 <# } #>
 ]
 export const menuItems: { url: string, text: string }[] = [
 <# foreach (var component in GetComponents().Where(c => c.ShowMenu)) { #>
-    { url: '<#=component.Url#>', text: '<#=component.DisplayName#>' },
+  { url: '<#=component.Url#>', text: '<#=component.DisplayName#>' },
 <# } #>
 ]

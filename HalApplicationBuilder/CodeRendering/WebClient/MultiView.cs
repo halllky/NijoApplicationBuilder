@@ -40,127 +40,126 @@ import { useHttpRequest } from '../../hooks/useHttpRequest';
 
 export default function () {
 
-    const [, dispatch] = useAppContext()
-    useCtrlS(() => {
-        dispatch({ type: 'pushMsg', msg: '保存しました。' })
-    })
+  const [, dispatch] = useAppContext()
+  useCtrlS(() => {
+    dispatch({ type: 'pushMsg', msg: '保存しました。' })
+  })
 
-    const { get } = useHttpRequest()
-    const [param, setParam] = useState<FieldValues>({})
+  const { get } = useHttpRequest()
+  const [param, setParam] = useState<FieldValues>({})
 
-    const reactHookFormMethods = useForm()
-    const register = reactHookFormMethods.register
-    const handleSubmit = reactHookFormMethods.handleSubmit
-    const reset = reactHookFormMethods.reset
+  const reactHookFormMethods = useForm()
+  const register = reactHookFormMethods.register
+  const handleSubmit = reactHookFormMethods.handleSubmit
+  const reset = reactHookFormMethods.reset
 
-    const onSearch: SubmitHandler<FieldValues> = useCallback(data => {
-        setParam(data)
-    }, [])
-    const onClear = useCallback((e: React.MouseEvent) => {
-        reset()
-        e.preventDefault()
-    }, [reset])
-    const { data, isFetching } = useQuery({
-        queryKey: ['");
+  const onSearch: SubmitHandler<FieldValues> = useCallback(data => {
+    setParam(data)
+  }, [])
+  const onClear = useCallback((e: React.MouseEvent) => {
+    reset()
+    e.preventDefault()
+  }, [reset])
+  const { data, isFetching } = useQuery({
+    queryKey: ['");
             this.Write(this.ToStringHelper.ToStringWithCulture(UseQueryKey));
-            this.Write("\', JSON.stringify(param)],\r\n        queryFn: async () => {\r\n            const res" +
-                    "ponse = await get<RowType[]>(`");
+            this.Write("\', JSON.stringify(param)],\r\n    queryFn: async () => {\r\n      const response = aw" +
+                    "ait get<RowType[]>(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetSearchCommandApi()));
             this.Write(@"`, { param })
-            return response.ok ? response.data : []
-        },
-        onError: error => {
-            dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
-        },
-    })
+      return response.ok ? response.data : []
+    },
+    onError: error => {
+      dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
+    },
+  })
 
-    const navigate = useNavigate()
-    const toCreateView = useCallback(() => {
-        navigate('");
+  const navigate = useNavigate()
+  const toCreateView = useCallback(() => {
+    navigate('");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetCreateViewUrl()));
             this.Write(@"')
-    }, [navigate])
+  }, [navigate])
 
-    const [expanded, setExpanded] = useState(true)
+  const [expanded, setExpanded] = useState(true)
 
-    if (isFetching) return <></>
+  if (isFetching) return <></>
 
-    return (
-        <div className=""page-content-root"">
+  return (
+    <div className=""page-content-root"">
 
-            <div className=""flex flex-row justify-start items-center space-x-2"">
-                <div className='flex-1 flex flex-row items-center space-x-1 cursor-pointer' onClick={() => setExpanded(!expanded)}>
-                    <h1 className=""text-base font-semibold select-none py-1"">
-                        ");
+      <div className=""flex flex-row justify-start items-center space-x-2"">
+        <div className='flex-1 flex flex-row items-center space-x-1 cursor-pointer' onClick={() => setExpanded(!expanded)}>
+          <h1 className=""text-base font-semibold select-none py-1"">
+            ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
             this.Write(@"
-                    </h1>
-                    {expanded
-                        ? <ChevronDownIcon className=""w-4"" />
-                        : <ChevronUpIcon className=""w-4"" />}
-                </div>
-                <IconButton underline icon={PlusIcon} onClick={toCreateView}>新規作成</IconButton>
-            </div>
+          </h1>
+          {expanded
+            ? <ChevronDownIcon className=""w-4"" />
+            : <ChevronUpIcon className=""w-4"" />}
+        </div>
+        <IconButton underline icon={PlusIcon} onClick={toCreateView}>新規作成</IconButton>
+      </div>
 
-            <FormProvider {...reactHookFormMethods}>
-                <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1 p-1 bg-neutral-200`} onSubmit={handleSubmit(onSearch)}>
+      <FormProvider {...reactHookFormMethods}>
+        <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1 p-1 bg-neutral-200`} onSubmit={handleSubmit(onSearch)}>
 ");
  foreach (var member in _searchCondition.GetMembers()) { 
-            this.Write("                    <div className=\"flex\">\r\n                        <div classNam" +
-                    "e=\"");
+            this.Write("          <div className=\"flex\">\r\n            <div className=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(PropNameWidth));
-            this.Write("\">\r\n                            <span className=\"text-sm select-none opacity-80\">" +
-                    "\r\n                                ");
+            this.Write("\">\r\n              <span className=\"text-sm select-none opacity-80\">\r\n            " +
+                    "    ");
             this.Write(this.ToStringHelper.ToStringWithCulture(member.Name));
-            this.Write("\r\n                            </span>\r\n                        </div>\r\n          " +
-                    "              <div className=\"flex-1\">\r\n");
+            this.Write("\r\n              </span>\r\n            </div>\r\n            <div className=\"flex-1\">" +
+                    "\r\n");
  foreach (var line in RenderForm(member)) { 
-            this.Write("                            ");
+            this.Write("              ");
             this.Write(this.ToStringHelper.ToStringWithCulture(line));
             this.Write("\r\n");
  } 
-            this.Write("                        </div>\r\n                    </div>\r\n");
+            this.Write("            </div>\r\n          </div>\r\n");
  } 
-            this.Write(@"                    <div className='flex flex-row justify-start space-x-1'>
-                        <IconButton fill icon={MagnifyingGlassIcon}>検索</IconButton>
-                        <IconButton outline onClick={onClear}>クリア</IconButton>
-                        <div className='flex-1'></div>
-                        <IconButton underline icon={BookmarkIcon}>この検索条件を保存</IconButton>
-                    </div>
-                </form>
-            </FormProvider>
+            this.Write(@"          <div className='flex flex-row justify-start space-x-1'>
+            <IconButton fill icon={MagnifyingGlassIcon}>検索</IconButton>
+            <IconButton outline onClick={onClear}>クリア</IconButton>
+            <div className='flex-1'></div>
+            <IconButton underline icon={BookmarkIcon}>この検索条件を保存</IconButton>
+          </div>
+        </form>
+      </FormProvider>
 
-            <div className=""ag-theme-alpine compact flex-1"">
-                <AgGridReact
-                    rowData={data || []}
-                    columnDefs={columnDefs}
-                    multiSortKey='ctrl'
-                    undoRedoCellEditing
-                    undoRedoCellEditingLimit={20}>
-                </AgGridReact>
-            </div>
-        </div>
-    )
+      <div className=""ag-theme-alpine compact flex-1"">
+        <AgGridReact
+          rowData={data || []}
+          columnDefs={columnDefs}
+          multiSortKey='ctrl'
+          undoRedoCellEditing
+          undoRedoCellEditingLimit={20}>
+        </AgGridReact>
+      </div>
+    </div>
+  )
 }
 
 type RowType = {
-    ");
+  ");
             this.Write(this.ToStringHelper.ToStringWithCulture(SearchResultBase.INSTANCE_KEY));
             this.Write(": string\r\n");
  foreach (var member in _searchResult.GetMembers()) { 
-            this.Write("    ");
+            this.Write("  ");
             this.Write(this.ToStringHelper.ToStringWithCulture(member.Name));
             this.Write("?: string | number | boolean\r\n");
  } 
-            this.Write("}\r\n\r\nconst columnDefs: ColDef<RowType>[] = [\r\n    {\r\n        resizable: true,\r\n  " +
-                    "      width: 50,\r\n        cellRenderer: ({ data }: { data: RowType }) => {\r\n    " +
-                    "        const encoded = window.encodeURI(data.");
+            this.Write("}\r\n\r\nconst columnDefs: ColDef<RowType>[] = [\r\n  {\r\n    resizable: true,\r\n    widt" +
+                    "h: 50,\r\n    cellRenderer: ({ data }: { data: RowType }) => {\r\n      const encode" +
+                    "d = window.encodeURI(data.");
             this.Write(this.ToStringHelper.ToStringWithCulture(SearchResultBase.INSTANCE_KEY));
-            this.Write(")\r\n            return <Link to={`");
+            this.Write(")\r\n      return <Link to={`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetSingleViewUrl()));
-            this.Write("/${encoded}`} className=\"text-blue-400\">詳細</Link>\r\n        },\r\n    },\r\n");
+            this.Write("/${encoded}`} className=\"text-blue-400\">詳細</Link>\r\n    },\r\n  },\r\n");
  foreach (var member in _searchResult.GetMembers()) { 
-            this.Write("    { field: \'");
+            this.Write("  { field: \'");
             this.Write(this.ToStringHelper.ToStringWithCulture(member.Name));
             this.Write("\', resizable: true, sortable: true, editable: true },\r\n");
  } 

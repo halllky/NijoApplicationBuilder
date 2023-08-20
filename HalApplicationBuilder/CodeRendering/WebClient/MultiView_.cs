@@ -103,9 +103,9 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 // TODO: RegisterNameを使っていない
                 yield return $"<select className=\"border\">";
                 foreach (var opt in options) {
-                    yield return $"    <option selected value=\"{opt.Key}\">";
-                    yield return $"        {opt.Value}";
-                    yield return $"    </option>";
+                    yield return $"  <option selected value=\"{opt.Key}\">";
+                    yield return $"    {opt.Value}";
+                    yield return $"  </option>";
                 }
                 yield return $"</select>";
             }

@@ -38,7 +38,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Schema.ApplicationName));
             this.Write("\' as const\r\n\r\nexport const routes: { url: string, el: JSX.Element }[] = [\r\n");
  foreach (var component in GetComponents()) { 
-            this.Write("    { url: \'");
+            this.Write("  { url: \'");
             this.Write(this.ToStringHelper.ToStringWithCulture(component.Url));
             this.Write("\', el: <");
             this.Write(this.ToStringHelper.ToStringWithCulture(component.PhysicalName));
@@ -46,7 +46,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
  } 
             this.Write("]\r\nexport const menuItems: { url: string, text: string }[] = [\r\n");
  foreach (var component in GetComponents().Where(c => c.ShowMenu)) { 
-            this.Write("    { url: \'");
+            this.Write("  { url: \'");
             this.Write(this.ToStringHelper.ToStringWithCulture(component.Url));
             this.Write("\', text: \'");
             this.Write(this.ToStringHelper.ToStringWithCulture(component.DisplayName));

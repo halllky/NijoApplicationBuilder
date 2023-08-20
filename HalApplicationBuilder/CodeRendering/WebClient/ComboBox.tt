@@ -21,29 +21,29 @@ export const <#=ComponentName#> = forwardRef(({ raectHookFormId }: {
   const [keyword, setKeyword] = useState('')
   const { register } = useFormContext()
   const { data } = useQuery({
-    queryKey: ['<#=UseQueryKey#>'],
-    queryFn: async () => {
-      const response = await get<<#=AggregateInstanceKeyNamePairTS.DEF#>[]>(`<#=Api#>`, { keyword })
-      return response.ok ? response.data : []
-    },
-    onError: error => {
-      dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
-    },
+  queryKey: ['<#=UseQueryKey#>'],
+  queryFn: async () => {
+    const response = await get<<#=AggregateInstanceKeyNamePairTS.DEF#>[]>(`<#=Api#>`, { keyword })
+    return response.ok ? response.data : []
+  },
+  onError: error => {
+    dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
+  },
   })
 
   return (
-    <Combobox ref={ref}>
-      <Combobox.Input
-        {...register(raectHookFormId)}
-        onChange={(event) => setKeyword(event.target.value)}
-      />
-      <Combobox.Options>
-        {data?.map(referenceDto => (
-          <Combobox.Option key={referenceDto.<#=AggregateInstanceKeyNamePairTS.KEY#>} value={referenceDto.<#=AggregateInstanceKeyNamePairTS.KEY#>}>
-            {referenceDto.<#=AggregateInstanceKeyNamePairTS.NAME#>}
-          </Combobox.Option>
-        ))}
-      </Combobox.Options>
-    </Combobox>
+  <Combobox ref={ref}>
+    <Combobox.Input
+    {...register(raectHookFormId)}
+    onChange={(event) => setKeyword(event.target.value)}
+    />
+    <Combobox.Options>
+    {data?.map(referenceDto => (
+      <Combobox.Option key={referenceDto.<#=AggregateInstanceKeyNamePairTS.KEY#>} value={referenceDto.<#=AggregateInstanceKeyNamePairTS.KEY#>}>
+      {referenceDto.<#=AggregateInstanceKeyNamePairTS.NAME#>}
+      </Combobox.Option>
+    ))}
+    </Combobox.Options>
+  </Combobox>
   )
 })

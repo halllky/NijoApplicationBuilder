@@ -17,38 +17,38 @@ import { <#=_instance.Item.TypeScriptTypeName#> as DataDetail } from '../../<#=t
 
 export default function () {
 
-    const reactHookFormMethods = useForm()
-    const register = reactHookFormMethods.register
-    const handleSubmit = reactHookFormMethods.handleSubmit
+  const reactHookFormMethods = useForm()
+  const register = reactHookFormMethods.register
+  const handleSubmit = reactHookFormMethods.handleSubmit
 
-    const navigate = useNavigate()
-    const { post } = useHttpRequest()
-    const [, dispatch] = useAppContext()
-    const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
-    const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-        const response = await post<DataDetail>(`<#=GetCreateCommandApi()#>`, data)
-        if (response.ok) {
-            dispatch({ type: 'pushMsg', msg: `${response.data.<#=AggregateInstanceBase.INSTANCE_NAME#>}を作成しました。` })
-            setErrorMessages([])
-            const encoded = window.encodeURI(response.data.<#=AggregateInstanceBase.INSTANCE_KEY#>!)
-            navigate(`<#=GetSingleViewUrl()#>/${encoded}`)
-        } else {
-            setErrorMessages([...errorMessages, ...response.errors])
-        }
-    }, [post, navigate, errorMessages, setErrorMessages, dispatch])
+  const navigate = useNavigate()
+  const { post } = useHttpRequest()
+  const [, dispatch] = useAppContext()
+  const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
+  const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
+    const response = await post<DataDetail>(`<#=GetCreateCommandApi()#>`, data)
+    if (response.ok) {
+      dispatch({ type: 'pushMsg', msg: `${response.data.<#=AggregateInstanceBase.INSTANCE_NAME#>}を作成しました。` })
+      setErrorMessages([])
+      const encoded = window.encodeURI(response.data.<#=AggregateInstanceBase.INSTANCE_KEY#>!)
+      navigate(`<#=GetSingleViewUrl()#>/${encoded}`)
+    } else {
+      setErrorMessages([...errorMessages, ...response.errors])
+    }
+  }, [post, navigate, errorMessages, setErrorMessages, dispatch])
 
-    return (
-        <FormProvider {...reactHookFormMethods}>
-            <form className="page-content-root" onSubmit={handleSubmit(onSave)}>
-                <h1 className="text-base font-semibold select-none py-1">
-                    <Link to="<#=GetMultiViewUrl()#>"><#=_aggregate.Item.DisplayName#></Link>&nbsp;新規作成
-                </h1>
-                <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
-<#=RenderForm("                    ")#>
-                </div>
-                <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
-                <IconButton fill icon={BookmarkSquareIcon} className="self-start">保存</IconButton>
-            </form>
-        </FormProvider>
-    )
+  return (
+    <FormProvider {...reactHookFormMethods}>
+      <form className="page-content-root" onSubmit={handleSubmit(onSave)}>
+        <h1 className="text-base font-semibold select-none py-1">
+          <Link to="<#=GetMultiViewUrl()#>"><#=_aggregate.Item.DisplayName#></Link>&nbsp;新規作成
+        </h1>
+        <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
+<#=RenderForm("          ")#>
+        </div>
+        <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
+        <IconButton fill icon={BookmarkSquareIcon} className="self-start">保存</IconButton>
+      </form>
+    </FormProvider>
+  )
 }
