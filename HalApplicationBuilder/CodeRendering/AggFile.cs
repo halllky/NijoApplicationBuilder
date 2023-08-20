@@ -119,8 +119,8 @@ namespace ");
                     "t(searchResult);\r\n        }\r\n        [HttpGet(\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(Controller.KEYWORDSEARCH_ACTION_NAME));
             this.Write("\")]\r\n        public virtual IActionResult SearchByKeyword([FromQuery] string keyw" +
-                    "ord) {\r\n            // TODO\r\n            throw new NotImplementedException();\r\n " +
-                    "       }\r\n    }\r\n}\r\nnamespace ");
+                    "ord) {\r\n            // TODO\r\n            return this.JsonContent(Array.Empty<obj" +
+                    "ect>());\r\n        }\r\n    }\r\n}\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
             this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
                     "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n  " +

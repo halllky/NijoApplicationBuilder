@@ -27,36 +27,47 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
         public virtual string TransformText()
         {
  foreach (var prop in _instance.GetProperties(_ctx.Config)) { 
+ if (prop is AggregateInstance.SchalarProperty schalarProperty) { 
             this.Write("<div className=\"flex\">\r\n    <div className=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(PropNameWidth));
-            this.Write("\">\r\n        <span className=\"text-sm select-none opacity-60\">\r\n            ");
+            this.Write("\">\r\n        <span className=\"text-sm select-none opacity-80\">\r\n            ");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
             this.Write("\r\n        </span>\r\n    </div>\r\n    <div className=\"flex-1\">\r\n");
- if (prop is AggregateInstance.SchalarProperty schalarProperty) { 
- foreach (var line in RenderSchalarProperty(schalarProperty)) { 
-            this.Write("        ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(line));
-            this.Write("\r\n");
- } 
+ PushIndent("        "); 
+ RenderSchalarProperty(schalarProperty); 
+ PopIndent(); 
+            this.Write("    </div>\r\n</div>\r\n\r\n");
  } else if (prop is AggregateInstance.RefProperty refProperty) { 
-            this.Write("        <");
+            this.Write("<div className=\"flex\">\r\n    <div className=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(PropNameWidth));
+            this.Write("\">\r\n        <span className=\"text-sm select-none opacity-80\">\r\n            ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write("\r\n        </span>\r\n    </div>\r\n    <div className=\"flex-1\">\r\n        <");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetComboboxName(refProperty)));
             this.Write(" raectHookFormId={\'");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetRegisterName(refProperty.PropertyName)));
-            this.Write("\'} />\r\n");
+            this.Write("\'} />\r\n    </div>\r\n</div>\r\n\r\n");
  } else if (prop is AggregateInstance.ChildProperty childProperty) { 
-            this.Write("        <div className=\"flex flex-col space-y-1 p-1 border border-neutral-300\">\r\n" +
-                    "");
-            this.Write(this.ToStringHelper.ToStringWithCulture(RenderChildAggregateBody(childProperty, "            ")));
-            this.Write("\r\n        </div>\r\n");
+            this.Write("<div className=\"py-2\">\r\n    <span className=\"text-sm select-none text-neutral-400" +
+                    "\">\r\n        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write("\r\n    </span>\r\n    <div className=\"flex flex-col space-y-1 p-1 border border-neut" +
+                    "ral-400\">\r\n");
+            this.Write(this.ToStringHelper.ToStringWithCulture(RenderChildAggregateBody(childProperty, "        ")));
+            this.Write("\r\n    </div>\r\n</div>\r\n\r\n");
  } else if (prop is AggregateInstance.VariationProperty variationProperty) { 
-            this.Write("        <div className=\"flex flex-col space-y-1 p-1 border border-neutral-300\">\r\n" +
-                    "        </div>\r\n");
+            this.Write("<div className=\"py-2\">\r\n    <span className=\"text-sm select-none text-neutral-400" +
+                    "\">\r\n        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write("\r\n    </span>\r\n    <div className=\"flex flex-col space-y-1 p-1 border border-neut" +
+                    "ral-400\">\r\n    </div>\r\n</div>\r\n\r\n");
  } else if (prop is AggregateInstance.ChildrenProperty childrenProperty) { 
-            this.Write("        <div className=\"flex flex-col space-y-1 p-1 border border-neutral-300\">\r\n" +
-                    "        </div>\r\n");
+            this.Write("<div className=\"py-2\">\r\n    <span className=\"text-sm select-none text-neutral-400" +
+                    "\">\r\n        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write("\r\n    </span>\r\n    <div className=\"flex flex-col space-y-1 p-1 border border-neut" +
+                    "ral-400\">\r\n    </div>\r\n</div>\r\n\r\n");
  } 
-            this.Write("    </div>\r\n</div>\r\n");
  } 
             return this.GenerationEnvironment.ToString();
         }

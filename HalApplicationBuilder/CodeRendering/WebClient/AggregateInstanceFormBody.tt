@@ -6,30 +6,59 @@
 <#@ import namespace="System.Collections.Generic" #>
 <#@ import namespace="HalApplicationBuilder.Core" #>
 <# foreach (var prop in _instance.GetProperties(_ctx.Config)) { #>
+<# if (prop is AggregateInstance.SchalarProperty schalarProperty) { #>
 <div className="flex">
     <div className="<#=PropNameWidth#>">
-        <span className="text-sm select-none opacity-60">
+        <span className="text-sm select-none opacity-80">
             <#=prop.PropertyName#>
         </span>
     </div>
     <div className="flex-1">
-<# if (prop is AggregateInstance.SchalarProperty schalarProperty) { #>
-<# foreach (var line in RenderSchalarProperty(schalarProperty)) { #>
-        <#=line#>
-<# } #>
-<# } else if (prop is AggregateInstance.RefProperty refProperty) { #>
-        <<#=GetComboboxName(refProperty)#> raectHookFormId={'<#=GetRegisterName(refProperty.PropertyName)#>'} />
-<# } else if (prop is AggregateInstance.ChildProperty childProperty) { #>
-        <div className="flex flex-col space-y-1 p-1 border border-neutral-300">
-<#=RenderChildAggregateBody(childProperty, "            ")#>
-        </div>
-<# } else if (prop is AggregateInstance.VariationProperty variationProperty) { #>
-        <div className="flex flex-col space-y-1 p-1 border border-neutral-300">
-        </div>
-<# } else if (prop is AggregateInstance.ChildrenProperty childrenProperty) { #>
-        <div className="flex flex-col space-y-1 p-1 border border-neutral-300">
-        </div>
-<# } #>
+<# PushIndent("        "); #>
+<# RenderSchalarProperty(schalarProperty); #>
+<# PopIndent(); #>
     </div>
 </div>
+
+<# } else if (prop is AggregateInstance.RefProperty refProperty) { #>
+<div className="flex">
+    <div className="<#=PropNameWidth#>">
+        <span className="text-sm select-none opacity-80">
+            <#=prop.PropertyName#>
+        </span>
+    </div>
+    <div className="flex-1">
+        <<#=GetComboboxName(refProperty)#> raectHookFormId={'<#=GetRegisterName(refProperty.PropertyName)#>'} />
+    </div>
+</div>
+
+<# } else if (prop is AggregateInstance.ChildProperty childProperty) { #>
+<div className="py-2">
+    <span className="text-sm select-none text-neutral-400">
+        <#=prop.PropertyName#>
+    </span>
+    <div className="flex flex-col space-y-1 p-1 border border-neutral-400">
+<#=RenderChildAggregateBody(childProperty, "        ")#>
+    </div>
+</div>
+
+<# } else if (prop is AggregateInstance.VariationProperty variationProperty) { #>
+<div className="py-2">
+    <span className="text-sm select-none text-neutral-400">
+        <#=prop.PropertyName#>
+    </span>
+    <div className="flex flex-col space-y-1 p-1 border border-neutral-400">
+    </div>
+</div>
+
+<# } else if (prop is AggregateInstance.ChildrenProperty childrenProperty) { #>
+<div className="py-2">
+    <span className="text-sm select-none text-neutral-400">
+        <#=prop.PropertyName#>
+    </span>
+    <div className="flex flex-col space-y-1 p-1 border border-neutral-400">
+    </div>
+</div>
+
+<# } #>
 <# } #>

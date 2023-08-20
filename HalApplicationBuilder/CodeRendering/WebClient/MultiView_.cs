@@ -67,22 +67,22 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     var from = GetRegisterName(Util.FromTo.FROM);
                     var to = GetRegisterName(Util.FromTo.TO);
                     if (multiline) {
-                        yield return $"<textarea className=\"border\" {{...register('{from}')}}></textarea>";
+                        yield return $"<textarea className=\"border w-40\" {{...register('{from}')}}></textarea>";
                         yield return $"〜";
-                        yield return $"<textarea className=\"border\" {{...register('{to}')}}></textarea>";
+                        yield return $"<textarea className=\"border w-40\" {{...register('{to}')}}></textarea>";
 
                     } else {
-                        yield return $"<input type=\"text\" className=\"border\" {{...register('{from}')}} />";
+                        yield return $"<input type=\"text\" className=\"border w-40\" {{...register('{from}')}} />";
                         yield return $"〜";
-                        yield return $"<input type=\"text\" className=\"border\" {{...register('{to}')}} />";
+                        yield return $"<input type=\"text\" className=\"border w-40\" {{...register('{to}')}} />";
                     }
 
                 } else {
                     var name = GetRegisterName();
                     if (multiline)
-                        yield return $"<textarea className=\"border\" {{...register('{name}')}}></textarea>";
+                        yield return $"<textarea className=\"border w-80\" {{...register('{name}')}}></textarea>";
                     else
-                        yield return $"<input type=\"text\" className=\"border\" {{...register('{name}')}} />";
+                        yield return $"<input type=\"text\" className=\"border w-80\" {{...register('{name}')}} />";
                 }
             }
             /// <summary>

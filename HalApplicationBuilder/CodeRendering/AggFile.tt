@@ -93,7 +93,7 @@ namespace <#=_ctx.Config.RootNamespace#> {
         [HttpGet("<#=Controller.KEYWORDSEARCH_ACTION_NAME#>")]
         public virtual IActionResult SearchByKeyword([FromQuery] string keyword) {
             // TODO
-            throw new NotImplementedException();
+            return this.JsonContent(Array.Empty<object>());
         }
     }
 }

@@ -48,10 +48,10 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         }
 
         #region SCHALAR PROPERTY
-        private IEnumerable<string> RenderSchalarProperty(AggregateInstance.SchalarProperty prop) {
+        private void RenderSchalarProperty(AggregateInstance.SchalarProperty prop) {
             var renderer = new FormRenderer(prop, this);
             foreach (var line in prop.CorrespondingDbColumn.MemberType.RenderUI(renderer)) {
-                yield return line;
+                WriteLine(line);
             }
         }
         private class FormRenderer : IGuiFormRenderer {
@@ -62,15 +62,17 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             private readonly AggregateInstance.SchalarProperty _prop;
             private readonly AggregateInstanceFormBody _owner;
 
+            private const string INPUT_WIDTH = "w-80";
+
             /// <summary>
             /// Createビュー兼シングルビュー: テキストボックス
             /// </summary>
             public IEnumerable<string> TextBox(bool multiline = false) {
                 var name = _owner.GetRegisterName(_prop.PropertyName);
                 if (multiline)
-                    yield return $"<textarea {{...register('{name}')}}></textarea>";
+                    yield return $"<textarea {{...register('{name}')}} className=\"{INPUT_WIDTH}\"></textarea>";
                 else
-                    yield return $"<input type=\"text\" {{...register('{name}')}} />";
+                    yield return $"<input type=\"text\" {{...register('{name}')}} className=\"{INPUT_WIDTH}\" />";
             }
 
             /// <summary>

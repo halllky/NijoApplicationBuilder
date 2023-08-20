@@ -79,7 +79,7 @@ export default function () {
 <# foreach (var member in _searchCondition.GetMembers()) { #>
                     <div className="flex">
                         <div className="<#=PropNameWidth#>">
-                            <span className="text-sm select-none opacity-60">
+                            <span className="text-sm select-none opacity-80">
                                 <#=member.Name#>
                             </span>
                         </div>
