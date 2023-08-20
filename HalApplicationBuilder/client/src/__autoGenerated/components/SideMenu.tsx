@@ -30,7 +30,7 @@ export const SideMenu = () => {
           <SideMenuLink url="/settings" icon={Cog6ToothIcon}>設定</SideMenuLink>
           <SideMenuLink url="/account" icon={UserCircleIcon}>テスト太郎</SideMenuLink>
         </nav>
-        <span className="p-1 text-sm">
+        <span className="p-1 text-sm whitespace-nowrap overflow-hidden">
           ver. <CopyableText>0.9.0.0</CopyableText>
         </span>
       </Panel>
