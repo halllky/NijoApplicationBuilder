@@ -32,15 +32,16 @@ import { useAppContext } from '../../hooks/AppContext';
 import { Link, useParams } from 'react-router-dom';
 import { FieldValues, SubmitHandler, useForm, FormProvider } from 'react-hook-form';
 import { BookmarkSquareIcon } from '@heroicons/react/24/outline';
-import { IconButton, InlineMessageBar, BarMessage");
-            this.Write(this.ToStringHelper.ToStringWithCulture(CollectCombobox()));
-            this.Write(" } from \'../../components\';\r\nimport { useHttpRequest } from \'../../hooks/useHttpR" +
-                    "equest\';\r\nimport { ");
+import * as Components from '../../components';
+import { IconButton, InlineMessageBar, BarMessage } from '../../components';
+import { useHttpRequest } from '../../hooks/useHttpRequest';
+import { ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
             this.Write(" as DataDetail } from \'../../");
             this.Write(this.ToStringHelper.ToStringWithCulture(types.ImportName));
-            this.Write(@"'
-
+            this.Write("\'\r\n");
+ RenderImportFromComponents(); 
+            this.Write(@"
 export default function () {
 
   const [, dispatch] = useAppContext()

@@ -481,11 +481,18 @@ namespace HalApplicationBuilder.Core {
 
         // ----------------------------- GraphNode extensions -----------------------------
 
-        internal static IEnumerable<GraphNode<T>> EnumerateAncestors<T>(this GraphNode<T> graphNode) where T : IGraphNode {
-            GraphNode<T>? node = graphNode.GetParent()?.Initial;
-            while (node != null) {
-                yield return node;
-                node = node.GetParent()?.Initial;
+        /// <summary>
+        /// 祖先を列挙する。ルート要素が先。
+        /// </summary>
+        internal static IEnumerable<GraphEdge<T>> EnumerateAncestors<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+            var stack = new Stack<GraphEdge<T>>();
+            GraphEdge<T>? edge = graphNode.GetParent();
+            while (edge != null) {
+                stack.Push(edge);
+                edge = edge.Initial.GetParent();
+            }
+            while (stack.Count > 0) {
+                yield return stack.Pop();
             }
         }
         internal static IEnumerable<GraphNode<T>> EnumerateDescendants<T>(this GraphNode<T> graphNode) where T : IGraphNode {
@@ -503,12 +510,6 @@ namespace HalApplicationBuilder.Core {
 
             foreach (var desc in GetDescencantsRecursively(graphNode)) {
                 yield return desc;
-            }
-        }
-        internal static IEnumerable<GraphNode<T>> EnumerateThisAndAncestors<T>(this GraphNode<T> graphNode) where T : IGraphNode {
-            yield return graphNode;
-            foreach (var ancestor in graphNode.EnumerateAncestors()) {
-                yield return ancestor;
             }
         }
         internal static IEnumerable<GraphNode<T>> EnumerateThisAndDescendants<T>(this GraphNode<T> graphNode) where T : IGraphNode {

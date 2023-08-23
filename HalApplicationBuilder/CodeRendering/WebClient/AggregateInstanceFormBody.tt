@@ -28,23 +28,25 @@
     </span>
   </div>
   <div className="flex-1">
-    <<#=GetComboboxName(refProperty)#> raectHookFormId={'<#=GetRegisterName(refProperty.PropertyName)#>'} />
+    <Components.<#=GetComboboxName(refProperty)#> raectHookFormId={'<#=GetRegisterName(refProperty.PropertyName)#>'} />
   </div>
 </div>
 
 <# } else if (prop is AggregateInstance.ChildProperty childProperty) { #>
 <div className="py-2">
-  <span className="text-sm select-none text-neutral-400">
+  <span className="text-sm select-none opacity-80">
     <#=prop.PropertyName#>
   </span>
   <div className="flex flex-col space-y-1 p-1 border border-neutral-400">
-<#=RenderChildAggregateBody(childProperty, "    ")#>
+<# PushIndent("    "); #>
+<# RenderChildAggregateBody(childProperty); #>
+<# PopIndent(); #>
   </div>
 </div>
 
 <# } else if (prop is AggregateInstance.VariationProperty variationProperty) { #>
 <div className="py-2">
-  <span className="text-sm select-none text-neutral-400">
+  <span className="text-sm select-none opacity-80">
     <#=prop.PropertyName#>
   </span>
   <div className="flex flex-col space-y-1 p-1 border border-neutral-400">
@@ -53,10 +55,13 @@
 
 <# } else if (prop is AggregateInstance.ChildrenProperty childrenProperty) { #>
 <div className="py-2">
-  <span className="text-sm select-none text-neutral-400">
+  <span className="text-sm select-none opacity-80">
     <#=prop.PropertyName#>
   </span>
-  <div className="flex flex-col space-y-1 p-1 border border-neutral-400">
+  <div className="flex flex-col space-y-1 p-1">
+<# PushIndent("    "); #>
+<# RenderChildrenAggregateBody(childrenProperty); #>
+<# PopIndent(); #>
   </div>
 </div>
 

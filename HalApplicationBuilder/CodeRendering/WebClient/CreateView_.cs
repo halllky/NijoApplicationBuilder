@@ -2,6 +2,7 @@ using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -26,19 +27,16 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         private string GetSingleViewUrl() => new SingleView(_aggregate, _ctx).Url;
         private string GetCreateCommandApi() => new AggFile.Controller(_aggregate).CreateCommandApi;
 
+        private void RenderImportFromComponents() {
+            var descs = new DescencantForms(_instance, _ctx);
+            var components = descs.EnumerateComponentNames().Join(", ");
+            WriteLine($"import {{ {components} }} from './{Path.GetFileNameWithoutExtension(descs.FileName)}'");
+        }
+
         private string RenderForm(string indent) {
             var body = new AggregateInstanceFormBody(_instance, _ctx);
             body.PushIndent(indent);
             return body.TransformText();
-        }
-
-        private string CollectCombobox() {
-            return _aggregate
-                .EnumerateThisAndDescendants()
-                .SelectMany(agg => agg.GetRefMembers())
-                .Select(refProp => $", {new ComboBox(refProp.Terminal, _ctx).ComponentName}")
-                .Distinct()
-                .Join(string.Empty);
         }
     }
 }

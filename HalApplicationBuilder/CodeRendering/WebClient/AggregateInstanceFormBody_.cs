@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.CodeRendering.WebClient {
-    partial class AggregateInstanceFormBody {
+    partial class AggregateInstanceFormBody : ITemplate {
         internal AggregateInstanceFormBody(GraphNode<AggregateInstance> instance, CodeRenderingContext ctx) {
             _ctx = ctx;
             _instance = instance;
@@ -34,6 +34,9 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
 
         private string PropNameWidth { get; }
+
+        public string FileName => throw new NotImplementedException("このテンプレートは他のテンプレートの一部としてレンダリングされるためファイル名はありません。");
+
         internal static string GetPropNameFlexBasis(IEnumerable<string> propNames) {
             var maxCharWidth = propNames
                 .Select(prop => prop.CalculateCharacterWidth())
@@ -111,11 +114,17 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         #endregion REF PROPERTY
 
         #region CHILD PROPERTY
-        private string RenderChildAggregateBody(AggregateInstance.ChildProperty childProperty, string indent) {
-            var childTemplate = new AggregateInstanceFormBody(childProperty.ChildAggregateInstance, _ctx);
-            childTemplate.PushIndent(indent);
-            return childTemplate.TransformText();
+        private void RenderChildAggregateBody(AggregateInstance.ChildProperty childProperty) {
+            var component = new DescencantForms.Component(childProperty.ChildAggregateInstance);
+            component.RenderCaller(this);
         }
         #endregion CHILD PROPERTY
+
+        #region CHILDREN PROPERTY
+        private void RenderChildrenAggregateBody(AggregateInstance.ChildrenProperty childrenProperty) {
+            var component = new DescencantForms.Component(childrenProperty.ChildAggregateInstance);
+            component.RenderCaller(this);
+        }
+        #endregion CHILDREN PROPERTY
     }
 }

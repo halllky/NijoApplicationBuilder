@@ -335,6 +335,7 @@ namespace HalApplicationBuilder {
                             aggregateDir.Generate(new CreateView(root, ctx));
                             aggregateDir.Generate(new MultiView(root, ctx));
                             aggregateDir.Generate(new SingleView(root, ctx));
+                            aggregateDir.Generate(new DescencantForms(root, ctx));
                             aggregateDir.DeleteOtherFiles();
                         });
                     }

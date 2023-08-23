@@ -10,6 +10,12 @@ namespace HalApplicationBuilder.CodeRendering {
         void WriteLine(string appendToText);
 
         string TransformText();
+
+        void Render(ITemplate template) {
+            foreach (var line in template.TransformText().Split(Environment.NewLine)) {
+                WriteLine(line);
+            }
+        }
     }
 }
 

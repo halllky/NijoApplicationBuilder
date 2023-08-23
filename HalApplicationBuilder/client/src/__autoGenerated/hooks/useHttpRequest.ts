@@ -46,7 +46,7 @@ export const useHttpRequest = () => {
       dispatch({ type: 'pushMsg', msg: `ERROR(${fullUrl})` })
       const text = await response.text()
       const res: { content: string } = JSON.parse(text)
-      const content: string[] = JSON.parse(res.content)
+      const content: string[] = res.content ? JSON.parse(res.content) : [text]
       const errors: BarMessage[] = content.map(text => ({ uuid: UUID.generate(), text }))
       return { ok: false, errors }
     }

@@ -31,15 +31,17 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
 import { Link, useNavigate } from 'react-router-dom';
 import { FieldValues, SubmitHandler, useForm, FormProvider } from 'react-hook-form';
 import { BookmarkSquareIcon } from '@heroicons/react/24/outline';
-import { IconButton, InlineMessageBar, BarMessage");
-            this.Write(this.ToStringHelper.ToStringWithCulture(CollectCombobox()));
-            this.Write(" } from \'../../components\';\r\nimport { useHttpRequest } from \'../../hooks/useHttpR" +
-                    "equest\';\r\nimport { useAppContext } from \"../../hooks/AppContext\"\r\nimport { ");
+import * as Components from '../../components';
+import { IconButton, InlineMessageBar, BarMessage } from '../../components';
+import { useHttpRequest } from '../../hooks/useHttpRequest';
+import { useAppContext } from ""../../hooks/AppContext""
+import { ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
             this.Write(" as DataDetail } from \'../../");
             this.Write(this.ToStringHelper.ToStringWithCulture(types.ImportName));
-            this.Write(@"'
-
+            this.Write("\'\r\n");
+ RenderImportFromComponents(); 
+            this.Write(@"
 export default function () {
 
   const reactHookFormMethods = useForm()

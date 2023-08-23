@@ -1,0 +1,53 @@
+<#@ template language="C#" linePragmas="false" #>
+<#@ output encoding="utf-8" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="HalApplicationBuilder.Core" #>
+import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { useForm, useFieldArray, useFormContext } from 'react-hook-form'
+import * as Components from '../../components'
+import { <#=_aggregateInstance.Item.TypeScriptTypeName#> } from '<#=TypesImport#>'
+
+<# foreach (var desc in EnumerateDescendantComponents()) { #>
+<# if (desc.IsChildren) { #>
+export const <#=desc.ComponentName#> = (args: {
+<# foreach (var arg in desc.GetArguments().Values) { #>
+  <#=arg#>: number
+<# } #>
+}) => {
+  const { control, register } = useFormContext<<#=_aggregateInstance.Item.TypeScriptTypeName#>>()
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: `<#=desc.GetUseFieldArrayName()#>`,
+  })
+
+  return (
+    <>
+      {fields.map((item, index) => (
+        <div key={index} className="flex flex-col space-y-1 p-1 border border-neutral-400">
+<# RenderBody(desc, "          "); #>
+          <Components.IconButton underline icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }} className="self-start">削除</Components.IconButton>
+        </div>
+      ))}
+      <Components.IconButton underline icon={PlusIcon} onClick={e => { append({}); e.preventDefault() }} className="self-start">追加</Components.IconButton>
+    </>
+  )
+}
+
+<# } else { #>
+export const <#=desc.ComponentName#> = (args: {
+<# foreach (var arg in desc.GetArguments().Values) { #>
+  <#=arg#>: number
+<# } #>
+}) => {
+  const { control, register } = useFormContext<<#=_aggregateInstance.Item.TypeScriptTypeName#>>()
+
+  return <>
+<# RenderBody(desc, "      "); #>
+  </>
+}
+
+<# } #>
+<# } #>

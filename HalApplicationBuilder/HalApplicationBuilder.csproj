@@ -46,6 +46,10 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>AggregateInstanceFormBody.cs</LastGenOutput>
 		</None>
+		<None Update="CodeRendering\WebClient\DescencantForms.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>DescencantForms.cs</LastGenOutput>
+		</None>
 		<None Update="CodeRendering\WebClient\CreateView.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>CreateView.cs</LastGenOutput>
@@ -187,6 +191,11 @@
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>AggregateInstanceFormBody.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering\WebClient\DescencantForms.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>DescencantForms.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering\WebClient\CreateView.cs">
 		  <DesignTime>True</DesignTime>

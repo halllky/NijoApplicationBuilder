@@ -19,59 +19,62 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class AggregateInstanceFormBody : AggregateInstanceFormBodyBase
+    public partial class DescencantForms : DescencantFormsBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
- foreach (var prop in _instance.GetProperties(_ctx.Config)) { 
- if (prop is AggregateInstance.SchalarProperty schalarProperty) { 
-            this.Write("<div className=\"flex\">\r\n  <div className=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PropNameWidth));
-            this.Write("\">\r\n    <span className=\"text-sm select-none opacity-80\">\r\n      ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write("\r\n    </span>\r\n  </div>\r\n  <div className=\"flex-1\">\r\n");
- PushIndent("    "); 
- RenderSchalarProperty(schalarProperty); 
- PopIndent(); 
-            this.Write("  </div>\r\n</div>\r\n\r\n");
- } else if (prop is AggregateInstance.RefProperty refProperty) { 
-            this.Write("<div className=\"flex\">\r\n  <div className=\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(PropNameWidth));
-            this.Write("\">\r\n    <span className=\"text-sm select-none opacity-80\">\r\n      ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write("\r\n    </span>\r\n  </div>\r\n  <div className=\"flex-1\">\r\n    <Components.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(GetComboboxName(refProperty)));
-            this.Write(" raectHookFormId={\'");
-            this.Write(this.ToStringHelper.ToStringWithCulture(GetRegisterName(refProperty.PropertyName)));
-            this.Write("\'} />\r\n  </div>\r\n</div>\r\n\r\n");
- } else if (prop is AggregateInstance.ChildProperty childProperty) { 
-            this.Write("<div className=\"py-2\">\r\n  <span className=\"text-sm select-none opacity-80\">\r\n    " +
-                    "");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write("\r\n  </span>\r\n  <div className=\"flex flex-col space-y-1 p-1 border border-neutral-" +
-                    "400\">\r\n");
- PushIndent("    "); 
- RenderChildAggregateBody(childProperty); 
- PopIndent(); 
-            this.Write("  </div>\r\n</div>\r\n\r\n");
- } else if (prop is AggregateInstance.VariationProperty variationProperty) { 
-            this.Write("<div className=\"py-2\">\r\n  <span className=\"text-sm select-none opacity-80\">\r\n    " +
-                    "");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write("\r\n  </span>\r\n  <div className=\"flex flex-col space-y-1 p-1 border border-neutral-" +
-                    "400\">\r\n  </div>\r\n</div>\r\n\r\n");
- } else if (prop is AggregateInstance.ChildrenProperty childrenProperty) { 
-            this.Write("<div className=\"py-2\">\r\n  <span className=\"text-sm select-none opacity-80\">\r\n    " +
-                    "");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write("\r\n  </span>\r\n  <div className=\"flex flex-col space-y-1 p-1\">\r\n");
- PushIndent("    "); 
- RenderChildrenAggregateBody(childrenProperty); 
- PopIndent(); 
-            this.Write("  </div>\r\n</div>\r\n\r\n");
+            this.Write("import { PlusIcon, XMarkIcon } from \'@heroicons/react/24/outline\'\r\nimport { useFo" +
+                    "rm, useFieldArray, useFormContext } from \'react-hook-form\'\r\nimport * as Componen" +
+                    "ts from \'../../components\'\r\nimport { ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.TypeScriptTypeName));
+            this.Write(" } from \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(TypesImport));
+            this.Write("\'\r\n\r\n");
+ foreach (var desc in EnumerateDescendantComponents()) { 
+ if (desc.IsChildren) { 
+            this.Write("export const ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(desc.ComponentName));
+            this.Write(" = (args: {\r\n");
+ foreach (var arg in desc.GetArguments().Values) { 
+            this.Write("  ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(arg));
+            this.Write(": number\r\n");
+ } 
+            this.Write("}) => {\r\n  const { control, register } = useFormContext<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.TypeScriptTypeName));
+            this.Write(">()\r\n  const { fields, append, remove } = useFieldArray({\r\n    control,\r\n    name" +
+                    ": `");
+            this.Write(this.ToStringHelper.ToStringWithCulture(desc.GetUseFieldArrayName()));
+            this.Write("`,\r\n  })\r\n\r\n  return (\r\n    <>\r\n      {fields.map((item, index) => (\r\n        <di" +
+                    "v key={index} className=\"flex flex-col space-y-1 p-1 border border-neutral-400\">" +
+                    "\r\n");
+ RenderBody(desc, "          "); 
+            this.Write(@"          <Components.IconButton underline icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }} className=""self-start"">削除</Components.IconButton>
+        </div>
+      ))}
+      <Components.IconButton underline icon={PlusIcon} onClick={e => { append({}); e.preventDefault() }} className=""self-start"">追加</Components.IconButton>
+    </>
+  )
+}
+
+");
+ } else { 
+            this.Write("export const ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(desc.ComponentName));
+            this.Write(" = (args: {\r\n");
+ foreach (var arg in desc.GetArguments().Values) { 
+            this.Write("  ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(arg));
+            this.Write(": number\r\n");
+ } 
+            this.Write("}) => {\r\n  const { control, register } = useFormContext<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.TypeScriptTypeName));
+            this.Write(">()\r\n\r\n  return <>\r\n");
+ RenderBody(desc, "      "); 
+            this.Write("  </>\r\n}\r\n\r\n");
  } 
  } 
             return this.GenerationEnvironment.ToString();
@@ -82,7 +85,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class AggregateInstanceFormBodyBase
+    public class DescencantFormsBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;
