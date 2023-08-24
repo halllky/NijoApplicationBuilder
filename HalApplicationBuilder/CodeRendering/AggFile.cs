@@ -52,7 +52,7 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(" _dbContext;\r\n\r\n        [HttpPost(\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(Controller.CREATE_ACTION_NAME));
             this.Write("\")]\r\n        public virtual IActionResult Create([FromBody] ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(CreateCommandClassName));
             this.Write(" param) {\r\n            if (_dbContext.");
             this.Write(this.ToStringHelper.ToStringWithCulture(_create.MethodName));
             this.Write("(param, out var created, out var errors)) {\r\n                return this.JsonCont" +
@@ -66,19 +66,18 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(" {\r\n        public bool ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_create.MethodName));
             this.Write("(");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CreateCommandClassName));
+            this.Write(" command, out ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
-            this.Write(" instance, out ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
-            this.Write(" created, out ICollection<string> errors) {\r\n            var dbEntity = instance." +
-                    "");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance.TO_DB_ENTITY_METHOD_NAME));
+            this.Write(" created, out ICollection<string> errors) {\r\n            var dbEntity = command.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CreateCommandToDbEntityMethodName));
             this.Write("();\r\n            this.Add(dbEntity);\r\n\r\n            try {\r\n                this.S" +
                     "aveChanges();\r\n            } catch (DbUpdateException ex) {\r\n                cre" +
                     "ated = new ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
             this.Write("();\r\n                errors = ex.GetMessagesRecursively(\"  \").ToList();\r\n        " +
-                    "        return false;\r\n            }\r\n\r\n            var instanceKey = instance.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(GETINSTANCEKEY_METHOD_NAME));
+                    "        return false;\r\n            }\r\n\r\n            var instanceKey = command.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CreateCommandGetInstanceKeyMethodName));
             this.Write("().ToString();\r\n            var afterUpdate = this.");
             this.Write(this.ToStringHelper.ToStringWithCulture(_find.MethodName));
             this.Write("(instanceKey);\r\n            if (afterUpdate == null) {\r\n                created =" +
@@ -340,6 +339,45 @@ namespace ");
             this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
                     "s.Generic;\r\n    using System.Linq;\r\n\r\n    /// <summary>\r\n    /// ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.GetCorrespondingAggregate().Item.DisplayName));
+            this.Write("のデータ作成コマンドです。\r\n    /// </summary>\r\n    public partial class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CreateCommandClassName));
+            this.Write(" {\r\n");
+ foreach (var prop in _aggregateInstance.GetProperties(_ctx.Config)) { 
+            this.Write("        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.CSharpTypeName));
+            this.Write(" ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write(" { get; set; }\r\n");
+ } 
+            this.Write("\r\n        /// <summary>\r\n        /// ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
+            this.Write("のデータ作成コマンドをデータベースに保存する形に変換します。\r\n        /// </summary>\r\n        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
+            this.Write(".");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_dbEntity.Item.ClassName));
+            this.Write(" ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CreateCommandToDbEntityMethodName));
+            this.Write("() {\r\n");
+ PushIndent("            "); 
+ ToDbEntity(); 
+ PopIndent(); 
+            this.Write("        }\r\n        /// <summary>\r\n        /// 主キーを返します。\r\n        /// </summary>\r\n" +
+                    "        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.CLASS_NAME));
+            this.Write(" ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(CreateCommandGetInstanceKeyMethodName));
+            this.Write("() {\r\n            return ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.CLASS_NAME));
+            this.Write(".");
+            this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.CREATE));
+            this.Write("(new object[] {\r\n");
+ foreach (var p in _aggregateInstance.GetSchalarProperties(_ctx.Config).Where(p => p.CorrespondingDbColumn.IsPrimary)) { 
+            this.Write("                this.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(p.PropertyName));
+            this.Write(",\r\n");
+ } 
+            this.Write("            });\r\n        }\r\n    }\r\n\r\n    /// <summary>\r\n    /// ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.GetCorrespondingAggregate().Item.DisplayName));
             this.Write("のデータ1件の詳細を表すクラスです。\r\n    /// </summary>\r\n    public partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
             this.Write(" : ");
@@ -380,7 +418,8 @@ namespace ");
  PushIndent("            "); 
  ToDbEntity(); 
  PopIndent(); 
-            this.Write("        }\r\n        public ");
+            this.Write("        }\r\n        /// <summary>\r\n        /// 主キーを返します。\r\n        /// </summary>\r\n" +
+                    "        public ");
             this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.CLASS_NAME));
             this.Write(" ");
             this.Write(this.ToStringHelper.ToStringWithCulture(GETINSTANCEKEY_METHOD_NAME));

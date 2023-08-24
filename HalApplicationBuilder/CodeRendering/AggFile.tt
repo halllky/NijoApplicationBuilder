@@ -26,7 +26,7 @@ namespace <#=_ctx.Config.RootNamespace#> {
         private readonly <#=_ctx.Config.DbContextName#> _dbContext;
 
         [HttpPost("<#=Controller.CREATE_ACTION_NAME#>")]
-        public virtual IActionResult Create([FromBody] <#=_aggregateInstance.Item.ClassName#> param) {
+        public virtual IActionResult Create([FromBody] <#=CreateCommandClassName#> param) {
             if (_dbContext.<#=_create.MethodName#>(param, out var created, out var errors)) {
                 return this.JsonContent(created);
             } else {
@@ -44,8 +44,8 @@ namespace <#=_ctx.Config.EntityNamespace#> {
     using Microsoft.EntityFrameworkCore.Infrastructure;
 
     partial class <#=_ctx.Config.DbContextName#> {
-        public bool <#=_create.MethodName#>(<#=_aggregateInstance.Item.ClassName#> instance, out <#=_aggregateInstance.Item.ClassName#> created, out ICollection<string> errors) {
-            var dbEntity = instance.<#=AggregateInstance.TO_DB_ENTITY_METHOD_NAME#>();
+        public bool <#=_create.MethodName#>(<#=CreateCommandClassName#> command, out <#=_aggregateInstance.Item.ClassName#> created, out ICollection<string> errors) {
+            var dbEntity = command.<#=CreateCommandToDbEntityMethodName#>();
             this.Add(dbEntity);
 
             try {
@@ -56,7 +56,7 @@ namespace <#=_ctx.Config.EntityNamespace#> {
                 return false;
             }
 
-            var instanceKey = instance.<#=GETINSTANCEKEY_METHOD_NAME#>().ToString();
+            var instanceKey = command.<#=CreateCommandGetInstanceKeyMethodName#>().ToString();
             var afterUpdate = this.<#=_find.MethodName#>(instanceKey);
             if (afterUpdate == null) {
                 created = new <#=_aggregateInstance.Item.ClassName#>();
@@ -323,6 +323,34 @@ namespace <#=_ctx.Config.RootNamespace#> {
     using System.Linq;
 
     /// <summary>
+    /// <#=_aggregateInstance.GetCorrespondingAggregate().Item.DisplayName#>のデータ作成コマンドです。
+    /// </summary>
+    public partial class <#=CreateCommandClassName#> {
+<# foreach (var prop in _aggregateInstance.GetProperties(_ctx.Config)) { #>
+        public <#=prop.CSharpTypeName#> <#=prop.PropertyName#> { get; set; }
+<# } #>
+
+        /// <summary>
+        /// <#=_aggregate.Item.DisplayName#>のデータ作成コマンドをデータベースに保存する形に変換します。
+        /// </summary>
+        public <#=_ctx.Config.EntityNamespace#>.<#=_dbEntity.Item.ClassName#> <#=CreateCommandToDbEntityMethodName#>() {
+<# PushIndent("            "); #>
+<# ToDbEntity(); #>
+<# PopIndent(); #>
+        }
+        /// <summary>
+        /// 主キーを返します。
+        /// </summary>
+        public <#=InstanceKey.CLASS_NAME#> <#=CreateCommandGetInstanceKeyMethodName#>() {
+            return <#=InstanceKey.CLASS_NAME#>.<#=InstanceKey.CREATE#>(new object[] {
+<# foreach (var p in _aggregateInstance.GetSchalarProperties(_ctx.Config).Where(p => p.CorrespondingDbColumn.IsPrimary)) { #>
+                this.<#=p.PropertyName#>,
+<# } #>
+            });
+        }
+    }
+
+    /// <summary>
     /// <#=_aggregateInstance.GetCorrespondingAggregate().Item.DisplayName#>のデータ1件の詳細を表すクラスです。
     /// </summary>
     public partial class <#=_aggregateInstance.Item.ClassName#> : <#=AggregateInstance.BASE_CLASS_NAME#> {
@@ -346,6 +374,9 @@ namespace <#=_ctx.Config.RootNamespace#> {
 <# ToDbEntity(); #>
 <# PopIndent(); #>
         }
+        /// <summary>
+        /// 主キーを返します。
+        /// </summary>
         public <#=InstanceKey.CLASS_NAME#> <#=GETINSTANCEKEY_METHOD_NAME#>() {
             return <#=InstanceKey.CLASS_NAME#>.<#=InstanceKey.CREATE#>(new object[] {
 <# foreach (var p in _aggregateInstance.GetSchalarProperties(_ctx.Config).Where(p => p.CorrespondingDbColumn.IsPrimary)) { #>

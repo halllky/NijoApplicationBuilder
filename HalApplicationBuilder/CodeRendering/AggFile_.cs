@@ -362,7 +362,11 @@ namespace HalApplicationBuilder.CodeRendering {
         #endregion SEARCH
 
 
-        #region AGGREGATE INSTANCE
+        #region AGGREGATE INSTANCE & CREATE COMMAND
+        private string CreateCommandClassName => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}CreateCommand";
+        private string CreateCommandToDbEntityMethodName => AggregateInstance.TO_DB_ENTITY_METHOD_NAME;
+        private string CreateCommandGetInstanceKeyMethodName => GETINSTANCENAME_METHOD_NAME;
+
         private void ToDbEntity() {
 
             void WriteBody(GraphNode<AggregateInstance> instance, string parentPath, string instancePath, int depth) {
@@ -495,7 +499,7 @@ namespace HalApplicationBuilder.CodeRendering {
                 yield return $"    ?? string.Empty;";
             }
         }
-        #endregion AGGREGATE INSTANCE
+        #endregion AGGREGATE INSTANCE & CREATE COMMAND
 
 
         #region CONTROLLER
