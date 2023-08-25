@@ -79,10 +79,12 @@ export default function () {
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
             this.Write("</Link>&nbsp;新規作成\r\n        </h1>\r\n        <div className=\"flex flex-col space-y-1" +
                     " p-1 bg-neutral-200\">\r\n");
-            this.Write(this.ToStringHelper.ToStringWithCulture(RenderForm("          ")));
-            this.Write("\r\n        </div>\r\n        <InlineMessageBar value={errorMessages} onChange={setEr" +
-                    "rorMessages} />\r\n        <IconButton fill icon={BookmarkSquareIcon} className=\"s" +
-                    "elf-start\">保存</IconButton>\r\n      </form>\r\n    </FormProvider>\r\n  )\r\n}\r\n");
+ PushIndent("          "); 
+ RenderForm(); 
+ PopIndent(); 
+            this.Write("        </div>\r\n        <InlineMessageBar value={errorMessages} onChange={setErro" +
+                    "rMessages} />\r\n        <IconButton fill icon={BookmarkSquareIcon} className=\"sel" +
+                    "f-start\">保存</IconButton>\r\n      </form>\r\n    </FormProvider>\r\n  )\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

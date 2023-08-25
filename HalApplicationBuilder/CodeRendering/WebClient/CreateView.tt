@@ -46,7 +46,9 @@ export default function () {
           <Link to="<#=GetMultiViewUrl()#>"><#=_aggregate.Item.DisplayName#></Link>&nbsp;新規作成
         </h1>
         <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
-<#=RenderForm("          ")#>
+<# PushIndent("          "); #>
+<# RenderForm(); #>
+<# PopIndent(); #>
         </div>
         <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
         <IconButton fill icon={BookmarkSquareIcon} className="self-start">保存</IconButton>

@@ -33,10 +33,9 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             WriteLine($"import {{ {components} }} from './{Path.GetFileNameWithoutExtension(descs.FileName)}'");
         }
 
-        private string RenderForm(string indent) {
+        private void RenderForm() {
             var body = new AggregateInstanceFormBody(_instance, _ctx);
-            body.PushIndent(indent);
-            return body.TransformText();
+            ((ITemplate)this).Render(body);
         }
     }
 }

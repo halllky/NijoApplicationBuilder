@@ -65,7 +65,9 @@ export default function () {
           <span className="select-all">{instanceName}</span>
         </h1>
         <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
-<#=RenderForm("          ")#>
+<# PushIndent("          "); #>
+<# RenderForm(); #>
+<# PopIndent(); #>
         </div>
         <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
         <IconButton fill icon={BookmarkSquareIcon} className="self-start">更新</IconButton>
