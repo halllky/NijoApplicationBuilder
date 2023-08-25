@@ -96,7 +96,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     if (entity.Source == null || !entity.Source.IsRef()) {
                         foreach (var child in entity.GetChildMembers()) Collect(child.Terminal);
                         foreach (var child in entity.GetChildrenMembers()) Collect(child.Terminal);
-                        foreach (var child in entity.GetVariationMembers()) Collect(child.Terminal);
+                        foreach (var child in entity.GetVariationGroups().SelectMany(group => group.VariationAggregates.Values)) Collect(child.Terminal);
                         foreach (var refTarget in entity.GetRefMembers()) Collect(refTarget.Terminal);
                     }
                 }
@@ -139,7 +139,7 @@ namespace HalApplicationBuilder.CodeRendering {
                 if (entity.Source == null || !entity.Source.IsRef()) {
                     foreach (var child in entity.GetChildMembers()) Collect(child.Terminal);
                     foreach (var child in entity.GetChildrenMembers()) Collect(child.Terminal);
-                    foreach (var child in entity.GetVariationMembers()) Collect(child.Terminal);
+                    foreach (var child in entity.GetVariationGroups().SelectMany(group => group.VariationAggregates.Values)) Collect(child.Terminal);
                     foreach (var refTarget in entity.GetRefMembers()) Collect(refTarget.Terminal);
                 }
             }

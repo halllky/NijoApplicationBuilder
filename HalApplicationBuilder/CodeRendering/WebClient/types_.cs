@@ -59,16 +59,14 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     PopIndent();
                     WriteLine($"}}[]");
                 }
-                foreach (var group in instance.GetVariationGroups()) {
+                foreach (var member in instance.GetVariationGroups().SelectMany(group => group.VariationAggregates.Values)) {
                     //WriteLine($"{group.Key}?: number"); // TODO GetSchalarPropertiesのほうでとれてきてしまう
 
-                    foreach (var member in group) {
-                        WriteLine($"{member.RelationName}?: {{");
-                        PushIndent("  ");
-                        RenderBody(member.Terminal);
-                        PopIndent();
-                        WriteLine($"}}");
-                    }
+                    WriteLine($"{member.RelationName}?: {{");
+                    PushIndent("  ");
+                    RenderBody(member.Terminal);
+                    PopIndent();
+                    WriteLine($"}}");
                 }
             }
 

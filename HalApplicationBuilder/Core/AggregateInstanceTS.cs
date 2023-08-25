@@ -40,16 +40,14 @@ namespace HalApplicationBuilder.Core {
                     template.PopIndent();
                     template.WriteLine($"}}[]");
                 }
-                foreach (var group in instance.GetVariationGroups()) {
+                foreach (var member in instance.GetVariationGroups().SelectMany(group => group.VariationAggregates.Values)) {
                     //template.WriteLine($"{group.Key}?: number"); // TODO GetSchalarPropertiesのほうでとれてきてしまう
 
-                    foreach (var member in group) {
-                        template.WriteLine($"{member.RelationName}?: {{");
-                        template.PushIndent("  ");
-                        RenderBody(member.Terminal);
-                        template.PopIndent();
-                        template.WriteLine($"}}");
-                    }
+                    template.WriteLine($"{member.RelationName}?: {{");
+                    template.PushIndent("  ");
+                    RenderBody(member.Terminal);
+                    template.PopIndent();
+                    template.WriteLine($"}}");
                 }
             }
 

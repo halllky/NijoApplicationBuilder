@@ -106,7 +106,7 @@ namespace HalApplicationBuilder.Core
         }
         internal static IEnumerable<AggregateInstance.VariationProperty> GetVariationProperties(this GraphNode<AggregateInstance> node, Config config) {
             var initial = node.GetDbEntity().Item.Id;
-            foreach (var edge in node.GetVariationMembers()) {
+            foreach (var edge in node.GetVariationGroups().SelectMany(group => group.VariationAggregates.Values)) {
                 var navigationProperty = new NavigationProperty(edge.Terminal.GetDbEntity().In.Single(e => e.Initial.Item.Id == initial), config);
                 yield return new AggregateInstance.VariationProperty {
                     ChildAggregateInstance = edge.Terminal,

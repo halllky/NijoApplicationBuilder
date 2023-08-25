@@ -190,7 +190,7 @@ namespace HalApplicationBuilder.Core {
                 // variationの型番号
                 yield return new EFCoreEntity.Member {
                     Owner = dbEntity.Item,
-                    PropertyName = group.Key.ToCSharpSafe(),
+                    PropertyName = group.GroupName.ToCSharpSafe(),
                     IsPrimary = false, // TODO Variationを主キーに設定できないの不便では？
                     IsInstanceName = false,
                     MemberType = new EnumList(),
@@ -211,7 +211,7 @@ namespace HalApplicationBuilder.Core {
             foreach (var edge in efCoreEntity.GetChildMembers()) {
                 yield return new NavigationProperty(edge, config);
             }
-            foreach (var edge in efCoreEntity.GetVariationMembers()) {
+            foreach (var edge in efCoreEntity.GetVariationGroups().SelectMany(group => group.VariationAggregates.Values)) {
                 yield return new NavigationProperty(edge, config);
             }
             foreach (var edge in efCoreEntity.GetChildrenMembers()) {
