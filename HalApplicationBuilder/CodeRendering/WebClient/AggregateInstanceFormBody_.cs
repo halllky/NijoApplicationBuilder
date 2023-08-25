@@ -22,21 +22,16 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         private readonly GraphNode<AggregateInstance> _instance;
         private readonly GraphNode<EFCoreEntity> _dbEntity;
 
-
-        private string GetRegisterName(string propName) {
-            var list = _instance
-                .PathFromEntry()
-                .Select(path => path.RelationName)
-                .ToList();
-            list.Add(propName);
-            return list.Join(".");
-        }
-
-
         private string PropNameWidth { get; }
-
         public string FileName => throw new NotImplementedException("このテンプレートは他のテンプレートの一部としてレンダリングされるためファイル名はありません。");
 
+        private string GetRegisterName(string propName) {
+            return _instance
+                .PathFromEntry()
+                .Select(path => path.RelationName)
+                .Concat(new[] { propName })
+                .Join(".");
+        }
         internal static string GetPropNameFlexBasis(IEnumerable<string> propNames) {
             var maxCharWidth = propNames
                 .Select(prop => prop.CalculateCharacterWidth())
@@ -107,24 +102,62 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         }
         #endregion SCHALAR PROPERTY
 
-        #region REF PROPERTY
-        private string GetComboboxName(AggregateInstance.RefProperty refProperty) {
-            return new ComboBox(refProperty.RefTarget.GetCorrespondingAggregate(), _ctx).ComponentName;
+        #region DESCENDANT AGGREGATES
+        private void RenderRefAggregateBody(AggregateInstance.RefProperty refProperty) {
+            var component = new ComboBox(refProperty.RefTarget.GetCorrespondingAggregate(), _ctx);
+            var registerName = GetRegisterName(refProperty.PropertyName);
+            component.RenderCaller(this, registerName);
         }
-        #endregion REF PROPERTY
-
-        #region CHILD PROPERTY
-        private void RenderChildAggregateBody(AggregateInstance.ChildProperty childProperty) {
-            var component = new DescencantForms.Component(childProperty.ChildAggregateInstance);
-            component.RenderCaller(this);
-        }
-        #endregion CHILD PROPERTY
-
-        #region CHILDREN PROPERTY
         private void RenderChildrenAggregateBody(AggregateInstance.ChildrenProperty childrenProperty) {
             var component = new DescencantForms.Component(childrenProperty.ChildAggregateInstance);
             component.RenderCaller(this);
         }
-        #endregion CHILDREN PROPERTY
+        private void RenderChildAggregateBody(AggregateInstance.ChildProperty childProperty) {
+            var component = new DescencantForms.Component(childProperty.ChildAggregateInstance);
+            component.RenderCaller(this);
+        }
+        private void RenderVariationAggregateBody(AggregateInstance.VariationProperty variationProperty) {
+            var renderer = new VariationRenderer(variationProperty, this);
+            renderer.RenderBody(this);
+        }
+
+        internal class VariationRenderer {
+            internal VariationRenderer(AggregateInstance.VariationProperty variationProperty, AggregateInstanceFormBody owner) {
+                _variationProperty = variationProperty;
+                _owner = owner;
+            }
+            private readonly AggregateInstance.VariationProperty _variationProperty;
+            private readonly AggregateInstanceFormBody _owner;
+
+            private string GetStateName() {
+                var name = _variationProperty.ChildAggregateInstance
+                    .PathFromEntry()
+                    .Select(edge => edge.RelationName)
+                    .Concat(new[] { _variationProperty.PropertyName })
+                    .Join("_")
+                    .ToCSharpSafe();
+                return $"selected{name}";
+            }
+            private string GetDispatcherName() {
+                var name = _variationProperty.ChildAggregateInstance
+                    .PathFromEntry()
+                    .Select(edge => edge.RelationName)
+                    .Concat(new[] { _variationProperty.PropertyName })
+                    .Join("_")
+                    .ToCSharpSafe();
+                return $"change{name}";
+            }
+
+            internal void RenderHook(ITemplate template) {
+                template.WriteLine($"const [{GetStateName()}, {GetDispatcherName()}] = useState(0)");
+            }
+            internal void RenderBody(ITemplate template) {
+                // TODO variation周りの設計修正が先
+                //template.WriteLine($"<label>");
+                //template.WriteLine($"  <input type=\"radio\"  />");
+                //template.WriteLine($"</label>");
+            }
+        }
+        #endregion DESCENDANT AGGREGATES
     }
 }

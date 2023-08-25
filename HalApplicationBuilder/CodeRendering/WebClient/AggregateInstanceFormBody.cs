@@ -42,11 +42,11 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
             this.Write(this.ToStringHelper.ToStringWithCulture(PropNameWidth));
             this.Write("\">\r\n    <span className=\"text-sm select-none opacity-80\">\r\n      ");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write("\r\n    </span>\r\n  </div>\r\n  <div className=\"flex-1\">\r\n    <Components.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(GetComboboxName(refProperty)));
-            this.Write(" raectHookFormId={\'");
-            this.Write(this.ToStringHelper.ToStringWithCulture(GetRegisterName(refProperty.PropertyName)));
-            this.Write("\'} />\r\n  </div>\r\n</div>\r\n\r\n");
+            this.Write("\r\n    </span>\r\n  </div>\r\n  <div className=\"flex-1\">\r\n");
+ PushIndent("    "); 
+ RenderRefAggregateBody(refProperty); 
+ PopIndent(); 
+            this.Write("  </div>\r\n</div>\r\n\r\n");
  } else if (prop is AggregateInstance.ChildProperty childProperty) { 
             this.Write("<div className=\"py-2\">\r\n  <span className=\"text-sm select-none opacity-80\">\r\n    " +
                     "");

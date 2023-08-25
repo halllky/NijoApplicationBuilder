@@ -28,7 +28,9 @@
     </span>
   </div>
   <div className="flex-1">
-    <Components.<#=GetComboboxName(refProperty)#> raectHookFormId={'<#=GetRegisterName(refProperty.PropertyName)#>'} />
+<# PushIndent("    "); #>
+<# RenderRefAggregateBody(refProperty); #>
+<# PopIndent(); #>
   </div>
 </div>
 
