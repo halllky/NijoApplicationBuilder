@@ -54,7 +54,7 @@ namespace HalApplicationBuilder.IntegrationTest {
             var query = parameters == null
                 ? string.Empty
                 : $"?{await new FormUrlEncodedContent(parameters).ReadAsStringAsync()}";
-            var uri = new Uri(project.GetDebugUrl(), path + query);
+            var uri = new Uri(project.Debugger.GetDebugUrl(), path + query);
 
             var message = new HttpRequestMessage(HttpMethod.Get, uri);
 
@@ -68,7 +68,7 @@ namespace HalApplicationBuilder.IntegrationTest {
         /// <param name="body">リクエストボディ</param>
         /// <returns>HTTPレスポンス</returns>
         public static async Task<HttpResponseMessage> Post(this HalappProject project, string path, object body) {
-            var uri = new Uri(project.GetDebugUrl(), path);
+            var uri = new Uri(project.Debugger.GetDebugUrl(), path);
             var message = new HttpRequestMessage(HttpMethod.Post, uri);
             message.Content = new StringContent(body.ToJson(), Encoding.UTF8, "application/json");
 
@@ -77,7 +77,7 @@ namespace HalApplicationBuilder.IntegrationTest {
         }
 
         public static async Task<HttpResponseMessage> Delete(this HalappProject project, string path) {
-            var uri = new Uri(project.GetDebugUrl(), path);
+            var uri = new Uri(project.Debugger.GetDebugUrl(), path);
             var message = new HttpRequestMessage(HttpMethod.Delete, uri);
 
             using var client = new HttpClient();
