@@ -45,6 +45,24 @@ namespace HalApplicationBuilder {
 
             return this;
         }
+        /// <summary>
+        /// データベースおよび全てのマイグレーションを削除します。
+        /// </summary>
+        public HalappProjectMigrator DeleteDatabaseAndMigrations() {
+            // マイグレーションの削除
+            var migrationDir = Path.Combine(_project.ProjectRoot, "Migrations");
+            if (Directory.Exists(migrationDir)) {
+                foreach (var file in Directory.GetFiles(migrationDir)) {
+                    File.Delete(file);
+                }
+            }
+            // DBの削除
+            File.Delete(Path.Combine(_project.ProjectRoot, "bin", "Debug", "debug.sqlite3"));
+            File.Delete(Path.Combine(_project.ProjectRoot, "bin", "Debug", "debug.sqlite3-shm"));
+            File.Delete(Path.Combine(_project.ProjectRoot, "bin", "Debug", "debug.sqlite3-wal"));
+
+            return this;
+        }
 
         internal IEnumerable<Migration> GetMigrations() {
             try {
