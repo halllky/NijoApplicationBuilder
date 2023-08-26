@@ -13,6 +13,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
     using System.Text;
     using System.Collections.Generic;
     using HalApplicationBuilder.Core;
+    using HalApplicationBuilder.DotnetEx;
     using System;
     
     /// <summary>
@@ -57,12 +58,36 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
  RenderChildAggregateBody(childProperty); 
  PopIndent(); 
             this.Write("  </div>\r\n</div>\r\n\r\n");
- } else if (prop is AggregateInstance.VariationProperty variationProperty) { 
-            this.Write("<div className=\"py-2\">\r\n  <span className=\"text-sm select-none opacity-80\">\r\n    " +
+ } else if (prop is AggregateInstance.VariationProperty variationProperty
+              && variationProperty.Key == variationProperty.Group.VariationAggregates.First().Key) { 
+            this.Write("<div className=\"flex\">\r\n  <div className=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(PropNameWidth));
+            this.Write("\">\r\n    <span className=\"text-sm select-none opacity-80\">\r\n      ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(variationProperty.Group.GroupName));
+            this.Write("\r\n    </span>\r\n  </div>\r\n  <div className=\"flex-1 flex gap-2 flex-wrap\">\r\n");
+ foreach (var item in variationProperty.Group.VariationAggregates) { 
+            this.Write("    <label>\r\n      <input type=\"radio\" value=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(item.Key));
+            this.Write("\" {...register(\'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetRegisterName(variationProperty.Group.GroupName.ToCSharpSafe())));
+            this.Write("\')} />\r\n      ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(item.Value.RelationName));
+            this.Write("\r\n    </label>\r\n");
+ } 
+            this.Write("  </div>\r\n</div>\r\n");
+ foreach (var item in variationProperty.Group.VariationAggregates) { 
+            this.Write("<div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(watch(\'" +
                     "");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write("\r\n  </span>\r\n  <div className=\"flex flex-col space-y-1 p-1 border border-neutral-" +
-                    "400\">\r\n  </div>\r\n</div>\r\n\r\n");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetRegisterName(variationProperty.Group.GroupName.ToCSharpSafe())));
+            this.Write("\') !== \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(item.Key));
+            this.Write("\' ? \'hidden\' : \'\')}`}>\r\n");
+ PushIndent("  "); 
+ RenderVariationAggregateBody(item.Value.Terminal); 
+ PopIndent(); 
+            this.Write("</div>\r\n");
+ } 
+            this.Write("\r\n");
  } else if (prop is AggregateInstance.ChildrenProperty childrenProperty) { 
             this.Write("<div className=\"py-2\">\r\n  <span className=\"text-sm select-none opacity-80\">\r\n    " +
                     "");

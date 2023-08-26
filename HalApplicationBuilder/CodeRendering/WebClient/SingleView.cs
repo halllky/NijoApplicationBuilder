@@ -68,6 +68,7 @@ export default function () {
   const reactHookFormMethods = useForm({ defaultValues })
   const register = reactHookFormMethods.register
   const handleSubmit = reactHookFormMethods.handleSubmit
+  const watch = reactHookFormMethods.watch
 
   const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
   const onSave: SubmitHandler<FieldValues> = useCallback(async data => {

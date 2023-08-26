@@ -44,9 +44,10 @@ import { ");
             this.Write(@"
 export default function () {
 
-  const reactHookFormMethods = useForm()
+  const reactHookFormMethods = useForm<DataDetail>()
   const register = reactHookFormMethods.register
   const handleSubmit = reactHookFormMethods.handleSubmit
+  const watch = reactHookFormMethods.watch
 
   const navigate = useNavigate()
   const { post } = useHttpRequest()

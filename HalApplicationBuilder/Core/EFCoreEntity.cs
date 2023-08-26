@@ -193,9 +193,9 @@ namespace HalApplicationBuilder.Core {
                     PropertyName = group.GroupName.ToCSharpSafe(),
                     IsPrimary = false, // TODO Variationを主キーに設定できないの不便では？
                     IsInstanceName = false,
-                    MemberType = new EnumList(),
-                    CSharpTypeName = "int",
-                    TypeScriptTypename = "number",
+                    MemberType = new VariationSwitch(),
+                    CSharpTypeName = "string",
+                    TypeScriptTypename = "string",
                     Initializer = "default",
                     RequiredAtDB = true,
                     CorrespondingParentColumn = null,

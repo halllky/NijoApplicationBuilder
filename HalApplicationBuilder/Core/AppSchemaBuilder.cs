@@ -38,12 +38,8 @@ namespace HalApplicationBuilder.Core {
                     localError.Add($"Root aggregate define '{el.Name}' cann't have '{XML_ATTR_MULTIPLE}' attribute.");
 
                 var isVariationContainer = el.Elements().Any(inner => inner.Attribute(XML_ATTR_SWITCH) != null);
-                var strVariationSwitch = el.Attribute(XML_ATTR_SWITCH)?.Value;
-                var isVariation = !isVariationContainer && strVariationSwitch != null;
-                var variationSwitch = -1;
-                if (isVariation && !int.TryParse(strVariationSwitch, out variationSwitch)) {
-                    localError.Add($"Value of '{XML_ATTR_SWITCH}' of '{el.Name}' must be integer.");
-                }
+                var variationSwitch = el.Attribute(XML_ATTR_SWITCH)?.Value;
+                var isVariation = !isVariationContainer && variationSwitch != null;
 
                 var ancestorNames = isVariationContainer
                     ? GetAncestors(el).Reverse().Select(xElement => xElement.Name.LocalName)
@@ -444,7 +440,7 @@ namespace HalApplicationBuilder.Core {
             public string OwnerFullPath { get; set; } = "";
             internal IList<SchalarMemberDef> Members { get; set; } = new List<SchalarMemberDef>();
             public string VariationContainer { get; set; } = "";
-            public int VariationSwitch { get; set; } = -1;
+            public string VariationSwitch { get; set; } = "";
         }
         internal class ChildrenDef {
             public string Name { get; set; } = "";
@@ -618,13 +614,9 @@ namespace HalApplicationBuilder.Core {
                 .Select(group => new VariationGroup<T> {
                     GroupName = group.Key,
                     VariationAggregates = group.ToDictionary(
-                        edge => (int)edge.Attributes[REL_ATTR_VARIATIONSWITCH],
+                        edge => (string)edge.Attributes[REL_ATTR_VARIATIONSWITCH],
                         edge => edge.As<T>()),
                 });
-        }
-        internal class VariationGroup<T> where T : IGraphNode {
-            internal required string GroupName { get; init; }
-            internal required IReadOnlyDictionary<int, GraphEdge<T>> VariationAggregates { get; init; }
         }
 
         // ----------------------------- GraphEdge extensions -----------------------------
@@ -656,5 +648,11 @@ namespace HalApplicationBuilder.Core {
             return graphEdge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                 && (string)type == REL_ATTRVALUE_REFERENCE;
         }
+    }
+
+    internal class VariationGroup<T> where T : IGraphNode {
+        internal GraphNode<T> Initial => VariationAggregates.First().Value.Initial.As<T>();
+        internal required string GroupName { get; init; }
+        internal required IReadOnlyDictionary<string, GraphEdge<T>> VariationAggregates { get; init; }
     }
 }

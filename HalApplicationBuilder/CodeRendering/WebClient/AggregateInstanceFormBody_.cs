@@ -116,46 +116,42 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             var component = new DescencantForms.Component(childProperty.ChildAggregateInstance);
             component.RenderCaller(this);
         }
-        private void RenderVariationAggregateBody(AggregateInstance.VariationProperty variationProperty) {
-            var renderer = new VariationRenderer(variationProperty, this);
-            renderer.RenderBody(this);
+        private void RenderVariationAggregateBody(GraphNode<AggregateInstance> variationAggregateInstance) {
+            var component = new DescencantForms.Component(variationAggregateInstance);
+            component.RenderCaller(this);
         }
 
-        internal class VariationRenderer {
-            internal VariationRenderer(AggregateInstance.VariationProperty variationProperty, AggregateInstanceFormBody owner) {
-                _variationProperty = variationProperty;
-                _owner = owner;
+        internal class VariationSwitchState {
+            internal VariationSwitchState(VariationGroup<AggregateInstance> variationGroup) {
+                _variationGroup = variationGroup;
             }
-            private readonly AggregateInstance.VariationProperty _variationProperty;
-            private readonly AggregateInstanceFormBody _owner;
+            private readonly VariationGroup<AggregateInstance> _variationGroup;
 
-            private string GetStateName() {
-                var name = _variationProperty.ChildAggregateInstance
-                    .PathFromEntry()
-                    .Select(edge => edge.RelationName)
-                    .Concat(new[] { _variationProperty.PropertyName })
-                    .Join("_")
-                    .ToCSharpSafe();
-                return $"selected{name}";
+            internal string StateName {
+                get {
+                    var name = _variationGroup.Initial
+                        .PathFromEntry()
+                        .Select(edge => edge.RelationName)
+                        .Concat(new[] { _variationGroup.GroupName })
+                        .Join("_")
+                        .ToCSharpSafe();
+                    return $"selected{name}";
+                }
             }
-            private string GetDispatcherName() {
-                var name = _variationProperty.ChildAggregateInstance
-                    .PathFromEntry()
-                    .Select(edge => edge.RelationName)
-                    .Concat(new[] { _variationProperty.PropertyName })
-                    .Join("_")
-                    .ToCSharpSafe();
-                return $"change{name}";
+            internal string DispatcherName {
+                get {
+                    var name = _variationGroup.Initial
+                        .PathFromEntry()
+                        .Select(edge => edge.RelationName)
+                        .Concat(new[] { _variationGroup.GroupName })
+                        .Join("_")
+                        .ToCSharpSafe();
+                    return $"change{name}";
+                }
             }
 
             internal void RenderHook(ITemplate template) {
-                template.WriteLine($"const [{GetStateName()}, {GetDispatcherName()}] = useState(0)");
-            }
-            internal void RenderBody(ITemplate template) {
-                // TODO variation周りの設計修正が先
-                //template.WriteLine($"<label>");
-                //template.WriteLine($"  <input type=\"radio\"  />");
-                //template.WriteLine($"</label>");
+                template.WriteLine($"const [{StateName}, {DispatcherName}] = useState(0)");
             }
         }
         #endregion DESCENDANT AGGREGATES

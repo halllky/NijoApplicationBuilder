@@ -43,6 +43,8 @@ namespace HalApplicationBuilder.Core
             internal required NavigationProperty CorrespondingNavigationProperty { get; init; }
         }
         internal class VariationProperty : Property {
+            internal required VariationGroup<AggregateInstance> Group { get; init; }
+            internal required string Key { get; init; }
             internal required GraphNode<AggregateInstance> ChildAggregateInstance { get; init; }
             internal required NavigationProperty CorrespondingNavigationProperty { get; init; }
         }
@@ -106,15 +108,19 @@ namespace HalApplicationBuilder.Core
         }
         internal static IEnumerable<AggregateInstance.VariationProperty> GetVariationProperties(this GraphNode<AggregateInstance> node, Config config) {
             var initial = node.GetDbEntity().Item.Id;
-            foreach (var edge in node.GetVariationGroups().SelectMany(group => group.VariationAggregates.Values)) {
-                var navigationProperty = new NavigationProperty(edge.Terminal.GetDbEntity().In.Single(e => e.Initial.Item.Id == initial), config);
-                yield return new AggregateInstance.VariationProperty {
-                    ChildAggregateInstance = edge.Terminal,
-                    CorrespondingNavigationProperty = navigationProperty,
-                    CSharpTypeName = edge.Terminal.Item.ClassName,
-                    TypeScriptTypename = edge.Terminal.Item.TypeScriptTypeName,
-                    PropertyName = edge.RelationName,
-                };
+            foreach (var group in node.GetVariationGroups()) {
+                foreach (var kv in group.VariationAggregates) {
+                    var navigationProperty = new NavigationProperty(kv.Value.Terminal.GetDbEntity().In.Single(e => e.Initial.Item.Id == initial), config);
+                    yield return new AggregateInstance.VariationProperty {
+                        Group = group,
+                        Key = kv.Key,
+                        ChildAggregateInstance = kv.Value.Terminal,
+                        CorrespondingNavigationProperty = navigationProperty,
+                        CSharpTypeName = kv.Value.Terminal.Item.ClassName,
+                        TypeScriptTypename = kv.Value.Terminal.Item.TypeScriptTypeName,
+                        PropertyName = kv.Value.RelationName,
+                    };
+                }
             }
         }
         internal static IEnumerable<AggregateInstance.RefProperty> GetRefProperties(this GraphNode<AggregateInstance> node, Config config) {
