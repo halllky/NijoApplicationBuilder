@@ -14,7 +14,7 @@ import { BookmarkSquareIcon } from '@heroicons/react/24/outline';
 import * as Components from '../../components';
 import { IconButton, InlineMessageBar, BarMessage } from '../../components';
 import { useHttpRequest } from '../../hooks/useHttpRequest';
-import { <#=_instance.Item.TypeScriptTypeName#> as DataDetail } from '../../<#=types.ImportName#>'
+import * as AggregateType from '../../<#=types.ImportName#>'
 <# RenderImportFromComponents(); #>
 
 export default function () {
@@ -26,16 +26,16 @@ export default function () {
   const [instanceName, setInstanceName] = useState<string | undefined>('')
   const [fetched, setFetched] = useState(false)
   const defaultValues = useCallback(async () => {
-    if (!instanceKey) return {} as DataDetail
+    if (!instanceKey) return AggregateType.<#=new types.AggregateInstanceInitializerFunction(_instance).FunctionName#>()
     const encoded = window.encodeURI(instanceKey)
     const response = await get(`<#=GetFindCommandApi()#>/${encoded}`)
     setFetched(true)
     if (response.ok) {
-      const responseData = response.data as DataDetail
+      const responseData = response.data as AggregateType.<#=_instance.Item.TypeScriptTypeName#>
       setInstanceName(responseData.<#=AggregateInstanceBase.INSTANCE_NAME#>)
       return responseData
     } else {
-      return {} as DataDetail
+      return AggregateType.<#=new types.AggregateInstanceInitializerFunction(_instance).FunctionName#>()
     }
   }, [instanceKey])
 
@@ -46,7 +46,7 @@ export default function () {
 
   const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
   const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-    const response = await post<DataDetail>(`<#=GetUpdateCommandApi()#>`, data)
+    const response = await post<AggregateType.<#=_instance.Item.TypeScriptTypeName#>>(`<#=GetUpdateCommandApi()#>`, data)
     if (response.ok) {
       setErrorMessages([])
       dispatch({ type: 'pushMsg', msg: `${response.data.<#=AggregateInstanceBase.INSTANCE_NAME#>}を更新しました。` })

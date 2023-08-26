@@ -7,7 +7,7 @@ export const useCtrlS = (callMethodIfCtrlS: () => void) => {
 
     useEffect(() => {
         const keyDown = (event: KeyboardEvent) => {
-            if (event.key.toLowerCase() === "s" && (event.ctrlKey || event.metaKey)) {
+            if (event.key?.toLowerCase() === "s" && (event.ctrlKey || event.metaKey)) {
                 event.preventDefault()
                 fnRef.current()
             }

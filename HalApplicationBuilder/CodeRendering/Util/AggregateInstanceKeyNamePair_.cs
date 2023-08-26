@@ -16,6 +16,10 @@ namespace HalApplicationBuilder.CodeRendering.Util {
         internal const string KEY = "InstanceKey";
         internal const string NAME = "InstanceName";
 
+        internal const string TS_DEF = "{ key: string, name: string }";
+        internal const string JSON_KEY = "key";
+        internal const string JSON_NAME = "name";
+
         public string FileName => "AggregateInstanceKeyNamePair.cs";
     }
 }

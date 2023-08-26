@@ -138,13 +138,13 @@ namespace HalApplicationBuilder.Core
                 yield return new AggregateInstance.RefProperty {
                     RefTarget = edge.Terminal,
                     CSharpTypeName = AggregateInstanceKeyNamePair.CLASSNAME,
-                    TypeScriptTypename = AggregateInstanceKeyNamePairTS.DEF,
+                    TypeScriptTypename = AggregateInstanceKeyNamePair.TS_DEF,
                     PropertyName = edge.RelationName,
                     CorrespondingNavigationProperty = new NavigationProperty(edgeAsEfCore, config),
                     CorrespondingDbColumns = node
                         .GetDbEntity()
                         .GetColumns()
-                        .Where(col => col.CorrespondingRefTargetColumn?.Owner == terminalDbEntity.Item)
+                        .Where(col => col.CorrespondingRefTargetColumn?.Owner == terminalDbEntity)
                         .ToArray(),
                 };
             }

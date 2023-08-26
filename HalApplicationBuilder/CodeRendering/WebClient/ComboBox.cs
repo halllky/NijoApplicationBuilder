@@ -26,7 +26,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write(@"import { forwardRef, ForwardedRef, useState } from ""react""
+            this.Write(@"import React, { forwardRef, ForwardedRef, useState, useCallback } from ""react""
 import { useQuery } from ""react-query""
 import { useFormContext } from 'react-hook-form';
 import { Combobox } from ""@headlessui/react""
@@ -39,41 +39,53 @@ export const ");
   raectHookFormId: string
 }, ref: ForwardedRef<HTMLElement>) => {
 
-  const [, dispatch] = useAppContext()
-  const { get } = useHttpRequest()
   const [keyword, setKeyword] = useState('')
-  const { register } = useFormContext()
-  const { data } = useQuery({
-  queryKey: ['");
+  const { get } = useHttpRequest()
+  const [, dispatch] = useAppContext()
+  const { data, refetch } = useQuery({
+    queryKey: ['");
             this.Write(this.ToStringHelper.ToStringWithCulture(UseQueryKey));
-            this.Write("\'],\r\n  queryFn: async () => {\r\n    const response = await get<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePairTS.DEF));
+            this.Write("\'],\r\n    queryFn: async () => {\r\n      const response = await get<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePair.TS_DEF));
             this.Write("[]>(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(Api));
             this.Write(@"`, { keyword })
-    return response.ok ? response.data : []
-  },
-  onError: error => {
-    dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
-  },
+      return response.ok ? response.data : []
+    },
+    onError: error => {
+      dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
+    },
   })
 
+  const [setTimeoutHandle, setSetTimeoutHandle] = useState<NodeJS.Timeout | undefined>(undefined)
+  const onChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setKeyword(e.target.value)
+    if (setTimeoutHandle !== undefined) clearTimeout(setTimeoutHandle)
+    setSetTimeoutHandle(setTimeout(() => refetch(), 1000))
+  }, [setKeyword, setTimeoutHandle, setSetTimeoutHandle, refetch])
+  const onBlur = useCallback(() => {
+    if (setTimeoutHandle !== undefined) clearTimeout(setTimeoutHandle)
+    setSetTimeoutHandle(undefined)
+    refetch()
+  }, [setTimeoutHandle, setSetTimeoutHandle, refetch])
+
+  const { watch, setValue } = useFormContext()
+  const selectedValue = watch(raectHookFormId)?.key || null
+  const onChangeSelectedValue = useCallback((value?: { key: string, name: string }) => {
+    setValue(raectHookFormId, value)
+  }, [setValue, watch])
+
   return (
-  <Combobox ref={ref}>
-    <Combobox.Input
-    {...register(raectHookFormId)}
-    onChange={(event) => setKeyword(event.target.value)}
-    />
-    <Combobox.Options>
-    {data?.map(referenceDto => (
-      <Combobox.Option key={referenceDto.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePairTS.KEY));
-            this.Write("} value={referenceDto.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePairTS.KEY));
-            this.Write("}>\r\n      {referenceDto.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePairTS.NAME));
-            this.Write("}\r\n      </Combobox.Option>\r\n    ))}\r\n    </Combobox.Options>\r\n  </Combobox>\r\n  )" +
-                    "\r\n})\r\n");
+    <Combobox ref={ref} value={selectedValue} onChange={onChangeSelectedValue}>
+      <Combobox.Input onChange={onChange} onBlur={onBlur} />
+      <Combobox.Options>
+        {data?.map(item => (
+          <Combobox.Option key={item.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePair.JSON_KEY));
+            this.Write("} value={item}>\r\n            {item.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePair.JSON_NAME));
+            this.Write("}\r\n          </Combobox.Option>\r\n        ))}\r\n      </Combobox.Options>\r\n    </Co" +
+                    "mbobox>\r\n  )\r\n})\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

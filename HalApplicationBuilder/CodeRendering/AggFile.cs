@@ -14,6 +14,7 @@ namespace HalApplicationBuilder.CodeRendering
     using System.Collections.Generic;
     using HalApplicationBuilder.Core;
     using HalApplicationBuilder.CodeRendering.Util;
+    using HalApplicationBuilder.DotnetEx;
     using System;
     
     /// <summary>
@@ -117,9 +118,11 @@ namespace ");
             this.Write("(condition)\r\n                .AsEnumerable();\r\n            return this.JsonConten" +
                     "t(searchResult);\r\n        }\r\n        [HttpGet(\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(Controller.KEYWORDSEARCH_ACTION_NAME));
-            this.Write("\")]\r\n        public virtual IActionResult SearchByKeyword([FromQuery] string keyw" +
-                    "ord) {\r\n            // TODO\r\n            return this.JsonContent(Array.Empty<obj" +
-                    "ect>());\r\n        }\r\n    }\r\n}\r\nnamespace ");
+            this.Write("\")]\r\n        public virtual IActionResult SearchByKeyword([FromQuery] string? key" +
+                    "word) {\r\n            var items = _dbContext.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ListByKeywordMethodName));
+            this.Write("(keyword);\r\n            return this.JsonContent(items);\r\n        }\r\n    }\r\n}\r\nnam" +
+                    "espace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
             this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
                     "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n  " +
@@ -196,8 +199,56 @@ namespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_search.GetInstanceNamePropName()));
             this.Write(";\r\n");
  } 
-            this.Write("\r\n                yield return item;\r\n            }\r\n        }\r\n    }\r\n}\r\n#endreg" +
-                    "ion 一覧検索\r\n\r\n\r\n#region 詳細検索\r\nnamespace ");
+            this.Write("\r\n                yield return item;\r\n            }\r\n        }\r\n\r\n        /// <su" +
+                    "mmary>\r\n        /// ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
+            this.Write("をキーワードで検索します。\r\n        /// </summary>\r\n        public IEnumerable<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePair.CLASSNAME));
+            this.Write("> ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(ListByKeywordMethodName));
+            this.Write("(string? keyword) {\r\n            var query = this.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_dbEntity.Item.DbSetName));
+            this.Write(".Select(e => new {\r\n");
+ foreach (var col in EnumerateListByKeywordTargetColumns()) { 
+            this.Write("                e.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(col.Path));
+            this.Write(",\r\n");
+ } 
+            this.Write("            });\r\n\r\n            if (!string.IsNullOrWhiteSpace(keyword)) {\r\n      " +
+                    "          var like = $\"%{keyword.Trim().Replace(\"%\", \"\\\\%\")}%\";\r\n               " +
+                    " query = query.Where(item => ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(EnumerateListByKeywordTargetColumns().Select(col => $"EF.Functions.Like(item.{col.NameAsString}, like)").Join($"{Environment.NewLine}                            || ")));
+            this.Write(");\r\n            }\r\n\r\n            query = query\r\n                .OrderBy(item => " +
+                    "item.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(EnumerateListByKeywordTargetColumns().Where(col => col.IsInstanceKey).First().Name));
+            this.Write(")\r\n                .Take(");
+            this.Write(this.ToStringHelper.ToStringWithCulture(LIST_BY_KEYWORD_MAX + 1));
+            this.Write(");\r\n\r\n");
+ var keyColumns = EnumerateListByKeywordTargetColumns().Where(col => col.IsInstanceKey).ToArray(); 
+ var nameColumns = EnumerateListByKeywordTargetColumns().Where(col => col.IsInstanceName).ToArray(); 
+            this.Write("            return query\r\n                .AsEnumerable()\r\n                .Selec" +
+                    "t(item => new ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePair.CLASSNAME));
+            this.Write(" {\r\n                    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePair.KEY));
+            this.Write(" = ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.CLASS_NAME));
+            this.Write(".");
+            this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.CREATE));
+            this.Write("(new object?[] {\r\n");
+ foreach (var col in keyColumns) { 
+            this.Write("                        item.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(col.Name));
+            this.Write(",\r\n");
+ } 
+            this.Write("                    }).ToString(),\r\n                    ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePair.NAME));
+            this.Write(" = ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(nameColumns.Any()
+                        ? nameColumns.Select(col => $"item.{col.Name}?.ToString()").Join(" + ")
+                        : keyColumns.Select(col => $"item.{col.Name}?.ToString()").Join(" + ")));
+            this.Write(",\r\n                });\r\n        }\r\n    }\r\n}\r\n#endregion 一覧検索\r\n\r\n\r\n#region 詳細検索\r\nn" +
+                    "amespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.RootNamespace));
             this.Write(" {\r\n    using Microsoft.AspNetCore.Mvc;\r\n    using ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));

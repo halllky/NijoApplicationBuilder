@@ -23,7 +23,7 @@ namespace HalApplicationBuilder.Core {
         internal const string KEYEQUALS = "KeyEquals";
 
         internal class Member : ValueObject {
-            internal required EFCoreEntity Owner { get; init; }
+            internal required GraphNode<EFCoreEntity> Owner { get; init; }
             internal required bool IsPrimary { get; init; }
             internal required bool IsInstanceName { get; init; }
             internal required IAggregateMemberType MemberType { get; init; }
@@ -73,8 +73,8 @@ namespace HalApplicationBuilder.Core {
                     OppositeIsMany = oppositeIsMany,
                     ForeignKeys = owner
                         .GetColumns()
-                        .Where(m => m.IsPrimary && m.CorrespondingParentColumn?.Owner == opposite.Item
-                                 || m.CorrespondingRefTargetColumn?.Owner == opposite.Item),
+                        .Where(m => m.IsPrimary && m.CorrespondingParentColumn?.Owner == opposite
+                                 || m.CorrespondingRefTargetColumn?.Owner == opposite),
                 };
             }
 
@@ -140,7 +140,7 @@ namespace HalApplicationBuilder.Core {
             if (parent != null) {
                 foreach (var parentPkColumn in parent.GetColumns().Where(c => c.IsPrimary)) {
                     yield return new EFCoreEntity.Member {
-                        Owner = dbEntity.Item,
+                        Owner = dbEntity,
                         PropertyName = parentPkColumn.PropertyName,
                         IsPrimary = true,
                         IsInstanceName = false,
@@ -156,7 +156,7 @@ namespace HalApplicationBuilder.Core {
             // スカラー値
             foreach (var member in dbEntity.GetCorrespondingAggregate().Item.Members) {
                 yield return new EFCoreEntity.Member {
-                    Owner = dbEntity.Item,
+                    Owner = dbEntity,
                     PropertyName = member.Name,
                     IsPrimary = member.IsPrimary,
                     IsInstanceName = member.IsInstanceName,
@@ -172,7 +172,7 @@ namespace HalApplicationBuilder.Core {
             foreach (var edge in dbEntity.GetRefMembers()) {
                 foreach (var refTargetPk in edge.Terminal.GetColumns().Where(c => c.IsPrimary)) {
                     yield return new EFCoreEntity.Member {
-                        Owner = dbEntity.Item,
+                        Owner = dbEntity,
                         PropertyName = $"{edge.RelationName}_{refTargetPk.PropertyName}",
                         IsPrimary = edge.IsPrimary(),
                         IsInstanceName = edge.IsInstanceName(),
@@ -189,7 +189,7 @@ namespace HalApplicationBuilder.Core {
             foreach (var group in dbEntity.GetCorrespondingAggregate().GetVariationGroups()) {
                 // variationの型番号
                 yield return new EFCoreEntity.Member {
-                    Owner = dbEntity.Item,
+                    Owner = dbEntity,
                     PropertyName = group.GroupName.ToCSharpSafe(),
                     IsPrimary = false, // TODO Variationを主キーに設定できないの不便では？
                     IsInstanceName = false,

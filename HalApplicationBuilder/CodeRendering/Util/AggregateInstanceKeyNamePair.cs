@@ -25,13 +25,17 @@ namespace HalApplicationBuilder.CodeRendering.Util
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("using System;\r\nnamespace ");
+            this.Write("using System;\r\nusing System.Text.Json.Serialization;\r\n\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_namespace));
             this.Write(" {\r\n    public class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(CLASSNAME));
-            this.Write(" {\r\n        public virtual string ");
+            this.Write(" {\r\n        [JsonPropertyName(\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(JSON_KEY));
+            this.Write("\")]\r\n        public virtual string? ");
             this.Write(this.ToStringHelper.ToStringWithCulture(KEY));
-            this.Write(" { get; set; } = string.Empty;\r\n        public virtual string ");
+            this.Write(" { get; set; } = string.Empty;\r\n        [JsonPropertyName(\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(JSON_NAME));
+            this.Write("\")]\r\n        public virtual string? ");
             this.Write(this.ToStringHelper.ToStringWithCulture(NAME));
             this.Write(" { get; set; } = string.Empty;\r\n    }\r\n}\r\n");
             return this.GenerationEnvironment.ToString();

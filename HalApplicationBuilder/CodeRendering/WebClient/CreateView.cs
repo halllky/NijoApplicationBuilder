@@ -35,16 +35,17 @@ import * as Components from '../../components';
 import { IconButton, InlineMessageBar, BarMessage } from '../../components';
 import { useHttpRequest } from '../../hooks/useHttpRequest';
 import { useAppContext } from ""../../hooks/AppContext""
-import { ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
-            this.Write(" as DataDetail } from \'../../");
+import * as AggregateType from '../../");
             this.Write(this.ToStringHelper.ToStringWithCulture(types.ImportName));
             this.Write("\'\r\n");
  RenderImportFromComponents(); 
-            this.Write(@"
+            this.Write("\r\nconst defaultValues = AggregateType.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(new types.AggregateInstanceInitializerFunction(_instance).FunctionName));
+            this.Write(@"()
+
 export default function () {
 
-  const reactHookFormMethods = useForm<DataDetail>()
+  const reactHookFormMethods = useForm({ defaultValues })
   const register = reactHookFormMethods.register
   const handleSubmit = reactHookFormMethods.handleSubmit
   const watch = reactHookFormMethods.watch
@@ -54,7 +55,9 @@ export default function () {
   const [, dispatch] = useAppContext()
   const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
   const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-    const response = await post<DataDetail>(`");
+    const response = await post<AggregateType.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
+            this.Write(">(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetCreateCommandApi()));
             this.Write("`, data)\r\n    if (response.ok) {\r\n      dispatch({ type: \'pushMsg\', msg: `${respo" +
                     "nse.data.");

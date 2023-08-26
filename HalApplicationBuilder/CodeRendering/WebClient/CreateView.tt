@@ -14,12 +14,14 @@ import * as Components from '../../components';
 import { IconButton, InlineMessageBar, BarMessage } from '../../components';
 import { useHttpRequest } from '../../hooks/useHttpRequest';
 import { useAppContext } from "../../hooks/AppContext"
-import { <#=_instance.Item.TypeScriptTypeName#> as DataDetail } from '../../<#=types.ImportName#>'
+import * as AggregateType from '../../<#=types.ImportName#>'
 <# RenderImportFromComponents(); #>
+
+const defaultValues = AggregateType.<#=new types.AggregateInstanceInitializerFunction(_instance).FunctionName#>()
 
 export default function () {
 
-  const reactHookFormMethods = useForm<DataDetail>()
+  const reactHookFormMethods = useForm({ defaultValues })
   const register = reactHookFormMethods.register
   const handleSubmit = reactHookFormMethods.handleSubmit
   const watch = reactHookFormMethods.watch
@@ -29,7 +31,7 @@ export default function () {
   const [, dispatch] = useAppContext()
   const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
   const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-    const response = await post<DataDetail>(`<#=GetCreateCommandApi()#>`, data)
+    const response = await post<AggregateType.<#=_instance.Item.TypeScriptTypeName#>>(`<#=GetCreateCommandApi()#>`, data)
     if (response.ok) {
       dispatch({ type: 'pushMsg', msg: `${response.data.<#=AggregateInstanceBase.INSTANCE_NAME#>}を作成しました。` })
       setErrorMessages([])

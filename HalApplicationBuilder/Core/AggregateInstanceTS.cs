@@ -24,7 +24,7 @@ namespace HalApplicationBuilder.Core {
                     template.WriteLine($"{prop.PropertyName}?: {prop.TypeScriptTypename}");
                 }
                 foreach (var member in instance.GetRefMembers()) {
-                    template.WriteLine($"{member.RelationName}?: {AggregateInstanceKeyNamePairTS.DEF}");
+                    template.WriteLine($"{member.RelationName}?: {AggregateInstanceKeyNamePair.TS_DEF}");
                 }
                 foreach (var member in instance.GetChildMembers()) {
                     template.WriteLine($"{member.RelationName}?: {{");

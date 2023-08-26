@@ -26,11 +26,11 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("import { PlusIcon, XMarkIcon } from \'@heroicons/react/24/outline\'\r\nimport { useFo" +
-                    "rm, useFieldArray, useFormContext } from \'react-hook-form\'\r\nimport * as Componen" +
-                    "ts from \'../../components\'\r\nimport { ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.TypeScriptTypeName));
-            this.Write(" } from \'");
+            this.Write(@"import React, { useCallback } from 'react'
+import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { useForm, useFieldArray, useFormContext } from 'react-hook-form'
+import * as Components from '../../components'
+import * as AggregateType from '");
             this.Write(this.ToStringHelper.ToStringWithCulture(TypesImport));
             this.Write("\'\r\n\r\n");
  foreach (var desc in EnumerateDescendantComponents()) { 
@@ -43,19 +43,22 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
             this.Write(this.ToStringHelper.ToStringWithCulture(arg));
             this.Write(": number\r\n");
  } 
-            this.Write("}) => {\r\n  const { control, register } = useFormContext<");
+            this.Write("}) => {\r\n  const { control, register } = useFormContext<AggregateType.");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.TypeScriptTypeName));
             this.Write(">()\r\n  const { fields, append, remove } = useFieldArray({\r\n    control,\r\n    name" +
                     ": `");
             this.Write(this.ToStringHelper.ToStringWithCulture(desc.GetUseFieldArrayName()));
-            this.Write("`,\r\n  })\r\n\r\n  return (\r\n    <>\r\n      {fields.map((item, index) => (\r\n        <di" +
-                    "v key={index} className=\"flex flex-col space-y-1 p-1 border border-neutral-400\">" +
-                    "\r\n");
+            this.Write("`,\r\n  })\r\n  const onAdd = useCallback((e: React.MouseEvent) => {\r\n    append(Aggr" +
+                    "egateType.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(new types.AggregateInstanceInitializerFunction(desc.AggregateInstance).FunctionName));
+            this.Write("())\r\n    e.preventDefault()\r\n  }, [append])\r\n\r\n  return (\r\n    <>\r\n      {fields." +
+                    "map((item, index) => (\r\n        <div key={index} className=\"flex flex-col space-" +
+                    "y-1 p-1 border border-neutral-400\">\r\n");
  RenderBody(desc, "          "); 
             this.Write(@"          <Components.IconButton underline icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }} className=""self-start"">削除</Components.IconButton>
         </div>
       ))}
-      <Components.IconButton underline icon={PlusIcon} onClick={e => { append({}); e.preventDefault() }} className=""self-start"">追加</Components.IconButton>
+      <Components.IconButton underline icon={PlusIcon} onClick={onAdd} className=""self-start"">追加</Components.IconButton>
     </>
   )
 }
@@ -70,7 +73,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
             this.Write(this.ToStringHelper.ToStringWithCulture(arg));
             this.Write(": number\r\n");
  } 
-            this.Write("}) => {\r\n  const { control, register } = useFormContext<");
+            this.Write("}) => {\r\n  const { control, register } = useFormContext<AggregateType.");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.TypeScriptTypeName));
             this.Write(">()\r\n\r\n  return <>\r\n");
  RenderBody(desc, "      "); 

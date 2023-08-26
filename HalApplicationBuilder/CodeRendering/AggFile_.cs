@@ -362,6 +362,37 @@ namespace HalApplicationBuilder.CodeRendering {
         #endregion SEARCH
 
 
+        #region LIST BY KEYWORD
+        private const int LIST_BY_KEYWORD_MAX = 100;
+        private string ListByKeywordMethodName => $"SearchByKeyword{_dbEntity.GetCorrespondingAggregate().Item.DisplayName.ToCSharpSafe()}";
+        private IEnumerable<ListByKeywordTargetColumn> EnumerateListByKeywordTargetColumns() {
+            return _dbEntity
+                .GetColumns()
+                .Where(col => col.IsPrimary || col.IsInstanceName)
+                .Select(col => new ListByKeywordTargetColumn {
+                    Name = col.PropertyName,
+                    NameAsString = col.CSharpTypeName.Contains("string")
+                        ? col.PropertyName
+                        : $"{col.PropertyName}.ToString()",
+                    Path = col.Owner
+                        .PathFromEntry()
+                        .Select(edge => edge.RelationName)
+                        .Concat(new[] { col.PropertyName })
+                        .Join("."),
+                    IsInstanceKey = col.IsPrimary,
+                    IsInstanceName = col.IsInstanceName,
+                });
+        }
+        private class ListByKeywordTargetColumn {
+            internal required string Path { get; init; }
+            internal required string Name { get; init; }
+            internal required string NameAsString { get; init; }
+            internal required bool IsInstanceKey { get; init; }
+            internal required bool IsInstanceName { get; init; }
+        }
+        #endregion LIST BY KEYWORD
+
+
         #region AGGREGATE INSTANCE & CREATE COMMAND
         private string CreateCommandClassName => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}CreateCommand";
         private string CreateCommandToDbEntityMethodName => AggregateInstance.TO_DB_ENTITY_METHOD_NAME;

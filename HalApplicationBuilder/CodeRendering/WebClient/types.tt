@@ -4,11 +4,12 @@
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
-<# foreach (var (instance, searchCondition, searchResult) in GetAggregateInstances()) { #>
-<# Render(instance); #>
-
-<# Render(searchCondition); #>
-
-<# Render(searchResult); #>
-
+<#@ import namespace="HalApplicationBuilder.Core" #>
+<# foreach (var root in _ctx.Schema.RootAggregates().Select(x => x.GetInstanceClass())) { #>
+<#     foreach (var instance in root.EnumerateThisAndDescendants()) { #>
+<#         Render(instance); #>
+<#         new AggregateInstanceInitializerFunction(instance).Render(this); #>
+<#     } #>
+<#     Render(new SearchCondition(root.GetDbEntity().AsEntry())); #>
+<#     Render(new SearchResult(root.GetDbEntity().AsEntry())); #>
 <# } #>

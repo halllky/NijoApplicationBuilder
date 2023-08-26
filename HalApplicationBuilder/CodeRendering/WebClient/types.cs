@@ -12,6 +12,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
     using System.Linq;
     using System.Text;
     using System.Collections.Generic;
+    using HalApplicationBuilder.Core;
     using System;
     
     /// <summary>
@@ -25,13 +26,13 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
         /// </summary>
         public virtual string TransformText()
         {
- foreach (var (instance, searchCondition, searchResult) in GetAggregateInstances()) { 
- Render(instance); 
-            this.Write("\r\n");
- Render(searchCondition); 
-            this.Write("\r\n");
- Render(searchResult); 
-            this.Write("\r\n");
+ foreach (var root in _ctx.Schema.RootAggregates().Select(x => x.GetInstanceClass())) { 
+     foreach (var instance in root.EnumerateThisAndDescendants()) { 
+         Render(instance); 
+         new AggregateInstanceInitializerFunction(instance).Render(this); 
+     } 
+     Render(new SearchCondition(root.GetDbEntity().AsEntry())); 
+     Render(new SearchResult(root.GetDbEntity().AsEntry())); 
  } 
             return this.GenerationEnvironment.ToString();
         }

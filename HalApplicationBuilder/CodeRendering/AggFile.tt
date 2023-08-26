@@ -6,6 +6,7 @@
 <#@ import namespace="System.Collections.Generic" #>
 <#@ import namespace="HalApplicationBuilder.Core" #>
 <#@ import namespace="HalApplicationBuilder.CodeRendering.Util" #>
+<#@ import namespace="HalApplicationBuilder.DotnetEx" #>
 #pragma warning disable CS8600 // Null リテラルまたは Null の可能性がある値を Null 非許容型に変換しています。
 #pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければなりません
 #pragma warning disable IDE1006 // 命名スタイル
@@ -91,9 +92,9 @@ namespace <#=_ctx.Config.RootNamespace#> {
             return this.JsonContent(searchResult);
         }
         [HttpGet("<#=Controller.KEYWORDSEARCH_ACTION_NAME#>")]
-        public virtual IActionResult SearchByKeyword([FromQuery] string keyword) {
-            // TODO
-            return this.JsonContent(Array.Empty<object>());
+        public virtual IActionResult SearchByKeyword([FromQuery] string? keyword) {
+            var items = _dbContext.<#=ListByKeywordMethodName#>(keyword);
+            return this.JsonContent(items);
         }
     }
 }
@@ -142,6 +143,41 @@ namespace <#=_ctx.Config.EntityNamespace#> {
 
                 yield return item;
             }
+        }
+
+        /// <summary>
+        /// <#=_aggregate.Item.DisplayName#>をキーワードで検索します。
+        /// </summary>
+        public IEnumerable<<#=AggregateInstanceKeyNamePair.CLASSNAME#>> <#=ListByKeywordMethodName#>(string? keyword) {
+            var query = this.<#=_dbEntity.Item.DbSetName#>.Select(e => new {
+<# foreach (var col in EnumerateListByKeywordTargetColumns()) { #>
+                e.<#=col.Path#>,
+<# } #>
+            });
+
+            if (!string.IsNullOrWhiteSpace(keyword)) {
+                var like = $"%{keyword.Trim().Replace("%", "\\%")}%";
+                query = query.Where(item => <#=EnumerateListByKeywordTargetColumns().Select(col => $"EF.Functions.Like(item.{col.NameAsString}, like)").Join($"{Environment.NewLine}                            || ") #>);
+            }
+
+            query = query
+                .OrderBy(item => item.<#=EnumerateListByKeywordTargetColumns().Where(col => col.IsInstanceKey).First().Name#>)
+                .Take(<#=LIST_BY_KEYWORD_MAX + 1#>);
+
+<# var keyColumns = EnumerateListByKeywordTargetColumns().Where(col => col.IsInstanceKey).ToArray(); #>
+<# var nameColumns = EnumerateListByKeywordTargetColumns().Where(col => col.IsInstanceName).ToArray(); #>
+            return query
+                .AsEnumerable()
+                .Select(item => new <#=AggregateInstanceKeyNamePair.CLASSNAME#> {
+                    <#=AggregateInstanceKeyNamePair.KEY#> = <#=InstanceKey.CLASS_NAME#>.<#=InstanceKey.CREATE#>(new object?[] {
+<# foreach (var col in keyColumns) { #>
+                        item.<#=col.Name#>,
+<# } #>
+                    }).ToString(),
+                    <#=AggregateInstanceKeyNamePair.NAME#> = <#=nameColumns.Any()
+                        ? nameColumns.Select(col => $"item.{col.Name}?.ToString()").Join(" + ")
+                        : keyColumns.Select(col => $"item.{col.Name}?.ToString()").Join(" + ")#>,
+                });
         }
     }
 }

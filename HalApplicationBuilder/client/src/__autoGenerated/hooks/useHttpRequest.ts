@@ -12,7 +12,13 @@ export const useHttpRequest = () => {
   const get = useCallback(async <T = object>(url: string, param: { [key: string]: unknown } = {}): Promise<HttpGetResult<T>> => {
     const query = new URLSearchParams()
     for (const key of Object.keys(param)) {
-      query.append(key, JSON.stringify(param[key]))
+      let value: string
+      switch (typeof param[key]) {
+        case 'undefined': value = ''; break
+        case 'object': value = JSON.stringify(param[key]); break
+        default: value = String(param[key]); break
+      }
+      query.append(key, value)
     }
     const queryString = query.toString()
     const fullUrl = queryString ? `${apiDomain}${url}?${queryString}` : `${apiDomain}${url}`
@@ -25,7 +31,7 @@ export const useHttpRequest = () => {
       dispatch({ type: 'pushMsg', msg: `ERROR(${fullUrl})` })
       const text = await response.text()
       const res: { content: string } = JSON.parse(text)
-      const content: string[] = JSON.parse(res.content)
+      const content: string[] = res.content ? JSON.parse(res.content) : [text]
       const errors: BarMessage[] = content.map(text => ({ uuid: UUID.generate(), text }))
       return { ok: false, errors }
     }

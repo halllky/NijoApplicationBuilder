@@ -5,9 +5,13 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 using System;
+using System.Text.Json.Serialization;
+
 namespace <#=_namespace#> {
     public class <#=CLASSNAME#> {
-        public virtual string <#=KEY#> { get; set; } = string.Empty;
-        public virtual string <#=NAME#> { get; set; } = string.Empty;
+        [JsonPropertyName("<#=JSON_KEY#>")]
+        public virtual string? <#=KEY#> { get; set; } = string.Empty;
+        [JsonPropertyName("<#=JSON_NAME#>")]
+        public virtual string? <#=NAME#> { get; set; } = string.Empty;
     }
 }

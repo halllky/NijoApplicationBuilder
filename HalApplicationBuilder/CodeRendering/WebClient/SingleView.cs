@@ -35,9 +35,7 @@ import { BookmarkSquareIcon } from '@heroicons/react/24/outline';
 import * as Components from '../../components';
 import { IconButton, InlineMessageBar, BarMessage } from '../../components';
 import { useHttpRequest } from '../../hooks/useHttpRequest';
-import { ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
-            this.Write(" as DataDetail } from \'../../");
+import * as AggregateType from '../../");
             this.Write(this.ToStringHelper.ToStringWithCulture(types.ImportName));
             this.Write("\'\r\n");
  RenderImportFromComponents(); 
@@ -51,17 +49,19 @@ export default function () {
   const [instanceName, setInstanceName] = useState<string | undefined>('')
   const [fetched, setFetched] = useState(false)
   const defaultValues = useCallback(async () => {
-    if (!instanceKey) return {} as DataDetail
-    const encoded = window.encodeURI(instanceKey)
-    const response = await get(`");
+    if (!instanceKey) return AggregateType.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(new types.AggregateInstanceInitializerFunction(_instance).FunctionName));
+            this.Write("()\r\n    const encoded = window.encodeURI(instanceKey)\r\n    const response = await" +
+                    " get(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetFindCommandApi()));
             this.Write("/${encoded}`)\r\n    setFetched(true)\r\n    if (response.ok) {\r\n      const response" +
-                    "Data = response.data as DataDetail\r\n      setInstanceName(responseData.");
+                    "Data = response.data as AggregateType.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
+            this.Write("\r\n      setInstanceName(responseData.");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceBase.INSTANCE_NAME));
-            this.Write(@")
-      return responseData
-    } else {
-      return {} as DataDetail
+            this.Write(")\r\n      return responseData\r\n    } else {\r\n      return AggregateType.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(new types.AggregateInstanceInitializerFunction(_instance).FunctionName));
+            this.Write(@"()
     }
   }, [instanceKey])
 
@@ -72,7 +72,9 @@ export default function () {
 
   const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
   const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-    const response = await post<DataDetail>(`");
+    const response = await post<AggregateType.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
+            this.Write(">(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetUpdateCommandApi()));
             this.Write("`, data)\r\n    if (response.ok) {\r\n      setErrorMessages([])\r\n      dispatch({ ty" +
                     "pe: \'pushMsg\', msg: `${response.data.");

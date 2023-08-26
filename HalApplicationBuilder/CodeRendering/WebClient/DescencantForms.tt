@@ -5,10 +5,11 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 <#@ import namespace="HalApplicationBuilder.Core" #>
+import React, { useCallback } from 'react'
 import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useForm, useFieldArray, useFormContext } from 'react-hook-form'
 import * as Components from '../../components'
-import { <#=_aggregateInstance.Item.TypeScriptTypeName#> } from '<#=TypesImport#>'
+import * as AggregateType from '<#=TypesImport#>'
 
 <# foreach (var desc in EnumerateDescendantComponents()) { #>
 <# if (desc.IsChildren) { #>
@@ -17,11 +18,15 @@ export const <#=desc.ComponentName#> = (args: {
   <#=arg#>: number
 <# } #>
 }) => {
-  const { control, register } = useFormContext<<#=_aggregateInstance.Item.TypeScriptTypeName#>>()
+  const { control, register } = useFormContext<AggregateType.<#=_aggregateInstance.Item.TypeScriptTypeName#>>()
   const { fields, append, remove } = useFieldArray({
     control,
     name: `<#=desc.GetUseFieldArrayName()#>`,
   })
+  const onAdd = useCallback((e: React.MouseEvent) => {
+    append(AggregateType.<#=new types.AggregateInstanceInitializerFunction(desc.AggregateInstance).FunctionName#>())
+    e.preventDefault()
+  }, [append])
 
   return (
     <>
@@ -31,7 +36,7 @@ export const <#=desc.ComponentName#> = (args: {
           <Components.IconButton underline icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }} className="self-start">削除</Components.IconButton>
         </div>
       ))}
-      <Components.IconButton underline icon={PlusIcon} onClick={e => { append({}); e.preventDefault() }} className="self-start">追加</Components.IconButton>
+      <Components.IconButton underline icon={PlusIcon} onClick={onAdd} className="self-start">追加</Components.IconButton>
     </>
   )
 }
@@ -42,7 +47,7 @@ export const <#=desc.ComponentName#> = (args: {
   <#=arg#>: number
 <# } #>
 }) => {
-  const { control, register } = useFormContext<<#=_aggregateInstance.Item.TypeScriptTypeName#>>()
+  const { control, register } = useFormContext<AggregateType.<#=_aggregateInstance.Item.TypeScriptTypeName#>>()
 
   return <>
 <# RenderBody(desc, "      "); #>
