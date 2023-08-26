@@ -29,8 +29,8 @@ namespace HalApplicationBuilder.IntegrationTest {
             const string DIR_NAME = "自動テストで作成されたプロジェクト";
             var dir = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..", DIR_NAME));
             Project = Directory.Exists(dir)
-                ? HalappProject.Open(dir, log: Console.Out, verbose: true)
-                : HalappProject.Create(dir, DIR_NAME, true, log: Console.Out, verbose: true);
+                ? HalappProject.Open(dir, log: Console.Out)
+                : HalappProject.Create(dir, DIR_NAME, true, log: Console.Out);
         }
 
         [OneTimeTearDown]

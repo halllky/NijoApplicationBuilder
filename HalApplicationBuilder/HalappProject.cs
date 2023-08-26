@@ -29,7 +29,7 @@ namespace HalApplicationBuilder {
         /// <param name="applicationName">アプリケーション名</param>
         /// <param name="verbose">ログの詳細出力を行うかどうか</param>
         /// <returns>作成されたプロジェクトを表すオブジェクト</returns>
-        public static HalappProject Create(string projectRootDir, string? applicationName, bool keepTempIferror, CancellationToken? cancellationToken = null, TextWriter? log = null, bool verbose = false) {
+        public static HalappProject Create(string projectRootDir, string? applicationName, bool keepTempIferror, CancellationToken? cancellationToken = null, TextWriter? log = null) {
 
             if (string.IsNullOrWhiteSpace(applicationName))
                 throw new InvalidOperationException($"Please specify name of new application. example 'halapp create my-new-app'");
@@ -46,7 +46,7 @@ namespace HalApplicationBuilder {
 
             var error = false;
             try {
-                var tempProject = new HalappProject(tempDir, log, verbose);
+                var tempProject = new HalappProject(tempDir, log);
 
                 Directory.CreateDirectory(tempDir);
 
@@ -77,7 +77,7 @@ namespace HalApplicationBuilder {
 
                 log?.WriteLine("プロジェクト作成完了");
 
-                return new HalappProject(projectRootDir, log, verbose);
+                return new HalappProject(projectRootDir, log);
 
             } catch {
                 error = true;
@@ -98,25 +98,23 @@ namespace HalApplicationBuilder {
         /// </summary>
         /// <param name="path">プロジェクトルートディレクトリの絶対パス</param>
         /// <returns>作成されたプロジェクトを表すオブジェクト</returns>
-        public static HalappProject Open(string? path, TextWriter? log = null, bool verbose = false) {
+        public static HalappProject Open(string? path, TextWriter? log = null) {
             if (string.IsNullOrWhiteSpace(path))
-                return new HalappProject(Directory.GetCurrentDirectory(), log, verbose);
+                return new HalappProject(Directory.GetCurrentDirectory(), log);
             else if (Path.IsPathRooted(path))
-                return new HalappProject(path, log, verbose);
+                return new HalappProject(path, log);
             else
-                return new HalappProject(Path.Combine(Directory.GetCurrentDirectory(), path), log, verbose);
+                return new HalappProject(Path.Combine(Directory.GetCurrentDirectory(), path), log);
         }
 
-        private HalappProject(string projetctRoot, TextWriter? log, bool verbose) {
+        private HalappProject(string projetctRoot, TextWriter? log) {
             if (string.IsNullOrWhiteSpace(projetctRoot))
                 throw new ArgumentException($"'{nameof(projetctRoot)}' is required.");
 
             ProjectRoot = Path.GetFullPath(projetctRoot);
             _log = log;
-            _verbose = verbose;
         }
 
-        private readonly bool _verbose;
         private readonly TextWriter? _log;
 
         public string ProjectRoot { get; }
