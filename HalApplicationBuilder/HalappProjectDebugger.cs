@@ -48,14 +48,14 @@ namespace HalApplicationBuilder {
                 var changed = false;
 
                 watcher = new FileSystemWatcher(_project.ProjectRoot);
-                watcher.Filter = _project.GetAggregateSchemaPath();
+                watcher.Filter = Path.GetFileName(_project.GetAggregateSchemaPath());
                 watcher.NotifyFilter = NotifyFilters.LastWrite;
                 watcher.Changed += (_, _) => {
                     changed = true;
                     rebuildCancellation?.Cancel();
                 };
 
-                npmStart = _project.Debugger.CreateClientRunningProcess(cancellationToken, _log ?? Console.Out);
+                npmStart = _project.Debugger.CreateClientRunningProcess(_log ?? Console.Out, cancellationToken);
                 await npmStart.Launch();
 
                 watcher.EnableRaisingEvents = true;
@@ -86,7 +86,7 @@ namespace HalApplicationBuilder {
                         _project.Migrator.AddMigration();
                         _project.Migrator.Migrate();
 
-                        dotnetRun = CreateServerRunningProcess(linkedTokenSource.Token, _log ?? Console.Out);
+                        dotnetRun = CreateServerRunningProcess(_log ?? Console.Out, linkedTokenSource.Token);
                         await dotnetRun.Launch();
 
                     } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
@@ -125,7 +125,7 @@ namespace HalApplicationBuilder {
         /// <summary>
         /// クライアントサイドプロセスのコマンドを作成します。
         /// </summary>
-        internal BackgroundProcess CreateClientRunningProcess(CancellationToken cancellationToken, TextWriter log) {
+        internal BackgroundProcess CreateClientRunningProcess(TextWriter log, CancellationToken cancellationToken) {
             if (!_project.IsValidDirectory()) throw new InvalidOperationException("Here is not halapp directory.");
 
             var process = new DotnetEx.BackgroundProcess {
@@ -144,7 +144,7 @@ namespace HalApplicationBuilder {
         /// ビルドは行いません。
         /// 実行中のソースファイルの変更は自動的に反映されません。
         /// </summary>
-        internal BackgroundProcess CreateServerRunningProcess(CancellationToken cancellationToken, TextWriter log) {
+        internal BackgroundProcess CreateServerRunningProcess(TextWriter log, CancellationToken cancellationToken) {
             if (!_project.IsValidDirectory()) throw new InvalidOperationException("Here is not halapp directory.");
 
             var process = new BackgroundProcess {

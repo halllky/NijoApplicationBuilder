@@ -128,6 +128,9 @@ namespace HalApplicationBuilder {
         public HalappProjectDebugger Debugger { get; }
         public HalappProjectMigrator Migrator { get; }
 
+        public string GetAggregateSchemaPath() {
+            return Path.Combine(ProjectRoot, HALAPP_XML_NAME);
+        }
         public Config ReadConfig() {
             var xmlFullPath = GetAggregateSchemaPath();
             using var stream = IO.OpenFileWithRetry(xmlFullPath);
@@ -137,9 +140,25 @@ namespace HalApplicationBuilder {
             var config = Config.FromXml(xDocument);
             return config;
         }
+        /// <summary>
+        /// アプリケーションスキーマを生成します。
+        /// </summary>
+        /// <exception cref="InvalidOperationException">アプリケーションスキーマが不正な場合</exception>
+        internal AppSchema BuildSchema() {
+            var xmlFullPath = GetAggregateSchemaPath();
+            using var stream = IO.OpenFileWithRetry(xmlFullPath);
+            using var reader = new StreamReader(stream);
+            var xmlContent = reader.ReadToEnd();
+            var xDocument = XDocument.Parse(xmlContent);
 
-        public string GetAggregateSchemaPath() {
-            return Path.Combine(ProjectRoot, HALAPP_XML_NAME);
+            if (!AppSchemaBuilder.FromXml(xDocument, out var builder, out var errors)) {
+                throw new InvalidOperationException(errors.Join(Environment.NewLine));
+            }
+            if (!builder.TryBuild(out var appSchema, out var errors1)) {
+                throw new InvalidOperationException(errors1.Join(Environment.NewLine));
+            }
+
+            return appSchema;
         }
 
         /// <summary>
@@ -177,27 +196,6 @@ namespace HalApplicationBuilder {
 
         private void Process_Log(object? sender, ProcessEx.LogEventArgs e) {
             _log?.WriteLine(e.Message);
-        }
-
-        /// <summary>
-        /// アプリケーションスキーマを生成します。
-        /// </summary>
-        /// <exception cref="InvalidOperationException">アプリケーションスキーマが不正な場合</exception>
-        internal AppSchema BuildSchema() {
-            var xmlFullPath = GetAggregateSchemaPath();
-            using var stream = IO.OpenFileWithRetry(xmlFullPath);
-            using var reader = new StreamReader(stream);
-            var xmlContent = reader.ReadToEnd();
-            var xDocument = XDocument.Parse(xmlContent);
-
-            if (!AppSchemaBuilder.FromXml(xDocument, out var builder, out var errors)) {
-                throw new InvalidOperationException(errors.Join(Environment.NewLine));
-            }
-            if (!builder.TryBuild(out var appSchema, out var errors1)) {
-                throw new InvalidOperationException(errors1.Join(Environment.NewLine));
-            }
-
-            return appSchema;
         }
     }
 }
