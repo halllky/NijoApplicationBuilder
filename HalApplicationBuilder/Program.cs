@@ -94,12 +94,8 @@ namespace HalApplicationBuilder {
             var ok = true;
             foreach (var name in names) {
                 try {
-                    var cmd = new DotnetEx.Terminal {
-                        WorkingDirectory = ".",
-                        CancellationToken = cancellationToken,
-                        Verbose = false,
-                    };
-                    cmd.Exec(name, "--version");
+                    using var cmd = new ProcessEx(".", name, "--version");
+                    cmd.Start(cancellationToken);
                 } catch (OperationCanceledException) {
                     throw;
                 } catch {

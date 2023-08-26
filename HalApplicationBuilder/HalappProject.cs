@@ -62,14 +62,12 @@ namespace HalApplicationBuilder {
                 tempProject.EnsureCreateDatabase();
 
                 // git initial commit
-                var cmd = new Terminal {
-                    WorkingDirectory = tempDir,
-                    CancellationToken = cancellationToken,
-                    Verbose = verbose,
-                };
-                cmd.Exec("git", "init");
-                cmd.Exec("git", "add", ".");
-                cmd.Exec("git", "commit", "-m", "init");
+                using var cmd1 = tempProject.CreateProcess("git", "init");
+                using var cmd2 = tempProject.CreateProcess("git", "add", ".");
+                using var cmd3 = tempProject.CreateProcess("git", "commit", "-m", "init");
+                cmd1.Start(cancellationToken);
+                cmd2.Start(cancellationToken);
+                cmd3.Start(cancellationToken);
 
                 // ここまでの処理がすべて成功したら一時ディレクトリを本来のディレクトリ名に変更
                 if (tempDir != projectRootDir) {
@@ -166,15 +164,13 @@ namespace HalApplicationBuilder {
             _log?.WriteLine($"プロジェクトを作成します。");
 
             var config = ReadConfig();
-            var cmd = new Terminal {
-                WorkingDirectory = ProjectRoot,
-                Verbose = _verbose,
-            };
-
-            cmd.Exec("dotnet", "new", "webapi", "--output", ".", "--name", config.ApplicationName);
+            using var cmd1 = CreateProcess("dotnet", "new", "webapi", "--output", ".", "--name", config.ApplicationName);
+            cmd1.Start();
 
             // Create .gitignore file
-            cmd.Exec("dotnet", "new", "gitignore");
+            using var cmd2 = CreateProcess("dotnet", "new", "gitignore");
+            cmd2.Start();
+
             var filename = Path.Combine(ProjectRoot, ".gitignore");
             var gitignore = File.ReadAllLines(filename).ToList();
             gitignore.Insert(0, "# HalApplicationBuilder");
@@ -350,22 +346,21 @@ namespace HalApplicationBuilder {
         /// 必要なNuGetパッケージを参照に加えます。
         /// </summary>
         internal HalappProject AddNugetPackages() {
-            var cmd = new Terminal {
-                WorkingDirectory = ProjectRoot,
-                Verbose = _verbose,
-            };
-
             _log?.WriteLine($"Microsoft.EntityFrameworkCore パッケージへの参照を追加します。");
-            cmd.Exec("dotnet", "add", "package", "Microsoft.EntityFrameworkCore");
+            using var cmd1 = CreateProcess("dotnet", "add", "package", "Microsoft.EntityFrameworkCore");
+            cmd1.Start();
 
             _log?.WriteLine($"Microsoft.EntityFrameworkCore.Proxies パッケージへの参照を追加します。");
-            cmd.Exec("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Proxies");
+            using var cmd2 = CreateProcess("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Proxies");
+            cmd2.Start();
 
             _log?.WriteLine($"Microsoft.EntityFrameworkCore.Design パッケージへの参照を追加します。"); // migration add に必要
-            cmd.Exec("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Design");
+            using var cmd3 = CreateProcess("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Design");
+            cmd3.Start();
 
             _log?.WriteLine($"Microsoft.EntityFrameworkCore.Sqlite パッケージへの参照を追加します。");
-            cmd.Exec("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Sqlite");
+            using var cmd4 = CreateProcess("dotnet", "add", "package", "Microsoft.EntityFrameworkCore.Sqlite");
+            cmd4.Start();
 
             return this;
         }
@@ -407,10 +402,7 @@ namespace HalApplicationBuilder {
             var dbDir = Path.Combine(ProjectRoot, "bin", "Debug");
             if (!Directory.Exists(dbDir)) Directory.CreateDirectory(dbDir);
 
-            var migrator = new DotnetEf(new Terminal {
-                WorkingDirectory = ProjectRoot,
-                Verbose = _verbose,
-            });
+            var migrator = new DotnetEf(this, null);
             if (!migrator.GetMigrations().Any()) {
                 migrator.AddMigration();
             }
@@ -423,11 +415,8 @@ namespace HalApplicationBuilder {
         /// 必要なnpmモジュールをインストールします。
         /// </summary>
         public HalappProject InstallDependencies() {
-            var npmProcess = new Terminal {
-                WorkingDirectory = WebClientProjectRoot,
-                Verbose = _verbose,
-            };
-            npmProcess.Exec("npm", "ci");
+            using var npmProcess = CreateClientDirProcess("npm", "ci");
+            npmProcess.Start();
 
             // dotnetはビルド時に自動的にインストールされるので何もしない
 
@@ -438,27 +427,30 @@ namespace HalApplicationBuilder {
         /// プロジェクトをビルドします。
         /// </summary>
         public async Task BuildAsync() {
-            await Task.WhenAll(
-                Task.Run(() => {
-                    var cmd = new Terminal {
-                        WorkingDirectory = ProjectRoot,
-                        Verbose = _verbose,
-                    };
-                    cmd.Exec("dotnet", "build");
-                }),
-                Task.Run(() => {
-                    var terminal2 = new Terminal {
-                        WorkingDirectory = WebClientProjectRoot,
-                        Verbose = _verbose,
-                    };
-                    terminal2.Exec("npm", "run", "build");
-                }));
+            using var cmd1 = CreateProcess("dotnet", "build");
+            using var cmd2 = CreateClientDirProcess("npm", "run", "build");
+            await Task.WhenAll(cmd1.StartAsync(), cmd2.StartAsync());
+        }
+
+        private ProcessEx CreateProcess(string filename, params string[] args) {
+            var process = new ProcessEx(ProjectRoot, filename, args);
+            process.Log += Process_Log;
+            return process;
+        }
+        private ProcessEx CreateClientDirProcess(string filename, params string[] args) {
+            var process = new ProcessEx(WebClientProjectRoot, filename, args);
+            process.Log += Process_Log;
+            return process;
+        }
+
+        private void Process_Log(object? sender, ProcessEx.LogEventArgs e) {
+            _log?.WriteLine(e.Message);
         }
 
         /// <summary>
         /// クライアントサイドプロセスのコマンドを作成します。
         /// </summary>
-        internal BackgroundProcess CreateClientProcess(CancellationToken cancellationToken, TextWriter log) {
+        internal BackgroundProcess CreateClientRunningProcess(CancellationToken cancellationToken, TextWriter log) {
             if (!IsValidDirectory()) throw new InvalidOperationException("Here is not halapp directory.");
 
             var process = new DotnetEx.BackgroundProcess {
@@ -466,10 +458,9 @@ namespace HalApplicationBuilder {
                 Filename = "npm",
                 Args = new[] { "run", "dev" },
                 CancellationToken = cancellationToken,
-                IsReady = e => e.Data != null && ViteReadyConsole().IsMatch(e.Data), // viteのコンソール表示
+                IsReady = e => ViteReadyConsole().IsMatch(e.Message), // viteのコンソール表示
             };
-            process.OnStandardOut += (sender, e) => log.WriteLine(e.Data);
-            process.OnStandardError += (sender, e) => log.WriteLine(e.Data);
+            process.Log += (sender, e) => log.WriteLine(e.Message);
 
             return process;
         }
@@ -478,7 +469,7 @@ namespace HalApplicationBuilder {
         /// ビルドは行いません。
         /// 実行中のソースファイルの変更は自動的に反映されません。
         /// </summary>
-        internal BackgroundProcess CreateServerProcess(CancellationToken cancellationToken, TextWriter log) {
+        internal BackgroundProcess CreateServerRunningProcess(CancellationToken cancellationToken, TextWriter log) {
             if (!IsValidDirectory()) throw new InvalidOperationException("Here is not halapp directory.");
 
             var process = new BackgroundProcess {
@@ -486,10 +477,9 @@ namespace HalApplicationBuilder {
                 Filename = "dotnet",
                 Args = new[] { "run", "--no-build", "--launch-profile", "https" },
                 CancellationToken = cancellationToken,
-                IsReady = e => e.Data != null && AspCoreStartedRegex().IsMatch(e.Data),
+                IsReady = e => AspCoreStartedRegex().IsMatch(e.Message),
             };
-            process.OnStandardOut += (sender, e) => log.WriteLine(e.Data);
-            process.OnStandardError += (sender, e) => log.WriteLine(e.Data);
+            process.Log += (sender, e) => log.WriteLine(e.Message);
 
             return process;
         }
@@ -501,11 +491,7 @@ namespace HalApplicationBuilder {
             if (!IsValidDirectory()) return;
 
             var config = ReadConfig();
-            var migrator = new DotnetEf(new Terminal {
-                WorkingDirectory = ProjectRoot,
-                Verbose = _verbose,
-                CancellationToken = cancellationToken,
-            });
+            var migrator = new DotnetEf(this, cancellationToken);
 
             // 以下の2種類のキャンセルがあるので統合する
             // - ユーザーの操作による halapp debug 全体のキャンセル
@@ -533,7 +519,7 @@ namespace HalApplicationBuilder {
                     rebuildCancellation?.Cancel();
                 };
 
-                npmStart = CreateClientProcess(cancellationToken, _log ?? Console.Out);
+                npmStart = CreateClientRunningProcess(cancellationToken, _log ?? Console.Out);
                 await npmStart.Launch();
 
                 watcher.EnableRaisingEvents = true;
@@ -564,7 +550,7 @@ namespace HalApplicationBuilder {
                         migrator.AddMigration();
                         migrator.Migrate();
 
-                        dotnetRun = CreateServerProcess(linkedTokenSource.Token, _log ?? Console.Out);
+                        dotnetRun = CreateServerRunningProcess(linkedTokenSource.Token, _log ?? Console.Out);
                         await dotnetRun.Launch();
 
                     } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
@@ -669,10 +655,12 @@ namespace HalApplicationBuilder {
         /// </summary>
         private partial class DotnetEf {
 
-            internal DotnetEf(Terminal terminal) {
-                _terminal = terminal;
+            internal DotnetEf(HalappProject project, CancellationToken? cancellationToken) {
+                _project = project;
+                _cancellationToken = cancellationToken;
             }
-            private readonly Terminal _terminal;
+            private readonly HalappProject _project;
+            private readonly CancellationToken? _cancellationToken;
 
             private bool _build = false;
             private void Build() {
@@ -680,21 +668,23 @@ namespace HalApplicationBuilder {
                 _build = true;
 
                 // このクラスの処理が走っているとき、基本的には dotnet run も並走しているので、Releaseビルドを指定しないとビルド先が競合して失敗してしまう
-                _terminal.Exec("dotnet", "build", "--configuration", "Release");
+                using var process = _project.CreateProcess("dotnet", "build", "--configuration", "Release");
+                process.Start(_cancellationToken);
             }
 
             internal IEnumerable<Migration> GetMigrations() {
                 try {
                     Build();
 
-                    var output = _terminal.ReadOutput(
+                    using var process = _project.CreateProcess(
                         "dotnet", "ef", "migrations", "list",
                         "--prefix-output", // ビルド状況やの行頭には "info:" が、マイグレーション名の行頭には "data:" がつくので、その識別のため
                         "--configuration", "Release",
                         "--no-build"); 
 
                     var regex = MigrationDataLineRegex();
-                    return output
+                    return process
+                        .Read(_cancellationToken)
                         .Select(line => regex.Match(line))
                         .Where(match => match.Success)
                         .Select(match => new Migration {
@@ -710,25 +700,43 @@ namespace HalApplicationBuilder {
                 Build();
 
                 // そのマイグレーションが適用済みだと migrations remove できないので、まず database update する
-                _terminal.Exec("dotnet", "ef", "database", "update", migrationName, "--configuration", "Release", "--no-build");
+                using var update = _project.CreateProcess(
+                    "dotnet", "ef", "database", "update", migrationName,
+                    "--configuration", "Release",
+                    "--no-build");
+                update.Start(_cancellationToken);
 
                 // リリース済みマイグレーションより後のマイグレーションを消す
                 while (GetMigrations().Last().Name != migrationName) {
-                    _terminal.Exec("dotnet", "ef", "migrations", "remove", "--configuration", "Release", "--no-build");
+                    using var remove = _project.CreateProcess(
+                        "dotnet", "ef", "migrations", "remove",
+                        "--configuration", "Release",
+                        "--no-build");
+                    remove.Start(_cancellationToken);
                 }
             }
             internal void AddMigration() {
                 Build();
+
                 var migrationCount = GetMigrations().Count();
                 var nextMigrationId = migrationCount.ToString("000000000000");
-                _terminal.Exec("dotnet", "ef", "migrations", "add", nextMigrationId, "--configuration", "Release", "--no-build");
+
+                using var cmd = _project.CreateProcess(
+                    "dotnet", "ef", "migrations", "add", nextMigrationId,
+                    "--configuration", "Release",
+                    "--no-build");
+                cmd.Start(_cancellationToken);
 
                 // マイグレーションファイルが追加されたことにより再ビルドが必要
                 _build = false;
             }
             internal void Migrate() {
                 Build();
-                _terminal.Exec("dotnet", "ef", "database", "update", "--configuration", "Release", "--no-build");
+                using var update = _project.CreateProcess(
+                    "dotnet", "ef", "database", "update",
+                    "--configuration", "Release",
+                    "--no-build");
+                update.Start( _cancellationToken);
             }
 
             internal struct Migration {
