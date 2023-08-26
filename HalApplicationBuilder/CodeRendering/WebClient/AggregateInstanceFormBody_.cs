@@ -26,11 +26,15 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         public string FileName => throw new NotImplementedException("このテンプレートは他のテンプレートの一部としてレンダリングされるためファイル名はありません。");
 
         private string GetRegisterName(string propName) {
-            return _instance
-                .PathFromEntry()
-                .Select(path => path.RelationName)
-                .Concat(new[] { propName })
-                .Join(".");
+            var component = new DescencantForms.Component(_instance);
+            var path = component.GetUseFieldArrayName();
+
+            var list = new List<string>();
+            if (!string.IsNullOrWhiteSpace(path)) list.Add(path);
+            if (_instance.GetParent()?.IsChildren() == true) list.Add("${index}");
+            list.Add(propName);
+
+            return list.Join(".");
         }
         internal static string GetPropNameFlexBasis(IEnumerable<string> propNames) {
             var maxCharWidth = propNames
@@ -68,9 +72,9 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             public IEnumerable<string> TextBox(bool multiline = false) {
                 var name = _owner.GetRegisterName(_prop.PropertyName);
                 if (multiline)
-                    yield return $"<textarea {{...register('{name}')}} className=\"{INPUT_WIDTH}\"></textarea>";
+                    yield return $"<textarea {{...register(`{name}`)}} className=\"{INPUT_WIDTH}\"></textarea>";
                 else
-                    yield return $"<input type=\"text\" {{...register('{name}')}} className=\"{INPUT_WIDTH}\" />";
+                    yield return $"<input type=\"text\" {{...register(`{name}`)}} className=\"{INPUT_WIDTH}\" />";
             }
 
             /// <summary>
@@ -78,7 +82,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             /// </summary>
             public IEnumerable<string> Toggle() {
                 var name = _owner.GetRegisterName(_prop.PropertyName);
-                yield return $"<input type=\"checkbox\" {{...register('{name}')}} />";
+                yield return $"<input type=\"checkbox\" {{...register(`{name}`)}} />";
             }
 
             /// <summary>

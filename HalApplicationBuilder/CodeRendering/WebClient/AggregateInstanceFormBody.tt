@@ -58,14 +58,14 @@
   <div className="flex-1 flex gap-2 flex-wrap">
 <# foreach (var item in variationProperty.Group.VariationAggregates) { #>
     <label>
-      <input type="radio" value="<#=item.Key#>" {...register('<#=GetRegisterName(variationProperty.Group.GroupName.ToCSharpSafe())#>')} />
+      <input type="radio" value="<#=item.Key#>" {...register(`<#=GetRegisterName(variationProperty.Group.GroupName.ToCSharpSafe())#>`)} />
       <#=item.Value.RelationName#>
     </label>
 <# } #>
   </div>
 </div>
 <# foreach (var item in variationProperty.Group.VariationAggregates) { #>
-<div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(watch('<#=GetRegisterName(variationProperty.Group.GroupName.ToCSharpSafe())#>') !== '<#=item.Key#>' ? 'hidden' : '')}`}>
+<div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(watch(`<#=GetRegisterName(variationProperty.Group.GroupName.ToCSharpSafe())#>`) !== '<#=item.Key#>' ? 'hidden' : '')}`}>
 <# PushIndent("  "); #>
 <# RenderVariationAggregateBody(item.Value.Terminal); #>
 <# PopIndent(); #>

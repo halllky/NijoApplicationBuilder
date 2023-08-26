@@ -68,18 +68,18 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
  foreach (var item in variationProperty.Group.VariationAggregates) { 
             this.Write("    <label>\r\n      <input type=\"radio\" value=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(item.Key));
-            this.Write("\" {...register(\'");
+            this.Write("\" {...register(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetRegisterName(variationProperty.Group.GroupName.ToCSharpSafe())));
-            this.Write("\')} />\r\n      ");
+            this.Write("`)} />\r\n      ");
             this.Write(this.ToStringHelper.ToStringWithCulture(item.Value.RelationName));
             this.Write("\r\n    </label>\r\n");
  } 
             this.Write("  </div>\r\n</div>\r\n");
  foreach (var item in variationProperty.Group.VariationAggregates) { 
-            this.Write("<div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(watch(\'" +
+            this.Write("<div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(watch(`" +
                     "");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetRegisterName(variationProperty.Group.GroupName.ToCSharpSafe())));
-            this.Write("\') !== \'");
+            this.Write("`) !== \'");
             this.Write(this.ToStringHelper.ToStringWithCulture(item.Key));
             this.Write("\' ? \'hidden\' : \'\')}`}>\r\n");
  PushIndent("  "); 

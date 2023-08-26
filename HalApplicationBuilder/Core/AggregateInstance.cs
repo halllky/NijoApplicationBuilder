@@ -64,18 +64,24 @@ namespace HalApplicationBuilder.Core
             foreach (var prop in GetRefProperties(node, config)) yield return prop;
         }
 
-        internal static IEnumerable<AggregateInstance.SchalarProperty> GetSchalarProperties(this GraphNode<AggregateInstance> node, Config config) {
-            foreach (var column in node.GetDbEntity().GetColumns()) {
-                // 親子両方で定義されて冗長になってしまうため、親のPKは含めない
-                if (column.CorrespondingParentColumn != null) continue;
-                // 参照はKeyNamePairで定義するので、含めない
-                if (column.CorrespondingRefTargetColumn != null) continue;
-
+        internal static IEnumerable<AggregateInstance.SchalarProperty> GetSchalarProperties(this GraphNode<AggregateInstance> instance, Config config) {
+            var dbEntityColumns = instance.GetDbEntity().GetColumns().ToArray();
+            foreach (var member in instance.GetCorrespondingAggregate().Item.Members) {
                 yield return new AggregateInstance.SchalarProperty {
-                    CorrespondingDbColumn = column,
-                    CSharpTypeName = column.CSharpTypeName,
-                    TypeScriptTypename = column.TypeScriptTypename,
-                    PropertyName = column.PropertyName,
+                    CorrespondingDbColumn = dbEntityColumns.Single(col => col.PropertyName == member.Name),
+                    CSharpTypeName = member.Type.GetCSharpTypeName(),
+                    TypeScriptTypename = member.Type.GetTypeScriptTypeName(),
+                    PropertyName = member.Name,
+                };
+            }
+
+            // variationのスイッチ
+            foreach (var group in instance.GetVariationGroups()) {
+                yield return new AggregateInstance.SchalarProperty {
+                    CorrespondingDbColumn = dbEntityColumns.Single(col => col.PropertyName == group.GroupName),
+                    CSharpTypeName = "string",
+                    TypeScriptTypename = "string",
+                    PropertyName = group.GroupName,
                 };
             }
         }
