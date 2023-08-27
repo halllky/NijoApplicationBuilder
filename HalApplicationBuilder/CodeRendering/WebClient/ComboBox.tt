@@ -9,6 +9,8 @@ import React, { forwardRef, ForwardedRef, useState, useCallback } from "react"
 import { useQuery } from "react-query"
 import { useFormContext } from 'react-hook-form';
 import { Combobox } from "@headlessui/react"
+import { ChevronUpDownIcon } from "@heroicons/react/24/outline"
+import { NowLoading } from "./NowLoading"
 import { useAppContext } from "../hooks/AppContext"
 import { usePageContext } from "../hooks/PageContext"
 import { useHttpRequest } from "../hooks/useHttpRequest"
@@ -22,7 +24,7 @@ export const <#=ComponentName#> = forwardRef(({ raectHookFormId }: {
   const [keyword, setKeyword] = useState('')
   const { get } = useHttpRequest()
   const [, dispatch] = useAppContext()
-  const { data, refetch } = useQuery({
+  const { data, refetch, isFetching } = useQuery({
     queryKey: ['<#=UseQueryKey#>'],
     queryFn: async () => {
       const response = await get<<#=AggregateInstanceKeyNamePair.TS_DEF#>[]>(`<#=Api#>`, { keyword })
@@ -37,7 +39,10 @@ export const <#=ComponentName#> = forwardRef(({ raectHookFormId }: {
   const onChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setKeyword(e.target.value)
     if (setTimeoutHandle !== undefined) clearTimeout(setTimeoutHandle)
-    setSetTimeoutHandle(setTimeout(() => refetch(), 1000))
+    setSetTimeoutHandle(setTimeout(() => {
+      refetch()
+      setSetTimeoutHandle(undefined)
+    }, 300))
   }, [setKeyword, setTimeoutHandle, setSetTimeoutHandle, refetch])
   const onBlur = useCallback(() => {
     if (setTimeoutHandle !== undefined) clearTimeout(setTimeoutHandle)
@@ -46,21 +51,37 @@ export const <#=ComponentName#> = forwardRef(({ raectHookFormId }: {
   }, [setTimeoutHandle, setSetTimeoutHandle, refetch])
 
   const { watch, setValue } = useFormContext()
-  const selectedValue = watch(raectHookFormId)?.key || null
-  const onChangeSelectedValue = useCallback((value?: { key: string, name: string }) => {
+  const onChangeSelectedValue = useCallback((value?: <#=AggregateInstanceKeyNamePair.TS_DEF#>) => {
     setValue(raectHookFormId, value)
   }, [setValue, watch])
+  const displayValue = useCallback((item?: <#=AggregateInstanceKeyNamePair.TS_DEF#>) => {
+    return item?.name || ''
+  }, [])
 
   return (
-    <Combobox ref={ref} value={selectedValue} onChange={onChangeSelectedValue} nullable disabled={pageIsReadOnly}>
-      <Combobox.Input onChange={onChange} onBlur={onBlur} />
-      <Combobox.Options>
-        {data?.map(item => (
-          <Combobox.Option key={item.<#=AggregateInstanceKeyNamePair.JSON_KEY#>} value={item}>
-            {item.<#=AggregateInstanceKeyNamePair.JSON_NAME#>}
-          </Combobox.Option>
-        ))}
-      </Combobox.Options>
+    <Combobox ref={ref} value={watch(raectHookFormId) || null} onChange={onChangeSelectedValue} nullable disabled={pageIsReadOnly}>
+      <div className="relative <#=FormOfAggregateInstance.INPUT_WIDTH#>">
+        <Combobox.Input displayValue={displayValue} onChange={onChange} onBlur={onBlur} className="w-full" spellCheck="false" autoComplete="off" />
+        {!pageIsReadOnly &&
+          <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
+            <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+          </Combobox.Button>}
+        <Combobox.Options className="absolute mt-1 w-full overflow-auto bg-white py-1 shadow-lg focus:outline-none">
+          {(setTimeoutHandle !== undefined || isFetching) &&
+            <NowLoading />}
+          {(setTimeoutHandle === undefined && !isFetching && data?.length === 0) &&
+            <span className="p-1 text-sm select-none opacity-50">データなし</span>}
+          {(setTimeoutHandle === undefined && !isFetching) && data?.map(item => (
+            <Combobox.Option key={item.<#=AggregateInstanceKeyNamePair.JSON_KEY#>} value={item}>
+              {({ active }) => (
+                <div className={active ? 'bg-neutral-200' : ''}>
+                  {item.<#=AggregateInstanceKeyNamePair.JSON_NAME#>}
+                </div>
+              )}
+            </Combobox.Option>
+          ))}
+        </Combobox.Options>
+      </div>
     </Combobox>
   )
 })

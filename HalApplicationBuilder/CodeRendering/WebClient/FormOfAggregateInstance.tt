@@ -94,7 +94,7 @@ export const <#=desc.ComponentName#> = (args: {
       <span className="text-sm select-none opacity-80">
         <#=prop.PropertyName#>
       </span>
-      <div className="flex flex-col space-y-1 p-1">
+      <div className="flex flex-col space-y-1">
 <# PushIndent("        "); #>
 <# RenderChildrenAggregateBody(childrenProperty); #>
 <# PopIndent(); #>

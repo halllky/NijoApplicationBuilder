@@ -114,7 +114,7 @@ import * as AggregateType from '");
             this.Write("    <div className=\"py-2\">\r\n      <span className=\"text-sm select-none opacity-80" +
                     "\">\r\n        ");
             this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
-            this.Write("\r\n      </span>\r\n      <div className=\"flex flex-col space-y-1 p-1\">\r\n");
+            this.Write("\r\n      </span>\r\n      <div className=\"flex flex-col space-y-1\">\r\n");
  PushIndent("        "); 
  RenderChildrenAggregateBody(childrenProperty); 
  PopIndent(); 

@@ -30,6 +30,8 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
 import { useQuery } from ""react-query""
 import { useFormContext } from 'react-hook-form';
 import { Combobox } from ""@headlessui/react""
+import { ChevronUpDownIcon } from ""@heroicons/react/24/outline""
+import { NowLoading } from ""./NowLoading""
 import { useAppContext } from ""../hooks/AppContext""
 import { usePageContext } from ""../hooks/PageContext""
 import { useHttpRequest } from ""../hooks/useHttpRequest""
@@ -45,7 +47,7 @@ export const ");
   const [keyword, setKeyword] = useState('')
   const { get } = useHttpRequest()
   const [, dispatch] = useAppContext()
-  const { data, refetch } = useQuery({
+  const { data, refetch, isFetching } = useQuery({
     queryKey: ['");
             this.Write(this.ToStringHelper.ToStringWithCulture(UseQueryKey));
             this.Write("\'],\r\n    queryFn: async () => {\r\n      const response = await get<");
@@ -64,7 +66,10 @@ export const ");
   const onChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setKeyword(e.target.value)
     if (setTimeoutHandle !== undefined) clearTimeout(setTimeoutHandle)
-    setSetTimeoutHandle(setTimeout(() => refetch(), 1000))
+    setSetTimeoutHandle(setTimeout(() => {
+      refetch()
+      setSetTimeoutHandle(undefined)
+    }, 300))
   }, [setKeyword, setTimeoutHandle, setSetTimeoutHandle, refetch])
   const onBlur = useCallback(() => {
     if (setTimeoutHandle !== undefined) clearTimeout(setTimeoutHandle)
@@ -73,22 +78,35 @@ export const ");
   }, [setTimeoutHandle, setSetTimeoutHandle, refetch])
 
   const { watch, setValue } = useFormContext()
-  const selectedValue = watch(raectHookFormId)?.key || null
-  const onChangeSelectedValue = useCallback((value?: { key: string, name: string }) => {
-    setValue(raectHookFormId, value)
-  }, [setValue, watch])
-
-  return (
-    <Combobox ref={ref} value={selectedValue} onChange={onChangeSelectedValue} nullable disabled={pageIsReadOnly}>
-      <Combobox.Input onChange={onChange} onBlur={onBlur} />
-      <Combobox.Options>
-        {data?.map(item => (
-          <Combobox.Option key={item.");
+  const onChangeSelectedValue = useCallback((value?: ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePair.TS_DEF));
+            this.Write(") => {\r\n    setValue(raectHookFormId, value)\r\n  }, [setValue, watch])\r\n  const di" +
+                    "splayValue = useCallback((item?: ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePair.TS_DEF));
+            this.Write(") => {\r\n    return item?.name || \'\'\r\n  }, [])\r\n\r\n  return (\r\n    <Combobox ref={r" +
+                    "ef} value={watch(raectHookFormId) || null} onChange={onChangeSelectedValue} null" +
+                    "able disabled={pageIsReadOnly}>\r\n      <div className=\"relative ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(FormOfAggregateInstance.INPUT_WIDTH));
+            this.Write(@""">
+        <Combobox.Input displayValue={displayValue} onChange={onChange} onBlur={onBlur} className=""w-full"" spellCheck=""false"" autoComplete=""off"" />
+        {!pageIsReadOnly &&
+          <Combobox.Button className=""absolute inset-y-0 right-0 flex items-center pr-2"">
+            <ChevronUpDownIcon className=""h-5 w-5 text-gray-400"" aria-hidden=""true"" />
+          </Combobox.Button>}
+        <Combobox.Options className=""absolute mt-1 w-full overflow-auto bg-white py-1 shadow-lg focus:outline-none"">
+          {(setTimeoutHandle !== undefined || isFetching) &&
+            <NowLoading />}
+          {(setTimeoutHandle === undefined && !isFetching && data?.length === 0) &&
+            <span className=""p-1 text-sm select-none opacity-50"">データなし</span>}
+          {(setTimeoutHandle === undefined && !isFetching) && data?.map(item => (
+            <Combobox.Option key={item.");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePair.JSON_KEY));
-            this.Write("} value={item}>\r\n            {item.");
+            this.Write("} value={item}>\r\n              {({ active }) => (\r\n                <div className" +
+                    "={active ? \'bg-neutral-200\' : \'\'}>\r\n                  {item.");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePair.JSON_NAME));
-            this.Write("}\r\n          </Combobox.Option>\r\n        ))}\r\n      </Combobox.Options>\r\n    </Co" +
-                    "mbobox>\r\n  )\r\n})\r\n");
+            this.Write("}\r\n                </div>\r\n              )}\r\n            </Combobox.Option>\r\n    " +
+                    "      ))}\r\n        </Combobox.Options>\r\n      </div>\r\n    </Combobox>\r\n  )\r\n})\r\n" +
+                    "");
             return this.GenerationEnvironment.ToString();
         }
     }

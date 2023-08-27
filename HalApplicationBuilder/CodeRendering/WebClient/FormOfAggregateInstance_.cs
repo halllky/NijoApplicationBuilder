@@ -53,17 +53,15 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             private readonly GraphNode<AggregateInstance> _instance;
             private readonly AggregateInstance.SchalarProperty _prop;
 
-            private const string INPUT_WIDTH = "w-80";
-
             /// <summary>
             /// Createビュー兼シングルビュー: テキストボックス
             /// </summary>
             public IEnumerable<string> TextBox(bool multiline = false) {
                 var name = GetRegisterName(_instance, _prop.PropertyName);
                 if (multiline)
-                    yield return $"<textarea {{...register(`{name}`)}} className=\"{INPUT_WIDTH}\" readOnly={{pageIsReadOnly}}></textarea>";
+                    yield return $"<textarea {{...register(`{name}`)}} className=\"{INPUT_WIDTH}\" readOnly={{pageIsReadOnly}} spellCheck=\"false\" autoComplete=\"off\"></textarea>";
                 else
-                    yield return $"<input type=\"text\" {{...register(`{name}`)}} className=\"{INPUT_WIDTH}\" readOnly={{pageIsReadOnly}} />";
+                    yield return $"<input type=\"text\" {{...register(`{name}`)}} className=\"{INPUT_WIDTH}\" readOnly={{pageIsReadOnly}} spellCheck=\"false\" autoComplete=\"off\" />";
             }
 
             /// <summary>
@@ -176,7 +174,8 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         }
 
 
-        #region STATIC METHOD
+        #region STATIC
+        internal const string INPUT_WIDTH = "w-80";
         private static string GetRegisterName(GraphNode<AggregateInstance> instance, string propName) {
             var component = new Component(instance);
             var path = component.GetUseFieldArrayName();
@@ -200,6 +199,6 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
             return $"basis-{c}";
         }
-        #endregion STATIC METHOD
+        #endregion STATIC
     }
 }
