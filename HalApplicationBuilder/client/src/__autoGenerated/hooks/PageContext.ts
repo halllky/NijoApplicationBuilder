@@ -1,7 +1,7 @@
 import React, { createContext, useContext } from "react"
 
 type PageState = {
-  readOnly?: boolean
+  pageIsReadOnly?: boolean
 }
 type Action
   = { type: 'changeReadOnly', value: boolean }
@@ -9,7 +9,7 @@ type Action
 export const pageContextReducer: React.Reducer<PageState, Action> = (state, action) => {
   switch (action.type) {
     case 'changeReadOnly':
-      return { ...state, readOnly: action.value }
+      return { ...state, pageIsReadOnly: action.value }
   }
 }
 

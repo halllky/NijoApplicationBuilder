@@ -84,11 +84,11 @@ export default function () {
     }
   }, [errorMessages, dispatch, post])
 
-  const pageContextValue = useReducer(pageContextReducer, { readOnly: true })
+  const pageContextValue = useReducer(pageContextReducer, { pageIsReadOnly: true })
   const toggleReadOnlyMode = useCallback((e: React.MouseEvent) => {
-    pageContextValue[1]({ type: 'changeReadOnly', value: !pageContextValue[0].readOnly })
+    pageContextValue[1]({ type: 'changeReadOnly', value: !pageContextValue[0].pageIsReadOnly })
     e.preventDefault()
-  }, [pageContextValue[0].readOnly])
+  }, [pageContextValue[0].pageIsReadOnly])
 
   if (!fetched) return <></>
 

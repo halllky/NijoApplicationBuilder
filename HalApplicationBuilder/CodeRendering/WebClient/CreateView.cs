@@ -46,7 +46,7 @@ import * as AggregateType from '../../");
 
 export default function () {
 
-  const pageContextValue = useReducer(pageContextReducer, { readOnly: false })
+  const pageContextValue = useReducer(pageContextReducer, { pageIsReadOnly: false })
   const reactHookFormMethods = useForm({ defaultValues })
 
   const navigate = useNavigate()

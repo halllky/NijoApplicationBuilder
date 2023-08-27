@@ -61,9 +61,9 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             public IEnumerable<string> TextBox(bool multiline = false) {
                 var name = GetRegisterName(_instance, _prop.PropertyName);
                 if (multiline)
-                    yield return $"<textarea {{...register(`{name}`)}} className=\"{INPUT_WIDTH}\" readOnly={{readOnly}}></textarea>";
+                    yield return $"<textarea {{...register(`{name}`)}} className=\"{INPUT_WIDTH}\" readOnly={{pageIsReadOnly}}></textarea>";
                 else
-                    yield return $"<input type=\"text\" {{...register(`{name}`)}} className=\"{INPUT_WIDTH}\" readOnly={{readOnly}} />";
+                    yield return $"<input type=\"text\" {{...register(`{name}`)}} className=\"{INPUT_WIDTH}\" readOnly={{pageIsReadOnly}} />";
             }
 
             /// <summary>
@@ -71,7 +71,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             /// </summary>
             public IEnumerable<string> Toggle() {
                 var name = GetRegisterName(_instance, _prop.PropertyName);
-                yield return $"<input type=\"checkbox\" {{...register(`{name}`)}} disabled={{readOnly}} />";
+                yield return $"<input type=\"checkbox\" {{...register(`{name}`)}} disabled={{pageIsReadOnly}} />";
             }
 
             /// <summary>

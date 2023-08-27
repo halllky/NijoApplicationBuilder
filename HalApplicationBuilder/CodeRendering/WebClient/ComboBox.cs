@@ -40,7 +40,7 @@ export const ");
   raectHookFormId: string
 }, ref: ForwardedRef<HTMLElement>) => {
 
-  const [{ readOnly },] = usePageContext()
+  const [{ pageIsReadOnly },] = usePageContext()
 
   const [keyword, setKeyword] = useState('')
   const { get } = useHttpRequest()
@@ -79,7 +79,7 @@ export const ");
   }, [setValue, watch])
 
   return (
-    <Combobox ref={ref} value={selectedValue} onChange={onChangeSelectedValue} nullable disabled={readOnly}>
+    <Combobox ref={ref} value={selectedValue} onChange={onChangeSelectedValue} nullable disabled={pageIsReadOnly}>
       <Combobox.Input onChange={onChange} onBlur={onBlur} />
       <Combobox.Options>
         {data?.map(item => (

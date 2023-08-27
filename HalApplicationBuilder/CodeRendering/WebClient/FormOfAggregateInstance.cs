@@ -44,8 +44,8 @@ import * as AggregateType from '");
             this.Write(this.ToStringHelper.ToStringWithCulture(arg));
             this.Write(": number\r\n");
  } 
-            this.Write("}) => {\r\n  const [{ readOnly },] = usePageContext()\r\n  const { register, watch } " +
-                    "= useFormContext<AggregateType.");
+            this.Write("}) => {\r\n  const [{ pageIsReadOnly },] = usePageContext()\r\n  const { register, wa" +
+                    "tch } = useFormContext<AggregateType.");
             this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
             this.Write(">()\r\n\r\n  return <>\r\n");
  foreach (var prop in desc.AggregateInstance.GetProperties(_ctx.Config)) { 
@@ -131,8 +131,8 @@ import * as AggregateType from '");
             this.Write(this.ToStringHelper.ToStringWithCulture(arg));
             this.Write(": number\r\n");
  } 
-            this.Write("}) => {\r\n  const [{ readOnly },] = usePageContext()\r\n  const { control, register " +
-                    "} = useFormContext<AggregateType.");
+            this.Write("}) => {\r\n  const [{ pageIsReadOnly },] = usePageContext()\r\n  const { control, reg" +
+                    "ister } = useFormContext<AggregateType.");
             this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
             this.Write(">()\r\n  const { fields, append, remove } = useFieldArray({\r\n    control,\r\n    name" +
                     ": `");
@@ -145,10 +145,10 @@ import * as AggregateType from '");
                     "y-1 p-1 border border-neutral-400\">\r\n          <");
             this.Write(this.ToStringHelper.ToStringWithCulture(desc.ComponentName));
             this.Write(@" {...args} />
-          {!readOnly && <Components.IconButton underline icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }} className=""self-start"">削除</Components.IconButton>}
+          {!pageIsReadOnly && <Components.IconButton underline icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }} className=""self-start"">削除</Components.IconButton>}
         </div>
       ))}
-      {!readOnly && <Components.IconButton underline icon={PlusIcon} onClick={onAdd} className=""self-start"">追加</Components.IconButton>}
+      {!pageIsReadOnly && <Components.IconButton underline icon={PlusIcon} onClick={onAdd} className=""self-start"">追加</Components.IconButton>}
     </>
   )
 }
