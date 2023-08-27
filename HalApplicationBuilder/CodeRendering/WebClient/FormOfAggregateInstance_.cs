@@ -29,10 +29,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         internal IEnumerable<string> EnumerateComponentNames() {
             return _instance
                 .EnumerateThisAndDescendants()
-                .Select(x => new Component(x))
-                .Select(component => component.IsChildren
-                    ? component.ComponentNameOfChildrenList
-                    : component.ComponentName);
+                .Select(x => new Component(x).ComponentName);
         }
 
         private string PropNameWidth { get; }
@@ -97,7 +94,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         #region DESCENDANT AGGREGATES
         private void RenderRefAggregateBody(AggregateInstance.RefProperty refProperty) {
             var component = new ComboBox(refProperty.RefTarget.GetCorrespondingAggregate(), _ctx);
-            var registerName = GetRegisterName(_instance, refProperty.PropertyName);
+            var registerName = GetRegisterName(refProperty.RefTarget);
             component.RenderCaller(this, registerName);
         }
         private void RenderChildrenAggregateBody(AggregateInstance.ChildrenProperty childrenProperty) {
@@ -121,27 +118,19 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             }
             internal GraphNode<AggregateInstance> AggregateInstance { get; }
 
-            /// <summary>
-            /// Childrenに関して、exportするのはコンポーネント要素ではなくfileds.mapを使っている方なので少々ややこしくなっている
-            /// </summary>
-            internal string ComponentName => IsChildren
-                ? $"{AggregateInstance.Item.TypeScriptTypeName}ListItemView"
-                : $"{AggregateInstance.Item.TypeScriptTypeName}View";
-            internal string ComponentNameOfChildrenList => IsChildren
-                ? $"{AggregateInstance.Item.TypeScriptTypeName}View"
-                : throw new InvalidOperationException($"Children以外はこのプロパティを呼び出してはいけない");
+            internal virtual string ComponentName => $"{AggregateInstance.Item.TypeScriptTypeName}View";
             internal bool IsChildren => AggregateInstance.IsChildrenMember();
 
-            internal IReadOnlyDictionary<GraphEdge<AggregateInstance>, string> GetArguments() {
+            internal virtual IReadOnlyDictionary<GraphEdge, string> GetArguments() {
                 // 祖先コンポーネントの中に含まれるChildrenの数だけ、
                 // このコンポーネントのその配列中でのインデックスが特定されている必要があるので、引数で渡す
                 var ancestors = AggregateInstance
-                    .EnumerateAncestors()
+                    .PathFromEntry()
                     .SkipLast(1)
                     .Where(edge => edge.Terminal.IsChildrenMember())
                     .ToArray();
 
-                var dict = new Dictionary<GraphEdge<AggregateInstance>, string>();
+                var dict = new Dictionary<GraphEdge, string>();
                 for (int i = 0; i < ancestors.Length; i++) {
                     dict.Add(ancestors[i], $"index_{i}");
                 }
@@ -151,7 +140,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             internal string GetUseFieldArrayName() {
                 var path = new List<string>();
                 var args = GetArguments();
-                var ancestors = AggregateInstance.EnumerateAncestors().ToArray();
+                var ancestors = AggregateInstance.PathFromEntry().ToArray();
 
                 foreach (var ancestor in ancestors) {
                     path.Add(ancestor.RelationName);
@@ -162,28 +151,49 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             }
 
             internal void RenderCaller(ITemplate template) {
-                var name = IsChildren
-                    ? ComponentNameOfChildrenList
-                    : ComponentName;
                 var args = GetArguments()
                     .SkipLast(1)
                     .Select(x => $" {x.Value}={{{x.Value}}}")
                     .Join(string.Empty);
-                template.WriteLine($"<{name}{args} />");
+                template.WriteLine($"<{ComponentName}{args} />");
+            }
+        }
+        /// <summary>
+        /// Childrenはコード自動生成の都合上各要素のコンポーネントと配列のコンポーネントの2個あり、これは前者
+        /// </summary>
+        private class ComponentOfChildrenListItem : Component {
+            internal ComponentOfChildrenListItem(GraphNode<AggregateInstance> instance) : base(instance) { }
+
+            internal override string ComponentName => $"{AggregateInstance.Item.TypeScriptTypeName}ListItemView";
+
+            internal override IReadOnlyDictionary<GraphEdge, string> GetArguments() {
+                // 祖先コンポーネントの中に含まれるChildrenの数だけ、
+                // このコンポーネントのその配列中でのインデックスが特定されている必要があるので、引数で渡す
+                var ancestors = AggregateInstance
+                    .PathFromEntry()
+                    // .SkipLast(1)
+                    .Where(edge => edge.Terminal.IsChildrenMember())
+                    .ToArray();
+
+                var dict = new Dictionary<GraphEdge, string>();
+                for (int i = 0; i < ancestors.Length; i++) {
+                    dict.Add(ancestors[i], $"index_{i}");
+                }
+                return dict;
             }
         }
 
 
         #region STATIC
         internal const string INPUT_WIDTH = "w-80";
-        private static string GetRegisterName(GraphNode<AggregateInstance> instance, string propName) {
+        private static string GetRegisterName(GraphNode<AggregateInstance> instance, string? propName = null) {
             var component = new Component(instance);
             var path = component.GetUseFieldArrayName();
 
             var list = new List<string>();
             if (!string.IsNullOrWhiteSpace(path)) list.Add(path);
             if (instance.IsChildrenMember()) list.Add("${index}");
-            list.Add(propName);
+            if (propName != null) list.Add(propName);
 
             return list.Join(".");
         }

@@ -13,8 +13,11 @@ import { usePageContext } from '../../hooks/PageContext'
 import * as Components from '../../components'
 import * as AggregateType from '<#=TypesImport#>'
 
-<# foreach (var desc in _instance.EnumerateThisAndDescendants().Select(x => new Component(x))) { #>
-export const <#=desc.ComponentName#> = (args: {
+<# var components = _instance
+    .EnumerateThisAndDescendants()
+    .Select(x => x.IsChildrenMember() ? new ComponentOfChildrenListItem(x) : new Component(x)); #>
+<# foreach (var desc in components) { #>
+export const <#=desc.ComponentName#> = ({ <#=desc.GetArguments().Values.Join(", ")#> }: {
 <# foreach (var arg in desc.GetArguments().Values) { #>
   <#=arg#>: number
 <# } #>
@@ -108,8 +111,9 @@ export const <#=desc.ComponentName#> = (args: {
 
 
 <# if (desc.IsChildren) { #>
-export const <#=desc.ComponentNameOfChildrenList#> = (args: {
-<# foreach (var arg in desc.GetArguments().Values) { #>
+<# var arrayComponent = new Component(desc.AggregateInstance); #>
+export const <#=arrayComponent.ComponentName#> = (args: {
+<# foreach (var arg in arrayComponent.GetArguments().Values) { #>
   <#=arg#>: number
 <# } #>
 }) => {
@@ -117,18 +121,18 @@ export const <#=desc.ComponentNameOfChildrenList#> = (args: {
   const { control, register } = useFormContext<AggregateType.<#=_instance.Item.TypeScriptTypeName#>>()
   const { fields, append, remove } = useFieldArray({
     control,
-    name: `<#=desc.GetUseFieldArrayName()#>`,
+    name: `<#=arrayComponent.GetUseFieldArrayName()#>`,
   })
   const onAdd = useCallback((e: React.MouseEvent) => {
-    append(AggregateType.<#=new types.AggregateInstanceInitializerFunction(desc.AggregateInstance).FunctionName#>())
+    append(AggregateType.<#=new types.AggregateInstanceInitializerFunction(arrayComponent.AggregateInstance).FunctionName#>())
     e.preventDefault()
   }, [append])
 
   return (
     <>
-      {fields.map((item, index) => (
+      {fields.map((_, index) => (
         <div key={index} className="flex flex-col space-y-1 p-1 border border-neutral-400">
-          <<#=desc.ComponentName#> {...args} />
+          <<#=desc.ComponentName#> {...args} <#=desc.GetArguments().Values.Last()#>={index} />
           {!pageIsReadOnly && <Components.IconButton underline icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }} className="self-start">削除</Components.IconButton>}
         </div>
       ))}

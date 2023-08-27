@@ -35,10 +35,15 @@ import * as Components from '../../components'
 import * as AggregateType from '");
             this.Write(this.ToStringHelper.ToStringWithCulture(TypesImport));
             this.Write("\'\r\n\r\n");
- foreach (var desc in _instance.EnumerateThisAndDescendants().Select(x => new Component(x))) { 
+ var components = _instance
+    .EnumerateThisAndDescendants()
+    .Select(x => x.IsChildrenMember() ? new ComponentOfChildrenListItem(x) : new Component(x)); 
+ foreach (var desc in components) { 
             this.Write("export const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(desc.ComponentName));
-            this.Write(" = (args: {\r\n");
+            this.Write(" = ({ ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(desc.GetArguments().Values.Join(", ")));
+            this.Write(" }: {\r\n");
  foreach (var arg in desc.GetArguments().Values) { 
             this.Write("  ");
             this.Write(this.ToStringHelper.ToStringWithCulture(arg));
@@ -123,10 +128,11 @@ import * as AggregateType from '");
  } 
             this.Write("  </>\r\n}\r\n\r\n\r\n");
  if (desc.IsChildren) { 
+ var arrayComponent = new Component(desc.AggregateInstance); 
             this.Write("export const ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(desc.ComponentNameOfChildrenList));
+            this.Write(this.ToStringHelper.ToStringWithCulture(arrayComponent.ComponentName));
             this.Write(" = (args: {\r\n");
- foreach (var arg in desc.GetArguments().Values) { 
+ foreach (var arg in arrayComponent.GetArguments().Values) { 
             this.Write("  ");
             this.Write(this.ToStringHelper.ToStringWithCulture(arg));
             this.Write(": number\r\n");
@@ -136,15 +142,17 @@ import * as AggregateType from '");
             this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
             this.Write(">()\r\n  const { fields, append, remove } = useFieldArray({\r\n    control,\r\n    name" +
                     ": `");
-            this.Write(this.ToStringHelper.ToStringWithCulture(desc.GetUseFieldArrayName()));
+            this.Write(this.ToStringHelper.ToStringWithCulture(arrayComponent.GetUseFieldArrayName()));
             this.Write("`,\r\n  })\r\n  const onAdd = useCallback((e: React.MouseEvent) => {\r\n    append(Aggr" +
                     "egateType.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(new types.AggregateInstanceInitializerFunction(desc.AggregateInstance).FunctionName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(new types.AggregateInstanceInitializerFunction(arrayComponent.AggregateInstance).FunctionName));
             this.Write("())\r\n    e.preventDefault()\r\n  }, [append])\r\n\r\n  return (\r\n    <>\r\n      {fields." +
-                    "map((item, index) => (\r\n        <div key={index} className=\"flex flex-col space-" +
-                    "y-1 p-1 border border-neutral-400\">\r\n          <");
+                    "map((_, index) => (\r\n        <div key={index} className=\"flex flex-col space-y-1" +
+                    " p-1 border border-neutral-400\">\r\n          <");
             this.Write(this.ToStringHelper.ToStringWithCulture(desc.ComponentName));
-            this.Write(@" {...args} />
+            this.Write(" {...args} ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(desc.GetArguments().Values.Last()));
+            this.Write(@"={index} />
           {!pageIsReadOnly && <Components.IconButton underline icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }} className=""self-start"">削除</Components.IconButton>}
         </div>
       ))}

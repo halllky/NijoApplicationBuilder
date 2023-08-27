@@ -31,7 +31,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
         internal string Api => new AggFile.Controller(_dbEntity.GetCorrespondingAggregate()).KeywordSearchCommandApi;
 
         internal void RenderCaller(ITemplate template, string raectHookFormId) {
-            template.WriteLine($"<Components.{ComponentName} raectHookFormId={{'{raectHookFormId}'}} />");
+            template.WriteLine($"<Components.{ComponentName} raectHookFormId={{`{raectHookFormId}`}} />");
         }
     }
 }
