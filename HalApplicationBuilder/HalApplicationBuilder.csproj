@@ -46,13 +46,9 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>HttpResponseExceptionFilter.cs</LastGenOutput>
 		</None>
-		<None Update="CodeRendering\WebClient\AggregateInstanceFormBody.tt">
+		<None Update="CodeRendering\WebClient\FormOfAggregateInstance.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>AggregateInstanceFormBody.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\WebClient\DescencantForms.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>DescencantForms.cs</LastGenOutput>
+		  <LastGenOutput>FormOfAggregateInstance.cs</LastGenOutput>
 		</None>
 		<None Update="CodeRendering\WebClient\CreateView.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
@@ -196,15 +192,10 @@
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>HttpResponseExceptionFilter.tt</DependentUpon>
 		</Compile>
-		<Compile Update="CodeRendering\WebClient\AggregateInstanceFormBody.cs">
+		<Compile Update="CodeRendering\WebClient\FormOfAggregateInstance.cs">
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
-		  <DependentUpon>AggregateInstanceFormBody.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\WebClient\DescencantForms.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>DescencantForms.tt</DependentUpon>
+		  <DependentUpon>FormOfAggregateInstance.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering\WebClient\CreateView.cs">
 		  <DesignTime>True</DesignTime>

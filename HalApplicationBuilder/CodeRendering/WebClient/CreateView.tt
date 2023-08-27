@@ -15,16 +15,13 @@ import { IconButton, InlineMessageBar, BarMessage } from '../../components';
 import { useHttpRequest } from '../../hooks/useHttpRequest';
 import { useAppContext } from "../../hooks/AppContext"
 import * as AggregateType from '../../<#=types.ImportName#>'
-<# RenderImportFromComponents(); #>
+import { <#=new FormOfAggregateInstance.Component(_instance).ComponentName#> } from './components'
 
 const defaultValues = AggregateType.<#=new types.AggregateInstanceInitializerFunction(_instance).FunctionName#>()
 
 export default function () {
 
   const reactHookFormMethods = useForm({ defaultValues })
-  const register = reactHookFormMethods.register
-  const handleSubmit = reactHookFormMethods.handleSubmit
-  const watch = reactHookFormMethods.watch
 
   const navigate = useNavigate()
   const { post } = useHttpRequest()
@@ -44,14 +41,12 @@ export default function () {
 
   return (
     <FormProvider {...reactHookFormMethods}>
-      <form className="page-content-root" onSubmit={handleSubmit(onSave)}>
+      <form className="page-content-root" onSubmit={reactHookFormMethods.handleSubmit(onSave)}>
         <h1 className="text-base font-semibold select-none py-1">
           <Link to="<#=GetMultiViewUrl()#>"><#=_aggregate.Item.DisplayName#></Link>&nbsp;新規作成
         </h1>
         <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
-<# PushIndent("          "); #>
-<# RenderForm(); #>
-<# PopIndent(); #>
+          <<#=new FormOfAggregateInstance.Component(_instance).ComponentName#> />
         </div>
         <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
         <IconButton fill icon={BookmarkSquareIcon} className="self-start">保存</IconButton>

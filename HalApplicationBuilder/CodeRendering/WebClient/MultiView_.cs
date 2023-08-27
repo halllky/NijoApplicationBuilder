@@ -18,7 +18,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             _searchResult = new SearchResult(dbEntity);
 
             var memberNames = _searchCondition.GetMembers().Select(m => m.Name);
-            PropNameWidth = AggregateInstanceFormBody.GetPropNameFlexBasis(memberNames);
+            PropNameWidth = FormOfAggregateInstance.GetPropNameFlexBasis(memberNames);
         }
 
         private readonly CodeRenderingContext _ctx;

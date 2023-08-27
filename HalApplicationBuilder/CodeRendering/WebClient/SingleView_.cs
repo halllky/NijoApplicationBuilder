@@ -26,16 +26,5 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         private string GetMultiViewUrl() => new MultiView(_aggregate, _ctx).Url;
         private string GetFindCommandApi() => new AggFile.Controller(_aggregate).FindCommandApi;
         private string GetUpdateCommandApi() => new AggFile.Controller(_aggregate).UpdateCommandApi;
-
-        private void RenderImportFromComponents() {
-            var descs = new DescencantForms(_instance, _ctx);
-            var components = descs.EnumerateComponentNames().Join(", ");
-            WriteLine($"import {{ {components} }} from './{Path.GetFileNameWithoutExtension(descs.FileName)}'");
-        }
-
-        private void RenderForm() {
-            var body = new AggregateInstanceFormBody(_instance, _ctx);
-            ((ITemplate)this).Render(body);
-        }
     }
 }

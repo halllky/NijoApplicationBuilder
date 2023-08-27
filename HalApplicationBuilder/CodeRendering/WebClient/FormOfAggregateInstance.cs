@@ -13,13 +13,14 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
     using System.Text;
     using System.Collections.Generic;
     using HalApplicationBuilder.Core;
+    using HalApplicationBuilder.DotnetEx;
     using System;
     
     /// <summary>
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class DescencantForms : DescencantFormsBase
+    public partial class FormOfAggregateInstance : FormOfAggregateInstanceBase
     {
         /// <summary>
         /// Create the template output
@@ -33,8 +34,7 @@ import * as Components from '../../components'
 import * as AggregateType from '");
             this.Write(this.ToStringHelper.ToStringWithCulture(TypesImport));
             this.Write("\'\r\n\r\n");
- foreach (var desc in EnumerateDescendantComponents()) { 
- if (desc.IsChildren) { 
+ foreach (var desc in _instance.EnumerateThisAndDescendants().Select(x => new Component(x))) { 
             this.Write("export const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(desc.ComponentName));
             this.Write(" = (args: {\r\n");
@@ -43,8 +43,94 @@ import * as AggregateType from '");
             this.Write(this.ToStringHelper.ToStringWithCulture(arg));
             this.Write(": number\r\n");
  } 
+            this.Write("}) => {\r\n  const { register, watch } = useFormContext<AggregateType.");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
+            this.Write(">()\r\n\r\n  return <>\r\n");
+ foreach (var prop in desc.AggregateInstance.GetProperties(_ctx.Config)) { 
+ if (prop is AggregateInstance.SchalarProperty schalarProperty) { 
+            this.Write("    <div className=\"flex\">\r\n      <div className=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(PropNameWidth));
+            this.Write("\">\r\n        <span className=\"text-sm select-none opacity-80\">\r\n          ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write("\r\n        </span>\r\n      </div>\r\n      <div className=\"flex-1\">\r\n");
+ PushIndent("        "); 
+ RenderSchalarProperty(desc.AggregateInstance, schalarProperty); 
+ PopIndent(); 
+            this.Write("      </div>\r\n    </div>\r\n\r\n");
+ } else if (prop is AggregateInstance.RefProperty refProperty) { 
+            this.Write("    <div className=\"flex\">\r\n      <div className=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(PropNameWidth));
+            this.Write("\">\r\n        <span className=\"text-sm select-none opacity-80\">\r\n          ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write("\r\n        </span>\r\n      </div>\r\n      <div className=\"flex-1\">\r\n");
+ PushIndent("        "); 
+ RenderRefAggregateBody(refProperty); 
+ PopIndent(); 
+            this.Write("      </div>\r\n    </div>\r\n\r\n");
+ } else if (prop is AggregateInstance.ChildProperty childProperty) { 
+            this.Write("    <div className=\"py-2\">\r\n      <span className=\"text-sm select-none opacity-80" +
+                    "\">\r\n        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write("\r\n      </span>\r\n      <div className=\"flex flex-col space-y-1 p-1 border border-" +
+                    "neutral-400\">\r\n");
+ PushIndent("        "); 
+ RenderChildAggregateBody(childProperty); 
+ PopIndent(); 
+            this.Write("      </div>\r\n    </div>\r\n\r\n");
+ } else if (prop is AggregateInstance.VariationProperty variationProperty
+              && variationProperty.Key == variationProperty.Group.VariationAggregates.First().Key) { 
+            this.Write("    <div className=\"flex\">\r\n      <div className=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(PropNameWidth));
+            this.Write("\">\r\n        <span className=\"text-sm select-none opacity-80\">\r\n          ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(variationProperty.Group.GroupName));
+            this.Write("\r\n        </span>\r\n      </div>\r\n      <div className=\"flex-1 flex gap-2 flex-wra" +
+                    "p\">\r\n");
+ foreach (var item in variationProperty.Group.VariationAggregates) { 
+            this.Write("        <label>\r\n          <input type=\"radio\" value=\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(item.Key));
+            this.Write("\" {...register(`");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetRegisterName(desc.AggregateInstance, variationProperty.Group.GroupName.ToCSharpSafe())));
+            this.Write("`)} />\r\n          ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(item.Value.RelationName));
+            this.Write("\r\n        </label>\r\n");
+ } 
+            this.Write("      </div>\r\n    </div>\r\n");
+ foreach (var item in variationProperty.Group.VariationAggregates) { 
+            this.Write("    <div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(wat" +
+                    "ch(`");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetRegisterName(desc.AggregateInstance, variationProperty.Group.GroupName.ToCSharpSafe())));
+            this.Write("`) !== \'");
+            this.Write(this.ToStringHelper.ToStringWithCulture(item.Key));
+            this.Write("\' ? \'hidden\' : \'\')}`}>\r\n");
+ PushIndent("      "); 
+ RenderVariationAggregateBody(item.Value.Terminal); 
+ PopIndent(); 
+            this.Write("    </div>\r\n");
+ } 
+            this.Write("\r\n");
+ } else if (prop is AggregateInstance.ChildrenProperty childrenProperty) { 
+            this.Write("    <div className=\"py-2\">\r\n      <span className=\"text-sm select-none opacity-80" +
+                    "\">\r\n        ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(prop.PropertyName));
+            this.Write("\r\n      </span>\r\n      <div className=\"flex flex-col space-y-1 p-1\">\r\n");
+ PushIndent("        "); 
+ RenderChildrenAggregateBody(childrenProperty); 
+ PopIndent(); 
+            this.Write("      </div>\r\n    </div>\r\n\r\n");
+ } 
+ } 
+            this.Write("  </>\r\n}\r\n\r\n\r\n");
+ if (desc.IsChildren) { 
+            this.Write("export const ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(desc.ComponentNameOfChildrenList));
+            this.Write(" = (args: {\r\n");
+ foreach (var arg in desc.GetArguments().Values) { 
+            this.Write("  ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(arg));
+            this.Write(": number\r\n");
+ } 
             this.Write("}) => {\r\n  const { control, register } = useFormContext<AggregateType.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.TypeScriptTypeName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
             this.Write(">()\r\n  const { fields, append, remove } = useFieldArray({\r\n    control,\r\n    name" +
                     ": `");
             this.Write(this.ToStringHelper.ToStringWithCulture(desc.GetUseFieldArrayName()));
@@ -53,31 +139,17 @@ import * as AggregateType from '");
             this.Write(this.ToStringHelper.ToStringWithCulture(new types.AggregateInstanceInitializerFunction(desc.AggregateInstance).FunctionName));
             this.Write("())\r\n    e.preventDefault()\r\n  }, [append])\r\n\r\n  return (\r\n    <>\r\n      {fields." +
                     "map((item, index) => (\r\n        <div key={index} className=\"flex flex-col space-" +
-                    "y-1 p-1 border border-neutral-400\">\r\n");
- RenderBody(desc, "          "); 
-            this.Write(@"          <Components.IconButton underline icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }} className=""self-start"">削除</Components.IconButton>
+                    "y-1 p-1 border border-neutral-400\">\r\n          <");
+            this.Write(this.ToStringHelper.ToStringWithCulture(desc.ComponentName));
+            this.Write(@" {...args} />
+          <Components.IconButton underline icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }} className=""self-start"">削除</Components.IconButton>
         </div>
       ))}
       <Components.IconButton underline icon={PlusIcon} onClick={onAdd} className=""self-start"">追加</Components.IconButton>
     </>
   )
 }
-
 ");
- } else { 
-            this.Write("export const ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(desc.ComponentName));
-            this.Write(" = (args: {\r\n");
- foreach (var arg in desc.GetArguments().Values) { 
-            this.Write("  ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(arg));
-            this.Write(": number\r\n");
- } 
-            this.Write("}) => {\r\n  const { control, register } = useFormContext<AggregateType.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.TypeScriptTypeName));
-            this.Write(">()\r\n\r\n  return <>\r\n");
- RenderBody(desc, "      "); 
-            this.Write("  </>\r\n}\r\n\r\n");
  } 
  } 
             return this.GenerationEnvironment.ToString();
@@ -88,7 +160,7 @@ import * as AggregateType from '");
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class DescencantFormsBase
+    public class FormOfAggregateInstanceBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

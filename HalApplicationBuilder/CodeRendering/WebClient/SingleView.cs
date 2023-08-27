@@ -37,9 +37,10 @@ import { IconButton, InlineMessageBar, BarMessage } from '../../components';
 import { useHttpRequest } from '../../hooks/useHttpRequest';
 import * as AggregateType from '../../");
             this.Write(this.ToStringHelper.ToStringWithCulture(types.ImportName));
-            this.Write("\'\r\n");
- RenderImportFromComponents(); 
-            this.Write(@"
+            this.Write("\'\r\nimport { ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(new FormOfAggregateInstance.Component(_instance).ComponentName));
+            this.Write(@" } from './components'
+
 export default function () {
 
   const [, dispatch] = useAppContext()
@@ -66,9 +67,6 @@ export default function () {
   }, [instanceKey])
 
   const reactHookFormMethods = useForm({ defaultValues })
-  const register = reactHookFormMethods.register
-  const handleSubmit = reactHookFormMethods.handleSubmit
-  const watch = reactHookFormMethods.watch
 
   const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
   const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
@@ -89,7 +87,7 @@ export default function () {
 
   return (
     <FormProvider {...reactHookFormMethods}>
-      <form className=""page-content-root"" onSubmit={handleSubmit(onSave)}>
+      <form className=""page-content-root"" onSubmit={reactHookFormMethods.handleSubmit(onSave)}>
         <h1 className=""text-base font-semibold select-none py-1"">
           <Link to=""");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetMultiViewUrl()));
@@ -97,13 +95,11 @@ export default function () {
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
             this.Write("</Link>\r\n          &nbsp;&#047;&nbsp;\r\n          <span className=\"select-all\">{in" +
                     "stanceName}</span>\r\n        </h1>\r\n        <div className=\"flex flex-col space-y" +
-                    "-1 p-1 bg-neutral-200\">\r\n");
- PushIndent("          "); 
- RenderForm(); 
- PopIndent(); 
-            this.Write("        </div>\r\n        <InlineMessageBar value={errorMessages} onChange={setErro" +
-                    "rMessages} />\r\n        <IconButton fill icon={BookmarkSquareIcon} className=\"sel" +
-                    "f-start\">更新</IconButton>\r\n      </form>\r\n    </FormProvider>\r\n  )\r\n}\r\n");
+                    "-1 p-1 bg-neutral-200\">\r\n          <");
+            this.Write(this.ToStringHelper.ToStringWithCulture(new FormOfAggregateInstance.Component(_instance).ComponentName));
+            this.Write(" />\r\n        </div>\r\n        <InlineMessageBar value={errorMessages} onChange={se" +
+                    "tErrorMessages} />\r\n        <IconButton fill icon={BookmarkSquareIcon} className" +
+                    "=\"self-start\">更新</IconButton>\r\n      </form>\r\n    </FormProvider>\r\n  )\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }
