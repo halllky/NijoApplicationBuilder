@@ -80,7 +80,7 @@ namespace HalApplicationBuilder.CodeRendering
                     "        return false;\r\n            }\r\n\r\n            var instanceKey = command.");
             this.Write(this.ToStringHelper.ToStringWithCulture(CreateCommandGetInstanceKeyMethodName));
             this.Write("().ToString();\r\n            var afterUpdate = this.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_find.MethodName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(FindMethodName));
             this.Write("(instanceKey);\r\n            if (afterUpdate == null) {\r\n                created =" +
                     " new ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
@@ -258,7 +258,7 @@ namespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(Controller.FIND_ACTION_NAME));
             this.Write("/{instanceKey}\")]\r\n        public virtual IActionResult Find(string instanceKey) " +
                     "{\r\n            var instance = _dbContext.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_find.MethodName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(FindMethodName));
             this.Write("(instanceKey);\r\n            if (instance == null) {\r\n                return NotFo" +
                     "und();\r\n            } else {\r\n                return this.JsonContent(instance);" +
                     "\r\n            }\r\n        }\r\n    }\r\n}\r\nnamespace ");
@@ -270,16 +270,16 @@ namespace ");
             this.Write(" {\r\n        /// <summary>\r\n        /// ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
             this.Write("のキー情報から対象データの詳細を検索して返します。\r\n        /// </summary>\r\n        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_find.ReturnType));
+            this.Write(this.ToStringHelper.ToStringWithCulture(FindMethodReturnType));
             this.Write("? ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_find.MethodName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(FindMethodName));
             this.Write("(string serializedInstanceKey) {\r\n\r\n");
  PushIndent("            "); 
  RenderDbEntityLoading("entity", "serializedInstanceKey", tracks: false); 
  PopIndent(); 
             this.Write("\r\n            if (entity == null) return null;\r\n\r\n            var aggregateInstan" +
                     "ce = ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_find.AggregateInstanceTypeFullName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
             this.Write(".");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstance.FROM_DB_ENTITY_METHOD_NAME));
             this.Write("(entity);\r\n            return aggregateInstance;\r\n        }\r\n    }\r\n}\r\n#endregion" +
@@ -332,7 +332,7 @@ namespace ");
             this.Write("();\r\n                foreach (var msg in ex.GetMessagesRecursively()) errors.Add(" +
                     "msg);\r\n                return false;\r\n            }\r\n\r\n            var afterUpda" +
                     "te = this.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_find.MethodName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(FindMethodName));
             this.Write("(key);\r\n            if (afterUpdate == null) {\r\n                updated = new ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
             this.Write("();\r\n                errors.Add(\"更新後のデータの再読み込みに失敗しました。\");\r\n                return" +

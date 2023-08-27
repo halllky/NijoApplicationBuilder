@@ -23,7 +23,6 @@ namespace HalApplicationBuilder.CodeRendering {
             _searchResult = new SearchResult(_dbEntity);
             _controller = new Controller(_aggregate);
             _create = new CreateMethod(_dbEntity, ctx);
-            _find = new FindMethod(_dbEntity, ctx);
             _search = new SearchMethod(_dbEntity, ctx);
             _update = new UpdateMethod(_dbEntity, ctx);
             _delete = new DeleteMethod(_dbEntity, ctx);
@@ -71,66 +70,8 @@ namespace HalApplicationBuilder.CodeRendering {
         #endregion CREATE
 
         #region FIND
-        private readonly FindMethod _find;
-        internal class FindMethod {
-            internal FindMethod(GraphNode<EFCoreEntity> dbEntity, CodeRenderingContext ctx) {
-                _dbEntity = dbEntity;
-                _instance = dbEntity.GetUiInstance().Item;
-                _ctx = ctx;
-            }
-
-            private readonly GraphNode<EFCoreEntity> _dbEntity;
-            private readonly AggregateInstance _instance;
-            private readonly CodeRenderingContext _ctx;
-
-            internal string ReturnType => _instance.ClassName;
-            internal string MethodName => $"Find{_dbEntity.GetCorrespondingAggregate().Item.DisplayName.ToCSharpSafe()}";
-            internal string DbSetName => _dbEntity.Item.DbSetName;
-            internal string AggregateInstanceTypeFullName => $"{_ctx.Config.RootNamespace}.{_instance.ClassName}";
-
-            [Obsolete]
-            internal IEnumerable<string> Include() {
-                var entities = new HashSet<GraphNode>();
-                void Collect(GraphNode<EFCoreEntity> entity) {
-                    entities.Add(entity);
-                    if (entity.Source == null || !entity.Source.IsRef()) {
-                        foreach (var child in entity.GetChildMembers()) Collect(child.Terminal);
-                        foreach (var child in entity.GetChildrenMembers()) Collect(child.Terminal);
-                        foreach (var child in entity.GetVariationGroups().SelectMany(group => group.VariationAggregates.Values)) Collect(child.Terminal);
-                        foreach (var refTarget in entity.GetRefMembers()) Collect(refTarget.Terminal);
-                    }
-                }
-                Collect(_dbEntity);
-
-                foreach (var entity in entities) {
-                    foreach (var edge in entity.PathFromEntry()) {
-                        yield return edge.Source.IsRoot()
-                            ? $".Include(x => x.{edge.RelationName})"
-                            : $".ThenInclude(x => x.{edge.RelationName})";
-                    }
-                }
-            }
-
-            [Obsolete]
-            internal IEnumerable<string> SingleOrDefault(string paramName) {
-                var keys = _dbEntity
-                    .GetColumns()
-                    .Where(col => col.IsPrimary)
-                    .ToArray();
-
-                for (int i = 0; i < keys.Length; i++) {
-                    var col = keys[i].PropertyName;
-                    var cast = keys[i].CSharpTypeName;
-                    var close = i == keys.Length - 1 ? ");" : "";
-
-                    if (i == 0) {
-                        yield return $".SingleOrDefault(x => x.{col} == ({cast}){paramName}[{i}]{close}";
-                    } else {
-                        yield return $"                   && x.{col} == ({cast}){paramName}[{i}]{close}";
-                    }
-                }
-            }
-        }
+        private string FindMethodReturnType => _aggregateInstance.Item.ClassName;
+        private string FindMethodName => $"Find{_dbEntity.GetCorrespondingAggregate().Item.DisplayName.ToCSharpSafe()}";
         private void RenderDbEntityLoading(string entityVarName, string serializedInstanceKeyVarName, bool tracks) {
             // Include
             var descendants = new HashSet<GraphNode>();

@@ -58,7 +58,7 @@ namespace <#=_ctx.Config.EntityNamespace#> {
             }
 
             var instanceKey = command.<#=CreateCommandGetInstanceKeyMethodName#>().ToString();
-            var afterUpdate = this.<#=_find.MethodName#>(instanceKey);
+            var afterUpdate = this.<#=FindMethodName#>(instanceKey);
             if (afterUpdate == null) {
                 created = new <#=_aggregateInstance.Item.ClassName#>();
                 errors = new[] { "更新後のデータの再読み込みに失敗しました。" };
@@ -192,7 +192,7 @@ namespace <#=_ctx.Config.RootNamespace#> {
     partial class <#=_controller.ClassName#> {
         [HttpGet("<#=Controller.FIND_ACTION_NAME#>/{instanceKey}")]
         public virtual IActionResult Find(string instanceKey) {
-            var instance = _dbContext.<#=_find.MethodName#>(instanceKey);
+            var instance = _dbContext.<#=FindMethodName#>(instanceKey);
             if (instance == null) {
                 return NotFound();
             } else {
@@ -213,7 +213,7 @@ namespace <#=_ctx.Config.EntityNamespace#> {
         /// <summary>
         /// <#=_aggregate.Item.DisplayName#>のキー情報から対象データの詳細を検索して返します。
         /// </summary>
-        public <#=_find.ReturnType#>? <#=_find.MethodName#>(string serializedInstanceKey) {
+        public <#=FindMethodReturnType#>? <#=FindMethodName#>(string serializedInstanceKey) {
 
 <# PushIndent("            "); #>
 <# RenderDbEntityLoading("entity", "serializedInstanceKey", tracks: false); #>
@@ -221,7 +221,7 @@ namespace <#=_ctx.Config.EntityNamespace#> {
 
             if (entity == null) return null;
 
-            var aggregateInstance = <#=_find.AggregateInstanceTypeFullName#>.<#=AggregateInstance.FROM_DB_ENTITY_METHOD_NAME#>(entity);
+            var aggregateInstance = <#=_aggregateInstance.Item.ClassName#>.<#=AggregateInstance.FROM_DB_ENTITY_METHOD_NAME#>(entity);
             return aggregateInstance;
         }
     }
@@ -285,7 +285,7 @@ namespace <#=_ctx.Config.EntityNamespace#> {
                 return false;
             }
 
-            var afterUpdate = this.<#=_find.MethodName#>(key);
+            var afterUpdate = this.<#=FindMethodName#>(key);
             if (afterUpdate == null) {
                 updated = new <#=_aggregateInstance.Item.ClassName#>();
                 errors.Add("更新後のデータの再読み込みに失敗しました。");
