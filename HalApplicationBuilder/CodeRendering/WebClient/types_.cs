@@ -73,6 +73,12 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             internal string FunctionName => $"create{_instance.Item.TypeScriptTypeName}";
 
             internal void Render(ITemplate template) {
+                var children = _instance
+                    .GetChildrenMembers()
+                    .Select(edge => new {
+                        Key = edge.RelationName,
+                        Value = $"[]",
+                    });
                 var child = _instance
                     .GetChildMembers()
                     .Select(edge => new {
@@ -86,15 +92,15 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                         Key = edge.RelationName,
                         Value = $"{new AggregateInstanceInitializerFunction(edge.Terminal).FunctionName}()",
                     });
-                var children = _instance
-                    .GetChildrenMembers()
-                    .Select(edge => new {
-                        Key = edge.RelationName,
-                        Value = $"[]",
+                var variationSwitch = _instance
+                    .GetVariationGroups()
+                    .Select(group => new {
+                        Key = group.GroupName,
+                        Value = $"'{group.VariationAggregates.First().Key}'",
                     });
 
                 template.WriteLine($"export const {FunctionName} = (): {_instance.Item.TypeScriptTypeName} => ({{");
-                foreach (var item in child.Concat(variation).Concat(children)) {
+                foreach (var item in children.Concat(child).Concat(variation).Concat(variationSwitch)) {
                     template.WriteLine($"  {item.Key}: {item.Value},");
                 }
                 template.WriteLine($"}})");

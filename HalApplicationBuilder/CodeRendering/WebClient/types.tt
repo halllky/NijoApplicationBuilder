@@ -6,10 +6,17 @@
 <#@ import namespace="System.Collections.Generic" #>
 <#@ import namespace="HalApplicationBuilder.Core" #>
 <# foreach (var root in _ctx.Schema.RootAggregates().Select(x => x.GetInstanceClass())) { #>
+// ------------------ <#=root.GetCorrespondingAggregate().Item.DisplayName#> ------------------
 <#     foreach (var instance in root.EnumerateThisAndDescendants()) { #>
 <#         Render(instance); #>
+<#     } #>
+
+<#     foreach (var instance in root.EnumerateThisAndDescendants()) { #>
 <#         new AggregateInstanceInitializerFunction(instance).Render(this); #>
 <#     } #>
+
 <#     Render(new SearchCondition(root.GetDbEntity().AsEntry())); #>
+
 <#     Render(new SearchResult(root.GetDbEntity().AsEntry())); #>
+
 <# } #>

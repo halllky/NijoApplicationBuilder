@@ -639,7 +639,7 @@ namespace HalApplicationBuilder.Core {
     }
 
     internal class VariationGroup<T> where T : IGraphNode {
-        internal GraphNode<T> Initial => VariationAggregates.First().Value.Initial.As<T>();
+        internal GraphNode<T> Owner => VariationAggregates.First().Value.Initial.As<T>();
         internal required string GroupName { get; init; }
         internal required IReadOnlyDictionary<string, GraphEdge<T>> VariationAggregates { get; init; }
     }

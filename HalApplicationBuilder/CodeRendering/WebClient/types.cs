@@ -27,12 +27,21 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
         public virtual string TransformText()
         {
  foreach (var root in _ctx.Schema.RootAggregates().Select(x => x.GetInstanceClass())) { 
+            this.Write("// ------------------ ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(root.GetCorrespondingAggregate().Item.DisplayName));
+            this.Write(" ------------------\r\n");
      foreach (var instance in root.EnumerateThisAndDescendants()) { 
          Render(instance); 
+     } 
+            this.Write("\r\n");
+     foreach (var instance in root.EnumerateThisAndDescendants()) { 
          new AggregateInstanceInitializerFunction(instance).Render(this); 
      } 
+            this.Write("\r\n");
      Render(new SearchCondition(root.GetDbEntity().AsEntry())); 
+            this.Write("\r\n");
      Render(new SearchResult(root.GetDbEntity().AsEntry())); 
+            this.Write("\r\n");
  } 
             return this.GenerationEnvironment.ToString();
         }

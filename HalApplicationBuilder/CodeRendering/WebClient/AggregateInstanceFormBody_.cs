@@ -124,40 +124,6 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             var component = new DescencantForms.Component(variationAggregateInstance);
             component.RenderCaller(this);
         }
-
-        internal class VariationSwitchState {
-            internal VariationSwitchState(VariationGroup<AggregateInstance> variationGroup) {
-                _variationGroup = variationGroup;
-            }
-            private readonly VariationGroup<AggregateInstance> _variationGroup;
-
-            internal string StateName {
-                get {
-                    var name = _variationGroup.Initial
-                        .PathFromEntry()
-                        .Select(edge => edge.RelationName)
-                        .Concat(new[] { _variationGroup.GroupName })
-                        .Join("_")
-                        .ToCSharpSafe();
-                    return $"selected{name}";
-                }
-            }
-            internal string DispatcherName {
-                get {
-                    var name = _variationGroup.Initial
-                        .PathFromEntry()
-                        .Select(edge => edge.RelationName)
-                        .Concat(new[] { _variationGroup.GroupName })
-                        .Join("_")
-                        .ToCSharpSafe();
-                    return $"change{name}";
-                }
-            }
-
-            internal void RenderHook(ITemplate template) {
-                template.WriteLine($"const [{StateName}, {DispatcherName}] = useState(0)");
-            }
-        }
         #endregion DESCENDANT AGGREGATES
     }
 }
