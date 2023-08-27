@@ -31,7 +31,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
             var list = new List<string>();
             if (!string.IsNullOrWhiteSpace(path)) list.Add(path);
-            if (_instance.GetParent()?.IsChildren() == true) list.Add("${index}");
+            if (_instance.IsChildrenMember()) list.Add("${index}");
             list.Add(propName);
 
             return list.Join(".");

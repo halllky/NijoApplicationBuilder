@@ -199,19 +199,19 @@ namespace HalApplicationBuilder.CodeRendering {
 
                     // before, after それぞれの子孫インスタンスを一次配列に格納する
                     void RenderEntityArray(bool renderBefore) {
-                        if (paths.Any(path => path.IsChildren())) {
+                        if (paths.Any(path => path.Terminal.IsChildrenMember())) {
                             // 子集約までの経路の途中に配列が含まれる場合
                             template.WriteLine($"var arr{i}_{(renderBefore ? "before" : "after")} = {(renderBefore ? before : after)}");
 
                             var select = false;
                             foreach (var path in paths) {
-                                if (select && path.IsChildren()) {
+                                if (select && path.Terminal.IsChildrenMember()) {
                                     template.WriteLine($"    .SelectMany(x => x.{path.RelationName})");
                                 } else if (select) {
                                     template.WriteLine($"    .Select(x => x.{path.RelationName})");
                                 } else {
                                     template.WriteLine($"    .{path.RelationName}");
-                                    if (path.IsChildren()) select = true;
+                                    if (path.Terminal.IsChildrenMember()) select = true;
                                 }
                             }
                             template.WriteLine($"    .ToArray();");

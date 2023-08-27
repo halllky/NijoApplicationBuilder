@@ -57,7 +57,7 @@ namespace HalApplicationBuilder.Core {
                 var entityClass = $"{config.EntityNamespace}.{opposite.As<EFCoreEntity>().Item.ClassName}";
 
                 string propertyName;
-                if (owner == terminal && (graphEdge.IsChild() || graphEdge.IsChildren() || graphEdge.IsVariation())) {
+                if (owner == terminal && (owner.IsChildMember() || owner.IsChildrenMember() || owner.IsVariationMember())) {
                     propertyName = "Parent";
                 } else if (owner == terminal && graphEdge.IsRef()) {
                     propertyName = $"RefferedBy_{initial.Item.ClassName}_{graphEdge.RelationName}";
@@ -78,17 +78,17 @@ namespace HalApplicationBuilder.Core {
                 };
             }
 
-            if (graphEdge.IsChild()) {
+            if (terminal.IsChildMember()) {
                 Principal = CreateItem(initial, oppositeIsMany: false);
                 Relevant = CreateItem(terminal, oppositeIsMany: false);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
-            } else if (graphEdge.IsVariation()) {
+            } else if (terminal.IsVariationMember()) {
                 Principal = CreateItem(initial, oppositeIsMany: false);
                 Relevant = CreateItem(terminal, oppositeIsMany: false);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
-            } else if (graphEdge.IsChildren()) {
+            } else if (terminal.IsChildrenMember()) {
                 Principal = CreateItem(initial, oppositeIsMany: true);
                 Relevant = CreateItem(terminal, oppositeIsMany: false);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;

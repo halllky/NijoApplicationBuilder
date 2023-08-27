@@ -45,7 +45,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             internal GraphNode<AggregateInstance> AggregateInstance { get; }
 
             internal string ComponentName => $"{AggregateInstance.Item.TypeScriptTypeName}View";
-            internal bool IsChildren => AggregateInstance.GetParent()?.IsChildren() == true;
+            internal bool IsChildren => AggregateInstance.IsChildrenMember();
 
             internal IReadOnlyDictionary<GraphEdge<AggregateInstance>, string> GetArguments() {
                 // 祖先コンポーネントの中に含まれるChildrenの数だけ、
@@ -53,7 +53,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 var ancestors = AggregateInstance
                     .EnumerateAncestors()
                     .SkipLast(1)
-                    .Where(a => a.IsChildren() == true)
+                    .Where(edge => edge.Terminal.IsChildrenMember())
                     .ToArray();
 
                 var dict = new Dictionary<GraphEdge<AggregateInstance>, string>();
@@ -70,7 +70,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
                 foreach (var ancestor in ancestors) {
                     path.Add(ancestor.RelationName);
-                    if (ancestor != ancestors.Last() && ancestor.IsChildren()) path.Add($"${{{args[ancestor]}}}");
+                    if (ancestor != ancestors.Last() && ancestor.Terminal.IsChildrenMember()) path.Add($"${{{args[ancestor]}}}");
                 }
 
                 return path.Join(".");

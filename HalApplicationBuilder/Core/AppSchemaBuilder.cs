@@ -514,12 +514,12 @@ namespace HalApplicationBuilder.Core {
                 yield return desc;
             }
         }
+        internal static GraphEdge? GetParent(this GraphNode graphNode) {
+            return graphNode.In.SingleOrDefault(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                                                     && (string)type == REL_ATTRVALUE_PARENT_CHILD);
+        }
         internal static GraphEdge<T>? GetParent<T>(this GraphNode<T> graphNode) where T : IGraphNode {
-            var edge = graphNode.In.SingleOrDefault(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                                                    && (string)type == REL_ATTRVALUE_PARENT_CHILD);
-            if (edge == null) return null;
-            if (edge.Initial.Item is not T) throw new InvalidOperationException($"Parent of '{graphNode.Item.Id}' is not same type to it's child.");
-            return edge.As<T>();
+            return ((GraphNode)graphNode).GetParent()?.As<T>();
         }
         internal static bool IsRoot(this GraphNode graphNode) {
             return !graphNode.In.Any(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
@@ -557,23 +557,28 @@ namespace HalApplicationBuilder.Core {
             return dbEntity.GetCorrespondingAggregate().GetInstanceClass();
         }
 
-        internal static bool IsChildrenMemberOf<T>(this GraphNode<T> graphNode, GraphNode<T> parent) where T : IGraphNode {
-            return graphNode.Source != null
-                && graphNode.Source.IsChildren()
-                && graphNode.Source.Initial == parent;
+        internal static bool IsChildrenMember(this GraphNode graphNode) {
+            var parent = graphNode.GetParent();
+            return parent != null
+                && parent.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                && (string)type == REL_ATTRVALUE_PARENT_CHILD
+                && parent.Attributes.ContainsKey(REL_ATTR_MULTIPLE);
         }
-        internal static bool IsChildMemberOf<T>(this GraphNode<T> graphNode, GraphNode<T> parent) where T : IGraphNode {
-            return graphNode.Source != null
-                && graphNode.Source.IsChild()
-                && graphNode.Source.Initial == parent;
+        internal static bool IsChildMember(this GraphNode graphNode) {
+            var parent = graphNode.GetParent();
+            return parent != null
+                && parent.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                && (string)type == REL_ATTRVALUE_PARENT_CHILD
+                && !parent.Attributes.ContainsKey(REL_ATTR_MULTIPLE)
+                && !parent.Attributes.ContainsKey(REL_ATTR_VARIATIONGROUPNAME);
         }
-        internal static bool IsVariationMemberOf<T>(this GraphNode<T> graphNode, GraphNode<T> parent) where T : IGraphNode {
-            throw new NotImplementedException();
-        }
-        internal static bool IsRefMemberOf<T>(this GraphNode<T> graphNode, GraphNode<T> parent) where T : IGraphNode {
-            return graphNode.Source != null
-                && graphNode.Source.IsRef()
-                && graphNode.Source.Initial == parent;
+        internal static bool IsVariationMember(this GraphNode graphNode) {
+            var parent = graphNode.GetParent();
+            return parent != null
+                && parent.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                && (string)type == REL_ATTRVALUE_PARENT_CHILD
+                && !parent.Attributes.ContainsKey(REL_ATTR_MULTIPLE)
+                && parent.Attributes.ContainsKey(REL_ATTR_VARIATIONGROUPNAME);
         }
 
         internal static IEnumerable<GraphEdge<T>> GetChildrenMembers<T>(this GraphNode<T> graphNode) where T : IGraphNode {
@@ -626,23 +631,6 @@ namespace HalApplicationBuilder.Core {
         }
         internal static bool IsInstanceName(this GraphEdge graphEdge) {
             return graphEdge.Attributes.TryGetValue(REL_ATTR_IS_INSTANCE_NAME, out var bln) && (bool)bln;
-        }
-        internal static bool IsChildren(this GraphEdge graphEdge) {
-            return graphEdge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                && (string)type == REL_ATTRVALUE_PARENT_CHILD
-                && graphEdge.Attributes.ContainsKey(REL_ATTR_MULTIPLE);
-        }
-        internal static bool IsChild(this GraphEdge graphEdge) {
-            return graphEdge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                && (string)type == REL_ATTRVALUE_PARENT_CHILD
-                && !graphEdge.Attributes.ContainsKey(REL_ATTR_MULTIPLE)
-                && !graphEdge.Attributes.ContainsKey(REL_ATTR_VARIATIONGROUPNAME);
-        }
-        internal static bool IsVariation(this GraphEdge graphEdge) {
-            return graphEdge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                && (string)type == REL_ATTRVALUE_PARENT_CHILD
-                && !graphEdge.Attributes.ContainsKey(REL_ATTR_MULTIPLE)
-                && graphEdge.Attributes.ContainsKey(REL_ATTR_VARIATIONGROUPNAME);
         }
         internal static bool IsRef(this GraphEdge graphEdge) {
             return graphEdge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
