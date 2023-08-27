@@ -30,7 +30,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
             this.Write(@"import { useState, useCallback, useReducer } from 'react';
 import { useAppContext } from '../../hooks/AppContext';
 import { PageContext, pageContextReducer } from '../../hooks/PageContext'
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { FieldValues, SubmitHandler, useForm, FormProvider } from 'react-hook-form';
 import { BookmarkSquareIcon, PencilIcon } from '@heroicons/react/24/outline';
 import * as Components from '../../components';
@@ -78,18 +78,18 @@ export default function () {
             this.Write("`, data)\r\n    if (response.ok) {\r\n      setErrorMessages([])\r\n      dispatch({ ty" +
                     "pe: \'pushMsg\', msg: `${response.data.");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceBase.INSTANCE_NAME));
-            this.Write(@"}を更新しました。` })
-    } else {
-      setErrorMessages([...errorMessages, ...response.errors])
-    }
-  }, [errorMessages, dispatch, post])
-
-  const pageContextValue = useReducer(pageContextReducer, { pageIsReadOnly: true })
-  const toggleReadOnlyMode = useCallback((e: React.MouseEvent) => {
-    pageContextValue[1]({ type: 'changeReadOnly', value: !pageContextValue[0].pageIsReadOnly })
-    e.preventDefault()
-  }, [pageContextValue[0].pageIsReadOnly])
-
+            this.Write("}を更新しました。` })\r\n    } else {\r\n      setErrorMessages([...errorMessages, ...respons" +
+                    "e.errors])\r\n    }\r\n  }, [errorMessages, dispatch, post])\r\n\r\n  const pageContextV" +
+                    "alue = useReducer(pageContextReducer, { pageIsReadOnly: ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_asEditView ? "false" : "true"));
+            this.Write(" })\r\n\r\n");
+ if (!_asEditView) { 
+            this.Write("  const navigate = useNavigate()\r\n  const navigateToEditView = useCallback((e: Re" +
+                    "act.MouseEvent) => {\r\n    navigate(`");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetEditViewUrl()));
+            this.Write("/${instanceKey}`)\r\n    e.preventDefault()\r\n  }, [navigate, instanceKey])\r\n");
+ } 
+            this.Write(@"
   if (!fetched) return <></>
 
   return (
@@ -101,14 +101,14 @@ export default function () {
             this.Write(this.ToStringHelper.ToStringWithCulture(GetMultiViewUrl()));
             this.Write("\">");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
-            this.Write(@"</Link>
-            &nbsp;&#047;&nbsp;
-            <span className=""select-all"">{instanceName}</span>
-            <div className=""flex-1""></div>
-            <IconButton icon={PencilIcon} onClick={toggleReadOnlyMode}>編集</IconButton>
-          </h1>
-          <div className=""flex flex-col space-y-1 p-1 bg-neutral-200"">
-            <");
+            this.Write("</Link>\r\n            &nbsp;&#047;&nbsp;\r\n            <span className=\"select-all\"" +
+                    ">{instanceName}</span>\r\n            <div className=\"flex-1\"></div>\r\n");
+ if (!_asEditView) { 
+            this.Write("            <IconButton fill icon={PencilIcon} onClick={navigateToEditView}>編集</I" +
+                    "conButton>\r\n");
+ } 
+            this.Write("          </h1>\r\n          <div className=\"flex flex-col space-y-1 p-1 bg-neutral" +
+                    "-200\">\r\n            <");
             this.Write(this.ToStringHelper.ToStringWithCulture(new FormOfAggregateInstance.Component(_instance).ComponentName));
             this.Write(@" />
           </div>

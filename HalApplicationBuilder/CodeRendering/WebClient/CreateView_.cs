@@ -24,7 +24,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         internal string Route => $"/{_aggregate.Item.UniqueId}/new";
 
         private string GetMultiViewUrl() => new MultiView(_aggregate, _ctx).Url;
-        private string GetSingleViewUrl() => new SingleView(_aggregate, _ctx).Url;
+        private string GetSingleViewUrl() => new SingleView(_aggregate, _ctx, asEditView: false).Url;
         private string GetCreateCommandApi() => new AggFile.Controller(_aggregate).CreateCommandApi;
     }
 }

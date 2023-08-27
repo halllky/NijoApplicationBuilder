@@ -9,7 +9,7 @@
 import { useState, useCallback, useReducer } from 'react';
 import { useAppContext } from '../../hooks/AppContext';
 import { PageContext, pageContextReducer } from '../../hooks/PageContext'
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { FieldValues, SubmitHandler, useForm, FormProvider } from 'react-hook-form';
 import { BookmarkSquareIcon, PencilIcon } from '@heroicons/react/24/outline';
 import * as Components from '../../components';
@@ -53,11 +53,15 @@ export default function () {
     }
   }, [errorMessages, dispatch, post])
 
-  const pageContextValue = useReducer(pageContextReducer, { pageIsReadOnly: true })
-  const toggleReadOnlyMode = useCallback((e: React.MouseEvent) => {
-    pageContextValue[1]({ type: 'changeReadOnly', value: !pageContextValue[0].pageIsReadOnly })
+  const pageContextValue = useReducer(pageContextReducer, { pageIsReadOnly: <#=_asEditView ? "false" : "true" #> })
+
+<# if (!_asEditView) { #>
+  const navigate = useNavigate()
+  const navigateToEditView = useCallback((e: React.MouseEvent) => {
+    navigate(`<#=GetEditViewUrl()#>/${instanceKey}`)
     e.preventDefault()
-  }, [pageContextValue[0].pageIsReadOnly])
+  }, [navigate, instanceKey])
+<# } #>
 
   if (!fetched) return <></>
 
@@ -70,7 +74,9 @@ export default function () {
             &nbsp;&#047;&nbsp;
             <span className="select-all">{instanceName}</span>
             <div className="flex-1"></div>
-            <IconButton icon={PencilIcon} onClick={toggleReadOnlyMode}>編集</IconButton>
+<# if (!_asEditView) { #>
+            <IconButton fill icon={PencilIcon} onClick={navigateToEditView}>編集</IconButton>
+<# } #>
           </h1>
           <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
             <<#=new FormOfAggregateInstance.Component(_instance).ComponentName#> />

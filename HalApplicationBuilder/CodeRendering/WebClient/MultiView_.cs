@@ -33,7 +33,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         private string UseQueryKey => _aggregate.Item.UniqueId;
 
         private string GetCreateViewUrl() => new CreateView(_aggregate, _ctx).Url;
-        private string GetSingleViewUrl() => new SingleView(_aggregate, _ctx).Url;
+        private string GetSingleViewUrl() => new SingleView(_aggregate, _ctx, asEditView: false).Url;
         private string GetSearchCommandApi() => new AggFile.Controller(_aggregate).SearchCommandApi;
 
         private string PropNameWidth { get; }

@@ -192,7 +192,8 @@ namespace HalApplicationBuilder {
                         pageDir.Directory(GetAggDirName(root), aggregateDir => {
                             aggregateDir.Generate(new CreateView(root, ctx));
                             aggregateDir.Generate(new MultiView(root, ctx));
-                            aggregateDir.Generate(new SingleView(root, ctx));
+                            aggregateDir.Generate(new SingleView(root, ctx, asEditView: true));
+                            aggregateDir.Generate(new SingleView(root, ctx, asEditView: false));
                             aggregateDir.Generate(new FormOfAggregateInstance(root, ctx));
                             aggregateDir.DeleteOtherFiles();
                         });

@@ -33,13 +33,21 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     DisplayName = aggregate.Item.DisplayName,
                     From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(multiView.FileName)}",
                 };
-                var singleView = new SingleView(aggregate, _ctx);
+                var editView = new SingleView(aggregate, _ctx, asEditView: true);
                 yield return new ImportedComponent {
                     ShowMenu = false,
-                    Url = singleView.Route,
-                    PhysicalName = $"{aggregateName}SingleView",
+                    Url = editView.Route,
+                    PhysicalName = $"{aggregateName}EditView",
                     DisplayName = aggregate.Item.DisplayName,
-                    From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(singleView.FileName)}",
+                    From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(editView.FileName)}",
+                };
+                var detailView = new SingleView(aggregate, _ctx, asEditView: false);
+                yield return new ImportedComponent {
+                    ShowMenu = false,
+                    Url = detailView.Route,
+                    PhysicalName = $"{aggregateName}DetailView",
+                    DisplayName = aggregate.Item.DisplayName,
+                    From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(detailView.FileName)}",
                 };
                 var createView = new CreateView(aggregate, _ctx);
                 yield return new ImportedComponent {
