@@ -275,7 +275,7 @@ namespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(FindMethodName));
             this.Write("(string serializedInstanceKey) {\r\n\r\n");
  PushIndent("            "); 
- RenderDbEntityLoading("entity", "serializedInstanceKey", tracks: false); 
+ RenderDbEntityLoading("entity", "serializedInstanceKey", tracks: false, includeRefs: true); 
  PopIndent(); 
             this.Write("\r\n            if (entity == null) return null;\r\n\r\n            var aggregateInstan" +
                     "ce = ");
@@ -314,7 +314,7 @@ namespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(GETINSTANCEKEY_METHOD_NAME));
             this.Write("().ToString();\r\n\r\n");
  PushIndent("            "); 
- RenderDbEntityLoading("beforeDbEntity", "key", tracks: false); 
+ RenderDbEntityLoading("beforeDbEntity", "key", tracks: false, includeRefs: false); 
  PopIndent(); 
             this.Write("\r\n            if (beforeDbEntity == null) {\r\n                updated = new ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
@@ -360,7 +360,7 @@ namespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_delete.MethodName));
             this.Write("(string key, out ICollection<string> errors) {\r\n\r\n");
  PushIndent("            "); 
- RenderDbEntityLoading("entity", "key", tracks: true); 
+ RenderDbEntityLoading("entity", "key", tracks: true, includeRefs: false); 
  PopIndent(); 
             this.Write(@"
             if (entity == null) {

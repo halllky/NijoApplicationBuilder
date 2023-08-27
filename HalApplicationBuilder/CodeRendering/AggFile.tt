@@ -216,7 +216,7 @@ namespace <#=_ctx.Config.EntityNamespace#> {
         public <#=FindMethodReturnType#>? <#=FindMethodName#>(string serializedInstanceKey) {
 
 <# PushIndent("            "); #>
-<# RenderDbEntityLoading("entity", "serializedInstanceKey", tracks: false); #>
+<# RenderDbEntityLoading("entity", "serializedInstanceKey", tracks: false, includeRefs: true); #>
 <# PopIndent(); #>
 
             if (entity == null) return null;
@@ -259,7 +259,7 @@ namespace <#=_ctx.Config.EntityNamespace#> {
             var key = after.<#=GETINSTANCEKEY_METHOD_NAME#>().ToString();
 
 <# PushIndent("            "); #>
-<# RenderDbEntityLoading("beforeDbEntity", "key", tracks: false); #>
+<# RenderDbEntityLoading("beforeDbEntity", "key", tracks: false, includeRefs: false); #>
 <# PopIndent(); #>
 
             if (beforeDbEntity == null) {
@@ -327,7 +327,7 @@ namespace <#=_ctx.Config.EntityNamespace#> {
         public bool <#=_delete.MethodName#>(string key, out ICollection<string> errors) {
 
 <# PushIndent("            "); #>
-<# RenderDbEntityLoading("entity", "key", tracks: true); #>
+<# RenderDbEntityLoading("entity", "key", tracks: true, includeRefs: false); #>
 <# PopIndent(); #>
 
             if (entity == null) {

@@ -480,6 +480,15 @@ namespace HalApplicationBuilder.Core {
         /// <summary>
         /// 祖先を列挙する。ルート要素が先。
         /// </summary>
+        internal static IEnumerable<GraphNode<T>> EnumerateAncestorsAndThis<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+            foreach (var ancestor in graphNode.EnumerateAncestors()) {
+                yield return ancestor.Initial;
+            }
+            yield return graphNode;
+        }
+        /// <summary>
+        /// 祖先を列挙する。ルート要素が先。
+        /// </summary>
         internal static IEnumerable<GraphEdge<T>> EnumerateAncestors<T>(this GraphNode<T> graphNode) where T : IGraphNode {
             var stack = new Stack<GraphEdge<T>>();
             GraphEdge<T>? edge = graphNode.GetParent();
@@ -520,6 +529,9 @@ namespace HalApplicationBuilder.Core {
         }
         internal static GraphEdge<T>? GetParent<T>(this GraphNode<T> graphNode) where T : IGraphNode {
             return ((GraphNode)graphNode).GetParent()?.As<T>();
+        }
+        internal static GraphNode<T> GetRoot<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+            return graphNode.EnumerateAncestorsAndThis().First();
         }
         internal static bool IsRoot(this GraphNode graphNode) {
             return !graphNode.In.Any(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)

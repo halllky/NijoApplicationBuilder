@@ -72,30 +72,29 @@ namespace HalApplicationBuilder.CodeRendering {
         #region FIND
         private string FindMethodReturnType => _aggregateInstance.Item.ClassName;
         private string FindMethodName => $"Find{_dbEntity.GetCorrespondingAggregate().Item.DisplayName.ToCSharpSafe()}";
-        private void RenderDbEntityLoading(string entityVarName, string serializedInstanceKeyVarName, bool tracks) {
+        private void RenderDbEntityLoading(string entityVarName, string serializedInstanceKeyVarName, bool tracks, bool includeRefs) {
             // Include
-            var descendants = new HashSet<GraphNode>();
-            void Collect(GraphNode<EFCoreEntity> entity) {
-                descendants.Add(entity);
-                if (entity.Source == null || !entity.Source.IsRef()) {
-                    foreach (var child in entity.GetChildMembers()) Collect(child.Terminal);
-                    foreach (var child in entity.GetChildrenMembers()) Collect(child.Terminal);
-                    foreach (var child in entity.GetVariationGroups().SelectMany(group => group.VariationAggregates.Values)) Collect(child.Terminal);
-                    foreach (var refTarget in entity.GetRefMembers()) Collect(refTarget.Terminal);
-                }
+            var includeEntities = _dbEntity
+                .EnumerateThisAndDescendants()
+                .ToList();
+            if (includeRefs) {
+                var refEntities = _dbEntity
+                    .EnumerateThisAndDescendants()
+                    .SelectMany(entity => entity.GetRefMembers())
+                    .Select(refTarget => refTarget.Terminal.GetRoot())
+                    .SelectMany(refTargetRoot => refTargetRoot.EnumerateThisAndDescendants());
+                includeEntities.AddRange(refEntities);
             }
-            Collect(_dbEntity);
+            var paths = includeEntities
+                .SelectMany(entity => entity.PathFromEntry());
 
-            // Rendering
             WriteLine($"var instanceKey = {InstanceKey.CLASS_NAME}.{InstanceKey.PARSE}({serializedInstanceKeyVarName});");
             WriteLine($"var {entityVarName} = this.{_dbEntity.Item.DbSetName}");
-
             if (tracks == false) {
                 WriteLine($"    .AsNoTracking()");
             }
-
-            foreach (var edge in descendants.SelectMany(entity => entity.PathFromEntry())) {
-                if (edge.Source.IsRoot()) {
+            foreach (var edge in paths) {
+                if (edge.Source.As<EFCoreEntity>() == _dbEntity) {
                     WriteLine($"    .Include(x => x.{edge.RelationName})");
                 } else {
                     WriteLine($"    .ThenInclude(x => x.{edge.RelationName})");
