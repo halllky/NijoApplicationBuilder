@@ -110,16 +110,13 @@ export default function () {
             this.Write("          </h1>\r\n          <div className=\"flex flex-col space-y-1 p-1 bg-neutral" +
                     "-200\">\r\n            <");
             this.Write(this.ToStringHelper.ToStringWithCulture(new FormOfAggregateInstance.Component(_instance).ComponentName));
-            this.Write(@" />
-          </div>
-          <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
-          <IconButton fill icon={BookmarkSquareIcon} className=""self-start"">更新</IconButton>
-        </form>
-      </FormProvider>
-    </PageContext.Provider>
-  )
-}
-");
+            this.Write(" />\r\n          </div>\r\n          <InlineMessageBar value={errorMessages} onChange" +
+                    "={setErrorMessages} />\r\n");
+ if (_asEditView) { 
+            this.Write("          <IconButton fill icon={BookmarkSquareIcon} className=\"self-start\">更新</I" +
+                    "conButton>\r\n");
+ } 
+            this.Write("        </form>\r\n      </FormProvider>\r\n    </PageContext.Provider>\r\n  )\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

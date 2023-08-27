@@ -78,7 +78,7 @@ export const <#=desc.ComponentName#> = ({ <#=desc.GetArguments().Values.Join(", 
       <div className="flex-1 flex gap-2 flex-wrap">
 <# foreach (var item in variationProperty.Group.VariationAggregates) { #>
         <label>
-          <input type="radio" value="<#=item.Key#>" {...register(`<#=GetRegisterName(desc.AggregateInstance, variationProperty.Group.GroupName.ToCSharpSafe())#>`)} />
+          <input type="radio" value="<#=item.Key#>" disabled={pageIsReadOnly} {...register(`<#=GetRegisterName(desc.AggregateInstance, variationProperty.Group.GroupName.ToCSharpSafe())#>`)} />
           <#=item.Value.RelationName#>
         </label>
 <# } #>

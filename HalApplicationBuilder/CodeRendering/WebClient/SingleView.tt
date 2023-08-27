@@ -82,7 +82,9 @@ export default function () {
             <<#=new FormOfAggregateInstance.Component(_instance).ComponentName#> />
           </div>
           <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
+<# if (_asEditView) { #>
           <IconButton fill icon={BookmarkSquareIcon} className="self-start">更新</IconButton>
+<# } #>
         </form>
       </FormProvider>
     </PageContext.Provider>

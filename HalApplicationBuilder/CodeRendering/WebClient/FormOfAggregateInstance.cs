@@ -95,7 +95,7 @@ import * as AggregateType from '");
  foreach (var item in variationProperty.Group.VariationAggregates) { 
             this.Write("        <label>\r\n          <input type=\"radio\" value=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(item.Key));
-            this.Write("\" {...register(`");
+            this.Write("\" disabled={pageIsReadOnly} {...register(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetRegisterName(desc.AggregateInstance, variationProperty.Group.GroupName.ToCSharpSafe())));
             this.Write("`)} />\r\n          ");
             this.Write(this.ToStringHelper.ToStringWithCulture(item.Value.RelationName));
