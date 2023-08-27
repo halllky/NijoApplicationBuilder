@@ -30,6 +30,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
             this.Write(@"import React, { useCallback } from 'react'
 import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useForm, useFieldArray, useFormContext } from 'react-hook-form'
+import { usePageContext } from '../../hooks/PageContext'
 import * as Components from '../../components'
 import * as AggregateType from '");
             this.Write(this.ToStringHelper.ToStringWithCulture(TypesImport));
@@ -43,7 +44,8 @@ import * as AggregateType from '");
             this.Write(this.ToStringHelper.ToStringWithCulture(arg));
             this.Write(": number\r\n");
  } 
-            this.Write("}) => {\r\n  const { register, watch } = useFormContext<AggregateType.");
+            this.Write("}) => {\r\n  const [{ readOnly },] = usePageContext()\r\n  const { register, watch } " +
+                    "= useFormContext<AggregateType.");
             this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
             this.Write(">()\r\n\r\n  return <>\r\n");
  foreach (var prop in desc.AggregateInstance.GetProperties(_ctx.Config)) { 
@@ -129,7 +131,8 @@ import * as AggregateType from '");
             this.Write(this.ToStringHelper.ToStringWithCulture(arg));
             this.Write(": number\r\n");
  } 
-            this.Write("}) => {\r\n  const { control, register } = useFormContext<AggregateType.");
+            this.Write("}) => {\r\n  const [{ readOnly },] = usePageContext()\r\n  const { control, register " +
+                    "} = useFormContext<AggregateType.");
             this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
             this.Write(">()\r\n  const { fields, append, remove } = useFieldArray({\r\n    control,\r\n    name" +
                     ": `");
@@ -142,10 +145,10 @@ import * as AggregateType from '");
                     "y-1 p-1 border border-neutral-400\">\r\n          <");
             this.Write(this.ToStringHelper.ToStringWithCulture(desc.ComponentName));
             this.Write(@" {...args} />
-          <Components.IconButton underline icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }} className=""self-start"">削除</Components.IconButton>
+          {!readOnly && <Components.IconButton underline icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }} className=""self-start"">削除</Components.IconButton>}
         </div>
       ))}
-      <Components.IconButton underline icon={PlusIcon} onClick={onAdd} className=""self-start"">追加</Components.IconButton>
+      {!readOnly && <Components.IconButton underline icon={PlusIcon} onClick={onAdd} className=""self-start"">追加</Components.IconButton>}
     </>
   )
 }

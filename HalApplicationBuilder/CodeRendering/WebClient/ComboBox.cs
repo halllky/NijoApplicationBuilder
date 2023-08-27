@@ -31,6 +31,7 @@ import { useQuery } from ""react-query""
 import { useFormContext } from 'react-hook-form';
 import { Combobox } from ""@headlessui/react""
 import { useAppContext } from ""../hooks/AppContext""
+import { usePageContext } from ""../hooks/PageContext""
 import { useHttpRequest } from ""../hooks/useHttpRequest""
 
 export const ");
@@ -38,6 +39,8 @@ export const ");
             this.Write(@" = forwardRef(({ raectHookFormId }: {
   raectHookFormId: string
 }, ref: ForwardedRef<HTMLElement>) => {
+
+  const [{ readOnly },] = usePageContext()
 
   const [keyword, setKeyword] = useState('')
   const { get } = useHttpRequest()
@@ -76,7 +79,7 @@ export const ");
   }, [setValue, watch])
 
   return (
-    <Combobox ref={ref} value={selectedValue} onChange={onChangeSelectedValue} nullable>
+    <Combobox ref={ref} value={selectedValue} onChange={onChangeSelectedValue} nullable disabled={readOnly}>
       <Combobox.Input onChange={onChange} onBlur={onBlur} />
       <Combobox.Options>
         {data?.map(item => (

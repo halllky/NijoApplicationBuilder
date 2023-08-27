@@ -27,7 +27,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write(@"import { useState, useCallback } from 'react';
+            this.Write(@"import { useState, useCallback, useReducer } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FieldValues, SubmitHandler, useForm, FormProvider } from 'react-hook-form';
 import { BookmarkSquareIcon } from '@heroicons/react/24/outline';
@@ -35,6 +35,7 @@ import * as Components from '../../components';
 import { IconButton, InlineMessageBar, BarMessage } from '../../components';
 import { useHttpRequest } from '../../hooks/useHttpRequest';
 import { useAppContext } from ""../../hooks/AppContext""
+import { PageContext, pageContextReducer } from '../../hooks/PageContext'
 import * as AggregateType from '../../");
             this.Write(this.ToStringHelper.ToStringWithCulture(types.ImportName));
             this.Write("\'\r\nimport { ");
@@ -45,6 +46,7 @@ import * as AggregateType from '../../");
 
 export default function () {
 
+  const pageContextValue = useReducer(pageContextReducer, { readOnly: false })
   const reactHookFormMethods = useForm({ defaultValues })
 
   const navigate = useNavigate()
@@ -71,19 +73,27 @@ export default function () {
   }, [post, navigate, errorMessages, setErrorMessages, dispatch])
 
   return (
-    <FormProvider {...reactHookFormMethods}>
-      <form className=""page-content-root"" onSubmit={reactHookFormMethods.handleSubmit(onSave)}>
-        <h1 className=""text-base font-semibold select-none py-1"">
-          <Link to=""");
+    <PageContext.Provider value={pageContextValue}>
+      <FormProvider {...reactHookFormMethods}>
+        <form className=""page-content-root"" onSubmit={reactHookFormMethods.handleSubmit(onSave)}>
+          <h1 className=""flex text-base font-semibold select-none p-1"">
+            <Link to=""");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetMultiViewUrl()));
             this.Write("\">");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
-            this.Write("</Link>&nbsp;新規作成\r\n        </h1>\r\n        <div className=\"flex flex-col space-y-1" +
-                    " p-1 bg-neutral-200\">\r\n          <");
+            this.Write("</Link>&nbsp;新規作成\r\n          </h1>\r\n          <div className=\"flex flex-col space" +
+                    "-y-1 p-1 bg-neutral-200\">\r\n            <");
             this.Write(this.ToStringHelper.ToStringWithCulture(new FormOfAggregateInstance.Component(_instance).ComponentName));
-            this.Write(" />\r\n        </div>\r\n        <InlineMessageBar value={errorMessages} onChange={se" +
-                    "tErrorMessages} />\r\n        <IconButton fill icon={BookmarkSquareIcon} className" +
-                    "=\"self-start\">保存</IconButton>\r\n      </form>\r\n    </FormProvider>\r\n  )\r\n}\r\n");
+            this.Write(@" />
+          </div>
+          <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
+          <IconButton fill icon={BookmarkSquareIcon} className=""self-start"">保存</IconButton>
+        </form>
+      </FormProvider>
+    </PageContext.Provider>
+  )
+}
+");
             return this.GenerationEnvironment.ToString();
         }
     }

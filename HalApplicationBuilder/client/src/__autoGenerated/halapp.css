@@ -37,6 +37,10 @@ code {
 .ellipsis-ex {
   @apply overflow-hidden whitespace-nowrap text-ellipsis;
 }
+input:read-only,
+textarea:read-only {
+  @apply bg-transparent;
+}
 
 /* ag-grid */
 .ag-theme-alpine.compact {

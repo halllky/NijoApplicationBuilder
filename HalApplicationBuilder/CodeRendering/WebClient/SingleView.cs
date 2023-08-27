@@ -27,11 +27,12 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write(@"import { useState, useCallback } from 'react';
+            this.Write(@"import { useState, useCallback, useReducer } from 'react';
 import { useAppContext } from '../../hooks/AppContext';
+import { PageContext, pageContextReducer } from '../../hooks/PageContext'
 import { Link, useParams } from 'react-router-dom';
 import { FieldValues, SubmitHandler, useForm, FormProvider } from 'react-hook-form';
-import { BookmarkSquareIcon } from '@heroicons/react/24/outline';
+import { BookmarkSquareIcon, PencilIcon } from '@heroicons/react/24/outline';
 import * as Components from '../../components';
 import { IconButton, InlineMessageBar, BarMessage } from '../../components';
 import { useHttpRequest } from '../../hooks/useHttpRequest';
@@ -83,23 +84,42 @@ export default function () {
     }
   }, [errorMessages, dispatch, post])
 
+  const pageContextValue = useReducer(pageContextReducer, { readOnly: true })
+  const toggleReadOnlyMode = useCallback((e: React.MouseEvent) => {
+    pageContextValue[1]({ type: 'changeReadOnly', value: !pageContextValue[0].readOnly })
+    e.preventDefault()
+  }, [pageContextValue[0].readOnly])
+
   if (!fetched) return <></>
 
   return (
-    <FormProvider {...reactHookFormMethods}>
-      <form className=""page-content-root"" onSubmit={reactHookFormMethods.handleSubmit(onSave)}>
-        <h1 className=""text-base font-semibold select-none py-1"">
-          <Link to=""");
+    <PageContext.Provider value={pageContextValue}>
+      <FormProvider {...reactHookFormMethods}>
+        <form className=""page-content-root"" onSubmit={reactHookFormMethods.handleSubmit(onSave)}>
+          <h1 className=""flex text-base font-semibold select-none p-1"">
+            <Link to=""");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetMultiViewUrl()));
             this.Write("\">");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
-            this.Write("</Link>\r\n          &nbsp;&#047;&nbsp;\r\n          <span className=\"select-all\">{in" +
-                    "stanceName}</span>\r\n        </h1>\r\n        <div className=\"flex flex-col space-y" +
-                    "-1 p-1 bg-neutral-200\">\r\n          <");
+            this.Write(@"</Link>
+            &nbsp;&#047;&nbsp;
+            <span className=""select-all"">{instanceName}</span>
+            <div className=""flex-1""></div>
+            <IconButton icon={PencilIcon} onClick={toggleReadOnlyMode}>編集</IconButton>
+          </h1>
+          <div className=""flex flex-col space-y-1 p-1 bg-neutral-200"">
+            <");
             this.Write(this.ToStringHelper.ToStringWithCulture(new FormOfAggregateInstance.Component(_instance).ComponentName));
-            this.Write(" />\r\n        </div>\r\n        <InlineMessageBar value={errorMessages} onChange={se" +
-                    "tErrorMessages} />\r\n        <IconButton fill icon={BookmarkSquareIcon} className" +
-                    "=\"self-start\">更新</IconButton>\r\n      </form>\r\n    </FormProvider>\r\n  )\r\n}\r\n");
+            this.Write(@" />
+          </div>
+          <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
+          <IconButton fill icon={BookmarkSquareIcon} className=""self-start"">更新</IconButton>
+        </form>
+      </FormProvider>
+    </PageContext.Provider>
+  )
+}
+");
             return this.GenerationEnvironment.ToString();
         }
     }
