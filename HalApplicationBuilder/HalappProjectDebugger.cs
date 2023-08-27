@@ -216,9 +216,12 @@ namespace HalApplicationBuilder {
         /// <summary>
         /// プロジェクトをビルドします。
         /// </summary>
-        public async Task BuildAsync() {
+        /// <param name="noEmit">trueにするとnpmについてTypeScriptのエラーチェックのみ実行しビルド結果は出力しない</param>
+        public async Task BuildAsync(bool noEmit = false) {
             using var cmd1 = _project.CreateProcess("dotnet", "build");
-            using var cmd2 = _project.CreateClientDirProcess("npm", "run", "build");
+            using var cmd2 = noEmit
+                ? _project.CreateClientDirProcess("npm", "run", "tsc")
+                : _project.CreateClientDirProcess("npm", "run", "build");
             await Task.WhenAll(cmd1.StartAsync(), cmd2.StartAsync());
         }
 

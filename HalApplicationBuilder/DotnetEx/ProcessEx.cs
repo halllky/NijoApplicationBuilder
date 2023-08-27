@@ -55,6 +55,11 @@ namespace HalApplicationBuilder.DotnetEx {
             if (disposedValue) throw new InvalidOperationException("This object is disposed.");
             await _semaphore.WaitAsync();
 
+            Log?.Invoke(this, new LogEventArgs {
+                IsError = false,
+                Message = $"Start process: '{_process.StartInfo.FileName} {_process.StartInfo.ArgumentList.Join(" ")}'",
+            });
+
             _process.Start();
             _process.BeginOutputReadLine();
             _process.BeginErrorReadLine();
@@ -80,6 +85,11 @@ namespace HalApplicationBuilder.DotnetEx {
         internal IEnumerable<string> Read(CancellationToken? cancellationToken = null) {
             if (disposedValue) throw new InvalidOperationException("This object is disposed.");
             _semaphore.Wait();
+
+            Log?.Invoke(this, new LogEventArgs {
+                IsError = false,
+                Message = $"Start process: '{_process.StartInfo.FileName} {_process.StartInfo.ArgumentList.Join(" ")}'",
+            });
 
             _process.Start();
             _process.BeginOutputReadLine();

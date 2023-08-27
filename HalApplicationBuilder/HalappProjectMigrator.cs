@@ -13,29 +13,28 @@ namespace HalApplicationBuilder {
     /// </summary>
     public partial class HalappProjectMigrator {
 
-        internal HalappProjectMigrator(HalappProject project) {
+        internal HalappProjectMigrator(HalappProject project, TextWriter? log) {
             _project = project;
+            _log = log;
         }
         private readonly HalappProject _project;
 
-        private bool _build = false;
-        private void Build() {
-            if (_build) return;
-            _build = true;
-
-            // このクラスの処理が走っているとき、基本的には dotnet run も並走しているので、Releaseビルドを指定しないとビルド先が競合して失敗してしまう
-            using var process = _project.CreateProcess("dotnet", "build", "--configuration", "Release");
-            process.Start();
+        private readonly TextWriter? _log;
+        private void Logout(string message) {
+            _log?.WriteLine($"{DateTime.Now}\t{message}");
         }
+
+        private bool _skipBuild = false;
 
         /// <summary>
         /// データベースが存在しない場合に新規作成します。
         /// </summary>
         /// <returns></returns>
         public HalappProjectMigrator EnsureCreateDatabase() {
+            var dbDir = Path.Combine(_project.ProjectRoot, "bin", "Debug");
+            Logout($"EnsureCreateDatabase: {dbDir}");
 
             // sqliteファイル出力先フォルダが無い場合は作成する
-            var dbDir = Path.Combine(_project.ProjectRoot, "bin", "Debug");
             if (!Directory.Exists(dbDir)) Directory.CreateDirectory(dbDir);
 
             if (!GetMigrations().Any()) {
@@ -45,37 +44,44 @@ namespace HalApplicationBuilder {
 
             return this;
         }
+
         /// <summary>
-        /// データベースおよび全てのマイグレーションを削除します。
+        /// データベースおよび全てのマイグレーションを削除し、作り直します。
         /// </summary>
-        public HalappProjectMigrator DeleteDatabaseAndMigrations() {
-            // マイグレーションの削除
+        public HalappProjectMigrator DeleteAndRecreateDatabase() {
+            void DeleteFile(string path) {
+                Logout($"Delete: {path}");
+                File.Delete(path);
+            }
+
+            // 既存DB,マイグレーションの削除
             var migrationDir = Path.Combine(_project.ProjectRoot, "Migrations");
             if (Directory.Exists(migrationDir)) {
                 foreach (var file in Directory.GetFiles(migrationDir)) {
-                    File.Delete(file);
+                    DeleteFile(file);
                 }
             }
-            // DBの削除
-            File.Delete(Path.Combine(_project.ProjectRoot, "bin", "Debug", "debug.sqlite3"));
-            File.Delete(Path.Combine(_project.ProjectRoot, "bin", "Debug", "debug.sqlite3-shm"));
-            File.Delete(Path.Combine(_project.ProjectRoot, "bin", "Debug", "debug.sqlite3-wal"));
+            DeleteFile(Path.Combine(_project.ProjectRoot, "bin", "Debug", "debug.sqlite3"));
+            DeleteFile(Path.Combine(_project.ProjectRoot, "bin", "Debug", "debug.sqlite3-shm"));
+            DeleteFile(Path.Combine(_project.ProjectRoot, "bin", "Debug", "debug.sqlite3-wal"));
+
+            // マイグレーション,DB作成
+            AddMigration("000000000000");
+            Migrate();
 
             return this;
         }
 
         internal IEnumerable<Migration> GetMigrations() {
             try {
-                Build();
-
                 using var process = _project.CreateProcess(
                     "dotnet", "ef", "migrations", "list",
                     "--prefix-output", // ビルド状況やの行頭には "info:" が、マイグレーション名の行頭には "data:" がつくので、その識別のため
                     "--configuration", "Release",
-                    "--no-build");
+                    _skipBuild ? "--no-build" : "");
 
                 var regex = MigrationDataLineRegex();
-                return process
+                var migrations = process
                     .Read()
                     .Select(line => regex.Match(line))
                     .Where(match => match.Success)
@@ -84,51 +90,58 @@ namespace HalApplicationBuilder {
                         Pending = match.Groups.Count == 3,
                     })
                     .ToArray();
+                _skipBuild = true;
+                return migrations;
             } catch (Exception) {
                 return Enumerable.Empty<Migration>();
             }
         }
         internal void RemoveMigrationsUntil(string migrationName) {
-            Build();
-
             // そのマイグレーションが適用済みだと migrations remove できないので、まず database update する
             using var update = _project.CreateProcess(
                 "dotnet", "ef", "database", "update", migrationName,
                 "--configuration", "Release",
-                "--no-build");
+                _skipBuild ? "--no-build" : "");
             update.Start();
+            _skipBuild = true;
 
             // リリース済みマイグレーションより後のマイグレーションを消す
             while (GetMigrations().Last().Name != migrationName) {
                 using var remove = _project.CreateProcess(
                     "dotnet", "ef", "migrations", "remove",
                     "--configuration", "Release",
-                    "--no-build");
+                    _skipBuild ? "--no-build" : "");
                 remove.Start();
+                _skipBuild = false;
             }
         }
-        internal void AddMigration() {
-            Build();
 
+        private string GenerateNextMigrationId() {
             var migrationCount = GetMigrations().Count();
             var nextMigrationId = migrationCount.ToString("000000000000");
+            return nextMigrationId;
+        }
 
+        internal void AddMigration() {
+            var nextMigrationId = GenerateNextMigrationId();
+            AddMigration(nextMigrationId);
+        }
+        internal void AddMigration(string nextMigrationId) {
             using var cmd = _project.CreateProcess(
                 "dotnet", "ef", "migrations", "add", nextMigrationId,
                 "--configuration", "Release",
-                "--no-build");
+                _skipBuild ? "--no-build" : "");
             cmd.Start();
-
-            // マイグレーションファイルが追加されたことにより再ビルドが必要
-            _build = false;
+            _skipBuild = false;
         }
+
         internal void Migrate() {
-            Build();
             using var update = _project.CreateProcess(
                 "dotnet", "ef", "database", "update",
                 "--configuration", "Release",
-                "--no-build");
+                _skipBuild ? "--no-build" : "");
             update.Start();
+            _skipBuild = true;
         }
 
         internal struct Migration {

@@ -116,7 +116,7 @@ namespace HalApplicationBuilder {
 
             CodeGenerator = new HalappProjectCodeGenerator(this, log);
             Debugger = new HalappProjectDebugger(this, log);
-            Migrator = new HalappProjectMigrator(this);
+            Migrator = new HalappProjectMigrator(this, log);
         }
 
         private readonly TextWriter? _log;
@@ -195,7 +195,7 @@ namespace HalApplicationBuilder {
         }
 
         private void Process_Log(object? sender, ProcessEx.LogEventArgs e) {
-            _log?.WriteLine(e.Message);
+            _log?.WriteLine($"{DateTime.Now}\t{e.Message}");
         }
     }
 }
