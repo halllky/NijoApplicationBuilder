@@ -39,12 +39,12 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         private string PropNameWidth { get; }
 
         private IEnumerable<string> RenderForm(SearchCondition.Member member) {
-            var renderer = new FormRenderer(member);
+            var renderer = new SearchConditionUiForm(member);
             foreach (var line in member.Type.RenderUI(renderer)) yield return line;
         }
 
-        private class FormRenderer : IGuiFormRenderer {
-            public FormRenderer(SearchCondition.Member member) {
+        private class SearchConditionUiForm : IGuiFormRenderer {
+            public SearchConditionUiForm(SearchCondition.Member member) {
                 _member = member;
             }
             private readonly SearchCondition.Member _member;
@@ -66,23 +66,13 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 if (_member.Type.SearchBehavior == SearchBehavior.Range) {
                     var from = GetRegisterName(Util.FromTo.FROM);
                     var to = GetRegisterName(Util.FromTo.TO);
-                    if (multiline) {
-                        yield return $"<textarea className=\"border w-40\" {{...register('{from}')}}></textarea>";
-                        yield return $"〜";
-                        yield return $"<textarea className=\"border w-40\" {{...register('{to}')}}></textarea>";
-
-                    } else {
-                        yield return $"<input type=\"text\" className=\"border w-40\" {{...register('{from}')}} />";
-                        yield return $"〜";
-                        yield return $"<input type=\"text\" className=\"border w-40\" {{...register('{to}')}} />";
-                    }
+                    yield return $"<input type=\"text\" className=\"border w-40\" {{...register('{from}')}} />";
+                    yield return $"〜";
+                    yield return $"<input type=\"text\" className=\"border w-40\" {{...register('{to}')}} />";
 
                 } else {
                     var name = GetRegisterName();
-                    if (multiline)
-                        yield return $"<textarea className=\"border w-80\" {{...register('{name}')}}></textarea>";
-                    else
-                        yield return $"<input type=\"text\" className=\"border w-80\" {{...register('{name}')}} />";
+                    yield return $"<input type=\"text\" className=\"border w-80\" {{...register('{name}')}} />";
                 }
             }
             /// <summary>
