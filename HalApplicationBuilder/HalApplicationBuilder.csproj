@@ -42,6 +42,10 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>DbContext.cs</LastGenOutput>
 		</None>
+		<None Update="CodeRendering\Util\HttpResponseExceptionFilter.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>HttpResponseExceptionFilter.cs</LastGenOutput>
+		</None>
 		<None Update="CodeRendering\WebClient\AggregateInstanceFormBody.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>AggregateInstanceFormBody.cs</LastGenOutput>
@@ -186,6 +190,11 @@
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>DbContext.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering\Util\HttpResponseExceptionFilter.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>HttpResponseExceptionFilter.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering\WebClient\AggregateInstanceFormBody.cs">
 		  <DesignTime>True</DesignTime>

@@ -72,6 +72,9 @@ namespace HalApplicationBuilder {
                     $"            .AllowAnyHeader();",
                     $"    }});",
                     $"}});",
+                    $"builder.Services.AddControllers(option => {{",
+                    $"    option.Filters.Add<{new CodeRendering.Util.HttpResponseExceptionFilter(_project.ReadConfig().RootNamespace).ClassFullName}>();",
+                    $"}});",
                     $"/* HalApplicationBuilder によって自動生成されたコード ここまで */",
                     $"",
                 });
@@ -122,6 +125,7 @@ namespace HalApplicationBuilder {
                         utilDir.Generate(new CodeRendering.Util.FromTo(ctx.Config));
                         utilDir.Generate(new CodeRendering.Util.InstanceKey(ctx));
                         utilDir.Generate(new CodeRendering.Util.AggregateInstanceKeyNamePair(ctx.Config));
+                        utilDir.Generate(new CodeRendering.Util.HttpResponseExceptionFilter(ctx.Config.RootNamespace));
                         utilDir.DeleteOtherFiles();
                     });
                     genDir.Directory("Web", controllerDir => {
