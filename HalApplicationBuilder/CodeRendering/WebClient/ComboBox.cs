@@ -76,7 +76,7 @@ export const ");
   }, [setValue, watch])
 
   return (
-    <Combobox ref={ref} value={selectedValue} onChange={onChangeSelectedValue}>
+    <Combobox ref={ref} value={selectedValue} onChange={onChangeSelectedValue} nullable>
       <Combobox.Input onChange={onChange} onBlur={onBlur} />
       <Combobox.Options>
         {data?.map(item => (
