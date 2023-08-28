@@ -81,7 +81,7 @@ export default function () {
             this.Write(@"')
   }, [navigate])
 
-  const [expanded, setExpanded] = useState(true)
+  const [expanded, setExpanded] = useState(false)
 
   if (isFetching) return <></>
 

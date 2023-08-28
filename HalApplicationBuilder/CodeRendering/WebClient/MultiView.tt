@@ -55,7 +55,7 @@ export default function () {
     navigate('<#=GetCreateViewUrl()#>')
   }, [navigate])
 
-  const [expanded, setExpanded] = useState(true)
+  const [expanded, setExpanded] = useState(false)
 
   if (isFetching) return <></>
 

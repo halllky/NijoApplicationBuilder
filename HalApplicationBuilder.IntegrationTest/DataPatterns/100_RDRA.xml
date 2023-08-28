@@ -4,7 +4,7 @@
   
   <アクター>
     <アクターID type="id" key="" />
-    <アクター名 type="word" />
+    <アクター名 type="word" name="" />
     <種別>
       <人 switch="1">
         <自社か社外か type="word" />
@@ -16,7 +16,7 @@
   
   <ユースケース>
     <ユースケースID type="id" key="" />
-    <概要 type="sentence" />
+    <概要 type="sentence" name="" />
     <主体 refTo="/アクター" />
     <関連機能 multiple="">
       <機能 refTo="/機能" key="" />
@@ -25,7 +25,7 @@
 
   <機能>
     <機能ID type="id" key="" />
-    <機能名 type="word" />
+    <機能名 type="word" name="" />
     <参照更新の別 type="word" />
     <非機能要件>
       <レスポンス type="sentence" />
