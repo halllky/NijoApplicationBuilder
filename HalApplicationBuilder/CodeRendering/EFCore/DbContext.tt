@@ -37,6 +37,8 @@ namespace <#=_ctx.Config.DbContextNamespace#> {
 <# } #>
             });
 <# } #>
+
+            <#=_ctx.Config.EntityNamespace#>.BackgroundTaskEntity.OnModelCreating(modelBuilder);
         }
     }
 }

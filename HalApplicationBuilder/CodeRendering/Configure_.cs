@@ -11,8 +11,16 @@ namespace HalApplicationBuilder.CodeRendering {
         }
         private readonly CodeRenderingContext _ctx;
 
-        public string FileName => "HalappDefualtConfigurer.cs";
-        private string RuntimeServerSettings => new Util.RuntimeSettings(_ctx).ServerSetiingTypeFullName;
+        public const string CLASSNAME = "HalappConfigurer";
+        public const string INIT_WEB_HOST_BUILDER = "InitWebHostBuilder";
+        public const string INIT_BATCH_PROCESS = "InitAsBatchProces";
+        public const string CONFIGURE_SERVICES = "ConfigureServices";
+        public const string INIT_WEBAPPLICATION= "InitWebApplication";
 
+        public string FileName => "HalappConfigurer.cs";
+        public string Namespace => _ctx.Config.RootNamespace;
+        public string ClassFullname => $"{_ctx.Config.RootNamespace}.{CLASSNAME}";
+
+        private string RuntimeServerSettings => new Util.RuntimeSettings(_ctx).ServerSetiingTypeFullName;
     }
 }

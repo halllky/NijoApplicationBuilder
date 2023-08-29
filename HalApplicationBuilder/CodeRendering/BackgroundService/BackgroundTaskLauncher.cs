@@ -7,7 +7,7 @@
 //     コードが再生成されると失われます。
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace HalApplicationBuilder.CodeRendering
+namespace HalApplicationBuilder.CodeRendering.BackgroundService
 {
     using System.Linq;
     using System.Text;
@@ -18,103 +18,180 @@ namespace HalApplicationBuilder.CodeRendering
     /// Class to produce the template output
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public partial class Configure : ConfigureBase
+    public partial class BackgroundTaskLauncher : BackgroundTaskLauncherBase
     {
         /// <summary>
         /// Create the template output
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("\r\nnamespace ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Namespace));
-            this.Write(" {\r\n\r\n    internal static class ");
+            this.Write("using Microsoft.EntityFrameworkCore;\r\nusing System;\r\nusing System.Collections.Gen" +
+                    "eric;\r\nusing System.Linq;\r\nusing System.Reflection;\r\nusing System.Text;\r\nusing S" +
+                    "ystem.Text.Json.Serialization;\r\nusing System.Threading.Tasks;\r\n\r\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(RootNamespace));
+            this.Write(" {\r\n    public sealed class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(CLASSNAME));
-            this.Write(" {\r\n\r\n        internal static void ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(INIT_WEB_HOST_BUILDER));
-            this.Write("(this WebApplicationBuilder builder) {\r\n            ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(CONFIGURE_SERVICES));
-            this.Write(@"(builder.Services);
+            this.Write(" : Microsoft.Extensions.Hosting.BackgroundService {\r\n    \r\n        protected over" +
+                    "ride async Task ExecuteAsync(CancellationToken stoppingToken) {\r\n            var" +
+                    " serviceCollection = new ServiceCollection();\r\n            ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(new Configure(_ctx).ClassFullname));
+            this.Write(".");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Configure.INIT_BATCH_PROCESS));
+            this.Write(@"(serviceCollection);
+            var services = serviceCollection.BuildServiceProvider();
+            
+            var logger = services.GetRequiredService<ILogger>();
+            var settings = services.GetRequiredService<RuntimeSettings.Server>();
+            var runningTasks = new Dictionary<string, Task>();
 
-            // HTMLのエンコーディングをUTF-8にする(日本語のHTMLエンコード防止)
-            builder.Services.Configure<Microsoft.Extensions.WebEncoders.WebEncoderOptions>(options => {
-                options.TextEncoderSettings = new System.Text.Encodings.Web.TextEncoderSettings(System.Text.Unicode.UnicodeRanges.All);
+            stoppingToken.Register(() => {
+                logger.LogInformation($""バッチ起動監視処理の中止が要請されました。"");
             });
 
-            // npm start で実行されるポートがASP.NETのそれと別なので
-            builder.Services.AddCors(options => {
-                options.AddDefaultPolicy(builder => {
-                    builder.AllowAnyOrigin()
-                        .AllowAnyMethod()
-                        .AllowAnyHeader();
-                });
-            });
+            try {
 
-            builder.Services.AddControllers(option => {
-                option.Filters.Add<RDRA.HttpResponseExceptionFilter>();
-            });
+                logger.LogInformation($""バッチ起動監視 開始"");
 
-            builder.Services.AddHostedService<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(new BackgroundService.BackgroundTaskLauncher(_ctx).ClassFullname));
-            this.Write(">();\r\n        }\r\n\r\n        internal static void ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(INIT_WEBAPPLICATION));
-            this.Write("(this WebApplication app) {\r\n            // 前述AddCorsの設定をするならこちらも必要\r\n            " +
-                    "app.UseCors();\r\n        }\r\n\r\n        internal static void ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(INIT_BATCH_PROCESS));
-            this.Write("(this IServiceCollection services) {\r\n            ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(CONFIGURE_SERVICES));
-            this.Write("(services);\r\n        }\r\n\r\n        internal static void ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(CONFIGURE_SERVICES));
-            this.Write("(IServiceCollection services) {\r\n\r\n");
-          /* SaveやDetailでDbContextをダイレクトに参照しているため */ 
-            this.Write("            services.AddScoped<Microsoft.EntityFrameworkCore.DbContext>(provider " +
-                    "=> {\r\n                return provider.GetRequiredService<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextNamespace));
-            this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
-            this.Write(">();\r\n            });\r\n\r\n            services.AddDbContext<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextNamespace));
-            this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
-            this.Write(">((provider, option) => {\r\n                var setting = provider.GetRequiredServ" +
-                    "ice<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(RuntimeServerSettings));
-            this.Write(">();\r\n                var connStr = setting.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Util.RuntimeSettings.GET_ACTIVE_CONNSTR));
-            this.Write(@"();
-                Microsoft.EntityFrameworkCore.ProxiesExtensions.UseLazyLoadingProxies(option);
-                Microsoft.EntityFrameworkCore.SqliteDbContextOptionsBuilderExtensions.UseSqlite(option, connStr);
-            });
+                while (!stoppingToken.IsCancellationRequested) {
+                    // 待機
+                    try {
+                        await Task.Delay(settings.BackgroundTask.PollingSpanMilliSeconds, stoppingToken);
+                    } catch (TaskCanceledException ex) {
+                        logger.LogCritical(ex, ""TaskCanceledException Error"", ex.Message);
+                        continue;
+                    }
+                
+                    // 終了しているバッチがないか調べる
+                    using var pollingScope = services.CreateScope();
+                    var dbContext = pollingScope.ServiceProvider.GetRequiredService<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(DbContextFullName));
+            this.Write(">();\r\n                    DetectFinishing(runningTasks, dbContext, logger);\r\n\r\n  " +
+                    "                  // 起動対象バッチがあるかどうか検索\r\n                    var queued = dbContex" +
+                    "t\r\n                        .BackgroundTasks\r\n                        .Where(task" +
+                    " => task.State == E_BackgroundTaskState.WaitToStart)\r\n                        .O" +
+                    "rderBy(task => task.RequestTime)\r\n                        .Take(5)\r\n            " +
+                    "            .ToArray();\r\n                    if (!queued.Any()) continue;\r\n\r\n   " +
+                    "                 // バッチ起動\r\n                    var now = DateTime.Now;\r\n        " +
+                    "            var assembly = Assembly.GetExecutingAssembly();\r\n                   " +
+                    " var context = new BackgroundTaskContext {\r\n                        StartTime = " +
+                    "now,\r\n                        ServiceProvider = pollingScope.ServiceProvider,\r\n " +
+                    "                   };\r\n                    foreach (var entity in queued) {\r\n   " +
+                    "                     try {\r\n                            var type = assembly.GetT" +
+                    "ype(entity.ClassName) ?? throw new InvalidOperationException($\"バッチ {entity.Id} {" +
+                    "entity.Name}: クラスが見つかりません(アセンブリ: {assembly.FullName}, クラス名: {entity.ClassName})\"" +
+                    ");\r\n                            var instance = Activator.CreateInstance(type) ??" +
+                    " throw new InvalidOperationException($\"バッチ {entity.Id} {entity.Name}: \'{entity.C" +
+                    "lassName}\' クラスのインスタンス化に失敗しました。引数なしコンストラクタがあるか等確認してください。\");\r\n                    " +
+                    "        if (instance is not BackgroundTask backgroundTask) throw new InvalidOper" +
+                    "ationException($\"バッチ {entity.Id} {entity.Name}: \'{entity.ClassName}\' クラスが{nameof" +
+                    "(BackgroundTask)}クラスを継承していません。\");\r\n\r\n                            var task = back" +
+                    "groundTask.ExecuteAsync(context, stoppingToken);\r\n                            ru" +
+                    "nningTasks.Add(entity.Id, task);\r\n                        \r\n                    " +
+                    "        logger.LogInformation(\"バッチ起動({Id} {Name})\", entity.Id, entity.Name);\r\n\r\n" +
+                    "                            entity.StartTime = now;\r\n                           " +
+                    " entity.State = E_BackgroundTaskState.Running;\r\n                            dbCo" +
+                    "ntext.SaveChanges();\r\n\r\n                        } catch (Exception ex) {\r\n      " +
+                    "                      logger.LogError(ex, \"バッチの起動に失敗しました({Id} {Name}): {Message}" +
+                    "\", entity.Id, entity.Name, ex.Message);\r\n                        }\r\n            " +
+                    "        }\r\n                }\r\n            } catch (Exception ex) {\r\n            " +
+                    "    logger.LogCritical(ex, \"バッチ起動監視処理でエラーが発生しました: {Message}\", ex.Message);\r\n    " +
+                    "        }\r\n\r\n            // 起動中ジョブの終了を待機\r\n            try {\r\n                log" +
+                    "ger.LogInformation(\"起動中ジョブの終了を待機します。\");\r\n                using var disposingScop" +
+                    "e = services.CreateScope();\r\n                Task.WaitAll(runningTasks.Values.To" +
+                    "Array(), CancellationToken.None);\r\n                var dbContext = disposingScop" +
+                    "e.ServiceProvider.GetRequiredService<RDRA.EntityFramework.MyDbContext>();\r\n     " +
+                    "           DetectFinishing(runningTasks, dbContext, logger);\r\n            } catc" +
+                    "h (Exception ex) {\r\n                logger.LogCritical(ex, \"バッチ起動監視処理(起動中ジョブの終了待" +
+                    "機)でエラーが発生しました: {Message}\", ex.Message);\r\n            }\r\n\r\n            logger.Log" +
+                    "Information($\"バッチ起動監視 終了\");\r\n        }\r\n\r\n        /// <summary>\r\n        /// 終了し" +
+                    "たタスクを検知して完了情報を記録します。\r\n        /// </summary>\r\n        private void DetectFinishi" +
+                    "ng(Dictionary<string, Task> runningTasks, ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(DbContextFullName));
+            this.Write(@" dbContext, ILogger logger) {
+            // 終了したバッチを列挙
+            var completedTasks = runningTasks
+                .Where(kv => kv.Value.IsCompleted)
+                .ToDictionary(kv => kv.Key, kv => kv.Value);
+            if (!completedTasks.Any()) return;
 
-            services.AddScoped(_ => {
-                var filename = """);
-            this.Write(this.ToStringHelper.ToStringWithCulture(Util.RuntimeSettings.JSON_FILE_NAME));
-            this.Write("\";\r\n                if (System.IO.File.Exists(filename)) {\r\n                    u" +
-                    "sing var stream = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare." +
-                    "ReadWrite);\r\n                    var parsed = System.Text.Json.JsonSerializer.De" +
-                    "serialize<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(RuntimeServerSettings));
-            this.Write(">(stream);\r\n                    return parsed ?? ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(RuntimeServerSettings));
-            this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Util.RuntimeSettings.GET_DEFAULT));
-            this.Write("();\r\n                } else {\r\n                    var setting = ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(RuntimeServerSettings));
-            this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Util.RuntimeSettings.GET_DEFAULT));
-            this.Write(@"();
-                    File.WriteAllText(filename, System.Text.Json.JsonSerializer.Serialize(setting, new System.Text.Json.JsonSerializerOptions {
-                        WriteIndented = true,
-                    }));
-                    return setting;
+            // バッチと対応するデータをDBから検索
+            var ids = completedTasks.Keys.ToArray();
+            var entities = dbContext
+                .BackgroundTasks
+                .Where(e => ids.Contains(e.Id))
+                .ToDictionary(e => e.Id);
+            var list = completedTasks.ToDictionary(
+                kv => kv.Key,
+                kv => entities.GetValueOrDefault(kv.Key));
+
+            // そのバッチが完了した旨をDBに登録
+            var now = DateTime.Now;
+            foreach (var item in list) {
+                if (item.Value == null) {
+                    logger.LogError(""タスク {Id} の完了情報の記録に失敗しました"", item.Key);
+                    continue;
                 }
-            });
+                item.Value.FinishTime = now;
+                item.Value.State = completedTasks[item.Key].IsCompletedSuccessfully
+                    ? E_BackgroundTaskState.Success
+                    : E_BackgroundTaskState.Fault;
+                dbContext.SaveChanges();
 
-            services.AddScoped<ILogger>(provider => {
-                var setting = provider.GetRequiredService<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(RuntimeServerSettings));
-            this.Write(">();\r\n                return new ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Util.DefaultLogger.CLASSNAME));
-            this.Write("(setting.LogDirectory);\r\n            });\r\n        }\r\n    }\r\n\r\n}\r\n");
+                runningTasks.Remove(item.Key);
+            }
+        }
+    }
+}
+
+namespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(RootNamespace));
+            this.Write(@" {
+    public abstract class BackgroundTask {
+        public abstract Task ExecuteAsync(BackgroundTaskContext context, CancellationToken cancellationToken);
+    }
+
+    public enum E_BackgroundTaskState {
+        WaitToStart = 0,
+        Running = 1,
+        Success = 2,
+        Fault = 3,
+    }
+
+    public sealed class BackgroundTaskContext {
+        public required DateTime StartTime { get; init; }
+        public required IServiceProvider ServiceProvider { get; init; }
+        public ILogger Logger => ServiceProvider.GetRequiredService<ILogger>();
+        public ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(DbContextFullName));
+            this.Write(" DbContext => ServiceProvider.GetRequiredService<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(DbContextFullName));
+            this.Write(">();\r\n    }\r\n\r\n}\r\n\r\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(EntityNamespace));
+            this.Write(@" {
+    public class BackgroundTaskEntity {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public E_BackgroundTaskState State { get; set; }
+        public string ClassName { get; set; } = string.Empty;
+        public DateTime RequestTime { get; set; }
+        public DateTime? StartTime { get; set; }
+        public DateTime? FinishTime { get; set; }
+
+        public static void OnModelCreating(ModelBuilder modelBuilder) {
+            modelBuilder.Entity<BackgroundTaskEntity>(e => {
+                e.HasKey(e => e.Id);
+            });
+        }
+    }
+}
+
+namespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(DbContextNamespace));
+            this.Write(" {\r\n    partial class ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(DbContextName));
+            this.Write(" {\r\n        public virtual DbSet<");
+            this.Write(this.ToStringHelper.ToStringWithCulture(EntityNamespace));
+            this.Write(".BackgroundTaskEntity> BackgroundTasks { get; set; }\r\n    }\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }
@@ -123,7 +200,7 @@ namespace HalApplicationBuilder.CodeRendering
     /// Base class for this transformation
     /// </summary>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
-    public class ConfigureBase
+    public class BackgroundTaskLauncherBase
     {
         #region Fields
         private global::System.Text.StringBuilder generationEnvironmentField;

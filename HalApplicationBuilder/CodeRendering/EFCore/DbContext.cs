@@ -75,7 +75,9 @@ namespace HalApplicationBuilder.CodeRendering.EFCore
  } 
             this.Write("            });\r\n");
  } 
-            this.Write("        }\r\n    }\r\n}\r\n");
+            this.Write("\r\n            ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
+            this.Write(".BackgroundTaskEntity.OnModelCreating(modelBuilder);\r\n        }\r\n    }\r\n}\r\n");
             return this.GenerationEnvironment.ToString();
         }
     }

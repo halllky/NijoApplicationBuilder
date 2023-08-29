@@ -1,0 +1,186 @@
+<#@ template language="C#" linePragmas="false" #>
+<#@ output encoding="utf-8" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Text.Json.Serialization;
+using System.Threading.Tasks;
+
+namespace <#=RootNamespace#> {
+    public sealed class <#=CLASSNAME#> : Microsoft.Extensions.Hosting.BackgroundService {
+    
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
+            var serviceCollection = new ServiceCollection();
+            <#=new Configure(_ctx).ClassFullname#>.<#=Configure.INIT_BATCH_PROCESS#>(serviceCollection);
+            var services = serviceCollection.BuildServiceProvider();
+            
+            var logger = services.GetRequiredService<ILogger>();
+            var settings = services.GetRequiredService<RuntimeSettings.Server>();
+            var runningTasks = new Dictionary<string, Task>();
+
+            stoppingToken.Register(() => {
+                logger.LogInformation($"バッチ起動監視処理の中止が要請されました。");
+            });
+
+            try {
+
+                logger.LogInformation($"バッチ起動監視 開始");
+
+                while (!stoppingToken.IsCancellationRequested) {
+                    // 待機
+                    try {
+                        await Task.Delay(settings.BackgroundTask.PollingSpanMilliSeconds, stoppingToken);
+                    } catch (TaskCanceledException ex) {
+                        logger.LogCritical(ex, "TaskCanceledException Error", ex.Message);
+                        continue;
+                    }
+                
+                    // 終了しているバッチがないか調べる
+                    using var pollingScope = services.CreateScope();
+                    var dbContext = pollingScope.ServiceProvider.GetRequiredService<<#=DbContextFullName#>>();
+                    DetectFinishing(runningTasks, dbContext, logger);
+
+                    // 起動対象バッチがあるかどうか検索
+                    var queued = dbContext
+                        .BackgroundTasks
+                        .Where(task => task.State == E_BackgroundTaskState.WaitToStart)
+                        .OrderBy(task => task.RequestTime)
+                        .Take(5)
+                        .ToArray();
+                    if (!queued.Any()) continue;
+
+                    // バッチ起動
+                    var now = DateTime.Now;
+                    var assembly = Assembly.GetExecutingAssembly();
+                    var context = new BackgroundTaskContext {
+                        StartTime = now,
+                        ServiceProvider = pollingScope.ServiceProvider,
+                    };
+                    foreach (var entity in queued) {
+                        try {
+                            var type = assembly.GetType(entity.ClassName) ?? throw new InvalidOperationException($"バッチ {entity.Id} {entity.Name}: クラスが見つかりません(アセンブリ: {assembly.FullName}, クラス名: {entity.ClassName})");
+                            var instance = Activator.CreateInstance(type) ?? throw new InvalidOperationException($"バッチ {entity.Id} {entity.Name}: '{entity.ClassName}' クラスのインスタンス化に失敗しました。引数なしコンストラクタがあるか等確認してください。");
+                            if (instance is not BackgroundTask backgroundTask) throw new InvalidOperationException($"バッチ {entity.Id} {entity.Name}: '{entity.ClassName}' クラスが{nameof(BackgroundTask)}クラスを継承していません。");
+
+                            var task = backgroundTask.ExecuteAsync(context, stoppingToken);
+                            runningTasks.Add(entity.Id, task);
+                        
+                            logger.LogInformation("バッチ起動({Id} {Name})", entity.Id, entity.Name);
+
+                            entity.StartTime = now;
+                            entity.State = E_BackgroundTaskState.Running;
+                            dbContext.SaveChanges();
+
+                        } catch (Exception ex) {
+                            logger.LogError(ex, "バッチの起動に失敗しました({Id} {Name}): {Message}", entity.Id, entity.Name, ex.Message);
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                logger.LogCritical(ex, "バッチ起動監視処理でエラーが発生しました: {Message}", ex.Message);
+            }
+
+            // 起動中ジョブの終了を待機
+            try {
+                logger.LogInformation("起動中ジョブの終了を待機します。");
+                using var disposingScope = services.CreateScope();
+                Task.WaitAll(runningTasks.Values.ToArray(), CancellationToken.None);
+                var dbContext = disposingScope.ServiceProvider.GetRequiredService<RDRA.EntityFramework.MyDbContext>();
+                DetectFinishing(runningTasks, dbContext, logger);
+            } catch (Exception ex) {
+                logger.LogCritical(ex, "バッチ起動監視処理(起動中ジョブの終了待機)でエラーが発生しました: {Message}", ex.Message);
+            }
+
+            logger.LogInformation($"バッチ起動監視 終了");
+        }
+
+        /// <summary>
+        /// 終了したタスクを検知して完了情報を記録します。
+        /// </summary>
+        private void DetectFinishing(Dictionary<string, Task> runningTasks, <#=DbContextFullName#> dbContext, ILogger logger) {
+            // 終了したバッチを列挙
+            var completedTasks = runningTasks
+                .Where(kv => kv.Value.IsCompleted)
+                .ToDictionary(kv => kv.Key, kv => kv.Value);
+            if (!completedTasks.Any()) return;
+
+            // バッチと対応するデータをDBから検索
+            var ids = completedTasks.Keys.ToArray();
+            var entities = dbContext
+                .BackgroundTasks
+                .Where(e => ids.Contains(e.Id))
+                .ToDictionary(e => e.Id);
+            var list = completedTasks.ToDictionary(
+                kv => kv.Key,
+                kv => entities.GetValueOrDefault(kv.Key));
+
+            // そのバッチが完了した旨をDBに登録
+            var now = DateTime.Now;
+            foreach (var item in list) {
+                if (item.Value == null) {
+                    logger.LogError("タスク {Id} の完了情報の記録に失敗しました", item.Key);
+                    continue;
+                }
+                item.Value.FinishTime = now;
+                item.Value.State = completedTasks[item.Key].IsCompletedSuccessfully
+                    ? E_BackgroundTaskState.Success
+                    : E_BackgroundTaskState.Fault;
+                dbContext.SaveChanges();
+
+                runningTasks.Remove(item.Key);
+            }
+        }
+    }
+}
+
+namespace <#=RootNamespace#> {
+    public abstract class BackgroundTask {
+        public abstract Task ExecuteAsync(BackgroundTaskContext context, CancellationToken cancellationToken);
+    }
+
+    public enum E_BackgroundTaskState {
+        WaitToStart = 0,
+        Running = 1,
+        Success = 2,
+        Fault = 3,
+    }
+
+    public sealed class BackgroundTaskContext {
+        public required DateTime StartTime { get; init; }
+        public required IServiceProvider ServiceProvider { get; init; }
+        public ILogger Logger => ServiceProvider.GetRequiredService<ILogger>();
+        public <#=DbContextFullName#> DbContext => ServiceProvider.GetRequiredService<<#=DbContextFullName#>>();
+    }
+
+}
+
+namespace <#=EntityNamespace#> {
+    public class BackgroundTaskEntity {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public E_BackgroundTaskState State { get; set; }
+        public string ClassName { get; set; } = string.Empty;
+        public DateTime RequestTime { get; set; }
+        public DateTime? StartTime { get; set; }
+        public DateTime? FinishTime { get; set; }
+
+        public static void OnModelCreating(ModelBuilder modelBuilder) {
+            modelBuilder.Entity<BackgroundTaskEntity>(e => {
+                e.HasKey(e => e.Id);
+            });
+        }
+    }
+}
+
+namespace <#=DbContextNamespace#> {
+    partial class <#=DbContextName#> {
+        public virtual DbSet<<#=EntityNamespace#>.BackgroundTaskEntity> BackgroundTasks { get; set; }
+    }
+}

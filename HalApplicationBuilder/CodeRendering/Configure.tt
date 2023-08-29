@@ -5,10 +5,44 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 
-namespace HalApplicationBuilder.Runtime {
+namespace <#=Namespace#> {
 
-    internal static class HalAppDefaultConfigurer {
-        internal static void Configure(IServiceCollection services, string runtimeRootDir) {
+    internal static class <#=CLASSNAME#> {
+
+        internal static void <#=INIT_WEB_HOST_BUILDER#>(this WebApplicationBuilder builder) {
+            <#=CONFIGURE_SERVICES#>(builder.Services);
+
+            // HTMLのエンコーディングをUTF-8にする(日本語のHTMLエンコード防止)
+            builder.Services.Configure<Microsoft.Extensions.WebEncoders.WebEncoderOptions>(options => {
+                options.TextEncoderSettings = new System.Text.Encodings.Web.TextEncoderSettings(System.Text.Unicode.UnicodeRanges.All);
+            });
+
+            // npm start で実行されるポートがASP.NETのそれと別なので
+            builder.Services.AddCors(options => {
+                options.AddDefaultPolicy(builder => {
+                    builder.AllowAnyOrigin()
+                        .AllowAnyMethod()
+                        .AllowAnyHeader();
+                });
+            });
+
+            builder.Services.AddControllers(option => {
+                option.Filters.Add<RDRA.HttpResponseExceptionFilter>();
+            });
+
+            builder.Services.AddHostedService<<#=new BackgroundService.BackgroundTaskLauncher(_ctx).ClassFullname#>>();
+        }
+
+        internal static void <#=INIT_WEBAPPLICATION#>(this WebApplication app) {
+            // 前述AddCorsの設定をするならこちらも必要
+            app.UseCors();
+        }
+
+        internal static void <#=INIT_BATCH_PROCESS#>(this IServiceCollection services) {
+            <#=CONFIGURE_SERVICES#>(services);
+        }
+
+        internal static void <#=CONFIGURE_SERVICES#>(IServiceCollection services) {
 
 <#          /* SaveやDetailでDbContextをダイレクトに参照しているため */ #>
             services.AddScoped<Microsoft.EntityFrameworkCore.DbContext>(provider => {
@@ -35,6 +69,11 @@ namespace HalApplicationBuilder.Runtime {
                     }));
                     return setting;
                 }
+            });
+
+            services.AddScoped<ILogger>(provider => {
+                var setting = provider.GetRequiredService<<#=RuntimeServerSettings#>>();
+                return new <#=Util.DefaultLogger.CLASSNAME#>(setting.LogDirectory);
             });
         }
     }

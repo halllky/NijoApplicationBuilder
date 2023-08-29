@@ -34,6 +34,10 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>AggFile.cs</LastGenOutput>
 		</None>
+		<None Update="CodeRendering\BackgroundService\BackgroundTaskLauncher.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>BackgroundTaskLauncher.cs</LastGenOutput>
+		</None>
 		<None Update="CodeRendering\Configure.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>Configure.cs</LastGenOutput>
@@ -41,6 +45,10 @@
 		<None Update="CodeRendering\EFCore\DbContext.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>DbContext.cs</LastGenOutput>
+		</None>
+		<None Update="CodeRendering\Util\DefaultLogger.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>DefaultLogger.cs</LastGenOutput>
 		</None>
 		<None Update="CodeRendering\Util\HttpResponseExceptionFilter.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
@@ -177,6 +185,11 @@
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>AggFile.tt</DependentUpon>
 		</Compile>
+		<Compile Update="CodeRendering\BackgroundService\BackgroundTaskLauncher.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>BackgroundTaskLauncher.tt</DependentUpon>
+		</Compile>
 		<Compile Update="CodeRendering\Configure.cs">
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
@@ -186,6 +199,11 @@
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>DbContext.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering\Util\DefaultLogger.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>DefaultLogger.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering\Util\HttpResponseExceptionFilter.cs">
 		  <DesignTime>True</DesignTime>

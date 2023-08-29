@@ -48,6 +48,12 @@ namespace HalApplicationBuilder.CodeRendering.Util
             this.Write(this.ToStringHelper.ToStringWithCulture(SERVER));
             this.Write(@" {
             /// <summary>
+            /// ログ出力先ディレクトリ
+            /// </summary>
+            [JsonPropertyName(""log"")]
+            public string? LogDirectory { get; set; }
+
+            /// <summary>
             /// 現在接続中のDBの名前。 <see cref=""DbProfiles""/> のいずれかのキーと一致
             /// </summary>
             [JsonPropertyName(""currentDb"")]
@@ -61,6 +67,20 @@ namespace HalApplicationBuilder.CodeRendering.Util
                 [JsonPropertyName(""connStr"")]
                 public string ConnStr { get; set; } = string.Empty;
             }
+            
+            /// <summary>
+            /// バックグラウンド処理に関する設定
+            /// </summary>
+            [JsonPropertyName(""backgroundTask"")]
+            public BackgroundTaskSetting BackgroundTask { get; set; } = new();
+            public class BackgroundTaskSetting {
+                /// <summary>
+                /// ポーリング間隔（ミリ秒）
+                /// </summary>
+                [JsonPropertyName(""pollingSpanMilliSeconds"")]
+                public int PollingSpanMilliSeconds { get; set; } = 5000;
+            }
+
 
             public string ");
             this.Write(this.ToStringHelper.ToStringWithCulture(GET_ACTIVE_CONNSTR));
@@ -85,6 +105,9 @@ namespace HalApplicationBuilder.CodeRendering.Util
                 return json;
             }
 
+            /// <summary>
+            /// 規定の実行時設定を返します。
+            /// </summary>
             public static ");
             this.Write(this.ToStringHelper.ToStringWithCulture(SERVER));
             this.Write(" ");
@@ -97,6 +120,7 @@ namespace HalApplicationBuilder.CodeRendering.Util
                 return new ");
             this.Write(this.ToStringHelper.ToStringWithCulture(SERVER));
             this.Write(@" {
+                    LogDirectory = ""log"",
                     CurrentDb = ""SQLITE"",
                     DbProfiles = new List<DbProfile> {
                         new DbProfile { Name = ""SQLITE"", ConnStr = connStr.ToString() },

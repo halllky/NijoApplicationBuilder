@@ -28,6 +28,12 @@ namespace <#=_ctx.Config.RootNamespace#> {
         /// </summary>
         public class <#=SERVER#> {
             /// <summary>
+            /// ログ出力先ディレクトリ
+            /// </summary>
+            [JsonPropertyName("log")]
+            public string? LogDirectory { get; set; }
+
+            /// <summary>
             /// 現在接続中のDBの名前。 <see cref="DbProfiles"/> のいずれかのキーと一致
             /// </summary>
             [JsonPropertyName("currentDb")]
@@ -41,6 +47,20 @@ namespace <#=_ctx.Config.RootNamespace#> {
                 [JsonPropertyName("connStr")]
                 public string ConnStr { get; set; } = string.Empty;
             }
+            
+            /// <summary>
+            /// バックグラウンド処理に関する設定
+            /// </summary>
+            [JsonPropertyName("backgroundTask")]
+            public BackgroundTaskSetting BackgroundTask { get; set; } = new();
+            public class BackgroundTaskSetting {
+                /// <summary>
+                /// ポーリング間隔（ミリ秒）
+                /// </summary>
+                [JsonPropertyName("pollingSpanMilliSeconds")]
+                public int PollingSpanMilliSeconds { get; set; } = 5000;
+            }
+
 
             public string <#=GET_ACTIVE_CONNSTR#>() {
                 if (string.IsNullOrWhiteSpace(CurrentDb))
@@ -61,12 +81,16 @@ namespace <#=_ctx.Config.RootNamespace#> {
                 return json;
             }
 
+            /// <summary>
+            /// 規定の実行時設定を返します。
+            /// </summary>
             public static <#=SERVER#> <#=GET_DEFAULT#>() {
                 var connStr = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder();
                 connStr.DataSource = "bin/Debug/debug.sqlite3";
                 connStr.Pooling = false; // デバッグ終了時にshm, walファイルが残らないようにするため
 
                 return new <#=SERVER#> {
+                    LogDirectory = "log",
                     CurrentDb = "SQLITE",
                     DbProfiles = new List<DbProfile> {
                         new DbProfile { Name = "SQLITE", ConnStr = connStr.ToString() },
