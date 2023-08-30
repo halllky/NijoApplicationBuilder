@@ -9,8 +9,8 @@ using System.Text;
 
 namespace <#=_namespace#> {
     public class <#=CLASSNAME#> : ILogger {
-        public <#=CLASSNAME#>(string logDirectory) {
-            _logDirectory = logDirectory;
+        public <#=CLASSNAME#>(string? logDirectory) {
+            _logDirectory = logDirectory ?? "job";
         }
         private readonly string _logDirectory;
         private bool _directoryCraeted = false;
@@ -40,9 +40,9 @@ namespace <#=_namespace#> {
             textWriter.WriteLine($"{header}\t{formatter(state, exception)}");
 
             if (exception != null) {
-                textWriter.WriteLine($"---------------------------------------------------");
+                textWriter.WriteLine($"");
                 textWriter.WriteLine($"{exception}");
-                textWriter.WriteLine($"---------------------------------------------------");
+                textWriter.WriteLine($"");
             }
         }
     }

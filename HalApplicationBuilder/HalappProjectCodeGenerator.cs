@@ -132,6 +132,7 @@ namespace HalApplicationBuilder {
                     });
                     genDir.Directory("BackgroundService", bsDir => {
                         bsDir.Generate(new CodeRendering.BackgroundService.BackgroundTaskLauncher(ctx));
+                        bsDir.Generate(new CodeRendering.BackgroundService.BackgroundTask(ctx));
                     });
                     genDir.DeleteOtherFiles();
                 });

@@ -32,6 +32,11 @@ namespace <#=_ctx.Config.RootNamespace#> {
             /// </summary>
             [JsonPropertyName("log")]
             public string? LogDirectory { get; set; }
+            /// <summary>
+            /// バッチ実行結果出力先ディレクトリ
+            /// </summary>
+            [JsonPropertyName("job")]
+            public string? JobDirectory { get; set; }
 
             /// <summary>
             /// 現在接続中のDBの名前。 <see cref="DbProfiles"/> のいずれかのキーと一致
@@ -91,6 +96,7 @@ namespace <#=_ctx.Config.RootNamespace#> {
 
                 return new <#=SERVER#> {
                     LogDirectory = "log",
+                    JobDirectory = "job",
                     CurrentDb = "SQLITE",
                     DbProfiles = new List<DbProfile> {
                         new DbProfile { Name = "SQLITE", ConnStr = connStr.ToString() },

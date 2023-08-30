@@ -23,8 +23,8 @@ namespace <#=_ctx.Config.RootNamespace#> {
             _logger = logger;
             _dbContext = dbContext;
         }
-        private readonly ILogger<<#=_controller.ClassName#>> _logger;
-        private readonly <#=_ctx.Config.DbContextName#> _dbContext;
+        protected readonly ILogger<<#=_controller.ClassName#>> _logger;
+        protected readonly <#=_ctx.Config.DbContextName#> _dbContext;
 
         [HttpPost("<#=Controller.CREATE_ACTION_NAME#>")]
         public virtual IActionResult Create([FromBody] <#=CreateCommandClassName#> param) {

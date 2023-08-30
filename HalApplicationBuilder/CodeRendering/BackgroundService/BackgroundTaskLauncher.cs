@@ -25,9 +25,17 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService
         /// </summary>
         public virtual string TransformText()
         {
-            this.Write("using Microsoft.EntityFrameworkCore;\r\nusing System;\r\nusing System.Collections.Gen" +
-                    "eric;\r\nusing System.Linq;\r\nusing System.Reflection;\r\nusing System.Text;\r\nusing S" +
-                    "ystem.Text.Json.Serialization;\r\nusing System.Threading.Tasks;\r\n\r\nnamespace ");
+            this.Write(@"using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading.Tasks;
+
+namespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(RootNamespace));
             this.Write(" {\r\n    public sealed class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(CLASSNAME));
@@ -44,6 +52,9 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService
             var settings = services.GetRequiredService<RuntimeSettings.Server>();
             var runningTasks = new Dictionary<string, Task>();
 
+            var directory = Path.Combine(Directory.GetCurrentDirectory(), settings.JobDirectory ?? ""job"");
+            if (!Directory.Exists(directory)) Directory.CreateDirectory(directory);
+
             stoppingToken.Register(() => {
                 logger.LogInformation($""バッチ起動監視処理の中止が要請されました。"");
             });
@@ -56,8 +67,7 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService
                     // 待機
                     try {
                         await Task.Delay(settings.BackgroundTask.PollingSpanMilliSeconds, stoppingToken);
-                    } catch (TaskCanceledException ex) {
-                        logger.LogCritical(ex, ""TaskCanceledException Error"", ex.Message);
+                    } catch (TaskCanceledException) {
                         continue;
                     }
                 
@@ -72,40 +82,74 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService
                     "rderBy(task => task.RequestTime)\r\n                        .Take(5)\r\n            " +
                     "            .ToArray();\r\n                    if (!queued.Any()) continue;\r\n\r\n   " +
                     "                 // バッチ起動\r\n                    var now = DateTime.Now;\r\n        " +
-                    "            var assembly = Assembly.GetExecutingAssembly();\r\n                   " +
-                    " var context = new BackgroundTaskContext {\r\n                        StartTime = " +
-                    "now,\r\n                        ServiceProvider = pollingScope.ServiceProvider,\r\n " +
-                    "                   };\r\n                    foreach (var entity in queued) {\r\n   " +
-                    "                     try {\r\n                            var type = assembly.GetT" +
-                    "ype(entity.ClassName) ?? throw new InvalidOperationException($\"バッチ {entity.Id} {" +
-                    "entity.Name}: クラスが見つかりません(アセンブリ: {assembly.FullName}, クラス名: {entity.ClassName})\"" +
-                    ");\r\n                            var instance = Activator.CreateInstance(type) ??" +
-                    " throw new InvalidOperationException($\"バッチ {entity.Id} {entity.Name}: \'{entity.C" +
-                    "lassName}\' クラスのインスタンス化に失敗しました。引数なしコンストラクタがあるか等確認してください。\");\r\n                    " +
-                    "        if (instance is not BackgroundTask backgroundTask) throw new InvalidOper" +
-                    "ationException($\"バッチ {entity.Id} {entity.Name}: \'{entity.ClassName}\' クラスが{nameof" +
-                    "(BackgroundTask)}クラスを継承していません。\");\r\n\r\n                            var task = back" +
-                    "groundTask.ExecuteAsync(context, stoppingToken);\r\n                            ru" +
-                    "nningTasks.Add(entity.Id, task);\r\n                        \r\n                    " +
-                    "        logger.LogInformation(\"バッチ起動({Id} {Name})\", entity.Id, entity.Name);\r\n\r\n" +
-                    "                            entity.StartTime = now;\r\n                           " +
-                    " entity.State = E_BackgroundTaskState.Running;\r\n                            dbCo" +
-                    "ntext.SaveChanges();\r\n\r\n                        } catch (Exception ex) {\r\n      " +
-                    "                      logger.LogError(ex, \"バッチの起動に失敗しました({Id} {Name}): {Message}" +
-                    "\", entity.Id, entity.Name, ex.Message);\r\n                        }\r\n            " +
-                    "        }\r\n                }\r\n            } catch (Exception ex) {\r\n            " +
-                    "    logger.LogCritical(ex, \"バッチ起動監視処理でエラーが発生しました: {Message}\", ex.Message);\r\n    " +
-                    "        }\r\n\r\n            // 起動中ジョブの終了を待機\r\n            try {\r\n                log" +
-                    "ger.LogInformation(\"起動中ジョブの終了を待機します。\");\r\n                using var disposingScop" +
-                    "e = services.CreateScope();\r\n                Task.WaitAll(runningTasks.Values.To" +
-                    "Array(), CancellationToken.None);\r\n                var dbContext = disposingScop" +
-                    "e.ServiceProvider.GetRequiredService<RDRA.EntityFramework.MyDbContext>();\r\n     " +
-                    "           DetectFinishing(runningTasks, dbContext, logger);\r\n            } catc" +
-                    "h (Exception ex) {\r\n                logger.LogCritical(ex, \"バッチ起動監視処理(起動中ジョブの終了待" +
-                    "機)でエラーが発生しました: {Message}\", ex.Message);\r\n            }\r\n\r\n            logger.Log" +
-                    "Information($\"バッチ起動監視 終了\");\r\n        }\r\n\r\n        /// <summary>\r\n        /// 終了し" +
-                    "たタスクを検知して完了情報を記録します。\r\n        /// </summary>\r\n        private void DetectFinishi" +
-                    "ng(Dictionary<string, Task> runningTasks, ");
+                    "            var contextFactory = new BackgroundTaskContextFactory(now, services," +
+                    " directory);\r\n                    foreach (var entity in queued) {\r\n            " +
+                    "            try {\r\n                            var backgroundTask = FindTaskByID" +
+                    "(entity.BatchType);\r\n                            var executeArgument = CreateExe" +
+                    "cuteArgument(backgroundTask, entity, contextFactory, stoppingToken);\r\n\r\n        " +
+                    "                    var task = Task.Run(() => {\r\n                               " +
+                    " logger.LogInformation(\"バッチ実行開始 {Id} ({Type} {Name})\", entity.Id, entity.BatchTy" +
+                    "pe, entity.Name);\r\n                                backgroundTask.Execute(execut" +
+                    "eArgument);\r\n                                logger.LogInformation(\"バッチ実行終了 {Id}" +
+                    " ({Type} {Name})\", entity.Id, entity.BatchType, entity.Name);\r\n                 " +
+                    "           }, CancellationToken.None);\r\n                            runningTasks" +
+                    ".Add(entity.Id, task);\r\n\r\n                            entity.StartTime = now;\r\n " +
+                    "                           entity.State = E_BackgroundTaskState.Running;\r\n      " +
+                    "                      dbContext.SaveChanges();\r\n\r\n                        } catc" +
+                    "h (Exception ex) {\r\n                            logger.LogError(ex, \"バッチの起動に失敗しま" +
+                    "した({Id} {Name}): {Message}\", entity.Id, entity.Name, ex.Message);\r\n             " +
+                    "           }\r\n                    }\r\n                }\r\n            } catch (Exc" +
+                    "eption ex) {\r\n                logger.LogCritical(ex, \"バッチ起動監視処理でエラーが発生しました: {Mes" +
+                    "sage}\", ex.Message);\r\n            }\r\n\r\n            // 起動中ジョブの終了を待機\r\n            " +
+                    "try {\r\n                logger.LogInformation(\"起動中ジョブの終了を待機します。\");\r\n             " +
+                    "   using var disposingScope = services.CreateScope();\r\n                Task.Wait" +
+                    "All(runningTasks.Values.ToArray(), CancellationToken.None);\r\n                var" +
+                    " dbContext = disposingScope.ServiceProvider.GetRequiredService<RDRA.EntityFramew" +
+                    "ork.MyDbContext>();\r\n                DetectFinishing(runningTasks, dbContext, lo" +
+                    "gger);\r\n            } catch (Exception ex) {\r\n                logger.LogCritical" +
+                    "(ex, \"バッチ起動監視処理(起動中ジョブの終了待機)でエラーが発生しました: {Message}\", ex.Message);\r\n            }" +
+                    "\r\n\r\n            logger.LogInformation($\"バッチ起動監視 終了\");\r\n        }\r\n\r\n        /// " +
+                    "<summary>\r\n        /// バッチIDと対応するクラスのインスタンスを作成して返します。\r\n        /// </summary>\r\n " +
+                    "       private BackgroundTask FindTaskByID(string batchType) {\r\n            var " +
+                    "assembly = Assembly.GetExecutingAssembly();\r\n            var types = assembly\r\n " +
+                    "               .GetTypes()\r\n                .Select(type => new { type, attr = t" +
+                    "ype.GetCustomAttribute<BackgroundTaskAttribute>() })\r\n                .Where(x =" +
+                    "> x.attr?.Id == batchType)\r\n                .ToArray();\r\n            if (types.L" +
+                    "ength == 0)\r\n                throw new InvalidOperationException($\"バッチID \'{batch" +
+                    "Type}\' と対応するバッチが見つかりません。\");\r\n            if (types.Length >= 2)\r\n               " +
+                    " throw new InvalidOperationException($\"バッチID \'{batchType}\' と対応するバッチが複数見つかりました。\")" +
+                    ";\r\n\r\n            var type = types[0].type;\r\n            var instance = Activator" +
+                    ".CreateInstance(type) ?? throw new InvalidOperationException($\"バッチ {batchType}: " +
+                    "\'{type.Name}\' クラスのインスタンス化に失敗しました。引数なしコンストラクタがあるか等確認してください。\");\r\n            if (i" +
+                    "nstance is not BackgroundTask backgroundTask) throw new InvalidOperationExceptio" +
+                    "n($\"バッチ {batchType}: \'{type.Name}\' クラスは{nameof(BackgroundTask)}クラスを継承している必要があります" +
+                    "。\");\r\n            return backgroundTask;\r\n        }\r\n        \r\n        /// <summ" +
+                    "ary>\r\n        /// ジョブの起動指示をもとに実行用のオブジェクトを作成して返します。\r\n        /// </summary>\r\n    " +
+                    "    private static JobChain CreateExecuteArgument(BackgroundTask backgroundTask," +
+                    " ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(EntityNamespace));
+            this.Write(".BackgroundTaskEntity entity, BackgroundTaskContextFactory contextFactory, Cancel" +
+                    "lationToken stoppingToken) {\r\n            var type = backgroundTask.GetType();\r\n" +
+                    "\r\n            while (type != null && type != typeof(object)) {\r\n                " +
+                    "// パラメータなしの場合\r\n                if (type == typeof(BackgroundTask)) {\r\n          " +
+                    "          return new JobChain(entity.Id, new(), contextFactory, stoppingToken);\r" +
+                    "\n                }\r\n                // パラメータありの場合\r\n                if (type.IsGe" +
+                    "nericType && type.GetGenericTypeDefinition() == typeof(BackgroundTask<>)) {\r\n   " +
+                    "                 var genericType = type.GetGenericArguments()[0];\r\n\r\n           " +
+                    "         object parsed;\r\n                    try {\r\n                        pars" +
+                    "ed = JsonSerializer.Deserialize(entity.ParameterJson, genericType)!;\r\n          " +
+                    "          } catch (JsonException ex) {\r\n                        throw new Invali" +
+                    "dOperationException($\"バッチID {entity.Id} のパラメータを {genericType.Name} 型のJSONとして解釈でき" +
+                    "ません。\", ex);\r\n                    }\r\n\r\n                    var jobChainType = typ" +
+                    "eof(JobChainWithParameter<>).MakeGenericType(genericType);\r\n                    " +
+                    "return (JobChain)Activator.CreateInstance(jobChainType, new object[] {\r\n        " +
+                    "                entity.Id,\r\n                        parsed,\r\n                   " +
+                    "     new Stack<string>(),\r\n                        contextFactory,\r\n            " +
+                    "            stoppingToken,\r\n                    })!;\r\n                }\r\n       " +
+                    "         type = type.BaseType;\r\n            }\r\n\r\n            throw new InvalidOp" +
+                    "erationException();\r\n        }\r\n\r\n        /// <summary>\r\n        /// 終了したタスクを検知し" +
+                    "て完了情報を記録します。\r\n        /// </summary>\r\n        private void DetectFinishing(Dicti" +
+                    "onary<string, Task> runningTasks, ");
             this.Write(this.ToStringHelper.ToStringWithCulture(DbContextFullName));
             this.Write(@" dbContext, ILogger logger) {
             // 終了したバッチを列挙
@@ -145,34 +189,52 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService
 
 namespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(RootNamespace));
-            this.Write(@" {
-    public abstract class BackgroundTask {
-        public abstract Task ExecuteAsync(BackgroundTaskContext context, CancellationToken cancellationToken);
-    }
-
-    public enum E_BackgroundTaskState {
-        WaitToStart = 0,
-        Running = 1,
-        Success = 2,
-        Fault = 3,
-    }
-
-    public sealed class BackgroundTaskContext {
-        public required DateTime StartTime { get; init; }
-        public required IServiceProvider ServiceProvider { get; init; }
-        public ILogger Logger => ServiceProvider.GetRequiredService<ILogger>();
-        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(DbContextFullName));
-            this.Write(" DbContext => ServiceProvider.GetRequiredService<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(DbContextFullName));
-            this.Write(">();\r\n    }\r\n\r\n}\r\n\r\nnamespace ");
+            this.Write(" {\r\n    public enum E_BackgroundTaskState {\r\n        WaitToStart = 0,\r\n        Ru" +
+                    "nning = 1,\r\n        Success = 2,\r\n        Fault = 3,\r\n    }\r\n\r\n    public sealed" +
+                    " class BackgroundTaskContextFactory {\r\n        public BackgroundTaskContextFacto" +
+                    "ry(DateTime startTime, IServiceProvider serviceProvider, string directory) {\r\n  " +
+                    "          _startTime = startTime;\r\n            _serviceProvider = serviceProvide" +
+                    "r;\r\n            _directory = directory;\r\n        }\r\n        private readonly Dat" +
+                    "eTime _startTime;\r\n        private readonly IServiceProvider _serviceProvider;\r\n" +
+                    "        private readonly string _directory;\r\n\r\n        public BackgroundTaskCont" +
+                    "ext CraeteScopedContext(string jobId) {\r\n            var scope = _serviceProvide" +
+                    "r.CreateScope();\r\n            var dirName = $\"{_startTime:yyyyMMddHHmmss}_{jobId" +
+                    "}\";\r\n            var workingDirectory = Path.Combine(_directory, dirName);\r\n    " +
+                    "        return new BackgroundTaskContext(scope, _startTime, workingDirectory);\r\n" +
+                    "        }\r\n        public BackgroundTaskContext<TParameter> CraeteScopedContext<" +
+                    "TParameter>(string jobId, TParameter parameter) {\r\n            var scope = _serv" +
+                    "iceProvider.CreateScope();\r\n            var dirName = $\"{_startTime:yyyyMMddHHmm" +
+                    "ss}_{jobId}\";\r\n            var workingDirectory = Path.Combine(_directory, dirNa" +
+                    "me);\r\n            return new BackgroundTaskContext<TParameter>(parameter, scope," +
+                    " _startTime, workingDirectory);\r\n        }\r\n    }\r\n\r\n    public class Background" +
+                    "TaskContext : IDisposable {\r\n        public BackgroundTaskContext(IServiceScope " +
+                    "serviceScope, DateTime startTime, string workingDirectory) {\r\n            StartT" +
+                    "ime = startTime;\r\n            WorkingDirectory = workingDirectory;\r\n            " +
+                    "_serviceScope = serviceScope;\r\n        }\r\n\r\n        private readonly IServiceSco" +
+                    "pe _serviceScope;\r\n\r\n        public DateTime StartTime { get; }\r\n        public " +
+                    "string WorkingDirectory { get; }\r\n\r\n        public IServiceProvider ServiceProvi" +
+                    "der => _serviceScope.ServiceProvider;\r\n        public ILogger Logger => ServiceP" +
+                    "rovider.GetRequiredService<ILogger>();\r\n        public RDRA.EntityFramework.MyDb" +
+                    "Context DbContext => ServiceProvider.GetRequiredService<RDRA.EntityFramework.MyD" +
+                    "bContext>();\r\n\r\n        void IDisposable.Dispose() {\r\n            _serviceScope." +
+                    "Dispose();\r\n        }\r\n    }\r\n    public class BackgroundTaskContext<TParameter>" +
+                    " : BackgroundTaskContext {\r\n        public BackgroundTaskContext(TParameter para" +
+                    "meter, IServiceScope serviceScope, DateTime startTime, string workingDirectory)\r" +
+                    "\n            : base(serviceScope, startTime, workingDirectory) {\r\n            Pa" +
+                    "rameter = parameter;\r\n        }\r\n        public TParameter Parameter { get; }\r\n " +
+                    "   }\r\n\r\n    [System.AttributeUsage(AttributeTargets.Class, Inherited = false, Al" +
+                    "lowMultiple = false)]\r\n    sealed class BackgroundTaskAttribute : Attribute {\r\n " +
+                    "       public BackgroundTaskAttribute(string id) {\r\n            Id = id;\r\n      " +
+                    "  }\r\n        public string Id { get; }\r\n        public string? DisplayName { get" +
+                    "; set; }\r\n    }\r\n}\r\n\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(EntityNamespace));
             this.Write(@" {
     public class BackgroundTaskEntity {
         public string Id { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
+        public string BatchType { get; set; } = string.Empty;
+        public string ParameterJson { get; set; } = string.Empty;
         public E_BackgroundTaskState State { get; set; }
-        public string ClassName { get; set; } = string.Empty;
         public DateTime RequestTime { get; set; }
         public DateTime? StartTime { get; set; }
         public DateTime? FinishTime { get; set; }

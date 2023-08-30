@@ -49,26 +49,45 @@ namespace HalApplicationBuilder.CodeRendering.Util
             
             #line default
             #line hidden
-            this.Write("(string logDirectory) {\r\n            _logDirectory = logDirectory;\r\n        }\r\n  " +
-                    "      private readonly string _logDirectory;\r\n        private bool _directoryCra" +
-                    "eted = false;\r\n\r\n        public IDisposable? BeginScope<TState>(TState state) wh" +
-                    "ere TState : notnull {\r\n            return default;\r\n        }\r\n\r\n        public" +
-                    " bool IsEnabled(LogLevel logLevel) {\r\n            return true;\r\n        }\r\n\r\n   " +
-                    "     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, E" +
-                    "xception? exception, Func<TState, Exception?, string> formatter) {\r\n            " +
-                    "if (!_directoryCraeted) {\r\n                if (!Directory.Exists(_logDirectory))" +
-                    " {\r\n                    Directory.CreateDirectory(_logDirectory);\r\n             " +
-                    "   }\r\n                _directoryCraeted = true;\r\n            }\r\n\r\n            va" +
-                    "r now = DateTime.Now;\r\n            var file = Path.Combine(_logDirectory, $\"{now" +
-                    ":yyyyMMdd}.log\");\r\n            using var streamWriter = new StreamWriter(file, a" +
-                    "ppend: true, encoding: Encoding.UTF8);\r\n            using var textWriter = TextW" +
-                    "riter.Synchronized(streamWriter);\r\n\r\n            var header = $\"{now:G}\\t[{logLe" +
-                    "vel}]\";\r\n            textWriter.WriteLine($\"{header}\\t{formatter(state, exceptio" +
-                    "n)}\");\r\n\r\n            if (exception != null) {\r\n                textWriter.Write" +
-                    "Line($\"---------------------------------------------------\");\r\n                t" +
-                    "extWriter.WriteLine($\"{exception}\");\r\n                textWriter.WriteLine($\"---" +
-                    "------------------------------------------------\");\r\n            }\r\n        }\r\n " +
-                    "   }\r\n}\r\n");
+            this.Write(@"(string? logDirectory) {
+            _logDirectory = logDirectory ?? ""job"";
+        }
+        private readonly string _logDirectory;
+        private bool _directoryCraeted = false;
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull {
+            return default;
+        }
+
+        public bool IsEnabled(LogLevel logLevel) {
+            return true;
+        }
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) {
+            if (!_directoryCraeted) {
+                if (!Directory.Exists(_logDirectory)) {
+                    Directory.CreateDirectory(_logDirectory);
+                }
+                _directoryCraeted = true;
+            }
+
+            var now = DateTime.Now;
+            var file = Path.Combine(_logDirectory, $""{now:yyyyMMdd}.log"");
+            using var streamWriter = new StreamWriter(file, append: true, encoding: Encoding.UTF8);
+            using var textWriter = TextWriter.Synchronized(streamWriter);
+
+            var header = $""{now:G}\t[{logLevel}]"";
+            textWriter.WriteLine($""{header}\t{formatter(state, exception)}"");
+
+            if (exception != null) {
+                textWriter.WriteLine($"""");
+                textWriter.WriteLine($""{exception}"");
+                textWriter.WriteLine($"""");
+            }
+        }
+    }
+}
+");
             return this.GenerationEnvironment.ToString();
         }
     }

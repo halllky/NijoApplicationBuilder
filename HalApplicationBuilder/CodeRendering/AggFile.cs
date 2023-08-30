@@ -46,9 +46,9 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write("> logger, ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
             this.Write(" dbContext) {\r\n            _logger = logger;\r\n            _dbContext = dbContext;" +
-                    "\r\n        }\r\n        private readonly ILogger<");
+                    "\r\n        }\r\n        protected readonly ILogger<");
             this.Write(this.ToStringHelper.ToStringWithCulture(_controller.ClassName));
-            this.Write("> _logger;\r\n        private readonly ");
+            this.Write("> _logger;\r\n        protected readonly ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
             this.Write(" _dbContext;\r\n\r\n        [HttpPost(\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(Controller.CREATE_ACTION_NAME));

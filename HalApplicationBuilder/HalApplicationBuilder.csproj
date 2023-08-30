@@ -34,6 +34,10 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>AggFile.cs</LastGenOutput>
 		</None>
+		<None Update="CodeRendering\BackgroundService\BackgroundTask.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>BackgroundTask.cs</LastGenOutput>
+		</None>
 		<None Update="CodeRendering\BackgroundService\BackgroundTaskLauncher.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>BackgroundTaskLauncher.cs</LastGenOutput>
@@ -184,6 +188,11 @@
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>AggFile.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering\BackgroundService\BackgroundTask.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>BackgroundTask.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering\BackgroundService\BackgroundTaskLauncher.cs">
 		  <DesignTime>True</DesignTime>

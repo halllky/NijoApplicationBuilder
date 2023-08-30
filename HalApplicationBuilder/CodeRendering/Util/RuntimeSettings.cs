@@ -46,43 +46,26 @@ namespace HalApplicationBuilder.CodeRendering.Util
         /// </summary>
         public class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(SERVER));
-            this.Write(@" {
-            /// <summary>
-            /// ログ出力先ディレクトリ
-            /// </summary>
-            [JsonPropertyName(""log"")]
-            public string? LogDirectory { get; set; }
-
-            /// <summary>
-            /// 現在接続中のDBの名前。 <see cref=""DbProfiles""/> のいずれかのキーと一致
-            /// </summary>
-            [JsonPropertyName(""currentDb"")]
-            public string? CurrentDb { get; set; }
-
-            [JsonPropertyName(""db"")]
-            public List<DbProfile> DbProfiles { get; set; } = new();
-            public class DbProfile {
-                [JsonPropertyName(""name"")]
-                public string Name { get; set; } = string.Empty;
-                [JsonPropertyName(""connStr"")]
-                public string ConnStr { get; set; } = string.Empty;
-            }
-            
-            /// <summary>
-            /// バックグラウンド処理に関する設定
-            /// </summary>
-            [JsonPropertyName(""backgroundTask"")]
-            public BackgroundTaskSetting BackgroundTask { get; set; } = new();
-            public class BackgroundTaskSetting {
-                /// <summary>
-                /// ポーリング間隔（ミリ秒）
-                /// </summary>
-                [JsonPropertyName(""pollingSpanMilliSeconds"")]
-                public int PollingSpanMilliSeconds { get; set; } = 5000;
-            }
-
-
-            public string ");
+            this.Write(" {\r\n            /// <summary>\r\n            /// ログ出力先ディレクトリ\r\n            /// </sum" +
+                    "mary>\r\n            [JsonPropertyName(\"log\")]\r\n            public string? LogDire" +
+                    "ctory { get; set; }\r\n            /// <summary>\r\n            /// バッチ実行結果出力先ディレクトリ" +
+                    "\r\n            /// </summary>\r\n            [JsonPropertyName(\"job\")]\r\n           " +
+                    " public string? JobDirectory { get; set; }\r\n\r\n            /// <summary>\r\n       " +
+                    "     /// 現在接続中のDBの名前。 <see cref=\"DbProfiles\"/> のいずれかのキーと一致\r\n            /// </su" +
+                    "mmary>\r\n            [JsonPropertyName(\"currentDb\")]\r\n            public string? " +
+                    "CurrentDb { get; set; }\r\n\r\n            [JsonPropertyName(\"db\")]\r\n            pub" +
+                    "lic List<DbProfile> DbProfiles { get; set; } = new();\r\n            public class " +
+                    "DbProfile {\r\n                [JsonPropertyName(\"name\")]\r\n                public " +
+                    "string Name { get; set; } = string.Empty;\r\n                [JsonPropertyName(\"co" +
+                    "nnStr\")]\r\n                public string ConnStr { get; set; } = string.Empty;\r\n " +
+                    "           }\r\n            \r\n            /// <summary>\r\n            /// バックグラウンド処" +
+                    "理に関する設定\r\n            /// </summary>\r\n            [JsonPropertyName(\"backgroundTa" +
+                    "sk\")]\r\n            public BackgroundTaskSetting BackgroundTask { get; set; } = n" +
+                    "ew();\r\n            public class BackgroundTaskSetting {\r\n                /// <su" +
+                    "mmary>\r\n                /// ポーリング間隔（ミリ秒）\r\n                /// </summary>\r\n      " +
+                    "          [JsonPropertyName(\"pollingSpanMilliSeconds\")]\r\n                public " +
+                    "int PollingSpanMilliSeconds { get; set; } = 5000;\r\n            }\r\n\r\n\r\n          " +
+                    "  public string ");
             this.Write(this.ToStringHelper.ToStringWithCulture(GET_ACTIVE_CONNSTR));
             this.Write(@"() {
                 if (string.IsNullOrWhiteSpace(CurrentDb))
@@ -121,6 +104,7 @@ namespace HalApplicationBuilder.CodeRendering.Util
             this.Write(this.ToStringHelper.ToStringWithCulture(SERVER));
             this.Write(@" {
                     LogDirectory = ""log"",
+                    JobDirectory = ""job"",
                     CurrentDb = ""SQLITE"",
                     DbProfiles = new List<DbProfile> {
                         new DbProfile { Name = ""SQLITE"", ConnStr = connStr.ToString() },
