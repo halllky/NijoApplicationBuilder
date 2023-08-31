@@ -42,6 +42,10 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>BackgroundTaskLauncher.cs</LastGenOutput>
 		</None>
+		<None Update="CodeRendering\BackgroundService\BackgroundTaskListController.tt">
+		  <Generator>TextTemplatingFilePreprocessor</Generator>
+		  <LastGenOutput>BackgroundTaskListController.cs</LastGenOutput>
+		</None>
 		<None Update="CodeRendering\Configure.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>Configure.cs</LastGenOutput>
@@ -198,6 +202,11 @@
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>BackgroundTaskLauncher.tt</DependentUpon>
+		</Compile>
+		<Compile Update="CodeRendering\BackgroundService\BackgroundTaskListController.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>BackgroundTaskListController.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering\Configure.cs">
 		  <DesignTime>True</DesignTime>

@@ -6,6 +6,7 @@ import { MyAccount } from './MyAccount'
 import { SettingsScreen } from './Settings'
 import { SideMenu } from './SideMenu';
 import { UnCommitChanges } from './UnCommitChanges'
+import BackgroundTaskList from './BackgroundTaskList'
 import { routes } from '..';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import React from 'react';
@@ -37,6 +38,7 @@ function HalappRoot({ children }: {
               <Routes>
                 <Route path='/' element={<Dashboard />} />
                 <Route path='/changes' element={<UnCommitChanges />} />
+                <Route path='/bagkground-tasks' element={<BackgroundTaskList />} />
                 <Route path='/settings' element={<SettingsScreen />} />
                 <Route path='/account' element={<MyAccount />} />
                 {routes.map(route =>
