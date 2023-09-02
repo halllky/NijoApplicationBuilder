@@ -133,7 +133,13 @@ namespace HalApplicationBuilder {
                     genDir.Directory("BackgroundService", bsDir => {
                         bsDir.Generate(new CodeRendering.BackgroundService.BackgroundTaskLauncher(ctx));
                         bsDir.Generate(new CodeRendering.BackgroundService.BackgroundTask { Context = ctx });
-                        bsDir.Generate(new CodeRendering.BackgroundService.BackgroundTaskListController(ctx));
+
+                        var bgTaskSearch = CodeRendering.BackgroundService.BackgroundTaskEntity.CreateSearchFeature(appSchema.Graph, ctx);
+                        bsDir.Generate("BackgroundTaskController.cs", bgTaskSearch.RenderControllerAction());
+                        bsDir.Generate("BackgroundTaskSearchClass.cs", bgTaskSearch.RenderCSharpClassDef());
+                        bsDir.Generate("BackgroundTaskDbContextSearch.cs", bgTaskSearch.RenderDbContextMethod());
+
+                        bsDir.DeleteOtherFiles();
                     });
                     genDir.DeleteOtherFiles();
                 });
@@ -190,6 +196,12 @@ namespace HalApplicationBuilder {
                             aggregateDir.DeleteOtherFiles();
                         });
                     }
+
+                    pageDir.Directory("BackgroundTask", bgTaskDir => {
+                        var bgTaskSearch = CodeRendering.BackgroundService.BackgroundTaskEntity.CreateSearchFeature(appSchema.Graph, ctx);
+                        bgTaskDir.Generate(bgTaskSearch.CreateReactPage());
+                    });
+
                     pageDir.DeleteOtherFiles();
                 });
                 reactDir.DeleteOtherFiles();
@@ -265,13 +277,16 @@ namespace HalApplicationBuilder {
                 fn(new DirectorySetupper(System.IO.Path.Combine(Path, relativePath)));
             }
 
-            internal void Generate(ITemplate template) {
-                var file = System.IO.Path.Combine(Path, template.FileName);
+            internal void Generate(string filename, string content) {
+                var file = System.IO.Path.Combine(Path, filename);
 
                 _generated.Add(file);
 
                 using var sw = new StreamWriter(file, append: false, encoding: GetEncoding(file));
-                sw.WriteLine(template.TransformText());
+                sw.WriteLine(content);
+            }
+            internal void Generate(ITemplate template) {
+                Generate(template.FileName, template.TransformText());
             }
             internal void CopyFrom(string copySourceFile) {
                 var copyTargetFile = System.IO.Path.Combine(Path, System.IO.Path.GetFileName(copySourceFile));

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static HalApplicationBuilder.CodeRendering.BackgroundService.BackgroundTaskEntity;
 
 namespace HalApplicationBuilder.CodeRendering.BackgroundService {
     internal class BackgroundTaskLauncher : TemplateBase {
@@ -17,6 +18,7 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
 
         protected override string Template() {
             var dbContextFullName = $"{_ctx.Config.DbContextNamespace}.{_ctx.Config.DbContextName}";
+            var dbSetName = CreateEntity().DbSetName;
 
             return $$"""
                 using Microsoft.EntityFrameworkCore;
@@ -67,7 +69,7 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
 
                                     // 起動対象バッチがあるかどうか検索
                                     var queued = dbContext
-                                        .BackgroundTasks
+                                        .{{dbSetName}}
                                         .Where(task => task.State == E_BackgroundTaskState.WaitToStart)
                                         .OrderBy(task => task.RequestTime)
                                         .Take(5)
@@ -79,22 +81,22 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
                                     var contextFactory = new BackgroundTaskContextFactory(now, services, directory);
                                     foreach (var entity in queued) {
                                         try {
-                                            var backgroundTask = FindTaskByID(entity.BatchType);
+                                            var backgroundTask = FindTaskByID(entity.{{COL_BATCHTYPE}});
                                             var executeArgument = CreateExecuteArgument(backgroundTask, entity, contextFactory, stoppingToken);
 
                                             var task = Task.Run(() => {
-                                                logger.LogInformation("バッチ実行開始 {Id} ({Type} {Name})", entity.Id, entity.BatchType, entity.Name);
+                                                logger.LogInformation("バッチ実行開始 {Id} ({Type} {Name})", entity.{{COL_ID}}, entity.{{COL_BATCHTYPE}}, entity.{{COL_NAME}});
                                                 backgroundTask.Execute(executeArgument);
-                                                logger.LogInformation("バッチ実行終了 {Id} ({Type} {Name})", entity.Id, entity.BatchType, entity.Name);
+                                                logger.LogInformation("バッチ実行終了 {Id} ({Type} {Name})", entity.{{COL_ID}}, entity.{{COL_BATCHTYPE}}, entity.{{COL_NAME}});
                                             }, CancellationToken.None);
-                                            runningTasks.Add(entity.Id, task);
+                                            runningTasks.Add(entity.{{COL_ID}}, task);
 
-                                            entity.StartTime = now;
-                                            entity.State = E_BackgroundTaskState.Running;
+                                            entity.{{COL_STARTTIME}} = now;
+                                            entity.{{COL_STATE}} = E_BackgroundTaskState.Running;
                                             dbContext.SaveChanges();
 
                                         } catch (Exception ex) {
-                                            logger.LogError(ex, "バッチの起動に失敗しました({Id} {Name}): {Message}", entity.Id, entity.Name, ex.Message);
+                                            logger.LogError(ex, "バッチの起動に失敗しました({Id} {Name}): {Message}", entity.{{COL_ID}}, entity.{{COL_NAME}}, ex.Message);
                                         }
                                     }
                                 }
@@ -107,7 +109,7 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
                                 logger.LogInformation("起動中ジョブの終了を待機します。");
                                 using var disposingScope = services.CreateScope();
                                 Task.WaitAll(runningTasks.Values.ToArray(), CancellationToken.None);
-                                var dbContext = disposingScope.ServiceProvider.GetRequiredService<RDRA.EntityFramework.MyDbContext>();
+                                var dbContext = disposingScope.ServiceProvider.GetRequiredService<{{dbContextFullName}}>();
                                 DetectFinishing(runningTasks, dbContext, logger);
                             } catch (Exception ex) {
                                 logger.LogCritical(ex, "バッチ起動監視処理(起動中ジョブの終了待機)でエラーが発生しました: {Message}", ex.Message);
@@ -146,7 +148,7 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
                             while (type != null && type != typeof(object)) {
                                 // パラメータなしの場合
                                 if (type == typeof(BackgroundTask)) {
-                                    return new JobChain(entity.Id, new(), contextFactory, stoppingToken);
+                                    return new JobChain(entity.{{COL_ID}}, new(), contextFactory, stoppingToken);
                                 }
                                 // パラメータありの場合
                                 if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(BackgroundTask<>)) {
@@ -154,14 +156,14 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
 
                                     object parsed;
                                     try {
-                                        parsed = JsonSerializer.Deserialize(entity.ParameterJson, genericType)!;
+                                        parsed = JsonSerializer.Deserialize(entity.{{COL_PARAMETERJSON}}, genericType)!;
                                     } catch (JsonException ex) {
-                                        throw new InvalidOperationException($"バッチID {entity.Id} のパラメータを {genericType.Name} 型のJSONとして解釈できません。", ex);
+                                        throw new InvalidOperationException($"バッチID {entity.{{COL_ID}}} のパラメータを {genericType.Name} 型のJSONとして解釈できません。", ex);
                                     }
 
                                     var jobChainType = typeof(JobChainWithParameter<>).MakeGenericType(genericType);
                                     return (JobChain)Activator.CreateInstance(jobChainType, new object[] {
-                                        entity.Id,
+                                        entity.{{COL_ID}},
                                         parsed,
                                         new Stack<string>(),
                                         contextFactory,
@@ -187,7 +189,7 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
                             // バッチと対応するデータをDBから検索
                             var ids = completedTasks.Keys.ToArray();
                             var entities = dbContext
-                                .BackgroundTasks
+                                .{{dbSetName}}
                                 .Where(e => ids.Contains(e.Id))
                                 .ToDictionary(e => e.Id);
                             var list = completedTasks.ToDictionary(
@@ -259,7 +261,7 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
 
                         public IServiceProvider ServiceProvider => _serviceScope.ServiceProvider;
                         public ILogger Logger => ServiceProvider.GetRequiredService<ILogger>();
-                        public RDRA.EntityFramework.MyDbContext DbContext => ServiceProvider.GetRequiredService<RDRA.EntityFramework.MyDbContext>();
+                        public {{dbContextFullName}} DbContext => ServiceProvider.GetRequiredService<{{dbContextFullName}}>();
 
                         void IDisposable.Dispose() {
                             _serviceScope.Dispose();
@@ -284,27 +286,27 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
                 }
 
                 namespace {{_ctx.Config.EntityNamespace}} {
-                    public class BackgroundTaskEntity {
+                    public class {{BackgroundTaskEntity.CLASSNAME}} {
                         [JsonPropertyName("id")]
-                        public string Id { get; set; } = string.Empty;
+                        public string {{COL_ID}} { get; set; } = string.Empty;
                         [JsonPropertyName("name")]
-                        public string Name { get; set; } = string.Empty;
+                        public string {{COL_NAME}} { get; set; } = string.Empty;
                         [JsonPropertyName("batchType")]
-                        public string BatchType { get; set; } = string.Empty;
+                        public string {{COL_BATCHTYPE}} { get; set; } = string.Empty;
                         [JsonPropertyName("parameter")]
-                        public string ParameterJson { get; set; } = string.Empty;
+                        public string {{COL_PARAMETERJSON}} { get; set; } = string.Empty;
                         [JsonPropertyName("state")]
-                        public E_BackgroundTaskState State { get; set; }
+                        public E_BackgroundTaskState {{COL_STATE}} { get; set; }
                         [JsonPropertyName("requestTime")]
-                        public DateTime RequestTime { get; set; }
+                        public DateTime {{COL_REQUESTTIME}} { get; set; }
                         [JsonPropertyName("startTime")]
-                        public DateTime? StartTime { get; set; }
+                        public DateTime? {{COL_STARTTIME}} { get; set; }
                         [JsonPropertyName("finishTime")]
-                        public DateTime? FinishTime { get; set; }
+                        public DateTime? {{COL_FINISHTIME}} { get; set; }
 
                         public static void OnModelCreating(ModelBuilder modelBuilder) {
-                            modelBuilder.Entity<BackgroundTaskEntity>(e => {
-                                e.HasKey(e => e.Id);
+                            modelBuilder.Entity<{{BackgroundTaskEntity.CLASSNAME}}>(e => {
+                                e.HasKey(e => e.{{COL_ID}});
                             });
                         }
                     }
@@ -312,7 +314,7 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
 
                 namespace {{_ctx.Config.DbContextNamespace}} {
                     partial class {{_ctx.Config.DbContextName}} {
-                        public virtual DbSet<{{_ctx.Config.EntityNamespace}}.BackgroundTaskEntity> BackgroundTasks { get; set; }
+                        public virtual DbSet<{{_ctx.Config.EntityNamespace}}.{{BackgroundTaskEntity.CLASSNAME}}> {{dbSetName}} { get; set; }
                     }
                 }
             

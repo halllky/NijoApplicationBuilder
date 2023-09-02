@@ -19,7 +19,7 @@ namespace HalApplicationBuilder.CodeRendering {
             _dbEntity = aggregate.GetDbEntity().AsEntry().As<EFCoreEntity>();
             _aggregateInstance = aggregate.GetInstanceClass().AsEntry().As<AggregateInstance>();
 
-            _controller = new Controller(_aggregate);
+            _controller = new WebClient.Controller(_aggregate.Item, ctx);
             _create = new CreateMethod(this, ctx);
             _search = new Search.SearchFeature(_dbEntity, ctx);
             _update = new UpdateMethod(this, ctx);
@@ -387,33 +387,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
 
         #region CONTROLLER
-        private readonly Controller _controller;
-        internal class Controller {
-            internal Controller(GraphNode<Aggregate> aggregate) {
-                _aggregate = aggregate;
-            }
-
-            private readonly GraphNode<Aggregate> _aggregate;
-
-            internal string ClassName => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}Controller";
-
-            internal const string SEARCH_ACTION_NAME = "list";
-            internal const string CREATE_ACTION_NAME = "create";
-            internal const string UPDATE_ACTION_NAME = "update";
-            internal const string DELETE_ACTION_NAME = "delete";
-            internal const string FIND_ACTION_NAME = "detail";
-            internal const string KEYWORDSEARCH_ACTION_NAME = "list-by-keyword";
-
-            internal const string SUBDOMAIN = "api";
-
-            internal string SubDomain => $"{SUBDOMAIN}/{_aggregate.Item.DisplayName.ToCSharpSafe()}";
-            internal string SearchCommandApi => $"/{SubDomain}/{SEARCH_ACTION_NAME}";
-            internal string CreateCommandApi => $"/{SubDomain}/{CREATE_ACTION_NAME}";
-            internal string UpdateCommandApi => $"/{SubDomain}/{UPDATE_ACTION_NAME}";
-            internal string DeleteCommandApi => $"/{SubDomain}/{DELETE_ACTION_NAME}";
-            internal string FindCommandApi => $"/{SubDomain}/{FIND_ACTION_NAME}";
-            internal string KeywordSearchCommandApi => $"/{SubDomain}/{KEYWORDSEARCH_ACTION_NAME}";
-        }
+        private readonly WebClient.Controller _controller;
         #endregion CONTROLLER
     }
 }

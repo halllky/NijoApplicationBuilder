@@ -8,19 +8,20 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Core {
     internal class EFCoreEntity : IGraphNode {
-        internal EFCoreEntity(Aggregate aggregate) {
-            // TODO 集約IDにコロンが含まれるケースの対策
-            Id = new NodeId($"DBENTITY::{aggregate.Id}");
-            ClassName = aggregate.DisplayName.ToCSharpSafe();
+        internal EFCoreEntity(Aggregate aggregate) : this(
+            new NodeId($"DBENTITY::{aggregate.Id}"),
+            aggregate.DisplayName.ToCSharpSafe()) {
         }
-        internal EFCoreEntity(NodeId id, string name) {
+        internal EFCoreEntity(NodeId id, string name, IList<SchalarMemberNotRelatedToAggregate>? schalarMembers = null) {
             Id = id;
             ClassName = name;
+            SchalarMembersNotRelatedToAggregate = schalarMembers ?? new List<SchalarMemberNotRelatedToAggregate>();
         }
 
         public NodeId Id { get; }
         internal string ClassName { get; }
         internal string DbSetName => ClassName;
+        internal IList<SchalarMemberNotRelatedToAggregate> SchalarMembersNotRelatedToAggregate;
 
         internal const string KEYEQUALS = "KeyEquals";
 
@@ -41,6 +42,16 @@ namespace HalApplicationBuilder.Core {
                 yield return Owner;
                 yield return PropertyName;
             }
+        }
+        /// <summary>
+        /// 集約に関係しないスカラー値メンバー
+        /// </summary>
+        internal class SchalarMemberNotRelatedToAggregate {
+            internal required string PropertyName { get; init; }
+            internal required bool IsPrimary { get; init; }
+            internal required bool IsInstanceName { get; init; }
+            internal required IAggregateMemberType MemberType { get; init; }
+            internal bool RequiredAtDB { get; init; }
         }
     }
 
@@ -156,6 +167,20 @@ namespace HalApplicationBuilder.Core {
                 }
             }
             // スカラー値
+            foreach (var member in dbEntity.Item.SchalarMembersNotRelatedToAggregate) {
+                yield return new EFCoreEntity.Member {
+                    Owner = dbEntity,
+                    PropertyName = member.PropertyName,
+                    IsPrimary = member.IsPrimary,
+                    IsInstanceName = member.IsInstanceName,
+                    MemberType = member.MemberType,
+                    CSharpTypeName = member.MemberType.GetCSharpTypeName(),
+                    TypeScriptTypename = member.MemberType.GetTypeScriptTypeName(),
+                    RequiredAtDB = member.RequiredAtDB,
+                    CorrespondingParentColumn = null,
+                    CorrespondingRefTargetColumn = null,
+                };
+            }
             var aggregate = dbEntity.GetCorrespondingAggregate();
             if (aggregate != null) {
                 foreach (var member in aggregate.Item.Members) {
@@ -201,7 +226,6 @@ namespace HalApplicationBuilder.Core {
                     MemberType = new VariationSwitch(),
                     CSharpTypeName = "string",
                     TypeScriptTypename = "string",
-                    Initializer = "default",
                     RequiredAtDB = true,
                     CorrespondingParentColumn = null,
                     CorrespondingRefTargetColumn = null,

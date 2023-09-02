@@ -349,11 +349,18 @@ namespace HalApplicationBuilder.Core {
             });
 
             // ---------------------------------------------------------
+            // 基盤機能
+            var halappEntities = new IGraphNode[] {
+                CodeRendering.BackgroundService.BackgroundTaskEntity.CreateEntity(),
+            };
+
+            // ---------------------------------------------------------
             // グラフを作成して返す
             var nodes = aggregates.Values
                 .Cast<IGraphNode>()
                 .Concat(dbEntities)
-                .Concat(aggregateInstances);
+                .Concat(aggregateInstances)
+                .Concat(halappEntities);
             var edges = aggregateEdges
                 .Concat(dbEntityEdges)
                 .Concat(entityToAggregate)

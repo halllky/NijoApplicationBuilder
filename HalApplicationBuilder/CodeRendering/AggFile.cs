@@ -35,23 +35,10 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.RootNamespace));
             this.Write(" {\r\n    using Microsoft.AspNetCore.Mvc;\r\n    using ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
-            this.Write(";\r\n\r\n    [ApiController]\r\n    [Route(\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Controller.SUBDOMAIN));
-            this.Write("/[controller]\")]\r\n    public partial class ");
+            this.Write(";\r\n\r\n    partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_controller.ClassName));
-            this.Write(" : ControllerBase {\r\n        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_controller.ClassName));
-            this.Write("(ILogger<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_controller.ClassName));
-            this.Write("> logger, ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
-            this.Write(" dbContext) {\r\n            _logger = logger;\r\n            _dbContext = dbContext;" +
-                    "\r\n        }\r\n        protected readonly ILogger<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_controller.ClassName));
-            this.Write("> _logger;\r\n        protected readonly ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
-            this.Write(" _dbContext;\r\n\r\n        [HttpPost(\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Controller.CREATE_ACTION_NAME));
+            this.Write(" : ControllerBase {\r\n        [HttpPost(\"");
+            this.Write(this.ToStringHelper.ToStringWithCulture(WebClient.Controller.CREATE_ACTION_NAME));
             this.Write("\")]\r\n        public virtual IActionResult Create([FromBody] ");
             this.Write(this.ToStringHelper.ToStringWithCulture(CreateCommandClassName));
             this.Write(" param) {\r\n            if (_dbContext.");
@@ -100,16 +87,17 @@ namespace HalApplicationBuilder.CodeRendering
 
 #region 一覧検索
 ");
- _search.RenderControllerAction(this, _controller); 
- _search.RenderDbContextMethod(this); 
-            this.Write("#endregion 一覧検索\r\n\r\n\r\n#region キーワード検索\r\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_search.RenderControllerAction()));
+            this.Write("\r\n");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_search.RenderDbContextMethod()));
+            this.Write("\r\n#endregion 一覧検索\r\n\r\n\r\n#region キーワード検索\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.RootNamespace));
             this.Write(" {\r\n    using Microsoft.AspNetCore.Mvc;\r\n    using ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
             this.Write(";\r\n\r\n    partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_controller.ClassName));
             this.Write(" {\r\n        [HttpGet(\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Controller.KEYWORDSEARCH_ACTION_NAME));
+            this.Write(this.ToStringHelper.ToStringWithCulture(WebClient.Controller.KEYWORDSEARCH_ACTION_NAME));
             this.Write("\")]\r\n        public virtual IActionResult SearchByKeyword([FromQuery] string? key" +
                     "word) {\r\n            var items = _dbContext.");
             this.Write(this.ToStringHelper.ToStringWithCulture(ListByKeywordMethodName));
@@ -175,7 +163,7 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(";\r\n\r\n    partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_controller.ClassName));
             this.Write(" {\r\n        [HttpGet(\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Controller.FIND_ACTION_NAME));
+            this.Write(this.ToStringHelper.ToStringWithCulture(WebClient.Controller.FIND_ACTION_NAME));
             this.Write("/{instanceKey}\")]\r\n        public virtual IActionResult Find(string instanceKey) " +
                     "{\r\n            var instance = _dbContext.");
             this.Write(this.ToStringHelper.ToStringWithCulture(FindMethodName));
@@ -210,7 +198,7 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(";\r\n\r\n    partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_controller.ClassName));
             this.Write(" {\r\n        [HttpPost(\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Controller.UPDATE_ACTION_NAME));
+            this.Write(this.ToStringHelper.ToStringWithCulture(WebClient.Controller.UPDATE_ACTION_NAME));
             this.Write("\")]\r\n        public virtual IActionResult Update(");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregateInstance.Item.ClassName));
             this.Write(" param) {\r\n            if (_dbContext.");
@@ -264,7 +252,7 @@ namespace HalApplicationBuilder.CodeRendering
             this.Write(";\r\n\r\n    partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_controller.ClassName));
             this.Write(" {\r\n        [HttpDelete(\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Controller.DELETE_ACTION_NAME));
+            this.Write(this.ToStringHelper.ToStringWithCulture(WebClient.Controller.DELETE_ACTION_NAME));
             this.Write("/{key}\")]\r\n        public virtual IActionResult Delete(string key) {\r\n           " +
                     " if (_dbContext.");
             this.Write(this.ToStringHelper.ToStringWithCulture(_delete.MethodName));
@@ -443,8 +431,8 @@ namespace ");
             this.Write("    }\r\n");
  } 
             this.Write("}\r\n\r\n");
- _search.RenderCSharpClassDef(this); 
-            this.Write("\r\nnamespace ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(_search.RenderCSharpClassDef()));
+            this.Write("\r\n\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
             this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
                     "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n  " +
@@ -460,9 +448,7 @@ namespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(col.CSharpTypeName));
             this.Write(" ");
             this.Write(this.ToStringHelper.ToStringWithCulture(col.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.Initializer == null ? "" : $" = {col.Initializer};"));
-            this.Write("\r\n");
+            this.Write(" { get; set; }\r\n");
  } 
             this.Write("\r\n");
  foreach (var nav in EnumerateNavigationProperties(ett)) { 
@@ -470,9 +456,7 @@ namespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(nav.CSharpTypeName));
             this.Write(" ");
             this.Write(this.ToStringHelper.ToStringWithCulture(nav.PropertyName));
-            this.Write(" { get; set; }");
-            this.Write(this.ToStringHelper.ToStringWithCulture(nav.Initializer == null ? "" : $" = {nav.Initializer};"));
-            this.Write("\r\n");
+            this.Write(" { get; set; }\r\n");
  } 
             this.Write("\r\n        /// <summary>このオブジェクトと比較対象のオブジェクトの主キーが一致するかを返します。</summary>\r\n        pu" +
                     "blic bool ");

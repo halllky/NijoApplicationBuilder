@@ -1,4 +1,3 @@
-using HalApplicationBuilder.CodeRendering.Presentation;
 using HalApplicationBuilder.CodeRendering.WebClient;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
@@ -23,7 +22,7 @@ namespace HalApplicationBuilder.CodeRendering.Search {
 
             protected override string Template() {
                 var useQueryKey = $"{Search.PhysicalName}::search";
-                var searchApi = $"/{AggFile.Controller.SUBDOMAIN}/{Search.PhysicalName}/{AggFile.Controller.SEARCH_ACTION_NAME}";
+                var searchApi = $"/{Controller.SUBDOMAIN}/{Search.PhysicalName}/{Controller.SEARCH_ACTION_NAME}";
 
                 var aggregate = Search.DbEntity.GetCorrespondingAggregate();
                 var createViewRoute = aggregate == null ? null : new CreateView(aggregate, Search.Context).Route;
@@ -102,7 +101,9 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                                 ? <ChevronDownIcon className="w-4" />
                                 : <ChevronUpIcon className="w-4" />}
                             </div>
+                    {{If(createViewRoute != null, $$"""
                             <IconButton underline icon={PlusIcon} onClick={toCreateView}>新規作成</IconButton>
+                    """)}}
                           </div>
 
                           <FormProvider {...reactHookFormMethods}>

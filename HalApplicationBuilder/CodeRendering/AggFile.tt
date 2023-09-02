@@ -16,17 +16,8 @@ namespace <#=_ctx.Config.RootNamespace#> {
     using Microsoft.AspNetCore.Mvc;
     using <#=_ctx.Config.EntityNamespace#>;
 
-    [ApiController]
-    [Route("<#=Controller.SUBDOMAIN#>/[controller]")]
-    public partial class <#=_controller.ClassName#> : ControllerBase {
-        public <#=_controller.ClassName#>(ILogger<<#=_controller.ClassName#>> logger, <#=_ctx.Config.DbContextName#> dbContext) {
-            _logger = logger;
-            _dbContext = dbContext;
-        }
-        protected readonly ILogger<<#=_controller.ClassName#>> _logger;
-        protected readonly <#=_ctx.Config.DbContextName#> _dbContext;
-
-        [HttpPost("<#=Controller.CREATE_ACTION_NAME#>")]
+    partial class <#=_controller.ClassName#> : ControllerBase {
+        [HttpPost("<#=WebClient.Controller.CREATE_ACTION_NAME#>")]
         public virtual IActionResult Create([FromBody] <#=CreateCommandClassName#> param) {
             if (_dbContext.<#=_create.MethodName#>(param, out var created, out var errors)) {
                 return this.JsonContent(created);
@@ -75,8 +66,8 @@ namespace <#=_ctx.Config.EntityNamespace#> {
 
 
 #region 一覧検索
-<# _search.RenderControllerAction(this, _controller); #>
-<# _search.RenderDbContextMethod(this); #>
+<#=_search.RenderControllerAction()#>
+<#=_search.RenderDbContextMethod()#>
 #endregion 一覧検索
 
 
@@ -86,7 +77,7 @@ namespace <#=_ctx.Config.RootNamespace#> {
     using <#=_ctx.Config.EntityNamespace#>;
 
     partial class <#=_controller.ClassName#> {
-        [HttpGet("<#=Controller.KEYWORDSEARCH_ACTION_NAME#>")]
+        [HttpGet("<#=WebClient.Controller.KEYWORDSEARCH_ACTION_NAME#>")]
         public virtual IActionResult SearchByKeyword([FromQuery] string? keyword) {
             var items = _dbContext.<#=ListByKeywordMethodName#>(keyword);
             return this.JsonContent(items);
@@ -147,7 +138,7 @@ namespace <#=_ctx.Config.RootNamespace#> {
     using <#=_ctx.Config.EntityNamespace#>;
 
     partial class <#=_controller.ClassName#> {
-        [HttpGet("<#=Controller.FIND_ACTION_NAME#>/{instanceKey}")]
+        [HttpGet("<#=WebClient.Controller.FIND_ACTION_NAME#>/{instanceKey}")]
         public virtual IActionResult Find(string instanceKey) {
             var instance = _dbContext.<#=FindMethodName#>(instanceKey);
             if (instance == null) {
@@ -192,7 +183,7 @@ namespace <#=_ctx.Config.RootNamespace#> {
     using <#=_ctx.Config.EntityNamespace#>;
 
     partial class <#=_controller.ClassName#> {
-        [HttpPost("<#=Controller.UPDATE_ACTION_NAME#>")]
+        [HttpPost("<#=WebClient.Controller.UPDATE_ACTION_NAME#>")]
         public virtual IActionResult Update(<#=_aggregateInstance.Item.ClassName#> param) {
             if (_dbContext.<#=_update.MethodName#>(param, out var updated, out var errors)) {
                 return this.JsonContent(updated);
@@ -262,7 +253,7 @@ namespace <#=_ctx.Config.RootNamespace#> {
     using <#=_ctx.Config.EntityNamespace#>;
 
     partial class <#=_controller.ClassName#> {
-        [HttpDelete("<#=Controller.DELETE_ACTION_NAME#>/{key}")]
+        [HttpDelete("<#=WebClient.Controller.DELETE_ACTION_NAME#>/{key}")]
         public virtual IActionResult Delete(string key) {
             if (_dbContext.<#=_delete.MethodName#>(key, out var errors)) {
                 return Ok();
@@ -402,7 +393,7 @@ namespace <#=_ctx.Config.RootNamespace#> {
 <# } #>
 }
 
-<# _search.RenderCSharpClassDef(this); #>
+<#=_search.RenderCSharpClassDef()#>
 
 namespace <#=_ctx.Config.EntityNamespace#> {
     using System;
@@ -418,11 +409,11 @@ namespace <#=_ctx.Config.EntityNamespace#> {
     /// </summary>
     public partial class <#=ett.Item.ClassName#> {
 <# foreach (var col in ett.GetColumns()) { #>
-        public <#=col.CSharpTypeName#> <#=col.PropertyName#> { get; set; }<#=col.Initializer == null ? "" : $" = {col.Initializer};"#>
+        public <#=col.CSharpTypeName#> <#=col.PropertyName#> { get; set; }
 <# } #>
 
 <# foreach (var nav in EnumerateNavigationProperties(ett)) { #>
-        public virtual <#=nav.CSharpTypeName#> <#=nav.PropertyName#> { get; set; }<#=nav.Initializer == null ? "" : $" = {nav.Initializer};"#>
+        public virtual <#=nav.CSharpTypeName#> <#=nav.PropertyName#> { get; set; }
 <# } #>
 
         /// <summary>このオブジェクトと比較対象のオブジェクトの主キーが一致するかを返します。</summary>

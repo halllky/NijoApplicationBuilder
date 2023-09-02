@@ -8,8 +8,10 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.CodeRendering.Search {
     partial class SearchFeature {
-        internal void RenderCSharpClassDef(ITemplate template) {
-            template.WriteLine($$"""
+        internal string RenderCSharpClassDef() {
+            return $$"""
+                #pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければなりません
+
                 namespace {{Context.Config.RootNamespace}} {
                     using System;
                     using System.Collections;
@@ -34,7 +36,7 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                 """)}}
                     }
                 }
-                """);
+                """;
         }
 
         internal static ITemplate CreateSearchConditionBaseClassTemplate(CodeRenderingContext ctx) {

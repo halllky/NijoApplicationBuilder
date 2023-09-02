@@ -31,7 +31,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
         private string GetMultiViewUrl() => new Search.SearchFeature(_aggregate.GetDbEntity(), _ctx).ReactPageUrl;
         private string GetEditViewUrl() => new SingleView(_aggregate, _ctx, asEditView: true).Url;
-        private string GetFindCommandApi() => new AggFile.Controller(_aggregate).FindCommandApi;
-        private string GetUpdateCommandApi() => new AggFile.Controller(_aggregate).UpdateCommandApi;
+        private string GetFindCommandApi() => new Controller(_aggregate.Item, _ctx).FindCommandApi;
+        private string GetUpdateCommandApi() => new Controller(_aggregate.Item, _ctx).UpdateCommandApi;
     }
 }

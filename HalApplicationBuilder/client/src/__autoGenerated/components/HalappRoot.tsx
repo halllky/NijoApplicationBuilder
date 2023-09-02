@@ -6,7 +6,7 @@ import { MyAccount } from './MyAccount'
 import { SettingsScreen } from './Settings'
 import { SideMenu } from './SideMenu';
 import { UnCommitChanges } from './UnCommitChanges'
-import BackgroundTaskList from './BackgroundTaskList'
+import BackgroundTaskList from '../pages/BackgroundTask/list'
 import { routes } from '..';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import React from 'react';

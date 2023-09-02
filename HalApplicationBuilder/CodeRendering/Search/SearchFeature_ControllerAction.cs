@@ -6,14 +6,18 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.CodeRendering.Search {
     partial class SearchFeature {
-        internal void RenderControllerAction(ITemplate template, AggFile.Controller controller) {
-            template.WriteLine($$"""
+        internal string RenderControllerAction() {
+            var controller = new WebClient.Controller(PhysicalName, Context);
+
+            return $$"""
+                {{controller.Render()}}
+
                 namespace {{Context.Config.RootNamespace}} {
                     using Microsoft.AspNetCore.Mvc;
                     using {{Context.Config.EntityNamespace}};
 
                     partial class {{controller.ClassName}} {
-                        [HttpGet("{{AggFile.Controller.SEARCH_ACTION_NAME}}")]
+                        [HttpGet("{{WebClient.Controller.SEARCH_ACTION_NAME}}")]
                         public virtual IActionResult Search([FromQuery] string param) {
                             var json = System.Web.HttpUtility.UrlDecode(param);
                             var condition = string.IsNullOrWhiteSpace(json)
@@ -26,7 +30,7 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                         }
                     }
                 }
-                """);
+                """;
         }
     }
 }

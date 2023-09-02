@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static HalApplicationBuilder.CodeRendering.BackgroundService.BackgroundTaskEntity;
 
 namespace HalApplicationBuilder.CodeRendering.BackgroundService {
     internal class BackgroundTask : TemplateBase {
@@ -35,13 +36,13 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
                             var json = parameter == null
                                 ? string.Empty
                                 : JsonSerializer.Serialize(parameter);
-                            var entity = new {{Context.Config.EntityNamespace}}.BackgroundTaskEntity {
-                                Id = Guid.NewGuid().ToString(),
-                                Name = attribute.DisplayName ?? batchType.Name,
-                                BatchType = attribute.Id,
-                                ParameterJson = json,
-                                RequestTime = now,
-                                State = E_BackgroundTaskState.WaitToStart,
+                            var entity = new {{Context.Config.EntityNamespace}}.{{CLASSNAME}} {
+                                {{COL_ID}} = Guid.NewGuid().ToString(),
+                                {{COL_NAME}} = attribute.DisplayName ?? batchType.Name,
+                                {{COL_BATCHTYPE}} = attribute.Id,
+                                {{COL_PARAMETERJSON}} = json,
+                                {{COL_REQUESTTIME}} = now,
+                                {{COL_STATE}} = E_BackgroundTaskState.WaitToStart,
                             };
                             dbContext.Add(entity);
                             dbContext.SaveChanges();

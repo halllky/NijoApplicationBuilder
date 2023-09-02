@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.CodeRendering.Search {
     partial class SearchFeature {
-        internal void RenderDbContextMethod(ITemplate template) {
+        internal string RenderDbContextMethod() {
 
             var selectClause = Members.Select(m => new {
                 resultMemberName = m.SearchResultPropName,
@@ -21,7 +21,7 @@ namespace HalApplicationBuilder.CodeRendering.Search {
             });
             var instanceNameProp = Members.SingleOrDefault(m => m.IsInstanceName)?.SearchResultPropName;
 
-            template.WriteLine($$"""
+            return $$"""
                 namespace {{Context.Config.EntityNamespace}} {
                     using System;
                     using System.Collections;
@@ -88,7 +88,7 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                         }
                     }
                 }
-                """);
+                """;
         }
     }
 }

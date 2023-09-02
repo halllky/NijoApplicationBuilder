@@ -26,6 +26,6 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
         private string GetMultiViewUrl() => new SearchFeature(_aggregate.GetDbEntity(), _ctx).ReactPageUrl;
         private string GetSingleViewUrl() => new SingleView(_aggregate, _ctx, asEditView: false).Url;
-        private string GetCreateCommandApi() => new AggFile.Controller(_aggregate).CreateCommandApi;
+        private string GetCreateCommandApi() => new Controller(_aggregate.Item, _ctx).CreateCommandApi;
     }
 }

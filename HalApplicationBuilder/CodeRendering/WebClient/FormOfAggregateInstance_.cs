@@ -157,7 +157,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         private static RegisterName GetRegisterName(GraphNode<AggregateInstance> instance, AggregateInstance.Property? prop = null) {
             var path = new List<IRegistrationPath>();
             foreach (var edge in instance.PathFromEntry()) {
-                path.Add(new DescendantAggregate { Aggregate = edge.Terminal });
+                path.Add(new RelatedAggregate { Aggregate = edge.Terminal });
                 if (edge.Terminal.IsChildrenMember()) path.Add(new ArrayIndex { Aggregate = edge.Terminal });
             }
             if (prop != null) path.Add(new LastProperty { Property = prop });
@@ -172,9 +172,9 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         private interface IRegistrationPath {
             internal string Name { get; }
         }
-        private class DescendantAggregate : IRegistrationPath {
+        private class RelatedAggregate : IRegistrationPath {
             internal required GraphNode Aggregate { get; init; }
-            public string Name => Aggregate.GetParent()!.RelationName;
+            public string Name => Aggregate.Source!.RelationName;
         }
         private class ArrayIndex : IRegistrationPath {
             internal required GraphNode Aggregate { get; init; }
