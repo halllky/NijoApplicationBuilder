@@ -20,10 +20,10 @@ namespace HalApplicationBuilder.CodeRendering {
             _aggregateInstance = aggregate.GetInstanceClass().AsEntry().As<AggregateInstance>();
 
             _controller = new Controller(_aggregate);
-            _create = new CreateMethod(_dbEntity, ctx);
+            _create = new CreateMethod(this, ctx);
             _search = new Search.SearchFeature(_dbEntity, ctx);
-            _update = new UpdateMethod(_dbEntity, ctx);
-            _delete = new DeleteMethod(_dbEntity, ctx);
+            _update = new UpdateMethod(this, ctx);
+            _delete = new DeleteMethod(this, ctx);
 
             _ctx = ctx;
         }
@@ -52,24 +52,26 @@ namespace HalApplicationBuilder.CodeRendering {
         #region CREATE
         private readonly CreateMethod _create;
         internal class CreateMethod {
-            internal CreateMethod(GraphNode<EFCoreEntity> dbEntity, CodeRenderingContext ctx) {
-                _dbEntity = dbEntity;
-                _instance = dbEntity.GetUiInstance().Item;
+            internal CreateMethod(AggFile aggFile, CodeRenderingContext ctx) {
+                _aggregate = aggFile._aggregate;
+                _dbEntity = aggFile._dbEntity;
+                _instance = aggFile._aggregateInstance;
                 _ctx = ctx;
             }
 
+            private readonly GraphNode<Aggregate> _aggregate;
             private readonly GraphNode<EFCoreEntity> _dbEntity;
-            private readonly AggregateInstance _instance;
+            private readonly GraphNode<AggregateInstance> _instance;
             private readonly CodeRenderingContext _ctx;
 
-            internal string ArgType => _instance.ClassName;
-            internal string MethodName => $"Create{_dbEntity.GetCorrespondingAggregate().Item.DisplayName.ToCSharpSafe()}";
+            internal string ArgType => _instance.Item.ClassName;
+            internal string MethodName => $"Create{_aggregate.Item.DisplayName.ToCSharpSafe()}";
         }
         #endregion CREATE
 
         #region FIND
         private string FindMethodReturnType => _aggregateInstance.Item.ClassName;
-        private string FindMethodName => $"Find{_dbEntity.GetCorrespondingAggregate().Item.DisplayName.ToCSharpSafe()}";
+        private string FindMethodName => $"Find{_aggregate.Item.DisplayName.ToCSharpSafe()}";
         private void RenderDbEntityLoading(string entityVarName, string serializedInstanceKeyVarName, bool tracks, bool includeRefs) {
             // Include
             var includeEntities = _dbEntity
@@ -118,17 +120,19 @@ namespace HalApplicationBuilder.CodeRendering {
         #region UPDATE
         private readonly UpdateMethod _update;
         internal class UpdateMethod {
-            internal UpdateMethod(GraphNode<EFCoreEntity> dbEntity, CodeRenderingContext ctx) {
-                _dbEntity = dbEntity;
-                _instance = dbEntity.GetUiInstance().Item;
+            internal UpdateMethod(AggFile aggFile, CodeRenderingContext ctx) {
+                _aggregate = aggFile._aggregate;
+                _dbEntity = aggFile._dbEntity;
+                _instance = aggFile._aggregateInstance;
                 _ctx = ctx;
             }
 
+            private readonly GraphNode<Aggregate> _aggregate;
             private readonly GraphNode<EFCoreEntity> _dbEntity;
-            private readonly AggregateInstance _instance;
+            private readonly GraphNode<AggregateInstance> _instance;
             private readonly CodeRenderingContext _ctx;
 
-            internal string MethodName => $"Update{_dbEntity.GetCorrespondingAggregate().Item.DisplayName.ToCSharpSafe()}";
+            internal string MethodName => $"Update{_aggregate.Item.DisplayName.ToCSharpSafe()}";
 
             internal void RenderDescendantsAttaching(ITemplate template, string dbContext, string before, string after) {
                 var descendantDbEntities = _dbEntity.EnumerateDescendants().ToArray();
@@ -189,17 +193,19 @@ namespace HalApplicationBuilder.CodeRendering {
         #region DELETE
         private readonly DeleteMethod _delete;
         internal class DeleteMethod {
-            internal DeleteMethod(GraphNode<EFCoreEntity> dbEntity, CodeRenderingContext ctx) {
-                _dbEntity = dbEntity;
-                _instance = dbEntity.GetUiInstance().Item;
+            internal DeleteMethod(AggFile aggFile, CodeRenderingContext ctx) {
+                _aggregate = aggFile._aggregate;
+                _dbEntity = aggFile._dbEntity;
+                _instance = aggFile._aggregateInstance;
                 _ctx = ctx;
             }
 
+            private readonly GraphNode<Aggregate> _aggregate;
             private readonly GraphNode<EFCoreEntity> _dbEntity;
-            private readonly AggregateInstance _instance;
+            private readonly GraphNode<AggregateInstance> _instance;
             private readonly CodeRenderingContext _ctx;
 
-            internal string MethodName => $"Delete{_dbEntity.GetCorrespondingAggregate().Item.DisplayName.ToCSharpSafe()}";
+            internal string MethodName => $"Delete{_aggregate.Item.DisplayName.ToCSharpSafe()}";
         }
         #endregion DELETE
 
@@ -211,7 +217,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
         #region LIST BY KEYWORD
         private const int LIST_BY_KEYWORD_MAX = 100;
-        private string ListByKeywordMethodName => $"SearchByKeyword{_dbEntity.GetCorrespondingAggregate().Item.DisplayName.ToCSharpSafe()}";
+        private string ListByKeywordMethodName => $"SearchByKeyword{_aggregate.Item.DisplayName.ToCSharpSafe()}";
         private IEnumerable<ListByKeywordTargetColumn> EnumerateListByKeywordTargetColumns() {
             return _dbEntity
                 .GetColumns()

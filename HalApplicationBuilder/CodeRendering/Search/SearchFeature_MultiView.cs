@@ -24,8 +24,10 @@ namespace HalApplicationBuilder.CodeRendering.Search {
             protected override string Template() {
                 var useQueryKey = $"{Search.PhysicalName}::search";
                 var searchApi = $"/{AggFile.Controller.SUBDOMAIN}/{Search.PhysicalName}/{AggFile.Controller.SEARCH_ACTION_NAME}";
-                var createViewRoute = new CreateView(Search.DbEntity.GetCorrespondingAggregate(), Search.Context).Route;
-                var singleViewRoute = new SingleView(Search.DbEntity.GetCorrespondingAggregate(), Search.Context, false).Route;
+
+                var aggregate = Search.DbEntity.GetCorrespondingAggregate();
+                var createViewRoute = aggregate == null ? null : new CreateView(aggregate, Search.Context).Route;
+                var singleViewRoute = aggregate == null ? null : new SingleView(aggregate, Search.Context, false).Route;
 
                 var memberNames = Search.Members.Select(m => m.ConditionPropName);
                 var propNameWidth = FormOfAggregateInstance.GetPropNameFlexBasis(memberNames);
@@ -78,9 +80,11 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                       })
 
                       const navigate = useNavigate()
+                    {{If(createViewRoute != null, $$"""
                       const toCreateView = useCallback(() => {
                         navigate('{{createViewRoute}}')
                       }, [navigate])
+                    """)}}
 
                       const [expanded, setExpanded] = useState(false)
 
@@ -145,6 +149,7 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                     }
 
                     const columnDefs: ColDef<RowType>[] = [
+                    {{If(singleViewRoute != null, $$"""
                       {
                         resizable: true,
                         width: 50,
@@ -153,6 +158,7 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                           return <Link to={`{{singleViewRoute}}/${encoded}`} className="text-blue-400">詳細</Link>
                         },
                       },
+                    """)}}
                     {{Search.Members.SelectTextTemplate(member => $$"""
                       { field: '{{member.SearchResultPropName}}', resizable: true, sortable: true, editable: true },
                     """)}}

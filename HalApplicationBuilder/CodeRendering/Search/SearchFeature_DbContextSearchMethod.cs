@@ -41,32 +41,28 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                 """)}}
                             });
 
-                {{Members.SelectTextTemplate(member => member.Type.SearchBehavior switch {
-                SearchBehavior.Ambiguous => $$"""
+                {{Members.SelectTextTemplate(member => TemplateTextHelper
+                    .If(member.Type.SearchBehavior == SearchBehavior.Ambiguous, $$"""
                             if (!string.IsNullOrWhiteSpace(param.{{member.ConditionPropName}})) {
                                 var trimmed = param.{{member.ConditionPropName}}.Trim();
                                 query = query.Where(x => x.{{member.SearchResultPropName}}.Contains(trimmed));
                             }
-                """,
-                SearchBehavior.Range => $$"""
+                """).ElseIf(member.Type.SearchBehavior == SearchBehavior.Range, $$"""
                             if (param.{{member.ConditionPropName}}.{{FromTo.FROM}} != default) {
                                 query = query.Where(x => x.{{member.SearchResultPropName}} >= param.{{member.ConditionPropName}}.{{FromTo.FROM}});
                             }
                             if (param.{{member.ConditionPropName}}.{{FromTo.TO}} != default) {
                                 query = query.Where(x => x.{{member.SearchResultPropName}} <= param.{{member.ConditionPropName}}.{{FromTo.TO}});";
                             }
-                """,
-                SearchBehavior.Strict => new[] { "string", "string?" }.Contains(member.Type.GetCSharpTypeName()) ? $$"""
+                """).ElseIf(member.Type.SearchBehavior == SearchBehavior.Strict && new[] { "string", "string?" }.Contains(member.Type.GetCSharpTypeName()), $$"""
                             if (!string.IsNullOrWhiteSpace(param.{{member.ConditionPropName}})) {
                                 query = query.Where(x => x.{{member.SearchResultPropName}} == param.{{member.ConditionPropName}});
                             }
-                """ : $$"""
+                """).ElseIf(member.Type.SearchBehavior == SearchBehavior.Strict, $$"""
                             if (param.{{member.ConditionPropName}} != default) {
                                 query = query.Where(x => x.{{member.SearchResultPropName}} == param.{{member.ConditionPropName}});
                             }
-                """,
-                _ => string.Empty,
-                })}}
+                """))}}
                             if (param.{{SEARCHCONDITION_PAGE_PROP_NAME}} != null) {
                                 const int PAGE_SIZE = 20;
                                 var skip = param.{{SEARCHCONDITION_PAGE_PROP_NAME}}.Value * PAGE_SIZE;
@@ -80,12 +76,10 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                 """)}}
                                 }).ToString();
 
-                {{(instanceNameProp == null
-                ? $$"""
+                {{TemplateTextHelper.If(instanceNameProp == null, $$"""
                                 // 表示名に使用するプロパティが定義されていないため、キーを表示名に使用します。
                                 item.{{SEARCHRESULT_INSTANCE_NAME_PROP_NAME}} = item.{{SEARCHRESULT_INSTANCE_KEY_PROP_NAME}};
-                """
-                : $$"""
+                """).Else($$"""
                                 item.{{SEARCHRESULT_INSTANCE_NAME_PROP_NAME}} = item.{{instanceNameProp}};
                 """)}}
 

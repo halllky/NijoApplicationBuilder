@@ -544,9 +544,9 @@ namespace HalApplicationBuilder.Core {
                 .Initial
                 .As<EFCoreEntity>();
         }
-        internal static GraphNode<Aggregate> GetCorrespondingAggregate(this GraphNode<EFCoreEntity> dbEntity) {
+        internal static GraphNode<Aggregate>? GetCorrespondingAggregate(this GraphNode<EFCoreEntity> dbEntity) {
             return dbEntity.Out
-                .Single(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_AGG_2_ETT)
+                .SingleOrDefault(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_AGG_2_ETT)?
                 .Terminal
                 .As<Aggregate>();
         }
@@ -565,8 +565,8 @@ namespace HalApplicationBuilder.Core {
         internal static GraphNode<EFCoreEntity> GetDbEntity(this GraphNode<AggregateInstance> instance) {
             return instance.GetCorrespondingAggregate().GetDbEntity();
         }
-        internal static GraphNode<AggregateInstance> GetUiInstance(this GraphNode<EFCoreEntity> dbEntity) {
-            return dbEntity.GetCorrespondingAggregate().GetInstanceClass();
+        internal static GraphNode<AggregateInstance>? GetUiInstance(this GraphNode<EFCoreEntity> dbEntity) {
+            return dbEntity.GetCorrespondingAggregate()?.GetInstanceClass();
         }
 
         internal static bool IsChildrenMember(this GraphNode graphNode) {

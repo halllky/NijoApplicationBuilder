@@ -154,19 +154,22 @@ namespace HalApplicationBuilder.Core {
                 }
             }
             // スカラー値
-            foreach (var member in dbEntity.GetCorrespondingAggregate().Item.Members) {
-                yield return new EFCoreEntity.Member {
-                    Owner = dbEntity,
-                    PropertyName = member.Name,
-                    IsPrimary = member.IsPrimary,
-                    IsInstanceName = member.IsInstanceName,
-                    MemberType = member.Type,
-                    CSharpTypeName = member.Type.GetCSharpTypeName(),
-                    TypeScriptTypename = member.Type.GetTypeScriptTypeName(),
-                    RequiredAtDB = member.IsPrimary, // TODO XMLでrequired属性を定義できるようにする
-                    CorrespondingParentColumn = null,
-                    CorrespondingRefTargetColumn = null,
-                };
+            var aggregate = dbEntity.GetCorrespondingAggregate();
+            if (aggregate != null) {
+                foreach (var member in aggregate.Item.Members) {
+                    yield return new EFCoreEntity.Member {
+                        Owner = dbEntity,
+                        PropertyName = member.Name,
+                        IsPrimary = member.IsPrimary,
+                        IsInstanceName = member.IsInstanceName,
+                        MemberType = member.Type,
+                        CSharpTypeName = member.Type.GetCSharpTypeName(),
+                        TypeScriptTypename = member.Type.GetTypeScriptTypeName(),
+                        RequiredAtDB = member.IsPrimary, // TODO XMLでrequired属性を定義できるようにする
+                        CorrespondingParentColumn = null,
+                        CorrespondingRefTargetColumn = null,
+                    };
+                }
             }
             // Ref
             foreach (var edge in dbEntity.GetRefMembers()) {
@@ -186,7 +189,7 @@ namespace HalApplicationBuilder.Core {
                 }
             }
             // リレーション
-            foreach (var group in dbEntity.GetCorrespondingAggregate().GetVariationGroups()) {
+            foreach (var group in dbEntity.GetVariationGroups()) {
                 // variationの型番号
                 yield return new EFCoreEntity.Member {
                     Owner = dbEntity,

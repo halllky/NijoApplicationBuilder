@@ -414,7 +414,7 @@ namespace <#=_ctx.Config.EntityNamespace#> {
     
 <# foreach (var ett in _dbEntity.EnumerateThisAndDescendants()) { #>
     /// <summary>
-    /// <#=ett.GetCorrespondingAggregate().Item.DisplayName#>のデータベースに保存されるデータの形を表すクラスです。
+    /// <#=ett.GetCorrespondingAggregate()?.Item.DisplayName#>のデータベースに保存されるデータの形を表すクラスです。
     /// </summary>
     public partial class <#=ett.Item.ClassName#> {
 <# foreach (var col in ett.GetColumns()) { #>

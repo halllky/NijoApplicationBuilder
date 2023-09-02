@@ -14,19 +14,23 @@ namespace HalApplicationBuilder.CodeRendering.Search {
         internal SearchFeature(GraphNode<EFCoreEntity> dbEntity, CodeRenderingContext ctx) {
             DbEntity = dbEntity.AsEntry();
             Context = ctx;
+
+            var aggregate = DbEntity.GetCorrespondingAggregate();
+            DisplayName = aggregate == null ? string.Empty : aggregate.Item.DisplayName;
+            ReactPageUrl = aggregate == null ? string.Empty : $"/{aggregate.Item.UniqueId}";
         }
 
         internal CodeRenderingContext Context { get; }
         internal GraphNode<EFCoreEntity> DbEntity { get; }
 
-        internal string DisplayName => DbEntity.GetCorrespondingAggregate().Item.DisplayName;
+        internal string DisplayName { get; }
         internal string PhysicalName => DbEntity.Item.ClassName;
 
         internal string SearchConditionClassName => $"{PhysicalName}SearchCondition";
         internal string SearchResultClassName => $"{PhysicalName}SearchResult";
         internal string DbContextSearchMethodName => $"Search{PhysicalName}";
 
-        internal string ReactPageUrl => $"/{DbEntity.GetCorrespondingAggregate().Item.UniqueId}";
+        internal string ReactPageUrl { get; }
         internal const string REACT_FILENAME = "list.tsx";
 
         private const string SEARCHCONDITION_BASE_CLASS_NAME = "SearchConditionBase";

@@ -451,7 +451,7 @@ namespace ");
                     "  using Microsoft.EntityFrameworkCore.Infrastructure;\r\n    \r\n");
  foreach (var ett in _dbEntity.EnumerateThisAndDescendants()) { 
             this.Write("    /// <summary>\r\n    /// ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(ett.GetCorrespondingAggregate().Item.DisplayName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(ett.GetCorrespondingAggregate()?.Item.DisplayName));
             this.Write("のデータベースに保存されるデータの形を表すクラスです。\r\n    /// </summary>\r\n    public partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(ett.Item.ClassName));
             this.Write(" {\r\n");
