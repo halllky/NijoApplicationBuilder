@@ -25,13 +25,12 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             foreach (var aggregate in _ctx.Schema.RootAggregates()) {
                 var aggregateName = aggregate.Item.DisplayName.ToCSharpSafe();
 
-                var multiView = new MultiView(aggregate, _ctx);
                 yield return new ImportedComponent {
                     ShowMenu = true,
-                    Url = multiView.Route,
+                    Url = new Search.SearchFeature(aggregate.GetDbEntity(), _ctx).ReactPageUrl,
                     PhysicalName = $"{aggregateName}MultiView",
                     DisplayName = aggregate.Item.DisplayName,
-                    From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(multiView.FileName)}",
+                    From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(Search.SearchFeature.REACT_FILENAME)}",
                 };
                 var editView = new SingleView(aggregate, _ctx, asEditView: true);
                 yield return new ImportedComponent {

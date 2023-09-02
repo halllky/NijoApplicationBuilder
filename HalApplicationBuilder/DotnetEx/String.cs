@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -13,6 +14,9 @@ namespace HalApplicationBuilder.DotnetEx {
                 str = str.Replace(c, '_');
             }
             return str;
+        }
+        public static string SelectTextTemplate<T>(this IEnumerable<T> values, Func<T, string> selector) {
+            return values.Select(selector).Join(Environment.NewLine);
         }
 
         /// <summary>

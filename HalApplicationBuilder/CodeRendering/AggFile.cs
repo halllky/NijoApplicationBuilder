@@ -99,24 +99,16 @@ namespace HalApplicationBuilder.CodeRendering
 
 
 #region 一覧検索
-namespace ");
+");
+ _search.RenderControllerAction(this, _controller); 
+ _search.RenderDbContextMethod(this); 
+            this.Write("#endregion 一覧検索\r\n\r\n\r\n#region キーワード検索\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.RootNamespace));
             this.Write(" {\r\n    using Microsoft.AspNetCore.Mvc;\r\n    using ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
             this.Write(";\r\n\r\n    partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_controller.ClassName));
             this.Write(" {\r\n        [HttpGet(\"");
-            this.Write(this.ToStringHelper.ToStringWithCulture(Controller.SEARCH_ACTION_NAME));
-            this.Write("\")]\r\n        public virtual IActionResult Search([FromQuery] string param) {\r\n   " +
-                    "         var json = System.Web.HttpUtility.UrlDecode(param);\r\n            var co" +
-                    "ndition = string.IsNullOrWhiteSpace(json)\r\n                ? new ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_search.ArgType));
-            this.Write("()\r\n                : System.Text.Json.JsonSerializer.Deserialize<");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_search.ArgType));
-            this.Write(">(json)!;\r\n            var searchResult = _dbContext\r\n                .");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_search.MethodName));
-            this.Write("(condition)\r\n                .AsEnumerable();\r\n            return this.JsonConten" +
-                    "t(searchResult);\r\n        }\r\n        [HttpGet(\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(Controller.KEYWORDSEARCH_ACTION_NAME));
             this.Write("\")]\r\n        public virtual IActionResult SearchByKeyword([FromQuery] string? key" +
                     "word) {\r\n            var items = _dbContext.");
@@ -129,78 +121,6 @@ namespace ");
                     "  using Microsoft.EntityFrameworkCore.Infrastructure;\r\n\r\n    partial class ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
             this.Write(" {\r\n        /// <summary>\r\n        /// ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
-            this.Write("の一覧検索を行います。\r\n        /// </summary>\r\n        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_search.ReturnType));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_search.MethodName));
-            this.Write("(");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_search.ArgType));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchMethod.PARAM));
-            this.Write(") {\r\n            var ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchMethod.QUERY));
-            this.Write(" = this.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_search.DbSetName));
-            this.Write(".Select(");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchMethod.E));
-            this.Write(" => new ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_search.ReturnItemType));
-            this.Write(" {\r\n");
- foreach (var line in _search.SelectClause()) { 
-            this.Write("                ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(line));
-            this.Write("\r\n");
- } 
-            this.Write("            });\r\n\r\n");
- foreach (var line in _search.WhereClause()) { 
-            this.Write("            ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(line));
-            this.Write("\r\n");
- } 
-            this.Write("\r\n            if (");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchMethod.PARAM));
-            this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchMethod.PAGE));
-            this.Write(" != null) {\r\n                const int PAGE_SIZE = 20;\r\n                var skip " +
-                    "= ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchMethod.PARAM));
-            this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchMethod.PAGE));
-            this.Write(".Value * PAGE_SIZE;\r\n                ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchMethod.QUERY));
-            this.Write(" = ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchMethod.QUERY));
-            this.Write(".Skip(skip).Take(PAGE_SIZE);\r\n            }\r\n\r\n            foreach (var item in ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchMethod.QUERY));
-            this.Write(") {\r\n                item.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchResult.INSTANCE_KEY_PROP_NAME));
-            this.Write(" = ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.CLASS_NAME));
-            this.Write(".");
-            this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.CREATE));
-            this.Write("(new object?[] {\r\n");
- foreach (var key in _search.EnumerateKeys()) { 
-            this.Write("                    item.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(key));
-            this.Write(",\r\n");
- } 
-            this.Write("                }).ToString();\r\n\r\n");
- if (_search.GetInstanceNamePropName() == null) { 
-            this.Write("                // 表示名に使用するプロパティが定義されていないため、キーを表示名に使用します。\r\n                item.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchResult.INSTANCE_NAME_PROP_NAME));
-            this.Write(" = item.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchResult.INSTANCE_KEY_PROP_NAME));
-            this.Write(";\r\n");
- } else { 
-            this.Write("                item.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchResult.INSTANCE_NAME_PROP_NAME));
-            this.Write(" = item.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_search.GetInstanceNamePropName()));
-            this.Write(";\r\n");
- } 
-            this.Write("\r\n                yield return item;\r\n            }\r\n        }\r\n\r\n        /// <su" +
-                    "mmary>\r\n        /// ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
             this.Write("をキーワードで検索します。\r\n        /// </summary>\r\n        public IEnumerable<");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceKeyNamePair.CLASSNAME));
@@ -247,8 +167,8 @@ namespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(nameColumns.Any()
                         ? nameColumns.Select(col => $"item.{col.Name}?.ToString()").Join(" + ")
                         : keyColumns.Select(col => $"item.{col.Name}?.ToString()").Join(" + ")));
-            this.Write(",\r\n                });\r\n        }\r\n    }\r\n}\r\n#endregion 一覧検索\r\n\r\n\r\n#region 詳細検索\r\nn" +
-                    "amespace ");
+            this.Write(",\r\n                });\r\n        }\r\n    }\r\n}\r\n#endregion キーワード検索\r\n\r\n\r\n#region 詳細検索" +
+                    "\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.RootNamespace));
             this.Write(" {\r\n    using Microsoft.AspNetCore.Mvc;\r\n    using ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
@@ -522,35 +442,9 @@ namespace ");
  } 
             this.Write("    }\r\n");
  } 
-            this.Write("\r\n    /// <summary>\r\n    /// ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
-            this.Write("の一覧検索処理の検索条件を表すクラスです。\r\n    /// </summary>\r\n    public partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_searchCondition.ClassName));
-            this.Write(" : ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchCondition.BASE_CLASS_NAME));
-            this.Write(" {\r\n");
- foreach (var prop in _searchCondition.GetMembers()) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Type.GetCSharpTypeName()));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Name));
-            this.Write(" { get; set; }\r\n");
- } 
-            this.Write("    }\r\n\r\n    /// <summary>\r\n    /// ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
-            this.Write("の一覧検索処理の検索結果1件を表すクラスです。\r\n    /// </summary>\r\n    public partial class ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_searchResult.ClassName));
-            this.Write(" : ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(SearchResult.BASE_CLASS_NAME));
-            this.Write(" {\r\n");
- foreach (var prop in _searchResult.GetMembers()) { 
-            this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Type.GetCSharpTypeName()));
-            this.Write(" ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(prop.Name));
-            this.Write(" { get; set; }\r\n");
- } 
-            this.Write("    }\r\n}\r\n\r\nnamespace ");
+            this.Write("}\r\n\r\n");
+ _search.RenderCSharpClassDef(this); 
+            this.Write("\r\nnamespace ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.EntityNamespace));
             this.Write(" {\r\n    using System;\r\n    using System.Collections;\r\n    using System.Collection" +
                     "s.Generic;\r\n    using System.Linq;\r\n    using Microsoft.EntityFrameworkCore;\r\n  " +

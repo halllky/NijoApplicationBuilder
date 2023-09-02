@@ -1,3 +1,4 @@
+using HalApplicationBuilder.DotnetEx;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,12 +10,12 @@ namespace HalApplicationBuilder.CodeRendering.Search {
         internal void RenderTypescriptTypeDef(ITemplate template) {
             template.WriteLine($$"""
                 export type {{SearchConditionClassName}} = {
-                {{Members.Select(member => $$"""
+                {{Members.SelectTextTemplate(member => $$"""
                   {{member.ConditionPropName}}?: {{member.Type.GetTypeScriptTypeName()}}
                 """)}}
                 }
                 export type {{SearchResultClassName}} = {
-                {{Members.Select(member => $$"""
+                {{Members.SelectTextTemplate(member => $$"""
                   {{member.SearchResultPropName}}?: {{member.Type.GetTypeScriptTypeName()}}
                 """)}}
                 }

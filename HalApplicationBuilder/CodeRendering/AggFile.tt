@@ -75,22 +75,17 @@ namespace <#=_ctx.Config.EntityNamespace#> {
 
 
 #region 一覧検索
+<# _search.RenderControllerAction(this, _controller); #>
+<# _search.RenderDbContextMethod(this); #>
+#endregion 一覧検索
+
+
+#region キーワード検索
 namespace <#=_ctx.Config.RootNamespace#> {
     using Microsoft.AspNetCore.Mvc;
     using <#=_ctx.Config.EntityNamespace#>;
 
     partial class <#=_controller.ClassName#> {
-        [HttpGet("<#=Controller.SEARCH_ACTION_NAME#>")]
-        public virtual IActionResult Search([FromQuery] string param) {
-            var json = System.Web.HttpUtility.UrlDecode(param);
-            var condition = string.IsNullOrWhiteSpace(json)
-                ? new <#=_search.ArgType#>()
-                : System.Text.Json.JsonSerializer.Deserialize<<#=_search.ArgType#>>(json)!;
-            var searchResult = _dbContext
-                .<#=_search.MethodName#>(condition)
-                .AsEnumerable();
-            return this.JsonContent(searchResult);
-        }
         [HttpGet("<#=Controller.KEYWORDSEARCH_ACTION_NAME#>")]
         public virtual IActionResult SearchByKeyword([FromQuery] string? keyword) {
             var items = _dbContext.<#=ListByKeywordMethodName#>(keyword);
@@ -107,44 +102,6 @@ namespace <#=_ctx.Config.EntityNamespace#> {
     using Microsoft.EntityFrameworkCore.Infrastructure;
 
     partial class <#=_ctx.Config.DbContextName#> {
-        /// <summary>
-        /// <#=_aggregate.Item.DisplayName#>の一覧検索を行います。
-        /// </summary>
-        public <#=_search.ReturnType#> <#=_search.MethodName#>(<#=_search.ArgType#> <#=SearchMethod.PARAM#>) {
-            var <#=SearchMethod.QUERY#> = this.<#=_search.DbSetName#>.Select(<#=SearchMethod.E#> => new <#=_search.ReturnItemType#> {
-<# foreach (var line in _search.SelectClause()) { #>
-                <#=line#>
-<# } #>
-            });
-
-<# foreach (var line in _search.WhereClause()) { #>
-            <#=line#>
-<# } #>
-
-            if (<#=SearchMethod.PARAM#>.<#=SearchMethod.PAGE#> != null) {
-                const int PAGE_SIZE = 20;
-                var skip = <#=SearchMethod.PARAM#>.<#=SearchMethod.PAGE#>.Value * PAGE_SIZE;
-                <#=SearchMethod.QUERY#> = <#=SearchMethod.QUERY#>.Skip(skip).Take(PAGE_SIZE);
-            }
-
-            foreach (var item in <#=SearchMethod.QUERY#>) {
-                item.<#=SearchResult.INSTANCE_KEY_PROP_NAME#> = <#=InstanceKey.CLASS_NAME#>.<#=InstanceKey.CREATE#>(new object?[] {
-<# foreach (var key in _search.EnumerateKeys()) { #>
-                    item.<#=key#>,
-<# } #>
-                }).ToString();
-
-<# if (_search.GetInstanceNamePropName() == null) { #>
-                // 表示名に使用するプロパティが定義されていないため、キーを表示名に使用します。
-                item.<#=SearchResult.INSTANCE_NAME_PROP_NAME#> = item.<#=SearchResult.INSTANCE_KEY_PROP_NAME#>;
-<# } else { #>
-                item.<#=SearchResult.INSTANCE_NAME_PROP_NAME#> = item.<#=_search.GetInstanceNamePropName()#>;
-<# } #>
-
-                yield return item;
-            }
-        }
-
         /// <summary>
         /// <#=_aggregate.Item.DisplayName#>をキーワードで検索します。
         /// </summary>
@@ -181,7 +138,7 @@ namespace <#=_ctx.Config.EntityNamespace#> {
         }
     }
 }
-#endregion 一覧検索
+#endregion キーワード検索
 
 
 #region 詳細検索
@@ -443,25 +400,9 @@ namespace <#=_ctx.Config.RootNamespace#> {
 <# } #>
     }
 <# } #>
-
-    /// <summary>
-    /// <#=_aggregate.Item.DisplayName#>の一覧検索処理の検索条件を表すクラスです。
-    /// </summary>
-    public partial class <#=_searchCondition.ClassName#> : <#=SearchCondition.BASE_CLASS_NAME#> {
-<# foreach (var prop in _searchCondition.GetMembers()) { #>
-        public <#=prop.Type.GetCSharpTypeName()#> <#=prop.Name#> { get; set; }
-<# } #>
-    }
-
-    /// <summary>
-    /// <#=_aggregate.Item.DisplayName#>の一覧検索処理の検索結果1件を表すクラスです。
-    /// </summary>
-    public partial class <#=_searchResult.ClassName#> : <#=SearchResult.BASE_CLASS_NAME#> {
-<# foreach (var prop in _searchResult.GetMembers()) { #>
-        public <#=prop.Type.GetCSharpTypeName()#> <#=prop.Name#> { get; set; }
-<# } #>
-    }
 }
+
+<# _search.RenderCSharpClassDef(this); #>
 
 namespace <#=_ctx.Config.EntityNamespace#> {
     using System;

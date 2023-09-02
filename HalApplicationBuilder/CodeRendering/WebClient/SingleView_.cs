@@ -29,7 +29,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             ? $"/{_aggregate.Item.UniqueId}/edit/:instanceKey"
             : $"/{_aggregate.Item.UniqueId}/detail/:instanceKey";
 
-        private string GetMultiViewUrl() => new MultiView(_aggregate, _ctx).Url;
+        private string GetMultiViewUrl() => new Search.SearchFeature(_aggregate.GetDbEntity(), _ctx).ReactPageUrl;
         private string GetEditViewUrl() => new SingleView(_aggregate, _ctx, asEditView: true).Url;
         private string GetFindCommandApi() => new AggFile.Controller(_aggregate).FindCommandApi;
         private string GetUpdateCommandApi() => new AggFile.Controller(_aggregate).UpdateCommandApi;

@@ -38,9 +38,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
          new AggregateInstanceInitializerFunction(instance).Render(this); 
      } 
             this.Write("\r\n");
-     Render(new SearchCondition(root.GetDbEntity().AsEntry())); 
-            this.Write("\r\n");
-     Render(new SearchResult(root.GetDbEntity().AsEntry())); 
+     Render(root.GetDbEntity()); 
             this.Write("\r\n");
  } 
             return this.GenerationEnvironment.ToString();

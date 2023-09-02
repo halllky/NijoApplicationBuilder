@@ -45,21 +45,9 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             }
             WriteLine($"}}");
         }
-        private void Render(SearchCondition searchCondition) {
-
-            WriteLine($"export type {searchCondition.TypeScriptTypeName} = {{");
-            foreach (var member in searchCondition.GetMembers()) {
-                WriteLine($"  {member.Name}?: {member.Type.GetTypeScriptTypeName()}");
-            }
-            WriteLine($"}}");
-        }
-        private void Render(SearchResult searchResult) {
-
-            WriteLine($"export type {searchResult.TypeScriptTypeName} = {{");
-            foreach (var member in searchResult.GetMembers()) {
-                WriteLine($"  {member.Name}?: {member.Type.GetTypeScriptTypeName()}");
-            }
-            WriteLine($"}}");
+        private void Render(GraphNode<EFCoreEntity> dbEntity) {
+            var searchFeature = new Search.SearchFeature(dbEntity, _ctx);
+            searchFeature.RenderTypescriptTypeDef(this);
         }
 
 

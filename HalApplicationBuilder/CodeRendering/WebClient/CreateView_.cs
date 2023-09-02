@@ -1,3 +1,4 @@
+using HalApplicationBuilder.CodeRendering.Search;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
 using System;
@@ -23,7 +24,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         internal string Url => $"/{_aggregate.Item.UniqueId}/new";
         internal string Route => $"/{_aggregate.Item.UniqueId}/new";
 
-        private string GetMultiViewUrl() => new MultiView(_aggregate, _ctx).Url;
+        private string GetMultiViewUrl() => new SearchFeature(_aggregate.GetDbEntity(), _ctx).ReactPageUrl;
         private string GetSingleViewUrl() => new SingleView(_aggregate, _ctx, asEditView: false).Url;
         private string GetCreateCommandApi() => new AggFile.Controller(_aggregate).CreateCommandApi;
     }

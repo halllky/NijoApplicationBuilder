@@ -11,15 +11,13 @@ namespace HalApplicationBuilder.CodeRendering.Search {
     /// 検索機能
     /// </summary>
     internal partial class SearchFeature {
-
-        internal required CodeRenderingContext Context { get; init; }
-        internal required GraphNode<EFCoreEntity> DbEntity { get; init; }
-
-        internal string? CreateLinkUrl { get; init; }
-        internal Func<DetailLinkUrlArgs, string>? DetailLinkUrl { get; init; }
-        internal class DetailLinkUrlArgs {
-            internal required string EncodedInstanceKey { get; init; }
+        internal SearchFeature(GraphNode<EFCoreEntity> dbEntity, CodeRenderingContext ctx) {
+            DbEntity = dbEntity.AsEntry();
+            Context = ctx;
         }
+
+        internal CodeRenderingContext Context { get; }
+        internal GraphNode<EFCoreEntity> DbEntity { get; }
 
         internal string DisplayName => DbEntity.GetCorrespondingAggregate().Item.DisplayName;
         internal string PhysicalName => DbEntity.Item.ClassName;
@@ -27,6 +25,16 @@ namespace HalApplicationBuilder.CodeRendering.Search {
         internal string SearchConditionClassName => $"{PhysicalName}SearchCondition";
         internal string SearchResultClassName => $"{PhysicalName}SearchResult";
         internal string DbContextSearchMethodName => $"Search{PhysicalName}";
+
+        internal string ReactPageUrl => $"/{DbEntity.GetCorrespondingAggregate().Item.UniqueId}";
+        internal const string REACT_FILENAME = "list.tsx";
+
+        private const string SEARCHCONDITION_BASE_CLASS_NAME = "SearchConditionBase";
+        private const string SEARCHCONDITION_PAGE_PROP_NAME = "__halapp__Page";
+
+        private const string SEARCHRESULT_BASE_CLASS_NAME = "SearchResultBase";
+        private const string SEARCHRESULT_INSTANCE_KEY_PROP_NAME = "__halapp__InstanceKey";
+        private const string SEARCHRESULT_INSTANCE_NAME_PROP_NAME = "__halapp__InstanceName";
 
         private ICollection<Member>? _members;
         private ICollection<Member> Members {

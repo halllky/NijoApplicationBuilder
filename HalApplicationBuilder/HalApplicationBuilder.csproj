@@ -70,10 +70,6 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>CreateView.cs</LastGenOutput>
 		</None>
-		<None Update="CodeRendering\WebClient\MultiView.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>MultiView.cs</LastGenOutput>
-		</None>
 		<None Update="CodeRendering\WebClient\page.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>page.cs</LastGenOutput>
@@ -93,14 +89,6 @@
 		<None Update="CodeRendering\Util\AggregateInstanceKeyNamePair.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>AggregateInstanceKeyNamePair.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\Presentation\SearchConditionBase.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>SearchConditionBase.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\Presentation\SearchResultBase.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>SearchResultBase.cs</LastGenOutput>
 		</None>
 		<None Update="CodeRendering\WebClient\ComboBox.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
@@ -238,11 +226,6 @@
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>CreateView.tt</DependentUpon>
 		</Compile>
-		<Compile Update="CodeRendering\WebClient\MultiView.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>MultiView.tt</DependentUpon>
-		</Compile>
 		<Compile Update="CodeRendering\WebClient\page.cs">
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
@@ -267,16 +250,6 @@
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>AggregateInstanceKeyNamePair.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\Presentation\SearchConditionBase.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>SearchConditionBase.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\Presentation\SearchResultBase.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>SearchResultBase.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering\WebClient\ComboBox.cs">
 		  <DesignTime>True</DesignTime>

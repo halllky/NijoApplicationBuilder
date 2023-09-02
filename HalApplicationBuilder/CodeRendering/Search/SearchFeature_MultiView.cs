@@ -10,23 +10,22 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.CodeRendering.Search {
     partial class SearchFeature {
-        internal ITemplate CreateReactPage(string filename) {
-            return new MultiView(filename) {
+        internal ITemplate CreateReactPage() {
+            return new MultiView() {
                 Search = this,
             };
         }
 
         private class MultiView : TemplateBase {
-            public MultiView(string filename) {
-                FileName = filename;
-            }
 
-            public override string FileName { get; }
+            public override string FileName => REACT_FILENAME;
             public required SearchFeature Search { get; init; }
 
             protected override string Template() {
                 var useQueryKey = $"{Search.PhysicalName}::search";
-                var url = $"/{AggFile.Controller.SUBDOMAIN}/{Search.PhysicalName}/{AggFile.Controller.SEARCH_ACTION_NAME}";
+                var searchApi = $"/{AggFile.Controller.SUBDOMAIN}/{Search.PhysicalName}/{AggFile.Controller.SEARCH_ACTION_NAME}";
+                var createViewRoute = new CreateView(Search.DbEntity.GetCorrespondingAggregate(), Search.Context).Route;
+                var singleViewRoute = new SingleView(Search.DbEntity.GetCorrespondingAggregate(), Search.Context, false).Route;
 
                 var memberNames = Search.Members.Select(m => m.ConditionPropName);
                 var propNameWidth = FormOfAggregateInstance.GetPropNameFlexBasis(memberNames);
@@ -70,7 +69,7 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                       const { data, isFetching } = useQuery({
                         queryKey: ['{{useQueryKey}}', JSON.stringify(param)],
                         queryFn: async () => {
-                          const response = await get<RowType[]>(`{{url}}`, { param })
+                          const response = await get<RowType[]>(`{{searchApi}}`, { param })
                           return response.ok ? response.data : []
                         },
                         onError: error => {
@@ -79,11 +78,9 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                       })
 
                       const navigate = useNavigate()
-                    {{(Search.CreateLinkUrl == null ? string.Empty : $$"""
                       const toCreateView = useCallback(() => {
-                        navigate('{{Search.CreateLinkUrl}}')
+                        navigate('{{createViewRoute}}')
                       }, [navigate])
-                    """)}}
 
                       const [expanded, setExpanded] = useState(false)
 
@@ -101,14 +98,12 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                                 ? <ChevronDownIcon className="w-4" />
                                 : <ChevronUpIcon className="w-4" />}
                             </div>
-                    {{(Search.CreateLinkUrl == null ? string.Empty : $$"""
                             <IconButton underline icon={PlusIcon} onClick={toCreateView}>新規作成</IconButton>
-                    """)}}
                           </div>
 
                           <FormProvider {...reactHookFormMethods}>
                             <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1 p-1 bg-neutral-200`} onSubmit={handleSubmit(onSearch)}>
-                    {{Search.Members.Select(member => $$"""
+                    {{Search.Members.SelectTextTemplate(member => $$"""
                               <div className="flex">
                                 <div className="{{propNameWidth}}">
                                   <span className="text-sm select-none opacity-80">
@@ -116,7 +111,7 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                                   </span>
                                 </div>
                                 <div className="flex-1">
-                    {{member.Type.RenderUI(new SearchConditionUiForm(member)).Join(Environment.NewLine)}}
+                                  {{member.Type.RenderUI(new SearchConditionUiForm(member)).Join(Environment.NewLine + "              ")}}
                                 </div>
                               </div>
                     """)}}
@@ -143,24 +138,22 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                     }
 
                     type RowType = {
-                      {{SearchResultBase.INSTANCE_KEY}}: string
-                    {{Search.Members.Select(member => $$"""
+                      {{SEARCHRESULT_INSTANCE_KEY_PROP_NAME}}: string
+                    {{Search.Members.SelectTextTemplate(member => $$"""
                       {{member.SearchResultPropName}}?: string | number | boolean
                     """)}}
                     }
 
                     const columnDefs: ColDef<RowType>[] = [
-                    {{(Search.DetailLinkUrl == null ? string.Empty : $$"""
                       {
                         resizable: true,
                         width: 50,
                         cellRenderer: ({ data }: { data: RowType }) => {
-                          const encoded = window.encodeURI(data.{{SearchResultBase.INSTANCE_KEY}})
-                          return <Link to={`{{Search.DetailLinkUrl(new() { EncodedInstanceKey = "${encoded}" })}}`} className="text-blue-400">詳細</Link>
+                          const encoded = window.encodeURI(data.{{SEARCHRESULT_INSTANCE_KEY_PROP_NAME}})
+                          return <Link to={`{{singleViewRoute}}/${encoded}`} className="text-blue-400">詳細</Link>
                         },
                       },
-                    """)}}
-                    {{Search.Members.Select(member => $$"""
+                    {{Search.Members.SelectTextTemplate(member => $$"""
                       { field: '{{member.SearchResultPropName}}', resizable: true, sortable: true, editable: true },
                     """)}}
                     ]

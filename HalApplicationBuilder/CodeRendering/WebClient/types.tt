@@ -15,8 +15,6 @@
 <#         new AggregateInstanceInitializerFunction(instance).Render(this); #>
 <#     } #>
 
-<#     Render(new SearchCondition(root.GetDbEntity().AsEntry())); #>
-
-<#     Render(new SearchResult(root.GetDbEntity().AsEntry())); #>
+<#     Render(root.GetDbEntity()); #>
 
 <# } #>

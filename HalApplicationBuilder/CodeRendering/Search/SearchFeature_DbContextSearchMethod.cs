@@ -36,12 +36,12 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                         /// </summary>
                         public IEnumerable<{{SearchResultClassName}}> {{DbContextSearchMethodName}}({{SearchConditionClassName}} param) {
                             var query = this.{{DbEntity.Item.DbSetName}}.Select(e => new {{SearchResultClassName}} {
-                {{selectClause.Select(x => $$"""
+                {{selectClause.SelectTextTemplate(x => $$"""
                                 {{x.resultMemberName}} = e.{{x.dbColumnPath}},
                 """)}}
                             });
 
-                {{Members.Select(member => member.Type.SearchBehavior switch {
+                {{Members.SelectTextTemplate(member => member.Type.SearchBehavior switch {
                 SearchBehavior.Ambiguous => $$"""
                             if (!string.IsNullOrWhiteSpace(param.{{member.ConditionPropName}})) {
                                 var trimmed = param.{{member.ConditionPropName}}.Trim();
@@ -67,15 +67,15 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                 """,
                 _ => string.Empty,
                 })}}
-                            if (param.{{SearchCondition.PAGE_PROP_NAME}} != null) {
+                            if (param.{{SEARCHCONDITION_PAGE_PROP_NAME}} != null) {
                                 const int PAGE_SIZE = 20;
-                                var skip = param.{{SearchCondition.PAGE_PROP_NAME}}.Value * PAGE_SIZE;
+                                var skip = param.{{SEARCHCONDITION_PAGE_PROP_NAME}}.Value * PAGE_SIZE;
                                 query = query.Skip(skip).Take(PAGE_SIZE);
                             }
 
                             foreach (var item in query) {
-                                item.{{SearchResult.INSTANCE_KEY_PROP_NAME}} = {{InstanceKey.CLASS_NAME}}.{{InstanceKey.CREATE}}(new object?[] {
-                {{Members.Where(member => member.IsInstanceKey).Select(member => $$"""
+                                item.{{SEARCHRESULT_INSTANCE_KEY_PROP_NAME}} = {{InstanceKey.CLASS_NAME}}.{{InstanceKey.CREATE}}(new object?[] {
+                {{Members.Where(member => member.IsInstanceKey).SelectTextTemplate(member => $$"""
                                     item.{{member.SearchResultPropName}},
                 """)}}
                                 }).ToString();
@@ -83,10 +83,10 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                 {{(instanceNameProp == null
                 ? $$"""
                                 // 表示名に使用するプロパティが定義されていないため、キーを表示名に使用します。
-                                item.<#=SearchResult.INSTANCE_NAME_PROP_NAME#> = item.<#=SearchResult.INSTANCE_KEY_PROP_NAME#>;
+                                item.{{SEARCHRESULT_INSTANCE_NAME_PROP_NAME}} = item.{{SEARCHRESULT_INSTANCE_KEY_PROP_NAME}};
                 """
                 : $$"""
-                                item.<#=SearchResult.INSTANCE_NAME_PROP_NAME#> = item.<#=_search.GetInstanceNamePropName()#>;
+                                item.{{SEARCHRESULT_INSTANCE_NAME_PROP_NAME}} = item.{{instanceNameProp}};
                 """)}}
 
                                 yield return item;
