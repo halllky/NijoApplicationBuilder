@@ -54,7 +54,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             /// Createビュー兼シングルビュー: テキストボックス
             /// </summary>
             public IEnumerable<string> TextBox(bool multiline = false) {
-                var name = GetRegisterName(_instance, _prop.PropertyName);
+                var name = GetRegisterName(_instance, _prop).Value;
                 if (multiline)
                     yield return $"<textarea {{...register(`{name}`)}} className=\"{INPUT_WIDTH}\" readOnly={{pageIsReadOnly}} spellCheck=\"false\" autoComplete=\"off\"></textarea>";
                 else
@@ -65,7 +65,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             /// Createビュー兼シングルビュー: トグル
             /// </summary>
             public IEnumerable<string> Toggle() {
-                var name = GetRegisterName(_instance, _prop.PropertyName);
+                var name = GetRegisterName(_instance, _prop).Value;
                 yield return $"<input type=\"checkbox\" {{...register(`{name}`)}} disabled={{pageIsReadOnly}} />";
             }
 
@@ -94,7 +94,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         #region DESCENDANT AGGREGATES
         private void RenderRefAggregateBody(AggregateInstance.RefProperty refProperty) {
             var component = new ComboBox(refProperty.RefTarget.GetCorrespondingAggregate(), _ctx);
-            var registerName = GetRegisterName(refProperty.RefTarget);
+            var registerName = GetRegisterName(refProperty.RefTarget, refProperty).Value;
             component.RenderCaller(this, registerName);
         }
         private void RenderChildrenAggregateBody(AggregateInstance.ChildrenProperty childrenProperty) {
@@ -121,25 +121,9 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             internal virtual string ComponentName => $"{AggregateInstance.Item.TypeScriptTypeName}View";
             internal bool IsChildren => AggregateInstance.IsChildrenMember();
 
-            internal virtual IReadOnlyDictionary<GraphEdge, string> GetArguments() {
-                // 祖先コンポーネントの中に含まれるChildrenの数だけ、
-                // このコンポーネントのその配列中でのインデックスが特定されている必要があるので、引数で渡す
-                var ancestors = AggregateInstance
-                    .PathFromEntry()
-                    .SkipLast(1)
-                    .Where(edge => edge.Terminal.IsChildrenMember())
-                    .ToArray();
-
-                var dict = new Dictionary<GraphEdge, string>();
-                for (int i = 0; i < ancestors.Length; i++) {
-                    dict.Add(ancestors[i], $"index_{i}");
-                }
-                return dict;
-            }
-
             internal string GetUseFieldArrayName() {
                 var path = new List<string>();
-                var args = GetArguments();
+                var args = GetArguments(AggregateInstance);
                 var ancestors = AggregateInstance.PathFromEntry().ToArray();
 
                 foreach (var ancestor in ancestors) {
@@ -151,7 +135,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             }
 
             internal void RenderCaller(ITemplate template) {
-                var args = GetArguments()
+                var args = GetArguments(AggregateInstance)
                     .SkipLast(1)
                     .Select(x => $" {x.Value}={{{x.Value}}}")
                     .Join(string.Empty);
@@ -165,38 +149,58 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             internal ComponentOfChildrenListItem(GraphNode<AggregateInstance> instance) : base(instance) { }
 
             internal override string ComponentName => $"{AggregateInstance.Item.TypeScriptTypeName}ListItemView";
-
-            internal override IReadOnlyDictionary<GraphEdge, string> GetArguments() {
-                // 祖先コンポーネントの中に含まれるChildrenの数だけ、
-                // このコンポーネントのその配列中でのインデックスが特定されている必要があるので、引数で渡す
-                var ancestors = AggregateInstance
-                    .PathFromEntry()
-                    // .SkipLast(1)
-                    .Where(edge => edge.Terminal.IsChildrenMember())
-                    .ToArray();
-
-                var dict = new Dictionary<GraphEdge, string>();
-                for (int i = 0; i < ancestors.Length; i++) {
-                    dict.Add(ancestors[i], $"index_{i}");
-                }
-                return dict;
-            }
         }
 
 
         #region STATIC
         internal const string INPUT_WIDTH = "w-80";
-        private static string GetRegisterName(GraphNode<AggregateInstance> instance, string? propName = null) {
-            var component = new Component(instance);
-            var path = component.GetUseFieldArrayName();
-
-            var list = new List<string>();
-            if (!string.IsNullOrWhiteSpace(path)) list.Add(path);
-            if (instance.IsChildrenMember()) list.Add("${index}");
-            if (propName != null) list.Add(propName);
-
-            return list.Join(".");
+        private static RegisterName GetRegisterName(GraphNode<AggregateInstance> instance, AggregateInstance.Property? prop = null) {
+            var path = new List<IRegistrationPath>();
+            foreach (var edge in instance.PathFromEntry()) {
+                path.Add(new DescendantAggregate { Aggregate = edge.Terminal });
+                if (edge.Terminal.IsChildrenMember()) path.Add(new ArrayIndex { Aggregate = edge.Terminal });
+            }
+            if (prop != null) path.Add(new LastProperty { Property = prop });
+            return new RegisterName { Path = path };
         }
+        private class RegisterName {
+            internal required IList<IRegistrationPath> Path { get; init; }
+            internal string Value => Path
+                .Select(p => p is ArrayIndex arrayIndex ? ("${" + p.Name + "}") : p.Name)
+                .Join(".");
+        }
+        private interface IRegistrationPath {
+            internal string Name { get; }
+        }
+        private class DescendantAggregate : IRegistrationPath {
+            internal required GraphNode Aggregate { get; init; }
+            public string Name => Aggregate.GetParent()!.RelationName;
+        }
+        private class ArrayIndex : IRegistrationPath {
+            internal required GraphNode Aggregate { get; init; }
+            public string Name => Aggregate
+                .PathFromEntry()
+                .Where(edge => edge.Terminal.IsChildrenMember())
+                .Select((_, i) => $"index_{i}")
+                .Last();
+        }
+        private class LastProperty : IRegistrationPath {
+            internal required AggregateInstance.Property Property { get; init; }
+            public string Name => Property.PropertyName;
+        }
+
+        internal static IReadOnlyDictionary<GraphEdge, string> GetArguments(GraphNode<AggregateInstance> instance) {
+            // 祖先コンポーネントの中に含まれるChildrenの数だけ、
+            // このコンポーネントのその配列中でのインデックスが特定されている必要があるので、引数で渡す
+            var args = GetRegisterName(instance).Path
+                .Where(path => path is ArrayIndex)
+                .Cast<ArrayIndex>()
+                .ToDictionary(
+                    arrayIndex => arrayIndex.Aggregate.GetParent()!,
+                    arrayIndex => arrayIndex.Name);
+            return args;
+        }
+
         internal static string GetPropNameFlexBasis(IEnumerable<string> propNames) {
             var maxCharWidth = propNames
                 .Select(prop => prop.CalculateCharacterWidth())

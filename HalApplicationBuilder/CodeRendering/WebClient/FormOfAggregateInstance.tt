@@ -17,8 +17,8 @@ import * as AggregateType from '<#=TypesImport#>'
     .EnumerateThisAndDescendants()
     .Select(x => x.IsChildrenMember() ? new ComponentOfChildrenListItem(x) : new Component(x)); #>
 <# foreach (var desc in components) { #>
-export const <#=desc.ComponentName#> = ({ <#=desc.GetArguments().Values.Join(", ")#> }: {
-<# foreach (var arg in desc.GetArguments().Values) { #>
+export const <#=desc.ComponentName#> = ({ <#=GetArguments(desc.AggregateInstance).Values.Join(", ")#> }: {
+<# foreach (var arg in GetArguments(desc.AggregateInstance).Values) { #>
   <#=arg#>: number
 <# } #>
 }) => {
@@ -78,14 +78,14 @@ export const <#=desc.ComponentName#> = ({ <#=desc.GetArguments().Values.Join(", 
       <div className="flex-1 flex gap-2 flex-wrap">
 <# foreach (var item in variationProperty.Group.VariationAggregates) { #>
         <label>
-          <input type="radio" value="<#=item.Key#>" disabled={pageIsReadOnly} {...register(`<#=GetRegisterName(desc.AggregateInstance, variationProperty.Group.GroupName.ToCSharpSafe())#>`)} />
+          <input type="radio" value="<#=item.Key#>" disabled={pageIsReadOnly} {...register(`<#=GetRegisterName(desc.AggregateInstance, variationProperty).Value#>`)} />
           <#=item.Value.RelationName#>
         </label>
 <# } #>
       </div>
     </div>
 <# foreach (var item in variationProperty.Group.VariationAggregates) { #>
-    <div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(watch(`<#=GetRegisterName(desc.AggregateInstance, variationProperty.Group.GroupName.ToCSharpSafe())#>`) !== '<#=item.Key#>' ? 'hidden' : '')}`}>
+    <div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(watch(`<#=GetRegisterName(desc.AggregateInstance, variationProperty).Value#>`) !== '<#=item.Key#>' ? 'hidden' : '')}`}>
 <# PushIndent("      "); #>
 <# RenderVariationAggregateBody(item.Value.Terminal); #>
 <# PopIndent(); #>
@@ -113,7 +113,7 @@ export const <#=desc.ComponentName#> = ({ <#=desc.GetArguments().Values.Join(", 
 <# if (desc.IsChildren) { #>
 <# var arrayComponent = new Component(desc.AggregateInstance); #>
 export const <#=arrayComponent.ComponentName#> = (args: {
-<# foreach (var arg in arrayComponent.GetArguments().Values) { #>
+<# foreach (var arg in GetArguments(arrayComponent.AggregateInstance).Values.SkipLast(1)) { #>
   <#=arg#>: number
 <# } #>
 }) => {
@@ -132,7 +132,7 @@ export const <#=arrayComponent.ComponentName#> = (args: {
     <>
       {fields.map((_, index) => (
         <div key={index} className="flex flex-col space-y-1 p-1 border border-neutral-400">
-          <<#=desc.ComponentName#> {...args} <#=desc.GetArguments().Values.Last()#>={index} />
+          <<#=desc.ComponentName#> {...args} <#=GetArguments(desc.AggregateInstance).Values.Last()#>={index} />
           {!pageIsReadOnly && <Components.IconButton underline icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }} className="self-start">削除</Components.IconButton>}
         </div>
       ))}

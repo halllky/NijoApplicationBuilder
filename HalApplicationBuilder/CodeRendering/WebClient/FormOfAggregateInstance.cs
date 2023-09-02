@@ -42,9 +42,9 @@ import * as AggregateType from '");
             this.Write("export const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(desc.ComponentName));
             this.Write(" = ({ ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(desc.GetArguments().Values.Join(", ")));
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetArguments(desc.AggregateInstance).Values.Join(", ")));
             this.Write(" }: {\r\n");
- foreach (var arg in desc.GetArguments().Values) { 
+ foreach (var arg in GetArguments(desc.AggregateInstance).Values) { 
             this.Write("  ");
             this.Write(this.ToStringHelper.ToStringWithCulture(arg));
             this.Write(": number\r\n");
@@ -96,7 +96,7 @@ import * as AggregateType from '");
             this.Write("        <label>\r\n          <input type=\"radio\" value=\"");
             this.Write(this.ToStringHelper.ToStringWithCulture(item.Key));
             this.Write("\" disabled={pageIsReadOnly} {...register(`");
-            this.Write(this.ToStringHelper.ToStringWithCulture(GetRegisterName(desc.AggregateInstance, variationProperty.Group.GroupName.ToCSharpSafe())));
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetRegisterName(desc.AggregateInstance, variationProperty).Value));
             this.Write("`)} />\r\n          ");
             this.Write(this.ToStringHelper.ToStringWithCulture(item.Value.RelationName));
             this.Write("\r\n        </label>\r\n");
@@ -105,7 +105,7 @@ import * as AggregateType from '");
  foreach (var item in variationProperty.Group.VariationAggregates) { 
             this.Write("    <div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(wat" +
                     "ch(`");
-            this.Write(this.ToStringHelper.ToStringWithCulture(GetRegisterName(desc.AggregateInstance, variationProperty.Group.GroupName.ToCSharpSafe())));
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetRegisterName(desc.AggregateInstance, variationProperty).Value));
             this.Write("`) !== \'");
             this.Write(this.ToStringHelper.ToStringWithCulture(item.Key));
             this.Write("\' ? \'hidden\' : \'\')}`}>\r\n");
@@ -132,7 +132,7 @@ import * as AggregateType from '");
             this.Write("export const ");
             this.Write(this.ToStringHelper.ToStringWithCulture(arrayComponent.ComponentName));
             this.Write(" = (args: {\r\n");
- foreach (var arg in arrayComponent.GetArguments().Values) { 
+ foreach (var arg in GetArguments(arrayComponent.AggregateInstance).Values.SkipLast(1)) { 
             this.Write("  ");
             this.Write(this.ToStringHelper.ToStringWithCulture(arg));
             this.Write(": number\r\n");
@@ -151,7 +151,7 @@ import * as AggregateType from '");
                     " p-1 border border-neutral-400\">\r\n          <");
             this.Write(this.ToStringHelper.ToStringWithCulture(desc.ComponentName));
             this.Write(" {...args} ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(desc.GetArguments().Values.Last()));
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetArguments(desc.AggregateInstance).Values.Last()));
             this.Write(@"={index} />
           {!pageIsReadOnly && <Components.IconButton underline icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }} className=""self-start"">削除</Components.IconButton>}
         </div>

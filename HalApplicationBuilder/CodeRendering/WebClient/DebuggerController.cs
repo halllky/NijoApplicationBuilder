@@ -51,7 +51,7 @@ public class HalappDebugController : ControllerBase {
             this.Write(this.ToStringHelper.ToStringWithCulture(_ctx.Config.DbContextName));
             this.Write(@">();
     dbContext.Database.EnsureDeleted();
-    dbContext.Database.Migrate();
+    dbContext.Database.EnsureCreated();
     return new HttpResponseMessage {
       StatusCode = System.Net.HttpStatusCode.OK,
       Content = new StringContent(""DBを再作成しました。""),
