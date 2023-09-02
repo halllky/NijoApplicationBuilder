@@ -72,9 +72,12 @@ namespace HalApplicationBuilder.CodeRendering {
         private bool _eval;
 
         internal static TemplateTextHelper If(bool condition, string text) {
-            var stringBuilder = new StringBuilder();
-            if (condition) stringBuilder.AppendLine(text);
-            return new TemplateTextHelper(stringBuilder);
+            var helper = new TemplateTextHelper(new StringBuilder());
+            if (condition) {
+                helper._stringBuilder.AppendLine(text);
+                helper._eval = false;
+            }
+            return helper;
         }
         internal TemplateTextHelper ElseIf(bool condition, string text) {
             if (_eval && condition) {

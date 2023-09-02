@@ -182,241 +182,191 @@ namespace HalApplicationBuilder.Core {
 
         internal bool TryBuild(out AppSchema appSchema, out ICollection<string> errors, MemberTypeResolver? memberTypeResolver = null) {
 
-            errors = new HashSet<string>();
-            if (memberTypeResolver == null) memberTypeResolver = MemberTypeResolver.Default();
+            var aggregateDefs = _aggregateDefs
+                .Select(def => new {
+                    FullPath = def.FullPath.Value,
+                    def.Members,
+                })
+                .Concat(_childrenDefs.Select(def => new {
+                    FullPath = $"{def.OwnerFullPath}/{def.Name}",
+                    def.Members,
+                }))
+                .Concat(_childDefs.Select(def => new {
+                    FullPath = $"{def.OwnerFullPath}/{def.Name}",
+                    def.Members,
+                }))
+                .Concat(_variationDefs.Select(def => new {
+                    FullPath = $"{def.OwnerFullPath}/{def.Name}",
+                    def.Members,
+                }));
 
-            var aggregates = new Dictionary<NodeId, Aggregate>();
-            var aggregateRelations = new Dictionary<(NodeId, string, NodeId), GraphEdgeInfo>();
-
-            // ----------------------------------------------------------------------------------
-            // 集約ノードの作成
-            foreach (var def in _aggregateDefs) {
-                var members = new List<Aggregate.Member>();
-                foreach (var member in def.Members) {
-                    if (memberTypeResolver.TryResolve(member.Type, out var memberType)) {
-                        members.Add(new Aggregate.Member {
-                            Name = member.Name,
-                            Type = memberType,
-                            IsPrimary = member.IsPrimary,
-                            IsInstanceName = member.IsInstanceName,
-                            Optional = member.Optional,
-                        });
-                    } else {
-                        errors.Add($"Type name '{member.Type}' of '{member.Name}' is invalid.");
-                    }
-                }
-                var aggregate = new Aggregate(def.FullPath, members);
-                aggregates.Add(aggregate.Id, aggregate);
-            }
-
-            foreach (var def in _childrenDefs) {
-                if (!AggregatePath.TryParse(def.OwnerFullPath, out var parentPath, out var err)) {
-                    errors.Add(err);
-                    continue;
-                }
-                var path = parentPath.GetChildAggregatePath(def.Name);
-                var members = new List<Aggregate.Member>();
-                foreach (var member in def.Members) {
-                    if (memberTypeResolver.TryResolve(member.Type, out var memberType)) {
-                        members.Add(new Aggregate.Member {
-                            Name = member.Name,
-                            Type = memberType,
-                            IsPrimary = member.IsPrimary,
-                            IsInstanceName = member.IsInstanceName,
-                            Optional = member.Optional,
-                        });
-                    } else {
-                        errors.Add($"Type name '{member.Type}' of '{member.Name}' is invalid.");
-                    }
-                }
-                var aggregate = new Aggregate(path, members);
-                var relation = new GraphEdgeInfo {
-                    Initial = new NodeId(parentPath.Value),
-                    Terminal = new NodeId(path.Value),
+            var relationDefs = _childrenDefs
+                .Select(def => new {
+                    Initial = def.OwnerFullPath,
+                    Terminal = $"{def.OwnerFullPath}/{def.Name}",
                     RelationName = def.Name,
                     Attributes = new Dictionary<string, object> {
                         { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD },
                         { DirectedEdgeExtensions.REL_ATTR_MULTIPLE, true },
                     },
-                };
-                aggregates.Add(aggregate.Id, aggregate);
-                aggregateRelations[(relation.Initial, relation.RelationName, relation.Terminal)] = relation;
-            }
-
-            foreach (var def in _childDefs) {
-                if (!AggregatePath.TryParse(def.OwnerFullPath, out var parentPath, out var err)) {
-                    errors.Add(err);
-                    continue;
-                }
-                var path = parentPath.GetChildAggregatePath(def.Name);
-                var members = new List<Aggregate.Member>();
-                foreach (var member in def.Members) {
-                    if (memberTypeResolver.TryResolve(member.Type, out var memberType)) {
-                        members.Add(new Aggregate.Member {
-                            Name = member.Name,
-                            Type = memberType,
-                            IsPrimary = member.IsPrimary,
-                            IsInstanceName = member.IsInstanceName,
-                            Optional = member.Optional,
-                        });
-                    } else {
-                        errors.Add($"Type name of '{member.Name}' is invalid: '{member.Type}'");
-                    }
-                }
-                var aggregate = new Aggregate(path, members);
-                var relation = new GraphEdgeInfo {
-                    Initial = new NodeId(parentPath.Value),
-                    Terminal = new NodeId(path.Value),
+                })
+                .Concat(_childDefs.Select(def => new {
+                    Initial = def.OwnerFullPath,
+                    Terminal = $"{def.OwnerFullPath}/{def.Name}",
                     RelationName = def.Name,
                     Attributes = new Dictionary<string, object> {
                         { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD },
                     },
-                };
-                aggregates.Add(aggregate.Id, aggregate);
-                aggregateRelations[(relation.Initial, relation.RelationName, relation.Terminal)] = relation;
-            }
-
-            foreach (var def in _variationDefs) {
-                if (!AggregatePath.TryParse(def.OwnerFullPath, out var parentPath, out var err)) {
-                    errors.Add(err);
-                    continue;
-                }
-                var path = parentPath.GetChildAggregatePath(def.Name);
-                var members = new List<Aggregate.Member>();
-                foreach (var member in def.Members) {
-                    if (memberTypeResolver.TryResolve(member.Type, out var memberType)) {
-                        members.Add(new Aggregate.Member {
-                            Name = member.Name,
-                            Type = memberType,
-                            IsPrimary = member.IsPrimary,
-                            IsInstanceName = member.IsInstanceName,
-                            Optional = member.Optional,
-                        });
-                    } else {
-                        errors.Add($"Type name of '{member.Name}' is invalid: '{member.Type}'");
-                    }
-                }
-                var aggregate = new Aggregate(path, members);
-                var relation = new GraphEdgeInfo {
-                    Initial = new NodeId(parentPath.Value),
-                    Terminal = new NodeId(path.Value),
-                    RelationName = $"{def.VariationContainer}_{def.Name}",
+                }))
+                .Concat(_variationDefs.Select(def => new {
+                    Initial = def.OwnerFullPath,
+                    Terminal = $"{def.OwnerFullPath}/{def.Name}",
+                    RelationName = def.Name,
                     Attributes = new Dictionary<string, object> {
                         { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD },
                         { DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH, def.VariationSwitch },
                         { DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, def.VariationContainer },
                     },
-                };
-                aggregates.Add(aggregate.Id, aggregate);
-                aggregateRelations[(relation.Initial, relation.RelationName, relation.Terminal)] = relation;
-            }
-
-            foreach (var def in _referencesDefs) {
-                if (!AggregatePath.TryParse(def.OwnerFullPath, out var ownerPath, out var err)) {
-                    errors.Add(err);
-                    continue;
-                }
-                if (!AggregatePath.TryParse(def.TargetFullPath, out var targetPath, out err)) {
-                    errors.Add(err);
-                    continue;
-                }
-                var relation = new GraphEdgeInfo {
-                    Initial = new NodeId(ownerPath.Value),
-                    Terminal = new NodeId(targetPath.Value),
+                }))
+                .Concat(_referencesDefs.Select(def => new {
+                    Initial = def.OwnerFullPath,
+                    Terminal = def.TargetFullPath,
                     RelationName = def.Name,
                     Attributes = new Dictionary<string, object> {
                         { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_REFERENCE },
                         { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, def.IsPrimary },
                         { DirectedEdgeExtensions.REL_ATTR_IS_INSTANCE_NAME, def.IsInstanceName },
                     },
-                };
-                aggregateRelations[(relation.Initial, relation.RelationName, relation.Terminal)] = relation;
+                }));
+
+            // ---------------------------------------------------------
+            errors = new HashSet<string>();
+            memberTypeResolver ??= MemberTypeResolver.Default();
+
+            var aggregates = new Dictionary<AggregatePath, Aggregate>();
+            var aggregateEdges = new List<GraphEdgeInfo>();
+            foreach (var aggregate in aggregateDefs) {
+                var successToParse = true;
+
+                // バリデーションおよびグラフ構成要素の作成: 集約ID
+                if (!AggregatePath.TryParse(aggregate.FullPath, out var id, out var error)) {
+                    errors.Add(error);
+                    successToParse = false;
+                } else if (aggregates.ContainsKey(id)) {
+                    errors.Add($"ID '{id}' が重複しています。");
+                    successToParse = false;
+                }
+
+                // バリデーションおよびグラフ構成要素の作成: 集約メンバー
+                var members = new List<Aggregate.Member>();
+                foreach (var member in aggregate.Members) {
+                    if (!memberTypeResolver.TryResolve(member.Type, out var memberType)) {
+                        errors.Add($"'{member.Name}' のタイプ '{member.Type}' が不正です。");
+                        successToParse = false;
+                        continue;
+                    }
+                    members.Add(new Aggregate.Member {
+                        Name = member.Name,
+                        Type = memberType,
+                        IsPrimary = member.IsPrimary,
+                        IsInstanceName = member.IsInstanceName,
+                        Optional = member.Optional,
+                    });
+                }
+
+                if (successToParse) {
+                    aggregates.Add(id, new Aggregate(id, members));
+                }
             }
 
-            // ----------------------------------------------------------------------------------
-            // 集約ノードのバリデーション
-            var aggregateDict = new Dictionary<AggregatePath, Aggregate>();
-            foreach (var aggregate in aggregates.Values) {
-                aggregateDict[aggregate.Path] = aggregate; 
-            }
-            var duplicates = aggregates.Values
-                .GroupBy(a => a.Path)
-                .Where(group => group.Count() >= 2);
-            foreach (var dup in duplicates) {
-                errors.Add($"Aggregate path duplicates: {dup.Key}");
-            }
+            foreach (var relation in relationDefs) {
+                var successToParse = true;
 
-            // ----------------------------------------------------------------------------------
-            // DBEntityノード、Instanceノードの作成
-            var dbEntities = new List<IGraphNode>();
-            var dbEntityRelations = new Dictionary<(NodeId, string, NodeId), GraphEdgeInfo>();
-            foreach (var aggregate in aggregates.Values) {
-                var dbEntity = new EFCoreEntity(aggregate);
-                dbEntities.Add(dbEntity);
+                // バリデーションおよびグラフ構成要素の作成: リレーションの集約ID
+                if (!AggregatePath.TryParse(relation.Initial, out var initial, out var error1)) {
+                    errors.Add(error1);
+                    successToParse = false;
+                } else if (!aggregates.ContainsKey(initial)) {
+                    errors.Add($"ID '{relation.Initial}' と対応する定義がありません。");
+                    successToParse = false;
+                }
+                if (!AggregatePath.TryParse(relation.Terminal, out var terminal, out var error2)) {
+                    errors.Add(error2);
+                    successToParse = false;
+                } else if (!aggregates.ContainsKey(terminal)) {
+                    errors.Add($"ID '{relation.Terminal}' と対応する定義がありません。");
+                    successToParse = false;
+                }
 
-                dbEntityRelations.Add((dbEntity.Id, "origin", aggregate.Id), new GraphEdgeInfo {
-                    Initial = dbEntity.Id,
-                    Terminal = aggregate.Id,
-                    RelationName = "origin",
-                    Attributes = new Dictionary<string, object> {
-                        { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_AGG_2_ETT },
-                    },
-                });
-
-                foreach (var edge in aggregateRelations.Values.Where(e => e.Initial == aggregate.Id)) {
-                    var terminal = new EFCoreEntity(aggregates[edge.Terminal]).Id;
-                    dbEntityRelations.Add((dbEntity.Id, edge.RelationName, terminal), new GraphEdgeInfo {
-                         Initial = dbEntity.Id,
-                         RelationName = edge.RelationName,
-                         Terminal = terminal,
-                         Attributes = new Dictionary<string, object>(edge.Attributes),
+                if (successToParse) {
+                    aggregateEdges.Add(new GraphEdgeInfo {
+                        Initial = new NodeId(initial.Value),
+                        Terminal = new NodeId(terminal.Value),
+                        RelationName = relation.RelationName,
+                        Attributes = relation.Attributes,
                     });
                 }
             }
 
-            var aggregateInstances = new List<IGraphNode>();
-            var aggregateInstanceRelations = new Dictionary<(NodeId, string, NodeId), GraphEdgeInfo>();
-            foreach (var aggregate in aggregates.Values) {
-                var instance = new AggregateInstance(aggregate);
-                aggregateInstances.Add(instance);
+            // ---------------------------------------------------------
+            // DbEntity作成
+            var dbEntities = aggregates.Values.Select(aggregate => new EFCoreEntity(
+                new NodeId($"DBENTITY::{aggregate.Id}"),
+                aggregate.DisplayName.ToCSharpSafe()));
+            var dbEntityEdges = aggregateEdges.Select(edge => new GraphEdgeInfo {
+                Initial = new NodeId($"DBENTITY::{edge.Initial}"),
+                Terminal = new NodeId($"DBENTITY::{edge.Terminal}"),
+                RelationName = edge.RelationName,
+                Attributes = edge.Attributes,
+            });
+            var entityToAggregate = aggregates.Values.Select(aggregate => new GraphEdgeInfo {
+                Initial = new NodeId($"DBENTITY::{aggregate.Id}"),
+                Terminal = aggregate.Id,
+                RelationName = "origin",
+                Attributes = new Dictionary<string, object> {
+                    { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_AGG_2_ETT },
+                },
+            });
 
-                aggregateInstanceRelations.Add((instance.Id, "origin", aggregate.Id), new GraphEdgeInfo {
-                    Initial = instance.Id,
-                    Terminal = aggregate.Id,
-                    RelationName = "origin",
-                    Attributes = new Dictionary<string, object> {
-                        { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_AGG_2_INS },
-                    },
-                });
+            // ---------------------------------------------------------
+            // AggregateInstance作成
+            var aggregateInstances = aggregates.Values.Select(aggregate => new AggregateInstance(
+                new NodeId($"INSTANCE::{aggregate.Id}"),
+                aggregate.DisplayName.ToCSharpSafe()));
+            var aggregateInstanceEdges = aggregateEdges.Select(edge => new GraphEdgeInfo {
+                Initial = new NodeId($"INSTANCE::{edge.Initial}"),
+                Terminal = new NodeId($"INSTANCE::{edge.Terminal}"),
+                RelationName = edge.RelationName,
+                Attributes = edge.Attributes,
+            });
+            var instanceToAggregate = aggregates.Values.Select(aggregate => new GraphEdgeInfo {
+                Initial = new NodeId($"INSTANCE::{aggregate.Id}"),
+                Terminal = aggregate.Id,
+                RelationName = "origin",
+                Attributes = new Dictionary<string, object> {
+                    { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_AGG_2_INS },
+                },
+            });
 
-                foreach (var edge in aggregateRelations.Values.Where(e => e.Initial == aggregate.Id)) {
-                    var terminal = new AggregateInstance(aggregates[edge.Terminal]).Id;
-                    aggregateInstanceRelations.Add((instance.Id, edge.RelationName, terminal), new GraphEdgeInfo {
-                        Initial = instance.Id,
-                        RelationName = edge.RelationName,
-                        Terminal = terminal,
-                        Attributes = new Dictionary<string, object>(edge.Attributes),
-                    });
-                }
-            }
-
-            // ----------------------------------------------------------------------------------
+            // ---------------------------------------------------------
             // グラフを作成して返す
-            var allNodes = aggregates.Values
+            var nodes = aggregates.Values
+                .Cast<IGraphNode>()
                 .Concat(dbEntities)
                 .Concat(aggregateInstances);
-            var allEdges = aggregateRelations.Values
-                .Concat(dbEntityRelations.Values)
-                .Concat(aggregateInstanceRelations.Values);
-            if (!DirectedGraph.TryCreate(allNodes, allEdges, out var graph, out var errors1)) {
+            var edges = aggregateEdges
+                .Concat(dbEntityEdges)
+                .Concat(entityToAggregate)
+                .Concat(aggregateInstanceEdges)
+                .Concat(instanceToAggregate);
+            if (!DirectedGraph.TryCreate(nodes, edges, out var graph, out var errors1)) {
                 foreach (var err in errors1) errors.Add(err);
             }
-            if (errors.Any()) {
-                appSchema = AppSchema.Empty();
-                return false;
-            }
-            appSchema = new AppSchema(ApplicationName, graph);
-            return true;
+
+            appSchema = errors.Any()
+                ? AppSchema.Empty()
+                : new AppSchema(ApplicationName, graph);
+            return !errors.Any();
         }
 
         internal class AggregateDef {

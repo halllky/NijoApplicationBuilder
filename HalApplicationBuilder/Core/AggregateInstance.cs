@@ -9,16 +9,18 @@ using System.Threading.Tasks;
 namespace HalApplicationBuilder.Core
 {
     internal class AggregateInstance : IGraphNode {
-        internal AggregateInstance(Aggregate aggregate) {
-            // TODO aggregateIdにコロンが含まれるケースの対策
-            Id = new NodeId($"INSTANCE::{aggregate.Id}");
-            _aggregate = aggregate;
+        internal AggregateInstance(Aggregate aggregate) : this(
+            new NodeId($"INSTANCE::{aggregate.Id}"),
+            aggregate.DisplayName.ToCSharpSafe()) {
+        }
+        internal AggregateInstance(NodeId id, string name) {
+            Id = id;
+            ClassName = $"{name}Instance";
+            TypeScriptTypeName = name;
         }
 
-        private readonly Aggregate _aggregate;
-
-        internal string ClassName => $"{_aggregate.DisplayName.ToCSharpSafe()}Instance";
-        internal string TypeScriptTypeName => _aggregate.DisplayName.ToCSharpSafe();
+        internal string ClassName { get; }
+        internal string TypeScriptTypeName { get; }
 
         public NodeId Id { get; }
 

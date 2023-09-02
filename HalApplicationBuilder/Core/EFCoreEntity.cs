@@ -11,13 +11,15 @@ namespace HalApplicationBuilder.Core {
         internal EFCoreEntity(Aggregate aggregate) {
             // TODO 集約IDにコロンが含まれるケースの対策
             Id = new NodeId($"DBENTITY::{aggregate.Id}");
-            Aggregate = aggregate;
+            ClassName = aggregate.DisplayName.ToCSharpSafe();
+        }
+        internal EFCoreEntity(NodeId id, string name) {
+            Id = id;
+            ClassName = name;
         }
 
         public NodeId Id { get; }
-        private Aggregate Aggregate { get; }
-
-        internal string ClassName => Aggregate.DisplayName.ToCSharpSafe();
+        internal string ClassName { get; }
         internal string DbSetName => ClassName;
 
         internal const string KEYEQUALS = "KeyEquals";
