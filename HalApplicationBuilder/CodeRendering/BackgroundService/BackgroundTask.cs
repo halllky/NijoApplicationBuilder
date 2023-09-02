@@ -42,7 +42,7 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
                                 {{COL_BATCHTYPE}} = attribute.Id,
                                 {{COL_PARAMETERJSON}} = json,
                                 {{COL_REQUESTTIME}} = now,
-                                {{COL_STATE}} = E_BackgroundTaskState.WaitToStart,
+                                {{COL_STATE}} = {{ENUM_BGTASKSTATE}}.{{ENUM_BGTASKSTATE_WAITTOSTART}},
                             };
                             dbContext.Add(entity);
                             dbContext.SaveChanges();

@@ -350,9 +350,12 @@ namespace HalApplicationBuilder.Core {
 
             // ---------------------------------------------------------
             // 基盤機能
-            var halappEntities = new IGraphNode[] {
-                CodeRendering.BackgroundService.BackgroundTaskEntity.CreateEntity(),
-            };
+            var halappEntities = new List<IGraphNode>();
+            var halappEnums = new List<EnumDefinition>();
+
+            // 基盤機能: バッチ処理
+            halappEntities.Add(CodeRendering.BackgroundService.BackgroundTaskEntity.CreateEntity());
+            halappEnums.Add(CodeRendering.BackgroundService.BackgroundTaskEntity.CreateBackgroundTaskStateEnum());
 
             // ---------------------------------------------------------
             // グラフを作成して返す
@@ -372,7 +375,7 @@ namespace HalApplicationBuilder.Core {
 
             appSchema = errors.Any()
                 ? AppSchema.Empty()
-                : new AppSchema(ApplicationName, graph);
+                : new AppSchema(ApplicationName, graph, halappEnums);
             return !errors.Any();
         }
 

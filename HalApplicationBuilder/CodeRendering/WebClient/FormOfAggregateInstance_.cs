@@ -72,20 +72,16 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             /// <summary>
             /// Createビュー兼シングルビュー: 選択肢（コード自動生成時に要素が確定しているもの）
             /// </summary>
-            public IEnumerable<string> Selection() {
-                // TODO: enumの値をスキーマから取得する
-                var options = new List<KeyValuePair<string, string>>();
-                if (!_prop.CorrespondingDbColumn.RequiredAtDB)
-                    options.Add(KeyValuePair.Create("", ""));
-
-                // TODO: RegisterNameを使っていない
-                yield return $"<select>";
-                foreach (var opt in options) {
-                    yield return $"  <option selected value=\"{opt.Key}\">";
-                    yield return $"    {opt.Value}";
-                    yield return $"  </option>";
-                }
-                yield return $"</select>";
+            public IEnumerable<string> Selection(IEnumerable<KeyValuePair<string, string>> options) {
+                yield return $$"""
+                    <select className="border" {...register(`{{GetRegisterName(_instance)}}`)}>
+                    {{options.SelectTextTemplate(option => $$"""
+                        <option value="{{option.Key}}">
+                        {{option.Value}}
+                        </option>
+                    """)}}
+                    </select>
+                    """;
             }
         }
         #endregion SCHALAR PROPERTY

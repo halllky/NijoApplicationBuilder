@@ -70,7 +70,7 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
                                     // 起動対象バッチがあるかどうか検索
                                     var queued = dbContext
                                         .{{dbSetName}}
-                                        .Where(task => task.State == E_BackgroundTaskState.WaitToStart)
+                                        .Where(task => task.State == {{ENUM_BGTASKSTATE}}.{{ENUM_BGTASKSTATE_WAITTOSTART}})
                                         .OrderBy(task => task.RequestTime)
                                         .Take(5)
                                         .ToArray();
@@ -92,7 +92,7 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
                                             runningTasks.Add(entity.{{COL_ID}}, task);
 
                                             entity.{{COL_STARTTIME}} = now;
-                                            entity.{{COL_STATE}} = E_BackgroundTaskState.Running;
+                                            entity.{{COL_STATE}} = {{ENUM_BGTASKSTATE}}.{{ENUM_BGTASKSTATE_RUNNING}};
                                             dbContext.SaveChanges();
 
                                         } catch (Exception ex) {
@@ -205,8 +205,8 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
                                 }
                                 item.Value.FinishTime = now;
                                 item.Value.State = completedTasks[item.Key].IsCompletedSuccessfully
-                                    ? E_BackgroundTaskState.Success
-                                    : E_BackgroundTaskState.Fault;
+                                    ? {{ENUM_BGTASKSTATE}}.{{ENUM_BGTASKSTATE_SUCCESS}}
+                                    : {{ENUM_BGTASKSTATE}}.{{ENUM_BGTASKSTATE_FAULT}};
                                 dbContext.SaveChanges();
 
                                 runningTasks.Remove(item.Key);
@@ -216,13 +216,6 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
                 }
 
                 namespace {{_ctx.Config.RootNamespace}} {
-                    public enum E_BackgroundTaskState {
-                        WaitToStart = 0,
-                        Running = 1,
-                        Success = 2,
-                        Fault = 3,
-                    }
-
                     public sealed class BackgroundTaskContextFactory {
                         public BackgroundTaskContextFactory(DateTime startTime, IServiceProvider serviceProvider, string directory) {
                             _startTime = startTime;
@@ -296,7 +289,7 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
                         [JsonPropertyName("parameter")]
                         public string {{COL_PARAMETERJSON}} { get; set; } = string.Empty;
                         [JsonPropertyName("state")]
-                        public E_BackgroundTaskState {{COL_STATE}} { get; set; }
+                        public {{ENUM_BGTASKSTATE}} {{COL_STATE}} { get; set; }
                         [JsonPropertyName("requestTime")]
                         public DateTime {{COL_REQUESTTIME}} { get; set; }
                         [JsonPropertyName("startTime")]

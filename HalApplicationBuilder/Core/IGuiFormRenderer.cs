@@ -14,6 +14,6 @@ namespace HalApplicationBuilder.Core {
         /// <summary>
         /// コード自動生成時点で選択肢が確定している選択肢（列挙体など）
         /// </summary>
-        IEnumerable<string> Selection();
+        IEnumerable<string> Selection(IEnumerable<KeyValuePair<string, string>> options);
     }
 }
