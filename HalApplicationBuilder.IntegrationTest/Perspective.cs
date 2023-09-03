@@ -29,7 +29,7 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                 }
 
                 using var ct = new CancellationTokenSource();
-                using var dotnetRun = SharedResource.Project.Debugger.CreateServerRunningProcess(Console.Out, ct.Token);
+                using var dotnetRun = SharedResource.Project.Debugger.CreateServerRunningProcess(TestContext.Out, ct.Token);
                 try {
                     // halapp.xmlの更新
                     File.WriteAllText(SharedResource.Project.GetAggregateSchemaPath(), _pattern.LoadXmlString());

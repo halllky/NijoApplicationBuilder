@@ -19,8 +19,8 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                 });
                 var res2 = await SharedResource.Project.Get("/api/集約A/detail/[\"111\"]");
 
-                Assert.That(res1.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                Assert.That(res2.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Util.AssertHttpResponseIsOK(res1);
+                Util.AssertHttpResponseIsOK(res2);
                 Assert.That(await res2.Content.ReadAsJsonAsync(), Is.EqualTo(new {
                     ID = "111",
                     __halapp_InstanceKey = "[\"111\"]",
@@ -40,9 +40,9 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                 });
                 var findResult2 = await SharedResource.Project.Get("/api/参照元/detail/[\"222\"]");
 
-                Assert.That(createResult1.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                Assert.That(createResult2.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                Assert.That(findResult2.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Util.AssertHttpResponseIsOK(createResult1);
+                Util.AssertHttpResponseIsOK(createResult2);
+                Util.AssertHttpResponseIsOK(findResult2);
                 Assert.That(await findResult2.Content.ReadAsJsonAsync(), Is.EqualTo(new {
                     参照元集約ID = "222",
                     参照元集約名 = "参照元2",
@@ -63,8 +63,8 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                 });
                 var findResult1 = await SharedResource.Project.Get("/api/親集約/detail/[\"111\"]");
 
-                Assert.That(createResult1.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                Assert.That(findResult1.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Util.AssertHttpResponseIsOK(createResult1);
+                Util.AssertHttpResponseIsOK(findResult1);
                 Assert.That(await findResult1.Content.ReadAsJsonAsync(), Is.EqualTo(new {
                     親集約ID = "111",
                     親集約名 = "親1",
@@ -88,8 +88,8 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                 });
                 var findResult1 = await SharedResource.Project.Get("/api/親集約/detail/[\"111\"]");
 
-                Assert.That(createResult1.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                Assert.That(findResult1.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Util.AssertHttpResponseIsOK(createResult1);
+                Util.AssertHttpResponseIsOK(findResult1);
                 Assert.That(await findResult1.Content.ReadAsJsonAsync(), Is.EqualTo(new {
                     親集約ID = "111",
                     親集約名 = "親1",
@@ -115,8 +115,8 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                 });
                 var findResult1 = await SharedResource.Project.Get("/api/親集約/detail/[\"111\"]");
 
-                Assert.That(createResult1.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                Assert.That(findResult1.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Util.AssertHttpResponseIsOK(createResult1);
+                Util.AssertHttpResponseIsOK(findResult1);
                 Assert.That(await findResult1.Content.ReadAsJsonAsync(), Is.EqualTo(new {
                     親集約ID = "111",
                     親集約名 = "親1",
