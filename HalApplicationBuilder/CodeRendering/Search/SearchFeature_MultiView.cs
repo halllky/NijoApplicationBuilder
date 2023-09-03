@@ -25,8 +25,8 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                 var searchApi = $"/{Controller.SUBDOMAIN}/{Search.PhysicalName}/{Controller.SEARCH_ACTION_NAME}";
 
                 var aggregate = Search.DbEntity.GetCorrespondingAggregate();
-                var createViewRoute = aggregate == null ? null : new CreateView(aggregate, Search.Context).Route;
-                var singleViewRoute = aggregate == null ? null : new SingleView(aggregate, Search.Context, false).Route;
+                var createViewRoute = aggregate == null ? null : new CreateView(aggregate, Search.Context).Url;
+                var singleViewRoute = aggregate == null ? null : new SingleView(aggregate, Search.Context, false).Url;
 
                 var memberNames = Search.Members.Select(m => m.ConditionPropName);
                 var propNameWidth = FormOfAggregateInstance.GetPropNameFlexBasis(memberNames);
