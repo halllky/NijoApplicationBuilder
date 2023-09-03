@@ -36,6 +36,8 @@ namespace HalApplicationBuilder.DotnetEx {
 
             _process.OutputDataReceived += OnStdOut;
             _process.ErrorDataReceived += OnStdErr;
+
+            _process.Disposed += OnProcessDisposed;
         }
 
         private readonly Process _process;
@@ -65,10 +67,12 @@ namespace HalApplicationBuilder.DotnetEx {
             _process.BeginErrorReadLine();
 
             try {
-                await Task.Run(() => {
+                await Task.Run(async () => {
                     while (true) {
-                        if (_process.HasExited || cancellationToken?.IsCancellationRequested == true) break;
-                        Thread.Sleep(100);
+                        if (_processIsDisposed
+                            || _process.HasExited
+                            || cancellationToken?.IsCancellationRequested == true) break;
+                        await Task.Delay(100, cancellationToken ?? CancellationToken.None);
                     }
                     if (_process.ExitCode != 0) {
                         throw new InvalidOperationException($"Exit code of command '{_process.StartInfo.FileName} {_process.StartInfo.ArgumentList.Join(" ")}' is not Zero: {_process.ExitCode}{Environment.NewLine}{_error}");
@@ -100,8 +104,11 @@ namespace HalApplicationBuilder.DotnetEx {
             try {
                 while (true) {
                     while (_stdOut.Count > 0) yield return _stdOut.Dequeue();
-                    if (_process.HasExited || cancellationToken?.IsCancellationRequested == true) break;
-                    Thread.Sleep(100);
+                    if (_processIsDisposed
+                        || _process.HasExited
+                        || cancellationToken?.IsCancellationRequested == true) break;
+                    var task = Task.Delay(100, cancellationToken ?? CancellationToken.None);
+                    task.Wait();
                 }
                 if (_process.ExitCode != 0) {
                     throw new InvalidOperationException($"Exit code of command '{_process.StartInfo.FileName} {_process.StartInfo.ArgumentList.Join(" ")}' is not Zero: {_process.ExitCode}{Environment.NewLine}{_error}");
@@ -135,6 +142,11 @@ namespace HalApplicationBuilder.DotnetEx {
                 IsError = true,
                 Message = e.Data,
             });
+        }
+
+        private bool _processIsDisposed = false;
+        private void OnProcessDisposed(object? sender, EventArgs e) {
+            _processIsDisposed = true;
         }
 
         private bool disposedValue;
