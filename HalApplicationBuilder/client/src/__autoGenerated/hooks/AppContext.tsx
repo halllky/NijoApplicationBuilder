@@ -1,7 +1,8 @@
 import moment from "moment";
-import React, { useContext, useReducer } from "react";
+import React, { useCallback, useContext, useReducer } from "react";
 import { UUID } from "uuidjs";
 import { Toast, ToastMessage } from "../components/Toast";
+import { setTimeout } from "timers";
 
 const LOCALSTORAGEKEY = '::HALAPP_APIDOMAIN::'
 
@@ -10,7 +11,7 @@ export type AppState = {
   apiDomain?: string
 }
 type Action
-  = { type: 'pushMsg', msg: string }
+  = { type: 'pushMsg', id?: string, msg: string }
   | { type: 'delMessage', id: string }
   | { type: 'changeDomain', value: string }
 
@@ -22,7 +23,7 @@ const initialState = createDefaultAppState()
 const reducer: React.Reducer<AppState, Action> = (state, action) => {
   switch (action.type) {
     case 'pushMsg': {
-      const id = UUID.generate()
+      const id = action.id ?? UUID.generate()
       const popupTime = moment().format('YYYY-MM-DD hh:mm:ss')
       const popupMessages = [...state.popupMessages, { id, msg: action.msg, popupTime }]
       return { ...state, popupMessages }
@@ -42,16 +43,26 @@ const AppContext = React.createContext<[AppState, React.Dispatch<Action>]>([unde
 
 export const AppContextProvider = ({ children }: { children?: React.ReactNode }) => {
 
-  const value = useReducer(reducer, initialState)
+  const [state, dispatch] = useReducer(reducer, initialState)
+
+  const dispatchWithSetTimeout = useCallback<typeof dispatch>(action => {
+    if (action.type === 'pushMsg') {
+      const id = UUID.generate()
+      dispatch({ ...action, id })
+      window.setTimeout(() => dispatch({ type: 'delMessage', id }), 5000)
+    } else {
+      dispatch(action)
+    }
+  }, [dispatch])
 
   return (
-    <AppContext.Provider value={value}>
+    <AppContext.Provider value={[state, dispatchWithSetTimeout]}>
 
       {children}
 
       {/* TOAST MESSAGE */}
       <div className="fixed bottom-3 right-3" style={{ zIndex: 9999 }}>
-        {value[0].popupMessages.map(msg => <Toast key={msg.id} item={msg} />)}
+        {state.popupMessages.map(msg => <Toast key={msg.id} item={msg} />)}
       </div>
     </AppContext.Provider>
   )
