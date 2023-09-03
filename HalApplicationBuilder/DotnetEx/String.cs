@@ -15,9 +15,6 @@ namespace HalApplicationBuilder.DotnetEx {
             }
             return str;
         }
-        public static string SelectTextTemplate<T>(this IEnumerable<T> values, Func<T, string> selector) {
-            return values.Select(selector).Join(Environment.NewLine);
-        }
 
         /// <summary>
         /// 半角文字を1、全角文字を2として横幅を算出する。

@@ -30,8 +30,10 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
         internal string UseQueryKey => $"combo-{_aggregate.Item.UniqueId}";
         internal string Api => new Controller(_aggregate.Item, _ctx).KeywordSearchCommandApi;
 
-        internal void RenderCaller(ITemplate template, string raectHookFormId) {
-            template.WriteLine($"<Components.{ComponentName} raectHookFormId={{`{raectHookFormId}`}} />");
+        internal string RenderCaller(string raectHookFormId) {
+            return $$"""
+                <Components.{{ComponentName}} raectHookFormId={`{{raectHookFormId}}`} />
+                """;
         }
     }
 }

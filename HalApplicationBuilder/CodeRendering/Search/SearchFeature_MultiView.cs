@@ -79,7 +79,7 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                       })
 
                       const navigate = useNavigate()
-                    {{If(createViewRoute != null, $$"""
+                    {{If(createViewRoute != null, () => $$"""
                       const toCreateView = useCallback(() => {
                         navigate('{{createViewRoute}}')
                       }, [navigate])
@@ -101,7 +101,7 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                                 ? <ChevronDownIcon className="w-4" />
                                 : <ChevronUpIcon className="w-4" />}
                             </div>
-                    {{If(createViewRoute != null, $$"""
+                    {{If(createViewRoute != null, () => $$"""
                             <IconButton underline icon={PlusIcon} onClick={toCreateView}>新規作成</IconButton>
                     """)}}
                           </div>
@@ -150,7 +150,7 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                     }
 
                     const columnDefs: ColDef<RowType>[] = [
-                    {{If(singleViewRoute != null, $$"""
+                    {{If(singleViewRoute != null, () => $$"""
                       {
                         resizable: true,
                         width: 50,

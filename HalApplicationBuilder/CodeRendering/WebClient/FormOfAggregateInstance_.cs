@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.CodeRendering.WebClient {
-    partial class FormOfAggregateInstance : ITemplate {
+    partial class FormOfAggregateInstance : TemplateBase {
         internal FormOfAggregateInstance(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx)
             : this(aggregate.GetInstanceClass().AsEntry(), ctx) { }
         internal FormOfAggregateInstance(GraphNode<AggregateInstance> aggregateInstance, CodeRenderingContext ctx) {
@@ -24,7 +24,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
         private string TypesImport => $"../../{Path.GetFileNameWithoutExtension(new types(_ctx).FileName)}";
 
-        public string FileName => "components.tsx";
+        public override string FileName => "components.tsx";
 
         internal IEnumerable<string> EnumerateComponentNames() {
             return _instance
@@ -105,22 +105,22 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
 
         #region DESCENDANT AGGREGATES
-        private void RenderRefAggregateBody(AggregateInstance.RefProperty refProperty) {
+        private string RenderRefAggregateBody(AggregateInstance.RefProperty refProperty) {
             var component = new ComboBox(refProperty.RefTarget.GetCorrespondingAggregate(), _ctx);
             var registerName = GetRegisterName(refProperty.RefTarget, refProperty).Value;
-            component.RenderCaller(this, registerName);
+            return component.RenderCaller(registerName);
         }
-        private void RenderChildrenAggregateBody(AggregateInstance.ChildrenProperty childrenProperty) {
+        private string RenderChildrenAggregateBody(AggregateInstance.ChildrenProperty childrenProperty) {
             var component = new Component(childrenProperty.ChildAggregateInstance);
-            component.RenderCaller(this);
+            return component.RenderCaller();
         }
-        private void RenderChildAggregateBody(AggregateInstance.ChildProperty childProperty) {
+        private string RenderChildAggregateBody(AggregateInstance.ChildProperty childProperty) {
             var component = new Component(childProperty.ChildAggregateInstance);
-            component.RenderCaller(this);
+            return component.RenderCaller();
         }
-        private void RenderVariationAggregateBody(GraphNode<AggregateInstance> variationAggregateInstance) {
+        private string RenderVariationAggregateBody(GraphNode<AggregateInstance> variationAggregateInstance) {
             var component = new Component(variationAggregateInstance);
-            component.RenderCaller(this);
+            return component.RenderCaller();
         }
         #endregion DESCENDANT AGGREGATES
 
@@ -147,12 +147,12 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 return path.Join(".");
             }
 
-            internal void RenderCaller(ITemplate template) {
+            internal string RenderCaller() {
                 var args = GetArguments(AggregateInstance)
                     .SkipLast(1)
                     .Select(x => $" {x.Value}={{{x.Value}}}")
                     .Join(string.Empty);
-                template.WriteLine($"<{ComponentName}{args} />");
+                return $"<{ComponentName}{args} />";
             }
         }
         /// <summary>

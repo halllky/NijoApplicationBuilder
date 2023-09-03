@@ -54,7 +54,7 @@ namespace HalApplicationBuilder.CodeRendering {
             throw new NotImplementedException();
         }
 
-        protected static TemplateTextHelper If(bool condition, string template) {
+        protected static TemplateTextHelper If(bool condition, Func<string> template) {
             return TemplateTextHelper.If(condition, template);
         }
     }
@@ -71,23 +71,23 @@ namespace HalApplicationBuilder.CodeRendering {
         private readonly StringBuilder _stringBuilder;
         private bool _eval;
 
-        internal static TemplateTextHelper If(bool condition, string text) {
+        internal static TemplateTextHelper If(bool condition, Func<string> text) {
             var helper = new TemplateTextHelper(new StringBuilder());
             if (condition) {
-                helper._stringBuilder.AppendLine(text);
+                helper._stringBuilder.AppendLine(text());
                 helper._eval = false;
             }
             return helper;
         }
-        internal TemplateTextHelper ElseIf(bool condition, string text) {
+        internal TemplateTextHelper ElseIf(bool condition, Func<string> text) {
             if (_eval && condition) {
-                _stringBuilder.AppendLine(text);
+                _stringBuilder.AppendLine(text());
                 _eval = false;
             }
             return this;
         }
-        internal string Else(string text) {
-            if (_eval) _stringBuilder.AppendLine(text);
+        internal string Else(Func<string> text) {
+            if (_eval) _stringBuilder.AppendLine(text());
             return ToString();
         }
 
@@ -102,6 +102,9 @@ namespace HalApplicationBuilder.CodeRendering {
         }
     }
     internal static class TemplateTextHelperExtensions {
+        internal static string SelectTextTemplate<T>(this IEnumerable<T> values, Func<T, string> selector) {
+            return values.Select(selector).Join(Environment.NewLine);
+        }
         internal static string SelectTextTemplate<T>(this IEnumerable<T> values, Func<T, TemplateTextHelper> selector) {
             return values
                 .Select(selector)

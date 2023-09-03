@@ -26,7 +26,7 @@ namespace HalApplicationBuilder.CodeRendering {
                 {{_enumDefinitions.SelectTextTemplate(def => $$"""
                     public enum {{def.Name}} {
                 {{def.Items.SelectTextTemplate(item => $$"""
-                {{If(!string.IsNullOrWhiteSpace(item.DisplayName), $$"""
+                {{If(!string.IsNullOrWhiteSpace(item.DisplayName), () => $$"""
                         [Display(Name = "{{item.DisplayName}}")]
                 """)}}
                         {{item.PhysicalName}} = {{item.Value}},

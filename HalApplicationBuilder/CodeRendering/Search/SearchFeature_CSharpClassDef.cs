@@ -22,9 +22,9 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                     /// {{DisplayName}}の一覧検索処理の検索条件を表すクラスです。
                     /// </summary>
                     public partial class {{SearchConditionClassName}} : {{SEARCHCONDITION_BASE_CLASS_NAME}} {
-                {{Members.SelectTextTemplate(member => TemplateTextHelper.If(member.Type.SearchBehavior == SearchBehavior.Range, $$"""
+                {{Members.SelectTextTemplate(member => TemplateTextHelper.If(member.Type.SearchBehavior == SearchBehavior.Range, () => $$"""
                         public {{Util.FromTo.CLASSNAME}}<{{member.Type.GetCSharpTypeName()}}> {{member.ConditionPropName}} { get; set; } = new();
-                """).Else($$"""
+                """).Else(() => $$"""
                         public {{member.Type.GetCSharpTypeName()}} {{member.ConditionPropName}} { get; set; }
                 """))}}
                     }

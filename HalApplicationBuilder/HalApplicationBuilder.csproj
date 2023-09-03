@@ -50,10 +50,6 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>HttpResponseExceptionFilter.cs</LastGenOutput>
 		</None>
-		<None Update="CodeRendering\WebClient\FormOfAggregateInstance.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>FormOfAggregateInstance.cs</LastGenOutput>
-		</None>
 		<None Update="CodeRendering\WebClient\CreateView.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>CreateView.cs</LastGenOutput>
@@ -188,11 +184,6 @@
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>HttpResponseExceptionFilter.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\WebClient\FormOfAggregateInstance.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>FormOfAggregateInstance.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering\WebClient\CreateView.cs">
 		  <DesignTime>True</DesignTime>
