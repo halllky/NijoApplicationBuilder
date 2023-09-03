@@ -12,7 +12,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         protected override string Template() {
             var components = _instance
                 .EnumerateThisAndDescendants()
-                .Select(x => x.IsChildrenMember() ? new ComponentOfChildrenListItem(x) : new Component(x));
+                .Select(x => new Component(x));
 
             return $$"""
                 import React, { useCallback } from 'react'
@@ -22,139 +22,181 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 import * as Components from '../../components'
                 import * as AggregateType from '{{TypesImport}}'
 
-                {{components.SelectTextTemplate(desc => $$"""
-                export const {{desc.ComponentName}} = ({ {{GetArguments(desc.AggregateInstance).Values.Join(", ")}} }: {
-                {{GetArguments(desc.AggregateInstance).Values.SelectTextTemplate(arg => $$"""
-                  {{arg}}: number
-                """)}}
-                }) => {
-                  const [{ pageIsReadOnly },] = usePageContext()
-                  const { register, watch } = useFormContext<AggregateType.{{_instance.Item.TypeScriptTypeName}}>()
+                {{components.SelectTextTemplate(RenderComponent)}}
+                """;
+        }
 
-                  return <>
-                {{desc.AggregateInstance.GetProperties(_ctx.Config).SelectTextTemplate(prop => $$"""
-                {{If(prop is AggregateInstance.SchalarProperty, () => $$"""
+        private string RenderComponent(Component component) {
+            if (!component.IsChildren) {
+                var args = GetArguments(component.AggregateInstance).Values;
+                var layout = component.AggregateInstance.GetProperties(_ctx.Config).SelectTextTemplate(p => RenderProperty(component, p));
+
+                return $$"""
+                    export const {{component.ComponentName}} = ({ {{args.Join(", ")}} }: {
+                    {{args.SelectTextTemplate(arg => $$"""
+                      {{arg}}: number
+                    """)}}
+                    }) => {
+                      const [{ pageIsReadOnly },] = usePageContext()
+                      const { register, watch } = useFormContext<AggregateType.{{_instance.Item.TypeScriptTypeName}}>()
+
+                      return (
+                        <>
+                          {{WithIndent(layout, "      ")}}
+                        </>
+                      )
+                    }
+                    """;
+
+            } else {
+                var argsAndIndex = GetArguments(component.AggregateInstance).Values;
+                var args = argsAndIndex.SkipLast(1);
+                var index = argsAndIndex.Last();
+                var layout = component.AggregateInstance.GetProperties(_ctx.Config).SelectTextTemplate(p => RenderProperty(component, p));
+                var createNewChildrenItem = new types.AggregateInstanceInitializerFunction(component.AggregateInstance).FunctionName;
+
+                return $$"""
+                    export const {{component.ComponentName}} = ({ {{args.Join(", ")}} }: {
+                    {{args.SelectTextTemplate(arg => $$"""
+                      {{arg}}: number
+                    """)}}
+                    }) => {
+                      const [{ pageIsReadOnly },] = usePageContext()
+                      const { register, watch, control } = useFormContext<AggregateType.{{_instance.Item.TypeScriptTypeName}}>()
+                      const { fields, append, remove } = useFieldArray({
+                        control,
+                        name: `{{component.GetUseFieldArrayName()}}`,
+                      })
+                      const onAdd = useCallback((e: React.MouseEvent) => {
+                        append(AggregateType.{{createNewChildrenItem}}())
+                        e.preventDefault()
+                      }, [append])
+                      const onRemove = useCallback((index: number) => {
+                        return (e: React.MouseEvent) => {
+                          remove(index)
+                          e.preventDefault()
+                        }
+                      }, [remove])
+
+                      return (
+                        <>
+                          {fields.map((_, {{index}}) => (
+                            <div key={{{index}}} className="flex flex-col space-y-1 p-1 border border-neutral-400">
+                              {{WithIndent(layout, "          ")}}
+                              {!pageIsReadOnly &&
+                                <Components.IconButton
+                                  underline
+                                  icon={XMarkIcon}
+                                  onClick={onRemove({{index}})}
+                                  className="self-start">
+                                  削除
+                                </Components.IconButton>}
+                            </div>
+                          ))}
+                          {!pageIsReadOnly &&
+                            <Components.IconButton
+                              underline
+                              icon={PlusIcon}
+                              onClick={onAdd}
+                              className="self-start">
+                              追加
+                            </Components.IconButton>}
+                        </>
+                      )
+                    }
+                    """;
+            }
+        }
+
+        private string RenderProperty(Component component, AggregateInstance.Property prop) {
+            if (prop is AggregateInstance.SchalarProperty schalar) {
+                return $$"""
                     <div className="flex">
                       <div className="{{PropNameWidth}}">
-                        <span className="text-sm select-none opacity-80">
-                          {{prop.PropertyName}}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        {{RenderSchalarProperty(desc.AggregateInstance, (AggregateInstance.SchalarProperty)prop, "        ")}}
-                      </div>
-                    </div>
-
-                """).ElseIf(prop is AggregateInstance.RefProperty, () => $$"""
-                    <div className="flex">
-                      <div className="{{PropNameWidth}}">
-                        <span className="text-sm select-none opacity-80">
-                          {{prop.PropertyName}}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        {{WithIndent(RenderRefAggregateBody((AggregateInstance.RefProperty)prop), "        ")}}
-                      </div>
-                    </div>
-
-                """).ElseIf(prop is AggregateInstance.ChildProperty, () => $$"""
-                    <div className="py-2">
                       <span className="text-sm select-none opacity-80">
                         {{prop.PropertyName}}
                       </span>
-                      <div className="flex flex-col space-y-1 p-1 border border-neutral-400">
-                        {{WithIndent(RenderChildAggregateBody((AggregateInstance.ChildProperty)prop), "        ")}}
+                      </div>
+                      <div className="flex-1">
+                        {{RenderSchalarProperty(component.AggregateInstance, schalar, "    ")}}
                       </div>
                     </div>
+                    """;
 
-                """).ElseIf(prop is AggregateInstance.VariationSwitchProperty, () => $$"""
+            } else if (prop is AggregateInstance.RefProperty refProperty) {
+                var combobox = new ComboBox(refProperty.RefTarget.GetCorrespondingAggregate(), _ctx);
+                var registerName = GetRegisterName(component.AggregateInstance, refProperty).Value;
+                return $$"""
                     <div className="flex">
                       <div className="{{PropNameWidth}}">
-                        <span className="text-sm select-none opacity-80">
-                          {{((AggregateInstance.VariationSwitchProperty)prop).CorrespondingDbColumn.PropertyName}}
-                        </span>
+                      <span className="text-sm select-none opacity-80">
+                        {{prop.PropertyName}}
+                      </span>
+                      </div>
+                      <div className="flex-1">
+                        {{WithIndent(combobox.RenderCaller(registerName), "    ")}}
+                      </div>
+                    </div>
+                    """;
+
+            } else if (prop is AggregateInstance.ChildProperty child) {
+                var childComponent = new Component(child.ChildAggregateInstance);
+                return $$"""
+                    <div className="py-2">
+                      <span className="text-sm select-none opacity-80">
+                      {{prop.PropertyName}}
+                      </span>
+                      <div className="flex flex-col space-y-1 p-1 border border-neutral-400">
+                        {{WithIndent(childComponent.RenderCaller(), "    ")}}
+                      </div>
+                    </div>
+                    """;
+
+            } else if (prop is AggregateInstance.VariationProperty variation) {
+                var childComponent = new Component(variation.ChildAggregateInstance);
+                var switchProp = GetRegisterName(component.AggregateInstance, variation.Group).Value;
+                return $$"""
+                    <div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(watch(`{{switchProp}}`) !== '{{variation.Key}}' ? 'hidden' : '')}`}>
+                      {{WithIndent(childComponent.RenderCaller(), "  ")}}
+                    </div>
+                    """;
+
+            } else if (prop is AggregateInstance.VariationSwitchProperty variationSwitch) {
+                var switchProp = GetRegisterName(component.AggregateInstance, variationSwitch).Value;
+                return $$"""
+                    <div className="flex">
+                      <div className="{{PropNameWidth}}">
+                      <span className="text-sm select-none opacity-80">
+                        {{variationSwitch.CorrespondingDbColumn.PropertyName}}
+                      </span>
                       </div>
                       <div className="flex-1 flex gap-2 flex-wrap">
-                {{((AggregateInstance.VariationSwitchProperty)prop).CorrespondingDbColumn.Group.VariationAggregates.SelectTextTemplate(item => $$"""
+                    {{variationSwitch.CorrespondingDbColumn.Group.VariationAggregates.SelectTextTemplate(item => $$"""
                         <label>
-                          <input type="radio" value="{{item.Key}}" disabled={pageIsReadOnly} {...register(`{{GetRegisterName(desc.AggregateInstance, prop).Value}}`)} />
+                          <input type="radio" value="{{item.Key}}" disabled={pageIsReadOnly} {...register(`{{switchProp}}`)} />
                           {{item.Value.RelationName}}
                         </label>
-                """)}}
+                    """)}}
                       </div>
                     </div>
+                    """;
 
-                {{((AggregateInstance.VariationSwitchProperty)prop).GroupItems.SelectTextTemplate(item => $$"""
-                    <div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(watch(`{{GetRegisterName(desc.AggregateInstance, prop).Value}}`) !== '{{item.Key}}' ? 'hidden' : '')}`}>
-                      {{WithIndent(RenderVariationAggregateBody(item.ChildAggregateInstance), "      ")}}
-                    </div>
-                """)}}
-
-                """).ElseIf(prop is AggregateInstance.ChildrenProperty, () => $$"""
+            } else if (prop is AggregateInstance.ChildrenProperty children) {
+                var childrenComponent = new Component(children.ChildAggregateInstance);
+                return $$"""
                     <div className="py-2">
                       <span className="text-sm select-none opacity-80">
                         {{prop.PropertyName}}
                       </span>
                       <div className="flex flex-col space-y-1">
-                        {{WithIndent(RenderChildrenAggregateBody((AggregateInstance.ChildrenProperty)prop), "        ")}}
+                        {{WithIndent(childrenComponent.RenderCaller(), "    ")}}
                       </div>
                     </div>
+                    """;
 
-                """)}}
-                """)}}
-                  </>
-                }
-
-
-                {{If(desc.IsChildren, () => {
-                var listComponent = new Component(desc.AggregateInstance);
-                return $$$"""
-                export const {{{listComponent.ComponentName}}} = (args: {
-                {{{GetArguments(desc.AggregateInstance).Values.SkipLast(1).SelectTextTemplate(arg => $$"""
-                  {{arg}}: number
-                """)}}}
-                }) => {
-                  const [{ pageIsReadOnly },] = usePageContext()
-                  const { control, register } = useFormContext<AggregateType.{{{_instance.Item.TypeScriptTypeName}}}>()
-                  const { fields, append, remove } = useFieldArray({
-                    control,
-                    name: `{{{desc.GetUseFieldArrayName()}}}`,
-                  })
-                  const onAdd = useCallback((e: React.MouseEvent) => {
-                    append(AggregateType.{{{new types.AggregateInstanceInitializerFunction(desc.AggregateInstance).FunctionName}}}())
-                    e.preventDefault()
-                  }, [append])
-
-                  return (
-                    <>
-                      {fields.map((_, index) => (
-                        <div key={index} className="flex flex-col space-y-1 p-1 border border-neutral-400">
-                          <{{{desc.ComponentName}}}
-                            {...args}
-                            {{{GetArguments(desc.AggregateInstance).Values.Last()}}}={index}
-                          />
-                          {!pageIsReadOnly &&
-                            <Components.IconButton
-                              underline
-                              icon={XMarkIcon}
-                              onClick={e => { remove(index); e.preventDefault() }}
-                              className="self-start">削除</Components.IconButton>}
-                        </div>
-                      ))}
-                      {!pageIsReadOnly &&
-                        <Components.IconButton
-                          underline
-                          icon={PlusIcon}
-                          onClick={onAdd}
-                          className="self-start">
-                          追加
-                        </Components.IconButton>}
-                    </>
-                  )
-                }
-                """; })}}
-                """)}}
-                """;
+            } else {
+                throw new NotImplementedException();
+            }
         }
     }
 }

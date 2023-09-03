@@ -1,3 +1,4 @@
+using HalApplicationBuilder.CodeRendering;
 using HalApplicationBuilder.CodeRendering.Util;
 using HalApplicationBuilder.DotnetEx;
 using System;
@@ -5,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace HalApplicationBuilder.Core
 {
@@ -49,11 +51,34 @@ namespace HalApplicationBuilder.Core
             internal required NavigationProperty CorrespondingNavigationProperty { get; init; }
         }
         internal class VariationSwitchProperty : Property {
+            internal required VariationGroup<AggregateInstance> Group { get; init; }
             internal required EFCoreEntity.VariationGroupTypeIdentifier CorrespondingDbColumn { get; init; }
-            internal required ICollection<VariationProperty> GroupItems { get; init; }
+
+            internal required Config Config { get; init; }
+            internal IEnumerable<VariationProperty> GetGroupItems() {
+                foreach (var kv in Group.VariationAggregates) {
+                    var dbEntity = kv.Value.Terminal.GetDbEntity();
+                    var sameRelationWithEFCoreEntity = kv.Value.Terminal
+                        .GetDbEntity()
+                        .In
+                        .Single(e => e.RelationName == kv.Value.RelationName)
+                        .As<EFCoreEntity>();
+                    var navigationProperty = new NavigationProperty(sameRelationWithEFCoreEntity, Config);
+
+                    yield return new VariationProperty {
+                        Group = this,
+                        Key = kv.Key,
+                        ChildAggregateInstance = kv.Value.Terminal,
+                        CorrespondingNavigationProperty = navigationProperty,
+                        CSharpTypeName = kv.Value.Terminal.Item.ClassName,
+                        TypeScriptTypename = kv.Value.Terminal.Item.TypeScriptTypeName,
+                        PropertyName = kv.Value.RelationName,
+                    };
+                }
+            }
         }
         internal class VariationProperty : Property {
-            internal required VariationGroup<AggregateInstance> Group { get; init; }
+            internal required VariationSwitchProperty Group { get; init; }
             internal required string Key { get; init; }
             internal required GraphNode<AggregateInstance> ChildAggregateInstance { get; init; }
             internal required NavigationProperty CorrespondingNavigationProperty { get; init; }
@@ -133,42 +158,23 @@ namespace HalApplicationBuilder.Core
                 .Where(col => col is EFCoreEntity.VariationGroupTypeIdentifier)
                 .Cast<EFCoreEntity.VariationGroupTypeIdentifier>()
                 .ToArray();
+
             foreach (var group in instance.GetVariationGroups()) {
-                var groupItems = instance
-                    .GetVariationProperties(config)
-                    .Where(x => x.Group.GroupName == group.GroupName)
-                    .ToArray();
+                var correspondingDbColumn = dbEntityColumns.Single(col => col.PropertyName == group.GroupName);
                 yield return new AggregateInstance.VariationSwitchProperty {
-                    CorrespondingDbColumn = dbEntityColumns.Single(col => col.PropertyName == group.GroupName),
-                    GroupItems = groupItems,
+                    Group = group,
+                    CorrespondingDbColumn = correspondingDbColumn,
                     CSharpTypeName = "string",
                     TypeScriptTypename = "string",
                     PropertyName = group.GroupName,
+                    Config = config,
                 };
             }
         }
         internal static IEnumerable<AggregateInstance.VariationProperty> GetVariationProperties(this GraphNode<AggregateInstance> node, Config config) {
-            var initial = node.GetDbEntity().Item.Id;
-            foreach (var group in node.GetVariationGroups()) {
-                foreach (var kv in group.VariationAggregates) {
-                    var sameRelationWithEFCoreEntity = kv.Value.Terminal
-                        .GetDbEntity()
-                        .In
-                        .Single(e => e.RelationName == kv.Value.RelationName)
-                        .As<EFCoreEntity>();
-                    var navigationProperty = new NavigationProperty(sameRelationWithEFCoreEntity, config);
-
-                    yield return new AggregateInstance.VariationProperty {
-                        Group = group,
-                        Key = kv.Key,
-                        ChildAggregateInstance = kv.Value.Terminal,
-                        CorrespondingNavigationProperty = navigationProperty,
-                        CSharpTypeName = kv.Value.Terminal.Item.ClassName,
-                        TypeScriptTypename = kv.Value.Terminal.Item.TypeScriptTypeName,
-                        PropertyName = kv.Value.RelationName,
-                    };
-                }
-            }
+            return node
+                .GetVariationSwitchProperties(config)
+                .SelectMany(group => group.GetGroupItems());
         }
         internal static IEnumerable<AggregateInstance.RefProperty> GetRefProperties(this GraphNode<AggregateInstance> node, Config config) {
             foreach (var edge in node.GetRefMembers()) {

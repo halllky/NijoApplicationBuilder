@@ -104,27 +104,6 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         #endregion SCHALAR PROPERTY
 
 
-        #region DESCENDANT AGGREGATES
-        private string RenderRefAggregateBody(AggregateInstance.RefProperty refProperty) {
-            var component = new ComboBox(refProperty.RefTarget.GetCorrespondingAggregate(), _ctx);
-            var registerName = GetRegisterName(_instance, refProperty).Value;
-            return component.RenderCaller(registerName);
-        }
-        private string RenderChildrenAggregateBody(AggregateInstance.ChildrenProperty childrenProperty) {
-            var component = new Component(childrenProperty.ChildAggregateInstance);
-            return component.RenderCaller();
-        }
-        private string RenderChildAggregateBody(AggregateInstance.ChildProperty childProperty) {
-            var component = new Component(childProperty.ChildAggregateInstance);
-            return component.RenderCaller();
-        }
-        private string RenderVariationAggregateBody(GraphNode<AggregateInstance> variationAggregateInstance) {
-            var component = new Component(variationAggregateInstance);
-            return component.RenderCaller();
-        }
-        #endregion DESCENDANT AGGREGATES
-
-
         internal class Component {
             internal Component(GraphNode<AggregateInstance> instance) {
                 AggregateInstance = instance;
