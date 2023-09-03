@@ -445,13 +445,23 @@ namespace HalApplicationBuilder.Core {
         internal const string REL_ATTR_IS_PRIMARY = "is-primary";
         internal const string REL_ATTR_IS_INSTANCE_NAME = "is-instance-name";
 
-        // ----------------------------- DirectedGraph extensions -----------------------------
+        // ----------------------------- GraphNode extensions -----------------------------
 
-        internal static IEnumerable<GraphNode<EFCoreEntity>> RootEntities(this IEnumerable<GraphNode<EFCoreEntity>> graph) {
-            return graph.Where(entity => entity.IsRoot());
+        internal static bool IsRoot(this GraphNode graphNode) {
+            return !graphNode.In.Any(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                                             && (string)type == REL_ATTRVALUE_PARENT_CHILD);
+        }
+        internal static GraphNode<T> GetRoot<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+            return graphNode.EnumerateAncestorsAndThis().First();
         }
 
-        // ----------------------------- GraphNode extensions -----------------------------
+        internal static GraphEdge? GetParent(this GraphNode graphNode) {
+            return graphNode.In.SingleOrDefault(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                                                     && (string)type == REL_ATTRVALUE_PARENT_CHILD);
+        }
+        internal static GraphEdge<T>? GetParent<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+            return ((GraphNode)graphNode).GetParent()?.As<T>();
+        }
 
         /// <summary>
         /// 祖先を列挙する。ルート要素が先。
@@ -476,6 +486,7 @@ namespace HalApplicationBuilder.Core {
                 yield return stack.Pop();
             }
         }
+
         internal static IEnumerable<GraphNode<T>> EnumerateDescendants<T>(this GraphNode<T> graphNode) where T : IGraphNode {
             static IEnumerable<GraphNode<T>> GetDescencantsRecursively(GraphNode<T> node) {
                 var children = node.GetChildMembers()
@@ -499,20 +510,6 @@ namespace HalApplicationBuilder.Core {
                 yield return desc;
             }
         }
-        internal static GraphEdge? GetParent(this GraphNode graphNode) {
-            return graphNode.In.SingleOrDefault(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                                                     && (string)type == REL_ATTRVALUE_PARENT_CHILD);
-        }
-        internal static GraphEdge<T>? GetParent<T>(this GraphNode<T> graphNode) where T : IGraphNode {
-            return ((GraphNode)graphNode).GetParent()?.As<T>();
-        }
-        internal static GraphNode<T> GetRoot<T>(this GraphNode<T> graphNode) where T : IGraphNode {
-            return graphNode.EnumerateAncestorsAndThis().First();
-        }
-        internal static bool IsRoot(this GraphNode graphNode) {
-            return !graphNode.In.Any(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                                             && (string)type == REL_ATTRVALUE_PARENT_CHILD);
-        }
 
         internal static GraphNode<EFCoreEntity> GetDbEntity(this GraphNode<Aggregate> aggregate) {
             return aggregate.In
@@ -520,18 +517,28 @@ namespace HalApplicationBuilder.Core {
                 .Initial
                 .As<EFCoreEntity>();
         }
-        internal static GraphNode<Aggregate>? GetCorrespondingAggregate(this GraphNode<EFCoreEntity> dbEntity) {
-            return dbEntity.Out
-                .SingleOrDefault(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_AGG_2_ETT)?
-                .Terminal
-                .As<Aggregate>();
-        }
         internal static GraphNode<AggregateInstance> GetInstanceClass(this GraphNode<Aggregate> aggregate) {
             return aggregate.In
             .Single(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_AGG_2_INS)
             .Initial
             .As<AggregateInstance>();
         }
+        internal static IEnumerable<GraphNode<Aggregate.Member>> GetSchalarMembers(this GraphNode<Aggregate> aggregate) {
+            return aggregate.Out
+                .Where(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_HAVING)
+                .Select(edge => edge.Terminal.As<Aggregate.Member>());
+        }
+
+        internal static GraphNode<Aggregate>? GetCorrespondingAggregate(this GraphNode<EFCoreEntity> dbEntity) {
+            return dbEntity.Out
+                .SingleOrDefault(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_AGG_2_ETT)?
+                .Terminal
+                .As<Aggregate>();
+        }
+        internal static GraphNode<AggregateInstance>? GetUiInstance(this GraphNode<EFCoreEntity> dbEntity) {
+            return dbEntity.GetCorrespondingAggregate()?.GetInstanceClass();
+        }
+
         internal static GraphNode<Aggregate> GetCorrespondingAggregate(this GraphNode<AggregateInstance> instance) {
             return instance.Out
                 .Single(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_AGG_2_INS)
@@ -540,15 +547,6 @@ namespace HalApplicationBuilder.Core {
         }
         internal static GraphNode<EFCoreEntity> GetDbEntity(this GraphNode<AggregateInstance> instance) {
             return instance.GetCorrespondingAggregate().GetDbEntity();
-        }
-        internal static GraphNode<AggregateInstance>? GetUiInstance(this GraphNode<EFCoreEntity> dbEntity) {
-            return dbEntity.GetCorrespondingAggregate()?.GetInstanceClass();
-        }
-
-        internal static IEnumerable<GraphNode<Aggregate.Member>> GetMembers(this GraphNode<Aggregate> aggregate) {
-            return aggregate.Out
-                .Where(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_HAVING)
-                .Select(edge => edge.Terminal.As<Aggregate.Member>());
         }
 
         internal static bool IsChildrenMember(this GraphNode graphNode) {

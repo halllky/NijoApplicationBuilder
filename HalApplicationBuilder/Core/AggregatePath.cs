@@ -53,22 +53,6 @@ namespace HalApplicationBuilder.Core {
         internal string BaseName => _separated.Last();
         private readonly string[] _separated;
 
-        /// <summary>
-        /// ルート要素ならnull
-        /// </summary>
-        internal AggregatePath? GetParentPath() {
-            if (_separated.Length == 1) return null;
-
-            var parentArray = _separated.SkipLast(1).ToArray();
-            var parentFullpath = SEPARATOR + string.Join(SEPARATOR, parentArray);
-            return new AggregatePath(parentFullpath, parentArray);
-        }
-        internal AggregatePath GetChildAggregatePath(string childAggregateName) {
-            var childArray = _separated.Union(new[] { childAggregateName }).ToArray();
-            var childFullpath = Value + SEPARATOR + childAggregateName;
-            return new AggregatePath(childFullpath, childArray);
-        }
-
         protected override IEnumerable<object?> ValueObjectIdentifiers() {
             yield return Value;
         }

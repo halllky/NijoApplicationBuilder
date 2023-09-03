@@ -183,7 +183,7 @@ namespace HalApplicationBuilder.Core {
             }
             var aggregate = dbEntity.GetCorrespondingAggregate();
             if (aggregate != null) {
-                foreach (var member in aggregate.GetMembers()) {
+                foreach (var member in aggregate.GetSchalarMembers()) {
                     yield return new EFCoreEntity.Member {
                         Owner = dbEntity,
                         PropertyName = member.Item.Name,

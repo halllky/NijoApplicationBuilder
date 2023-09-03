@@ -68,7 +68,7 @@ namespace HalApplicationBuilder.Core
 
         internal static IEnumerable<AggregateInstance.SchalarProperty> GetSchalarProperties(this GraphNode<AggregateInstance> instance, Config config) {
             var dbEntityColumns = instance.GetDbEntity().GetColumns().ToArray();
-            foreach (var member in instance.GetCorrespondingAggregate().GetMembers()) {
+            foreach (var member in instance.GetCorrespondingAggregate().GetSchalarMembers()) {
                 yield return new AggregateInstance.SchalarProperty {
                     CorrespondingDbColumn = dbEntityColumns.Single(col => col.PropertyName == member.Item.Name),
                     CSharpTypeName = member.Item.Type.GetCSharpTypeName(),
