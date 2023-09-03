@@ -3,7 +3,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { AppContextProvider } from '../hooks/AppContext'
 import { Dashboard } from './Dashboard'
 import { MyAccount } from './MyAccount'
-import { SettingsScreen } from './Settings'
+import { ServerSettingScreen } from './ServerSetting'
 import { SideMenu } from './SideMenu';
 import { UnCommitChanges } from './UnCommitChanges'
 import BackgroundTaskList from '../pages/BackgroundTask/list'
@@ -39,7 +39,7 @@ function HalappRoot({ children }: {
                 <Route path='/' element={<Dashboard />} />
                 <Route path='/changes' element={<UnCommitChanges />} />
                 <Route path='/bagkground-tasks' element={<BackgroundTaskList />} />
-                <Route path='/settings' element={<SettingsScreen />} />
+                <Route path='/settings' element={<ServerSettingScreen />} />
                 <Route path='/account' element={<MyAccount />} />
                 {routes.map(route =>
                   <Route key={route.url} path={route.url} element={route.el} />

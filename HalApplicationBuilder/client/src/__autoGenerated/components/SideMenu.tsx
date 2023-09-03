@@ -1,6 +1,6 @@
 import React from "react"
 import { Link } from "react-router-dom"
-import { ArrowsUpDownIcon, CircleStackIcon, Cog6ToothIcon, PlayCircleIcon, UserCircleIcon } from "@heroicons/react/24/outline"
+import { ArrowsUpDownIcon, CircleStackIcon, PlayCircleIcon, UserCircleIcon } from "@heroicons/react/24/outline"
 import { CopyableText } from "./CopyableText"
 import { menuItems, THIS_APPLICATION_NAME } from ".."
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
@@ -28,7 +28,7 @@ export const SideMenu = () => {
         <nav className="flex-1 overflow-y-auto leading-none">
           <SideMenuLink url="/changes" icon={ArrowsUpDownIcon}>変更</SideMenuLink>
           <SideMenuLink url="/bagkground-tasks" icon={PlayCircleIcon}>バッチ処理</SideMenuLink>
-          <SideMenuLink url="/settings" icon={Cog6ToothIcon}>設定</SideMenuLink>
+          <SideMenuLink url="/settings" icon={CircleStackIcon}>サーバー</SideMenuLink>
           <SideMenuLink url="/account" icon={UserCircleIcon}>テスト太郎</SideMenuLink>
         </nav>
         <span className="p-1 text-sm whitespace-nowrap overflow-hidden">

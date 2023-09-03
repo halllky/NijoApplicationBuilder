@@ -102,19 +102,18 @@ import * as AggregateType from '../../");
             this.Write("\">");
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
             this.Write("</Link>\r\n            &nbsp;&#047;&nbsp;\r\n            <span className=\"select-all\"" +
-                    ">{instanceName}</span>\r\n            <div className=\"flex-1\"></div>\r\n");
- if (!_asEditView) { 
-            this.Write("            <IconButton fill icon={PencilIcon} onClick={navigateToEditView}>編集</I" +
-                    "conButton>\r\n");
- } 
-            this.Write("          </h1>\r\n          <div className=\"flex flex-col space-y-1 p-1 bg-neutral" +
-                    "-200\">\r\n            <");
+                    ">{instanceName}</span>\r\n            <div className=\"flex-1\"></div>\r\n          </" +
+                    "h1>\r\n          <div className=\"flex flex-col space-y-1 p-1 bg-neutral-200\">\r\n   " +
+                    "         <");
             this.Write(this.ToStringHelper.ToStringWithCulture(new FormOfAggregateInstance.Component(_instance).ComponentName));
             this.Write(" />\r\n          </div>\r\n          <InlineMessageBar value={errorMessages} onChange" +
                     "={setErrorMessages} />\r\n");
  if (_asEditView) { 
-            this.Write("          <IconButton fill icon={BookmarkSquareIcon} className=\"self-start\">更新</I" +
+            this.Write("          <IconButton fill className=\"self-start\" icon={BookmarkSquareIcon}>更新</I" +
                     "conButton>\r\n");
+ } else { 
+            this.Write("          <IconButton fill className=\"self-start\" icon={PencilIcon} onClick={navi" +
+                    "gateToEditView}>編集</IconButton>\r\n");
  } 
             this.Write("        </form>\r\n      </FormProvider>\r\n    </PageContext.Provider>\r\n  )\r\n}\r\n");
             return this.GenerationEnvironment.ToString();

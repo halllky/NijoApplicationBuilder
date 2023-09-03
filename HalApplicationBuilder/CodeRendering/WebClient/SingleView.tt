@@ -75,16 +75,15 @@ export default function () {
             &nbsp;&#047;&nbsp;
             <span className="select-all">{instanceName}</span>
             <div className="flex-1"></div>
-<# if (!_asEditView) { #>
-            <IconButton fill icon={PencilIcon} onClick={navigateToEditView}>編集</IconButton>
-<# } #>
           </h1>
           <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
             <<#=new FormOfAggregateInstance.Component(_instance).ComponentName#> />
           </div>
           <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
 <# if (_asEditView) { #>
-          <IconButton fill icon={BookmarkSquareIcon} className="self-start">更新</IconButton>
+          <IconButton fill className="self-start" icon={BookmarkSquareIcon}>更新</IconButton>
+<# } else { #>
+          <IconButton fill className="self-start" icon={PencilIcon} onClick={navigateToEditView}>編集</IconButton>
 <# } #>
         </form>
       </FormProvider>

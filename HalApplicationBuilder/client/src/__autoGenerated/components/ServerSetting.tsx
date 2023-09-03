@@ -8,7 +8,7 @@ import { IconButton } from './IconButton';
 import { InlineMessageBar, BarMessage } from './InlineMessageBar';
 import { useHttpRequest } from '../hooks/useHttpRequest';
 
-export const SettingsScreen = () => {
+export const ServerSettingScreen = () => {
 
   const [{ apiDomain }, dispatch] = useAppContext()
   const { get, post } = useHttpRequest()
@@ -57,14 +57,14 @@ export const SettingsScreen = () => {
     <div className="page-content-root">
 
       <SettingSection title="基本設定">
-        <Setting label="サーバーURL">
+        <Setting label="APIサーバーURL">
           <InputForms.Word value={apiDomain} onChange={e => dispatch({ type: 'changeDomain', value: e.target.value })} className="w-full" />
         </Setting>
       </SettingSection>
 
       {process.env.NODE_ENV === 'development' &&
         <SettingSection
-          title="シークレット設定（開発環境でのみ有効）"
+          title="データベース"
           sholder={<IconButton underline icon={ArrowPathIcon} onClick={reload}>再読み込み</IconButton>}
         >
           <InlineMessageBar value={settingErrors} onChange={setSettingErrors} />
@@ -85,7 +85,7 @@ export const SettingsScreen = () => {
                     <IconButton underline icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }}>削除</IconButton>
                   </div>
                 ))}
-                
+
               </div>
             </Setting>
             <IconButton fill icon={BookmarkSquareIcon} className="mt-2">保存</IconButton>
