@@ -1,6 +1,7 @@
 using HalApplicationBuilder.DotnetEx;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -244,7 +245,9 @@ namespace HalApplicationBuilder.Core {
             memberTypeResolver ??= MemberTypeResolver.Default();
 
             var aggregates = new Dictionary<AggregatePath, Aggregate>();
-            var aggregateEdges = new List<GraphEdgeInfo>();
+            var aggregateMembers = new HashSet<Aggregate.Member>();
+            var edgesFromAggToAgg = new List<GraphEdgeInfo>();
+            var edgesFromAggToMember = new List<GraphEdgeInfo>();
             foreach (var aggregate in aggregateDefs) {
                 var successToParse = true;
 
@@ -258,24 +261,34 @@ namespace HalApplicationBuilder.Core {
                 }
 
                 // バリデーションおよびグラフ構成要素の作成: 集約メンバー
-                var members = new List<Aggregate.Member>();
+                var aggregateId = new NodeId(id.Value);
                 foreach (var member in aggregate.Members) {
                     if (!memberTypeResolver.TryResolve(member.Type, out var memberType)) {
                         errors.Add($"'{member.Name}' のタイプ '{member.Type}' が不正です。");
                         successToParse = false;
                         continue;
                     }
-                    members.Add(new Aggregate.Member {
+                    var memberId = new NodeId($"{id.Value}/{member.Name}");
+                    aggregateMembers.Add(new Aggregate.Member {
+                        Id = memberId,
                         Name = member.Name,
                         Type = memberType,
                         IsPrimary = member.IsPrimary,
                         IsInstanceName = member.IsInstanceName,
                         Optional = member.Optional,
                     });
+                    edgesFromAggToMember.Add(new GraphEdgeInfo {
+                        Initial = aggregateId,
+                        Terminal = memberId,
+                        RelationName = member.Name,
+                        Attributes = new Dictionary<string, object> {
+                            { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_HAVING },
+                        },
+                    });
                 }
 
                 if (successToParse) {
-                    aggregates.Add(id, new Aggregate(id, members));
+                    aggregates.Add(id, new Aggregate(id));
                 }
             }
 
@@ -299,7 +312,7 @@ namespace HalApplicationBuilder.Core {
                 }
 
                 if (successToParse) {
-                    aggregateEdges.Add(new GraphEdgeInfo {
+                    edgesFromAggToAgg.Add(new GraphEdgeInfo {
                         Initial = new NodeId(initial.Value),
                         Terminal = new NodeId(terminal.Value),
                         RelationName = relation.RelationName,
@@ -313,7 +326,7 @@ namespace HalApplicationBuilder.Core {
             var dbEntities = aggregates.Values.Select(aggregate => new EFCoreEntity(
                 new NodeId($"DBENTITY::{aggregate.Id}"),
                 aggregate.DisplayName.ToCSharpSafe()));
-            var dbEntityEdges = aggregateEdges.Select(edge => new GraphEdgeInfo {
+            var dbEntityEdges = edgesFromAggToAgg.Select(edge => new GraphEdgeInfo {
                 Initial = new NodeId($"DBENTITY::{edge.Initial}"),
                 Terminal = new NodeId($"DBENTITY::{edge.Terminal}"),
                 RelationName = edge.RelationName,
@@ -333,7 +346,7 @@ namespace HalApplicationBuilder.Core {
             var aggregateInstances = aggregates.Values.Select(aggregate => new AggregateInstance(
                 new NodeId($"INSTANCE::{aggregate.Id}"),
                 aggregate.DisplayName.ToCSharpSafe()));
-            var aggregateInstanceEdges = aggregateEdges.Select(edge => new GraphEdgeInfo {
+            var aggregateInstanceEdges = edgesFromAggToAgg.Select(edge => new GraphEdgeInfo {
                 Initial = new NodeId($"INSTANCE::{edge.Initial}"),
                 Terminal = new NodeId($"INSTANCE::{edge.Terminal}"),
                 RelationName = edge.RelationName,
@@ -361,10 +374,12 @@ namespace HalApplicationBuilder.Core {
             // グラフを作成して返す
             var nodes = aggregates.Values
                 .Cast<IGraphNode>()
+                .Concat(aggregateMembers)
                 .Concat(dbEntities)
                 .Concat(aggregateInstances)
                 .Concat(halappEntities);
-            var edges = aggregateEdges
+            var edges = edgesFromAggToAgg
+                .Concat(edgesFromAggToMember)
                 .Concat(dbEntityEdges)
                 .Concat(entityToAggregate)
                 .Concat(aggregateInstanceEdges)
@@ -418,6 +433,7 @@ namespace HalApplicationBuilder.Core {
 
     internal static class DirectedEdgeExtensions {
         internal const string REL_ATTR_RELATION_TYPE = "relationType";
+        internal const string REL_ATTRVALUE_HAVING = "having";
         internal const string REL_ATTRVALUE_PARENT_CHILD = "child";
         internal const string REL_ATTRVALUE_REFERENCE = "reference";
         internal const string REL_ATTRVALUE_AGG_2_ETT = "aggregate-dbentity";
@@ -527,6 +543,12 @@ namespace HalApplicationBuilder.Core {
         }
         internal static GraphNode<AggregateInstance>? GetUiInstance(this GraphNode<EFCoreEntity> dbEntity) {
             return dbEntity.GetCorrespondingAggregate()?.GetInstanceClass();
+        }
+
+        internal static IEnumerable<GraphNode<Aggregate.Member>> GetMembers(this GraphNode<Aggregate> aggregate) {
+            return aggregate.Out
+                .Where(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_HAVING)
+                .Select(edge => edge.Terminal.As<Aggregate.Member>());
         }
 
         internal static bool IsChildrenMember(this GraphNode graphNode) {

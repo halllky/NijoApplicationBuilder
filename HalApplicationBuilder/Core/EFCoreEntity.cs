@@ -183,16 +183,16 @@ namespace HalApplicationBuilder.Core {
             }
             var aggregate = dbEntity.GetCorrespondingAggregate();
             if (aggregate != null) {
-                foreach (var member in aggregate.Item.Members) {
+                foreach (var member in aggregate.GetMembers()) {
                     yield return new EFCoreEntity.Member {
                         Owner = dbEntity,
-                        PropertyName = member.Name,
-                        IsPrimary = member.IsPrimary,
-                        IsInstanceName = member.IsInstanceName,
-                        MemberType = member.Type,
-                        CSharpTypeName = member.Type.GetCSharpTypeName(),
-                        TypeScriptTypename = member.Type.GetTypeScriptTypeName(),
-                        RequiredAtDB = member.IsPrimary, // TODO XMLでrequired属性を定義できるようにする
+                        PropertyName = member.Item.Name,
+                        IsPrimary = member.Item.IsPrimary,
+                        IsInstanceName = member.Item.IsInstanceName,
+                        MemberType = member.Item.Type,
+                        CSharpTypeName = member.Item.Type.GetCSharpTypeName(),
+                        TypeScriptTypename = member.Item.Type.GetTypeScriptTypeName(),
+                        RequiredAtDB = member.Item.IsPrimary, // TODO XMLでrequired属性を定義できるようにする
                         CorrespondingParentColumn = null,
                         CorrespondingRefTargetColumn = null,
                     };
