@@ -118,6 +118,8 @@ namespace HalApplicationBuilder {
                         utilDir.Generate(new CodeRendering.Util.AggregateInstanceKeyNamePair(ctx.Config));
                         utilDir.Generate(new CodeRendering.Util.HttpResponseExceptionFilter(ctx.Config.RootNamespace));
                         utilDir.Generate(new CodeRendering.Util.DefaultLogger(ctx.Config.RootNamespace));
+                        var util = new CodeRendering.Util.Utility(ctx);
+                        utilDir.Generate("JsonConversion.cs", util.RenderJsonConversionMethods());
                         utilDir.DeleteOtherFiles();
                     });
                     genDir.Directory("Web", controllerDir => {

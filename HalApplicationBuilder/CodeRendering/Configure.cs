@@ -51,9 +51,14 @@ namespace HalApplicationBuilder.CodeRendering
 
             builder.Services.AddControllers(option => {
                 option.Filters.Add<RDRA.HttpResponseExceptionFilter>();
-            });
 
-            builder.Services.AddHostedService<");
+            }).AddJsonOptions(option => {
+                ");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Util.Utility.CLASSNAME));
+            this.Write(".");
+            this.Write(this.ToStringHelper.ToStringWithCulture(Util.Utility.MODIFY_JSONOPTION));
+            this.Write("(option.JsonSerializerOptions);\r\n            });\r\n\r\n            builder.Services." +
+                    "AddHostedService<");
             this.Write(this.ToStringHelper.ToStringWithCulture(new BackgroundService.BackgroundTaskLauncher(_ctx).ClassFullname));
             this.Write(">();\r\n        }\r\n\r\n        internal static void ");
             this.Write(this.ToStringHelper.ToStringWithCulture(INIT_WEBAPPLICATION));

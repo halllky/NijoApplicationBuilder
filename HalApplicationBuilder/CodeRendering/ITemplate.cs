@@ -92,7 +92,7 @@ namespace HalApplicationBuilder.CodeRendering {
         }
 
         public override string ToString() {
-            return _stringBuilder.ToString();
+            return _stringBuilder.ToString().TrimEnd();
         }
     }
     internal static class TemplateTextHelperExtensions {

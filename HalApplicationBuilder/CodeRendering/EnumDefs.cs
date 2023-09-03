@@ -21,10 +21,15 @@ namespace HalApplicationBuilder.CodeRendering {
         protected override string Template() {
             return $$"""
                 namespace {{_ctx.Config.RootNamespace}} {
+                    using System.ComponentModel.DataAnnotations;
+
                 {{_enumDefinitions.SelectTextTemplate(def => $$"""
                     public enum {{def.Name}} {
                 {{def.Items.SelectTextTemplate(item => $$"""
-                        {{item.Name}} = {{item.Value}},
+                {{If(!string.IsNullOrWhiteSpace(item.DisplayName), $$"""
+                        [Display(Name = "{{item.DisplayName}}")]
+                """)}}
+                        {{item.PhysicalName}} = {{item.Value}},
                 """)}}
                     }
                 """)}}

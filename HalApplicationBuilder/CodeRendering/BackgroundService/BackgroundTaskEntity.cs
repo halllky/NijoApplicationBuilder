@@ -72,10 +72,10 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
         }
         internal static EnumDefinition CreateBackgroundTaskStateEnum() {
             if (!EnumDefinition.TryCreate(ENUM_BGTASKSTATE, new[] {
-                new EnumDefinition.Item { Value = 0, Name = ENUM_BGTASKSTATE_WAITTOSTART },
-                new EnumDefinition.Item { Value = 1, Name = ENUM_BGTASKSTATE_RUNNING },
-                new EnumDefinition.Item { Value = 2, Name = ENUM_BGTASKSTATE_SUCCESS },
-                new EnumDefinition.Item { Value = 3, Name = ENUM_BGTASKSTATE_FAULT },
+                new EnumDefinition.Item { Value = 0, DisplayName = "起動待ち", PhysicalName = ENUM_BGTASKSTATE_WAITTOSTART },
+                new EnumDefinition.Item { Value = 1, DisplayName = "実行中", PhysicalName = ENUM_BGTASKSTATE_RUNNING },
+                new EnumDefinition.Item { Value = 2, DisplayName = "正常終了", PhysicalName = ENUM_BGTASKSTATE_SUCCESS },
+                new EnumDefinition.Item { Value = 3, DisplayName = "異常終了", PhysicalName = ENUM_BGTASKSTATE_FAULT },
             }, out var enumDefinition, out var errors)) {
                 throw new InvalidOperationException(errors.Join(Environment.NewLine));
             }

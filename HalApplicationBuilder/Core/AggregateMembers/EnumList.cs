@@ -1,3 +1,4 @@
+using HalApplicationBuilder.DotnetEx;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,9 +14,13 @@ namespace HalApplicationBuilder.Core.AggregateMembers {
 
         public override SearchBehavior SearchBehavior => SearchBehavior.Strict;
         public override string GetCSharpTypeName() => $"{Definition.Name}?";
-        public override string GetTypeScriptTypeName() => "number";
+        public override string GetTypeScriptTypeName() {
+            return Definition.Items.Select(x => $"'{x.PhysicalName}'").Join(" | ");
+        }
         public override IEnumerable<string> RenderUI(IGuiFormRenderer ui) {
-            var options = Definition.Items.ToDictionary(x => x.Value.ToString(), x => x.Name);
+            var options = Definition.Items.ToDictionary(
+                x => x.PhysicalName,
+                x => x.DisplayName ?? x.PhysicalName);
             return ui.Selection(options);
         }
     }

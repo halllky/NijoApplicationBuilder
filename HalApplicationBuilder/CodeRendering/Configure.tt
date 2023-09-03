@@ -28,6 +28,9 @@ namespace <#=Namespace#> {
 
             builder.Services.AddControllers(option => {
                 option.Filters.Add<RDRA.HttpResponseExceptionFilter>();
+
+            }).AddJsonOptions(option => {
+                <#=Util.Utility.CLASSNAME#>.<#=Util.Utility.MODIFY_JSONOPTION#>(option.JsonSerializerOptions);
             });
 
             builder.Services.AddHostedService<<#=new BackgroundService.BackgroundTaskLauncher(_ctx).ClassFullname#>>();

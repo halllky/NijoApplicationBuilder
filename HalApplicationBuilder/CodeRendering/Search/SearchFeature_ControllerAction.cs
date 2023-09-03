@@ -1,3 +1,4 @@
+using HalApplicationBuilder.CodeRendering.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +23,7 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                             var json = System.Web.HttpUtility.UrlDecode(param);
                             var condition = string.IsNullOrWhiteSpace(json)
                                 ? new {{SearchConditionClassName}}()
-                                : System.Text.Json.JsonSerializer.Deserialize<{{SearchConditionClassName}}>(json)!;
+                                : {{Utility.CLASSNAME}}.{{Utility.PARSE_JSON}}<{{SearchConditionClassName}}>(json);
                             var searchResult = _dbContext
                                 .{{DbContextSearchMethodName}}(condition)
                                 .AsEnumerable();
