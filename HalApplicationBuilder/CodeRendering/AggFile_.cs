@@ -104,7 +104,7 @@ namespace HalApplicationBuilder.CodeRendering {
             var keys = _dbEntity.GetColumns().Where(col => col.IsPrimary).ToArray();
             for (int i = 0; i < keys.Length; i++) {
                 var col = keys[i].PropertyName;
-                var cast = keys[i].CSharpTypeName;
+                var cast = keys[i].MemberType.GetCSharpTypeName();
                 var close = i == keys.Length - 1 ? ");" : "";
                 if (i == 0) {
                     WriteLine($"    .SingleOrDefault(x => x.{col} == ({cast})instanceKey.{InstanceKey.OBJECT_ARRAY}[{i}]{close}");
@@ -224,7 +224,7 @@ namespace HalApplicationBuilder.CodeRendering {
                 .Where(col => col.IsPrimary || col.IsInstanceName)
                 .Select(col => new ListByKeywordTargetColumn {
                     Name = col.PropertyName,
-                    NameAsString = col.CSharpTypeName.Contains("string")
+                    NameAsString = col.MemberType.GetCSharpTypeName().Contains("string")
                         ? col.PropertyName
                         : $"{col.PropertyName}.ToString()",
                     Path = col.Owner
@@ -273,7 +273,7 @@ namespace HalApplicationBuilder.CodeRendering {
                 foreach (var prop in instance.GetRefProperties(_ctx.Config)) {
                     for (int i = 0; i < prop.CorrespondingDbColumns.Length; i++) {
                         var col = prop.CorrespondingDbColumns[i];
-                        WriteLine($"{col.PropertyName} = ({col.CSharpTypeName}){InstanceKey.CLASS_NAME}.{InstanceKey.PARSE}({instancePath}.{prop.PropertyName}.{AggregateInstanceKeyNamePair.KEY}).{InstanceKey.OBJECT_ARRAY}[{i}],");
+                        WriteLine($"{col.PropertyName} = ({col.MemberType.GetCSharpTypeName()}){InstanceKey.CLASS_NAME}.{InstanceKey.PARSE}({instancePath}.{prop.PropertyName}.{AggregateInstanceKeyNamePair.KEY}).{InstanceKey.OBJECT_ARRAY}[{i}],");
                     }
                 }
                 // 子要素

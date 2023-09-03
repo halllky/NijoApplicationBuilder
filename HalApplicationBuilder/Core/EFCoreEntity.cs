@@ -12,46 +12,90 @@ namespace HalApplicationBuilder.Core {
             new NodeId($"DBENTITY::{aggregate.Id}"),
             aggregate.DisplayName.ToCSharpSafe()) {
         }
-        internal EFCoreEntity(NodeId id, string name, IList<SchalarMemberNotRelatedToAggregate>? schalarMembers = null) {
+        internal EFCoreEntity(NodeId id, string name, IList<BareColumn>? schalarMembers = null) {
             Id = id;
             ClassName = name;
-            SchalarMembersNotRelatedToAggregate = schalarMembers ?? new List<SchalarMemberNotRelatedToAggregate>();
+            SchalarMembersNotRelatedToAggregate = schalarMembers ?? new List<BareColumn>();
         }
 
         public NodeId Id { get; }
         internal string ClassName { get; }
         internal string DbSetName => ClassName;
-        internal IList<SchalarMemberNotRelatedToAggregate> SchalarMembersNotRelatedToAggregate;
+        internal IList<BareColumn> SchalarMembersNotRelatedToAggregate;
 
         internal const string KEYEQUALS = "KeyEquals";
 
-        internal class Member : ValueObject {
-            internal required GraphNode<EFCoreEntity> Owner { get; init; }
-            internal required bool IsPrimary { get; init; }
-            internal required bool IsInstanceName { get; init; }
-            internal required IAggregateMemberType MemberType { get; init; }
-            internal required string CSharpTypeName { get; init; }
-            internal required string TypeScriptTypename { get; init; }
-            internal required string PropertyName { get; init; }
-            internal string? Initializer { get; init; }
-            internal bool RequiredAtDB { get; init; }
-            internal required Member? CorrespondingParentColumn { get; init; }
-            internal required Member? CorrespondingRefTargetColumn { get; init; }
-
-            protected override IEnumerable<object?> ValueObjectIdentifiers() {
-                yield return Owner;
-                yield return PropertyName;
-            }
+        internal interface IMember {
+            GraphNode<EFCoreEntity> Owner { get; }
+            string PropertyName { get; }
+            IAggregateMemberType MemberType { get; }
+            bool IsPrimary { get;  }
+            bool IsInstanceName { get; }
+            bool RequiredAtDB { get; }
+            IMember? CorrespondingParentColumn { get; }
+            IMember? CorrespondingRefTargetColumn { get; }
         }
+
         /// <summary>
         /// 集約に関係しないスカラー値メンバー
         /// </summary>
-        internal class SchalarMemberNotRelatedToAggregate {
-            internal required string PropertyName { get; init; }
-            internal required bool IsPrimary { get; init; }
-            internal required bool IsInstanceName { get; init; }
-            internal required IAggregateMemberType MemberType { get; init; }
-            internal bool RequiredAtDB { get; init; }
+        internal class BareColumn {
+            public required string PropertyName { get; init; }
+            public required bool IsPrimary { get; init; }
+            public required bool IsInstanceName { get; init; }
+            public required IAggregateMemberType MemberType { get; init; }
+            public bool RequiredAtDB { get; init; }
+        }
+        internal class BareColumnWithOwner : BareColumn, IMember {
+            public required GraphNode<EFCoreEntity> Owner { get; init; }
+            IMember? IMember.CorrespondingParentColumn => null;
+            IMember? IMember.CorrespondingRefTargetColumn => null;
+        }
+
+        internal class SchalarColumnDefniedInAggregate : IMember {
+            public required GraphNode<EFCoreEntity> Owner { get; init; }
+            public required string PropertyName { get; init; }
+            public required IAggregateMemberType MemberType { get; init; }
+            public required bool IsPrimary { get; init; }
+            public required bool IsInstanceName { get; init; }
+            public required bool RequiredAtDB { get; init; }
+            IMember? IMember.CorrespondingParentColumn => null;
+            IMember? IMember.CorrespondingRefTargetColumn => null;
+        }
+        internal class ParentTablePrimaryKey : IMember {
+            public required IMember CorrespondingParentColumn { get; init; }
+            public required GraphNode<EFCoreEntity> Owner { get; init; }
+
+            public string PropertyName => CorrespondingParentColumn.PropertyName;
+            public IAggregateMemberType MemberType => CorrespondingParentColumn.MemberType;
+            public bool IsInstanceName => CorrespondingParentColumn.IsInstanceName;
+            public bool IsPrimary => true;
+            public bool RequiredAtDB => true;
+            IMember? IMember.CorrespondingRefTargetColumn => null;
+        }
+        internal class RefTargetTablePrimaryKey : IMember {
+            public required GraphEdge<EFCoreEntity> Relation { get; init; }
+            public required IMember CorrespondingRefTargetColumn { get; init; }
+
+            public GraphNode<EFCoreEntity> Owner => Relation.Initial;
+            public string PropertyName => $"{Relation.RelationName}_{CorrespondingRefTargetColumn.PropertyName}";
+            public IAggregateMemberType MemberType => CorrespondingRefTargetColumn.MemberType;
+            public bool IsPrimary => Relation.IsPrimary();
+            public bool IsInstanceName => CorrespondingRefTargetColumn.IsInstanceName;
+            public bool RequiredAtDB => IsPrimary; // TODO XMLでrequired属性を定義できるようにする
+            IMember? IMember.CorrespondingParentColumn => null;
+        }
+        internal class VariationGroupTypeIdentifier : IMember {
+            public required VariationGroup<EFCoreEntity> Group { get; init; }
+            public required GraphNode<EFCoreEntity> Owner { get; init; }
+
+            public string PropertyName => Group.GroupName;
+            public IAggregateMemberType MemberType { get; } = new VariationSwitch();
+            public bool IsInstanceName => false;
+            public bool IsPrimary => false; // TODO: variationを主キーに設定できるようにする
+            public bool RequiredAtDB => true;
+            IMember? IMember.CorrespondingParentColumn => null;
+            IMember? IMember.CorrespondingRefTargetColumn => null;
         }
     }
 
@@ -131,7 +175,7 @@ namespace HalApplicationBuilder.Core {
             internal required string PropertyName { get; init; }
             internal required bool OppositeIsMany { get; init; }
             internal string? Initializer { get; init; }
-            internal required IEnumerable<EFCoreEntity.Member> ForeignKeys { get; init; }
+            internal required IEnumerable<EFCoreEntity.IMember> ForeignKeys { get; init; }
 
             protected override IEnumerable<object?> ValueObjectIdentifiers() {
                 yield return Owner;
@@ -147,70 +191,46 @@ namespace HalApplicationBuilder.Core {
     }
 
     internal static class EFCoreEntityExtensions {
-        internal static IEnumerable<EFCoreEntity.Member> GetColumns(this GraphNode<EFCoreEntity> dbEntity) {
+        internal static IEnumerable<EFCoreEntity.IMember> GetColumns(this GraphNode<EFCoreEntity> dbEntity) {
             // 親の主キー
             var parent = dbEntity.GetParent()?.Initial;
             if (parent != null) {
                 foreach (var parentPkColumn in parent.GetColumns().Where(c => c.IsPrimary)) {
-                    yield return new EFCoreEntity.Member {
+                    yield return new EFCoreEntity.ParentTablePrimaryKey {
                         Owner = dbEntity,
-                        PropertyName = parentPkColumn.PropertyName,
-                        IsPrimary = true,
-                        IsInstanceName = false,
-                        MemberType = parentPkColumn.MemberType,
-                        CSharpTypeName = parentPkColumn.CSharpTypeName,
-                        TypeScriptTypename = parentPkColumn.TypeScriptTypename,
-                        RequiredAtDB = true,
                         CorrespondingParentColumn = parentPkColumn,
-                        CorrespondingRefTargetColumn = null,
                     };
                 }
             }
             // スカラー値
             foreach (var member in dbEntity.Item.SchalarMembersNotRelatedToAggregate) {
-                yield return new EFCoreEntity.Member {
+                yield return new EFCoreEntity.BareColumnWithOwner {
                     Owner = dbEntity,
                     PropertyName = member.PropertyName,
                     IsPrimary = member.IsPrimary,
                     IsInstanceName = member.IsInstanceName,
                     MemberType = member.MemberType,
-                    CSharpTypeName = member.MemberType.GetCSharpTypeName(),
-                    TypeScriptTypename = member.MemberType.GetTypeScriptTypeName(),
                     RequiredAtDB = member.RequiredAtDB,
-                    CorrespondingParentColumn = null,
-                    CorrespondingRefTargetColumn = null,
                 };
             }
             var aggregate = dbEntity.GetCorrespondingAggregate();
             if (aggregate != null) {
                 foreach (var member in aggregate.GetSchalarMembers()) {
-                    yield return new EFCoreEntity.Member {
+                    yield return new EFCoreEntity.SchalarColumnDefniedInAggregate {
                         Owner = dbEntity,
                         PropertyName = member.Item.Name,
                         IsPrimary = member.Item.IsPrimary,
                         IsInstanceName = member.Item.IsInstanceName,
                         MemberType = member.Item.Type,
-                        CSharpTypeName = member.Item.Type.GetCSharpTypeName(),
-                        TypeScriptTypename = member.Item.Type.GetTypeScriptTypeName(),
                         RequiredAtDB = member.Item.IsPrimary, // TODO XMLでrequired属性を定義できるようにする
-                        CorrespondingParentColumn = null,
-                        CorrespondingRefTargetColumn = null,
                     };
                 }
             }
             // Ref
             foreach (var edge in dbEntity.GetRefMembers()) {
                 foreach (var refTargetPk in edge.Terminal.GetColumns().Where(c => c.IsPrimary)) {
-                    yield return new EFCoreEntity.Member {
-                        Owner = dbEntity,
-                        PropertyName = $"{edge.RelationName}_{refTargetPk.PropertyName}",
-                        IsPrimary = edge.IsPrimary(),
-                        IsInstanceName = edge.IsInstanceName(),
-                        MemberType = refTargetPk.MemberType,
-                        CSharpTypeName = refTargetPk.CSharpTypeName,
-                        TypeScriptTypename = refTargetPk.TypeScriptTypename,
-                        RequiredAtDB = edge.IsPrimary(), // TODO XMLでrequired属性を定義できるようにする
-                        CorrespondingParentColumn = null,
+                    yield return new EFCoreEntity.RefTargetTablePrimaryKey {
+                        Relation = edge,
                         CorrespondingRefTargetColumn = refTargetPk,
                     };
                 }
@@ -218,17 +238,9 @@ namespace HalApplicationBuilder.Core {
             // リレーション
             foreach (var group in dbEntity.GetVariationGroups()) {
                 // variationの型番号
-                yield return new EFCoreEntity.Member {
+                yield return new EFCoreEntity.VariationGroupTypeIdentifier {
+                    Group = group,
                     Owner = dbEntity,
-                    PropertyName = group.GroupName.ToCSharpSafe(),
-                    IsPrimary = false, // TODO Variationを主キーに設定できないの不便では？
-                    IsInstanceName = false,
-                    MemberType = new VariationSwitch(),
-                    CSharpTypeName = "string",
-                    TypeScriptTypename = "string",
-                    RequiredAtDB = true,
-                    CorrespondingParentColumn = null,
-                    CorrespondingRefTargetColumn = null,
                 };
             }
         }

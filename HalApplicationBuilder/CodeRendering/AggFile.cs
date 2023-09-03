@@ -445,7 +445,7 @@ namespace ");
             this.Write(" {\r\n");
  foreach (var col in ett.GetColumns()) { 
             this.Write("        public ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(col.CSharpTypeName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(col.MemberType.GetCSharpTypeName()));
             this.Write(" ");
             this.Write(this.ToStringHelper.ToStringWithCulture(col.PropertyName));
             this.Write(" { get; set; }\r\n");

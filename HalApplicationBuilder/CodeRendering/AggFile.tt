@@ -409,7 +409,7 @@ namespace <#=_ctx.Config.EntityNamespace#> {
     /// </summary>
     public partial class <#=ett.Item.ClassName#> {
 <# foreach (var col in ett.GetColumns()) { #>
-        public <#=col.CSharpTypeName#> <#=col.PropertyName#> { get; set; }
+        public <#=col.MemberType.GetCSharpTypeName()#> <#=col.PropertyName#> { get; set; }
 <# } #>
 
 <# foreach (var nav in EnumerateNavigationProperties(ett)) { #>

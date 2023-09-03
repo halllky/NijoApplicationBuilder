@@ -34,7 +34,7 @@ namespace HalApplicationBuilder.Core
             internal required string PropertyName { get; init; }
         }
         internal class SchalarProperty : Property {
-            internal required EFCoreEntity.Member CorrespondingDbColumn { get; init; }
+            internal required EFCoreEntity.IMember CorrespondingDbColumn { get; init; }
         }
         internal class ChildrenProperty : Property {
             internal required GraphNode<AggregateInstance> ChildAggregateInstance { get; init; }
@@ -53,7 +53,7 @@ namespace HalApplicationBuilder.Core
         internal class RefProperty : Property {
             internal required GraphNode<AggregateInstance> RefTarget { get; init; }
             internal required NavigationProperty CorrespondingNavigationProperty { get; init; }
-            internal required EFCoreEntity.Member[] CorrespondingDbColumns { get; init; }
+            internal required EFCoreEntity.IMember[] CorrespondingDbColumns { get; init; }
         }
     }
 
