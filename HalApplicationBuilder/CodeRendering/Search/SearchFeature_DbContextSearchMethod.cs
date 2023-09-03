@@ -52,7 +52,7 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                                 query = query.Where(x => x.{{member.SearchResultPropName}} >= param.{{member.ConditionPropName}}.{{FromTo.FROM}});
                             }
                             if (param.{{member.ConditionPropName}}.{{FromTo.TO}} != default) {
-                                query = query.Where(x => x.{{member.SearchResultPropName}} <= param.{{member.ConditionPropName}}.{{FromTo.TO}});";
+                                query = query.Where(x => x.{{member.SearchResultPropName}} <= param.{{member.ConditionPropName}}.{{FromTo.TO}});
                             }
                 """).ElseIf(member.Type.SearchBehavior == SearchBehavior.Strict && new[] { "string", "string?" }.Contains(member.Type.GetCSharpTypeName()), $$"""
                             if (!string.IsNullOrWhiteSpace(param.{{member.ConditionPropName}})) {
