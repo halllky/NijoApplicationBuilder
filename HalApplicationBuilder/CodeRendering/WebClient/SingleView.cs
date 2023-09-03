@@ -40,14 +40,17 @@ import * as AggregateType from '../../");
             this.Write(this.ToStringHelper.ToStringWithCulture(types.ImportName));
             this.Write("\'\r\nimport { ");
             this.Write(this.ToStringHelper.ToStringWithCulture(new FormOfAggregateInstance.Component(_instance).ComponentName));
-            this.Write(@" } from './components'
-
-export default function () {
-
-  const [, dispatch] = useAppContext()
-  
+            this.Write(" } from \'./components\'\r\n\r\nexport default function () {\r\n\r\n  const { instanceKey }" +
+                    " = useParams()\r\n  const [, dispatch] = useAppContext()\r\n  \r\n  const navigate = u" +
+                    "seNavigate()\r\n");
+ if (!_asEditView) { 
+            this.Write("  const navigateToEditView = useCallback((e: React.MouseEvent) => {\r\n    navigate" +
+                    "(`");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetEditViewUrl()));
+            this.Write("/${instanceKey}`)\r\n    e.preventDefault()\r\n  }, [navigate, instanceKey])\r\n");
+ } 
+            this.Write(@"  
   const { get, post } = useHttpRequest()
-  const { instanceKey } = useParams()
   const [instanceName, setInstanceName] = useState<string | undefined>('')
   const [fetched, setFetched] = useState(false)
   const defaultValues = useCallback(async () => {
@@ -78,18 +81,15 @@ export default function () {
             this.Write("`, data)\r\n    if (response.ok) {\r\n      setErrorMessages([])\r\n      dispatch({ ty" +
                     "pe: \'pushMsg\', msg: `${response.data.");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceBase.INSTANCE_NAME));
-            this.Write("}を更新しました。` })\r\n    } else {\r\n      setErrorMessages([...errorMessages, ...respons" +
-                    "e.errors])\r\n    }\r\n  }, [errorMessages, dispatch, post])\r\n\r\n  const pageContextV" +
-                    "alue = useReducer(pageContextReducer, { pageIsReadOnly: ");
+            this.Write("}を更新しました。` })\r\n      navigate(`");
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetReadonlySingleViewUrl()));
+            this.Write("/${instanceKey}`)\r\n    } else {\r\n      setErrorMessages([...errorMessages, ...res" +
+                    "ponse.errors])\r\n    }\r\n  }, [errorMessages, dispatch, post, navigate, instanceKe" +
+                    "y])\r\n\r\n  const pageContextValue = useReducer(pageContextReducer, { pageIsReadOnl" +
+                    "y: ");
             this.Write(this.ToStringHelper.ToStringWithCulture(_asEditView ? "false" : "true"));
-            this.Write(" })\r\n\r\n");
- if (!_asEditView) { 
-            this.Write("  const navigate = useNavigate()\r\n  const navigateToEditView = useCallback((e: Re" +
-                    "act.MouseEvent) => {\r\n    navigate(`");
-            this.Write(this.ToStringHelper.ToStringWithCulture(GetEditViewUrl()));
-            this.Write("/${instanceKey}`)\r\n    e.preventDefault()\r\n  }, [navigate, instanceKey])\r\n");
- } 
-            this.Write(@"
+            this.Write(@" })
+
   if (!fetched) return <></>
 
   return (
