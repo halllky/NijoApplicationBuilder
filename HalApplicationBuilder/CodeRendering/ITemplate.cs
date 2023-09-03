@@ -94,6 +94,12 @@ namespace HalApplicationBuilder.CodeRendering {
         public override string ToString() {
             return _stringBuilder.ToString().TrimEnd();
         }
+
+        internal static string WithIndent(string content, string indent) {
+            return content
+                .Split(Environment.NewLine)
+                .Join(Environment.NewLine + indent);
+        }
     }
     internal static class TemplateTextHelperExtensions {
         internal static string SelectTextTemplate<T>(this IEnumerable<T> values, Func<T, TemplateTextHelper> selector) {

@@ -9,7 +9,7 @@ namespace HalApplicationBuilder.Core {
         SearchBehavior SearchBehavior { get; }
         string GetCSharpTypeName();
         string GetTypeScriptTypeName();
-        IEnumerable<string> RenderUI(IGuiFormRenderer ui);
+        string RenderUI(IGuiFormRenderer ui);
     }
     /// <summary>
     /// 検索処理の挙動
@@ -38,7 +38,7 @@ namespace HalApplicationBuilder.Core {
         public abstract SearchBehavior SearchBehavior { get; }
         public abstract string GetCSharpTypeName();
         public abstract string GetTypeScriptTypeName();
-        public abstract IEnumerable<string> RenderUI(IGuiFormRenderer ui);
+        public abstract string RenderUI(IGuiFormRenderer ui);
     }
 
 
@@ -49,7 +49,7 @@ namespace HalApplicationBuilder.Core {
         public SearchBehavior SearchBehavior => SearchBehavior.Range;
         public abstract string GetCSharpTypeName();
         public abstract string GetTypeScriptTypeName();
-        public abstract IEnumerable<string> RenderUI(IGuiFormRenderer ui);
+        public abstract string RenderUI(IGuiFormRenderer ui);
         //object? Min { get; }
         //object? Max { get; }
     }

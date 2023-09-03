@@ -36,11 +36,9 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
 
         #region SCHALAR PROPERTY
-        private void RenderSchalarProperty(GraphNode<AggregateInstance> instance, AggregateInstance.SchalarProperty prop) {
+        private string RenderSchalarProperty(GraphNode<AggregateInstance> instance, AggregateInstance.SchalarProperty prop, string indent) {
             var renderer = new ReactForm(instance, prop);
-            foreach (var line in prop.CorrespondingDbColumn.MemberType.RenderUI(renderer)) {
-                WriteLine(line);
-            }
+            return TemplateTextHelper.WithIndent(prop.CorrespondingDbColumn.MemberType.RenderUI(renderer), indent);
         }
         private class ReactForm : IGuiFormRenderer {
             internal ReactForm(GraphNode<AggregateInstance> instance, AggregateInstance.SchalarProperty prop) {
@@ -53,27 +51,46 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             /// <summary>
             /// Createビュー兼シングルビュー: テキストボックス
             /// </summary>
-            public IEnumerable<string> TextBox(bool multiline = false) {
+            public string TextBox(bool multiline = false) {
                 var name = GetRegisterName(_instance, _prop).Value;
                 if (multiline)
-                    yield return $"<textarea {{...register(`{name}`)}} className=\"{INPUT_WIDTH}\" readOnly={{pageIsReadOnly}} spellCheck=\"false\" autoComplete=\"off\"></textarea>";
+                    return $$"""
+                        <textarea
+                            {...register(`{{name}}`)}
+                            className="{{INPUT_WIDTH}}"
+                            readOnly={pageIsReadOnly}
+                            spellCheck="false"
+                            autoComplete="off">
+                        </textarea>
+                        """;
                 else
-                    yield return $"<input type=\"text\" {{...register(`{name}`)}} className=\"{INPUT_WIDTH}\" readOnly={{pageIsReadOnly}} spellCheck=\"false\" autoComplete=\"off\" />";
+                    return $$"""
+                        <input
+                            type="text"
+                            {...register(`{{name}}`)}
+                            className="{{INPUT_WIDTH}}"
+                            readOnly={pageIsReadOnly}
+                            spellCheck="false"
+                            autoComplete="off"
+                        />
+                        """;
             }
 
             /// <summary>
             /// Createビュー兼シングルビュー: トグル
             /// </summary>
-            public IEnumerable<string> Toggle() {
+            public string Toggle() {
                 var name = GetRegisterName(_instance, _prop).Value;
-                yield return $"<input type=\"checkbox\" {{...register(`{name}`)}} disabled={{pageIsReadOnly}} />";
+                return $$"""
+                    <input type="checkbox" {...register(`{{name}}`)} disabled={pageIsReadOnly} />
+                    """;
             }
 
             /// <summary>
             /// Createビュー兼シングルビュー: 選択肢（コード自動生成時に要素が確定しているもの）
             /// </summary>
-            public IEnumerable<string> Selection(IEnumerable<KeyValuePair<string, string>> options) {
-                yield return $$"""
+            public string Selection(IEnumerable<KeyValuePair<string, string>> options) {
+                return $$"""
                     <select className="border" {...register(`{{GetRegisterName(_instance)}}`)}>
                     {{options.SelectTextTemplate(option => $$"""
                         <option value="{{option.Key}}">

@@ -9,6 +9,6 @@ namespace HalApplicationBuilder.Core.AggregateMembers {
         public SearchBehavior SearchBehavior => SearchBehavior.Ambiguous;
         public string GetCSharpTypeName() => "string";
         public string GetTypeScriptTypeName() => "string";
-        public IEnumerable<string> RenderUI(IGuiFormRenderer ui) => ui.TextBox(multiline: true);
+        public string RenderUI(IGuiFormRenderer ui) => ui.TextBox(multiline: true);
     }
 }

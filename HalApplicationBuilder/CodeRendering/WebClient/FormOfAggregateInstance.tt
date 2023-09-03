@@ -35,9 +35,7 @@ export const <#=desc.ComponentName#> = ({ <#=GetArguments(desc.AggregateInstance
         </span>
       </div>
       <div className="flex-1">
-<# PushIndent("        "); #>
-<# RenderSchalarProperty(desc.AggregateInstance, schalarProperty); #>
-<# PopIndent(); #>
+        <#=RenderSchalarProperty(desc.AggregateInstance, schalarProperty, "        ")#>
       </div>
     </div>
 

@@ -17,7 +17,7 @@ namespace HalApplicationBuilder.Core.AggregateMembers {
         public override string GetTypeScriptTypeName() {
             return Definition.Items.Select(x => $"'{x.PhysicalName}'").Join(" | ");
         }
-        public override IEnumerable<string> RenderUI(IGuiFormRenderer ui) {
+        public override string RenderUI(IGuiFormRenderer ui) {
             var options = Definition.Items.ToDictionary(
                 x => x.PhysicalName,
                 x => x.DisplayName ?? x.PhysicalName);

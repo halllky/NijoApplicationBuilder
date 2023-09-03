@@ -116,7 +116,7 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                                   </span>
                                 </div>
                                 <div className="flex-1">
-                                  {{member.Type.RenderUI(new SearchConditionUiForm(member)).Join(Environment.NewLine + "              ")}}
+                                  {{TemplateTextHelper.WithIndent(member.Type.RenderUI(new SearchConditionUiForm(member)),"              ")}}
                                 </div>
                               </div>
                     """)}}
@@ -188,31 +188,35 @@ namespace HalApplicationBuilder.CodeRendering.Search {
                 /// <summary>
                 /// 検索条件: テキストボックス
                 /// </summary>
-                public IEnumerable<string> TextBox(bool multiline = false) {
+                public string TextBox(bool multiline = false) {
                     if (_member.Type.SearchBehavior == SearchBehavior.Range) {
                         var from = GetRegisterName(Util.FromTo.FROM);
                         var to = GetRegisterName(Util.FromTo.TO);
-                        yield return $"<input type=\"text\" className=\"border w-40\" {{...register('{from}')}} />";
-                        yield return $"〜";
-                        yield return $"<input type=\"text\" className=\"border w-40\" {{...register('{to}')}} />";
+                        return $$"""
+                            <input type="text" className="border w-40" {...register('{{from}}')} />
+                            〜
+                            <input type="text" className="border w-40" {...register('{{to}}')} />
+                            """;
 
                     } else {
                         var name = GetRegisterName();
-                        yield return $"<input type=\"text\" className=\"border w-80\" {{...register('{name}')}} />";
+                        return $$"""
+                            <input type="text" className="border w-80" {...register('{{name}}')} />
+                            """;
                     }
                 }
                 /// <summary>
                 /// 検索条件: トグル
                 /// </summary>
-                public IEnumerable<string> Toggle() {
+                public string Toggle() {
                     // TODO: "true only", "false only", "all" の3種類のラジオボタン
-                    yield break;
+                    return string.Empty;
                 }
                 /// <summary>
                 /// 検索条件: 選択肢（コード自動生成時に要素が確定しているもの）
                 /// </summary>
-                public IEnumerable<string> Selection(IEnumerable<KeyValuePair<string, string>> options) {
-                    yield return $$"""
+                public string Selection(IEnumerable<KeyValuePair<string, string>> options) {
+                    return $$"""
                         <select className="border" {...register(`{{GetRegisterName()}}`)}>
                         {{options.SelectTextTemplate(option => $$"""
                           <option value="{{option.Key}}">
