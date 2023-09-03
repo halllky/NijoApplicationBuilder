@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static HalApplicationBuilder.CodeRendering.TemplateTextHelper;
 
 namespace HalApplicationBuilder.CodeRendering.WebClient {
     partial class FormOfAggregateInstance {
@@ -32,7 +33,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
                   return <>
                 {{desc.AggregateInstance.GetProperties(_ctx.Config).SelectTextTemplate(prop => $$"""
-                {{TemplateTextHelper.If(prop is AggregateInstance.SchalarProperty, () => $$"""
+                {{If(prop is AggregateInstance.SchalarProperty, () => $$"""
                     <div className="flex">
                       <div className="{{PropNameWidth}}">
                         <span className="text-sm select-none opacity-80">
@@ -52,7 +53,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                         </span>
                       </div>
                       <div className="flex-1">
-                        {{TemplateTextHelper.WithIndent(RenderRefAggregateBody((AggregateInstance.RefProperty)prop), "        ")}}
+                        {{WithIndent(RenderRefAggregateBody((AggregateInstance.RefProperty)prop), "        ")}}
                       </div>
                     </div>
 
@@ -62,30 +63,30 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                         {{prop.PropertyName}}
                       </span>
                       <div className="flex flex-col space-y-1 p-1 border border-neutral-400">
-                        {{TemplateTextHelper.WithIndent(RenderChildAggregateBody((AggregateInstance.ChildProperty)prop), "        ")}}
+                        {{WithIndent(RenderChildAggregateBody((AggregateInstance.ChildProperty)prop), "        ")}}
                       </div>
                     </div>
 
-                """).ElseIf(prop is AggregateInstance.VariationProperty variationProperty
-                         && variationProperty.Key == variationProperty.Group.VariationAggregates.First().Key, () => $$"""
+                """).ElseIf(prop is AggregateInstance.VariationSwitchProperty, () => $$"""
                     <div className="flex">
                       <div className="{{PropNameWidth}}">
                         <span className="text-sm select-none opacity-80">
-                          {{((AggregateInstance.VariationProperty)prop).Group.GroupName}}
+                          {{((AggregateInstance.VariationSwitchProperty)prop).CorrespondingDbColumn.PropertyName}}
                         </span>
                       </div>
                       <div className="flex-1 flex gap-2 flex-wrap">
-                {{((AggregateInstance.VariationProperty)prop).Group.VariationAggregates.SelectTextTemplate(item => $$"""
+                {{((AggregateInstance.VariationSwitchProperty)prop).CorrespondingDbColumn.Group.VariationAggregates.SelectTextTemplate(item => $$"""
                         <label>
-                          <input type="radio" value="{{item.Key}}" disabled={pageIsReadOnly} {...register(`{{GetRegisterName(desc.AggregateInstance, (AggregateInstance.VariationProperty)prop).Value}}`)} />
+                          <input type="radio" value="{{item.Key}}" disabled={pageIsReadOnly} {...register(`{{GetRegisterName(desc.AggregateInstance, prop).Value}}`)} />
                           {{item.Value.RelationName}}
                         </label>
                 """)}}
                       </div>
                     </div>
-                {{((AggregateInstance.VariationProperty)prop).Group.VariationAggregates.SelectTextTemplate(item => $$"""
-                    <div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(watch(`{{GetRegisterName(desc.AggregateInstance, (AggregateInstance.VariationProperty)prop).Value}}`) !== '{{item.Key}}' ? 'hidden' : '')}`}>
-                      {{TemplateTextHelper.WithIndent(RenderVariationAggregateBody(item.Value.Terminal), "      ")}}
+
+                {{((AggregateInstance.VariationSwitchProperty)prop).GroupItems.SelectTextTemplate(item => $$"""
+                    <div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(watch(`{{GetRegisterName(desc.AggregateInstance, prop).Value}}`) !== '{{item.Key}}' ? 'hidden' : '')}`}>
+                      {{WithIndent(RenderVariationAggregateBody(item.ChildAggregateInstance), "      ")}}
                     </div>
                 """)}}
 
@@ -95,7 +96,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                         {{prop.PropertyName}}
                       </span>
                       <div className="flex flex-col space-y-1">
-                        {{TemplateTextHelper.WithIndent(RenderChildrenAggregateBody((AggregateInstance.ChildrenProperty)prop), "        ")}}
+                        {{WithIndent(RenderChildrenAggregateBody((AggregateInstance.ChildrenProperty)prop), "        ")}}
                       </div>
                     </div>
 
@@ -105,20 +106,22 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 }
 
 
-                {{TemplateTextHelper.If(desc.IsChildren, () => $$"""
-                export const {{desc.ComponentName}} = (args: {
-                {{GetArguments(desc.AggregateInstance).Values.SkipLast(1).SelectTextTemplate(arg => $$"""
+                {{If(desc.IsChildren, () => {
+                var listComponent = new Component(desc.AggregateInstance);
+                return $$$"""
+                export const {{{listComponent.ComponentName}}} = (args: {
+                {{{GetArguments(desc.AggregateInstance).Values.SkipLast(1).SelectTextTemplate(arg => $$"""
                   {{arg}}: number
-                """)}}
+                """)}}}
                 }) => {
                   const [{ pageIsReadOnly },] = usePageContext()
-                  const { control, register } = useFormContext<AggregateType.{{_instance.Item.TypeScriptTypeName}}>()
+                  const { control, register } = useFormContext<AggregateType.{{{_instance.Item.TypeScriptTypeName}}}>()
                   const { fields, append, remove } = useFieldArray({
                     control,
-                    name: `{{desc.GetUseFieldArrayName()}}`,
+                    name: `{{{desc.GetUseFieldArrayName()}}}`,
                   })
                   const onAdd = useCallback((e: React.MouseEvent) => {
-                    append(AggregateType.{{new types.AggregateInstanceInitializerFunction(desc.AggregateInstance).FunctionName}}())
+                    append(AggregateType.{{{new types.AggregateInstanceInitializerFunction(desc.AggregateInstance).FunctionName}}}())
                     e.preventDefault()
                   }, [append])
 
@@ -126,15 +129,15 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     <>
                       {fields.map((_, index) => (
                         <div key={index} className="flex flex-col space-y-1 p-1 border border-neutral-400">
-                          <{{desc.ComponentName}}
+                          <{{{desc.ComponentName}}}
                             {...args}
-                            {{GetArguments(desc.AggregateInstance).Values.Last()}}={index}
+                            {{{GetArguments(desc.AggregateInstance).Values.Last()}}}={index}
                           />
                           {!pageIsReadOnly &&
                             <Components.IconButton
                               underline
                               icon={XMarkIcon}
-                              onClick={e => { remove(index); e.preventDefault() }\}
+                              onClick={e => { remove(index); e.preventDefault() }}
                               className="self-start">削除</Components.IconButton>}
                         </div>
                       ))}
@@ -149,7 +152,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     </>
                   )
                 }
-                """)}}
+                """; })}}
                 """)}}
                 """;
         }

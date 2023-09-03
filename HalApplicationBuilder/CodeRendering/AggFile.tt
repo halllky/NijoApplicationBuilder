@@ -327,7 +327,7 @@ namespace <#=_ctx.Config.RootNamespace#> {
         /// </summary>
         public <#=InstanceKey.CLASS_NAME#> <#=CreateCommandGetInstanceKeyMethodName#>() {
             return <#=InstanceKey.CLASS_NAME#>.<#=InstanceKey.CREATE#>(new object[] {
-<# foreach (var p in _aggregateInstance.GetSchalarProperties(_ctx.Config).Where(p => p.CorrespondingDbColumn.IsPrimary)) { #>
+<# foreach (var p in _aggregateInstance.GetSchalarProperties().Where(p => p.CorrespondingDbColumn.IsPrimary)) { #>
                 this.<#=p.PropertyName#>,
 <# } #>
             });
@@ -363,7 +363,7 @@ namespace <#=_ctx.Config.RootNamespace#> {
         /// </summary>
         public <#=InstanceKey.CLASS_NAME#> <#=GETINSTANCEKEY_METHOD_NAME#>() {
             return <#=InstanceKey.CLASS_NAME#>.<#=InstanceKey.CREATE#>(new object[] {
-<# foreach (var p in _aggregateInstance.GetSchalarProperties(_ctx.Config).Where(p => p.CorrespondingDbColumn.IsPrimary)) { #>
+<# foreach (var p in _aggregateInstance.GetSchalarProperties().Where(p => p.CorrespondingDbColumn.IsPrimary)) { #>
                 this.<#=p.PropertyName#>,
 <# } #>
             });

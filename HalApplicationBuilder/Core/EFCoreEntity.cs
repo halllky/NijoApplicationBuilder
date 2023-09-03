@@ -25,6 +25,10 @@ namespace HalApplicationBuilder.Core {
 
         internal const string KEYEQUALS = "KeyEquals";
 
+        public override string ToString() {
+            return Id.Value;
+        }
+
         internal interface IMember {
             GraphNode<EFCoreEntity> Owner { get; }
             string PropertyName { get; }
@@ -32,8 +36,6 @@ namespace HalApplicationBuilder.Core {
             bool IsPrimary { get;  }
             bool IsInstanceName { get; }
             bool RequiredAtDB { get; }
-            IMember? CorrespondingParentColumn { get; }
-            IMember? CorrespondingRefTargetColumn { get; }
         }
 
         /// <summary>
@@ -48,8 +50,6 @@ namespace HalApplicationBuilder.Core {
         }
         internal class BareColumnWithOwner : BareColumn, IMember {
             public required GraphNode<EFCoreEntity> Owner { get; init; }
-            IMember? IMember.CorrespondingParentColumn => null;
-            IMember? IMember.CorrespondingRefTargetColumn => null;
         }
 
         internal class SchalarColumnDefniedInAggregate : IMember {
@@ -59,8 +59,6 @@ namespace HalApplicationBuilder.Core {
             public required bool IsPrimary { get; init; }
             public required bool IsInstanceName { get; init; }
             public required bool RequiredAtDB { get; init; }
-            IMember? IMember.CorrespondingParentColumn => null;
-            IMember? IMember.CorrespondingRefTargetColumn => null;
         }
         internal class ParentTablePrimaryKey : IMember {
             public required IMember CorrespondingParentColumn { get; init; }
@@ -71,19 +69,17 @@ namespace HalApplicationBuilder.Core {
             public bool IsInstanceName => CorrespondingParentColumn.IsInstanceName;
             public bool IsPrimary => true;
             public bool RequiredAtDB => true;
-            IMember? IMember.CorrespondingRefTargetColumn => null;
         }
         internal class RefTargetTablePrimaryKey : IMember {
             public required GraphEdge<EFCoreEntity> Relation { get; init; }
             public required IMember CorrespondingRefTargetColumn { get; init; }
+            public required GraphNode<EFCoreEntity> Owner { get; init; }
 
-            public GraphNode<EFCoreEntity> Owner => Relation.Initial;
             public string PropertyName => $"{Relation.RelationName}_{CorrespondingRefTargetColumn.PropertyName}";
             public IAggregateMemberType MemberType => CorrespondingRefTargetColumn.MemberType;
             public bool IsPrimary => Relation.IsPrimary();
             public bool IsInstanceName => CorrespondingRefTargetColumn.IsInstanceName;
             public bool RequiredAtDB => IsPrimary; // TODO XMLでrequired属性を定義できるようにする
-            IMember? IMember.CorrespondingParentColumn => null;
         }
         internal class VariationGroupTypeIdentifier : IMember {
             public required VariationGroup<EFCoreEntity> Group { get; init; }
@@ -94,8 +90,6 @@ namespace HalApplicationBuilder.Core {
             public bool IsInstanceName => false;
             public bool IsPrimary => false; // TODO: variationを主キーに設定できるようにする
             public bool RequiredAtDB => true;
-            IMember? IMember.CorrespondingParentColumn => null;
-            IMember? IMember.CorrespondingRefTargetColumn => null;
         }
     }
 
@@ -104,22 +98,20 @@ namespace HalApplicationBuilder.Core {
     /// ナビゲーションプロパティ
     /// </summary>
     internal class NavigationProperty : ValueObject {
-        internal NavigationProperty(GraphEdge graphEdge, Config config) {
-            _graphEdge = graphEdge;
+        internal NavigationProperty(GraphEdge<EFCoreEntity> relation, Config config) {
+            _graphEdge = relation;
 
-            var initial = graphEdge.Initial.As<EFCoreEntity>();
-            var terminal = graphEdge.Terminal.As<EFCoreEntity>();
             Item CreateItem(GraphNode<EFCoreEntity> owner, bool oppositeIsMany) {
-                var opposite = owner == initial ? terminal : initial;
-                var entityClass = $"{config.EntityNamespace}.{opposite.As<EFCoreEntity>().Item.ClassName}";
+                var opposite = owner == relation.Initial ? relation.Terminal : relation.Initial;
+                var entityClass = $"{config.EntityNamespace}.{opposite.Item.ClassName}";
 
                 string propertyName;
-                if (owner == terminal && (owner.IsChildMember() || owner.IsChildrenMember() || owner.IsVariationMember())) {
+                if (owner == relation.Terminal && (owner.IsChildMember() || owner.IsChildrenMember() || owner.IsVariationMember())) {
                     propertyName = "Parent";
-                } else if (owner == terminal && graphEdge.IsRef()) {
-                    propertyName = $"RefferedBy_{initial.Item.ClassName}_{graphEdge.RelationName}";
+                } else if (owner == relation.Terminal && relation.IsRef()) {
+                    propertyName = $"RefferedBy_{relation.Initial.Item.ClassName}_{relation.RelationName}";
                 } else {
-                    propertyName = graphEdge.RelationName;
+                    propertyName = relation.RelationName;
                 }
 
                 return new Item {
@@ -130,33 +122,33 @@ namespace HalApplicationBuilder.Core {
                     OppositeIsMany = oppositeIsMany,
                     ForeignKeys = owner
                         .GetColumns()
-                        .Where(m => m.IsPrimary && m.CorrespondingParentColumn?.Owner == opposite
-                                 || m.CorrespondingRefTargetColumn?.Owner == opposite),
+                        .Where(col => col is EFCoreEntity.RefTargetTablePrimaryKey refTargetPk
+                                   && refTargetPk.Relation.Terminal == opposite),
                 };
             }
 
-            if (terminal.IsChildMember()) {
-                Principal = CreateItem(initial, oppositeIsMany: false);
-                Relevant = CreateItem(terminal, oppositeIsMany: false);
+            if (relation.Terminal.IsChildMember()) {
+                Principal = CreateItem(relation.Initial, oppositeIsMany: false);
+                Relevant = CreateItem(relation.Terminal, oppositeIsMany: false);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
-            } else if (terminal.IsVariationMember()) {
-                Principal = CreateItem(initial, oppositeIsMany: false);
-                Relevant = CreateItem(terminal, oppositeIsMany: false);
+            } else if (relation.Terminal.IsVariationMember()) {
+                Principal = CreateItem(relation.Initial, oppositeIsMany: false);
+                Relevant = CreateItem(relation.Terminal, oppositeIsMany: false);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
-            } else if (terminal.IsChildrenMember()) {
-                Principal = CreateItem(initial, oppositeIsMany: true);
-                Relevant = CreateItem(terminal, oppositeIsMany: false);
+            } else if (relation.Terminal.IsChildrenMember()) {
+                Principal = CreateItem(relation.Initial, oppositeIsMany: true);
+                Relevant = CreateItem(relation.Terminal, oppositeIsMany: false);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
-            } else if (graphEdge.IsRef()) {
-                Principal = CreateItem(terminal, oppositeIsMany: true);
-                Relevant = CreateItem(initial, oppositeIsMany: false);
+            } else if (relation.IsRef()) {
+                Principal = CreateItem(relation.Terminal, oppositeIsMany: true);
+                Relevant = CreateItem(relation.Initial, oppositeIsMany: false);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.NoAction;
 
             } else {
-                throw new ArgumentException("Graph edge can not be converted to navigation property.", nameof(graphEdge));
+                throw new ArgumentException("Graph edge can not be converted to navigation property.", nameof(relation));
             }
         }
         private readonly GraphEdge _graphEdge;
@@ -230,6 +222,7 @@ namespace HalApplicationBuilder.Core {
             foreach (var edge in dbEntity.GetRefMembers()) {
                 foreach (var refTargetPk in edge.Terminal.GetColumns().Where(c => c.IsPrimary)) {
                     yield return new EFCoreEntity.RefTargetTablePrimaryKey {
+                        Owner = dbEntity,
                         Relation = edge,
                         CorrespondingRefTargetColumn = refTargetPk,
                     };

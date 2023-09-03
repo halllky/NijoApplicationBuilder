@@ -330,7 +330,7 @@ namespace ");
             this.Write(".");
             this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.CREATE));
             this.Write("(new object[] {\r\n");
- foreach (var p in _aggregateInstance.GetSchalarProperties(_ctx.Config).Where(p => p.CorrespondingDbColumn.IsPrimary)) { 
+ foreach (var p in _aggregateInstance.GetSchalarProperties().Where(p => p.CorrespondingDbColumn.IsPrimary)) { 
             this.Write("                this.");
             this.Write(this.ToStringHelper.ToStringWithCulture(p.PropertyName));
             this.Write(",\r\n");
@@ -387,7 +387,7 @@ namespace ");
             this.Write(".");
             this.Write(this.ToStringHelper.ToStringWithCulture(InstanceKey.CREATE));
             this.Write("(new object[] {\r\n");
- foreach (var p in _aggregateInstance.GetSchalarProperties(_ctx.Config).Where(p => p.CorrespondingDbColumn.IsPrimary)) { 
+ foreach (var p in _aggregateInstance.GetSchalarProperties().Where(p => p.CorrespondingDbColumn.IsPrimary)) { 
             this.Write("                this.");
             this.Write(this.ToStringHelper.ToStringWithCulture(p.PropertyName));
             this.Write(",\r\n");

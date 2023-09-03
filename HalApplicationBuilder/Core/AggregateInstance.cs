@@ -24,6 +24,10 @@ namespace HalApplicationBuilder.Core
 
         public NodeId Id { get; }
 
+        public override string ToString() {
+            return Id.Value;
+        }
+
         internal const string BASE_CLASS_NAME = "AggregateInstanceBase";
         internal const string TO_DB_ENTITY_METHOD_NAME = "ToDbEntity";
         internal const string FROM_DB_ENTITY_METHOD_NAME = "FromDbEntity";
@@ -44,6 +48,10 @@ namespace HalApplicationBuilder.Core
             internal required GraphNode<AggregateInstance> ChildAggregateInstance { get; init; }
             internal required NavigationProperty CorrespondingNavigationProperty { get; init; }
         }
+        internal class VariationSwitchProperty : Property {
+            internal required EFCoreEntity.VariationGroupTypeIdentifier CorrespondingDbColumn { get; init; }
+            internal required ICollection<VariationProperty> GroupItems { get; init; }
+        }
         internal class VariationProperty : Property {
             internal required VariationGroup<AggregateInstance> Group { get; init; }
             internal required string Key { get; init; }
@@ -59,14 +67,15 @@ namespace HalApplicationBuilder.Core
 
     internal static class AggregateInstanceExtensions {
         internal static IEnumerable<AggregateInstance.Property> GetProperties(this GraphNode<AggregateInstance> node, Config config) {
-            foreach (var prop in GetSchalarProperties(node, config)) yield return prop;
+            foreach (var prop in GetSchalarProperties(node)) yield return prop;
             foreach (var prop in GetChildrenProperties(node, config)) yield return prop;
             foreach (var prop in GetChildProperties(node, config)) yield return prop;
+            foreach (var prop in GetVariationSwitchProperties(node, config)) yield return prop;
             foreach (var prop in GetVariationProperties(node, config)) yield return prop;
             foreach (var prop in GetRefProperties(node, config)) yield return prop;
         }
 
-        internal static IEnumerable<AggregateInstance.SchalarProperty> GetSchalarProperties(this GraphNode<AggregateInstance> instance, Config config) {
+        internal static IEnumerable<AggregateInstance.SchalarProperty> GetSchalarProperties(this GraphNode<AggregateInstance> instance) {
             var dbEntityColumns = instance.GetDbEntity().GetColumns().ToArray();
             foreach (var member in instance.GetCorrespondingAggregate().GetSchalarMembers()) {
                 yield return new AggregateInstance.SchalarProperty {
@@ -76,22 +85,18 @@ namespace HalApplicationBuilder.Core
                     PropertyName = member.Item.Name,
                 };
             }
-
-            // variationのスイッチ
-            foreach (var group in instance.GetVariationGroups()) {
-                yield return new AggregateInstance.SchalarProperty {
-                    CorrespondingDbColumn = dbEntityColumns.Single(col => col.PropertyName == group.GroupName),
-                    CSharpTypeName = "string",
-                    TypeScriptTypename = "string",
-                    PropertyName = group.GroupName,
-                };
-            }
         }
 
         internal static IEnumerable<AggregateInstance.ChildrenProperty> GetChildrenProperties(this GraphNode<AggregateInstance> node, Config config) {
             var initial = node.GetDbEntity().Item.Id;
             foreach (var edge in node.GetChildrenMembers()) {
-                var navigationProperty = new NavigationProperty(edge.Terminal.GetDbEntity().In.Single(e => e.Initial.Item.Id == initial), config);
+                var sameRelationWithEFCoreEntity = edge.Terminal
+                    .GetDbEntity()
+                    .In
+                    .Single(e => e.RelationName == edge.RelationName)
+                    .As<EFCoreEntity>();
+                var navigationProperty = new NavigationProperty(sameRelationWithEFCoreEntity, config);
+
                 yield return new AggregateInstance.ChildrenProperty {
                     ChildAggregateInstance = edge.Terminal,
                     CorrespondingNavigationProperty = navigationProperty,
@@ -104,7 +109,13 @@ namespace HalApplicationBuilder.Core
         internal static IEnumerable<AggregateInstance.ChildProperty> GetChildProperties(this GraphNode<AggregateInstance> node, Config config) {
             var initial = node.GetDbEntity().Item.Id;
             foreach (var edge in node.GetChildMembers()) {
-                var navigationProperty = new NavigationProperty(edge.Terminal.GetDbEntity().In.Single(e => e.Initial.Item.Id == initial), config);
+                var sameRelationWithEFCoreEntity = edge.Terminal
+                    .GetDbEntity()
+                    .In
+                    .Single(e => e.RelationName == edge.RelationName)
+                    .As<EFCoreEntity>();
+                var navigationProperty = new NavigationProperty(sameRelationWithEFCoreEntity, config);
+
                 yield return new AggregateInstance.ChildProperty {
                     ChildAggregateInstance = edge.Terminal,
                     CorrespondingNavigationProperty = navigationProperty,
@@ -114,11 +125,39 @@ namespace HalApplicationBuilder.Core
                 };
             }
         }
+
+        internal static IEnumerable<AggregateInstance.VariationSwitchProperty> GetVariationSwitchProperties(this GraphNode<AggregateInstance> instance, Config config) {
+            var dbEntityColumns = instance
+                .GetDbEntity()
+                .GetColumns()
+                .Where(col => col is EFCoreEntity.VariationGroupTypeIdentifier)
+                .Cast<EFCoreEntity.VariationGroupTypeIdentifier>()
+                .ToArray();
+            foreach (var group in instance.GetVariationGroups()) {
+                var groupItems = instance
+                    .GetVariationProperties(config)
+                    .Where(x => x.Group.GroupName == group.GroupName)
+                    .ToArray();
+                yield return new AggregateInstance.VariationSwitchProperty {
+                    CorrespondingDbColumn = dbEntityColumns.Single(col => col.PropertyName == group.GroupName),
+                    GroupItems = groupItems,
+                    CSharpTypeName = "string",
+                    TypeScriptTypename = "string",
+                    PropertyName = group.GroupName,
+                };
+            }
+        }
         internal static IEnumerable<AggregateInstance.VariationProperty> GetVariationProperties(this GraphNode<AggregateInstance> node, Config config) {
             var initial = node.GetDbEntity().Item.Id;
             foreach (var group in node.GetVariationGroups()) {
                 foreach (var kv in group.VariationAggregates) {
-                    var navigationProperty = new NavigationProperty(kv.Value.Terminal.GetDbEntity().In.Single(e => e.Initial.Item.Id == initial), config);
+                    var sameRelationWithEFCoreEntity = kv.Value.Terminal
+                        .GetDbEntity()
+                        .In
+                        .Single(e => e.RelationName == kv.Value.RelationName)
+                        .As<EFCoreEntity>();
+                    var navigationProperty = new NavigationProperty(sameRelationWithEFCoreEntity, config);
+
                     yield return new AggregateInstance.VariationProperty {
                         Group = group,
                         Key = kv.Key,
@@ -135,8 +174,11 @@ namespace HalApplicationBuilder.Core
             foreach (var edge in node.GetRefMembers()) {
                 var initialDbEntity = edge.Initial.GetDbEntity();
                 var terminalDbEntity = edge.Terminal.GetDbEntity();
-                var edgeAsEfCore = terminalDbEntity.In.Single(x => x.RelationName == edge.RelationName
-                                                                && x.Initial.As<EFCoreEntity>() == initialDbEntity);
+                var edgeAsEfCore = terminalDbEntity.In
+                    .Single(x => x.RelationName == edge.RelationName
+                              && x.Initial.As<EFCoreEntity>() == initialDbEntity)
+                    .As<EFCoreEntity>();
+
                 yield return new AggregateInstance.RefProperty {
                     RefTarget = edge.Terminal,
                     CSharpTypeName = AggregateInstanceKeyNamePair.CLASSNAME,
@@ -146,7 +188,8 @@ namespace HalApplicationBuilder.Core
                     CorrespondingDbColumns = node
                         .GetDbEntity()
                         .GetColumns()
-                        .Where(col => col.CorrespondingRefTargetColumn?.Owner == terminalDbEntity)
+                        .Where(col => col is EFCoreEntity.RefTargetTablePrimaryKey refTargetPk
+                                   && refTargetPk.Relation.Terminal == terminalDbEntity)
                         .ToArray(),
                 };
             }

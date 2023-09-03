@@ -260,13 +260,17 @@ namespace HalApplicationBuilder.CodeRendering {
                     var parentPkColumns = instance
                         .GetDbEntity()
                         .GetColumns()
-                        .Where(col => col.IsPrimary && col.CorrespondingParentColumn != null);
+                        .Where(col => col is EFCoreEntity.ParentTablePrimaryKey)
+                        .Cast<EFCoreEntity.ParentTablePrimaryKey>();
                     foreach (var col in parentPkColumns) {
-                        WriteLine($"{col.PropertyName} = {parentPath}.{col.CorrespondingParentColumn!.PropertyName},");
+                        WriteLine($"{col.PropertyName} = {parentPath}.{col.CorrespondingParentColumn.PropertyName},");
                     }
                 }
                 // 自身のメンバー
-                foreach (var prop in instance.GetSchalarProperties(_ctx.Config)) {
+                foreach (var prop in instance.GetSchalarProperties()) {
+                    WriteLine($"{prop.CorrespondingDbColumn.PropertyName} = {instancePath}.{prop.PropertyName},");
+                }
+                foreach (var prop in instance.GetVariationSwitchProperties(_ctx.Config)) {
                     WriteLine($"{prop.CorrespondingDbColumn.PropertyName} = {instancePath}.{prop.PropertyName},");
                 }
                 // Ref
@@ -319,7 +323,10 @@ namespace HalApplicationBuilder.CodeRendering {
 
             void WriteBody(GraphNode<AggregateInstance> instance, string parentPath, string instancePath, int depth) {
                 // 自身のメンバー
-                foreach (var prop in instance.GetSchalarProperties(_ctx.Config)) {
+                foreach (var prop in instance.GetSchalarProperties()) {
+                    WriteLine($"{prop.PropertyName} = {instancePath}.{prop.CorrespondingDbColumn.PropertyName},");
+                }
+                foreach (var prop in instance.GetVariationSwitchProperties(_ctx.Config)) {
                     WriteLine($"{prop.PropertyName} = {instancePath}.{prop.CorrespondingDbColumn.PropertyName},");
                 }
                 // Ref
@@ -362,15 +369,15 @@ namespace HalApplicationBuilder.CodeRendering {
 
         private IEnumerable<string> GetInstanceNameProps() {
             var useKeyInsteadOfName = _aggregateInstance
-                .GetSchalarProperties(_ctx.Config)
+                .GetSchalarProperties()
                 .Any(p => p.CorrespondingDbColumn.IsInstanceName) == false;
             var props = useKeyInsteadOfName
                 ? _aggregateInstance
-                    .GetSchalarProperties(_ctx.Config)
+                    .GetSchalarProperties()
                     .Where(p => p.CorrespondingDbColumn.IsPrimary)
                     .ToArray()
                 : _aggregateInstance
-                    .GetSchalarProperties(_ctx.Config)
+                    .GetSchalarProperties()
                     .Where(p => p.CorrespondingDbColumn.IsInstanceName)
                     .ToArray();
             if (props.Length == 0) {

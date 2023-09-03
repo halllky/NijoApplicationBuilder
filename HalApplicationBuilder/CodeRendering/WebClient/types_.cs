@@ -28,7 +28,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 WriteLine($"  {AggregateInstanceBase.INSTANCE_KEY}?: string");
                 WriteLine($"  {AggregateInstanceBase.INSTANCE_NAME}?: string");
             }
-            foreach (var prop in instance.GetSchalarProperties(_ctx.Config)) {
+            foreach (var prop in instance.GetSchalarProperties()) {
                 WriteLine($"  {prop.PropertyName}?: {prop.TypeScriptTypename}");
             }
             foreach (var member in instance.GetRefMembers()) {
@@ -39,6 +39,9 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             }
             foreach (var member in instance.GetChildrenMembers()) {
                 WriteLine($"  {member.RelationName}?: {member.Terminal.Item.TypeScriptTypeName}[]");
+            }
+            foreach (var member in instance.GetVariationSwitchProperties(_ctx.Config)) {
+                WriteLine($"  {member.CorrespondingDbColumn.PropertyName}?: {member.TypeScriptTypename}");
             }
             foreach (var member in instance.GetVariationGroups().SelectMany(group => group.VariationAggregates.Values)) {
                 WriteLine($"  {member.RelationName}?: {member.Terminal.Item.TypeScriptTypeName}");

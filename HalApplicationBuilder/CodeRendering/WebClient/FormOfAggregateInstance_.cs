@@ -107,7 +107,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         #region DESCENDANT AGGREGATES
         private string RenderRefAggregateBody(AggregateInstance.RefProperty refProperty) {
             var component = new ComboBox(refProperty.RefTarget.GetCorrespondingAggregate(), _ctx);
-            var registerName = GetRegisterName(refProperty.RefTarget, refProperty).Value;
+            var registerName = GetRegisterName(_instance, refProperty).Value;
             return component.RenderCaller(registerName);
         }
         private string RenderChildrenAggregateBody(AggregateInstance.ChildrenProperty childrenProperty) {
