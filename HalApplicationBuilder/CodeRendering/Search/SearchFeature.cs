@@ -16,8 +16,8 @@ namespace HalApplicationBuilder.CodeRendering.Search {
             Context = ctx;
 
             var aggregate = DbEntity.GetCorrespondingAggregate();
-            DisplayName = aggregate == null ? string.Empty : aggregate.Item.DisplayName;
-            ReactPageUrl = aggregate == null ? string.Empty : $"/{aggregate.Item.UniqueId}";
+            DisplayName = aggregate == null ? DbEntity.Item.ClassName : aggregate.Item.DisplayName;
+            ReactPageUrl = aggregate == null ? $"/{DbEntity.Item.ClassName}" : $"/{aggregate.Item.UniqueId}";
         }
 
         internal CodeRenderingContext Context { get; }
