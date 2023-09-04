@@ -200,7 +200,7 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                 }.ToJson()));
 
 
-            }).LaunchTest();
+            }).LaunchWebApi();
         }
     }
 }

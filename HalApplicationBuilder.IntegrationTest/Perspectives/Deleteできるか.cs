@@ -131,7 +131,7 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                 }
 
 
-            }).LaunchTest();
+            }).LaunchWebApi();
         }
     }
 }

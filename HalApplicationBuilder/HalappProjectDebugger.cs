@@ -163,19 +163,19 @@ namespace HalApplicationBuilder {
         /// デバッグ時に起動されるアプリケーションのURLを返します。
         /// </summary>
         public Uri GetDebugUrl() {
-            return new Uri(GetDebugApplicationUrl().Split(';')[1]);
+            return new Uri(GetDebuggingServerUrl().Split(';')[1]);
         }
         /// <summary>
         /// デバッグ時に起動されるSwagger UIのURLを返します。
         /// </summary>
         /// <returns></returns>
         public Uri GetSwaggerUrl() {
-            return new Uri(new Uri(GetDebugApplicationUrl().Split(';')[0]), "swagger");
+            return new Uri(new Uri(GetDebuggingServerUrl().Split(';')[0]), "swagger");
         }
         /// <summary>
         /// launchSettings.jsonのhttpsプロファイルのapplicationUrlセクションの値を読み取ります。
         /// </summary>
-        private string GetDebugApplicationUrl() {
+        private string GetDebuggingServerUrl() {
             var properties = Path.Combine(_project.ProjectRoot, "Properties");
             if (!Directory.Exists(properties)) throw new DirectoryNotFoundException(properties);
             var launchSettings = Path.Combine(properties, "launchSettings.json");
@@ -199,6 +199,28 @@ namespace HalApplicationBuilder {
                 throw new InvalidOperationException($"Invalid json: {launchSettings}");
 
             return applicationUrl.GetValue<string>();
+        }
+        /// <summary>
+        /// vite.config.ts からポートを参照してURLを生成して返します。
+        /// </summary>
+        /// <returns></returns>
+        public Uri GetDebuggingClientUrl() {
+            var viteConfigTs = Path.Combine(_project.ProjectRoot, HalappProject.REACT_DIR, "vite.config.ts");
+            if (!File.Exists(viteConfigTs))
+                throw new FileNotFoundException(viteConfigTs);
+
+            using var stream = new StreamReader(viteConfigTs, Encoding.UTF8);
+            var regex = new Regex(@"port:\s*([^,]*)");
+            while (!stream.EndOfStream) {
+                var line = stream.ReadLine();
+                if (line == null) continue;
+                var match = regex.Match(line);
+                if (!match.Success) continue;
+                var port = match.Groups[1].Value;
+                return new Uri($"http://localhost:{port}");
+            }
+
+            throw new InvalidOperationException("vite.config.ts からポート番号を読み取れません。'port: 9999'のようにポートを設定している行があるか確認してください。");
         }
 
         /// <summary>

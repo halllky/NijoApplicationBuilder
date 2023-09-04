@@ -21,7 +21,7 @@ namespace HalApplicationBuilder {
     public sealed partial class HalappProject {
 
         private const string HALAPP_XML_NAME = "halapp.xml";
-        private const string REACT_DIR = "client";
+        internal const string REACT_DIR = "client";
 
         /// <summary>
         /// 新しいhalappプロジェクトを作成します。

@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Build.Evaluation;
 using Microsoft.Data.Sqlite;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
 using System;
 using System.Net.Http;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -75,7 +78,11 @@ namespace HalApplicationBuilder.IntegrationTest {
             using var client = new HttpClient();
             return await client.SendAsync(message);
         }
-
+        /// <summary>
+        /// テスト用プロジェクトにHTTPリクエストを送信し、結果を受け取ります。
+        /// </summary>
+        /// <param name="path">URLのうちドメインより後ろの部分</param>
+        /// <returns>HTTPレスポンス</returns>
         public static async Task<HttpResponseMessage> Delete(this HalappProject project, string path) {
             var uri = new Uri(project.Debugger.GetDebugUrl(), path);
             var message = new HttpRequestMessage(HttpMethod.Delete, uri);
@@ -84,6 +91,9 @@ namespace HalApplicationBuilder.IntegrationTest {
             return await client.SendAsync(message);
         }
 
+        /// <summary>
+        /// テスト用データベースにSELECT文を発行します。
+        /// </summary>
         public static IEnumerable<SqliteDataReader> ExecSql(this HalappProject project, string sql) {
             var dataSource = Path.GetFullPath(Path.Combine(project.ProjectRoot, $"bin/Debug/debug.sqlite3")).Replace("\\", "/");
             var connStr = new SqliteConnectionStringBuilder();
@@ -98,6 +108,15 @@ namespace HalApplicationBuilder.IntegrationTest {
             while (reader.Read()) {
                 yield return reader;
             }
+        }
+
+        /// <summary>
+        /// 実行中のテスト用プロジェクトをWebから操作する機構を作成します。
+        /// </summary>
+        public static IWebDriver CreateWebDriver(this HalappProject project) {
+            var exeDir = Assembly.GetExecutingAssembly().Location;
+            var driver = new ChromeDriver(exeDir);
+            return driver;
         }
     }
 }
