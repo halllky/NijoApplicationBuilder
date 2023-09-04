@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.IntegrationTest.Perspectives {
@@ -69,6 +70,7 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                     await npmStart.Launch();
 
                     await describe();
+
                 } finally {
                     ct.Cancel();
                 }
