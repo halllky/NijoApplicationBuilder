@@ -1,4 +1,5 @@
 using HalApplicationBuilder.DotnetEx;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,13 +13,13 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder {
     public sealed partial class HalappProjectDebugger {
-        internal HalappProjectDebugger(HalappProject project, TextWriter? log) {
+        internal HalappProjectDebugger(HalappProject project, ILogger? log) {
             _project = project;
             _log = log;
         }
 
         private readonly HalappProject _project;
-        private readonly TextWriter? _log;
+        private readonly ILogger? _log;
 
         /// <summary>
         /// デバッグを開始します。
@@ -36,8 +37,8 @@ namespace HalApplicationBuilder {
             CancellationTokenSource? linkedTokenSource = null;
 
             // バックグラウンド処理の宣言
-            BackgroundProcess? dotnetRun = null;
-            BackgroundProcess? npmStart = null;
+            Task? dotnetRun = null;
+            Task? npmStart = null;
 
             // ファイル変更監視用オブジェクト
             FileSystemWatcher? watcher = null;
@@ -55,8 +56,7 @@ namespace HalApplicationBuilder {
                     rebuildCancellation?.Cancel();
                 };
 
-                npmStart = _project.Debugger.CreateClientRunningProcess(_log ?? Console.Out, cancellationToken);
-                await npmStart.Launch();
+                npmStart = await _project.Debugger.CreateClientRunningProcess(cancellationToken);
 
                 watcher.EnableRaisingEvents = true;
 
@@ -86,8 +86,7 @@ namespace HalApplicationBuilder {
                         _project.Migrator.AddMigration();
                         _project.Migrator.Migrate();
 
-                        dotnetRun = CreateServerRunningProcess(_log ?? Console.Out, linkedTokenSource.Token);
-                        await dotnetRun.Launch();
+                        dotnetRun = await CreateServerRunningProcess(linkedTokenSource.Token);
 
                     } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
                         throw; // デバッグ自体を中断
@@ -125,38 +124,16 @@ namespace HalApplicationBuilder {
         /// <summary>
         /// クライアントサイドプロセスのコマンドを作成します。
         /// </summary>
-        internal BackgroundProcess CreateClientRunningProcess(TextWriter log, CancellationToken cancellationToken) {
-            if (!_project.IsValidDirectory()) throw new InvalidOperationException("Here is not halapp directory.");
-
-            var process = new DotnetEx.BackgroundProcess {
-                WorkingDirectory = _project.WebClientProjectRoot,
-                Filename = "npm",
-                Args = new[] { "run", "dev" },
-                CancellationToken = cancellationToken,
-                IsReady = e => ViteReadyConsole().IsMatch(e.Message), // viteのコンソール表示
-            };
-            process.Log += (sender, e) => log.WriteLine(e.Message);
-
-            return process;
+        internal Task<Task> CreateClientRunningProcess(CancellationToken cancellationToken) {
+            return _project.ClientDirTerminal.RunBackground(new[] { "npm", "run", "dev" }, ViteReadyConsole(), cancellationToken);
         }
         /// <summary>
         /// サーバーサイドプロセスのコマンドを作成します。
         /// ビルドは行いません。
         /// 実行中のソースファイルの変更は自動的に反映されません。
         /// </summary>
-        internal BackgroundProcess CreateServerRunningProcess(TextWriter log, CancellationToken cancellationToken) {
-            if (!_project.IsValidDirectory()) throw new InvalidOperationException("Here is not halapp directory.");
-
-            var process = new BackgroundProcess {
-                WorkingDirectory = _project.ProjectRoot,
-                Filename = "dotnet",
-                Args = new[] { "run", "--no-build", "--launch-profile", "https" },
-                CancellationToken = cancellationToken,
-                IsReady = e => AspCoreStartedRegex().IsMatch(e.Message),
-            };
-            process.Log += (sender, e) => log.WriteLine(e.Message);
-
-            return process;
+        internal Task<Task> CreateServerRunningProcess(CancellationToken cancellationToken) {
+            return _project.Terminal.RunBackground(new[] { "dotnet", "run", "--no-build", "--launch-profile", "https" }, AspCoreStartedRegex(), cancellationToken);
         }
 
         /// <summary>
@@ -227,8 +204,9 @@ namespace HalApplicationBuilder {
         /// 必要なnpmモジュールをインストールします。
         /// </summary>
         public HalappProjectDebugger InstallDependencies() {
-            using var npmProcess = _project.CreateClientDirProcess("npm", "ci");
-            npmProcess.Start();
+            _project.ClientDirTerminal
+                .Run(new[] { "npm", "ci" }, CancellationToken.None)
+                .Wait();
 
             // dotnetはビルド時に自動的にインストールされるので何もしない
 
@@ -239,12 +217,13 @@ namespace HalApplicationBuilder {
         /// プロジェクトをビルドします。
         /// </summary>
         /// <param name="noEmit">trueにするとnpmについてTypeScriptのエラーチェックのみ実行しビルド結果は出力しない</param>
-        public async Task BuildAsync(bool noEmit = false) {
-            using var cmd1 = _project.CreateProcess("dotnet", "build");
-            using var cmd2 = noEmit
-                ? _project.CreateClientDirProcess("npm", "run", "tsc")
-                : _project.CreateClientDirProcess("npm", "run", "build");
-            await Task.WhenAll(cmd1.StartAsync(), cmd2.StartAsync());
+        public async Task BuildAsync(CancellationToken cancellationToken, bool noEmit = false) {
+            var dotnetBuild = _project.Terminal.Run(new[] { "dotnet", "build" }, cancellationToken);
+            var npmBuild = noEmit
+                ? _project.ClientDirTerminal.Run(new[] { "npm", "run", "tsc" }, cancellationToken)
+                : _project.ClientDirTerminal.Run(new[] { "npm", "run", "build" }, cancellationToken);
+
+            await Task.WhenAll(dotnetBuild, npmBuild);
         }
 
         [GeneratedRegex("Now listening on:")]

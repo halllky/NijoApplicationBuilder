@@ -30,10 +30,11 @@ namespace HalApplicationBuilder.IntegrationTest {
 
             // 依存先パッケージのインストールにかかる時間とデータ量を削減するために全テストで1つのディレクトリを共有する
             const string DIR_NAME = "自動テストで作成されたプロジェクト";
+            var logger = new TestContextLogger();
             var dir = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..", DIR_NAME));
             Project = Directory.Exists(dir)
-                ? HalappProject.Open(dir, log: TestContext.Out)
-                : HalappProject.Create(dir, DIR_NAME, true, log: TestContext.Out);
+                ? HalappProject.Open(dir, logger)
+                : HalappProject.Create(dir, DIR_NAME, true, log: logger);
         }
 
         [OneTimeTearDown]

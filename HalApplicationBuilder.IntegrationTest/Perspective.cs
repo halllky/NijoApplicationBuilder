@@ -30,7 +30,7 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                 }
 
                 using var ct = new CancellationTokenSource();
-                using var dotnetRun = SharedResource.Project.Debugger.CreateServerRunningProcess(TestContext.Out, ct.Token);
+                Task? dotnetRun = null;
                 try {
                     // halapp.xmlの更新
                     File.WriteAllText(SharedResource.Project.GetAggregateSchemaPath(), _pattern.LoadXmlString());
@@ -39,12 +39,14 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                     // コードとDBを再作成
                     await Task.WhenAll(
                         Task.Run(SharedResource.Project.Migrator.DeleteAndRecreateDatabase),
-                        SharedResource.Project.Debugger.BuildAsync());
+                        SharedResource.Project.Debugger.BuildAsync(ct.Token));
 
-                    await dotnetRun.Launch();
+                    dotnetRun = await SharedResource.Project.Debugger.CreateServerRunningProcess(ct.Token);
+
                     await describe();
                 } finally {
                     ct.Cancel();
+                    dotnetRun?.Wait();
                 }
             }
             public async Task LaunchWebApiAndClient() {
@@ -54,8 +56,8 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                 }
 
                 using var ct = new CancellationTokenSource();
-                using var dotnetRun = SharedResource.Project.Debugger.CreateServerRunningProcess(TestContext.Out, ct.Token);
-                using var npmStart = SharedResource.Project.Debugger.CreateClientRunningProcess(TestContext.Out, ct.Token);
+                Task? dotnetRun = null;
+                Task? npmStart = null;
                 try {
                     // halapp.xmlの更新
                     File.WriteAllText(SharedResource.Project.GetAggregateSchemaPath(), _pattern.LoadXmlString());
@@ -64,15 +66,18 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                     // コードとDBを再作成
                     await Task.WhenAll(
                         Task.Run(SharedResource.Project.Migrator.DeleteAndRecreateDatabase),
-                        SharedResource.Project.Debugger.BuildAsync());
+                        SharedResource.Project.Debugger.BuildAsync(ct.Token));
 
-                    await dotnetRun.Launch();
-                    await npmStart.Launch();
+                    // 開始
+                    dotnetRun = await SharedResource.Project.Debugger.CreateServerRunningProcess(ct.Token);
+                    npmStart = await SharedResource.Project.Debugger.CreateClientRunningProcess(ct.Token);
 
                     await describe();
 
                 } finally {
                     ct.Cancel();
+                    dotnetRun?.Wait();
+                    npmStart?.Wait();
                 }
             }
         }

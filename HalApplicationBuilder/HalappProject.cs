@@ -3,6 +3,7 @@ using HalApplicationBuilder.CodeRendering.EFCore;
 using HalApplicationBuilder.CodeRendering.WebClient;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -29,7 +30,7 @@ namespace HalApplicationBuilder {
         /// <param name="applicationName">アプリケーション名</param>
         /// <param name="verbose">ログの詳細出力を行うかどうか</param>
         /// <returns>作成されたプロジェクトを表すオブジェクト</returns>
-        public static HalappProject Create(string projectRootDir, string? applicationName, bool keepTempIferror, CancellationToken? cancellationToken = null, TextWriter? log = null) {
+        public static HalappProject Create(string projectRootDir, string? applicationName, bool keepTempIferror, CancellationToken? cancellationToken = null, ILogger? log = null) {
 
             if (string.IsNullOrWhiteSpace(applicationName))
                 throw new InvalidOperationException($"Please specify name of new application. example 'halapp create my-new-app'");
@@ -62,12 +63,9 @@ namespace HalApplicationBuilder {
                 tempProject.Migrator.EnsureCreateDatabase();
 
                 // git initial commit
-                using var cmd1 = tempProject.CreateProcess("git", "init");
-                using var cmd2 = tempProject.CreateProcess("git", "add", ".");
-                using var cmd3 = tempProject.CreateProcess("git", "commit", "-m", "init");
-                cmd1.Start(cancellationToken);
-                cmd2.Start(cancellationToken);
-                cmd3.Start(cancellationToken);
+                tempProject.Terminal.Run(new[] { "git", "init" }, cancellationToken ?? CancellationToken.None).Wait();
+                tempProject.Terminal.Run(new[] { "git", "add", "." }, cancellationToken ?? CancellationToken.None).Wait();
+                tempProject.Terminal.Run(new[] { "git", "commit", "-m", "init" }, cancellationToken ?? CancellationToken.None).Wait();
 
                 // ここまでの処理がすべて成功したら一時ディレクトリを本来のディレクトリ名に変更
                 if (tempDir != projectRootDir) {
@@ -75,7 +73,7 @@ namespace HalApplicationBuilder {
                     Directory.Move(tempDir, projectRootDir);
                 }
 
-                log?.WriteLine("プロジェクト作成完了");
+                log?.LogInformation("プロジェクト作成完了");
 
                 return new HalappProject(projectRootDir, log);
 
@@ -88,7 +86,7 @@ namespace HalApplicationBuilder {
                     try {
                         Directory.Delete(tempDir, true);
                     } catch (Exception ex) {
-                        log?.WriteLine(new Exception("Failure to delete temp directory.", ex).ToString());
+                        log?.LogError(ex, new Exception("Failure to delete temp directory.", ex).ToString());
                     }
                 }
             }
@@ -98,7 +96,7 @@ namespace HalApplicationBuilder {
         /// </summary>
         /// <param name="path">プロジェクトルートディレクトリの絶対パス</param>
         /// <returns>作成されたプロジェクトを表すオブジェクト</returns>
-        public static HalappProject Open(string? path, TextWriter? log = null) {
+        public static HalappProject Open(string? path, ILogger? log = null) {
             if (string.IsNullOrWhiteSpace(path))
                 return new HalappProject(Directory.GetCurrentDirectory(), log);
             else if (Path.IsPathRooted(path))
@@ -107,19 +105,19 @@ namespace HalApplicationBuilder {
                 return new HalappProject(Path.Combine(Directory.GetCurrentDirectory(), path), log);
         }
 
-        private HalappProject(string projetctRoot, TextWriter? log) {
+        private HalappProject(string projetctRoot, ILogger? log) {
             if (string.IsNullOrWhiteSpace(projetctRoot))
                 throw new ArgumentException($"'{nameof(projetctRoot)}' is required.");
 
             ProjectRoot = Path.GetFullPath(projetctRoot);
-            _log = log;
+            _log = log ?? ILoggerExtension.CreateConsoleLogger();
 
             CodeGenerator = new HalappProjectCodeGenerator(this, log);
             Debugger = new HalappProjectDebugger(this, log);
             Migrator = new HalappProjectMigrator(this, log);
         }
 
-        private readonly TextWriter? _log;
+        private readonly ILogger _log;
 
         public string ProjectRoot { get; }
         public string WebClientProjectRoot => Path.Combine(ProjectRoot, REACT_DIR);
@@ -177,25 +175,13 @@ namespace HalApplicationBuilder {
             if (!File.Exists(halappXml))
                 errors.Add($"'{halappXml}' is not found.");
 
-            if (_log != null) {
-                foreach (var error in errors) _log.WriteLine(error);
-            }
+            foreach (var error in errors) _log.LogError(error);
             return errors.Count == 0;
         }
 
-        internal ProcessEx CreateProcess(string filename, params string[] args) {
-            var process = new ProcessEx(ProjectRoot, filename, args);
-            process.Log += Process_Log;
-            return process;
-        }
-        internal ProcessEx CreateClientDirProcess(string filename, params string[] args) {
-            var process = new ProcessEx(WebClientProjectRoot, filename, args);
-            process.Log += Process_Log;
-            return process;
-        }
-
-        private void Process_Log(object? sender, ProcessEx.LogEventArgs e) {
-            _log?.WriteLine($"{DateTime.Now}\t{e.Message}");
-        }
+        private Terminal? _projectRootTerminal;
+        private Terminal? _clientDirTerminal;
+        internal Terminal Terminal => _projectRootTerminal ??= new Terminal(ProjectRoot, _log);
+        internal Terminal ClientDirTerminal => _clientDirTerminal ??= new Terminal(WebClientProjectRoot, _log);
     }
 }
