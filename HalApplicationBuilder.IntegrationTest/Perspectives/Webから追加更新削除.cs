@@ -11,7 +11,7 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
         [UseDataPatterns]
         public async Task Webから追加更新削除(DataPattern pattern) {
 
-            await If(pattern).When(E_DataPattern._001_Refのみxml, async () => {
+            await If(pattern).When(E_DataPattern._001_Refのみxml, () => {
                 using var driver = SharedResource.Project.CreateWebDriver();
 
                 // トップページ
@@ -30,6 +30,8 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                 // 参照元: MultiView
                 // 参照元: CreateView
                 // 参照元: SingleView
+
+                return Task.CompletedTask;
 
             }).LaunchWebApiAndClient();
         }
