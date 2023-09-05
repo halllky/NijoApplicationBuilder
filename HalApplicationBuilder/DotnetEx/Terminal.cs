@@ -79,13 +79,13 @@ namespace HalApplicationBuilder.DotnetEx {
 
             } catch (TaskCanceledException) {
                 _logger.LogInformation("{Command}: Cancelled", logName);
-                await EnsureKill(process.Id, logName);
+                await EnsureKill(process, logName);
                 process.Dispose();
                 throw;
 
             } catch (Exception ex) {
                 _logger.LogCritical(ex, "{Command}: Error", logName);
-                await EnsureKill(process.Id, logName);
+                await EnsureKill(process, logName);
                 process.Dispose();
                 throw;
             }
@@ -103,7 +103,7 @@ namespace HalApplicationBuilder.DotnetEx {
                     _logger.LogInformation("{Command}: Cancelled", logName);
 
                 } finally {
-                    await EnsureKill(process.Id, logName);
+                    await EnsureKill(process, logName);
                     process.Dispose();
                 }
             }, CancellationToken.None); // タスク開始前にキャンセルされてしまうとEnsureKillを通らなくなるのでCancellationToken.None
@@ -156,11 +156,11 @@ namespace HalApplicationBuilder.DotnetEx {
             Exception? exception = null;
             int? pid = null;
             try {
-                _logger.LogInformation("{Command}: Start", logName);
-
                 process.Start();
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
+
+                _logger.LogInformation("{Command}: Start (PID = {PID})", logName, process.Id);
 
                 pid = process.Id;
 
@@ -179,16 +179,21 @@ namespace HalApplicationBuilder.DotnetEx {
                 throw;
 
             } finally {
-                await EnsureKill(process.Id, logName);
+                await EnsureKill(process, logName);
             }
         }
         /// <summary>
         /// プロセスツリーを確実に終了させます。
         /// </summary>
-        /// <param name="pid">プロセスID</param>
-        private async Task EnsureKill(int pid, string logName) {
+        /// <param name="process">プロセスID</param>
+        private async Task EnsureKill(Process process, string logName) {
+            int? pid = null;
             try {
-                using var kill = CreateProcess(new[] { "taskkill", "/PID", pid.ToString(), "/T", "/F" });
+                if (process.HasExited) return;
+
+                pid = process.Id;
+
+                using var kill = CreateProcess(new[] { "taskkill", "/PID", pid.ToString()!, "/T", "/F" });
 
                 kill.Start();
                 kill.BeginOutputReadLine();
