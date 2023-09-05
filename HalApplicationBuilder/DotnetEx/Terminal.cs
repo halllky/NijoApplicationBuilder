@@ -153,7 +153,6 @@ namespace HalApplicationBuilder.DotnetEx {
 
             // プロセス開始
             using var process = CreateProcess(command);
-            Exception? exception = null;
             int? pid = null;
             try {
                 process.Start();
@@ -167,7 +166,7 @@ namespace HalApplicationBuilder.DotnetEx {
                 await taskAwaiter(process);
 
                 if (process.ExitCode != 0) {
-                    exception = new InvalidOperationException($"Exit code is '{process.ExitCode}': {logName}");
+                    throw new InvalidOperationException($"{logName}: Exit code is '{process.ExitCode}'");
                 }
 
             } catch (TaskCanceledException) {
