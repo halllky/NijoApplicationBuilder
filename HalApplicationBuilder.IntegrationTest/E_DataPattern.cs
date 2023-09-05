@@ -12,6 +12,9 @@ namespace HalApplicationBuilder.IntegrationTest {
         [FileName("004_Variationのみ.xml")]
         _004_Variationのみxml,
 
+        [FileName("010_ChildrenからChildrenへの参照.xml")]
+        _010_ChildrenからChildrenへの参照,
+
         [FileName("100_RDRA.xml")]
         _100_RDRAxml,
     }

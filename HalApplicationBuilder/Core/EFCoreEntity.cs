@@ -106,7 +106,9 @@ namespace HalApplicationBuilder.Core {
                 var entityClass = $"{config.EntityNamespace}.{opposite.Item.ClassName}";
 
                 string propertyName;
-                if (owner == relation.Terminal && (owner.IsChildMember() || owner.IsChildrenMember() || owner.IsVariationMember())) {
+                if (owner == relation.Terminal
+                    && (owner.IsChildMember() || owner.IsChildrenMember() || owner.IsVariationMember())
+                    && owner.GetParent() == relation) {
                     propertyName = "Parent";
                 } else if (owner == relation.Terminal && relation.IsRef()) {
                     propertyName = $"RefferedBy_{relation.Initial.Item.ClassName}_{relation.RelationName}";
@@ -127,17 +129,18 @@ namespace HalApplicationBuilder.Core {
                 };
             }
 
-            if (relation.Terminal.IsChildMember()) {
+            var parent = relation.Terminal.GetParent()?.Initial;
+            if (relation.Terminal.IsChildMember() && relation.Initial == parent) {
                 Principal = CreateItem(relation.Initial, oppositeIsMany: false);
                 Relevant = CreateItem(relation.Terminal, oppositeIsMany: false);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
-            } else if (relation.Terminal.IsVariationMember()) {
+            } else if (relation.Terminal.IsVariationMember() && relation.Initial == parent) {
                 Principal = CreateItem(relation.Initial, oppositeIsMany: false);
                 Relevant = CreateItem(relation.Terminal, oppositeIsMany: false);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
-            } else if (relation.Terminal.IsChildrenMember()) {
+            } else if (relation.Terminal.IsChildrenMember() && relation.Initial == parent) {
                 Principal = CreateItem(relation.Initial, oppositeIsMany: true);
                 Relevant = CreateItem(relation.Terminal, oppositeIsMany: false);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;

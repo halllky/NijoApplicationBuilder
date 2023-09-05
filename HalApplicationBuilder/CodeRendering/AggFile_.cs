@@ -81,12 +81,20 @@ namespace HalApplicationBuilder.CodeRendering {
                 var refEntities = _dbEntity
                     .EnumerateThisAndDescendants()
                     .SelectMany(entity => entity.GetRefMembers())
-                    .Select(refTarget => refTarget.Terminal.GetRoot())
-                    .SelectMany(refTargetRoot => refTargetRoot.EnumerateThisAndDescendants());
+                    .Select(edge => edge.Terminal);
+                var refTargetAncestors = refEntities
+                    .SelectMany(refTarget => refTarget.EnumerateAncestors())
+                    .Select(edge => edge.Initial);
+                var refTargetDescendants = refEntities
+                    .SelectMany(refTarget => refTarget.EnumerateDescendants());
+
                 includeEntities.AddRange(refEntities);
+                includeEntities.AddRange(refTargetAncestors);
+                includeEntities.AddRange(refTargetDescendants);
             }
             var paths = includeEntities
-                .SelectMany(entity => entity.PathFromEntry());
+                .SelectMany(entity => entity.PathFromEntry())
+                .Select(edge => edge.As<EFCoreEntity>());
 
             WriteLine($"var instanceKey = {InstanceKey.CLASS_NAME}.{InstanceKey.PARSE}({serializedInstanceKeyVarName});");
             WriteLine($"var {entityVarName} = this.{_dbEntity.Item.DbSetName}");
@@ -94,10 +102,14 @@ namespace HalApplicationBuilder.CodeRendering {
                 WriteLine($"    .AsNoTracking()");
             }
             foreach (var edge in paths) {
+                var nav = new NavigationProperty(edge, _ctx.Config);
+                var prop = edge.Source.As<EFCoreEntity>() == nav.Principal.Owner
+                    ? nav.Principal.PropertyName
+                    : nav.Relevant.PropertyName;
                 if (edge.Source.As<EFCoreEntity>() == _dbEntity) {
-                    WriteLine($"    .Include(x => x.{edge.RelationName})");
+                    WriteLine($"    .Include(x => x.{prop})");
                 } else {
-                    WriteLine($"    .ThenInclude(x => x.{edge.RelationName})");
+                    WriteLine($"    .ThenInclude(x => x.{prop})");
                 }
             }
 
@@ -331,7 +343,10 @@ namespace HalApplicationBuilder.CodeRendering {
                 }
                 // Ref
                 foreach (var prop in instance.GetRefProperties(_ctx.Config)) {
-                    WriteLine($"{prop.PropertyName} = {prop.RefTarget.Item.ClassName}.{AggregateInstance.FROM_DB_ENTITY_METHOD_NAME}({instancePath}.{prop.CorrespondingNavigationProperty.Relevant.PropertyName}).{TOKEYNAMEPAIR_METHOD_NAME}(),");
+                    var navigation = prop.Owner.GetDbEntity() == prop.CorrespondingNavigationProperty.Principal.Owner
+                        ? prop.CorrespondingNavigationProperty.Principal
+                        : prop.CorrespondingNavigationProperty.Relevant;
+                    WriteLine($"{prop.PropertyName} = {prop.RefTarget.Item.ClassName}.{AggregateInstance.FROM_DB_ENTITY_METHOD_NAME}({instancePath}.{navigation.PropertyName}).{TOKEYNAMEPAIR_METHOD_NAME}(),");
                 }
                 // 子要素
                 foreach (var child in instance.GetChildrenProperties(_ctx.Config)) {
