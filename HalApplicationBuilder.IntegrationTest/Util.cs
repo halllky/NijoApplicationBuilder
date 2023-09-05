@@ -48,5 +48,12 @@ namespace HalApplicationBuilder.IntegrationTest {
                 throw;
             }
         }
+
+        #region Selenium
+        internal static OpenQA.Selenium.By ByInnerText(string innerText) {
+            var escaped = innerText.Replace("'", "\\'");
+            return OpenQA.Selenium.By.XPath($"//*[contains(text(), '{escaped}')]");
+        }
+        #endregion Selenium
     }
 }

@@ -117,6 +117,11 @@ namespace HalApplicationBuilder.IntegrationTest {
         public static IWebDriver CreateWebDriver(this HalappProject project) {
             var exeDir = Assembly.GetExecutingAssembly().Location;
             var driver = new ChromeDriver(exeDir);
+
+            // トップページに移動する
+            var root = SharedResource.Project.Debugger.GetDebuggingClientUrl();
+            driver.Navigate().GoToUrl(root);
+
             return driver;
         }
     }

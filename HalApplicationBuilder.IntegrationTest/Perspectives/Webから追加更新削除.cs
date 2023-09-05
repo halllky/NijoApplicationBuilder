@@ -1,3 +1,4 @@
+using OpenQA.Selenium;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,9 +14,22 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
             await If(pattern).When(E_DataPattern._001_Refのみxml, async () => {
                 using var driver = SharedResource.Project.CreateWebDriver();
 
-                // トップページに移動
-                var root = SharedResource.Project.Debugger.GetDebuggingClientUrl();
-                driver.Navigate().GoToUrl(new Uri(root, "/0980ef37494eb0089d5695ded11e38fa"));
+                // トップページ
+                driver.FindElement(Util.ByInnerText("参照先")).Click();
+
+                // 参照先: MultiView
+                driver.FindElement(Util.ByInnerText("新規作成")).Click();
+
+                // 参照先: CreateView
+                driver.FindElement(By.Name("参照先集約ID")).SendKeys("あ");
+                driver.FindElement(By.Name("参照先集約名")).SendKeys("い");
+                driver.FindElement(Util.ByInnerText("保存")).Click();
+
+                // 参照先: SingleView
+
+                // 参照元: MultiView
+                // 参照元: CreateView
+                // 参照元: SingleView
 
             }).LaunchWebApiAndClient();
         }
