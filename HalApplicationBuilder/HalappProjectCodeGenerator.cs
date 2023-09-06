@@ -103,7 +103,7 @@ namespace HalApplicationBuilder {
                     genDir.Generate(new EnumDefs(appSchema.EnumDefinitions, ctx));
 
                     foreach (var aggregate in ctx.Schema.RootAggregates()) {
-                        genDir.Generate(new AggFile(aggregate, ctx));
+                        genDir.Generate(new AggregateRenderer(aggregate, ctx));
                     }
 
                     genDir.Directory("Util", utilDir => {

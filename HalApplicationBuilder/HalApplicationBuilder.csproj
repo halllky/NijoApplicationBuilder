@@ -30,10 +30,6 @@
 	  <None Remove="Serialized\" />
 	</ItemGroup>
 	<ItemGroup>
-		<None Update="CodeRendering\AggFile.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>AggFile.cs</LastGenOutput>
-		</None>
 		<None Update="CodeRendering\Configure.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>Configure.cs</LastGenOutput>
@@ -159,11 +155,6 @@
 	<ItemGroup>
 		<Compile Update="CodeGenerating\MultiView\MultiViewTemplate.cs">
 			<DependentUpon>MultiViewTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\AggFile.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>AggFile.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering\Configure.cs">
 		  <DesignTime>True</DesignTime>
