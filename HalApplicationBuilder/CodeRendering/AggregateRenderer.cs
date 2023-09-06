@@ -456,7 +456,7 @@ namespace HalApplicationBuilder.CodeRendering {
                         /// <summary>
                         /// {{_aggregate.Item.DisplayName}}をキーワードで検索します。
                         /// </summary>
-                        public IEnumerable<{{AggregateInstanceKeyNamePair.CLASSNAME}}> <{{ListByKeywordMethodName}}(string? keyword) {
+                        public IEnumerable<{{AggregateInstanceKeyNamePair.CLASSNAME}}> {{ListByKeywordMethodName}}(string? keyword) {
                             var query = this.{{_dbEntity.Item.DbSetName}}.Select(e => new {
                 {{EnumerateListByKeywordTargetColumns().SelectTextTemplate(col => $$"""
                                 e.{{col.Path}},
@@ -525,7 +525,7 @@ namespace HalApplicationBuilder.CodeRendering {
                             errors = new List<string>();
                             var key = after.{{GETINSTANCEKEY_METHOD_NAME}}().ToString();
 
-                            {{WithIndent(find.RenderDbEntityLoading("beforeDbEntity", "key", tracks: false, includeRefs: false), "            ")}}
+                            {{WithIndent(find.RenderDbEntityLoading("this", "beforeDbEntity", "key", tracks: false, includeRefs: false), "            ")}}
 
                             if (beforeDbEntity == null) {
                                 updated = new {{_aggregateInstance.Item.ClassName}}();
@@ -589,7 +589,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     partial class {{_ctx.Config.DbContextName}} {
                         public bool {{_delete.MethodName}}(string key, out ICollection<string> errors) {
 
-                            {{WithIndent(find.RenderDbEntityLoading("entity", "key", tracks: true, includeRefs: false), "            ")}}
+                            {{WithIndent(find.RenderDbEntityLoading("this", "entity", "key", tracks: true, includeRefs: false), "            ")}}
 
                             if (entity == null) {
                                 errors = new[] { "削除対象のデータが見つかりません。" };

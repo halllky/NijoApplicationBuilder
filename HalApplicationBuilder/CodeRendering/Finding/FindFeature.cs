@@ -65,7 +65,7 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
                         /// </summary>
                         public {{FindMethodReturnType}}? {{FindMethodName}}(string serializedInstanceKey) {
                 
-                            {{WithIndent(RenderDbEntityLoading("entity", "serializedInstanceKey", tracks: false, includeRefs: true), "            ")}}
+                            {{WithIndent(RenderDbEntityLoading("this", "entity", "serializedInstanceKey", tracks: false, includeRefs: true), "            ")}}
                 
                             if (entity == null) return null;
                 
@@ -77,8 +77,7 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
                 """;
         }
 
-        internal string RenderDbEntityLoading(string entityVarName, string serializedInstanceKeyVarName, bool tracks, bool includeRefs) {
-            var builder = new StringBuilder();
+        internal string RenderDbEntityLoading(string dbContextVarName, string entityVarName, string serializedInstanceKeyVarName, bool tracks, bool includeRefs) {
 
             // Include
             var includeEntities = _dbEntity
@@ -101,38 +100,38 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
             }
             var paths = includeEntities
                 .SelectMany(entity => entity.PathFromEntry())
-                .Select(edge => edge.As<EFCoreEntity>());
+                .Select(edge => edge.As<EFCoreEntity>())
+                .Select(edge => {
+                    var source = edge.Source.As<EFCoreEntity>();
+                    var nav = new NavigationProperty(edge, _ctx.Config);
+                    var prop = edge.Source.As<EFCoreEntity>() == nav.Principal.Owner
+                        ? nav.Principal.PropertyName
+                        : nav.Relevant.PropertyName;
+                    return new { source, prop };
+                });
 
-            builder.AppendLine($"var instanceKey = {InstanceKey.CLASS_NAME}.{InstanceKey.PARSE}({serializedInstanceKeyVarName});");
-            builder.AppendLine($"var {entityVarName} = this.{_dbEntity.Item.DbSetName}");
-            if (tracks == false) {
-                builder.AppendLine($"    .AsNoTracking()");
-            }
-            foreach (var edge in paths) {
-                var nav = new NavigationProperty(edge, _ctx.Config);
-                var prop = edge.Source.As<EFCoreEntity>() == nav.Principal.Owner
-                    ? nav.Principal.PropertyName
-                    : nav.Relevant.PropertyName;
-                if (edge.Source.As<EFCoreEntity>() == _dbEntity) {
-                    builder.AppendLine($"    .Include(x => x.{prop})");
-                } else {
-                    builder.AppendLine($"    .ThenInclude(x => x.{prop})");
-                }
-            }
+            // SingleOrDefault
+            var keys = _dbEntity
+                .GetColumns()
+                .Where(col => col.IsPrimary)
+                .SelectTextTemplate((col, i) => {
+                    var cast = col.MemberType.GetCSharpTypeName();
+                    return $"x.{col.PropertyName} == ({cast})instanceKey.{InstanceKey.OBJECT_ARRAY}[{i}]";
+                });
 
-            var keys = _dbEntity.GetColumns().Where(col => col.IsPrimary).ToArray();
-            for (int i = 0; i < keys.Length; i++) {
-                var col = keys[i].PropertyName;
-                var cast = keys[i].MemberType.GetCSharpTypeName();
-                var close = i == keys.Length - 1 ? ");" : "";
-                if (i == 0) {
-                    builder.AppendLine($"    .SingleOrDefault(x => x.{col} == ({cast})instanceKey.{InstanceKey.OBJECT_ARRAY}[{i}]{close}");
-                } else {
-                    builder.AppendLine($"                       && x.{col} == ({cast})instanceKey.{InstanceKey.OBJECT_ARRAY}[{i}]{close}");
-                }
-            }
-
-            return builder.ToString();
+            return $$"""
+                var instanceKey = {{InstanceKey.CLASS_NAME}}.{{InstanceKey.PARSE}}({{serializedInstanceKeyVarName}});
+                var {{entityVarName}} = {{dbContextVarName}}.{{_dbEntity.Item.DbSetName}}
+                {{If(tracks == false, () => $$"""
+                    .AsNoTracking()
+                """)}}
+                {{paths.SelectTextTemplate(path => path.source == _dbEntity ? $$"""
+                    .Include(x => x.{{path.prop}})
+                """ : $$"""
+                    .ThenInclude(x => x.{{path.prop}})
+                """)}}
+                    .SingleOrDefault(x => {{WithIndent(keys, "                       && ")}});
+                """;
         }
 
     }
