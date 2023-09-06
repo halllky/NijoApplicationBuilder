@@ -275,60 +275,6 @@ namespace HalApplicationBuilder.CodeRendering {
 
             return builder.ToString();
         }
-        private string FromDbEntity() {
-            var builder = new StringBuilder();
-            var indent = "";
-
-            void WriteBody(GraphNode<AggregateInstance> instance, string parentPath, string instancePath, int depth) {
-                // 自身のメンバー
-                foreach (var prop in instance.GetSchalarProperties()) {
-                    builder.AppendLine($"{indent}{prop.PropertyName} = {instancePath}.{prop.CorrespondingDbColumn.PropertyName},");
-                }
-                foreach (var prop in instance.GetVariationSwitchProperties(_ctx.Config)) {
-                    builder.AppendLine($"{indent}{prop.PropertyName} = {instancePath}.{prop.CorrespondingDbColumn.PropertyName},");
-                }
-                // Ref
-                foreach (var prop in instance.GetRefProperties(_ctx.Config)) {
-                    var navigation = prop.Owner.GetDbEntity() == prop.CorrespondingNavigationProperty.Principal.Owner
-                        ? prop.CorrespondingNavigationProperty.Principal
-                        : prop.CorrespondingNavigationProperty.Relevant;
-                    builder.AppendLine($"{indent}{prop.PropertyName} = {prop.RefTarget.Item.ClassName}.{AggregateInstance.FROM_DB_ENTITY_METHOD_NAME}({instancePath}.{navigation.PropertyName}).{TOKEYNAMEPAIR_METHOD_NAME}(),");
-                }
-                // 子要素
-                foreach (var child in instance.GetChildrenProperties(_ctx.Config)) {
-                    builder.AppendLine($"{indent}{child.PropertyName} = {instancePath}.{child.PropertyName}.Select(x{depth} => new {child.ChildAggregateInstance.Item.ClassName} {{");
-                    indent += "    ";
-                    WriteBody(child.ChildAggregateInstance.AsEntry(), instancePath, $"x{depth}", depth + 1);
-                    indent = indent.Substring(indent.Length - 4, 4);
-                    builder.AppendLine($"{indent}}}).ToList(),");
-                }
-                foreach (var child in instance.GetChildProperties(_ctx.Config)) {
-                    builder.AppendLine($"{indent}{child.PropertyName} = new {child.ChildAggregateInstance.Item.ClassName} {{");
-                    indent += "    ";
-                    WriteBody(child.ChildAggregateInstance, instancePath, $"{instancePath}.{child.CorrespondingNavigationProperty.Principal.PropertyName}", depth + 1);
-                    indent = indent.Substring(indent.Length - 4, 4);
-                    builder.AppendLine($"{indent}}},");
-                }
-                foreach (var child in instance.GetVariationProperties(_ctx.Config)) {
-                    builder.AppendLine($"{indent}{child.PropertyName} = new {child.ChildAggregateInstance.Item.ClassName} {{");
-                    indent += "    ";
-                    WriteBody(child.ChildAggregateInstance, instancePath, $"{instancePath}.{child.CorrespondingNavigationProperty.Principal.PropertyName}", depth + 1);
-                    indent = indent.Substring(indent.Length - 4, 4);
-                    builder.AppendLine($"{indent}}},");
-                }
-            }
-
-            builder.AppendLine($"{indent}var instance = new {_aggregateInstance.Item.ClassName} {{");
-            indent += "    ";
-            WriteBody(_aggregateInstance, "", E, 0);
-            indent = indent.Substring(indent.Length - 4, 4);
-            builder.AppendLine($"{indent}}};");
-            builder.AppendLine($"{indent}instance.{AggregateInstanceBase.INSTANCE_KEY} = instance.{GETINSTANCEKEY_METHOD_NAME}().ToString();");
-            builder.AppendLine($"{indent}instance.{AggregateInstanceBase.INSTANCE_NAME} = instance.{GETINSTANCENAME_METHOD_NAME}();");
-            builder.AppendLine($"{indent}return instance;");
-
-            return builder.ToString();
-        }
 
         private IEnumerable<string> GetInstanceNameProps() {
             var useKeyInsteadOfName = _aggregateInstance
@@ -362,6 +308,7 @@ namespace HalApplicationBuilder.CodeRendering {
         protected override string Template() {
             var search = new Searching.SearchFeature(_dbEntity, _ctx);
             var find = new Finding.FindFeature(_aggregate, _ctx);
+            var fromDbEntity = new InstanceConverting.FromDbEntityRenderer(_aggregate, _ctx);
 
             var keyColumns = EnumerateListByKeywordTargetColumns().Where(col => col.IsInstanceKey).ToArray();
             var nameColumns = EnumerateListByKeywordTargetColumns().Where(col => col.IsInstanceName).ToArray();
@@ -653,12 +600,8 @@ namespace HalApplicationBuilder.CodeRendering {
                         public {{prop.CSharpTypeName}} {{prop.PropertyName}} { get; set; }
                 """)}}
 
-                        /// <summary>
-                        /// {{_aggregate.Item.DisplayName}}のデータベースから取得した内容を画面に表示する形に変換します。
-                        /// </summary>
-                        public static {{_aggregateInstance.Item.ClassName}} {{AggregateInstance.FROM_DB_ENTITY_METHOD_NAME}}({{_ctx.Config.EntityNamespace}}.{{_dbEntity.Item.ClassName}} {{E}}) {
-                            {{WithIndent(FromDbEntity(), "            ")}}
-                        }
+                        {{WithIndent(fromDbEntity.Render(), "        ")}}
+
                         /// <summary>
                         /// {{_aggregate.Item.DisplayName}}のデータ1件の内容をデータベースに保存する形に変換します。
                         /// </summary>
