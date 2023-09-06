@@ -22,7 +22,6 @@ namespace HalApplicationBuilder.CodeRendering {
 
             _controller = new WebClient.Controller(_aggregate.Item, ctx);
             _create = new CreateMethod(this, ctx);
-            _search = new Search.SearchFeature(_dbEntity, ctx);
             _update = new UpdateMethod(this, ctx);
             _delete = new DeleteMethod(this, ctx);
 
@@ -69,68 +68,6 @@ namespace HalApplicationBuilder.CodeRendering {
             internal string MethodName => $"Create{_aggregate.Item.DisplayName.ToCSharpSafe()}";
         }
         #endregion CREATE
-
-        #region FIND
-        private string FindMethodReturnType => _aggregateInstance.Item.ClassName;
-        private string FindMethodName => $"Find{_aggregate.Item.DisplayName.ToCSharpSafe()}";
-        private string RenderDbEntityLoading(string entityVarName, string serializedInstanceKeyVarName, bool tracks, bool includeRefs) {
-            var builder = new StringBuilder();
-
-            // Include
-            var includeEntities = _dbEntity
-                .EnumerateThisAndDescendants()
-                .ToList();
-            if (includeRefs) {
-                var refEntities = _dbEntity
-                    .EnumerateThisAndDescendants()
-                    .SelectMany(entity => entity.GetRefMembers())
-                    .Select(edge => edge.Terminal);
-                var refTargetAncestors = refEntities
-                    .SelectMany(refTarget => refTarget.EnumerateAncestors())
-                    .Select(edge => edge.Initial);
-                var refTargetDescendants = refEntities
-                    .SelectMany(refTarget => refTarget.EnumerateDescendants());
-
-                includeEntities.AddRange(refEntities);
-                includeEntities.AddRange(refTargetAncestors);
-                includeEntities.AddRange(refTargetDescendants);
-            }
-            var paths = includeEntities
-                .SelectMany(entity => entity.PathFromEntry())
-                .Select(edge => edge.As<EFCoreEntity>());
-
-            builder.AppendLine($"var instanceKey = {InstanceKey.CLASS_NAME}.{InstanceKey.PARSE}({serializedInstanceKeyVarName});");
-            builder.AppendLine($"var {entityVarName} = this.{_dbEntity.Item.DbSetName}");
-            if (tracks == false) {
-                builder.AppendLine($"    .AsNoTracking()");
-            }
-            foreach (var edge in paths) {
-                var nav = new NavigationProperty(edge, _ctx.Config);
-                var prop = edge.Source.As<EFCoreEntity>() == nav.Principal.Owner
-                    ? nav.Principal.PropertyName
-                    : nav.Relevant.PropertyName;
-                if (edge.Source.As<EFCoreEntity>() == _dbEntity) {
-                    builder.AppendLine($"    .Include(x => x.{prop})");
-                } else {
-                    builder.AppendLine($"    .ThenInclude(x => x.{prop})");
-                }
-            }
-
-            var keys = _dbEntity.GetColumns().Where(col => col.IsPrimary).ToArray();
-            for (int i = 0; i < keys.Length; i++) {
-                var col = keys[i].PropertyName;
-                var cast = keys[i].MemberType.GetCSharpTypeName();
-                var close = i == keys.Length - 1 ? ");" : "";
-                if (i == 0) {
-                    builder.AppendLine($"    .SingleOrDefault(x => x.{col} == ({cast})instanceKey.{InstanceKey.OBJECT_ARRAY}[{i}]{close}");
-                } else {
-                    builder.AppendLine($"                       && x.{col} == ({cast})instanceKey.{InstanceKey.OBJECT_ARRAY}[{i}]{close}");
-                }
-            }
-
-            return builder.ToString();
-        }
-        #endregion FIND
 
 
         #region UPDATE
@@ -228,11 +165,6 @@ namespace HalApplicationBuilder.CodeRendering {
             internal string MethodName => $"Delete{_aggregate.Item.DisplayName.ToCSharpSafe()}";
         }
         #endregion DELETE
-
-
-        #region SEARCH
-        private readonly Search.SearchFeature _search;
-        #endregion SEARCH
 
 
         #region LIST BY KEYWORD
@@ -428,6 +360,9 @@ namespace HalApplicationBuilder.CodeRendering {
         private readonly WebClient.Controller _controller;
         #endregion CONTROLLER
         protected override string Template() {
+            var search = new Searching.SearchFeature(_dbEntity, _ctx);
+            var find = new Finding.FindFeature(_aggregate, _ctx);
+
             var keyColumns = EnumerateListByKeywordTargetColumns().Where(col => col.IsInstanceKey).ToArray();
             var nameColumns = EnumerateListByKeywordTargetColumns().Where(col => col.IsInstanceName).ToArray();
 
@@ -474,7 +409,7 @@ namespace HalApplicationBuilder.CodeRendering {
                             }
 
                             var instanceKey = command.{{CreateCommandGetInstanceKeyMethodName}}().ToString();
-                            var afterUpdate = this.{{FindMethodName}}(instanceKey);
+                            var afterUpdate = this.{{find.FindMethodName}}(instanceKey);
                             if (afterUpdate == null) {
                                 created = new {{_aggregateInstance.Item.ClassName}}();
                                 errors = new[] { "更新後のデータの再読み込みに失敗しました。" };
@@ -491,8 +426,8 @@ namespace HalApplicationBuilder.CodeRendering {
 
 
                 #region 一覧検索
-                {{_search.RenderControllerAction()}}
-                {{_search.RenderDbContextMethod()}}
+                {{search.RenderControllerAction()}}
+                {{search.RenderDbContextMethod()}}
                 #endregion 一覧検索
 
 
@@ -556,45 +491,8 @@ namespace HalApplicationBuilder.CodeRendering {
 
 
                 #region 詳細検索
-                namespace {{_ctx.Config.RootNamespace}} {
-                    using Microsoft.AspNetCore.Mvc;
-                    using {{_ctx.Config.EntityNamespace}};
-
-                    partial class {{_controller.ClassName}} {
-                        [HttpGet("{{WebClient.Controller.FIND_ACTION_NAME}}/{instanceKey}")]
-                        public virtual IActionResult Find(string instanceKey) {
-                            var instance = _dbContext.{{FindMethodName}}(instanceKey);
-                            if (instance == null) {
-                                return NotFound();
-                            } else {
-                                return this.JsonContent(instance);
-                            }
-                        }
-                    }
-                }
-                namespace {{_ctx.Config.EntityNamespace}} {
-                    using System;
-                    using System.Collections;
-                    using System.Collections.Generic;
-                    using System.Linq;
-                    using Microsoft.EntityFrameworkCore;
-                    using Microsoft.EntityFrameworkCore.Infrastructure;
-
-                    partial class {{_ctx.Config.DbContextName}} {
-                        /// <summary>
-                        /// {{_aggregate.Item.DisplayName}}のキー情報から対象データの詳細を検索して返します。
-                        /// </summary>
-                        public {{FindMethodReturnType}}? {{FindMethodName}}(string serializedInstanceKey) {
-
-                            {{WithIndent(RenderDbEntityLoading("entity", "serializedInstanceKey", tracks: false, includeRefs: true), "            ")}}
-
-                            if (entity == null) return null;
-
-                            var aggregateInstance = {{_aggregateInstance.Item.ClassName}}.{{AggregateInstance.FROM_DB_ENTITY_METHOD_NAME}}(entity);
-                            return aggregateInstance;
-                        }
-                    }
-                }
+                {{find.RenderController()}}
+                {{find.RenderEFCoreFindMethod()}}
                 #endregion 詳細検索
 
 
@@ -627,7 +525,7 @@ namespace HalApplicationBuilder.CodeRendering {
                             errors = new List<string>();
                             var key = after.{{GETINSTANCEKEY_METHOD_NAME}}().ToString();
 
-                            {{WithIndent(RenderDbEntityLoading("beforeDbEntity", "key", tracks: false, includeRefs: false), "            ")}}
+                            {{WithIndent(find.RenderDbEntityLoading("beforeDbEntity", "key", tracks: false, includeRefs: false), "            ")}}
 
                             if (beforeDbEntity == null) {
                                 updated = new {{_aggregateInstance.Item.ClassName}}();
@@ -650,7 +548,7 @@ namespace HalApplicationBuilder.CodeRendering {
                                 return false;
                             }
 
-                            var afterUpdate = this.{{FindMethodName}}(key);
+                            var afterUpdate = this.{{find.FindMethodName}}(key);
                             if (afterUpdate == null) {
                                 updated = new {{_aggregateInstance.Item.ClassName}}();
                                 errors.Add("更新後のデータの再読み込みに失敗しました。");
@@ -691,7 +589,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     partial class {{_ctx.Config.DbContextName}} {
                         public bool {{_delete.MethodName}}(string key, out ICollection<string> errors) {
 
-                            {{WithIndent(RenderDbEntityLoading("entity", "key", tracks: true, includeRefs: false), "            ")}}
+                            {{WithIndent(find.RenderDbEntityLoading("entity", "key", tracks: true, includeRefs: false), "            ")}}
 
                             if (entity == null) {
                                 errors = new[] { "削除対象のデータが見つかりません。" };
@@ -802,7 +700,7 @@ namespace HalApplicationBuilder.CodeRendering {
                 """)}}
                 }
 
-                {{_search.RenderCSharpClassDef()}}
+                {{search.RenderCSharpClassDef()}}
 
                 namespace {{_ctx.Config.EntityNamespace}} {
                     using System;

@@ -49,7 +49,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             WriteLine($"}}");
         }
         private void Render(GraphNode<EFCoreEntity> dbEntity) {
-            var searchFeature = new Search.SearchFeature(dbEntity, _ctx);
+            var searchFeature = new Searching.SearchFeature(dbEntity, _ctx);
             searchFeature.RenderTypescriptTypeDef(this);
         }
 

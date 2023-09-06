@@ -99,11 +99,11 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
         internal const string ENUM_BGTASKSTATE_SUCCESS = "Success";
         internal const string ENUM_BGTASKSTATE_FAULT = "Fault";
 
-        internal static Search.SearchFeature CreateSearchFeature(DirectedGraph graph, CodeRenderingContext ctx) {
+        internal static Searching.SearchFeature CreateSearchFeature(DirectedGraph graph, CodeRenderingContext ctx) {
             var bgTaskEntity = graph
                 .Single(node => node.Item.Id == GraphNodeId)
                 .As<EFCoreEntity>();
-            return new Search.SearchFeature(bgTaskEntity, ctx);
+            return new Searching.SearchFeature(bgTaskEntity, ctx);
         }
     }
 }

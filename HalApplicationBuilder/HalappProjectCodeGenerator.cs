@@ -120,8 +120,8 @@ namespace HalApplicationBuilder {
                     });
                     genDir.Directory("Web", controllerDir => {
                         controllerDir.Generate(new CodeRendering.Presentation.AggregateInstanceBase(ctx));
-                        controllerDir.Generate(CodeRendering.Search.SearchFeature.CreateSearchConditionBaseClassTemplate(ctx));
-                        controllerDir.Generate(CodeRendering.Search.SearchFeature.CreateSearchResultBaseClassTemplate(ctx));
+                        controllerDir.Generate(CodeRendering.Searching.SearchFeature.CreateSearchConditionBaseClassTemplate(ctx));
+                        controllerDir.Generate(CodeRendering.Searching.SearchFeature.CreateSearchResultBaseClassTemplate(ctx));
                         controllerDir.Generate(new DebuggerController(ctx));
                         controllerDir.DeleteOtherFiles();
                     });
@@ -188,7 +188,7 @@ namespace HalApplicationBuilder {
                     foreach (var root in ctx.Schema.RootAggregates()) {
                         pageDir.Directory(GetAggDirName(root), aggregateDir => {
                             aggregateDir.Generate(new CreateView(root, ctx));
-                            aggregateDir.Generate(new CodeRendering.Search.SearchFeature(root.GetDbEntity(), ctx).CreateReactPage());
+                            aggregateDir.Generate(new CodeRendering.Searching.SearchFeature(root.GetDbEntity(), ctx).CreateReactPage());
                             aggregateDir.Generate(new SingleView(root, ctx, asEditView: true));
                             aggregateDir.Generate(new SingleView(root, ctx, asEditView: false));
                             aggregateDir.Generate(new FormOfAggregateInstance(root, ctx));

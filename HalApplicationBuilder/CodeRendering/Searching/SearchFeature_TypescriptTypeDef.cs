@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HalApplicationBuilder.CodeRendering.Search {
+namespace HalApplicationBuilder.CodeRendering.Searching {
     partial class SearchFeature {
         internal void RenderTypescriptTypeDef(ITemplate template) {
             template.WriteLine($$"""

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HalApplicationBuilder.CodeRendering.Search {
+namespace HalApplicationBuilder.CodeRendering.Searching {
     /// <summary>
     /// 検索機能
     /// </summary>

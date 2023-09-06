@@ -1,4 +1,4 @@
-using HalApplicationBuilder.CodeRendering.Search;
+using HalApplicationBuilder.CodeRendering.Searching;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
 using System;
