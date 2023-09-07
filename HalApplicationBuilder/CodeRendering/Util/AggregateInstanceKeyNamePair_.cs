@@ -13,8 +13,8 @@ namespace HalApplicationBuilder.CodeRendering.Util {
         private readonly string _namespace;
 
         internal const string CLASSNAME = "AggregateInstanceKeyNamePair";
-        internal const string KEY = "InstanceKey";
-        internal const string NAME = "InstanceName";
+        internal const string KEY = "Key";
+        internal const string NAME = "DisplayName";
 
         internal const string TS_DEF = "{ key: string, name: string }";
         internal const string JSON_KEY = "key";

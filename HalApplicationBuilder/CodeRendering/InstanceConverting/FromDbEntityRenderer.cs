@@ -63,17 +63,16 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                         .Where(col => col.IsInstanceName)
                         .SingleOrDefault()?
                         .PropertyName;
+                    var foreignKeys = refTarget.ForeignKeys
+                        .Select(fk => $"{instancePath}.{fk.PropertyName}")
+                        .Join(", ");
                     var joinedFk = refTarget.ForeignKeys
                         .Select(fk => $"{fk.PropertyName}?.ToString()")
                         .Join(" + ");
 
                     yield return $$"""
                         {{refProp.PropertyName}} = new() {
-                            {{AggregateInstanceKeyNamePair.KEY}} = {{Utility.CLASSNAME}}.{{Utility.TO_JSON}}(new object?[] {
-                            {{refTarget.ForeignKeys.SelectTextTemplate(fk => $$"""
-                                {{instancePath}}.{{fk.PropertyName}},
-                            """)}}
-                            }),
+                            {{AggregateInstanceKeyNamePair.KEY}} = {{Utility.CLASSNAME}}.{{Utility.TO_JSON}}(new object?[] { {{foreignKeys}} }),
                             {{AggregateInstanceKeyNamePair.NAME}} = {{instancePath}}.{{nameColumn ?? joinedFk}},
                         },
                         """;
