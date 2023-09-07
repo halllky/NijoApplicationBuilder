@@ -95,6 +95,11 @@ namespace HalApplicationBuilder.CodeRendering {
             return _stringBuilder.ToString().TrimEnd();
         }
 
+        internal static string WithIndent(IEnumerable<string> content, string indent) {
+            return content
+                .Select(x => WithIndent(x, indent))
+                .Join(Environment.NewLine + indent);
+        }
         internal static string WithIndent(string content, string indent) {
             return content
                 .Split(Environment.NewLine)
