@@ -1,4 +1,5 @@
 using HalApplicationBuilder.CodeRendering.Presentation;
+using HalApplicationBuilder.CodeRendering.Util;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
@@ -54,12 +55,27 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                         """;
 
                 } else if (prop is AggregateInstance.RefProperty refProp) {
-                    var name = refProp.Owner.GetDbEntity() == refProp.CorrespondingNavigationProperty.Principal.Owner
-                        ? refProp.CorrespondingNavigationProperty.Principal.PropertyName
-                        : refProp.CorrespondingNavigationProperty.Relevant.PropertyName;
+                    var refTarget = refProp.Owner.GetDbEntity() == refProp.CorrespondingNavigationProperty.Principal.Owner
+                        ? refProp.CorrespondingNavigationProperty.Principal
+                        : refProp.CorrespondingNavigationProperty.Relevant;
+                    var nameColumn = refTarget.Owner
+                        .GetColumns()
+                        .Where(col => col.IsInstanceName)
+                        .SingleOrDefault()?
+                        .PropertyName;
+                    var joinedFk = refTarget.ForeignKeys
+                        .Select(fk => $"{fk.PropertyName}?.ToString()")
+                        .Join(" + ");
 
                     yield return $$"""
-                        {{refProp.PropertyName}} = {{refProp.RefTarget.Item.ClassName}}.{{AggregateInstance.FROM_DB_ENTITY_METHOD_NAME}}({{instancePath}}.{{name}}).{{AggregateRenderer.TOKEYNAMEPAIR_METHOD_NAME}}(),
+                        {{refProp.PropertyName}} = new() {
+                            {{AggregateInstanceKeyNamePair.KEY}} = {{Utility.CLASSNAME}}.{{Utility.TO_JSON}}(new object?[] {
+                            {{refTarget.ForeignKeys.SelectTextTemplate(fk => $$"""
+                                {{instancePath}}.{{fk.PropertyName}},
+                            """)}}
+                            }),
+                            {{AggregateInstanceKeyNamePair.NAME}} = {{instancePath}}.{{nameColumn ?? joinedFk}},
+                        },
                         """;
 
                 } else if (prop is AggregateInstance.ChildrenProperty children) {
