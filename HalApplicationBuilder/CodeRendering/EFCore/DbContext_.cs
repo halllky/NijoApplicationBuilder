@@ -18,7 +18,7 @@ namespace HalApplicationBuilder.CodeRendering.EFCore {
 
         public string FileName => $"{_ctx.Config.DbContextName.ToFileNameSafe()}.cs";
 
-        private IEnumerable<string> RenderNavigationPropertyOnModelCreating(GraphNode<EFCoreEntity> dbEntity) {
+        private IEnumerable<string> RenderNavigationPropertyOnModelCreating(GraphNode<IEFCoreEntity> dbEntity) {
 
             foreach (var nav in dbEntity.GetNavigationProperties(_ctx.Config)) {
 

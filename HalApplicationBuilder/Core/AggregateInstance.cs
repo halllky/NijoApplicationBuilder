@@ -41,7 +41,7 @@ namespace HalApplicationBuilder.Core
             internal required string PropertyName { get; init; }
         }
         internal class SchalarProperty : Property {
-            internal required EFCoreEntity.IMember CorrespondingDbColumn { get; init; }
+            internal required IEFCoreEntity.IMember CorrespondingDbColumn { get; init; }
         }
         internal class ChildrenProperty : Property {
             internal required GraphNode<AggregateInstance> ChildAggregateInstance { get; init; }
@@ -53,7 +53,7 @@ namespace HalApplicationBuilder.Core
         }
         internal class VariationSwitchProperty : Property {
             internal required VariationGroup<AggregateInstance> Group { get; init; }
-            internal required EFCoreEntity.VariationGroupTypeIdentifier CorrespondingDbColumn { get; init; }
+            internal required IEFCoreEntity.VariationGroupTypeIdentifier CorrespondingDbColumn { get; init; }
 
             internal required Config Config { get; init; }
             internal IEnumerable<VariationProperty> GetGroupItems() {
@@ -63,7 +63,7 @@ namespace HalApplicationBuilder.Core
                         .GetDbEntity()
                         .In
                         .Single(e => e.RelationName == kv.Value.RelationName)
-                        .As<EFCoreEntity>();
+                        .As<IEFCoreEntity>();
                     var navigationProperty = new NavigationProperty(sameRelationWithEFCoreEntity, Config);
 
                     yield return new VariationProperty {
@@ -88,7 +88,7 @@ namespace HalApplicationBuilder.Core
         internal class RefProperty : Property {
             internal required GraphNode<AggregateInstance> RefTarget { get; init; }
             internal required NavigationProperty CorrespondingNavigationProperty { get; init; }
-            internal required EFCoreEntity.IMember[] CorrespondingDbColumns { get; init; }
+            internal required IEFCoreEntity.IMember[] CorrespondingDbColumns { get; init; }
         }
     }
 
@@ -122,7 +122,7 @@ namespace HalApplicationBuilder.Core
                     .GetDbEntity()
                     .In
                     .Single(e => e.RelationName == edge.RelationName)
-                    .As<EFCoreEntity>();
+                    .As<IEFCoreEntity>();
                 var navigationProperty = new NavigationProperty(sameRelationWithEFCoreEntity, config);
 
                 yield return new AggregateInstance.ChildrenProperty {
@@ -142,7 +142,7 @@ namespace HalApplicationBuilder.Core
                     .GetDbEntity()
                     .In
                     .Single(e => e.RelationName == edge.RelationName)
-                    .As<EFCoreEntity>();
+                    .As<IEFCoreEntity>();
                 var navigationProperty = new NavigationProperty(sameRelationWithEFCoreEntity, config);
 
                 yield return new AggregateInstance.ChildProperty {
@@ -160,8 +160,8 @@ namespace HalApplicationBuilder.Core
             var dbEntityColumns = instance
                 .GetDbEntity()
                 .GetColumns()
-                .Where(col => col is EFCoreEntity.VariationGroupTypeIdentifier)
-                .Cast<EFCoreEntity.VariationGroupTypeIdentifier>()
+                .Where(col => col is IEFCoreEntity.VariationGroupTypeIdentifier)
+                .Cast<IEFCoreEntity.VariationGroupTypeIdentifier>()
                 .ToArray();
 
             foreach (var group in instance.GetVariationGroups()) {
@@ -188,8 +188,8 @@ namespace HalApplicationBuilder.Core
                 var terminalDbEntity = edge.Terminal.GetDbEntity();
                 var edgeAsEfCore = terminalDbEntity.In
                     .Single(x => x.RelationName == edge.RelationName
-                              && x.Initial.As<EFCoreEntity>() == initialDbEntity)
-                    .As<EFCoreEntity>();
+                              && x.Initial.As<IEFCoreEntity>() == initialDbEntity)
+                    .As<IEFCoreEntity>();
 
                 yield return new AggregateInstance.RefProperty {
                     Owner = instance,
@@ -201,7 +201,7 @@ namespace HalApplicationBuilder.Core
                     CorrespondingDbColumns = instance
                         .GetDbEntity()
                         .GetColumns()
-                        .Where(col => col is EFCoreEntity.RefTargetTablePrimaryKey refTargetPk
+                        .Where(col => col is IEFCoreEntity.RefTargetTablePrimaryKey refTargetPk
                                    && refTargetPk.Relation.Terminal == terminalDbEntity)
                         .ToArray(),
                 };

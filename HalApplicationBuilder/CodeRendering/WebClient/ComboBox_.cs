@@ -21,7 +21,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
 
         private readonly CodeRenderingContext _ctx;
         private readonly GraphNode<Aggregate> _aggregate;
-        private readonly GraphNode<EFCoreEntity> _dbEntity;
+        private readonly GraphNode<IEFCoreEntity> _dbEntity;
 
         public string FileName => $"ComboBox{_aggregate.Item.DisplayName.ToFileNameSafe()}.tsx";
 

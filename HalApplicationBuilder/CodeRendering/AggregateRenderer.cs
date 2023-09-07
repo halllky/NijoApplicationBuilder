@@ -17,7 +17,7 @@ namespace HalApplicationBuilder.CodeRendering {
                 throw new ArgumentException($"{nameof(AggregateRenderer)} requires root aggregate.", nameof(aggregate));
 
             _aggregate = aggregate;
-            _dbEntity = aggregate.GetDbEntity().AsEntry().As<EFCoreEntity>();
+            _dbEntity = aggregate.GetDbEntity().AsEntry().As<IEFCoreEntity>();
             _aggregateInstance = aggregate.GetInstanceClass().AsEntry().As<AggregateInstance>();
 
             _controller = new WebClient.Controller(_aggregate.Item, ctx);
@@ -30,7 +30,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
 
         private readonly GraphNode<Aggregate> _aggregate;
-        private readonly GraphNode<EFCoreEntity> _dbEntity;
+        private readonly GraphNode<IEFCoreEntity> _dbEntity;
         private readonly GraphNode<AggregateInstance> _aggregateInstance;
 
         private readonly CodeRenderingContext _ctx;
@@ -42,7 +42,7 @@ namespace HalApplicationBuilder.CodeRendering {
         public const string GETINSTANCENAME_METHOD_NAME = "GetInstanceName";
         public const string TOKEYNAMEPAIR_METHOD_NAME = "ToKeyNamePair";
 
-        private IEnumerable<NavigationProperty.Item> EnumerateNavigationProperties(GraphNode<EFCoreEntity> entity) {
+        private IEnumerable<NavigationProperty.Item> EnumerateNavigationProperties(GraphNode<IEFCoreEntity> entity) {
             foreach (var nav in entity.GetNavigationProperties(_ctx.Config)) {
                 if (nav.Principal.Owner == entity) yield return nav.Principal;
                 if (nav.Relevant.Owner == entity) yield return nav.Relevant;
@@ -60,7 +60,7 @@ namespace HalApplicationBuilder.CodeRendering {
             }
 
             private readonly GraphNode<Aggregate> _aggregate;
-            private readonly GraphNode<EFCoreEntity> _dbEntity;
+            private readonly GraphNode<IEFCoreEntity> _dbEntity;
             private readonly GraphNode<AggregateInstance> _instance;
             private readonly CodeRenderingContext _ctx;
 
@@ -81,7 +81,7 @@ namespace HalApplicationBuilder.CodeRendering {
             }
 
             private readonly GraphNode<Aggregate> _aggregate;
-            private readonly GraphNode<EFCoreEntity> _dbEntity;
+            private readonly GraphNode<IEFCoreEntity> _dbEntity;
             private readonly GraphNode<AggregateInstance> _instance;
             private readonly CodeRenderingContext _ctx;
 
@@ -125,7 +125,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
                     // ChangeState変更
                     builder.AppendLine($"foreach (var a in arr{i}_after) {{");
-                    builder.AppendLine($"    var b = arr{i}_before.SingleOrDefault(b => b.{EFCoreEntity.KEYEQUALS}(a));");
+                    builder.AppendLine($"    var b = arr{i}_before.SingleOrDefault(b => b.{IEFCoreEntity.KEYEQUALS}(a));");
                     builder.AppendLine($"    if (b == null) {{");
                     builder.AppendLine($"        {dbContext}.Entry(a).State = EntityState.Added;");
                     builder.AppendLine($"    }} else {{");
@@ -134,7 +134,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     builder.AppendLine($"}}");
 
                     builder.AppendLine($"foreach (var b in arr{i}_before) {{");
-                    builder.AppendLine($"    var a = arr{i}_after.SingleOrDefault(a => a.{EFCoreEntity.KEYEQUALS}(b));");
+                    builder.AppendLine($"    var a = arr{i}_after.SingleOrDefault(a => a.{IEFCoreEntity.KEYEQUALS}(b));");
                     builder.AppendLine($"    if (a == null) {{");
                     builder.AppendLine($"        {dbContext}.Entry(b).State = EntityState.Deleted;");
                     builder.AppendLine($"    }}");
@@ -158,7 +158,7 @@ namespace HalApplicationBuilder.CodeRendering {
             }
 
             private readonly GraphNode<Aggregate> _aggregate;
-            private readonly GraphNode<EFCoreEntity> _dbEntity;
+            private readonly GraphNode<IEFCoreEntity> _dbEntity;
             private readonly GraphNode<AggregateInstance> _instance;
             private readonly CodeRenderingContext _ctx;
 
@@ -586,7 +586,7 @@ namespace HalApplicationBuilder.CodeRendering {
                 """)}}
 
                         /// <summary>このオブジェクトと比較対象のオブジェクトの主キーが一致するかを返します。</summary>
-                        public bool {{EFCoreEntity.KEYEQUALS}}({{ett.Item.ClassName}} entity) {
+                        public bool {{IEFCoreEntity.KEYEQUALS}}({{ett.Item.ClassName}} entity) {
                 {{ett.GetColumns().Where(c => c.IsPrimary).SelectTextTemplate(col => $$"""
                             if (entity.{{col.PropertyName}} != this.{{col.PropertyName}}) return false;
                 """)}}

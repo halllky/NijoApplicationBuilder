@@ -21,7 +21,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
 
         private readonly GraphNode<Aggregate> _aggregate;
         private readonly GraphNode<AggregateInstance> _aggregateInstance;
-        private readonly GraphNode<EFCoreEntity> _dbEntity;
+        private readonly GraphNode<IEFCoreEntity> _dbEntity;
         private readonly CodeRenderingContext _ctx;
 
         private const string METHODNAME = AggregateInstance.FROM_DB_ENTITY_METHOD_NAME;

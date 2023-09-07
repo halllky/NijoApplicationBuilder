@@ -19,7 +19,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
 
         private readonly GraphNode<Aggregate> _aggregate;
         private readonly GraphNode<AggregateInstance> _aggregateInstance;
-        private readonly GraphNode<EFCoreEntity> _dbEntity;
+        private readonly GraphNode<IEFCoreEntity> _dbEntity;
         private readonly CodeRenderingContext _ctx;
 
         private const string METHODNAME = AggregateInstance.TO_DB_ENTITY_METHOD_NAME;
@@ -40,7 +40,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
         private IEnumerable<string> RenderBody(GraphNode<AggregateInstance> instance, string parentPath, string instancePath, int depth) {
             foreach (var prop in instance.GetProperties(_ctx.Config)) {
                 if (prop is AggregateInstance.SchalarProperty schalarProp) {
-                    var path = schalarProp.CorrespondingDbColumn is EFCoreEntity.ParentTablePrimaryKey
+                    var path = schalarProp.CorrespondingDbColumn is IEFCoreEntity.ParentTablePrimaryKey
                         ? parentPath
                         : instancePath;
 

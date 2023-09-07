@@ -511,11 +511,11 @@ namespace HalApplicationBuilder.Core {
             }
         }
 
-        internal static GraphNode<EFCoreEntity> GetDbEntity(this GraphNode<Aggregate> aggregate) {
+        internal static GraphNode<IEFCoreEntity> GetDbEntity(this GraphNode<Aggregate> aggregate) {
             return aggregate.In
                 .Single(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_AGG_2_ETT)
                 .Initial
-                .As<EFCoreEntity>();
+                .As<IEFCoreEntity>();
         }
         internal static GraphNode<AggregateInstance> GetInstanceClass(this GraphNode<Aggregate> aggregate) {
             return aggregate.In
@@ -529,13 +529,13 @@ namespace HalApplicationBuilder.Core {
                 .Select(edge => edge.Terminal.As<Aggregate.Member>());
         }
 
-        internal static GraphNode<Aggregate>? GetCorrespondingAggregate(this GraphNode<EFCoreEntity> dbEntity) {
+        internal static GraphNode<Aggregate>? GetCorrespondingAggregate(this GraphNode<IEFCoreEntity> dbEntity) {
             return dbEntity.Out
                 .SingleOrDefault(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_AGG_2_ETT)?
                 .Terminal
                 .As<Aggregate>();
         }
-        internal static GraphNode<AggregateInstance>? GetUiInstance(this GraphNode<EFCoreEntity> dbEntity) {
+        internal static GraphNode<AggregateInstance>? GetUiInstance(this GraphNode<IEFCoreEntity> dbEntity) {
             return dbEntity.GetCorrespondingAggregate()?.GetInstanceClass();
         }
 
@@ -545,7 +545,7 @@ namespace HalApplicationBuilder.Core {
                 .Terminal
                 .As<Aggregate>();
         }
-        internal static GraphNode<EFCoreEntity> GetDbEntity(this GraphNode<AggregateInstance> instance) {
+        internal static GraphNode<IEFCoreEntity> GetDbEntity(this GraphNode<AggregateInstance> instance) {
             return instance.GetCorrespondingAggregate().GetDbEntity();
         }
 

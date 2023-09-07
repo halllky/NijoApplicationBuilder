@@ -5,9 +5,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static HalApplicationBuilder.Core.IEFCoreEntity;
 
 namespace HalApplicationBuilder.Core {
-    internal class EFCoreEntity : IGraphNode {
+    internal class EFCoreEntity : IEFCoreEntity {
         internal EFCoreEntity(Aggregate aggregate) : this(
             new NodeId($"DBENTITY::{aggregate.Id}"),
             aggregate.DisplayName.ToCSharpSafe()) {
@@ -19,78 +20,15 @@ namespace HalApplicationBuilder.Core {
         }
 
         public NodeId Id { get; }
-        internal string ClassName { get; }
-        internal string DbSetName => ClassName;
-        internal IList<BareColumn> SchalarMembersNotRelatedToAggregate;
-
-        internal const string KEYEQUALS = "KeyEquals";
+        public string ClassName { get; }
+        public string DbSetName => ClassName;
+        public IList<BareColumn> SchalarMembersNotRelatedToAggregate { get; }
 
         public override string ToString() {
             return Id.Value;
         }
 
-        internal interface IMember {
-            GraphNode<EFCoreEntity> Owner { get; }
-            string PropertyName { get; }
-            IAggregateMemberType MemberType { get; }
-            bool IsPrimary { get;  }
-            bool IsInstanceName { get; }
-            bool RequiredAtDB { get; }
-        }
 
-        /// <summary>
-        /// 集約に関係しないスカラー値メンバー
-        /// </summary>
-        internal class BareColumn {
-            public required string PropertyName { get; init; }
-            public required bool IsPrimary { get; init; }
-            public required bool IsInstanceName { get; init; }
-            public required IAggregateMemberType MemberType { get; init; }
-            public bool RequiredAtDB { get; init; }
-        }
-        internal class BareColumnWithOwner : BareColumn, IMember {
-            public required GraphNode<EFCoreEntity> Owner { get; init; }
-        }
-
-        internal class SchalarColumnDefniedInAggregate : IMember {
-            public required GraphNode<EFCoreEntity> Owner { get; init; }
-            public required string PropertyName { get; init; }
-            public required IAggregateMemberType MemberType { get; init; }
-            public required bool IsPrimary { get; init; }
-            public required bool IsInstanceName { get; init; }
-            public required bool RequiredAtDB { get; init; }
-        }
-        internal class ParentTablePrimaryKey : IMember {
-            public required IMember CorrespondingParentColumn { get; init; }
-            public required GraphNode<EFCoreEntity> Owner { get; init; }
-
-            public string PropertyName => CorrespondingParentColumn.PropertyName;
-            public IAggregateMemberType MemberType => CorrespondingParentColumn.MemberType;
-            public bool IsInstanceName => CorrespondingParentColumn.IsInstanceName;
-            public bool IsPrimary => true;
-            public bool RequiredAtDB => true;
-        }
-        internal class RefTargetTablePrimaryKey : IMember {
-            public required GraphEdge<EFCoreEntity> Relation { get; init; }
-            public required IMember CorrespondingRefTargetColumn { get; init; }
-            public required GraphNode<EFCoreEntity> Owner { get; init; }
-
-            public string PropertyName => $"{Relation.RelationName}_{CorrespondingRefTargetColumn.PropertyName}";
-            public IAggregateMemberType MemberType => CorrespondingRefTargetColumn.MemberType;
-            public bool IsPrimary => Relation.IsPrimary();
-            public bool IsInstanceName => CorrespondingRefTargetColumn.IsInstanceName;
-            public bool RequiredAtDB => IsPrimary; // TODO XMLでrequired属性を定義できるようにする
-        }
-        internal class VariationGroupTypeIdentifier : IMember {
-            public required VariationGroup<EFCoreEntity> Group { get; init; }
-            public required GraphNode<EFCoreEntity> Owner { get; init; }
-
-            public string PropertyName => Group.GroupName;
-            public IAggregateMemberType MemberType { get; } = new VariationSwitch();
-            public bool IsInstanceName => false;
-            public bool IsPrimary => false; // TODO: variationを主キーに設定できるようにする
-            public bool RequiredAtDB => true;
-        }
     }
 
 
@@ -98,10 +36,10 @@ namespace HalApplicationBuilder.Core {
     /// ナビゲーションプロパティ
     /// </summary>
     internal class NavigationProperty : ValueObject {
-        internal NavigationProperty(GraphEdge<EFCoreEntity> relation, Config config) {
+        internal NavigationProperty(GraphEdge<IEFCoreEntity> relation, Config config) {
             _graphEdge = relation;
 
-            Item CreateItem(GraphNode<EFCoreEntity> owner, bool oppositeIsMany) {
+            Item CreateItem(GraphNode<IEFCoreEntity> owner, bool oppositeIsMany) {
                 var opposite = owner == relation.Initial ? relation.Terminal : relation.Initial;
                 var entityClass = $"{config.EntityNamespace}.{opposite.Item.ClassName}";
 
@@ -124,7 +62,7 @@ namespace HalApplicationBuilder.Core {
                     OppositeIsMany = oppositeIsMany,
                     ForeignKeys = owner
                         .GetColumns()
-                        .Where(col => col is EFCoreEntity.RefTargetTablePrimaryKey refTargetPk
+                        .Where(col => col is IEFCoreEntity.RefTargetTablePrimaryKey refTargetPk
                                    && refTargetPk.Relation.Terminal == opposite),
                 };
             }
@@ -165,12 +103,12 @@ namespace HalApplicationBuilder.Core {
         /// </summary>
         internal Item Relevant { get; }
         internal class Item : ValueObject {
-            internal required GraphNode<EFCoreEntity> Owner { get; init; }
+            internal required GraphNode<IEFCoreEntity> Owner { get; init; }
             internal required string CSharpTypeName { get; init; }
             internal required string PropertyName { get; init; }
             internal required bool OppositeIsMany { get; init; }
             internal string? Initializer { get; init; }
-            internal required IEnumerable<EFCoreEntity.IMember> ForeignKeys { get; init; }
+            internal required IEnumerable<IEFCoreEntity.IMember> ForeignKeys { get; init; }
 
             protected override IEnumerable<object?> ValueObjectIdentifiers() {
                 yield return Owner;
@@ -186,12 +124,12 @@ namespace HalApplicationBuilder.Core {
     }
 
     internal static class EFCoreEntityExtensions {
-        internal static IEnumerable<EFCoreEntity.IMember> GetColumns(this GraphNode<EFCoreEntity> dbEntity) {
+        internal static IEnumerable<IEFCoreEntity.IMember> GetColumns(this GraphNode<IEFCoreEntity> dbEntity) {
             // 親の主キー
             var parent = dbEntity.GetParent()?.Initial;
             if (parent != null) {
                 foreach (var parentPkColumn in parent.GetColumns().Where(c => c.IsPrimary)) {
-                    yield return new EFCoreEntity.ParentTablePrimaryKey {
+                    yield return new IEFCoreEntity.ParentTablePrimaryKey {
                         Owner = dbEntity,
                         CorrespondingParentColumn = parentPkColumn,
                     };
@@ -199,7 +137,7 @@ namespace HalApplicationBuilder.Core {
             }
             // スカラー値
             foreach (var member in dbEntity.Item.SchalarMembersNotRelatedToAggregate) {
-                yield return new EFCoreEntity.BareColumnWithOwner {
+                yield return new IEFCoreEntity.BareColumnWithOwner {
                     Owner = dbEntity,
                     PropertyName = member.PropertyName,
                     IsPrimary = member.IsPrimary,
@@ -211,7 +149,7 @@ namespace HalApplicationBuilder.Core {
             var aggregate = dbEntity.GetCorrespondingAggregate();
             if (aggregate != null) {
                 foreach (var member in aggregate.GetSchalarMembers()) {
-                    yield return new EFCoreEntity.SchalarColumnDefniedInAggregate {
+                    yield return new IEFCoreEntity.SchalarColumnDefniedInAggregate {
                         Owner = dbEntity,
                         PropertyName = member.Item.Name,
                         IsPrimary = member.Item.IsPrimary,
@@ -224,7 +162,7 @@ namespace HalApplicationBuilder.Core {
             // Ref
             foreach (var edge in dbEntity.GetRefMembers()) {
                 foreach (var refTargetPk in edge.Terminal.GetColumns().Where(c => c.IsPrimary)) {
-                    yield return new EFCoreEntity.RefTargetTablePrimaryKey {
+                    yield return new IEFCoreEntity.RefTargetTablePrimaryKey {
                         Owner = dbEntity,
                         Relation = edge,
                         CorrespondingRefTargetColumn = refTargetPk,
@@ -234,13 +172,13 @@ namespace HalApplicationBuilder.Core {
             // リレーション
             foreach (var group in dbEntity.GetVariationGroups()) {
                 // variationの型番号
-                yield return new EFCoreEntity.VariationGroupTypeIdentifier {
+                yield return new IEFCoreEntity.VariationGroupTypeIdentifier {
                     Group = group,
                     Owner = dbEntity,
                 };
             }
         }
-        internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<EFCoreEntity> efCoreEntity, Config config) {
+        internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<IEFCoreEntity> efCoreEntity, Config config) {
             var parent = efCoreEntity.GetParent();
             if (parent != null)
                 yield return new NavigationProperty(parent, config);

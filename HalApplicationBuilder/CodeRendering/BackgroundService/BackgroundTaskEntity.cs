@@ -9,58 +9,58 @@ using System.Threading.Tasks;
 namespace HalApplicationBuilder.CodeRendering.BackgroundService {
     internal class BackgroundTaskEntity {
         internal static NodeId GraphNodeId => new NodeId($"HALAPP::{CLASSNAME}");
-        internal static EFCoreEntity CreateEntity() {
+        internal static IEFCoreEntity CreateEntity() {
             var columns = new[] {
-                new EFCoreEntity.BareColumn {
+                new IEFCoreEntity.BareColumn {
                     PropertyName = COL_ID,
                     IsPrimary = true,
                     IsInstanceName = false,
                     MemberType = new Core.AggregateMembers.Id(),
                     RequiredAtDB = true,
                 },
-                new EFCoreEntity.BareColumn {
+                new IEFCoreEntity.BareColumn {
                     PropertyName = COL_NAME,
                     IsPrimary = false,
                     IsInstanceName = true,
                     MemberType = new Core.AggregateMembers.Word(),
                     RequiredAtDB = true,
                 },
-                new EFCoreEntity.BareColumn {
+                new IEFCoreEntity.BareColumn {
                     PropertyName = COL_BATCHTYPE,
                     IsPrimary = false,
                     IsInstanceName = false,
                     MemberType = new Core.AggregateMembers.Word(),
                     RequiredAtDB = true,
                 },
-                new EFCoreEntity.BareColumn {
+                new IEFCoreEntity.BareColumn {
                     PropertyName = COL_PARAMETERJSON,
                     IsPrimary = false,
                     IsInstanceName = false,
                     MemberType = new Core.AggregateMembers.Word(),
                     RequiredAtDB = true,
                 },
-                new EFCoreEntity.BareColumn {
+                new IEFCoreEntity.BareColumn {
                     PropertyName = COL_STATE,
                     IsPrimary = false,
                     IsInstanceName = false,
                     MemberType = new Core.AggregateMembers.EnumList(CreateBackgroundTaskStateEnum()),
                     RequiredAtDB = true,
                 },
-                new EFCoreEntity.BareColumn {
+                new IEFCoreEntity.BareColumn {
                     PropertyName = COL_REQUESTTIME,
                     IsPrimary = false,
                     IsInstanceName = false,
                     MemberType = new Core.AggregateMembers.TimePoint(),
                     RequiredAtDB = true,
                 },
-                new EFCoreEntity.BareColumn {
+                new IEFCoreEntity.BareColumn {
                     PropertyName = COL_STARTTIME,
                     IsPrimary = false,
                     IsInstanceName = false,
                     MemberType = new Core.AggregateMembers.TimePoint(),
                     RequiredAtDB = false,
                 },
-                new EFCoreEntity.BareColumn {
+                new IEFCoreEntity.BareColumn {
                     PropertyName = COL_FINISHTIME,
                     IsPrimary = false,
                     IsInstanceName = false,
@@ -102,7 +102,7 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
         internal static Searching.SearchFeature CreateSearchFeature(DirectedGraph graph, CodeRenderingContext ctx) {
             var bgTaskEntity = graph
                 .Single(node => node.Item.Id == GraphNodeId)
-                .As<EFCoreEntity>();
+                .As<IEFCoreEntity>();
             return new Searching.SearchFeature(bgTaskEntity, ctx);
         }
     }

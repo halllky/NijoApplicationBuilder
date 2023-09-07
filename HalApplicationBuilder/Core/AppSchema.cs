@@ -24,8 +24,8 @@ namespace HalApplicationBuilder.Core {
         internal IEnumerable<GraphNode<Aggregate>> RootAggregates() {
             return AllAggregates().Where(aggregate => aggregate.IsRoot());
         }
-        internal IEnumerable<GraphNode<EFCoreEntity>> ToEFCoreGraph() {
-            return Graph.Only<EFCoreEntity>();
+        internal IEnumerable<GraphNode<IEFCoreEntity>> ToEFCoreGraph() {
+            return Graph.Only<IEFCoreEntity>();
         }
         internal IEnumerable<GraphNode<AggregateInstance>> ToAggregateInstanceGraph() {
             return Graph.Only<AggregateInstance>();

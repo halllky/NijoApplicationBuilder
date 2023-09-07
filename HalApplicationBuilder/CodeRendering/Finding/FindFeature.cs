@@ -19,7 +19,7 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
 
         private readonly GraphNode<Aggregate> _aggregate;
         private readonly GraphNode<AggregateInstance> _aggregateInstance;
-        private readonly GraphNode<EFCoreEntity> _dbEntity;
+        private readonly GraphNode<IEFCoreEntity> _dbEntity;
         private readonly CodeRenderingContext _ctx;
 
         internal string FindMethodReturnType => _aggregateInstance.Item.ClassName;
@@ -100,11 +100,11 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
             }
             var paths = includeEntities
                 .SelectMany(entity => entity.PathFromEntry())
-                .Select(edge => edge.As<EFCoreEntity>())
+                .Select(edge => edge.As<IEFCoreEntity>())
                 .Select(edge => {
-                    var source = edge.Source.As<EFCoreEntity>();
+                    var source = edge.Source.As<IEFCoreEntity>();
                     var nav = new NavigationProperty(edge, _ctx.Config);
-                    var prop = edge.Source.As<EFCoreEntity>() == nav.Principal.Owner
+                    var prop = edge.Source.As<IEFCoreEntity>() == nav.Principal.Owner
                         ? nav.Principal.PropertyName
                         : nav.Relevant.PropertyName;
                     return new { source, prop };

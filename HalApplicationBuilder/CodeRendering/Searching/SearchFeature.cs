@@ -11,7 +11,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
     /// 検索機能
     /// </summary>
     internal partial class SearchFeature {
-        internal SearchFeature(GraphNode<EFCoreEntity> dbEntity, CodeRenderingContext ctx) {
+        internal SearchFeature(GraphNode<IEFCoreEntity> dbEntity, CodeRenderingContext ctx) {
             DbEntity = dbEntity.AsEntry();
             Context = ctx;
 
@@ -21,7 +21,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
         }
 
         internal CodeRenderingContext Context { get; }
-        internal GraphNode<EFCoreEntity> DbEntity { get; }
+        internal GraphNode<IEFCoreEntity> DbEntity { get; }
 
         internal string DisplayName { get; }
         internal string PhysicalName => DbEntity.Item.ClassName;
@@ -72,7 +72,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
         internal class Member {
             internal required string ConditionPropName { get; init; }
             internal required string SearchResultPropName { get; init; }
-            internal required EFCoreEntity.IMember CorrespondingDbColumn { get; init; }
+            internal required IEFCoreEntity.IMember CorrespondingDbColumn { get; init; }
             internal required IAggregateMemberType Type { get; init; }
             internal required bool IsInstanceKey { get; init; }
             internal required bool IsInstanceName { get; init; }
