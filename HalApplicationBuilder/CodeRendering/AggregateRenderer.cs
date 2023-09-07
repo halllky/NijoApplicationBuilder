@@ -203,79 +203,6 @@ namespace HalApplicationBuilder.CodeRendering {
         private string CreateCommandToDbEntityMethodName => AggregateInstance.TO_DB_ENTITY_METHOD_NAME;
         private string CreateCommandGetInstanceKeyMethodName => GETINSTANCENAME_METHOD_NAME;
 
-        private string ToDbEntity() {
-            var builder = new StringBuilder();
-            var indent = "";
-
-            void WriteBody(GraphNode<AggregateInstance> instance, string parentPath, string instancePath, int depth) {
-                // 親のPK
-                var parent = instance.GetParent()?.Initial;
-                if (parent != null) {
-                    var parentPkColumns = instance
-                        .GetDbEntity()
-                        .GetColumns()
-                        .Where(col => col is EFCoreEntity.ParentTablePrimaryKey)
-                        .Cast<EFCoreEntity.ParentTablePrimaryKey>();
-                    foreach (var col in parentPkColumns) {
-                        builder.AppendLine($"{indent}{col.PropertyName} = {parentPath}.{col.CorrespondingParentColumn.PropertyName},");
-                    }
-                }
-                // 自身のメンバー
-                foreach (var prop in instance.GetSchalarProperties()) {
-                    builder.AppendLine($"{indent}{prop.CorrespondingDbColumn.PropertyName} = {instancePath}.{prop.PropertyName},");
-                }
-                foreach (var prop in instance.GetVariationSwitchProperties(_ctx.Config)) {
-                    builder.AppendLine($"{indent}{prop.CorrespondingDbColumn.PropertyName} = {instancePath}.{prop.PropertyName},");
-                }
-                // Ref
-                foreach (var prop in instance.GetRefProperties(_ctx.Config)) {
-                    for (int i = 0; i < prop.CorrespondingDbColumns.Length; i++) {
-                        var col = prop.CorrespondingDbColumns[i];
-                        builder.AppendLine($"{indent}{col.PropertyName} = ({col.MemberType.GetCSharpTypeName()}){InstanceKey.CLASS_NAME}.{InstanceKey.PARSE}({instancePath}.{prop.PropertyName}.{AggregateInstanceKeyNamePair.KEY}).{InstanceKey.OBJECT_ARRAY}[{i}],");
-                    }
-                }
-                // 子要素
-                foreach (var child in instance.GetChildrenProperties(_ctx.Config)) {
-                    var childProp = child.CorrespondingNavigationProperty.Principal.PropertyName;
-                    var childDbEntity = $"{_ctx.Config.EntityNamespace}.{child.CorrespondingNavigationProperty.Relevant.Owner.Item.ClassName}";
-
-                    builder.AppendLine($"{indent}{child.PropertyName} = this.{childProp}.Select(x{depth} => new {childDbEntity} {{");
-                    indent += "    ";
-                    WriteBody(child.ChildAggregateInstance.AsEntry(), instancePath, $"x{depth}", depth + 1);
-                    indent = indent.Substring(indent.Length - 4, 4);
-                    builder.AppendLine($"{indent}}}).ToList(),");
-                }
-                foreach (var child in instance.GetChildProperties(_ctx.Config)) {
-                    var childProp = child.CorrespondingNavigationProperty.Principal.PropertyName;
-                    var childDbEntity = $"{_ctx.Config.EntityNamespace}.{child.CorrespondingNavigationProperty.Relevant.Owner.Item.ClassName}";
-
-                    builder.AppendLine($"{indent}{child.PropertyName} = new {childDbEntity} {{");
-                    indent += "    ";
-                    WriteBody(child.ChildAggregateInstance, instancePath, $"{instancePath}.{child.ChildAggregateInstance.Source!.RelationName}", depth + 1);
-                    indent = indent.Substring(indent.Length - 4, 4);
-                    builder.AppendLine($"{indent}}},");
-                }
-                foreach (var child in instance.GetVariationProperties(_ctx.Config)) {
-                    var childProp = child.CorrespondingNavigationProperty.Principal.PropertyName;
-                    var childDbEntity = $"{_ctx.Config.EntityNamespace}.{child.CorrespondingNavigationProperty.Relevant.Owner.Item.ClassName}";
-
-                    builder.AppendLine($"{indent}{child.PropertyName} = new {childDbEntity} {{");
-                    indent += "    ";
-                    WriteBody(child.ChildAggregateInstance, instancePath, $"{instancePath}.{child.ChildAggregateInstance.Source!.RelationName}", depth + 1);
-                    indent = indent.Substring(indent.Length - 4, 4);
-                    builder.AppendLine($"{indent}}},");
-                }
-            }
-
-            builder.AppendLine($"{indent}return new {_ctx.Config.EntityNamespace}.{_dbEntity.Item.ClassName} {{");
-            indent += "    ";
-            WriteBody(_aggregateInstance, "", "this", 0);
-            indent = indent.Substring(indent.Length - 4, 4);
-            builder.AppendLine($"{indent}}};");
-
-            return builder.ToString();
-        }
-
         private IEnumerable<string> GetInstanceNameProps() {
             var useKeyInsteadOfName = _aggregateInstance
                 .GetSchalarProperties()
@@ -308,6 +235,7 @@ namespace HalApplicationBuilder.CodeRendering {
         protected override string Template() {
             var search = new Searching.SearchFeature(_dbEntity, _ctx);
             var find = new Finding.FindFeature(_aggregate, _ctx);
+            var toDbEntity = new InstanceConverting.ToDbEntityRenderer(_aggregate, _ctx);
             var fromDbEntity = new InstanceConverting.FromDbEntityRenderer(_aggregate, _ctx);
 
             var keyColumns = EnumerateListByKeywordTargetColumns().Where(col => col.IsInstanceKey).ToArray();
@@ -578,7 +506,7 @@ namespace HalApplicationBuilder.CodeRendering {
                         /// {{_aggregate.Item.DisplayName}}のデータ作成コマンドをデータベースに保存する形に変換します。
                         /// </summary>
                         public {{_ctx.Config.EntityNamespace}}.{{_dbEntity.Item.ClassName}} {{CreateCommandToDbEntityMethodName}}() {
-                            {{WithIndent(ToDbEntity(), "            ")}}
+                            {{WithIndent(toDbEntity.Render(), "            ")}}
                         }
                         /// <summary>
                         /// 主キーを返します。
@@ -606,8 +534,9 @@ namespace HalApplicationBuilder.CodeRendering {
                         /// {{_aggregate.Item.DisplayName}}のデータ1件の内容をデータベースに保存する形に変換します。
                         /// </summary>
                         public {{_ctx.Config.EntityNamespace}}.{{_dbEntity.Item.ClassName}} {{AggregateInstance.TO_DB_ENTITY_METHOD_NAME}}() {
-                            {{WithIndent(ToDbEntity(), "            ")}}
+                            {{WithIndent(toDbEntity.Render(), "        ")}}
                         }
+
                         /// <summary>
                         /// 主キーを返します。
                         /// </summary>

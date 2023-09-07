@@ -23,14 +23,14 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
         private readonly GraphNode<EFCoreEntity> _dbEntity;
         private readonly CodeRenderingContext _ctx;
 
-        internal const string METHODNAME = "FromDbEntity";
+        private const string METHODNAME = AggregateInstance.FROM_DB_ENTITY_METHOD_NAME;
 
         internal string Render() {
             return $$"""
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}のデータベースから取得した内容を画面に表示する形に変換します。
                 /// </summary>
-                public static {{_aggregateInstance.Item.ClassName}} {{AggregateInstance.FROM_DB_ENTITY_METHOD_NAME}}({{_ctx.Config.EntityNamespace}}.{{_dbEntity.Item.ClassName}} entity) {
+                public static {{_aggregateInstance.Item.ClassName}} {{METHODNAME}}({{_ctx.Config.EntityNamespace}}.{{_dbEntity.Item.ClassName}} entity) {
                     var instance = new {{_aggregateInstance.Item.ClassName}} {
                         {{WithIndent(RenderBody(_aggregateInstance, "", "entity", 0), "        ")}}
                     };
