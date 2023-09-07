@@ -502,12 +502,7 @@ namespace HalApplicationBuilder.CodeRendering {
                         public {{prop.CSharpTypeName}} {{prop.PropertyName}} { get; set; }
                 """)}}
 
-                        /// <summary>
-                        /// {{_aggregate.Item.DisplayName}}のデータ作成コマンドをデータベースに保存する形に変換します。
-                        /// </summary>
-                        public {{_ctx.Config.EntityNamespace}}.{{_dbEntity.Item.ClassName}} {{CreateCommandToDbEntityMethodName}}() {
-                            {{WithIndent(toDbEntity.Render(), "            ")}}
-                        }
+                        {{WithIndent(toDbEntity.Render(), "        ")}}
                         /// <summary>
                         /// 主キーを返します。
                         /// </summary>
@@ -530,12 +525,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
                         {{WithIndent(fromDbEntity.Render(), "        ")}}
 
-                        /// <summary>
-                        /// {{_aggregate.Item.DisplayName}}のデータ1件の内容をデータベースに保存する形に変換します。
-                        /// </summary>
-                        public {{_ctx.Config.EntityNamespace}}.{{_dbEntity.Item.ClassName}} {{AggregateInstance.TO_DB_ENTITY_METHOD_NAME}}() {
-                            {{WithIndent(toDbEntity.Render(), "        ")}}
-                        }
+                        {{WithIndent(toDbEntity.Render(), "        ")}}
 
                         /// <summary>
                         /// 主キーを返します。

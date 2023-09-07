@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static HalApplicationBuilder.CodeRendering.TemplateTextHelper;
 
 namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
     internal class ToDbEntityRenderer {
@@ -24,76 +25,84 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
         private const string METHODNAME = AggregateInstance.TO_DB_ENTITY_METHOD_NAME;
 
         internal string Render() {
-            var builder = new StringBuilder();
-            var indent = "";
+            return $$"""
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}}のオブジェクトをデータベースに保存する形に変換します。
+                /// </summary>
+                public {{_ctx.Config.EntityNamespace}}.{{_dbEntity.Item.ClassName}} {{METHODNAME}}() {
+                    return new {{_ctx.Config.EntityNamespace}}.{{_dbEntity.Item.ClassName}} {
+                        {{WithIndent(RenderBody(_aggregateInstance, "", "this", 0), "        ")}}
+                    };
+                }
+                """;
+        }
 
-            void WriteBody(GraphNode<AggregateInstance> instance, string parentPath, string instancePath, int depth) {
-                // 親のPK
-                var parent = instance.GetParent()?.Initial;
-                if (parent != null) {
-                    var parentPkColumns = instance
-                        .GetDbEntity()
-                        .GetColumns()
-                        .Where(col => col is EFCoreEntity.ParentTablePrimaryKey)
-                        .Cast<EFCoreEntity.ParentTablePrimaryKey>();
-                    foreach (var col in parentPkColumns) {
-                        builder.AppendLine($"{indent}{col.PropertyName} = {parentPath}.{col.CorrespondingParentColumn.PropertyName},");
+        private IEnumerable<string> RenderBody(GraphNode<AggregateInstance> instance, string parentPath, string instancePath, int depth) {
+            foreach (var prop in instance.GetProperties(_ctx.Config)) {
+                if (prop is AggregateInstance.SchalarProperty schalarProp) {
+                    var path = schalarProp.CorrespondingDbColumn is EFCoreEntity.ParentTablePrimaryKey
+                        ? parentPath
+                        : instancePath;
+
+                    yield return $$"""
+                        {{schalarProp.CorrespondingDbColumn.PropertyName}} = {{path}}.{{schalarProp.PropertyName}},
+                        """;
+
+                } else if (prop is AggregateInstance.VariationSwitchProperty switchProp) {
+
+                    yield return $$"""
+                        {{switchProp.CorrespondingDbColumn.PropertyName}} = {{instancePath}}.{{switchProp.PropertyName}},
+                        """;
+
+                } else if (prop is AggregateInstance.RefProperty refProp) {
+                    for (int i = 0; i < refProp.CorrespondingDbColumns.Length; i++) {
+                        var col = refProp.CorrespondingDbColumns[i];
+
+                        yield return $$"""
+                            {{col.PropertyName}} = ({{col.MemberType.GetCSharpTypeName()}}){{InstanceKey.CLASS_NAME}}.{{InstanceKey.PARSE}}({{instancePath}}.{{prop.PropertyName}}.{{AggregateInstanceKeyNamePair.KEY}}).{{InstanceKey.OBJECT_ARRAY}}[{{i}}],
+                            """;
                     }
-                }
-                // 自身のメンバー
-                foreach (var prop in instance.GetSchalarProperties()) {
-                    builder.AppendLine($"{indent}{prop.CorrespondingDbColumn.PropertyName} = {instancePath}.{prop.PropertyName},");
-                }
-                foreach (var prop in instance.GetVariationSwitchProperties(_ctx.Config)) {
-                    builder.AppendLine($"{indent}{prop.CorrespondingDbColumn.PropertyName} = {instancePath}.{prop.PropertyName},");
-                }
-                // Ref
-                foreach (var prop in instance.GetRefProperties(_ctx.Config)) {
-                    for (int i = 0; i < prop.CorrespondingDbColumns.Length; i++) {
-                        var col = prop.CorrespondingDbColumns[i];
-                        builder.AppendLine($"{indent}{col.PropertyName} = ({col.MemberType.GetCSharpTypeName()}){InstanceKey.CLASS_NAME}.{InstanceKey.PARSE}({instancePath}.{prop.PropertyName}.{AggregateInstanceKeyNamePair.KEY}).{InstanceKey.OBJECT_ARRAY}[{i}],");
-                    }
-                }
-                // 子要素
-                foreach (var child in instance.GetChildrenProperties(_ctx.Config)) {
-                    var childProp = child.CorrespondingNavigationProperty.Principal.PropertyName;
-                    var childDbEntity = $"{_ctx.Config.EntityNamespace}.{child.CorrespondingNavigationProperty.Relevant.Owner.Item.ClassName}";
 
-                    builder.AppendLine($"{indent}{child.PropertyName} = this.{childProp}.Select(x{depth} => new {childDbEntity} {{");
-                    indent += "    ";
-                    WriteBody(child.ChildAggregateInstance.AsEntry(), instancePath, $"x{depth}", depth + 1);
-                    indent = indent.Substring(indent.Length - 4, 4);
-                    builder.AppendLine($"{indent}}}).ToList(),");
-                }
-                foreach (var child in instance.GetChildProperties(_ctx.Config)) {
-                    var childProp = child.CorrespondingNavigationProperty.Principal.PropertyName;
-                    var childDbEntity = $"{_ctx.Config.EntityNamespace}.{child.CorrespondingNavigationProperty.Relevant.Owner.Item.ClassName}";
+                } else if (prop is AggregateInstance.ChildrenProperty children) {
+                    var item = depth == 0 ? "item" : $"item{depth}";
+                    var childProp = children.CorrespondingNavigationProperty.Principal.PropertyName;
+                    var childInstance = children.ChildAggregateInstance.AsEntry();
+                    var childDbEntityClass = $"{_ctx.Config.EntityNamespace}.{children.CorrespondingNavigationProperty.Relevant.Owner.Item.ClassName}";
 
-                    builder.AppendLine($"{indent}{child.PropertyName} = new {childDbEntity} {{");
-                    indent += "    ";
-                    WriteBody(child.ChildAggregateInstance, instancePath, $"{instancePath}.{child.ChildAggregateInstance.Source!.RelationName}", depth + 1);
-                    indent = indent.Substring(indent.Length - 4, 4);
-                    builder.AppendLine($"{indent}}},");
-                }
-                foreach (var child in instance.GetVariationProperties(_ctx.Config)) {
-                    var childProp = child.CorrespondingNavigationProperty.Principal.PropertyName;
-                    var childDbEntity = $"{_ctx.Config.EntityNamespace}.{child.CorrespondingNavigationProperty.Relevant.Owner.Item.ClassName}";
+                    yield return $$"""
+                        {{children.PropertyName}} = this.{{childProp}}.Select({{item}} => new {{childDbEntityClass}} {
+                            {{WithIndent(RenderBody(childInstance, instancePath, item, depth + 1), "    ")}}
+                        }).ToList(),
+                        """;
 
-                    builder.AppendLine($"{indent}{child.PropertyName} = new {childDbEntity} {{");
-                    indent += "    ";
-                    WriteBody(child.ChildAggregateInstance, instancePath, $"{instancePath}.{child.ChildAggregateInstance.Source!.RelationName}", depth + 1);
-                    indent = indent.Substring(indent.Length - 4, 4);
-                    builder.AppendLine($"{indent}}},");
+                } else if (prop is AggregateInstance.ChildProperty child) {
+                    var childProp = child.CorrespondingNavigationProperty.Principal.PropertyName;
+                    var childInstance = child.ChildAggregateInstance;
+                    var childDbEntityClass = $"{_ctx.Config.EntityNamespace}.{child.CorrespondingNavigationProperty.Relevant.Owner.Item.ClassName}";
+                    var nestedInstancePath = $"{instancePath}.{child.ChildAggregateInstance.Source!.RelationName}";
+
+                    yield return $$"""
+                        {{child.PropertyName}} = new {{childDbEntityClass}} {
+                            {{WithIndent(RenderBody(childInstance, instancePath, nestedInstancePath, depth + 1), "    ")}}
+                        },
+                        """;
+
+                } else if (prop is AggregateInstance.VariationProperty variation) {
+                    var childProp = variation.CorrespondingNavigationProperty.Principal.PropertyName;
+                    var childInstance = variation.ChildAggregateInstance;
+                    var childDbEntityClass = $"{_ctx.Config.EntityNamespace}.{variation.CorrespondingNavigationProperty.Relevant.Owner.Item.ClassName}";
+                    var nestedInstancePath = $"{instancePath}.{variation.ChildAggregateInstance.Source!.RelationName}";
+
+                    yield return $$"""
+                        {{variation.PropertyName}} = new {{childDbEntityClass}} {
+                            {{WithIndent(RenderBody(childInstance, instancePath, nestedInstancePath, depth + 1), "    ")}}
+                        },
+                        """;
+
+                } else {
+                    throw new NotImplementedException();
                 }
             }
-
-            builder.AppendLine($"{indent}return new {_ctx.Config.EntityNamespace}.{_dbEntity.Item.ClassName} {{");
-            indent += "    ";
-            WriteBody(_aggregateInstance, "", "this", 0);
-            indent = indent.Substring(indent.Length - 4, 4);
-            builder.AppendLine($"{indent}}};");
-
-            return builder.ToString();
         }
     }
 }
