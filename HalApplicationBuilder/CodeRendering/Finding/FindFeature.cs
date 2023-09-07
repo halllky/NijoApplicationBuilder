@@ -18,7 +18,7 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
         }
 
         private readonly GraphNode<Aggregate> _aggregate;
-        private readonly GraphNode<AggregateInstance> _aggregateInstance;
+        private readonly GraphNode<IAggregateInstance> _aggregateInstance;
         private readonly GraphNode<IEFCoreEntity> _dbEntity;
         private readonly CodeRenderingContext _ctx;
 
@@ -69,7 +69,7 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
                 
                             if (entity == null) return null;
                 
-                            var aggregateInstance = {{_aggregateInstance.Item.ClassName}}.{{AggregateInstance.FROM_DB_ENTITY_METHOD_NAME}}(entity);
+                            var aggregateInstance = {{_aggregateInstance.Item.ClassName}}.{{IAggregateInstance.FROM_DB_ENTITY_METHOD_NAME}}(entity);
                             return aggregateInstance;
                         }
                     }

@@ -18,7 +18,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
         private readonly CodeRenderingContext _ctx;
         private readonly GraphNode<Aggregate> _aggregate;
-        private readonly GraphNode<AggregateInstance> _instance;
+        private readonly GraphNode<IAggregateInstance> _instance;
         private readonly bool _asEditView;
 
         public string FileName => _asEditView ? "edit.tsx" : "detail.tsx";

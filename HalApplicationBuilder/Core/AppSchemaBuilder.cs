@@ -517,11 +517,11 @@ namespace HalApplicationBuilder.Core {
                 .Initial
                 .As<IEFCoreEntity>();
         }
-        internal static GraphNode<AggregateInstance> GetInstanceClass(this GraphNode<Aggregate> aggregate) {
+        internal static GraphNode<IAggregateInstance> GetInstanceClass(this GraphNode<Aggregate> aggregate) {
             return aggregate.In
             .Single(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_AGG_2_INS)
             .Initial
-            .As<AggregateInstance>();
+            .As<IAggregateInstance>();
         }
         internal static IEnumerable<GraphNode<Aggregate.Member>> GetSchalarMembers(this GraphNode<Aggregate> aggregate) {
             return aggregate.Out
@@ -535,17 +535,17 @@ namespace HalApplicationBuilder.Core {
                 .Terminal
                 .As<Aggregate>();
         }
-        internal static GraphNode<AggregateInstance>? GetUiInstance(this GraphNode<IEFCoreEntity> dbEntity) {
+        internal static GraphNode<IAggregateInstance>? GetUiInstance(this GraphNode<IEFCoreEntity> dbEntity) {
             return dbEntity.GetCorrespondingAggregate()?.GetInstanceClass();
         }
 
-        internal static GraphNode<Aggregate> GetCorrespondingAggregate(this GraphNode<AggregateInstance> instance) {
+        internal static GraphNode<Aggregate> GetCorrespondingAggregate(this GraphNode<IAggregateInstance> instance) {
             return instance.Out
                 .Single(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_AGG_2_INS)
                 .Terminal
                 .As<Aggregate>();
         }
-        internal static GraphNode<IEFCoreEntity> GetDbEntity(this GraphNode<AggregateInstance> instance) {
+        internal static GraphNode<IEFCoreEntity> GetDbEntity(this GraphNode<IAggregateInstance> instance) {
             return instance.GetCorrespondingAggregate().GetDbEntity();
         }
 

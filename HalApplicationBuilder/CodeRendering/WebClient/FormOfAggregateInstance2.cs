@@ -108,8 +108,8 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             }
         }
 
-        private string RenderProperty(Component component, AggregateInstance.Property prop) {
-            if (prop is AggregateInstance.SchalarProperty schalar) {
+        private string RenderProperty(Component component, IAggregateInstance.Property prop) {
+            if (prop is IAggregateInstance.SchalarProperty schalar) {
                 return $$"""
                     <div className="flex">
                       <div className="{{PropNameWidth}}">
@@ -123,7 +123,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     </div>
                     """;
 
-            } else if (prop is AggregateInstance.RefProperty refProperty) {
+            } else if (prop is IAggregateInstance.RefProperty refProperty) {
                 var combobox = new ComboBox(refProperty.RefTarget.GetCorrespondingAggregate(), _ctx);
                 var registerName = GetRegisterName(component.AggregateInstance, refProperty).Value;
                 return $$"""
@@ -139,7 +139,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     </div>
                     """;
 
-            } else if (prop is AggregateInstance.ChildProperty child) {
+            } else if (prop is IAggregateInstance.ChildProperty child) {
                 var childComponent = new Component(child.ChildAggregateInstance);
                 return $$"""
                     <div className="py-2">
@@ -152,7 +152,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     </div>
                     """;
 
-            } else if (prop is AggregateInstance.VariationProperty variation) {
+            } else if (prop is IAggregateInstance.VariationProperty variation) {
                 var childComponent = new Component(variation.ChildAggregateInstance);
                 var switchProp = GetRegisterName(component.AggregateInstance, variation.Group).Value;
                 return $$"""
@@ -161,7 +161,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     </div>
                     """;
 
-            } else if (prop is AggregateInstance.VariationSwitchProperty variationSwitch) {
+            } else if (prop is IAggregateInstance.VariationSwitchProperty variationSwitch) {
                 var switchProp = GetRegisterName(component.AggregateInstance, variationSwitch).Value;
                 return $$"""
                     <div className="flex">
@@ -181,7 +181,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     </div>
                     """;
 
-            } else if (prop is AggregateInstance.ChildrenProperty children) {
+            } else if (prop is IAggregateInstance.ChildrenProperty children) {
                 var childrenComponent = new Component(children.ChildAggregateInstance);
                 return $$"""
                     <div className="py-2">

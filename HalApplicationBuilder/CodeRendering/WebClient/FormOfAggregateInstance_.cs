@@ -11,7 +11,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
     partial class FormOfAggregateInstance : TemplateBase {
         internal FormOfAggregateInstance(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx)
             : this(aggregate.GetInstanceClass().AsEntry(), ctx) { }
-        internal FormOfAggregateInstance(GraphNode<AggregateInstance> aggregateInstance, CodeRenderingContext ctx) {
+        internal FormOfAggregateInstance(GraphNode<IAggregateInstance> aggregateInstance, CodeRenderingContext ctx) {
             _ctx = ctx;
             _instance = aggregateInstance;
 
@@ -20,7 +20,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 .Select(p => p.PropertyName));
         }
         private readonly CodeRenderingContext _ctx;
-        private readonly GraphNode<AggregateInstance> _instance;
+        private readonly GraphNode<IAggregateInstance> _instance;
 
         private string TypesImport => $"../../{Path.GetFileNameWithoutExtension(new types(_ctx).FileName)}";
 
@@ -36,17 +36,17 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
 
         #region SCHALAR PROPERTY
-        private string RenderSchalarProperty(GraphNode<AggregateInstance> instance, AggregateInstance.SchalarProperty prop, string indent) {
+        private string RenderSchalarProperty(GraphNode<IAggregateInstance> instance, IAggregateInstance.SchalarProperty prop, string indent) {
             var renderer = new ReactForm(instance, prop);
             return TemplateTextHelper.WithIndent(prop.CorrespondingDbColumn.MemberType.RenderUI(renderer), indent);
         }
         private class ReactForm : IGuiFormRenderer {
-            internal ReactForm(GraphNode<AggregateInstance> instance, AggregateInstance.SchalarProperty prop) {
+            internal ReactForm(GraphNode<IAggregateInstance> instance, IAggregateInstance.SchalarProperty prop) {
                 _instance = instance;
                 _prop = prop;
             }
-            private readonly GraphNode<AggregateInstance> _instance;
-            private readonly AggregateInstance.SchalarProperty _prop;
+            private readonly GraphNode<IAggregateInstance> _instance;
+            private readonly IAggregateInstance.SchalarProperty _prop;
 
             /// <summary>
             /// Createビュー兼シングルビュー: テキストボックス
@@ -105,10 +105,10 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
 
         internal class Component {
-            internal Component(GraphNode<AggregateInstance> instance) {
+            internal Component(GraphNode<IAggregateInstance> instance) {
                 AggregateInstance = instance;
             }
-            internal GraphNode<AggregateInstance> AggregateInstance { get; }
+            internal GraphNode<IAggregateInstance> AggregateInstance { get; }
 
             internal virtual string ComponentName => $"{AggregateInstance.Item.TypeScriptTypeName}View";
             internal bool IsChildren => AggregateInstance.IsChildrenMember();
@@ -138,7 +138,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         /// Childrenはコード自動生成の都合上各要素のコンポーネントと配列のコンポーネントの2個あり、これは前者
         /// </summary>
         private class ComponentOfChildrenListItem : Component {
-            internal ComponentOfChildrenListItem(GraphNode<AggregateInstance> instance) : base(instance) { }
+            internal ComponentOfChildrenListItem(GraphNode<IAggregateInstance> instance) : base(instance) { }
 
             internal override string ComponentName => $"{AggregateInstance.Item.TypeScriptTypeName}ListItemView";
         }
@@ -146,7 +146,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
         #region STATIC
         internal const string INPUT_WIDTH = "w-80";
-        private static RegisterName GetRegisterName(GraphNode<AggregateInstance> instance, AggregateInstance.Property? prop = null) {
+        private static RegisterName GetRegisterName(GraphNode<IAggregateInstance> instance, IAggregateInstance.Property? prop = null) {
             var path = new List<IRegistrationPath>();
             foreach (var edge in instance.PathFromEntry()) {
                 path.Add(new RelatedAggregate { Aggregate = edge.Terminal });
@@ -177,11 +177,11 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 .Last();
         }
         private class LastProperty : IRegistrationPath {
-            internal required AggregateInstance.Property Property { get; init; }
+            internal required IAggregateInstance.Property Property { get; init; }
             public string Name => Property.PropertyName;
         }
 
-        internal static IReadOnlyDictionary<GraphEdge, string> GetArguments(GraphNode<AggregateInstance> instance) {
+        internal static IReadOnlyDictionary<GraphEdge, string> GetArguments(GraphNode<IAggregateInstance> instance) {
             // 祖先コンポーネントの中に含まれるChildrenの数だけ、
             // このコンポーネントのその配列中でのインデックスが特定されている必要があるので、引数で渡す
             var args = GetRegisterName(instance).Path

@@ -18,7 +18,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
             _aggregate = aggregate;
             _dbEntity = aggregate.GetDbEntity().AsEntry().As<IEFCoreEntity>();
-            _aggregateInstance = aggregate.GetInstanceClass().AsEntry().As<AggregateInstance>();
+            _aggregateInstance = aggregate.GetInstanceClass().AsEntry().As<IAggregateInstance>();
 
             _controller = new WebClient.Controller(_aggregate.Item, ctx);
             _create = new CreateMethod(this, ctx);
@@ -31,7 +31,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
         private readonly GraphNode<Aggregate> _aggregate;
         private readonly GraphNode<IEFCoreEntity> _dbEntity;
-        private readonly GraphNode<AggregateInstance> _aggregateInstance;
+        private readonly GraphNode<IAggregateInstance> _aggregateInstance;
 
         private readonly CodeRenderingContext _ctx;
 
@@ -61,7 +61,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
             private readonly GraphNode<Aggregate> _aggregate;
             private readonly GraphNode<IEFCoreEntity> _dbEntity;
-            private readonly GraphNode<AggregateInstance> _instance;
+            private readonly GraphNode<IAggregateInstance> _instance;
             private readonly CodeRenderingContext _ctx;
 
             internal string ArgType => _instance.Item.ClassName;
@@ -82,7 +82,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
             private readonly GraphNode<Aggregate> _aggregate;
             private readonly GraphNode<IEFCoreEntity> _dbEntity;
-            private readonly GraphNode<AggregateInstance> _instance;
+            private readonly GraphNode<IAggregateInstance> _instance;
             private readonly CodeRenderingContext _ctx;
 
             internal string MethodName => $"Update{_aggregate.Item.DisplayName.ToCSharpSafe()}";
@@ -159,7 +159,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
             private readonly GraphNode<Aggregate> _aggregate;
             private readonly GraphNode<IEFCoreEntity> _dbEntity;
-            private readonly GraphNode<AggregateInstance> _instance;
+            private readonly GraphNode<IAggregateInstance> _instance;
             private readonly CodeRenderingContext _ctx;
 
             internal string MethodName => $"Delete{_aggregate.Item.DisplayName.ToCSharpSafe()}";
@@ -200,7 +200,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
         #region AGGREGATE INSTANCE & CREATE COMMAND
         private string CreateCommandClassName => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}CreateCommand";
-        private string CreateCommandToDbEntityMethodName => AggregateInstance.TO_DB_ENTITY_METHOD_NAME;
+        private string CreateCommandToDbEntityMethodName => IAggregateInstance.TO_DB_ENTITY_METHOD_NAME;
         private string CreateCommandGetInstanceKeyMethodName => GETINSTANCENAME_METHOD_NAME;
 
         private IEnumerable<string> GetInstanceNameProps() {
@@ -408,7 +408,7 @@ namespace HalApplicationBuilder.CodeRendering {
                                 return false;
                             }
 
-                            var afterDbEntity = after.{{AggregateInstance.TO_DB_ENTITY_METHOD_NAME}}();
+                            var afterDbEntity = after.{{IAggregateInstance.TO_DB_ENTITY_METHOD_NAME}}();
 
                             // Attach
                             this.Entry(afterDbEntity).State = EntityState.Modified;
@@ -518,7 +518,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     /// <summary>
                     /// {{_aggregateInstance.GetCorrespondingAggregate().Item.DisplayName}}のデータ1件の詳細を表すクラスです。
                     /// </summary>
-                    public partial class {{_aggregateInstance.Item.ClassName}} : {{AggregateInstance.BASE_CLASS_NAME}} {
+                    public partial class {{_aggregateInstance.Item.ClassName}} : {{IAggregateInstance.BASE_CLASS_NAME}} {
                 {{_aggregateInstance.GetProperties(_ctx.Config).SelectTextTemplate(prop => $$"""
                         public {{prop.CSharpTypeName}} {{prop.PropertyName}} { get; set; }
                 """)}}

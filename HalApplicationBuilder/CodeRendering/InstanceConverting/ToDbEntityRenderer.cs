@@ -18,11 +18,11 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
         }
 
         private readonly GraphNode<Aggregate> _aggregate;
-        private readonly GraphNode<AggregateInstance> _aggregateInstance;
+        private readonly GraphNode<IAggregateInstance> _aggregateInstance;
         private readonly GraphNode<IEFCoreEntity> _dbEntity;
         private readonly CodeRenderingContext _ctx;
 
-        private const string METHODNAME = AggregateInstance.TO_DB_ENTITY_METHOD_NAME;
+        private const string METHODNAME = IAggregateInstance.TO_DB_ENTITY_METHOD_NAME;
 
         internal string Render() {
             return $$"""
@@ -37,9 +37,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                 """;
         }
 
-        private IEnumerable<string> RenderBody(GraphNode<AggregateInstance> instance, string parentPath, string instancePath, int depth) {
+        private IEnumerable<string> RenderBody(GraphNode<IAggregateInstance> instance, string parentPath, string instancePath, int depth) {
             foreach (var prop in instance.GetProperties(_ctx.Config)) {
-                if (prop is AggregateInstance.SchalarProperty schalarProp) {
+                if (prop is IAggregateInstance.SchalarProperty schalarProp) {
                     var path = schalarProp.CorrespondingDbColumn is IEFCoreEntity.ParentTablePrimaryKey
                         ? parentPath
                         : instancePath;
@@ -48,13 +48,13 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                         {{schalarProp.CorrespondingDbColumn.PropertyName}} = {{path}}.{{schalarProp.PropertyName}},
                         """;
 
-                } else if (prop is AggregateInstance.VariationSwitchProperty switchProp) {
+                } else if (prop is IAggregateInstance.VariationSwitchProperty switchProp) {
 
                     yield return $$"""
                         {{switchProp.CorrespondingDbColumn.PropertyName}} = {{instancePath}}.{{switchProp.PropertyName}},
                         """;
 
-                } else if (prop is AggregateInstance.RefProperty refProp) {
+                } else if (prop is IAggregateInstance.RefProperty refProp) {
                     for (int i = 0; i < refProp.CorrespondingDbColumns.Length; i++) {
                         var col = refProp.CorrespondingDbColumns[i];
 
@@ -63,7 +63,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                             """;
                     }
 
-                } else if (prop is AggregateInstance.ChildrenProperty children) {
+                } else if (prop is IAggregateInstance.ChildrenProperty children) {
                     var item = depth == 0 ? "item" : $"item{depth}";
                     var childProp = children.CorrespondingNavigationProperty.Principal.PropertyName;
                     var childInstance = children.ChildAggregateInstance.AsEntry();
@@ -75,7 +75,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                         }).ToList(),
                         """;
 
-                } else if (prop is AggregateInstance.ChildProperty child) {
+                } else if (prop is IAggregateInstance.ChildProperty child) {
                     var childProp = child.CorrespondingNavigationProperty.Principal.PropertyName;
                     var childInstance = child.ChildAggregateInstance;
                     var childDbEntityClass = $"{_ctx.Config.EntityNamespace}.{child.CorrespondingNavigationProperty.Relevant.Owner.Item.ClassName}";
@@ -87,7 +87,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                         },
                         """;
 
-                } else if (prop is AggregateInstance.VariationProperty variation) {
+                } else if (prop is IAggregateInstance.VariationProperty variation) {
                     var childProp = variation.CorrespondingNavigationProperty.Principal.PropertyName;
                     var childInstance = variation.ChildAggregateInstance;
                     var childDbEntityClass = $"{_ctx.Config.EntityNamespace}.{variation.CorrespondingNavigationProperty.Relevant.Owner.Item.ClassName}";

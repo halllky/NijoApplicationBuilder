@@ -22,7 +22,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         public static string ImportName => Path.GetFileNameWithoutExtension(FILENAME);
         public const string FILENAME = "types.ts";
 
-        private void Render(GraphNode<AggregateInstance> instance) {
+        private void Render(GraphNode<IAggregateInstance> instance) {
             WriteLine($"export type {instance.Item.TypeScriptTypeName} = {{");
             if (instance.IsRoot()) {
                 WriteLine($"  {AggregateInstanceBase.INSTANCE_KEY}?: string");
@@ -56,10 +56,10 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
         #region Initializer function
         internal class AggregateInstanceInitializerFunction {
-            internal AggregateInstanceInitializerFunction(GraphNode<AggregateInstance> instance) {
+            internal AggregateInstanceInitializerFunction(GraphNode<IAggregateInstance> instance) {
                 _instance = instance;
             }
-            private readonly GraphNode<AggregateInstance> _instance;
+            private readonly GraphNode<IAggregateInstance> _instance;
 
             internal string FunctionName => $"create{_instance.Item.TypeScriptTypeName}";
 
