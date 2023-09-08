@@ -68,7 +68,7 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
                     RequiredAtDB = false,
                 },
             };
-            return new EFCoreEntity(GraphNodeId, CLASSNAME, columns);
+            return new DbTable(GraphNodeId, CLASSNAME, columns);
         }
         internal static EnumDefinition CreateBackgroundTaskStateEnum() {
             if (!EnumDefinition.TryCreate(ENUM_BGTASKSTATE, new[] {

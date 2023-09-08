@@ -8,12 +8,8 @@ using System.Threading.Tasks;
 using static HalApplicationBuilder.Core.IEFCoreEntity;
 
 namespace HalApplicationBuilder.Core {
-    internal class EFCoreEntity : IEFCoreEntity {
-        internal EFCoreEntity(Aggregate aggregate) : this(
-            new NodeId($"DBENTITY::{aggregate.Id}"),
-            aggregate.DisplayName.ToCSharpSafe()) {
-        }
-        internal EFCoreEntity(NodeId id, string name, IList<BareColumn>? schalarMembers = null) {
+    internal class DbTable : IEFCoreEntity {
+        internal DbTable(NodeId id, string name, IList<BareColumn>? schalarMembers = null) {
             Id = id;
             ClassName = name;
             SchalarMembersNotRelatedToAggregate = schalarMembers ?? new List<BareColumn>();

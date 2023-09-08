@@ -322,46 +322,6 @@ namespace HalApplicationBuilder.Core {
             }
 
             // ---------------------------------------------------------
-            // DbEntity作成
-            var dbEntities = aggregates.Values.Select(aggregate => new EFCoreEntity(
-                new NodeId($"DBENTITY::{aggregate.Id}"),
-                aggregate.DisplayName.ToCSharpSafe()));
-            var dbEntityEdges = edgesFromAggToAgg.Select(edge => new GraphEdgeInfo {
-                Initial = new NodeId($"DBENTITY::{edge.Initial}"),
-                Terminal = new NodeId($"DBENTITY::{edge.Terminal}"),
-                RelationName = edge.RelationName,
-                Attributes = edge.Attributes,
-            });
-            var entityToAggregate = aggregates.Values.Select(aggregate => new GraphEdgeInfo {
-                Initial = new NodeId($"DBENTITY::{aggregate.Id}"),
-                Terminal = aggregate.Id,
-                RelationName = "origin",
-                Attributes = new Dictionary<string, object> {
-                    { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_AGG_2_ETT },
-                },
-            });
-
-            // ---------------------------------------------------------
-            // AggregateInstance作成
-            var aggregateInstances = aggregates.Values.Select(aggregate => new AggregateInstance(
-                new NodeId($"INSTANCE::{aggregate.Id}"),
-                aggregate.DisplayName.ToCSharpSafe()));
-            var aggregateInstanceEdges = edgesFromAggToAgg.Select(edge => new GraphEdgeInfo {
-                Initial = new NodeId($"INSTANCE::{edge.Initial}"),
-                Terminal = new NodeId($"INSTANCE::{edge.Terminal}"),
-                RelationName = edge.RelationName,
-                Attributes = edge.Attributes,
-            });
-            var instanceToAggregate = aggregates.Values.Select(aggregate => new GraphEdgeInfo {
-                Initial = new NodeId($"INSTANCE::{aggregate.Id}"),
-                Terminal = aggregate.Id,
-                RelationName = "origin",
-                Attributes = new Dictionary<string, object> {
-                    { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_AGG_2_INS },
-                },
-            });
-
-            // ---------------------------------------------------------
             // 基盤機能
             var halappEntities = new List<IGraphNode>();
             var halappEnums = new List<EnumDefinition>();
@@ -375,15 +335,9 @@ namespace HalApplicationBuilder.Core {
             var nodes = aggregates.Values
                 .Cast<IGraphNode>()
                 .Concat(aggregateMembers)
-                .Concat(dbEntities)
-                .Concat(aggregateInstances)
                 .Concat(halappEntities);
             var edges = edgesFromAggToAgg
-                .Concat(edgesFromAggToMember)
-                .Concat(dbEntityEdges)
-                .Concat(entityToAggregate)
-                .Concat(aggregateInstanceEdges)
-                .Concat(instanceToAggregate);
+                .Concat(edgesFromAggToMember);
             if (!DirectedGraph.TryCreate(nodes, edges, out var graph, out var errors1)) {
                 foreach (var err in errors1) errors.Add(err);
             }
@@ -512,16 +466,10 @@ namespace HalApplicationBuilder.Core {
         }
 
         internal static GraphNode<IEFCoreEntity> GetDbEntity(this GraphNode<Aggregate> aggregate) {
-            return aggregate.In
-                .Single(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_AGG_2_ETT)
-                .Initial
-                .As<IEFCoreEntity>();
+            return aggregate.As<IEFCoreEntity>();
         }
         internal static GraphNode<IAggregateInstance> GetInstanceClass(this GraphNode<Aggregate> aggregate) {
-            return aggregate.In
-            .Single(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_AGG_2_INS)
-            .Initial
-            .As<IAggregateInstance>();
+            return aggregate.As<IAggregateInstance>();
         }
         internal static IEnumerable<GraphNode<Aggregate.Member>> GetSchalarMembers(this GraphNode<Aggregate> aggregate) {
             return aggregate.Out
@@ -530,23 +478,17 @@ namespace HalApplicationBuilder.Core {
         }
 
         internal static GraphNode<Aggregate>? GetCorrespondingAggregate(this GraphNode<IEFCoreEntity> dbEntity) {
-            return dbEntity.Out
-                .SingleOrDefault(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_AGG_2_ETT)?
-                .Terminal
-                .As<Aggregate>();
+            return dbEntity.Item is Aggregate ? dbEntity.As<Aggregate>() : null;
         }
         internal static GraphNode<IAggregateInstance>? GetUiInstance(this GraphNode<IEFCoreEntity> dbEntity) {
-            return dbEntity.GetCorrespondingAggregate()?.GetInstanceClass();
+            return dbEntity.As<IAggregateInstance>();
         }
 
         internal static GraphNode<Aggregate> GetCorrespondingAggregate(this GraphNode<IAggregateInstance> instance) {
-            return instance.Out
-                .Single(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_AGG_2_INS)
-                .Terminal
-                .As<Aggregate>();
+            return instance.As<Aggregate>();
         }
         internal static GraphNode<IEFCoreEntity> GetDbEntity(this GraphNode<IAggregateInstance> instance) {
-            return instance.GetCorrespondingAggregate().GetDbEntity();
+            return instance.As<IEFCoreEntity>();
         }
 
         internal static bool IsChildrenMember(this GraphNode graphNode) {

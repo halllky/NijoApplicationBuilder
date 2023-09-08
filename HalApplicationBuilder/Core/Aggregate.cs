@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Core {
-    internal class Aggregate : ValueObject, IGraphNode {
+    internal class Aggregate : ValueObject, IAggregateInstance, IEFCoreEntity {
         internal Aggregate(AggregatePath path) {
             Id = new NodeId(path.Value);
             Path = path;
@@ -16,6 +16,12 @@ namespace HalApplicationBuilder.Core {
         internal AggregatePath Path { get; }
         internal string DisplayName => Path.BaseName;
         internal string UniqueId => new HashedString(Path.Value).Guid.ToString().Replace("-", "");
+
+        string IAggregateInstance.ClassName => DisplayName.ToCSharpSafe();
+        string IAggregateInstance.TypeScriptTypeName => DisplayName.ToCSharpSafe();
+
+        string IEFCoreEntity.ClassName => $"{DisplayName.ToCSharpSafe()}DbEntity";
+        IList<IEFCoreEntity.BareColumn> IEFCoreEntity.SchalarMembersNotRelatedToAggregate => new List<IEFCoreEntity.BareColumn>();
 
         protected override IEnumerable<object?> ValueObjectIdentifiers() {
             yield return Id;

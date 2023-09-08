@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static HalApplicationBuilder.Core.EFCoreEntity;
 
 namespace HalApplicationBuilder.Core {
     internal interface IEFCoreEntity : IGraphNode {

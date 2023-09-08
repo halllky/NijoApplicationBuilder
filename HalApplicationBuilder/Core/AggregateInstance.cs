@@ -9,29 +9,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using static HalApplicationBuilder.Core.IAggregateInstance;
 
-namespace HalApplicationBuilder.Core
-{
-    internal class AggregateInstance : IAggregateInstance, IGraphNode {
-        internal AggregateInstance(Aggregate aggregate) : this(
-            new NodeId($"INSTANCE::{aggregate.Id}"),
-            aggregate.DisplayName.ToCSharpSafe()) {
-        }
-        internal AggregateInstance(NodeId id, string name) {
-            Id = id;
-            ClassName = $"{name}Instance";
-            TypeScriptTypeName = name;
-        }
-
-        public string ClassName { get; }
-        public string TypeScriptTypeName { get; }
-
-        public NodeId Id { get; }
-
-        public override string ToString() {
-            return Id.Value;
-        }
-    }
-
+namespace HalApplicationBuilder.Core {
     internal static class AggregateInstanceExtensions {
         internal static IEnumerable<IAggregateInstance.Property> GetProperties(this GraphNode<IAggregateInstance> node, Config config) {
             foreach (var prop in GetSchalarProperties(node)) yield return prop;
