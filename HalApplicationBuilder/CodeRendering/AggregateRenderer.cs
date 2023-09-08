@@ -246,6 +246,8 @@ namespace HalApplicationBuilder.CodeRendering {
                 #pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければなりません
                 #pragma warning disable IDE1006 // 命名スタイル
 
+                {{_controller.Render()}}
+
                 #region データ新規作成
                 namespace {{_ctx.Config.RootNamespace}} {
                     using Microsoft.AspNetCore.Mvc;
