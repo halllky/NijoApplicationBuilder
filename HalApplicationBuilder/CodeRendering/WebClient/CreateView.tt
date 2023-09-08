@@ -16,9 +16,9 @@ import { useHttpRequest } from '../../hooks/useHttpRequest';
 import { useAppContext } from "../../hooks/AppContext"
 import { PageContext, pageContextReducer } from '../../hooks/PageContext'
 import * as AggregateType from '../../<#=types.ImportName#>'
-import { <#=new FormOfAggregateInstance.Component(_instance).ComponentName#> } from './components'
+import { <#=new FormOfAggregateInstance.Component(_aggregate).ComponentName#> } from './components'
 
-const defaultValues = AggregateType.<#=new types.AggregateInstanceInitializerFunction(_instance).FunctionName#>()
+const defaultValues = AggregateType.<#=new types.AggregateInstanceInitializerFunction(_aggregate).FunctionName#>()
 
 export default function () {
 
@@ -30,7 +30,7 @@ export default function () {
   const [, dispatch] = useAppContext()
   const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
   const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-    const response = await post<AggregateType.<#=_instance.Item.TypeScriptTypeName#>>(`<#=GetCreateCommandApi()#>`, data)
+    const response = await post<AggregateType.<#=_aggregate.Item.TypeScriptTypeName#>>(`<#=GetCreateCommandApi()#>`, data)
     if (response.ok) {
       dispatch({ type: 'pushMsg', msg: `${response.data.<#=AggregateInstanceBase.INSTANCE_NAME#>}を作成しました。` })
       setErrorMessages([])
@@ -49,7 +49,7 @@ export default function () {
             <Link to="<#=GetMultiViewUrl()#>"><#=_aggregate.Item.DisplayName#></Link>&nbsp;新規作成
           </h1>
           <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
-            <<#=new FormOfAggregateInstance.Component(_instance).ComponentName#> />
+            <<#=new FormOfAggregateInstance.Component(_aggregate).ComponentName#> />
           </div>
           <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
           <IconButton fill icon={BookmarkSquareIcon} className="self-start">保存</IconButton>

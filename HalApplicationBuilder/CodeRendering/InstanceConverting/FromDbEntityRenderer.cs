@@ -14,14 +14,10 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
     internal class FromDbEntityRenderer {
         internal FromDbEntityRenderer(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx) {
             _aggregate = aggregate;
-            _aggregateInstance = aggregate.GetInstanceClass().AsEntry();
-            _dbEntity = aggregate.GetDbEntity().AsEntry();
             _ctx = ctx;
         }
 
         private readonly GraphNode<Aggregate> _aggregate;
-        private readonly GraphNode<IAggregateInstance> _aggregateInstance;
-        private readonly GraphNode<IEFCoreEntity> _dbEntity;
         private readonly CodeRenderingContext _ctx;
 
         private const string METHODNAME = IAggregateInstance.FROM_DB_ENTITY_METHOD_NAME;
@@ -31,9 +27,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}のデータベースから取得した内容を画面に表示する形に変換します。
                 /// </summary>
-                public static {{_aggregateInstance.Item.ClassName}} {{METHODNAME}}({{_ctx.Config.EntityNamespace}}.{{_dbEntity.Item.ClassName}} entity) {
-                    var instance = new {{_aggregateInstance.Item.ClassName}} {
-                        {{WithIndent(RenderBody(_aggregateInstance, "", "entity", 0), "        ")}}
+                public static {{_aggregate.Item.ClassName}} {{METHODNAME}}({{_ctx.Config.EntityNamespace}}.{{_aggregate.Item.EFCoreEntityClassName}} entity) {
+                    var instance = new {{_aggregate.Item.ClassName}} {
+                        {{WithIndent(RenderBody(_aggregate, "", "entity", 0), "        ")}}
                     };
                     instance.{{AggregateInstanceBase.INSTANCE_KEY}} = instance.{{AggregateRenderer.GETINSTANCEKEY_METHOD_NAME}}().ToString();
                     instance.{{AggregateInstanceBase.INSTANCE_NAME}} = instance.{{AggregateRenderer.GETINSTANCENAME_METHOD_NAME}}();
@@ -42,7 +38,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                 """;
         }
 
-        private IEnumerable<string> RenderBody(GraphNode<IAggregateInstance> instance, string parentPath, string instancePath, int depth) {
+        private IEnumerable<string> RenderBody(GraphNode<Aggregate> instance, string parentPath, string instancePath, int depth) {
             foreach (var prop in instance.GetProperties(_ctx.Config)) {
                 if (prop is IAggregateInstance.SchalarProperty schalarProp) {
                     yield return $$"""
@@ -55,7 +51,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                         """;
 
                 } else if (prop is IAggregateInstance.RefProperty refProp) {
-                    var refTarget = refProp.Owner.GetDbEntity() == refProp.CorrespondingNavigationProperty.Principal.Owner
+                    var refTarget = (IEFCoreEntity)refProp.Owner.Item == refProp.CorrespondingNavigationProperty.Principal.Owner.Item
                         ? refProp.CorrespondingNavigationProperty.Principal
                         : refProp.CorrespondingNavigationProperty.Relevant;
                     var nameColumn = refTarget.Owner

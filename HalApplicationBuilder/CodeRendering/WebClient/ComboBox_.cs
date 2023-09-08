@@ -16,12 +16,10 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
         {
             _ctx = ctx;
             _aggregate = aggregate;
-            _dbEntity = aggregate.GetDbEntity().AsEntry();
         }
 
         private readonly CodeRenderingContext _ctx;
         private readonly GraphNode<Aggregate> _aggregate;
-        private readonly GraphNode<IEFCoreEntity> _dbEntity;
 
         public string FileName => $"ComboBox{_aggregate.Item.DisplayName.ToFileNameSafe()}.tsx";
 

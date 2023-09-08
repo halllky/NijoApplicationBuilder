@@ -39,7 +39,7 @@ import { useHttpRequest } from '../../hooks/useHttpRequest';
 import * as AggregateType from '../../");
             this.Write(this.ToStringHelper.ToStringWithCulture(types.ImportName));
             this.Write("\'\r\nimport { ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(new FormOfAggregateInstance.Component(_instance).ComponentName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(new FormOfAggregateInstance.Component(_aggregate).ComponentName));
             this.Write(" } from \'./components\'\r\n\r\nexport default function () {\r\n\r\n  const { instanceKey }" +
                     " = useParams()\r\n  const [, dispatch] = useAppContext()\r\n  \r\n  const navigate = u" +
                     "seNavigate()\r\n");
@@ -55,17 +55,17 @@ import * as AggregateType from '../../");
   const [fetched, setFetched] = useState(false)
   const defaultValues = useCallback(async () => {
     if (!instanceKey) return AggregateType.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(new types.AggregateInstanceInitializerFunction(_instance).FunctionName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(new types.AggregateInstanceInitializerFunction(_aggregate).FunctionName));
             this.Write("()\r\n    const encoded = window.encodeURI(instanceKey)\r\n    const response = await" +
                     " get(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetFindCommandApi()));
             this.Write("/${encoded}`)\r\n    setFetched(true)\r\n    if (response.ok) {\r\n      const response" +
                     "Data = response.data as AggregateType.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.TypeScriptTypeName));
             this.Write("\r\n      setInstanceName(responseData.");
             this.Write(this.ToStringHelper.ToStringWithCulture(AggregateInstanceBase.INSTANCE_NAME));
             this.Write(")\r\n      return responseData\r\n    } else {\r\n      return AggregateType.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(new types.AggregateInstanceInitializerFunction(_instance).FunctionName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(new types.AggregateInstanceInitializerFunction(_aggregate).FunctionName));
             this.Write(@"()
     }
   }, [instanceKey])
@@ -75,7 +75,7 @@ import * as AggregateType from '../../");
   const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
   const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
     const response = await post<AggregateType.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.TypeScriptTypeName));
             this.Write(">(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetUpdateCommandApi()));
             this.Write("`, data)\r\n    if (response.ok) {\r\n      setErrorMessages([])\r\n      dispatch({ ty" +
@@ -105,7 +105,7 @@ import * as AggregateType from '../../");
                     ">{instanceName}</span>\r\n            <div className=\"flex-1\"></div>\r\n          </" +
                     "h1>\r\n          <div className=\"flex flex-col space-y-1 p-1 bg-neutral-200\">\r\n   " +
                     "         <");
-            this.Write(this.ToStringHelper.ToStringWithCulture(new FormOfAggregateInstance.Component(_instance).ComponentName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(new FormOfAggregateInstance.Component(_aggregate).ComponentName));
             this.Write(" />\r\n          </div>\r\n          <InlineMessageBar value={errorMessages} onChange" +
                     "={setErrorMessages} />\r\n");
  if (_asEditView) { 

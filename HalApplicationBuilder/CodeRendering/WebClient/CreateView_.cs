@@ -13,18 +13,16 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         internal CreateView(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx) {
             _ctx = ctx;
             _aggregate = aggregate;
-            _instance = aggregate.GetInstanceClass().AsEntry();
         }
 
         private readonly CodeRenderingContext _ctx;
         private readonly GraphNode<Aggregate> _aggregate;
-        private readonly GraphNode<IAggregateInstance> _instance;
 
         public string FileName => "new.tsx";
         internal string Url => $"/{_aggregate.Item.UniqueId}/new";
         internal string Route => $"/{_aggregate.Item.UniqueId}/new";
 
-        private string GetMultiViewUrl() => new SearchFeature(_aggregate.GetDbEntity(), _ctx).ReactPageUrl;
+        private string GetMultiViewUrl() => new SearchFeature(_aggregate.As<IEFCoreEntity>(), _ctx).ReactPageUrl;
         private string GetSingleViewUrl() => new SingleView(_aggregate, _ctx, asEditView: false).Url;
         private string GetCreateCommandApi() => new Controller(_aggregate.Item, _ctx).CreateCommandApi;
     }

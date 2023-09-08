@@ -11,59 +11,72 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.CodeRendering.WebClient {
-    partial class types : ITemplate {
+    partial class types : TemplateBase {
         internal types(CodeRenderingContext ctx) {
             _ctx = ctx;
         }
 
         private readonly CodeRenderingContext _ctx;
 
-        public string FileName => FILENAME;
+        public override string FileName => FILENAME;
         public static string ImportName => Path.GetFileNameWithoutExtension(FILENAME);
         public const string FILENAME = "types.ts";
 
-        private void Render(GraphNode<IAggregateInstance> instance) {
-            WriteLine($"export type {instance.Item.TypeScriptTypeName} = {{");
+        protected override string Template() {
+            return _ctx.Schema.RootAggregates().SelectTextTemplate(root => $$"""
+                // ------------------ {{root.Item.DisplayName}} ------------------
+                {{root.EnumerateThisAndDescendants().SelectTextTemplate(Render)}}
+
+                {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => $$"""
+                    {{new AggregateInstanceInitializerFunction(aggregate).Render()}}
+                """)}}
+
+                {{new Searching.SearchFeature(root.As<IEFCoreEntity>(), _ctx).RenderTypescriptTypeDef()}}
+                """);
+        }
+
+        private string Render(GraphNode<Aggregate> instance) {
+            var builder = new StringBuilder();
+
+            builder.AppendLine($"export type {instance.Item.TypeScriptTypeName} = {{");
             if (instance.IsRoot()) {
-                WriteLine($"  {AggregateInstanceBase.INSTANCE_KEY}?: string");
-                WriteLine($"  {AggregateInstanceBase.INSTANCE_NAME}?: string");
+                builder.AppendLine($"  {AggregateInstanceBase.INSTANCE_KEY}?: string");
+                builder.AppendLine($"  {AggregateInstanceBase.INSTANCE_NAME}?: string");
             }
             foreach (var prop in instance.GetSchalarProperties()) {
-                WriteLine($"  {prop.PropertyName}?: {prop.TypeScriptTypename}");
+                builder.AppendLine($"  {prop.PropertyName}?: {prop.TypeScriptTypename}");
             }
             foreach (var member in instance.GetRefMembers()) {
-                WriteLine($"  {member.RelationName}?: {AggregateInstanceKeyNamePair.TS_DEF}");
+                builder.AppendLine($"  {member.RelationName}?: {AggregateInstanceKeyNamePair.TS_DEF}");
             }
             foreach (var member in instance.GetChildMembers()) {
-                WriteLine($"  {member.RelationName}?: {member.Terminal.Item.TypeScriptTypeName}");
+                builder.AppendLine($"  {member.RelationName}?: {member.Terminal.Item.TypeScriptTypeName}");
             }
             foreach (var member in instance.GetChildrenMembers()) {
-                WriteLine($"  {member.RelationName}?: {member.Terminal.Item.TypeScriptTypeName}[]");
+                builder.AppendLine($"  {member.RelationName}?: {member.Terminal.Item.TypeScriptTypeName}[]");
             }
             foreach (var member in instance.GetVariationSwitchProperties(_ctx.Config)) {
-                WriteLine($"  {member.CorrespondingDbColumn.PropertyName}?: {member.TypeScriptTypename}");
+                builder.AppendLine($"  {member.CorrespondingDbColumn.PropertyName}?: {member.TypeScriptTypename}");
             }
             foreach (var member in instance.GetVariationGroups().SelectMany(group => group.VariationAggregates.Values)) {
-                WriteLine($"  {member.RelationName}?: {member.Terminal.Item.TypeScriptTypeName}");
+                builder.AppendLine($"  {member.RelationName}?: {member.Terminal.Item.TypeScriptTypeName}");
             }
-            WriteLine($"}}");
-        }
-        private void Render(GraphNode<IEFCoreEntity> dbEntity) {
-            var searchFeature = new Searching.SearchFeature(dbEntity, _ctx);
-            searchFeature.RenderTypescriptTypeDef(this);
+            builder.AppendLine($"}}");
+
+            return builder.ToString();
         }
 
 
         #region Initializer function
         internal class AggregateInstanceInitializerFunction {
-            internal AggregateInstanceInitializerFunction(GraphNode<IAggregateInstance> instance) {
+            internal AggregateInstanceInitializerFunction(GraphNode<Aggregate> instance) {
                 _instance = instance;
             }
-            private readonly GraphNode<IAggregateInstance> _instance;
+            private readonly GraphNode<Aggregate> _instance;
 
             internal string FunctionName => $"create{_instance.Item.TypeScriptTypeName}";
 
-            internal void Render(ITemplate template) {
+            internal string Render() {
                 var children = _instance
                     .GetChildrenMembers()
                     .Select(edge => new {
@@ -90,11 +103,13 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                         Value = $"'{group.VariationAggregates.First().Key}'",
                     });
 
-                template.WriteLine($"export const {FunctionName} = (): {_instance.Item.TypeScriptTypeName} => ({{");
-                foreach (var item in children.Concat(child).Concat(variation).Concat(variationSwitch)) {
-                    template.WriteLine($"  {item.Key}: {item.Value},");
-                }
-                template.WriteLine($"}})");
+                return $$"""
+                    export const {{FunctionName}} = (): {{_instance.Item.TypeScriptTypeName}} => ({
+                    {{children.Concat(child).Concat(variation).Concat(variationSwitch).SelectTextTemplate(item => $$"""
+                      {{item.Key}}: {{item.Value}},
+                    """)}}
+                    })
+                    """;
             }
         }
         #endregion Initializer function

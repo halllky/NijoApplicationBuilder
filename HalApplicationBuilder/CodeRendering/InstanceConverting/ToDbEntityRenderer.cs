@@ -12,14 +12,10 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
     internal class ToDbEntityRenderer {
         internal ToDbEntityRenderer(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx) {
             _aggregate = aggregate;
-            _aggregateInstance = aggregate.GetInstanceClass().AsEntry();
-            _dbEntity = aggregate.GetDbEntity().AsEntry();
             _ctx = ctx;
         }
 
         private readonly GraphNode<Aggregate> _aggregate;
-        private readonly GraphNode<IAggregateInstance> _aggregateInstance;
-        private readonly GraphNode<IEFCoreEntity> _dbEntity;
         private readonly CodeRenderingContext _ctx;
 
         private const string METHODNAME = IAggregateInstance.TO_DB_ENTITY_METHOD_NAME;
@@ -29,15 +25,15 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}のオブジェクトをデータベースに保存する形に変換します。
                 /// </summary>
-                public {{_ctx.Config.EntityNamespace}}.{{_dbEntity.Item.ClassName}} {{METHODNAME}}() {
-                    return new {{_ctx.Config.EntityNamespace}}.{{_dbEntity.Item.ClassName}} {
-                        {{WithIndent(RenderBody(_aggregateInstance, "", "this", 0), "        ")}}
+                public {{_ctx.Config.EntityNamespace}}.{{_aggregate.Item.EFCoreEntityClassName}} {{METHODNAME}}() {
+                    return new {{_ctx.Config.EntityNamespace}}.{{_aggregate.Item.EFCoreEntityClassName}} {
+                        {{WithIndent(RenderBody(_aggregate, "", "this", 0), "        ")}}
                     };
                 }
                 """;
         }
 
-        private IEnumerable<string> RenderBody(GraphNode<IAggregateInstance> instance, string parentPath, string instancePath, int depth) {
+        private IEnumerable<string> RenderBody(GraphNode<Aggregate> instance, string parentPath, string instancePath, int depth) {
             foreach (var prop in instance.GetProperties(_ctx.Config)) {
                 if (prop is IAggregateInstance.SchalarProperty schalarProp) {
                     var path = schalarProp.CorrespondingDbColumn is IEFCoreEntity.ParentTablePrimaryKey

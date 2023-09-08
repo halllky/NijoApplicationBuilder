@@ -58,10 +58,6 @@
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>SingleView.cs</LastGenOutput>
 		</None>
-		<None Update="CodeRendering\WebClient\types.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>types.cs</LastGenOutput>
-		</None>
 		<None Update="CodeRendering\Presentation\AggregateInstanceBase.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>AggregateInstanceBase.cs</LastGenOutput>
@@ -190,11 +186,6 @@
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>SingleView.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\WebClient\types.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>types.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering\Presentation\AggregateInstanceBase.cs">
 		  <DesignTime>True</DesignTime>

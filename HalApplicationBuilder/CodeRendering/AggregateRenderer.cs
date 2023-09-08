@@ -17,8 +17,6 @@ namespace HalApplicationBuilder.CodeRendering {
                 throw new ArgumentException($"{nameof(AggregateRenderer)} requires root aggregate.", nameof(aggregate));
 
             _aggregate = aggregate;
-            _dbEntity = aggregate.GetDbEntity().AsEntry().As<IEFCoreEntity>();
-            _aggregateInstance = aggregate.GetInstanceClass().AsEntry().As<IAggregateInstance>();
 
             _controller = new WebClient.Controller(_aggregate.Item, ctx);
             _create = new CreateMethod(this, ctx);
@@ -30,8 +28,6 @@ namespace HalApplicationBuilder.CodeRendering {
 
 
         private readonly GraphNode<Aggregate> _aggregate;
-        private readonly GraphNode<IEFCoreEntity> _dbEntity;
-        private readonly GraphNode<IAggregateInstance> _aggregateInstance;
 
         private readonly CodeRenderingContext _ctx;
 
@@ -42,10 +38,10 @@ namespace HalApplicationBuilder.CodeRendering {
         public const string GETINSTANCENAME_METHOD_NAME = "GetInstanceName";
         public const string TOKEYNAMEPAIR_METHOD_NAME = "ToKeyNamePair";
 
-        private IEnumerable<NavigationProperty.Item> EnumerateNavigationProperties(GraphNode<IEFCoreEntity> entity) {
-            foreach (var nav in entity.GetNavigationProperties(_ctx.Config)) {
-                if (nav.Principal.Owner == entity) yield return nav.Principal;
-                if (nav.Relevant.Owner == entity) yield return nav.Relevant;
+        private IEnumerable<NavigationProperty.Item> EnumerateNavigationProperties(GraphNode<Aggregate> aggregate) {
+            foreach (var nav in aggregate.GetNavigationProperties(_ctx.Config)) {
+                if (nav.Principal.Owner.Item == (IEFCoreEntity)aggregate.Item) yield return nav.Principal;
+                if (nav.Relevant.Owner.Item == (IEFCoreEntity)aggregate.Item) yield return nav.Relevant;
             }
         }
 
@@ -54,17 +50,13 @@ namespace HalApplicationBuilder.CodeRendering {
         internal class CreateMethod {
             internal CreateMethod(AggregateRenderer aggFile, CodeRenderingContext ctx) {
                 _aggregate = aggFile._aggregate;
-                _dbEntity = aggFile._dbEntity;
-                _instance = aggFile._aggregateInstance;
                 _ctx = ctx;
             }
 
             private readonly GraphNode<Aggregate> _aggregate;
-            private readonly GraphNode<IEFCoreEntity> _dbEntity;
-            private readonly GraphNode<IAggregateInstance> _instance;
             private readonly CodeRenderingContext _ctx;
 
-            internal string ArgType => _instance.Item.ClassName;
+            internal string ArgType => _aggregate.Item.ClassName;
             internal string MethodName => $"Create{_aggregate.Item.DisplayName.ToCSharpSafe()}";
         }
         #endregion CREATE
@@ -75,14 +67,10 @@ namespace HalApplicationBuilder.CodeRendering {
         internal class UpdateMethod {
             internal UpdateMethod(AggregateRenderer aggFile, CodeRenderingContext ctx) {
                 _aggregate = aggFile._aggregate;
-                _dbEntity = aggFile._dbEntity;
-                _instance = aggFile._aggregateInstance;
                 _ctx = ctx;
             }
 
             private readonly GraphNode<Aggregate> _aggregate;
-            private readonly GraphNode<IEFCoreEntity> _dbEntity;
-            private readonly GraphNode<IAggregateInstance> _instance;
             private readonly CodeRenderingContext _ctx;
 
             internal string MethodName => $"Update{_aggregate.Item.DisplayName.ToCSharpSafe()}";
@@ -90,7 +78,7 @@ namespace HalApplicationBuilder.CodeRendering {
             internal string RenderDescendantsAttaching(string dbContext, string before, string after) {
                 var builder = new StringBuilder();
 
-                var descendantDbEntities = _dbEntity.EnumerateDescendants().ToArray();
+                var descendantDbEntities = _aggregate.EnumerateDescendants().ToArray();
                 for (int i = 0; i < descendantDbEntities.Length; i++) {
                     var paths = descendantDbEntities[i].PathFromEntry().ToArray();
 
@@ -115,7 +103,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
                         } else {
                             // 子集約までの経路の途中に配列が含まれない場合
-                            builder.AppendLine($"var arr{i}_{(renderBefore ? "before" : "after")} = new {descendantDbEntities[i].Item.ClassName}[] {{");
+                            builder.AppendLine($"var arr{i}_{(renderBefore ? "before" : "after")} = new {descendantDbEntities[i].Item.EFCoreEntityClassName}[] {{");
                             builder.AppendLine($"    {(renderBefore ? before : after)}.{paths.Select(p => p.RelationName).Join(".")},");
                             builder.AppendLine($"}};");
                         }
@@ -152,14 +140,10 @@ namespace HalApplicationBuilder.CodeRendering {
         internal class DeleteMethod {
             internal DeleteMethod(AggregateRenderer aggFile, CodeRenderingContext ctx) {
                 _aggregate = aggFile._aggregate;
-                _dbEntity = aggFile._dbEntity;
-                _instance = aggFile._aggregateInstance;
                 _ctx = ctx;
             }
 
             private readonly GraphNode<Aggregate> _aggregate;
-            private readonly GraphNode<IEFCoreEntity> _dbEntity;
-            private readonly GraphNode<IAggregateInstance> _instance;
             private readonly CodeRenderingContext _ctx;
 
             internal string MethodName => $"Delete{_aggregate.Item.DisplayName.ToCSharpSafe()}";
@@ -171,7 +155,7 @@ namespace HalApplicationBuilder.CodeRendering {
         private const int LIST_BY_KEYWORD_MAX = 100;
         private string ListByKeywordMethodName => $"SearchByKeyword{_aggregate.Item.DisplayName.ToCSharpSafe()}";
         private IEnumerable<ListByKeywordTargetColumn> EnumerateListByKeywordTargetColumns() {
-            return _dbEntity
+            return _aggregate
                 .GetColumns()
                 .Where(col => col.IsPrimary || col.IsInstanceName)
                 .Select(col => new ListByKeywordTargetColumn {
@@ -204,15 +188,15 @@ namespace HalApplicationBuilder.CodeRendering {
         private string CreateCommandGetInstanceKeyMethodName => GETINSTANCENAME_METHOD_NAME;
 
         private IEnumerable<string> GetInstanceNameProps() {
-            var useKeyInsteadOfName = _aggregateInstance
+            var useKeyInsteadOfName = _aggregate
                 .GetSchalarProperties()
                 .Any(p => p.CorrespondingDbColumn.IsInstanceName) == false;
             var props = useKeyInsteadOfName
-                ? _aggregateInstance
+                ? _aggregate
                     .GetSchalarProperties()
                     .Where(p => p.CorrespondingDbColumn.IsPrimary)
                     .ToArray()
-                : _aggregateInstance
+                : _aggregate
                     .GetSchalarProperties()
                     .Where(p => p.CorrespondingDbColumn.IsInstanceName)
                     .ToArray();
@@ -233,7 +217,7 @@ namespace HalApplicationBuilder.CodeRendering {
         private readonly WebClient.Controller _controller;
         #endregion CONTROLLER
         protected override string Template() {
-            var search = new Searching.SearchFeature(_dbEntity, _ctx);
+            var search = new Searching.SearchFeature(_aggregate.As<IEFCoreEntity>(), _ctx);
             var find = new Finding.FindFeature(_aggregate, _ctx);
             var toDbEntity = new InstanceConverting.ToDbEntityRenderer(_aggregate, _ctx);
             var fromDbEntity = new InstanceConverting.FromDbEntityRenderer(_aggregate, _ctx);
@@ -273,14 +257,14 @@ namespace HalApplicationBuilder.CodeRendering {
                     using Microsoft.EntityFrameworkCore.Infrastructure;
 
                     partial class {{_ctx.Config.DbContextName}} {
-                        public bool {{_create.MethodName}}({{CreateCommandClassName}} command, out {{_aggregateInstance.Item.ClassName}} created, out ICollection<string> errors) {
+                        public bool {{_create.MethodName}}({{CreateCommandClassName}} command, out {{_aggregate.Item.ClassName}} created, out ICollection<string> errors) {
                             var dbEntity = command.{{CreateCommandToDbEntityMethodName}}();
                             this.Add(dbEntity);
 
                             try {
                                 this.SaveChanges();
                             } catch (DbUpdateException ex) {
-                                created = new {{_aggregateInstance.Item.ClassName}}();
+                                created = new {{_aggregate.Item.ClassName}}();
                                 errors = ex.GetMessagesRecursively("  ").ToList();
                                 return false;
                             }
@@ -288,7 +272,7 @@ namespace HalApplicationBuilder.CodeRendering {
                             var instanceKey = command.{{CreateCommandGetInstanceKeyMethodName}}().ToString();
                             var afterUpdate = this.{{find.FindMethodName}}(instanceKey);
                             if (afterUpdate == null) {
-                                created = new {{_aggregateInstance.Item.ClassName}}();
+                                created = new {{_aggregate.Item.ClassName}}();
                                 errors = new[] { "更新後のデータの再読み込みに失敗しました。" };
                                 return false;
                             }
@@ -334,7 +318,7 @@ namespace HalApplicationBuilder.CodeRendering {
                         /// {{_aggregate.Item.DisplayName}}をキーワードで検索します。
                         /// </summary>
                         public IEnumerable<{{AggregateInstanceKeyNamePair.CLASSNAME}}> {{ListByKeywordMethodName}}(string? keyword) {
-                            var query = this.{{_dbEntity.Item.DbSetName}}.Select(e => new {
+                            var query = this.{{_aggregate.Item.DbSetName}}.Select(e => new {
                 {{EnumerateListByKeywordTargetColumns().SelectTextTemplate(col => $$"""
                                 e.{{col.Path}},
                 """)}}
@@ -380,7 +364,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
                     partial class {{_controller.ClassName}} {
                         [HttpPost("{{WebClient.Controller.UPDATE_ACTION_NAME}}")]
-                        public virtual IActionResult Update({{_aggregateInstance.Item.ClassName}} param) {
+                        public virtual IActionResult Update({{_aggregate.Item.ClassName}} param) {
                             if (_dbContext.{{_update.MethodName}}(param, out var updated, out var errors)) {
                                 return this.JsonContent(updated);
                             } else {
@@ -398,14 +382,14 @@ namespace HalApplicationBuilder.CodeRendering {
                     using Microsoft.EntityFrameworkCore.Infrastructure;
 
                     partial class {{_ctx.Config.DbContextName}} {
-                        public bool {{_update.MethodName}}({{_aggregateInstance.Item.ClassName}} after, out {{_aggregateInstance.Item.ClassName}} updated, out ICollection<string> errors) {
+                        public bool {{_update.MethodName}}({{_aggregate.Item.ClassName}} after, out {{_aggregate.Item.ClassName}} updated, out ICollection<string> errors) {
                             errors = new List<string>();
                             var key = after.{{GETINSTANCEKEY_METHOD_NAME}}().ToString();
 
                             {{WithIndent(find.RenderDbEntityLoading("this", "beforeDbEntity", "key", tracks: false, includeRefs: false), "            ")}}
 
                             if (beforeDbEntity == null) {
-                                updated = new {{_aggregateInstance.Item.ClassName}}();
+                                updated = new {{_aggregate.Item.ClassName}}();
                                 errors.Add("更新対象のデータが見つかりません。");
                                 return false;
                             }
@@ -420,14 +404,14 @@ namespace HalApplicationBuilder.CodeRendering {
                             try {
                                 this.SaveChanges();
                             } catch (DbUpdateException ex) {
-                                updated = new {{_aggregateInstance.Item.ClassName}}();
+                                updated = new {{_aggregate.Item.ClassName}}();
                                 foreach (var msg in ex.GetMessagesRecursively()) errors.Add(msg);
                                 return false;
                             }
 
                             var afterUpdate = this.{{find.FindMethodName}}(key);
                             if (afterUpdate == null) {
-                                updated = new {{_aggregateInstance.Item.ClassName}}();
+                                updated = new {{_aggregate.Item.ClassName}}();
                                 errors.Add("更新後のデータの再読み込みに失敗しました。");
                                 return false;
                             }
@@ -497,10 +481,10 @@ namespace HalApplicationBuilder.CodeRendering {
                     using System.Linq;
 
                     /// <summary>
-                    /// {{_aggregateInstance.GetCorrespondingAggregate().Item.DisplayName}}のデータ作成コマンドです。
+                    /// {{_aggregate.Item.DisplayName}}のデータ作成コマンドです。
                     /// </summary>
                     public partial class {{CreateCommandClassName}} {
-                {{_aggregateInstance.GetProperties(_ctx.Config).SelectTextTemplate(prop => $$"""
+                {{_aggregate.GetProperties(_ctx.Config).SelectTextTemplate(prop => $$"""
                         public {{prop.CSharpTypeName}} {{prop.PropertyName}} { get; set; }
                 """)}}
 
@@ -510,7 +494,7 @@ namespace HalApplicationBuilder.CodeRendering {
                         /// </summary>
                         public {{InstanceKey.CLASS_NAME}} {{CreateCommandGetInstanceKeyMethodName}}() {
                             return {{InstanceKey.CLASS_NAME}}.{{InstanceKey.CREATE}}(new object[] {
-                {{_aggregateInstance.GetSchalarProperties().Where(p => p.CorrespondingDbColumn.IsPrimary).SelectTextTemplate(p => $$"""
+                {{_aggregate.GetSchalarProperties().Where(p => p.CorrespondingDbColumn.IsPrimary).SelectTextTemplate(p => $$"""
                                 this.{{p.PropertyName}},
                 """)}}
                             });
@@ -518,10 +502,10 @@ namespace HalApplicationBuilder.CodeRendering {
                     }
 
                     /// <summary>
-                    /// {{_aggregateInstance.GetCorrespondingAggregate().Item.DisplayName}}のデータ1件の詳細を表すクラスです。
+                    /// {{_aggregate.Item.DisplayName}}のデータ1件の詳細を表すクラスです。
                     /// </summary>
-                    public partial class {{_aggregateInstance.Item.ClassName}} : {{IAggregateInstance.BASE_CLASS_NAME}} {
-                {{_aggregateInstance.GetProperties(_ctx.Config).SelectTextTemplate(prop => $$"""
+                    public partial class {{_aggregate.Item.ClassName}} : {{IAggregateInstance.BASE_CLASS_NAME}} {
+                {{_aggregate.GetProperties(_ctx.Config).SelectTextTemplate(prop => $$"""
                         public {{prop.CSharpTypeName}} {{prop.PropertyName}} { get; set; }
                 """)}}
 
@@ -534,7 +518,7 @@ namespace HalApplicationBuilder.CodeRendering {
                         /// </summary>
                         public {{InstanceKey.CLASS_NAME}} {{GETINSTANCEKEY_METHOD_NAME}}() {
                             return {{InstanceKey.CLASS_NAME}}.{{InstanceKey.CREATE}}(new object[] {
-                {{_aggregateInstance.GetSchalarProperties().Where(p => p.CorrespondingDbColumn.IsPrimary).SelectTextTemplate(p => $$"""
+                {{_aggregate.GetSchalarProperties().Where(p => p.CorrespondingDbColumn.IsPrimary).SelectTextTemplate(p => $$"""
                                 this.{{p.PropertyName}},
                 """)}}
                             });
@@ -552,9 +536,9 @@ namespace HalApplicationBuilder.CodeRendering {
                         }
                     }
 
-                {{_aggregateInstance.EnumerateDescendants().SelectTextTemplate(ins => $$"""
+                {{_aggregate.EnumerateDescendants().SelectTextTemplate(ins => $$"""
                     /// <summary>
-                    /// {{ins.GetCorrespondingAggregate().Item.DisplayName}}のデータ1件の詳細を表すクラスです。
+                    /// {{ins.Item.DisplayName}}のデータ1件の詳細を表すクラスです。
                     /// </summary>
                     public partial class {{ins.Item.ClassName}} {
                 {{ins.GetProperties(_ctx.Config).SelectTextTemplate(prop => $$"""
@@ -574,11 +558,11 @@ namespace HalApplicationBuilder.CodeRendering {
                     using Microsoft.EntityFrameworkCore;
                     using Microsoft.EntityFrameworkCore.Infrastructure;
 
-                {{_dbEntity.EnumerateThisAndDescendants().SelectTextTemplate(ett => $$"""
+                {{_aggregate.EnumerateThisAndDescendants().SelectTextTemplate(ett => $$"""
                     /// <summary>
-                    /// {{ett.GetCorrespondingAggregate()?.Item.DisplayName}}のデータベースに保存されるデータの形を表すクラスです。
+                    /// {{ett.Item.DisplayName}}のデータベースに保存されるデータの形を表すクラスです。
                     /// </summary>
-                    public partial class {{ett.Item.ClassName}} {
+                    public partial class {{ett.Item.EFCoreEntityClassName}} {
                 {{ett.GetColumns().SelectTextTemplate(col => $$"""
                         public {{col.MemberType.GetCSharpTypeName()}} {{col.PropertyName}} { get; set; }
                 """)}}
@@ -588,7 +572,7 @@ namespace HalApplicationBuilder.CodeRendering {
                 """)}}
 
                         /// <summary>このオブジェクトと比較対象のオブジェクトの主キーが一致するかを返します。</summary>
-                        public bool {{IEFCoreEntity.KEYEQUALS}}({{ett.Item.ClassName}} entity) {
+                        public bool {{IEFCoreEntity.KEYEQUALS}}({{ett.Item.EFCoreEntityClassName}} entity) {
                 {{ett.GetColumns().Where(c => c.IsPrimary).SelectTextTemplate(col => $$"""
                             if (entity.{{col.PropertyName}} != this.{{col.PropertyName}}) return false;
                 """)}}
@@ -598,8 +582,8 @@ namespace HalApplicationBuilder.CodeRendering {
                 """)}}
 
                     partial class {{_ctx.Config.DbContextName}} {
-                {{_dbEntity.EnumerateThisAndDescendants().SelectTextTemplate(ett => $$"""
-                        public DbSet<{{_ctx.Config.EntityNamespace}}.{{ett.Item.ClassName}}> {{ett.Item.DbSetName}} { get; set; }
+                {{_aggregate.EnumerateThisAndDescendants().SelectTextTemplate(ett => $$"""
+                        public DbSet<{{_ctx.Config.EntityNamespace}}.{{ett.Item.EFCoreEntityClassName}}> {{ett.Item.DbSetName}} { get; set; }
                 """)}}
                     }
                 }

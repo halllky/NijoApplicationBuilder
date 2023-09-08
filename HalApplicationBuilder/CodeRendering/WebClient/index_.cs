@@ -27,7 +27,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
                 yield return new ImportedComponent {
                     ShowMenu = true,
-                    Url = new Searching.SearchFeature(aggregate.GetDbEntity(), _ctx).ReactPageUrl,
+                    Url = new Searching.SearchFeature(aggregate.As<IEFCoreEntity>(), _ctx).ReactPageUrl,
                     PhysicalName = $"{aggregateName}MultiView",
                     DisplayName = aggregate.Item.DisplayName,
                     From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(Searching.SearchFeature.REACT_FILENAME)}",

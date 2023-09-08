@@ -24,7 +24,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                 var useQueryKey = $"{Search.PhysicalName}::search";
                 var searchApi = $"/{Controller.SUBDOMAIN}/{Search.PhysicalName}/{Controller.SEARCH_ACTION_NAME}";
 
-                var aggregate = Search.DbEntity.GetCorrespondingAggregate();
+                var aggregate = Search.DbEntity.Item is Aggregate ? Search.DbEntity.As<Aggregate>() : null;
                 var createViewRoute = aggregate == null ? null : new CreateView(aggregate, Search.Context).Url;
                 var singleViewRoute = aggregate == null ? null : new SingleView(aggregate, Search.Context, false).Url;
 

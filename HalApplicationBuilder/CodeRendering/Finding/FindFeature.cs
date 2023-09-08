@@ -12,17 +12,13 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
     internal class FindFeature {
         internal FindFeature(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx) {
             _aggregate = aggregate;
-            _aggregateInstance = aggregate.GetInstanceClass().AsEntry();
-            _dbEntity = aggregate.GetDbEntity().AsEntry();
             _ctx = ctx;
         }
 
         private readonly GraphNode<Aggregate> _aggregate;
-        private readonly GraphNode<IAggregateInstance> _aggregateInstance;
-        private readonly GraphNode<IEFCoreEntity> _dbEntity;
         private readonly CodeRenderingContext _ctx;
 
-        internal string FindMethodReturnType => _aggregateInstance.Item.ClassName;
+        internal string FindMethodReturnType => _aggregate.Item.ClassName;
         internal string FindMethodName => $"Find{_aggregate.Item.DisplayName.ToCSharpSafe()}";
 
         internal string RenderController() {
@@ -69,7 +65,7 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
                 
                             if (entity == null) return null;
                 
-                            var aggregateInstance = {{_aggregateInstance.Item.ClassName}}.{{IAggregateInstance.FROM_DB_ENTITY_METHOD_NAME}}(entity);
+                            var aggregateInstance = {{_aggregate.Item.ClassName}}.{{IAggregateInstance.FROM_DB_ENTITY_METHOD_NAME}}(entity);
                             return aggregateInstance;
                         }
                     }
@@ -80,11 +76,11 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
         internal string RenderDbEntityLoading(string dbContextVarName, string entityVarName, string serializedInstanceKeyVarName, bool tracks, bool includeRefs) {
 
             // Include
-            var includeEntities = _dbEntity
+            var includeEntities = _aggregate
                 .EnumerateThisAndDescendants()
                 .ToList();
             if (includeRefs) {
-                var refEntities = _dbEntity
+                var refEntities = _aggregate
                     .EnumerateThisAndDescendants()
                     .SelectMany(entity => entity.GetRefMembers())
                     .Select(edge => edge.Terminal);
@@ -111,7 +107,7 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
                 });
 
             // SingleOrDefault
-            var keys = _dbEntity
+            var keys = _aggregate
                 .GetColumns()
                 .Where(col => col.IsPrimary)
                 .SelectTextTemplate((col, i) => {
@@ -121,11 +117,11 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
 
             return $$"""
                 var instanceKey = {{InstanceKey.CLASS_NAME}}.{{InstanceKey.PARSE}}({{serializedInstanceKeyVarName}});
-                var {{entityVarName}} = {{dbContextVarName}}.{{_dbEntity.Item.DbSetName}}
+                var {{entityVarName}} = {{dbContextVarName}}.{{_aggregate.Item.DbSetName}}
                 {{If(tracks == false, () => $$"""
                     .AsNoTracking()
                 """)}}
-                {{paths.SelectTextTemplate(path => path.source == _dbEntity ? $$"""
+                {{paths.SelectTextTemplate(path => path.source.Item == (IEFCoreEntity)_aggregate.Item ? $$"""
                     .Include(x => x.{{path.prop}})
                 """ : $$"""
                     .ThenInclude(x => x.{{path.prop}})

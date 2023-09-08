@@ -142,9 +142,8 @@ namespace HalApplicationBuilder.Core {
                     RequiredAtDB = member.RequiredAtDB,
                 };
             }
-            var aggregate = dbEntity.GetCorrespondingAggregate();
-            if (aggregate != null) {
-                foreach (var member in aggregate.GetSchalarMembers()) {
+            if (dbEntity.Item is Aggregate) {
+                foreach (var member in dbEntity.As<Aggregate>().GetSchalarMembers()) {
                     yield return new IEFCoreEntity.SchalarColumnDefniedInAggregate {
                         Owner = dbEntity,
                         PropertyName = member.Item.Name,
@@ -195,5 +194,8 @@ namespace HalApplicationBuilder.Core {
                 yield return new NavigationProperty(edge, config);
             }
         }
+
+        internal static IEnumerable<IEFCoreEntity.IMember> GetColumns(this GraphNode<Aggregate> aggregate) => aggregate.As<IEFCoreEntity>().GetColumns();
+        internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<Aggregate> aggregate, Config config) => aggregate.As<IEFCoreEntity>().GetNavigationProperties(config);
     }
 }

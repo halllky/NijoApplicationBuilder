@@ -16,7 +16,7 @@ import * as Components from '../../components';
 import { IconButton, InlineMessageBar, BarMessage } from '../../components';
 import { useHttpRequest } from '../../hooks/useHttpRequest';
 import * as AggregateType from '../../<#=types.ImportName#>'
-import { <#=new FormOfAggregateInstance.Component(_instance).ComponentName#> } from './components'
+import { <#=new FormOfAggregateInstance.Component(_aggregate).ComponentName#> } from './components'
 
 export default function () {
 
@@ -35,16 +35,16 @@ export default function () {
   const [instanceName, setInstanceName] = useState<string | undefined>('')
   const [fetched, setFetched] = useState(false)
   const defaultValues = useCallback(async () => {
-    if (!instanceKey) return AggregateType.<#=new types.AggregateInstanceInitializerFunction(_instance).FunctionName#>()
+    if (!instanceKey) return AggregateType.<#=new types.AggregateInstanceInitializerFunction(_aggregate).FunctionName#>()
     const encoded = window.encodeURI(instanceKey)
     const response = await get(`<#=GetFindCommandApi()#>/${encoded}`)
     setFetched(true)
     if (response.ok) {
-      const responseData = response.data as AggregateType.<#=_instance.Item.TypeScriptTypeName#>
+      const responseData = response.data as AggregateType.<#=_aggregate.Item.TypeScriptTypeName#>
       setInstanceName(responseData.<#=AggregateInstanceBase.INSTANCE_NAME#>)
       return responseData
     } else {
-      return AggregateType.<#=new types.AggregateInstanceInitializerFunction(_instance).FunctionName#>()
+      return AggregateType.<#=new types.AggregateInstanceInitializerFunction(_aggregate).FunctionName#>()
     }
   }, [instanceKey])
 
@@ -52,7 +52,7 @@ export default function () {
 
   const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
   const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-    const response = await post<AggregateType.<#=_instance.Item.TypeScriptTypeName#>>(`<#=GetUpdateCommandApi()#>`, data)
+    const response = await post<AggregateType.<#=_aggregate.Item.TypeScriptTypeName#>>(`<#=GetUpdateCommandApi()#>`, data)
     if (response.ok) {
       setErrorMessages([])
       dispatch({ type: 'pushMsg', msg: `${response.data.<#=AggregateInstanceBase.INSTANCE_NAME#>}を更新しました。` })
@@ -77,7 +77,7 @@ export default function () {
             <div className="flex-1"></div>
           </h1>
           <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
-            <<#=new FormOfAggregateInstance.Component(_instance).ComponentName#> />
+            <<#=new FormOfAggregateInstance.Component(_aggregate).ComponentName#> />
           </div>
           <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
 <# if (_asEditView) { #>

@@ -17,11 +17,13 @@ namespace HalApplicationBuilder.Core {
         internal string DisplayName => Path.BaseName;
         internal string UniqueId => new HashedString(Path.Value).Guid.ToString().Replace("-", "");
 
-        string IAggregateInstance.ClassName => DisplayName.ToCSharpSafe();
-        string IAggregateInstance.TypeScriptTypeName => DisplayName.ToCSharpSafe();
+        public string ClassName => DisplayName.ToCSharpSafe();
+        public string TypeScriptTypeName => DisplayName.ToCSharpSafe();
 
-        string IEFCoreEntity.ClassName => $"{DisplayName.ToCSharpSafe()}DbEntity";
-        IList<IEFCoreEntity.BareColumn> IEFCoreEntity.SchalarMembersNotRelatedToAggregate => new List<IEFCoreEntity.BareColumn>();
+        public string EFCoreEntityClassName => $"{DisplayName.ToCSharpSafe()}DbEntity";
+        string IEFCoreEntity.ClassName => EFCoreEntityClassName;
+        public string DbSetName => EFCoreEntityClassName;
+        public IList<IEFCoreEntity.BareColumn> SchalarMembersNotRelatedToAggregate { get; } = new List<IEFCoreEntity.BareColumn>();
 
         protected override IEnumerable<object?> ValueObjectIdentifiers() {
             yield return Id;

@@ -465,30 +465,10 @@ namespace HalApplicationBuilder.Core {
             }
         }
 
-        internal static GraphNode<IEFCoreEntity> GetDbEntity(this GraphNode<Aggregate> aggregate) {
-            return aggregate.As<IEFCoreEntity>();
-        }
-        internal static GraphNode<IAggregateInstance> GetInstanceClass(this GraphNode<Aggregate> aggregate) {
-            return aggregate.As<IAggregateInstance>();
-        }
         internal static IEnumerable<GraphNode<Aggregate.Member>> GetSchalarMembers(this GraphNode<Aggregate> aggregate) {
             return aggregate.Out
                 .Where(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_HAVING)
                 .Select(edge => edge.Terminal.As<Aggregate.Member>());
-        }
-
-        internal static GraphNode<Aggregate>? GetCorrespondingAggregate(this GraphNode<IEFCoreEntity> dbEntity) {
-            return dbEntity.Item is Aggregate ? dbEntity.As<Aggregate>() : null;
-        }
-        internal static GraphNode<IAggregateInstance>? GetUiInstance(this GraphNode<IEFCoreEntity> dbEntity) {
-            return dbEntity.As<IAggregateInstance>();
-        }
-
-        internal static GraphNode<Aggregate> GetCorrespondingAggregate(this GraphNode<IAggregateInstance> instance) {
-            return instance.As<Aggregate>();
-        }
-        internal static GraphNode<IEFCoreEntity> GetDbEntity(this GraphNode<IAggregateInstance> instance) {
-            return instance.As<IEFCoreEntity>();
         }
 
         internal static bool IsChildrenMember(this GraphNode graphNode) {

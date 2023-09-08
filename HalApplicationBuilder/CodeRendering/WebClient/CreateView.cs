@@ -39,9 +39,9 @@ import { PageContext, pageContextReducer } from '../../hooks/PageContext'
 import * as AggregateType from '../../");
             this.Write(this.ToStringHelper.ToStringWithCulture(types.ImportName));
             this.Write("\'\r\nimport { ");
-            this.Write(this.ToStringHelper.ToStringWithCulture(new FormOfAggregateInstance.Component(_instance).ComponentName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(new FormOfAggregateInstance.Component(_aggregate).ComponentName));
             this.Write(" } from \'./components\'\r\n\r\nconst defaultValues = AggregateType.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(new types.AggregateInstanceInitializerFunction(_instance).FunctionName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(new types.AggregateInstanceInitializerFunction(_aggregate).FunctionName));
             this.Write(@"()
 
 export default function () {
@@ -55,7 +55,7 @@ export default function () {
   const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
   const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
     const response = await post<AggregateType.");
-            this.Write(this.ToStringHelper.ToStringWithCulture(_instance.Item.TypeScriptTypeName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.TypeScriptTypeName));
             this.Write(">(`");
             this.Write(this.ToStringHelper.ToStringWithCulture(GetCreateCommandApi()));
             this.Write("`, data)\r\n    if (response.ok) {\r\n      dispatch({ type: \'pushMsg\', msg: `${respo" +
@@ -83,7 +83,7 @@ export default function () {
             this.Write(this.ToStringHelper.ToStringWithCulture(_aggregate.Item.DisplayName));
             this.Write("</Link>&nbsp;新規作成\r\n          </h1>\r\n          <div className=\"flex flex-col space" +
                     "-y-1 p-1 bg-neutral-200\">\r\n            <");
-            this.Write(this.ToStringHelper.ToStringWithCulture(new FormOfAggregateInstance.Component(_instance).ComponentName));
+            this.Write(this.ToStringHelper.ToStringWithCulture(new FormOfAggregateInstance.Component(_aggregate).ComponentName));
             this.Write(@" />
           </div>
           <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />

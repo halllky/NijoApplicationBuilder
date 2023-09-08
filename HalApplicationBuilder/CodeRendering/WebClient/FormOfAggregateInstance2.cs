@@ -124,7 +124,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     """;
 
             } else if (prop is IAggregateInstance.RefProperty refProperty) {
-                var combobox = new ComboBox(refProperty.RefTarget.GetCorrespondingAggregate(), _ctx);
+                var combobox = new ComboBox(refProperty.RefTarget, _ctx);
                 var registerName = GetRegisterName(component.AggregateInstance, refProperty).Value;
                 return $$"""
                     <div className="flex">

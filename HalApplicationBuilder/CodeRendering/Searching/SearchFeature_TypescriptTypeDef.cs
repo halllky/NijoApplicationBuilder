@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.CodeRendering.Searching {
     partial class SearchFeature {
-        internal void RenderTypescriptTypeDef(ITemplate template) {
-            template.WriteLine($$"""
+        internal string RenderTypescriptTypeDef() {
+            return $$"""
                 export type {{SearchConditionClassName}} = {
                 {{Members.SelectTextTemplate(member => $$"""
                   {{member.ConditionPropName}}?: {{member.Type.GetTypeScriptTypeName()}}
@@ -19,7 +19,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                   {{member.SearchResultPropName}}?: {{member.Type.GetTypeScriptTypeName()}}
                 """)}}
                 }
-                """);
+                """;
         }
     }
 }

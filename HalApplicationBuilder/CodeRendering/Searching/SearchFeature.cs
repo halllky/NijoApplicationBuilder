@@ -15,9 +15,13 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
             DbEntity = dbEntity.AsEntry();
             Context = ctx;
 
-            var aggregate = DbEntity.GetCorrespondingAggregate();
-            DisplayName = aggregate == null ? DbEntity.Item.ClassName : aggregate.Item.DisplayName;
-            ReactPageUrl = aggregate == null ? $"/{DbEntity.Item.ClassName}" : $"/{aggregate.Item.UniqueId}";
+            if (dbEntity.Item is Aggregate aggregate) {
+                DisplayName = aggregate.DisplayName;
+                ReactPageUrl = $"/{aggregate.UniqueId}";
+            } else {
+                DisplayName = DbEntity.Item.ClassName;
+                ReactPageUrl = $"/{DbEntity.Item.ClassName}";
+            }
         }
 
         internal CodeRenderingContext Context { get; }
