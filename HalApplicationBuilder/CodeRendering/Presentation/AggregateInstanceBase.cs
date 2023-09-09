@@ -27,8 +27,8 @@ namespace HalApplicationBuilder.CodeRendering.Presentation {
 
                 namespace {{Namespace}} {
                     public abstract class {{CLASS_NAME}} {
-                        public string {{INSTANCE_KEY}} { get; set; } = string.Empty;
-                        public string {{INSTANCE_NAME}} { get; set; } = string.Empty;
+                        public string? {{INSTANCE_KEY}} { get; set; } = string.Empty;
+                        public string? {{INSTANCE_NAME}} { get; set; } = string.Empty;
                     }
                 }
                 """;

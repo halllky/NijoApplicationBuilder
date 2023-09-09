@@ -110,7 +110,6 @@ namespace HalApplicationBuilder {
                         utilDir.Generate(new CodeRendering.Util.RuntimeSettings(ctx));
                         utilDir.Generate(new CodeRendering.Util.DotnetExtensions(ctx.Config));
                         utilDir.Generate(new CodeRendering.Util.FromTo(ctx.Config));
-                        utilDir.Generate(new CodeRendering.Util.InstanceKey(ctx));
                         utilDir.Generate(new CodeRendering.Util.AggregateInstanceKeyNamePair(ctx.Config));
                         utilDir.Generate(new CodeRendering.Util.HttpResponseExceptionFilter(ctx.Config.RootNamespace));
                         utilDir.Generate(new CodeRendering.Util.DefaultLogger(ctx.Config.RootNamespace));

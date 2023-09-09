@@ -34,7 +34,8 @@ namespace HalApplicationBuilder.CodeRendering.Util {
                         public static string {{TO_JSON}}<T>(T obj) {
                             return JsonSerializer.Serialize(obj, {{GET_JSONOPTION}}());
                         }
-                        public static T {{PARSE_JSON}}<T>(string json) {
+                        public static T {{PARSE_JSON}}<T>(string? json) {
+                            if (json == null) throw new ArgumentNullException(nameof(json));
                             return JsonSerializer.Deserialize<T>(json, {{GET_JSONOPTION}}())!;
                         }
                     }

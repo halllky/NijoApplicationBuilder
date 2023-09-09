@@ -1,4 +1,5 @@
 using HalApplicationBuilder.Core;
+using HalApplicationBuilder.DotnetEx;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,6 +37,21 @@ namespace HalApplicationBuilder.CodeRendering.Util {
                     }
                 }
                 """;
+        }
+
+        internal static string RenderKeyJsonConverting(IEnumerable<string> members) {
+            return $$"""
+                {{Utility.CLASSNAME}}.{{Utility.TO_JSON}}(new object?[] {
+                {{members.SelectTextTemplate(member => $$"""
+                    {{member}},
+                """)}}
+                })
+                """.TrimEnd();
+        }
+        internal static string RenderKeyJsonRestoring(string fullpath) {
+            return $$"""
+                {{Utility.CLASSNAME}}.{{Utility.PARSE_JSON}}<object?[]>({{fullpath}})
+                """.TrimEnd();
         }
     }
 }

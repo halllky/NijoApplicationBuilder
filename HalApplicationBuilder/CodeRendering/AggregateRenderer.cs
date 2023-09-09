@@ -32,11 +32,6 @@ namespace HalApplicationBuilder.CodeRendering {
         private readonly CodeRenderingContext _ctx;
 
         public override string FileName => $"{_aggregate.Item.DisplayName.ToFileNameSafe()}.cs";
-        private const string E = "e";
-
-        public const string GETINSTANCEKEY_METHOD_NAME = "GetInstanceKey";
-        public const string GETINSTANCENAME_METHOD_NAME = "GetInstanceName";
-        public const string TOKEYNAMEPAIR_METHOD_NAME = "ToKeyNamePair";
 
         private IEnumerable<NavigationProperty.Item> EnumerateNavigationProperties(GraphNode<Aggregate> aggregate) {
             foreach (var nav in aggregate.GetNavigationProperties()) {
@@ -185,7 +180,6 @@ namespace HalApplicationBuilder.CodeRendering {
         #region AGGREGATE INSTANCE & CREATE COMMAND
         private string CreateCommandClassName => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}CreateCommand";
         private string CreateCommandToDbEntityMethodName => AggregateMember.TO_DB_ENTITY_METHOD_NAME;
-        private string CreateCommandGetInstanceKeyMethodName => GETINSTANCENAME_METHOD_NAME;
 
         private IEnumerable<string> GetInstanceNameProps() {
             var keys = _aggregate.GetKeyMembers().ToArray();
@@ -261,7 +255,7 @@ namespace HalApplicationBuilder.CodeRendering {
                                 return false;
                             }
 
-                            var instanceKey = command.{{CreateCommandGetInstanceKeyMethodName}}().ToString();
+                            var instanceKey = {{WithIndent(AggregateInstanceKeyNamePair.RenderKeyJsonConverting(_aggregate.GetKeyMembers().Select(m => $"command.{m.GetFullPath().Join(".")}")), "            ")}};
                             var afterUpdate = this.{{find.FindMethodName}}(instanceKey);
                             if (afterUpdate == null) {
                                 created = new {{_aggregate.Item.ClassName}}();
@@ -328,11 +322,7 @@ namespace HalApplicationBuilder.CodeRendering {
                             return query
                                 .AsEnumerable()
                                 .Select(item => new {{AggregateInstanceKeyNamePair.CLASSNAME}} {
-                                    {{AggregateInstanceKeyNamePair.KEY}} = {{InstanceKey.CLASS_NAME}}.{{InstanceKey.CREATE}}(new object?[] {
-                {{keyColumns.SelectTextTemplate(col => $$"""
-                                        item.{{col.Name}},
-                """)}}
-                                    }).ToString(),
+                                    {{AggregateInstanceKeyNamePair.KEY}} = {{WithIndent(AggregateInstanceKeyNamePair.RenderKeyJsonConverting(EnumerateListByKeywordTargetColumns().Where(col => col.IsInstanceKey).Select(col => $"item.{col.Name}")), "                    ")}},
                                     {{AggregateInstanceKeyNamePair.NAME}} = {{(nameColumns.Any()
                                         ? nameColumns.Select(col => $"item.{col.Name}?.ToString()").Join(" + ")
                                         : keyColumns.Select(col => $"item.{col.Name}?.ToString()").Join(" + "))}},
@@ -376,7 +366,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     partial class {{_ctx.Config.DbContextName}} {
                         public bool {{_update.MethodName}}({{_aggregate.Item.ClassName}} after, out {{_aggregate.Item.ClassName}} updated, out ICollection<string> errors) {
                             errors = new List<string>();
-                            var key = after.{{GETINSTANCEKEY_METHOD_NAME}}().ToString();
+                            var key = {{WithIndent(AggregateInstanceKeyNamePair.RenderKeyJsonConverting(_aggregate.GetKeyMembers().Select(m => $"after.{m.GetFullPath().Join(".")}")), "            ")}};
 
                             {{WithIndent(find.RenderDbEntityLoading("this", "beforeDbEntity", "key", tracks: false, includeRefs: false), "            ")}}
 
@@ -481,16 +471,6 @@ namespace HalApplicationBuilder.CodeRendering {
                 """)}}
 
                         {{WithIndent(toDbEntity.Render(), "        ")}}
-                        /// <summary>
-                        /// 主キーを返します。
-                        /// </summary>
-                        public {{InstanceKey.CLASS_NAME}} {{CreateCommandGetInstanceKeyMethodName}}() {
-                            return {{InstanceKey.CLASS_NAME}}.{{InstanceKey.CREATE}}(new object[] {
-                {{_aggregate.GetSchalarProperties().Where(p => p.IsPrimary).SelectTextTemplate(p => $$"""
-                                this.{{p.PropertyName}},
-                """)}}
-                            });
-                        }
                     }
 
                     /// <summary>
@@ -504,28 +484,6 @@ namespace HalApplicationBuilder.CodeRendering {
                         {{WithIndent(fromDbEntity.Render(), "        ")}}
 
                         {{WithIndent(toDbEntity.Render(), "        ")}}
-
-                        /// <summary>
-                        /// 主キーを返します。
-                        /// </summary>
-                        public {{InstanceKey.CLASS_NAME}} {{GETINSTANCEKEY_METHOD_NAME}}() {
-                            return {{InstanceKey.CLASS_NAME}}.{{InstanceKey.CREATE}}(new object[] {
-                {{_aggregate.GetSchalarProperties().Where(p => p.IsPrimary).SelectTextTemplate(p => $$"""
-                                this.{{p.PropertyName}},
-                """)}}
-                            });
-                        }
-                        public string {{GETINSTANCENAME_METHOD_NAME}}() {
-                {{GetInstanceNameProps().SelectTextTemplate(line => $$"""
-                            {{line}}
-                """)}}
-                        }
-                        public {{AggregateInstanceKeyNamePair.CLASSNAME}} {{TOKEYNAMEPAIR_METHOD_NAME}}() {
-                            return new {{AggregateInstanceKeyNamePair.CLASSNAME}} {
-                                {{AggregateInstanceKeyNamePair.KEY}} = this.{{GETINSTANCEKEY_METHOD_NAME}}().ToString(),
-                                {{AggregateInstanceKeyNamePair.NAME}} = this.{{GETINSTANCENAME_METHOD_NAME}}(),
-                            };
-                        }
                     }
 
                 {{_aggregate.EnumerateDescendants().SelectTextTemplate(ins => $$"""

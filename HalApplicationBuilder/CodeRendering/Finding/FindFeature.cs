@@ -112,11 +112,11 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
                 .Where(col => col.IsPrimary)
                 .SelectTextTemplate((col, i) => {
                     var cast = col.MemberType.GetCSharpTypeName();
-                    return $"x.{col.PropertyName} == ({cast})instanceKey.{InstanceKey.OBJECT_ARRAY}[{i}]";
+                    return $"x.{col.PropertyName} == ({cast})instanceKey[{i}]";
                 });
 
             return $$"""
-                var instanceKey = {{InstanceKey.CLASS_NAME}}.{{InstanceKey.PARSE}}({{serializedInstanceKeyVarName}});
+                var instanceKey = {{AggregateInstanceKeyNamePair.RenderKeyJsonRestoring(serializedInstanceKeyVarName)}};
                 var {{entityVarName}} = {{dbContextVarName}}.{{_aggregate.Item.DbSetName}}
                 {{If(tracks == false, () => $$"""
                     .AsNoTracking()

@@ -31,8 +31,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                     var instance = new {{_aggregate.Item.ClassName}} {
                         {{WithIndent(RenderBody(_aggregate, _aggregate, "entity", 0), "        ")}}
                     };
-                    instance.{{AggregateInstanceBase.INSTANCE_KEY}} = instance.{{AggregateRenderer.GETINSTANCEKEY_METHOD_NAME}}().ToString();
-                    instance.{{AggregateInstanceBase.INSTANCE_NAME}} = instance.{{AggregateRenderer.GETINSTANCENAME_METHOD_NAME}}();
+                    instance.{{AggregateInstanceBase.INSTANCE_KEY}} = {{AggregateInstanceKeyNamePair.RenderKeyJsonConverting(_aggregate.GetKeyMembers().Select(m => $"instance.{m.GetFullPath().Join(".")}"))}};
+                    instance.{{AggregateInstanceBase.INSTANCE_NAME}} = {{_aggregate.GetInstanceNameMembers().Select(m => $"instance.{m.GetFullPath().Join(".")}?.ToString()").Join(" + ")}};
                     return instance;
                 }
                 """;

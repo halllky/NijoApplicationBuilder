@@ -49,11 +49,13 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
 
                 } else if (prop is AggregateMember.Ref refProp) {
                     var refTargetKeys = refProp.GetRefTargetKeys().ToArray();
+                    var refPropFullpath = $"{rootInstanceName}.{refProp.GetFullPath(rootInstance).Join(".")}.{AggregateInstanceKeyNamePair.KEY}";
                     for (int i = 0; i < refTargetKeys.Length; i++) {
                         var col = refTargetKeys[i];
+                        var memberType = col.MemberType.GetCSharpTypeName();
 
                         yield return $$"""
-                            {{col.PropertyName}} = ({{col.MemberType.GetCSharpTypeName()}}){{InstanceKey.CLASS_NAME}}.{{InstanceKey.PARSE}}({{rootInstanceName}}.{{prop.PropertyName}}.{{AggregateInstanceKeyNamePair.KEY}}).{{InstanceKey.OBJECT_ARRAY}}[{{i}}],
+                            {{col.PropertyName}} = ({{memberType}}){{AggregateInstanceKeyNamePair.RenderKeyJsonRestoring(refPropFullpath)}}[{{i}}]!,
                             """;
                     }
 

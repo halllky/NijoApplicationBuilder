@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static HalApplicationBuilder.CodeRendering.TemplateTextHelper;
 
 namespace HalApplicationBuilder.CodeRendering.Searching {
     partial class SearchFeature {
@@ -41,8 +42,8 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                 """)}}
                             });
 
-                {{Members.SelectTextTemplate(member => TemplateTextHelper
-                    .If(member.Type.SearchBehavior == SearchBehavior.Ambiguous, () => $$"""
+                {{Members.SelectTextTemplate(member => 
+                    If(member.Type.SearchBehavior == SearchBehavior.Ambiguous, () => $$"""
                             if (!string.IsNullOrWhiteSpace(param.{{member.ConditionPropName}})) {
                                 var trimmed = param.{{member.ConditionPropName}}.Trim();
                                 query = query.Where(x => x.{{member.SearchResultPropName}}.Contains(trimmed));
@@ -70,13 +71,9 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                             }
 
                             foreach (var item in query) {
-                                item.{{SEARCHRESULT_INSTANCE_KEY_PROP_NAME}} = {{InstanceKey.CLASS_NAME}}.{{InstanceKey.CREATE}}(new object?[] {
-                {{Members.Where(member => member.IsInstanceKey).SelectTextTemplate(member => $$"""
-                                    item.{{member.SearchResultPropName}},
-                """)}}
-                                }).ToString();
+                                item.{{SEARCHRESULT_INSTANCE_KEY_PROP_NAME}} = {{WithIndent(AggregateInstanceKeyNamePair.RenderKeyJsonConverting(Members.Where(member => member.IsInstanceKey).Select(member => $"item.{member.SearchResultPropName}")), "                ")}};
 
-                {{TemplateTextHelper.If(instanceNameProp == null, () => $$"""
+                {{If(instanceNameProp == null, () => $$"""
                                 // 表示名に使用するプロパティが定義されていないため、キーを表示名に使用します。
                                 item.{{SEARCHRESULT_INSTANCE_NAME_PROP_NAME}} = item.{{SEARCHRESULT_INSTANCE_KEY_PROP_NAME}};
                 """).Else(() => $$"""
