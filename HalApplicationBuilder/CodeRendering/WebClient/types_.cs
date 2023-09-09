@@ -27,9 +27,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 // ------------------ {{root.Item.DisplayName}} ------------------
                 {{root.EnumerateThisAndDescendants().SelectTextTemplate(Render)}}
 
-                {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => $$"""
-                    {{new AggregateInstanceInitializerFunction(aggregate).Render()}}
-                """)}}
+                {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new AggregateInstanceInitializerFunction(aggregate).Render())}}
 
                 {{new Searching.SearchFeature(root.As<IEFCoreEntity>(), _ctx).RenderTypescriptTypeDef()}}
                 """);
