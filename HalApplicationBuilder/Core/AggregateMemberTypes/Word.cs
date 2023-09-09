@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HalApplicationBuilder.Core.AggregateMembers {
+namespace HalApplicationBuilder.Core.AggregateMemberTypes {
     public class Word : CategorizeType {
         public override SearchBehavior SearchBehavior => SearchBehavior.Ambiguous;
         public override string GetCSharpTypeName() => "string";

@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Core {
-    internal class Aggregate : ValueObject, IAggregateInstance, IEFCoreEntity {
+    internal class Aggregate : ValueObject, IEFCoreEntity {
         internal Aggregate(AggregatePath path) {
             Id = new NodeId(path.Value);
             Path = path;

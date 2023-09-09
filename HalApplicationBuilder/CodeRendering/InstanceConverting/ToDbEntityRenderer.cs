@@ -19,7 +19,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
         private readonly GraphNode<Aggregate> _aggregate;
         private readonly CodeRenderingContext _ctx;
 
-        private const string METHODNAME = IAggregateInstance.TO_DB_ENTITY_METHOD_NAME;
+        private const string METHODNAME = AggregateMember.TO_DB_ENTITY_METHOD_NAME;
 
         internal string Render() {
             return $$"""
@@ -44,7 +44,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
             }
 
             foreach (var prop in instance.GetProperties(_ctx.Config)) {
-                if (prop is IAggregateInstance.SchalarProperty schalarProp) {
+                if (prop is AggregateMember.SchalarProperty schalarProp) {
                     var path = schalarProp.CorrespondingDbColumn is DbColumn.ParentTablePrimaryKey
                         ? parentPath
                         : instancePath;
@@ -53,13 +53,13 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                         {{schalarProp.CorrespondingDbColumn.PropertyName}} = {{instancePath}}.{{schalarProp.PropertyName}},
                         """;
 
-                } else if (prop is IAggregateInstance.VariationSwitchProperty switchProp) {
+                } else if (prop is AggregateMember.VariationSwitchProperty switchProp) {
 
                     yield return $$"""
                         {{switchProp.CorrespondingDbColumn.PropertyName}} = {{instancePath}}.{{switchProp.PropertyName}},
                         """;
 
-                } else if (prop is IAggregateInstance.RefProperty refProp) {
+                } else if (prop is AggregateMember.RefProperty refProp) {
                     for (int i = 0; i < refProp.CorrespondingDbColumns.Length; i++) {
                         var col = refProp.CorrespondingDbColumns[i];
 
@@ -68,7 +68,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                             """;
                     }
 
-                } else if (prop is IAggregateInstance.ChildrenProperty children) {
+                } else if (prop is AggregateMember.ChildrenProperty children) {
                     var item = depth == 0 ? "item" : $"item{depth}";
                     var childProp = children.CorrespondingNavigationProperty.Principal.PropertyName;
                     var childInstance = children.ChildAggregateInstance.AsEntry();
@@ -80,7 +80,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                         }).ToList(),
                         """;
 
-                } else if (prop is IAggregateInstance.ChildProperty child) {
+                } else if (prop is AggregateMember.ChildProperty child) {
                     var childProp = child.CorrespondingNavigationProperty.Principal.PropertyName;
                     var childInstance = child.ChildAggregateInstance;
                     var childDbEntityClass = $"{_ctx.Config.EntityNamespace}.{child.CorrespondingNavigationProperty.Relevant.Owner.Item.ClassName}";
@@ -92,7 +92,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                         },
                         """;
 
-                } else if (prop is IAggregateInstance.VariationProperty variation) {
+                } else if (prop is AggregateMember.VariationProperty variation) {
                     var childProp = variation.CorrespondingNavigationProperty.Principal.PropertyName;
                     var childInstance = variation.ChildAggregateInstance;
                     var childDbEntityClass = $"{_ctx.Config.EntityNamespace}.{variation.CorrespondingNavigationProperty.Relevant.Owner.Item.ClassName}";

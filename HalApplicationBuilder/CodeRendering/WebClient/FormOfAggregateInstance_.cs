@@ -34,17 +34,17 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
 
         #region SCHALAR PROPERTY
-        private string RenderSchalarProperty(GraphNode<Aggregate> instance, IAggregateInstance.SchalarProperty prop, string indent) {
+        private string RenderSchalarProperty(GraphNode<Aggregate> instance, AggregateMember.SchalarProperty prop, string indent) {
             var renderer = new ReactForm(instance, prop);
             return TemplateTextHelper.WithIndent(prop.CorrespondingDbColumn.MemberType.RenderUI(renderer), indent);
         }
         private class ReactForm : IGuiFormRenderer {
-            internal ReactForm(GraphNode<Aggregate> instance, IAggregateInstance.SchalarProperty prop) {
+            internal ReactForm(GraphNode<Aggregate> instance, AggregateMember.SchalarProperty prop) {
                 _instance = instance;
                 _prop = prop;
             }
             private readonly GraphNode<Aggregate> _instance;
-            private readonly IAggregateInstance.SchalarProperty _prop;
+            private readonly AggregateMember.SchalarProperty _prop;
 
             /// <summary>
             /// Createビュー兼シングルビュー: テキストボックス
@@ -144,7 +144,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
         #region STATIC
         internal const string INPUT_WIDTH = "w-80";
-        private static RegisterName GetRegisterName(GraphNode<Aggregate> instance, IAggregateInstance.Property? prop = null) {
+        private static RegisterName GetRegisterName(GraphNode<Aggregate> instance, AggregateMember.Property? prop = null) {
             var path = new List<IRegistrationPath>();
             foreach (var edge in instance.PathFromEntry()) {
                 path.Add(new RelatedAggregate { Aggregate = edge.Terminal });
@@ -175,7 +175,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 .Last();
         }
         private class LastProperty : IRegistrationPath {
-            internal required IAggregateInstance.Property Property { get; init; }
+            internal required AggregateMember.Property Property { get; init; }
             public string Name => Property.PropertyName;
         }
 

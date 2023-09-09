@@ -1,4 +1,4 @@
-using HalApplicationBuilder.Core.AggregateMembers;
+using HalApplicationBuilder.Core.AggregateMemberTypes;
 using HalApplicationBuilder.DotnetEx;
 using System;
 using System.Collections.Generic;

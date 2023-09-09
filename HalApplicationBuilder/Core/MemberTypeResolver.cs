@@ -1,4 +1,4 @@
-using HalApplicationBuilder.Core.AggregateMembers;
+using HalApplicationBuilder.Core.AggregateMemberTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;

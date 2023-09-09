@@ -184,7 +184,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
         #region AGGREGATE INSTANCE & CREATE COMMAND
         private string CreateCommandClassName => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}CreateCommand";
-        private string CreateCommandToDbEntityMethodName => IAggregateInstance.TO_DB_ENTITY_METHOD_NAME;
+        private string CreateCommandToDbEntityMethodName => AggregateMember.TO_DB_ENTITY_METHOD_NAME;
         private string CreateCommandGetInstanceKeyMethodName => GETINSTANCENAME_METHOD_NAME;
 
         private IEnumerable<string> GetInstanceNameProps() {
@@ -394,7 +394,7 @@ namespace HalApplicationBuilder.CodeRendering {
                                 return false;
                             }
 
-                            var afterDbEntity = after.{{IAggregateInstance.TO_DB_ENTITY_METHOD_NAME}}();
+                            var afterDbEntity = after.{{AggregateMember.TO_DB_ENTITY_METHOD_NAME}}();
 
                             // Attach
                             this.Entry(afterDbEntity).State = EntityState.Modified;
@@ -504,7 +504,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     /// <summary>
                     /// {{_aggregate.Item.DisplayName}}のデータ1件の詳細を表すクラスです。
                     /// </summary>
-                    public partial class {{_aggregate.Item.ClassName}} : {{IAggregateInstance.BASE_CLASS_NAME}} {
+                    public partial class {{_aggregate.Item.ClassName}} : {{AggregateMember.BASE_CLASS_NAME}} {
                 {{_aggregate.GetProperties(_ctx.Config).SelectTextTemplate(prop => $$"""
                         public {{prop.CSharpTypeName}} {{prop.PropertyName}} { get; set; }
                 """)}}

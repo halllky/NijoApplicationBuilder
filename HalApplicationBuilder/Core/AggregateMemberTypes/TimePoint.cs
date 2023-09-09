@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HalApplicationBuilder.Core.AggregateMembers {
+namespace HalApplicationBuilder.Core.AggregateMemberTypes {
     internal class TimePoint : SchalarType<DateTime> {
         public override string GetCSharpTypeName() => "DateTime?";
         public override string GetTypeScriptTypeName() => "string";

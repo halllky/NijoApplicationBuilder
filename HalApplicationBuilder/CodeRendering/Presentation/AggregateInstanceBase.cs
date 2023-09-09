@@ -16,7 +16,7 @@ namespace HalApplicationBuilder.CodeRendering.Presentation {
 
         internal string Namespace => _ctx.Config.RootNamespace;
         internal string ClassFullname => $"{Namespace}.{CLASS_NAME}";
-        internal static string CLASS_NAME => IAggregateInstance.BASE_CLASS_NAME;
+        internal static string CLASS_NAME => AggregateMember.BASE_CLASS_NAME;
         internal const string INSTANCE_KEY = "__halapp_InstanceKey";
         internal const string INSTANCE_NAME = "__halapp_InstanceName";
 

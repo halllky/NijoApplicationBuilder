@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HalApplicationBuilder.Core.AggregateMembers {
+namespace HalApplicationBuilder.Core.AggregateMemberTypes {
     public class Sentence : IAggregateMemberType {
         public SearchBehavior SearchBehavior => SearchBehavior.Ambiguous;
         public string GetCSharpTypeName() => "string";
