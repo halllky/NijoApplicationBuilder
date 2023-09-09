@@ -108,7 +108,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             }
         }
 
-        private string RenderProperty(Component component, AggregateMember.Property prop) {
+        private string RenderProperty(Component component, AggregateMember.AggregateMemberBase prop) {
             if (prop is AggregateMember.SchalarProperty schalar) {
                 return $$"""
                     <div className="flex">
@@ -171,10 +171,10 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                       </span>
                       </div>
                       <div className="flex-1 flex gap-2 flex-wrap">
-                    {{variationSwitch.CorrespondingDbColumn.Group.VariationAggregates.SelectTextTemplate(item => $$"""
+                    {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
                         <label>
-                          <input type="radio" value="{{item.Key}}" disabled={pageIsReadOnly} {...register(`{{switchProp}}`)} />
-                          {{item.Value.RelationName}}
+                          <input type="radio" value="{{variation.Key}}" disabled={pageIsReadOnly} {...register(`{{switchProp}}`)} />
+                          {{variation.PropertyName}}
                         </label>
                     """)}}
                       </div>

@@ -144,7 +144,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
         #region STATIC
         internal const string INPUT_WIDTH = "w-80";
-        private static RegisterName GetRegisterName(GraphNode<Aggregate> instance, AggregateMember.Property? prop = null) {
+        private static RegisterName GetRegisterName(GraphNode<Aggregate> instance, AggregateMember.AggregateMemberBase? prop = null) {
             var path = new List<IRegistrationPath>();
             foreach (var edge in instance.PathFromEntry()) {
                 path.Add(new RelatedAggregate { Aggregate = edge.Terminal });
@@ -175,7 +175,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 .Last();
         }
         private class LastProperty : IRegistrationPath {
-            internal required AggregateMember.Property Property { get; init; }
+            internal required AggregateMember.AggregateMemberBase Property { get; init; }
             public string Name => Property.PropertyName;
         }
 

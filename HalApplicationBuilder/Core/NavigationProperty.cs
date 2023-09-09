@@ -81,7 +81,7 @@ namespace HalApplicationBuilder.Core {
             internal required string PropertyName { get; init; }
             internal required bool OppositeIsMany { get; init; }
             internal string? Initializer { get; init; }
-            internal required IEnumerable<DbColumn.IDbColumn> ForeignKeys { get; init; }
+            internal required IEnumerable<DbColumn.DbColumnBase> ForeignKeys { get; init; }
 
             protected override IEnumerable<object?> ValueObjectIdentifiers() {
                 yield return Owner;

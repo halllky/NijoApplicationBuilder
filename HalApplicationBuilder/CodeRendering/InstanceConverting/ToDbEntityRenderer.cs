@@ -60,8 +60,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                         """;
 
                 } else if (prop is AggregateMember.RefProperty refProp) {
-                    for (int i = 0; i < refProp.CorrespondingDbColumns.Length; i++) {
-                        var col = refProp.CorrespondingDbColumns[i];
+                    var refTargetKeys = refProp.CorrespondingDbColumns.ToArray();
+                    for (int i = 0; i < refTargetKeys.Length; i++) {
+                        var col = refTargetKeys[i];
 
                         yield return $$"""
                             {{col.PropertyName}} = ({{col.MemberType.GetCSharpTypeName()}}){{InstanceKey.CLASS_NAME}}.{{InstanceKey.PARSE}}({{instancePath}}.{{prop.PropertyName}}.{{AggregateInstanceKeyNamePair.KEY}}).{{InstanceKey.OBJECT_ARRAY}}[{{i}}],

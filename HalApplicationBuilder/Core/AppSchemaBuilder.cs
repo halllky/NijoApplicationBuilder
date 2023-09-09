@@ -93,6 +93,7 @@ namespace HalApplicationBuilder.Core {
                                 TargetFullPath = refTo.Value,
                                 IsPrimary = key != null,
                                 IsInstanceName = name != null,
+                                IsRequired = optional != null,
                             });
                         } else {
                             ParseAsAggregate(innerElement, parent: aggregatePath);
@@ -237,6 +238,7 @@ namespace HalApplicationBuilder.Core {
                         { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_REFERENCE },
                         { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, def.IsPrimary },
                         { DirectedEdgeExtensions.REL_ATTR_IS_INSTANCE_NAME, def.IsInstanceName },
+                        { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, def.IsRequired },
                     },
                 }));
 
@@ -382,6 +384,7 @@ namespace HalApplicationBuilder.Core {
             public string TargetFullPath { get; set; } = "";
             public bool IsPrimary { get; set; }
             public bool IsInstanceName { get; set; }
+            public bool IsRequired { get; set; }
         }
     }
 
@@ -398,6 +401,7 @@ namespace HalApplicationBuilder.Core {
         internal const string REL_ATTR_VARIATIONSWITCH = "switch";
         internal const string REL_ATTR_IS_PRIMARY = "is-primary";
         internal const string REL_ATTR_IS_INSTANCE_NAME = "is-instance-name";
+        internal const string REL_ATTR_IS_REQUIRED = "is-required";
 
         // ----------------------------- GraphNode extensions -----------------------------
 
@@ -544,6 +548,9 @@ namespace HalApplicationBuilder.Core {
         }
         internal static bool IsInstanceName(this GraphEdge graphEdge) {
             return graphEdge.Attributes.TryGetValue(REL_ATTR_IS_INSTANCE_NAME, out var bln) && (bool)bln;
+        }
+        internal static bool IsRequired(this GraphEdge graphEdge) {
+            return graphEdge.Attributes.TryGetValue(REL_ATTR_IS_REQUIRED, out var bln) && (bool)bln;
         }
         internal static bool IsRef(this GraphEdge graphEdge) {
             return graphEdge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
