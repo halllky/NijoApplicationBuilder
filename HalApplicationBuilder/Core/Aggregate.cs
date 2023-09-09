@@ -30,16 +30,5 @@ namespace HalApplicationBuilder.Core {
         }
 
         public override string ToString() => $"Aggregate[{Path.Value}]";
-
-        internal class Member : IGraphNode {
-            public required NodeId Id { get; init; }
-            internal required string Name { get; init; }
-            internal required IAggregateMemberType Type { get; init; }
-            internal required bool IsPrimary { get; init; }
-            internal required bool IsInstanceName { get; init; }
-            internal required bool Optional { get; init; }
-
-            public override string ToString() => Id.Value;
-        }
     }
 }

@@ -9,12 +9,25 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace HalApplicationBuilder.Core {
+
+    internal class AggregateMemberNode : IGraphNode {
+        public required NodeId Id { get; init; }
+        internal required string Name { get; init; }
+        internal required IAggregateMemberType Type { get; init; }
+        internal required bool IsPrimary { get; init; }
+        internal required bool IsInstanceName { get; init; }
+        internal required bool Optional { get; init; }
+
+        public override string ToString() => Id.Value;
+    }
+
     internal static class AggregateMember {
+
         internal static IEnumerable<Property> GetProperties(this GraphNode<Aggregate> aggregate) {
 
             // スカラー値
             var dbEntityColumns = aggregate.GetColumns().ToArray();
-            foreach (var member in aggregate.GetSchalarMembers()) {
+            foreach (var member in aggregate.GetMemberNodes()) {
                 yield return new SchalarProperty {
                     Owner = aggregate,
                     CorrespondingDbColumn = dbEntityColumns.Single(col => col.PropertyName == member.Item.Name),

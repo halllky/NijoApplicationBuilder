@@ -35,7 +35,7 @@ namespace HalApplicationBuilder.Core {
                 };
             }
             if (dbEntity.Item is Aggregate) {
-                foreach (var member in dbEntity.As<Aggregate>().GetSchalarMembers()) {
+                foreach (var member in dbEntity.As<Aggregate>().GetMemberNodes()) {
                     yield return new SchalarColumnDefniedInAggregate {
                         Owner = dbEntity,
                         PropertyName = member.Item.Name,

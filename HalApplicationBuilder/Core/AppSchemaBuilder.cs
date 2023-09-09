@@ -245,7 +245,7 @@ namespace HalApplicationBuilder.Core {
             memberTypeResolver ??= MemberTypeResolver.Default();
 
             var aggregates = new Dictionary<AggregatePath, Aggregate>();
-            var aggregateMembers = new HashSet<Aggregate.Member>();
+            var aggregateMembers = new HashSet<AggregateMemberNode>();
             var edgesFromAggToAgg = new List<GraphEdgeInfo>();
             var edgesFromAggToMember = new List<GraphEdgeInfo>();
             foreach (var aggregate in aggregateDefs) {
@@ -269,7 +269,7 @@ namespace HalApplicationBuilder.Core {
                         continue;
                     }
                     var memberId = new NodeId($"{id.Value}/{member.Name}");
-                    aggregateMembers.Add(new Aggregate.Member {
+                    aggregateMembers.Add(new AggregateMemberNode {
                         Id = memberId,
                         Name = member.Name,
                         Type = memberType,
@@ -465,12 +465,6 @@ namespace HalApplicationBuilder.Core {
             }
         }
 
-        internal static IEnumerable<GraphNode<Aggregate.Member>> GetSchalarMembers(this GraphNode<Aggregate> aggregate) {
-            return aggregate.Out
-                .Where(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_HAVING)
-                .Select(edge => edge.Terminal.As<Aggregate.Member>());
-        }
-
         internal static bool IsChildrenMember(this GraphNode graphNode) {
             var parent = graphNode.GetParent();
             return parent != null
@@ -495,6 +489,11 @@ namespace HalApplicationBuilder.Core {
                 && parent.Attributes.ContainsKey(REL_ATTR_VARIATIONGROUPNAME);
         }
 
+        internal static IEnumerable<GraphNode<AggregateMemberNode>> GetMemberNodes(this GraphNode<Aggregate> aggregate) {
+            return aggregate.Out
+                .Where(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_HAVING)
+                .Select(edge => edge.Terminal.As<AggregateMemberNode>());
+        }
         internal static IEnumerable<GraphEdge<T>> GetChildrenMembers<T>(this GraphNode<T> graphNode) where T : IGraphNode {
             return graphNode.Out
                 .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
