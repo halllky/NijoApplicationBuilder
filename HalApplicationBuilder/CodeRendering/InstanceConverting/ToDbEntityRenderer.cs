@@ -43,7 +43,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                     """;
             }
 
-            foreach (var prop in instance.GetProperties(_ctx.Config)) {
+            foreach (var prop in instance.GetProperties()) {
                 if (prop is AggregateMember.SchalarProperty schalarProp) {
                     var path = schalarProp.CorrespondingDbColumn is DbColumn.ParentTablePrimaryKey
                         ? parentPath

@@ -60,7 +60,7 @@ namespace HalApplicationBuilder.CodeRendering.EFCore {
 
         private IEnumerable<string> RenderNavigationPropertyOnModelCreating(GraphNode<IEFCoreEntity> dbEntity) {
 
-            foreach (var nav in dbEntity.GetNavigationProperties(_ctx.Config)) {
+            foreach (var nav in dbEntity.GetNavigationProperties()) {
 
                 if (nav.Principal.Owner != dbEntity) continue;
 

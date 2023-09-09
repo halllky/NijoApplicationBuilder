@@ -29,7 +29,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         private string RenderComponent(Component component) {
             if (!component.IsChildren) {
                 var args = GetArguments(component.AggregateInstance).Values;
-                var layout = component.AggregateInstance.GetProperties(_ctx.Config).SelectTextTemplate(p => RenderProperty(component, p));
+                var layout = component.AggregateInstance.GetProperties().SelectTextTemplate(p => RenderProperty(component, p));
 
                 return $$"""
                     export const {{component.ComponentName}} = ({ {{args.Join(", ")}} }: {
@@ -52,7 +52,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 var argsAndIndex = GetArguments(component.AggregateInstance).Values;
                 var args = argsAndIndex.SkipLast(1);
                 var index = argsAndIndex.Last();
-                var layout = component.AggregateInstance.GetProperties(_ctx.Config).SelectTextTemplate(p => RenderProperty(component, p));
+                var layout = component.AggregateInstance.GetProperties().SelectTextTemplate(p => RenderProperty(component, p));
                 var createNewChildrenItem = new types.AggregateInstanceInitializerFunction(component.AggregateInstance).FunctionName;
 
                 return $$"""

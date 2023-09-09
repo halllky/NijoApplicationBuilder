@@ -99,7 +99,7 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
                 .Select(edge => edge.As<IEFCoreEntity>())
                 .Select(edge => {
                     var source = edge.Source.As<IEFCoreEntity>();
-                    var nav = new NavigationProperty(edge, _ctx.Config);
+                    var nav = new NavigationProperty(edge);
                     var prop = edge.Source.As<IEFCoreEntity>() == nav.Principal.Owner
                         ? nav.Principal.PropertyName
                         : nav.Relevant.PropertyName;

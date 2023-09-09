@@ -10,12 +10,11 @@ namespace HalApplicationBuilder.Core {
     /// ナビゲーションプロパティ
     /// </summary>
     internal class NavigationProperty : ValueObject {
-        internal NavigationProperty(GraphEdge<IEFCoreEntity> relation, Config config) {
+        internal NavigationProperty(GraphEdge<IEFCoreEntity> relation) {
             _graphEdge = relation;
 
             Item CreateItem(GraphNode<IEFCoreEntity> owner, bool oppositeIsMany) {
                 var opposite = owner == relation.Initial ? relation.Terminal : relation.Initial;
-                var entityClass = $"{config.EntityNamespace}.{opposite.Item.ClassName}";
 
                 string propertyName;
                 if (owner == relation.Terminal
@@ -30,8 +29,8 @@ namespace HalApplicationBuilder.Core {
 
                 return new Item {
                     Owner = owner,
-                    CSharpTypeName = oppositeIsMany ? $"ICollection<{entityClass}>" : entityClass,
-                    Initializer = oppositeIsMany ? $"new HashSet<{entityClass}>()" : null,
+                    CSharpTypeName = oppositeIsMany ? $"ICollection<{opposite.Item.ClassName}>" : opposite.Item.ClassName,
+                    Initializer = oppositeIsMany ? $"new HashSet<{opposite.Item.ClassName}>()" : null,
                     PropertyName = propertyName,
                     OppositeIsMany = oppositeIsMany,
                     ForeignKeys = owner
@@ -98,28 +97,28 @@ namespace HalApplicationBuilder.Core {
     }
 
     internal static class EFCoreEntityExtensions {
-        internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<IEFCoreEntity> efCoreEntity, Config config) {
+        internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<IEFCoreEntity> efCoreEntity) {
             var parent = efCoreEntity.GetParent();
             if (parent != null)
-                yield return new NavigationProperty(parent, config);
+                yield return new NavigationProperty(parent);
 
             foreach (var edge in efCoreEntity.GetChildMembers()) {
-                yield return new NavigationProperty(edge, config);
+                yield return new NavigationProperty(edge);
             }
             foreach (var edge in efCoreEntity.GetVariationGroups().SelectMany(group => group.VariationAggregates.Values)) {
-                yield return new NavigationProperty(edge, config);
+                yield return new NavigationProperty(edge);
             }
             foreach (var edge in efCoreEntity.GetChildrenMembers()) {
-                yield return new NavigationProperty(edge, config);
+                yield return new NavigationProperty(edge);
             }
             foreach (var edge in efCoreEntity.GetRefMembers()) {
-                yield return new NavigationProperty(edge, config);
+                yield return new NavigationProperty(edge);
             }
             foreach (var edge in efCoreEntity.GetReferrings()) {
-                yield return new NavigationProperty(edge, config);
+                yield return new NavigationProperty(edge);
             }
         }
 
-        internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<Aggregate> aggregate, Config config) => aggregate.As<IEFCoreEntity>().GetNavigationProperties(config);
+        internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<Aggregate> aggregate) => aggregate.As<IEFCoreEntity>().GetNavigationProperties();
     }
 }

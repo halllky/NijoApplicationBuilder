@@ -39,7 +39,7 @@ namespace HalApplicationBuilder.CodeRendering {
         public const string TOKEYNAMEPAIR_METHOD_NAME = "ToKeyNamePair";
 
         private IEnumerable<NavigationProperty.Item> EnumerateNavigationProperties(GraphNode<Aggregate> aggregate) {
-            foreach (var nav in aggregate.GetNavigationProperties(_ctx.Config)) {
+            foreach (var nav in aggregate.GetNavigationProperties()) {
                 if (nav.Principal.Owner.Item == (IEFCoreEntity)aggregate.Item) yield return nav.Principal;
                 if (nav.Relevant.Owner.Item == (IEFCoreEntity)aggregate.Item) yield return nav.Relevant;
             }
@@ -484,7 +484,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     /// {{_aggregate.Item.DisplayName}}のデータ作成コマンドです。
                     /// </summary>
                     public partial class {{CreateCommandClassName}} {
-                {{_aggregate.GetProperties(_ctx.Config).SelectTextTemplate(prop => $$"""
+                {{_aggregate.GetProperties().SelectTextTemplate(prop => $$"""
                         public {{prop.CSharpTypeName}} {{prop.PropertyName}} { get; set; }
                 """)}}
 
@@ -505,7 +505,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     /// {{_aggregate.Item.DisplayName}}のデータ1件の詳細を表すクラスです。
                     /// </summary>
                     public partial class {{_aggregate.Item.ClassName}} : {{AggregateMember.BASE_CLASS_NAME}} {
-                {{_aggregate.GetProperties(_ctx.Config).SelectTextTemplate(prop => $$"""
+                {{_aggregate.GetProperties().SelectTextTemplate(prop => $$"""
                         public {{prop.CSharpTypeName}} {{prop.PropertyName}} { get; set; }
                 """)}}
 
@@ -541,7 +541,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     /// {{ins.Item.DisplayName}}のデータ1件の詳細を表すクラスです。
                     /// </summary>
                     public partial class {{ins.Item.ClassName}} {
-                {{ins.GetProperties(_ctx.Config).SelectTextTemplate(prop => $$"""
+                {{ins.GetProperties().SelectTextTemplate(prop => $$"""
                         public {{prop.CSharpTypeName}} {{prop.PropertyName}} { get; set; }
                 """)}}
                     }

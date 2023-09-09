@@ -53,7 +53,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             foreach (var member in instance.GetChildrenMembers()) {
                 builder.AppendLine($"  {member.RelationName}?: {member.Terminal.Item.TypeScriptTypeName}[]");
             }
-            foreach (var member in instance.GetVariationSwitchProperties(_ctx.Config)) {
+            foreach (var member in instance.GetVariationSwitchProperties()) {
                 builder.AppendLine($"  {member.CorrespondingDbColumn.PropertyName}?: {member.TypeScriptTypename}");
             }
             foreach (var member in instance.GetVariationGroups().SelectMany(group => group.VariationAggregates.Values)) {

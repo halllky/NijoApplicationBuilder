@@ -39,7 +39,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
         }
 
         private IEnumerable<string> RenderBody(GraphNode<Aggregate> instance, string parentPath, string instancePath, int depth) {
-            foreach (var prop in instance.GetProperties(_ctx.Config)) {
+            foreach (var prop in instance.GetProperties()) {
                 if (prop is AggregateMember.SchalarProperty schalarProp) {
                     yield return $$"""
                         {{schalarProp.PropertyName}} = {{instancePath}}.{{schalarProp.CorrespondingDbColumn.PropertyName}},
