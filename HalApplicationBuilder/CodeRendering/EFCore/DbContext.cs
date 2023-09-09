@@ -52,17 +52,18 @@ namespace HalApplicationBuilder.CodeRendering.EFCore {
                     entity.Property(e => e.{{col.PropertyName}})
                         .IsRequired({{(col.RequiredAtDB ? "true" : "false")}});
                 """)}}
-            
-                    {{WithIndent(RenderNavigationPropertyOnModelCreating(dbEntity), "    ")}}
+
+                {{If(dbEntity.Item is Aggregate, () => $$"""
+                    {{WithIndent(RenderNavigationPropertyOnModelCreating(dbEntity.As<Aggregate>()), "    ")}}
+                """)}}            
                 });
                 """;
         }
 
-        private IEnumerable<string> RenderNavigationPropertyOnModelCreating(GraphNode<IEFCoreEntity> dbEntity) {
+        private IEnumerable<string> RenderNavigationPropertyOnModelCreating(GraphNode<Aggregate> aggregate) {
+            foreach (var nav in aggregate.GetNavigationProperties()) {
 
-            foreach (var nav in dbEntity.GetNavigationProperties()) {
-
-                if (nav.Principal.Owner != dbEntity) continue;
+                if (nav.Principal.Owner != aggregate) continue;
 
                 // Has
                 if (nav.Principal.OppositeIsMany) {

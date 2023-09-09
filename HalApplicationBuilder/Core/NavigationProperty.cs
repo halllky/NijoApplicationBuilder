@@ -10,10 +10,10 @@ namespace HalApplicationBuilder.Core {
     /// ナビゲーションプロパティ
     /// </summary>
     internal class NavigationProperty : ValueObject {
-        internal NavigationProperty(GraphEdge<IEFCoreEntity> relation) {
+        internal NavigationProperty(GraphEdge<Aggregate> relation) {
             _graphEdge = relation;
 
-            Item CreateItem(GraphNode<IEFCoreEntity> owner, bool oppositeIsMany) {
+            Item CreateItem(GraphNode<Aggregate> owner, bool oppositeIsMany) {
                 var opposite = owner == relation.Initial ? relation.Terminal : relation.Initial;
 
                 string propertyName;
@@ -22,21 +22,20 @@ namespace HalApplicationBuilder.Core {
                     && owner.GetParent() == relation) {
                     propertyName = "Parent";
                 } else if (owner == relation.Terminal && relation.IsRef()) {
-                    propertyName = $"RefferedBy_{relation.Initial.Item.ClassName}_{relation.RelationName}";
+                    propertyName = $"RefferedBy_{relation.Initial.Item.EFCoreEntityClassName}_{relation.RelationName}";
                 } else {
                     propertyName = relation.RelationName;
                 }
 
                 return new Item {
                     Owner = owner,
-                    CSharpTypeName = oppositeIsMany ? $"ICollection<{opposite.Item.ClassName}>" : opposite.Item.ClassName,
-                    Initializer = oppositeIsMany ? $"new HashSet<{opposite.Item.ClassName}>()" : null,
+                    CSharpTypeName = oppositeIsMany ? $"ICollection<{opposite.Item.EFCoreEntityClassName}>" : opposite.Item.EFCoreEntityClassName,
+                    Initializer = oppositeIsMany ? $"new HashSet<{opposite.Item.EFCoreEntityClassName}>()" : null,
                     PropertyName = propertyName,
                     OppositeIsMany = oppositeIsMany,
                     ForeignKeys = owner
                         .GetColumns()
-                        .Where(col => col is DbColumn.RefTargetTablePrimaryKey refTargetPk
-                                   && refTargetPk.Relation.Terminal == opposite),
+                        .Where(col => col.IsPrimary && col.Owner == opposite),
                 };
             }
 
@@ -75,14 +74,21 @@ namespace HalApplicationBuilder.Core {
         /// 従たるエンティティ側のナビゲーションプロパティ
         /// </summary>
         internal Item Relevant { get; }
+
         internal class Item : ValueObject {
-            internal required GraphNode<IEFCoreEntity> Owner { get; init; }
+            internal required GraphNode<Aggregate> Owner { get; init; }
             internal required string CSharpTypeName { get; init; }
             internal required string PropertyName { get; init; }
             internal required bool OppositeIsMany { get; init; }
             internal string? Initializer { get; init; }
             internal required IEnumerable<DbColumn.DbColumnBase> ForeignKeys { get; init; }
 
+            internal IEnumerable<string> GetFullPath() {
+                return Owner
+                    .PathFromEntry()
+                    .Select(edge => edge.RelationName)
+                    .Concat(new[] { PropertyName });
+            }
             protected override IEnumerable<object?> ValueObjectIdentifiers() {
                 yield return Owner;
                 yield return PropertyName;
@@ -94,31 +100,5 @@ namespace HalApplicationBuilder.Core {
         protected override IEnumerable<object?> ValueObjectIdentifiers() {
             yield return _graphEdge;
         }
-    }
-
-    internal static class EFCoreEntityExtensions {
-        internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<IEFCoreEntity> efCoreEntity) {
-            var parent = efCoreEntity.GetParent();
-            if (parent != null)
-                yield return new NavigationProperty(parent);
-
-            foreach (var edge in efCoreEntity.GetChildMembers()) {
-                yield return new NavigationProperty(edge);
-            }
-            foreach (var edge in efCoreEntity.GetVariationGroups().SelectMany(group => group.VariationAggregates.Values)) {
-                yield return new NavigationProperty(edge);
-            }
-            foreach (var edge in efCoreEntity.GetChildrenMembers()) {
-                yield return new NavigationProperty(edge);
-            }
-            foreach (var edge in efCoreEntity.GetRefMembers()) {
-                yield return new NavigationProperty(edge);
-            }
-            foreach (var edge in efCoreEntity.GetReferrings()) {
-                yield return new NavigationProperty(edge);
-            }
-        }
-
-        internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<Aggregate> aggregate) => aggregate.As<IEFCoreEntity>().GetNavigationProperties();
     }
 }

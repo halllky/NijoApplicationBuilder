@@ -12,7 +12,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
     /// </summary>
     internal partial class SearchFeature {
         internal SearchFeature(GraphNode<IEFCoreEntity> dbEntity, CodeRenderingContext ctx) {
-            DbEntity = dbEntity.AsEntry();
+            DbEntity = dbEntity;
             Context = ctx;
 
             if (dbEntity.Item is Aggregate aggregate) {

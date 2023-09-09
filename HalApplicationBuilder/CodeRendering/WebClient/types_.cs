@@ -44,17 +44,17 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             foreach (var prop in instance.GetSchalarProperties()) {
                 builder.AppendLine($"  {prop.PropertyName}?: {prop.TypeScriptTypename}");
             }
-            foreach (var member in instance.GetRefMembers()) {
+            foreach (var member in instance.GetRefEdge()) {
                 builder.AppendLine($"  {member.RelationName}?: {AggregateInstanceKeyNamePair.TS_DEF}");
             }
-            foreach (var member in instance.GetChildMembers()) {
+            foreach (var member in instance.GetChildEdges()) {
                 builder.AppendLine($"  {member.RelationName}?: {member.Terminal.Item.TypeScriptTypeName}");
             }
-            foreach (var member in instance.GetChildrenMembers()) {
+            foreach (var member in instance.GetChildrenEdges()) {
                 builder.AppendLine($"  {member.RelationName}?: {member.Terminal.Item.TypeScriptTypeName}[]");
             }
             foreach (var member in instance.GetVariationSwitchProperties()) {
-                builder.AppendLine($"  {member.CorrespondingDbColumn.PropertyName}?: {member.TypeScriptTypename}");
+                builder.AppendLine($"  {member.GetDbColumn().PropertyName}?: {member.TypeScriptTypename}");
             }
             foreach (var member in instance.GetVariationGroups().SelectMany(group => group.VariationAggregates.Values)) {
                 builder.AppendLine($"  {member.RelationName}?: {member.Terminal.Item.TypeScriptTypeName}");
@@ -76,13 +76,13 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
             internal string Render() {
                 var children = _instance
-                    .GetChildrenMembers()
+                    .GetChildrenEdges()
                     .Select(edge => new {
                         Key = edge.RelationName,
                         Value = $"[]",
                     });
                 var child = _instance
-                    .GetChildMembers()
+                    .GetChildEdges()
                     .Select(edge => new {
                         Key = edge.RelationName,
                         Value = $"{new AggregateInstanceInitializerFunction(edge.Terminal).FunctionName}()",

@@ -447,9 +447,9 @@ namespace HalApplicationBuilder.Core {
 
         internal static IEnumerable<GraphNode<T>> EnumerateDescendants<T>(this GraphNode<T> graphNode) where T : IGraphNode {
             static IEnumerable<GraphNode<T>> GetDescencantsRecursively(GraphNode<T> node) {
-                var children = node.GetChildMembers()
+                var children = node.GetChildEdges()
                     .Concat(node.GetVariationGroups().SelectMany(group => group.VariationAggregates.Values))
-                    .Concat(node.GetChildrenMembers());
+                    .Concat(node.GetChildrenEdges());
                 foreach (var edge in children) {
                     yield return edge.Terminal;
                     foreach (var descendant in GetDescencantsRecursively(edge.Terminal)) {
@@ -498,14 +498,14 @@ namespace HalApplicationBuilder.Core {
                 .Where(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_HAVING)
                 .Select(edge => edge.Terminal.As<AggregateMemberNode>());
         }
-        internal static IEnumerable<GraphEdge<T>> GetChildrenMembers<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+        internal static IEnumerable<GraphEdge<T>> GetChildrenEdges<T>(this GraphNode<T> graphNode) where T : IGraphNode {
             return graphNode.Out
                 .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                             && (string)type == REL_ATTRVALUE_PARENT_CHILD
                             && edge.Attributes.ContainsKey(REL_ATTR_MULTIPLE))
                 .Select(edge => edge.As<T>());
         }
-        internal static IEnumerable<GraphEdge<T>> GetChildMembers<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+        internal static IEnumerable<GraphEdge<T>> GetChildEdges<T>(this GraphNode<T> graphNode) where T : IGraphNode {
             return graphNode.Out
                 .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                             && (string)type == REL_ATTRVALUE_PARENT_CHILD
@@ -513,13 +513,13 @@ namespace HalApplicationBuilder.Core {
                             && !edge.Attributes.ContainsKey(REL_ATTR_VARIATIONGROUPNAME))
                 .Select(edge => edge.As<T>());
         }
-        internal static IEnumerable<GraphEdge<T>> GetRefMembers<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+        internal static IEnumerable<GraphEdge<T>> GetRefEdge<T>(this GraphNode<T> graphNode) where T : IGraphNode {
             return graphNode.Out
                 .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                             && (string)type == REL_ATTRVALUE_REFERENCE)
                 .Select(edge => edge.As<T>());
         }
-        internal static IEnumerable<GraphEdge<T>> GetReferrings<T>(this GraphNode<T> graphNode) where T : IGraphNode {
+        internal static IEnumerable<GraphEdge<T>> GetReferedEdges<T>(this GraphNode<T> graphNode) where T : IGraphNode {
             return graphNode.In
                 .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                             && (string)type == REL_ATTRVALUE_REFERENCE)

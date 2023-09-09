@@ -14,7 +14,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             _instance = aggregateInstance;
 
             PropNameWidth = GetPropNameFlexBasis(_instance
-                .GetProperties()
+                .GetMembers()
                 .Select(p => p.PropertyName));
         }
         private readonly CodeRenderingContext _ctx;
@@ -34,17 +34,17 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
 
         #region SCHALAR PROPERTY
-        private string RenderSchalarProperty(GraphNode<Aggregate> instance, AggregateMember.SchalarProperty prop, string indent) {
+        private string RenderSchalarProperty(GraphNode<Aggregate> instance, AggregateMember.Schalar prop, string indent) {
             var renderer = new ReactForm(instance, prop);
-            return TemplateTextHelper.WithIndent(prop.CorrespondingDbColumn.MemberType.RenderUI(renderer), indent);
+            return TemplateTextHelper.WithIndent(prop.MemberType.RenderUI(renderer), indent);
         }
         private class ReactForm : IGuiFormRenderer {
-            internal ReactForm(GraphNode<Aggregate> instance, AggregateMember.SchalarProperty prop) {
+            internal ReactForm(GraphNode<Aggregate> instance, AggregateMember.Schalar prop) {
                 _instance = instance;
                 _prop = prop;
             }
             private readonly GraphNode<Aggregate> _instance;
-            private readonly AggregateMember.SchalarProperty _prop;
+            private readonly AggregateMember.Schalar _prop;
 
             /// <summary>
             /// Createビュー兼シングルビュー: テキストボックス
@@ -183,8 +183,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             // 祖先コンポーネントの中に含まれるChildrenの数だけ、
             // このコンポーネントのその配列中でのインデックスが特定されている必要があるので、引数で渡す
             var args = GetRegisterName(instance).Path
-                .Where(path => path is ArrayIndex)
-                .Cast<ArrayIndex>()
+                .OfType<ArrayIndex>()
                 .ToDictionary(
                     arrayIndex => arrayIndex.Aggregate.GetParent()!,
                     arrayIndex => arrayIndex.Name);

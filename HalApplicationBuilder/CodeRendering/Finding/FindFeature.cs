@@ -82,7 +82,7 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
             if (includeRefs) {
                 var refEntities = _aggregate
                     .EnumerateThisAndDescendants()
-                    .SelectMany(entity => entity.GetRefMembers())
+                    .SelectMany(entity => entity.GetRefEdge())
                     .Select(edge => edge.Terminal);
                 var refTargetAncestors = refEntities
                     .SelectMany(refTarget => refTarget.EnumerateAncestors())
@@ -96,11 +96,11 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
             }
             var paths = includeEntities
                 .SelectMany(entity => entity.PathFromEntry())
-                .Select(edge => edge.As<IEFCoreEntity>())
+                .Select(edge => edge.As<Aggregate>())
                 .Select(edge => {
-                    var source = edge.Source.As<IEFCoreEntity>();
+                    var source = edge.Source.As<Aggregate>();
                     var nav = new NavigationProperty(edge);
-                    var prop = edge.Source.As<IEFCoreEntity>() == nav.Principal.Owner
+                    var prop = edge.Source.As<Aggregate>() == nav.Principal.Owner
                         ? nav.Principal.PropertyName
                         : nav.Relevant.PropertyName;
                     return new { source, prop };
@@ -121,7 +121,7 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
                 {{If(tracks == false, () => $$"""
                     .AsNoTracking()
                 """)}}
-                {{paths.SelectTextTemplate(path => path.source.Item == (IEFCoreEntity)_aggregate.Item ? $$"""
+                {{paths.SelectTextTemplate(path => path.source == _aggregate ? $$"""
                     .Include(x => x.{{path.prop}})
                 """ : $$"""
                     .ThenInclude(x => x.{{path.prop}})

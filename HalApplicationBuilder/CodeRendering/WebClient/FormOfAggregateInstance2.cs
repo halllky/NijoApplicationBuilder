@@ -29,7 +29,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         private string RenderComponent(Component component) {
             if (!component.IsChildren) {
                 var args = GetArguments(component.AggregateInstance).Values;
-                var layout = component.AggregateInstance.GetProperties().SelectTextTemplate(p => RenderProperty(component, p));
+                var layout = component.AggregateInstance.GetMembers().SelectTextTemplate(p => RenderProperty(component, p));
 
                 return $$"""
                     export const {{component.ComponentName}} = ({ {{args.Join(", ")}} }: {
@@ -52,7 +52,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 var argsAndIndex = GetArguments(component.AggregateInstance).Values;
                 var args = argsAndIndex.SkipLast(1);
                 var index = argsAndIndex.Last();
-                var layout = component.AggregateInstance.GetProperties().SelectTextTemplate(p => RenderProperty(component, p));
+                var layout = component.AggregateInstance.GetMembers().SelectTextTemplate(p => RenderProperty(component, p));
                 var createNewChildrenItem = new types.AggregateInstanceInitializerFunction(component.AggregateInstance).FunctionName;
 
                 return $$"""
@@ -109,7 +109,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         }
 
         private string RenderProperty(Component component, AggregateMember.AggregateMemberBase prop) {
-            if (prop is AggregateMember.SchalarProperty schalar) {
+            if (prop is AggregateMember.Schalar schalar) {
                 return $$"""
                     <div className="flex">
                       <div className="{{PropNameWidth}}">
@@ -123,8 +123,8 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     </div>
                     """;
 
-            } else if (prop is AggregateMember.RefProperty refProperty) {
-                var combobox = new ComboBox(refProperty.RefTarget, _ctx);
+            } else if (prop is AggregateMember.Ref refProperty) {
+                var combobox = new ComboBox(refProperty.MemberAggregate, _ctx);
                 var registerName = GetRegisterName(component.AggregateInstance, refProperty).Value;
                 return $$"""
                     <div className="flex">
@@ -139,8 +139,8 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     </div>
                     """;
 
-            } else if (prop is AggregateMember.ChildProperty child) {
-                var childComponent = new Component(child.ChildAggregateInstance);
+            } else if (prop is AggregateMember.Child child) {
+                var childComponent = new Component(child.MemberAggregate);
                 return $$"""
                     <div className="py-2">
                       <span className="text-sm select-none opacity-80">
@@ -152,8 +152,8 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     </div>
                     """;
 
-            } else if (prop is AggregateMember.VariationProperty variation) {
-                var childComponent = new Component(variation.ChildAggregateInstance);
+            } else if (prop is AggregateMember.VariationItem variation) {
+                var childComponent = new Component(variation.MemberAggregate);
                 var switchProp = GetRegisterName(component.AggregateInstance, variation.Group).Value;
                 return $$"""
                     <div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(watch(`{{switchProp}}`) !== '{{variation.Key}}' ? 'hidden' : '')}`}>
@@ -161,13 +161,13 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     </div>
                     """;
 
-            } else if (prop is AggregateMember.VariationSwitchProperty variationSwitch) {
+            } else if (prop is AggregateMember.Variation variationSwitch) {
                 var switchProp = GetRegisterName(component.AggregateInstance, variationSwitch).Value;
                 return $$"""
                     <div className="flex">
                       <div className="{{PropNameWidth}}">
                       <span className="text-sm select-none opacity-80">
-                        {{variationSwitch.CorrespondingDbColumn.PropertyName}}
+                        {{variationSwitch.PropertyName}}
                       </span>
                       </div>
                       <div className="flex-1 flex gap-2 flex-wrap">
@@ -181,8 +181,8 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     </div>
                     """;
 
-            } else if (prop is AggregateMember.ChildrenProperty children) {
-                var childrenComponent = new Component(children.ChildAggregateInstance);
+            } else if (prop is AggregateMember.Children children) {
+                var childrenComponent = new Component(children.MemberAggregate);
                 return $$"""
                     <div className="py-2">
                       <span className="text-sm select-none opacity-80">

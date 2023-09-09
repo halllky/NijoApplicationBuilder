@@ -138,7 +138,7 @@ namespace HalApplicationBuilder.DotnetEx {
             get {
                 _out ??= _graph.Edges
                     .Where(edgeInfo => edgeInfo.Initial == Item.Id)
-                    .Select(edgeInfo => new GraphEdge(edgeInfo, _graph, this))
+                    .Select(GoToNeighborEdge)
                     .ToArray();
                 return _out;
             }
@@ -150,26 +150,22 @@ namespace HalApplicationBuilder.DotnetEx {
             get {
                 _in ??= _graph.Edges
                     .Where(edgeInfo => edgeInfo.Terminal == Item.Id)
-                    .Select(edgeInfo => new GraphEdge(edgeInfo, _graph, this))
+                    .Select(GoToNeighborEdge)
                     .ToArray();
                 return _in;
             }
         }
-        /// <summary>
-        /// <see cref="In"/> + <see cref="Out"/>
-        /// </summary>
-        internal IEnumerable<GraphEdge> InAndOut => In.Union(Out);
+
+        private GraphEdge GoToNeighborEdge(GraphEdgeInfo edgeInfo) {
+            var newEdge = new GraphEdge(edgeInfo, _graph, this);
+            if (newEdge == Source) return Source;
+            return newEdge;
+        }
 
         /// <summary>
         /// この頂点がどの経路を辿って生成されたか。Entryの最初の頂点の場合はnull
         /// </summary>
         internal GraphEdge? Source { get; }
-        /// <summary>
-        /// ここまで辿ってきた経路をリセットした新しいインスタンスを返します。
-        /// </summary>
-        internal GraphNode AsEntry() {
-            return new GraphNode(Item, _graph, null);
-        }
 
         /// <summary>
         /// エントリーからの辺の一覧を返します。よりエントリーに近いほうから順番に返します。
@@ -253,8 +249,6 @@ namespace HalApplicationBuilder.DotnetEx {
             : base(item, graph, source) { }
 
         internal new T Item => (T)base.Item;
-
-        internal new GraphNode<T> AsEntry() => base.AsEntry().As<T>();
     }
     internal class GraphEdge<T> : GraphEdge where T : IGraphNode {
         internal GraphEdge(GraphEdgeInfo info, DirectedGraph graph, GraphNode source) : base(info, graph, source) {

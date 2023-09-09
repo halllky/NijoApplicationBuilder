@@ -40,8 +40,8 @@ namespace HalApplicationBuilder.CodeRendering {
 
         private IEnumerable<NavigationProperty.Item> EnumerateNavigationProperties(GraphNode<Aggregate> aggregate) {
             foreach (var nav in aggregate.GetNavigationProperties()) {
-                if (nav.Principal.Owner.Item == (IEFCoreEntity)aggregate.Item) yield return nav.Principal;
-                if (nav.Relevant.Owner.Item == (IEFCoreEntity)aggregate.Item) yield return nav.Relevant;
+                if (nav.Principal.Owner == aggregate) yield return nav.Principal;
+                if (nav.Relevant.Owner == aggregate) yield return nav.Relevant;
             }
         }
 
@@ -188,18 +188,10 @@ namespace HalApplicationBuilder.CodeRendering {
         private string CreateCommandGetInstanceKeyMethodName => GETINSTANCENAME_METHOD_NAME;
 
         private IEnumerable<string> GetInstanceNameProps() {
-            var useKeyInsteadOfName = _aggregate
-                .GetSchalarProperties()
-                .Any(p => p.CorrespondingDbColumn.IsInstanceName) == false;
-            var props = useKeyInsteadOfName
-                ? _aggregate
-                    .GetSchalarProperties()
-                    .Where(p => p.CorrespondingDbColumn.IsPrimary)
-                    .ToArray()
-                : _aggregate
-                    .GetSchalarProperties()
-                    .Where(p => p.CorrespondingDbColumn.IsInstanceName)
-                    .ToArray();
+            var keys = _aggregate.GetKeyMembers().ToArray();
+            var names = _aggregate.GetInstanceNameMembers().ToArray();
+            var props = names.Any() ? names : keys;
+
             if (props.Length == 0) {
                 yield return $"return string.Empty;";
             } else {
@@ -484,7 +476,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     /// {{_aggregate.Item.DisplayName}}のデータ作成コマンドです。
                     /// </summary>
                     public partial class {{CreateCommandClassName}} {
-                {{_aggregate.GetProperties().SelectTextTemplate(prop => $$"""
+                {{_aggregate.GetMembers().SelectTextTemplate(prop => $$"""
                         public {{prop.CSharpTypeName}} {{prop.PropertyName}} { get; set; }
                 """)}}
 
@@ -494,7 +486,7 @@ namespace HalApplicationBuilder.CodeRendering {
                         /// </summary>
                         public {{InstanceKey.CLASS_NAME}} {{CreateCommandGetInstanceKeyMethodName}}() {
                             return {{InstanceKey.CLASS_NAME}}.{{InstanceKey.CREATE}}(new object[] {
-                {{_aggregate.GetSchalarProperties().Where(p => p.CorrespondingDbColumn.IsPrimary).SelectTextTemplate(p => $$"""
+                {{_aggregate.GetSchalarProperties().Where(p => p.IsPrimary).SelectTextTemplate(p => $$"""
                                 this.{{p.PropertyName}},
                 """)}}
                             });
@@ -505,7 +497,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     /// {{_aggregate.Item.DisplayName}}のデータ1件の詳細を表すクラスです。
                     /// </summary>
                     public partial class {{_aggregate.Item.ClassName}} : {{AggregateMember.BASE_CLASS_NAME}} {
-                {{_aggregate.GetProperties().SelectTextTemplate(prop => $$"""
+                {{_aggregate.GetMembers().SelectTextTemplate(prop => $$"""
                         public {{prop.CSharpTypeName}} {{prop.PropertyName}} { get; set; }
                 """)}}
 
@@ -518,7 +510,7 @@ namespace HalApplicationBuilder.CodeRendering {
                         /// </summary>
                         public {{InstanceKey.CLASS_NAME}} {{GETINSTANCEKEY_METHOD_NAME}}() {
                             return {{InstanceKey.CLASS_NAME}}.{{InstanceKey.CREATE}}(new object[] {
-                {{_aggregate.GetSchalarProperties().Where(p => p.CorrespondingDbColumn.IsPrimary).SelectTextTemplate(p => $$"""
+                {{_aggregate.GetSchalarProperties().Where(p => p.IsPrimary).SelectTextTemplate(p => $$"""
                                 this.{{p.PropertyName}},
                 """)}}
                             });
@@ -541,7 +533,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     /// {{ins.Item.DisplayName}}のデータ1件の詳細を表すクラスです。
                     /// </summary>
                     public partial class {{ins.Item.ClassName}} {
-                {{ins.GetProperties().SelectTextTemplate(prop => $$"""
+                {{ins.GetMembers().SelectTextTemplate(prop => $$"""
                         public {{prop.CSharpTypeName}} {{prop.PropertyName}} { get; set; }
                 """)}}
                     }

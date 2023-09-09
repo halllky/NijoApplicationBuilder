@@ -1,4 +1,3 @@
-using HalApplicationBuilder.CodeRendering;
 using HalApplicationBuilder.CodeRendering.Util;
 using HalApplicationBuilder.DotnetEx;
 using System;
@@ -21,46 +20,72 @@ namespace HalApplicationBuilder.Core {
         public override string ToString() => Id.Value;
     }
 
+
     internal static class AggregateMember {
 
-        internal static IEnumerable<AggregateMemberBase> GetProperties(this GraphNode<Aggregate> aggregate) {
-            foreach (var member in aggregate.GetMemberNodes()) {
-                yield return new SchalarProperty(member);
-            }
-            foreach (var edge in aggregate.GetChildrenMembers()) {
-                yield return new ChildrenProperty(edge);
-            }
-            foreach (var edge in aggregate.GetChildMembers()) {
-                yield return new ChildProperty(edge);
-            }
+        internal static IEnumerable<AggregateMemberBase> GetMembers(this GraphNode<Aggregate> aggregate) {
+            foreach (var member in aggregate.GetMemberNodes()) yield return new Schalar(member);
+            foreach (var edge in aggregate.GetChildrenEdges()) yield return new Children(edge);
+            foreach (var edge in aggregate.GetChildEdges()) yield return new Child(edge);
             foreach (var group in aggregate.GetVariationGroups()) {
-                yield return new VariationSwitchProperty(group);
+                var variationGroup = new Variation(group);
+                yield return variationGroup;
+                foreach (var item in variationGroup.GetGroupItems()) yield return item;
             }
-            foreach (var edge in aggregate.GetRefMembers()) {
-                yield return new RefProperty(edge);
+            foreach (var edge in aggregate.GetRefEdge()) yield return new Ref(edge);
+        }
+        internal static IEnumerable<ValueMember> GetKeyMembers(this GraphNode<Aggregate> aggregate) {
+            foreach (var member in aggregate.GetMembers()) {
+                if (member is ValueMember valueMember && valueMember.IsPrimary) {
+                    yield return valueMember;
+                }
+                if (member is Ref refProp) {
+                    foreach (var refTargetKey in refProp.GetRefTargetKeys()) {
+                        yield return refTargetKey;
+                    }
+                }
             }
         }
-        internal static IEnumerable<AggregateMemberBase> GetKeyProperties(this GraphNode<Aggregate> aggregate) {
-            foreach (var prop in aggregate.GetProperties()) {
-                if (prop is SchalarProperty schalarProperty && schalarProperty.IsPrimary)
-                    yield return schalarProperty;
-                else if (prop is RefProperty refProp && refProp.IsPrimary)
-                    yield return refProp;
+        internal static IEnumerable<ValueMember> GetInstanceNameMembers(this GraphNode<Aggregate> aggregate) {
+            var nameMembers = new List<ValueMember>();
+            foreach (var member in aggregate.GetMembers()) {
+                if (member is ValueMember valueMember && valueMember.IsInstanceName) {
+                    nameMembers.Add(valueMember);
+                }
+                if (member is Ref refProp && refProp.IsInstanceName) {
+                    nameMembers.AddRange(refProp.GetRefTargetNameMembers());
+                }
+            }
+            // name属性のメンバーが無い場合はキーを表示名称にする
+            return nameMembers.Any()
+                ? nameMembers
+                : aggregate.GetKeyMembers();
+        }
+        internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<Aggregate> aggregate) {
+            var parent = aggregate.GetParent();
+            if (parent != null) {
+                yield return new NavigationProperty(parent);
+            }
+
+            foreach (var member in aggregate.GetMembers()) {
+                if (member is not RelationMember relationMember) continue;
+                yield return relationMember.GetNavigationProperty();
             }
         }
 
-        internal static IEnumerable<SchalarProperty> GetSchalarProperties(this GraphNode<Aggregate> aggregate) {
+        [Obsolete]
+        internal static IEnumerable<Schalar> GetSchalarProperties(this GraphNode<Aggregate> aggregate) {
             return aggregate
-                .GetProperties()
-                .Where(prop => prop is SchalarProperty)
-                .Cast<SchalarProperty>();
+                .GetMembers()
+                .Where(prop => prop is Schalar)
+                .Cast<Schalar>();
         }
-
-        internal static IEnumerable<VariationSwitchProperty> GetVariationSwitchProperties(this GraphNode<Aggregate> aggregate) {
+        [Obsolete]
+        internal static IEnumerable<Variation> GetVariationSwitchProperties(this GraphNode<Aggregate> aggregate) {
             return aggregate
-                .GetProperties()
-                .Where(prop => prop is VariationSwitchProperty)
-                .Cast<VariationSwitchProperty>();
+                .GetMembers()
+                .Where(prop => prop is Variation)
+                .Cast<Variation>();
         }
 
 
@@ -68,20 +93,50 @@ namespace HalApplicationBuilder.Core {
         internal const string TO_DB_ENTITY_METHOD_NAME = "ToDbEntity";
         internal const string FROM_DB_ENTITY_METHOD_NAME = "FromDbEntity";
 
+
+        #region MEMBER BASE
         internal abstract class AggregateMemberBase : ValueObject {
             internal abstract GraphNode<Aggregate> Owner { get; }
             internal abstract string PropertyName { get; }
             internal abstract string CSharpTypeName { get; }
             internal abstract string TypeScriptTypename { get; }
 
+            internal virtual IEnumerable<string> GetFullPath(GraphNode<Aggregate>? since = null) {
+                var skip = since != null;
+                foreach (var edge in Owner.PathFromEntry()) {
+                    if (skip && edge.Source?.As<Aggregate>() == since) skip = false;
+                    if (skip) continue;
+                    yield return edge.RelationName;
+                }
+                yield return PropertyName;
+            }
+
             protected override IEnumerable<object?> ValueObjectIdentifiers() {
                 yield return Owner;
                 yield return PropertyName;
             }
+            public override string ToString() {
+                return GetFullPath().Join(".");
+            }
         }
+        internal abstract class ValueMember : AggregateMemberBase {
+            internal abstract bool IsPrimary { get; }
+            internal abstract bool IsInstanceName { get; }
+            internal abstract bool RequiredAtDB { get; }
+            internal abstract IAggregateMemberType MemberType { get; }
 
-        internal class SchalarProperty : AggregateMemberBase {
-            internal SchalarProperty(GraphNode<AggregateMemberNode> aggregateMemberNode) {
+            internal abstract DbColumn.DbColumnBase GetDbColumn();
+        }
+        internal abstract class RelationMember : AggregateMemberBase {
+            internal abstract GraphNode<Aggregate> MemberAggregate { get; }
+            internal abstract NavigationProperty GetNavigationProperty();
+        }
+        #endregion MEMBER BASE
+
+
+        #region MEMBER IMPLEMEMT
+        internal class Schalar : ValueMember {
+            internal Schalar(GraphNode<AggregateMemberNode> aggregateMemberNode) {
                 _node = aggregateMemberNode;
             }
             private readonly GraphNode<AggregateMemberNode> _node;
@@ -91,15 +146,18 @@ namespace HalApplicationBuilder.Core {
             internal override string CSharpTypeName => _node.Item.Type.GetCSharpTypeName();
             internal override string TypeScriptTypename => _node.Item.Type.GetTypeScriptTypeName();
 
-            internal bool IsPrimary => _node.Item.IsPrimary;
-            internal bool IsInstanceName => _node.Item.IsInstanceName;
-            internal bool RequiredAtDB => _node.Item.IsPrimary || !_node.Item.Optional;
-            internal IAggregateMemberType MemberType => _node.Item.Type;
-            internal DbColumn.DbColumnBase CorrespondingDbColumn => new DbColumn.SchalarColumnDefniedInAggregate(this);
+            internal override bool IsPrimary => _node.Item.IsPrimary;
+            internal override bool IsInstanceName => _node.Item.IsInstanceName;
+            internal override bool RequiredAtDB => _node.Item.IsPrimary || !_node.Item.Optional;
+            internal override IAggregateMemberType MemberType => _node.Item.Type;
+
+            internal override DbColumn.DbColumnBase GetDbColumn() {
+                return new DbColumn.AggregateMemberColumn(this);
+            }
         }
 
-        internal class ChildrenProperty : AggregateMemberBase {
-            internal ChildrenProperty(GraphEdge<Aggregate> edge) {
+        internal class Children : RelationMember {
+            internal Children(GraphEdge<Aggregate> edge) {
                 _edge = edge;
             }
             private readonly GraphEdge<Aggregate> _edge;
@@ -108,12 +166,14 @@ namespace HalApplicationBuilder.Core {
             internal override string PropertyName => _edge.RelationName;
             internal override string CSharpTypeName => $"List<{_edge.Terminal.Item.ClassName}>";
             internal override string TypeScriptTypename => $"{_edge.Terminal.Item.TypeScriptTypeName}[]";
-            internal GraphNode<Aggregate> ChildAggregateInstance => _edge.Terminal;
-            internal NavigationProperty CorrespondingNavigationProperty => new NavigationProperty(_edge.As<IEFCoreEntity>());
+            internal override GraphNode<Aggregate> MemberAggregate => _edge.Terminal;
+            internal override NavigationProperty GetNavigationProperty() {
+                return new NavigationProperty(_edge);
+            }
         }
 
-        internal class ChildProperty : AggregateMemberBase {
-            internal ChildProperty(GraphEdge<Aggregate> edge) {
+        internal class Child : RelationMember {
+            internal Child(GraphEdge<Aggregate> edge) {
                 _edge = edge;
             }
             private readonly GraphEdge<Aggregate> _edge;
@@ -122,67 +182,113 @@ namespace HalApplicationBuilder.Core {
             internal override string PropertyName => _edge.RelationName;
             internal override string CSharpTypeName => _edge.Terminal.Item.ClassName;
             internal override string TypeScriptTypename => _edge.Terminal.Item.TypeScriptTypeName;
-            internal GraphNode<Aggregate> ChildAggregateInstance => _edge.Terminal;
-            internal NavigationProperty CorrespondingNavigationProperty => new NavigationProperty(_edge.As<IEFCoreEntity>());
+            internal override GraphNode<Aggregate> MemberAggregate => _edge.Terminal;
+
+            internal override NavigationProperty GetNavigationProperty() {
+                return new NavigationProperty(_edge);
+            }
         }
 
-        internal class VariationSwitchProperty : AggregateMemberBase {
-            internal VariationSwitchProperty(VariationGroup<Aggregate> group) {
+        internal class Variation : ValueMember {
+            internal Variation(VariationGroup<Aggregate> group) {
                 _group = group;
             }
             private readonly VariationGroup<Aggregate> _group;
 
             internal override GraphNode<Aggregate> Owner => _group.Owner;
             internal override string PropertyName => _group.GroupName;
-            internal override string CSharpTypeName => "string";
-            internal override string TypeScriptTypename => "string";
-            internal DbColumn.DbColumnBase CorrespondingDbColumn => new DbColumn.VariationGroupTypeIdentifier(this);
+            internal override string CSharpTypeName => MemberType.GetCSharpTypeName();
+            internal override string TypeScriptTypename => MemberType.GetTypeScriptTypeName();
 
-            internal IEnumerable<VariationProperty> GetGroupItems() {
+            internal override bool IsPrimary => false; // TODO
+            internal override bool IsInstanceName => false; // TODO
+            internal override bool RequiredAtDB => false; // TODO
+            internal override IAggregateMemberType MemberType { get; } = new AggregateMemberTypes.VariationSwitch();
+
+            internal override DbColumn.DbColumnBase GetDbColumn() {
+                return new DbColumn.VariationTypeColumn(this);
+            }
+            internal IEnumerable<VariationItem> GetGroupItems() {
                 foreach (var kv in _group.VariationAggregates) {
-                    yield return new VariationProperty(this, kv.Key, kv.Value);
+                    yield return new VariationItem(this, kv.Key, kv.Value);
                 }
             }
         }
 
-        internal class VariationProperty : AggregateMemberBase {
-            internal VariationProperty(VariationSwitchProperty group, string key, GraphEdge<Aggregate> edge) {
+        internal class VariationItem : RelationMember {
+            internal VariationItem(Variation group, string key, GraphEdge<Aggregate> edge) {
                 Group = group;
                 Key = key;
                 _edge = edge;
             }
             private readonly GraphEdge<Aggregate> _edge;
 
-            internal VariationSwitchProperty Group { get; }
+            internal Variation Group { get; }
             internal string Key { get; }
 
             internal override GraphNode<Aggregate> Owner => _edge.Initial;
             internal override string PropertyName => _edge.RelationName;
             internal override string CSharpTypeName => _edge.Terminal.Item.ClassName;
             internal override string TypeScriptTypename => _edge.Terminal.Item.TypeScriptTypeName;
-            internal GraphNode<Aggregate> ChildAggregateInstance => _edge.Terminal;
-            internal NavigationProperty CorrespondingNavigationProperty => new NavigationProperty(_edge.As<IEFCoreEntity>());
+            internal override GraphNode<Aggregate> MemberAggregate => _edge.Terminal;
+
+            internal override NavigationProperty GetNavigationProperty() {
+                return new NavigationProperty(_edge);
+            }
         }
 
-        internal class RefProperty : AggregateMemberBase {
-            internal RefProperty(GraphEdge<Aggregate> edge) {
-                Relation = edge;
+        internal class Ref : RelationMember {
+            internal Ref(GraphEdge<Aggregate> edge) {
+                _edge = edge;
             }
-            internal GraphEdge<Aggregate> Relation { get; }
+            private readonly GraphEdge<Aggregate> _edge;
 
-            internal override GraphNode<Aggregate> Owner => Relation.Initial;
-            internal override string PropertyName => Relation.RelationName;
+            internal override GraphNode<Aggregate> Owner => _edge.Initial;
+            internal override string PropertyName => _edge.RelationName;
             internal override string CSharpTypeName => AggregateInstanceKeyNamePair.CLASSNAME;
             internal override string TypeScriptTypename => AggregateInstanceKeyNamePair.TS_DEF;
-            internal bool IsPrimary => Relation.IsPrimary();
-            internal bool IsInstanceName => Relation.IsInstanceName();
-            internal bool RequiredAtDB => Relation.IsPrimary() || Relation.IsRequired();
-            internal GraphNode<Aggregate> RefTarget => Relation.Terminal;
-            internal NavigationProperty CorrespondingNavigationProperty => new NavigationProperty(Relation.As<IEFCoreEntity>());
-            internal IEnumerable<DbColumn.DbColumnBase> CorrespondingDbColumns => Relation.Initial
-                .GetColumns()
-                .Where(col => col is DbColumn.RefTargetTablePrimaryKey refTargetPk
-                           && refTargetPk.Relation.Terminal == Relation.Terminal);
+
+            internal override GraphNode<Aggregate> MemberAggregate => _edge.Terminal;
+
+            internal bool IsPrimary => _edge.IsPrimary();
+            internal bool IsInstanceName => _edge.IsInstanceName();
+            internal bool RequiredAtDB => _edge.IsRequired();
+
+            internal override NavigationProperty GetNavigationProperty() {
+                return new NavigationProperty(_edge);
+            }
+            internal IEnumerable<ValueMember> GetRefTargetKeys() {
+                return _edge.Terminal
+                    .GetKeyMembers()
+                    .Select(refTargetMember => new RefTargetMember(this, refTargetMember));
+            }
+            internal IEnumerable<ValueMember> GetRefTargetNameMembers() {
+                return _edge.Terminal
+                    .GetInstanceNameMembers()
+                    .Select(refTargetMember => new RefTargetMember(this, refTargetMember));
+            }
         }
+        internal class RefTargetMember : ValueMember {
+            internal RefTargetMember(Ref refMember, ValueMember refTargetMember) {
+                _refMember = refMember;
+                _refTargetMember = refTargetMember;
+            }
+            private readonly Ref _refMember;
+            private readonly ValueMember _refTargetMember;
+
+            internal override bool IsPrimary => _refMember.IsPrimary;
+            internal override bool IsInstanceName => _refMember.IsInstanceName;
+            internal override bool RequiredAtDB => _refMember.RequiredAtDB;
+            internal override IAggregateMemberType MemberType => _refTargetMember.MemberType;
+            internal override GraphNode<Aggregate> Owner => _refMember.Owner;
+            internal override string PropertyName => $"{_refMember.PropertyName}_{_refTargetMember.PropertyName}";
+            internal override string CSharpTypeName => _refTargetMember.CSharpTypeName;
+            internal override string TypeScriptTypename => _refTargetMember.TypeScriptTypename;
+
+            internal override DbColumn.DbColumnBase GetDbColumn() {
+                return new DbColumn.RefTargetTablePKColumn(_refMember, _refTargetMember.GetDbColumn());
+            }
+        }
+        #endregion MEMBER IMPLEMEMT
     }
 }

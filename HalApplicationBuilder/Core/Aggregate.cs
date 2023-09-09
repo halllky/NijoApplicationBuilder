@@ -23,7 +23,7 @@ namespace HalApplicationBuilder.Core {
         public string EFCoreEntityClassName => $"{DisplayName.ToCSharpSafe()}DbEntity";
         string IEFCoreEntity.ClassName => EFCoreEntityClassName;
         public string DbSetName => EFCoreEntityClassName;
-        public IList<DbColumn.BareColumn> SchalarMembersNotRelatedToAggregate { get; } = new List<DbColumn.BareColumn>();
+        public IList<DbColumn.ColumnInfo> SchalarMembersNotRelatedToAggregate { get; } = new List<DbColumn.ColumnInfo>();
 
         protected override IEnumerable<object?> ValueObjectIdentifiers() {
             yield return Id;

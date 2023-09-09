@@ -29,7 +29,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                 /// </summary>
                 public static {{_aggregate.Item.ClassName}} {{METHODNAME}}({{_ctx.Config.EntityNamespace}}.{{_aggregate.Item.EFCoreEntityClassName}} entity) {
                     var instance = new {{_aggregate.Item.ClassName}} {
-                        {{WithIndent(RenderBody(_aggregate, "", "entity", 0), "        ")}}
+                        {{WithIndent(RenderBody(_aggregate, _aggregate, "entity", 0), "        ")}}
                     };
                     instance.{{AggregateInstanceBase.INSTANCE_KEY}} = instance.{{AggregateRenderer.GETINSTANCEKEY_METHOD_NAME}}().ToString();
                     instance.{{AggregateInstanceBase.INSTANCE_NAME}} = instance.{{AggregateRenderer.GETINSTANCENAME_METHOD_NAME}}();
@@ -38,73 +38,50 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                 """;
         }
 
-        private IEnumerable<string> RenderBody(GraphNode<Aggregate> instance, string parentPath, string instancePath, int depth) {
-            foreach (var prop in instance.GetProperties()) {
-                if (prop is AggregateMember.SchalarProperty schalarProp) {
+        private IEnumerable<string> RenderBody(GraphNode<Aggregate> instance, GraphNode<Aggregate> rootInstance, string rootInstanceName, int depth) {
+            foreach (var prop in instance.GetMembers()) {
+                if (prop is AggregateMember.ValueMember valueMember) {
                     yield return $$"""
-                        {{schalarProp.PropertyName}} = {{instancePath}}.{{schalarProp.CorrespondingDbColumn.PropertyName}},
+                        {{valueMember.PropertyName}} = {{rootInstanceName}}.{{valueMember.GetFullPath(rootInstance).Join(".")}},
                         """;
 
-                } else if (prop is AggregateMember.VariationSwitchProperty switchProp) {
-                    yield return $$"""
-                        {{switchProp.PropertyName}} = {{instancePath}}.{{switchProp.CorrespondingDbColumn.PropertyName}},
-                        """;
-
-                } else if (prop is AggregateMember.RefProperty refProp) {
-                    var refTarget = (IEFCoreEntity)refProp.Owner.Item == refProp.CorrespondingNavigationProperty.Principal.Owner.Item
-                        ? refProp.CorrespondingNavigationProperty.Principal
-                        : refProp.CorrespondingNavigationProperty.Relevant;
-                    var nameColumn = refTarget.Owner
-                        .GetColumns()
-                        .Where(col => col.IsInstanceName)
-                        .SingleOrDefault()?
-                        .PropertyName;
+                } else if (prop is AggregateMember.Ref refProp) {
+                    var nav = refProp.GetNavigationProperty();
+                    var refTarget = refProp.Owner == nav.Principal.Owner
+                        ? nav.Principal
+                        : nav.Relevant;
+                    var names = refTarget.Owner
+                        .GetInstanceNameMembers()
+                        .Select(member => $"{rootInstanceName}.{member.GetFullPath(rootInstance).Join(".")}");
                     var foreignKeys = refTarget.ForeignKeys
-                        .Select(fk => $"{instancePath}.{fk.PropertyName}")
-                        .Join(", ");
-                    var joinedFk = refTarget.ForeignKeys
-                        .Select(fk => $"{fk.PropertyName}?.ToString()")
-                        .Join(" + ");
+                        .Select(fk => $"{rootInstanceName}.{fk.GetFullPath(rootInstance.As<IEFCoreEntity>()).Join(".")}");
 
                     yield return $$"""
                         {{refProp.PropertyName}} = new() {
-                            {{AggregateInstanceKeyNamePair.KEY}} = {{Utility.CLASSNAME}}.{{Utility.TO_JSON}}(new object?[] { {{foreignKeys}} }),
-                            {{AggregateInstanceKeyNamePair.NAME}} = {{instancePath}}.{{nameColumn ?? joinedFk}},
+                            {{AggregateInstanceKeyNamePair.KEY}} = {{Utility.CLASSNAME}}.{{Utility.TO_JSON}}(new object?[] { {{foreignKeys.Join(", ")}} }),
+                            {{AggregateInstanceKeyNamePair.NAME}} = {{names.Join(" + ")}},
                         },
                         """;
 
-                } else if (prop is AggregateMember.ChildrenProperty children) {
+                } else if (prop is AggregateMember.Children children) {
                     var item = depth == 0 ? "item" : $"item{depth}";
-                    var childClass = children.ChildAggregateInstance.Item.ClassName;
-                    var childInstance = children.ChildAggregateInstance.AsEntry();
-
-                    var body = RenderBody(childInstance, instancePath, item, depth + 1);
+                    var childClass = children.MemberAggregate.Item.ClassName;
+                    var childInstance = children.MemberAggregate;
+                    var childFullPath = children.GetFullPath(rootInstance).Join(".");
 
                     yield return $$"""
-                        {{children.PropertyName}} = {{instancePath}}.{{children.PropertyName}}.Select({{item}} => new {{childClass}} {
-                            {{WithIndent(RenderBody(childInstance, instancePath, item, depth + 1), "    ")}}
+                        {{children.PropertyName}} = {{rootInstanceName}}.{{childFullPath}}.Select({{item}} => new {{childClass}} {
+                            {{WithIndent(RenderBody(childInstance, childInstance, item, depth + 1), "    ")}}
                         }).ToList(),
                         """;
 
-                } else if (prop is AggregateMember.ChildProperty child) {
-                    var childClass = child.ChildAggregateInstance.Item.ClassName;
-                    var childInstance = child.ChildAggregateInstance;
-                    var nestedInstancePath = $"{instancePath}.{child.CorrespondingNavigationProperty.Principal.PropertyName}";
+                } else if (prop is AggregateMember.RelationMember child) {
+                    var childClass = child.MemberAggregate.Item.ClassName;
+                    var childInstance = child.MemberAggregate;
 
                     yield return $$"""
                         {{child.PropertyName}} = new {{childClass}} {
-                            {{WithIndent(RenderBody(childInstance, instancePath, nestedInstancePath, depth + 1), "    ")}}
-                        },
-                        """;
-
-                } else if (prop is AggregateMember.VariationProperty variation) {
-                    var childClass = variation.ChildAggregateInstance.Item.ClassName;
-                    var childInstance = variation.ChildAggregateInstance;
-                    var nestedInstancePath = $"{instancePath}.{variation.CorrespondingNavigationProperty.Principal.PropertyName}";
-
-                    yield return $$"""
-                        {{variation.PropertyName}} = new {{childClass}} {
-                            {{WithIndent(RenderBody(childInstance, instancePath, nestedInstancePath, depth + 1), "    ")}}
+                            {{WithIndent(RenderBody(childInstance, rootInstance, rootInstanceName, depth + 1), "    ")}}
                         },
                         """;
 
