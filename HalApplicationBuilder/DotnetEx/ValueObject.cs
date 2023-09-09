@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,7 +10,13 @@ namespace HalApplicationBuilder.DotnetEx {
 
         public override bool Equals(object? obj) {
             if (obj == null) return false;
-            if (obj.GetType() != GetType()) return false;
+
+            var objType = obj.GetType();
+            var thisType = GetType();
+            if (objType != thisType
+                && !objType.IsSubclassOf(thisType)
+                && !thisType.IsSubclassOf(objType)) return false;
+
             return ValueObjectIdentifiers().SequenceEqual(((ValueObject)obj).ValueObjectIdentifiers());
         }
         public override int GetHashCode() {

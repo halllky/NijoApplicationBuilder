@@ -224,20 +224,16 @@ namespace HalApplicationBuilder.DotnetEx {
         /// <summary>
         /// 辺の始点
         /// </summary>
-        internal GraphNode Initial {
-            get {
-                _initial ??= new GraphNode(_graph.Nodes[_info.Initial], _graph, this);
-                return _initial;
-            }
-        }
+        internal GraphNode Initial => _initial ??= GoToNeighborNode(_info.Initial);
         /// <summary>
         /// 辺の終点
         /// </summary>
-        internal GraphNode Terminal {
-            get {
-                _terminal ??= new GraphNode(_graph.Nodes[_info.Terminal], _graph, this);
-                return _terminal;
-            }
+        internal GraphNode Terminal => _terminal ??= GoToNeighborNode(_info.Terminal);
+
+        private GraphNode GoToNeighborNode(NodeId nodeId) {
+            var newNode = new GraphNode(_graph.Nodes[nodeId], _graph, this);
+            if (newNode == Source) return Source;
+            return newNode;
         }
 
         internal GraphEdge<T> As<T>() where T : IGraphNode {
