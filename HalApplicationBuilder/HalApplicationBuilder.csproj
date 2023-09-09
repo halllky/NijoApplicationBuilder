@@ -30,69 +30,13 @@
 	  <None Remove="Serialized\" />
 	</ItemGroup>
 	<ItemGroup>
-		<None Update="CodeRendering\Configure.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>Configure.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\EFCore\DbContext.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>DbContext.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\Util\DefaultLogger.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>DefaultLogger.cs</LastGenOutput>
-		</None>
 		<None Update="CodeRendering\Util\HttpResponseExceptionFilter.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>HttpResponseExceptionFilter.cs</LastGenOutput>
 		</None>
-		<None Update="CodeRendering\WebClient\CreateView.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>CreateView.cs</LastGenOutput>
-		</None>
 		<None Update="CodeRendering\WebClient\page.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>page.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\WebClient\SingleView.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>SingleView.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\Presentation\AggregateInstanceBase.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>AggregateInstanceBase.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\Util\AggregateInstanceKeyNamePair.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>AggregateInstanceKeyNamePair.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\WebClient\ComboBox.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>ComboBox.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\WebClient\DebuggerController.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>DebuggerController.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\WebClient\index.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>index.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\Util\DotnetExtensions.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>DotnetExtensions.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\Util\FromTo.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>FromTo.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\Util\InstanceKey.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>InstanceKey.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\Util\RuntimeSettings.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>RuntimeSettings.cs</LastGenOutput>
 		</None>
 		<None Update="CodeRendering\EFCore\DbContextTemplate.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
@@ -101,10 +45,6 @@
 		<None Update="CodeRendering\DefaultRuntimeConfigTemplate.tt">
 		  <Generator>TextTemplatingFilePreprocessor</Generator>
 		  <LastGenOutput>DefaultRuntimeConfigTemplate.cs</LastGenOutput>
-		</None>
-		<None Update="CodeRendering\WebClient\index.tt">
-		  <Generator>TextTemplatingFilePreprocessor</Generator>
-		  <LastGenOutput>index.cs</LastGenOutput>
 		</None>
 		<None Update="AspNetMvc\AggregatePartialViewTemplate.tt">
 			<Generator>TextTemplatingFilePreprocessor</Generator>
@@ -152,85 +92,15 @@
 		<Compile Update="CodeGenerating\MultiView\MultiViewTemplate.cs">
 			<DependentUpon>MultiViewTemplate.tt</DependentUpon>
 		</Compile>
-		<Compile Update="CodeRendering\Configure.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>Configure.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\EFCore\DbContext.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>DbContext.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\Util\DefaultLogger.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>DefaultLogger.tt</DependentUpon>
-		</Compile>
 		<Compile Update="CodeRendering\Util\HttpResponseExceptionFilter.cs">
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>HttpResponseExceptionFilter.tt</DependentUpon>
 		</Compile>
-		<Compile Update="CodeRendering\WebClient\CreateView.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>CreateView.tt</DependentUpon>
-		</Compile>
 		<Compile Update="CodeRendering\WebClient\page.cs">
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>page.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\WebClient\SingleView.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>SingleView.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\Presentation\AggregateInstanceBase.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>AggregateInstanceBase.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\Util\AggregateInstanceKeyNamePair.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>AggregateInstanceKeyNamePair.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\WebClient\ComboBox.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>ComboBox.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\WebClient\DebuggerController.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>DebuggerController.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\WebClient\index.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>index.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\Util\DotnetExtensions.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>DotnetExtensions.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\Util\FromTo.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>FromTo.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\Util\InstanceKey.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>InstanceKey.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\Util\RuntimeSettings.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>RuntimeSettings.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering\EFCore\DbContextTemplate.cs">
 		  <DesignTime>True</DesignTime>
@@ -241,11 +111,6 @@
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
 		  <DependentUpon>DefaultRuntimeConfigTemplate.tt</DependentUpon>
-		</Compile>
-		<Compile Update="CodeRendering\WebClient\index.cs">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>index.tt</DependentUpon>
 		</Compile>
 		<Compile Update="CodeRendering\UIModelsTemplate.cs">
 		  <DesignTime>True</DesignTime>

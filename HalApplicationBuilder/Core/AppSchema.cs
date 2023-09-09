@@ -27,9 +27,6 @@ namespace HalApplicationBuilder.Core {
         internal IEnumerable<GraphNode<IEFCoreEntity>> ToEFCoreGraph() {
             return Graph.Only<IEFCoreEntity>();
         }
-        internal IEnumerable<GraphNode<IAggregateInstance>> ToAggregateInstanceGraph() {
-            return Graph.Only<IAggregateInstance>();
-        }
 
         internal IReadOnlyCollection<EnumDefinition> EnumDefinitions { get; }
     }
