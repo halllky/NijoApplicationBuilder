@@ -1,6 +1,7 @@
 using HalApplicationBuilder.CodeRendering.Util;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,6 +35,14 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
         }
 
         private IEnumerable<string> RenderBody(GraphNode<Aggregate> instance, string parentPath, string instancePath, int depth) {
+
+            // 親のPK
+            foreach (var column in instance.GetColumns().Where(col => col is IEFCoreEntity.ParentTablePrimaryKey)) {
+                yield return $$"""
+                    {{column.PropertyName}} = {{parentPath}}.{{column.PropertyName}},
+                    """;
+            }
+
             foreach (var prop in instance.GetProperties(_ctx.Config)) {
                 if (prop is IAggregateInstance.SchalarProperty schalarProp) {
                     var path = schalarProp.CorrespondingDbColumn is IEFCoreEntity.ParentTablePrimaryKey
@@ -41,7 +50,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                         : instancePath;
 
                     yield return $$"""
-                        {{schalarProp.CorrespondingDbColumn.PropertyName}} = {{path}}.{{schalarProp.PropertyName}},
+                        {{schalarProp.CorrespondingDbColumn.PropertyName}} = {{instancePath}}.{{schalarProp.PropertyName}},
                         """;
 
                 } else if (prop is IAggregateInstance.VariationSwitchProperty switchProp) {
