@@ -20,7 +20,8 @@ namespace HalApplicationBuilder.Core {
             var aggregateColumns = dbEntity.Item is not Aggregate
                 ? Enumerable.Empty<DbColumnBase>()
                 : dbEntity.As<Aggregate>()
-                          .GetKeyMembers()
+                          .GetMembers()
+                          .OfType<AggregateMember.ValueMember>()
                           .Select(member => member.GetDbColumn());
 
             return nonAggregateColumns.Concat(aggregateColumns);

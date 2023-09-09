@@ -35,9 +35,14 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
         }
 
         private IEnumerable<string> RenderBody(GraphNode<Aggregate> instance, GraphNode<Aggregate> rootInstance, string rootInstanceName, int depth) {
-
             foreach (var prop in instance.GetMembers()) {
-                if (prop is AggregateMember.ValueMember valueMember) {
+                if (prop is AggregateMember.ParentPK) {
+                    continue; // Children等の分岐でレンダリングするので
+
+                } else if (prop is AggregateMember.RefTargetMember) {
+                    continue; // Refの分岐でレンダリングするので
+
+                } else if (prop is AggregateMember.ValueMember valueMember) {
                     yield return $$"""
                         {{valueMember.GetDbColumn().PropertyName}} = {{rootInstanceName}}.{{valueMember.GetFullPath(rootInstance).Join(".")}},
                         """;

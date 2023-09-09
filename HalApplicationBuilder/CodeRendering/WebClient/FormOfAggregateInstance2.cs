@@ -109,7 +109,13 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         }
 
         private string RenderProperty(Component component, AggregateMember.AggregateMemberBase prop) {
-            if (prop is AggregateMember.Schalar schalar) {
+            if (prop is AggregateMember.ParentPK) {
+                return string.Empty;
+
+            } else if (prop is AggregateMember.RefTargetMember) {
+                return string.Empty;
+
+            } else if (prop is AggregateMember.Schalar schalar) {
                 return $$"""
                     <div className="flex">
                       <div className="{{PropNameWidth}}">

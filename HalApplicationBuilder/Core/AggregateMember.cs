@@ -26,7 +26,7 @@ namespace HalApplicationBuilder.Core {
         internal static IEnumerable<AggregateMemberBase> GetMembers(this GraphNode<Aggregate> aggregate) {
             var parent = aggregate.GetParent();
             if (parent != null) {
-                foreach (var parentPK in parent.Terminal.GetKeyMembers()) {
+                foreach (var parentPK in parent.Initial.GetKeyMembers()) {
                     yield return new ParentPK(aggregate, parentPK);
                 }
             }
@@ -76,6 +76,10 @@ namespace HalApplicationBuilder.Core {
             foreach (var member in aggregate.GetMembers()) {
                 if (member is not RelationMember relationMember) continue;
                 yield return relationMember.GetNavigationProperty();
+            }
+
+            foreach (var refered in aggregate.GetReferedEdges()) {
+                yield return new NavigationProperty(refered);
             }
         }
 
