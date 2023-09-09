@@ -13,33 +13,17 @@ namespace HalApplicationBuilder.Core {
             return aggregate.As<IEFCoreEntity>().GetColumns();
         }
         internal static IEnumerable<DbColumnBase> GetColumns(this GraphNode<IEFCoreEntity> dbEntity) {
-            // 親の主キー
-            var parent = dbEntity.GetParent()?.Initial;
-            if (parent != null) {
-                foreach (var parentPkColumn in parent.GetColumns().Where(c => c.IsPrimary)) {
-                    yield return new ParentTablePKColumn(dbEntity, parentPkColumn);
-                }
-            }
-            // 集約で定義されていないカラム
-            foreach (var member in dbEntity.Item.SchalarMembersNotRelatedToAggregate) {
-                yield return new NonAggregateMemberColumn(dbEntity, member);
-            }
-            // 集約に紐づくカラム
-            if (dbEntity.Item is Aggregate) {
-                foreach (var prop in dbEntity.As<Aggregate>().GetMembers()) {
-                    if (prop is AggregateMember.Schalar schalar) {
-                        yield return new AggregateMemberColumn(schalar);
+            var nonAggregateColumns = dbEntity.Item
+                .SchalarMembersNotRelatedToAggregate
+                .Select(member => new NonAggregateMemberColumn(dbEntity, member));
 
-                    } else if (prop is AggregateMember.Variation variationGroup) {
-                        yield return new VariationTypeColumn(variationGroup);
+            var aggregateColumns = dbEntity.Item is not Aggregate
+                ? Enumerable.Empty<DbColumnBase>()
+                : dbEntity.As<Aggregate>()
+                          .GetKeyMembers()
+                          .Select(member => member.GetDbColumn());
 
-                    } else if (prop is AggregateMember.Ref refMember) {
-                        foreach (var refTargetPk in refMember.GetRefTargetKeys()) {
-                            yield return refTargetPk.GetDbColumn();
-                        }
-                    } 
-                }
-            }
+            return nonAggregateColumns.Concat(aggregateColumns);
         }
 
 

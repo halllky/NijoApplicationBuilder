@@ -24,38 +24,44 @@ namespace HalApplicationBuilder.Core {
     internal static class AggregateMember {
 
         internal static IEnumerable<AggregateMemberBase> GetMembers(this GraphNode<Aggregate> aggregate) {
-            foreach (var member in aggregate.GetMemberNodes()) yield return new Schalar(member);
-            foreach (var edge in aggregate.GetChildrenEdges()) yield return new Children(edge);
-            foreach (var edge in aggregate.GetChildEdges()) yield return new Child(edge);
+            var parent = aggregate.GetParent();
+            if (parent != null) {
+                foreach (var parentPK in parent.Terminal.GetKeyMembers()) {
+                    yield return new ParentPK(aggregate, parentPK);
+                }
+            }
+            foreach (var member in aggregate.GetMemberNodes()) {
+                yield return new Schalar(member);
+            }
+            foreach (var edge in aggregate.GetChildrenEdges()) {
+                yield return new Children(edge);
+            }
+            foreach (var edge in aggregate.GetChildEdges()) {
+                yield return new Child(edge);
+            }
             foreach (var group in aggregate.GetVariationGroups()) {
                 var variationGroup = new Variation(group);
                 yield return variationGroup;
                 foreach (var item in variationGroup.GetGroupItems()) yield return item;
             }
-            foreach (var edge in aggregate.GetRefEdge()) yield return new Ref(edge);
+            foreach (var edge in aggregate.GetRefEdge()) {
+                var refMember = new Ref(edge);
+                yield return refMember;
+                foreach (var refPK in refMember.GetRefTargetKeys()) yield return refPK;
+            }
         }
         internal static IEnumerable<ValueMember> GetKeyMembers(this GraphNode<Aggregate> aggregate) {
-            foreach (var member in aggregate.GetMembers()) {
-                if (member is ValueMember valueMember && valueMember.IsPrimary) {
-                    yield return valueMember;
-                }
-                if (member is Ref refProp) {
-                    foreach (var refTargetKey in refProp.GetRefTargetKeys()) {
-                        yield return refTargetKey;
-                    }
-                }
-            }
+            return aggregate
+                .GetMembers()
+                .OfType<ValueMember>()
+                .Where(member => member.IsPrimary);
         }
         internal static IEnumerable<ValueMember> GetInstanceNameMembers(this GraphNode<Aggregate> aggregate) {
-            var nameMembers = new List<ValueMember>();
-            foreach (var member in aggregate.GetMembers()) {
-                if (member is ValueMember valueMember && valueMember.IsInstanceName) {
-                    nameMembers.Add(valueMember);
-                }
-                if (member is Ref refProp && refProp.IsInstanceName) {
-                    nameMembers.AddRange(refProp.GetRefTargetNameMembers());
-                }
-            }
+            var nameMembers = aggregate
+                .GetMembers()
+                .OfType<ValueMember>()
+                .Where(member => member.IsInstanceName)
+                .ToArray();
             // name属性のメンバーが無い場合はキーを表示名称にする
             return nameMembers.Any()
                 ? nameMembers
@@ -287,6 +293,28 @@ namespace HalApplicationBuilder.Core {
 
             internal override DbColumn.DbColumnBase GetDbColumn() {
                 return new DbColumn.RefTargetTablePKColumn(_refMember, _refTargetMember.GetDbColumn());
+            }
+        }
+
+        internal class ParentPK : ValueMember {
+            internal ParentPK(GraphNode<Aggregate> childAggregate, ValueMember parentPK) {
+                _childAggregate = childAggregate;
+                _parentPK = parentPK;
+            }
+            private readonly GraphNode<Aggregate> _childAggregate;
+            private readonly ValueMember _parentPK;
+
+            internal override bool IsPrimary => true;
+            internal override bool IsInstanceName => false;
+            internal override bool RequiredAtDB => true;
+            internal override IAggregateMemberType MemberType => _parentPK.MemberType;
+            internal override GraphNode<Aggregate> Owner => _childAggregate;
+            internal override string PropertyName => _parentPK.PropertyName;
+            internal override string CSharpTypeName => _parentPK.CSharpTypeName;
+            internal override string TypeScriptTypename => _parentPK.TypeScriptTypename;
+
+            internal override DbColumn.DbColumnBase GetDbColumn() {
+                return new DbColumn.ParentTablePKColumn(_childAggregate.As<IEFCoreEntity>(), _parentPK.GetDbColumn());
             }
         }
         #endregion MEMBER IMPLEMEMT
