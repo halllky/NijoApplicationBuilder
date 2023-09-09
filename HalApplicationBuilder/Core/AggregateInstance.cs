@@ -73,8 +73,8 @@ namespace HalApplicationBuilder.Core {
         internal static IEnumerable<IAggregateInstance.VariationSwitchProperty> GetVariationSwitchProperties(this GraphNode<Aggregate> instance, Config config) {
             var dbEntityColumns = instance
                 .GetColumns()
-                .Where(col => col is IEFCoreEntity.VariationGroupTypeIdentifier)
-                .Cast<IEFCoreEntity.VariationGroupTypeIdentifier>()
+                .Where(col => col is DbColumn.VariationGroupTypeIdentifier)
+                .Cast<DbColumn.VariationGroupTypeIdentifier>()
                 .ToArray();
 
             foreach (var group in instance.GetVariationGroups()) {
@@ -113,7 +113,7 @@ namespace HalApplicationBuilder.Core {
                     CorrespondingNavigationProperty = new NavigationProperty(edgeAsEfCore, config),
                     CorrespondingDbColumns = instance
                         .GetColumns()
-                        .Where(col => col is IEFCoreEntity.RefTargetTablePrimaryKey refTargetPk
+                        .Where(col => col is DbColumn.RefTargetTablePrimaryKey refTargetPk
                                    && refTargetPk.Relation.Terminal == terminalDbEntity)
                         .ToArray(),
                 };

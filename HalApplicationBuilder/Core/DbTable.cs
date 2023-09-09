@@ -9,16 +9,16 @@ using static HalApplicationBuilder.Core.IEFCoreEntity;
 
 namespace HalApplicationBuilder.Core {
     internal class DbTable : IEFCoreEntity {
-        internal DbTable(NodeId id, string name, IList<BareColumn>? schalarMembers = null) {
+        internal DbTable(NodeId id, string name, IList<DbColumn.BareColumn>? schalarMembers = null) {
             Id = id;
             ClassName = name;
-            SchalarMembersNotRelatedToAggregate = schalarMembers ?? new List<BareColumn>();
+            SchalarMembersNotRelatedToAggregate = schalarMembers ?? new List<DbColumn.BareColumn>();
         }
 
         public NodeId Id { get; }
         public string ClassName { get; }
         public string DbSetName => ClassName;
-        public IList<BareColumn> SchalarMembersNotRelatedToAggregate { get; }
+        public IList<DbColumn.BareColumn> SchalarMembersNotRelatedToAggregate { get; }
 
         public override string ToString() {
             return Id.Value;
@@ -58,7 +58,7 @@ namespace HalApplicationBuilder.Core {
                     OppositeIsMany = oppositeIsMany,
                     ForeignKeys = owner
                         .GetColumns()
-                        .Where(col => col is IEFCoreEntity.RefTargetTablePrimaryKey refTargetPk
+                        .Where(col => col is DbColumn.RefTargetTablePrimaryKey refTargetPk
                                    && refTargetPk.Relation.Terminal == opposite),
                 };
             }
@@ -104,7 +104,7 @@ namespace HalApplicationBuilder.Core {
             internal required string PropertyName { get; init; }
             internal required bool OppositeIsMany { get; init; }
             internal string? Initializer { get; init; }
-            internal required IEnumerable<IEFCoreEntity.IMember> ForeignKeys { get; init; }
+            internal required IEnumerable<DbColumn.IDbColumn> ForeignKeys { get; init; }
 
             protected override IEnumerable<object?> ValueObjectIdentifiers() {
                 yield return Owner;
@@ -120,59 +120,6 @@ namespace HalApplicationBuilder.Core {
     }
 
     internal static class EFCoreEntityExtensions {
-        internal static IEnumerable<IEFCoreEntity.IMember> GetColumns(this GraphNode<IEFCoreEntity> dbEntity) {
-            // 親の主キー
-            var parent = dbEntity.GetParent()?.Initial;
-            if (parent != null) {
-                foreach (var parentPkColumn in parent.GetColumns().Where(c => c.IsPrimary)) {
-                    yield return new IEFCoreEntity.ParentTablePrimaryKey {
-                        Owner = dbEntity,
-                        CorrespondingParentColumn = parentPkColumn,
-                    };
-                }
-            }
-            // スカラー値
-            foreach (var member in dbEntity.Item.SchalarMembersNotRelatedToAggregate) {
-                yield return new IEFCoreEntity.BareColumnWithOwner {
-                    Owner = dbEntity,
-                    PropertyName = member.PropertyName,
-                    IsPrimary = member.IsPrimary,
-                    IsInstanceName = member.IsInstanceName,
-                    MemberType = member.MemberType,
-                    RequiredAtDB = member.RequiredAtDB,
-                };
-            }
-            if (dbEntity.Item is Aggregate) {
-                foreach (var member in dbEntity.As<Aggregate>().GetSchalarMembers()) {
-                    yield return new IEFCoreEntity.SchalarColumnDefniedInAggregate {
-                        Owner = dbEntity,
-                        PropertyName = member.Item.Name,
-                        IsPrimary = member.Item.IsPrimary,
-                        IsInstanceName = member.Item.IsInstanceName,
-                        MemberType = member.Item.Type,
-                        RequiredAtDB = member.Item.IsPrimary, // TODO XMLでrequired属性を定義できるようにする
-                    };
-                }
-            }
-            // Ref
-            foreach (var edge in dbEntity.GetRefMembers()) {
-                foreach (var refTargetPk in edge.Terminal.GetColumns().Where(c => c.IsPrimary)) {
-                    yield return new IEFCoreEntity.RefTargetTablePrimaryKey {
-                        Owner = dbEntity,
-                        Relation = edge,
-                        CorrespondingRefTargetColumn = refTargetPk,
-                    };
-                }
-            }
-            // リレーション
-            foreach (var group in dbEntity.GetVariationGroups()) {
-                // variationの型番号
-                yield return new IEFCoreEntity.VariationGroupTypeIdentifier {
-                    Group = group,
-                    Owner = dbEntity,
-                };
-            }
-        }
         internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<IEFCoreEntity> efCoreEntity, Config config) {
             var parent = efCoreEntity.GetParent();
             if (parent != null)
@@ -195,7 +142,6 @@ namespace HalApplicationBuilder.Core {
             }
         }
 
-        internal static IEnumerable<IEFCoreEntity.IMember> GetColumns(this GraphNode<Aggregate> aggregate) => aggregate.As<IEFCoreEntity>().GetColumns();
         internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<Aggregate> aggregate, Config config) => aggregate.As<IEFCoreEntity>().GetNavigationProperties(config);
     }
 }

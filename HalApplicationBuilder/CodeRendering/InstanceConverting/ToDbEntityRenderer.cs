@@ -37,7 +37,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
         private IEnumerable<string> RenderBody(GraphNode<Aggregate> instance, string parentPath, string instancePath, int depth) {
 
             // 親のPK
-            foreach (var column in instance.GetColumns().Where(col => col is IEFCoreEntity.ParentTablePrimaryKey)) {
+            foreach (var column in instance.GetColumns().Where(col => col is DbColumn.ParentTablePrimaryKey)) {
                 yield return $$"""
                     {{column.PropertyName}} = {{parentPath}}.{{column.PropertyName}},
                     """;
@@ -45,7 +45,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
 
             foreach (var prop in instance.GetProperties(_ctx.Config)) {
                 if (prop is IAggregateInstance.SchalarProperty schalarProp) {
-                    var path = schalarProp.CorrespondingDbColumn is IEFCoreEntity.ParentTablePrimaryKey
+                    var path = schalarProp.CorrespondingDbColumn is DbColumn.ParentTablePrimaryKey
                         ? parentPath
                         : instancePath;
 

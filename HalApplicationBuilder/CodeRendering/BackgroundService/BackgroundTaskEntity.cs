@@ -11,56 +11,56 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
         internal static NodeId GraphNodeId => new NodeId($"HALAPP::{CLASSNAME}");
         internal static IEFCoreEntity CreateEntity() {
             var columns = new[] {
-                new IEFCoreEntity.BareColumn {
+                new DbColumn.BareColumn {
                     PropertyName = COL_ID,
                     IsPrimary = true,
                     IsInstanceName = false,
                     MemberType = new Core.AggregateMembers.Id(),
                     RequiredAtDB = true,
                 },
-                new IEFCoreEntity.BareColumn {
+                new DbColumn.BareColumn {
                     PropertyName = COL_NAME,
                     IsPrimary = false,
                     IsInstanceName = true,
                     MemberType = new Core.AggregateMembers.Word(),
                     RequiredAtDB = true,
                 },
-                new IEFCoreEntity.BareColumn {
+                new DbColumn.BareColumn {
                     PropertyName = COL_BATCHTYPE,
                     IsPrimary = false,
                     IsInstanceName = false,
                     MemberType = new Core.AggregateMembers.Word(),
                     RequiredAtDB = true,
                 },
-                new IEFCoreEntity.BareColumn {
+                new DbColumn.BareColumn {
                     PropertyName = COL_PARAMETERJSON,
                     IsPrimary = false,
                     IsInstanceName = false,
                     MemberType = new Core.AggregateMembers.Word(),
                     RequiredAtDB = true,
                 },
-                new IEFCoreEntity.BareColumn {
+                new DbColumn.BareColumn {
                     PropertyName = COL_STATE,
                     IsPrimary = false,
                     IsInstanceName = false,
                     MemberType = new Core.AggregateMembers.EnumList(CreateBackgroundTaskStateEnum()),
                     RequiredAtDB = true,
                 },
-                new IEFCoreEntity.BareColumn {
+                new DbColumn.BareColumn {
                     PropertyName = COL_REQUESTTIME,
                     IsPrimary = false,
                     IsInstanceName = false,
                     MemberType = new Core.AggregateMembers.TimePoint(),
                     RequiredAtDB = true,
                 },
-                new IEFCoreEntity.BareColumn {
+                new DbColumn.BareColumn {
                     PropertyName = COL_STARTTIME,
                     IsPrimary = false,
                     IsInstanceName = false,
                     MemberType = new Core.AggregateMembers.TimePoint(),
                     RequiredAtDB = false,
                 },
-                new IEFCoreEntity.BareColumn {
+                new DbColumn.BareColumn {
                     PropertyName = COL_FINISHTIME,
                     IsPrimary = false,
                     IsInstanceName = false,

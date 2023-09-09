@@ -22,7 +22,7 @@ namespace HalApplicationBuilder.Core {
             internal required string PropertyName { get; init; }
         }
         internal class SchalarProperty : Property {
-            internal required IEFCoreEntity.IMember CorrespondingDbColumn { get; init; }
+            internal required DbColumn.IDbColumn CorrespondingDbColumn { get; init; }
         }
         internal class ChildrenProperty : Property {
             internal required GraphNode<Aggregate> ChildAggregateInstance { get; init; }
@@ -34,7 +34,7 @@ namespace HalApplicationBuilder.Core {
         }
         internal class VariationSwitchProperty : Property {
             internal required VariationGroup<Aggregate> Group { get; init; }
-            internal required IEFCoreEntity.VariationGroupTypeIdentifier CorrespondingDbColumn { get; init; }
+            internal required DbColumn.VariationGroupTypeIdentifier CorrespondingDbColumn { get; init; }
 
             internal required Config Config { get; init; }
             internal IEnumerable<VariationProperty> GetGroupItems() {
@@ -66,7 +66,7 @@ namespace HalApplicationBuilder.Core {
         internal class RefProperty : Property {
             internal required GraphNode<Aggregate> RefTarget { get; init; }
             internal required NavigationProperty CorrespondingNavigationProperty { get; init; }
-            internal required IEFCoreEntity.IMember[] CorrespondingDbColumns { get; init; }
+            internal required DbColumn.IDbColumn[] CorrespondingDbColumns { get; init; }
         }
 
     }
