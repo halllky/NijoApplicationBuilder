@@ -20,93 +20,9 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         private readonly CodeRenderingContext _ctx;
         private readonly GraphNode<Aggregate> _instance;
 
-        private string TypesImport => $"../../{Path.GetFileNameWithoutExtension(new types(_ctx).FileName)}";
-
         public override string FileName => "components.tsx";
 
-        internal IEnumerable<string> EnumerateComponentNames() {
-            return _instance
-                .EnumerateThisAndDescendants()
-                .Select(x => new Component(x).ComponentName);
-        }
-
         private string PropNameWidth { get; }
-
-
-        #region SCHALAR PROPERTY
-        private string RenderSchalarProperty(GraphNode<Aggregate> instance, AggregateMember.Schalar prop, string indent) {
-            var renderer = new ReactForm(instance, prop);
-            return TemplateTextHelper.WithIndent(prop.MemberType.RenderUI(renderer), indent);
-        }
-        private class ReactForm : IGuiFormRenderer {
-            internal ReactForm(GraphNode<Aggregate> instance, AggregateMember.Schalar prop) {
-                _instance = instance;
-                _prop = prop;
-            }
-            private readonly GraphNode<Aggregate> _instance;
-            private readonly AggregateMember.Schalar _prop;
-
-            private string ReadOnlyWhere() {
-                return _prop.IsPrimary
-                    ? "singleViewPageMode === 'view' || singleViewPageMode === 'edit'"
-                    : "singleViewPageMode === 'view'";
-            }
-
-            /// <summary>
-            /// Createビュー兼シングルビュー: テキストボックス
-            /// </summary>
-            public string TextBox(bool multiline = false) {
-                var name = GetRegisterName(_instance, _prop).Value;
-                if (multiline)
-                    return $$"""
-                        <textarea
-                            {...register(`{{name}}`)}
-                            className="{{INPUT_WIDTH}}"
-                            readOnly={{{ReadOnlyWhere()}}}
-                            spellCheck="false"
-                            autoComplete="off">
-                        </textarea>
-                        """;
-                else
-                    return $$"""
-                        <input
-                            type="text"
-                            {...register(`{{name}}`)}
-                            className="{{INPUT_WIDTH}}"
-                            readOnly={{{ReadOnlyWhere()}}}
-                            spellCheck="false"
-                            autoComplete="off"
-                        />
-                        """;
-            }
-
-            /// <summary>
-            /// Createビュー兼シングルビュー: トグル
-            /// </summary>
-            public string Toggle() {
-                var name = GetRegisterName(_instance, _prop).Value;
-                return $$"""
-                    <input type="checkbox" {...register(`{{name}}`)} disabled={{{ReadOnlyWhere()}}} />
-                    """;
-            }
-
-            /// <summary>
-            /// Createビュー兼シングルビュー: 選択肢（コード自動生成時に要素が確定しているもの）
-            /// </summary>
-            public string Selection(IEnumerable<KeyValuePair<string, string>> options) {
-                return $$"""
-                    <select className="border" {...register(`{{GetRegisterName(_instance)}}`)}>
-                    {{options.SelectTextTemplate(option => $$"""
-                        <option value="{{option.Key}}">
-                        {{option.Value}}
-                        </option>
-                    """)}}
-                    </select>
-                    """;
-            }
-        }
-        #endregion SCHALAR PROPERTY
-
 
         internal class Component {
             internal Component(GraphNode<Aggregate> instance) {
@@ -137,14 +53,6 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     .Join(string.Empty);
                 return $"<{ComponentName}{args} />";
             }
-        }
-        /// <summary>
-        /// Childrenはコード自動生成の都合上各要素のコンポーネントと配列のコンポーネントの2個あり、これは前者
-        /// </summary>
-        private class ComponentOfChildrenListItem : Component {
-            internal ComponentOfChildrenListItem(GraphNode<Aggregate> instance) : base(instance) { }
-
-            internal override string ComponentName => $"{AggregateInstance.Item.TypeScriptTypeName}ListItemView";
         }
 
 

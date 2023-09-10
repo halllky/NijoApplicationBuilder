@@ -2,6 +2,7 @@ using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,16 +21,27 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 import { useForm, useFieldArray, useFormContext } from 'react-hook-form'
                 import { usePageContext } from '../../hooks/PageContext'
                 import * as Components from '../../components'
-                import * as AggregateType from '{{TypesImport}}'
+                import * as AggregateType from '../../{{Path.GetFileNameWithoutExtension(new types(_ctx).FileName)}}'
 
                 {{components.SelectTextTemplate(RenderComponent)}}
                 """;
         }
 
         private string RenderComponent(Component component) {
+            var layout = component.AggregateInstance.GetMembers().SelectTextTemplate(prop => prop switch {
+                AggregateMember.ParentPK => string.Empty,
+                AggregateMember.RefTargetMember => string.Empty,
+                AggregateMember.Schalar x => RenderProperty(component, x),
+                AggregateMember.Ref x => RenderProperty(component, x),
+                AggregateMember.Child x => RenderProperty(component, x),
+                AggregateMember.VariationItem x => RenderProperty(component, x),
+                AggregateMember.Variation x => RenderProperty(component, x),
+                AggregateMember.Children x => RenderProperty(component, x),
+                _ => throw new NotImplementedException(),
+            });
+
             if (!component.IsChildren) {
                 var args = GetArguments(component.AggregateInstance).Values;
-                var layout = component.AggregateInstance.GetMembers().SelectTextTemplate(p => RenderProperty(component, p));
 
                 return $$"""
                     export const {{component.ComponentName}} = ({ {{args.Join(", ")}} }: {
@@ -52,7 +64,6 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 var argsAndIndex = GetArguments(component.AggregateInstance).Values;
                 var args = argsAndIndex.SkipLast(1);
                 var index = argsAndIndex.Last();
-                var layout = component.AggregateInstance.GetMembers().SelectTextTemplate(p => RenderProperty(component, p));
                 var createNewChildrenItem = new types.AggregateInstanceInitializerFunction(component.AggregateInstance).FunctionName;
 
                 return $$"""
@@ -108,101 +119,164 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             }
         }
 
-        private string RenderProperty(Component component, AggregateMember.AggregateMemberBase prop) {
-            if (prop is AggregateMember.ParentPK) {
-                return string.Empty;
 
-            } else if (prop is AggregateMember.RefTargetMember) {
-                return string.Empty;
-
-            } else if (prop is AggregateMember.Schalar schalar) {
-                return $$"""
-                    <div className="flex">
-                      <div className="{{PropNameWidth}}">
-                      <span className="text-sm select-none opacity-80">
-                        {{prop.PropertyName}}
-                      </span>
-                      </div>
-                      <div className="flex-1">
-                        {{RenderSchalarProperty(component.AggregateInstance, schalar, "    ")}}
-                      </div>
-                    </div>
-                    """;
-
-            } else if (prop is AggregateMember.Ref refProperty) {
-                var combobox = new KeywordSearching.ComboBox(refProperty.MemberAggregate, _ctx);
-                var registerName = GetRegisterName(component.AggregateInstance, refProperty).Value;
-                return $$"""
-                    <div className="flex">
-                      <div className="{{PropNameWidth}}">
-                      <span className="text-sm select-none opacity-80">
-                        {{prop.PropertyName}}
-                      </span>
-                      </div>
-                      <div className="flex-1">
-                        {{WithIndent(combobox.RenderCaller(registerName), "    ")}}
-                      </div>
-                    </div>
-                    """;
-
-            } else if (prop is AggregateMember.Child child) {
-                var childComponent = new Component(child.MemberAggregate);
-                return $$"""
-                    <div className="py-2">
-                      <span className="text-sm select-none opacity-80">
-                      {{prop.PropertyName}}
-                      </span>
-                      <div className="flex flex-col space-y-1 p-1 border border-neutral-400">
-                        {{WithIndent(childComponent.RenderCaller(), "    ")}}
-                      </div>
-                    </div>
-                    """;
-
-            } else if (prop is AggregateMember.VariationItem variation) {
-                var childComponent = new Component(variation.MemberAggregate);
-                var switchProp = GetRegisterName(component.AggregateInstance, variation.Group).Value;
-                return $$"""
-                    <div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(watch(`{{switchProp}}`) !== '{{variation.Key}}' ? 'hidden' : '')}`}>
-                      {{WithIndent(childComponent.RenderCaller(), "  ")}}
-                    </div>
-                    """;
-
-            } else if (prop is AggregateMember.Variation variationSwitch) {
-                var switchProp = GetRegisterName(component.AggregateInstance, variationSwitch).Value;
-                return $$"""
-                    <div className="flex">
-                      <div className="{{PropNameWidth}}">
-                      <span className="text-sm select-none opacity-80">
-                        {{variationSwitch.PropertyName}}
-                      </span>
-                      </div>
-                      <div className="flex-1 flex gap-2 flex-wrap">
-                    {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
-                        <label>
-                          <input type="radio" value="{{variation.Key}}" disabled={singleViewPageMode === 'view'} {...register(`{{switchProp}}`)} />
-                          {{variation.PropertyName}}
-                        </label>
-                    """)}}
-                      </div>
-                    </div>
-                    """;
-
-            } else if (prop is AggregateMember.Children children) {
-                var childrenComponent = new Component(children.MemberAggregate);
-                return $$"""
-                    <div className="py-2">
-                      <span className="text-sm select-none opacity-80">
-                        {{prop.PropertyName}}
-                      </span>
-                      <div className="flex flex-col space-y-1">
-                        {{WithIndent(childrenComponent.RenderCaller(), "    ")}}
-                      </div>
-                    </div>
-                    """;
-
-            } else {
-                throw new NotImplementedException();
+        #region SCHALAR PROPERTY
+        private string RenderProperty(Component component, AggregateMember.Schalar schalar) {
+            var renderer = new ReactForm(component.AggregateInstance, schalar);
+            return $$"""
+                <div className="flex">
+                  <div className="{{PropNameWidth}}">
+                    <span className="text-sm select-none opacity-80">
+                      {{schalar.PropertyName}}
+                    </span>
+                  </div>
+                  <div className="flex-1">
+                    {{WithIndent(schalar.MemberType.RenderUI(renderer), "    ")}}
+                  </div>
+                </div>
+                """;
+        }
+        private class ReactForm : IGuiFormRenderer {
+            internal ReactForm(GraphNode<Aggregate> instance, AggregateMember.Schalar prop) {
+                _instance = instance;
+                _prop = prop;
             }
+            private readonly GraphNode<Aggregate> _instance;
+            private readonly AggregateMember.Schalar _prop;
+
+            private string ReadOnlyWhere() {
+                return _prop.IsPrimary
+                    ? "singleViewPageMode === 'view' || singleViewPageMode === 'edit'"
+                    : "singleViewPageMode === 'view'";
+            }
+
+            /// <summary>
+            /// Createビュー兼シングルビュー: テキストボックス
+            /// </summary>
+            public string TextBox(bool multiline = false) {
+                var name = GetRegisterName(_instance, _prop).Value;
+                if (multiline)
+                    return $$"""
+                        <textarea
+                          {...register(`{{name}}`)}
+                          className="{{INPUT_WIDTH}}"
+                          readOnly={{{ReadOnlyWhere()}}}
+                          spellCheck="false"
+                          autoComplete="off">
+                        </textarea>
+                        """;
+                else
+                    return $$"""
+                        <input
+                          type="text"
+                          {...register(`{{name}}`)}
+                          className="{{INPUT_WIDTH}}"
+                          readOnly={{{ReadOnlyWhere()}}}
+                          spellCheck="false"
+                          autoComplete="off"
+                        />
+                        """;
+            }
+
+            /// <summary>
+            /// Createビュー兼シングルビュー: トグル
+            /// </summary>
+            public string Toggle() {
+                var name = GetRegisterName(_instance, _prop).Value;
+                return $$"""
+                    <input type="checkbox" {...register(`{{name}}`)} disabled={{{ReadOnlyWhere()}}} />
+                    """;
+            }
+
+            /// <summary>
+            /// Createビュー兼シングルビュー: 選択肢（コード自動生成時に要素が確定しているもの）
+            /// </summary>
+            public string Selection(IEnumerable<KeyValuePair<string, string>> options) {
+                return $$"""
+                    <select className="border" {...register(`{{GetRegisterName(_instance)}}`)}>
+                    {{options.SelectTextTemplate(option => $$"""
+                      <option value="{{option.Key}}">
+                        {{option.Value}}
+                      </option>
+                    """)}}
+                    </select>
+                    """;
+            }
+        }
+        #endregion SCHALAR PROPERTY
+
+
+
+        private string RenderProperty(Component component, AggregateMember.Ref refProperty) {
+            var combobox = new KeywordSearching.ComboBox(refProperty.MemberAggregate, _ctx);
+            var registerName = GetRegisterName(component.AggregateInstance, refProperty).Value;
+            return $$"""
+                <div className="flex">
+                  <div className="{{PropNameWidth}}">
+                    <span className="text-sm select-none opacity-80">
+                      {{refProperty.PropertyName}}
+                    </span>
+                  </div>
+                  <div className="flex-1">
+                    {{WithIndent(combobox.RenderCaller(registerName), "    ")}}
+                  </div>
+                </div>
+                """;
+        }
+        private string RenderProperty(Component component, AggregateMember.Child child) {
+            var childComponent = new Component(child.MemberAggregate);
+            return $$"""
+                <div className="py-2">
+                  <span className="text-sm select-none opacity-80">
+                  {{child.PropertyName}}
+                  </span>
+                  <div className="flex flex-col space-y-1 p-1 border border-neutral-400">
+                    {{WithIndent(childComponent.RenderCaller(), "    ")}}
+                  </div>
+                </div>
+                """;
+        }
+        private string RenderProperty(Component component, AggregateMember.VariationItem variation) {
+            var childComponent = new Component(variation.MemberAggregate);
+            var switchProp = GetRegisterName(component.AggregateInstance, variation.Group).Value;
+            return $$"""
+                <div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(watch(`{{switchProp}}`) !== '{{variation.Key}}' ? 'hidden' : '')}`}>
+                  {{WithIndent(childComponent.RenderCaller(), "  ")}}
+                </div>
+                """;
+        }
+        private string RenderProperty(Component component, AggregateMember.Variation variationSwitch) {
+            var switchProp = GetRegisterName(component.AggregateInstance, variationSwitch).Value;
+            return $$"""
+                <div className="flex">
+                  <div className="{{PropNameWidth}}">
+                  <span className="text-sm select-none opacity-80">
+                    {{variationSwitch.PropertyName}}
+                  </span>
+                  </div>
+                  <div className="flex-1 flex gap-2 flex-wrap">
+                {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
+                    <label>
+                      <input type="radio" value="{{variation.Key}}" disabled={singleViewPageMode === 'view'} {...register(`{{switchProp}}`)} />
+                      {{variation.PropertyName}}
+                    </label>
+                """)}}
+                  </div>
+                </div>
+                """;
+        }
+        private string RenderProperty(Component component, AggregateMember.Children children) {
+            var childrenComponent = new Component(children.MemberAggregate);
+            return $$"""
+                <div className="py-2">
+                  <span className="text-sm select-none opacity-80">
+                    {{children.PropertyName}}
+                  </span>
+                  <div className="flex flex-col space-y-1">
+                    {{WithIndent(childrenComponent.RenderCaller(), "    ")}}
+                  </div>
+                </div>
+                """;
         }
     }
 }
