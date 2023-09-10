@@ -466,7 +466,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     /// {{_aggregate.Item.DisplayName}}のデータ作成コマンドです。
                     /// </summary>
                     public partial class {{CreateCommandClassName}} {
-                {{_aggregate.GetMembers().SelectTextTemplate(prop => $$"""
+                {{_aggregate.GetMembers().Where(m => m is not AggregateMember.ParentPK && m is not AggregateMember.RefTargetMember).SelectTextTemplate(prop => $$"""
                         public {{prop.CSharpTypeName}} {{prop.PropertyName}} { get; set; }
                 """)}}
 
@@ -477,7 +477,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     /// {{_aggregate.Item.DisplayName}}のデータ1件の詳細を表すクラスです。
                     /// </summary>
                     public partial class {{_aggregate.Item.ClassName}} : {{AggregateMember.BASE_CLASS_NAME}} {
-                {{_aggregate.GetMembers().SelectTextTemplate(prop => $$"""
+                {{_aggregate.GetMembers().Where(m => m is not AggregateMember.ParentPK && m is not AggregateMember.RefTargetMember).SelectTextTemplate(prop => $$"""
                         public {{prop.CSharpTypeName}} {{prop.PropertyName}} { get; set; }
                 """)}}
 
@@ -491,7 +491,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     /// {{ins.Item.DisplayName}}のデータ1件の詳細を表すクラスです。
                     /// </summary>
                     public partial class {{ins.Item.ClassName}} {
-                {{ins.GetMembers().SelectTextTemplate(prop => $$"""
+                {{ins.GetMembers().Where(m => m is not AggregateMember.ParentPK && m is not AggregateMember.RefTargetMember).SelectTextTemplate(prop => $$"""
                         public {{prop.CSharpTypeName}} {{prop.PropertyName}} { get; set; }
                 """)}}
                     }
