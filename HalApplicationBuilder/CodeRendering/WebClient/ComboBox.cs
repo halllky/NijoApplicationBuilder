@@ -9,12 +9,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HalApplicationBuilder.CodeRendering.WebClient
-{
-    partial class ComboBox : TemplateBase
-    {
-        internal ComboBox(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx)
-        {
+namespace HalApplicationBuilder.CodeRendering.WebClient {
+    partial class ComboBox : TemplateBase {
+        internal ComboBox(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx) {
             _ctx = ctx;
             _aggregate = aggregate;
         }
