@@ -49,6 +49,9 @@ namespace HalApplicationBuilder.Core {
                 yield return Owner;
                 yield return PropertyName;
             }
+            public override string ToString() {
+                return GetFullPath().Join(".");
+            }
         }
 
         /// <summary>
@@ -87,7 +90,7 @@ namespace HalApplicationBuilder.Core {
             internal override IAggregateMemberType MemberType => _schalarProperty.MemberType;
             internal override bool IsPrimary => _schalarProperty.IsPrimary;
             internal override bool IsInstanceName => _schalarProperty.IsInstanceName;
-            internal override bool RequiredAtDB => _schalarProperty.RequiredAtDB;
+            internal override bool RequiredAtDB => _schalarProperty.IsPrimary || _schalarProperty.RequiredAtDB;
         }
         internal class ParentTablePKColumn : DbColumnBase {
             internal ParentTablePKColumn(GraphNode<IEFCoreEntity> owner, DbColumnBase parentColumn) {
@@ -129,7 +132,7 @@ namespace HalApplicationBuilder.Core {
             internal override IAggregateMemberType MemberType => _variationGroup.MemberType;
             internal override bool IsInstanceName => _variationGroup.IsInstanceName;
             internal override bool IsPrimary => _variationGroup.IsPrimary;
-            internal override bool RequiredAtDB => _variationGroup.RequiredAtDB;
+            internal override bool RequiredAtDB => _variationGroup.IsPrimary || _variationGroup.RequiredAtDB;
         }
     }
 }

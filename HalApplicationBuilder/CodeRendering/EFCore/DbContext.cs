@@ -82,11 +82,11 @@ namespace HalApplicationBuilder.CodeRendering.EFCore {
                 // FK
                 if (!nav.Principal.OppositeIsMany && !nav.Relevant.OppositeIsMany) {
                     // HasOneWithOneのときは型引数が要るらしい
-                    yield return $"    .HasForeignKey<{nav.Relevant.Owner.Item.ClassName}>(e => new {{";
+                    yield return $"    .HasForeignKey<{nav.Relevant.Owner.Item.EFCoreEntityClassName}>(e => new {{";
                 } else {
                     yield return $"    .HasForeignKey(e => new {{";
                 }
-                foreach (var fk in nav.Relevant.ForeignKeys) {
+                foreach (var fk in nav.Relevant.GetForeignKeys()) {
                     yield return $"        e.{fk.PropertyName},";
                 }
                 yield return $"    }})";

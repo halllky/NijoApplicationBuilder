@@ -10,11 +10,13 @@ namespace HalApplicationBuilder.CodeRendering.Util {
         internal const string MODIFY_JSONOPTION = "ModifyJsonSrializerOptions";
         internal const string TO_JSON = "ToJson";
         internal const string PARSE_JSON = "ParseJson";
+        internal const string PARSE_JSON_AS_OBJARR = "ParseJsonAsObjectArray";
 
         internal string RenderJsonConversionMethods() {
             return $$"""
                 namespace {{_ctx.Config.RootNamespace}} {
                     using System.Text.Json;
+                    using System.Text.Json.Nodes;
 
                     static partial class {{CLASSNAME}} {
                         public static void {{MODIFY_JSONOPTION}}(JsonSerializerOptions option) {
@@ -37,6 +39,22 @@ namespace HalApplicationBuilder.CodeRendering.Util {
                         public static T {{PARSE_JSON}}<T>(string? json) {
                             if (json == null) throw new ArgumentNullException(nameof(json));
                             return JsonSerializer.Deserialize<T>(json, {{GET_JSONOPTION}}())!;
+                        }
+                        /// <summary>
+                        /// 単に <see cref="JsonSerializer.Deserialize(JsonElement, Type, JsonSerializerOptions?)"/> で object?[] を指定すると JsonElement[] 型になり各要素のキャストができないためその回避
+                        /// </summary>
+                        public static object?[] {{PARSE_JSON_AS_OBJARR}}(string? json) {
+                            return ParseJson<JsonElement[]>(json)
+                                .Select(jsonElement => (object?)(jsonElement.ValueKind switch {
+                                    JsonValueKind.Undefined => null,
+                                    JsonValueKind.Null => null,
+                                    JsonValueKind.True => true,
+                                    JsonValueKind.False => false,
+                                    JsonValueKind.String => jsonElement.GetString(),
+                                    JsonValueKind.Number => jsonElement.GetDecimal(),
+                                    _ => jsonElement,
+                                }))
+                                .ToArray();
                         }
                     }
                 }

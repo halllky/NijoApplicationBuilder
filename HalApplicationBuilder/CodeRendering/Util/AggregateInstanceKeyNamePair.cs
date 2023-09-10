@@ -50,7 +50,7 @@ namespace HalApplicationBuilder.CodeRendering.Util {
         }
         internal static string RenderKeyJsonRestoring(string fullpath) {
             return $$"""
-                {{Utility.CLASSNAME}}.{{Utility.PARSE_JSON}}<object?[]>({{fullpath}})
+                {{Utility.CLASSNAME}}.{{Utility.PARSE_JSON_AS_OBJARR}}({{fullpath}})
                 """.TrimEnd();
         }
     }

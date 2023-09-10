@@ -59,7 +59,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                     var names = refTarget.Owner
                         .GetInstanceNameMembers()
                         .Select(member => $"{rootInstanceName}.{member.GetFullPath(rootInstance).Join(".")}");
-                    var foreignKeys = refTarget.ForeignKeys
+                    var foreignKeys = refTarget
+                        .GetForeignKeys()
                         .Select(fk => $"{rootInstanceName}.{fk.GetFullPath(rootInstance.As<IEFCoreEntity>()).Join(".")}");
 
                     yield return $$"""

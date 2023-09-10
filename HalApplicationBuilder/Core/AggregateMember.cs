@@ -138,8 +138,14 @@ namespace HalApplicationBuilder.Core {
             internal abstract DbColumn.DbColumnBase GetDbColumn();
         }
         internal abstract class RelationMember : AggregateMemberBase {
-            internal abstract GraphNode<Aggregate> MemberAggregate { get; }
-            internal abstract NavigationProperty GetNavigationProperty();
+            protected RelationMember(GraphEdge<Aggregate> relation) {
+                Relation = relation;
+            }
+            internal GraphEdge<Aggregate> Relation { get; }
+            internal GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
+            internal NavigationProperty GetNavigationProperty() {
+                return new NavigationProperty(Relation);
+            }
         }
         #endregion MEMBER BASE
 
@@ -167,36 +173,21 @@ namespace HalApplicationBuilder.Core {
         }
 
         internal class Children : RelationMember {
-            internal Children(GraphEdge<Aggregate> edge) {
-                _edge = edge;
-            }
-            private readonly GraphEdge<Aggregate> _edge;
+            internal Children(GraphEdge<Aggregate> edge) : base(edge) { }
 
-            internal override GraphNode<Aggregate> Owner => _edge.Initial;
-            internal override string PropertyName => _edge.RelationName;
-            internal override string CSharpTypeName => $"List<{_edge.Terminal.Item.ClassName}>";
-            internal override string TypeScriptTypename => $"{_edge.Terminal.Item.TypeScriptTypeName}[]";
-            internal override GraphNode<Aggregate> MemberAggregate => _edge.Terminal;
-            internal override NavigationProperty GetNavigationProperty() {
-                return new NavigationProperty(_edge);
-            }
+            internal override GraphNode<Aggregate> Owner => Relation.Initial;
+            internal override string PropertyName => Relation.RelationName;
+            internal override string CSharpTypeName => $"List<{Relation.Terminal.Item.ClassName}>";
+            internal override string TypeScriptTypename => $"{Relation.Terminal.Item.TypeScriptTypeName}[]";
         }
 
         internal class Child : RelationMember {
-            internal Child(GraphEdge<Aggregate> edge) {
-                _edge = edge;
-            }
-            private readonly GraphEdge<Aggregate> _edge;
+            internal Child(GraphEdge<Aggregate> edge) : base(edge) { }
 
-            internal override GraphNode<Aggregate> Owner => _edge.Initial;
-            internal override string PropertyName => _edge.RelationName;
-            internal override string CSharpTypeName => _edge.Terminal.Item.ClassName;
-            internal override string TypeScriptTypename => _edge.Terminal.Item.TypeScriptTypeName;
-            internal override GraphNode<Aggregate> MemberAggregate => _edge.Terminal;
-
-            internal override NavigationProperty GetNavigationProperty() {
-                return new NavigationProperty(_edge);
-            }
+            internal override GraphNode<Aggregate> Owner => Relation.Initial;
+            internal override string PropertyName => Relation.RelationName;
+            internal override string CSharpTypeName => Relation.Terminal.Item.ClassName;
+            internal override string TypeScriptTypename => Relation.Terminal.Item.TypeScriptTypeName;
         }
 
         internal class Variation : ValueMember {
@@ -226,54 +217,39 @@ namespace HalApplicationBuilder.Core {
         }
 
         internal class VariationItem : RelationMember {
-            internal VariationItem(Variation group, string key, GraphEdge<Aggregate> edge) {
+            internal VariationItem(Variation group, string key, GraphEdge<Aggregate> edge) : base(edge) {
                 Group = group;
                 Key = key;
-                _edge = edge;
             }
-            private readonly GraphEdge<Aggregate> _edge;
 
             internal Variation Group { get; }
             internal string Key { get; }
 
-            internal override GraphNode<Aggregate> Owner => _edge.Initial;
-            internal override string PropertyName => _edge.RelationName;
-            internal override string CSharpTypeName => _edge.Terminal.Item.ClassName;
-            internal override string TypeScriptTypename => _edge.Terminal.Item.TypeScriptTypeName;
-            internal override GraphNode<Aggregate> MemberAggregate => _edge.Terminal;
-
-            internal override NavigationProperty GetNavigationProperty() {
-                return new NavigationProperty(_edge);
-            }
+            internal override GraphNode<Aggregate> Owner => Relation.Initial;
+            internal override string PropertyName => Relation.RelationName;
+            internal override string CSharpTypeName => Relation.Terminal.Item.ClassName;
+            internal override string TypeScriptTypename => Relation.Terminal.Item.TypeScriptTypeName;
         }
 
         internal class Ref : RelationMember {
-            internal Ref(GraphEdge<Aggregate> edge) {
-                _edge = edge;
-            }
-            private readonly GraphEdge<Aggregate> _edge;
+            internal Ref(GraphEdge<Aggregate> edge) : base(edge) { }
 
-            internal override GraphNode<Aggregate> Owner => _edge.Initial;
-            internal override string PropertyName => _edge.RelationName;
+            internal override GraphNode<Aggregate> Owner => Relation.Initial;
+            internal override string PropertyName => Relation.RelationName;
             internal override string CSharpTypeName => AggregateInstanceKeyNamePair.CLASSNAME;
             internal override string TypeScriptTypename => AggregateInstanceKeyNamePair.TS_DEF;
 
-            internal override GraphNode<Aggregate> MemberAggregate => _edge.Terminal;
+            internal bool IsPrimary => Relation.IsPrimary();
+            internal bool IsInstanceName => Relation.IsInstanceName();
+            internal bool RequiredAtDB => Relation.IsPrimary() || Relation.IsRequired();
 
-            internal bool IsPrimary => _edge.IsPrimary();
-            internal bool IsInstanceName => _edge.IsInstanceName();
-            internal bool RequiredAtDB => _edge.IsRequired();
-
-            internal override NavigationProperty GetNavigationProperty() {
-                return new NavigationProperty(_edge);
-            }
             internal IEnumerable<ValueMember> GetRefTargetKeys() {
-                return _edge.Terminal
+                return Relation.Terminal
                     .GetKeyMembers()
                     .Select(refTargetMember => new RefTargetMember(this, refTargetMember));
             }
             internal IEnumerable<ValueMember> GetRefTargetNameMembers() {
-                return _edge.Terminal
+                return Relation.Terminal
                     .GetInstanceNameMembers()
                     .Select(refTargetMember => new RefTargetMember(this, refTargetMember));
             }

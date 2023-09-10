@@ -13,51 +13,25 @@ namespace HalApplicationBuilder.Core {
         internal NavigationProperty(GraphEdge<Aggregate> relation) {
             _graphEdge = relation;
 
-            Item CreateItem(GraphNode<Aggregate> owner, bool oppositeIsMany) {
-                var opposite = owner == relation.Initial ? relation.Terminal : relation.Initial;
-
-                string propertyName;
-                if (owner == relation.Terminal
-                    && (owner.IsChildMember() || owner.IsChildrenMember() || owner.IsVariationMember())
-                    && owner.GetParent() == relation) {
-                    propertyName = "Parent";
-                } else if (owner == relation.Terminal && relation.IsRef()) {
-                    propertyName = $"RefferedBy_{relation.Initial.Item.EFCoreEntityClassName}_{relation.RelationName}";
-                } else {
-                    propertyName = relation.RelationName;
-                }
-
-                return new Item {
-                    Owner = owner,
-                    CSharpTypeName = oppositeIsMany ? $"ICollection<{opposite.Item.EFCoreEntityClassName}>" : opposite.Item.EFCoreEntityClassName,
-                    Initializer = oppositeIsMany ? $"new HashSet<{opposite.Item.EFCoreEntityClassName}>()" : null,
-                    PropertyName = propertyName,
-                    OppositeIsMany = oppositeIsMany,
-                    ForeignKeys = owner
-                        .GetColumns()
-                        .Where(col => col.IsPrimary && col.Owner == opposite),
-                };
-            }
-
-            var parent = relation.Terminal.GetParent()?.Initial;
-            if (relation.Terminal.IsChildMember() && relation.Initial == parent) {
-                Principal = CreateItem(relation.Initial, oppositeIsMany: false);
-                Relevant = CreateItem(relation.Terminal, oppositeIsMany: false);
+            var parent = relation.Terminal.GetParent();
+            if (relation.Terminal.IsChildMember() && relation == parent) {
+                Principal = new Item(relation, relation.Initial);
+                Relevant = new Item(relation, relation.Terminal);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
-            } else if (relation.Terminal.IsVariationMember() && relation.Initial == parent) {
-                Principal = CreateItem(relation.Initial, oppositeIsMany: false);
-                Relevant = CreateItem(relation.Terminal, oppositeIsMany: false);
+            } else if (relation.Terminal.IsVariationMember() && relation == parent) {
+                Principal = new Item(relation, relation.Initial);
+                Relevant = new Item(relation, relation.Terminal);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
-            } else if (relation.Terminal.IsChildrenMember() && relation.Initial == parent) {
-                Principal = CreateItem(relation.Initial, oppositeIsMany: true);
-                Relevant = CreateItem(relation.Terminal, oppositeIsMany: false);
+            } else if (relation.Terminal.IsChildrenMember() && relation == parent) {
+                Principal = new Item(relation, relation.Initial);
+                Relevant = new Item(relation, relation.Terminal);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
             } else if (relation.IsRef()) {
-                Principal = CreateItem(relation.Terminal, oppositeIsMany: true);
-                Relevant = CreateItem(relation.Initial, oppositeIsMany: false);
+                Principal = new Item(relation, relation.Terminal);
+                Relevant = new Item(relation, relation.Initial);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.NoAction;
 
             } else {
@@ -76,12 +50,86 @@ namespace HalApplicationBuilder.Core {
         internal Item Relevant { get; }
 
         internal class Item : ValueObject {
-            internal required GraphNode<Aggregate> Owner { get; init; }
-            internal required string CSharpTypeName { get; init; }
-            internal required string PropertyName { get; init; }
-            internal required bool OppositeIsMany { get; init; }
-            internal string? Initializer { get; init; }
-            internal required IEnumerable<DbColumn.DbColumnBase> ForeignKeys { get; init; }
+            internal Item(GraphEdge<Aggregate> relation, GraphNode<Aggregate> initialOrTerminal) {
+                _relation = relation;
+                Owner = initialOrTerminal;
+                Opposite = initialOrTerminal == relation.Initial
+                    ? relation.Terminal
+                    : relation.Initial;
+            }
+
+            private readonly GraphEdge<Aggregate> _relation;
+            internal GraphNode<Aggregate> Owner { get; }
+            internal GraphNode<Aggregate> Opposite { get; }
+
+            internal string PropertyName {
+                get {
+                    if (_relation.Terminal == Owner
+                        && (_relation.Terminal.IsChildMember()
+                        || _relation.Terminal.IsChildrenMember()
+                        || _relation.Terminal.IsVariationMember())
+                        && _relation.Terminal.GetParent() == _relation) {
+                        return "Parent";
+
+                    } else if (_relation.Terminal == Owner
+                            && _relation.IsRef()) {
+                        return $"RefferedBy_{_relation.Initial.Item.EFCoreEntityClassName}_{_relation.RelationName}";
+
+                    } else {
+                        return _relation.RelationName;
+                    }
+                }
+            }
+            internal bool OppositeIsMany {
+                get {
+                    if (_relation.Terminal == Owner
+                        && _relation.IsRef()) {
+                        return true;
+
+                    } else if (_relation.Terminal.IsChildrenMember()
+                            && _relation.Terminal.GetParent() == _relation
+                            && _relation.Initial == Owner) {
+                        return true;
+
+                    } else {
+                        return false;
+                    }
+                }
+            }
+
+            internal string CSharpTypeName => OppositeIsMany
+                ? $"ICollection<{Opposite.Item.EFCoreEntityClassName}>"
+                : Opposite.Item.EFCoreEntityClassName;
+            internal string? Initializer => OppositeIsMany
+                ? $"new HashSet<{Opposite.Item.EFCoreEntityClassName}>()"
+                : null;
+
+            internal IEnumerable<DbColumn.DbColumnBase> GetForeignKeys() {
+                if (_relation.Terminal == Owner
+                    && (_relation.Terminal.IsChildMember()
+                    || _relation.Terminal.IsChildrenMember()
+                    || _relation.Terminal.IsVariationMember())
+                    && _relation.Terminal.GetParent() == _relation) {
+
+                    return _relation.Terminal
+                        .GetKeyMembers()
+                        .OfType<AggregateMember.ParentPK>()
+                        .Select(parentPk => parentPk.GetDbColumn());
+
+                } else if (_relation.Terminal == Owner
+                        && _relation.IsRef()) {
+
+                    return _relation.Terminal
+                        .GetMembers()
+                        .OfType<AggregateMember.Ref>()
+                        .Where(refMember => refMember.Relation == _relation)
+                        .SelectMany(refMember => refMember.GetRefTargetKeys())
+                        .Select(refTargetKey => refTargetKey.GetDbColumn());
+
+                } else {
+                    return Enumerable.Empty<DbColumn.DbColumnBase>();
+                }
+            }
 
             internal IEnumerable<string> GetFullPath() {
                 return Owner
