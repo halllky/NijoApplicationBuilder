@@ -26,7 +26,6 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         internal const string UPDATE_ACTION_NAME = "update";
         internal const string DELETE_ACTION_NAME = "delete";
         internal const string FIND_ACTION_NAME = "detail";
-        internal const string KEYWORDSEARCH_ACTION_NAME = "list-by-keyword";
 
         internal const string SUBDOMAIN = "api";
 
@@ -36,7 +35,6 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         internal string UpdateCommandApi => $"/{SubDomain}/{UPDATE_ACTION_NAME}";
         internal string DeleteCommandApi => $"/{SubDomain}/{DELETE_ACTION_NAME}";
         internal string FindCommandApi => $"/{SubDomain}/{FIND_ACTION_NAME}";
-        internal string KeywordSearchCommandApi => $"/{SubDomain}/{KEYWORDSEARCH_ACTION_NAME}";
 
         internal string Render() {
             return $$"""

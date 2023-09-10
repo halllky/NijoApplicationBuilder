@@ -1,4 +1,5 @@
 using HalApplicationBuilder.CodeRendering.Util;
+using HalApplicationBuilder.CodeRendering.WebClient;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HalApplicationBuilder.CodeRendering.WebClient {
+namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
     partial class ComboBox : TemplateBase {
         internal ComboBox(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx) {
             _ctx = ctx;
@@ -24,7 +25,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         internal string ComponentName => $"ComboBox{_aggregate.Item.DisplayName.ToCSharpSafe()}";
 
         internal string UseQueryKey => $"combo-{_aggregate.Item.UniqueId}";
-        internal string Api => new Controller(_aggregate.Item, _ctx).KeywordSearchCommandApi;
+        internal string Api => new KeywordSearchingFeature(_aggregate, _ctx).GetUri();
 
         protected override string Template() {
             return $$"""

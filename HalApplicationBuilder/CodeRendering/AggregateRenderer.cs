@@ -18,8 +18,6 @@ namespace HalApplicationBuilder.CodeRendering {
                 throw new ArgumentException($"{nameof(AggregateRenderer)} requires root aggregate.", nameof(aggregate));
 
             _aggregate = aggregate;
-
-            _controller = new WebClient.Controller(_aggregate.Item, ctx);
             _create = new CreateMethod(this, ctx);
             _update = new UpdateMethod(this, ctx);
             _delete = new DeleteMethod(this, ctx);
@@ -147,37 +145,6 @@ namespace HalApplicationBuilder.CodeRendering {
         #endregion DELETE
 
 
-        #region LIST BY KEYWORD
-        private const int LIST_BY_KEYWORD_MAX = 100;
-        private string ListByKeywordMethodName => $"SearchByKeyword{_aggregate.Item.DisplayName.ToCSharpSafe()}";
-        private IEnumerable<ListByKeywordTargetColumn> EnumerateListByKeywordTargetColumns() {
-            return _aggregate
-                .GetColumns()
-                .Where(col => col.IsPrimary || col.IsInstanceName)
-                .Select(col => new ListByKeywordTargetColumn {
-                    Name = col.PropertyName,
-                    NameAsString = col.MemberType.GetCSharpTypeName().Contains("string")
-                        ? col.PropertyName
-                        : $"{col.PropertyName}.ToString()",
-                    Path = col.Owner
-                        .PathFromEntry()
-                        .Select(edge => edge.RelationName)
-                        .Concat(new[] { col.PropertyName })
-                        .Join("."),
-                    IsInstanceKey = col.IsPrimary,
-                    IsInstanceName = col.IsInstanceName,
-                });
-        }
-        private class ListByKeywordTargetColumn {
-            internal required string Path { get; init; }
-            internal required string Name { get; init; }
-            internal required string NameAsString { get; init; }
-            internal required bool IsInstanceKey { get; init; }
-            internal required bool IsInstanceName { get; init; }
-        }
-        #endregion LIST BY KEYWORD
-
-
         #region AGGREGATE INSTANCE & CREATE COMMAND
         private string CreateCommandClassName => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}CreateCommand";
 
@@ -199,31 +166,26 @@ namespace HalApplicationBuilder.CodeRendering {
         #endregion AGGREGATE INSTANCE & CREATE COMMAND
 
 
-        #region CONTROLLER
-        private readonly WebClient.Controller _controller;
-        #endregion CONTROLLER
         protected override string Template() {
+            var controller = new WebClient.Controller(_aggregate.Item, _ctx);
             var search = new Searching.SearchFeature(_aggregate.As<IEFCoreEntity>(), _ctx);
             var find = new Finding.FindFeature(_aggregate, _ctx);
             var toDbEntity = new ToDbEntityRenderer(_aggregate, _ctx);
             var fromDbEntity = new FromDbEntityRenderer(_aggregate, _ctx);
-
-            var keyColumns = EnumerateListByKeywordTargetColumns().Where(col => col.IsInstanceKey).ToArray();
-            var nameColumns = EnumerateListByKeywordTargetColumns().Where(col => col.IsInstanceName).ToArray();
 
             return $$"""
                 #pragma warning disable CS8600 // Null リテラルまたは Null の可能性がある値を Null 非許容型に変換しています。
                 #pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければなりません
                 #pragma warning disable IDE1006 // 命名スタイル
 
-                {{_controller.Render()}}
+                {{controller.Render()}}
 
                 #region データ新規作成
                 namespace {{_ctx.Config.RootNamespace}} {
                     using Microsoft.AspNetCore.Mvc;
                     using {{_ctx.Config.EntityNamespace}};
 
-                    partial class {{_controller.ClassName}} : ControllerBase {
+                    partial class {{controller.ClassName}} : ControllerBase {
                         [HttpPost("{{WebClient.Controller.CREATE_ACTION_NAME}}")]
                         public virtual IActionResult Create([FromBody] {{CreateCommandClassName}} param) {
                             if (_dbContext.{{_create.MethodName}}(param, out var created, out var errors)) {
@@ -279,57 +241,13 @@ namespace HalApplicationBuilder.CodeRendering {
 
 
                 #region キーワード検索
-                namespace {{_ctx.Config.RootNamespace}} {
-                    using Microsoft.AspNetCore.Mvc;
-                    using {{_ctx.Config.EntityNamespace}};
-
-                    partial class {{_controller.ClassName}} {
-                        [HttpGet("{{WebClient.Controller.KEYWORDSEARCH_ACTION_NAME}}")]
-                        public virtual IActionResult SearchByKeyword([FromQuery] string? keyword) {
-                            var items = _dbContext.{{ListByKeywordMethodName}}(keyword);
-                            return this.JsonContent(items);
-                        }
-                    }
-                }
-                namespace {{_ctx.Config.EntityNamespace}} {
-                    using System;
-                    using System.Collections;
-                    using System.Collections.Generic;
-                    using System.Linq;
-                    using Microsoft.EntityFrameworkCore;
-                    using Microsoft.EntityFrameworkCore.Infrastructure;
-
-                    partial class {{_ctx.Config.DbContextName}} {
-                        /// <summary>
-                        /// {{_aggregate.Item.DisplayName}}をキーワードで検索します。
-                        /// </summary>
-                        public IEnumerable<{{AggregateInstanceKeyNamePair.CLASSNAME}}> {{ListByKeywordMethodName}}(string? keyword) {
-                            var query = this.{{_aggregate.Item.DbSetName}}.Select(e => new {
-                {{EnumerateListByKeywordTargetColumns().SelectTextTemplate(col => $$"""
-                                e.{{col.Path}},
+                {{_aggregate
+                    .EnumerateThisAndDescendants()
+                    .Select(a => new KeywordSearching.KeywordSearchingFeature(a, _ctx))
+                    .SelectTextTemplate(feature => $$"""
+                {{feature.RenderController()}}
+                {{feature.RenderDbContextMethod()}}
                 """)}}
-                            });
-
-                            if (!string.IsNullOrWhiteSpace(keyword)) {
-                                var like = $"%{keyword.Trim().Replace("%", "\\%")}%";
-                                query = query.Where(item => {{EnumerateListByKeywordTargetColumns().Select(col => $"EF.Functions.Like(item.{col.NameAsString}, like)").Join($"{Environment.NewLine}                            || ")}});
-                            }
-
-                            query = query
-                                .OrderBy(item => item.{{EnumerateListByKeywordTargetColumns().Where(col => col.IsInstanceKey).First().Name}})
-                                .Take({{LIST_BY_KEYWORD_MAX + 1}});
-
-                            return query
-                                .AsEnumerable()
-                                .Select(item => new {{AggregateInstanceKeyNamePair.CLASSNAME}} {
-                                    {{AggregateInstanceKeyNamePair.KEY}} = {{WithIndent(AggregateInstanceKeyNamePair.RenderKeyJsonConverting(EnumerateListByKeywordTargetColumns().Where(col => col.IsInstanceKey).Select(col => $"item.{col.Name}")), "                    ")}},
-                                    {{AggregateInstanceKeyNamePair.NAME}} = {{(nameColumns.Any()
-                                        ? nameColumns.Select(col => $"item.{col.Name}?.ToString()").Join(" + ")
-                                        : keyColumns.Select(col => $"item.{col.Name}?.ToString()").Join(" + "))}},
-                                });
-                        }
-                    }
-                }
                 #endregion キーワード検索
 
 
@@ -344,7 +262,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     using Microsoft.AspNetCore.Mvc;
                     using {{_ctx.Config.EntityNamespace}};
 
-                    partial class {{_controller.ClassName}} {
+                    partial class {{controller.ClassName}} {
                         [HttpPost("{{WebClient.Controller.UPDATE_ACTION_NAME}}")]
                         public virtual IActionResult Update({{_aggregate.Item.ClassName}} param) {
                             if (_dbContext.{{_update.MethodName}}(param, out var updated, out var errors)) {
@@ -410,7 +328,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     using Microsoft.AspNetCore.Mvc;
                     using {{_ctx.Config.EntityNamespace}};
 
-                    partial class {{_controller.ClassName}} {
+                    partial class {{controller.ClassName}} {
                         [HttpDelete("{{WebClient.Controller.DELETE_ACTION_NAME}}/{key}")]
                         public virtual IActionResult Delete(string key) {
                             if (_dbContext.{{_delete.MethodName}}(key, out var errors)) {

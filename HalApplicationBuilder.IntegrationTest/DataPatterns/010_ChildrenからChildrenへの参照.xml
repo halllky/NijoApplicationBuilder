@@ -5,6 +5,7 @@
     <参照先集約ID type="id" key="" />
     <参照先集約名 type="word" name="" />
     <参照先の子配列 multiple="">
+      <参照先の子配列のキー type="id" key="" />
       <参照先の子配列の名前プロパティ type="word" name="" />
     </参照先の子配列>
   </参照先>
