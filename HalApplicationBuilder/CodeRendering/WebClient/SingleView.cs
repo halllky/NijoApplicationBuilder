@@ -10,27 +10,54 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.CodeRendering.WebClient {
     partial class SingleView : TemplateBase {
-        internal SingleView(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx, bool asEditView) {
-            _ctx = ctx;
-            _aggregate = aggregate;
-            _asEditView = asEditView;
+        internal enum E_Type {
+            Create,
+            View,
+            Edit,
         }
 
+        internal SingleView(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx, E_Type type) {
+            _aggregate = aggregate;
+            _ctx = ctx;
+            _type = type;
+        }
         private readonly CodeRenderingContext _ctx;
         private readonly GraphNode<Aggregate> _aggregate;
-        private readonly bool _asEditView;
+        private readonly E_Type _type;
 
-        public override string FileName => _asEditView ? "edit.tsx" : "detail.tsx";
-        internal string Url => _asEditView
-            ? $"/{_aggregate.Item.UniqueId}/edit"
-            : $"/{_aggregate.Item.UniqueId}/detail";
-        internal string Route => _asEditView
-            ? $"/{_aggregate.Item.UniqueId}/edit/:instanceKey"
-            : $"/{_aggregate.Item.UniqueId}/detail/:instanceKey";
+        public override string FileName => _type switch {
+            E_Type.Create => "new.tsx",
+            E_Type.View => "detail.tsx",
+            E_Type.Edit => "edit.tsx",
+            _ => throw new NotImplementedException(),
+        };
+
+        internal string Url => GetUrl(_type);
+        private string GetUrl(E_Type type) => type switch {
+            E_Type.Create => $"/{_aggregate.Item.UniqueId}/new",
+            E_Type.View => $"/{_aggregate.Item.UniqueId}/detail",
+            E_Type.Edit => $"/{_aggregate.Item.UniqueId}/edit",
+            _ => throw new NotImplementedException(),
+        };
+
+        internal string Route => _type switch {
+            E_Type.Create => $"/{_aggregate.Item.UniqueId}/new",
+            E_Type.View => $"/{_aggregate.Item.UniqueId}/detail/:instanceKey",
+            E_Type.Edit => $"/{_aggregate.Item.UniqueId}/edit/:instanceKey",
+            _ => throw new NotImplementedException(),
+        };
 
         protected override string Template() {
+            var controller = new Controller(_aggregate.Item, _ctx);
+            var multiViewUrl = new Searching.SearchFeature(_aggregate.As<IEFCoreEntity>(), _ctx).ReactPageUrl;
+            var singleViewPageMode = _type switch {
+                E_Type.Create => "'create'",
+                E_Type.View =>   "'view'",
+                E_Type.Edit =>   "'edit'",
+                _ => throw new NotImplementedException(),
+            };
             return $$"""
-                import { useState, useCallback, useReducer } from 'react';
+                import { useState, useCallback, useMemo, useReducer } from 'react';
                 import { useAppContext } from '../../hooks/AppContext';
                 import { PageContext, pageContextReducer } from '../../hooks/PageContext'
                 import { Link, useParams, useNavigate } from 'react-router-dom';
@@ -44,24 +71,25 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
                 export default function () {
 
-                  const { instanceKey } = useParams()
+                  // コンテキスト等
                   const [, dispatch] = useAppContext()
-
-                  const navigate = useNavigate()
-                {{If(!_asEditView, () => $$"""
-                  const navigateToEditView = useCallback((e: React.MouseEvent) => {
-                    navigate(`{{GetEditViewUrl()}}/${instanceKey}`)
-                    e.preventDefault()
-                  }, [navigate, instanceKey])
-                """)}}
-
+                  const pageContextValue = useReducer(pageContextReducer, { singleViewPageMode: {{singleViewPageMode}} })
                   const { get, post } = useHttpRequest()
+                  const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
+
+                  // 画面表示時
+                {{If(_type == E_Type.Create, () => $$"""
+                  const defaultValues = useMemo(() => {
+                    return AggregateType.{{new types.AggregateInstanceInitializerFunction(_aggregate).FunctionName}}()
+                  }, [])
+                """).Else(() => $$"""
+                  const { instanceKey } = useParams()
                   const [instanceName, setInstanceName] = useState<string | undefined>('')
                   const [fetched, setFetched] = useState(false)
                   const defaultValues = useCallback(async () => {
                     if (!instanceKey) return AggregateType.{{new types.AggregateInstanceInitializerFunction(_aggregate).FunctionName}}()
                     const encoded = window.encodeURI(instanceKey)
-                    const response = await get(`{{GetFindCommandApi()}}/${encoded}`)
+                    const response = await get(`{{controller.FindCommandApi}}/${encoded}`)
                     setFetched(true)
                     if (response.ok) {
                       const responseData = response.data as AggregateType.{{_aggregate.Item.TypeScriptTypeName}}
@@ -71,43 +99,75 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                       return AggregateType.{{new types.AggregateInstanceInitializerFunction(_aggregate).FunctionName}}()
                     }
                   }, [instanceKey])
+                """)}}
 
                   const reactHookFormMethods = useForm({ defaultValues })
 
-                  const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
+                  // 処理確定時
+                  const navigate = useNavigate()
+                {{If(_type == E_Type.View, () => $$"""
+                  const navigateToEditView = useCallback((e: React.MouseEvent) => {
+                    navigate(`{{GetUrl(E_Type.Edit)}}/${instanceKey}`)
+                    e.preventDefault()
+                  }, [navigate, instanceKey])
+                """)}}
+                {{If(_type == E_Type.Create, () => $$"""
+                  const onSave: SubmitHandler<FieldValues> = useCallback(async data => {	
+                    const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{controller.CreateCommandApi}}`, data)	
+                    if (response.ok) {	
+                      dispatch({ type: 'pushMsg', msg: `${response.data.{{AggregateInstanceBase.INSTANCE_NAME}}}を作成しました。` })	
+                      setErrorMessages([])	
+                      const encoded = window.encodeURI(response.data.{{AggregateInstanceBase.INSTANCE_KEY}}!)	
+                      navigate(`{{GetUrl(E_Type.View)}}/${encoded}`)	
+                    } else {	
+                      setErrorMessages([...errorMessages, ...response.errors])	
+                    }	
+                  }, [post, navigate, errorMessages, setErrorMessages, dispatch])
+                """).ElseIf(_type == E_Type.Edit, () => $$"""
                   const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-                    const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{GetUpdateCommandApi()}}`, data)
+                    const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{controller.UpdateCommandApi}}`, data)
                     if (response.ok) {
                       setErrorMessages([])
                       dispatch({ type: 'pushMsg', msg: `${response.data.{{AggregateInstanceBase.INSTANCE_NAME}}}を更新しました。` })
-                      navigate(`{{GetReadonlySingleViewUrl()}}/${instanceKey}`)
+                      navigate(`{{GetUrl(E_Type.View)}}/${instanceKey}`)
                     } else {
                       setErrorMessages([...errorMessages, ...response.errors])
                     }
                   }, [errorMessages, dispatch, post, navigate, instanceKey])
+                """)}}
 
-                  const pageContextValue = useReducer(pageContextReducer, { singleViewPageMode: {{(_asEditView ? "'edit'" : "'view'")}} })
-
+                {{If(_type == E_Type.View || _type == E_Type.Edit, () => $$"""
                   if (!fetched) return <></>
+                """)}}
 
                   return (
                     <PageContext.Provider value={pageContextValue}>
                       <FormProvider {...reactHookFormMethods}>
+                {{If(_type == E_Type.Create || _type == E_Type.Edit, () => $$"""
                         <form className="page-content-root" onSubmit={reactHookFormMethods.handleSubmit(onSave)}>
-                          <h1 className="flex text-base font-semibold select-none p-1">
-                            <Link to="{{GetMultiViewUrl()}}">{{_aggregate.Item.DisplayName}}</Link>
+                """).Else(() => $$"""
+                        <form className="page-content-root">
+                """)}}
+                          <h1 className="flex text-base font-semibold select-none py-1">
+                            <Link to="{{multiViewUrl}}">{{_aggregate.Item.DisplayName}}</Link>
                             &nbsp;&#047;&nbsp;
+                {{If(_type == E_Type.Create, () => $$"""
+                            新規作成
+                """).Else(() => $$"""
                             <span className="select-all">{instanceName}</span>
+                """)}}
                             <div className="flex-1"></div>
                           </h1>
                           <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
                             <{{new FormOfAggregateInstance.Component(_aggregate).ComponentName}} />
                           </div>
                           <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
-                {{If(_asEditView, () => $$"""
-                          <IconButton fill className="self-start" icon={BookmarkSquareIcon}>更新</IconButton>
-                """).Else(() => $$"""
+                {{If(_type == E_Type.Create, () => $$"""
+                          <IconButton fill className="self-start" icon={BookmarkSquareIcon}>保存</IconButton>
+                """).ElseIf(_type == E_Type.View, () => $$"""
                           <IconButton fill className="self-start" icon={PencilIcon} onClick={navigateToEditView}>編集</IconButton>
+                """).ElseIf(_type == E_Type.Edit, () => $$"""
+                          <IconButton fill className="self-start" icon={BookmarkSquareIcon}>更新</IconButton>
                 """)}}
                         </form>
                       </FormProvider>
@@ -116,11 +176,5 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 }
                 """;
         }
-
-        private string GetMultiViewUrl() => new Searching.SearchFeature(_aggregate.As<IEFCoreEntity>(), _ctx).ReactPageUrl;
-        private string GetEditViewUrl() => new SingleView(_aggregate, _ctx, asEditView: true).Url;
-        private string GetReadonlySingleViewUrl() => new SingleView(_aggregate, _ctx, asEditView: false).Url;
-        private string GetFindCommandApi() => new Controller(_aggregate.Item, _ctx).FindCommandApi;
-        private string GetUpdateCommandApi() => new Controller(_aggregate.Item, _ctx).UpdateCommandApi;
     }
 }

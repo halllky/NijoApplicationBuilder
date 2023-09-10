@@ -59,15 +59,17 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     DisplayName = aggregate.Item.DisplayName,
                     From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(Searching.SearchFeature.REACT_FILENAME)}",
                 };
-                var editView = new SingleView(aggregate, _ctx, asEditView: true);
+
+                var createView = new SingleView(aggregate, _ctx, SingleView.E_Type.Create);
+                var detailView = new SingleView(aggregate, _ctx, SingleView.E_Type.View);
+                var editView = new SingleView(aggregate, _ctx, SingleView.E_Type.Edit);
                 yield return new ImportedComponent {
                     ShowMenu = false,
-                    Url = editView.Route,
-                    PhysicalName = $"{aggregateName}EditView",
+                    Url = createView.Route,
+                    PhysicalName = $"{aggregateName}CreateView",
                     DisplayName = aggregate.Item.DisplayName,
-                    From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(editView.FileName)}",
+                    From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(createView.FileName)}",
                 };
-                var detailView = new SingleView(aggregate, _ctx, asEditView: false);
                 yield return new ImportedComponent {
                     ShowMenu = false,
                     Url = detailView.Route,
@@ -75,13 +77,12 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     DisplayName = aggregate.Item.DisplayName,
                     From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(detailView.FileName)}",
                 };
-                var createView = new CreateView(aggregate, _ctx);
                 yield return new ImportedComponent {
                     ShowMenu = false,
-                    Url = createView.Route,
-                    PhysicalName = $"{aggregateName}CreateView",
+                    Url = editView.Route,
+                    PhysicalName = $"{aggregateName}EditView",
                     DisplayName = aggregate.Item.DisplayName,
-                    From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(createView.FileName)}",
+                    From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(editView.FileName)}",
                 };
             }
         }

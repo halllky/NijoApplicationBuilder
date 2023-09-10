@@ -186,10 +186,10 @@ namespace HalApplicationBuilder {
                 reactDir.Directory(REACT_PAGE_DIR, pageDir => {
                     foreach (var root in ctx.Schema.RootAggregates()) {
                         pageDir.Directory(GetAggDirName(root), aggregateDir => {
-                            aggregateDir.Generate(new CreateView(root, ctx));
                             aggregateDir.Generate(new CodeRendering.Searching.SearchFeature(root.As<IEFCoreEntity>(), ctx).CreateReactPage());
-                            aggregateDir.Generate(new SingleView(root, ctx, asEditView: true));
-                            aggregateDir.Generate(new SingleView(root, ctx, asEditView: false));
+                            aggregateDir.Generate(new SingleView(root, ctx, SingleView.E_Type.Create));
+                            aggregateDir.Generate(new SingleView(root, ctx, SingleView.E_Type.View));
+                            aggregateDir.Generate(new SingleView(root, ctx, SingleView.E_Type.Edit));
                             aggregateDir.Generate(new FormOfAggregateInstance(root, ctx));
                             aggregateDir.DeleteOtherFiles();
                         });
