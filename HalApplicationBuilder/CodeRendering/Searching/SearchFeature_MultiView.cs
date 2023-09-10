@@ -30,7 +30,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                 var singleViewRoute = aggregate == null ? null : new SingleView(aggregate, Search.Context, SingleView.E_Type.View).Url;
 
                 var memberNames = Search.Members.Select(m => m.ConditionPropName);
-                var propNameWidth = FormOfAggregateInstance.GetPropNameFlexBasis(memberNames);
+                var propNameWidth = AggregateComponent.GetPropNameFlexBasis(memberNames);
 
                 var s = new StringBuilder();
                 s.Append($$"""

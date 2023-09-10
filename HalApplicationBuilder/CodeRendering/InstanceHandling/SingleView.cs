@@ -59,7 +59,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             };
             var components = _aggregate
                 .EnumerateThisAndDescendants()
-                .Select(x => new FormOfAggregateInstance.AggregateComponent(x, _ctx));
+                .Select(x => new AggregateComponent(x, _ctx));
+            var createEmptyObject = new types.AggregateInstanceInitializerFunction(_aggregate).FunctionName;
 
             return $$"""
                 import { useState, useCallback, useMemo, useReducer } from 'react';
@@ -84,14 +85,14 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                   // 画面表示時
                 {{If(_type == E_Type.Create, () => $$"""
                   const defaultValues = useMemo(() => {
-                    return AggregateType.{{new types.AggregateInstanceInitializerFunction(_aggregate).FunctionName}}()
+                    return AggregateType.{{createEmptyObject}}()
                   }, [])
                 """).Else(() => $$"""
                   const { instanceKey } = useParams()
                   const [instanceName, setInstanceName] = useState<string | undefined>('')
                   const [fetched, setFetched] = useState(false)
                   const defaultValues = useCallback(async () => {
-                    if (!instanceKey) return AggregateType.{{new types.AggregateInstanceInitializerFunction(_aggregate).FunctionName}}()
+                    if (!instanceKey) return AggregateType.{{createEmptyObject}}()
                     const encoded = window.encodeURI(instanceKey)
                     const response = await get(`{{controller.FindCommandApi}}/${encoded}`)
                     setFetched(true)
@@ -100,7 +101,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       setInstanceName(responseData.{{AggregateInstanceBase.INSTANCE_NAME}})
                       return responseData
                     } else {
-                      return AggregateType.{{new types.AggregateInstanceInitializerFunction(_aggregate).FunctionName}}()
+                      return AggregateType.{{createEmptyObject}}()
                     }
                   }, [instanceKey])
                 """)}}
@@ -163,7 +164,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                             <div className="flex-1"></div>
                           </h1>
                           <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
-                            {{new FormOfAggregateInstance.AggregateComponent(_aggregate, _ctx).RenderCaller()}}
+                            {{new AggregateComponent(_aggregate, _ctx).RenderCaller()}}
                           </div>
                           <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
                 {{If(_type == E_Type.Create, () => $$"""
