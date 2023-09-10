@@ -31,7 +31,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                     var instance = new {{_aggregate.Item.ClassName}} {
                         {{WithIndent(RenderBody(_aggregate, _aggregate, "entity", 0), "        ")}}
                     };
-                    instance.{{AggregateInstanceBase.INSTANCE_KEY}} = {{AggregateInstanceKeyNamePair.RenderKeyJsonConverting(_aggregate.GetKeyMembers().Select(m => $"instance.{m.GetFullPath().Join(".")}"))}};
+                    instance.{{AggregateInstanceBase.INSTANCE_KEY}} = {{WithIndent(AggregateInstanceKeyNamePair.RenderKeyJsonConverting(_aggregate.GetKeyMembers().Select(m => $"instance.{m.GetFullPath().Join(".")}")), "    ")}};
                     instance.{{AggregateInstanceBase.INSTANCE_NAME}} = {{_aggregate.GetInstanceNameMembers().Select(m => $"instance.{m.GetFullPath().Join(".")}?.ToString()").Join(" + ")}};
                     return instance;
                 }
@@ -52,16 +52,12 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                         """;
 
                 } else if (prop is AggregateMember.Ref refProp) {
-                    var nav = refProp.GetNavigationProperty();
-                    var refTarget = refProp.Owner == nav.Principal.Owner
-                        ? nav.Principal
-                        : nav.Relevant;
-                    var names = refTarget.Owner
+                    var names = refProp.MemberAggregate
                         .GetInstanceNameMembers()
-                        .Select(member => $"{rootInstanceName}.{member.GetFullPath(rootInstance).Join(".")}");
-                    var foreignKeys = refTarget
+                        .Select(m => $"{rootInstanceName}.{m.GetFullPath(rootInstance).Join(".")}?.ToString()");
+                    var foreignKeys = refProp
                         .GetForeignKeys()
-                        .Select(fk => $"{rootInstanceName}.{fk.GetFullPath(rootInstance.As<IEFCoreEntity>()).Join(".")}");
+                        .Select(m => $"{rootInstanceName}.{m.GetFullPath(rootInstance).Join(".")}");
 
                     yield return $$"""
                         {{refProp.PropertyName}} = new() {

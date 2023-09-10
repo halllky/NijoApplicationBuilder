@@ -47,7 +47,7 @@ namespace HalApplicationBuilder.Core {
             foreach (var edge in aggregate.GetRefEdge()) {
                 var refMember = new Ref(edge);
                 yield return refMember;
-                foreach (var refPK in refMember.GetRefTargetKeys()) yield return refPK;
+                foreach (var refPK in refMember.GetForeignKeys()) yield return refPK;
             }
         }
         internal static IEnumerable<ValueMember> GetKeyMembers(this GraphNode<Aggregate> aggregate) {
@@ -243,14 +243,9 @@ namespace HalApplicationBuilder.Core {
             internal bool IsInstanceName => Relation.IsInstanceName();
             internal bool RequiredAtDB => Relation.IsPrimary() || Relation.IsRequired();
 
-            internal IEnumerable<ValueMember> GetRefTargetKeys() {
+            internal IEnumerable<ValueMember> GetForeignKeys() {
                 return Relation.Terminal
                     .GetKeyMembers()
-                    .Select(refTargetMember => new RefTargetMember(this, refTargetMember));
-            }
-            internal IEnumerable<ValueMember> GetRefTargetNameMembers() {
-                return Relation.Terminal
-                    .GetInstanceNameMembers()
                     .Select(refTargetMember => new RefTargetMember(this, refTargetMember));
             }
         }

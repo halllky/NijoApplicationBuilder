@@ -48,7 +48,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
                         """;
 
                 } else if (prop is AggregateMember.Ref refProp) {
-                    var refTargetKeys = refProp.GetRefTargetKeys().ToArray();
+                    var refTargetKeys = refProp.GetForeignKeys().ToArray();
                     var refPropFullpath = $"{rootInstanceName}.{refProp.GetFullPath(rootInstance).Join(".")}.{AggregateInstanceKeyNamePair.KEY}";
                     for (int i = 0; i < refTargetKeys.Length; i++) {
                         var col = refTargetKeys[i];

@@ -116,14 +116,14 @@ namespace HalApplicationBuilder.Core {
                         .OfType<AggregateMember.ParentPK>()
                         .Select(parentPk => parentPk.GetDbColumn());
 
-                } else if (_relation.Terminal == Owner
+                } else if (_relation.Initial == Owner
                         && _relation.IsRef()) {
 
-                    return _relation.Terminal
+                    return _relation.Initial
                         .GetMembers()
                         .OfType<AggregateMember.Ref>()
                         .Where(refMember => refMember.Relation == _relation)
-                        .SelectMany(refMember => refMember.GetRefTargetKeys())
+                        .SelectMany(refMember => refMember.GetForeignKeys())
                         .Select(refTargetKey => refTargetKey.GetDbColumn());
 
                 } else {
