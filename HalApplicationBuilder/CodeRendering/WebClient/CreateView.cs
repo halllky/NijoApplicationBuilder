@@ -41,7 +41,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
                 export default function () {
 
-                  const pageContextValue = useReducer(pageContextReducer, { pageIsReadOnly: false })
+                  const pageContextValue = useReducer(pageContextReducer, { singleViewPageMode: 'create' })
                   const reactHookFormMethods = useForm({ defaultValues })
 
                   const navigate = useNavigate()

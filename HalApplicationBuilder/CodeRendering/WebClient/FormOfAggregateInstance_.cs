@@ -46,6 +46,12 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             private readonly GraphNode<Aggregate> _instance;
             private readonly AggregateMember.Schalar _prop;
 
+            private string ReadOnlyWhere() {
+                return _prop.IsPrimary
+                    ? "singleViewPageMode === 'view' || singleViewPageMode === 'edit'"
+                    : "singleViewPageMode === 'view'";
+            }
+
             /// <summary>
             /// Createビュー兼シングルビュー: テキストボックス
             /// </summary>
@@ -56,7 +62,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                         <textarea
                             {...register(`{{name}}`)}
                             className="{{INPUT_WIDTH}}"
-                            readOnly={pageIsReadOnly}
+                            readOnly={{{ReadOnlyWhere()}}}
                             spellCheck="false"
                             autoComplete="off">
                         </textarea>
@@ -67,7 +73,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                             type="text"
                             {...register(`{{name}}`)}
                             className="{{INPUT_WIDTH}}"
-                            readOnly={pageIsReadOnly}
+                            readOnly={{{ReadOnlyWhere()}}}
                             spellCheck="false"
                             autoComplete="off"
                         />
@@ -80,7 +86,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             public string Toggle() {
                 var name = GetRegisterName(_instance, _prop).Value;
                 return $$"""
-                    <input type="checkbox" {...register(`{{name}}`)} disabled={pageIsReadOnly} />
+                    <input type="checkbox" {...register(`{{name}}`)} disabled={{{ReadOnlyWhere()}}} />
                     """;
             }
 

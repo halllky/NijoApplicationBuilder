@@ -37,7 +37,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const [{ pageIsReadOnly },] = usePageContext()
+                      const [{ singleViewPageMode },] = usePageContext()
                       const { register, watch } = useFormContext<AggregateType.{{_instance.Item.TypeScriptTypeName}}>()
 
                       return (
@@ -61,7 +61,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const [{ pageIsReadOnly },] = usePageContext()
+                      const [{ singleViewPageMode },] = usePageContext()
                       const { register, watch, control } = useFormContext<AggregateType.{{_instance.Item.TypeScriptTypeName}}>()
                       const { fields, append, remove } = useFieldArray({
                         control,
@@ -83,7 +83,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                           {fields.map((_, {{index}}) => (
                             <div key={{{index}}} className="flex flex-col space-y-1 p-1 border border-neutral-400">
                               {{WithIndent(layout, "          ")}}
-                              {!pageIsReadOnly &&
+                              {singleViewPageMode !== 'view' &&
                                 <Components.IconButton
                                   underline
                                   icon={XMarkIcon}
@@ -93,7 +93,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                                 </Components.IconButton>}
                             </div>
                           ))}
-                          {!pageIsReadOnly &&
+                          {singleViewPageMode !== 'view' &&
                             <Components.IconButton
                               underline
                               icon={PlusIcon}
@@ -179,7 +179,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                       <div className="flex-1 flex gap-2 flex-wrap">
                     {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
                         <label>
-                          <input type="radio" value="{{variation.Key}}" disabled={pageIsReadOnly} {...register(`{{switchProp}}`)} />
+                          <input type="radio" value="{{variation.Key}}" disabled={singleViewPageMode === 'view'} {...register(`{{switchProp}}`)} />
                           {{variation.PropertyName}}
                         </label>
                     """)}}

@@ -43,7 +43,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                   raectHookFormId: string
                 }, ref: ForwardedRef<HTMLElement>) => {
 
-                  const [{ pageIsReadOnly },] = usePageContext()
+                  const [{ singleViewPageMode },] = usePageContext()
 
                   const [keyword, setKeyword] = useState('')
                   const { get } = useHttpRequest()
@@ -83,10 +83,10 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                   }, [])
 
                   return (
-                    <Combobox ref={ref} value={watch(raectHookFormId) || null} onChange={onChangeSelectedValue} nullable disabled={pageIsReadOnly}>
+                    <Combobox ref={ref} value={watch(raectHookFormId) || null} onChange={onChangeSelectedValue} nullable disabled={singleViewPageMode === 'view'}>
                       <div className="relative {{FormOfAggregateInstance.INPUT_WIDTH}}">
                         <Combobox.Input displayValue={displayValue} onChange={onChange} onBlur={onBlur} className="w-full" spellCheck="false" autoComplete="off" />
-                        {!pageIsReadOnly &&
+                        {singleViewPageMode !== 'view' &&
                           <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
                             <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
                           </Combobox.Button>}

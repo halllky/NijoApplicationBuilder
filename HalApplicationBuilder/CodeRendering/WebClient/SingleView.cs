@@ -86,7 +86,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     }
                   }, [errorMessages, dispatch, post, navigate, instanceKey])
 
-                  const pageContextValue = useReducer(pageContextReducer, { pageIsReadOnly: {{(_asEditView ? "false" : "true")}} })
+                  const pageContextValue = useReducer(pageContextReducer, { singleViewPageMode: {{(_asEditView ? "'edit'" : "'view'")}} })
 
                   if (!fetched) return <></>
 

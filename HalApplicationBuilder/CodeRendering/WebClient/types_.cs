@@ -1,14 +1,13 @@
 using HalApplicationBuilder.CodeRendering.Presentation;
-using HalApplicationBuilder.CodeRendering.Util;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static HalApplicationBuilder.CodeRendering.TemplateTextHelper;
 
 namespace HalApplicationBuilder.CodeRendering.WebClient {
     partial class types : TemplateBase {
@@ -36,23 +35,23 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         private string Render(GraphNode<Aggregate> aggregate) {
             if (aggregate.IsRoot()) {
                 return $$"""
-                  export type {{aggregate.Item.TypeScriptTypeName}} = {
-                  {{aggregate.GetMembers().Where(m => m is not AggregateMember.ParentPK && m is not AggregateMember.RefTargetMember).SelectTextTemplate(m => $$"""
-                    {{m.PropertyName}}?: {{m.TypeScriptTypename}}
-                  """)}}
-                    {{AggregateInstanceBase.INSTANCE_KEY}}?: string
-                    {{AggregateInstanceBase.INSTANCE_NAME}}?: string
-                  }
-                  """;
+                    export type {{aggregate.Item.TypeScriptTypeName}} = {
+                    {{aggregate.GetMembers().Where(m => m is not AggregateMember.ParentPK && m is not AggregateMember.RefTargetMember).SelectTextTemplate(m => $$"""
+                      {{m.PropertyName}}?: {{m.TypeScriptTypename}}
+                    """)}}
+                      {{AggregateInstanceBase.INSTANCE_KEY}}?: string
+                      {{AggregateInstanceBase.INSTANCE_NAME}}?: string
+                    }
+                    """;
 
             } else {
                 return $$"""
-                  export type {{aggregate.Item.TypeScriptTypeName}} = {
-                  {{aggregate.GetMembers().Where(m => m is not AggregateMember.ParentPK && m is not AggregateMember.RefTargetMember).SelectTextTemplate(m => $$"""
-                    {{m.PropertyName}}?: {{m.TypeScriptTypename}}
-                  """)}}
-                  }
-                  """;
+                   export type {{aggregate.Item.TypeScriptTypeName}} = {
+                   {{aggregate.GetMembers().Where(m => m is not AggregateMember.ParentPK && m is not AggregateMember.RefTargetMember).SelectTextTemplate(m => $$"""
+                     {{m.PropertyName}}?: {{m.TypeScriptTypename}}
+                   """)}}
+                   }
+                   """;
             }
         }
 
