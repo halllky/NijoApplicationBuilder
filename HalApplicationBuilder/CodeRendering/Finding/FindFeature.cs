@@ -1,3 +1,4 @@
+using HalApplicationBuilder.CodeRendering.InstanceConverting;
 using HalApplicationBuilder.CodeRendering.Util;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
@@ -65,7 +66,7 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
                 
                             if (entity == null) return null;
                 
-                            var aggregateInstance = {{_aggregate.Item.ClassName}}.{{AggregateMember.FROM_DB_ENTITY_METHOD_NAME}}(entity);
+                            var aggregateInstance = {{_aggregate.Item.ClassName}}.{{FromDbEntityRenderer.METHODNAME}}(entity);
                             return aggregateInstance;
                         }
                     }

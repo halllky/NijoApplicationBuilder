@@ -124,8 +124,11 @@ namespace HalApplicationBuilder.Core {
                         Name = el.Name.LocalName,
                         Members  = schalarMembers,
                         VariationContainer = el.Parent?.Name.LocalName ?? string.Empty,
-                        VariationSwitch = variationSwitch,
+                        VariationSwitch = variationSwitch ?? string.Empty,
                         OwnerFullPath = parent.Value,
+                        IsPrimary = el.Parent?.Attribute(XML_ATTR_KEY) != null,
+                        IsInstanceName = el.Parent?.Attribute(XML_ATTR_NAME) != null,
+                        Optional = el.Parent?.Attribute(XML_ATTR_OPTIONAL) != null,
                     });
                 } else {
                     schemaBuilder.AddChildAggregate(new ChildDef {
@@ -228,6 +231,9 @@ namespace HalApplicationBuilder.Core {
                         { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD },
                         { DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH, def.VariationSwitch },
                         { DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, def.VariationContainer },
+                        { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, def.IsPrimary },
+                        { DirectedEdgeExtensions.REL_ATTR_IS_INSTANCE_NAME, def.IsInstanceName },
+                        { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, !def.Optional },
                     },
                 }))
                 .Concat(_referencesDefs.Select(def => new {
@@ -372,6 +378,9 @@ namespace HalApplicationBuilder.Core {
             internal IList<SchalarMemberDef> Members { get; set; } = new List<SchalarMemberDef>();
             public string VariationContainer { get; set; } = "";
             public string VariationSwitch { get; set; } = "";
+            public bool IsPrimary { get; set; }
+            public bool IsInstanceName { get; set; }
+            public bool Optional { get; set; }
         }
         internal class ChildrenDef {
             public string Name { get; set; } = "";
@@ -562,5 +571,8 @@ namespace HalApplicationBuilder.Core {
         internal GraphNode<T> Owner => VariationAggregates.First().Value.Initial.As<T>();
         internal required string GroupName { get; init; }
         internal required IReadOnlyDictionary<string, GraphEdge<T>> VariationAggregates { get; init; }
+        internal bool IsPrimary => VariationAggregates.First().Value.IsPrimary();
+        internal bool IsInstanceName => VariationAggregates.First().Value.IsInstanceName();
+        internal bool RequiredAtDB => VariationAggregates.First().Value.IsRequired();
     }
 }

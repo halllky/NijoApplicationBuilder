@@ -33,35 +33,27 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 """);
         }
 
-        private string Render(GraphNode<Aggregate> instance) {
-            var builder = new StringBuilder();
+        private string Render(GraphNode<Aggregate> aggregate) {
+            if (aggregate.IsRoot()) {
+                return $$"""
+                  export type {{aggregate.Item.TypeScriptTypeName}} = {
+                  {{aggregate.GetMembers().Where(m => m is not AggregateMember.ParentPK && m is not AggregateMember.RefTargetMember).SelectTextTemplate(m => $$"""
+                    {{m.PropertyName}}?: {{m.TypeScriptTypename}}
+                  """)}}
+                    {{AggregateInstanceBase.INSTANCE_KEY}}?: string
+                    {{AggregateInstanceBase.INSTANCE_NAME}}?: string
+                  }
+                  """;
 
-            builder.AppendLine($"export type {instance.Item.TypeScriptTypeName} = {{");
-            if (instance.IsRoot()) {
-                builder.AppendLine($"  {AggregateInstanceBase.INSTANCE_KEY}?: string");
-                builder.AppendLine($"  {AggregateInstanceBase.INSTANCE_NAME}?: string");
+            } else {
+                return $$"""
+                  export type {{aggregate.Item.TypeScriptTypeName}} = {
+                  {{aggregate.GetMembers().Where(m => m is not AggregateMember.ParentPK && m is not AggregateMember.RefTargetMember).SelectTextTemplate(m => $$"""
+                    {{m.PropertyName}}?: {{m.TypeScriptTypename}}
+                  """)}}
+                  }
+                  """;
             }
-            foreach (var prop in instance.GetSchalarProperties()) {
-                builder.AppendLine($"  {prop.PropertyName}?: {prop.TypeScriptTypename}");
-            }
-            foreach (var member in instance.GetRefEdge()) {
-                builder.AppendLine($"  {member.RelationName}?: {AggregateInstanceKeyNamePair.TS_DEF}");
-            }
-            foreach (var member in instance.GetChildEdges()) {
-                builder.AppendLine($"  {member.RelationName}?: {member.Terminal.Item.TypeScriptTypeName}");
-            }
-            foreach (var member in instance.GetChildrenEdges()) {
-                builder.AppendLine($"  {member.RelationName}?: {member.Terminal.Item.TypeScriptTypeName}[]");
-            }
-            foreach (var member in instance.GetVariationSwitchProperties()) {
-                builder.AppendLine($"  {member.GetDbColumn().PropertyName}?: {member.TypeScriptTypename}");
-            }
-            foreach (var member in instance.GetVariationGroups().SelectMany(group => group.VariationAggregates.Values)) {
-                builder.AppendLine($"  {member.RelationName}?: {member.Terminal.Item.TypeScriptTypeName}");
-            }
-            builder.AppendLine($"}}");
-
-            return builder.ToString();
         }
 
 

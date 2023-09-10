@@ -1,3 +1,4 @@
+using HalApplicationBuilder.CodeRendering.InstanceConverting;
 using HalApplicationBuilder.CodeRendering.Presentation;
 using HalApplicationBuilder.CodeRendering.Util;
 using HalApplicationBuilder.Core;
@@ -179,7 +180,6 @@ namespace HalApplicationBuilder.CodeRendering {
 
         #region AGGREGATE INSTANCE & CREATE COMMAND
         private string CreateCommandClassName => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}CreateCommand";
-        private string CreateCommandToDbEntityMethodName => AggregateMember.TO_DB_ENTITY_METHOD_NAME;
 
         private IEnumerable<string> GetInstanceNameProps() {
             var keys = _aggregate.GetKeyMembers().ToArray();
@@ -205,8 +205,8 @@ namespace HalApplicationBuilder.CodeRendering {
         protected override string Template() {
             var search = new Searching.SearchFeature(_aggregate.As<IEFCoreEntity>(), _ctx);
             var find = new Finding.FindFeature(_aggregate, _ctx);
-            var toDbEntity = new InstanceConverting.ToDbEntityRenderer(_aggregate, _ctx);
-            var fromDbEntity = new InstanceConverting.FromDbEntityRenderer(_aggregate, _ctx);
+            var toDbEntity = new ToDbEntityRenderer(_aggregate, _ctx);
+            var fromDbEntity = new FromDbEntityRenderer(_aggregate, _ctx);
 
             var keyColumns = EnumerateListByKeywordTargetColumns().Where(col => col.IsInstanceKey).ToArray();
             var nameColumns = EnumerateListByKeywordTargetColumns().Where(col => col.IsInstanceName).ToArray();
@@ -244,7 +244,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
                     partial class {{_ctx.Config.DbContextName}} {
                         public bool {{_create.MethodName}}({{CreateCommandClassName}} command, out {{_aggregate.Item.ClassName}} created, out ICollection<string> errors) {
-                            var dbEntity = command.{{CreateCommandToDbEntityMethodName}}();
+                            var dbEntity = command.{{ToDbEntityRenderer.METHODNAME}}();
                             this.Add(dbEntity);
 
                             try {
@@ -376,7 +376,7 @@ namespace HalApplicationBuilder.CodeRendering {
                                 return false;
                             }
 
-                            var afterDbEntity = after.{{AggregateMember.TO_DB_ENTITY_METHOD_NAME}}();
+                            var afterDbEntity = after.{{ToDbEntityRenderer.METHODNAME}}();
 
                             // Attach
                             this.Entry(afterDbEntity).State = EntityState.Modified;
@@ -476,7 +476,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     /// <summary>
                     /// {{_aggregate.Item.DisplayName}}のデータ1件の詳細を表すクラスです。
                     /// </summary>
-                    public partial class {{_aggregate.Item.ClassName}} : {{AggregateMember.BASE_CLASS_NAME}} {
+                    public partial class {{_aggregate.Item.ClassName}} : {{AggregateInstanceBase.CLASS_NAME}} {
                 {{_aggregate.GetMembers().Where(m => m is not AggregateMember.ParentPK && m is not AggregateMember.RefTargetMember).SelectTextTemplate(prop => $$"""
                         public {{prop.CSharpTypeName}} {{prop.PropertyName}} { get; set; }
                 """)}}

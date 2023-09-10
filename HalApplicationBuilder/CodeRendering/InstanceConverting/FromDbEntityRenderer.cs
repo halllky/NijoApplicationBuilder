@@ -20,7 +20,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
         private readonly GraphNode<Aggregate> _aggregate;
         private readonly CodeRenderingContext _ctx;
 
-        private const string METHODNAME = AggregateMember.FROM_DB_ENTITY_METHOD_NAME;
+        internal const string METHODNAME = "FromDbEntity";
 
         internal string Render() {
             return $$"""

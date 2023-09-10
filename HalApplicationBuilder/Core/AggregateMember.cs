@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
@@ -82,26 +83,6 @@ namespace HalApplicationBuilder.Core {
                 yield return new NavigationProperty(refered);
             }
         }
-
-        [Obsolete]
-        internal static IEnumerable<Schalar> GetSchalarProperties(this GraphNode<Aggregate> aggregate) {
-            return aggregate
-                .GetMembers()
-                .Where(prop => prop is Schalar)
-                .Cast<Schalar>();
-        }
-        [Obsolete]
-        internal static IEnumerable<Variation> GetVariationSwitchProperties(this GraphNode<Aggregate> aggregate) {
-            return aggregate
-                .GetMembers()
-                .Where(prop => prop is Variation)
-                .Cast<Variation>();
-        }
-
-
-        internal const string BASE_CLASS_NAME = "AggregateInstanceBase";
-        internal const string TO_DB_ENTITY_METHOD_NAME = "ToDbEntity";
-        internal const string FROM_DB_ENTITY_METHOD_NAME = "FromDbEntity";
 
 
         #region MEMBER BASE
@@ -201,9 +182,9 @@ namespace HalApplicationBuilder.Core {
             internal override string CSharpTypeName => MemberType.GetCSharpTypeName();
             internal override string TypeScriptTypename => MemberType.GetTypeScriptTypeName();
 
-            internal override bool IsPrimary => false; // TODO
-            internal override bool IsInstanceName => false; // TODO
-            internal override bool RequiredAtDB => false; // TODO
+            internal override bool IsPrimary => _group.IsPrimary;
+            internal override bool IsInstanceName => _group.IsInstanceName;
+            internal override bool RequiredAtDB => _group.IsPrimary || _group.RequiredAtDB;
             internal override IAggregateMemberType MemberType { get; } = new AggregateMemberTypes.VariationSwitch();
 
             internal override DbColumn.DbColumnBase GetDbColumn() {
