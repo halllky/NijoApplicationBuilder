@@ -57,18 +57,21 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 E_Type.Edit => "'edit'",
                 _ => throw new NotImplementedException(),
             };
+            var components = _aggregate
+                .EnumerateThisAndDescendants()
+                .Select(x => new FormOfAggregateInstance.AggregateComponent(x, _ctx));
+
             return $$"""
                 import { useState, useCallback, useMemo, useReducer } from 'react';
                 import { useAppContext } from '../../hooks/AppContext';
-                import { PageContext, pageContextReducer } from '../../hooks/PageContext'
+                import { PageContext, pageContextReducer, usePageContext } from '../../hooks/PageContext'
                 import { Link, useParams, useNavigate } from 'react-router-dom';
-                import { FieldValues, SubmitHandler, useForm, FormProvider } from 'react-hook-form';
-                import { BookmarkSquareIcon, PencilIcon } from '@heroicons/react/24/outline';
+                import { FieldValues, SubmitHandler, useForm, FormProvider, useFormContext, useFieldArray } from 'react-hook-form';
+                import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
                 import * as Components from '../../components';
                 import { IconButton, InlineMessageBar, BarMessage } from '../../components';
                 import { useHttpRequest } from '../../hooks/useHttpRequest';
                 import * as AggregateType from '../../{{types.ImportName}}'
-                import { {{new FormOfAggregateInstance.Component(_aggregate).ComponentName}} } from './components'
 
                 export default function () {
 
@@ -160,7 +163,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                             <div className="flex-1"></div>
                           </h1>
                           <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
-                            <{{new FormOfAggregateInstance.Component(_aggregate).ComponentName}} />
+                            {{new FormOfAggregateInstance.AggregateComponent(_aggregate, _ctx).RenderCaller()}}
                           </div>
                           <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
                 {{If(_type == E_Type.Create, () => $$"""
@@ -175,6 +178,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     </PageContext.Provider>
                   )
                 }
+
+
+                {{components.SelectTextTemplate(cmp => cmp.Render())}}
                 """;
         }
     }

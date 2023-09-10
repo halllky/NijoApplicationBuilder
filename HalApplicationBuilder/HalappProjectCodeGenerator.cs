@@ -191,7 +191,6 @@ namespace HalApplicationBuilder {
                             aggregateDir.Generate(new SingleView(root, ctx, SingleView.E_Type.Create));
                             aggregateDir.Generate(new SingleView(root, ctx, SingleView.E_Type.View));
                             aggregateDir.Generate(new SingleView(root, ctx, SingleView.E_Type.Edit));
-                            aggregateDir.Generate(new FormOfAggregateInstance(root, ctx));
                             aggregateDir.DeleteOtherFiles();
                         });
                     }
