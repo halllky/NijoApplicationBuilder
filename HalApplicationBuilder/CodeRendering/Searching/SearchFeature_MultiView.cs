@@ -1,3 +1,4 @@
+using HalApplicationBuilder.CodeRendering.InstanceHandling;
 using HalApplicationBuilder.CodeRendering.WebClient;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
@@ -116,7 +117,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                                   </span>
                                 </div>
                                 <div className="flex-1">
-                                  {{TemplateTextHelper.WithIndent(member.Type.RenderUI(new SearchConditionUiForm(member)),"              ")}}
+                                  {{TemplateTextHelper.WithIndent(member.Type.RenderUI(new SearchConditionUiForm(member)), "              ")}}
                                 </div>
                               </div>
                     """)}}

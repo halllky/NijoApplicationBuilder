@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HalApplicationBuilder.CodeRendering.WebClient {
+namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
     partial class FormOfAggregateInstance : TemplateBase {
         internal FormOfAggregateInstance(GraphNode<Aggregate> aggregateInstance, CodeRenderingContext ctx) {
             _ctx = ctx;

@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static HalApplicationBuilder.CodeRendering.TemplateTextHelper;
 
-namespace HalApplicationBuilder.CodeRendering.InstanceConverting {
+namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
     internal class FromDbEntityRenderer {
         internal FromDbEntityRenderer(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx) {
             _aggregate = aggregate;

@@ -1,4 +1,5 @@
 using HalApplicationBuilder.CodeRendering.Presentation;
+using HalApplicationBuilder.CodeRendering.WebClient;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
 using System;
@@ -8,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HalApplicationBuilder.CodeRendering.WebClient {
+namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
     partial class SingleView : TemplateBase {
         internal enum E_Type {
             Create,
@@ -52,8 +53,8 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             var multiViewUrl = new Searching.SearchFeature(_aggregate.As<IEFCoreEntity>(), _ctx).ReactPageUrl;
             var singleViewPageMode = _type switch {
                 E_Type.Create => "'create'",
-                E_Type.View =>   "'view'",
-                E_Type.Edit =>   "'edit'",
+                E_Type.View => "'view'",
+                E_Type.Edit => "'edit'",
                 _ => throw new NotImplementedException(),
             };
             return $$"""

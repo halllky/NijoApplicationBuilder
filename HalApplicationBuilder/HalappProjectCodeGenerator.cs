@@ -1,5 +1,6 @@
 using HalApplicationBuilder.CodeRendering;
 using HalApplicationBuilder.CodeRendering.EFCore;
+using HalApplicationBuilder.CodeRendering.InstanceHandling;
 using HalApplicationBuilder.CodeRendering.WebClient;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;

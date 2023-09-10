@@ -1,5 +1,6 @@
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
+using HalApplicationBuilder.CodeRendering.WebClient;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static HalApplicationBuilder.CodeRendering.TemplateTextHelper;
 
-namespace HalApplicationBuilder.CodeRendering.WebClient {
+namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
     partial class FormOfAggregateInstance {
         protected override string Template() {
             var components = _instance

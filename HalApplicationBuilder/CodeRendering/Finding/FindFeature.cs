@@ -1,4 +1,4 @@
-using HalApplicationBuilder.CodeRendering.InstanceConverting;
+using HalApplicationBuilder.CodeRendering.InstanceHandling;
 using HalApplicationBuilder.CodeRendering.Util;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
