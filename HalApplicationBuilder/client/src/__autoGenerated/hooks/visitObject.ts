@@ -1,7 +1,7 @@
 /**
  * ツリー構造をもつオブジェクトに対して再帰的に処理を行います。
  */
-export const visitObject = (obj: object, callback: (obj: object) => object): void => {
+export const visitObject = (obj: object, callback: (obj: object) => void): void => {
   if (typeof obj !== 'object') return
 
   if (Array.isArray(obj)) {

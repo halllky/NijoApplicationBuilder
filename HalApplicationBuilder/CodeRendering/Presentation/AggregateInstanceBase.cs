@@ -20,6 +20,11 @@ namespace HalApplicationBuilder.CodeRendering.Presentation {
         internal const string INSTANCE_KEY = "__halapp_InstanceKey";
         internal const string INSTANCE_NAME = "__halapp_InstanceName";
 
+        /// <summary>
+        /// クライアント側でそのオブジェクトがロードしたものか否かを区別する属性。主キーの編集可否などに影響
+        /// </summary>
+        internal const string IS_LOADED = "__isLoaded";
+
         protected override string Template() {
             return $$"""
                 #pragma warning disable CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入っていなければなりません。Null 許容として宣言することをご検討ください。

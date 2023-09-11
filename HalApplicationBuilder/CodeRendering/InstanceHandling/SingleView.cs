@@ -59,7 +59,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             };
             var components = _aggregate
                 .EnumerateThisAndDescendants()
-                .Select(x => new AggregateComponent(x, _ctx));
+                .Select(x => new AggregateComponent(x, _ctx, _type));
             var createEmptyObject = new types.AggregateInstanceInitializerFunction(_aggregate).FunctionName;
 
             return $$"""
@@ -72,6 +72,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 import * as Components from '../../components';
                 import { IconButton, InlineMessageBar, BarMessage } from '../../components';
                 import { useHttpRequest } from '../../hooks/useHttpRequest';
+                import { visitObject } from '../../hooks';
                 import * as AggregateType from '../../{{types.ImportName}}'
 
                 export default function () {
@@ -99,6 +100,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     if (response.ok) {
                       const responseData = response.data as AggregateType.{{_aggregate.Item.TypeScriptTypeName}}
                       setInstanceName(responseData.{{AggregateInstanceBase.INSTANCE_NAME}})
+                      visitObject(responseData, obj => {
+                        (obj as { {{AggregateInstanceBase.IS_LOADED}}?: boolean }).{{AggregateInstanceBase.IS_LOADED}} = true
+                      })
                       return responseData
                     } else {
                       return AggregateType.{{createEmptyObject}}()
@@ -164,7 +168,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                             <div className="flex-1"></div>
                           </h1>
                           <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
-                            {{new AggregateComponent(_aggregate, _ctx).RenderCaller()}}
+                            {{new AggregateComponent(_aggregate, _ctx, _type).RenderCaller()}}
                           </div>
                           <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
                 {{If(_type == E_Type.Create, () => $$"""

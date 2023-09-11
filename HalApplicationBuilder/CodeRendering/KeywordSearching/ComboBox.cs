@@ -115,7 +115,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
 
         internal string RenderCaller(string raectHookFormId) {
             return $$"""
-                <Components.{{ComponentName}} raectHookFormId={`{{raectHookFormId}}`} />
+                <Components.{{ComponentName}} raectHookFormId={{{raectHookFormId}}} />
                 """;
         }
     }

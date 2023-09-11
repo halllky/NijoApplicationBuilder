@@ -41,6 +41,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     """)}}
                       {{AggregateInstanceBase.INSTANCE_KEY}}?: string
                       {{AggregateInstanceBase.INSTANCE_NAME}}?: string
+                      {{AggregateInstanceBase.IS_LOADED}}?: boolean
                     }
                     """;
 
@@ -50,6 +51,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                    {{aggregate.GetMembers().Where(m => m is not AggregateMember.ParentPK && m is not AggregateMember.RefTargetMember).SelectTextTemplate(m => $$"""
                      {{m.PropertyName}}?: {{m.TypeScriptTypename}}
                    """)}}
+                     {{AggregateInstanceBase.IS_LOADED}}?: boolean
                    }
                    """;
             }

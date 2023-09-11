@@ -8,17 +8,20 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using HalApplicationBuilder.CodeRendering.WebClient;
+using HalApplicationBuilder.CodeRendering.Presentation;
 
 namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
     internal class AggregateComponent {
-        internal AggregateComponent(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx) {
+        internal AggregateComponent(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx, SingleView.E_Type type) {
             _aggregate = aggregate;
             _ctx = ctx;
+            _mode = type;
         }
 
         private readonly GraphNode<Aggregate> _aggregate;
         private readonly CodeRenderingContext _ctx;
+        private readonly SingleView.E_Type _mode;
 
         private string ComponentName => $"{_aggregate.Item.TypeScriptTypeName}View";
         private string PropNameWidth => GetPropNameFlexBasis(_aggregate.GetMembers().Select(p => p.PropertyName));
@@ -46,7 +49,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             if (prop != null) {
                 path.Add(prop.PropertyName);
             }
-            return path.Join(".");
+            var name = path.Join(".");
+            return string.IsNullOrEmpty(name) ? string.Empty : $"`{name}`";
         }
         private IEnumerable<string> GetArguments() {
             // 祖先コンポーネントの中に含まれるChildrenの数だけ、
@@ -89,7 +93,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     """)}}
                     }) => {
                       const [{ singleViewPageMode },] = usePageContext()
-                      const { register, watch } = useFormContext<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
+                      const { register, watch, getValues } = useFormContext<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
+                      const item = getValues({{GetRegisterName()}})
                     
                       return (
                         <>
@@ -114,7 +119,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       const { register, watch, control } = useFormContext<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
                       const { fields, append, remove } = useFieldArray({
                         control,
-                        name: `{{GetRegisterName()}}`,
+                        name: {{GetRegisterName()}},
                       })
                       const onAdd = useCallback((e: React.MouseEvent) => {
                         append(AggregateType.{{createNewChildrenItem}}())
@@ -129,7 +134,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     
                       return (
                         <>
-                          {fields.map((_, {{loopVar}}) => (
+                          {fields.map((item, {{loopVar}}) => (
                             <div key={{{loopVar}}} className="flex flex-col space-y-1 p-1 border border-neutral-400">
                               {{WithIndent(layout, "          ")}}
                               {singleViewPageMode !== 'view' &&
@@ -159,7 +164,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
         #region SCHALAR PROPERTY
         private string RenderProperty(AggregateMember.Schalar schalar) {
-            var renderer = new ReactForm(this, schalar);
+            var renderer = new ReactForm(this, schalar, _mode);
             return $$"""
                 <div className="flex">
                   <div className="{{PropNameWidth}}">
@@ -174,17 +179,23 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 """;
         }
         private class ReactForm : IGuiFormRenderer {
-            internal ReactForm(AggregateComponent component, AggregateMember.Schalar prop) {
+            internal ReactForm(AggregateComponent component, AggregateMember.Schalar prop, SingleView.E_Type mode) {
                 _component = component;
                 _prop = prop;
+                _mode = mode;
             }
             private readonly AggregateComponent _component;
             private readonly AggregateMember.Schalar _prop;
+            private readonly SingleView.E_Type _mode;
 
             private string ReadOnlyWhere() {
-                return _prop.IsPrimary
-                    ? "singleViewPageMode === 'view' || singleViewPageMode === 'edit'"
-                    : "singleViewPageMode === 'view'";
+                if (_prop.IsPrimary) {
+                    return _mode == SingleView.E_Type.Edit
+                        ? $"item?.{AggregateInstanceBase.IS_LOADED} && (singleViewPageMode === 'view' || singleViewPageMode === 'edit')"
+                        : $"singleViewPageMode === 'view' || singleViewPageMode === 'edit'";
+                } else {
+                    return "singleViewPageMode === 'view'";
+                }
             }
 
             /// <summary>
@@ -194,7 +205,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 if (multiline)
                     return $$"""
                         <textarea
-                          {...register(`{{_component.GetRegisterName(_prop)}}`)}
+                          {...register({{_component.GetRegisterName(_prop)}})}
                           className="{{INPUT_WIDTH}}"
                           readOnly={{{ReadOnlyWhere()}}}
                           spellCheck="false"
@@ -205,7 +216,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     return $$"""
                         <input
                           type="text"
-                          {...register(`{{_component.GetRegisterName(_prop)}}`)}
+                          {...register({{_component.GetRegisterName(_prop)}})}
                           className="{{INPUT_WIDTH}}"
                           readOnly={{{ReadOnlyWhere()}}}
                           spellCheck="false"
@@ -219,7 +230,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             /// </summary>
             public string Toggle() {
                 return $$"""
-                    <input type="checkbox" {...register(`{{_component.GetRegisterName(_prop)}}`)} disabled={{{ReadOnlyWhere()}}} />
+                    <input type="checkbox" {...register({{_component.GetRegisterName(_prop)}})} disabled={{{ReadOnlyWhere()}}} />
                     """;
             }
 
@@ -228,7 +239,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             /// </summary>
             public string Selection(IEnumerable<KeyValuePair<string, string>> options) {
                 return $$"""
-                    <select className="border" {...register(`{{_component.GetRegisterName()}}`)}>
+                    <select className="border" {...register({{_component.GetRegisterName()}})}>
                     {{options.SelectTextTemplate(option => $$"""
                       <option value="{{option.Key}}">
                         {{option.Value}}
@@ -257,7 +268,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 """;
         }
         private string RenderProperty(AggregateMember.Child child) {
-            var childComponent = new AggregateComponent(child.MemberAggregate, _ctx);
+            var childComponent = new AggregateComponent(child.MemberAggregate, _ctx, _mode);
             return $$"""
                 <div className="py-2">
                   <span className="text-sm select-none opacity-80">
@@ -270,10 +281,10 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 """;
         }
         private string RenderProperty(AggregateMember.VariationItem variation) {
-            var childComponent = new AggregateComponent(variation.MemberAggregate, _ctx);
+            var childComponent = new AggregateComponent(variation.MemberAggregate, _ctx, _mode);
             var switchProp = GetRegisterName(variation.Group);
             return $$"""
-                <div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(watch(`{{switchProp}}`) !== '{{variation.Key}}' ? 'hidden' : '')}`}>
+                <div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(watch({{switchProp}}) !== '{{variation.Key}}' ? 'hidden' : '')}`}>
                   {{WithIndent(childComponent.RenderCaller(), "  ")}}
                 </div>
                 """;
@@ -290,7 +301,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                   <div className="flex-1 flex gap-2 flex-wrap">
                 {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
                     <label>
-                      <input type="radio" value="{{variation.Key}}" disabled={singleViewPageMode === 'view'} {...register(`{{switchProp}}`)} />
+                      <input type="radio" value="{{variation.Key}}" disabled={singleViewPageMode === 'view'} {...register({{switchProp}})} />
                       {{variation.PropertyName}}
                     </label>
                 """)}}
@@ -299,7 +310,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 """;
         }
         private string RenderProperty(AggregateMember.Children children) {
-            var childrenComponent = new AggregateComponent(children.MemberAggregate, _ctx);
+            var childrenComponent = new AggregateComponent(children.MemberAggregate, _ctx, _mode);
             return $$"""
                 <div className="py-2">
                   <span className="text-sm select-none opacity-80">
