@@ -20,6 +20,7 @@ namespace HalApplicationBuilder.Core {
         public string GetPath() {
             return Path.Combine(_projectRoot, "halapp.xml");
         }
+
         public XDocument Load() {
             var xmlFullPath = GetPath();
             using var stream = IO.OpenFileWithRetry(xmlFullPath);
@@ -28,9 +29,13 @@ namespace HalApplicationBuilder.Core {
             var xDocument = XDocument.Parse(xmlContent);
             return xDocument;
         }
+
         internal bool ConfigureBuilder(AppSchemaBuilder builder, out ICollection<string> errors) {
             var xDocument = Load();
-            if (xDocument.Root == null) throw new FormatException($"Xml doesn't have contents.");
+            if (xDocument.Root == null) {
+                errors = new List<string> { "XMLが空です。" };
+                return false;
+            }
 
             var errorList = new List<string>();
 
@@ -49,7 +54,7 @@ namespace HalApplicationBuilder.Core {
                 // バリデーション
                 var members = el.Source
                     .Elements()
-                    .Select(inner => Attributes.Parse(inner, errorListLocal))
+                    .Select(inner => IsAttributeParser.Parse(inner, errorListLocal))
                     .ToArray();
 
                 if (el.ElementType == E_XElementType.VariationContainer) {
@@ -141,7 +146,7 @@ namespace HalApplicationBuilder.Core {
 
             foreach (var xElement in xDocument.Root.Elements()) {
                 if (xElement.Name.LocalName == Config.XML_CONFIG_SECTION_NAME) continue;
-                var parsed = Attributes.Parse(xElement, errorList);
+                var parsed = IsAttributeParser.Parse(xElement, errorList);
                 Handle(parsed, parent: null);
             }
             errors = errorList;
@@ -171,27 +176,43 @@ namespace HalApplicationBuilder.Core {
         /// <summary>
         /// is="" で複数の値を指定したときに設定が競合したりidを自動的に主キーと推測したりする仕様が複雑なのでそれを簡略化するための仕組み
         /// </summary>
-        private abstract class Attributes {
+        private abstract class IsAttributeParser {
             public static ParsedXElement Parse(XElement element, ICollection<string> errors) {
 
                 // stringの辞書に変換
                 var isAttribute = element.Attribute("is")?.Value ?? string.Empty;
-                var splitted = isAttribute.Split(' ', '　');
+                var splitted = isAttribute.Split(' ', '　').ToArray();
                 var keyValues = new Dictionary<string, string>();
-                foreach (var item in splitted) {
-                    var separated = item.Split(':');
-                    if (separated.Length >= 3) {
-                        errors.Add($"'{element.Name}' の '{item}' が':'を複数含んでいます。");
-                        continue;
+
+                string? key = null;
+                string? value = null;
+                for (int i = 0; i < splitted.Length; i++) {
+                    if (string.IsNullOrWhiteSpace(splitted[i])) continue;
+
+                    var separated = new Queue<string>(splitted[i].Split(':'));
+                    while (separated.TryDequeue(out var text)) {
+                        if (string.IsNullOrWhiteSpace(text)) {
+                            continue;
+                        } else if (key == null) {
+                            key = text;
+                        } else if (value == null) {
+                            value = text;
+                        } else {
+                            errors.Add($"'{element.Name}' に':'を複数含む属性があるため '{text}' がキーか値かを判別できません。");
+                            key = null;
+                            value = null;
+                        }
                     }
-                    var key = separated[0];
-                    var value = separated.Length >= 2 ? separated[1] : string.Empty;
-                    keyValues.Add(key, value);
+                    if (key != null) {
+                        keyValues.Add(key, value ?? string.Empty);
+                        key = null;
+                        value = null;
+                    }
                 }
 
                 // 各値のハンドラを決定
                 var attributeTypes = Enumerate().ToDictionary(attr => attr.GetType().GetCustomAttribute<IsAttribute>()!.Value);
-                var handlers = new HashSet<Attributes>();
+                var handlers = new HashSet<IsAttributeParser>();
                 foreach (var kv in keyValues) {
                     if (!attributeTypes.TryGetValue(kv.Key.ToLower(), out var handler)) {
                         errors.Add($"'{element.Name}' の '{kv.Key}' は認識できない属性です。");
@@ -208,7 +229,7 @@ namespace HalApplicationBuilder.Core {
                 // 各指定間で矛盾がないかを調べて返す
                 bool specified;
                 var elementType = Parse(handlers.Select(h => h.ElementType), out specified, err => errors.Add($"'{element.Name.LocalName}' 種別の指定でエラー: {err} ('{isAttribute}')"));
-                if (!specified) errors.Add("の種別が不明です。");
+                if (!specified) errors.Add($"{element.Name.LocalName} の種別が不明です。");
 
                 var multiple = Parse(handlers.Select(h => h.IsMultipleChildAggregate), out specified, err => errors.Add($"'{element.Name.LocalName}' エラー: {err} ('{isAttribute}')"));
                 if (!specified) multiple = false;
@@ -293,7 +314,7 @@ namespace HalApplicationBuilder.Core {
                 }
                 public string Value { get; }
             }
-            private static IEnumerable<Attributes> Enumerate() {
+            private static IEnumerable<IsAttributeParser> Enumerate() {
                 yield return new MasterDataAttr();
                 yield return new ObjectAttr();
                 yield return new ArrayAttr();
@@ -307,55 +328,55 @@ namespace HalApplicationBuilder.Core {
             }
 
             [Is("master-data")]
-            private class MasterDataAttr : Attributes {
+            private class MasterDataAttr : IsAttributeParser {
                 protected override (E_XElementType, E_Priority)? ElementType => (E_XElementType.RootAggregate, E_Priority.Force);
             }
             [Is("object")]
-            private class ObjectAttr : Attributes {
+            private class ObjectAttr : IsAttributeParser {
                 protected override (E_XElementType, E_Priority)? ElementType => (E_XElementType.ChildAggregate, E_Priority.Force);
                 protected override (bool, E_Priority)? IsMultipleChildAggregate => (false, E_Priority.Force);
             }
             [Is("array")]
-            private class ArrayAttr : Attributes {
+            private class ArrayAttr : IsAttributeParser {
                 protected override (E_XElementType, E_Priority)? ElementType => (E_XElementType.ChildAggregate, E_Priority.Force);
                 protected override (bool, E_Priority)? IsMultipleChildAggregate => (true, E_Priority.Force);
             }
             [Is("variation")]
-            private class VariationAttr : Attributes {
+            private class VariationAttr : IsAttributeParser {
                 protected override (E_XElementType, E_Priority)? ElementType => (E_XElementType.VariationContainer, E_Priority.Force);
             }
             [Is("ref-to")]
-            private class RefToAttr : Attributes {
+            private class RefToAttr : IsAttributeParser {
                 protected override (E_XElementType, E_Priority)? ElementType => (E_XElementType.Ref, E_Priority.Force);
             }
 
             [Is("key")]
-            private class KeyAttr : Attributes {
+            private class KeyAttr : IsAttributeParser {
                 protected override (E_XElementType, E_Priority)? ElementType => (E_XElementType.Schalar, E_Priority.IfNotSpecified);
                 protected override (bool, E_Priority)? IsKey => (true, E_Priority.Force);
                 protected override (bool, E_Priority)? IsRequired => (true, E_Priority.Force);
             }
             [Is("name")]
-            private class NameAttr : Attributes {
+            private class NameAttr : IsAttributeParser {
                 protected override (E_XElementType, E_Priority)? ElementType => (E_XElementType.Schalar, E_Priority.IfNotSpecified);
                 protected override (bool, E_Priority)? IsName => (true, E_Priority.Force);
                 protected override (string, E_Priority)? AggregateMemberTypeName => (MemberTypeResolver.TYPE_WORD, E_Priority.IfNotSpecified);
             }
 
             [Is("id")]
-            private class IdAttr : Attributes {
+            private class IdAttr : IsAttributeParser {
                 protected override (E_XElementType, E_Priority)? ElementType => (E_XElementType.Schalar, E_Priority.Force);
                 protected override (bool, E_Priority)? IsKey => (true, E_Priority.IfNotSpecified);
                 protected override (bool, E_Priority)? IsRequired => (true, E_Priority.IfNotSpecified);
                 protected override (string, E_Priority)? AggregateMemberTypeName => (MemberTypeResolver.TYPE_ID, E_Priority.Force);
             }
             [Is("word")]
-            private class WordAttr : Attributes {
+            private class WordAttr : IsAttributeParser {
                 protected override (E_XElementType, E_Priority)? ElementType => (E_XElementType.Schalar, E_Priority.Force);
                 protected override (string, E_Priority)? AggregateMemberTypeName => (MemberTypeResolver.TYPE_WORD, E_Priority.Force);
             }
             [Is("sentence")]
-            private class SentenceAttr : Attributes {
+            private class SentenceAttr : IsAttributeParser {
                 protected override (E_XElementType, E_Priority)? ElementType => (E_XElementType.Schalar, E_Priority.Force);
                 protected override (string, E_Priority)? AggregateMemberTypeName => (MemberTypeResolver.TYPE_SENTENCE, E_Priority.Force);
             }
