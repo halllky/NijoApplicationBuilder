@@ -21,7 +21,6 @@ using System.Xml.Linq;
 namespace HalApplicationBuilder {
     public sealed partial class HalappProject {
 
-        private const string HALAPP_XML_NAME = "halapp.xml";
         internal const string REACT_DIR = "client";
 
         /// <summary>
@@ -127,30 +126,19 @@ namespace HalApplicationBuilder {
         public HalappProjectMigrator Migrator { get; }
 
         public string GetAggregateSchemaPath() {
-            return Path.Combine(ProjectRoot, HALAPP_XML_NAME);
+            return AppSchemaXml.GetPath(ProjectRoot);
         }
         public Config ReadConfig() {
-            var xmlFullPath = GetAggregateSchemaPath();
-            using var stream = IO.OpenFileWithRetry(xmlFullPath);
-            using var reader = new StreamReader(stream);
-            var xmlContent = reader.ReadToEnd();
-            var xDocument = XDocument.Parse(xmlContent);
-            var config = Config.FromXml(xDocument);
-            return config;
+            var xDocument = AppSchemaXml.Load(ProjectRoot);
+            return Config.FromXml(xDocument);
         }
         /// <summary>
         /// アプリケーションスキーマを生成します。
         /// </summary>
         /// <exception cref="InvalidOperationException">アプリケーションスキーマが不正な場合</exception>
         internal AppSchema BuildSchema() {
-            var xmlFullPath = GetAggregateSchemaPath();
-            using var stream = IO.OpenFileWithRetry(xmlFullPath);
-            using var reader = new StreamReader(stream);
-            var xmlContent = reader.ReadToEnd();
-            var xDocument = XDocument.Parse(xmlContent);
-
             var builder = new AppSchemaBuilder();
-            if (!AppSchemaBuilder.AddXml(builder, xDocument, out var errors)) {
+            if (!builder.AddXml(ProjectRoot, out var errors)) {
                 throw new InvalidOperationException(errors.Join(Environment.NewLine));
             }
             if (!builder.TryBuild(out var appSchema, out var errors1)) {
