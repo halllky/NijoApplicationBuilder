@@ -71,6 +71,7 @@ namespace HalApplicationBuilder.Core {
                                  && y.Key.Item2 == E_Option.ObjectType
                                  && (string)y.Value! == OBJECT_TYPE_AGGREGATE_MEMBER)
                         .Select(member => new {
+                            TreePath = member.Key.Item1,
                             Name = member.Key.Item1.BaseName,
                             Type = GetOption<string?>(member.Key.Item1, E_Option.MemberTypeName),
                             IsPrimary = GetOption<bool?>(member.Key.Item1, E_Option.IsPrimary) == true,
@@ -124,7 +125,7 @@ namespace HalApplicationBuilder.Core {
                 errors.Add($"アプリケーション名が指定されていません。");
             }
 
-            var aggregates = new Dictionary<AggregatePath, Aggregate>();
+            var aggregates = new Dictionary<NodeId, Aggregate>();
             var aggregateMembers = new HashSet<AggregateMemberNode>();
             var edgesFromAggToAgg = new List<GraphEdgeInfo>();
             var edgesFromAggToMember = new List<GraphEdgeInfo>();
@@ -132,16 +133,13 @@ namespace HalApplicationBuilder.Core {
                 var successToParse = true;
 
                 // バリデーションおよびグラフ構成要素の作成: 集約ID
-                if (!AggregatePath.TryParse(aggregate.TreePath.ToString(), out var id, out var error)) {
-                    errors.Add(error);
-                    successToParse = false;
-                } else if (aggregates.ContainsKey(id)) {
-                    errors.Add($"ID '{id}' が重複しています。");
+                var aggregateId = aggregate.TreePath.ToGraphNodeId();
+                if (aggregates.ContainsKey(aggregateId)) {
+                    errors.Add($"ID '{aggregate.TreePath}' が重複しています。");
                     successToParse = false;
                 }
 
                 // バリデーションおよびグラフ構成要素の作成: 集約メンバー
-                var aggregateId = new NodeId(id.Value);
                 foreach (var member in aggregate.Members) {
 
                     // refはリレーションの方で作成する
@@ -157,7 +155,7 @@ namespace HalApplicationBuilder.Core {
                         successToParse = false;
                         continue;
                     }
-                    var memberId = new NodeId($"{id.Value}/{member.Name}");
+                    var memberId = member.TreePath.ToGraphNodeId();
                     aggregateMembers.Add(new AggregateMemberNode {
                         Id = memberId,
                         Name = member.Name,
@@ -177,33 +175,29 @@ namespace HalApplicationBuilder.Core {
                 }
 
                 if (successToParse) {
-                    aggregates.Add(id, new Aggregate(id));
+                    aggregates.Add(aggregateId, new Aggregate(aggregate.TreePath));
                 }
             }
 
             foreach (var relation in relationDefs) {
                 var successToParse = true;
+                var initial = relation.Initial.ToGraphNodeId();
+                var terminal = relation.Terminal.ToGraphNodeId();
 
                 // バリデーションおよびグラフ構成要素の作成: リレーションの集約ID
-                if (!AggregatePath.TryParse(relation.Initial.ToString(), out var initial, out var error1)) {
-                    errors.Add(error1);
-                    successToParse = false;
-                } else if (!aggregates.ContainsKey(initial)) {
+                if (!aggregates.ContainsKey(initial)) {
                     errors.Add($"ID '{relation.Initial}' と対応する定義がありません。");
                     successToParse = false;
                 }
-                if (!AggregatePath.TryParse(relation.Terminal.ToString(), out var terminal, out var error2)) {
-                    errors.Add(error2);
-                    successToParse = false;
-                } else if (!aggregates.ContainsKey(terminal)) {
+                if (!aggregates.ContainsKey(terminal)) {
                     errors.Add($"ID '{relation.Terminal}' と対応する定義がありません。");
                     successToParse = false;
                 }
 
                 if (successToParse) {
                     edgesFromAggToAgg.Add(new GraphEdgeInfo {
-                        Initial = new NodeId(initial.Value),
-                        Terminal = new NodeId(terminal.Value),
+                        Initial = initial,
+                        Terminal = terminal,
                         RelationName = relation.RelationName,
                         Attributes = relation.Attributes,
                     });
@@ -278,39 +272,6 @@ namespace HalApplicationBuilder.Core {
         private const string OBJECT_TYPE_AGGREGATE = "aggregate";
         private const string OBJECT_TYPE_AGGREGATE_MEMBER = "aggregate-member";
         #endregion オプションを好きな順番で定義できるようTryBuild実行時まで全てのオプションをobject型で保持しておくための仕組み
-
-
-        private class TreePath : ValueObject {
-            public static TreePath FromString(string str) {
-                var path = str
-                    .Split(AggregatePath.SEPARATOR)
-                    .Where(s => !string.IsNullOrWhiteSpace(s))
-                    .Select(s => s.Trim());
-                return new TreePath(path);
-            }
-
-            public TreePath(IEnumerable<string> value) {
-                _value = value.ToArray();
-            }
-            private readonly string[] _value;
-            private TreePath? _parentCache;
-
-            public string BaseName => _value.LastOrDefault() ?? string.Empty;
-            public bool IsRoot => _value.Length <= 1;
-            public TreePath Parent => _parentCache ??= _value.Length == 0
-                ? new TreePath(Enumerable.Empty<string>())
-                : new TreePath(_value.SkipLast(1));
-
-            public NodeId ToGraphNodeId() {
-                return new NodeId(ToString());
-            }
-            protected override IEnumerable<object?> ValueObjectIdentifiers() {
-                foreach (var item in _value) yield return item;
-            }
-            public override string ToString() {
-                return AggregatePath.SEPARATOR + _value.Join(AggregatePath.SEPARATOR.ToString());
-            }
-        }
     }
 
     public interface IAggregateBuildOption {

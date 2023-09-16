@@ -7,15 +7,15 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Core {
     internal class Aggregate : ValueObject, IEFCoreEntity {
-        internal Aggregate(AggregatePath path) {
-            Id = new NodeId(path.Value);
-            Path = path;
+        internal Aggregate(TreePath path) {
+            Id = path.ToGraphNodeId();
+            _path = path;
         }
 
         public NodeId Id { get; }
-        internal AggregatePath Path { get; }
-        internal string DisplayName => Path.BaseName;
-        internal string UniqueId => new HashedString(Path.Value).Guid.ToString().Replace("-", "");
+        private readonly TreePath _path;
+        internal string DisplayName => _path.BaseName;
+        internal string UniqueId => new HashedString(_path.ToString()).Guid.ToString().Replace("-", "");
 
         public string ClassName => DisplayName.ToCSharpSafe();
         public string TypeScriptTypeName => DisplayName.ToCSharpSafe();
@@ -29,6 +29,6 @@ namespace HalApplicationBuilder.Core {
             yield return Id;
         }
 
-        public override string ToString() => $"Aggregate[{Path.Value}]";
+        public override string ToString() => $"Aggregate[{_path}]";
     }
 }
