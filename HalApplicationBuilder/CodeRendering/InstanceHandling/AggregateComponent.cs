@@ -63,6 +63,17 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             return args;
         }
 
+        private string IfReadOnly(string readOnly, AggregateMember.ValueMember prop) {
+            return _mode switch {
+                SingleView.E_Type.Create => "",
+                SingleView.E_Type.View => readOnly,
+                SingleView.E_Type.Edit => prop.IsPrimary
+                    ? $"{readOnly}={{item?.{AggregateInstanceBase.IS_LOADED}}}"
+                    : $"",
+                _ => throw new NotImplementedException(),
+            };
+        }
+
 
         internal string RenderCaller() {
             var args = GetArguments()
@@ -92,7 +103,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const [{ singleViewPageMode },] = usePageContext()
+                      const [{ },] = usePageContext()
                       const { register, watch, getValues } = useFormContext<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
                       const item = getValues({{GetRegisterName()}})
                     
@@ -115,7 +126,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const [{ singleViewPageMode },] = usePageContext()
+                      const [{ },] = usePageContext()
                       const { register, watch, control } = useFormContext<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
                       const { fields, append, remove } = useFieldArray({
                         control,
@@ -137,24 +148,26 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                           {fields.map((item, {{loopVar}}) => (
                             <div key={{{loopVar}}} className="flex flex-col space-y-1 p-1 border border-neutral-400">
                               {{WithIndent(layout, "          ")}}
-                              {singleViewPageMode !== 'view' &&
-                                <Components.IconButton
-                                  underline
-                                  icon={XMarkIcon}
-                                  onClick={onRemove({{loopVar}})}
-                                  className="self-start">
-                                  削除
-                                </Components.IconButton>}
+                    {{If(_mode != SingleView.E_Type.View, () => $$"""
+                              <Components.IconButton
+                                underline
+                                icon={XMarkIcon}
+                                onClick={onRemove({{loopVar}})}
+                                className="self-start">
+                                削除
+                              </Components.IconButton>
+                    """)}}
                             </div>
                           ))}
-                          {singleViewPageMode !== 'view' &&
-                            <Components.IconButton
-                              underline
-                              icon={PlusIcon}
-                              onClick={onAdd}
-                              className="self-start">
-                              追加
-                            </Components.IconButton>}
+                    {{If(_mode != SingleView.E_Type.View, () => $$"""
+                          <Components.IconButton
+                            underline
+                            icon={PlusIcon}
+                            onClick={onAdd}
+                            className="self-start">
+                            追加
+                          </Components.IconButton>
+                    """)}}
                         </>
                       )
                     }
@@ -188,26 +201,18 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             private readonly AggregateMember.Schalar _prop;
             private readonly SingleView.E_Type _mode;
 
-            private string ReadOnlyWhere() {
-                if (_prop.IsPrimary) {
-                    return _mode == SingleView.E_Type.Edit
-                        ? $"item?.{AggregateInstanceBase.IS_LOADED} && (singleViewPageMode === 'view' || singleViewPageMode === 'edit')"
-                        : $"singleViewPageMode === 'view' || singleViewPageMode === 'edit'";
-                } else {
-                    return "singleViewPageMode === 'view'";
-                }
-            }
-
             /// <summary>
             /// Createビュー兼シングルビュー: テキストボックス
             /// </summary>
             public string TextBox(bool multiline = false) {
+                var readOnly = _component.IfReadOnly("readOnly", _prop);
+
                 if (multiline)
                     return $$"""
                         <textarea
                           {...register({{_component.GetRegisterName(_prop)}})}
                           className="{{INPUT_WIDTH}}"
-                          readOnly={{{ReadOnlyWhere()}}}
+                          {{WithIndent(readOnly, "  ")}}
                           spellCheck="false"
                           autoComplete="off">
                         </textarea>
@@ -218,7 +223,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                           type="text"
                           {...register({{_component.GetRegisterName(_prop)}})}
                           className="{{INPUT_WIDTH}}"
-                          readOnly={{{ReadOnlyWhere()}}}
+                          {{WithIndent(readOnly, "  ")}}
                           spellCheck="false"
                           autoComplete="off"
                         />
@@ -229,8 +234,10 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             /// Createビュー兼シングルビュー: トグル
             /// </summary>
             public string Toggle() {
+                var registerName = _component.GetRegisterName(_prop);
+                var disabled = _component.IfReadOnly("disabled", _prop);
                 return $$"""
-                    <input type="checkbox" {...register({{_component.GetRegisterName(_prop)}})} disabled={{{ReadOnlyWhere()}}} />
+                    <input type="checkbox" {...register({{registerName}})} {{disabled}} />
                     """;
             }
 
@@ -238,19 +245,33 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             /// Createビュー兼シングルビュー: 選択肢（コード自動生成時に要素が確定しているもの）
             /// </summary>
             public string Selection(IEnumerable<KeyValuePair<string, string>> options) {
-                return $$"""
-                    {({{ReadOnlyWhere()}})
-                      ? <input type="text" {...register({{_component.GetRegisterName(_prop)}})} readOnly />
-                      : <select className="{{INPUT_WIDTH}}" {...register({{_component.GetRegisterName(_prop)}})}>
-                          <option value="">
-                          </option>
-                    {{options.SelectTextTemplate(option => $$"""
-                          <option value="{{option.Key}}">
-                            {{option.Value}}
-                          </option>
-                    """)}}
-                        </select>}
+                var input = $$"""
+                    <input type="text" {...register({{_component.GetRegisterName(_prop)}})} readOnly />
                     """;
+                var select = $$"""
+                    <select className="{{INPUT_WIDTH}}" {...register({{_component.GetRegisterName(_prop)}})}>
+                      <option value="">
+                      </option>
+                    {{options.SelectTextTemplate(option => $$"""
+                      <option value="{{option.Key}}">
+                        {{option.Value}}
+                      </option>
+                    """)}}
+                    </select>
+                    """;
+
+                return _mode switch {
+                    SingleView.E_Type.Create => select,
+                    SingleView.E_Type.View => input,
+                    SingleView.E_Type.Edit => _prop.IsPrimary
+                        ? $$"""
+                            {(item?.{{AggregateInstanceBase.IS_LOADED}})
+                              ? {{WithIndent(input, "    ")}}
+                              : {{WithIndent(select, "    ")}}}
+                            """
+                        : select,
+                    _ => throw new NotImplementedException(),
+                };
             }
         }
         #endregion SCHALAR PROPERTY
@@ -258,6 +279,13 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         private string RenderProperty(AggregateMember.Ref refProperty) {
             var combobox = new KeywordSearching.ComboBox(refProperty.MemberAggregate, _ctx);
             var registerName = GetRegisterName(refProperty);
+            var callCombobox = _mode switch {
+                SingleView.E_Type.Create => combobox.RenderCaller(registerName, readOnly: false),
+                SingleView.E_Type.View => combobox.RenderCaller(registerName, readOnly: true),
+                SingleView.E_Type.Edit => combobox.RenderCaller(registerName, $"item?.{AggregateInstanceBase.IS_LOADED}"),
+                _ => throw new NotImplementedException(),
+            };
+
             return $$"""
                 <div className="flex">
                   <div className="{{PropNameWidth}}">
@@ -266,7 +294,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     </span>
                   </div>
                   <div className="flex-1">
-                    {{WithIndent(combobox.RenderCaller(registerName), "    ")}}
+                    {{WithIndent(callCombobox, "    ")}}
                   </div>
                 </div>
                 """;
@@ -295,6 +323,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         }
         private string RenderProperty(AggregateMember.Variation variationSwitch) {
             var switchProp = GetRegisterName(variationSwitch);
+            var disabled = IfReadOnly("disabled", variationSwitch);
             return $$"""
                 <div className="flex">
                   <div className="{{PropNameWidth}}">
@@ -305,7 +334,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                   <div className="flex-1 flex gap-2 flex-wrap">
                 {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
                     <label>
-                      <input type="radio" value="{{variation.Key}}" disabled={singleViewPageMode === 'view'} {...register({{switchProp}})} />
+                      <input type="radio" value="{{variation.Key}}" {{disabled}} {...register({{switchProp}})} />
                       {{variation.PropertyName}}
                     </label>
                 """)}}

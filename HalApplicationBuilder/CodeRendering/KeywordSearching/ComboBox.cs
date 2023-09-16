@@ -37,14 +37,12 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                 import { ChevronUpDownIcon } from "@heroicons/react/24/outline"
                 import { NowLoading } from "./NowLoading"
                 import { useAppContext } from "../hooks/AppContext"
-                import { usePageContext } from "../hooks/PageContext"
                 import { useHttpRequest } from "../hooks/useHttpRequest"
 
-                export const {{ComponentName}} = forwardRef(({ raectHookFormId }: {
+                export const {{ComponentName}} = forwardRef(({ raectHookFormId, readOnly }: {
                   raectHookFormId: string
+                  readOnly?: boolean
                 }, ref: ForwardedRef<HTMLElement>) => {
-
-                  const [{ singleViewPageMode },] = usePageContext()
 
                   const [keyword, setKeyword] = useState('')
                   const { get } = useHttpRequest()
@@ -84,10 +82,10 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                   }, [])
 
                   return (
-                    <Combobox ref={ref} value={watch(raectHookFormId) || null} onChange={onChangeSelectedValue} nullable disabled={singleViewPageMode === 'view'}>
+                    <Combobox ref={ref} value={watch(raectHookFormId) || null} onChange={onChangeSelectedValue} nullable disabled={readOnly}>
                       <div className="relative {{AggregateComponent.INPUT_WIDTH}}">
                         <Combobox.Input displayValue={displayValue} onChange={onChange} onBlur={onBlur} className="w-full" spellCheck="false" autoComplete="off" />
-                        {singleViewPageMode !== 'view' &&
+                        {!readOnly &&
                           <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
                             <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
                           </Combobox.Button>}
@@ -113,9 +111,14 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                 """;
         }
 
-        internal string RenderCaller(string raectHookFormId) {
+        internal string RenderCaller(string raectHookFormId, bool readOnly) {
             return $$"""
-                <Components.{{ComponentName}} raectHookFormId={{{raectHookFormId}}} />
+                <Components.{{ComponentName}} raectHookFormId={{{raectHookFormId}}} {{(readOnly ? "readOnly" : "")}} />
+                """;
+        }
+        internal string RenderCaller(string raectHookFormId, string readOnlyCondition) {
+            return $$"""
+                <Components.{{ComponentName}} raectHookFormId={{{raectHookFormId}}} readOnly={{{readOnlyCondition}}} />
                 """;
         }
     }

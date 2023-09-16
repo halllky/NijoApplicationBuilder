@@ -51,12 +51,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         protected override string Template() {
             var controller = new Controller(_aggregate.Item, _ctx);
             var multiViewUrl = new Searching.SearchFeature(_aggregate.As<IEFCoreEntity>(), _ctx).ReactPageUrl;
-            var singleViewPageMode = _type switch {
-                E_Type.Create => "'create'",
-                E_Type.View => "'view'",
-                E_Type.Edit => "'edit'",
-                _ => throw new NotImplementedException(),
-            };
             var components = _aggregate
                 .EnumerateThisAndDescendants()
                 .Select(x => new AggregateComponent(x, _ctx, _type));
@@ -79,7 +73,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
                   // コンテキスト等
                   const [, dispatch] = useAppContext()
-                  const pageContextValue = useReducer(pageContextReducer, { singleViewPageMode: {{singleViewPageMode}} })
+                  const pageContextValue = useReducer(pageContextReducer, { })
                   const { get, post } = useHttpRequest()
                   const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
 

@@ -1,9 +1,6 @@
 import React, { createContext, useContext } from "react"
 
-type PageMode = 'create' | 'view' | 'edit'
-
 type PageState = {
-  singleViewPageMode: PageMode
 }
 type Action
   = {}
