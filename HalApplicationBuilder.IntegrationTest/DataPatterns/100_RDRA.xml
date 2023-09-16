@@ -26,11 +26,16 @@
   <機能 is="master-data">
     <機能ID is="id" />
     <機能名 is="name" />
-    <参照更新の別 is="word" />
+    <参照更新の別 is="E_参照更新" />
     <非機能要件 is="object">
       <レスポンス is="sentence" />
       <セキュリティ is="sentence" />
     </非機能要件>
   </機能>
+
+  <E_参照更新 is="enum">
+    <参照系機能 />
+    <更新系機能 />
+  </E_参照更新>
 
 </RDRA>

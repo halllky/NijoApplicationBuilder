@@ -1,3 +1,4 @@
+using HalApplicationBuilder.Core.AggregateMemberTypes;
 using HalApplicationBuilder.DotnetEx;
 using System;
 using System.Collections.Generic;
@@ -7,13 +8,14 @@ using static HalApplicationBuilder.Core.AggregateMember;
 
 namespace HalApplicationBuilder.Core {
 
-    public class AppSchemaBuilder : IAggregateBuildOption, IAggregateMemberBuildOption {
+    public class AppSchemaBuilder : IAggregateBuildOption, IAggregateMemberBuildOption, IEnumBuildOption {
 
         private string? _applicationName;
         public AppSchemaBuilder SetApplicationName(string value) {
             _applicationName = value;
             return this;
         }
+
         public AppSchemaBuilder AddAggregate(IEnumerable<string> path, Action<IAggregateBuildOption>? options = null) {
             Scope(new TreePath(path.ToArray()), () => {
                 SetOption(new() { { E_Option.ObjectType, OBJECT_TYPE_AGGREGATE } });
@@ -21,14 +23,6 @@ namespace HalApplicationBuilder.Core {
             });
             return this;
         }
-        public AppSchemaBuilder AddAggregateMember(IEnumerable<string> path, Action<IAggregateMemberBuildOption>? options = null) {
-            Scope(new TreePath(path), () => {
-                SetOption(new() { { E_Option.ObjectType, OBJECT_TYPE_AGGREGATE_MEMBER } });
-                options?.Invoke(this);
-            });
-            return this;
-        }
-
         IAggregateBuildOption IAggregateBuildOption.IsPrimary(bool value) => SetOption(new() {
             { E_Option.IsPrimary, value },
         });
@@ -43,6 +37,13 @@ namespace HalApplicationBuilder.Core {
             { E_Option.VariationGroupKey, key },
         });
 
+        public AppSchemaBuilder AddAggregateMember(IEnumerable<string> path, Action<IAggregateMemberBuildOption>? options = null) {
+            Scope(new TreePath(path), () => {
+                SetOption(new() { { E_Option.ObjectType, OBJECT_TYPE_AGGREGATE_MEMBER } });
+                options?.Invoke(this);
+            });
+            return this;
+        }
         IAggregateMemberBuildOption IAggregateMemberBuildOption.MemberType(string typeName) => SetOption(new() {
             { E_Option.MemberTypeName, typeName },
         });
@@ -58,6 +59,25 @@ namespace HalApplicationBuilder.Core {
         IAggregateMemberBuildOption IAggregateMemberBuildOption.IsReferenceTo(string refTarget) => SetOption(new() {
             { E_Option.RefTo, TreePath.FromString(refTarget) },
         });
+
+        public AppSchemaBuilder AddEnum(string name, Action<IEnumBuildOption>? options = null) {
+            Scope(new TreePath(new[] { name }), () => {
+                SetOption(new() { { E_Option.ObjectType, OBJECT_TYPE_ENUM } });
+                options?.Invoke(this);
+            });
+            return this;
+        }
+        IEnumBuildOption IEnumBuildOption.AddMember(string name, int? value) {
+            var @enum = _currentScope.Peek();
+            Scope(@enum.CreateChild(name), () => {
+                SetOption(new() {
+                    { E_Option.ObjectType, OBJECT_TYPE_ENUM_VALUE },
+                    { E_Option.EnumValue, value },
+                });
+            });
+            return this;
+        }
+
 
         internal bool TryBuild(out AppSchema appSchema, out ICollection<string> errors, MemberTypeResolver? memberTypeResolver = null) {
 
@@ -115,8 +135,24 @@ namespace HalApplicationBuilder.Core {
                 });
             var relationDefs = parentAndChild.Concat(refs);
 
+            var enumDefs = _unvalidatedOptions
+                .Where(x => x.Key.Item2 == E_Option.ObjectType
+                         && (string)x.Value! == OBJECT_TYPE_ENUM)
+                .Select(@enum => new {
+                    Name = @enum.Key.Item1.BaseName,
+                    Values = _unvalidatedOptions
+                        .Where(x => x.Key.Item1.Parent == @enum.Key.Item1
+                                 && x.Key.Item2 == E_Option.ObjectType
+                                 && (string)x.Value! == OBJECT_TYPE_ENUM_VALUE)
+                        .Select(enumValue => new {
+                            Name = enumValue.Key.Item1.BaseName,
+                            Value = GetOption<int?>(enumValue.Key.Item1, E_Option.EnumValue),
+                        })
+                        .ToArray(),
+                });
+
             // ---------------------------------------------------------
-            // バリデーション
+            // バリデーションおよびドメインクラスへの変換
 
             errors = new HashSet<string>();
             memberTypeResolver ??= MemberTypeResolver.Default();
@@ -125,6 +161,42 @@ namespace HalApplicationBuilder.Core {
                 errors.Add($"アプリケーション名が指定されていません。");
             }
 
+            // enumの組み立て
+            var builtEnums = new List<EnumDefinition>();
+            foreach (var @enum in enumDefs) {
+                var items = new List<EnumDefinition.Item>();
+                var unusedInt = 0;
+                var usedInt = @enum.Values
+                    .Where(v => v.Value.HasValue)
+                    .Select(v => v.Value)
+                    .Cast<int>()
+                    .ToHashSet();
+                foreach (var item in @enum.Values) {
+                    if (item.Value.HasValue) {
+                        items.Add(new EnumDefinition.Item {
+                            PhysicalName = item.Name,
+                            Value = item.Value.Value,
+                        });
+                    } else {
+                        // 値が未指定の場合、自動的に使われていない整数値を使う
+                        while (usedInt.Contains(unusedInt)) unusedInt++;
+                        usedInt.Add(unusedInt);
+                        items.Add(new EnumDefinition.Item {
+                            PhysicalName = item.Name,
+                            Value = unusedInt,
+                        });
+                    }
+                }
+
+                if (EnumDefinition.TryCreate(@enum.Name, items, out var created, out var enumCreateErrors)) {
+                    builtEnums.Add(created);
+                    memberTypeResolver.Register(created.Name, new EnumList(created));
+                } else {
+                    foreach (var err in enumCreateErrors) errors.Add(err);
+                }
+            }
+
+            // GraphNodeの組み立て
             var aggregates = new Dictionary<NodeId, Aggregate>();
             var aggregateMembers = new HashSet<AggregateMemberNode>();
             var edgesFromAggToAgg = new List<GraphEdgeInfo>();
@@ -179,6 +251,7 @@ namespace HalApplicationBuilder.Core {
                 }
             }
 
+            // GraphEdgeの組み立て
             foreach (var relation in relationDefs) {
                 var successToParse = true;
                 var initial = relation.Initial.ToGraphNodeId();
@@ -224,19 +297,22 @@ namespace HalApplicationBuilder.Core {
             if (!DirectedGraph.TryCreate(nodes, edges, out var graph, out var errors1)) {
                 foreach (var err in errors1) errors.Add(err);
             }
+            var enums = builtEnums
+                .Concat(halappEnums)
+                .ToArray();
 
             appSchema = errors.Any()
                 ? AppSchema.Empty()
-                : new AppSchema(_applicationName!, graph, halappEnums);
+                : new AppSchema(_applicationName!, graph, enums);
             return !errors.Any();
         }
 
 
         #region オプションを好きな順番で定義できるようTryBuild実行時まで全てのオプションをobject型で保持しておくための仕組み
         private void Scope(TreePath objectPath, Action action) {
-            _currentSettingObject.Push(objectPath);
+            _currentScope.Push(objectPath);
             action();
-            _currentSettingObject.Pop();
+            _currentScope.Pop();
         }
         private T? GetOption<T>(TreePath owner, E_Option option) {
             var key = (owner, option);
@@ -247,13 +323,13 @@ namespace HalApplicationBuilder.Core {
             }
         }
         private AppSchemaBuilder SetOption(Dictionary<E_Option, object?> options) {
-            var obj = _currentSettingObject.Peek();
+            var obj = _currentScope.Peek();
             foreach (var item in options) {
                 _unvalidatedOptions[(obj, item.Key)] = item.Value;
             }
             return this;
         }
-        private readonly Stack<TreePath> _currentSettingObject = new();
+        private readonly Stack<TreePath> _currentScope = new();
         private readonly Dictionary<(TreePath, E_Option), object?> _unvalidatedOptions = new();
 
         private enum E_Option {
@@ -268,9 +344,13 @@ namespace HalApplicationBuilder.Core {
             VariationGroupName,
             VariationGroupKey,
             MemberTypeName,
+            EnumName,
+            EnumValue,
         }
         private const string OBJECT_TYPE_AGGREGATE = "aggregate";
         private const string OBJECT_TYPE_AGGREGATE_MEMBER = "aggregate-member";
+        private const string OBJECT_TYPE_ENUM = "enum";
+        private const string OBJECT_TYPE_ENUM_VALUE = "enum-value";
         #endregion オプションを好きな順番で定義できるようTryBuild実行時まで全てのオプションをobject型で保持しておくための仕組み
     }
 
@@ -286,6 +366,9 @@ namespace HalApplicationBuilder.Core {
         IAggregateMemberBuildOption IsDisplayName(bool value = true);
         IAggregateMemberBuildOption IsRequired(bool value = true);
         IAggregateMemberBuildOption IsReferenceTo(string refTarget);
+    }
+    public interface IEnumBuildOption {
+        IEnumBuildOption AddMember(string name, int? value = null);
     }
 
     internal static class DirectedEdgeExtensions {

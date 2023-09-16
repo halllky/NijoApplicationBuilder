@@ -26,6 +26,9 @@ namespace HalApplicationBuilder.DotnetEx {
             ? new TreePath(Enumerable.Empty<string>())
             : new TreePath(_value.SkipLast(1));
 
+        public TreePath CreateChild(string name) {
+            return new TreePath(_value.Concat(new[] { name }));
+        }
         public NodeId ToGraphNodeId() {
             return new NodeId(ToString());
         }

@@ -239,13 +239,17 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             /// </summary>
             public string Selection(IEnumerable<KeyValuePair<string, string>> options) {
                 return $$"""
-                    <select className="border" {...register({{_component.GetRegisterName()}})}>
+                    {({{ReadOnlyWhere()}})
+                      ? <input type="text" {...register({{_component.GetRegisterName(_prop)}})} readOnly />
+                      : <select className="{{INPUT_WIDTH}}" {...register({{_component.GetRegisterName(_prop)}})}>
+                          <option value="">
+                          </option>
                     {{options.SelectTextTemplate(option => $$"""
-                      <option value="{{option.Key}}">
-                        {{option.Value}}
-                      </option>
+                          <option value="{{option.Key}}">
+                            {{option.Value}}
+                          </option>
                     """)}}
-                    </select>
+                        </select>}
                     """;
             }
         }

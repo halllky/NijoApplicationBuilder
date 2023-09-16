@@ -119,7 +119,33 @@ namespace HalApplicationBuilder.Core {
             builder.SetApplicationName(xDocument.Root.Name.LocalName);
 
             foreach (var xElement in xDocument.Root.Elements()) {
+                // コンフィグ
                 if (xElement.Name.LocalName == Config.XML_CONFIG_SECTION_NAME) continue;
+
+                // 列挙体
+                const string ENUM = "enum";
+                var isAttr = IsAttributeParser.ToKeyValues(xElement, new List<string>());
+                if (isAttr.ContainsKey(ENUM)) {
+                    foreach (var kv in isAttr) {
+                        if (kv.Key != ENUM) errorList.Add($"列挙体定義に属性 '{kv.Key}' を指定できません。");
+                    }
+                    builder.AddEnum(xElement.Name.LocalName, options => {
+                        foreach (var innerElement in xElement.Elements()) {
+                            var enumName = innerElement.Name.LocalName;
+                            var strValue = innerElement.Attribute("key")?.Value;
+                            if (strValue == null) {
+                                options.AddMember(enumName);
+                            } else if (int.TryParse(strValue, out var intValue)) {
+                                options.AddMember(enumName, intValue);
+                            } else {
+                                errorList.Add($"'{xElement.Name.LocalName}' の '{enumName}' の値 '{strValue}' を整数に変換できません。");
+                            }
+                        }
+                    });
+                    continue;
+                }
+
+                // 集約定義
                 var parsed = IsAttributeParser.Parse(xElement, errorList);
                 Handle(parsed, Enumerable.Empty<string>());
             }
@@ -127,6 +153,9 @@ namespace HalApplicationBuilder.Core {
             return errors.Count == 0;
         }
 
+        /// <summary>
+        /// 集約または集約メンバーとして解釈されたXElement
+        /// </summary>
         private class ParsedXElement {
             public required XElement Source { get; init; }
             public required E_XElementType ElementType { get; init; }
@@ -151,10 +180,69 @@ namespace HalApplicationBuilder.Core {
         /// is="" で複数の値を指定したときに設定が競合したりidを自動的に主キーと推測したりする仕様が複雑なのでそれを簡略化するための仕組み
         /// </summary>
         private abstract class IsAttributeParser {
+            /// <summary>
+            /// XElementを集約または集約メンバーとして解釈する
+            /// </summary>
             public static ParsedXElement Parse(XElement element, ICollection<string> errors) {
 
-                // stringの辞書に変換
-                var isAttribute = element.Attribute("is")?.Value ?? string.Empty;
+                // 各値のハンドラを決定
+                var keyValues = ToKeyValues(element, errors);
+                var attributeTypes = Enumerate().ToDictionary(attr => attr.GetType().GetCustomAttribute<IsAttribute>()!.Value);
+                var handlers = new HashSet<IsAttributeParser>();
+                foreach (var kv in keyValues) {
+                    IsAttributeParser? handler = null;
+                    if (attributeTypes.TryGetValue(kv.Key.ToLower(), out handler)) {
+                        handler.Value = kv.Value;
+                    } else {
+                        handler = new OtherAttr { Value = kv.Key };
+                    }
+
+                    if (handlers.Contains(handler)) {
+                        errors.Add($"'{element.Name}' に '{kv.Key}' が複数指定されています。");
+                        continue;
+                    }
+                    handlers.Add(handler);
+                }
+
+                // 各指定間で矛盾がないかを調べて返す
+                var isAttribute = element.Attribute(IS)?.Value ?? string.Empty;
+                bool specified;
+                var elementType = Parse(handlers.Select(h => h.ElementType), out specified, err => errors.Add($"'{element.Name.LocalName}' 種別の指定でエラー: {err} ('{isAttribute}')"));
+                if (!specified) elementType = E_XElementType.Schalar;
+
+                var multiple = Parse(handlers.Select(h => h.IsMultipleChildAggregate), out specified, err => errors.Add($"'{element.Name.LocalName}' エラー: {err} ('{isAttribute}')"));
+                if (!specified) multiple = false;
+
+                var isKey = Parse(handlers.Select(h => h.IsKey), out specified, err => errors.Add($"'{element.Name.LocalName}' キーか否かの指定でエラー: {err} ('{isAttribute}')"));
+                if (!specified) isKey = false;
+
+                var isName = Parse(handlers.Select(h => h.IsName), out specified, err => errors.Add($"'{element.Name.LocalName}' 表示名称か否かの指定でエラー: {err} ('{isAttribute}')"));
+                if (!specified) isName = false;
+
+                var isRequired = Parse(handlers.Select(h => h.IsRequired), out specified, err => errors.Add($"'{element.Name.LocalName}' 必須か否かの指定でエラー: {err} ('{isAttribute}')"));
+                if (!specified) isRequired = false;
+
+                var memberTypeName = Parse(handlers.Select(h => h.AggregateMemberTypeName), out specified, err => errors.Add($"'{element.Name.LocalName}' 型名の指定でエラー: {err} ('{isAttribute}')")) ?? string.Empty;
+                if (!specified) memberTypeName = string.Empty;
+
+                return new ParsedXElement {
+                    Source = element,
+                    ElementType = elementType,
+                    IsKey = isKey,
+                    IsName = isName,
+                    IsRequired = isRequired,
+                    AggregateMemberTypeName = memberTypeName,
+                    IsMultipleChildAggregate = multiple,
+                    RefTargetName = elementType == E_XElementType.Ref
+                        ? handlers.OfType<RefToAttr>().First().Value
+                        : string.Empty,
+                };
+            }
+            /// <summary>
+            /// is属性をstringの辞書に変換
+            /// </summary>
+            public static IReadOnlyDictionary<string, string> ToKeyValues(XElement element, ICollection<string> errors) {
+                var isAttribute = element.Attribute(IS)?.Value ?? string.Empty;
                 var splitted = isAttribute.Split(' ', '　').ToArray();
                 var keyValues = new Dictionary<string, string>();
 
@@ -184,54 +272,7 @@ namespace HalApplicationBuilder.Core {
                     }
                 }
 
-                // 各値のハンドラを決定
-                var attributeTypes = Enumerate().ToDictionary(attr => attr.GetType().GetCustomAttribute<IsAttribute>()!.Value);
-                var handlers = new HashSet<IsAttributeParser>();
-                foreach (var kv in keyValues) {
-                    if (!attributeTypes.TryGetValue(kv.Key.ToLower(), out var handler)) {
-                        errors.Add($"'{element.Name}' の '{kv.Key}' は認識できない属性です。");
-                        continue;
-                    }
-                    if (handlers.Contains(handler)) {
-                        errors.Add($"'{element.Name}' に '{kv.Key}' が複数指定されています。");
-                        continue;
-                    }
-                    handler.Value = kv.Value;
-                    handlers.Add(handler);
-                }
-
-                // 各指定間で矛盾がないかを調べて返す
-                bool specified;
-                var elementType = Parse(handlers.Select(h => h.ElementType), out specified, err => errors.Add($"'{element.Name.LocalName}' 種別の指定でエラー: {err} ('{isAttribute}')"));
-                if (!specified) errors.Add($"{element.Name.LocalName} の種別が不明です。");
-
-                var multiple = Parse(handlers.Select(h => h.IsMultipleChildAggregate), out specified, err => errors.Add($"'{element.Name.LocalName}' エラー: {err} ('{isAttribute}')"));
-                if (!specified) multiple = false;
-
-                var isKey = Parse(handlers.Select(h => h.IsKey), out specified, err => errors.Add($"'{element.Name.LocalName}' キーか否かの指定でエラー: {err} ('{isAttribute}')"));
-                if (!specified) isKey = false;
-
-                var isName = Parse(handlers.Select(h => h.IsName), out specified, err => errors.Add($"'{element.Name.LocalName}' 表示名称か否かの指定でエラー: {err} ('{isAttribute}')"));
-                if (!specified) isName = false;
-
-                var isRequired = Parse(handlers.Select(h => h.IsRequired), out specified, err => errors.Add($"'{element.Name.LocalName}' 必須か否かの指定でエラー: {err} ('{isAttribute}')"));
-                if (!specified) isRequired = false;
-
-                var memberTypeName = Parse(handlers.Select(h => h.AggregateMemberTypeName), out specified, err => errors.Add($"'{element.Name.LocalName}' 型名の指定でエラー: {err} ('{isAttribute}')")) ?? string.Empty;
-                if (!specified) memberTypeName = string.Empty;
-
-                return new ParsedXElement {
-                    Source = element,
-                    ElementType = elementType,
-                    IsKey = isKey,
-                    IsName = isName,
-                    IsRequired = isRequired,
-                    AggregateMemberTypeName = memberTypeName,
-                    IsMultipleChildAggregate = multiple,
-                    RefTargetName = elementType == E_XElementType.Ref
-                        ? handlers.OfType<RefToAttr>().First().Value
-                        : string.Empty,
-                };
+                return keyValues;
             }
             /// <summary>
             /// 各指定値の優先順位を考慮して値を決定する。
@@ -279,6 +320,15 @@ namespace HalApplicationBuilder.Core {
             protected virtual (bool, E_Priority)? IsRequired => null;
             protected virtual (string, E_Priority)? AggregateMemberTypeName => null;
             protected string Value { get; set; } = string.Empty;
+
+            private const string IS = "is";
+
+            /// <summary>
+            /// どの予約語にも合致しないもの。enumの名前ないしユーザー定義型とみなす
+            /// </summary>
+            private class OtherAttr : IsAttributeParser {
+                protected override (string, E_Priority)? AggregateMemberTypeName => (Value, E_Priority.Force);
+            }
 
             #region 新しい属性があればここに追加
             [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]

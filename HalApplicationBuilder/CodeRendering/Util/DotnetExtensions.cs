@@ -26,13 +26,7 @@ namespace HalApplicationBuilder.CodeRendering.Util {
 
                     public static class DotnetExtensions {
                         public static IActionResult JsonContent<T>(this ControllerBase controller, T obj) {
-                            var options = new JsonSerializerOptions {
-                                // レスポンスに大文字が含まれるとき、大文字のまま返す。
-                                // react hook form や ag-grid では大文字小文字を区別しているため
-                                PropertyNameCaseInsensitive = true,
-                            };
-                            var json = JsonSerializer.Serialize(obj, options);
-
+                            var json = {{Utility.CLASSNAME}}.{{Utility.TO_JSON}}(obj);
                             return controller.Content(json, "application/json");
                         }
                         public static IEnumerable<string> GetMessagesRecursively(this Exception ex, string indent = "") {
