@@ -2,35 +2,35 @@
 
 <RDRA>
   
-  <アクター>
-    <アクターID type="id" key="" />
-    <アクター名 type="word" name="" />
-    <種別>
-      <人 switch="1">
-        <自社か社外か type="word" />
+  <アクター is="master-data">
+    <アクターID is="id" />
+    <アクター名 is="name" />
+    <種別 is="variation">
+      <人 variation-key="1">
+        <自社か社外か is="word" />
       </人>
-      <外部システム switch="2">
+      <外部システム variation-key="2">
       </外部システム>
     </種別>
   </アクター>
-  
-  <ユースケース>
-    <ユースケースID type="id" key="" />
-    <概要 type="sentence" name="" />
-    <主体 refTo="/アクター" />
-    <関連機能 multiple="">
-      <機能 refTo="/機能" key="" />
+
+  <ユースケース is="master-data">
+    <ユースケースID is="id" />
+    <概要 is="sentence name" />
+    <主体 is="ref-to:アクター" />
+    <関連機能 is="array">
+      <機能 is="ref-to:機能 key" />
     </関連機能>
   </ユースケース>
 
-  <機能>
-    <機能ID type="id" key="" />
-    <機能名 type="word" name="" />
-    <参照更新の別 type="word" />
-    <非機能要件>
-      <レスポンス type="sentence" />
-      <セキュリティ type="sentence" />
+  <機能 is="master-data">
+    <機能ID is="id" />
+    <機能名 is="name" />
+    <参照更新の別 is="word" />
+    <非機能要件 is="object">
+      <レスポンス is="sentence" />
+      <セキュリティ is="sentence" />
     </非機能要件>
   </機能>
-  
+ 
 </RDRA>

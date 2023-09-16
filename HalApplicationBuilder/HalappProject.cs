@@ -149,7 +149,8 @@ namespace HalApplicationBuilder {
             var xmlContent = reader.ReadToEnd();
             var xDocument = XDocument.Parse(xmlContent);
 
-            if (!AppSchemaBuilder.FromXml(xDocument, out var builder, out var errors)) {
+            var builder = new AppSchemaBuilder();
+            if (!AppSchemaBuilder.AddXml(builder, xDocument, out var errors)) {
                 throw new InvalidOperationException(errors.Join(Environment.NewLine));
             }
             if (!builder.TryBuild(out var appSchema, out var errors1)) {

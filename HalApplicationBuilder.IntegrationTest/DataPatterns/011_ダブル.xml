@@ -1,108 +1,106 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <RDRA>
-  <ルート>
-    <ID type="id" key="" />
-    <名前 type="word" name="" />
+  <ルート is="master-data">
+    <ID is="id" />
+    <名前 is="name" />
 
-    <子>
-      <ID type="id" key="" />
-      <名前 type="word" name="" />
+    <子 is="object">
+      <ID is="id" />
+      <名前 is="name" />
 
-      <子の子>
-        <ID type="id" key="" />
-        <名前 type="word" name="" />
+      <子の子 is="object">
+        <ID is="id" />
+        <名前 is="name" />
       </子の子>
-      <子の子配列 multiple="">
-        <ID type="id" key="" />
-        <名前 type="word" name="" />
+      <子の子配列 is="array">
+        <ID is="id" />
+        <名前 is="name" />
       </子の子配列>
-      <子の子バリエーション>
-        <子の子バリエーションA switch="A">
-          <ID type="id" key="" />
-          <名前 type="word" name="" />
+      <子の子バリエーション is="variation">
+        <子の子バリエーションA variation-key="A">
+          <ID is="id" />
+          <名前 is="name" />
         </子の子バリエーションA>
-        <子の子バリエーションB switch="B">
-          <ID type="id" key="" />
-          <名前 type="word" name="" />
+        <子の子バリエーションB variation-key="B">
+          <ID is="id" />
+          <名前 is="name" />
         </子の子バリエーションB>
       </子の子バリエーション>
     </子>
 
-    <子配列 multiple="">
-      <ID type="id" key="" />
-      <名前 type="word" name="" />
+    <子配列 is="array">
+      <ID is="id" />
+      <名前 is="name" />
 
-      <子配列の子>
-        <ID type="id" key="" />
-        <名前 type="word" name="" />
+      <子配列の子 is="object">
+        <ID is="id" />
+        <名前 is="name" />
       </子配列の子>
-      <子配列の子配列 multiple="">
-        <ID type="id" key="" />
-        <名前 type="word" name="" />
+      <子配列の子配列 is="array">
+        <ID is="id" />
+        <名前 is="name" />
       </子配列の子配列>
-      <子配列の子バリエーション>
-        <子配列の子バリエーションA switch="A">
-          <ID type="id" key="" />
-          <名前 type="word" name="" />
+      <子配列の子バリエーション is="variation">
+        <子配列の子バリエーションA variation-key="A">
+          <ID is="id" />
+          <名前 is="name" />
         </子配列の子バリエーションA>
-        <子配列の子バリエーションB switch="B">
-          <ID type="id" key="" />
-          <名前 type="word" name="" />
+        <子配列の子バリエーションB variation-key="B">
+          <ID is="id" />
+          <名前 is="name" />
         </子配列の子バリエーションB>
       </子配列の子バリエーション>
     </子配列>
 
     <子バリエーション>
+      <子バリエーション種別A variation-key="A">
+        <ID is="id" />
+        <名前 is="name" />
 
-      <子バリエーション種別A switch="A">
-        <ID type="id" key="" />
-        <名前 type="word" name="" />
-
-        <子バリエーション種別Aの子>
-          <ID type="id" key="" />
-          <名前 type="word" name="" />
+        <子バリエーション種別Aの子 is="object">
+          <ID is="id" />
+          <名前 is="display-name" />
         </子バリエーション種別Aの子>
-        <子バリエーション種別Aの子配列 multiple="">
-          <ID type="id" key="" />
-          <名前 type="word" name="" />
+        <子バリエーション種別Aの子配列 is="array">
+          <ID is="id" />
+          <名前 is="name" />
         </子バリエーション種別Aの子配列>
-        <子バリエーション種別Aの子バリエーション>
-          <子バリエーション種別Aの子バリエーションA switch="A">
-            <ID type="id" key="" />
-            <名前 type="word" name="" />
+        <子バリエーション種別Aの子バリエーション is="variation">
+          <子バリエーション種別Aの子バリエーションA variation-key="A">
+            <ID is="id" />
+            <名前 is="name" />
           </子バリエーション種別Aの子バリエーションA>
-          <子バリエーション種別Aの子バリエーションB switch="B">
-            <ID type="id" key="" />
-            <名前 type="word" name="" />
+          <子バリエーション種別Aの子バリエーションB variation-key="B">
+            <ID is="id" />
+            <名前 is="name" />
           </子バリエーション種別Aの子バリエーションB>
         </子バリエーション種別Aの子バリエーション>
       </子バリエーション種別A>
 
-      <子バリエーション種別B switch="B">
-        <ID type="id" key="" />
-        <名前 type="word" name="" />
+      <子バリエーション種別B variation-key="B">
+        <ID is="id" />
+        <名前 is="name" />
 
-        <子バリエーション種別Bの子>
-          <ID type="id" key="" />
-          <名前 type="word" name="" />
+        <子バリエーション種別Bの子 is="object">
+          <ID is="id" />
+          <名前 is="name" />
         </子バリエーション種別Bの子>
-        <子バリエーション種別Bの子配列 multiple="">
-          <ID type="id" key="" />
-          <名前 type="word" name="" />
+        <子バリエーション種別Bの子配列 is="array">
+          <ID is="id" />
+          <名前 is="name" />
         </子バリエーション種別Bの子配列>
-        <子バリエーション種別Bの子バリエーション>
-          <子バリエーション種別Bの子バリエーションA switch="A">
-            <ID type="id" key="" />
-            <名前 type="word" name="" />
+        <子バリエーション種別Bの子バリエーション is="variation">
+          <子バリエーション種別Bの子バリエーションA variation-key="A">
+            <ID is="id" />
+            <名前 is="name" />
           </子バリエーション種別Bの子バリエーションA>
-          <子バリエーション種別Bの子バリエーションB switch="B">
-            <ID type="id" key="" />
-            <名前 type="word" name="" />
+          <子バリエーション種別Bの子バリエーションB variation-key="B">
+            <ID is="id" />
+            <名前 is="name" />
           </子バリエーション種別Bの子バリエーションB>
         </子バリエーション種別Bの子バリエーション>
       </子バリエーション種別B>
-
     </子バリエーション>
 
   </ルート>

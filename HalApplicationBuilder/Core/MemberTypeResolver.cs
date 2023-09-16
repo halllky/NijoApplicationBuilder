@@ -9,11 +9,14 @@ namespace HalApplicationBuilder.Core {
     public sealed class MemberTypeResolver {
         public static MemberTypeResolver Default() {
             var resolver = new MemberTypeResolver()
-                .Register("id", new Id())
-                .Register("word", new Word())
-                .Register("sentence", new Sentence());
+                .Register(TYPE_ID, new Id())
+                .Register(TYPE_WORD, new Word())
+                .Register(TYPE_SENTENCE, new Sentence());
             return resolver;
         }
+        internal const string TYPE_ID = "id";
+        internal const string TYPE_WORD = "word";
+        internal const string TYPE_SENTENCE = "sentence";
 
         private MemberTypeResolver() { }
         private readonly Dictionary<string, IAggregateMemberType> _registered = new();

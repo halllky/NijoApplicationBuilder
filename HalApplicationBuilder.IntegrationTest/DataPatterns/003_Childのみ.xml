@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <RDRA>
-  <親集約>
-    <親集約ID type="id" key="" />
-    <親集約名 type="word" name="" />
-    <子集約>
-      <子集約ID type="id" key="" />
-      <子集約名 type="word" name="" />
+  <親集約 is="master-data">
+    <親集約ID is="id" />
+    <親集約名 is="name" />
+    <子集約 is="object">
+      <子集約ID is="id" />
+      <子集約名 is="name" />
     </子集約>
   </親集約>
 </RDRA>
