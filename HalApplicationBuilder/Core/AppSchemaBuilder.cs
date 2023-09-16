@@ -3,206 +3,116 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static HalApplicationBuilder.Core.AggregateMember;
 
 namespace HalApplicationBuilder.Core {
 
-    public interface IAggregateBuildOption {
-        IAggregateBuildOption IsPrimary();
-        IAggregateBuildOption IsArray();
-        IAggregateBuildOption IsVariationGroupMember(string groupName, string key);
-    }
-    public interface IAggregateMemberBuildOption {
-        IAggregateMemberBuildOption IsPrimary();
-        IAggregateMemberBuildOption IsDisplayName();
-        IAggregateMemberBuildOption IsRequired();
-        IAggregateMemberBuildOption IsReferenceTo(string refTarget);
-    }
-
     public class AppSchemaBuilder : IAggregateBuildOption, IAggregateMemberBuildOption {
 
+        private string? _applicationName;
+        public AppSchemaBuilder SetApplicationName(string value) {
+            _applicationName = value;
+            return this;
+        }
         public AppSchemaBuilder AddAggregate(IEnumerable<string> path, Action<IAggregateBuildOption>? options = null) {
-            Scope(new ObjectPath(path.ToArray()), () => {
+            Scope(new TreePath(path.ToArray()), () => {
                 SetOption(new() { { E_Option.ObjectType, OBJECT_TYPE_AGGREGATE } });
                 options?.Invoke(this);
             });
             return this;
         }
         public AppSchemaBuilder AddAggregateMember(IEnumerable<string> path, Action<IAggregateMemberBuildOption>? options = null) {
-            Scope(new ObjectPath(path), () => {
+            Scope(new TreePath(path), () => {
                 SetOption(new() { { E_Option.ObjectType, OBJECT_TYPE_AGGREGATE_MEMBER } });
                 options?.Invoke(this);
             });
             return this;
         }
 
-        IAggregateBuildOption IAggregateBuildOption.IsPrimary() => SetOption(new() {
-            { E_Option.IsPrimary, true },
+        IAggregateBuildOption IAggregateBuildOption.IsPrimary(bool value) => SetOption(new() {
+            { E_Option.IsPrimary, value },
         });
-        IAggregateBuildOption IAggregateBuildOption.IsArray() => SetOption(new() {
-            { E_Option.IsArray, true },
+        IAggregateBuildOption IAggregateBuildOption.IsDisplayName(bool value) => SetOption(new() {
+            { E_Option.IsInstanceName, value },
+        });
+        IAggregateBuildOption IAggregateBuildOption.IsArray(bool value) => SetOption(new() {
+            { E_Option.IsArray, value },
         });
         IAggregateBuildOption IAggregateBuildOption.IsVariationGroupMember(string groupName, string key) => SetOption(new() {
             { E_Option.VariationGroupName, groupName },
             { E_Option.VariationGroupKey, key },
         });
 
-        IAggregateMemberBuildOption IAggregateMemberBuildOption.IsPrimary() => SetOption(new() {
-            { E_Option.IsPrimary, true },
+        IAggregateMemberBuildOption IAggregateMemberBuildOption.MemberType(string typeName) => SetOption(new() {
+            { E_Option.MemberTypeName, typeName },
         });
-        IAggregateMemberBuildOption IAggregateMemberBuildOption.IsDisplayName() => SetOption(new() {
-            { E_Option.IsInstanceName, true },
+        IAggregateMemberBuildOption IAggregateMemberBuildOption.IsPrimary(bool value) => SetOption(new() {
+            { E_Option.IsPrimary, value },
         });
-        IAggregateMemberBuildOption IAggregateMemberBuildOption.IsRequired() => SetOption(new() {
-            { E_Option.IsRequired, true },
+        IAggregateMemberBuildOption IAggregateMemberBuildOption.IsDisplayName(bool value) => SetOption(new() {
+            { E_Option.IsInstanceName, value },
+        });
+        IAggregateMemberBuildOption IAggregateMemberBuildOption.IsRequired(bool value) => SetOption(new() {
+            { E_Option.IsRequired, value },
         });
         IAggregateMemberBuildOption IAggregateMemberBuildOption.IsReferenceTo(string refTarget) => SetOption(new() {
-            { E_Option.RefTo, refTarget },
+            { E_Option.RefTo, TreePath.FromString(refTarget) },
         });
-
-
-        #region オプションを好きな順番で定義できるようTryBuild実行時まで全てのオプションをobject型で保持しておくための仕組み
-        private void Scope(ObjectPath objectPath, Action action) {
-            _currentSettingObject.Push(objectPath);
-            action();
-            _currentSettingObject.Pop();
-        }
-        private AppSchemaBuilder SetOption(Dictionary<E_Option, object?> options) {
-            var obj = _currentSettingObject.Peek();
-            foreach (var item in options) {
-                _unvalidatedOptions[(obj, item.Key)] = item.Value;
-            }
-            return this;
-        }
-        private readonly Stack<ObjectPath> _currentSettingObject = new();
-        private readonly Dictionary<(ObjectPath, E_Option), object?> _unvalidatedOptions = new();
-
-        private enum E_Option {
-            ObjectType,
-            PhysicalName,
-            Owner,
-            IsPrimary,
-            IsInstanceName,
-            IsRequired,
-            RefTo,
-            IsArray,
-            VariationGroupName,
-            VariationGroupKey,
-        }
-        private const string OBJECT_TYPE_AGGREGATE = "aggregate";
-        private const string OBJECT_TYPE_AGGREGATE_MEMBER = "aggregate-member";
-        #endregion オプションを好きな順番で定義できるようTryBuild実行時まで全てのオプションをobject型で保持しておくための仕組み
-
-
-        private class ObjectPath : ValueObject {
-            public ObjectPath(IEnumerable<string> value) => _value = value.ToArray();
-            private readonly string[] _value;
-
-            public NodeId ToGraphNodeId() {
-                return new NodeId(ToString());
-            }
-            protected override IEnumerable<object?> ValueObjectIdentifiers() {
-                foreach (var item in _value) yield return item;
-            }
-            public override string ToString() {
-                return AggregatePath.SEPARATOR + _value.Join(AggregatePath.SEPARATOR.ToString());
-            }
-        }
-
-
-        private string? _applicationName;
-        private readonly List<AggregateDef> _aggregateDefs = new List<AggregateDef>();
-        private readonly List<ChildDef> _childDefs = new List<ChildDef>();
-        private readonly List<VariationDef> _variationDefs = new List<VariationDef>();
-        private readonly List<ChildrenDef> _childrenDefs = new List<ChildrenDef>();
-        private readonly List<ReferenceDef> _referencesDefs = new List<ReferenceDef>();
-
-        internal AppSchemaBuilder SetApplicationName(string value) {
-            _applicationName = value;
-            return this;
-        }
-        internal AppSchemaBuilder AddAggregate(AggregateDef aggregateDef) {
-            _aggregateDefs.Add(aggregateDef);
-            return this;
-        }
-        internal AppSchemaBuilder AddChildAggregate(ChildDef childDef) {
-            _childDefs.Add(childDef);
-            return this;
-        }
-        internal AppSchemaBuilder AddChildrenAggregate(ChildrenDef childrenDef) {
-            _childrenDefs.Add(childrenDef);
-            return this;
-        }
-        internal AppSchemaBuilder AddVariationAggregate(VariationDef variationDef) {
-            _variationDefs.Add(variationDef);
-            return this;
-        }
-        internal AppSchemaBuilder AddReference(ReferenceDef referenceDef) {
-            _referencesDefs.Add(referenceDef);
-            return this;
-        }
 
         internal bool TryBuild(out AppSchema appSchema, out ICollection<string> errors, MemberTypeResolver? memberTypeResolver = null) {
 
-            var aggregateDefs = _aggregateDefs
-                .Select(def => new {
-                    FullPath = def.FullPath.Value,
-                    def.Members,
+            var aggregateDefs = _unvalidatedOptions
+                .Where(x => x.Key.Item2 == E_Option.ObjectType
+                         && (string)x.Value! == OBJECT_TYPE_AGGREGATE)
+                .Select(aggregate => new {
+                    TreePath = aggregate.Key.Item1,
+                    Members = _unvalidatedOptions
+                        .Where(y => y.Key.Item1.Parent == aggregate.Key.Item1
+                                 && y.Key.Item2 == E_Option.ObjectType
+                                 && (string)y.Value! == OBJECT_TYPE_AGGREGATE_MEMBER)
+                        .Select(member => new {
+                            Name = member.Key.Item1.BaseName,
+                            Type = GetOption<string?>(member.Key.Item1, E_Option.MemberTypeName),
+                            IsPrimary = GetOption<bool?>(member.Key.Item1, E_Option.IsPrimary) == true,
+                            IsInstanceName = GetOption<bool?>(member.Key.Item1, E_Option.IsInstanceName) == true,
+                            IsRequired = GetOption<bool?>(member.Key.Item1, E_Option.IsRequired) == true,
+                            RefTarget = GetOption<TreePath?>(member.Key.Item1, E_Option.RefTo),
+                        })
+                        .ToArray(),
                 })
-                .Concat(_childrenDefs.Select(def => new {
-                    FullPath = $"{def.OwnerFullPath}/{def.Name}",
-                    def.Members,
-                }))
-                .Concat(_childDefs.Select(def => new {
-                    FullPath = $"{def.OwnerFullPath}/{def.Name}",
-                    def.Members,
-                }))
-                .Concat(_variationDefs.Select(def => new {
-                    FullPath = $"{def.OwnerFullPath}/{def.Name}",
-                    def.Members,
-                }));
+                .ToArray();
 
-            var relationDefs = _childrenDefs
-                .Select(def => new {
-                    Initial = def.OwnerFullPath,
-                    Terminal = $"{def.OwnerFullPath}/{def.Name}",
-                    RelationName = def.Name,
+            var parentAndChild = aggregateDefs
+                .Where(aggregate => !aggregate.TreePath.IsRoot)
+                .Select(aggregate => new {
+                    Initial = aggregate.TreePath.Parent,
+                    Terminal = aggregate.TreePath,
+                    RelationName = aggregate.TreePath.BaseName,
                     Attributes = new Dictionary<string, object> {
                         { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD },
-                        { DirectedEdgeExtensions.REL_ATTR_MULTIPLE, true },
+                        { DirectedEdgeExtensions.REL_ATTR_MULTIPLE, GetOption<bool?>(aggregate.TreePath, E_Option.IsArray) == true },
+                        { DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH, GetOption<string?>(aggregate.TreePath, E_Option.VariationGroupKey) ?? string.Empty },
+                        { DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, GetOption<string?>(aggregate.TreePath, E_Option.VariationGroupName) ?? string.Empty },
+                        { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, GetOption<bool?>(aggregate.TreePath, E_Option.IsPrimary) == true },
+                        { DirectedEdgeExtensions.REL_ATTR_IS_INSTANCE_NAME, GetOption<bool?>(aggregate.TreePath, E_Option.IsInstanceName) == true },
+                        { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, GetOption<bool?>(aggregate.TreePath, E_Option.IsRequired) == true },
                     },
-                })
-                .Concat(_childDefs.Select(def => new {
-                    Initial = def.OwnerFullPath,
-                    Terminal = $"{def.OwnerFullPath}/{def.Name}",
-                    RelationName = def.Name,
-                    Attributes = new Dictionary<string, object> {
-                        { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD },
-                    },
-                }))
-                .Concat(_variationDefs.Select(def => new {
-                    Initial = def.OwnerFullPath,
-                    Terminal = $"{def.OwnerFullPath}/{def.Name}",
-                    RelationName = def.Name,
-                    Attributes = new Dictionary<string, object> {
-                        { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD },
-                        { DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH, def.VariationSwitch },
-                        { DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, def.VariationContainer },
-                        { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, def.IsPrimary },
-                        { DirectedEdgeExtensions.REL_ATTR_IS_INSTANCE_NAME, def.IsInstanceName },
-                        { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, !def.Optional },
-                    },
-                }))
-                .Concat(_referencesDefs.Select(def => new {
-                    Initial = def.OwnerFullPath,
-                    Terminal = def.TargetFullPath,
-                    RelationName = def.Name,
+                });
+            var refs = aggregateDefs
+                .SelectMany(aggregate => aggregate.Members, (aggregate, member) => new { aggregate, member })
+                .Where(x => x.member.RefTarget != null)
+                .Select(x => new {
+                    Initial = x.aggregate.TreePath,
+                    Terminal = x.member.RefTarget!,
+                    RelationName = x.member.Name,
                     Attributes = new Dictionary<string, object> {
                         { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_REFERENCE },
-                        { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, def.IsPrimary },
-                        { DirectedEdgeExtensions.REL_ATTR_IS_INSTANCE_NAME, def.IsInstanceName },
-                        { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, def.IsRequired },
+                        { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, x.member.IsPrimary },
+                        { DirectedEdgeExtensions.REL_ATTR_IS_INSTANCE_NAME, x.member.IsInstanceName },
+                        { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, x.member.IsRequired },
                     },
-                }));
+                });
+            var relationDefs = parentAndChild.Concat(refs);
 
             // ---------------------------------------------------------
             // バリデーション
@@ -222,7 +132,7 @@ namespace HalApplicationBuilder.Core {
                 var successToParse = true;
 
                 // バリデーションおよびグラフ構成要素の作成: 集約ID
-                if (!AggregatePath.TryParse(aggregate.FullPath, out var id, out var error)) {
+                if (!AggregatePath.TryParse(aggregate.TreePath.ToString(), out var id, out var error)) {
                     errors.Add(error);
                     successToParse = false;
                 } else if (aggregates.ContainsKey(id)) {
@@ -233,6 +143,15 @@ namespace HalApplicationBuilder.Core {
                 // バリデーションおよびグラフ構成要素の作成: 集約メンバー
                 var aggregateId = new NodeId(id.Value);
                 foreach (var member in aggregate.Members) {
+
+                    // refはリレーションの方で作成する
+                    if (member.RefTarget != null) continue;
+
+                    if (member.Type == null) {
+                        errors.Add($"'{member.Name}' のタイプが指定されていません。");
+                        successToParse = false;
+                        continue;
+                    }
                     if (!memberTypeResolver.TryResolve(member.Type, out var memberType)) {
                         errors.Add($"'{member.Name}' のタイプ '{member.Type}' が不正です。");
                         successToParse = false;
@@ -245,7 +164,7 @@ namespace HalApplicationBuilder.Core {
                         Type = memberType,
                         IsPrimary = member.IsPrimary,
                         IsInstanceName = member.IsInstanceName,
-                        Optional = member.Optional,
+                        Optional = !member.IsRequired,
                     });
                     edgesFromAggToMember.Add(new GraphEdgeInfo {
                         Initial = aggregateId,
@@ -266,14 +185,14 @@ namespace HalApplicationBuilder.Core {
                 var successToParse = true;
 
                 // バリデーションおよびグラフ構成要素の作成: リレーションの集約ID
-                if (!AggregatePath.TryParse(relation.Initial, out var initial, out var error1)) {
+                if (!AggregatePath.TryParse(relation.Initial.ToString(), out var initial, out var error1)) {
                     errors.Add(error1);
                     successToParse = false;
                 } else if (!aggregates.ContainsKey(initial)) {
                     errors.Add($"ID '{relation.Initial}' と対応する定義がありません。");
                     successToParse = false;
                 }
-                if (!AggregatePath.TryParse(relation.Terminal, out var terminal, out var error2)) {
+                if (!AggregatePath.TryParse(relation.Terminal.ToString(), out var terminal, out var error2)) {
                     errors.Add(error2);
                     successToParse = false;
                 } else if (!aggregates.ContainsKey(terminal)) {
@@ -318,45 +237,94 @@ namespace HalApplicationBuilder.Core {
             return !errors.Any();
         }
 
-        internal class AggregateDef {
-            internal AggregatePath FullPath { get; set; } = AggregatePath.Empty;
-            internal IList<SchalarMemberDef> Members { get; set; } = new List<SchalarMemberDef>();
+
+        #region オプションを好きな順番で定義できるようTryBuild実行時まで全てのオプションをobject型で保持しておくための仕組み
+        private void Scope(TreePath objectPath, Action action) {
+            _currentSettingObject.Push(objectPath);
+            action();
+            _currentSettingObject.Pop();
         }
-        internal class SchalarMemberDef {
-            public string Name { get; set; } = "";
-            public string Type { get; set; } = "";
-            public bool IsPrimary { get; set; }
-            public bool IsInstanceName { get; set; }
-            public bool Optional { get; set; }
+        private T? GetOption<T>(TreePath owner, E_Option option) {
+            var key = (owner, option);
+            if (_unvalidatedOptions.TryGetValue(key, out var value)) {
+                return (T)value!;
+            } else {
+                return default;
+            }
         }
-        internal class ChildDef {
-            public string Name { get; set; } = "";
-            public string OwnerFullPath { get; set; } = "";
-            internal IList<SchalarMemberDef> Members { get; set; } = new List<SchalarMemberDef>();
+        private AppSchemaBuilder SetOption(Dictionary<E_Option, object?> options) {
+            var obj = _currentSettingObject.Peek();
+            foreach (var item in options) {
+                _unvalidatedOptions[(obj, item.Key)] = item.Value;
+            }
+            return this;
         }
-        internal class VariationDef {
-            public string Name { get; set; } = "";
-            public string OwnerFullPath { get; set; } = "";
-            internal IList<SchalarMemberDef> Members { get; set; } = new List<SchalarMemberDef>();
-            public string VariationContainer { get; set; } = "";
-            public string VariationSwitch { get; set; } = "";
-            public bool IsPrimary { get; set; }
-            public bool IsInstanceName { get; set; }
-            public bool Optional { get; set; }
+        private readonly Stack<TreePath> _currentSettingObject = new();
+        private readonly Dictionary<(TreePath, E_Option), object?> _unvalidatedOptions = new();
+
+        private enum E_Option {
+            ObjectType,
+            PhysicalName,
+            Owner,
+            IsPrimary,
+            IsInstanceName,
+            IsRequired,
+            RefTo,
+            IsArray,
+            VariationGroupName,
+            VariationGroupKey,
+            MemberTypeName,
         }
-        internal class ChildrenDef {
-            public string Name { get; set; } = "";
-            public string OwnerFullPath { get; set; } = "";
-            internal IList<SchalarMemberDef> Members { get; set; } = new List<SchalarMemberDef>();
+        private const string OBJECT_TYPE_AGGREGATE = "aggregate";
+        private const string OBJECT_TYPE_AGGREGATE_MEMBER = "aggregate-member";
+        #endregion オプションを好きな順番で定義できるようTryBuild実行時まで全てのオプションをobject型で保持しておくための仕組み
+
+
+        private class TreePath : ValueObject {
+            public static TreePath FromString(string str) {
+                var path = str
+                    .Split(AggregatePath.SEPARATOR)
+                    .Where(s => !string.IsNullOrWhiteSpace(s))
+                    .Select(s => s.Trim());
+                return new TreePath(path);
+            }
+
+            public TreePath(IEnumerable<string> value) {
+                _value = value.ToArray();
+            }
+            private readonly string[] _value;
+            private TreePath? _parentCache;
+
+            public string BaseName => _value.LastOrDefault() ?? string.Empty;
+            public bool IsRoot => _value.Length <= 1;
+            public TreePath Parent => _parentCache ??= _value.Length == 0
+                ? new TreePath(Enumerable.Empty<string>())
+                : new TreePath(_value.SkipLast(1));
+
+            public NodeId ToGraphNodeId() {
+                return new NodeId(ToString());
+            }
+            protected override IEnumerable<object?> ValueObjectIdentifiers() {
+                foreach (var item in _value) yield return item;
+            }
+            public override string ToString() {
+                return AggregatePath.SEPARATOR + _value.Join(AggregatePath.SEPARATOR.ToString());
+            }
         }
-        internal class ReferenceDef {
-            public string Name { get; set; } = "";
-            public string OwnerFullPath { get; set; } = "";
-            public string TargetFullPath { get; set; } = "";
-            public bool IsPrimary { get; set; }
-            public bool IsInstanceName { get; set; }
-            public bool IsRequired { get; set; }
-        }
+    }
+
+    public interface IAggregateBuildOption {
+        IAggregateBuildOption IsPrimary(bool value = true);
+        IAggregateBuildOption IsDisplayName(bool value = true);
+        IAggregateBuildOption IsArray(bool value = true);
+        IAggregateBuildOption IsVariationGroupMember(string groupName, string key);
+    }
+    public interface IAggregateMemberBuildOption {
+        IAggregateMemberBuildOption MemberType(string typeName);
+        IAggregateMemberBuildOption IsPrimary(bool value = true);
+        IAggregateMemberBuildOption IsDisplayName(bool value = true);
+        IAggregateMemberBuildOption IsRequired(bool value = true);
+        IAggregateMemberBuildOption IsReferenceTo(string refTarget);
     }
 
     internal static class DirectedEdgeExtensions {
@@ -445,23 +413,25 @@ namespace HalApplicationBuilder.Core {
             return parent != null
                 && parent.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                 && (string)type == REL_ATTRVALUE_PARENT_CHILD
-                && parent.Attributes.ContainsKey(REL_ATTR_MULTIPLE);
+                && parent.Attributes.TryGetValue(REL_ATTR_MULTIPLE, out var isArray)
+                && (bool)isArray;
         }
         internal static bool IsChildMember(this GraphNode graphNode) {
             var parent = graphNode.GetParent();
             return parent != null
                 && parent.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                 && (string)type == REL_ATTRVALUE_PARENT_CHILD
-                && !parent.Attributes.ContainsKey(REL_ATTR_MULTIPLE)
-                && !parent.Attributes.ContainsKey(REL_ATTR_VARIATIONGROUPNAME);
+                && (!parent.Attributes.TryGetValue(REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray == false)
+                && (!parent.Attributes.TryGetValue(REL_ATTR_VARIATIONGROUPNAME, out var groupName) || (string)groupName == string.Empty);
         }
         internal static bool IsVariationMember(this GraphNode graphNode) {
             var parent = graphNode.GetParent();
             return parent != null
                 && parent.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                 && (string)type == REL_ATTRVALUE_PARENT_CHILD
-                && !parent.Attributes.ContainsKey(REL_ATTR_MULTIPLE)
-                && parent.Attributes.ContainsKey(REL_ATTR_VARIATIONGROUPNAME);
+                && (!parent.Attributes.TryGetValue(REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray == false)
+                && parent.Attributes.TryGetValue(REL_ATTR_VARIATIONGROUPNAME, out var groupName)
+                && (string)groupName != string.Empty;
         }
 
         internal static IEnumerable<GraphNode<AggregateMemberNode>> GetMemberNodes(this GraphNode<Aggregate> aggregate) {
@@ -473,15 +443,16 @@ namespace HalApplicationBuilder.Core {
             return graphNode.Out
                 .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                             && (string)type == REL_ATTRVALUE_PARENT_CHILD
-                            && edge.Attributes.ContainsKey(REL_ATTR_MULTIPLE))
+                            && edge.Attributes.TryGetValue(REL_ATTR_MULTIPLE, out var isArray)
+                            && (bool)isArray)
                 .Select(edge => edge.As<T>());
         }
         internal static IEnumerable<GraphEdge<T>> GetChildEdges<T>(this GraphNode<T> graphNode) where T : IGraphNode {
             return graphNode.Out
                 .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                             && (string)type == REL_ATTRVALUE_PARENT_CHILD
-                            && !edge.Attributes.ContainsKey(REL_ATTR_MULTIPLE)
-                            && !edge.Attributes.ContainsKey(REL_ATTR_VARIATIONGROUPNAME))
+                            && (!edge.Attributes.TryGetValue(REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray == false)
+                            && (!edge.Attributes.TryGetValue(REL_ATTR_VARIATIONGROUPNAME, out var groupName) || (string)groupName == string.Empty))
                 .Select(edge => edge.As<T>());
         }
         internal static IEnumerable<GraphEdge<T>> GetRefEdge<T>(this GraphNode<T> graphNode) where T : IGraphNode {
@@ -501,8 +472,9 @@ namespace HalApplicationBuilder.Core {
             return graphNode.Out
                 .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                             && (string)type == REL_ATTRVALUE_PARENT_CHILD
-                            && !edge.Attributes.ContainsKey(REL_ATTR_MULTIPLE)
-                            && edge.Attributes.ContainsKey(REL_ATTR_VARIATIONGROUPNAME))
+                            && (!edge.Attributes.TryGetValue(REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray == false)
+                            && (!edge.Attributes.TryGetValue(REL_ATTR_VARIATIONGROUPNAME, out var groupName)
+                            && (string)groupName! != string.Empty))
                 .GroupBy(edge => (string)edge.Attributes[REL_ATTR_VARIATIONGROUPNAME])
                 .Select(group => new VariationGroup<T> {
                     GroupName = group.Key,

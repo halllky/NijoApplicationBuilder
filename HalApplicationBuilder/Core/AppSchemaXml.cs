@@ -39,17 +39,10 @@ namespace HalApplicationBuilder.Core {
 
             var errorList = new List<string>();
 
-            void Handle(ParsedXElement el, AggregatePath? parent) {
+            void Handle(ParsedXElement el, IEnumerable<string> ancestors) {
                 const string VARIATION_KEY = "variation-key";
                 var errorListLocal = new HashSet<string>();
-
-                // パス組み立て
-                AggregatePath aggregatePath;
-                if (parent == null) {
-                    if (!AggregatePath.TryCreate(new[] { el.Source.Name.LocalName }, out aggregatePath, out var err)) errorListLocal.Add(err);
-                } else {
-                    if (!parent.TryCreateChild(el.Source.Name.LocalName, out aggregatePath, out var err)) errorListLocal.Add(err);
-                }
+                var path = ancestors.Concat(new[] { el.Source.Name.LocalName }).ToArray();
 
                 // バリデーション
                 var members = el.Source
@@ -79,66 +72,47 @@ namespace HalApplicationBuilder.Core {
                 errorList.AddRange(errorListLocal);
 
                 // 登録
-                var schalarMembers = members
-                    .Where(member => member.ElementType == E_XElementType.Schalar)
-                    .Select(member => new SchalarMemberDef {
-                        Name = member.Source.Name.LocalName,
-                        Type = member.AggregateMemberTypeName,
-                        IsPrimary = member.IsKey,
-                        IsInstanceName = member.IsName,
-                        Optional = !member.IsRequired,
-                    });
+                if (el.ElementType == E_XElementType.RootAggregate
+                 || el.ElementType == E_XElementType.ChildAggregate
+                 || el.ElementType == E_XElementType.VariationValue) {
 
-                if (el.ElementType == E_XElementType.RootAggregate) {
-                    builder.AddAggregate(new AggregateDef {
-                        FullPath = aggregatePath,
-                        Members = schalarMembers.ToList(),
-                    });
-                } else if (el.ElementType == E_XElementType.ChildAggregate) {
-                    if (el.IsMultipleChildAggregate) {
-                        builder.AddChildrenAggregate(new ChildrenDef {
-                            Name = el.Source.Name.LocalName,
-                            Members = schalarMembers.ToList(),
-                            OwnerFullPath = parent!.Value,
-                        });
-                    } else {
-                        builder.AddChildAggregate(new ChildDef {
-                            Name = el.Source.Name.LocalName,
-                            Members = schalarMembers.ToList(),
-                            OwnerFullPath = parent!.Value,
-                        });
-                    }
-                } else if (el.ElementType == E_XElementType.VariationValue) {
-                    builder.AddVariationAggregate(new VariationDef {
-                        Name = el.Source.Name.LocalName,
-                        Members = schalarMembers.ToList(),
-                        VariationContainer = el.Source.Parent?.Name.LocalName ?? string.Empty,
-                        VariationSwitch = el.Source.Attribute(VARIATION_KEY)?.Value ?? string.Empty,
-                        OwnerFullPath = parent!.Value,
-                        IsPrimary = el.IsKey,
-                        IsInstanceName = el.IsName,
-                        Optional = !el.IsRequired,
+                    builder.AddAggregate(path, options => {
+
+                        if (el.ElementType == E_XElementType.ChildAggregate && el.IsMultipleChildAggregate) {
+                            options.IsArray();
+                        }
+                        if (el.ElementType == E_XElementType.VariationValue) {
+                            options.IsPrimary(el.IsKey);
+                            options.IsVariationGroupMember(
+                                groupName: el.Source.Parent?.Name.LocalName ?? string.Empty,
+                                key: el.Source.Attribute(VARIATION_KEY)?.Value ?? string.Empty);
+                        }
                     });
                 }
+                foreach (var member in members) {
+                    if (member.ElementType == E_XElementType.Schalar
+                     || member.ElementType == E_XElementType.Ref) {
 
-                var refMembers = members.Where(m => m.ElementType == E_XElementType.Ref);
-                foreach (var member in refMembers) {
-                    builder.AddReference(new ReferenceDef {
-                        Name = member.Source.Name.LocalName,
-                        OwnerFullPath = aggregatePath.Value,
-                        IsPrimary = member.IsKey,
-                        IsInstanceName = member.IsName,
-                        IsRequired = member.IsRequired,
-                        TargetFullPath = member.RefTargetName,
-                    });
+                        builder.AddAggregateMember(path.Concat(new[] { member.Source.Name.LocalName }), option => {
+                            option.IsPrimary(member.IsKey);
+                            option.IsDisplayName(member.IsName);
+                            option.IsRequired(member.IsRequired);
+                            option.MemberType(member.AggregateMemberTypeName);
+
+                            if (member.ElementType == E_XElementType.Ref) {
+                                option.IsReferenceTo(member.RefTargetName);
+                            }
+                        });
+                    }
                 }
 
                 // 再帰
-                var descendants = members
-                    .Where(member => member.ElementType == E_XElementType.ChildAggregate
-                                  || member.ElementType == E_XElementType.VariationValue);
-                foreach (var item in descendants) {
-                    Handle(item, aggregatePath);
+                foreach (var member in members) {
+                    if (member.ElementType == E_XElementType.ChildAggregate
+                     || member.ElementType == E_XElementType.VariationValue) {
+
+                        Handle(member, path);
+                    }
                 }
             }
 
@@ -147,7 +121,7 @@ namespace HalApplicationBuilder.Core {
             foreach (var xElement in xDocument.Root.Elements()) {
                 if (xElement.Name.LocalName == Config.XML_CONFIG_SECTION_NAME) continue;
                 var parsed = IsAttributeParser.Parse(xElement, errorList);
-                Handle(parsed, parent: null);
+                Handle(parsed, Enumerable.Empty<string>());
             }
             errors = errorList;
             return errors.Count == 0;
