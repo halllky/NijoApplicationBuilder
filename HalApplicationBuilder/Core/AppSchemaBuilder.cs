@@ -5,7 +5,109 @@ using System.Linq;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Core {
-    internal class AppSchemaBuilder {
+
+    public interface IAggregateBuildOption {
+        IAggregateBuildOption IsPrimary();
+        IAggregateBuildOption IsArray();
+        IAggregateBuildOption IsVariationGroupMember(string groupName, string key);
+    }
+    public interface IAggregateMemberBuildOption {
+        IAggregateMemberBuildOption IsPrimary();
+        IAggregateMemberBuildOption IsDisplayName();
+        IAggregateMemberBuildOption IsRequired();
+        IAggregateMemberBuildOption IsReferenceTo(string refTarget);
+    }
+
+    public class AppSchemaBuilder : IAggregateBuildOption, IAggregateMemberBuildOption {
+
+        public AppSchemaBuilder AddAggregate(IEnumerable<string> path, Action<IAggregateBuildOption>? options = null) {
+            Scope(new ObjectPath(path.ToArray()), () => {
+                SetOption(new() { { E_Option.ObjectType, OBJECT_TYPE_AGGREGATE } });
+                options?.Invoke(this);
+            });
+            return this;
+        }
+        public AppSchemaBuilder AddAggregateMember(IEnumerable<string> path, Action<IAggregateMemberBuildOption>? options = null) {
+            Scope(new ObjectPath(path), () => {
+                SetOption(new() { { E_Option.ObjectType, OBJECT_TYPE_AGGREGATE_MEMBER } });
+                options?.Invoke(this);
+            });
+            return this;
+        }
+
+        IAggregateBuildOption IAggregateBuildOption.IsPrimary() => SetOption(new() {
+            { E_Option.IsPrimary, true },
+        });
+        IAggregateBuildOption IAggregateBuildOption.IsArray() => SetOption(new() {
+            { E_Option.IsArray, true },
+        });
+        IAggregateBuildOption IAggregateBuildOption.IsVariationGroupMember(string groupName, string key) => SetOption(new() {
+            { E_Option.VariationGroupName, groupName },
+            { E_Option.VariationGroupKey, key },
+        });
+
+        IAggregateMemberBuildOption IAggregateMemberBuildOption.IsPrimary() => SetOption(new() {
+            { E_Option.IsPrimary, true },
+        });
+        IAggregateMemberBuildOption IAggregateMemberBuildOption.IsDisplayName() => SetOption(new() {
+            { E_Option.IsInstanceName, true },
+        });
+        IAggregateMemberBuildOption IAggregateMemberBuildOption.IsRequired() => SetOption(new() {
+            { E_Option.IsRequired, true },
+        });
+        IAggregateMemberBuildOption IAggregateMemberBuildOption.IsReferenceTo(string refTarget) => SetOption(new() {
+            { E_Option.RefTo, refTarget },
+        });
+
+
+        #region オプションを好きな順番で定義できるようTryBuild実行時まで全てのオプションをobject型で保持しておくための仕組み
+        private void Scope(ObjectPath objectPath, Action action) {
+            _currentSettingObject.Push(objectPath);
+            action();
+            _currentSettingObject.Pop();
+        }
+        private AppSchemaBuilder SetOption(Dictionary<E_Option, object?> options) {
+            var obj = _currentSettingObject.Peek();
+            foreach (var item in options) {
+                _unvalidatedOptions[(obj, item.Key)] = item.Value;
+            }
+            return this;
+        }
+        private readonly Stack<ObjectPath> _currentSettingObject = new();
+        private readonly Dictionary<(ObjectPath, E_Option), object?> _unvalidatedOptions = new();
+
+        private enum E_Option {
+            ObjectType,
+            PhysicalName,
+            Owner,
+            IsPrimary,
+            IsInstanceName,
+            IsRequired,
+            RefTo,
+            IsArray,
+            VariationGroupName,
+            VariationGroupKey,
+        }
+        private const string OBJECT_TYPE_AGGREGATE = "aggregate";
+        private const string OBJECT_TYPE_AGGREGATE_MEMBER = "aggregate-member";
+        #endregion オプションを好きな順番で定義できるようTryBuild実行時まで全てのオプションをobject型で保持しておくための仕組み
+
+
+        private class ObjectPath : ValueObject {
+            public ObjectPath(IEnumerable<string> value) => _value = value.ToArray();
+            private readonly string[] _value;
+
+            public NodeId ToGraphNodeId() {
+                return new NodeId(ToString());
+            }
+            protected override IEnumerable<object?> ValueObjectIdentifiers() {
+                foreach (var item in _value) yield return item;
+            }
+            public override string ToString() {
+                return AggregatePath.SEPARATOR + _value.Join(AggregatePath.SEPARATOR.ToString());
+            }
+        }
+
 
         private string? _applicationName;
         private readonly List<AggregateDef> _aggregateDefs = new List<AggregateDef>();

@@ -39,7 +39,7 @@ namespace HalApplicationBuilder.Core {
             return true;
         }
 
-        private const char SEPARATOR = '/';
+        internal const char SEPARATOR = '/';
         internal static AggregatePath Empty => new AggregatePath(new string(SEPARATOR, 1), Array.Empty<string>());
 
         private AggregatePath(string fullpath, string[] separated) {
