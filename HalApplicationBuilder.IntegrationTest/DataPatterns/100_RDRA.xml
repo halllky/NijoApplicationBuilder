@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <RDRA>
-  
+
   <アクター is="master-data">
     <アクターID is="id" />
     <アクター名 is="name" />
@@ -32,5 +32,5 @@
       <セキュリティ is="sentence" />
     </非機能要件>
   </機能>
- 
+
 </RDRA>
