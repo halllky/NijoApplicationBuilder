@@ -10,21 +10,26 @@ using System.IO;
 using HalApplicationBuilder.DotnetEx;
 
 namespace HalApplicationBuilder.Core {
-    internal static class AppSchemaXml {
-        internal static string GetPath(string projectRoot) {
-            return Path.Combine(projectRoot, "halapp.xml");
+    public class AppSchemaXml {
+        internal AppSchemaXml(string projectRoot) {
+            _projectRoot = projectRoot;
         }
-        internal static XDocument Load(string projectRoot) {
-            var xmlFullPath = GetPath(projectRoot);
+
+        private readonly string _projectRoot;
+
+        public string GetPath() {
+            return Path.Combine(_projectRoot, "halapp.xml");
+        }
+        public XDocument Load() {
+            var xmlFullPath = GetPath();
             using var stream = IO.OpenFileWithRetry(xmlFullPath);
             using var reader = new StreamReader(stream);
             var xmlContent = reader.ReadToEnd();
             var xDocument = XDocument.Parse(xmlContent);
             return xDocument;
         }
-
-        internal static bool AddXml(this AppSchemaBuilder builder, string projectRoot, out ICollection<string> errors) {
-            var xDocument = Load(projectRoot);
+        internal bool ConfigureBuilder(AppSchemaBuilder builder, out ICollection<string> errors) {
+            var xDocument = Load();
             if (xDocument.Root == null) throw new FormatException($"Xml doesn't have contents.");
 
             var errorList = new List<string>();

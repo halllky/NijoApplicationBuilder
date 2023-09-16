@@ -114,6 +114,7 @@ namespace HalApplicationBuilder {
             CodeGenerator = new HalappProjectCodeGenerator(this, log);
             Debugger = new HalappProjectDebugger(this, log);
             Migrator = new HalappProjectMigrator(this, log);
+            SchemaXml = new AppSchemaXml(ProjectRoot);
         }
 
         private readonly ILogger _log;
@@ -124,12 +125,10 @@ namespace HalApplicationBuilder {
         public HalappProjectCodeGenerator CodeGenerator { get; }
         public HalappProjectDebugger Debugger { get; }
         public HalappProjectMigrator Migrator { get; }
+        public AppSchemaXml SchemaXml { get; }
 
-        public string GetAggregateSchemaPath() {
-            return AppSchemaXml.GetPath(ProjectRoot);
-        }
         public Config ReadConfig() {
-            var xDocument = AppSchemaXml.Load(ProjectRoot);
+            var xDocument = SchemaXml.Load();
             return Config.FromXml(xDocument);
         }
         /// <summary>
@@ -138,7 +137,7 @@ namespace HalApplicationBuilder {
         /// <exception cref="InvalidOperationException">アプリケーションスキーマが不正な場合</exception>
         internal AppSchema BuildSchema() {
             var builder = new AppSchemaBuilder();
-            if (!builder.AddXml(ProjectRoot, out var errors)) {
+            if (!SchemaXml.ConfigureBuilder(builder, out var errors)) {
                 throw new InvalidOperationException(errors.Join(Environment.NewLine));
             }
             if (!builder.TryBuild(out var appSchema, out var errors1)) {
@@ -160,7 +159,7 @@ namespace HalApplicationBuilder {
             if (!Directory.Exists(ProjectRoot))
                 errors.Add($"Directory '{ProjectRoot}' is not exist.");
 
-            var halappXml = GetAggregateSchemaPath();
+            var halappXml = SchemaXml.GetPath();
             if (!File.Exists(halappXml))
                 errors.Add($"'{halappXml}' is not found.");
 

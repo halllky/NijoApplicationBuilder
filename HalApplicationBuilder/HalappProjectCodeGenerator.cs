@@ -231,7 +231,7 @@ namespace HalApplicationBuilder {
         /// halapp.xml が無い場合作成します。
         /// </summary>
         internal HalappProjectCodeGenerator EnsureCreateHalappXml(string applicationName) {
-            var xmlPath = _project.GetAggregateSchemaPath();
+            var xmlPath = _project.SchemaXml.GetPath();
 
             if (!File.Exists(xmlPath)) {
                 var rootNamespace = applicationName.ToCSharpSafe();

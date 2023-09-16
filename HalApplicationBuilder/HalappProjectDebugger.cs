@@ -49,7 +49,7 @@ namespace HalApplicationBuilder {
                 var changed = false;
 
                 watcher = new FileSystemWatcher(_project.ProjectRoot);
-                watcher.Filter = Path.GetFileName(_project.GetAggregateSchemaPath());
+                watcher.Filter = Path.GetFileName(_project.SchemaXml.GetPath());
                 watcher.NotifyFilter = NotifyFilters.LastWrite;
                 watcher.Changed += (_, _) => {
                     changed = true;
