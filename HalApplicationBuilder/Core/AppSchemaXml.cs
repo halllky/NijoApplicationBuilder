@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using static HalApplicationBuilder.Core.AppSchemaBuilder;
 using System.Xml.Linq;
 using System.IO;
 using HalApplicationBuilder.DotnetEx;
@@ -76,32 +75,25 @@ namespace HalApplicationBuilder.Core {
                  || el.ElementType == E_XElementType.ChildAggregate
                  || el.ElementType == E_XElementType.VariationValue) {
 
-                    builder.AddAggregate(path, options => {
-
-                        if (el.ElementType == E_XElementType.ChildAggregate && el.IsMultipleChildAggregate) {
-                            options.IsArray();
-                        }
-                        if (el.ElementType == E_XElementType.VariationValue) {
-                            options.IsPrimary(el.IsKey);
-                            options.IsVariationGroupMember(
-                                groupName: el.Source.Parent?.Name.LocalName ?? string.Empty,
-                                key: el.Source.Attribute(VARIATION_KEY)?.Value ?? string.Empty);
-                        }
+                    builder.AddAggregate(path, new AggregateBuildOption {
+                        IsArray = el.ElementType == E_XElementType.ChildAggregate && el.IsMultipleChildAggregate,
+                        IsPrimary = el.ElementType == E_XElementType.VariationValue && el.IsKey,
+                        IsVariationGroupMember = el.ElementType == E_XElementType.VariationValue ? new() {
+                            GroupName = el.Source.Parent?.Name.LocalName ?? string.Empty,
+                            Key = el.Source.Attribute(VARIATION_KEY)?.Value ?? string.Empty,
+                        } : null,
                     });
                 }
                 foreach (var member in members) {
                     if (member.ElementType == E_XElementType.Schalar
                      || member.ElementType == E_XElementType.Ref) {
 
-                        builder.AddAggregateMember(path.Concat(new[] { member.Source.Name.LocalName }), option => {
-                            option.IsPrimary(member.IsKey);
-                            option.IsDisplayName(member.IsName);
-                            option.IsRequired(member.IsRequired);
-                            option.MemberType(member.AggregateMemberTypeName);
-
-                            if (member.ElementType == E_XElementType.Ref) {
-                                option.IsReferenceTo(member.RefTargetName);
-                            }
+                        builder.AddAggregateMember(path.Concat(new[] { member.Source.Name.LocalName }), new AggregateMemberBuildOption {
+                            IsPrimary = member.IsKey,
+                            IsDisplayName = member.IsName,
+                            IsRequired = member.IsRequired,
+                            MemberType = member.AggregateMemberTypeName,
+                            IsReferenceTo = member.ElementType == E_XElementType.Ref ? member.RefTargetName : null,
                         });
                     }
                 }
@@ -129,19 +121,21 @@ namespace HalApplicationBuilder.Core {
                     foreach (var kv in isAttr) {
                         if (kv.Key != ENUM) errorList.Add($"列挙体定義に属性 '{kv.Key}' を指定できません。");
                     }
-                    builder.AddEnum(xElement.Name.LocalName, options => {
-                        foreach (var innerElement in xElement.Elements()) {
-                            var enumName = innerElement.Name.LocalName;
-                            var strValue = innerElement.Attribute("key")?.Value;
-                            if (strValue == null) {
-                                options.AddMember(enumName);
-                            } else if (int.TryParse(strValue, out var intValue)) {
-                                options.AddMember(enumName, intValue);
-                            } else {
-                                errorList.Add($"'{xElement.Name.LocalName}' の '{enumName}' の値 '{strValue}' を整数に変換できません。");
-                            }
+
+                    var enumValues = new List<EnumValueOption>();
+                    foreach (var innerElement in xElement.Elements()) {
+                        var enumName = innerElement.Name.LocalName;
+                        var strValue = innerElement.Attribute("key")?.Value;
+                        if (strValue == null) {
+                            enumValues.Add(new EnumValueOption { Name = enumName });
+                        } else if (int.TryParse(strValue, out var intValue)) {
+                            enumValues.Add(new EnumValueOption { Name = enumName, Value = intValue });
+                        } else {
+                            errorList.Add($"'{xElement.Name.LocalName}' の '{enumName}' の値 '{strValue}' を整数に変換できません。");
                         }
-                    });
+                    }
+
+                    builder.AddEnum(xElement.Name.LocalName, enumValues);
                     continue;
                 }
 

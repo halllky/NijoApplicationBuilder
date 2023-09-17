@@ -8,98 +8,48 @@ using static HalApplicationBuilder.Core.AggregateMember;
 
 namespace HalApplicationBuilder.Core {
 
-    public class AppSchemaBuilder : IAggregateBuildOption, IAggregateMemberBuildOption, IEnumBuildOption {
+    public sealed class AppSchemaBuilder {
 
         private string? _applicationName;
+        private readonly Dictionary<TreePath, AggregateBuildOption> _aggregates = new();
+        private readonly Dictionary<TreePath, AggregateMemberBuildOption> _aggregateMembers = new();
+        private readonly Dictionary<string, IEnumerable<EnumValueOption>> _enums = new();
+
         public AppSchemaBuilder SetApplicationName(string value) {
             _applicationName = value;
             return this;
         }
-
-        public AppSchemaBuilder AddAggregate(IEnumerable<string> path, Action<IAggregateBuildOption>? options = null) {
-            Scope(new TreePath(path.ToArray()), () => {
-                SetOption(new() { { E_Option.ObjectType, OBJECT_TYPE_AGGREGATE } });
-                options?.Invoke(this);
-            });
+        public AppSchemaBuilder AddAggregate(IEnumerable<string> path, AggregateBuildOption? options = null) {
+            _aggregates[new TreePath(path.ToArray())] = options ?? new();
             return this;
         }
-        IAggregateBuildOption IAggregateBuildOption.IsPrimary(bool value) => SetOption(new() {
-            { E_Option.IsPrimary, value },
-        });
-        IAggregateBuildOption IAggregateBuildOption.IsDisplayName(bool value) => SetOption(new() {
-            { E_Option.IsInstanceName, value },
-        });
-        IAggregateBuildOption IAggregateBuildOption.IsArray(bool value) => SetOption(new() {
-            { E_Option.IsArray, value },
-        });
-        IAggregateBuildOption IAggregateBuildOption.IsVariationGroupMember(string groupName, string key) => SetOption(new() {
-            { E_Option.VariationGroupName, groupName },
-            { E_Option.VariationGroupKey, key },
-        });
-
-        public AppSchemaBuilder AddAggregateMember(IEnumerable<string> path, Action<IAggregateMemberBuildOption>? options = null) {
-            Scope(new TreePath(path), () => {
-                SetOption(new() { { E_Option.ObjectType, OBJECT_TYPE_AGGREGATE_MEMBER } });
-                options?.Invoke(this);
-            });
+        public AppSchemaBuilder AddAggregateMember(IEnumerable<string> path, AggregateMemberBuildOption? options = null) {
+            _aggregateMembers[new TreePath(path)] = options ?? new();
             return this;
         }
-        IAggregateMemberBuildOption IAggregateMemberBuildOption.MemberType(string typeName) => SetOption(new() {
-            { E_Option.MemberTypeName, typeName },
-        });
-        IAggregateMemberBuildOption IAggregateMemberBuildOption.IsPrimary(bool value) => SetOption(new() {
-            { E_Option.IsPrimary, value },
-        });
-        IAggregateMemberBuildOption IAggregateMemberBuildOption.IsDisplayName(bool value) => SetOption(new() {
-            { E_Option.IsInstanceName, value },
-        });
-        IAggregateMemberBuildOption IAggregateMemberBuildOption.IsRequired(bool value) => SetOption(new() {
-            { E_Option.IsRequired, value },
-        });
-        IAggregateMemberBuildOption IAggregateMemberBuildOption.IsReferenceTo(string refTarget) => SetOption(new() {
-            { E_Option.RefTo, TreePath.FromString(refTarget) },
-        });
-
-        public AppSchemaBuilder AddEnum(string name, Action<IEnumBuildOption>? options = null) {
-            Scope(new TreePath(new[] { name }), () => {
-                SetOption(new() { { E_Option.ObjectType, OBJECT_TYPE_ENUM } });
-                options?.Invoke(this);
-            });
+        public AppSchemaBuilder AddEnum(string name, IEnumerable<EnumValueOption> values) {
+            _enums[name] = values;
             return this;
         }
-        IEnumBuildOption IEnumBuildOption.AddMember(string name, int? value) {
-            var @enum = _currentScope.Peek();
-            Scope(@enum.CreateChild(name), () => {
-                SetOption(new() {
-                    { E_Option.ObjectType, OBJECT_TYPE_ENUM_VALUE },
-                    { E_Option.EnumValue, value },
-                });
-            });
-            return this;
-        }
-
 
         internal bool TryBuild(out AppSchema appSchema, out ICollection<string> errors, MemberTypeResolver? memberTypeResolver = null) {
 
-            var aggregateDefs = _unvalidatedOptions
-                .Where(x => x.Key.Item2 == E_Option.ObjectType
-                         && (string)x.Value! == OBJECT_TYPE_AGGREGATE)
+            var aggregateDefs = _aggregates
                 .Select(aggregate => new {
-                    TreePath = aggregate.Key.Item1,
-                    Members = _unvalidatedOptions
-                        .Where(y => y.Key.Item1.Parent == aggregate.Key.Item1
-                                 && y.Key.Item2 == E_Option.ObjectType
-                                 && (string)y.Value! == OBJECT_TYPE_AGGREGATE_MEMBER)
+                    TreePath = aggregate.Key,
+                    Members = _aggregateMembers
+                        .Where(member => member.Key.Parent == aggregate.Key)
                         .Select(member => new {
-                            TreePath = member.Key.Item1,
-                            Name = member.Key.Item1.BaseName,
-                            Type = GetOption<string?>(member.Key.Item1, E_Option.MemberTypeName),
-                            IsPrimary = GetOption<bool?>(member.Key.Item1, E_Option.IsPrimary) == true,
-                            IsInstanceName = GetOption<bool?>(member.Key.Item1, E_Option.IsInstanceName) == true,
-                            IsRequired = GetOption<bool?>(member.Key.Item1, E_Option.IsRequired) == true,
-                            RefTarget = GetOption<TreePath?>(member.Key.Item1, E_Option.RefTo),
+                            TreePath = member.Key,
+                            Name = member.Key.BaseName,
+                            Type = member.Value.MemberType,
+                            IsPrimary = member.Value.IsPrimary == true,
+                            IsInstanceName = member.Value.IsDisplayName == true,
+                            IsRequired = member.Value.IsRequired == true,
+                            RefTarget = member.Value.IsReferenceTo == null ? null : TreePath.FromString(member.Value.IsReferenceTo),
                         })
                         .ToArray(),
+                    Options = aggregate.Value,
                 })
                 .ToArray();
 
@@ -111,12 +61,10 @@ namespace HalApplicationBuilder.Core {
                     RelationName = aggregate.TreePath.BaseName,
                     Attributes = new Dictionary<string, object> {
                         { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD },
-                        { DirectedEdgeExtensions.REL_ATTR_MULTIPLE, GetOption<bool?>(aggregate.TreePath, E_Option.IsArray) == true },
-                        { DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH, GetOption<string?>(aggregate.TreePath, E_Option.VariationGroupKey) ?? string.Empty },
-                        { DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, GetOption<string?>(aggregate.TreePath, E_Option.VariationGroupName) ?? string.Empty },
-                        { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, GetOption<bool?>(aggregate.TreePath, E_Option.IsPrimary) == true },
-                        { DirectedEdgeExtensions.REL_ATTR_IS_INSTANCE_NAME, GetOption<bool?>(aggregate.TreePath, E_Option.IsInstanceName) == true },
-                        { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, GetOption<bool?>(aggregate.TreePath, E_Option.IsRequired) == true },
+                        { DirectedEdgeExtensions.REL_ATTR_MULTIPLE, aggregate.Options.IsArray == true },
+                        { DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH, aggregate.Options.IsVariationGroupMember?.Key ?? string.Empty },
+                        { DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, aggregate.Options.IsVariationGroupMember?.GroupName ?? string.Empty },
+                        { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, aggregate.Options.IsPrimary == true },
                     },
                 });
             var refs = aggregateDefs
@@ -135,22 +83,6 @@ namespace HalApplicationBuilder.Core {
                 });
             var relationDefs = parentAndChild.Concat(refs);
 
-            var enumDefs = _unvalidatedOptions
-                .Where(x => x.Key.Item2 == E_Option.ObjectType
-                         && (string)x.Value! == OBJECT_TYPE_ENUM)
-                .Select(@enum => new {
-                    Name = @enum.Key.Item1.BaseName,
-                    Values = _unvalidatedOptions
-                        .Where(x => x.Key.Item1.Parent == @enum.Key.Item1
-                                 && x.Key.Item2 == E_Option.ObjectType
-                                 && (string)x.Value! == OBJECT_TYPE_ENUM_VALUE)
-                        .Select(enumValue => new {
-                            Name = enumValue.Key.Item1.BaseName,
-                            Value = GetOption<int?>(enumValue.Key.Item1, E_Option.EnumValue),
-                        })
-                        .ToArray(),
-                });
-
             // ---------------------------------------------------------
             // バリデーションおよびドメインクラスへの変換
 
@@ -163,15 +95,15 @@ namespace HalApplicationBuilder.Core {
 
             // enumの組み立て
             var builtEnums = new List<EnumDefinition>();
-            foreach (var @enum in enumDefs) {
+            foreach (var @enum in _enums) {
                 var items = new List<EnumDefinition.Item>();
                 var unusedInt = 0;
-                var usedInt = @enum.Values
+                var usedInt = @enum.Value
                     .Where(v => v.Value.HasValue)
                     .Select(v => v.Value)
                     .Cast<int>()
                     .ToHashSet();
-                foreach (var item in @enum.Values) {
+                foreach (var item in @enum.Value) {
                     if (item.Value.HasValue) {
                         items.Add(new EnumDefinition.Item {
                             PhysicalName = item.Name,
@@ -188,7 +120,7 @@ namespace HalApplicationBuilder.Core {
                     }
                 }
 
-                if (EnumDefinition.TryCreate(@enum.Name, items, out var created, out var enumCreateErrors)) {
+                if (EnumDefinition.TryCreate(@enum.Key, items, out var created, out var enumCreateErrors)) {
                     builtEnums.Add(created);
                     memberTypeResolver.Register(created.Name, new EnumList(created));
                 } else {
@@ -306,70 +238,30 @@ namespace HalApplicationBuilder.Core {
                 : new AppSchema(_applicationName!, graph, enums);
             return !errors.Any();
         }
-
-
-        #region オプションを好きな順番で定義できるようTryBuild実行時まで全てのオプションをobject型で保持しておくための仕組み
-        private void Scope(TreePath objectPath, Action action) {
-            _currentScope.Push(objectPath);
-            action();
-            _currentScope.Pop();
-        }
-        private T? GetOption<T>(TreePath owner, E_Option option) {
-            var key = (owner, option);
-            if (_unvalidatedOptions.TryGetValue(key, out var value)) {
-                return (T)value!;
-            } else {
-                return default;
-            }
-        }
-        private AppSchemaBuilder SetOption(Dictionary<E_Option, object?> options) {
-            var obj = _currentScope.Peek();
-            foreach (var item in options) {
-                _unvalidatedOptions[(obj, item.Key)] = item.Value;
-            }
-            return this;
-        }
-        private readonly Stack<TreePath> _currentScope = new();
-        private readonly Dictionary<(TreePath, E_Option), object?> _unvalidatedOptions = new();
-
-        private enum E_Option {
-            ObjectType,
-            PhysicalName,
-            Owner,
-            IsPrimary,
-            IsInstanceName,
-            IsRequired,
-            RefTo,
-            IsArray,
-            VariationGroupName,
-            VariationGroupKey,
-            MemberTypeName,
-            EnumName,
-            EnumValue,
-        }
-        private const string OBJECT_TYPE_AGGREGATE = "aggregate";
-        private const string OBJECT_TYPE_AGGREGATE_MEMBER = "aggregate-member";
-        private const string OBJECT_TYPE_ENUM = "enum";
-        private const string OBJECT_TYPE_ENUM_VALUE = "enum-value";
-        #endregion オプションを好きな順番で定義できるようTryBuild実行時まで全てのオプションをobject型で保持しておくための仕組み
     }
 
-    public interface IAggregateBuildOption {
-        IAggregateBuildOption IsPrimary(bool value = true);
-        IAggregateBuildOption IsDisplayName(bool value = true);
-        IAggregateBuildOption IsArray(bool value = true);
-        IAggregateBuildOption IsVariationGroupMember(string groupName, string key);
+    public sealed class AggregateBuildOption {
+        public bool? IsPrimary { get; set; }
+        public bool? IsArray { get; set; }
+        public GroupOption? IsVariationGroupMember { get; set; }
+
+        public sealed class GroupOption {
+            public required string GroupName { get; init; }
+            public required string Key { get; init; }
+        }
     }
-    public interface IAggregateMemberBuildOption {
-        IAggregateMemberBuildOption MemberType(string typeName);
-        IAggregateMemberBuildOption IsPrimary(bool value = true);
-        IAggregateMemberBuildOption IsDisplayName(bool value = true);
-        IAggregateMemberBuildOption IsRequired(bool value = true);
-        IAggregateMemberBuildOption IsReferenceTo(string refTarget);
+    public sealed class AggregateMemberBuildOption {
+        public string? MemberType { get; set; }
+        public bool? IsPrimary { get; set; }
+        public bool? IsDisplayName { get; set; }
+        public bool? IsRequired { get; set; }
+        public string? IsReferenceTo { get; set; }
     }
-    public interface IEnumBuildOption {
-        IEnumBuildOption AddMember(string name, int? value = null);
+    public sealed class EnumValueOption {
+        public string Name { get; set; } = string.Empty;
+        public int? Value { get; set; }
     }
+
 
     internal static class DirectedEdgeExtensions {
         internal const string REL_ATTR_RELATION_TYPE = "relationType";
