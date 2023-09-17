@@ -51,11 +51,12 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     var refTargetKeys = refProp.GetForeignKeys().ToArray();
                     var refPropFullpath = $"{rootInstanceName}.{refProp.GetFullPath(rootInstance).Join(".")}.{AggregateInstanceKeyNamePair.KEY}";
                     for (int i = 0; i < refTargetKeys.Length; i++) {
-                        var col = refTargetKeys[i];
-                        var memberType = col.MemberType.GetCSharpTypeName();
+                        var foreignKey = refTargetKeys[i];
+                        var propertyName = foreignKey.GetDbColumn().PropertyName;
+                        var memberType = foreignKey.MemberType.GetCSharpTypeName();
 
                         yield return $$"""
-                            {{col.PropertyName}} = ({{memberType}}){{AggregateInstanceKeyNamePair.RenderKeyJsonRestoring(refPropFullpath)}}[{{i}}]!,
+                            {{propertyName}} = ({{memberType}}){{AggregateInstanceKeyNamePair.RenderKeyJsonRestoring(refPropFullpath)}}[{{i}}]!,
                             """;
                     }
 

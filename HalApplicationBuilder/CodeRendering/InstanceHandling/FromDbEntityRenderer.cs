@@ -54,10 +54,12 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 } else if (prop is AggregateMember.Ref refProp) {
                     var names = refProp.MemberAggregate
                         .GetInstanceNameMembers()
-                        .Select(m => $"{rootInstanceName}.{m.GetFullPath(rootInstance).Join(".")}?.ToString()");
+                        .Select(member => member.GetDbColumn().GetFullPath(rootInstance.As<IEFCoreEntity>()).Join("."))
+                        .Select(fullpath => $"{rootInstanceName}.{fullpath}?.ToString()");
                     var foreignKeys = refProp
                         .GetForeignKeys()
-                        .Select(m => $"{rootInstanceName}.{m.GetFullPath(rootInstance).Join(".")}");
+                        .Select(member => member.GetDbColumn().GetFullPath(rootInstance.As<IEFCoreEntity>()).Join("."))
+                        .Select(fullpath => $"{rootInstanceName}.{fullpath}");
 
                     yield return $$"""
                         {{refProp.PropertyName}} = new() {
