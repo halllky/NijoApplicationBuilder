@@ -14,11 +14,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
 
             var selectClause = Members.Select(m => new {
                 resultMemberName = m.SearchResultPropName,
-                dbColumnPath = m.CorrespondingDbColumn.Owner
-                    .PathFromEntry()
-                    .Select(edge => edge.RelationName)
-                    .Union(new[] { m.CorrespondingDbColumn.PropertyName })
-                    .Join("."),
+                dbColumnPath = m.CorrespondingDbColumn.GetFullPath().Join("."),
             });
             var instanceNameProp = Members.SingleOrDefault(m => m.IsInstanceName)?.SearchResultPropName;
 

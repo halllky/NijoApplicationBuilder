@@ -404,6 +404,16 @@ namespace HalApplicationBuilder.Core {
             return ((GraphNode)graphNode).GetParent()?.As<T>();
         }
 
+        internal static IEnumerable<GraphNode<T>> SelectUntil<T>(this GraphNode<T> graphNode, Func<GraphNode<T>, IEnumerable<GraphNode<T>>> predicate) where T : IGraphNode {
+            foreach (var item in predicate(graphNode)) {
+                yield return item;
+
+                foreach (var item2 in SelectUntil(item, predicate)) {
+                    yield return item2;
+                }
+            }
+        }
+
         /// <summary>
         /// 祖先を列挙する。ルート要素が先。
         /// </summary>

@@ -48,10 +48,8 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
         private ICollection<Member> Members {
             get {
                 _members ??= DbEntity
-                    .EnumerateThisAndDescendants()
-                    .Where(entity => entity == DbEntity
-                                    || entity.IsChildMember()
-                                    || entity.Source?.IsRef() == true)
+                    .SelectUntil(entity => entity.GetChildEdges().Select(edge => edge.Terminal)
+                        .Concat(entity.GetRefEdge().Where(edge => edge.IsPrimary()).Select(edge => edge.Terminal)))
                     .SelectMany(entity => entity.GetColumns())
                     .Select(col => new Member {
                         CorrespondingDbColumn = col,
