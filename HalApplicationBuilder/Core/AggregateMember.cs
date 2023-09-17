@@ -255,22 +255,35 @@ namespace HalApplicationBuilder.Core {
         internal class ParentPK : ValueMember {
             internal ParentPK(GraphNode<Aggregate> childAggregate, ValueMember parentPK) {
                 _childAggregate = childAggregate;
-                _parentPK = parentPK;
+                Original = parentPK;
             }
             private readonly GraphNode<Aggregate> _childAggregate;
-            private readonly ValueMember _parentPK;
+            /// <summary>
+            /// 大元が祖父母の主キーだった場合でも親のメンバーを返す
+            /// </summary>
+            internal ValueMember Original { get; }
 
             internal override bool IsPrimary => true;
             internal override bool IsInstanceName => false;
             internal override bool RequiredAtDB => true;
-            internal override IAggregateMemberType MemberType => _parentPK.MemberType;
+            internal override IAggregateMemberType MemberType => Original.MemberType;
             internal override GraphNode<Aggregate> Owner => _childAggregate;
-            internal override string PropertyName => $"{_parentPK.Owner.Item.ClassName}_{_parentPK.PropertyName}";
-            internal override string CSharpTypeName => _parentPK.CSharpTypeName;
-            internal override string TypeScriptTypename => _parentPK.TypeScriptTypename;
+            internal override string PropertyName => $"{Original.Owner.Item.ClassName}_{Original.PropertyName}";
+            internal override string CSharpTypeName => Original.CSharpTypeName;
+            internal override string TypeScriptTypename => Original.TypeScriptTypename;
 
             internal override DbColumn.DbColumnBase GetDbColumn() {
-                return new DbColumn.ParentTablePKColumn(_childAggregate.As<IEFCoreEntity>(), _parentPK.GetDbColumn());
+                return new DbColumn.ParentTablePKColumn(_childAggregate.As<IEFCoreEntity>(), Original.GetDbColumn());
+            }
+            /// <summary>
+            /// 大元が祖父母の主キーだった場合は祖父母のメンバーを返す
+            /// </summary>
+            internal ValueMember GetDeclaringMember() {
+                var member = Original;
+                while (member is ParentPK memberAsParentPK) {
+                    member = memberAsParentPK.Original;
+                }
+                return member;
             }
         }
         #endregion MEMBER IMPLEMEMT

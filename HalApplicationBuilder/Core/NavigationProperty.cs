@@ -131,11 +131,14 @@ namespace HalApplicationBuilder.Core {
                 }
             }
 
-            internal IEnumerable<string> GetFullPath() {
-                return Owner
-                    .PathFromEntry()
-                    .Select(edge => edge.RelationName)
-                    .Concat(new[] { PropertyName });
+            internal IEnumerable<string> GetFullPath(GraphNode<Aggregate>? since = null) {
+                var skip = since != null;
+                foreach (var edge in Owner.PathFromEntry()) {
+                    if (skip && edge.Source?.As<Aggregate>() == since) skip = false;
+                    if (skip) continue;
+                    yield return edge.RelationName;
+                }
+                yield return PropertyName;
             }
             protected override IEnumerable<object?> ValueObjectIdentifiers() {
                 yield return Owner;
