@@ -265,7 +265,7 @@ namespace HalApplicationBuilder.Core {
             internal override bool RequiredAtDB => true;
             internal override IAggregateMemberType MemberType => _parentPK.MemberType;
             internal override GraphNode<Aggregate> Owner => _childAggregate;
-            internal override string PropertyName => _parentPK.PropertyName;
+            internal override string PropertyName => $"{_parentPK.Owner.Item.ClassName}_{_parentPK.PropertyName}";
             internal override string CSharpTypeName => _parentPK.CSharpTypeName;
             internal override string TypeScriptTypename => _parentPK.TypeScriptTypename;
 

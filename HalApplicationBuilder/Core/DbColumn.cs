@@ -100,7 +100,7 @@ namespace HalApplicationBuilder.Core {
             internal DbColumnBase Original { get; }
 
             internal override GraphNode<IEFCoreEntity> Owner { get; }
-            internal override string PropertyName => Original.PropertyName;
+            internal override string PropertyName => $"{Original.Owner.Item.ClassName}_{Original.PropertyName}";
             internal override IAggregateMemberType MemberType => Original.MemberType;
             internal override bool IsPrimary => true;
             internal override bool IsInstanceName => Original.IsInstanceName;
@@ -111,7 +111,7 @@ namespace HalApplicationBuilder.Core {
                 _refMember = refMember;
                 Original = refTargetColumn;
             }
-            private AggregateMember.Ref _refMember;
+            private readonly AggregateMember.Ref _refMember;
             internal DbColumnBase Original { get; }
 
             internal override GraphNode<IEFCoreEntity> Owner => _refMember.Owner.As<IEFCoreEntity>();

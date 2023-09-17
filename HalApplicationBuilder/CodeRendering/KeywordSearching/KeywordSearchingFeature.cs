@@ -55,34 +55,44 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
         }
 
         internal string RenderDbContextMethod() {
-            var keys = _aggregate.GetKeyMembers().ToArray();
-            var names = _aggregate.GetInstanceNameMembers().ToArray();
+            var keys = _aggregate
+                .GetKeyMembers()
+                .Select(item => new { item, FromNames = false });
+            var names = _aggregate
+                .GetInstanceNameMembers()
+                .Select(item => new { item, FromNames = true });
             var members = keys
-                .Union(names)
-                .Select(member => new {
-                    member,
-                    column = member.GetDbColumn(),
-                    nameToString = member.MemberType.GetCSharpTypeName() == "string"
-                        ? member.PropertyName
-                        : $"{member.PropertyName}.ToString()",
-                });
+                .Concat(names)
+                .GroupBy(x => x.item)
+                .Select(group => new { item = group.Key, FromNames = group.Any(x => x.FromNames) })
+                .Select(x => new {
+                    x.item.IsPrimary,
+                    IsInstanceName = x.item.IsInstanceName || x.FromNames,
+                    QueryResultPropertyName = x.item.PropertyName,
+                    QueryResultPropertyNameAsString = x.item.MemberType.GetCSharpTypeName() == "string"
+                        ? x.item.PropertyName
+                        : $"{x.item.PropertyName}.ToString()",
+                    EFCorePropertyFullPath = x.item.GetDbColumn().GetFullPath(_aggregate.As<IEFCoreEntity>()).Join("."),
+                })
+                .ToArray();
 
             const string LIKE = "like";
             var select = members
-                .Select(x => $"e.{x.column.GetFullPath(_aggregate.As<IEFCoreEntity>()).Join(".")},");
+                .Select(x => $"{x.QueryResultPropertyName} = e.{x.EFCorePropertyFullPath},");
             var where = members
-                .Select(x => $"EF.Functions.Like(item.{x.nameToString}, {LIKE})")
+                .Select(x => $"EF.Functions.Like(item.{x.QueryResultPropertyNameAsString}, {LIKE})")
                 .Join(Environment.NewLine + " || ");
             var orderBy = members
                 .Select((x, i) => i == 0
-                    ? $".OrderBy(item => item.{x.column.PropertyName})"
-                    : $".ThenBy(item => item.{x.column.PropertyName})");
+                    ? $".OrderBy(item => item.{x.QueryResultPropertyName})"
+                    : $".ThenBy(item => item.{x.QueryResultPropertyName})");
 
             var instanceKey = AggregateInstanceKeyNamePair.RenderKeyJsonConverting(members
-                .Where(x => x.member.IsPrimary)
-                .Select(x => $"item.{x.column.PropertyName}"));
-            var instanceName = names
-                .Select(m => $"item.{m.GetDbColumn().PropertyName}?.ToString()").Join(" + ");
+                .Where(x => x.IsPrimary)
+                .Select(x => $"item.{x.QueryResultPropertyName}"));
+            var instanceName = members
+                .Where(x => x.IsInstanceName)
+                .Select(x => $"item.{x.QueryResultPropertyNameAsString}").Join(" + ");
 
             return $$"""
                 namespace {{_ctx.Config.EntityNamespace}} {
