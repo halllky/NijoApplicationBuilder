@@ -39,11 +39,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         private IEnumerable<string> RenderBody(BodyRenderingContext context) {
             foreach (var prop in context.RenderingAggregate.GetMembers()) {
                 if (prop is AggregateMember.ParentPK parentPK) {
-                    var instanceName = context.FindOwnerInstanceName(parentPK);
-                    var declaringMember = parentPK.GetDeclaringMember();
-                    var instancePath = declaringMember.GetFullPath(declaringMember.Owner).Join(".");
+                    var fullpath = context.GetValueSourceFullPath(parentPK);
                     yield return $$"""
-                        {{parentPK.GetDbColumn().PropertyName}} = {{instanceName}}.{{instancePath}},
+                        {{parentPK.GetDbColumn().PropertyName}} = {{fullpath}},
                         """;
 
                 } else if (prop is AggregateMember.RefTargetMember) {
@@ -101,7 +99,11 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         private class BodyRenderingContext {
             public BodyRenderingContext(GraphNode<Aggregate> aggregate, string instanceName) {
                 _stack = new Stack<Item>();
-                _stack.Push(new Item { Aggregate = aggregate, InstanceName = instanceName });
+                _stack.Push(new Item {
+                    Instance = instanceName,
+                    InstanceType = aggregate,
+                    MostRecent1To1Ancestor = aggregate,
+                });
                 ValueSource = aggregate;
             }
             private BodyRenderingContext(Stack<Item> stack, GraphNode<Aggregate> valueSource) {
@@ -110,32 +112,42 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             }
             private readonly Stack<Item> _stack;
 
-            public GraphNode<Aggregate> RenderingAggregate => _stack.Peek().Aggregate;
+            public GraphNode<Aggregate> RenderingAggregate => _stack.Peek().InstanceType;
             public GraphNode<Aggregate> ValueSource { get; }
-            public string ValueSourceInstance => _stack.Peek().InstanceName;
+            public string ValueSourceInstance => _stack.Peek().Instance;
             public int Depth => _stack.Count - 1;
 
             public BodyRenderingContext Nest(GraphNode<Aggregate> childAggregate, string? childInstanceName = null) {
                 var newStack = new Stack<Item>(_stack);
-                newStack.Push(new Item { Aggregate = childAggregate, InstanceName = childInstanceName ?? ValueSourceInstance });
+                newStack.Push(new Item {
+                    Instance = childInstanceName ?? ValueSourceInstance,
+                    InstanceType = childAggregate,
+                    MostRecent1To1Ancestor = childInstanceName == null
+                        ? ValueSource
+                        : childAggregate,
+                });
                 var valueSource = childInstanceName == null ? ValueSource : childAggregate;
                 return new BodyRenderingContext(newStack, valueSource);
             }
             /// <summary>
-            /// 集約クラスはは親の主キーを持っていないため、
-            /// EFCoreエンティティの親の主キーは集約クラスのインスタンスの親から持ってくる必要があるので
-            /// そのインスタンスの名前を探す
+            /// 集約クラスはは親の主キーを持っていないため、EFCoreエンティティの親の主キーは集約クラスのインスタンスの親から持ってくる必要がある。
+            /// またラムダ式の中だと単純にthisからのGetFullPathで適切な名前がとれないのでその辺の問題にも対応している
             /// </summary>
-            public string FindOwnerInstanceName(AggregateMember.ParentPK parentPK) {
-                var declareingAggregate = parentPK.GetDeclaringMember().Owner;
-                return _stack
-                    .Single(item => item.Aggregate == declareingAggregate)
-                    .InstanceName;
+            public string GetValueSourceFullPath(AggregateMember.ParentPK parentPK) {
+                var declaringMember = parentPK.GetDeclaringMember();
+                var x = _stack.Single(x => x.InstanceType == declaringMember.Owner);
+                var path = declaringMember.GetFullPath(x.MostRecent1To1Ancestor);
+
+                return $"{x.Instance}.{path.Join(".")}";
             }
 
             private class Item {
-                public required GraphNode<Aggregate> Aggregate { get; init; }
-                public required string InstanceName { get; init; }
+                public required string Instance { get; init; }
+                public required GraphNode<Aggregate> InstanceType { get; init; }
+                /// <summary>
+                /// 1対1で辿れるうちの直近の祖先（集約ルートまたはラムダ変数の型）
+                /// </summary>
+                public required GraphNode<Aggregate> MostRecent1To1Ancestor { get; init; }
             }
         }
     }
