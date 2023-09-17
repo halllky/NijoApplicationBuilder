@@ -10,8 +10,8 @@ namespace HalApplicationBuilder.Core {
 
         public string RootNamespace => ApplicationName.ToCSharpSafe();
 
-        public required string EntityNamespace { get; init; }
-        public required string DbContextNamespace { get; init; }
+        public string EntityNamespace => RootNamespace;
+        public string DbContextNamespace => RootNamespace;
         public required string DbContextName { get; init; }
 
 
@@ -60,9 +60,6 @@ namespace HalApplicationBuilder.Core {
 
             return new Config {
                 ApplicationName = xDocument.Root.Name.LocalName,
-
-                EntityNamespace = ns?.Element(NAMESPACE_EFCORE_ENTITY)?.Value ?? $"{xDocument.Root.Name.LocalName.ToCSharpSafe()}.EntityFramework",
-                DbContextNamespace = ns?.Element(NAMESPACE_DBCONTEXT)?.Value ?? $"{xDocument.Root.Name.LocalName.ToCSharpSafe()}.EntityFramework",
                 DbContextName = configSection?.Element(DBCONTEXT_NAME)?.Value ?? "MyDbContext",
             };
         }

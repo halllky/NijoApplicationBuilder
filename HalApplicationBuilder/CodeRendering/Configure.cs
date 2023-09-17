@@ -47,7 +47,7 @@ namespace HalApplicationBuilder.CodeRendering {
                             });
 
                             builder.Services.AddControllers(option => {
-                                option.Filters.Add<RDRA.HttpResponseExceptionFilter>();
+                                option.Filters.Add<{{Namespace}}.HttpResponseExceptionFilter>();
 
                             }).AddJsonOptions(option => {
                                 {{Util.Utility.CLASSNAME}}.{{Util.Utility.MODIFY_JSONOPTION}}(option.JsonSerializerOptions);

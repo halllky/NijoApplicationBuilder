@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<RDRA>
+<自動テストで作成されたプロジェクト>
   <参照先 is="master-data">
     <参照先集約ID is="id" />
     <参照先集約名 is="name" />
@@ -10,4 +10,4 @@
     <参照元集約名 is="name" />
     <参照 is="ref-to:参照先" />
   </参照元>
-</RDRA>
+</自動テストで作成されたプロジェクト>

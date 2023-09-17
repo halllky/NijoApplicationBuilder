@@ -238,8 +238,6 @@ namespace HalApplicationBuilder {
                 var config = new Config {
                     ApplicationName = applicationName,
                     DbContextName = "MyDbContext",
-                    DbContextNamespace = $"{rootNamespace}.EntityFramework",
-                    EntityNamespace = $"{rootNamespace}.EntityFramework.Entities",
                 };
                 var xmlContent = new XDocument(config.ToXmlWithRoot());
                 using var sw = new StreamWriter(xmlPath, append: false, encoding: new UTF8Encoding(false));
