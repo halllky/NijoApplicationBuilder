@@ -54,7 +54,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var components = _aggregate
                 .EnumerateThisAndDescendants()
                 .Select(x => new AggregateComponent(x, _ctx, _type));
-            var createEmptyObject = new types.AggregateInstanceInitializerFunction(_aggregate).FunctionName;
+            var createEmptyObject = new AggregateInstanceInitializerFunction(_aggregate).FunctionName;
 
             return $$"""
                 import { useState, useCallback, useMemo, useReducer } from 'react';

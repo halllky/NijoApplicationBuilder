@@ -118,7 +118,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             } else {
                 var args = GetArguments().ToArray();
                 var loopVar = $"index_{args.Length}";
-                var createNewChildrenItem = new types.AggregateInstanceInitializerFunction(_aggregate).FunctionName;
+                var createNewChildrenItem = new AggregateInstanceInitializerFunction(_aggregate).FunctionName;
 
                 return $$"""
                     const {{ComponentName}} = ({ {{args.Join(", ")}} }: {
