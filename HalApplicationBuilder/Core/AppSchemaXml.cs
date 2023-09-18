@@ -39,63 +39,6 @@ namespace HalApplicationBuilder.Core {
 
             var errorList = new List<string>();
 
-            void Handle(ParsedXElement el, IEnumerable<string> ancestors) {
-                const string VARIATION_KEY = "variation-key";
-                var errorListLocal = new HashSet<string>();
-                var path = ancestors.Concat(new[] { el.Source.Name.LocalName }).ToArray();
-
-                // バリデーション
-                var members = el.Source
-                    .Elements()
-                    .Select(inner => ParseAggregateXElement(inner, errorListLocal))
-                    .ToArray();
-
-                if (el.ElementType == E_XElementType.VariationContainer) {
-                    var duplicates = el.Source
-                        .Elements()
-                        .Select(e => e.Attribute(VARIATION_KEY)?.Value)
-                        .Where(str => str != null)
-                        .Select(str => int.TryParse(str, out var i) ? i : (int?)null)
-                        .GroupBy(i => i)
-                        .Where(group => group.Key != null && group.Count() >= 2);
-                    foreach (var group in duplicates) {
-                        errorListLocal.Add($"Value of '{VARIATION_KEY}' of child of '{el.Source.Name.LocalName}' duplicates: {group.Key}");
-                    }
-                    foreach (var innerElement in el.Source.Elements()) {
-                        if (innerElement.Attribute(VARIATION_KEY) == null) {
-                            errorListLocal.Add($"Aggregate define '{innerElement.Name}' must have '{VARIATION_KEY}' attribute.");
-                            continue;
-                        }
-                    }
-                }
-
-                errorList.AddRange(errorListLocal);
-
-                // 登録
-                if (el.ElementType == E_XElementType.RootAggregate
-                 || el.ElementType == E_XElementType.ChildAggregate
-                 || el.ElementType == E_XElementType.VariationValue) {
-
-                    builder.AddAggregate(path, el.AggregateOption);
-                }
-                foreach (var member in members) {
-                    if (member.ElementType == E_XElementType.Schalar
-                     || member.ElementType == E_XElementType.Ref) {
-
-                        builder.AddAggregateMember(path.Concat(new[] { member.Source.Name.LocalName }), member.MemberOption);
-                    }
-                }
-
-                // 再帰
-                foreach (var member in members) {
-                    if (member.ElementType == E_XElementType.ChildAggregate
-                     || member.ElementType == E_XElementType.VariationValue) {
-
-                        Handle(member, path);
-                    }
-                }
-            }
-
             builder.SetApplicationName(xDocument.Root.Name.LocalName);
 
             foreach (var xElement in xDocument.Root.Elements()) {
@@ -128,8 +71,34 @@ namespace HalApplicationBuilder.Core {
                 }
 
                 // 集約定義
-                var parsed = ParseAggregateXElement(xElement, errorList);
-                Handle(parsed, Enumerable.Empty<string>());
+                void HandleAggregateElementRecursively(XElement el, IEnumerable<string> parent) {
+                    var path = parent.Concat(new[] { el.Name.LocalName }).ToArray();
+                    var parsed = ParseAggregateXElement(el, errorList);
+                    switch (parsed.ElementType) {
+                        case E_XElementType.RootAggregate:
+                        case E_XElementType.ChildAggregate:
+                        case E_XElementType.VariationValue:
+                            builder.AddAggregate(path, parsed.AggregateOption);
+                            break;
+
+                        case E_XElementType.Schalar:
+                        case E_XElementType.Ref:
+                            builder.AddAggregateMember(path, parsed.MemberOption);
+                            break;
+
+                        case E_XElementType.VariationContainer:
+                            // variation container は集約グラフ上は存在しないものとして扱う
+                            path = parent.ToArray();
+                            break;
+
+                        default:
+                            break;
+                    }
+                    foreach (var innerElement in el.Elements()) {
+                        HandleAggregateElementRecursively(innerElement, path);
+                    }
+                }
+                HandleAggregateElementRecursively(xElement, Enumerable.Empty<string>());
             }
             errors = errorList;
             return errors.Count == 0;
@@ -211,14 +180,20 @@ namespace HalApplicationBuilder.Core {
             parser.IfExists("array")
                 .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)
                 .SetAggregateOption(opt => opt.IsArray, true, E_Priority.Force);
+
             parser.IfExists("variation")
                 .ElementTypeIs(E_XElementType.VariationContainer, E_Priority.Force);
+            parser.IfExists("variation-key")
+                .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)
+                .SetAggregateOption(opt => opt.IsVariationGroupMember, variationKey => new() { GroupName = element.Parent?.Name.LocalName ?? string.Empty, Key = variationKey }, E_Priority.Force);
+
             parser.IfExists("ref-to")
                 .ElementTypeIs(E_XElementType.Ref, E_Priority.Force)
                 .SetMemberOption(opt => opt.IsReferenceTo, value => value, E_Priority.Force);
 
             parser.IfExists("key")
                 .ElementTypeIs(E_XElementType.Schalar, E_Priority.IfNotSpecified)
+                .SetAggregateOption(opt => opt.IsPrimary, true, E_Priority.Force)
                 .SetMemberOption(opt => opt.IsPrimary, true, E_Priority.Force)
                 .SetMemberOption(opt => opt.IsRequired, true, E_Priority.Force);
             parser.IfExists("name")

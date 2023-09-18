@@ -18,11 +18,11 @@
         <名前 is="name" />
       </子の子配列>
       <子の子バリエーション is="variation">
-        <子の子バリエーションA variation-key="A">
+        <子の子バリエーションA is="variation-key:A">
           <ID is="id" />
           <名前 is="name" />
         </子の子バリエーションA>
-        <子の子バリエーションB variation-key="B">
+        <子の子バリエーションB is="variation-key:B">
           <ID is="id" />
           <名前 is="name" />
         </子の子バリエーションB>
@@ -42,11 +42,11 @@
         <名前 is="name" />
       </子配列の子配列>
       <子配列の子バリエーション is="variation">
-        <子配列の子バリエーションA variation-key="A">
+        <子配列の子バリエーションA is="variation-key:A">
           <ID is="id" />
           <名前 is="name" />
         </子配列の子バリエーションA>
-        <子配列の子バリエーションB variation-key="B">
+        <子配列の子バリエーションB is="variation-key:B">
           <ID is="id" />
           <名前 is="name" />
         </子配列の子バリエーションB>
@@ -54,31 +54,31 @@
     </子配列>
 
     <子バリエーション is="variation">
-      <子バリエーション種別A variation-key="A">
+      <子バリエーション種別A is="variation-key:A">
         <ID is="id" />
         <名前 is="name" />
 
         <子バリエーション種別Aの子 is="object">
           <ID is="id" />
-          <名前 is="display-name" />
+          <名前 is="name" />
         </子バリエーション種別Aの子>
         <子バリエーション種別Aの子配列 is="array">
           <ID is="id" />
           <名前 is="name" />
         </子バリエーション種別Aの子配列>
         <子バリエーション種別Aの子バリエーション is="variation">
-          <子バリエーション種別Aの子バリエーションA variation-key="A">
+          <子バリエーション種別Aの子バリエーションA is="variation-key:A">
             <ID is="id" />
             <名前 is="name" />
           </子バリエーション種別Aの子バリエーションA>
-          <子バリエーション種別Aの子バリエーションB variation-key="B">
+          <子バリエーション種別Aの子バリエーションB is="variation-key:B">
             <ID is="id" />
             <名前 is="name" />
           </子バリエーション種別Aの子バリエーションB>
         </子バリエーション種別Aの子バリエーション>
       </子バリエーション種別A>
 
-      <子バリエーション種別B variation-key="B">
+      <子バリエーション種別B is="variation-key:B">
         <ID is="id" />
         <名前 is="name" />
 
@@ -91,11 +91,11 @@
           <名前 is="name" />
         </子バリエーション種別Bの子配列>
         <子バリエーション種別Bの子バリエーション is="variation">
-          <子バリエーション種別Bの子バリエーションA variation-key="A">
+          <子バリエーション種別Bの子バリエーションA is="variation-key:A">
             <ID is="id" />
             <名前 is="name" />
           </子バリエーション種別Bの子バリエーションA>
-          <子バリエーション種別Bの子バリエーションB variation-key="B">
+          <子バリエーション種別Bの子バリエーションB is="variation-key:B">
             <ID is="id" />
             <名前 is="name" />
           </子バリエーション種別Bの子バリエーションB>

@@ -42,11 +42,7 @@ namespace HalApplicationBuilder.Core {
                         .Select(member => new {
                             TreePath = member.Key,
                             Name = member.Key.BaseName,
-                            Type = member.Value.MemberType,
-                            IsPrimary = member.Value.IsPrimary == true,
-                            IsInstanceName = member.Value.IsDisplayName == true,
-                            IsRequired = member.Value.IsRequired == true,
-                            RefTarget = member.Value.IsReferenceTo == null ? null : TreePath.FromString(member.Value.IsReferenceTo),
+                            Options = member.Value,
                         })
                         .ToArray(),
                     Options = aggregate.Value,
@@ -69,16 +65,16 @@ namespace HalApplicationBuilder.Core {
                 });
             var refs = aggregateDefs
                 .SelectMany(aggregate => aggregate.Members, (aggregate, member) => new { aggregate, member })
-                .Where(x => x.member.RefTarget != null)
+                .Where(x => x.member.Options.IsReferenceTo != null)
                 .Select(x => new {
                     Initial = x.aggregate.TreePath,
-                    Terminal = x.member.RefTarget!,
+                    Terminal = TreePath.FromString(x.member.Options.IsReferenceTo!),
                     RelationName = x.member.Name,
                     Attributes = new Dictionary<string, object> {
                         { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_REFERENCE },
-                        { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, x.member.IsPrimary },
-                        { DirectedEdgeExtensions.REL_ATTR_IS_INSTANCE_NAME, x.member.IsInstanceName },
-                        { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, x.member.IsRequired },
+                        { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, x.member.Options.IsPrimary == true },
+                        { DirectedEdgeExtensions.REL_ATTR_IS_INSTANCE_NAME, x.member.Options.IsDisplayName == true },
+                        { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, x.member.Options.IsRequired == true },
                     },
                 });
             var relationDefs = parentAndChild.Concat(refs);
@@ -147,15 +143,15 @@ namespace HalApplicationBuilder.Core {
                 foreach (var member in aggregate.Members) {
 
                     // refはリレーションの方で作成する
-                    if (member.RefTarget != null) continue;
+                    if (member.Options.IsReferenceTo != null) continue;
 
-                    if (member.Type == null) {
+                    if (member.Options.MemberType == null) {
                         errors.Add($"'{member.Name}' のタイプが指定されていません。");
                         successToParse = false;
                         continue;
                     }
-                    if (!memberTypeResolver.TryResolve(member.Type, out var memberType)) {
-                        errors.Add($"'{member.Name}' のタイプ '{member.Type}' が不正です。");
+                    if (!memberTypeResolver.TryResolve(member.Options.MemberType, out var memberType)) {
+                        errors.Add($"'{member.Name}' のタイプ '{member.Options.MemberType}' が不正です。");
                         successToParse = false;
                         continue;
                     }
@@ -164,9 +160,9 @@ namespace HalApplicationBuilder.Core {
                         Id = memberId,
                         Name = member.Name,
                         Type = memberType,
-                        IsPrimary = member.IsPrimary,
-                        IsInstanceName = member.IsInstanceName,
-                        Optional = !member.IsRequired,
+                        IsPrimary = member.Options.IsPrimary == true,
+                        IsInstanceName = member.Options.IsDisplayName == true,
+                        Optional = !member.Options.IsRequired == true,
                     });
                     edgesFromAggToMember.Add(new GraphEdgeInfo {
                         Initial = aggregateId,
@@ -425,8 +421,8 @@ namespace HalApplicationBuilder.Core {
                 .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                             && (string)type == REL_ATTRVALUE_PARENT_CHILD
                             && (!edge.Attributes.TryGetValue(REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray == false)
-                            && (!edge.Attributes.TryGetValue(REL_ATTR_VARIATIONGROUPNAME, out var groupName)
-                            && (string)groupName! != string.Empty))
+                            && edge.Attributes.TryGetValue(REL_ATTR_VARIATIONGROUPNAME, out var groupName)
+                            && (string)groupName! != string.Empty)
                 .GroupBy(edge => (string)edge.Attributes[REL_ATTR_VARIATIONGROUPNAME])
                 .Select(group => new VariationGroup<T> {
                     GroupName = group.Key,

@@ -6,10 +6,10 @@
     <アクターID is="id" />
     <アクター名 is="name" />
     <種別 is="variation">
-      <人 variation-key="1">
+      <人 is="variation-key:1">
         <自社か社外か is="word" />
       </人>
-      <外部システム variation-key="2">
+      <外部システム is="variation-key:2">
       </外部システム>
     </種別>
   </アクター>

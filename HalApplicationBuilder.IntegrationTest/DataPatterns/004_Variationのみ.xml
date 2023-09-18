@@ -5,10 +5,10 @@
     <親集約ID is="id" />
     <親集約名 is="name" />
     <種別 is="variation">
-      <種別A variation-key="1">
-        <種別Aのみに存在する属性 type="word" />
+      <種別A is="variation-key:1">
+        <種別Aのみに存在する属性 is="word" />
       </種別A>
-      <種別B variation-key="2">
+      <種別B is="variation-key:2">
       </種別B>
     </種別>
   </親集約>
