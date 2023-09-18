@@ -240,7 +240,8 @@ namespace HalApplicationBuilder.Core {
                 Owner = childAggregate;
                 Original = parentPK;
                 Options = parentPK.Options.Clone(opt => {
-                    opt.MemberName = $"{parentPK.Owner.Item.ClassName}_{parentPK.MemberName}";
+                    var declaring = GetDeclaringMember();
+                    opt.MemberName = declaring.Owner.Item.ClassName + declaring.MemberName;
                 });
             }
 
