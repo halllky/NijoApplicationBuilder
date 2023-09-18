@@ -40,10 +40,10 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
         private IEnumerable<string> RenderBody(GraphNode<Aggregate> instance, GraphNode<Aggregate> rootInstance, string rootInstanceName, int depth) {
             foreach (var prop in instance.GetMembers()) {
-                if (prop is AggregateMember.ParentPK) {
+                if (prop is AggregateMember.KeyOfParent) {
                     continue; // 不要
 
-                } else if (prop is AggregateMember.RefTargetMember) {
+                } else if (prop is AggregateMember.KeyOfRefTarget) {
                     continue; // Refの分岐でレンダリングするので
 
                 } else if (prop is AggregateMember.ValueMember valueMember) {

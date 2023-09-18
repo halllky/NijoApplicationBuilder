@@ -29,7 +29,7 @@ namespace HalApplicationBuilder.Core {
             var parent = aggregate.GetParent();
             if (parent != null) {
                 foreach (var parentPK in parent.Initial.GetKeyMembers()) {
-                    yield return new ParentPK(aggregate, parentPK);
+                    yield return new KeyOfParent(aggregate, parentPK);
                 }
             }
             foreach (var member in aggregate.GetMemberNodes()) {
@@ -118,7 +118,17 @@ namespace HalApplicationBuilder.Core {
             internal abstract bool RequiredAtDB { get; }
             internal abstract IAggregateMemberType MemberType { get; }
 
-            internal abstract DbColumn.DbColumnBase GetDbColumn();
+            internal DbColumn GetDbColumn() {
+                return new DbColumn {
+                    Owner = Owner.As<IEFCoreEntity>(),
+                    PropertyName = PropertyName,
+                    MemberType = MemberType,
+                    IsPrimary = IsPrimary,
+                    IsInstanceName = IsInstanceName,
+                    RequiredAtDB = IsPrimary || RequiredAtDB,
+                    InvisibleInGui = InvisilbeInGui,
+                };
+            }
         }
         internal abstract class RelationMember : AggregateMemberBase {
             protected RelationMember(GraphEdge<Aggregate> relation) {
@@ -151,10 +161,6 @@ namespace HalApplicationBuilder.Core {
             internal override bool RequiredAtDB => _node.Item.IsPrimary || !_node.Item.Optional;
             internal override bool InvisilbeInGui => _node.Item.InvisibleInGui;
             internal override IAggregateMemberType MemberType => _node.Item.Type;
-
-            internal override DbColumn.DbColumnBase GetDbColumn() {
-                return new DbColumn.AggregateMemberColumn(this);
-            }
         }
 
         internal class Children : RelationMember {
@@ -192,9 +198,6 @@ namespace HalApplicationBuilder.Core {
             internal override bool InvisilbeInGui => _group.InvisibleInGui;
             internal override IAggregateMemberType MemberType { get; } = new AggregateMemberTypes.VariationSwitch();
 
-            internal override DbColumn.DbColumnBase GetDbColumn() {
-                return new DbColumn.VariationTypeColumn(this);
-            }
             internal IEnumerable<VariationItem> GetGroupItems() {
                 foreach (var kv in _group.VariationAggregates) {
                     yield return new VariationItem(this, kv.Key, kv.Value);
@@ -232,11 +235,11 @@ namespace HalApplicationBuilder.Core {
             internal IEnumerable<ValueMember> GetForeignKeys() {
                 return Relation.Terminal
                     .GetKeyMembers()
-                    .Select(refTargetMember => new RefTargetMember(this, refTargetMember));
+                    .Select(refTargetMember => new KeyOfRefTarget(this, refTargetMember));
             }
         }
-        internal class RefTargetMember : ValueMember {
-            internal RefTargetMember(Ref refMember, ValueMember refTargetMember) {
+        internal class KeyOfRefTarget : ValueMember {
+            internal KeyOfRefTarget(Ref refMember, ValueMember refTargetMember) {
                 _refMember = refMember;
                 _refTargetMember = refTargetMember;
             }
@@ -252,14 +255,10 @@ namespace HalApplicationBuilder.Core {
             internal override string PropertyName => $"{_refMember.PropertyName}_{_refTargetMember.PropertyName}";
             internal override string CSharpTypeName => _refTargetMember.CSharpTypeName;
             internal override string TypeScriptTypename => _refTargetMember.TypeScriptTypename;
-
-            internal override DbColumn.DbColumnBase GetDbColumn() {
-                return new DbColumn.RefTargetTablePKColumn(_refMember, _refTargetMember.GetDbColumn());
-            }
         }
 
-        internal class ParentPK : ValueMember {
-            internal ParentPK(GraphNode<Aggregate> childAggregate, ValueMember parentPK) {
+        internal class KeyOfParent : ValueMember {
+            internal KeyOfParent(GraphNode<Aggregate> childAggregate, ValueMember parentPK) {
                 _childAggregate = childAggregate;
                 Original = parentPK;
             }
@@ -279,15 +278,12 @@ namespace HalApplicationBuilder.Core {
             internal override string CSharpTypeName => Original.CSharpTypeName;
             internal override string TypeScriptTypename => Original.TypeScriptTypename;
 
-            internal override DbColumn.DbColumnBase GetDbColumn() {
-                return new DbColumn.ParentTablePKColumn(_childAggregate.As<IEFCoreEntity>(), Original.GetDbColumn());
-            }
             /// <summary>
             /// 大元が祖父母の主キーだった場合は祖父母のメンバーを返す
             /// </summary>
             internal ValueMember GetDeclaringMember() {
                 var member = Original;
-                while (member is ParentPK memberAsParentPK) {
+                while (member is KeyOfParent memberAsParentPK) {
                     member = memberAsParentPK.Original;
                 }
                 return member;

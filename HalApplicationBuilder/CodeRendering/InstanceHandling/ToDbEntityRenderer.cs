@@ -38,13 +38,13 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
         private IEnumerable<string> RenderBody(BodyRenderingContext context) {
             foreach (var prop in context.RenderingAggregate.GetMembers()) {
-                if (prop is AggregateMember.ParentPK parentPK) {
+                if (prop is AggregateMember.KeyOfParent parentPK) {
                     var fullpath = context.GetValueSourceFullPath(parentPK);
                     yield return $$"""
                         {{parentPK.GetDbColumn().PropertyName}} = {{fullpath}},
                         """;
 
-                } else if (prop is AggregateMember.RefTargetMember) {
+                } else if (prop is AggregateMember.KeyOfRefTarget) {
                     continue; // Refの分岐でレンダリングするので
 
                 } else if (prop is AggregateMember.ValueMember valueMember) {
@@ -133,7 +133,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             /// 集約クラスはは親の主キーを持っていないため、EFCoreエンティティの親の主キーは集約クラスのインスタンスの親から持ってくる必要がある。
             /// またラムダ式の中だと単純にthisからのGetFullPathで適切な名前がとれないのでその辺の問題にも対応している
             /// </summary>
-            public string GetValueSourceFullPath(AggregateMember.ParentPK parentPK) {
+            public string GetValueSourceFullPath(AggregateMember.KeyOfParent parentPK) {
                 var declaringMember = parentPK.GetDeclaringMember();
                 var x = _stack.Single(x => x.InstanceType == declaringMember.Owner);
                 var path = declaringMember.GetFullPath(x.MostRecent1To1Ancestor);

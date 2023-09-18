@@ -41,7 +41,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             if (aggregate.IsRoot()) {
                 return $$"""
                     export type {{aggregate.Item.TypeScriptTypeName}} = {
-                    {{aggregate.GetMembers().Where(m => m is not AggregateMember.ParentPK && m is not AggregateMember.RefTargetMember).SelectTextTemplate(m => $$"""
+                    {{aggregate.GetMembers().Where(m => m is not AggregateMember.KeyOfParent && m is not AggregateMember.KeyOfRefTarget).SelectTextTemplate(m => $$"""
                       {{m.PropertyName}}?: {{m.TypeScriptTypename}}
                     """)}}
                       {{AggregateInstanceBase.INSTANCE_KEY}}?: string
@@ -53,7 +53,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
             } else {
                 return $$"""
                    export type {{aggregate.Item.TypeScriptTypeName}} = {
-                   {{aggregate.GetMembers().Where(m => m is not AggregateMember.ParentPK && m is not AggregateMember.RefTargetMember).SelectTextTemplate(m => $$"""
+                   {{aggregate.GetMembers().Where(m => m is not AggregateMember.KeyOfParent && m is not AggregateMember.KeyOfRefTarget).SelectTextTemplate(m => $$"""
                      {{m.PropertyName}}?: {{m.TypeScriptTypename}}
                    """)}}
                      {{AggregateInstanceBase.IS_LOADED}}?: boolean

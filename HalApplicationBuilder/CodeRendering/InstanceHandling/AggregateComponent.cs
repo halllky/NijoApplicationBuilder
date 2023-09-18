@@ -83,8 +83,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         }
         internal string Render() {
             var layout = _aggregate.GetMembers().SelectTextTemplate(prop => prop switch {
-                AggregateMember.ParentPK => string.Empty,
-                AggregateMember.RefTargetMember => string.Empty,
+                AggregateMember.KeyOfParent => string.Empty,
+                AggregateMember.KeyOfRefTarget => string.Empty,
                 AggregateMember.Schalar x => RenderProperty(x),
                 AggregateMember.Ref x => RenderProperty(x),
                 AggregateMember.Child x => RenderProperty(x),

@@ -11,61 +11,69 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
         internal static NodeId GraphNodeId => new NodeId($"HALAPP::{CLASSNAME}");
         internal static IEFCoreEntity CreateEntity() {
             var columns = new[] {
-                new DbColumn.ColumnInfo {
+                new DbColumnWithoutOwner {
                     PropertyName = COL_ID,
                     IsPrimary = true,
                     IsInstanceName = false,
                     MemberType = new Core.AggregateMemberTypes.Id(),
                     RequiredAtDB = true,
+                    InvisibleInGui = false,
                 },
-                new DbColumn.ColumnInfo {
+                new DbColumnWithoutOwner {
                     PropertyName = COL_NAME,
                     IsPrimary = false,
                     IsInstanceName = true,
                     MemberType = new Core.AggregateMemberTypes.Word(),
                     RequiredAtDB = true,
+                    InvisibleInGui = false,
                 },
-                new DbColumn.ColumnInfo {
+                new DbColumnWithoutOwner {
                     PropertyName = COL_BATCHTYPE,
                     IsPrimary = false,
                     IsInstanceName = false,
                     MemberType = new Core.AggregateMemberTypes.Word(),
                     RequiredAtDB = true,
+                    InvisibleInGui = false,
                 },
-                new DbColumn.ColumnInfo {
+                new DbColumnWithoutOwner {
                     PropertyName = COL_PARAMETERJSON,
                     IsPrimary = false,
                     IsInstanceName = false,
                     MemberType = new Core.AggregateMemberTypes.Word(),
                     RequiredAtDB = true,
+                    InvisibleInGui = false,
                 },
-                new DbColumn.ColumnInfo {
+                new DbColumnWithoutOwner {
                     PropertyName = COL_STATE,
                     IsPrimary = false,
                     IsInstanceName = false,
                     MemberType = new Core.AggregateMemberTypes.EnumList(CreateBackgroundTaskStateEnum()),
                     RequiredAtDB = true,
+                    InvisibleInGui = false,
                 },
-                new DbColumn.ColumnInfo {
+                new DbColumnWithoutOwner {
                     PropertyName = COL_REQUESTTIME,
                     IsPrimary = false,
                     IsInstanceName = false,
                     MemberType = new Core.AggregateMemberTypes.TimePoint(),
                     RequiredAtDB = true,
+                    InvisibleInGui = false,
                 },
-                new DbColumn.ColumnInfo {
+                new DbColumnWithoutOwner {
                     PropertyName = COL_STARTTIME,
                     IsPrimary = false,
                     IsInstanceName = false,
                     MemberType = new Core.AggregateMemberTypes.TimePoint(),
                     RequiredAtDB = false,
+                    InvisibleInGui = false,
                 },
-                new DbColumn.ColumnInfo {
+                new DbColumnWithoutOwner {
                     PropertyName = COL_FINISHTIME,
                     IsPrimary = false,
                     IsInstanceName = false,
                     MemberType = new Core.AggregateMemberTypes.TimePoint(),
                     RequiredAtDB = false,
+                    InvisibleInGui = false,
                 },
             };
             return new DbTable(GraphNodeId, CLASSNAME, columns);

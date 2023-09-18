@@ -75,7 +75,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
         internal class Member {
             internal required string ConditionPropName { get; init; }
             internal required string SearchResultPropName { get; init; }
-            internal required DbColumn.DbColumnBase CorrespondingDbColumn { get; init; }
+            internal required DbColumn CorrespondingDbColumn { get; init; }
             internal required IAggregateMemberType Type { get; init; }
             internal required bool IsInstanceKey { get; init; }
             internal required bool IsInstanceName { get; init; }

@@ -9,16 +9,16 @@ using static HalApplicationBuilder.Core.IEFCoreEntity;
 
 namespace HalApplicationBuilder.Core {
     internal class DbTable : IEFCoreEntity {
-        internal DbTable(NodeId id, string name, IList<DbColumn.ColumnInfo>? schalarMembers = null) {
+        internal DbTable(NodeId id, string name, IList<DbColumnWithoutOwner>? schalarMembers = null) {
             Id = id;
             ClassName = name;
-            SchalarMembersNotRelatedToAggregate = schalarMembers ?? new List<DbColumn.ColumnInfo>();
+            SchalarMembersNotRelatedToAggregate = schalarMembers ?? new List<DbColumnWithoutOwner>();
         }
 
         public NodeId Id { get; }
         public string ClassName { get; }
         public string DbSetName => ClassName;
-        public IList<DbColumn.ColumnInfo> SchalarMembersNotRelatedToAggregate { get; }
+        public IList<DbColumnWithoutOwner> SchalarMembersNotRelatedToAggregate { get; }
 
         public override string ToString() {
             return Id.Value;

@@ -24,7 +24,7 @@ namespace HalApplicationBuilder.Core {
         public string EFCoreEntityClassName => $"{DisplayName.ToCSharpSafe()}DbEntity";
         string IEFCoreEntity.ClassName => EFCoreEntityClassName;
         public string DbSetName => EFCoreEntityClassName;
-        public IList<DbColumn.ColumnInfo> SchalarMembersNotRelatedToAggregate { get; } = new List<DbColumn.ColumnInfo>();
+        public IList<DbColumnWithoutOwner> SchalarMembersNotRelatedToAggregate { get; } = new List<DbColumnWithoutOwner>();
 
         internal AggregateBuildOption Options { get; }
 

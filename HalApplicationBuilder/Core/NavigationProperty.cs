@@ -104,7 +104,7 @@ namespace HalApplicationBuilder.Core {
                 ? $"new HashSet<{Opposite.Item.EFCoreEntityClassName}>()"
                 : null;
 
-            internal IEnumerable<DbColumn.DbColumnBase> GetForeignKeys() {
+            internal IEnumerable<DbColumn> GetForeignKeys() {
                 if (_relation.Terminal == Owner
                     && (_relation.Terminal.IsChildMember()
                     || _relation.Terminal.IsChildrenMember()
@@ -113,7 +113,7 @@ namespace HalApplicationBuilder.Core {
 
                     return _relation.Terminal
                         .GetKeyMembers()
-                        .OfType<AggregateMember.ParentPK>()
+                        .OfType<AggregateMember.KeyOfParent>()
                         .Select(parentPk => parentPk.GetDbColumn());
 
                 } else if (_relation.Initial == Owner
@@ -127,7 +127,7 @@ namespace HalApplicationBuilder.Core {
                         .Select(refTargetKey => refTargetKey.GetDbColumn());
 
                 } else {
-                    return Enumerable.Empty<DbColumn.DbColumnBase>();
+                    return Enumerable.Empty<DbColumn>();
                 }
             }
 
