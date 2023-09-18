@@ -224,7 +224,6 @@ namespace HalApplicationBuilder.Core {
                 .SetMemberOption(opt => opt.MemberType, MemberTypeResolver.TYPE_SENTENCE, E_Priority.Force);
 
             parser.IfExists("hidden")
-                .SetAggregateOption(opt => opt.InvisibleInGui, true, E_Priority.Force)
                 .SetMemberOption(opt => opt.InvisibleInGui, true, E_Priority.Force);
 
             var elementType = parser.GetElementType();
