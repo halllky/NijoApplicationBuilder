@@ -284,4 +284,24 @@ namespace HalApplicationBuilder.DotnetEx {
         internal IReadOnlyDictionary<string, object> Attributes { get; init; } = new Dictionary<string, object>();
     }
     #endregion VALUE
+
+
+    internal static class DirectedGraphExtensions {
+        internal static IEnumerable<GraphNode<T>> SelectNeighbors<T>(this GraphNode<T> graphNode, Func<GraphNode<T>, IEnumerable<GraphNode<T>>> predicate) where T : IGraphNode {
+            foreach (var item in predicate(graphNode)) {
+                yield return item;
+
+                foreach (var item2 in SelectNeighbors(item, predicate)) {
+                    yield return item2;
+                }
+            }
+        }
+        internal static IEnumerable<GraphNode<T>> SelectThisAndNeighbors<T>(this GraphNode<T> graphNode, Func<GraphNode<T>, IEnumerable<GraphNode<T>>> predicate) where T : IGraphNode {
+            yield return graphNode;
+            foreach (var item in graphNode.SelectNeighbors(predicate)) {
+                yield return item;
+            }
+        }
+
+    }
 }

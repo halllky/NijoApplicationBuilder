@@ -48,7 +48,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
         private ICollection<Member> Members {
             get {
                 _members ??= DbEntity
-                    .SelectThisAndUntil(entity => entity.GetChildEdges().Select(edge => edge.Terminal)
+                    .SelectThisAndNeighbors(entity => entity.GetChildEdges().Select(edge => edge.Terminal)
                         .Concat(entity.GetRefEdge().Where(edge => edge.IsPrimary()).Select(edge => edge.Terminal)))
                     .SelectMany(entity => entity.GetColumns())
                     .Select(col => new Member {

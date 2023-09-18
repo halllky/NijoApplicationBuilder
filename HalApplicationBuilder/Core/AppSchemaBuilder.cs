@@ -302,22 +302,6 @@ namespace HalApplicationBuilder.Core {
             return ((GraphNode)graphNode).GetParent()?.As<T>();
         }
 
-        internal static IEnumerable<GraphNode<T>> SelectUntil<T>(this GraphNode<T> graphNode, Func<GraphNode<T>, IEnumerable<GraphNode<T>>> predicate) where T : IGraphNode {
-            foreach (var item in predicate(graphNode)) {
-                yield return item;
-
-                foreach (var item2 in SelectUntil(item, predicate)) {
-                    yield return item2;
-                }
-            }
-        }
-        internal static IEnumerable<GraphNode<T>> SelectThisAndUntil<T>(this GraphNode<T> graphNode, Func<GraphNode<T>, IEnumerable<GraphNode<T>>> predicate) where T : IGraphNode {
-            yield return graphNode;
-            foreach (var item in graphNode.SelectUntil(predicate)) {
-                yield return item;
-            }
-        }
-
         /// <summary>
         /// 祖先を列挙する。ルート要素が先。
         /// </summary>
@@ -343,21 +327,10 @@ namespace HalApplicationBuilder.Core {
         }
 
         internal static IEnumerable<GraphNode<T>> EnumerateDescendants<T>(this GraphNode<T> graphNode) where T : IGraphNode {
-            static IEnumerable<GraphNode<T>> GetDescencantsRecursively(GraphNode<T> node) {
-                var children = node.GetChildEdges()
-                    .Concat(node.GetVariationGroups().SelectMany(group => group.VariationAggregates.Values))
-                    .Concat(node.GetChildrenEdges());
-                foreach (var edge in children) {
-                    yield return edge.Terminal;
-                    foreach (var descendant in GetDescencantsRecursively(edge.Terminal)) {
-                        yield return descendant;
-                    }
-                }
-            }
-
-            foreach (var desc in GetDescencantsRecursively(graphNode)) {
-                yield return desc;
-            }
+            return graphNode.SelectNeighbors(node => node.Out
+                .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var value)
+                            && (string)value == REL_ATTRVALUE_PARENT_CHILD)
+                .Select(edge => edge.Terminal.As<T>()));
         }
         internal static IEnumerable<GraphNode<T>> EnumerateThisAndDescendants<T>(this GraphNode<T> graphNode) where T : IGraphNode {
             yield return graphNode;
