@@ -59,15 +59,11 @@ namespace HalApplicationBuilder.Core {
                 .Where(member => member.IsPrimary);
         }
         internal static IEnumerable<ValueMember> GetInstanceNameMembers(this GraphNode<Aggregate> aggregate) {
-            var nameMembers = aggregate
+            return aggregate
                 .GetMembers()
                 .OfType<ValueMember>()
                 .Where(member => member.IsInstanceName)
                 .ToArray();
-            // name属性のメンバーが無い場合はキーを表示名称にする
-            return nameMembers.Any()
-                ? nameMembers
-                : aggregate.GetKeyMembers();
         }
         internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<Aggregate> aggregate) {
             var parent = aggregate.GetParent();
@@ -87,7 +83,7 @@ namespace HalApplicationBuilder.Core {
 
 
         #region MEMBER BASE
-        internal abstract class AggregateMemberBase : ValueObject {
+        internal abstract class AggregateMemberBase {
             internal abstract GraphNode<Aggregate> Owner { get; }
             internal abstract string PropertyName { get; }
             internal abstract string CSharpTypeName { get; }
@@ -104,17 +100,18 @@ namespace HalApplicationBuilder.Core {
                 yield return PropertyName;
             }
 
-            protected override IEnumerable<object?> ValueObjectIdentifiers() {
-                yield return Owner;
-                yield return PropertyName;
-            }
             public override string ToString() {
                 return GetFullPath().Join(".");
             }
         }
         internal abstract class ValueMember : AggregateMemberBase {
             internal abstract bool IsPrimary { get; }
-            internal abstract bool IsInstanceName { get; }
+
+            internal bool IsInstanceName
+                => SettingIsInstanceName()
+                || (!Owner.Item.HasNameMember && IsPrimary); // 集約中に名前が無い場合はキーを名前のかわりに使う
+            protected abstract bool SettingIsInstanceName();
+
             internal abstract bool RequiredAtDB { get; }
             internal abstract IAggregateMemberType MemberType { get; }
 
@@ -157,7 +154,7 @@ namespace HalApplicationBuilder.Core {
             internal override string TypeScriptTypename => _node.Item.Type.GetTypeScriptTypeName();
 
             internal override bool IsPrimary => _node.Item.IsPrimary;
-            internal override bool IsInstanceName => _node.Item.IsInstanceName;
+            protected override bool SettingIsInstanceName() => _node.Item.IsInstanceName;
             internal override bool RequiredAtDB => _node.Item.IsPrimary || !_node.Item.Optional;
             internal override bool InvisilbeInGui => _node.Item.InvisibleInGui;
             internal override IAggregateMemberType MemberType => _node.Item.Type;
@@ -193,7 +190,7 @@ namespace HalApplicationBuilder.Core {
             internal override string TypeScriptTypename => MemberType.GetTypeScriptTypeName();
 
             internal override bool IsPrimary => _group.IsPrimary;
-            internal override bool IsInstanceName => _group.IsInstanceName;
+            protected override bool SettingIsInstanceName() => _group.IsInstanceName;
             internal override bool RequiredAtDB => _group.IsPrimary || _group.RequiredAtDB;
             internal override bool InvisilbeInGui => _group.InvisibleInGui;
             internal override IAggregateMemberType MemberType { get; } = new AggregateMemberTypes.VariationSwitch();
@@ -228,10 +225,6 @@ namespace HalApplicationBuilder.Core {
             internal override string CSharpTypeName => AggregateInstanceKeyNamePair.CLASSNAME;
             internal override string TypeScriptTypename => AggregateInstanceKeyNamePair.TS_DEF;
 
-            internal bool IsPrimary => Relation.IsPrimary();
-            internal bool IsInstanceName => Relation.IsInstanceName();
-            internal bool RequiredAtDB => Relation.IsPrimary() || Relation.IsRequired();
-
             internal IEnumerable<ValueMember> GetForeignKeys() {
                 return Relation.Terminal
                     .GetKeyMembers()
@@ -246,9 +239,9 @@ namespace HalApplicationBuilder.Core {
             private readonly Ref _refMember;
             private readonly ValueMember _refTargetMember;
 
-            internal override bool IsPrimary => _refMember.IsPrimary;
-            internal override bool IsInstanceName => _refMember.IsInstanceName;
-            internal override bool RequiredAtDB => _refMember.RequiredAtDB;
+            internal override bool IsPrimary => _refMember.Relation.IsPrimary();
+            protected override bool SettingIsInstanceName() => _refMember.Relation.IsInstanceName();
+            internal override bool RequiredAtDB => _refMember.Relation.IsRequired();
             internal override bool InvisilbeInGui => _refMember.InvisilbeInGui;
             internal override IAggregateMemberType MemberType => _refTargetMember.MemberType;
             internal override GraphNode<Aggregate> Owner => _refMember.Owner;
@@ -269,7 +262,7 @@ namespace HalApplicationBuilder.Core {
             internal ValueMember Original { get; }
 
             internal override bool IsPrimary => true;
-            internal override bool IsInstanceName => false;
+            protected override bool SettingIsInstanceName() => false;
             internal override bool RequiredAtDB => true;
             internal override bool InvisilbeInGui => Original.InvisilbeInGui;
             internal override IAggregateMemberType MemberType => Original.MemberType;

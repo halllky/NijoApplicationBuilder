@@ -131,18 +131,20 @@ namespace HalApplicationBuilder.Core {
             var aggregateMembers = new HashSet<AggregateMemberNode>();
             var edgesFromAggToAgg = new List<GraphEdgeInfo>();
             var edgesFromAggToMember = new List<GraphEdgeInfo>();
-            foreach (var aggregate in aggregateDefs) {
+            foreach (var aggregateDef in aggregateDefs) {
                 var successToParse = true;
 
                 // バリデーションおよびグラフ構成要素の作成: 集約ID
-                var aggregateId = aggregate.TreePath.ToGraphNodeId();
+                var aggregateId = aggregateDef.TreePath.ToGraphNodeId();
                 if (aggregates.ContainsKey(aggregateId)) {
-                    errors.Add($"ID '{aggregate.TreePath}' が重複しています。");
+                    errors.Add($"ID '{aggregateDef.TreePath}' が重複しています。");
                     successToParse = false;
                 }
 
                 // バリデーションおよびグラフ構成要素の作成: 集約メンバー
-                foreach (var member in aggregate.Members) {
+                var hasNameMember = false;
+                foreach (var member in aggregateDef.Members) {
+                    if (member.Options.IsDisplayName == true) hasNameMember = true;
 
                     // refはリレーションの方で作成する
                     if (member.Options.IsReferenceTo != null) continue;
@@ -178,7 +180,9 @@ namespace HalApplicationBuilder.Core {
                 }
 
                 if (successToParse) {
-                    aggregates.Add(aggregateId, new Aggregate(aggregate.TreePath, aggregate.Options));
+                    var displayName = aggregateDef.TreePath.BaseName;
+                    var aggregate = new Aggregate(aggregateId, displayName, hasNameMember, aggregateDef.Options);
+                    aggregates.Add(aggregateId, aggregate);
                 }
             }
 

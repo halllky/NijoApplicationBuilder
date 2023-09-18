@@ -55,24 +55,18 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
         }
 
         internal string RenderDbContextMethod() {
-            var keys = _aggregate
-                .GetKeyMembers()
-                .Select(item => new { item, FromNames = false });
-            var names = _aggregate
-                .GetInstanceNameMembers()
-                .Select(item => new { item, FromNames = true });
-            var members = keys
-                .Concat(names)
-                .GroupBy(x => x.item)
-                .Select(group => new { item = group.Key, FromNames = group.Any(x => x.FromNames) })
-                .Select(x => new {
-                    x.item.IsPrimary,
-                    IsInstanceName = x.item.IsInstanceName || x.FromNames,
-                    QueryResultPropertyName = x.item.PropertyName,
-                    QueryResultPropertyNameAsString = x.item.MemberType.GetCSharpTypeName() == "string"
-                        ? x.item.PropertyName
-                        : $"{x.item.PropertyName}.ToString()",
-                    EFCorePropertyFullPath = x.item.GetDbColumn().GetFullPath(_aggregate.As<IEFCoreEntity>()).Join("."),
+            var members = _aggregate
+                .GetMembers()
+                .OfType<AggregateMember.ValueMember>()
+                .Where(member => member.IsPrimary || member.IsInstanceName)
+                .Select(item => new {
+                    item.IsPrimary,
+                    item.IsInstanceName,
+                    QueryResultPropertyName = item.PropertyName,
+                    QueryResultPropertyNameAsString = item.MemberType.GetCSharpTypeName() == "string"
+                        ? item.PropertyName
+                        : $"{item.PropertyName}.ToString()",
+                    EFCorePropertyFullPath = item.GetDbColumn().GetFullPath(_aggregate.As<IEFCoreEntity>()).Join("."),
                 })
                 .ToArray();
 
