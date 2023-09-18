@@ -200,11 +200,21 @@ namespace HalApplicationBuilder.Core {
                 .ElementTypeIs(E_XElementType.Schalar, E_Priority.IfNotSpecified)
                 .SetMemberOption(opt => opt.IsDisplayName, true, E_Priority.Force)
                 .SetMemberOption(opt => opt.MemberType, MemberTypeResolver.TYPE_WORD, E_Priority.IfNotSpecified);
+
+            // uuidと役割がかぶっているので非推奨
             parser.IfExists("id")
                 .ElementTypeIs(E_XElementType.Schalar, E_Priority.Force)
                 .SetMemberOption(opt => opt.IsPrimary, true, E_Priority.IfNotSpecified)
                 .SetMemberOption(opt => opt.IsRequired, true, E_Priority.IfNotSpecified)
                 .SetMemberOption(opt => opt.MemberType, MemberTypeResolver.TYPE_ID, E_Priority.Force);
+
+            parser.IfExists("uuid")
+                .ElementTypeIs(E_XElementType.Schalar, E_Priority.Force)
+                .SetMemberOption(opt => opt.IsPrimary, true, E_Priority.IfNotSpecified)
+                .SetMemberOption(opt => opt.IsRequired, true, E_Priority.IfNotSpecified)
+                .SetMemberOption(opt => opt.InvisibleInGui, true, E_Priority.IfNotSpecified)
+                .SetMemberOption(opt => opt.MemberType, MemberTypeResolver.TYPE_UUID, E_Priority.Force);
+
             parser.IfExists("word")
                 .ElementTypeIs(E_XElementType.Schalar, E_Priority.Force)
                 .SetMemberOption(opt => opt.MemberType, MemberTypeResolver.TYPE_WORD, E_Priority.Force);

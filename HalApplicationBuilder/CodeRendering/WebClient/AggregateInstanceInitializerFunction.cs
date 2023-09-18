@@ -1,4 +1,5 @@
 using HalApplicationBuilder.Core;
+using HalApplicationBuilder.Core.AggregateMemberTypes;
 using HalApplicationBuilder.DotnetEx;
 using System;
 using System.Collections.Generic;
@@ -41,10 +42,26 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     Key = group.GroupName,
                     Value = $"'{group.VariationAggregates.First().Key}'",
                 });
+            var uuid = _instance
+                .GetMembers()
+                .OfType<AggregateMember.ValueMember>()
+                .Where(member => member is not AggregateMember.ParentPK
+                              && member is not AggregateMember.RefTargetMember
+                              && member.MemberType is Uuid)
+                .Select(member => new {
+                    Key = member.PropertyName,
+                    Value = "UUID.generate()",
+                });
+
+            var initializers = uuid
+                .Concat(children)
+                .Concat(child)
+                .Concat(variation)
+                .Concat(variationSwitch);
 
             return $$"""
                     export const {{FunctionName}} = (): {{_instance.Item.TypeScriptTypeName}} => ({
-                    {{children.Concat(child).Concat(variation).Concat(variationSwitch).SelectTextTemplate(item => $$"""
+                    {{initializers.SelectTextTemplate(item => $$"""
                       {{item.Key}}: {{item.Value}},
                     """)}}
                     })

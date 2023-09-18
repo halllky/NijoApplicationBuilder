@@ -22,14 +22,19 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         public const string FILENAME = "types.ts";
 
         protected override string Template() {
-            return _ctx.Schema.RootAggregates().SelectTextTemplate(root => $$"""
+            return $$"""
+                import { UUID } from "uuidjs"
+
+                {{_ctx.Schema.RootAggregates().SelectTextTemplate(root => $$"""
                 // ------------------ {{root.Item.DisplayName}} ------------------
                 {{root.EnumerateThisAndDescendants().SelectTextTemplate(Render)}}
 
                 {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new AggregateInstanceInitializerFunction(aggregate).Render())}}
 
                 {{new Searching.SearchFeature(root.As<IEFCoreEntity>(), _ctx).RenderTypescriptTypeDef()}}
-                """);
+
+                """)}}
+                """;
         }
 
         private string Render(GraphNode<Aggregate> aggregate) {

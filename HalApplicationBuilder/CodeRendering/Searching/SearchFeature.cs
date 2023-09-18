@@ -51,7 +51,6 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                     .SelectThisAndUntil(entity => entity.GetChildEdges().Select(edge => edge.Terminal)
                         .Concat(entity.GetRefEdge().Where(edge => edge.IsPrimary()).Select(edge => edge.Terminal)))
                     .SelectMany(entity => entity.GetColumns())
-                    .Where(col => !col.InvisibleInGui)
                     .Select(col => new Member {
                         CorrespondingDbColumn = col,
                         IsInstanceKey = col.IsPrimary && col.Owner == DbEntity,
@@ -72,6 +71,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                 return _members;
             }
         }
+        private IEnumerable<Member> VisibleMembers => Members.Where(m => !m.CorrespondingDbColumn.InvisibleInGui);
         internal class Member {
             internal required string ConditionPropName { get; init; }
             internal required string SearchResultPropName { get; init; }

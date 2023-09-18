@@ -3,7 +3,7 @@
 <自動テストで作成されたプロジェクト>
 
   <アクター is="master-data">
-    <アクターID is="id" />
+    <アクターID is="uuid" />
     <アクター名 is="name" />
     <種別 is="variation">
       <人 is="variation-key:1">
@@ -15,7 +15,7 @@
   </アクター>
 
   <ユースケース is="master-data">
-    <ユースケースID is="id" />
+    <ユースケースID is="uuid" />
     <概要 is="sentence name" />
     <主体 is="ref-to:アクター" />
     <関連機能 is="array">
@@ -24,7 +24,7 @@
   </ユースケース>
 
   <機能 is="master-data">
-    <機能ID is="id" />
+    <機能ID is="uuid" />
     <機能名 is="name" />
     <参照更新の別 is="E_参照更新" />
     <非機能要件 is="object">

@@ -29,7 +29,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                 var createViewRoute = aggregate == null ? null : new SingleView(aggregate, Search.Context, SingleView.E_Type.Create).Url;
                 var singleViewRoute = aggregate == null ? null : new SingleView(aggregate, Search.Context, SingleView.E_Type.View).Url;
 
-                var memberNames = Search.Members.Select(m => m.ConditionPropName);
+                var memberNames = Search.VisibleMembers.Select(m => m.ConditionPropName);
                 var propNameWidth = AggregateComponent.GetPropNameFlexBasis(memberNames);
 
                 var s = new StringBuilder();
@@ -109,7 +109,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
 
                           <FormProvider {...reactHookFormMethods}>
                             <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1 p-1 bg-neutral-200`} onSubmit={handleSubmit(onSearch)}>
-                    {{Search.Members.SelectTextTemplate(member => $$"""
+                    {{Search.VisibleMembers.SelectTextTemplate(member => $$"""
                               <div className="flex">
                                 <div className="{{propNameWidth}}">
                                   <span className="text-sm select-none opacity-80">
@@ -145,7 +145,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
 
                     type RowType = {
                       {{SEARCHRESULT_INSTANCE_KEY_PROP_NAME}}: string
-                    {{Search.Members.SelectTextTemplate(member => $$"""
+                    {{Search.VisibleMembers.SelectTextTemplate(member => $$"""
                       {{member.SearchResultPropName}}?: string | number | boolean
                     """)}}
                     }
@@ -161,7 +161,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                         },
                       },
                     """)}}
-                    {{Search.Members.SelectTextTemplate(member => $$"""
+                    {{Search.VisibleMembers.SelectTextTemplate(member => $$"""
                       { field: '{{member.SearchResultPropName}}', resizable: true, sortable: true, editable: true },
                     """)}}
                     ]

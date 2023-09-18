@@ -10,11 +10,13 @@ namespace HalApplicationBuilder.Core {
         public static MemberTypeResolver Default() {
             var resolver = new MemberTypeResolver()
                 .Register(TYPE_ID, new Id())
+                .Register(TYPE_UUID, new Uuid())
                 .Register(TYPE_WORD, new Word())
                 .Register(TYPE_SENTENCE, new Sentence());
             return resolver;
         }
         internal const string TYPE_ID = "id";
+        internal const string TYPE_UUID = "uuid";
         internal const string TYPE_WORD = "word";
         internal const string TYPE_SENTENCE = "sentence";
 
