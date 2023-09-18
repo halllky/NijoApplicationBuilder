@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<自動テストで作成されたプロジェクト>
+  <親集約 is="master-data">
+    <ID is="uuid" />
+
+    <単語 is="word" />
+    <文章 is="sentence" />
+
+    <整数 is="int" />
+    <!--<実数 is="decimal" />
+    <百分率 is="percentage" />
+
+    <日付時刻 is="datetime" />
+    <日付 is="date" />
+    <年月 is="year-month" />
+
+    <真偽値 is="bool" />-->
+
+    <列挙体 is="MyEnum" />
+  </親集約>
+
+  <MyEnum is="enum">
+    <選択肢1 />
+    <選択肢2 />
+    <選択肢3 />
+  </MyEnum>
+</自動テストで作成されたプロジェクト>

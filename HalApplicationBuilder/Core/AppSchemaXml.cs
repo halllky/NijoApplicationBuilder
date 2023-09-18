@@ -222,6 +222,9 @@ namespace HalApplicationBuilder.Core {
                 .ElementTypeIs(E_XElementType.Schalar, E_Priority.Force)
                 .SetMemberOption(opt => opt.IsDisplayName, true, E_Priority.Force)
                 .SetMemberOption(opt => opt.MemberType, MemberTypeResolver.TYPE_SENTENCE, E_Priority.Force);
+            parser.IfExists("int")
+                .ElementTypeIs(E_XElementType.Schalar, E_Priority.Force)
+                .SetMemberOption(opt => opt.MemberType, MemberTypeResolver.TYPE_INT, E_Priority.Force);
 
             parser.IfExists("hidden")
                 .SetMemberOption(opt => opt.InvisibleInGui, true, E_Priority.Force);

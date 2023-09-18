@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.CodeRendering.Util {
@@ -11,6 +13,9 @@ namespace HalApplicationBuilder.CodeRendering.Util {
         internal const string TO_JSON = "ToJson";
         internal const string PARSE_JSON = "ParseJson";
         internal const string PARSE_JSON_AS_OBJARR = "ParseJsonAsObjectArray";
+
+        private const string CUSTOM_CONVERTER_NAMESPACE = "CustomJsonConverters";
+        private const string INT_CONVERTER = "IntegerValueConverter";
 
         internal string RenderJsonConversionMethods() {
             return $$"""
@@ -26,6 +31,9 @@ namespace HalApplicationBuilder.CodeRendering.Util {
                             // json中のenumの値を名前で設定できるようにする
                             var enumConverter = new System.Text.Json.Serialization.JsonStringEnumConverter();
                             option.Converters.Add(enumConverter);
+
+                            // カスタムコンバータ
+                            option.Converters.Add(new {{CUSTOM_CONVERTER_NAMESPACE}}.{{INT_CONVERTER}}());
                         }
                         public static JsonSerializerOptions {{GET_JSONOPTION}}() {
                             var option = new System.Text.Json.JsonSerializerOptions();
@@ -55,6 +63,47 @@ namespace HalApplicationBuilder.CodeRendering.Util {
                                     _ => jsonElement,
                                 }))
                                 .ToArray();
+                        }
+                    }
+                }
+                {{RenderIntConverter()}}
+                """;
+        }
+
+        internal string RenderIntConverter() {
+            return $$"""
+                namespace {{_ctx.Config.RootNamespace}}.{{CUSTOM_CONVERTER_NAMESPACE}} {
+                    using System.Text;
+                    using System.Text.Json;
+                    using System.Text.Json.Serialization;
+                            
+                    class {{INT_CONVERTER}} : JsonConverter<int?> {
+                        public override int? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
+                            var jsonValue = reader.GetString()?.Trim();
+                            if (jsonValue == null) return null;
+
+                            var builder = new StringBuilder();
+                            foreach (var character in jsonValue) {
+                                if (character == ',' || character == '，') {
+                                    // カンマ区切りは無視
+                                    continue;
+                                } else if (character == '.' || character == '．') {
+                                    // 小数点以下は切り捨て
+                                    break;
+                                } else if (char.IsDigit(character)) {
+                                    // 全角数値は半角数値に変換
+                                    builder.Append(char.GetNumericValue(character));
+                                } else {
+                                    builder.Append(character);
+                                }
+                            }
+
+                            var converted = builder.ToString();
+                            return string.IsNullOrEmpty() ? null : int.Parse(converted);
+                        }
+                    
+                        public override void Write(Utf8JsonWriter writer, int? value, JsonSerializerOptions options) {
+                            writer.WriteStringValue(value?.ToString());
                         }
                     }
                 }
