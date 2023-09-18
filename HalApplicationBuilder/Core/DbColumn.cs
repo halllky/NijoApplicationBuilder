@@ -16,16 +16,10 @@ namespace HalApplicationBuilder.Core {
         internal static IEnumerable<DbColumn> GetColumns(this GraphNode<IEFCoreEntity> dbEntity) {
             var nonAggregateColumns = dbEntity.Item
                 .SchalarMembersNotRelatedToAggregate
-                .Select(col => new DbColumn {
+                .Select(options => new DbColumn {
                     Owner = dbEntity,
-                    InvisibleInGui = col.InvisibleInGui,
-                    IsInstanceName = col.IsInstanceName,
-                    IsPrimary = col.IsPrimary,
-                    MemberType = col.MemberType,
-                    PropertyName = col.PropertyName,
-                    RequiredAtDB = col.RequiredAtDB,
+                    Options = options,
                 });
-
             var aggregateColumns = dbEntity.Item is Aggregate
                 ? dbEntity.As<Aggregate>()
                           .GetMembers()
@@ -37,17 +31,9 @@ namespace HalApplicationBuilder.Core {
         }
     }
 
-    internal class DbColumnWithoutOwner {
-        public required string PropertyName { get; init; }
-        public required bool IsPrimary { get; init; }
-        public required bool IsInstanceName { get; init; }
-        public required IAggregateMemberType MemberType { get; init; }
-        public required bool RequiredAtDB { get; init; }
-        public required bool InvisibleInGui { get; init; }
-    }
-
-    internal class DbColumn : DbColumnWithoutOwner {
+    internal class DbColumn {
         internal required GraphNode<IEFCoreEntity> Owner { get; init; }
+        internal required IReadOnlyMemberOptions Options { get; init; }
 
         internal IEnumerable<string> GetFullPath(GraphNode<IEFCoreEntity>? since = null) {
             var skip = since != null;
@@ -56,7 +42,7 @@ namespace HalApplicationBuilder.Core {
                 if (skip) continue;
                 yield return edge.RelationName;
             }
-            yield return PropertyName;
+            yield return Options.MemberName;
         }
 
         public override string ToString() {

@@ -14,7 +14,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
 
             var selectClause = Members.Select(m => new {
                 resultMemberName = m.SearchResultPropName,
-                dbColumnPath = m.CorrespondingDbColumn.GetFullPath().Join("."),
+                dbColumnPath = m.DbColumn.GetFullPath().Join("."),
             });
             var instanceNameProp = Members.SingleOrDefault(m => m.IsInstanceName)?.SearchResultPropName;
 
@@ -39,23 +39,23 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                             });
 
                 {{Members.SelectTextTemplate(member => 
-                    If(member.Type.SearchBehavior == SearchBehavior.Ambiguous, () => $$"""
+                    If(member.DbColumn.Options.MemberType.SearchBehavior == SearchBehavior.Ambiguous, () => $$"""
                             if (!string.IsNullOrWhiteSpace(param.{{member.ConditionPropName}})) {
                                 var trimmed = param.{{member.ConditionPropName}}.Trim();
                                 query = query.Where(x => x.{{member.SearchResultPropName}}.Contains(trimmed));
                             }
-                """).ElseIf(member.Type.SearchBehavior == SearchBehavior.Range, () => $$"""
+                """).ElseIf(member.DbColumn.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
                             if (param.{{member.ConditionPropName}}.{{FromTo.FROM}} != default) {
                                 query = query.Where(x => x.{{member.SearchResultPropName}} >= param.{{member.ConditionPropName}}.{{FromTo.FROM}});
                             }
                             if (param.{{member.ConditionPropName}}.{{FromTo.TO}} != default) {
                                 query = query.Where(x => x.{{member.SearchResultPropName}} <= param.{{member.ConditionPropName}}.{{FromTo.TO}});
                             }
-                """).ElseIf(member.Type.SearchBehavior == SearchBehavior.Strict && new[] { "string", "string?" }.Contains(member.Type.GetCSharpTypeName()), () => $$"""
+                """).ElseIf(member.DbColumn.Options.MemberType.SearchBehavior == SearchBehavior.Strict && new[] { "string", "string?" }.Contains(member.DbColumn.Options.MemberType.GetCSharpTypeName()), () => $$"""
                             if (!string.IsNullOrWhiteSpace(param.{{member.ConditionPropName}})) {
                                 query = query.Where(x => x.{{member.SearchResultPropName}} == param.{{member.ConditionPropName}});
                             }
-                """).ElseIf(member.Type.SearchBehavior == SearchBehavior.Strict, () => $$"""
+                """).ElseIf(member.DbColumn.Options.MemberType.SearchBehavior == SearchBehavior.Strict, () => $$"""
                             if (param.{{member.ConditionPropName}} != default) {
                                 query = query.Where(x => x.{{member.SearchResultPropName}} == param.{{member.ConditionPropName}});
                             }

@@ -11,68 +11,68 @@ namespace HalApplicationBuilder.CodeRendering.BackgroundService {
         internal static NodeId GraphNodeId => new NodeId($"HALAPP::{CLASSNAME}");
         internal static IEFCoreEntity CreateEntity() {
             var columns = new[] {
-                new DbColumnWithoutOwner {
-                    PropertyName = COL_ID,
-                    IsPrimary = true,
-                    IsInstanceName = false,
+                new MemberOptions {
+                    MemberName = COL_ID,
+                    IsKey = true,
+                    IsDisplayName = false,
                     MemberType = new Core.AggregateMemberTypes.Id(),
-                    RequiredAtDB = true,
+                    IsRequired = true,
                     InvisibleInGui = false,
                 },
-                new DbColumnWithoutOwner {
-                    PropertyName = COL_NAME,
-                    IsPrimary = false,
-                    IsInstanceName = true,
+                new MemberOptions {
+                    MemberName = COL_NAME,
+                    IsKey = false,
+                    IsDisplayName = true,
                     MemberType = new Core.AggregateMemberTypes.Word(),
-                    RequiredAtDB = true,
+                    IsRequired = true,
                     InvisibleInGui = false,
                 },
-                new DbColumnWithoutOwner {
-                    PropertyName = COL_BATCHTYPE,
-                    IsPrimary = false,
-                    IsInstanceName = false,
+                new MemberOptions {
+                    MemberName = COL_BATCHTYPE,
+                    IsKey = false,
+                    IsDisplayName = false,
                     MemberType = new Core.AggregateMemberTypes.Word(),
-                    RequiredAtDB = true,
+                    IsRequired = true,
                     InvisibleInGui = false,
                 },
-                new DbColumnWithoutOwner {
-                    PropertyName = COL_PARAMETERJSON,
-                    IsPrimary = false,
-                    IsInstanceName = false,
+                new MemberOptions {
+                    MemberName = COL_PARAMETERJSON,
+                    IsKey = false,
+                    IsDisplayName = false,
                     MemberType = new Core.AggregateMemberTypes.Word(),
-                    RequiredAtDB = true,
+                    IsRequired = true,
                     InvisibleInGui = false,
                 },
-                new DbColumnWithoutOwner {
-                    PropertyName = COL_STATE,
-                    IsPrimary = false,
-                    IsInstanceName = false,
+                new MemberOptions {
+                    MemberName = COL_STATE,
+                    IsKey = false,
+                    IsDisplayName = false,
                     MemberType = new Core.AggregateMemberTypes.EnumList(CreateBackgroundTaskStateEnum()),
-                    RequiredAtDB = true,
+                    IsRequired = true,
                     InvisibleInGui = false,
                 },
-                new DbColumnWithoutOwner {
-                    PropertyName = COL_REQUESTTIME,
-                    IsPrimary = false,
-                    IsInstanceName = false,
+                new MemberOptions {
+                    MemberName = COL_REQUESTTIME,
+                    IsKey = false,
+                    IsDisplayName = false,
                     MemberType = new Core.AggregateMemberTypes.TimePoint(),
-                    RequiredAtDB = true,
+                    IsRequired = true,
                     InvisibleInGui = false,
                 },
-                new DbColumnWithoutOwner {
-                    PropertyName = COL_STARTTIME,
-                    IsPrimary = false,
-                    IsInstanceName = false,
+                new MemberOptions {
+                    MemberName = COL_STARTTIME,
+                    IsKey = false,
+                    IsDisplayName = false,
                     MemberType = new Core.AggregateMemberTypes.TimePoint(),
-                    RequiredAtDB = false,
+                    IsRequired = false,
                     InvisibleInGui = false,
                 },
-                new DbColumnWithoutOwner {
-                    PropertyName = COL_FINISHTIME,
-                    IsPrimary = false,
-                    IsInstanceName = false,
+                new MemberOptions {
+                    MemberName = COL_FINISHTIME,
+                    IsKey = false,
+                    IsDisplayName = false,
                     MemberType = new Core.AggregateMemberTypes.TimePoint(),
-                    RequiredAtDB = false,
+                    IsRequired = false,
                     InvisibleInGui = false,
                 },
             };

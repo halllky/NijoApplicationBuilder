@@ -24,7 +24,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         private readonly SingleView.E_Type _mode;
 
         private string ComponentName => $"{_aggregate.Item.TypeScriptTypeName}View";
-        private string PropNameWidth => GetPropNameFlexBasis(_aggregate.GetMembers().Select(p => p.PropertyName));
+        private string PropNameWidth => GetPropNameFlexBasis(_aggregate.GetMembers().Select(p => p.MemberName));
 
         private string GetRegisterName(AggregateMember.AggregateMemberBase? prop = null) {
             var path = new List<string>();
@@ -47,7 +47,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 }
             }
             if (prop != null) {
-                path.Add(prop.PropertyName);
+                path.Add(prop.MemberName);
             }
             var name = path.Join(".");
             return string.IsNullOrEmpty(name) ? string.Empty : $"`{name}`";
@@ -67,7 +67,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             return _mode switch {
                 SingleView.E_Type.Create => "",
                 SingleView.E_Type.View => readOnly,
-                SingleView.E_Type.Edit => prop.IsPrimary
+                SingleView.E_Type.Edit => prop.IsKey
                     ? $"{readOnly}={{item?.{AggregateInstanceBase.IS_LOADED}}}"
                     : $"",
                 _ => throw new NotImplementedException(),
@@ -177,7 +177,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
         #region SCHALAR PROPERTY
         private string RenderProperty(AggregateMember.Schalar schalar) {
-            if (schalar.InvisilbeInGui) {
+            if (schalar.Options.InvisibleInGui) {
                 return $$"""
                     <input type="hidden" {...register({{GetRegisterName(schalar)}})} />
                     """;
@@ -188,11 +188,11 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     <div className="flex">
                       <div className="{{PropNameWidth}}">
                         <span className="text-sm select-none opacity-80">
-                          {{schalar.PropertyName}}
+                          {{schalar.MemberName}}
                         </span>
                       </div>
                       <div className="flex-1">
-                        {{WithIndent(schalar.MemberType.RenderUI(renderer), "    ")}}
+                        {{WithIndent(schalar.Options.MemberType.RenderUI(renderer), "    ")}}
                       </div>
                     </div>
                     """;
@@ -270,7 +270,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 return _mode switch {
                     SingleView.E_Type.Create => select,
                     SingleView.E_Type.View => input,
-                    SingleView.E_Type.Edit => _prop.IsPrimary
+                    SingleView.E_Type.Edit => _prop.Options.IsKey
                         ? $$"""
                             {(item?.{{AggregateInstanceBase.IS_LOADED}})
                               ? {{WithIndent(input, "    ")}}
@@ -304,7 +304,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 <div className="flex">
                   <div className="{{PropNameWidth}}">
                     <span className="text-sm select-none opacity-80">
-                      {{refProperty.PropertyName}}
+                      {{refProperty.MemberName}}
                     </span>
                   </div>
                   <div className="flex-1">
@@ -315,11 +315,10 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         }
         private string RenderProperty(AggregateMember.Child child) {
             var childComponent = new AggregateComponent(child.MemberAggregate, _ctx, _mode);
-            var className = child.InvisilbeInGui ? "hidden" : "py-2";
             return $$"""
-                <div className="{{className}}">
+                <div className="py-2">
                   <span className="text-sm select-none opacity-80">
-                    {{child.PropertyName}}
+                    {{child.MemberName}}
                   </span>
                   <div className="flex flex-col space-y-1 p-1 border border-neutral-400">
                     {{WithIndent(childComponent.RenderCaller(), "    ")}}
@@ -330,12 +329,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         private string RenderProperty(AggregateMember.VariationItem variation) {
             var switchProp = GetRegisterName(variation.Group);
             var childComponent = new AggregateComponent(variation.MemberAggregate, _ctx, _mode);
-            var className = variation.Group.InvisilbeInGui
-                ? $"`hidden`"
-                : $"`flex flex-col space-y-1 p-1 border border-neutral-400 ${{(watch({switchProp}) !== '{variation.Key}' ? 'hidden' : '')}}`";
 
             return $$"""
-                <div className={{{className}}}>
+                <div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(watch({{switchProp}}) !== '{{variation.Key}}' ? 'hidden' : '')}`}>
                   {{WithIndent(childComponent.RenderCaller(), "  ")}}
                 </div>
                 """;
@@ -343,20 +339,19 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         private string RenderProperty(AggregateMember.Variation variationSwitch) {
             var switchProp = GetRegisterName(variationSwitch);
             var disabled = IfReadOnly("disabled", variationSwitch);
-            var className = variationSwitch.InvisilbeInGui ? "hidden" : "flex";
 
             return $$"""
-                <div className="{{className}}">
+                <div className="flex">
                   <div className="{{PropNameWidth}}">
                   <span className="text-sm select-none opacity-80">
-                    {{variationSwitch.PropertyName}}
+                    {{variationSwitch.MemberName}}
                   </span>
                   </div>
                   <div className="flex-1 flex gap-2 flex-wrap">
                 {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
                     <label>
                       <input type="radio" value="{{variation.Key}}" {{disabled}} {...register({{switchProp}})} />
-                      {{variation.PropertyName}}
+                      {{variation.MemberName}}
                     </label>
                 """)}}
                   </div>
@@ -365,12 +360,11 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         }
         private string RenderProperty(AggregateMember.Children children) {
             var childrenComponent = new AggregateComponent(children.MemberAggregate, _ctx, _mode);
-            var className = children.InvisilbeInGui ? "hidden" : "py-2";
 
             return $$"""
-                <div className="{{className}}">
+                <div className="py-2">
                   <span className="text-sm select-none opacity-80">
-                    {{children.PropertyName}}
+                    {{children.MemberName}}
                   </span>
                   <div className="flex flex-col space-y-1">
                     {{WithIndent(childrenComponent.RenderCaller(), "    ")}}

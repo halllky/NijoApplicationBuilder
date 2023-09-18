@@ -162,11 +162,11 @@ namespace HalApplicationBuilder.Core {
                     var memberId = member.TreePath.ToGraphNodeId();
                     aggregateMembers.Add(new AggregateMemberNode {
                         Id = memberId,
-                        Name = member.Name,
-                        Type = memberType,
-                        IsPrimary = member.Options.IsPrimary == true,
-                        IsInstanceName = member.Options.IsDisplayName == true,
-                        Optional = !member.Options.IsRequired == true,
+                        MemberName = member.Name,
+                        MemberType = memberType,
+                        IsKey = member.Options.IsPrimary == true,
+                        IsDisplayName = member.Options.IsDisplayName == true,
+                        IsRequired = member.Options.IsRequired == true,
                         InvisibleInGui = member.Options.InvisibleInGui == true,
                     });
                     edgesFromAggToMember.Add(new GraphEdgeInfo {

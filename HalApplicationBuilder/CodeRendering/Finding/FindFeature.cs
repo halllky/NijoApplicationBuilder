@@ -110,10 +110,10 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
             // SingleOrDefault
             var keys = _aggregate
                 .GetColumns()
-                .Where(col => col.IsPrimary)
+                .Where(col => col.Options.IsKey)
                 .SelectTextTemplate((col, i) => {
-                    var cast = col.MemberType.GetCSharpTypeName();
-                    return $"x.{col.PropertyName} == ({cast})instanceKey[{i}]";
+                    var cast = col.Options.MemberType.GetCSharpTypeName();
+                    return $"x.{col.Options.MemberName} == ({cast})instanceKey[{i}]";
                 });
 
             return $$"""

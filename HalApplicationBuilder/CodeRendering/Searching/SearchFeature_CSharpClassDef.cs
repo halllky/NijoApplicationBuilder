@@ -22,10 +22,10 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                     /// {{DisplayName}}の一覧検索処理の検索条件を表すクラスです。
                     /// </summary>
                     public partial class {{SearchConditionClassName}} : {{SEARCHCONDITION_BASE_CLASS_NAME}} {
-                {{Members.SelectTextTemplate(member => TemplateTextHelper.If(member.Type.SearchBehavior == SearchBehavior.Range, () => $$"""
-                        public {{Util.FromTo.CLASSNAME}}<{{member.Type.GetCSharpTypeName()}}> {{member.ConditionPropName}} { get; set; } = new();
+                {{Members.SelectTextTemplate(member => TemplateTextHelper.If(member.DbColumn.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
+                        public {{Util.FromTo.CLASSNAME}}<{{member.DbColumn.Options.MemberType.GetCSharpTypeName()}}> {{member.ConditionPropName}} { get; set; } = new();
                 """).Else(() => $$"""
-                        public {{member.Type.GetCSharpTypeName()}} {{member.ConditionPropName}} { get; set; }
+                        public {{member.DbColumn.Options.MemberType.GetCSharpTypeName()}} {{member.ConditionPropName}} { get; set; }
                 """))}}
                     }
 
@@ -34,7 +34,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                     /// </summary>
                     public partial class {{SearchResultClassName}} : {{SEARCHRESULT_BASE_CLASS_NAME}} {
                 {{Members.SelectTextTemplate(member => $$"""
-                        public {{member.Type.GetCSharpTypeName()}} {{member.SearchResultPropName}} { get; set; }
+                        public {{member.DbColumn.Options.MemberType.GetCSharpTypeName()}} {{member.SearchResultPropName}} { get; set; }
                 """)}}
                     }
                 }

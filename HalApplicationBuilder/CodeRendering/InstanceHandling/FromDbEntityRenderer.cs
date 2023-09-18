@@ -48,7 +48,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
                 } else if (prop is AggregateMember.ValueMember valueMember) {
                     yield return $$"""
-                        {{valueMember.PropertyName}} = {{rootInstanceName}}.{{valueMember.GetFullPath(rootInstance).Join(".")}},
+                        {{valueMember.MemberName}} = {{rootInstanceName}}.{{valueMember.GetFullPath(rootInstance).Join(".")}},
                         """;
 
                 } else if (prop is AggregateMember.Ref refProp) {
@@ -62,7 +62,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                         .Select(fullpath => $"{rootInstanceName}.{fullpath}");
 
                     yield return $$"""
-                        {{refProp.PropertyName}} = new() {
+                        {{refProp.MemberName}} = new() {
                             {{AggregateInstanceKeyNamePair.KEY}} = {{Utility.CLASSNAME}}.{{Utility.TO_JSON}}(new object?[] { {{foreignKeys.Join(", ")}} }),
                             {{AggregateInstanceKeyNamePair.NAME}} = {{names.Join(" + ")}},
                         },
@@ -75,7 +75,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     var childFullPath = children.GetFullPath(rootInstance).Join(".");
 
                     yield return $$"""
-                        {{children.PropertyName}} = {{rootInstanceName}}.{{childFullPath}}.Select({{item}} => new {{childClass}} {
+                        {{children.MemberName}} = {{rootInstanceName}}.{{childFullPath}}.Select({{item}} => new {{childClass}} {
                             {{WithIndent(RenderBody(childInstance, childInstance, item, depth + 1), "    ")}}
                         }).ToList(),
                         """;
@@ -85,7 +85,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     var childInstance = child.MemberAggregate;
 
                     yield return $$"""
-                        {{child.PropertyName}} = new {{childClass}} {
+                        {{child.MemberName}} = new {{childClass}} {
                             {{WithIndent(RenderBody(childInstance, rootInstance, rootInstanceName, depth + 1), "    ")}}
                         },
                         """;

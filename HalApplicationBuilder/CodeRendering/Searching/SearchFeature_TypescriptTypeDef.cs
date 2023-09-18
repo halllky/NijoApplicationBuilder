@@ -11,12 +11,12 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
             return $$"""
                 export type {{SearchConditionClassName}} = {
                 {{Members.SelectTextTemplate(member => $$"""
-                  {{member.ConditionPropName}}?: {{member.Type.GetTypeScriptTypeName()}}
+                  {{member.ConditionPropName}}?: {{member.DbColumn.Options.MemberType.GetTypeScriptTypeName()}}
                 """)}}
                 }
                 export type {{SearchResultClassName}} = {
                 {{Members.SelectTextTemplate(member => $$"""
-                  {{member.SearchResultPropName}}?: {{member.Type.GetTypeScriptTypeName()}}
+                  {{member.SearchResultPropName}}?: {{member.DbColumn.Options.MemberType.GetTypeScriptTypeName()}}
                 """)}}
                 }
                 """;

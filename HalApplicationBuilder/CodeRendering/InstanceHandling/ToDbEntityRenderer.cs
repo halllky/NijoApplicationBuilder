@@ -41,7 +41,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 if (prop is AggregateMember.KeyOfParent parentPK) {
                     var fullpath = context.GetValueSourceFullPath(parentPK);
                     yield return $$"""
-                        {{parentPK.GetDbColumn().PropertyName}} = {{fullpath}},
+                        {{parentPK.GetDbColumn().Options.MemberName}} = {{fullpath}},
                         """;
 
                 } else if (prop is AggregateMember.KeyOfRefTarget) {
@@ -49,7 +49,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
                 } else if (prop is AggregateMember.ValueMember valueMember) {
                     yield return $$"""
-                        {{valueMember.GetDbColumn().PropertyName}} = {{context.ValueSourceInstance}}.{{valueMember.GetFullPath(context.ValueSource).Join(".")}},
+                        {{valueMember.GetDbColumn().Options.MemberName}} = {{context.ValueSourceInstance}}.{{valueMember.GetFullPath(context.ValueSource).Join(".")}},
                         """;
 
                 } else if (prop is AggregateMember.Ref refProp) {
@@ -57,8 +57,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     var refPropFullpath = $"{context.ValueSourceInstance}.{refProp.GetFullPath(context.ValueSource).Join(".")}.{AggregateInstanceKeyNamePair.KEY}";
                     for (int i = 0; i < refTargetKeys.Length; i++) {
                         var foreignKey = refTargetKeys[i];
-                        var propertyName = foreignKey.GetDbColumn().PropertyName;
-                        var memberType = foreignKey.MemberType.GetCSharpTypeName();
+                        var propertyName = foreignKey.GetDbColumn().Options.MemberName;
+                        var memberType = foreignKey.Options.MemberType.GetCSharpTypeName();
 
                         yield return $$"""
                             {{propertyName}} = ({{memberType}}){{AggregateInstanceKeyNamePair.RenderKeyJsonRestoring(refPropFullpath)}}[{{i}}]!,
@@ -73,7 +73,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     var childDbEntityClass = $"{_ctx.Config.EntityNamespace}.{nav.Relevant.Owner.Item.EFCoreEntityClassName}";
 
                     yield return $$"""
-                        {{children.PropertyName}} = {{context.ValueSourceInstance}}.{{childProp}}.Select({{item}} => new {{childDbEntityClass}} {
+                        {{children.MemberName}} = {{context.ValueSourceInstance}}.{{childProp}}.Select({{item}} => new {{childDbEntityClass}} {
                             {{WithIndent(RenderBody(context.Nest(childInstance, item)), "    ")}}
                         }).ToList(),
                         """;
@@ -85,7 +85,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     var childDbEntityClass = $"{_ctx.Config.EntityNamespace}.{nav.Relevant.Owner.Item.EFCoreEntityClassName}";
 
                     yield return $$"""
-                        {{child.PropertyName}} = new {{childDbEntityClass}} {
+                        {{child.MemberName}} = new {{childDbEntityClass}} {
                             {{WithIndent(RenderBody(context.Nest(childInstance)), "    ")}}
                         },
                         """;

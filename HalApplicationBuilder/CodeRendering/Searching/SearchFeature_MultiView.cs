@@ -117,7 +117,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                                   </span>
                                 </div>
                                 <div className="flex-1">
-                                  {{TemplateTextHelper.WithIndent(member.Type.RenderUI(new SearchConditionUiForm(member)), "              ")}}
+                                  {{TemplateTextHelper.WithIndent(member.DbColumn.Options.MemberType.RenderUI(new SearchConditionUiForm(member)), "              ")}}
                                 </div>
                               </div>
                     """)}}
@@ -177,7 +177,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                 private readonly Member _member;
 
                 private string GetRegisterName(string? inner = null) {
-                    var list = _member.CorrespondingDbColumn.Owner
+                    var list = _member.DbColumn.Owner
                         .PathFromEntry()
                         .Select(path => path.RelationName)
                         .ToList();
@@ -190,7 +190,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                 /// 検索条件: テキストボックス
                 /// </summary>
                 public string TextBox(bool multiline = false) {
-                    if (_member.Type.SearchBehavior == SearchBehavior.Range) {
+                    if (_member.DbColumn.Options.MemberType.SearchBehavior == SearchBehavior.Range) {
                         var from = GetRegisterName(Util.FromTo.FROM);
                         var to = GetRegisterName(Util.FromTo.TO);
                         return $$"""

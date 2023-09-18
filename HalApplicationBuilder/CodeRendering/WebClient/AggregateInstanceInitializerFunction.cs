@@ -47,9 +47,9 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 .OfType<AggregateMember.ValueMember>()
                 .Where(member => member is not AggregateMember.KeyOfParent
                               && member is not AggregateMember.KeyOfRefTarget
-                              && member.MemberType is Uuid)
+                              && member.Options.MemberType is Uuid)
                 .Select(member => new {
-                    Key = member.PropertyName,
+                    Key = member.MemberName,
                     Value = "UUID.generate()",
                 });
 

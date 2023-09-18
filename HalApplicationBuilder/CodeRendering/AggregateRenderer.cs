@@ -158,7 +158,7 @@ namespace HalApplicationBuilder.CodeRendering {
             } else {
                 for (int i = 0; i < props.Length; i++) {
                     var head = i == 0 ? "return " : "    + ";
-                    yield return $"{head}this.{props[i].PropertyName}?.ToString()";
+                    yield return $"{head}this.{props[i].MemberName}?.ToString()";
                 }
                 yield return $"    ?? string.Empty;";
             }
@@ -385,7 +385,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     /// </summary>
                     public partial class {{CreateCommandClassName}} {
                 {{_aggregate.GetMembers().Where(m => m is not AggregateMember.KeyOfParent && m is not AggregateMember.KeyOfRefTarget).SelectTextTemplate(prop => $$"""
-                        public {{prop.CSharpTypeName}} {{prop.PropertyName}} { get; set; }
+                        public {{prop.CSharpTypeName}} {{prop.MemberName}} { get; set; }
                 """)}}
 
                         {{WithIndent(toDbEntity.Render(), "        ")}}
@@ -396,7 +396,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     /// </summary>
                     public partial class {{_aggregate.Item.ClassName}} : {{AggregateInstanceBase.CLASS_NAME}} {
                 {{_aggregate.GetMembers().Where(m => m is not AggregateMember.KeyOfParent && m is not AggregateMember.KeyOfRefTarget).SelectTextTemplate(prop => $$"""
-                        public {{prop.CSharpTypeName}} {{prop.PropertyName}} { get; set; }
+                        public {{prop.CSharpTypeName}} {{prop.MemberName}} { get; set; }
                 """)}}
 
                         {{WithIndent(fromDbEntity.Render(), "        ")}}
@@ -410,7 +410,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     /// </summary>
                     public partial class {{ins.Item.ClassName}} {
                 {{ins.GetMembers().Where(m => m is not AggregateMember.KeyOfParent && m is not AggregateMember.KeyOfRefTarget).SelectTextTemplate(prop => $$"""
-                        public {{prop.CSharpTypeName}} {{prop.PropertyName}} { get; set; }
+                        public {{prop.CSharpTypeName}} {{prop.MemberName}} { get; set; }
                 """)}}
                     }
                 """)}}
@@ -432,7 +432,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     /// </summary>
                     public partial class {{ett.Item.EFCoreEntityClassName}} {
                 {{ett.GetColumns().SelectTextTemplate(col => $$"""
-                        public {{col.MemberType.GetCSharpTypeName()}} {{col.PropertyName}} { get; set; }
+                        public {{col.Options.MemberType.GetCSharpTypeName()}} {{col.Options.MemberName}} { get; set; }
                 """)}}
 
                 {{EnumerateNavigationProperties(ett).SelectTextTemplate(nav => $$"""
@@ -441,8 +441,8 @@ namespace HalApplicationBuilder.CodeRendering {
 
                         /// <summary>このオブジェクトと比較対象のオブジェクトの主キーが一致するかを返します。</summary>
                         public bool {{IEFCoreEntity.KEYEQUALS}}({{ett.Item.EFCoreEntityClassName}} entity) {
-                {{ett.GetColumns().Where(c => c.IsPrimary).SelectTextTemplate(col => $$"""
-                            if (entity.{{col.PropertyName}} != this.{{col.PropertyName}}) return false;
+                {{ett.GetColumns().Where(c => c.Options.IsKey).SelectTextTemplate(col => $$"""
+                            if (entity.{{col.Options.MemberName}} != this.{{col.Options.MemberName}}) return false;
                 """)}}
                             return true;
                         }

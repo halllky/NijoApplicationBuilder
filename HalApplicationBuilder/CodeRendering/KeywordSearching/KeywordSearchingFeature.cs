@@ -58,14 +58,14 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
             var members = _aggregate
                 .GetMembers()
                 .OfType<AggregateMember.ValueMember>()
-                .Where(member => member.IsPrimary || member.IsInstanceName)
+                .Where(member => member.IsKey || member.IsDisplayName)
                 .Select(item => new {
-                    item.IsPrimary,
-                    item.IsInstanceName,
-                    QueryResultPropertyName = item.PropertyName,
-                    QueryResultPropertyNameAsString = item.MemberType.GetCSharpTypeName() == "string"
-                        ? item.PropertyName
-                        : $"{item.PropertyName}.ToString()",
+                    item.IsKey,
+                    item.IsDisplayName,
+                    QueryResultPropertyName = item.MemberName,
+                    QueryResultPropertyNameAsString = item.Options.MemberType.GetCSharpTypeName() == "string"
+                        ? item.MemberName
+                        : $"{item.MemberName}.ToString()",
                     EFCorePropertyFullPath = item.GetDbColumn().GetFullPath(_aggregate.As<IEFCoreEntity>()).Join("."),
                 })
                 .ToArray();
@@ -82,10 +82,10 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                     : $".ThenBy(item => item.{x.QueryResultPropertyName})");
 
             var instanceKey = AggregateInstanceKeyNamePair.RenderKeyJsonConverting(members
-                .Where(x => x.IsPrimary)
+                .Where(x => x.IsKey)
                 .Select(x => $"item.{x.QueryResultPropertyName}"));
             var instanceName = members
-                .Where(x => x.IsInstanceName)
+                .Where(x => x.IsDisplayName)
                 .Select(x => $"item.{x.QueryResultPropertyNameAsString}").Join(" + ");
 
             return $$"""

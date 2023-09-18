@@ -43,14 +43,14 @@ namespace HalApplicationBuilder.CodeRendering.EFCore {
                 modelBuilder.Entity<{{_ctx.Config.EntityNamespace}}.{{dbEntity.Item.ClassName}}>(entity => {
             
                     entity.HasKey(e => new {
-                {{dbEntity.GetColumns().Where(x => x.IsPrimary).SelectTextTemplate(pk => $$"""
-                        e.{{pk.PropertyName}},
+                {{dbEntity.GetColumns().Where(x => x.Options.IsKey).SelectTextTemplate(pk => $$"""
+                        e.{{pk.Options.MemberName}},
                 """)}}
                     });
             
                 {{dbEntity.GetColumns().SelectTextTemplate(col => $$"""
-                    entity.Property(e => e.{{col.PropertyName}})
-                        .IsRequired({{(col.RequiredAtDB ? "true" : "false")}});
+                    entity.Property(e => e.{{col.Options.MemberName}})
+                        .IsRequired({{(col.Options.IsRequired ? "true" : "false")}});
                 """)}}
 
                 {{If(dbEntity.Item is Aggregate, () => $$"""
@@ -87,7 +87,7 @@ namespace HalApplicationBuilder.CodeRendering.EFCore {
                     yield return $"    .HasForeignKey(e => new {{";
                 }
                 foreach (var fk in nav.Relevant.GetForeignKeys()) {
-                    yield return $"        e.{fk.PropertyName},";
+                    yield return $"        e.{fk.Options.MemberName},";
                 }
                 yield return $"    }})";
 

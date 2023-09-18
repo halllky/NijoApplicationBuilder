@@ -10,7 +10,7 @@ namespace HalApplicationBuilder.Core {
     internal interface IEFCoreEntity : IGraphNode {
         internal string ClassName { get; }
         internal string DbSetName { get; }
-        internal IList<DbColumnWithoutOwner> SchalarMembersNotRelatedToAggregate { get; }
+        internal IList<IReadOnlyMemberOptions> SchalarMembersNotRelatedToAggregate { get; }
 
 
         internal const string KEYEQUALS = "KeyEquals";

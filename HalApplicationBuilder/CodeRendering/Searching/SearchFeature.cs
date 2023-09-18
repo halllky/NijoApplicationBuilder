@@ -52,31 +52,29 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                         .Concat(entity.GetRefEdge().Where(edge => edge.IsPrimary()).Select(edge => edge.Terminal)))
                     .SelectMany(entity => entity.GetColumns())
                     .Select(col => new Member {
-                        CorrespondingDbColumn = col,
-                        IsInstanceKey = col.IsPrimary && col.Owner == DbEntity,
-                        IsInstanceName = col.IsInstanceName && col.Owner == DbEntity,
-                        Type = col.MemberType,
+                        DbColumn = col,
+                        IsInstanceKey = col.Options.IsKey && col.Owner == DbEntity,
+                        IsInstanceName = col.Options.IsDisplayName && col.Owner == DbEntity,
                         ConditionPropName = col.Owner
                             .PathFromEntry()
                             .Select(edge => edge.RelationName)
-                            .Concat(new[] { col.PropertyName })
+                            .Concat(new[] { col.Options.MemberName })
                             .Join("_"),
                         SearchResultPropName = col.Owner
                             .PathFromEntry()
                             .Select(edge => edge.RelationName)
-                            .Concat(new[] { col.PropertyName })
+                            .Concat(new[] { col.Options.MemberName })
                             .Join("_"),
                     })
                     .ToArray();
                 return _members;
             }
         }
-        private IEnumerable<Member> VisibleMembers => Members.Where(m => !m.CorrespondingDbColumn.InvisibleInGui);
+        private IEnumerable<Member> VisibleMembers => Members.Where(m => !m.DbColumn.Options.InvisibleInGui);
         internal class Member {
             internal required string ConditionPropName { get; init; }
             internal required string SearchResultPropName { get; init; }
-            internal required DbColumn CorrespondingDbColumn { get; init; }
-            internal required IAggregateMemberType Type { get; init; }
+            internal required DbColumn DbColumn { get; init; }
             internal required bool IsInstanceKey { get; init; }
             internal required bool IsInstanceName { get; init; }
         }
