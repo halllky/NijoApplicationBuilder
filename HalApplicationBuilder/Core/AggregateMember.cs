@@ -17,6 +17,7 @@ namespace HalApplicationBuilder.Core {
         internal required bool IsPrimary { get; init; }
         internal required bool IsInstanceName { get; init; }
         internal required bool Optional { get; init; }
+        internal required bool InvisibleInGui { get; init; }
 
         public override string ToString() => Id.Value;
     }
@@ -91,6 +92,7 @@ namespace HalApplicationBuilder.Core {
             internal abstract string PropertyName { get; }
             internal abstract string CSharpTypeName { get; }
             internal abstract string TypeScriptTypename { get; }
+            internal abstract bool InvisilbeInGui { get; }
 
             internal virtual IEnumerable<string> GetFullPath(GraphNode<Aggregate>? since = null) {
                 var skip = since != null;
@@ -124,6 +126,7 @@ namespace HalApplicationBuilder.Core {
             }
             internal GraphEdge<Aggregate> Relation { get; }
             internal GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
+            internal override bool InvisilbeInGui => Relation.InvisibleInGui();
             internal NavigationProperty GetNavigationProperty() {
                 return new NavigationProperty(Relation);
             }
@@ -146,6 +149,7 @@ namespace HalApplicationBuilder.Core {
             internal override bool IsPrimary => _node.Item.IsPrimary;
             internal override bool IsInstanceName => _node.Item.IsInstanceName;
             internal override bool RequiredAtDB => _node.Item.IsPrimary || !_node.Item.Optional;
+            internal override bool InvisilbeInGui => _node.Item.InvisibleInGui;
             internal override IAggregateMemberType MemberType => _node.Item.Type;
 
             internal override DbColumn.DbColumnBase GetDbColumn() {
@@ -185,6 +189,7 @@ namespace HalApplicationBuilder.Core {
             internal override bool IsPrimary => _group.IsPrimary;
             internal override bool IsInstanceName => _group.IsInstanceName;
             internal override bool RequiredAtDB => _group.IsPrimary || _group.RequiredAtDB;
+            internal override bool InvisilbeInGui => _group.InvisibleInGui;
             internal override IAggregateMemberType MemberType { get; } = new AggregateMemberTypes.VariationSwitch();
 
             internal override DbColumn.DbColumnBase GetDbColumn() {
@@ -241,6 +246,7 @@ namespace HalApplicationBuilder.Core {
             internal override bool IsPrimary => _refMember.IsPrimary;
             internal override bool IsInstanceName => _refMember.IsInstanceName;
             internal override bool RequiredAtDB => _refMember.RequiredAtDB;
+            internal override bool InvisilbeInGui => _refMember.InvisilbeInGui;
             internal override IAggregateMemberType MemberType => _refTargetMember.MemberType;
             internal override GraphNode<Aggregate> Owner => _refMember.Owner;
             internal override string PropertyName => $"{_refMember.PropertyName}_{_refTargetMember.PropertyName}";
@@ -266,6 +272,7 @@ namespace HalApplicationBuilder.Core {
             internal override bool IsPrimary => true;
             internal override bool IsInstanceName => false;
             internal override bool RequiredAtDB => true;
+            internal override bool InvisilbeInGui => Original.InvisilbeInGui;
             internal override IAggregateMemberType MemberType => Original.MemberType;
             internal override GraphNode<Aggregate> Owner => _childAggregate;
             internal override string PropertyName => $"{Original.Owner.Item.ClassName}_{Original.PropertyName}";

@@ -227,6 +227,15 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                         </select>
                         """;
                 }
+                /// <summary>
+                /// 検索条件: 隠しフィールド
+                /// </summary>
+                public string HiddenField() {
+                    var name = GetRegisterName();
+                    return $$"""
+                        <input type="hidden" {...register('{{name}}')} />
+                        """;
+                }
             }
         }
     }

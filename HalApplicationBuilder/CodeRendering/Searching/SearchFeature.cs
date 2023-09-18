@@ -51,6 +51,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                     .SelectThisAndUntil(entity => entity.GetChildEdges().Select(edge => edge.Terminal)
                         .Concat(entity.GetRefEdge().Where(edge => edge.IsPrimary()).Select(edge => edge.Terminal)))
                     .SelectMany(entity => entity.GetColumns())
+                    .Where(col => !col.InvisibleInGui)
                     .Select(col => new Member {
                         CorrespondingDbColumn = col,
                         IsInstanceKey = col.IsPrimary && col.Owner == DbEntity,

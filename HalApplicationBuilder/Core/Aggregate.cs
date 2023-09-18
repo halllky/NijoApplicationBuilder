@@ -7,9 +7,10 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Core {
     internal class Aggregate : ValueObject, IEFCoreEntity {
-        internal Aggregate(TreePath path) {
+        internal Aggregate(TreePath path, AggregateBuildOption options) {
             Id = path.ToGraphNodeId();
             _path = path;
+            Options = options;
         }
 
         public NodeId Id { get; }
@@ -24,6 +25,8 @@ namespace HalApplicationBuilder.Core {
         string IEFCoreEntity.ClassName => EFCoreEntityClassName;
         public string DbSetName => EFCoreEntityClassName;
         public IList<DbColumn.ColumnInfo> SchalarMembersNotRelatedToAggregate { get; } = new List<DbColumn.ColumnInfo>();
+
+        internal AggregateBuildOption Options { get; }
 
         protected override IEnumerable<object?> ValueObjectIdentifiers() {
             yield return Id;

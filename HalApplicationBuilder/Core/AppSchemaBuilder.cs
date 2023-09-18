@@ -37,6 +37,7 @@ namespace HalApplicationBuilder.Core {
             var aggregateDefs = _aggregates
                 .Select(aggregate => new {
                     TreePath = aggregate.Key,
+                    Options = aggregate.Value,
                     Members = _aggregateMembers
                         .Where(member => member.Key.Parent == aggregate.Key)
                         .Select(member => new {
@@ -45,7 +46,6 @@ namespace HalApplicationBuilder.Core {
                             Options = member.Value,
                         })
                         .ToArray(),
-                    Options = aggregate.Value,
                 })
                 .ToArray();
 
@@ -61,6 +61,7 @@ namespace HalApplicationBuilder.Core {
                         { DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH, aggregate.Options.IsVariationGroupMember?.Key ?? string.Empty },
                         { DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, aggregate.Options.IsVariationGroupMember?.GroupName ?? string.Empty },
                         { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, aggregate.Options.IsPrimary == true },
+                        { DirectedEdgeExtensions.REL_ATTR_INVISIBLE_IN_GUI, aggregate.Options.InvisibleInGui == true },
                     },
                 });
             var refs = aggregateDefs
@@ -75,6 +76,7 @@ namespace HalApplicationBuilder.Core {
                         { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, x.member.Options.IsPrimary == true },
                         { DirectedEdgeExtensions.REL_ATTR_IS_INSTANCE_NAME, x.member.Options.IsDisplayName == true },
                         { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, x.member.Options.IsRequired == true },
+                        { DirectedEdgeExtensions.REL_ATTR_INVISIBLE_IN_GUI, x.member.Options.InvisibleInGui == true },
                     },
                 });
             var relationDefs = parentAndChild.Concat(refs);
@@ -163,6 +165,7 @@ namespace HalApplicationBuilder.Core {
                         IsPrimary = member.Options.IsPrimary == true,
                         IsInstanceName = member.Options.IsDisplayName == true,
                         Optional = !member.Options.IsRequired == true,
+                        InvisibleInGui = member.Options.InvisibleInGui == true,
                     });
                     edgesFromAggToMember.Add(new GraphEdgeInfo {
                         Initial = aggregateId,
@@ -175,7 +178,7 @@ namespace HalApplicationBuilder.Core {
                 }
 
                 if (successToParse) {
-                    aggregates.Add(aggregateId, new Aggregate(aggregate.TreePath));
+                    aggregates.Add(aggregateId, new Aggregate(aggregate.TreePath, aggregate.Options));
                 }
             }
 
@@ -240,6 +243,7 @@ namespace HalApplicationBuilder.Core {
         public bool? IsPrimary { get; set; }
         public bool? IsArray { get; set; }
         public GroupOption? IsVariationGroupMember { get; set; }
+        public bool? InvisibleInGui { get; set; }
 
         public sealed class GroupOption {
             public required string GroupName { get; init; }
@@ -252,6 +256,7 @@ namespace HalApplicationBuilder.Core {
         public bool? IsDisplayName { get; set; }
         public bool? IsRequired { get; set; }
         public string? IsReferenceTo { get; set; }
+        public bool? InvisibleInGui { get; set; }
     }
     public sealed class EnumValueOption {
         public string Name { get; set; } = string.Empty;
@@ -273,6 +278,7 @@ namespace HalApplicationBuilder.Core {
         internal const string REL_ATTR_IS_PRIMARY = "is-primary";
         internal const string REL_ATTR_IS_INSTANCE_NAME = "is-instance-name";
         internal const string REL_ATTR_IS_REQUIRED = "is-required";
+        internal const string REL_ATTR_INVISIBLE_IN_GUI = "invisible-in-gui";
 
         // ----------------------------- GraphNode extensions -----------------------------
 
@@ -443,6 +449,9 @@ namespace HalApplicationBuilder.Core {
         internal static bool IsRequired(this GraphEdge graphEdge) {
             return graphEdge.Attributes.TryGetValue(REL_ATTR_IS_REQUIRED, out var bln) && (bool)bln;
         }
+        internal static bool InvisibleInGui(this GraphEdge graphEdge) {
+            return graphEdge.Attributes.TryGetValue(REL_ATTR_INVISIBLE_IN_GUI, out var bln) && (bool)bln;
+        }
         internal static bool IsRef(this GraphEdge graphEdge) {
             return graphEdge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                 && (string)type == REL_ATTRVALUE_REFERENCE;
@@ -456,5 +465,6 @@ namespace HalApplicationBuilder.Core {
         internal bool IsPrimary => VariationAggregates.First().Value.IsPrimary();
         internal bool IsInstanceName => VariationAggregates.First().Value.IsInstanceName();
         internal bool RequiredAtDB => VariationAggregates.First().Value.IsRequired();
+        internal bool InvisibleInGui => VariationAggregates.First().Value.InvisibleInGui();
     }
 }

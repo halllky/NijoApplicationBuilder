@@ -35,6 +35,7 @@ namespace HalApplicationBuilder.Core {
             internal abstract bool IsPrimary { get; }
             internal abstract bool IsInstanceName { get; }
             internal abstract bool RequiredAtDB { get; }
+            internal abstract bool InvisibleInGui { get; }
 
             internal IEnumerable<string> GetFullPath(GraphNode<IEFCoreEntity>? since = null) {
                 var skip = since != null;
@@ -63,6 +64,7 @@ namespace HalApplicationBuilder.Core {
             public required bool IsInstanceName { get; init; }
             public required IAggregateMemberType MemberType { get; init; }
             public bool RequiredAtDB { get; init; }
+            public bool InvisibleInGui { get; init; }
         }
         internal class NonAggregateMemberColumn : DbColumnBase {
             internal NonAggregateMemberColumn(GraphNode<IEFCoreEntity> owner, ColumnInfo definition) {
@@ -77,6 +79,7 @@ namespace HalApplicationBuilder.Core {
             internal override bool IsPrimary => _definition.IsPrimary;
             internal override bool IsInstanceName => _definition.IsInstanceName;
             internal override bool RequiredAtDB => _definition.RequiredAtDB;
+            internal override bool InvisibleInGui => _definition.InvisibleInGui;
         }
 
         internal class AggregateMemberColumn : DbColumnBase {
@@ -91,6 +94,7 @@ namespace HalApplicationBuilder.Core {
             internal override bool IsPrimary => _schalarProperty.IsPrimary;
             internal override bool IsInstanceName => _schalarProperty.IsInstanceName;
             internal override bool RequiredAtDB => _schalarProperty.IsPrimary || _schalarProperty.RequiredAtDB;
+            internal override bool InvisibleInGui => _schalarProperty.InvisilbeInGui;
         }
         internal class ParentTablePKColumn : DbColumnBase {
             internal ParentTablePKColumn(GraphNode<IEFCoreEntity> owner, DbColumnBase parentColumn) {
@@ -105,6 +109,7 @@ namespace HalApplicationBuilder.Core {
             internal override bool IsPrimary => true;
             internal override bool IsInstanceName => Original.IsInstanceName;
             internal override bool RequiredAtDB => true;
+            internal override bool InvisibleInGui => Original.InvisibleInGui;
         }
         internal class RefTargetTablePKColumn : DbColumnBase {
             internal RefTargetTablePKColumn(AggregateMember.Ref refMember, DbColumnBase refTargetColumn) {
@@ -120,6 +125,7 @@ namespace HalApplicationBuilder.Core {
             internal override bool IsPrimary => _refMember.IsPrimary;
             internal override bool IsInstanceName => _refMember.IsInstanceName;
             internal override bool RequiredAtDB => _refMember.RequiredAtDB;
+            internal override bool InvisibleInGui => _refMember.InvisilbeInGui;
         }
         internal class VariationTypeColumn : DbColumnBase {
             internal VariationTypeColumn(AggregateMember.Variation variationGroup) {
@@ -133,6 +139,7 @@ namespace HalApplicationBuilder.Core {
             internal override bool IsInstanceName => _variationGroup.IsInstanceName;
             internal override bool IsPrimary => _variationGroup.IsPrimary;
             internal override bool RequiredAtDB => _variationGroup.IsPrimary || _variationGroup.RequiredAtDB;
+            internal override bool InvisibleInGui => _variationGroup.InvisilbeInGui;
         }
     }
 }
