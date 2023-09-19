@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<自動テストで作成されたプロジェクト>
+  <メイン is="master-data">
+    <ID is="uuid" />
+    <メイン名称 is="name" />
+
+    <自身のキーを持たないメイン子配列 is="array">
+      <整数 is="int" />
+    </自身のキーを持たないメイン子配列>
+
+    <自身のキーを持つメイン子配列 is="array">
+      <子配列自身のキー is="key int" />
+      <整数 is="int" />
+    </自身のキーを持つメイン子配列>
+  </メイン>
+
+  <主キーがRef is="master-data">
+    <メイン is="ref-to:メイン key" />
+    <名前 is="name" />
+  </主キーがRef>
+
+  <主キーの一部がRef is="master-data">
+    <メイン is="ref-to:メイン key" />
+    <自身のID is="uuid" />
+    <名前 is="name" />
+  </主キーの一部がRef>
+
+  <主キーが複数あり全部Ref is="master-data">
+    <メイン is="ref-to:メイン key" />
+    <メインB is="ref-to:メインB key" />
+    <自身のID is="uuid" />
+    <名前 is="name" />
+  </主キーが複数あり全部Ref>
+  <メインB is="master-data">
+    <ID is="uuid" />
+    <メインB名称 is="name" />
+  </メインB>
+
+  <集約の子に対するRefその1 is="master-data">
+    <メインの子 is="ref-to:メイン/自身のキーを持たないメイン子配列 key" />
+    <名前 is="name" />
+  </集約の子に対するRefその1>
+
+  <集約の子に対するRefその2 is="master-data">
+    <メインの子 is="ref-to:メイン/自身のキーを持つメイン子配列 key" />
+    <名前 is="name" />
+  </集約の子に対するRefその2>
+
+</自動テストで作成されたプロジェクト>
