@@ -17,8 +17,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         internal override string ClassName => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}CreateCommand";
 
         internal override string RenderCSharp(CodeRenderingContext ctx) {
-            var toDbEntity = new ToDbEntityRenderer(_aggregate, ctx);
-
             return $$"""
                 namespace {{ctx.Config.RootNamespace}} {
                     using System;
@@ -34,7 +32,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                         public {{prop.CSharpTypeName}} {{prop.MemberName}} { get; set; }
                 """)}}
 
-                        {{WithIndent(toDbEntity.Render(), "        ")}}
+                        {{WithIndent(ToDbEntity(ctx), "        ")}}
                     }
                 }
                 """;

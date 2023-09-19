@@ -66,7 +66,7 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
                 
                             if (entity == null) return null;
                 
-                            var aggregateInstance = {{_aggregate.Item.ClassName}}.{{FromDbEntityRenderer.METHODNAME}}(entity);
+                            var aggregateInstance = {{_aggregate.Item.ClassName}}.{{AggregateDetail.FROM_DBENTITY}}(entity);
                             return aggregateInstance;
                         }
                     }

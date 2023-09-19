@@ -170,8 +170,6 @@ namespace HalApplicationBuilder.CodeRendering {
             var controller = new WebClient.Controller(_aggregate.Item, _ctx);
             var search = new Searching.SearchFeature(_aggregate.As<IEFCoreEntity>(), _ctx);
             var find = new Finding.FindFeature(_aggregate, _ctx);
-            var toDbEntity = new ToDbEntityRenderer(_aggregate, _ctx);
-            var fromDbEntity = new FromDbEntityRenderer(_aggregate, _ctx);
 
             return $$"""
                 #pragma warning disable CS8600 // Null リテラルまたは Null の可能性がある値を Null 非許容型に変換しています。
@@ -206,7 +204,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
                     partial class {{_ctx.Config.DbContextName}} {
                         public bool {{_create.MethodName}}({{CreateCommandClassName}} command, out {{_aggregate.Item.ClassName}} created, out ICollection<string> errors) {
-                            var dbEntity = command.{{ToDbEntityRenderer.METHODNAME}}();
+                            var dbEntity = command.{{AggregateDetail.TO_DBENTITY}}();
                             this.Add(dbEntity);
 
                             try {
@@ -294,7 +292,7 @@ namespace HalApplicationBuilder.CodeRendering {
                                 return false;
                             }
 
-                            var afterDbEntity = after.{{ToDbEntityRenderer.METHODNAME}}();
+                            var afterDbEntity = after.{{AggregateDetail.TO_DBENTITY}}();
 
                             // Attach
                             this.Entry(afterDbEntity).State = EntityState.Modified;
