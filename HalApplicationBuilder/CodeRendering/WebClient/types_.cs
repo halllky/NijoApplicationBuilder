@@ -1,13 +1,11 @@
-using HalApplicationBuilder.CodeRendering.Presentation;
+using HalApplicationBuilder.CodeRendering.InstanceHandling;
 using HalApplicationBuilder.Core;
-using HalApplicationBuilder.DotnetEx;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static HalApplicationBuilder.CodeRendering.TemplateTextHelper;
 
 namespace HalApplicationBuilder.CodeRendering.WebClient {
     partial class types : TemplateBase {
@@ -27,7 +25,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
                 {{_ctx.Schema.RootAggregates().SelectTextTemplate(root => $$"""
                 // ------------------ {{root.Item.DisplayName}} ------------------
-                {{root.EnumerateThisAndDescendants().SelectTextTemplate(Render)}}
+                {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new AggregateDetail(aggregate).RenderTypeScript(_ctx))}}
 
                 {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new AggregateInstanceInitializerFunction(aggregate).Render())}}
 
@@ -35,31 +33,6 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
                 """)}}
                 """;
-        }
-
-        private string Render(GraphNode<Aggregate> aggregate) {
-            if (aggregate.IsRoot()) {
-                return $$"""
-                    export type {{aggregate.Item.TypeScriptTypeName}} = {
-                    {{aggregate.GetMembers().Where(m => m is not AggregateMember.KeyOfParent && m is not AggregateMember.KeyOfRefTarget).SelectTextTemplate(m => $$"""
-                      {{m.MemberName}}?: {{m.TypeScriptTypename}}
-                    """)}}
-                      {{AggregateInstanceBase.INSTANCE_KEY}}?: string
-                      {{AggregateInstanceBase.INSTANCE_NAME}}?: string
-                      {{AggregateInstanceBase.IS_LOADED}}?: boolean
-                    }
-                    """;
-
-            } else {
-                return $$"""
-                   export type {{aggregate.Item.TypeScriptTypeName}} = {
-                   {{aggregate.GetMembers().Where(m => m is not AggregateMember.KeyOfParent && m is not AggregateMember.KeyOfRefTarget).SelectTextTemplate(m => $$"""
-                     {{m.MemberName}}?: {{m.TypeScriptTypename}}
-                   """)}}
-                     {{AggregateInstanceBase.IS_LOADED}}?: boolean
-                   }
-                   """;
-            }
         }
     }
 }

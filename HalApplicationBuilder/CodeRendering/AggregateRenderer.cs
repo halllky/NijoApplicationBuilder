@@ -146,7 +146,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
 
         #region AGGREGATE INSTANCE & CREATE COMMAND
-        private string CreateCommandClassName => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}CreateCommand";
+        private string CreateCommandClassName => new AggregateCreateCommand(_aggregate).ClassName;
 
         private IEnumerable<string> GetInstanceNameProps() {
             var keys = _aggregate.GetKeyMembers().ToArray();
@@ -374,50 +374,11 @@ namespace HalApplicationBuilder.CodeRendering {
 
 
                 #region データ構造
-                namespace {{_ctx.Config.RootNamespace}} {
-                    using System;
-                    using System.Collections;
-                    using System.Collections.Generic;
-                    using System.Linq;
-
-                    /// <summary>
-                    /// {{_aggregate.Item.DisplayName}}のデータ作成コマンドです。
-                    /// </summary>
-                    public partial class {{CreateCommandClassName}} {
-                {{_aggregate.GetMembers().Where(m => m is not AggregateMember.KeyOfParent && m is not AggregateMember.KeyOfRefTarget).SelectTextTemplate(prop => $$"""
-                        public {{prop.CSharpTypeName}} {{prop.MemberName}} { get; set; }
-                """)}}
-
-                        {{WithIndent(toDbEntity.Render(), "        ")}}
-                    }
-
-                    /// <summary>
-                    /// {{_aggregate.Item.DisplayName}}のデータ1件の詳細を表すクラスです。
-                    /// </summary>
-                    public partial class {{_aggregate.Item.ClassName}} : {{AggregateInstanceBase.CLASS_NAME}} {
-                {{_aggregate.GetMembers().Where(m => m is not AggregateMember.KeyOfParent && m is not AggregateMember.KeyOfRefTarget).SelectTextTemplate(prop => $$"""
-                        public {{prop.CSharpTypeName}} {{prop.MemberName}} { get; set; }
-                """)}}
-
-                        {{WithIndent(fromDbEntity.Render(), "        ")}}
-
-                        {{WithIndent(toDbEntity.Render(), "        ")}}
-                    }
-
-                {{_aggregate.EnumerateDescendants().SelectTextTemplate(ins => $$"""
-                    /// <summary>
-                    /// {{ins.Item.DisplayName}}のデータ1件の詳細を表すクラスです。
-                    /// </summary>
-                    public partial class {{ins.Item.ClassName}} {
-                {{ins.GetMembers().Where(m => m is not AggregateMember.KeyOfParent && m is not AggregateMember.KeyOfRefTarget).SelectTextTemplate(prop => $$"""
-                        public {{prop.CSharpTypeName}} {{prop.MemberName}} { get; set; }
-                """)}}
-                    }
-                """)}}
-                }
+                {{new AggregateCreateCommand(_aggregate).RenderCSharp(_ctx)}}
+                {{new AggregateDetail(_aggregate).RenderCSharp(_ctx)}}
+                {{_aggregate.EnumerateDescendants().SelectTextTemplate(ins => new AggregateDetail(ins).RenderCSharp(_ctx))}}
 
                 {{search.RenderCSharpClassDef()}}
-
                 namespace {{_ctx.Config.EntityNamespace}} {
                     using System;
                     using System.Collections;
