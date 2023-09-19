@@ -24,7 +24,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         private readonly SingleView.E_Type _mode;
 
         private string ComponentName => $"{_aggregate.Item.TypeScriptTypeName}View";
-        private string PropNameWidth => GetPropNameFlexBasis(_aggregate.GetMembers().Select(p => p.MemberName));
+        private string PropNameWidth => GetPropNameFlexBasis(new AggregateDetail(_aggregate).GetAggregateDetailMembers().Select(p => p.MemberName));
 
         private string GetRegisterName(AggregateMember.AggregateMemberBase? prop = null) {
             var path = new List<string>();
@@ -82,9 +82,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             return $"<{ComponentName}{args} />";
         }
         internal string Render() {
-            var layout = _aggregate.GetMembers().SelectTextTemplate(prop => prop switch {
-                AggregateMember.KeyOfParent => string.Empty,
-                AggregateMember.KeyOfRefTarget => string.Empty,
+            var layout = new AggregateDetail(_aggregate).GetAggregateDetailMembers().SelectTextTemplate(prop => prop switch {
                 AggregateMember.Schalar x => RenderProperty(x),
                 AggregateMember.Ref x => RenderProperty(x),
                 AggregateMember.Child x => RenderProperty(x),

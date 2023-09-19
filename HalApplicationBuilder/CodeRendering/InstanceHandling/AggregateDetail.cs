@@ -21,8 +21,11 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         internal const string FROM_DBENTITY = "FromDbEntity";
         internal const string TO_DBENTITY = "ToDbEntity";
 
-        internal virtual IEnumerable<AggregateMember.AggregateMemberBase> GetMembers() {
-            return _aggregate
+        internal IEnumerable<AggregateMember.AggregateMemberBase> GetAggregateDetailMembers() {
+            return GetAggregateDetailMembersOf(_aggregate);
+        }
+        protected virtual IEnumerable<AggregateMember.AggregateMemberBase> GetAggregateDetailMembersOf(GraphNode<Aggregate> aggregate) {
+            return aggregate
                 .GetMembers()
                 .Where(m => m is not AggregateMember.KeyOfParent
                          && m is not AggregateMember.KeyOfRefTarget);
@@ -40,7 +43,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     /// {{_aggregate.Item.DisplayName}}のデータ1件の詳細を表すクラスです。
                     /// </summary>
                     public partial class {{ClassName}} : {{AggregateInstanceBase.CLASS_NAME}} {
-                {{GetMembers().SelectTextTemplate(prop => $$"""
+                {{GetAggregateDetailMembers().SelectTextTemplate(prop => $$"""
                         public {{prop.CSharpTypeName}} {{prop.MemberName}} { get; set; }
                 """)}}
 
@@ -56,7 +59,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         internal virtual string RenderTypeScript(CodeRenderingContext ctx) {
             return $$"""
                 export type {{_aggregate.Item.TypeScriptTypeName}} = {
-                {{GetMembers().SelectTextTemplate(m => $$"""
+                {{GetAggregateDetailMembers().SelectTextTemplate(m => $$"""
                   {{m.MemberName}}?: {{m.TypeScriptTypename}}
                 """)}}
                 {{If(_aggregate.IsRoot(), () => $$"""
@@ -86,7 +89,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 """;
         }
         private IEnumerable<string> RenderBodyOfFromDbEntity(GraphNode<Aggregate> instance, GraphNode<Aggregate> rootInstance, string rootInstanceName, int depth) {
-            foreach (var prop in instance.GetMembers()) {
+            foreach (var prop in GetAggregateDetailMembersOf(instance)) {
                 if (prop is AggregateMember.KeyOfParent) {
                     continue; // 不要
 
@@ -161,7 +164,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 """;
         }
         private IEnumerable<string> RenderBodyOfToDbEntity(BodyRenderingContext context) {
-            foreach (var prop in context.RenderingAggregate.GetMembers()) {
+            foreach (var prop in GetAggregateDetailMembersOf(context.RenderingAggregate)) {
                 if (prop is AggregateMember.KeyOfParent parentPK) {
                     var fullpath = context.GetValueSourceFullPath(parentPK);
                     yield return $$"""

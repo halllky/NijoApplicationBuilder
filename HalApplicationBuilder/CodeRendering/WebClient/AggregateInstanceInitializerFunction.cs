@@ -1,3 +1,4 @@
+using HalApplicationBuilder.CodeRendering.InstanceHandling;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.Core.AggregateMemberTypes;
 using HalApplicationBuilder.DotnetEx;
@@ -42,12 +43,10 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     Key = group.GroupName,
                     Value = $"'{group.VariationAggregates.First().Key}'",
                 });
-            var uuid = _instance
-                .GetMembers()
+            var uuid = new AggregateDetail(_instance)
+                .GetAggregateDetailMembers()
                 .OfType<AggregateMember.ValueMember>()
-                .Where(member => member is not AggregateMember.KeyOfParent
-                              && member is not AggregateMember.KeyOfRefTarget
-                              && member.Options.MemberType is Uuid)
+                .Where(member => member.Options.MemberType is Uuid)
                 .Select(member => new {
                     Key = member.MemberName,
                     Value = "UUID.generate()",
