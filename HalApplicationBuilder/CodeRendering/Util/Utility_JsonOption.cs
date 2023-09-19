@@ -99,7 +99,7 @@ namespace HalApplicationBuilder.CodeRendering.Util {
                             }
 
                             var converted = builder.ToString();
-                            return string.IsNullOrEmpty() ? null : int.Parse(converted);
+                            return string.IsNullOrEmpty(converted) ? null : int.Parse(converted);
                         }
                     
                         public override void Write(Utf8JsonWriter writer, int? value, JsonSerializerOptions options) {
