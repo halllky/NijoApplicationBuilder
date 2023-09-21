@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.CodeRendering.Util {
+    [Obsolete]
     partial class AggregateInstanceKeyNamePair : TemplateBase {
         internal AggregateInstanceKeyNamePair(Config config) {
             _namespace = config.RootNamespace;

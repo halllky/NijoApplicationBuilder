@@ -48,6 +48,13 @@ namespace HalApplicationBuilder.DotnetEx {
 
             return totalWidth;
         }
+
+        /// <summary>
+        /// C#の型名を表す文字列の末尾に"?"をつける
+        /// </summary>
+        internal static string ToNullable(this string str) {
+            return str.EndsWith("?") ? str : (str + "?");
+        }
     }
 }
 

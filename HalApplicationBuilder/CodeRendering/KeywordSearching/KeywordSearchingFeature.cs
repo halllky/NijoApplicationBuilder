@@ -60,6 +60,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                 .OfType<AggregateMember.ValueMember>()
                 .Where(member => member.IsKey || member.IsDisplayName)
                 .Select(item => new {
+                    MemberName = item is AggregateMember.KeyOfRefTarget refTarget ? refTarget.Original.MemberName : item.MemberName,
                     item.IsKey,
                     item.IsDisplayName,
                     QueryResultPropertyName = item.MemberName,
@@ -81,12 +82,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                     ? $".OrderBy(item => item.{x.QueryResultPropertyName})"
                     : $".ThenBy(item => item.{x.QueryResultPropertyName})");
 
-            var instanceKey = AggregateInstanceKeyNamePair.RenderKeyJsonConverting(members
-                .Where(x => x.IsKey)
-                .Select(x => $"item.{x.QueryResultPropertyName}"));
-            var instanceName = members
-                .Where(x => x.IsDisplayName)
-                .Select(x => $"item.{x.QueryResultPropertyNameAsString}").Join(" + ");
+            var aggregateKey = new AggregateKey(_aggregate);
 
             return $$"""
                 namespace {{_ctx.Config.EntityNamespace}} {
@@ -101,7 +97,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                         /// <summary>
                         /// {{_aggregate.Item.DisplayName}}をキーワードで検索します。
                         /// </summary>
-                        public IEnumerable<{{AggregateInstanceKeyNamePair.CLASSNAME}}> {{DbcontextMeghodName}}(string? keyword) {
+                        public IEnumerable<{{aggregateKey.CSharpClassName}}> {{DbcontextMeghodName}}(string? keyword) {
                             var query = this.{{_aggregate.Item.DbSetName}}.Select(e => new {
                                 {{WithIndent(select, "                ")}}
                             });
@@ -117,10 +113,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                 
                             return query
                                 .AsEnumerable()
-                                .Select(item => new {{AggregateInstanceKeyNamePair.CLASSNAME}} {
-                                    {{AggregateInstanceKeyNamePair.KEY}} = {{WithIndent(instanceKey, "                    ")}},
-                                    {{AggregateInstanceKeyNamePair.NAME}} = {{WithIndent(instanceName, "                    ")}},
-                                });
+                                .Select(item => {{WithIndent(aggregateKey.RenderConvertingFromDbEntity(m => $"item.{members.Single(n => n.MemberName == m.MemberName).QueryResultPropertyName}"), "                ")}});
                         }
                     }
                 }

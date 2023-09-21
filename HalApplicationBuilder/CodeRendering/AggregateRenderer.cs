@@ -215,8 +215,7 @@ namespace HalApplicationBuilder.CodeRendering {
                                 return false;
                             }
 
-                            var instanceKey = {{WithIndent(AggregateInstanceKeyNamePair.RenderKeyJsonConverting(_aggregate.GetKeyMembers().Select(m => $"command.{m.GetFullPath().Join(".")}")), "            ")}};
-                            var afterUpdate = this.{{find.FindMethodName}}(instanceKey);
+                            var afterUpdate = this.{{WithIndent(find.RenderCaller(m => $"dbEntity.{m.MemberName}"), "            ")}};
                             if (afterUpdate == null) {
                                 created = new {{_aggregate.Item.ClassName}}();
                                 errors = new[] { "更新後のデータの再読み込みに失敗しました。" };
@@ -282,9 +281,8 @@ namespace HalApplicationBuilder.CodeRendering {
                     partial class {{_ctx.Config.DbContextName}} {
                         public bool {{_update.MethodName}}({{_aggregate.Item.ClassName}} after, out {{_aggregate.Item.ClassName}} updated, out ICollection<string> errors) {
                             errors = new List<string>();
-                            var key = {{WithIndent(AggregateInstanceKeyNamePair.RenderKeyJsonConverting(_aggregate.GetKeyMembers().Select(m => $"after.{m.GetFullPath().Join(".")}")), "            ")}};
 
-                            {{WithIndent(find.RenderDbEntityLoading("this", "beforeDbEntity", "key", tracks: false, includeRefs: false), "            ")}}
+                            {{WithIndent(find.RenderDbEntityLoading("this", "beforeDbEntity", m => $"after.{m.MemberName}", tracks: false, includeRefs: false), "            ")}}
 
                             if (beforeDbEntity == null) {
                                 updated = new {{_aggregate.Item.ClassName}}();
@@ -307,7 +305,7 @@ namespace HalApplicationBuilder.CodeRendering {
                                 return false;
                             }
 
-                            var afterUpdate = this.{{find.FindMethodName}}(key);
+                            var afterUpdate = this.{{find.RenderCaller(m => $"afterDbEntity.{m.GetFullPath().Join(".")}")}};
                             if (afterUpdate == null) {
                                 updated = new {{_aggregate.Item.ClassName}}();
                                 errors.Add("更新後のデータの再読み込みに失敗しました。");
@@ -346,9 +344,9 @@ namespace HalApplicationBuilder.CodeRendering {
                     using Microsoft.EntityFrameworkCore.Infrastructure;
 
                     partial class {{_ctx.Config.DbContextName}} {
-                        public bool {{_delete.MethodName}}(string key, out ICollection<string> errors) {
+                        public bool {{_delete.MethodName}}({{_aggregate.GetKeyMembers().Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}, out ICollection<string> errors) {
 
-                            {{WithIndent(find.RenderDbEntityLoading("this", "entity", "key", tracks: true, includeRefs: false), "            ")}}
+                            {{WithIndent(find.RenderDbEntityLoading("this", "entity", m => m.MemberName, tracks: true, includeRefs: false), "            ")}}
 
                             if (entity == null) {
                                 errors = new[] { "削除対象のデータが見つかりません。" };
@@ -375,6 +373,12 @@ namespace HalApplicationBuilder.CodeRendering {
                 {{new AggregateCreateCommand(_aggregate).RenderCSharp(_ctx)}}
                 {{new AggregateDetail(_aggregate).RenderCSharp(_ctx)}}
                 {{_aggregate.EnumerateDescendants().SelectTextTemplate(ins => new AggregateDetail(ins).RenderCSharp(_ctx))}}
+
+                namespace {{_ctx.Config.RootNamespace}} {
+                    using System.Text.Json.Serialization;
+
+                    {{WithIndent(_aggregate.EnumerateThisAndDescendants().SelectTextTemplate(ins => new AggregateKey(ins).RenderCSharpDeclaring()), "    ")}}
+                }
 
                 {{search.RenderCSharpClassDef()}}
                 namespace {{_ctx.Config.EntityNamespace}} {

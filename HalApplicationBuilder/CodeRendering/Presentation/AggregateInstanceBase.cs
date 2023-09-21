@@ -17,8 +17,9 @@ namespace HalApplicationBuilder.CodeRendering.Presentation {
         internal string Namespace => _ctx.Config.RootNamespace;
         internal string ClassFullname => $"{Namespace}.{CLASS_NAME}";
         internal static string CLASS_NAME => "AggregateInstanceBase";
+        [Obsolete]
         internal const string INSTANCE_KEY = "__halapp_InstanceKey";
-        internal const string INSTANCE_NAME = "__halapp_InstanceName";
+        internal const string INSTANCE_NAME = "__displayName";
 
         /// <summary>
         /// クライアント側でそのオブジェクトがロードしたものか否かを区別する属性。主キーの編集可否などに影響

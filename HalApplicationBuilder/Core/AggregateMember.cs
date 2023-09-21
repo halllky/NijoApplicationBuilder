@@ -210,10 +210,10 @@ namespace HalApplicationBuilder.Core {
             }
 
             internal override GraphEdge<Aggregate> Relation { get; }
-            internal override string CSharpTypeName => AggregateInstanceKeyNamePair.CLASSNAME;
-            internal override string TypeScriptTypename => AggregateInstanceKeyNamePair.TS_DEF;
+            internal override string CSharpTypeName => new CodeRendering.AggregateKey(Relation.Terminal).CSharpClassName;
+            internal override string TypeScriptTypename => new CodeRendering.AggregateKey(Relation.Terminal).TypeScriptTypeName;
 
-            internal IEnumerable<ValueMember> GetForeignKeys() {
+            internal IEnumerable<KeyOfRefTarget> GetForeignKeys() {
                 return Relation.Terminal
                     .GetKeyMembers()
                     .Select(refTargetMember => new KeyOfRefTarget(this, refTargetMember));
@@ -228,11 +228,13 @@ namespace HalApplicationBuilder.Core {
                     opt.IsDisplayName = refMember.Relation.IsInstanceName();
                     opt.IsRequired = refMember.Relation.IsRequired();
                 });
+                Original = refTargetMember;
             }
             private readonly Ref _refMember;
 
             internal override IReadOnlyMemberOptions Options { get; }
             internal override GraphNode<Aggregate> Owner => _refMember.Owner;
+            internal ValueMember Original { get; }
         }
 
         internal class KeyOfParent : ValueMember {

@@ -31,9 +31,12 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
                 using {{_ctx.Config.EntityNamespace}};
             
                 partial class {{_controller.ClassName}} {
-                    [HttpGet("{{WebClient.Controller.FIND_ACTION_NAME}}/{instanceKey}")]
-                    public virtual IActionResult Find(string instanceKey) {
-                        var instance = _dbContext.{{FindMethodName}}(instanceKey);
+                    [HttpGet("{{WebClient.Controller.FIND_ACTION_NAME}}/")]
+                    public virtual IActionResult Find({{_aggregate.GetKeyMembers().Select(m => $"[FromQuery] {m.CSharpTypeName.ToNullable()} {m.MemberName}").Join(", ")}}) {
+            {{_aggregate.GetKeyMembers().SelectTextTemplate(m => $$"""
+                        if ({{m.MemberName}} == null) return BadRequest();
+            """)}}
+                        var instance = _dbContext.{{FindMethodName}}({{_aggregate.GetKeyMembers().Select(m => m.MemberName).Join(", ")}});
                         if (instance == null) {
                             return NotFound();
                         } else {
@@ -55,17 +58,17 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
                     using System.Linq;
                     using Microsoft.EntityFrameworkCore;
                     using Microsoft.EntityFrameworkCore.Infrastructure;
-                
+
                     partial class {{_ctx.Config.DbContextName}} {
                         /// <summary>
                         /// {{_aggregate.Item.DisplayName}}のキー情報から対象データの詳細を検索して返します。
                         /// </summary>
-                        public {{FindMethodReturnType}}? {{FindMethodName}}(string serializedInstanceKey) {
-                
-                            {{WithIndent(RenderDbEntityLoading("this", "entity", "serializedInstanceKey", tracks: false, includeRefs: true), "            ")}}
-                
+                        public {{FindMethodReturnType}}? {{FindMethodName}}({{_aggregate.GetKeyMembers().Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}) {
+
+                            {{WithIndent(RenderDbEntityLoading("this", "entity", m => m.MemberName, tracks: false, includeRefs: true), "            ")}}
+
                             if (entity == null) return null;
-                
+
                             var aggregateInstance = {{_aggregate.Item.ClassName}}.{{AggregateDetail.FROM_DBENTITY}}(entity);
                             return aggregateInstance;
                         }
@@ -74,7 +77,7 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
                 """;
         }
 
-        internal string RenderDbEntityLoading(string dbContextVarName, string entityVarName, string serializedInstanceKeyVarName, bool tracks, bool includeRefs) {
+        internal string RenderDbEntityLoading(string dbContextVarName, string entityVarName, Func<AggregateMember.ValueMember, string> memberSelector, bool tracks, bool includeRefs) {
 
             // Include
             var includeEntities = _aggregate
@@ -109,15 +112,10 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
 
             // SingleOrDefault
             var keys = _aggregate
-                .GetColumns()
-                .Where(col => col.Options.IsKey)
-                .SelectTextTemplate((col, i) => {
-                    var cast = col.Options.MemberType.GetCSharpTypeName();
-                    return $"x.{col.Options.MemberName} == ({cast})instanceKey[{i}]";
-                });
+                .GetKeyMembers()
+                .SelectTextTemplate(m => $"x.{m.GetDbColumn().Options.MemberName} == {memberSelector(m)}");
 
             return $$"""
-                var instanceKey = {{AggregateInstanceKeyNamePair.RenderKeyJsonRestoring(serializedInstanceKeyVarName)}};
                 var {{entityVarName}} = {{dbContextVarName}}.{{_aggregate.Item.DbSetName}}
                 {{If(tracks == false, () => $$"""
                     .AsNoTracking()
@@ -131,5 +129,16 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
                 """;
         }
 
+        internal string RenderCaller(Func<AggregateMember.ValueMember, string> nameSelector) {
+            var members = _aggregate
+                .GetKeyMembers()
+                .Select(member => nameSelector(member))
+                .Join($",{Environment.NewLine}    ");
+
+            return $$"""
+                {{FindMethodName}}(
+                    {{members}})
+                """;
+        }
     }
 }

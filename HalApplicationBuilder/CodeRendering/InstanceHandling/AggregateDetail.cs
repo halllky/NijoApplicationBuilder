@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using HalApplicationBuilder.CodeRendering.Util;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
     internal class AggregateDetail {
@@ -82,7 +83,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     var instance = new {{_aggregate.Item.ClassName}} {
                         {{WithIndent(RenderBodyOfFromDbEntity(_aggregate, _aggregate, "entity", 0), "        ")}}
                     };
-                    instance.{{AggregateInstanceBase.INSTANCE_KEY}} = {{WithIndent(AggregateInstanceKeyNamePair.RenderKeyJsonConverting(_aggregate.GetKeyMembers().Select(m => $"instance.{m.GetFullPath().Join(".")}")), "    ")}};
                     instance.{{AggregateInstanceBase.INSTANCE_NAME}} = {{_aggregate.GetInstanceNameMembers().Select(m => $"instance.{m.GetFullPath().Join(".")}?.ToString()").Join(" + ")}};
                     return instance;
                 }
@@ -110,13 +110,17 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                         .GetForeignKeys()
                         .Select(member => member.GetDbColumn().GetFullPath(rootInstance.As<IEFCoreEntity>()).Join("."))
                         .Select(fullpath => $"{rootInstanceName}.{fullpath}");
+                    var key = new AggregateKey(refProp.MemberAggregate);
 
                     yield return $$"""
-                        {{refProp.MemberName}} = new() {
-                            {{AggregateInstanceKeyNamePair.KEY}} = {{Utility.CLASSNAME}}.{{Utility.TO_JSON}}(new object?[] { {{foreignKeys.Join(", ")}} }),
-                            {{AggregateInstanceKeyNamePair.NAME}} = {{names.Join(" + ")}},
-                        },
+                        {{refProp.MemberName}} = {{key.RenderConvertingFromDbEntity(member => $"{rootInstanceName}.{member.GetFullPath(rootInstance).Join(".")}")}},
                         """;
+                    //yield eturn $$"""
+                    //    {{refProp.MemberName}} = new() {
+                    //        {{AggregateInstanceKeyNamePair.KEY}} = {{Utility.CLASSNAME}}.{{Utility.TO_JSON}}(new object?[] { {{foreignKeys.Join(", ")}} }),
+                    //        {{AggregateInstanceKeyNamePair.NAME}} = {{names.Join(" + ")}},
+                    //    },
+                    //    """;
 
                 } else if (prop is AggregateMember.Children children) {
                     var item = depth == 0 ? "item" : $"item{depth}";
@@ -180,16 +184,13 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                         """;
 
                 } else if (prop is AggregateMember.Ref refProp) {
-                    var refTargetKeys = refProp.GetForeignKeys().ToArray();
-                    var refPropFullpath = $"{context.ValueSourceInstance}.{refProp.GetFullPath(context.ValueSource).Join(".")}.{AggregateInstanceKeyNamePair.KEY}";
-                    for (int i = 0; i < refTargetKeys.Length; i++) {
-                        var foreignKey = refTargetKeys[i];
-                        var propertyName = foreignKey.GetDbColumn().Options.MemberName;
-                        var memberType = foreignKey.Options.MemberType.GetCSharpTypeName();
-
+                    var aggKey = new AggregateKey(refProp.MemberAggregate);
+                    var path = $"{context.ValueSourceInstance}.{refProp.GetFullPath(context.ValueSource).Join(".")}";
+                    foreach (var fk in refProp.GetForeignKeys()) {
                         yield return $$"""
-                            {{propertyName}} = ({{memberType}}){{AggregateInstanceKeyNamePair.RenderKeyJsonRestoring(refPropFullpath)}}[{{i}}]!,
+                            {{fk.GetDbColumn().Options.MemberName}} = {{path}}.{{fk.Original.MemberName}},
                             """;
+
                     }
 
                 } else if (prop is AggregateMember.Children children) {
