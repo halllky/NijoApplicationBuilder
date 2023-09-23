@@ -76,7 +76,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var keysFromUrl = keyName.GetKeys().Select(m => $"urlKey{m.MemberName}").ToArray();
 
             return $$"""
-                import { useState, useCallback, useMemo, useReducer } from 'react';
+                import { useState, useCallback, useMemo, useReducer, useRef } from 'react';
                 import { useAppContext } from '../../hooks/AppContext';
                 import { PageContext, pageContextReducer, usePageContext } from '../../hooks/PageContext'
                 import { Link, useParams, useNavigate } from 'react-router-dom';
@@ -132,6 +132,21 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
                   const reactHookFormMethods = useForm({ defaultValues })
 
+                  // 編集時
+                  const formRef = useRef<HTMLFormElement | null>(null)
+                  const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLFormElement>) => {
+                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                      // Ctrl + Enter で送信
+                      formRef.current?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))
+
+                    } else if (e.key === 'Enter' && !(e.target as HTMLElement).matches('textarea')) {
+                      // フォーム中でEnterキーが押されたときに誤submitされるのを防ぐ。
+                      // textareaでpreventDefaultすると改行できなくなるので除外
+                      e.preventDefault()
+
+                    }
+                  }, [])
+
                   // 処理確定時
                   const navigate = useNavigate()
                 {{If(_type == E_Type.View, () => $$"""
@@ -172,7 +187,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     <PageContext.Provider value={pageContextValue}>
                       <FormProvider {...reactHookFormMethods}>
                 {{If(_type == E_Type.Create || _type == E_Type.Edit, () => $$"""
-                        <form className="page-content-root" onSubmit={reactHookFormMethods.handleSubmit(onSave)}>
+                        <form className="page-content-root" ref={formRef} onSubmit={reactHookFormMethods.handleSubmit(onSave)} onKeyDown={onKeyDown}>
                 """).Else(() => $$"""
                         <form className="page-content-root">
                 """)}}
