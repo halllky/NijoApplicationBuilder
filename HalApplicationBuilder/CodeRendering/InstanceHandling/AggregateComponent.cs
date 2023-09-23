@@ -143,7 +143,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       return (
                         <>
                           {fields.map((item, {{loopVar}}) => (
-                            <div key={{{loopVar}}} className="flex flex-col space-y-1 p-1 border border-neutral-400">
+                            <div key={item.{{AggregateDetail.OBJECT_ID}}} className="flex flex-col space-y-1 p-1 border border-neutral-400">
                               {{WithIndent(layout, "          ")}}
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
                               <Components.IconButton

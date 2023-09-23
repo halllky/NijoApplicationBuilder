@@ -18,7 +18,16 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
         internal virtual string ClassName => _aggregate.Item.ClassName;
 
+        /// <summary>
+        /// 編集画面でDBから読み込んだデータとその画面中で新たに作成されたデータで
+        /// 挙動を分けるためのフラグ
+        /// </summary>
         internal const string IS_LOADED = "__loaded";
+        /// <summary>
+        /// useFieldArrayの中で配列インデックスをキーに使うと新規追加されたコンボボックスが
+        /// その1個上の要素の更新と紐づいてしまうのでクライアント側で要素1個ずつにIDを振る
+        /// </summary>
+        internal const string OBJECT_ID = "__object_id";
 
         internal const string FROM_DBENTITY = "FromDbEntity";
         internal const string TO_DBENTITY = "ToDbEntity";
@@ -65,6 +74,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                   {{m.MemberName}}?: {{m.TypeScriptTypename}}
                 """)}}
                   {{IS_LOADED}}?: boolean
+                  {{OBJECT_ID}}?: string
                 }
                 """;
         }

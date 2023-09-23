@@ -81,6 +81,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 import { PageContext, pageContextReducer, usePageContext } from '../../hooks/PageContext'
                 import { Link, useParams, useNavigate } from 'react-router-dom';
                 import { FieldValues, SubmitHandler, useForm, FormProvider, useFormContext, useFieldArray } from 'react-hook-form';
+                import { UUID } from 'uuidjs';
                 import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
                 import * as Components from '../../components';
                 import { IconButton, InlineMessageBar, BarMessage } from '../../components';
@@ -115,12 +116,13 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       const responseData = response.data as AggregateType.{{_aggregate.Item.TypeScriptTypeName}}
                       setInstanceName({{keyName.GetNames().Select(m => $"String(responseData.{m.MemberName})").Join(" + ")}})
 
-                {{If(_type == E_Type.Edit, () => $$"""
-                      // 新規データのみ主キーを編集可能にするため、読込データと新規データを区別するためのフラグをつける
                       visitObject(responseData, obj => {
-                        (obj as { {{AggregateDetail.IS_LOADED}}?: boolean }).{{AggregateDetail.IS_LOADED}} = true
+                        // 新規データのみ主キーを編集可能にするため、読込データと新規データを区別するためのフラグをつける
+                        (obj as { {{AggregateDetail.IS_LOADED}}?: boolean }).{{AggregateDetail.IS_LOADED}} = true;
+                        // 配列中のオブジェクト識別用
+                        (obj as { {{AggregateDetail.OBJECT_ID}}: string }).{{AggregateDetail.OBJECT_ID}} = UUID.generate()
                       })
-                """)}}
+
                       return responseData
                     } else {
                       return AggregateType.{{createEmptyObject}}()

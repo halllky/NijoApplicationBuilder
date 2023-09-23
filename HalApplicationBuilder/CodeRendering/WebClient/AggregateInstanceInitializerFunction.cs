@@ -63,6 +63,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                     {{initializers.SelectTextTemplate(item => $$"""
                       {{item.Key}}: {{item.Value}},
                     """)}}
+                      {{AggregateDetail.OBJECT_ID}}: UUID.generate(),
                     })
                     """;
         }

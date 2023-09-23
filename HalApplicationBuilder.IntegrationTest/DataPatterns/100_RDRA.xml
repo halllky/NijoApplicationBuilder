@@ -20,6 +20,7 @@
     <主体 is="ref-to:アクター" />
     <関連機能 is="array">
       <機能 is="ref-to:機能 key" />
+      <メモ is="sentence" />
     </関連機能>
   </ユースケース>
 
