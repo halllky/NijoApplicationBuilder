@@ -85,7 +85,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 """;
         }
         private IEnumerable<string> RenderBodyOfFromDbEntity(GraphNode<Aggregate> instance, GraphNode<Aggregate> rootInstance, string rootInstanceName, int depth) {
-            foreach (var prop in GetAggregateDetailMembersOf(instance)) {
+            foreach (var prop in instance.GetMembers()) {
                 if (prop is AggregateMember.KeyOfParent) {
                     continue; // 不要
 
@@ -168,7 +168,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 """;
         }
         private IEnumerable<string> RenderBodyOfToDbEntity(BodyRenderingContext context) {
-            foreach (var prop in GetAggregateDetailMembersOf(context.RenderingAggregate)) {
+            foreach (var prop in context.RenderingAggregate.GetMembers()) {
                 if (prop is AggregateMember.KeyOfParent parentPK) {
                     var fullpath = context.GetValueSourceFullPath(parentPK);
                     yield return $$"""
