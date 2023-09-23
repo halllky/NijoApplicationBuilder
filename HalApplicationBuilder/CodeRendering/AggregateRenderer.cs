@@ -147,22 +147,6 @@ namespace HalApplicationBuilder.CodeRendering {
 
         #region AGGREGATE INSTANCE & CREATE COMMAND
         private string CreateCommandClassName => new AggregateCreateCommand(_aggregate).ClassName;
-
-        private IEnumerable<string> GetInstanceNameProps() {
-            var keys = _aggregate.GetKeyMembers().ToArray();
-            var names = _aggregate.GetInstanceNameMembers().ToArray();
-            var props = names.Any() ? names : keys;
-
-            if (props.Length == 0) {
-                yield return $"return string.Empty;";
-            } else {
-                for (int i = 0; i < props.Length; i++) {
-                    var head = i == 0 ? "return " : "    + ";
-                    yield return $"{head}this.{props[i].MemberName}?.ToString()";
-                }
-                yield return $"    ?? string.Empty;";
-            }
-        }
         #endregion AGGREGATE INSTANCE & CREATE COMMAND
 
 
@@ -344,7 +328,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     using Microsoft.EntityFrameworkCore.Infrastructure;
 
                     partial class {{_ctx.Config.DbContextName}} {
-                        public bool {{_delete.MethodName}}({{_aggregate.GetKeyMembers().Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}, out ICollection<string> errors) {
+                        public bool {{_delete.MethodName}}({{_aggregate.GetKeys().Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}, out ICollection<string> errors) {
 
                             {{WithIndent(find.RenderDbEntityLoading("this", "entity", m => m.MemberName, tracks: true, includeRefs: false), "            ")}}
 
@@ -377,7 +361,6 @@ namespace HalApplicationBuilder.CodeRendering {
                 namespace {{_ctx.Config.RootNamespace}} {
                     using System.Text.Json.Serialization;
 
-                    {{WithIndent(_aggregate.EnumerateThisAndDescendants().SelectTextTemplate(ins => new AggregateKey(ins).RenderCSharpDeclaring()), "    ")}}
                     {{WithIndent(_aggregate.EnumerateThisAndDescendants().SelectTextTemplate(ins => new AggregateKeyName(ins).RenderCSharpDeclaring()), "    ")}}
                 }
 

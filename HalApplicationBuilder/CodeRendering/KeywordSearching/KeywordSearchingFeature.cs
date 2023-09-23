@@ -1,3 +1,4 @@
+using HalApplicationBuilder.CodeRendering.InstanceHandling;
 using HalApplicationBuilder.CodeRendering.Util;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
@@ -55,33 +56,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
         }
 
         internal string RenderDbContextMethod() {
-            //var members = _aggregate
-            //    .GetMembers()
-            //    .OfType<AggregateMember.ValueMember>()
-            //    .Where(member => member.IsKey || member.IsDisplayName)
-            //    .Select(item => new {
-            //        MemberName = item is AggregateMember.KeyOfRefTarget refTarget ? refTarget.Original.MemberName : item.MemberName,
-            //        item.IsKey,
-            //        item.IsDisplayName,
-            //        QueryResultPropertyName = item.MemberName,
-            //        QueryResultPropertyNameAsString = item.Options.MemberType.GetCSharpTypeName() == "string"
-            //            ? item.MemberName
-            //            : $"{item.MemberName}.ToString()",
-            //        EFCorePropertyFullPath = item.GetDbColumn().GetFullPath(_aggregate.As<IEFCoreEntity>()).Join("."),
-            //    })
-            //    .ToArray();
-
             const string LIKE = "like";
-            //var select = members
-            //    .Select(x => $"{x.QueryResultPropertyName} = e.{x.EFCorePropertyFullPath},");
-            //var where = members
-            //    .Select(x => $"EF.Functions.Like(item.{x.QueryResultPropertyNameAsString}, {LIKE})")
-            //    .Join(Environment.NewLine + " || ");
-            //var orderBy = members
-            //    .Select((x, i) => i == 0
-            //        ? $".OrderBy(item => item.{x.QueryResultPropertyName})"
-            //        : $".ThenBy(item => item.{x.QueryResultPropertyName})");
-
             var keyName = new AggregateKeyName(_aggregate);
 
             return $$"""
@@ -99,18 +74,18 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                         /// </summary>
                         public IEnumerable<{{keyName.CSharpClassName}}> {{DbcontextMeghodName}}(string? keyword) {
                             var query = this.{{_aggregate.Item.DbSetName}}.Select(e => new {{keyName.CSharpClassName}} {
-                {{keyName.GetMembers().SelectTextTemplate(m => $$"""
+                {{keyName.GetKeysAndNames().SelectTextTemplate(m => $$"""
                                 {{m.MemberName}} = e.{{m.GetDbColumn().Options.MemberName}},
                 """)}}
                             });
                 
                             if (!string.IsNullOrWhiteSpace(keyword)) {
                                 var {{LIKE}} = $"%{keyword.Trim().Replace("%", "\\%")}%";
-                                query = query.Where(item => {{WithIndent(keyName.GetMembers().SelectTextTemplate(m => $"EF.Functions.Like(item.{m.MemberName}, {LIKE})"), "                                         || ")}});
+                                query = query.Where(item => {{WithIndent(keyName.GetKeysAndNames().SelectTextTemplate(m => $"EF.Functions.Like(item.{m.MemberName}, {LIKE})"), "                                         || ")}});
                             }
 
                             query = query
-                                .OrderBy(m => m.{{keyName.GetMembers().First().MemberName}})
+                                .OrderBy(m => m.{{keyName.GetKeysAndNames().First().MemberName}})
                                 .Take({{LIST_BY_KEYWORD_MAX + 1}});
 
                             return query

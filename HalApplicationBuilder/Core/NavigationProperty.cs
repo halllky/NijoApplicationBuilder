@@ -112,7 +112,7 @@ namespace HalApplicationBuilder.Core {
                     && _relation.Terminal.GetParent() == _relation) {
 
                     return _relation.Terminal
-                        .GetKeyMembers()
+                        .GetKeys()
                         .OfType<AggregateMember.KeyOfParent>()
                         .Select(parentPk => parentPk.GetDbColumn());
 

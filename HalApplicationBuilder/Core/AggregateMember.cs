@@ -1,3 +1,4 @@
+using HalApplicationBuilder.CodeRendering.InstanceHandling;
 using HalApplicationBuilder.CodeRendering.Util;
 using HalApplicationBuilder.DotnetEx;
 using Microsoft.Extensions.Options;
@@ -30,7 +31,7 @@ namespace HalApplicationBuilder.Core {
         internal static IEnumerable<AggregateMemberBase> GetMembers(this GraphNode<Aggregate> aggregate) {
             var parent = aggregate.GetParent();
             if (parent != null) {
-                foreach (var parentPK in parent.Initial.GetKeyMembers()) {
+                foreach (var parentPK in parent.Initial.GetKeys()) {
                     yield return new KeyOfParent(aggregate, parentPK);
                 }
             }
@@ -54,18 +55,9 @@ namespace HalApplicationBuilder.Core {
                 foreach (var refPK in refMember.GetForeignKeys()) yield return refPK;
             }
         }
-        internal static IEnumerable<ValueMember> GetKeyMembers(this GraphNode<Aggregate> aggregate) {
-            return aggregate
-                .GetMembers()
-                .OfType<ValueMember>()
-                .Where(member => member.IsKey);
-        }
-        internal static IEnumerable<ValueMember> GetInstanceNameMembers(this GraphNode<Aggregate> aggregate) {
-            return aggregate
-                .GetMembers()
-                .OfType<ValueMember>()
-                .Where(member => member.IsDisplayName)
-                .ToArray();
+        /// <summary>糖衣構文</summary>
+        internal static IEnumerable<ValueMember> GetKeys(this GraphNode<Aggregate> aggregate) {
+            return new AggregateKeyName(aggregate).GetKeys();
         }
         internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<Aggregate> aggregate) {
             var parent = aggregate.GetParent();
@@ -210,12 +202,12 @@ namespace HalApplicationBuilder.Core {
             }
 
             internal override GraphEdge<Aggregate> Relation { get; }
-            internal override string CSharpTypeName => new CodeRendering.AggregateKey(Relation.Terminal).CSharpClassName;
-            internal override string TypeScriptTypename => new CodeRendering.AggregateKey(Relation.Terminal).TypeScriptTypeName;
+            internal override string CSharpTypeName => new AggregateKeyName(Relation.Terminal).CSharpClassName;
+            internal override string TypeScriptTypename => new AggregateKeyName(Relation.Terminal).TypeScriptTypeName;
 
             internal IEnumerable<KeyOfRefTarget> GetForeignKeys() {
                 return Relation.Terminal
-                    .GetKeyMembers()
+                    .GetKeys()
                     .Select(refTargetMember => new KeyOfRefTarget(this, refTargetMember));
             }
         }

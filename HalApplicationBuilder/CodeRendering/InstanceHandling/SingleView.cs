@@ -56,8 +56,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             E_Type.Create => $"/{_aggregate.Item.UniqueId}/new",
 
             // React Router は全角文字非対応なので key0, key1, ... をURLに使う
-            E_Type.View => $"/{_aggregate.Item.UniqueId}/detail/{new AggregateKey(_aggregate).GetMembers().Select((_, i) => $":key{i}").Join("/")}",
-            E_Type.Edit => $"/{_aggregate.Item.UniqueId}/edit/{new AggregateKey(_aggregate).GetMembers().Select((_, i) => $":key{i}").Join("/")}",
+            E_Type.View => $"/{_aggregate.Item.UniqueId}/detail/{_aggregate.GetKeys().Select((_, i) => $":key{i}").Join("/")}",
+            E_Type.Edit => $"/{_aggregate.Item.UniqueId}/edit/{_aggregate.GetKeys().Select((_, i) => $":key{i}").Join("/")}",
 
             _ => throw new NotImplementedException(),
         };
@@ -72,10 +72,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
             var find = new FindFeature(_aggregate);
 
-            var aggKey = new AggregateKey(_aggregate);
-            var aggName = new AggregateName(_aggregate);
-
-            var keysFromUrl = aggKey.GetMembers().Select(m => $"urlKey{m.MemberName}").ToArray();
+            var keyName = new AggregateKeyName(_aggregate);
+            var keysFromUrl = keyName.GetKeys().Select(m => $"urlKey{m.MemberName}").ToArray();
 
             return $$"""
                 import { useState, useCallback, useMemo, useReducer } from 'react';
@@ -104,7 +102,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     return AggregateType.{{createEmptyObject}}()
                   }, [])
                 """).Else(() => $$"""
-                  const { {{aggKey.GetMembers().Select((m, i) => $"key{i}: urlKey{m.MemberName}").Join(", ")}} } = useParams()
+                  const { {{keyName.GetKeys().Select((m, i) => $"key{i}: urlKey{m.MemberName}").Join(", ")}} } = useParams()
                   const [instanceName, setInstanceName] = useState<string | undefined>('')
                   const [fetched, setFetched] = useState(false)
                   const defaultValues = useCallback(async () => {
@@ -115,7 +113,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     setFetched(true)
                     if (response.ok) {
                       const responseData = response.data as AggregateType.{{_aggregate.Item.TypeScriptTypeName}}
-                      setInstanceName({{aggName.GetMembers().Select(m => $"String(responseData.{m.MemberName})").Join(" + ")}})
+                      setInstanceName({{keyName.GetNames().Select(m => $"String(responseData.{m.MemberName})").Join(" + ")}})
                       visitObject(responseData, obj => {
                         (obj as { {{AggregateDetail.IS_LOADED}}?: boolean }).{{AggregateDetail.IS_LOADED}} = true
                       })
@@ -140,9 +138,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                   const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
                     const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{controller.CreateCommandApi}}`, data)
                     if (response.ok) {
-                      dispatch({ type: 'pushMsg', msg: `${({{aggName.GetMembers().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を作成しました。` })
+                      dispatch({ type: 'pushMsg', msg: `${({{keyName.GetNames().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を作成しました。` })
                       setErrorMessages([])
-                      navigate(`{{GetUrlStringForReact(E_Type.View, aggKey.GetMembers().Select(m => $"response.data.{m.MemberName}"))}}`)
+                      navigate(`{{GetUrlStringForReact(E_Type.View, keyName.GetKeys().Select(m => $"response.data.{m.MemberName}"))}}`)
                     } else {
                       setErrorMessages([...errorMessages, ...response.errors])
                     }
@@ -152,7 +150,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{controller.UpdateCommandApi}}`, data)
                     if (response.ok) {
                       setErrorMessages([])
-                      dispatch({ type: 'pushMsg', msg: `${({{aggName.GetMembers().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を更新しました。` })
+                      dispatch({ type: 'pushMsg', msg: `${({{keyName.GetNames().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を更新しました。` })
                       navigate(`{{GetUrlStringForReact(E_Type.View, keysFromUrl)}}`)
                     } else {
                       setErrorMessages([...errorMessages, ...response.errors])

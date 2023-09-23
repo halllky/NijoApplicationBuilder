@@ -29,7 +29,6 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                 var aggregate = Search.DbEntity.Item is Aggregate ? Search.DbEntity.As<Aggregate>() : null;
                 var createView = aggregate == null ? null : new SingleView(aggregate, Search.Context, SingleView.E_Type.Create);
                 var singleView = aggregate == null ? null : new SingleView(aggregate, Search.Context, SingleView.E_Type.View);
-                var aggKey = aggregate == null ? null : new AggregateKey(aggregate);
 
                 var memberNames = Search.VisibleMembers.Select(m => m.ConditionPropName);
                 var propNameWidth = AggregateComponent.GetPropNameFlexBasis(memberNames);
@@ -157,7 +156,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                         resizable: true,
                         width: 50,
                         cellRenderer: ({ data }: { data: RowType }) => {
-                          const singleViewUrl = `{{singleView!.GetUrlStringForReact(aggKey!.GetMembers().Select(m => $"data.{m.MemberName}"))}}`
+                          const singleViewUrl = `{{singleView!.GetUrlStringForReact(aggregate!.GetKeys().Select(m => $"data.{m.MemberName}"))}}`
                           return <Link to={singleViewUrl} className="text-blue-400">詳細</Link>
                         },
                       },

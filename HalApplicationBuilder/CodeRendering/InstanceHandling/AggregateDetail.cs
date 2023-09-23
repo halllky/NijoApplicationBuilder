@@ -98,29 +98,13 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                         """;
 
                 } else if (prop is AggregateMember.Ref refProp) {
-                    var names = refProp.MemberAggregate
-                        .GetInstanceNameMembers()
-                        .Select(member => member.GetDbColumn().GetFullPath(rootInstance.As<IEFCoreEntity>()).Join("."))
-                        .Select(fullpath => $"{rootInstanceName}.{fullpath}?.ToString()");
-                    var foreignKeys = refProp
-                        .GetForeignKeys()
-                        .Select(member => member.GetDbColumn().GetFullPath(rootInstance.As<IEFCoreEntity>()).Join("."))
-                        .Select(fullpath => $"{rootInstanceName}.{fullpath}");
-                    var key = new AggregateKey(refProp.MemberAggregate);
-
                     yield return $$"""
                         {{refProp.MemberName}} = new() {
-                        {{key.GetMembers().SelectTextTemplate(m => $$"""
+                        {{refProp.MemberAggregate.GetKeys().SelectTextTemplate(m => $$"""
                             {{m.MemberName}} = {{rootInstanceName}}.{{m.GetDbColumn().GetFullPath(rootInstance.As<IEFCoreEntity>()).Join(".")}},
                         """)}}
                         },
                         """;
-                    //yield eturn $$"""
-                    //    {{refProp.MemberName}} = new() {
-                    //        {{AggregateInstanceKeyNamePair.KEY}} = {{Utility.CLASSNAME}}.{{Utility.TO_JSON}}(new object?[] { {{foreignKeys.Join(", ")}} }),
-                    //        {{AggregateInstanceKeyNamePair.NAME}} = {{names.Join(" + ")}},
-                    //    },
-                    //    """;
 
                 } else if (prop is AggregateMember.Children children) {
                     var item = depth == 0 ? "item" : $"item{depth}";
@@ -184,7 +168,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                         """;
 
                 } else if (prop is AggregateMember.Ref refProp) {
-                    var aggKey = new AggregateKey(refProp.MemberAggregate);
                     var path = $"{context.ValueSourceInstance}.{refProp.GetFullPath(context.ValueSource).Join(".")}";
                     foreach (var fk in refProp.GetForeignKeys()) {
                         yield return $$"""

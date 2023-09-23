@@ -27,7 +27,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         }
 
         internal string RenderController(CodeRenderingContext _ctx) {
-            var keys = new AggregateKey(_aggregate).GetMembers();
+            var keys = _aggregate.GetKeys();
             var controller = new WebClient.Controller(_aggregate.Item);
 
             return $$"""
@@ -38,7 +38,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 partial class {{controller.ClassName}} {
                     [HttpGet("{{ACTION_NAME}}/{{keys.Select(m => "{" + m.MemberName + "}").Join("/")}}")]
                     public virtual IActionResult Find({{keys.Select(m => $"{m.CSharpTypeName.ToNullable()} {m.MemberName}").Join(", ")}}) {
-            {{_aggregate.GetKeyMembers().SelectTextTemplate(m => $$"""
+            {{_aggregate.GetKeys().SelectTextTemplate(m => $$"""
                         if ({{m.MemberName}} == null) return BadRequest();
             """)}}
                         var instance = _dbContext.{{FindMethodName}}({{keys.Select(m => m.MemberName).Join(", ")}});
@@ -68,7 +68,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                         /// <summary>
                         /// {{_aggregate.Item.DisplayName}}のキー情報から対象データの詳細を検索して返します。
                         /// </summary>
-                        public {{FindMethodReturnType}}? {{FindMethodName}}({{_aggregate.GetKeyMembers().Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}) {
+                        public {{FindMethodReturnType}}? {{FindMethodName}}({{_aggregate.GetKeys().Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}) {
 
                             {{WithIndent(RenderDbEntityLoading("this", "entity", m => m.MemberName, tracks: false, includeRefs: true), "            ")}}
 
@@ -117,7 +117,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
             // SingleOrDefault
             var keys = _aggregate
-                .GetKeyMembers()
+                .GetKeys()
                 .SelectTextTemplate(m => $"x.{m.GetDbColumn().Options.MemberName} == {memberSelector(m)}");
 
             return $$"""
@@ -136,7 +136,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
         internal string RenderCaller(Func<AggregateMember.ValueMember, string> nameSelector) {
             var members = _aggregate
-                .GetKeyMembers()
+                .GetKeys()
                 .Select(member => nameSelector(member))
                 .Join($",{Environment.NewLine}    ");
 

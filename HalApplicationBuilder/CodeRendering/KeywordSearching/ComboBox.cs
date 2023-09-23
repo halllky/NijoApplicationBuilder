@@ -30,8 +30,8 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
 
         protected override string Template() {
             var keyName = new AggregateKeyName(_aggregate);
-            var keys = keyName.GetMembers().Where(m => m.IsKey);
-            var names = keyName.GetMembers().Where(m => m.IsDisplayName);
+            var keys = keyName.GetKeysAndNames().Where(m => m.IsKey);
+            var names = keyName.GetKeysAndNames().Where(m => m.IsDisplayName);
 
             return $$"""
                 import React, { forwardRef, ForwardedRef, useState, useCallback } from "react"
