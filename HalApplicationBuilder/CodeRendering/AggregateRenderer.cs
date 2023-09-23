@@ -359,8 +359,6 @@ namespace HalApplicationBuilder.CodeRendering {
                 {{_aggregate.EnumerateDescendants().SelectTextTemplate(ins => new AggregateDetail(ins).RenderCSharp(_ctx))}}
 
                 namespace {{_ctx.Config.RootNamespace}} {
-                    using System.Text.Json.Serialization;
-
                     {{WithIndent(_aggregate.EnumerateThisAndDescendants().SelectTextTemplate(ins => new AggregateKeyName(ins).RenderCSharpDeclaring()), "    ")}}
                 }
 

@@ -100,7 +100,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 } else if (prop is AggregateMember.Ref refProp) {
                     yield return $$"""
                         {{refProp.MemberName}} = new() {
-                        {{refProp.MemberAggregate.GetKeys().SelectTextTemplate(m => $$"""
+                        {{refProp.MemberAggregate.GetKeysAndNames().SelectTextTemplate(m => $$"""
                             {{m.MemberName}} = {{rootInstanceName}}.{{m.GetDbColumn().GetFullPath(rootInstance.As<IEFCoreEntity>()).Join(".")}},
                         """)}}
                         },

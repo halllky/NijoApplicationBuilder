@@ -75,7 +75,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                         public IEnumerable<{{keyName.CSharpClassName}}> {{DbcontextMeghodName}}(string? keyword) {
                             var query = this.{{_aggregate.Item.DbSetName}}.Select(e => new {{keyName.CSharpClassName}} {
                 {{keyName.GetKeysAndNames().SelectTextTemplate(m => $$"""
-                                {{m.MemberName}} = e.{{m.GetDbColumn().Options.MemberName}},
+                                {{m.MemberName}} = e.{{m.GetDbColumn().GetFullPath(_aggregate.As<IEFCoreEntity>()).Join(".")}},
                 """)}}
                             });
                 

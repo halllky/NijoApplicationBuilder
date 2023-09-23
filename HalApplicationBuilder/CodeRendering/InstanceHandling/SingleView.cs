@@ -114,9 +114,13 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     if (response.ok) {
                       const responseData = response.data as AggregateType.{{_aggregate.Item.TypeScriptTypeName}}
                       setInstanceName({{keyName.GetNames().Select(m => $"String(responseData.{m.MemberName})").Join(" + ")}})
+
+                {{If(_type == E_Type.Edit, () => $$"""
+                      // 新規データのみ主キーを編集可能にするため、読込データと新規データを区別するためのフラグをつける
                       visitObject(responseData, obj => {
                         (obj as { {{AggregateDetail.IS_LOADED}}?: boolean }).{{AggregateDetail.IS_LOADED}} = true
                       })
+                """)}}
                       return responseData
                     } else {
                       return AggregateType.{{createEmptyObject}}()

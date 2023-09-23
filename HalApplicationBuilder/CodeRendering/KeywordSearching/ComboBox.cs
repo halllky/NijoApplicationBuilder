@@ -30,8 +30,6 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
 
         protected override string Template() {
             var keyName = new AggregateKeyName(_aggregate);
-            var keys = keyName.GetKeysAndNames().Where(m => m.IsKey);
-            var names = keyName.GetKeysAndNames().Where(m => m.IsDisplayName);
 
             return $$"""
                 import React, { forwardRef, ForwardedRef, useState, useCallback } from "react"
@@ -83,7 +81,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                     setValue(raectHookFormId, value)
                   }, [setValue, watch])
                   const displayValue = useCallback((item?: {{keyName.TypeScriptTypeName}}) => {
-                    return `{{names.Select(m => "${item?." + m.MemberName + "}").Join("&nbsp;")}}`
+                    return `{{keyName.GetNames().Select(m => "${item?." + m.MemberName + "}").Join("&nbsp;")}}`
                   }, [])
 
                   return (
@@ -100,10 +98,10 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                           {(setTimeoutHandle === undefined && !isFetching && data?.length === 0) &&
                             <span className="p-1 text-sm select-none opacity-50">データなし</span>}
                           {(setTimeoutHandle === undefined && !isFetching) && data?.map(item => (
-                            <Combobox.Option key={`{{keys.Select(m => "${item." + m.MemberName + "}").Join("::")}}`} value={item}>
+                            <Combobox.Option key={`{{keyName.GetKeys().Select(m => "${item." + m.MemberName + "}").Join("::")}}`} value={item}>
                               {({ active }) => (
                                 <div className={active ? 'bg-neutral-200' : ''}>
-                                  {{names.Select(m => "{item." + m.MemberName + "}").Join("&nbsp;")}}
+                                  {{keyName.GetNames().Select(m => "{item." + m.MemberName + "}").Join("&nbsp;")}}
                                 </div>
                               )}
                             </Combobox.Option>
