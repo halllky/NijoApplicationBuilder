@@ -209,29 +209,18 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             /// Createビュー兼シングルビュー: テキストボックス
             /// </summary>
             public string TextBox(bool multiline = false) {
+                var name = _component.GetRegisterName(_prop);
                 var readOnly = _component.IfReadOnly("readOnly", _prop);
 
-                if (multiline)
+                if (multiline) {
                     return $$"""
-                        <textarea
-                          {...register({{_component.GetRegisterName(_prop)}})}
-                          className="{{INPUT_WIDTH}}"
-                          {{WithIndent(readOnly, "  ")}}
-                          spellCheck="false"
-                          autoComplete="off">
-                        </textarea>
+                        <Components.Description {...register({{name}})} className="{{INPUT_WIDTH}}" {{readOnly}} />
                         """;
-                else
+                } else {
                     return $$"""
-                        <input
-                          type="text"
-                          {...register({{_component.GetRegisterName(_prop)}})}
-                          className="{{INPUT_WIDTH}}"
-                          {{WithIndent(readOnly, "  ")}}
-                          spellCheck="false"
-                          autoComplete="off"
-                        />
+                        <Components.Word {...register({{name}})} className="{{INPUT_WIDTH}}" {{readOnly}} />
                         """;
+                }
             }
 
             /// <summary>
@@ -249,11 +238,12 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             /// Createビュー兼シングルビュー: 選択肢（コード自動生成時に要素が確定しているもの）
             /// </summary>
             public string Selection(IEnumerable<KeyValuePair<string, string>> options) {
+                var name = _component.GetRegisterName(_prop);
                 var input = $$"""
-                    <input type="text" {...register({{_component.GetRegisterName(_prop)}})} readOnly />
+                    <Components.Word {...register({{name}})} readOnly />
                     """;
                 var select = $$"""
-                    <select className="{{INPUT_WIDTH}}" {...register({{_component.GetRegisterName(_prop)}})}>
+                    <select {...register({{name}})} className="{{INPUT_WIDTH}}">
                       <option value="">
                       </option>
                     {{options.SelectTextTemplate(option => $$"""

@@ -1,9 +1,14 @@
-import { forwardRef, ForwardedRef, InputHTMLAttributes, TextareaHTMLAttributes } from "react"
+import { useCallback, forwardRef, ForwardedRef, InputHTMLAttributes, TextareaHTMLAttributes } from "react"
 
-const Word = forwardRef((props: InputHTMLAttributes<HTMLInputElement>, ref: ForwardedRef<HTMLInputElement>) => {
-  const className = `border border-neutral-400 ${props.className}`
+const selectAll = (e: React.FocusEvent<HTMLInputElement>) => {
+  e.target.select()
+}
+
+export const Word = forwardRef((props: InputHTMLAttributes<HTMLInputElement>, ref: ForwardedRef<HTMLInputElement>) => {
+  const className = `border border-neutral-400 px-1 ${props.className}`
   return (
     <input
+      onFocus={selectAll}
       {...props}
       ref={ref}
       type="text"
@@ -14,8 +19,12 @@ const Word = forwardRef((props: InputHTMLAttributes<HTMLInputElement>, ref: Forw
   )
 })
 
-const Description = forwardRef((props: TextareaHTMLAttributes<HTMLTextAreaElement>, ref: ForwardedRef<HTMLTextAreaElement>) => {
-  const className = `border border-neutral-400 ${props.className}`
+export const Description = forwardRef((props: TextareaHTMLAttributes<HTMLTextAreaElement>, ref: ForwardedRef<HTMLTextAreaElement>) => {
+  const className = `border border-neutral-400 px-1 ${props.className}`
+  const selectIfReadOnly = useCallback((e: React.FocusEvent<HTMLTextAreaElement>) => {
+    if (props.readOnly) e.target.select()
+  }, [props.readOnly])
+
   return (
     <textarea
       {...props}
@@ -24,16 +33,11 @@ const Description = forwardRef((props: TextareaHTMLAttributes<HTMLTextAreaElemen
       autoComplete="off"
       spellCheck={false}
       rows={props.rows || 3}
+      onFocus={selectIfReadOnly}
     />
   )
 })
 
-const Num = () => {
+export const Num = () => {
 
-}
-
-export const InputForms = {
-  Word,
-  Description,
-  Num,
 }

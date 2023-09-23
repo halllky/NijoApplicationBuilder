@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { FieldValues, SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { UUID } from 'uuidjs';
 import { useAppContext } from '../hooks/AppContext';
-import { InputForms } from './InputForms';
+import { Word } from './InputForms';
 import { IconButton } from './IconButton';
 import { InlineMessageBar, BarMessage } from './InlineMessageBar';
 import { useHttpRequest } from '../hooks/useHttpRequest';
@@ -58,7 +58,7 @@ export const ServerSettingScreen = () => {
 
       <SettingSection title="基本設定">
         <Setting label="APIサーバーURL">
-          <InputForms.Word value={apiDomain} onChange={e => dispatch({ type: 'changeDomain', value: e.target.value })} className="w-full" />
+          <Word value={apiDomain} onChange={e => dispatch({ type: 'changeDomain', value: e.target.value })} className="w-full" />
         </Setting>
       </SettingSection>
 
@@ -80,8 +80,8 @@ export const ServerSettingScreen = () => {
                 {fields.map((field, index) => (
                   <div key={field.id} className="flex items-center space-x-1">
                     <input {...register(`currentDb`)} type="radio" value={index} />
-                    <InputForms.Word {...register(`db.${index}.name`, { required: true })} className="basis-32 min-w-0" />
-                    <InputForms.Word {...register(`db.${index}.connStr`, { required: true })} className="flex-1" />
+                    <Word {...register(`db.${index}.name`, { required: true })} className="basis-32 min-w-0" />
+                    <Word {...register(`db.${index}.connStr`, { required: true })} className="flex-1" />
                     <IconButton underline icon={XMarkIcon} onClick={e => { remove(index); e.preventDefault() }}>削除</IconButton>
                   </div>
                 ))}

@@ -22,106 +22,68 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
         private readonly GraphNode<Aggregate> _aggregate;
 
         public override string FileName => $"ComboBox{_aggregate.Item.DisplayName.ToFileNameSafe()}.tsx";
-
         internal string ComponentName => $"ComboBox{_aggregate.Item.DisplayName.ToCSharpSafe()}";
-
-        internal string UseQueryKey => $"combo-{_aggregate.Item.UniqueId}";
         internal string Api => new KeywordSearchingFeature(_aggregate, _ctx).GetUri();
 
         protected override string Template() {
             var keyName = new AggregateKeyName(_aggregate);
 
             return $$"""
-                import React, { forwardRef, ForwardedRef, useState, useCallback } from "react"
-                import { useQuery } from "react-query"
+                import React, { useCallback } from "react"
                 import { useFormContext } from 'react-hook-form';
-                import { Combobox } from "@headlessui/react"
-                import { ChevronUpDownIcon } from "@heroicons/react/24/outline"
-                import { NowLoading } from "./NowLoading"
-                import { useAppContext } from "../hooks/AppContext"
                 import { useHttpRequest } from "../hooks/useHttpRequest"
+                import { AsyncComboBox } from "../components"
                 import { {{keyName.TypeScriptTypeName}} } from "../types"
 
-                export const {{ComponentName}} = forwardRef(({ raectHookFormId, readOnly }: {
+                export const {{ComponentName}} = ({ raectHookFormId, readOnly, className }: {
                   raectHookFormId: string
                   readOnly?: boolean
-                }, ref: ForwardedRef<HTMLElement>) => {
+                  className?: string
+                }) => {
 
-                  const [keyword, setKeyword] = useState('')
                   const { get } = useHttpRequest()
-                  const [, dispatch] = useAppContext()
-                  const { data, refetch, isFetching } = useQuery({
-                    queryKey: ['{{UseQueryKey}}'],
-                    queryFn: async () => {
-                      const response = await get<{{keyName.TypeScriptTypeName}}[]>(`{{Api}}`, { keyword })
-                      return response.ok ? response.data : []
-                    },
-                    onError: error => {
-                      dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
-                    },
-                  })
-
-                  const [setTimeoutHandle, setSetTimeoutHandle] = useState<NodeJS.Timeout | undefined>(undefined)
-                  const onChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-                    setKeyword(e.target.value)
-                    if (setTimeoutHandle !== undefined) clearTimeout(setTimeoutHandle)
-                    setSetTimeoutHandle(setTimeout(() => {
-                      refetch()
-                      setSetTimeoutHandle(undefined)
-                    }, 300))
-                  }, [setKeyword, setTimeoutHandle, setSetTimeoutHandle, refetch])
-                  const onBlur = useCallback(() => {
-                    if (setTimeoutHandle !== undefined) clearTimeout(setTimeoutHandle)
-                    setSetTimeoutHandle(undefined)
-                    refetch()
-                  }, [setTimeoutHandle, setSetTimeoutHandle, refetch])
+                  const queryFn = useCallback(async (keyword: string) => {
+                    const response = await get<{{keyName.TypeScriptTypeName}}[]>(`{{Api}}`, { keyword })
+                    return response.ok ? response.data : []
+                  }, [get])
 
                   const { watch, setValue } = useFormContext()
-                  const onChangeSelectedValue = useCallback((value?: {{keyName.TypeScriptTypeName}}) => {
-                    setValue(raectHookFormId, value)
+                  const onSelectedItemChanged = useCallback((item: {{keyName.TypeScriptTypeName}} | null | undefined) => {
+                    setValue(raectHookFormId, item)
                   }, [setValue, watch])
-                  const displayValue = useCallback((item?: {{keyName.TypeScriptTypeName}}) => {
-                    return `{{keyName.GetNames().Select(m => "${item?." + m.MemberName + "}").Join("&nbsp;")}}`
-                  }, [])
 
                   return (
-                    <Combobox ref={ref} value={watch(raectHookFormId) || null} onChange={onChangeSelectedValue} nullable disabled={readOnly}>
-                      <div className="relative {{AggregateComponent.INPUT_WIDTH}}">
-                        <Combobox.Input displayValue={displayValue} onChange={onChange} onBlur={onBlur} className="w-full" spellCheck="false" autoComplete="off" />
-                        {!readOnly &&
-                          <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
-                            <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-                          </Combobox.Button>}
-                        <Combobox.Options className="absolute mt-1 w-full overflow-auto bg-white py-1 shadow-lg focus:outline-none">
-                          {(setTimeoutHandle !== undefined || isFetching) &&
-                            <NowLoading />}
-                          {(setTimeoutHandle === undefined && !isFetching && data?.length === 0) &&
-                            <span className="p-1 text-sm select-none opacity-50">データなし</span>}
-                          {(setTimeoutHandle === undefined && !isFetching) && data?.map(item => (
-                            <Combobox.Option key={`{{keyName.GetKeys().Select(m => "${item." + m.MemberName + "}").Join("::")}}`} value={item}>
-                              {({ active }) => (
-                                <div className={active ? 'bg-neutral-200' : ''}>
-                                  {{keyName.GetNames().Select(m => "{item." + m.MemberName + "}").Join("&nbsp;")}}
-                                </div>
-                              )}
-                            </Combobox.Option>
-                          ))}
-                        </Combobox.Options>
-                      </div>
-                    </Combobox>
+                    <AsyncComboBox
+                      selectedItem={watch(raectHookFormId)}
+                      onSelectedItemChanged={onSelectedItemChanged}
+                      keySelector={keySelector}
+                      textSelector={textSelector}
+                      queryKey={queryKey}
+                      queryFn={queryFn}
+                      readOnly={readOnly}
+                      className={className}
+                    />
                   )
-                })
+                }
+
+                const queryKey = ['combo-{{_aggregate.Item.UniqueId}}']
+                const keySelector = (item: {{keyName.TypeScriptTypeName}}) => {
+                  return `{{keyName.GetKeys().Select(m => "${item." + m.MemberName + "}").Join("::")}}`
+                }
+                const textSelector = (item: {{keyName.TypeScriptTypeName}}) => {
+                  return `{{keyName.GetNames().Select(m => "${item?." + m.MemberName + "}").Join("&nbsp;")}}`
+                }
                 """;
         }
 
         internal string RenderCaller(string raectHookFormId, bool readOnly) {
             return $$"""
-                <Components.{{ComponentName}} raectHookFormId={{{raectHookFormId}}} {{(readOnly ? "readOnly" : "")}} />
+                <Components.{{ComponentName}} raectHookFormId={{{raectHookFormId}}} {{(readOnly ? "readOnly" : "")}} className="{{AggregateComponent.INPUT_WIDTH}}" />
                 """;
         }
         internal string RenderCaller(string raectHookFormId, string readOnlyCondition) {
             return $$"""
-                <Components.{{ComponentName}} raectHookFormId={{{raectHookFormId}}} readOnly={{{readOnlyCondition}}} />
+                <Components.{{ComponentName}} raectHookFormId={{{raectHookFormId}}} readOnly={{{readOnlyCondition}}} className="{{AggregateComponent.INPUT_WIDTH}}" />
                 """;
         }
     }

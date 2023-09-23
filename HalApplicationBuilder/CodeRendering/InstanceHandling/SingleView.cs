@@ -77,16 +77,12 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
             return $$"""
                 import { useState, useCallback, useMemo, useReducer, useRef } from 'react';
-                import { useAppContext } from '../../hooks/AppContext';
-                import { PageContext, pageContextReducer, usePageContext } from '../../hooks/PageContext'
                 import { Link, useParams, useNavigate } from 'react-router-dom';
                 import { FieldValues, SubmitHandler, useForm, FormProvider, useFormContext, useFieldArray } from 'react-hook-form';
-                import { UUID } from 'uuidjs';
                 import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
+                import { UUID } from 'uuidjs';
                 import * as Components from '../../components';
-                import { IconButton, InlineMessageBar, BarMessage } from '../../components';
-                import { useHttpRequest } from '../../hooks/useHttpRequest';
-                import { visitObject } from '../../hooks';
+                import { useAppContext, PageContext, pageContextReducer, usePageContext, visitObject, useHttpRequest } from '../../hooks';
                 import * as AggregateType from '../../{{types.ImportName}}'
 
                 export default function () {
@@ -95,7 +91,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                   const [, dispatch] = useAppContext()
                   const pageContextValue = useReducer(pageContextReducer, { })
                   const { get, post } = useHttpRequest()
-                  const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
+                  const [errorMessages, setErrorMessages] = useState<Components.BarMessage[]>([])
 
                   // 画面表示時
                 {{If(_type == E_Type.Create, () => $$"""
@@ -204,13 +200,13 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                           <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
                             {{new AggregateComponent(_aggregate, _ctx, _type).RenderCaller()}}
                           </div>
-                          <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
+                          <Components.InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
                 {{If(_type == E_Type.Create, () => $$"""
-                          <IconButton fill className="self-start" icon={BookmarkSquareIcon}>保存</IconButton>
+                          <Components.IconButton fill className="self-start" icon={BookmarkSquareIcon}>保存</Components.IconButton>
                 """).ElseIf(_type == E_Type.View, () => $$"""
-                          <IconButton fill className="self-start" icon={PencilIcon} onClick={navigateToEditView}>編集</IconButton>
+                          <Components.IconButton fill className="self-start" icon={PencilIcon} onClick={navigateToEditView}>編集</Components.IconButton>
                 """).ElseIf(_type == E_Type.Edit, () => $$"""
-                          <IconButton fill className="self-start" icon={BookmarkSquareIcon}>更新</IconButton>
+                          <Components.IconButton fill className="self-start" icon={BookmarkSquareIcon}>更新</Components.IconButton>
                 """)}}
                         </form>
                       </FormProvider>
