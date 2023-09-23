@@ -1,4 +1,3 @@
-using HalApplicationBuilder.CodeRendering.InstanceHandling;
 using HalApplicationBuilder.CodeRendering.Util;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
@@ -9,34 +8,40 @@ using System.Text;
 using System.Threading.Tasks;
 using static HalApplicationBuilder.CodeRendering.TemplateTextHelper;
 
-namespace HalApplicationBuilder.CodeRendering.Finding {
+namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
     internal class FindFeature {
-        internal FindFeature(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx) {
+        internal FindFeature(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
-            _ctx = ctx;
         }
 
         private readonly GraphNode<Aggregate> _aggregate;
-        private readonly CodeRenderingContext _ctx;
 
         internal string FindMethodReturnType => _aggregate.Item.ClassName;
         internal string FindMethodName => $"Find{_aggregate.Item.DisplayName.ToCSharpSafe()}";
+        private const string ACTION_NAME = "detail";
 
-        internal string RenderController() {
-            var _controller = new WebClient.Controller(_aggregate.Item, _ctx);
+        internal string GetUrlStringForReact(IEnumerable<string> keyVariables) {
+            var controller = new WebClient.Controller(_aggregate.Item);
+            var encoded = keyVariables.Select(key => $"${{window.encodeURI({key})}}");
+            return $"`/{controller.SubDomain}/{ACTION_NAME}/{encoded.Join("/")}`";
+        }
+
+        internal string RenderController(CodeRenderingContext _ctx) {
+            var keys = new AggregateKey(_aggregate).GetMembers();
+            var controller = new WebClient.Controller(_aggregate.Item);
 
             return $$"""
             namespace {{_ctx.Config.RootNamespace}} {
                 using Microsoft.AspNetCore.Mvc;
                 using {{_ctx.Config.EntityNamespace}};
             
-                partial class {{_controller.ClassName}} {
-                    [HttpGet("{{WebClient.Controller.FIND_ACTION_NAME}}/")]
-                    public virtual IActionResult Find({{_aggregate.GetKeyMembers().Select(m => $"[FromQuery] {m.CSharpTypeName.ToNullable()} {m.MemberName}").Join(", ")}}) {
+                partial class {{controller.ClassName}} {
+                    [HttpGet("{{ACTION_NAME}}/{{keys.Select(m => "{" + m.MemberName + "}").Join("/")}}")]
+                    public virtual IActionResult Find({{keys.Select(m => $"{m.CSharpTypeName.ToNullable()} {m.MemberName}").Join(", ")}}) {
             {{_aggregate.GetKeyMembers().SelectTextTemplate(m => $$"""
                         if ({{m.MemberName}} == null) return BadRequest();
             """)}}
-                        var instance = _dbContext.{{FindMethodName}}({{_aggregate.GetKeyMembers().Select(m => m.MemberName).Join(", ")}});
+                        var instance = _dbContext.{{FindMethodName}}({{keys.Select(m => m.MemberName).Join(", ")}});
                         if (instance == null) {
                             return NotFound();
                         } else {
@@ -48,7 +53,7 @@ namespace HalApplicationBuilder.CodeRendering.Finding {
             """;
         }
 
-        internal string RenderEFCoreFindMethod() {
+        internal string RenderEFCoreFindMethod(CodeRenderingContext _ctx) {
 
             return $$"""
                 namespace {{_ctx.Config.EntityNamespace}} {

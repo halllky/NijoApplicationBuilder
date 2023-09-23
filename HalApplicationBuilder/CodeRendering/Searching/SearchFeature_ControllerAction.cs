@@ -8,10 +8,10 @@ using System.Threading.Tasks;
 namespace HalApplicationBuilder.CodeRendering.Searching {
     partial class SearchFeature {
         internal string RenderControllerAction() {
-            var controller = new WebClient.Controller(PhysicalName, Context);
+            var controller = new WebClient.Controller(PhysicalName);
 
             return $$"""
-                {{controller.Render()}}
+                {{controller.Render(Context)}}
 
                 namespace {{Context.Config.RootNamespace}} {
                     using Microsoft.AspNetCore.Mvc;

@@ -32,31 +32,50 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             _ => throw new NotImplementedException(),
         };
 
-        internal string Url => GetUrl(_type);
-        private string GetUrl(E_Type type) => type switch {
-            E_Type.Create => $"/{_aggregate.Item.UniqueId}/new",
-            E_Type.View => $"/{_aggregate.Item.UniqueId}/detail",
-            E_Type.Edit => $"/{_aggregate.Item.UniqueId}/edit",
-            _ => throw new NotImplementedException(),
-        };
+        internal string GetUrlStringForReact(IEnumerable<string>? keyVariables = null) {
+            return GetUrlStringForReact(_type, keyVariables);
+        }
+        private string GetUrlStringForReact(E_Type type, IEnumerable<string>? keyVariables = null) {
+            switch (type) {
+                case E_Type.Create:
+                    return $"/{_aggregate.Item.UniqueId}/new";
+
+                case E_Type.View:
+                case E_Type.Edit:
+                    if (keyVariables == null) throw new ArgumentNullException(nameof(keyVariables));
+                    var command = type == E_Type.View ? "detail" : "edit";
+                    var encoded = keyVariables.Select(key => $"${{window.encodeURI(`${{{key}}}`)}}");
+                    return $"/{_aggregate.Item.UniqueId}/{command}/{encoded.Join("/")}";
+
+                default:
+                    throw new NotImplementedException();
+            }
+        }
 
         internal string Route => _type switch {
             E_Type.Create => $"/{_aggregate.Item.UniqueId}/new",
-            E_Type.View => $"/{_aggregate.Item.UniqueId}/detail/:instanceKey",
-            E_Type.Edit => $"/{_aggregate.Item.UniqueId}/edit/:instanceKey",
+
+            // React Router は全角文字非対応なので key0, key1, ... をURLに使う
+            E_Type.View => $"/{_aggregate.Item.UniqueId}/detail/{new AggregateKey(_aggregate).GetMembers().Select((_, i) => $":key{i}").Join("/")}",
+            E_Type.Edit => $"/{_aggregate.Item.UniqueId}/edit/{new AggregateKey(_aggregate).GetMembers().Select((_, i) => $":key{i}").Join("/")}",
+
             _ => throw new NotImplementedException(),
         };
 
         protected override string Template() {
-            var controller = new Controller(_aggregate.Item, _ctx);
+            var controller = new Controller(_aggregate.Item);
             var multiViewUrl = new Searching.SearchFeature(_aggregate.As<IEFCoreEntity>(), _ctx).ReactPageUrl;
             var components = _aggregate
                 .EnumerateThisAndDescendants()
                 .Select(x => new AggregateComponent(x, _ctx, _type));
             var createEmptyObject = new AggregateInstanceInitializerFunction(_aggregate).FunctionName;
 
+            var find = new FindFeature(_aggregate);
+
             var aggKey = new AggregateKey(_aggregate);
             var aggName = new AggregateName(_aggregate);
+
+            var keysFromUrl = aggKey.GetMembers().Select(m => $"urlKey{m.MemberName}").ToArray();
 
             return $$"""
                 import { useState, useCallback, useMemo, useReducer } from 'react';
@@ -85,13 +104,14 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     return AggregateType.{{createEmptyObject}}()
                   }, [])
                 """).Else(() => $$"""
-                  const { instanceKey } = useParams()
+                  const { {{aggKey.GetMembers().Select((m, i) => $"key{i}: urlKey{m.MemberName}").Join(", ")}} } = useParams()
                   const [instanceName, setInstanceName] = useState<string | undefined>('')
                   const [fetched, setFetched] = useState(false)
                   const defaultValues = useCallback(async () => {
-                    if (!instanceKey) return AggregateType.{{createEmptyObject}}()
-                    const encoded = window.encodeURI(instanceKey)
-                    const response = await get(`{{controller.FindCommandApi}}/${encoded}`)
+                {{keysFromUrl.SelectTextTemplate(key => $$"""
+                    if ({{key}} == null) return AggregateType.{{createEmptyObject}}()
+                """)}}
+                    const response = await get({{find.GetUrlStringForReact(keysFromUrl)}})
                     setFetched(true)
                     if (response.ok) {
                       const responseData = response.data as AggregateType.{{_aggregate.Item.TypeScriptTypeName}}
@@ -103,7 +123,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     } else {
                       return AggregateType.{{createEmptyObject}}()
                     }
-                  }, [instanceKey])
+                  }, [{{keysFromUrl.Join(", ")}}])
                 """)}}
 
                   const reactHookFormMethods = useForm({ defaultValues })
@@ -112,9 +132,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                   const navigate = useNavigate()
                 {{If(_type == E_Type.View, () => $$"""
                   const navigateToEditView = useCallback((e: React.MouseEvent) => {
-                    navigate(`{{GetUrl(E_Type.Edit)}}/${instanceKey}`)
+                    navigate(`{{GetUrlStringForReact(E_Type.Edit, keysFromUrl)}}`)
                     e.preventDefault()
-                  }, [navigate, instanceKey])
+                  }, [navigate, {{keysFromUrl.Join(", ")}}])
                 """)}}
                 {{If(_type == E_Type.Create, () => $$"""
                   const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
@@ -122,12 +142,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     if (response.ok) {
                       dispatch({ type: 'pushMsg', msg: `${({{aggName.GetMembers().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を作成しました。` })
                       setErrorMessages([])
-                      const encoded = window.encodeURI(JSON.stringify([
-                {{aggKey.GetMembers().SelectTextTemplate(m => $$"""
-                        response.data.{{m.MemberName}},
-                """)}}
-                      ]))
-                      navigate(`{{GetUrl(E_Type.View)}}/${encoded}`)
+                      navigate(`{{GetUrlStringForReact(E_Type.View, aggKey.GetMembers().Select(m => $"response.data.{m.MemberName}"))}}`)
                     } else {
                       setErrorMessages([...errorMessages, ...response.errors])
                     }
@@ -138,11 +153,11 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     if (response.ok) {
                       setErrorMessages([])
                       dispatch({ type: 'pushMsg', msg: `${({{aggName.GetMembers().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を更新しました。` })
-                      navigate(`{{GetUrl(E_Type.View)}}/${instanceKey}`)
+                      navigate(`{{GetUrlStringForReact(E_Type.View, keysFromUrl)}}`)
                     } else {
                       setErrorMessages([...errorMessages, ...response.errors])
                     }
-                  }, [errorMessages, dispatch, post, navigate, instanceKey])
+                  }, [errorMessages, dispatch, post, navigate, {{keysFromUrl.Join(", ")}}])
                 """)}}
 
                 {{If(_type == E_Type.View || _type == E_Type.Edit, () => $$"""

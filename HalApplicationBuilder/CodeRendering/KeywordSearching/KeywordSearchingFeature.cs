@@ -29,7 +29,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
 
         private WebClient.Controller GetController() {
             var root = _aggregate.GetRoot();
-            return new WebClient.Controller(root.Item, _ctx);
+            return new WebClient.Controller(root.Item);
         }
 
         internal string DbcontextMeghodName => $"SearchByKeyword{_aggregate.Item.DisplayName.ToCSharpSafe()}";

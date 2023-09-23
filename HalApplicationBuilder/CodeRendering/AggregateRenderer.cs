@@ -167,16 +167,16 @@ namespace HalApplicationBuilder.CodeRendering {
 
 
         protected override string Template() {
-            var controller = new WebClient.Controller(_aggregate.Item, _ctx);
+            var controller = new WebClient.Controller(_aggregate.Item);
             var search = new Searching.SearchFeature(_aggregate.As<IEFCoreEntity>(), _ctx);
-            var find = new Finding.FindFeature(_aggregate, _ctx);
+            var find = new FindFeature(_aggregate);
 
             return $$"""
                 #pragma warning disable CS8600 // Null リテラルまたは Null の可能性がある値を Null 非許容型に変換しています。
                 #pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければなりません
                 #pragma warning disable IDE1006 // 命名スタイル
 
-                {{controller.Render()}}
+                {{controller.Render(_ctx)}}
 
                 #region データ新規作成
                 namespace {{_ctx.Config.RootNamespace}} {
@@ -249,8 +249,8 @@ namespace HalApplicationBuilder.CodeRendering {
 
 
                 #region 詳細検索
-                {{find.RenderController()}}
-                {{find.RenderEFCoreFindMethod()}}
+                {{find.RenderController(_ctx)}}
+                {{find.RenderEFCoreFindMethod(_ctx)}}
                 #endregion 詳細検索
 
 

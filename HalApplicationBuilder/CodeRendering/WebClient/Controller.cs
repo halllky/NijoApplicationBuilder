@@ -8,17 +8,14 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.CodeRendering.WebClient {
     internal class Controller {
-        internal Controller(string physicalName, CodeRenderingContext ctx) {
+        internal Controller(string physicalName) {
             _physicalName = physicalName;
-            _ctx = ctx;
         }
-        internal Controller(Aggregate aggregate, CodeRenderingContext ctx)
-            : this(aggregate.DisplayName.ToCSharpSafe(), ctx) { }
+        internal Controller(Aggregate aggregate) : this(aggregate.DisplayName.ToCSharpSafe()) {
+        }
 
         private readonly string _physicalName;
-        private readonly CodeRenderingContext _ctx;
 
-        internal string Namespace => _ctx.Config.RootNamespace;
         internal string ClassName => $"{_physicalName}Controller";
 
         internal const string SEARCH_ACTION_NAME = "list";
@@ -34,11 +31,10 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
         internal string CreateCommandApi => $"/{SubDomain}/{CREATE_ACTION_NAME}";
         internal string UpdateCommandApi => $"/{SubDomain}/{UPDATE_ACTION_NAME}";
         internal string DeleteCommandApi => $"/{SubDomain}/{DELETE_ACTION_NAME}";
-        internal string FindCommandApi => $"/{SubDomain}/{FIND_ACTION_NAME}";
 
-        internal string Render() {
+        internal string Render(CodeRenderingContext _ctx) {
             return $$"""
-                namespace {{Namespace}} {
+                namespace {{_ctx.Config.RootNamespace}} {
                     using Microsoft.AspNetCore.Mvc;
                     using {{_ctx.Config.EntityNamespace}};
 

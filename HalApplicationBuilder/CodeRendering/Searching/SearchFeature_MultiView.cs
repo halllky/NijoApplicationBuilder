@@ -27,8 +27,8 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                 var searchApi = $"/{Controller.SUBDOMAIN}/{Search.PhysicalName}/{Controller.SEARCH_ACTION_NAME}";
 
                 var aggregate = Search.DbEntity.Item is Aggregate ? Search.DbEntity.As<Aggregate>() : null;
-                var createViewRoute = aggregate == null ? null : new SingleView(aggregate, Search.Context, SingleView.E_Type.Create).Url;
-                var singleViewRoute = aggregate == null ? null : new SingleView(aggregate, Search.Context, SingleView.E_Type.View).Url;
+                var createView = aggregate == null ? null : new SingleView(aggregate, Search.Context, SingleView.E_Type.Create);
+                var singleView = aggregate == null ? null : new SingleView(aggregate, Search.Context, SingleView.E_Type.View);
                 var aggKey = aggregate == null ? null : new AggregateKey(aggregate);
 
                 var memberNames = Search.VisibleMembers.Select(m => m.ConditionPropName);
@@ -82,9 +82,9 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                       })
 
                       const navigate = useNavigate()
-                    {{If(createViewRoute != null, () => $$"""
+                    {{If(createView != null, () => $$"""
                       const toCreateView = useCallback(() => {
-                        navigate('{{createViewRoute}}')
+                        navigate(`{{createView!.GetUrlStringForReact()}}`)
                       }, [navigate])
                     """)}}
 
@@ -104,7 +104,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                                 ? <ChevronDownIcon className="w-4" />
                                 : <ChevronUpIcon className="w-4" />}
                             </div>
-                    {{If(createViewRoute != null, () => $$"""
+                    {{If(createView != null, () => $$"""
                             <IconButton underline icon={PlusIcon} onClick={toCreateView}>新規作成</IconButton>
                     """)}}
                           </div>
@@ -152,15 +152,13 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                     }
 
                     const columnDefs: ColDef<RowType>[] = [
-                    {{If(singleViewRoute != null, () => $$"""
+                    {{If(singleView != null, () => $$"""
                       {
                         resizable: true,
                         width: 50,
                         cellRenderer: ({ data }: { data: RowType }) => {
-                          const encoded = window.encodeURI(JSON.stringify([
-                            {{WithIndent(aggKey!.GetMembers().SelectTextTemplate(m => $"data.{m.MemberName},"), "        ")}}
-                          ]))
-                          return <Link to={`{{singleViewRoute}}/${encoded}`} className="text-blue-400">詳細</Link>
+                          const singleViewUrl = `{{singleView!.GetUrlStringForReact(aggKey!.GetMembers().Select(m => $"data.{m.MemberName}"))}}`
+                          return <Link to={singleViewUrl} className="text-blue-400">詳細</Link>
                         },
                       },
                     """)}}
