@@ -83,7 +83,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                     setValue(raectHookFormId, value)
                   }, [setValue, watch])
                   const displayValue = useCallback((item?: {{keyName.TypeScriptTypeName}}) => {
-                    return ({{names.Select(m => $"String(item?.{m.MemberName})").Join(" + ")}}) || ''
+                    return `{{names.Select(m => "${item?." + m.MemberName + "}").Join("&nbsp;")}}`
                   }, [])
 
                   return (
@@ -103,7 +103,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                             <Combobox.Option key={`{{keys.Select(m => "${item." + m.MemberName + "}").Join("::")}}`} value={item}>
                               {({ active }) => (
                                 <div className={active ? 'bg-neutral-200' : ''}>
-                                  {{names.SelectTextTemplate(m => "{item." + m.MemberName + "}")}}
+                                  {{names.Select(m => "{item." + m.MemberName + "}").Join("&nbsp;")}}
                                 </div>
                               )}
                             </Combobox.Option>
