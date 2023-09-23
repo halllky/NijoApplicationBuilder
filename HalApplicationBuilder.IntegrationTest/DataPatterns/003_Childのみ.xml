@@ -4,7 +4,7 @@
   <親集約 is="master-data">
     <親集約ID is="id" />
     <親集約名 is="name" />
-    <子集約 is="object">
+    <子集約 is="section">
       <子集約ID is="id" />
       <子集約名 is="name" />
     </子集約>

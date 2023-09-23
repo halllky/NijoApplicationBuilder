@@ -28,7 +28,7 @@
     <機能ID is="uuid" />
     <機能名 is="name" />
     <参照更新の別 is="E_参照更新" />
-    <非機能要件 is="object">
+    <非機能要件 is="section">
       <レスポンス is="sentence" />
       <セキュリティ is="sentence" />
     </非機能要件>

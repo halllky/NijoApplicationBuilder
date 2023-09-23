@@ -174,7 +174,7 @@ namespace HalApplicationBuilder.Core {
             parser.IfExists("master-data")
                 .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force);
 
-            parser.IfExists("object")
+            parser.IfExists("section")
                 .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)
                 .SetAggregateOption(opt => opt.IsArray, false, E_Priority.Force);
             parser.IfExists("array")

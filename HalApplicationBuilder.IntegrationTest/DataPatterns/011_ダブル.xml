@@ -5,11 +5,11 @@
     <ID is="id" />
     <名前 is="name" />
 
-    <子 is="object">
+    <子 is="section">
       <ID is="id" />
       <名前 is="name" />
 
-      <子の子 is="object">
+      <子の子 is="section">
         <ID is="id" />
         <名前 is="name" />
       </子の子>
@@ -33,7 +33,7 @@
       <ID is="id" />
       <名前 is="name" />
 
-      <子配列の子 is="object">
+      <子配列の子 is="section">
         <ID is="id" />
         <名前 is="name" />
       </子配列の子>
@@ -58,7 +58,7 @@
         <ID is="id" />
         <名前 is="name" />
 
-        <子バリエーション種別Aの子 is="object">
+        <子バリエーション種別Aの子 is="section">
           <ID is="id" />
           <名前 is="name" />
         </子バリエーション種別Aの子>
@@ -82,7 +82,7 @@
         <ID is="id" />
         <名前 is="name" />
 
-        <子バリエーション種別Bの子 is="object">
+        <子バリエーション種別Bの子 is="section">
           <ID is="id" />
           <名前 is="name" />
         </子バリエーション種別Bの子>
