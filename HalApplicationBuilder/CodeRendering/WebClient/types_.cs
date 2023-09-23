@@ -1,4 +1,5 @@
 using HalApplicationBuilder.CodeRendering.InstanceHandling;
+using HalApplicationBuilder.CodeRendering.KeywordSearching;
 using HalApplicationBuilder.Core;
 using System;
 using System.Collections.Generic;
@@ -30,6 +31,8 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new AggregateInstanceInitializerFunction(aggregate).Render())}}
 
                 {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new AggregateKey(aggregate).RenderTypeScriptDeclaring())}}
+                
+                {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new AggregateKeyName(aggregate).RenderTypeScriptDeclaring())}}
 
                 {{new Searching.SearchFeature(root.As<IEFCoreEntity>(), _ctx).RenderTypescriptTypeDef()}}
 

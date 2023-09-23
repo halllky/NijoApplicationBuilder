@@ -1,4 +1,3 @@
-using HalApplicationBuilder.CodeRendering.Presentation;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
 using static HalApplicationBuilder.CodeRendering.TemplateTextHelper;
@@ -18,6 +17,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         protected readonly GraphNode<Aggregate> _aggregate;
 
         internal virtual string ClassName => _aggregate.Item.ClassName;
+
+        internal const string IS_LOADED = "__loaded";
 
         internal const string FROM_DBENTITY = "FromDbEntity";
         internal const string TO_DBENTITY = "ToDbEntity";
@@ -43,7 +44,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     /// <summary>
                     /// {{_aggregate.Item.DisplayName}}のデータ1件の詳細を表すクラスです。
                     /// </summary>
-                    public partial class {{ClassName}} : {{AggregateInstanceBase.CLASS_NAME}} {
+                    public partial class {{ClassName}} {
                 {{GetAggregateDetailMembers().SelectTextTemplate(prop => $$"""
                         public {{prop.CSharpTypeName}} {{prop.MemberName}} { get; set; }
                 """)}}
@@ -63,11 +64,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 {{GetAggregateDetailMembers().SelectTextTemplate(m => $$"""
                   {{m.MemberName}}?: {{m.TypeScriptTypename}}
                 """)}}
-                {{If(_aggregate.IsRoot(), () => $$"""
-                  {{AggregateInstanceBase.INSTANCE_KEY}}?: string
-                  {{AggregateInstanceBase.INSTANCE_NAME}}?: string
-                """)}}
-                  {{AggregateInstanceBase.IS_LOADED}}?: boolean
+                  {{IS_LOADED}}?: boolean
                 }
                 """;
         }
@@ -83,7 +80,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     var instance = new {{_aggregate.Item.ClassName}} {
                         {{WithIndent(RenderBodyOfFromDbEntity(_aggregate, _aggregate, "entity", 0), "        ")}}
                     };
-                    instance.{{AggregateInstanceBase.INSTANCE_NAME}} = {{_aggregate.GetInstanceNameMembers().Select(m => $"instance.{m.GetFullPath().Join(".")}?.ToString()").Join(" + ")}};
                     return instance;
                 }
                 """;
@@ -113,7 +109,11 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     var key = new AggregateKey(refProp.MemberAggregate);
 
                     yield return $$"""
-                        {{refProp.MemberName}} = {{key.RenderConvertingFromDbEntity(member => $"{rootInstanceName}.{member.GetFullPath(rootInstance).Join(".")}")}},
+                        {{refProp.MemberName}} = new() {
+                        {{key.GetMembers().SelectTextTemplate(m => $$"""
+                            {{m.MemberName}} = {{rootInstanceName}}.{{m.GetDbColumn().GetFullPath(rootInstance.As<IEFCoreEntity>()).Join(".")}},
+                        """)}}
+                        },
                         """;
                     //yield eturn $$"""
                     //    {{refProp.MemberName}} = new() {

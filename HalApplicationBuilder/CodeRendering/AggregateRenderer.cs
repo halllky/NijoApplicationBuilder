@@ -1,5 +1,5 @@
 using HalApplicationBuilder.CodeRendering.InstanceHandling;
-using HalApplicationBuilder.CodeRendering.Presentation;
+using HalApplicationBuilder.CodeRendering.KeywordSearching;
 using HalApplicationBuilder.CodeRendering.Util;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
@@ -378,6 +378,7 @@ namespace HalApplicationBuilder.CodeRendering {
                     using System.Text.Json.Serialization;
 
                     {{WithIndent(_aggregate.EnumerateThisAndDescendants().SelectTextTemplate(ins => new AggregateKey(ins).RenderCSharpDeclaring()), "    ")}}
+                    {{WithIndent(_aggregate.EnumerateThisAndDescendants().SelectTextTemplate(ins => new AggregateKeyName(ins).RenderCSharpDeclaring()), "    ")}}
                 }
 
                 {{search.RenderCSharpClassDef()}}

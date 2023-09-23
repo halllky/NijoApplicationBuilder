@@ -40,10 +40,6 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
         private const string SEARCHCONDITION_BASE_CLASS_NAME = "SearchConditionBase";
         private const string SEARCHCONDITION_PAGE_PROP_NAME = "__halapp__Page";
 
-        private const string SEARCHRESULT_BASE_CLASS_NAME = "SearchResultBase";
-        private const string SEARCHRESULT_INSTANCE_KEY_PROP_NAME = "__halapp__InstanceKey";
-        private const string SEARCHRESULT_INSTANCE_NAME_PROP_NAME = "__halapp__InstanceName";
-
         private ICollection<Member>? _members;
         private ICollection<Member> Members {
             get {

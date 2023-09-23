@@ -1,4 +1,3 @@
-using HalApplicationBuilder.CodeRendering.Presentation;
 using HalApplicationBuilder.CodeRendering.WebClient;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
@@ -56,6 +55,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 .Select(x => new AggregateComponent(x, _ctx, _type));
             var createEmptyObject = new AggregateInstanceInitializerFunction(_aggregate).FunctionName;
 
+            var aggKey = new AggregateKey(_aggregate);
+            var aggName = new AggregateName(_aggregate);
+
             return $$"""
                 import { useState, useCallback, useMemo, useReducer } from 'react';
                 import { useAppContext } from '../../hooks/AppContext';
@@ -93,9 +95,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     setFetched(true)
                     if (response.ok) {
                       const responseData = response.data as AggregateType.{{_aggregate.Item.TypeScriptTypeName}}
-                      setInstanceName(responseData.{{AggregateInstanceBase.INSTANCE_NAME}})
+                      setInstanceName({{aggName.GetMembers().Select(m => $"String(responseData.{m.MemberName})").Join(" + ")}})
                       visitObject(responseData, obj => {
-                        (obj as { {{AggregateInstanceBase.IS_LOADED}}?: boolean }).{{AggregateInstanceBase.IS_LOADED}} = true
+                        (obj as { {{AggregateDetail.IS_LOADED}}?: boolean }).{{AggregateDetail.IS_LOADED}} = true
                       })
                       return responseData
                     } else {
@@ -115,23 +117,27 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                   }, [navigate, instanceKey])
                 """)}}
                 {{If(_type == E_Type.Create, () => $$"""
-                  const onSave: SubmitHandler<FieldValues> = useCallback(async data => {	
-                    const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{controller.CreateCommandApi}}`, data)	
-                    if (response.ok) {	
-                      dispatch({ type: 'pushMsg', msg: `${response.data.{{AggregateInstanceBase.INSTANCE_NAME}}}を作成しました。` })	
-                      setErrorMessages([])	
-                      const encoded = window.encodeURI(response.data.{{AggregateInstanceBase.INSTANCE_KEY}}!)	
-                      navigate(`{{GetUrl(E_Type.View)}}/${encoded}`)	
-                    } else {	
-                      setErrorMessages([...errorMessages, ...response.errors])	
-                    }	
+                  const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
+                    const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{controller.CreateCommandApi}}`, data)
+                    if (response.ok) {
+                      dispatch({ type: 'pushMsg', msg: `${({{aggName.GetMembers().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を作成しました。` })
+                      setErrorMessages([])
+                      const encoded = window.encodeURI(JSON.stringify([
+                {{aggKey.GetMembers().SelectTextTemplate(m => $$"""
+                        response.data.{{m.MemberName}},
+                """)}}
+                      ]))
+                      navigate(`{{GetUrl(E_Type.View)}}/${encoded}`)
+                    } else {
+                      setErrorMessages([...errorMessages, ...response.errors])
+                    }
                   }, [post, navigate, errorMessages, setErrorMessages, dispatch])
                 """).ElseIf(_type == E_Type.Edit, () => $$"""
                   const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
                     const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{controller.UpdateCommandApi}}`, data)
                     if (response.ok) {
                       setErrorMessages([])
-                      dispatch({ type: 'pushMsg', msg: `${response.data.{{AggregateInstanceBase.INSTANCE_NAME}}}を更新しました。` })
+                      dispatch({ type: 'pushMsg', msg: `${({{aggName.GetMembers().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を更新しました。` })
                       navigate(`{{GetUrl(E_Type.View)}}/${instanceKey}`)
                     } else {
                       setErrorMessages([...errorMessages, ...response.errors])

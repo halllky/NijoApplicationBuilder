@@ -1,5 +1,6 @@
 using HalApplicationBuilder.CodeRendering.InstanceHandling;
 using HalApplicationBuilder.CodeRendering.WebClient;
+using static HalApplicationBuilder.CodeRendering.TemplateTextHelper;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
 using System;
@@ -28,6 +29,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                 var aggregate = Search.DbEntity.Item is Aggregate ? Search.DbEntity.As<Aggregate>() : null;
                 var createViewRoute = aggregate == null ? null : new SingleView(aggregate, Search.Context, SingleView.E_Type.Create).Url;
                 var singleViewRoute = aggregate == null ? null : new SingleView(aggregate, Search.Context, SingleView.E_Type.View).Url;
+                var aggKey = aggregate == null ? null : new AggregateKey(aggregate);
 
                 var memberNames = Search.VisibleMembers.Select(m => m.ConditionPropName);
                 var propNameWidth = AggregateComponent.GetPropNameFlexBasis(memberNames);
@@ -144,8 +146,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                     }
 
                     type RowType = {
-                      {{SEARCHRESULT_INSTANCE_KEY_PROP_NAME}}: string
-                    {{Search.VisibleMembers.SelectTextTemplate(member => $$"""
+                    {{Search.Members.SelectTextTemplate(member => $$"""
                       {{member.SearchResultPropName}}?: string | number | boolean
                     """)}}
                     }
@@ -156,7 +157,9 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                         resizable: true,
                         width: 50,
                         cellRenderer: ({ data }: { data: RowType }) => {
-                          const encoded = window.encodeURI(data.{{SEARCHRESULT_INSTANCE_KEY_PROP_NAME}})
+                          const encoded = window.encodeURI(JSON.stringify([
+                            {{WithIndent(aggKey!.GetMembers().SelectTextTemplate(m => $"data.{m.MemberName},"), "        ")}}
+                          ]))
                           return <Link to={`{{singleViewRoute}}/${encoded}`} className="text-blue-400">詳細</Link>
                         },
                       },

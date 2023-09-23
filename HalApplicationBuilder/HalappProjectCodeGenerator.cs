@@ -111,7 +111,6 @@ namespace HalApplicationBuilder {
                         utilDir.Generate(new CodeRendering.Util.RuntimeSettings(ctx));
                         utilDir.Generate(new CodeRendering.Util.DotnetExtensions(ctx.Config));
                         utilDir.Generate(new CodeRendering.Util.FromTo(ctx.Config));
-                        utilDir.Generate(new CodeRendering.Util.AggregateInstanceKeyNamePair(ctx.Config));
                         utilDir.Generate(new CodeRendering.Util.HttpResponseExceptionFilter(ctx.Config.RootNamespace));
                         utilDir.Generate(new CodeRendering.Util.DefaultLogger(ctx.Config.RootNamespace));
                         var util = new CodeRendering.Util.Utility(ctx);
@@ -119,9 +118,7 @@ namespace HalApplicationBuilder {
                         utilDir.DeleteOtherFiles();
                     });
                     genDir.Directory("Web", controllerDir => {
-                        controllerDir.Generate(new CodeRendering.Presentation.AggregateInstanceBase(ctx));
                         controllerDir.Generate(CodeRendering.Searching.SearchFeature.CreateSearchConditionBaseClassTemplate(ctx));
-                        controllerDir.Generate(CodeRendering.Searching.SearchFeature.CreateSearchResultBaseClassTemplate(ctx));
                         controllerDir.Generate(new DebuggerController(ctx));
                         controllerDir.DeleteOtherFiles();
                     });

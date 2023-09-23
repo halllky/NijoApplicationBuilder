@@ -66,18 +66,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                                 query = query.Skip(skip).Take(PAGE_SIZE);
                             }
 
-                            foreach (var item in query) {
-                                item.{{SEARCHRESULT_INSTANCE_KEY_PROP_NAME}} = {{WithIndent(AggregateInstanceKeyNamePair.RenderKeyJsonConverting(Members.Where(member => member.IsInstanceKey).Select(member => $"item.{member.SearchResultPropName}")), "                ")}};
-
-                {{If(instanceNameProp == null, () => $$"""
-                                // 表示名に使用するプロパティが定義されていないため、キーを表示名に使用します。
-                                item.{{SEARCHRESULT_INSTANCE_NAME_PROP_NAME}} = item.{{SEARCHRESULT_INSTANCE_KEY_PROP_NAME}};
-                """).Else(() => $$"""
-                                item.{{SEARCHRESULT_INSTANCE_NAME_PROP_NAME}} = item.{{instanceNameProp}};
-                """)}}
-
-                                yield return item;
-                            }
+                            return query.AsEnumerable();
                         }
                     }
                 }

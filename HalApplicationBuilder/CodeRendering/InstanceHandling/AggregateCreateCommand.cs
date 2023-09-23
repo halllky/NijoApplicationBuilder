@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using HalApplicationBuilder.CodeRendering.Presentation;
 
 namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
     internal class AggregateCreateCommand : AggregateDetail {
@@ -27,7 +26,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     /// <summary>
                     /// {{_aggregate.Item.DisplayName}}のデータ作成コマンドです。
                     /// </summary>
-                    public partial class {{ClassName}} : {{AggregateInstanceBase.CLASS_NAME}} {
+                    public partial class {{ClassName}} {
                 {{GetAggregateDetailMembers().SelectTextTemplate(prop => $$"""
                         public {{prop.CSharpTypeName}} {{prop.MemberName}} { get; set; }
                 """)}}

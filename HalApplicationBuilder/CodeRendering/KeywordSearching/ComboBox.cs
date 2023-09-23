@@ -29,6 +29,10 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
         internal string Api => new KeywordSearchingFeature(_aggregate, _ctx).GetUri();
 
         protected override string Template() {
+            var keyName = new AggregateKeyName(_aggregate);
+            var keys = keyName.GetMembers().Where(m => m.IsKey);
+            var names = keyName.GetMembers().Where(m => m.IsDisplayName);
+
             return $$"""
                 import React, { forwardRef, ForwardedRef, useState, useCallback } from "react"
                 import { useQuery } from "react-query"
@@ -38,6 +42,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                 import { NowLoading } from "./NowLoading"
                 import { useAppContext } from "../hooks/AppContext"
                 import { useHttpRequest } from "../hooks/useHttpRequest"
+                import { {{keyName.TypeScriptTypeName}} } from "../types"
 
                 export const {{ComponentName}} = forwardRef(({ raectHookFormId, readOnly }: {
                   raectHookFormId: string
@@ -50,7 +55,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                   const { data, refetch, isFetching } = useQuery({
                     queryKey: ['{{UseQueryKey}}'],
                     queryFn: async () => {
-                      const response = await get<{{AggregateInstanceKeyNamePair.TS_DEF}}[]>(`{{Api}}`, { keyword })
+                      const response = await get<{{keyName.TypeScriptTypeName}}[]>(`{{Api}}`, { keyword })
                       return response.ok ? response.data : []
                     },
                     onError: error => {
@@ -74,11 +79,11 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                   }, [setTimeoutHandle, setSetTimeoutHandle, refetch])
 
                   const { watch, setValue } = useFormContext()
-                  const onChangeSelectedValue = useCallback((value?: {{AggregateInstanceKeyNamePair.TS_DEF}}) => {
+                  const onChangeSelectedValue = useCallback((value?: {{keyName.TypeScriptTypeName}}) => {
                     setValue(raectHookFormId, value)
                   }, [setValue, watch])
-                  const displayValue = useCallback((item?: {{AggregateInstanceKeyNamePair.TS_DEF}}) => {
-                    return item?.name || ''
+                  const displayValue = useCallback((item?: {{keyName.TypeScriptTypeName}}) => {
+                    return ({{names.Select(m => $"String(item?.{m.MemberName})").Join(" + ")}}) || ''
                   }, [])
 
                   return (
@@ -95,10 +100,10 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                           {(setTimeoutHandle === undefined && !isFetching && data?.length === 0) &&
                             <span className="p-1 text-sm select-none opacity-50">データなし</span>}
                           {(setTimeoutHandle === undefined && !isFetching) && data?.map(item => (
-                            <Combobox.Option key={item.{{AggregateInstanceKeyNamePair.JSON_KEY}}} value={item}>
+                            <Combobox.Option key={`{{keys.Select(m => "${item." + m.MemberName + "}").Join("::")}}`} value={item}>
                               {({ active }) => (
                                 <div className={active ? 'bg-neutral-200' : ''}>
-                                  {item.{{AggregateInstanceKeyNamePair.JSON_NAME}}}
+                                  {{names.SelectTextTemplate(m => "{item." + m.MemberName + "}")}}
                                 </div>
                               )}
                             </Combobox.Option>

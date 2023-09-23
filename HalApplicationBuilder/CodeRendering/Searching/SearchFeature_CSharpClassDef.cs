@@ -32,7 +32,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                     /// <summary>
                     /// {{DisplayName}}の一覧検索処理の検索結果1件を表すクラスです。
                     /// </summary>
-                    public partial class {{SearchResultClassName}} : {{SEARCHRESULT_BASE_CLASS_NAME}} {
+                    public partial class {{SearchResultClassName}} {
                 {{Members.SelectTextTemplate(member => $$"""
                         public {{member.DbColumn.Options.MemberType.GetCSharpTypeName()}} {{member.SearchResultPropName}} { get; set; }
                 """)}}
@@ -52,24 +52,6 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                     namespace {{Context.Config.RootNamespace}} {
                         public abstract class {{SEARCHCONDITION_BASE_CLASS_NAME}} {
                             public int? {{SEARCHCONDITION_PAGE_PROP_NAME}} { get; set; }
-                        }
-                    }
-                    """;
-            }
-        }
-
-        internal static ITemplate CreateSearchResultBaseClassTemplate(CodeRenderingContext ctx) {
-            return new SearchResultBase { Context = ctx };
-        }
-        private class SearchResultBase : TemplateBase {
-            internal required CodeRenderingContext Context { get; init; }
-            public override string FileName => "SearchResultBase.cs";
-            protected override string Template() {
-                return $$"""
-                    namespace {{Context.Config.RootNamespace}} {
-                        public abstract class {{SEARCHRESULT_BASE_CLASS_NAME}} {
-                            public string {{SEARCHRESULT_INSTANCE_KEY_PROP_NAME}} { get; set; } = string.Empty;
-                            public string {{SEARCHRESULT_INSTANCE_NAME_PROP_NAME}} { get; set; } = string.Empty;
                         }
                     }
                     """;

@@ -8,7 +8,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using HalApplicationBuilder.CodeRendering.WebClient;
-using HalApplicationBuilder.CodeRendering.Presentation;
 
 namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
@@ -68,7 +67,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 SingleView.E_Type.Create => "",
                 SingleView.E_Type.View => readOnly,
                 SingleView.E_Type.Edit => prop.IsKey
-                    ? $"{readOnly}={{item?.{AggregateInstanceBase.IS_LOADED}}}"
+                    ? $"{readOnly}={{item?.{AggregateDetail.IS_LOADED}}}"
                     : $"",
                 _ => throw new NotImplementedException(),
             };
@@ -270,7 +269,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     SingleView.E_Type.View => input,
                     SingleView.E_Type.Edit => _prop.Options.IsKey
                         ? $$"""
-                            {(item?.{{AggregateInstanceBase.IS_LOADED}})
+                            {(item?.{{AggregateDetail.IS_LOADED}})
                               ? {{WithIndent(input, "    ")}}
                               : {{WithIndent(select, "    ")}}}
                             """
@@ -294,7 +293,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var callCombobox = _mode switch {
                 SingleView.E_Type.Create => combobox.RenderCaller(registerName, readOnly: false),
                 SingleView.E_Type.View => combobox.RenderCaller(registerName, readOnly: true),
-                SingleView.E_Type.Edit => combobox.RenderCaller(registerName, $"item?.{AggregateInstanceBase.IS_LOADED}"),
+                SingleView.E_Type.Edit => combobox.RenderCaller(registerName, $"item?.{AggregateDetail.IS_LOADED}"),
                 _ => throw new NotImplementedException(),
             };
 
