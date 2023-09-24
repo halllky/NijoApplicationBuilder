@@ -31,8 +31,9 @@ namespace HalApplicationBuilder.Core {
         internal static IEnumerable<AggregateMemberBase> GetMembers(this GraphNode<Aggregate> aggregate) {
             var parent = aggregate.GetParent();
             if (parent != null) {
-                foreach (var parentPK in parent.Initial.GetKeys()) {
-                    yield return new KeyOfParent(aggregate, parentPK);
+                var parentPKs = parent.Initial.GetKeys().ToArray();
+                for (var i = 0; i < parentPKs.Length; i++) {
+                    yield return new KeyOfParent(aggregate, parentPKs[i], i);
                 }
             }
             foreach (var member in aggregate.GetMemberNodes()) {
@@ -90,6 +91,7 @@ namespace HalApplicationBuilder.Core {
         internal abstract class AggregateMemberBase {
             internal abstract GraphNode<Aggregate> Owner { get; }
             internal abstract string MemberName { get; }
+            internal abstract decimal Order { get; }
             internal abstract string CSharpTypeName { get; }
             internal abstract string TypeScriptTypename { get; }
 
@@ -130,6 +132,8 @@ namespace HalApplicationBuilder.Core {
             internal override GraphNode<Aggregate> Owner => Relation.Initial;
             internal override string MemberName => Relation.RelationName;
             internal GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
+            internal override decimal Order => Relation.GetMemberOrder();
+
             internal NavigationProperty GetNavigationProperty() {
                 return new NavigationProperty(Relation);
             }
@@ -146,6 +150,7 @@ namespace HalApplicationBuilder.Core {
 
             internal override GraphNode<Aggregate> Owner => _node.Source!.Initial.As<Aggregate>();
             internal override IReadOnlyMemberOptions Options => _node.Item;
+            internal override decimal Order => _node.Source!.GetMemberOrder();
         }
 
         internal class Children : RelationMember {
@@ -183,6 +188,7 @@ namespace HalApplicationBuilder.Core {
 
             internal override IReadOnlyMemberOptions Options { get; }
             internal override GraphNode<Aggregate> Owner => _group.Owner;
+            internal override decimal Order => _group.MemberOrder;
 
             internal IEnumerable<VariationItem> GetGroupItems() {
                 foreach (var kv in _group.VariationAggregates) {
@@ -218,11 +224,11 @@ namespace HalApplicationBuilder.Core {
             internal IEnumerable<KeyOfRefTarget> GetForeignKeys() {
                 return Relation.Terminal
                     .GetKeys()
-                    .Select(refTargetMember => new KeyOfRefTarget(this, refTargetMember));
+                    .Select((refTargetMember, index) => new KeyOfRefTarget(this, refTargetMember, index));
             }
         }
         internal class KeyOfRefTarget : ValueMember {
-            internal KeyOfRefTarget(Ref refMember, ValueMember refTargetMember) {
+            internal KeyOfRefTarget(Ref refMember, ValueMember refTargetMember, int refTargetMemberOrder) {
                 _refMember = refMember;
                 Options = refTargetMember.Options.Clone(opt => {
                     opt.MemberName = $"{refMember.MemberName}_{refTargetMember.MemberName}";
@@ -231,26 +237,30 @@ namespace HalApplicationBuilder.Core {
                     opt.IsRequired = refMember.Relation.IsRequired();
                 });
                 Original = refTargetMember;
+                Order = refMember.Order + (refTargetMemberOrder / 1000);
             }
             private readonly Ref _refMember;
 
             internal override IReadOnlyMemberOptions Options { get; }
+            internal override decimal Order { get; }
             internal override GraphNode<Aggregate> Owner => _refMember.Owner;
             internal ValueMember Original { get; }
         }
 
         internal class KeyOfParent : ValueMember {
-            internal KeyOfParent(GraphNode<Aggregate> childAggregate, ValueMember parentPK) {
+            internal KeyOfParent(GraphNode<Aggregate> childAggregate, ValueMember parentPK, int parentPkOrder) {
                 Owner = childAggregate;
                 Original = parentPK;
                 Options = parentPK.Options.Clone(opt => {
                     var declaring = GetDeclaringMember();
                     opt.MemberName = declaring.Owner.Item.ClassName + declaring.MemberName;
                 });
+                Order = parentPK.Order + (parentPkOrder / 1000);
             }
 
             internal override GraphNode<Aggregate> Owner { get; }
             internal override IReadOnlyMemberOptions Options { get; }
+            internal override decimal Order { get; }
 
             /// <summary>
             /// 大元が祖父母の主キーだった場合でも親のメンバーを返す

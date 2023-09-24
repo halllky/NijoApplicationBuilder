@@ -32,8 +32,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         internal const string FROM_DBENTITY = "FromDbEntity";
         internal const string TO_DBENTITY = "ToDbEntity";
 
-        internal IEnumerable<AggregateMember.AggregateMemberBase> GetAggregateDetailMembers() {
-            return GetAggregateDetailMembersOf(_aggregate);
+        internal IOrderedEnumerable<AggregateMember.AggregateMemberBase> GetAggregateDetailMembers() {
+            return GetAggregateDetailMembersOf(_aggregate).OrderBy(m => m.Order);
         }
         protected virtual IEnumerable<AggregateMember.AggregateMemberBase> GetAggregateDetailMembersOf(GraphNode<Aggregate> aggregate) {
             return aggregate

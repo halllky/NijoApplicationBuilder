@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static HalApplicationBuilder.CodeRendering.Searching.SearchFeature;
 using static HalApplicationBuilder.Core.AggregateMember;
 
 namespace HalApplicationBuilder.Core {
@@ -15,16 +16,32 @@ namespace HalApplicationBuilder.Core {
         private readonly Dictionary<TreePath, AggregateMemberBuildOption> _aggregateMembers = new();
         private readonly Dictionary<string, IEnumerable<EnumValueOption>> _enums = new();
 
+        // メンバーの順番をAddされた順番にするための仕組み
+        private int _addedOrderCount = 0;
+        private readonly Dictionary<TreePath, int> _addedOrder = new();
+
         public AppSchemaBuilder SetApplicationName(string value) {
             _applicationName = value;
             return this;
         }
         public AppSchemaBuilder AddAggregate(IEnumerable<string> path, AggregateBuildOption? options = null) {
-            _aggregates[new TreePath(path.ToArray())] = options ?? new();
+            var treePath = new TreePath(path.ToArray());
+            _aggregates[treePath] = options ?? new();
+
+            if (!_addedOrder.ContainsKey(treePath)) {
+                _addedOrder[treePath] = _addedOrderCount;
+                _addedOrderCount++;
+            }
             return this;
         }
         public AppSchemaBuilder AddAggregateMember(IEnumerable<string> path, AggregateMemberBuildOption? options = null) {
-            _aggregateMembers[new TreePath(path)] = options ?? new();
+            var treePath = new TreePath(path.ToArray());
+            _aggregateMembers[treePath] = options ?? new();
+
+            if (!_addedOrder.ContainsKey(treePath)) {
+                _addedOrder[treePath] = _addedOrderCount;
+                _addedOrderCount++;
+            }
             return this;
         }
         public AppSchemaBuilder AddEnum(string name, IEnumerable<EnumValueOption> values) {
@@ -44,8 +61,10 @@ namespace HalApplicationBuilder.Core {
                             TreePath = member.Key,
                             Name = member.Key.BaseName,
                             Options = member.Value,
+                            Order = _addedOrder[member.Key],
                         })
                         .ToArray(),
+                    Order = _addedOrder[aggregate.Key],
                 })
                 .ToArray();
 
@@ -62,6 +81,7 @@ namespace HalApplicationBuilder.Core {
                         { DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, aggregate.Options.IsVariationGroupMember?.GroupName ?? string.Empty },
                         { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, aggregate.Options.IsPrimary == true },
                         { DirectedEdgeExtensions.REL_ATTR_INVISIBLE_IN_GUI, aggregate.Options.InvisibleInGui == true },
+                        { DirectedEdgeExtensions.REL_ATTR_MEMBER_ORDER, aggregate.Order },
                     },
                 });
             var refs = aggregateDefs
@@ -77,6 +97,7 @@ namespace HalApplicationBuilder.Core {
                         { DirectedEdgeExtensions.REL_ATTR_IS_INSTANCE_NAME, x.member.Options.IsDisplayName == true },
                         { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, x.member.Options.IsRequired == true },
                         { DirectedEdgeExtensions.REL_ATTR_INVISIBLE_IN_GUI, x.member.Options.InvisibleInGui == true },
+                        { DirectedEdgeExtensions.REL_ATTR_MEMBER_ORDER, x.member.Order },
                     },
                 });
             var relationDefs = parentAndChild.Concat(refs);
@@ -175,6 +196,7 @@ namespace HalApplicationBuilder.Core {
                         RelationName = member.Name,
                         Attributes = new Dictionary<string, object> {
                             { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_HAVING },
+                            { DirectedEdgeExtensions.REL_ATTR_MEMBER_ORDER, member.Order },
                         },
                     });
                 }
@@ -283,6 +305,7 @@ namespace HalApplicationBuilder.Core {
         internal const string REL_ATTR_IS_INSTANCE_NAME = "is-instance-name";
         internal const string REL_ATTR_IS_REQUIRED = "is-required";
         internal const string REL_ATTR_INVISIBLE_IN_GUI = "invisible-in-gui";
+        internal const string REL_ATTR_MEMBER_ORDER = "relation-aggregate-order";
 
         // ----------------------------- GraphNode extensions -----------------------------
 
@@ -412,6 +435,7 @@ namespace HalApplicationBuilder.Core {
                     VariationAggregates = group.ToDictionary(
                         edge => (string)edge.Attributes[REL_ATTR_VARIATIONSWITCH],
                         edge => edge.As<T>()),
+                    MemberOrder = group.First().GetMemberOrder(),
                 });
         }
 
@@ -433,12 +457,17 @@ namespace HalApplicationBuilder.Core {
             return graphEdge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                 && (string)type == REL_ATTRVALUE_REFERENCE;
         }
+
+        internal static int GetMemberOrder(this GraphEdge graphEdge) {
+            return (int)graphEdge.Attributes[REL_ATTR_MEMBER_ORDER];
+        }
     }
 
     internal class VariationGroup<T> where T : IGraphNode {
         internal GraphNode<T> Owner => VariationAggregates.First().Value.Initial.As<T>();
         internal required string GroupName { get; init; }
         internal required IReadOnlyDictionary<string, GraphEdge<T>> VariationAggregates { get; init; }
+        internal required int MemberOrder { get; init; }
         internal bool IsPrimary => VariationAggregates.First().Value.IsPrimary();
         internal bool IsInstanceName => VariationAggregates.First().Value.IsInstanceName();
         internal bool RequiredAtDB => VariationAggregates.First().Value.IsRequired();
