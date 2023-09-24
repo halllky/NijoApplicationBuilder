@@ -4,6 +4,8 @@ import React, { createContext, useContext, useMemo } from 'react'
 
 const VTableContext = createContext({ maxIndent: 0 })
 
+const VALUE_COLUMN_MAX_LENGTH = '480px'
+
 const Table = ({ children, maxIndent, headerWidth }: {
   children?: React.ReactNode
   maxIndent?: number
@@ -12,10 +14,13 @@ const Table = ({ children, maxIndent, headerWidth }: {
   const contextValue = useMemo(() => ({
     maxIndent: Math.max(maxIndent || 0, 0)
   }), [maxIndent])
+  const tableStyle = useMemo(() => ({
+    maxWidth: `calc(${headerWidth} + ${VALUE_COLUMN_MAX_LENGTH})`,
+  }), [headerWidth])
 
   return (
     <VTableContext.Provider value={contextValue}>
-      <table className="w-full">
+      <table style={tableStyle}>
         <colgroup>
           {Array.from({ length: maxIndent || 0 }).map((_, i) => (
             <col key={i} className="w-6" />

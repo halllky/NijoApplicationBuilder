@@ -162,7 +162,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                       },
                     """)}}
                     {{Search.VisibleMembers.SelectTextTemplate(member => $$"""
-                      { field: '{{member.SearchResultPropName}}', resizable: true, sortable: true, editable: true },
+                      { field: '{{member.SearchResultPropName}}', resizable: true, sortable: true },
                     """)}}
                     ]
                     """);
