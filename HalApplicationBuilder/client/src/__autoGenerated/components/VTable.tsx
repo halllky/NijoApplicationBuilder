@@ -4,9 +4,10 @@ import React, { createContext, useContext, useMemo } from 'react'
 
 const VTableContext = createContext({ maxIndent: 0 })
 
-const Table = ({ children, maxIndent }: {
+const Table = ({ children, maxIndent, headerWidth }: {
   children?: React.ReactNode
   maxIndent?: number
+  headerWidth?: string
 }) => {
   const contextValue = useMemo(() => ({
     maxIndent: Math.max(maxIndent || 0, 0)
@@ -15,6 +16,13 @@ const Table = ({ children, maxIndent }: {
   return (
     <VTableContext.Provider value={contextValue}>
       <table className="w-full">
+        <colgroup>
+          {Array.from({ length: maxIndent || 0 }).map((_, i) => (
+            <col key={i} className="w-6" />
+          ))}
+          <col style={({ width: headerWidth })} />
+          <col />
+        </colgroup>
         <tbody>
           {children}
         </tbody>
@@ -84,7 +92,7 @@ const NestedName = ({ indent, label, children, className }: RowProp) => {
 }
 
 const Indent = () => {
-  return <th className={`w-6 border-l ${BORDER_OPTION}`}></th>
+  return <th className={`border-l ${BORDER_OPTION}`}></th>
 }
 const ArrayItemDeleteButtonRow = ({ indent, children, className }: {
   indent?: number
@@ -116,7 +124,7 @@ const PropName = ({ children, className }: {
   className?: string
 }) => {
   return (
-    <span className={`text-sm font-semibold select-none opacity-80 ${className}`}>
+    <span className={`text-sm font-semibold select-none opacity-50 ${className}`}>
       {children}
     </span>
   )

@@ -100,7 +100,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                                   fill
                                   icon={XMarkIcon}
                                   onClick={onRemove({{loopVar}})}
-                                  className="absolute top-0 right-0">
+                                  className="absolute top-full right-0">
                                   削除
                                 </Components.IconButton>
                               </VTable.ArrayItemDeleteButtonRow>

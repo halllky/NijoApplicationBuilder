@@ -78,6 +78,31 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 .DefaultIfEmpty()
                 .Max();
 
+            // 左列の横幅の計算
+            const decimal INDENT_WIDTH = 1.5m;
+            var headersWidthRem = _aggregate
+                .EnumerateThisAndDescendants()
+                .SelectMany(
+                    // 画面上に表示されるメンバーだけ抽出
+                    a => new AggregateDetail(a)
+                        .GetAggregateDetailMembers()
+                        .Where(m => (m is not AggregateMember.ValueMember valueMember)
+                                 || !valueMember.Options.InvisibleInGui),
+                    (a, m) => new {
+                        m.MemberName,
+                        IndentWidth = a.EnumerateAncestors().Count() * INDENT_WIDTH, // インデント1個の幅をだいたい1.5remとして計算
+                        NameWidthRem = m.MemberName.CalculateCharacterWidth() * 0.5m, // tailwindの1remがだいたい全角文字1文字分
+                    });
+            // インデント込みで最も横幅が長いメンバーの横幅を計算
+            var longestHeaderWidthRem = headersWidthRem
+                .Select(x => Math.Ceiling((x.IndentWidth + x.NameWidthRem) * 10m) / 10m)
+                .DefaultIfEmpty()
+                .Max();
+            // - longestHeaderWidthRemにはインデントの横幅も含まれているのでインデントの横幅を引く
+            // - ヘッダ列の横幅にちょっと余裕をもたせるために+1
+            var indentWidth = maxIndent * INDENT_WIDTH;
+            var headerWidth = Math.Max(indentWidth, longestHeaderWidthRem - indentWidth) + 1m;
+
             return $$"""
                 import React, { useState, useCallback, useMemo, useReducer, useRef } from 'react';
                 import { Link, useParams, useNavigate } from 'react-router-dom';
@@ -202,7 +227,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                             <div className="flex-1"></div>
                           </h1>
 
-                          <VTable.Table maxIndent={{{maxIndent}}}>
+                          <VTable.Table maxIndent={{{maxIndent}}} headerWidth="{{headerWidth}}rem">
                             {{new AggregateComponent(_aggregate, _type).RenderCaller()}}
                           </VTable.Table>
 
