@@ -91,6 +91,34 @@ const NestedName = ({ indent, label, children, className }: RowProp) => {
   )
 }
 
+const EmptyRow = ({ indent, noBottomBorder, className }: {
+  indent?: number
+  noBottomBorder?: boolean
+  className?: string
+}) => {
+  const { maxIndent } = useContext(VTableContext)
+  const indentCount = useMemo(() => {
+    return Math.min(indent || 0, maxIndent)
+  }, [maxIndent, indent])
+  const thTdColSpan = useMemo(() => {
+    return Math.min(maxIndent + 1 - indentCount, maxIndent + 1) + 1
+  }, [maxIndent, indentCount])
+
+  return (
+    <tr className={className}>
+      {Array.from({ length: indentCount }).map((_, i) => (
+        <Indent key={i} />
+      ))}
+      <td className={`border-l ${noBottomBorder ? '' : 'border-b'} ${BORDER_OPTION}`}>
+        <div className="h-4"></div>
+      </td>
+      <td className={`border-r ${noBottomBorder ? '' : 'border-b'} ${BORDER_OPTION}`} colSpan={thTdColSpan}>
+        <div className="h-4"></div>
+      </td>
+    </tr>
+  )
+}
+
 const Indent = () => {
   return <th className={`border-l ${BORDER_OPTION}`}></th>
 }
@@ -113,7 +141,6 @@ const ArrayItemDeleteButtonRow = ({ indent, children, className }: {
         <Indent key={i} />
       ))}
       <td colSpan={thTdColSpan} className={`border-r ${(indentCount == 0 ? 'border-l' : '')} ${BORDER_OPTION}`}>
-        <div className="h-2"></div>
         {children}
       </td>
     </tr>
@@ -135,5 +162,6 @@ export const VTable = {
   Table,
   Row,
   NestedName,
+  EmptyRow,
   ArrayItemDeleteButtonRow,
 }

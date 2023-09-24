@@ -97,7 +97,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
                               <VTable.ArrayItemDeleteButtonRow indent={{{TableIndent + 1}}} className="relative">
                                 <Components.IconButton
-                                  fill
+                                  underline
                                   icon={XMarkIcon}
                                   onClick={onRemove({{loopVar}})}
                                   className="absolute top-full right-0">
@@ -106,6 +106,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                               </VTable.ArrayItemDeleteButtonRow>
                     """)}}
                               {{WithIndent(RenderMembers(), "          ")}}
+                              <VTable.EmptyRow indent={{{TableIndent - 1}}} noBottomBorder={{{loopVar}} < fields.length - 1} />
                             </React.Fragment>
                           ))}
                         </>
@@ -125,6 +126,71 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 AggregateMember.Children x => RenderProperty(x),
                 _ => throw new NotImplementedException(),
             });
+        }
+
+        private string RenderProperty(AggregateMember.Children children) {
+            var childrenComponent = new AggregateComponent(children.MemberAggregate, _mode);
+
+            return $$"""
+                {{childrenComponent.RenderCaller()}}
+                """;
+        }
+
+        private string RenderProperty(AggregateMember.Child child) {
+            var childComponent = new AggregateComponent(child.MemberAggregate, _mode);
+
+            return $$"""
+                <VTable.NestedName label="{{child.MemberName}}" indent={{{TableIndent}}} />
+                {{childComponent.RenderCaller()}}
+                <VTable.EmptyRow indent={{{TableIndent}}} />
+                """;
+        }
+
+        private string RenderProperty(AggregateMember.VariationItem variation) {
+            var switchProp = GetRegisterName(variation.Group);
+            var childComponent = new AggregateComponent(variation.MemberAggregate, _mode);
+
+            return $$"""
+                {watch({{switchProp}}) === '{{variation.Key}}' && <>
+                  {{WithIndent(childComponent.RenderCaller(), "  ")}}
+                  <VTable.EmptyRow indent={{{TableIndent}}} />
+                </>}
+                """;
+        }
+
+        private string RenderProperty(AggregateMember.Variation variationSwitch) {
+            var switchProp = GetRegisterName(variationSwitch);
+            var disabled = IfReadOnly("disabled", variationSwitch);
+
+            return $$"""
+                <VTable.NestedName label="{{variationSwitch.MemberName}}" indent={{{TableIndent}}}>
+                  <div className="flex-1 flex gap-2 flex-wrap">
+                {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
+                    <label>
+                      <input type="radio" value="{{variation.Key}}" {{disabled}} {...register({{switchProp}})} />
+                      {{variation.MemberName}}
+                    </label>
+                """)}}
+                  </div>
+                </VTable.NestedName>
+                """;
+        }
+
+        private string RenderProperty(AggregateMember.Ref refProperty) {
+            var combobox = new KeywordSearching.ComboBox(refProperty.MemberAggregate);
+            var registerName = GetRegisterName(refProperty);
+            var callCombobox = _mode switch {
+                SingleView.E_Type.Create => combobox.RenderCaller(registerName, readOnly: false),
+                SingleView.E_Type.View => combobox.RenderCaller(registerName, readOnly: true),
+                SingleView.E_Type.Edit => combobox.RenderCaller(registerName, $"item?.{AggregateDetail.IS_LOADED}"),
+                _ => throw new NotImplementedException(),
+            };
+
+            return $$"""
+                <VTable.Row label="{{refProperty.MemberName}}" indent={{{TableIndent}}}>
+                  {{WithIndent(callCombobox, "  ")}}
+                </VTable.Row>
+                """;
         }
 
         #region SCHALAR PROPERTY
@@ -226,78 +292,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             }
         }
         #endregion SCHALAR PROPERTY
-
-        private string RenderProperty(AggregateMember.Ref refProperty) {
-            var combobox = new KeywordSearching.ComboBox(refProperty.MemberAggregate);
-            var registerName = GetRegisterName(refProperty);
-            var callCombobox = _mode switch {
-                SingleView.E_Type.Create => combobox.RenderCaller(registerName, readOnly: false),
-                SingleView.E_Type.View => combobox.RenderCaller(registerName, readOnly: true),
-                SingleView.E_Type.Edit => combobox.RenderCaller(registerName, $"item?.{AggregateDetail.IS_LOADED}"),
-                _ => throw new NotImplementedException(),
-            };
-
-            return $$"""
-                <VTable.Row label="{{refProperty.MemberName}}" indent={{{TableIndent}}}>
-                  {{WithIndent(callCombobox, "  ")}}
-                </VTable.Row>
-                """;
-        }
-        private string RenderProperty(AggregateMember.Child child) {
-            var childComponent = new AggregateComponent(child.MemberAggregate, _mode);
-            var borderless = _aggregate.IsRoot() ? "borderless" : string.Empty;
-
-            return $$"""
-                <VTable.NestedName label="{{child.MemberName}}" indent={{{TableIndent}}} />
-                {{childComponent.RenderCaller()}}
-                """;
-            //return $$"""
-            //    <VTable.Row label="{{child.MemberName}}" wide {{borderless}} indent={{{indent}}}>
-            //      {{WithIndent(childComponent.RenderCaller(), "  ")}}
-            //    </VTable.Row>
-            //    """;
-        }
-        private string RenderProperty(AggregateMember.VariationItem variation) {
-            var switchProp = GetRegisterName(variation.Group);
-            var childComponent = new AggregateComponent(variation.MemberAggregate, _mode);
-            var borderless = _aggregate.IsRoot() ? "borderless" : string.Empty;
-
-            return $$"""
-                {watch({{switchProp}}) === '{{variation.Key}}' && <>
-                  {{WithIndent(childComponent.RenderCaller(), "  ")}}
-                </>}
-                """;
-            //return $$"""
-            //    <VTable.Row wide className={(watch({{switchProp}}) !== '{{variation.Key}}' ? 'hidden' : undefined)} indent={{{indent}}}>
-            //      {{WithIndent(childComponent.RenderCaller(), "  ")}}
-            //    </VTable.Row>
-            //    """;
-        }
-        private string RenderProperty(AggregateMember.Variation variationSwitch) {
-            var switchProp = GetRegisterName(variationSwitch);
-            var disabled = IfReadOnly("disabled", variationSwitch);
-
-            return $$"""
-                <VTable.NestedName label="{{variationSwitch.MemberName}}" indent={{{TableIndent}}}>
-                  <div className="flex-1 flex gap-2 flex-wrap">
-                {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
-                    <label>
-                      <input type="radio" value="{{variation.Key}}" {{disabled}} {...register({{switchProp}})} />
-                      {{variation.MemberName}}
-                    </label>
-                """)}}
-                  </div>
-                </VTable.NestedName>
-                """;
-        }
-        private string RenderProperty(AggregateMember.Children children) {
-            var childrenComponent = new AggregateComponent(children.MemberAggregate, _mode);
-            var borderless = _aggregate.IsRoot() ? "borderless" : string.Empty;
-
-            return $$"""
-                {{childrenComponent.RenderCaller()}}
-                """;
-        }
 
 
         private int TableIndent => _aggregate.EnumerateAncestors().Count();
