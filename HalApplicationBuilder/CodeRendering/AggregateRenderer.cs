@@ -224,10 +224,10 @@ namespace HalApplicationBuilder.CodeRendering {
                 #region キーワード検索
                 {{_aggregate
                     .EnumerateThisAndDescendants()
-                    .Select(a => new KeywordSearching.KeywordSearchingFeature(a, _ctx))
+                    .Select(a => new KeywordSearchingFeature(a))
                     .SelectTextTemplate(feature => $$"""
-                {{feature.RenderController()}}
-                {{feature.RenderDbContextMethod()}}
+                {{feature.RenderController(_ctx)}}
+                {{feature.RenderDbContextMethod(_ctx)}}
                 """)}}
                 #endregion キーワード検索
 

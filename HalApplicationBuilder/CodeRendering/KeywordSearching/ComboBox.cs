@@ -13,17 +13,15 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
     partial class ComboBox : TemplateBase {
-        internal ComboBox(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx) {
-            _ctx = ctx;
+        internal ComboBox(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
         }
 
-        private readonly CodeRenderingContext _ctx;
         private readonly GraphNode<Aggregate> _aggregate;
 
         public override string FileName => $"ComboBox{_aggregate.Item.DisplayName.ToFileNameSafe()}.tsx";
         internal string ComponentName => $"ComboBox{_aggregate.Item.DisplayName.ToCSharpSafe()}";
-        internal string Api => new KeywordSearchingFeature(_aggregate, _ctx).GetUri();
+        internal string Api => new KeywordSearchingFeature(_aggregate).GetUri();
 
         protected override string Template() {
             var keyName = new AggregateKeyName(_aggregate);

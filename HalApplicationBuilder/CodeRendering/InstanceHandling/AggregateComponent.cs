@@ -1,4 +1,5 @@
 using HalApplicationBuilder.Core;
+using HalApplicationBuilder.CodeRendering.WebClient;
 using HalApplicationBuilder.DotnetEx;
 using static HalApplicationBuilder.CodeRendering.TemplateTextHelper;
 using System;
@@ -7,72 +8,19 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using HalApplicationBuilder.CodeRendering.WebClient;
 
 namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
     internal class AggregateComponent {
-        internal AggregateComponent(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx, SingleView.E_Type type) {
+        internal AggregateComponent(GraphNode<Aggregate> aggregate, SingleView.E_Type type) {
             _aggregate = aggregate;
-            _ctx = ctx;
             _mode = type;
         }
 
         private readonly GraphNode<Aggregate> _aggregate;
-        private readonly CodeRenderingContext _ctx;
         private readonly SingleView.E_Type _mode;
 
         private string ComponentName => $"{_aggregate.Item.TypeScriptTypeName}View";
-        private string PropNameWidth => GetPropNameFlexBasis(new AggregateDetail(_aggregate).GetAggregateDetailMembers().Select(p => p.MemberName));
-
-        private string GetRegisterName(AggregateMember.AggregateMemberBase? prop = null) {
-            var path = new List<string>();
-            var i = 0;
-            foreach (var edge in _aggregate.PathFromEntry()) {
-                path.Add(edge.RelationName);
-
-                if (edge.Terminal.IsChildrenMember()) {
-                    if (edge.Terminal != _aggregate) {
-                        // 祖先の中にChildrenがあるので配列番号を加える
-                        path.Add("${index_" + i.ToString() + "}");
-                        i++;
-                    } else if (edge.Terminal == _aggregate && prop != null) {
-                        // このコンポーネント自身がChildrenのとき
-                        // - propがnull: useArrayFieldの登録名の作成なので配列番号を加えない
-                        // - propがnullでない: mapの中のプロパティのレンダリングなので配列番号を加える
-                        path.Add("${index_" + i.ToString() + "}");
-                        i++;
-                    }
-                }
-            }
-            if (prop != null) {
-                path.Add(prop.MemberName);
-            }
-            var name = path.Join(".");
-            return string.IsNullOrEmpty(name) ? string.Empty : $"`{name}`";
-        }
-        private IEnumerable<string> GetArguments() {
-            // 祖先コンポーネントの中に含まれるChildrenの数だけ、
-            // このコンポーネントのその配列中でのインデックスが特定されている必要があるので、引数で渡す
-            var args = _aggregate
-                .PathFromEntry()
-                .Where(edge => edge.Terminal != _aggregate
-                            && edge.Terminal.IsChildrenMember())
-                .Select((_, i) => $"index_{i}");
-            return args;
-        }
-
-        private string IfReadOnly(string readOnly, AggregateMember.ValueMember prop) {
-            return _mode switch {
-                SingleView.E_Type.Create => "",
-                SingleView.E_Type.View => readOnly,
-                SingleView.E_Type.Edit => prop.IsKey
-                    ? $"{readOnly}={{item?.{AggregateDetail.IS_LOADED}}}"
-                    : $"",
-                _ => throw new NotImplementedException(),
-            };
-        }
-
 
         internal string RenderCaller() {
             var args = GetArguments()
@@ -80,6 +28,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 .Join(string.Empty);
             return $"<{ComponentName}{args} />";
         }
+
         internal string Render() {
             var layout = new AggregateDetail(_aggregate).GetAggregateDetailMembers().SelectTextTemplate(prop => prop switch {
                 AggregateMember.Schalar x => RenderProperty(x),
@@ -92,8 +41,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             });
 
             if (!_aggregate.IsChildrenMember()) {
-                var args = GetArguments().ToArray();
 
+                // Childrenでない集約のレンダリング
+                var args = GetArguments().ToArray();
                 return $$"""
                     const {{ComponentName}} = ({ {{args.Join(", ")}} }: {
                     {{args.SelectTextTemplate(arg => $$"""
@@ -111,8 +61,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       )
                     }
                     """;
-
             } else {
+                // Childrenのレンダリング
                 var args = GetArguments().ToArray();
                 var loopVar = $"index_{args.Length}";
                 var createNewChildrenItem = new AggregateInstanceInitializerFunction(_aggregate).FunctionName;
@@ -278,7 +228,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         #endregion SCHALAR PROPERTY
 
         private string RenderProperty(AggregateMember.Ref refProperty) {
-            var combobox = new KeywordSearching.ComboBox(refProperty.MemberAggregate, _ctx);
+            var combobox = new KeywordSearching.ComboBox(refProperty.MemberAggregate);
             var registerName = GetRegisterName(refProperty);
             var callCombobox = _mode switch {
                 SingleView.E_Type.Create => combobox.RenderCaller(registerName, readOnly: false),
@@ -301,7 +251,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 """;
         }
         private string RenderProperty(AggregateMember.Child child) {
-            var childComponent = new AggregateComponent(child.MemberAggregate, _ctx, _mode);
+            var childComponent = new AggregateComponent(child.MemberAggregate, _mode);
             return $$"""
                 <div className="py-2">
                   <span className="text-sm select-none opacity-80">
@@ -315,7 +265,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         }
         private string RenderProperty(AggregateMember.VariationItem variation) {
             var switchProp = GetRegisterName(variation.Group);
-            var childComponent = new AggregateComponent(variation.MemberAggregate, _ctx, _mode);
+            var childComponent = new AggregateComponent(variation.MemberAggregate, _mode);
 
             return $$"""
                 <div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(watch({{switchProp}}) !== '{{variation.Key}}' ? 'hidden' : '')}`}>
@@ -346,7 +296,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 """;
         }
         private string RenderProperty(AggregateMember.Children children) {
-            var childrenComponent = new AggregateComponent(children.MemberAggregate, _ctx, _mode);
+            var childrenComponent = new AggregateComponent(children.MemberAggregate, _mode);
 
             return $$"""
                 <div className="py-2">
@@ -361,6 +311,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         }
 
 
+        #region ラベル列の横幅
         internal const string INPUT_WIDTH = "w-80";
         internal static string GetPropNameFlexBasis(IEnumerable<string> propNames) {
             var maxCharWidth = propNames
@@ -373,6 +324,57 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var c = Math.Min(96, b * 4); // tailwindでは basis-96 が最大なので
 
             return $"basis-{c}";
+        }
+        private string PropNameWidth => GetPropNameFlexBasis(new AggregateDetail(_aggregate).GetAggregateDetailMembers().Select(p => p.MemberName));
+        #endregion ラベル列の横幅
+
+        private string GetRegisterName(AggregateMember.AggregateMemberBase? prop = null) {
+            var path = new List<string>();
+            var i = 0;
+            foreach (var edge in _aggregate.PathFromEntry()) {
+                path.Add(edge.RelationName);
+
+                if (edge.Terminal.IsChildrenMember()) {
+                    if (edge.Terminal != _aggregate) {
+                        // 祖先の中にChildrenがあるので配列番号を加える
+                        path.Add("${index_" + i.ToString() + "}");
+                        i++;
+                    } else if (edge.Terminal == _aggregate && prop != null) {
+                        // このコンポーネント自身がChildrenのとき
+                        // - propがnull: useArrayFieldの登録名の作成なので配列番号を加えない
+                        // - propがnullでない: mapの中のプロパティのレンダリングなので配列番号を加える
+                        path.Add("${index_" + i.ToString() + "}");
+                        i++;
+                    }
+                }
+            }
+            if (prop != null) {
+                path.Add(prop.MemberName);
+            }
+            var name = path.Join(".");
+            return string.IsNullOrEmpty(name) ? string.Empty : $"`{name}`";
+        }
+
+        private IEnumerable<string> GetArguments() {
+            // 祖先コンポーネントの中に含まれるChildrenの数だけ、
+            // このコンポーネントのその配列中でのインデックスが特定されている必要があるので、引数で渡す
+            var args = _aggregate
+                .PathFromEntry()
+                .Where(edge => edge.Terminal != _aggregate
+                            && edge.Terminal.IsChildrenMember())
+                .Select((_, i) => $"index_{i}");
+            return args;
+        }
+
+        private string IfReadOnly(string readOnly, AggregateMember.ValueMember prop) {
+            return _mode switch {
+                SingleView.E_Type.Create => "",
+                SingleView.E_Type.View => readOnly,
+                SingleView.E_Type.Edit => prop.IsKey
+                    ? $"{readOnly}={{item?.{AggregateDetail.IS_LOADED}}}"
+                    : $"",
+                _ => throw new NotImplementedException(),
+            };
         }
     }
 }

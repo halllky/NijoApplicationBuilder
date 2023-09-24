@@ -67,7 +67,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var multiViewUrl = new Searching.SearchFeature(_aggregate.As<IEFCoreEntity>(), _ctx).ReactPageUrl;
             var components = _aggregate
                 .EnumerateThisAndDescendants()
-                .Select(x => new AggregateComponent(x, _ctx, _type));
+                .Select(x => new AggregateComponent(x, _type));
             var createEmptyObject = new AggregateInstanceInitializerFunction(_aggregate).FunctionName;
 
             var find = new FindFeature(_aggregate);
@@ -198,7 +198,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                             <div className="flex-1"></div>
                           </h1>
                           <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
-                            {{new AggregateComponent(_aggregate, _ctx, _type).RenderCaller()}}
+                            {{new AggregateComponent(_aggregate, _type).RenderCaller()}}
                           </div>
                           <Components.InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
                 {{If(_type == E_Type.Create, () => $$"""

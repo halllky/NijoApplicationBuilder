@@ -11,12 +11,10 @@ using static HalApplicationBuilder.CodeRendering.TemplateTextHelper;
 
 namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
     internal class KeywordSearchingFeature {
-        internal KeywordSearchingFeature(GraphNode<Aggregate> aggregate, CodeRenderingContext ctx) {
+        internal KeywordSearchingFeature(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
-            _ctx = ctx;
         }
         private readonly GraphNode<Aggregate> _aggregate;
-        private readonly CodeRenderingContext _ctx;
 
         private string GetActionName() {
             return _aggregate.IsRoot()
@@ -37,12 +35,12 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
 
         private const int LIST_BY_KEYWORD_MAX = 100;
 
-        internal string RenderController() {
+        internal string RenderController(CodeRenderingContext ctx) {
             var controller = GetController();
             return $$"""
-                namespace {{_ctx.Config.RootNamespace}} {
+                namespace {{ctx.Config.RootNamespace}} {
                     using Microsoft.AspNetCore.Mvc;
-                    using {{_ctx.Config.EntityNamespace}};
+                    using {{ctx.Config.EntityNamespace}};
                 
                     partial class {{controller.ClassName}} {
                         [HttpGet("{{GetActionName()}}")]
@@ -55,12 +53,12 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                 """;
         }
 
-        internal string RenderDbContextMethod() {
+        internal string RenderDbContextMethod(CodeRenderingContext ctx) {
             const string LIKE = "like";
             var keyName = new AggregateKeyName(_aggregate);
 
             return $$"""
-                namespace {{_ctx.Config.EntityNamespace}} {
+                namespace {{ctx.Config.EntityNamespace}} {
                     using System;
                     using System.Collections;
                     using System.Collections.Generic;
@@ -68,7 +66,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                     using Microsoft.EntityFrameworkCore;
                     using Microsoft.EntityFrameworkCore.Infrastructure;
                 
-                    partial class {{_ctx.Config.DbContextName}} {
+                    partial class {{ctx.Config.DbContextName}} {
                         /// <summary>
                         /// {{_aggregate.Item.DisplayName}}をキーワードで検索します。
                         /// </summary>
