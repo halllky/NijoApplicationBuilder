@@ -30,16 +30,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         }
 
         internal string Render() {
-            var layout = new AggregateDetail(_aggregate).GetAggregateDetailMembers().SelectTextTemplate(prop => prop switch {
-                AggregateMember.Schalar x => RenderProperty(x),
-                AggregateMember.Ref x => RenderProperty(x),
-                AggregateMember.Child x => RenderProperty(x),
-                AggregateMember.VariationItem x => RenderProperty(x),
-                AggregateMember.Variation x => RenderProperty(x),
-                AggregateMember.Children x => RenderProperty(x),
-                _ => throw new NotImplementedException(),
-            });
-
             if (!_aggregate.IsChildrenMember()) {
 
                 // Childrenでない集約のレンダリング
@@ -56,7 +46,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     
                       return (
                         <>
-                          {{WithIndent(layout, "      ")}}
+                          {{WithIndent(RenderVerticalTable(), "      ")}}
                         </>
                       )
                     }
@@ -94,7 +84,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                         <>
                           {fields.map((item, {{loopVar}}) => (
                             <div key={item.{{AggregateDetail.OBJECT_ID}}} className="flex flex-col space-y-1 p-1 border border-neutral-400">
-                              {{WithIndent(layout, "          ")}}
+                              {{WithIndent(RenderVerticalTable(), "          ")}}
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
                               <Components.IconButton
                                 underline
@@ -122,26 +112,50 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             }
         }
 
+        private string RenderVerticalTable() {
+            var start = "<>";
+            var end = "</>";
+            if (_aggregate.IsRoot()) {
+                var depth = _aggregate
+                    .EnumerateDescendants()
+                    .Select(a => a.EnumerateAncestors().Count())
+                    .DefaultIfEmpty()
+                    .Max();
+                start = $"<VTable.Table maxIndent={{{depth}}}>";
+                end = "</VTable.Table>";
+            }
+
+            return $$"""
+                {{start}}
+                  {{WithIndent(new AggregateDetail(_aggregate).GetAggregateDetailMembers().SelectTextTemplate(prop => prop switch {
+                      AggregateMember.Schalar x => RenderProperty(x),
+                      AggregateMember.Ref x => RenderProperty(x),
+                      AggregateMember.Child x => RenderProperty(x),
+                      AggregateMember.VariationItem x => RenderProperty(x),
+                      AggregateMember.Variation x => RenderProperty(x),
+                      AggregateMember.Children x => RenderProperty(x),
+                      _ => throw new NotImplementedException(),
+                  }), "    ")}}
+                {{end}}
+                """;
+        }
+
         #region SCHALAR PROPERTY
         private string RenderProperty(AggregateMember.Schalar schalar) {
+            var indent = _aggregate.EnumerateAncestors().Count();
             if (schalar.Options.InvisibleInGui) {
                 return $$"""
-                    <input type="hidden" {...register({{GetRegisterName(schalar)}})} />
+                    <VTable.Row className="hidden" wide indent={{{indent}}}>
+                      <input type="hidden" {...register({{GetRegisterName(schalar)}})} />
+                    </VTable.Row>
                     """;
 
             } else {
                 var renderer = new ReactForm(this, schalar, _mode);
                 return $$"""
-                    <div className="flex">
-                      <div className="{{PropNameWidth}}">
-                        <span className="text-sm select-none opacity-80">
-                          {{schalar.MemberName}}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        {{WithIndent(schalar.Options.MemberType.RenderUI(renderer), "    ")}}
-                      </div>
-                    </div>
+                    <VTable.Row label="{{schalar.MemberName}}" indent={{{indent}}}>
+                      {{WithIndent(schalar.Options.MemberType.RenderUI(renderer), "  ")}}
+                    </VTable.Row>
                     """;
             }
         }
@@ -228,6 +242,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         #endregion SCHALAR PROPERTY
 
         private string RenderProperty(AggregateMember.Ref refProperty) {
+            var indent = _aggregate.EnumerateAncestors().Count();
             var combobox = new KeywordSearching.ComboBox(refProperty.MemberAggregate);
             var registerName = GetRegisterName(refProperty);
             var callCombobox = _mode switch {
@@ -238,52 +253,42 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             };
 
             return $$"""
-                <div className="flex">
-                  <div className="{{PropNameWidth}}">
-                    <span className="text-sm select-none opacity-80">
-                      {{refProperty.MemberName}}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    {{WithIndent(callCombobox, "    ")}}
-                  </div>
-                </div>
+                <VTable.Row label="{{refProperty.MemberName}}" indent={{{indent}}}>
+                  {{WithIndent(callCombobox, "  ")}}
+                </VTable.Row>
                 """;
         }
         private string RenderProperty(AggregateMember.Child child) {
+            var indent = _aggregate.EnumerateAncestors().Count();
             var childComponent = new AggregateComponent(child.MemberAggregate, _mode);
-            return $$"""
-                <div className="py-2">
-                  <span className="text-sm select-none opacity-80">
-                    {{child.MemberName}}
-                  </span>
-                  <div className="flex flex-col space-y-1 p-1 border border-neutral-400">
-                    {{WithIndent(childComponent.RenderCaller(), "    ")}}
-                  </div>
-                </div>
-                """;
+            var borderless = _aggregate.IsRoot() ? "borderless" : string.Empty;
+
+            return childComponent.RenderCaller();
+            //return $$"""
+            //    <VTable.Row label="{{child.MemberName}}" wide {{borderless}} indent={{{indent}}}>
+            //      {{WithIndent(childComponent.RenderCaller(), "  ")}}
+            //    </VTable.Row>
+            //    """;
         }
         private string RenderProperty(AggregateMember.VariationItem variation) {
+            var indent = _aggregate.EnumerateAncestors().Count();
             var switchProp = GetRegisterName(variation.Group);
             var childComponent = new AggregateComponent(variation.MemberAggregate, _mode);
 
-            return $$"""
-                <div className={`flex flex-col space-y-1 p-1 border border-neutral-400 ${(watch({{switchProp}}) !== '{{variation.Key}}' ? 'hidden' : '')}`}>
-                  {{WithIndent(childComponent.RenderCaller(), "  ")}}
-                </div>
-                """;
+            return childComponent.RenderCaller();
+            //return $$"""
+            //    <VTable.Row wide className={(watch({{switchProp}}) !== '{{variation.Key}}' ? 'hidden' : undefined)} indent={{{indent}}}>
+            //      {{WithIndent(childComponent.RenderCaller(), "  ")}}
+            //    </VTable.Row>
+            //    """;
         }
         private string RenderProperty(AggregateMember.Variation variationSwitch) {
+            var indent = _aggregate.EnumerateAncestors().Count();
             var switchProp = GetRegisterName(variationSwitch);
             var disabled = IfReadOnly("disabled", variationSwitch);
 
             return $$"""
-                <div className="flex">
-                  <div className="{{PropNameWidth}}">
-                  <span className="text-sm select-none opacity-80">
-                    {{variationSwitch.MemberName}}
-                  </span>
-                  </div>
+                <VTable.Row label="{{variationSwitch.MemberName}}" indent={{{indent}}}>
                   <div className="flex-1 flex gap-2 flex-wrap">
                 {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
                     <label>
@@ -292,21 +297,20 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     </label>
                 """)}}
                   </div>
-                </div>
+                </VTable.Row>
                 """;
         }
         private string RenderProperty(AggregateMember.Children children) {
+            var indent = _aggregate.EnumerateAncestors().Count();
             var childrenComponent = new AggregateComponent(children.MemberAggregate, _mode);
+            var borderless = _aggregate.IsRoot() ? "borderless" : string.Empty;
 
             return $$"""
-                <div className="py-2">
-                  <span className="text-sm select-none opacity-80">
-                    {{children.MemberName}}
-                  </span>
+                <VTable.Row label="{{children.MemberName}}" wide {{borderless}} indent={{{indent}}}>
                   <div className="flex flex-col space-y-1">
                     {{WithIndent(childrenComponent.RenderCaller(), "    ")}}
                   </div>
-                </div>
+                </VTable.Row>
                 """;
         }
 

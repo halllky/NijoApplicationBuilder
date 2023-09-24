@@ -82,6 +82,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
                 import { UUID } from 'uuidjs';
                 import * as Components from '../../components';
+                import { VTable } from '../../components/VTable';
                 import { useAppContext, PageContext, pageContextReducer, usePageContext, visitObject, useHttpRequest } from '../../hooks';
                 import * as AggregateType from '../../{{types.ImportName}}'
 
@@ -197,7 +198,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 """)}}
                             <div className="flex-1"></div>
                           </h1>
-                          <div className="flex flex-col space-y-1 p-1 bg-neutral-200">
+                          <div className="flex flex-col space-y-1 p-1">
                             {{new AggregateComponent(_aggregate, _type).RenderCaller()}}
                           </div>
                           <Components.InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
