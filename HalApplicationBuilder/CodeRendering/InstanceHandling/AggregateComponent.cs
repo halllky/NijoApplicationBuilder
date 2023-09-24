@@ -44,11 +44,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       const { register, watch, getValues } = useFormContext<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
                       const item = getValues({{GetRegisterName()}})
                     
-                      return (
-                        <>
-                          {{WithIndent(RenderVerticalTable(), "      ")}}
-                        </>
-                      )
+                      return <>
+                        {{WithIndent(RenderMembers(), "    ")}}
+                      </>
                     }
                     """;
             } else {
@@ -82,29 +80,34 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     
                       return (
                         <>
+                          <VTable.NestedName label="{{_aggregate.GetParent()!.RelationName}}" indent={{{TableIndent - 1}}}>
+                    {{If(_mode != SingleView.E_Type.View, () => $$"""
+                            <Components.IconButton
+                              underline
+                              icon={PlusIcon}
+                              onClick={onAdd}
+                              className="self-start">
+                              追加
+                            </Components.IconButton>
+                    """)}}
+                          </VTable.NestedName>
+
                           {fields.map((item, {{loopVar}}) => (
-                            <div key={item.{{AggregateDetail.OBJECT_ID}}} className="flex flex-col space-y-1 p-1 border border-neutral-400">
-                              {{WithIndent(RenderVerticalTable(), "          ")}}
+                            <React.Fragment key={item.{{AggregateDetail.OBJECT_ID}}}>
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
-                              <Components.IconButton
-                                underline
-                                icon={XMarkIcon}
-                                onClick={onRemove({{loopVar}})}
-                                className="self-start">
-                                削除
-                              </Components.IconButton>
+                              <VTable.ArrayItemDeleteButtonRow indent={{{TableIndent + 1}}} className="relative">
+                                <Components.IconButton
+                                  fill
+                                  icon={XMarkIcon}
+                                  onClick={onRemove({{loopVar}})}
+                                  className="absolute top-0 right-0">
+                                  削除
+                                </Components.IconButton>
+                              </VTable.ArrayItemDeleteButtonRow>
                     """)}}
-                            </div>
+                              {{WithIndent(RenderMembers(), "          ")}}
+                            </React.Fragment>
                           ))}
-                    {{If(_mode != SingleView.E_Type.View, () => $$"""
-                          <Components.IconButton
-                            underline
-                            icon={PlusIcon}
-                            onClick={onAdd}
-                            className="self-start">
-                            追加
-                          </Components.IconButton>
-                    """)}}
                         </>
                       )
                     }
@@ -112,40 +115,23 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             }
         }
 
-        private string RenderVerticalTable() {
-            var start = "<>";
-            var end = "</>";
-            if (_aggregate.IsRoot()) {
-                var depth = _aggregate
-                    .EnumerateDescendants()
-                    .Select(a => a.EnumerateAncestors().Count())
-                    .DefaultIfEmpty()
-                    .Max();
-                start = $"<VTable.Table maxIndent={{{depth}}}>";
-                end = "</VTable.Table>";
-            }
-
-            return $$"""
-                {{start}}
-                  {{WithIndent(new AggregateDetail(_aggregate).GetAggregateDetailMembers().SelectTextTemplate(prop => prop switch {
-                      AggregateMember.Schalar x => RenderProperty(x),
-                      AggregateMember.Ref x => RenderProperty(x),
-                      AggregateMember.Child x => RenderProperty(x),
-                      AggregateMember.VariationItem x => RenderProperty(x),
-                      AggregateMember.Variation x => RenderProperty(x),
-                      AggregateMember.Children x => RenderProperty(x),
-                      _ => throw new NotImplementedException(),
-                  }), "    ")}}
-                {{end}}
-                """;
+        private string RenderMembers() {
+            return new AggregateDetail(_aggregate).GetAggregateDetailMembers().SelectTextTemplate(prop => prop switch {
+                AggregateMember.Schalar x => RenderProperty(x),
+                AggregateMember.Ref x => RenderProperty(x),
+                AggregateMember.Child x => RenderProperty(x),
+                AggregateMember.VariationItem x => RenderProperty(x),
+                AggregateMember.Variation x => RenderProperty(x),
+                AggregateMember.Children x => RenderProperty(x),
+                _ => throw new NotImplementedException(),
+            });
         }
 
         #region SCHALAR PROPERTY
         private string RenderProperty(AggregateMember.Schalar schalar) {
-            var indent = _aggregate.EnumerateAncestors().Count();
             if (schalar.Options.InvisibleInGui) {
                 return $$"""
-                    <VTable.Row className="hidden" wide indent={{{indent}}}>
+                    <VTable.Row className="hidden" indent={{{TableIndent}}}>
                       <input type="hidden" {...register({{GetRegisterName(schalar)}})} />
                     </VTable.Row>
                     """;
@@ -153,7 +139,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             } else {
                 var renderer = new ReactForm(this, schalar, _mode);
                 return $$"""
-                    <VTable.Row label="{{schalar.MemberName}}" indent={{{indent}}}>
+                    <VTable.Row label="{{schalar.MemberName}}" indent={{{TableIndent}}}>
                       {{WithIndent(schalar.Options.MemberType.RenderUI(renderer), "  ")}}
                     </VTable.Row>
                     """;
@@ -242,7 +228,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         #endregion SCHALAR PROPERTY
 
         private string RenderProperty(AggregateMember.Ref refProperty) {
-            var indent = _aggregate.EnumerateAncestors().Count();
             var combobox = new KeywordSearching.ComboBox(refProperty.MemberAggregate);
             var registerName = GetRegisterName(refProperty);
             var callCombobox = _mode switch {
@@ -253,17 +238,19 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             };
 
             return $$"""
-                <VTable.Row label="{{refProperty.MemberName}}" indent={{{indent}}}>
+                <VTable.Row label="{{refProperty.MemberName}}" indent={{{TableIndent}}}>
                   {{WithIndent(callCombobox, "  ")}}
                 </VTable.Row>
                 """;
         }
         private string RenderProperty(AggregateMember.Child child) {
-            var indent = _aggregate.EnumerateAncestors().Count();
             var childComponent = new AggregateComponent(child.MemberAggregate, _mode);
             var borderless = _aggregate.IsRoot() ? "borderless" : string.Empty;
 
-            return childComponent.RenderCaller();
+            return $$"""
+                <VTable.NestedName label="{{child.MemberName}}" indent={{{TableIndent}}} />
+                {{childComponent.RenderCaller()}}
+                """;
             //return $$"""
             //    <VTable.Row label="{{child.MemberName}}" wide {{borderless}} indent={{{indent}}}>
             //      {{WithIndent(childComponent.RenderCaller(), "  ")}}
@@ -271,11 +258,15 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             //    """;
         }
         private string RenderProperty(AggregateMember.VariationItem variation) {
-            var indent = _aggregate.EnumerateAncestors().Count();
             var switchProp = GetRegisterName(variation.Group);
             var childComponent = new AggregateComponent(variation.MemberAggregate, _mode);
+            var borderless = _aggregate.IsRoot() ? "borderless" : string.Empty;
 
-            return childComponent.RenderCaller();
+            return $$"""
+                {watch({{switchProp}}) === '{{variation.Key}}' && <>
+                  {{WithIndent(childComponent.RenderCaller(), "  ")}}
+                </>}
+                """;
             //return $$"""
             //    <VTable.Row wide className={(watch({{switchProp}}) !== '{{variation.Key}}' ? 'hidden' : undefined)} indent={{{indent}}}>
             //      {{WithIndent(childComponent.RenderCaller(), "  ")}}
@@ -283,12 +274,11 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             //    """;
         }
         private string RenderProperty(AggregateMember.Variation variationSwitch) {
-            var indent = _aggregate.EnumerateAncestors().Count();
             var switchProp = GetRegisterName(variationSwitch);
             var disabled = IfReadOnly("disabled", variationSwitch);
 
             return $$"""
-                <VTable.Row label="{{variationSwitch.MemberName}}" indent={{{indent}}}>
+                <VTable.NestedName label="{{variationSwitch.MemberName}}" indent={{{TableIndent}}}>
                   <div className="flex-1 flex gap-2 flex-wrap">
                 {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
                     <label>
@@ -297,23 +287,20 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     </label>
                 """)}}
                   </div>
-                </VTable.Row>
+                </VTable.NestedName>
                 """;
         }
         private string RenderProperty(AggregateMember.Children children) {
-            var indent = _aggregate.EnumerateAncestors().Count();
             var childrenComponent = new AggregateComponent(children.MemberAggregate, _mode);
             var borderless = _aggregate.IsRoot() ? "borderless" : string.Empty;
 
             return $$"""
-                <VTable.Row label="{{children.MemberName}}" wide {{borderless}} indent={{{indent}}}>
-                  <div className="flex flex-col space-y-1">
-                    {{WithIndent(childrenComponent.RenderCaller(), "    ")}}
-                  </div>
-                </VTable.Row>
+                {{childrenComponent.RenderCaller()}}
                 """;
         }
 
+
+        private int TableIndent => _aggregate.EnumerateAncestors().Count();
 
         #region ラベル列の横幅
         internal const string INPUT_WIDTH = "w-80";

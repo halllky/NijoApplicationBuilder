@@ -65,9 +65,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         protected override string Template() {
             var controller = new Controller(_aggregate.Item);
             var multiViewUrl = new Searching.SearchFeature(_aggregate.As<IEFCoreEntity>(), _ctx).ReactPageUrl;
-            var components = _aggregate
-                .EnumerateThisAndDescendants()
-                .Select(x => new AggregateComponent(x, _type));
             var createEmptyObject = new AggregateInstanceInitializerFunction(_aggregate).FunctionName;
 
             var find = new FindFeature(_aggregate);
@@ -75,8 +72,14 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var keyName = new AggregateKeyName(_aggregate);
             var keysFromUrl = keyName.GetKeys().Select(m => $"urlKey{m.MemberName}").ToArray();
 
+            var maxIndent = _aggregate
+                .EnumerateDescendants()
+                .Select(a => a.EnumerateAncestors().Count())
+                .DefaultIfEmpty()
+                .Max();
+
             return $$"""
-                import { useState, useCallback, useMemo, useReducer, useRef } from 'react';
+                import React, { useState, useCallback, useMemo, useReducer, useRef } from 'react';
                 import { Link, useParams, useNavigate } from 'react-router-dom';
                 import { FieldValues, SubmitHandler, useForm, FormProvider, useFormContext, useFieldArray } from 'react-hook-form';
                 import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
@@ -198,9 +201,11 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 """)}}
                             <div className="flex-1"></div>
                           </h1>
-                          <div className="flex flex-col space-y-1 p-1">
+
+                          <VTable.Table maxIndent={{{maxIndent}}}>
                             {{new AggregateComponent(_aggregate, _type).RenderCaller()}}
-                          </div>
+                          </VTable.Table>
+
                           <Components.InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
                 {{If(_type == E_Type.Create, () => $$"""
                           <Components.IconButton fill className="self-start" icon={BookmarkSquareIcon}>保存</Components.IconButton>
@@ -216,7 +221,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 }
 
 
-                {{components.SelectTextTemplate(cmp => cmp.Render())}}
+                {{_aggregate.EnumerateThisAndDescendants().SelectTextTemplate(agg => new AggregateComponent(agg, _type).Render())}}
                 """;
         }
     }
