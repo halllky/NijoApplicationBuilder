@@ -22,8 +22,25 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
         private string ComponentName => $"{_aggregate.Item.TypeScriptTypeName}View";
 
+        private IReadOnlyList<string>? _arguments;
+        private IReadOnlyList<string> Arguments {
+            get {
+                // 祖先コンポーネントの中に含まれるChildrenの数だけ、
+                // このコンポーネントのその配列中でのインデックスが特定されている必要があるので、引数で渡す
+                return _arguments ??= _aggregate
+                    .PathFromEntry()
+                    .Where(edge => edge.Terminal != _aggregate
+                                && edge.Terminal.IsChildrenMember())
+                    .Select((_, i) => $"index_{i}")
+                    .ToArray();
+            }
+        }
+
+        private IEnumerable<AggregateMember.AggregateMemberBase> _members;
+        private IEnumerable<AggregateMember.AggregateMemberBase> Members => _members ??= new AggregateDetail(_aggregate).GetAggregateDetailMembers();
+
         internal string RenderCaller() {
-            var args = GetArguments()
+            var args = Arguments
                 .Select(arg => $" {arg}={{{arg}}}")
                 .Join(string.Empty);
             return $"<{ComponentName}{args} />";
@@ -33,10 +50,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             if (!_aggregate.IsChildrenMember()) {
 
                 // Childrenでない集約のレンダリング
-                var args = GetArguments().ToArray();
                 return $$"""
-                    const {{ComponentName}} = ({ {{args.Join(", ")}} }: {
-                    {{args.SelectTextTemplate(arg => $$"""
+                    const {{ComponentName}} = ({ {{Arguments.Join(", ")}} }: {
+                    {{Arguments.SelectTextTemplate(arg => $$"""
                       {{arg}}: number
                     """)}}
                     }) => {
@@ -49,15 +65,18 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       </>
                     }
                     """;
-            } else {
-                // Childrenのレンダリング
-                var args = GetArguments().ToArray();
-                var loopVar = $"index_{args.Length}";
+
+            } else if (_aggregate.GetChildEdges().Any()
+                    || _aggregate.GetChildrenEdges().Any()
+                    || _aggregate.GetVariationGroups().Any()) {
+
+                // Childrenのレンダリング（子集約をもつ場合）
+                var loopVar = $"index_{Arguments.Count}";
                 var createNewChildrenItem = new AggregateInstanceInitializerFunction(_aggregate).FunctionName;
 
                 return $$"""
-                    const {{ComponentName}} = ({ {{args.Join(", ")}} }: {
-                    {{args.SelectTextTemplate(arg => $$"""
+                    const {{ComponentName}} = ({ {{Arguments.Join(", ")}} }: {
+                    {{Arguments.SelectTextTemplate(arg => $$"""
                       {{arg}}: number
                     """)}}
                     }) => {
@@ -113,11 +132,89 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       )
                     }
                     """;
+
+            } else {
+                // Childrenのレンダリング（子集約をもたない場合）
+                var loopVar = $"index_{Arguments.Count}";
+                var createNewChildrenItem = new AggregateInstanceInitializerFunction(_aggregate).FunctionName;
+
+                return $$"""
+                    const {{ComponentName}} = ({ {{Arguments.Join(", ")}} }: {
+                    {{Arguments.SelectTextTemplate(arg => $$"""
+                      {{arg}}: number
+                    """)}}
+                    }) => {
+                      const [{ },] = usePageContext()
+                      const { register, watch, control } = useFormContext<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
+                      const { fields, append, remove } = useFieldArray({
+                        control,
+                        name: {{GetRegisterName()}},
+                      })
+
+                      const gridApi = useRef<GridApi<typeof fields[0]> | null>(null)
+                      const onGridReady = useCallback((e: GridReadyEvent<typeof fields[0]>) => {
+                        gridApi.current = e.api
+                        e.api.getSelectedRows()
+                      }, [])
+
+                      const onAdd = useCallback((e: React.MouseEvent) => {
+                        append(AggregateType.{{createNewChildrenItem}}())
+                        e.preventDefault()
+                      }, [append])
+                      const onRemove = useCallback((e: React.MouseEvent) => {
+                        const selectedRows = gridApi.current?.getSelectedRows() ?? []
+                        for (const row of selectedRows) {
+                          const index = fields.indexOf(row)
+                          remove(index)
+                        }
+                        e.preventDefault()
+                      }, [remove, fields])
+
+                      const columnDefs = useMemo<ColDef<typeof fields[0]>[]>(() => [
+                    {{Members.SelectTextTemplate(member => $$"""
+                      { field: '{{member.MemberName}}', resizable: true, sortable: false, editable: {{(_mode == SingleView.E_Type.View ? "false" : "true")}} },
+                    """)}}
+                      ], [])
+
+                      return <>
+                        <VTable.NestedName label="{{_aggregate.GetParent()!.RelationName}}" indent={{{TableIndent - 1}}}>
+                    {{If(_mode != SingleView.E_Type.View, () => $$"""
+                          <Components.IconButton
+                            underline
+                            inline
+                            icon={PlusIcon}
+                            onClick={onAdd}
+                            className="mr-2">
+                            追加
+                          </Components.IconButton>
+                          <Components.IconButton
+                            underline
+                            inline
+                            icon={XMarkIcon}
+                            onClick={onRemove}>
+                            削除
+                          </Components.IconButton>
+                    """)}}
+                        </VTable.NestedName>
+                        <VTable.EmptyRow className="ag-theme-alpine compact h-64" indent={{{TableIndent - 1}}}>
+                          <AgGridReact
+                            rowData={fields || []}
+                            columnDefs={columnDefs}
+                            rowSelection='multiple'
+                            multiSortKey='ctrl'
+                            undoRedoCellEditing
+                            undoRedoCellEditingLimit={20}
+                            onGridReady={onGridReady}>
+                          </AgGridReact>
+                        </VTable.EmptyRow>
+                      </>
+                    }
+                    """;
             }
         }
 
         private string RenderMembers() {
-            return new AggregateDetail(_aggregate).GetAggregateDetailMembers().SelectTextTemplate(prop => prop switch {
+            return Members.SelectTextTemplate(prop => prop switch {
                 AggregateMember.Schalar x => RenderProperty(x),
                 AggregateMember.Ref x => RenderProperty(x),
                 AggregateMember.Child x => RenderProperty(x),
@@ -310,7 +407,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
             return $"basis-{c}";
         }
-        private string PropNameWidth => GetPropNameFlexBasis(new AggregateDetail(_aggregate).GetAggregateDetailMembers().Select(p => p.MemberName));
         #endregion ラベル列の横幅
 
         private string GetRegisterName(AggregateMember.AggregateMemberBase? prop = null) {
@@ -338,17 +434,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             }
             var name = path.Join(".");
             return string.IsNullOrEmpty(name) ? string.Empty : $"`{name}`";
-        }
-
-        private IEnumerable<string> GetArguments() {
-            // 祖先コンポーネントの中に含まれるChildrenの数だけ、
-            // このコンポーネントのその配列中でのインデックスが特定されている必要があるので、引数で渡す
-            var args = _aggregate
-                .PathFromEntry()
-                .Where(edge => edge.Terminal != _aggregate
-                            && edge.Terminal.IsChildrenMember())
-                .Select((_, i) => $"index_{i}");
-            return args;
         }
 
         private string IfReadOnly(string readOnly, AggregateMember.ValueMember prop) {

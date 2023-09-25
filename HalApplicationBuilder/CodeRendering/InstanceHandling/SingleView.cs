@@ -107,6 +107,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 import React, { useState, useCallback, useMemo, useReducer, useRef } from 'react';
                 import { Link, useParams, useNavigate } from 'react-router-dom';
                 import { FieldValues, SubmitHandler, useForm, FormProvider, useFormContext, useFieldArray } from 'react-hook-form';
+                import { AgGridReact } from 'ag-grid-react';
+                import { ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
                 import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
                 import { UUID } from 'uuidjs';
                 import * as Components from '../../components';

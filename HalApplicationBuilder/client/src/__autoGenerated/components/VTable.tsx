@@ -96,29 +96,27 @@ const NestedName = ({ indent, label, children, className }: RowProp) => {
   )
 }
 
-const EmptyRow = ({ indent, noBottomBorder, className }: {
+const EmptyRow = ({ indent, noBottomBorder, className, children }: {
   indent?: number
   noBottomBorder?: boolean
   className?: string
+  children?: React.ReactNode
 }) => {
   const { maxIndent } = useContext(VTableContext)
   const indentCount = useMemo(() => {
     return Math.min(indent || 0, maxIndent)
   }, [maxIndent, indent])
   const thTdColSpan = useMemo(() => {
-    return Math.min(maxIndent + 1 - indentCount, maxIndent + 1) + 1
+    return Math.min(maxIndent + 1 - indentCount, maxIndent + 1) + 2
   }, [maxIndent, indentCount])
 
   return (
-    <tr className={className}>
+    <tr>
       {Array.from({ length: indentCount }).map((_, i) => (
         <Indent key={i} />
       ))}
-      <td className={`border-l ${noBottomBorder ? '' : 'border-b'} ${BORDER_OPTION}`}>
-        <div className="h-4"></div>
-      </td>
-      <td className={`border-r ${noBottomBorder ? '' : 'border-b'} ${BORDER_OPTION}`} colSpan={thTdColSpan}>
-        <div className="h-4"></div>
+      <td className={`border-l border-r ${noBottomBorder ? '' : 'border-b'} ${BORDER_OPTION} ${className}`} colSpan={thTdColSpan}>
+        {children ?? <div className="h-4"></div>}
       </td>
     </tr>
   )

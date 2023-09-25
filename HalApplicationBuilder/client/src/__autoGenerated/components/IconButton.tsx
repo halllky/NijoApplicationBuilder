@@ -8,18 +8,20 @@ export const IconButton = (args: {
   hideText?: true
   icon?: React.ElementType
   children?: React.ReactNode
+  inline?: boolean
   className?: string
 }) => {
 
+  const flex = args.inline ? 'inline-flex' : 'flex'
   let className: string
   if (args.fill) {
-    className = `flex flex-row justify-center items-center select-none ${args.className} space-x-2 px-2 py-1 text-white bg-neutral-600`
+    className = `${flex} flex-row justify-center items-center select-none ${args.className} space-x-2 px-2 py-1 text-white bg-neutral-600`
   } else if (args.outline) {
-    className = `flex flex-row justify-center items-center select-none ${args.className} space-x-2 px-2 py-1 border border-neutral-600`
+    className = `${flex} flex-row justify-center items-center select-none ${args.className} space-x-2 px-2 py-1 border border-neutral-600`
   } else if (args.underline) {
-    className = `flex flex-row justify-center items-center select-none ${args.className} pr-1 text-blue-600 border-b border-blue-500`
+    className = `${flex} flex-row justify-center items-center select-none ${args.className} pr-1 text-blue-600 border-b border-blue-500`
   } else {
-    className = `flex flex-row justify-center items-center select-none ${args.className} space-x-2`
+    className = `${flex} flex-row justify-center items-center select-none ${args.className} space-x-2`
   }
 
   return (
