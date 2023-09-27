@@ -1,4 +1,5 @@
 using HalApplicationBuilder.Core;
+using HalApplicationBuilder.CodeRendering.KeywordSearching;
 using HalApplicationBuilder.CodeRendering.WebClient;
 using HalApplicationBuilder.DotnetEx;
 using static HalApplicationBuilder.CodeRendering.TemplateTextHelper;
@@ -36,7 +37,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             }
         }
 
-        private IEnumerable<AggregateMember.AggregateMemberBase> _members;
+        private IEnumerable<AggregateMember.AggregateMemberBase>? _members;
         private IEnumerable<AggregateMember.AggregateMemberBase> Members => _members ??= new AggregateDetail(_aggregate).GetAggregateDetailMembers();
 
         internal string RenderCaller() {
@@ -137,6 +138,27 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 // Childrenのレンダリング（子集約をもたない場合）
                 var loopVar = $"index_{Arguments.Count}";
                 var createNewChildrenItem = new AggregateInstanceInitializerFunction(_aggregate).FunctionName;
+                var colDefs = Members.Select(m => new {
+                    field = m.MemberName,
+                    editable = _mode == SingleView.E_Type.View ? "false" : "true",
+                    cellEditor = m switch {
+                        AggregateMember.ValueMember vm => vm.Options.MemberType.GetGridCellEditorName(),
+                        AggregateMember.Ref rm => "Components." + new ComboBox(rm.MemberAggregate).ComponentName,
+                        _ => throw new NotImplementedException(),
+                    },
+                    cellEditorParams = m switch {
+                        AggregateMember.ValueMember vm => vm.Options.MemberType.GetGridCellEditorParams(),
+                        AggregateMember.Ref rm => new Dictionary<string, string> {
+                            { "raectHookFormId", $"(rowIndex: number) => `{GetRegisterName().Replace("`", "")}.${{rowIndex}}.{rm.MemberName}`" },
+                        },
+                        _ => throw new NotImplementedException(),
+                    },
+                    valueFormatter = m switch {
+                        AggregateMember.ValueMember vm => null,
+                        AggregateMember.Ref rm => "({ value }) => " + new AggregateKeyName(rm.MemberAggregate).GetNames().Select(m => $"value.{m.MemberName}").Join(" + "),
+                        _ => throw new NotImplementedException(),
+                    },
+                });
 
                 return $$"""
                     const {{ComponentName}} = ({ {{Arguments.Join(", ")}} }: {
@@ -171,8 +193,23 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       }, [remove, fields])
 
                       const columnDefs = useMemo<ColDef<typeof fields[0]>[]>(() => [
-                    {{Members.SelectTextTemplate(member => $$"""
-                      { field: '{{member.MemberName}}', resizable: true, sortable: false, editable: {{(_mode == SingleView.E_Type.View ? "false" : "true")}} },
+                    {{colDefs.SelectTextTemplate(def => $$"""
+                        {
+                          field: '{{def.field}}',
+                          resizable: true,
+                          sortable: false,
+                          editable: {{def.editable}},
+                          cellEditor: {{def.cellEditor}},
+                          cellEditorParams: {
+                    {{def.cellEditorParams.SelectTextTemplate(p => $$"""
+                            {{p.Key}}: {{p.Value}},
+                    """)}}
+                          },
+                          cellEditorPopup: true,
+                    {{If(def.valueFormatter != null, () => $$"""
+                          valueFormatter: {{def.valueFormatter}},
+                    """)}}
+                        },
                     """)}}
                       ], [])
 

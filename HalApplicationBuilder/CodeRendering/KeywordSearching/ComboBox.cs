@@ -27,17 +27,20 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
             var keyName = new AggregateKeyName(_aggregate);
 
             return $$"""
-                import React, { useCallback } from "react"
+                import React, { useMemo, useCallback, forwardRef, useImperativeHandle } from "react"
                 import { useFormContext } from 'react-hook-form';
                 import { useHttpRequest } from "../hooks/useHttpRequest"
                 import { AsyncComboBox } from "../components"
                 import { {{keyName.TypeScriptTypeName}} } from "../types"
 
-                export const {{ComponentName}} = ({ raectHookFormId, readOnly, className }: {
-                  raectHookFormId: string
+                export const {{ComponentName}} = forwardRef(({ raectHookFormId, readOnly, className, rowIndex }: {
+                  // ag-grid CellEditorの場合はrowIndexと組み合わせてこのコンポーネントの中でIDを組み立てる
+                  raectHookFormId: string | ((rowIndex: number) => string)
                   readOnly?: boolean
                   className?: string
-                }) => {
+                  // ag-grid CellEditor用
+                  rowIndex?: number
+                }, ref) => {
 
                   const { get } = useHttpRequest()
                   const queryFn = useCallback(async (keyword: string) => {
@@ -46,13 +49,30 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                   }, [get])
 
                   const { watch, setValue } = useFormContext()
+                  const rhfId = useMemo(() => {
+                    if (typeof raectHookFormId === 'string') {
+                      return raectHookFormId
+                    } else if (rowIndex !== undefined) {
+                      return raectHookFormId(rowIndex)
+                    } else {
+                      throw Error('IDが関数の場合(グリッドセルの場合)はrowIndex必須')
+                    }
+                  }, [raectHookFormId, rowIndex])
+                  const selectedItem = watch(rhfId)
                   const onSelectedItemChanged = useCallback((item: {{keyName.TypeScriptTypeName}} | null | undefined) => {
-                    setValue(raectHookFormId, item)
+                    setValue(rhfId, item)
                   }, [setValue, watch])
+
+                  // ag-grid CellEditor用
+                  useImperativeHandle(ref, () => ({
+                    getValue: () => selectedItem,
+                    isCancelBeforeStart: () => false,
+                    isCancelAfterEnd: () => false,
+                  }))
 
                   return (
                     <AsyncComboBox
-                      selectedItem={watch(raectHookFormId)}
+                      selectedItem={selectedItem}
                       onSelectedItemChanged={onSelectedItemChanged}
                       keySelector={keySelector}
                       textSelector={textSelector}
@@ -62,7 +82,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                       className={className}
                     />
                   )
-                }
+                })
 
                 const queryKey = ['combo-{{_aggregate.Item.UniqueId}}']
                 const keySelector = (item: {{keyName.TypeScriptTypeName}}) => {

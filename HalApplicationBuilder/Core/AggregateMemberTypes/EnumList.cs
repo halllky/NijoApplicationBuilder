@@ -23,5 +23,9 @@ namespace HalApplicationBuilder.Core.AggregateMemberTypes {
                 x => x.DisplayName ?? x.PhysicalName);
             return ui.Selection(options);
         }
+        public override string GetGridCellEditorName() => "'agSelectCellEditor'";
+        public override IReadOnlyDictionary<string, string> GetGridCellEditorParams() => new Dictionary<string, string> {
+            { "values", $"[{Definition.Items.Select(x => $"'{x.PhysicalName}'").Join(", ")}]" },
+        };
     }
 }

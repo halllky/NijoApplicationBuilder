@@ -9,5 +9,7 @@ namespace HalApplicationBuilder.Core.AggregateMemberTypes {
         public override string GetCSharpTypeName() => "DateTime?";
         public override string GetTypeScriptTypeName() => "string";
         public override string RenderUI(IGuiFormRenderer ui) => ui.TextBox();
+        public override string GetGridCellEditorName() => "'agTextCellEditor'";
+        public override IReadOnlyDictionary<string, string> GetGridCellEditorParams() => new Dictionary<string, string>();
     }
 }

@@ -10,5 +10,7 @@ namespace HalApplicationBuilder.Core.AggregateMemberTypes {
         public string GetCSharpTypeName() => "string";
         public string GetTypeScriptTypeName() => "string";
         public string RenderUI(IGuiFormRenderer ui) => ui.TextBox(multiline: true);
+        public string GetGridCellEditorName() => "'agLargeTextCellEditor'";
+        public IReadOnlyDictionary<string, string> GetGridCellEditorParams() => new Dictionary<string, string>();
     }
 }

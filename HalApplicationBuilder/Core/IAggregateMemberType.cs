@@ -7,9 +7,12 @@ using System.Threading.Tasks;
 namespace HalApplicationBuilder.Core {
     public interface IAggregateMemberType {
         SearchBehavior SearchBehavior { get; }
+
         string GetCSharpTypeName();
         string GetTypeScriptTypeName();
         string RenderUI(IGuiFormRenderer ui);
+        string GetGridCellEditorName();
+        IReadOnlyDictionary<string, string> GetGridCellEditorParams();
     }
     /// <summary>
     /// 検索処理の挙動
@@ -39,6 +42,8 @@ namespace HalApplicationBuilder.Core {
         public abstract string GetCSharpTypeName();
         public abstract string GetTypeScriptTypeName();
         public abstract string RenderUI(IGuiFormRenderer ui);
+        public abstract string GetGridCellEditorName();
+        public abstract IReadOnlyDictionary<string, string> GetGridCellEditorParams();
     }
 
 
@@ -50,6 +55,8 @@ namespace HalApplicationBuilder.Core {
         public abstract string GetCSharpTypeName();
         public abstract string GetTypeScriptTypeName();
         public abstract string RenderUI(IGuiFormRenderer ui);
+        public abstract string GetGridCellEditorName();
+        public abstract IReadOnlyDictionary<string, string> GetGridCellEditorParams();
         //object? Min { get; }
         //object? Max { get; }
     }
