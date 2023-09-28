@@ -138,26 +138,25 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 // Childrenのレンダリング（子集約をもたない場合）
                 var loopVar = $"index_{Arguments.Count}";
                 var createNewChildrenItem = new AggregateInstanceInitializerFunction(_aggregate).FunctionName;
-                var colDefs = Members.Select(m => new {
-                    field = m.MemberName,
-                    editable = _mode == SingleView.E_Type.View ? "false" : "true",
-                    cellEditor = m switch {
-                        AggregateMember.ValueMember vm => vm.Options.MemberType.GetGridCellEditorName(),
-                        AggregateMember.Ref rm => "Components." + new ComboBox(rm.MemberAggregate).ComponentName,
-                        _ => throw new NotImplementedException(),
+                var editable = _mode == SingleView.E_Type.View ? "false" : "true";
+                var colDefs = Members.Select(m => m switch {
+                    AggregateMember.ValueMember vm => new {
+                        field = m.MemberName,
+                        editable,
+                        cellEditor = vm.Options.MemberType.GetGridCellEditorName(),
+                        cellEditorParams = vm.Options.MemberType.GetGridCellEditorParams(),
+                        valueFormatter = string.Empty,
                     },
-                    cellEditorParams = m switch {
-                        AggregateMember.ValueMember vm => vm.Options.MemberType.GetGridCellEditorParams(),
-                        AggregateMember.Ref rm => new Dictionary<string, string> {
+                    AggregateMember.Ref rm => new {
+                        field = m.MemberName,
+                        editable,
+                        cellEditor = "Components." + new ComboBox(rm.MemberAggregate).ComponentName,
+                        cellEditorParams = (IReadOnlyDictionary<string, string>)new Dictionary<string, string> {
                             { "raectHookFormId", $"(rowIndex: number) => `{GetRegisterName().Replace("`", "")}.${{rowIndex}}.{rm.MemberName}`" },
                         },
-                        _ => throw new NotImplementedException(),
+                        valueFormatter = "({ value }) => " + new AggregateKeyName(rm.MemberAggregate).GetNames().Select(m => $"value.{m.MemberName}").Join(" + "),
                     },
-                    valueFormatter = m switch {
-                        AggregateMember.ValueMember vm => null,
-                        AggregateMember.Ref rm => "({ value }) => " + new AggregateKeyName(rm.MemberAggregate).GetNames().Select(m => $"value.{m.MemberName}").Join(" + "),
-                        _ => throw new NotImplementedException(),
-                    },
+                    _ => throw new NotImplementedException(),
                 });
 
                 return $$"""
@@ -206,7 +205,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     """)}}
                           },
                           cellEditorPopup: true,
-                    {{If(def.valueFormatter != null, () => $$"""
+                    {{If(def.valueFormatter != string.Empty, () => $$"""
                           valueFormatter: {{def.valueFormatter}},
                     """)}}
                         },
