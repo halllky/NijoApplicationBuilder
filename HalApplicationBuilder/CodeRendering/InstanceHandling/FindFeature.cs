@@ -53,7 +53,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             """;
         }
 
-        internal string RenderEFCoreFindMethod(CodeRenderingContext _ctx) {
+        internal string RenderEFCoreMethod(CodeRenderingContext _ctx) {
 
             return $$"""
                 namespace {{_ctx.Config.EntityNamespace}} {
