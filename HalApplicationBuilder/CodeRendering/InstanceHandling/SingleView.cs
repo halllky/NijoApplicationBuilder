@@ -83,15 +83,24 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var headersWidthRem = _aggregate
                 .EnumerateThisAndDescendants()
                 .SelectMany(
-                    // 画面上に表示されるメンバーだけ抽出
                     a => new AggregateDetail(a)
                         .GetAggregateDetailMembers()
-                        .Where(m => (m is not AggregateMember.ValueMember valueMember)
-                                 || !valueMember.Options.InvisibleInGui),
+                        .Where(m => {
+                            // 同じ行に値を表示せず、名前が長くても行の横幅いっぱい占有できるため、除外
+                            if (m is AggregateMember.Child) return false;
+                            if (m is AggregateMember.Children) return false;
+                            if (m is AggregateMember.Variation) return false;
+
+                            // 画面上にメンバー名が表示されないため除外
+                            if (m is AggregateMember.VariationItem) return false;
+                            if (m is AggregateMember.ValueMember vm && vm.Options.InvisibleInGui) return false;
+
+                            return true;
+                        }),
                     (a, m) => new {
                         m.MemberName,
                         IndentWidth = a.EnumerateAncestors().Count() * INDENT_WIDTH, // インデント1個の幅をだいたい1.5remとして計算
-                        NameWidthRem = m.MemberName.CalculateCharacterWidth() * 0.5m, // tailwindの1remがだいたい全角文字1文字分
+                        NameWidthRem = (m.MemberName.CalculateCharacterWidth() / 2) * 1.0m, // tailwindの1remがだいたい全角文字1文字分
                     });
             // インデント込みで最も横幅が長いメンバーの横幅を計算
             var longestHeaderWidthRem = headersWidthRem
