@@ -43,7 +43,19 @@ textarea:read-only {
 }
 
 /* ag-grid */
+.ag-root-wrapper {
+  border: none !important;
+}
+
 .ag-theme-alpine.compact {
   --ag-grid-size: 3px;
   --ag-list-item-height: 20px;
+  /* neutral-200 */
+  --ag-header-background-color: #f3f4f6;
+  /* neutral-500 */
+  --ag-header-foreground-color: #737373;
 }
+  .ag-theme-alpine.compact .ag-header-cell {
+    /* SingleView中でのVTableのヘッダの文字と合わせる */
+    font-size: 14px;
+  }

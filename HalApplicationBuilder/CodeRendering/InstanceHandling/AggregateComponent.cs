@@ -61,9 +61,11 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       const { register, watch, getValues } = useFormContext<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
                       const item = getValues({{GetRegisterName()}})
                     
-                      return <>
-                        {{WithIndent(RenderMembers(), "    ")}}
-                      </>
+                      return (
+                        <>
+                          {{WithIndent(RenderMembers(), "      ")}}
+                        </>
+                      )
                     }
                     """;
 
@@ -100,7 +102,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     
                       return (
                         <>
-                          <VTable.NestedName label="{{_aggregate.GetParent()!.RelationName}}" indent={{{TableIndent - 1}}}>
+                          <VTable.Row keyOnly label="{{_aggregate.GetParent()!.RelationName}}" indent={{{TableIndent - 1}}}>
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
                             <Components.IconButton
                               underline
@@ -110,12 +112,12 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                               追加
                             </Components.IconButton>
                     """)}}
-                          </VTable.NestedName>
+                          </VTable.Row>
 
                           {fields.map((item, {{loopVar}}) => (
                             <React.Fragment key={item.{{AggregateDetail.OBJECT_ID}}}>
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
-                              <VTable.ArrayItemDeleteButtonRow indent={{{TableIndent + 1}}} className="relative">
+                              <VTable.Row keyOnly indent={{{TableIndent + 1}}} className="relative">
                                 <Components.IconButton
                                   underline
                                   icon={XMarkIcon}
@@ -123,10 +125,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                                   className="absolute top-full right-0">
                                   削除
                                 </Components.IconButton>
-                              </VTable.ArrayItemDeleteButtonRow>
+                              </VTable.Row>
                     """)}}
                               {{WithIndent(RenderMembers(), "          ")}}
-                              <VTable.EmptyRow indent={{{TableIndent - 1}}} noBottomBorder={{{loopVar}} < fields.length - 1} />
                             </React.Fragment>
                           ))}
                         </>
@@ -213,14 +214,13 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       ], [])
 
                       return <>
-                        <VTable.NestedName label="{{_aggregate.GetParent()!.RelationName}}" indent={{{TableIndent - 1}}}>
+                        <VTable.Row keyOnly label="{{_aggregate.GetParent()!.RelationName}}" indent={{{TableIndent - 1}}}>
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
                           <Components.IconButton
                             underline
                             inline
                             icon={PlusIcon}
-                            onClick={onAdd}
-                            className="mr-2">
+                            onClick={onAdd}>
                             追加
                           </Components.IconButton>
                           <Components.IconButton
@@ -231,18 +231,20 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                             削除
                           </Components.IconButton>
                     """)}}
-                        </VTable.NestedName>
-                        <VTable.EmptyRow className="ag-theme-alpine compact h-64" indent={{{TableIndent - 1}}}>
-                          <AgGridReact
-                            rowData={fields || []}
-                            columnDefs={columnDefs}
-                            rowSelection='multiple'
-                            multiSortKey='ctrl'
-                            undoRedoCellEditing
-                            undoRedoCellEditingLimit={20}
-                            onGridReady={onGridReady}>
-                          </AgGridReact>
-                        </VTable.EmptyRow>
+                        </VTable.Row>
+                        <VTable.Row valueOnly indent={{{TableIndent - 1}}}>
+                          <div className="ag-theme-alpine compact h-64">
+                            <AgGridReact
+                              rowData={fields || []}
+                              columnDefs={columnDefs}
+                              rowSelection='multiple'
+                              multiSortKey='ctrl'
+                              undoRedoCellEditing
+                              undoRedoCellEditingLimit={20}
+                              onGridReady={onGridReady}>
+                            </AgGridReact>
+                          </div>
+                        </VTable.Row>
                       </>
                     }
                     """;
@@ -265,6 +267,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var childrenComponent = new AggregateComponent(children.MemberAggregate, _mode);
 
             return $$"""
+                <VTable.Spacer indent={{{TableIndent}}} />
                 {{childrenComponent.RenderCaller()}}
                 """;
         }
@@ -273,9 +276,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var childComponent = new AggregateComponent(child.MemberAggregate, _mode);
 
             return $$"""
-                <VTable.NestedName label="{{child.MemberName}}" indent={{{TableIndent}}} />
+                <VTable.Spacer indent={{{TableIndent}}} />
+                <VTable.Row keyOnly label="{{child.MemberName}}" indent={{{TableIndent}}} />
                 {{childComponent.RenderCaller()}}
-                <VTable.EmptyRow indent={{{TableIndent}}} />
                 """;
         }
 
@@ -286,7 +289,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             return $$"""
                 {watch({{switchProp}}) === '{{variation.Key}}' && <>
                   {{WithIndent(childComponent.RenderCaller(), "  ")}}
-                  <VTable.EmptyRow indent={{{TableIndent}}} />
                 </>}
                 """;
         }
@@ -296,7 +298,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var disabled = IfReadOnly("disabled", variationSwitch);
 
             return $$"""
-                <VTable.NestedName label="{{variationSwitch.MemberName}}" indent={{{TableIndent}}}>
+                <VTable.Spacer indent={{{TableIndent}}} />
+                <VTable.Row keyOnly label="{{variationSwitch.MemberName}}" indent={{{TableIndent}}}>
                   <div className="flex-1 flex gap-2 flex-wrap">
                 {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
                     <label>
@@ -305,7 +308,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     </label>
                 """)}}
                   </div>
-                </VTable.NestedName>
+                </VTable.Row>
                 """;
         }
 
