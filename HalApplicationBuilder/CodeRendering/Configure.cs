@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using HalApplicationBuilder.CodeRendering.Logging;
 
 namespace HalApplicationBuilder.CodeRendering {
     partial class Configure : TemplateBase {
@@ -15,7 +16,7 @@ namespace HalApplicationBuilder.CodeRendering {
         public const string INIT_WEB_HOST_BUILDER = "InitWebHostBuilder";
         public const string INIT_BATCH_PROCESS = "InitAsBatchProces";
         public const string CONFIGURE_SERVICES = "ConfigureServices";
-        public const string INIT_WEBAPPLICATION= "InitWebApplication";
+        public const string INIT_WEBAPPLICATION = "InitWebApplication";
 
         public override string FileName => "HalappConfigurer.cs";
         public string Namespace => _ctx.Config.RootNamespace;
@@ -94,7 +95,7 @@ namespace HalApplicationBuilder.CodeRendering {
 
                             services.AddScoped<ILogger>(provider => {
                                 var setting = provider.GetRequiredService<{{RuntimeServerSettings}}>();
-                                return new {{Util.DefaultLogger.CLASSNAME}}(setting.LogDirectory);
+                                return new {{DefaultLogger.CLASSNAME}}(setting.LogDirectory);
                             });
                         }
                     }

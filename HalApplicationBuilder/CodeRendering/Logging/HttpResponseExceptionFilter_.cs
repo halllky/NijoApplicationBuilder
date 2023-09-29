@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using HalApplicationBuilder.CodeRendering.Util;
 
-namespace HalApplicationBuilder.CodeRendering.Util {
+namespace HalApplicationBuilder.CodeRendering.Logging {
     internal class HttpResponseExceptionFilter : TemplateBase {
         internal HttpResponseExceptionFilter(string rootnamespace) {
             _namespace = rootnamespace;

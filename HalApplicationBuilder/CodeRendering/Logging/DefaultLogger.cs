@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HalApplicationBuilder.CodeRendering.Util {
+namespace HalApplicationBuilder.CodeRendering.Logging {
     partial class DefaultLogger : TemplateBase {
         internal DefaultLogger(string @namespace) {
             _namespace = @namespace;

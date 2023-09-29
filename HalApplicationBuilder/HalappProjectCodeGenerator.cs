@@ -111,8 +111,8 @@ namespace HalApplicationBuilder {
                         utilDir.Generate(new CodeRendering.Util.RuntimeSettings(ctx));
                         utilDir.Generate(new CodeRendering.Util.DotnetExtensions(ctx.Config));
                         utilDir.Generate(new CodeRendering.Util.FromTo(ctx.Config));
-                        utilDir.Generate(new CodeRendering.Util.HttpResponseExceptionFilter(ctx.Config.RootNamespace));
-                        utilDir.Generate(new CodeRendering.Util.DefaultLogger(ctx.Config.RootNamespace));
+                        utilDir.Generate(new CodeRendering.Logging.HttpResponseExceptionFilter(ctx.Config.RootNamespace));
+                        utilDir.Generate(new CodeRendering.Logging.DefaultLogger(ctx.Config.RootNamespace));
                         var util = new CodeRendering.Util.Utility(ctx);
                         utilDir.Generate("JsonConversion.cs", util.RenderJsonConversionMethods());
                         utilDir.DeleteOtherFiles();
