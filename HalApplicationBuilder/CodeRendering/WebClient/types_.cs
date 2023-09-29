@@ -28,7 +28,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 // ------------------ {{root.Item.DisplayName}} ------------------
                 {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new AggregateDetail(aggregate).RenderTypeScript(_ctx))}}
 
-                {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new AggregateInstanceInitializerFunction(aggregate).Render())}}
+                {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new TSInitializerFunction(aggregate).Render())}}
 
                 {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new AggregateKeyName(aggregate).RenderTypeScriptDeclaring())}}
 

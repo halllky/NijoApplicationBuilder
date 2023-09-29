@@ -75,7 +75,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
                 // Childrenのレンダリング（子集約をもつ場合）
                 var loopVar = $"index_{Arguments.Count}";
-                var createNewChildrenItem = new AggregateInstanceInitializerFunction(_aggregate).FunctionName;
+                var createNewChildrenItem = new TSInitializerFunction(_aggregate).FunctionName;
 
                 return $$"""
                     const {{ComponentName}} = ({ {{Arguments.Join(", ")}} }: {
@@ -138,7 +138,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             } else {
                 // Childrenのレンダリング（子集約をもたない場合）
                 var loopVar = $"index_{Arguments.Count}";
-                var createNewChildrenItem = new AggregateInstanceInitializerFunction(_aggregate).FunctionName;
+                var createNewChildrenItem = new TSInitializerFunction(_aggregate).FunctionName;
                 var editable = _mode == SingleView.E_Type.View ? "false" : "true";
                 var colDefs = Members.Select(m => m switch {
                     AggregateMember.ValueMember vm => new {

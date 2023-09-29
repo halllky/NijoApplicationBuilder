@@ -1,4 +1,3 @@
-using HalApplicationBuilder.CodeRendering.InstanceHandling;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.Core.AggregateMemberTypes;
 using HalApplicationBuilder.DotnetEx;
@@ -8,9 +7,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HalApplicationBuilder.CodeRendering.WebClient {
-    internal class AggregateInstanceInitializerFunction {
-        internal AggregateInstanceInitializerFunction(GraphNode<Aggregate> instance) {
+namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
+    internal class TSInitializerFunction {
+        internal TSInitializerFunction(GraphNode<Aggregate> instance) {
             _instance = instance;
         }
         private readonly GraphNode<Aggregate> _instance;
@@ -28,14 +27,14 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
                 .GetChildEdges()
                 .Select(edge => new {
                     Key = edge.RelationName,
-                    Value = $"{new AggregateInstanceInitializerFunction(edge.Terminal).FunctionName}()",
+                    Value = $"{new TSInitializerFunction(edge.Terminal).FunctionName}()",
                 });
             var variation = _instance
                 .GetVariationGroups()
                 .SelectMany(group => group.VariationAggregates.Values)
                 .Select(edge => new {
                     Key = edge.RelationName,
-                    Value = $"{new AggregateInstanceInitializerFunction(edge.Terminal).FunctionName}()",
+                    Value = $"{new TSInitializerFunction(edge.Terminal).FunctionName}()",
                 });
             var variationSwitch = _instance
                 .GetVariationGroups()
