@@ -1,126 +1,229 @@
-import React, { CSSProperties, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
+import React, { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from "react"
+import { UUID } from "uuidjs"
 
-type KeyTravelContextValue = {
-  registered: HTMLElement[]
-  focusTarget?: HTMLElement
-  setFocusTarget: (el: HTMLElement) => void
+// -------------------------------------------
+// * ページ単位 *
+type Registered = {
+  readonly tabs: string[]
+  readonly elements: [tabId: string, element: HTMLElement][]
 }
-const KeyTravelContext = createContext({} as KeyTravelContextValue)
+type GlobalFocusContextValue = {
+  registered: React.RefObject<Registered>
+  activeTab?: String
+  activeElement?: HTMLElement
+  activate: ({ tab, el }: { tab?: string, el?: HTMLElement }) => void
+  moveToNextTab: () => void
+  moveToPrevTab: () => void
+}
+const GlobalFocusContext = createContext({} as GlobalFocusContextValue)
 
-const ContextProvider = ({ children }: {
-  children?: React.ReactNode
-}) => {
-  const [currentFocus, setCurrentFocus] = useState<HTMLElement | undefined>()
-  const registered = useMemo(() => {
-    return [] as HTMLElement[]
+const GlobalFocusPage = ({ children }: { children?: React.ReactNode }) => {
+  const registered = useRef<Registered>({ tabs: [], elements: [] })
+  const activeTab = useRef<string>()
+  const activeElement = useRef<HTMLElement>()
+  const forceUpdate = useForceUpdate()
+
+  const activate = useCallback(({ tab, el }: { tab?: string, el?: HTMLElement }) => {
+    if (tab === undefined && registered.current.tabs.length > 0) {
+      tab = registered.current.tabs[0]
+    }
+    if (el === undefined) {
+      const elements = registered.current.elements.filter(x => x[0] === tab)
+      el = elements.length === 0 ? undefined : elements[0][1]
+    }
+    activeTab.current = tab
+    activeElement.current = el
+    el?.focus()
+    forceUpdate()
   }, [])
-  const contextValue = useMemo<KeyTravelContextValue>(() => ({
-    registered,
-    focusTarget: currentFocus,
-    setFocusTarget: setCurrentFocus,
-  }), [registered, currentFocus, setCurrentFocus])
+
+  const moveToNextTab = useCallback(() => {
+    if (activeTab.current === undefined) { activate({}); return }
+    const activeTabIndex = registered.current.tabs.indexOf(activeTab.current)
+    if (activeTabIndex === -1) { activate({}); return }
+    const nextTabIndex = activeTabIndex === registered.current.tabs.length - 1
+      ? 0
+      : (activeTabIndex + 1)
+    activate({ tab: registered.current.tabs[nextTabIndex] })
+  }, [])
+
+  const moveToPrevTab = useCallback(() => {
+    if (activeTab.current === undefined) { activate({}); return }
+    const activeTabIndex = registered.current.tabs.indexOf(activeTab.current)
+    if (activeTabIndex === -1) { activate({}); return }
+    const nextTabIndex = activeTabIndex === 0
+      ? registered.current.tabs.length - 1
+      : (activeTabIndex - 1)
+    activate({ tab: registered.current.tabs[nextTabIndex] })
+  }, [])
 
   return (
-    <KeyTravelContext.Provider value={contextValue}>
+    <GlobalFocusContext.Provider value={{
+      registered,
+      activeTab: activeTab.current,
+      activeElement: activeElement.current,
+      activate,
+      moveToNextTab,
+      moveToPrevTab,
+    }}>
       {children}
-      <CurrentFocus focusTarget={currentFocus} />
-    </KeyTravelContext.Provider>
+      <FocusBorder />
+    </GlobalFocusContext.Provider>
   )
 }
 
-/**
- * 多分こうするより各フォーカスターゲットの中に現れたり消えたりする仕組みにした方がよい
- * フォーカス当たってるときに画面サイズかえられると追従できないので
- */
-const CurrentFocus = (props: {
-  focusTarget?: HTMLElement
-}) => {
-  const style = useMemo<CSSProperties>(() => {
-    const rect = props.focusTarget?.getBoundingClientRect()
-    return {
-      zIndex: 10,
-      top: (rect?.top ?? 0) + window.scrollY,
-      left: (rect?.left ?? 0) + window.scrollX,
-      width: rect?.width,
-      height: rect?.height,
-      transition: `all .1s ease-out 0s`,
+const FocusBorder = () => {
+  const ref = useRef<HTMLDivElement>(null)
+  const { activeElement } = useContext(GlobalFocusContext)
+
+  // この要素をactiveElementの子の位置に移動する。
+  // 同じ1つのDOMを移動させることでCSSアニメーションを効かせるため
+  useEffect(() => {
+    if (!ref.current || !activeElement) return
+    activeElement.appendChild(ref.current)
+  }, [activeElement])
+
+  return activeElement
+    ? (
+      <div ref={ref} className="absolute top-0 bottom-0 left-0 right-0
+        pointer-events-none border-2 border-orange-600"></div>
+    ) : (
+      <></>
+    )
+}
+
+// -------------------------------------------
+// * タブ単位 *
+
+type TabAreaContextValue = { tabId: string }
+const TabAreaContext = createContext({} as TabAreaContextValue)
+
+const TabArea = ({ children }: { children?: React.ReactNode }) => {
+  const tabId = useId()
+  const contextValue = useMemo<TabAreaContextValue>(() => ({ tabId }), [tabId])
+
+  // ページのコンテキストにこのタブを登録する
+  const { registered } = useContext(GlobalFocusContext)
+  useEffect(() => {
+    registered.current?.tabs.push(tabId)
+    return () => {
+      const index = registered.current?.tabs.indexOf(tabId)
+      if (index === -1 || index === undefined) return
+      registered.current?.tabs.splice(index, 1)
     }
-  }, [props.focusTarget])
+  }, [tabId])
 
   return (
-    <div
-      className="absolute pointer-events-none border-2 border-orange-600"
-      style={style}></div>
+    <TabAreaContext.Provider value={contextValue}>
+      {children}
+    </TabAreaContext.Provider>
   )
 }
 
 // -------------------------------------------
+// * コントロール単位 *
+
 const Focusable = ({ children, className }: {
   children?: React.ReactNode
   className?: string
 }) => {
-  const { focusTarget, setFocusTarget, registered } = useContext(KeyTravelContext)
-
-  const onClick = useCallback((e: React.MouseEvent) => {
-    setFocusTarget(e.target as HTMLElement)
-    e.preventDefault()
-  }, [setFocusTarget])
-
-  const onKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (!focusTarget) {
-      if (registered.length > 0) setFocusTarget(registered[0])
-      return
-    }
-    let nearestEl: HTMLElement | undefined
-    switch (e.key) {
-      case 'ArrowUp': nearestEl = findNearestElement('top', focusTarget, registered); break
-      case 'ArrowDown': nearestEl = findNearestElement('bottom', focusTarget, registered); break
-      case 'ArrowLeft': nearestEl = findNearestElement('left', focusTarget, registered); break
-      case 'ArrowRight': nearestEl = findNearestElement('right', focusTarget, registered); break
-      default: throw new Error()
-    }
-    if (!nearestEl) return
-    setFocusTarget(nearestEl)
-    nearestEl.focus()
-    e.preventDefault()
-  }, [focusTarget, registered, setFocusTarget])
+  const { registered, activate, moveToNextTab, moveToPrevTab } = useContext(GlobalFocusContext)
+  const { tabId } = useContext(TabAreaContext)
 
   const ref = useRef<HTMLLabelElement>(null)
+
+  // ページのコンテキストにこのエレメントを登録する
   useEffect(() => {
     if (ref.current) {
-      registered.push(ref.current)
+      registered.current?.elements.push([tabId, ref.current])
     }
     return () => {
       if (ref.current) {
-        const index = registered.indexOf(ref.current)
-        if (index !== -1) registered.splice(index, 1)
+        const index = registered.current?.elements.findIndex(x => x[1] === ref.current)
+        if (index === -1 || index === undefined) return
+        registered.current?.elements.splice(index, 1)
       }
     }
-  }, [ref.current])
+  }, [tabId])
+
+  // フォーカスがあたったとき
+  const activateElement = useCallback((el: HTMLElement) => {
+    activate({ tab: tabId, el })
+  }, [tabId])
+
+  // イベント
+  const onClick = useCallback((e: React.MouseEvent) => {
+    if (ref.current) activateElement(ref.current)
+    e.preventDefault()
+  }, [ref.current, activateElement])
+
+  const onKeyDown = useCallback((e: React.KeyboardEvent) => {
+    switch (e.key) {
+      case 'ArrowUp':
+      case 'ArrowDown':
+      case 'ArrowLeft':
+      case 'ArrowRight':
+        if (!ref.current) return
+        const elements = registered.current?.elements
+          .filter(x => x[0] === tabId)
+          .map(x => x[1])
+          || []
+        const nearestEl = findNearestElement(e.key, ref.current, elements)
+        if (!nearestEl) return
+        activateElement(nearestEl)
+        e.preventDefault()
+        break
+
+      case 'Tab':
+        if (e.shiftKey) {
+          moveToPrevTab()
+        } else {
+          moveToNextTab()
+        }
+        e.preventDefault()
+        break
+
+      default:
+        break
+    }
+  }, [tabId])
 
   return (
-    <label ref={ref} onClick={onClick} onKeyDown={onKeyDown} className={className}>
+    <label
+      ref={ref}
+      onClick={onClick}
+      onKeyDown={onKeyDown}
+      className={`relative inline-block ${className}`}
+    >
       {children}
     </label>
   )
 }
 
 // -------------------------------------------
+// * 以下、計算関数など *
+const useForceUpdate = () => {
+  const [state, setState] = useState(UUID.generate())
+  return useCallback(() => {
+    setState(UUID.generate())
+  }, [])
+}
+
 type Point = { x: number; y: number }
-type Direction = 'left' | 'top' | 'right' | 'bottom'
+type Direction = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'
 
 /**
  * 指定の方向にある最も近い要素を返します。
  */
 function findNearestElement(direction: Direction, thisEl: HTMLElement, targetsList: HTMLElement[]): HTMLElement | undefined {
   let isInRange: (angle: number) => boolean
-  if (direction === 'right') {
+  if (direction === 'ArrowRight') {
     isInRange = angle => angle >= -45 && angle <= 45
-  } else if (direction === 'top') {
+  } else if (direction === 'ArrowUp') {
     isInRange = angle => angle >= -135 && angle <= -45
-  } else if (direction === 'left') {
+  } else if (direction === 'ArrowLeft') {
     isInRange = angle => angle <= -135 || angle >= 135
-  } else if (direction === 'bottom') {
+  } else if (direction === 'ArrowDown') {
     isInRange = angle => angle >= 45 && angle <= 135
   } else {
     throw new Error
@@ -168,6 +271,7 @@ function isWithinSectorRange(a: Point, b: Point, checkAngle: (angle: number) => 
 }
 
 export default {
-  ContextProvider,
+  GlobalFocusPage,
+  TabArea,
   Focusable,
 }
