@@ -1,71 +1,102 @@
-import React, { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from "react"
-import { UUID } from "uuidjs"
+import React, { createContext, useCallback, useContext, useEffect, useId, useMemo, useReducer, useRef } from "react"
+
+type RegisteredItem = { tabId: string, controlId: string, ref: React.RefObject<HTMLElement> }
+type State = {
+  registered: RegisteredItem[]
+  active?: RegisteredItem
+  lastFocused: Map<string, string>
+  getTabs: () => { tabId: string, items: RegisteredItem[] }[]
+  getHtmlElements(tabId: string): HTMLElement[]
+  getLastFocusItem: (tabId: string) => RegisteredItem | undefined
+}
+type Action
+  = { type: 'register', item: RegisteredItem }
+  | { type: 'unregister', controlId: string }
+  | { type: 'move-to-next-tab' }
+  | { type: 'move-to-previous-tab' }
+  | { type: 'activate-by-id', controlId: string }
+  | { type: 'activate-by-element', el: HTMLElement }
+
+const reducer = (state: State, action: Action) => {
+  let updated = { ...state }
+  if (action.type === 'register') {
+    updated.registered = [...updated.registered.filter(x => x.controlId !== action.item.controlId), action.item]
+
+  } else if (action.type === 'unregister') {
+    updated.registered = updated.registered.filter(x => x.controlId !== action.controlId)
+  }
+  // ---------------------------
+
+  updated.getTabs = () => updated.registered.reduce((list, item) => {
+    const index = list.findIndex(x => x.tabId === item.tabId)
+    if (index === -1) list.push({ tabId: item.tabId, items: [item] })
+    else list[index].items.push(item)
+    return list
+  }, [] as { tabId: string, items: RegisteredItem[] }[])
+
+  updated.getHtmlElements = (tabId: string) => updated.getTabs()
+    .find(x => x.tabId === tabId)?.items
+    .map(x => x.ref.current)
+    .filter(current => current !== null) as HTMLElement[]
+    || []
+
+  updated.getLastFocusItem = (tabId: string) => {
+    const lastFocusControl = updated.lastFocused.get(tabId)
+    if (lastFocusControl === undefined) return undefined
+    return updated.registered.find(x => x.controlId === lastFocusControl)
+  }
+
+  // ---------------------------
+  const activate = (item: RegisteredItem | undefined) => {
+    updated.active = item
+    item?.ref.current?.focus()
+    if (item) updated.lastFocused.set(item.tabId, item.controlId)
+  }
+
+  switch (action.type) {
+    case 'activate-by-id': {
+      activate(updated.registered.find(x => x.controlId === action.controlId))
+      break
+    }
+    case 'activate-by-element': {
+      activate(updated.registered.find(x => x.ref.current === action.el))
+      break
+    }
+    case 'move-to-next-tab': {
+      const tabs = updated.getTabs()
+      const index = updated.active === undefined ? 0 : tabs.findIndex(x => x.tabId === updated.active!.tabId)
+      const nextTab = index === tabs.length - 1 ? tabs[0] : tabs[index + 1]
+      activate(updated.getLastFocusItem(nextTab.tabId) || nextTab.items[0])
+      break
+    }
+    case 'move-to-previous-tab': {
+      const tabs = updated.getTabs()
+      const index = updated.active === undefined ? 0 : tabs.findIndex(x => x.tabId === updated.active!.tabId)
+      const previousTab = index === 0 ? tabs[tabs.length - 1] : tabs[index - 1]
+      activate(updated.getLastFocusItem(previousTab.tabId) || previousTab.items[0])
+      break
+    }
+    default:
+      break
+  }
+  return updated
+}
 
 // -------------------------------------------
 // * ページ単位 *
-type Registered = {
-  readonly tabs: string[]
-  readonly elements: [tabId: string, element: HTMLElement][]
-}
-type GlobalFocusContextValue = {
-  registered: React.RefObject<Registered>
-  activeTab?: String
-  activeElement?: HTMLElement
-  activate: ({ tab, el }: { tab?: string, el?: HTMLElement }) => void
-  moveToNextTab: () => void
-  moveToPrevTab: () => void
-}
-const GlobalFocusContext = createContext({} as GlobalFocusContextValue)
+const GlobalFocusContext = createContext(null as unknown as [State, React.Dispatch<Action>])
 
 const GlobalFocusPage = ({ children }: { children?: React.ReactNode }) => {
-  const registered = useRef<Registered>({ tabs: [], elements: [] })
-  const activeTab = useRef<string>()
-  const activeElement = useRef<HTMLElement>()
-  const forceUpdate = useForceUpdate()
-
-  const activate = useCallback(({ tab, el }: { tab?: string, el?: HTMLElement }) => {
-    if (tab === undefined && registered.current.tabs.length > 0) {
-      tab = registered.current.tabs[0]
-    }
-    if (el === undefined) {
-      const elements = registered.current.elements.filter(x => x[0] === tab)
-      el = elements.length === 0 ? undefined : elements[0][1]
-    }
-    activeTab.current = tab
-    activeElement.current = el
-    el?.focus()
-    forceUpdate()
-  }, [])
-
-  const moveToNextTab = useCallback(() => {
-    if (activeTab.current === undefined) { activate({}); return }
-    const activeTabIndex = registered.current.tabs.indexOf(activeTab.current)
-    if (activeTabIndex === -1) { activate({}); return }
-    const nextTabIndex = activeTabIndex === registered.current.tabs.length - 1
-      ? 0
-      : (activeTabIndex + 1)
-    activate({ tab: registered.current.tabs[nextTabIndex] })
-  }, [])
-
-  const moveToPrevTab = useCallback(() => {
-    if (activeTab.current === undefined) { activate({}); return }
-    const activeTabIndex = registered.current.tabs.indexOf(activeTab.current)
-    if (activeTabIndex === -1) { activate({}); return }
-    const nextTabIndex = activeTabIndex === 0
-      ? registered.current.tabs.length - 1
-      : (activeTabIndex - 1)
-    activate({ tab: registered.current.tabs[nextTabIndex] })
-  }, [])
+  const reducervalue = useReducer(reducer, {
+    registered: [],
+    lastFocused: new Map(),
+    getTabs: () => { throw new Error() },
+    getLastFocusItem: () => { throw new Error() },
+    getHtmlElements: () => { throw new Error() },
+  } as State)
 
   return (
-    <GlobalFocusContext.Provider value={{
-      registered,
-      activeTab: activeTab.current,
-      activeElement: activeElement.current,
-      activate,
-      moveToNextTab,
-      moveToPrevTab,
-    }}>
+    <GlobalFocusContext.Provider value={reducervalue}>
       {children}
       <FocusBorder />
     </GlobalFocusContext.Provider>
@@ -74,19 +105,27 @@ const GlobalFocusPage = ({ children }: { children?: React.ReactNode }) => {
 
 const FocusBorder = () => {
   const ref = useRef<HTMLDivElement>(null)
-  const { activeElement } = useContext(GlobalFocusContext)
+  const [{ active },] = useContext(GlobalFocusContext)
 
-  // この要素をactiveElementの子の位置に移動する。
-  // 同じ1つのDOMを移動させることでCSSアニメーションを効かせるため
-  useEffect(() => {
-    if (!ref.current || !activeElement) return
-    activeElement.appendChild(ref.current)
-  }, [activeElement])
+  const style = useMemo<React.CSSProperties>(() => {
+    if (!active?.ref.current) return {}
+    const rect = active.ref.current.getBoundingClientRect()
+    return {
+      top: rect.top + window.scrollY,
+      left: rect.left + window.scrollX,
+      width: rect.width,
+      height: rect.height,
+    }
+  }, [active])
 
-  return activeElement
+  return active
     ? (
-      <div ref={ref} className="absolute top-0 bottom-0 left-0 right-0
-        pointer-events-none border-2 border-orange-600"></div>
+      <div ref={ref}
+        style={style}
+        className="absolute pointer-events-none
+          outline outline-2 outline-black border border-white
+          transition-all duration-100 ease-out">
+      </div>
     ) : (
       <></>
     )
@@ -102,17 +141,6 @@ const TabArea = ({ children }: { children?: React.ReactNode }) => {
   const tabId = useId()
   const contextValue = useMemo<TabAreaContextValue>(() => ({ tabId }), [tabId])
 
-  // ページのコンテキストにこのタブを登録する
-  const { registered } = useContext(GlobalFocusContext)
-  useEffect(() => {
-    registered.current?.tabs.push(tabId)
-    return () => {
-      const index = registered.current?.tabs.indexOf(tabId)
-      if (index === -1 || index === undefined) return
-      registered.current?.tabs.splice(index, 1)
-    }
-  }, [tabId])
-
   return (
     <TabAreaContext.Provider value={contextValue}>
       {children}
@@ -127,35 +155,23 @@ const Focusable = ({ children, className }: {
   children?: React.ReactNode
   className?: string
 }) => {
-  const { registered, activate, moveToNextTab, moveToPrevTab } = useContext(GlobalFocusContext)
   const { tabId } = useContext(TabAreaContext)
-
+  const controlId = useId()
   const ref = useRef<HTMLLabelElement>(null)
+
+  const [{ getHtmlElements }, dispatch] = useContext(GlobalFocusContext)
 
   // ページのコンテキストにこのエレメントを登録する
   useEffect(() => {
-    if (ref.current) {
-      registered.current?.elements.push([tabId, ref.current])
-    }
-    return () => {
-      if (ref.current) {
-        const index = registered.current?.elements.findIndex(x => x[1] === ref.current)
-        if (index === -1 || index === undefined) return
-        registered.current?.elements.splice(index, 1)
-      }
-    }
-  }, [tabId])
-
-  // フォーカスがあたったとき
-  const activateElement = useCallback((el: HTMLElement) => {
-    activate({ tab: tabId, el })
-  }, [tabId])
+    dispatch({ type: 'register', item: { tabId, controlId, ref } })
+    return () => dispatch({ type: 'unregister', controlId })
+  }, [])
 
   // イベント
   const onClick = useCallback((e: React.MouseEvent) => {
-    if (ref.current) activateElement(ref.current)
+    dispatch({ type: 'activate-by-id', controlId })
     e.preventDefault()
-  }, [ref.current, activateElement])
+  }, [controlId])
 
   const onKeyDown = useCallback((e: React.KeyboardEvent) => {
     switch (e.key) {
@@ -164,29 +180,22 @@ const Focusable = ({ children, className }: {
       case 'ArrowLeft':
       case 'ArrowRight':
         if (!ref.current) return
-        const elements = registered.current?.elements
-          .filter(x => x[0] === tabId)
-          .map(x => x[1])
-          || []
+        const elements = getHtmlElements(tabId)
         const nearestEl = findNearestElement(e.key, ref.current, elements)
-        if (!nearestEl) return
-        activateElement(nearestEl)
+        if (nearestEl) dispatch({ type: 'activate-by-element', el: nearestEl })
         e.preventDefault()
         break
 
       case 'Tab':
-        if (e.shiftKey) {
-          moveToPrevTab()
-        } else {
-          moveToNextTab()
-        }
+        if (e.shiftKey) dispatch({ type: 'move-to-previous-tab' })
+        else dispatch({ type: 'move-to-next-tab' })
         e.preventDefault()
         break
 
       default:
         break
     }
-  }, [tabId])
+  }, [tabId, controlId, getHtmlElements])
 
   return (
     <label
@@ -202,13 +211,6 @@ const Focusable = ({ children, className }: {
 
 // -------------------------------------------
 // * 以下、計算関数など *
-const useForceUpdate = () => {
-  const [state, setState] = useState(UUID.generate())
-  return useCallback(() => {
-    setState(UUID.generate())
-  }, [])
-}
-
 type Point = { x: number; y: number }
 type Direction = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'
 
