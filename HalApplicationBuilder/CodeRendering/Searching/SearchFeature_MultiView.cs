@@ -43,9 +43,10 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                     import { Link, useNavigate } from 'react-router-dom';
                     import { useQuery } from 'react-query';
                     import { FieldValues, SubmitHandler, useForm, FormProvider } from 'react-hook-form';
-                    import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
+                    import { BookmarkIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
                     import { IconButton } from '../../components';
                     import { useHttpRequest } from '../../hooks/useHttpRequest';
+                    import { TabKeyJumpGroup } from '../../hooks/GlobalFocus';
 
                     export default function () {
 
@@ -94,52 +95,54 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                       return (
                         <div className="page-content-root">
 
-                          <div className="flex flex-row justify-start items-center space-x-2">
-                            <div className='flex-1 flex flex-row items-center space-x-1 cursor-pointer' onClick={() => setExpanded(!expanded)}>
-                              <h1 className="text-base font-semibold select-none py-1">
-                                {{Search.DisplayName}}
-                              </h1>
-                              {expanded
-                                ? <ChevronDownIcon className="w-4" />
-                                : <ChevronUpIcon className="w-4" />}
-                            </div>
+                          <TabKeyJumpGroup>
+                            <div className="flex flex-row justify-start items-center space-x-2">
+                              <div className='flex-1 flex flex-row items-center space-x-1 cursor-pointer'>
+                                <h1 className="text-base font-semibold select-none py-1">
+                                  {{Search.DisplayName}}
+                                </h1>
+                                <IconButton underline icon={MagnifyingGlassIcon} onClick={() => setExpanded(!expanded)}>詳細検索</IconButton>
+                              </div>
                     {{If(createView != null, () => $$"""
-                            <IconButton underline icon={PlusIcon} onClick={toCreateView}>新規作成</IconButton>
+                              <IconButton underline icon={PlusIcon} onClick={toCreateView}>新規作成</IconButton>
                     """)}}
-                          </div>
+                            </div>
 
-                          <FormProvider {...reactHookFormMethods}>
-                            <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1 p-1 bg-neutral-200`} onSubmit={handleSubmit(onSearch)}>
+                            <FormProvider {...reactHookFormMethods}>
+                              <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1 p-1 bg-neutral-200`} onSubmit={handleSubmit(onSearch)}>
                     {{Search.VisibleMembers.SelectTextTemplate(member => $$"""
-                              <div className="flex">
-                                <div className="{{propNameWidth}}">
-                                  <span className="text-sm select-none opacity-80">
-                                    {{member.ConditionPropName}}
-                                  </span>
+                                <div className="flex">
+                                  <div className="{{propNameWidth}}">
+                                    <span className="text-sm select-none opacity-80">
+                                      {{member.ConditionPropName}}
+                                    </span>
+                                  </div>
+                                  <div className="flex-1">
+                                    {{WithIndent(member.DbColumn.Options.MemberType.RenderUI(new SearchConditionUiForm(member)), "                ")}}
+                                  </div>
                                 </div>
-                                <div className="flex-1">
-                                  {{TemplateTextHelper.WithIndent(member.DbColumn.Options.MemberType.RenderUI(new SearchConditionUiForm(member)), "              ")}}
-                                </div>
-                              </div>
                     """)}}
-                              <div className='flex flex-row justify-start space-x-1'>
-                                <IconButton fill icon={MagnifyingGlassIcon}>検索</IconButton>
-                                <IconButton outline onClick={onClear}>クリア</IconButton>
-                                <div className='flex-1'></div>
-                                <IconButton underline icon={BookmarkIcon}>この検索条件を保存</IconButton>
-                              </div>
-                            </form>
-                          </FormProvider>
-
-                          <div className="ag-theme-alpine compact flex-1">
-                            <AgGridReact
-                              rowData={data || []}
-                              columnDefs={columnDefs}
-                              multiSortKey='ctrl'
-                              undoRedoCellEditing
-                              undoRedoCellEditingLimit={20}>
-                            </AgGridReact>
-                          </div>
+                                <div className='flex flex-row justify-start space-x-1'>
+                                  <IconButton fill icon={MagnifyingGlassIcon}>検索</IconButton>
+                                  <IconButton outline onClick={onClear}>クリア</IconButton>
+                                  <div className='flex-1'></div>
+                                  <IconButton underline icon={BookmarkIcon}>この検索条件を保存</IconButton>
+                                </div>
+                              </form>
+                            </FormProvider>
+                          </TabKeyJumpGroup>
+                    
+                          <TabKeyJumpGroup>
+                            <div className="ag-theme-alpine compact flex-1">
+                              <AgGridReact
+                                rowData={data || []}
+                                columnDefs={columnDefs}
+                                multiSortKey='ctrl'
+                                undoRedoCellEditing
+                                undoRedoCellEditingLimit={20}>
+                              </AgGridReact>
+                            </div>
+                          </TabKeyJumpGroup>
                         </div>
                       )
                     }

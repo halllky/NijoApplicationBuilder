@@ -123,8 +123,10 @@ const FocusBorder = () => {
       <div ref={ref}
         style={style}
         className="absolute pointer-events-none
-          outline outline-2 outline-black border border-white
-          transition-all duration-100 ease-out">
+          outline-black border border-2 border-black
+          transition-all duration-100 ease-out
+          before:absolute before:border before:border-white before:top-[-3px] before:left-[-3px] before:right-[-3px] before:bottom-[-3px]
+          after:absolute after:border after:border-white after:top-0 after:left-0 after:right-0 after:bottom-0">
       </div>
     ) : (
       <></>
@@ -151,14 +153,13 @@ export const TabKeyJumpGroup = ({ children }: { children?: React.ReactNode }) =>
 // -------------------------------------------
 // * コントロール単位 *
 
-export const useFocusTarget = <T extends HTMLElement>(additional?: {
-  onClick?: (e: React.MouseEvent) => void
+export const useFocusTarget = <T extends HTMLElement>(ref: React.RefObject<T>, additional?: {
+  onMouseDown?: (e: React.MouseEvent) => void
   onKeyDown?: (e: React.KeyboardEvent) => void
 }) => {
   const [{ getHtmlElements }, dispatch] = useContext(GlobalFocusContext)
   const { tabId } = useContext(TabAreaContext)
   const controlId = useId()
-  const ref = useRef<T>(null)
 
   // ページのコンテキストにこのエレメントを登録する
   useEffect(() => {
@@ -167,10 +168,10 @@ export const useFocusTarget = <T extends HTMLElement>(additional?: {
   }, [])
 
   // イベント
-  const onClick = useCallback((e: React.MouseEvent) => {
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
     dispatch({ type: 'activate-by-id', controlId })
-    additional?.onClick?.(e)
-  }, [controlId, additional?.onClick])
+    additional?.onMouseDown?.(e)
+  }, [controlId, additional?.onMouseDown])
 
   const onKeyDown = useCallback((e: React.KeyboardEvent) => {
     switch (e.key) {
@@ -198,8 +199,7 @@ export const useFocusTarget = <T extends HTMLElement>(additional?: {
   }, [tabId, controlId, getHtmlElements, additional?.onKeyDown])
 
   return {
-    ref,
-    onClick,
+    onMouseDown,
     onKeyDown,
   }
 }
@@ -211,9 +211,11 @@ export const Focusable = ({ children, className }: {
   children?: React.ReactNode
   className?: string
 }) => {
+  const ref = useRef<HTMLLabelElement>(null)
   return (
     <label
-      {...useFocusTarget()}
+      ref={ref}
+      {...useFocusTarget(ref)}
       className={`relative inline-block ${className}`}
       tabIndex={0} // キーで移動したとき、jsのfocus()で移動先にフォーカスするにはtabindexが-1のままだと無理
     >

@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useRef } from "react"
 import { Link } from "react-router-dom"
 import { ArrowsUpDownIcon, CircleStackIcon, PlayCircleIcon, UserCircleIcon } from "@heroicons/react/24/outline"
 import { CopyableText } from "./CopyableText"
@@ -47,12 +47,13 @@ const SideMenuLink = ({ url, icon, children }: {
   icon?: React.ElementType
   children?: React.ReactNode
 }) => {
+  const ref = useRef<HTMLAnchorElement>(null)
   const location = useLocation()
   const className = location.pathname.startsWith(url)
-    ? 'inline-block w-full p-1 ellipsis-ex font-bold bg-white'
-    : 'inline-block w-full p-1 ellipsis-ex'
+    ? 'outline-none inline-block w-full p-1 ellipsis-ex font-bold bg-white'
+    : 'outline-none inline-block w-full p-1 ellipsis-ex'
   return (
-    <NavLink to={url} className={className} {...GlobalFocus.useFocusTarget()}>
+    <NavLink ref={ref} to={url} className={className} {...GlobalFocus.useFocusTarget(ref)}>
       {React.createElement(icon ?? CircleStackIcon, { className: 'inline w-4 mr-1 opacity-70 align-middle' })}
       <span className="text-sm align-middle select-none">{children}</span>
     </NavLink>
