@@ -86,7 +86,7 @@ const reducer = (state: State, action: Action) => {
 // * ページ単位 *
 const GlobalFocusContext = createContext(null as unknown as [State, React.Dispatch<Action>])
 
-const GlobalFocusPage = ({ children }: { children?: React.ReactNode }) => {
+export const GlobalFocusPage = ({ children }: { children?: React.ReactNode }) => {
   const reducervalue = useReducer(reducer, {
     registered: [],
     lastFocused: new Map(),
@@ -137,7 +137,7 @@ const FocusBorder = () => {
 type TabAreaContextValue = { tabId: string }
 const TabAreaContext = createContext({} as TabAreaContextValue)
 
-const TabArea = ({ children }: { children?: React.ReactNode }) => {
+export const TabKeyJumpGroup = ({ children }: { children?: React.ReactNode }) => {
   const tabId = useId()
   const contextValue = useMemo<TabAreaContextValue>(() => ({ tabId }), [tabId])
 
@@ -151,15 +151,14 @@ const TabArea = ({ children }: { children?: React.ReactNode }) => {
 // -------------------------------------------
 // * コントロール単位 *
 
-const Focusable = ({ children, className }: {
-  children?: React.ReactNode
-  className?: string
+export const useFocusTarget = <T extends HTMLElement>(additional?: {
+  onClick?: (e: React.MouseEvent) => void
+  onKeyDown?: (e: React.KeyboardEvent) => void
 }) => {
+  const [{ getHtmlElements }, dispatch] = useContext(GlobalFocusContext)
   const { tabId } = useContext(TabAreaContext)
   const controlId = useId()
-  const ref = useRef<HTMLLabelElement>(null)
-
-  const [{ getHtmlElements }, dispatch] = useContext(GlobalFocusContext)
+  const ref = useRef<T>(null)
 
   // ページのコンテキストにこのエレメントを登録する
   useEffect(() => {
@@ -170,39 +169,53 @@ const Focusable = ({ children, className }: {
   // イベント
   const onClick = useCallback((e: React.MouseEvent) => {
     dispatch({ type: 'activate-by-id', controlId })
-    e.preventDefault()
-  }, [controlId])
+    additional?.onClick?.(e)
+  }, [controlId, additional?.onClick])
 
   const onKeyDown = useCallback((e: React.KeyboardEvent) => {
     switch (e.key) {
       case 'ArrowUp':
       case 'ArrowDown':
       case 'ArrowLeft':
-      case 'ArrowRight':
+      case 'ArrowRight': {
         if (!ref.current) return
         const elements = getHtmlElements(tabId)
         const nearestEl = findNearestElement(e.key, ref.current, elements)
         if (nearestEl) dispatch({ type: 'activate-by-element', el: nearestEl })
         e.preventDefault()
         break
-
-      case 'Tab':
+      }
+      case 'Tab': {
         if (e.shiftKey) dispatch({ type: 'move-to-previous-tab' })
         else dispatch({ type: 'move-to-next-tab' })
         e.preventDefault()
         break
-
+      }
       default:
         break
     }
-  }, [tabId, controlId, getHtmlElements])
+    additional?.onKeyDown?.(e)
+  }, [tabId, controlId, getHtmlElements, additional?.onKeyDown])
 
+  return {
+    ref,
+    onClick,
+    onKeyDown,
+  }
+}
+
+/**
+ * 中の要素がinputじゃないとフォーカスが当たらないので注意
+ */
+export const Focusable = ({ children, className }: {
+  children?: React.ReactNode
+  className?: string
+}) => {
   return (
     <label
-      ref={ref}
-      onClick={onClick}
-      onKeyDown={onKeyDown}
+      {...useFocusTarget()}
       className={`relative inline-block ${className}`}
+      tabIndex={0} // キーで移動したとき、jsのfocus()で移動先にフォーカスするにはtabindexが-1のままだと無理
     >
       {children}
     </label>
@@ -270,10 +283,4 @@ function isWithinSectorRange(a: Point, b: Point, checkAngle: (angle: number) => 
   const angle = Math.atan2(abY, abX) * (180 / Math.PI)
   // console.log(angle)
   return checkAngle(angle)
-}
-
-export default {
-  GlobalFocusPage,
-  TabArea,
-  Focusable,
 }

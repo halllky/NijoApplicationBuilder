@@ -3,6 +3,7 @@ import React, { useCallback, useContext, useReducer } from "react";
 import { UUID } from "uuidjs";
 import { Toast, ToastMessage } from "../components/Toast";
 import { setTimeout } from "timers";
+import * as GlobalFocus from '../hooks/GlobalFocus'
 
 const LOCALSTORAGEKEY = '::HALAPP_APIDOMAIN::'
 
@@ -57,13 +58,15 @@ export const AppContextProvider = ({ children }: { children?: React.ReactNode })
 
   return (
     <AppContext.Provider value={[state, dispatchWithSetTimeout]}>
+      <GlobalFocus.GlobalFocusPage>
 
-      {children}
+        {children}
 
-      {/* TOAST MESSAGE */}
-      <div className="fixed bottom-3 right-3" style={{ zIndex: 9999 }}>
-        {state.popupMessages.map(msg => <Toast key={msg.id} item={msg} />)}
-      </div>
+        {/* TOAST MESSAGE */}
+        <div className="fixed bottom-3 right-3" style={{ zIndex: 9999 }}>
+          {state.popupMessages.map(msg => <Toast key={msg.id} item={msg} />)}
+        </div>
+      </GlobalFocus.GlobalFocusPage>
     </AppContext.Provider>
   )
 }
