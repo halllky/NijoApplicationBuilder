@@ -88,8 +88,10 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                 const keySelector = (item: {{keyName.TypeScriptTypeName}}) => {
                   return `{{keyName.GetKeys().Select(m => "${item." + m.MemberName + "}").Join("::")}}`
                 }
-                const textSelector = (item: {{keyName.TypeScriptTypeName}}) => {
-                  return `{{keyName.GetNames().Select(m => "${item?." + m.MemberName + "}").Join("&nbsp;")}}`
+                const textSelector = (item: {{keyName.TypeScriptTypeName}} | null) => {
+                  return item == null
+                    ? ``
+                    : `{{keyName.GetNames().Select(m => "${item." + m.MemberName + "}").Join("&nbsp;")}}`
                 }
                 """;
         }

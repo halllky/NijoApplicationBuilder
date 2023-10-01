@@ -6,24 +6,32 @@ type State = {
   active?: RegisteredItem
   lastFocused: Map<string, string>
   getTabs: () => { tabId: string, items: RegisteredItem[] }[]
-  getHtmlElements(tabId: string): HTMLElement[]
+  getHtmlElements(): HTMLElement[]
   getLastFocusItem: (tabId: string) => RegisteredItem | undefined
 }
 type Action
   = { type: 'register', item: RegisteredItem }
   | { type: 'unregister', controlId: string }
+  | { type: 'activate-first-item', tabId: string }
   | { type: 'move-to-next-tab' }
   | { type: 'move-to-previous-tab' }
   | { type: 'activate-by-id', controlId: string }
   | { type: 'activate-by-element', el: HTMLElement }
 
 const reducer = (state: State, action: Action) => {
-  let updated = { ...state }
+  const updated = { ...state }
   if (action.type === 'register') {
     updated.registered = [...updated.registered.filter(x => x.controlId !== action.item.controlId), action.item]
 
   } else if (action.type === 'unregister') {
+    const index = updated.registered.findIndex(x => x.controlId === action.controlId)
     updated.registered = updated.registered.filter(x => x.controlId !== action.controlId)
+
+    // フォーカス中の要素が削除された場合、近くの要素を選択する
+    if (updated.active?.controlId === action.controlId) {
+      const newItemIndex = Math.min(index, updated.registered.length - 1)
+      updated.active = updated.registered[newItemIndex]
+    }
   }
   // ---------------------------
 
@@ -34,10 +42,14 @@ const reducer = (state: State, action: Action) => {
     return list
   }, [] as { tabId: string, items: RegisteredItem[] }[])
 
-  updated.getHtmlElements = (tabId: string) => updated.getTabs()
-    .find(x => x.tabId === tabId)?.items
+  updated.getHtmlElements = () => updated
+    .registered
     .map(x => x.ref.current)
-    .filter(current => current !== null) as HTMLElement[]
+    .filter(current => {
+      if (current == null) return false
+      if (current.offsetParent == null) return false // 自身または親要素のいずれかが非表示ならnullになる
+      return true
+    }) as HTMLElement[]
     || []
 
   updated.getLastFocusItem = (tabId: string) => {
@@ -76,28 +88,66 @@ const reducer = (state: State, action: Action) => {
       activate(updated.getLastFocusItem(previousTab.tabId) || previousTab.items[0])
       break
     }
+    case 'activate-first-item': {
+      const item = updated
+        .getTabs()
+        .find(x => x.tabId === action.tabId)
+        ?.items[0]
+      if (item) activate(item)
+      break
+    }
     default:
       break
   }
+
+  // 何も選択されていなければ何かにフォーカスを当てる
+  if (!updated.active && updated.registered.length > 0) activate(updated.registered[0])
+
   return updated
 }
 
 // -------------------------------------------
 // * ページ単位 *
 const GlobalFocusContext = createContext(null as unknown as [State, React.Dispatch<Action>])
+export const useGlobalFocusContext = () => useContext(GlobalFocusContext)
 
 export const GlobalFocusPage = ({ children }: { children?: React.ReactNode }) => {
   const reducervalue = useReducer(reducer, {
     registered: [],
     lastFocused: new Map(),
-    getTabs: () => { throw new Error() },
-    getLastFocusItem: () => { throw new Error() },
-    getHtmlElements: () => { throw new Error() },
+    getTabs: () => [],
+    getLastFocusItem: () => undefined,
+    getHtmlElements: () => [],
   } as State)
+
+  const onKeyDown = useCallback((e: React.KeyboardEvent) => {
+    switch (e.key) {
+      case 'ArrowUp':
+      case 'ArrowDown':
+      case 'ArrowLeft':
+      case 'ArrowRight': {
+        const elements = reducervalue[0].getHtmlElements()
+        const nearestEl = findNearestElement(e.key, e.target as HTMLElement, elements)
+        if (nearestEl) reducervalue[1]({ type: 'activate-by-element', el: nearestEl })
+        e.preventDefault()
+        break
+      }
+      case 'Tab': {
+        if (e.shiftKey) reducervalue[1]({ type: 'move-to-previous-tab' })
+        else reducervalue[1]({ type: 'move-to-next-tab' })
+        e.preventDefault()
+        break
+      }
+      default:
+        break
+    }
+  }, [reducervalue[0].getHtmlElements])
 
   return (
     <GlobalFocusContext.Provider value={reducervalue}>
-      {children}
+      <div className="w-full h-full outline-none" onKeyDown={onKeyDown} tabIndex={0}>
+        {children}
+      </div>
       <FocusBorder />
     </GlobalFocusContext.Provider>
   )
@@ -139,8 +189,9 @@ const FocusBorder = () => {
 type TabAreaContextValue = { tabId: string }
 const TabAreaContext = createContext({} as TabAreaContextValue)
 
-export const TabKeyJumpGroup = ({ children }: { children?: React.ReactNode }) => {
-  const tabId = useId()
+export const TabKeyJumpGroup = ({ id, children }: { id?: string, children?: React.ReactNode }) => {
+  const tabIdIfNotProvided = useId()
+  const tabId = id ?? tabIdIfNotProvided
   const contextValue = useMemo<TabAreaContextValue>(() => ({ tabId }), [tabId])
 
   return (
@@ -155,9 +206,8 @@ export const TabKeyJumpGroup = ({ children }: { children?: React.ReactNode }) =>
 
 export const useFocusTarget = <T extends HTMLElement>(ref: React.RefObject<T>, additional?: {
   onMouseDown?: (e: React.MouseEvent) => void
-  onKeyDown?: (e: React.KeyboardEvent) => void
 }) => {
-  const [{ getHtmlElements }, dispatch] = useContext(GlobalFocusContext)
+  const [, dispatch] = useContext(GlobalFocusContext)
   const { tabId } = useContext(TabAreaContext)
   const controlId = useId()
 
@@ -173,34 +223,8 @@ export const useFocusTarget = <T extends HTMLElement>(ref: React.RefObject<T>, a
     additional?.onMouseDown?.(e)
   }, [controlId, additional?.onMouseDown])
 
-  const onKeyDown = useCallback((e: React.KeyboardEvent) => {
-    switch (e.key) {
-      case 'ArrowUp':
-      case 'ArrowDown':
-      case 'ArrowLeft':
-      case 'ArrowRight': {
-        if (!ref.current) return
-        const elements = getHtmlElements(tabId)
-        const nearestEl = findNearestElement(e.key, ref.current, elements)
-        if (nearestEl) dispatch({ type: 'activate-by-element', el: nearestEl })
-        e.preventDefault()
-        break
-      }
-      case 'Tab': {
-        if (e.shiftKey) dispatch({ type: 'move-to-previous-tab' })
-        else dispatch({ type: 'move-to-next-tab' })
-        e.preventDefault()
-        break
-      }
-      default:
-        break
-    }
-    additional?.onKeyDown?.(e)
-  }, [tabId, controlId, getHtmlElements, additional?.onKeyDown])
-
   return {
     onMouseDown,
-    onKeyDown,
   }
 }
 

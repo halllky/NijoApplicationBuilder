@@ -40,7 +40,7 @@ const reducer: React.Reducer<AppState, Action> = (state, action) => {
   }
 }
 
-const AppContext = React.createContext<[AppState, React.Dispatch<Action>]>([undefined as any, undefined as any])
+const AppContext = React.createContext<[AppState, React.Dispatch<Action>]>([{ popupMessages: [] }, undefined as any])
 
 export const AppContextProvider = ({ children }: { children?: React.ReactNode }) => {
 

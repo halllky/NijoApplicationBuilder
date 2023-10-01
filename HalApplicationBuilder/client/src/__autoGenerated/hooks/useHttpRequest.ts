@@ -10,6 +10,7 @@ export const useHttpRequest = () => {
   const [{ apiDomain }, dispatch] = useAppContext()
 
   const get = useCallback(async <T = object>(url: string, param: { [key: string]: unknown } = {}): Promise<HttpGetResult<T>> => {
+    if (!apiDomain) return { ok: false, errors: [{ uuid: UUID.generate(), text: 'サーバーが設定されていません。' }] }
     const query = new URLSearchParams()
     for (const key of Object.keys(param)) {
       let value: string
@@ -38,6 +39,7 @@ export const useHttpRequest = () => {
   }, [apiDomain, dispatch])
 
   const post = useCallback(async <T>(url: string, data: object = {}): Promise<HttpPostResult<T>> => {
+    if (!apiDomain) return { ok: false, errors: [{ uuid: UUID.generate(), text: 'サーバーが設定されていません。' }] }
     const fullUrl = `${apiDomain}${url}`
     const response = await fetch(fullUrl, {
       method: 'POST',

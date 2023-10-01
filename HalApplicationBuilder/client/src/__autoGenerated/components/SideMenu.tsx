@@ -10,10 +10,10 @@ import * as GlobalFocus from "../hooks/GlobalFocus"
 
 export const SideMenu = () => {
   return (
-    <GlobalFocus.TabKeyJumpGroup>
-      <PanelGroup direction="vertical" className="bg-neutral-300" autoSaveId={LOCAL_STORAGE_KEYS.SIDEBAR_SIZE_Y}>
+    <PanelGroup direction="vertical" className="bg-neutral-300" autoSaveId={LOCAL_STORAGE_KEYS.SIDEBAR_SIZE_Y}>
 
-        <Panel className="flex flex-col">
+      <Panel className="flex flex-col">
+        <GlobalFocus.TabKeyJumpGroup>
           <Link to='/' className="p-1 ellipsis-ex font-semibold select-none">
             {THIS_APPLICATION_NAME}
           </Link>
@@ -22,11 +22,13 @@ export const SideMenu = () => {
               <SideMenuLink key={item.url} url={item.url}>{item.text}</SideMenuLink>
             )}
           </nav>
-        </Panel>
+        </GlobalFocus.TabKeyJumpGroup>
+      </Panel>
 
-        <PanelResizeHandle className="h-1 border-b border-neutral-400" />
+      <PanelResizeHandle className="h-1 border-b border-neutral-400" />
 
-        <Panel className="flex flex-col">
+      <Panel className="flex flex-col">
+        <GlobalFocus.TabKeyJumpGroup>
           <nav className="flex-1 overflow-y-auto leading-none">
             <SideMenuLink url="/changes" icon={ArrowsUpDownIcon}>変更</SideMenuLink>
             <SideMenuLink url="/bagkground-tasks" icon={PlayCircleIcon}>バッチ処理</SideMenuLink>
@@ -36,9 +38,9 @@ export const SideMenu = () => {
           <span className="p-1 text-sm whitespace-nowrap overflow-hidden">
             ver. <CopyableText>0.9.0.0</CopyableText>
           </span>
-        </Panel>
-      </PanelGroup>
-    </GlobalFocus.TabKeyJumpGroup>
+        </GlobalFocus.TabKeyJumpGroup>
+      </Panel>
+    </PanelGroup>
   )
 }
 

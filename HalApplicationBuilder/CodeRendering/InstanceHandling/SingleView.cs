@@ -113,7 +113,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var headerWidth = Math.Max(indentWidth, longestHeaderWidthRem - indentWidth) + 1m;
 
             return $$"""
-                import React, { useState, useCallback, useMemo, useReducer, useRef } from 'react';
+                import React, { useState, useEffect, useCallback, useMemo, useReducer, useRef, useId } from 'react';
                 import { Link, useParams, useNavigate } from 'react-router-dom';
                 import { FieldValues, SubmitHandler, useForm, FormProvider, useFormContext, useFieldArray } from 'react-hook-form';
                 import { AgGridReact } from 'ag-grid-react';
@@ -130,6 +130,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                   visitObject,
                   useHttpRequest,
                   TabKeyJumpGroup,
+                  useGlobalFocusContext,
                 } from '../../hooks';
                 import * as AggregateType from '../../{{types.ImportName}}'
 
@@ -142,6 +143,11 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                   const [errorMessages, setErrorMessages] = useState<Components.BarMessage[]>([])
 
                   // 画面表示時
+                  const panelIentifier = useId()
+                  const [, dispatchFocusContext] = useGlobalFocusContext()
+                  useEffect(() => {
+                    dispatchFocusContext({ type: 'activate-first-item', tabId: panelIentifier })
+                  }, [])
                 {{If(_type == E_Type.Create, () => $$"""
                   const defaultValues = useMemo(() => {
                     return AggregateType.{{createEmptyObject}}()
@@ -235,7 +241,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 """).Else(() => $$"""
                         <form className="page-content-root">
                 """)}}
-                          <TabKeyJumpGroup>
+                          <TabKeyJumpGroup id={panelIentifier}>
                             <h1 className="flex text-base font-semibold select-none py-1">
                               <Link to="{{multiViewUrl}}">{{_aggregate.Item.DisplayName}}</Link>
                               &nbsp;&#047;&nbsp;
@@ -250,7 +256,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                             <VTable.Table maxIndent={{{maxIndent}}} headerWidth="{{headerWidth}}rem">
                               {{new AggregateComponent(_aggregate, _type).RenderCaller()}}
                             </VTable.Table>
+                          </TabKeyJumpGroup>
 
+                          <TabKeyJumpGroup>
                             <Components.InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
                 {{If(_type == E_Type.Create, () => $$"""
                             <Components.IconButton fill className="self-start" icon={BookmarkSquareIcon}>保存</Components.IconButton>
