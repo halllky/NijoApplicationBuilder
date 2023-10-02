@@ -1,5 +1,5 @@
 import moment from "moment";
-import React, { useCallback, useContext, useReducer } from "react";
+import React, { useCallback, useContext, useMemo, useReducer } from "react";
 import { UUID } from "uuidjs";
 import { Toast, ToastMessage } from "../components/Toast";
 import * as GlobalFocus from '../hooks/GlobalFocus'
@@ -60,17 +60,25 @@ export const AppContextProvider = ({ children }: { children?: React.ReactNode })
     }
   }, [dispatch])
 
+  const rootCss = useMemo(() => {
+    return state.darkMode
+      ? 'w-full h-full dark'
+      : 'w-full h-full'
+  }, [state.darkMode])
+
   return (
     <AppContext.Provider value={[state, dispatchWithSetTimeout]}>
-      <GlobalFocus.GlobalFocusPage className={(state.darkMode ? 'dark' : '')}>
+      <div className={rootCss}>
+        <GlobalFocus.GlobalFocusPage>
 
-        {children}
+          {children}
 
-        {/* TOAST MESSAGE */}
-        <div className="fixed bottom-3 right-3" style={{ zIndex: 9999 }}>
-          {state.popupMessages.map(msg => <Toast key={msg.id} item={msg} />)}
-        </div>
-      </GlobalFocus.GlobalFocusPage>
+          {/* TOAST MESSAGE */}
+          <div className="fixed bottom-3 right-3" style={{ zIndex: 9999 }}>
+            {state.popupMessages.map(msg => <Toast key={msg.id} item={msg} />)}
+          </div>
+        </GlobalFocus.GlobalFocusPage>
+      </div>
     </AppContext.Provider>
   )
 }

@@ -176,10 +176,10 @@ const FocusBorder = () => {
       <div ref={ref}
         style={style}
         className="absolute pointer-events-none
-          outline-black border border-2 border-black
-          transition-all duration-100 ease-out
-          before:absolute before:border before:border-white before:top-[-3px] before:left-[-3px] before:right-[-3px] before:bottom-[-3px]
-          after:absolute after:border after:border-white after:top-0 after:left-0 after:right-0 after:bottom-0">
+          outline-none border border-2 border-color-12
+          transition-all duration-100 ease-out">
+        <div className="border border-color-0 absolute top-0 left-0 right-0 bottom-0"></div>
+        <div className="border border-color-0 absolute top-[-3px] left-[-3px] right-[-3px] bottom-[-3px]"></div>
       </div>
     ) : (
       <></>

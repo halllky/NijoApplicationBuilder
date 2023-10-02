@@ -17,13 +17,13 @@ export const IconButton = (args: {
   const flex = args.inline ? 'inline-flex' : 'flex'
   let className: string
   if (args.fill) {
-    className = `${flex} flex-row justify-center items-center select-none ${args.className} space-x-2 px-2 py-1 text-white bg-color-7`
+    className = `${flex} flex-row justify-center items-center select-none outline-none ${args.className} space-x-2 px-2 py-1 text-color-0 bg-color-7`
   } else if (args.outline) {
-    className = `${flex} flex-row justify-center items-center select-none ${args.className} space-x-2 px-2 py-1 border border-color-7`
+    className = `${flex} flex-row justify-center items-center select-none outline-none ${args.className} space-x-2 px-2 py-1 border border-color-7`
   } else if (args.underline) {
-    className = `${flex} flex-row justify-center items-center select-none ${args.className} pr-1 text-blue-600 border-b border-blue-500`
+    className = `${flex} flex-row justify-center items-center select-none outline-none ${args.className} pr-1 text-blue-600 border-b border-blue-500`
   } else {
-    className = `${flex} flex-row justify-center items-center select-none ${args.className} space-x-2`
+    className = `${flex} flex-row justify-center items-center select-none outline-none ${args.className} space-x-2`
   }
 
   return (

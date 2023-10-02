@@ -122,7 +122,7 @@ const ComboBoxBase = forwardRef(<T,>(props: ComboBoxBaseProps<T>, ref: Forwarded
           <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
             <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
           </Combobox.Button>}
-        <Combobox.Options className="absolute mt-1 w-full overflow-auto bg-white py-1 shadow-lg focus:outline-none">
+        <Combobox.Options className="absolute mt-1 w-full overflow-auto bg-color-0 py-1 shadow-lg focus:outline-none">
           {props.nowLoading &&
             <NowLoading />}
           {!props.nowLoading && props.data.length === 0 &&

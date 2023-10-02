@@ -42,6 +42,9 @@ textarea:read-only {
   @apply bg-transparent;
 }
 
+.border-color-0 {
+  @apply border-white dark:border-black;
+}
 .border-color-1 {
   @apply border-neutral-50  dark:border-neutral-950;
 }
@@ -75,7 +78,13 @@ textarea:read-only {
 .border-color-11 {
   @apply border-neutral-950 dark:border-neutral-50;
 }
+.border-color-12 {
+  @apply border-black dark:border-white;
+}
 
+.bg-color-0 {
+  @apply bg-white dark:bg-black;
+}
 .bg-color-1 {
   @apply bg-neutral-50  dark:bg-neutral-950;
 }
@@ -109,7 +118,13 @@ textarea:read-only {
 .bg-color-11 {
   @apply bg-neutral-950 dark:bg-neutral-50;
 }
+.bg-color-12 {
+  @apply bg-black dark:bg-white;
+}
 
+.text-color-0 {
+  @apply text-white dark:text-black;
+}
 .text-color-1 {
   @apply text-neutral-50  dark:text-neutral-950;
 }
@@ -142,6 +157,9 @@ textarea:read-only {
 }
 .text-color-11 {
   @apply text-neutral-950 dark:text-neutral-50;
+}
+.text-color-12 {
+  @apply text-black dark:text-white;
 }
 
 /* ag-grid */

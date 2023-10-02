@@ -52,7 +52,7 @@ const SideMenuLink = ({ url, icon, children }: {
   const ref = useRef<HTMLAnchorElement>(null)
   const location = useLocation()
   const className = location.pathname.startsWith(url)
-    ? 'outline-none inline-block w-full p-1 ellipsis-ex font-bold bg-white'
+    ? 'outline-none inline-block w-full p-1 ellipsis-ex font-bold bg-color-0'
     : 'outline-none inline-block w-full p-1 ellipsis-ex'
   return (
     <NavLink ref={ref} to={url} className={className} {...GlobalFocus.useFocusTarget(ref)}>

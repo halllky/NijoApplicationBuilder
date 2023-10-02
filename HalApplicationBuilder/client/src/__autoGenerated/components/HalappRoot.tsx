@@ -26,7 +26,9 @@ function HalappRoot({ children }: {
 }) {
   const [{ darkMode }] = useAppContext()
   const className = useMemo(() => {
-    return darkMode ? "dark" : ""
+    return darkMode
+      ? 'bg-color-0 text-color-12 dark'
+      : 'bg-color-0 text-color-12'
   }, [darkMode])
 
   return (
