@@ -2,7 +2,6 @@ import moment from "moment";
 import React, { useCallback, useContext, useReducer } from "react";
 import { UUID } from "uuidjs";
 import { Toast, ToastMessage } from "../components/Toast";
-import { setTimeout } from "timers";
 import * as GlobalFocus from '../hooks/GlobalFocus'
 
 const LOCALSTORAGEKEY = '::HALAPP_APIDOMAIN::'
@@ -10,11 +9,13 @@ const LOCALSTORAGEKEY = '::HALAPP_APIDOMAIN::'
 export type AppState = {
   popupMessages: ToastMessage[]
   apiDomain?: string
+  darkMode?: boolean
 }
 type Action
   = { type: 'pushMsg', id?: string, msg: string }
   | { type: 'delMessage', id: string }
   | { type: 'changeDomain', value: string }
+  | { type: 'toggleDark' }
 
 const createDefaultAppState = (): AppState => ({
   popupMessages: [],
@@ -37,6 +38,9 @@ const reducer: React.Reducer<AppState, Action> = (state, action) => {
       localStorage.setItem(LOCALSTORAGEKEY, action.value)
       return { ...state, apiDomain: action.value }
     }
+    case 'toggleDark': {
+      return { ...state, darkMode: !state.darkMode }
+    }
   }
 }
 
@@ -58,7 +62,7 @@ export const AppContextProvider = ({ children }: { children?: React.ReactNode })
 
   return (
     <AppContext.Provider value={[state, dispatchWithSetTimeout]}>
-      <GlobalFocus.GlobalFocusPage>
+      <GlobalFocus.GlobalFocusPage className={(state.darkMode ? 'dark' : '')}>
 
         {children}
 

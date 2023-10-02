@@ -114,7 +114,7 @@ const ComboBoxBase = forwardRef(<T,>(props: ComboBoxBaseProps<T>, ref: Forwarded
           displayValue={props.textSelector}
           onChange={props.onChangeKeyword}
           onBlur={props.onBlurKeyword}
-          className="w-full border border-neutral-400"
+          className="w-full border border-color-5"
           spellCheck="false"
           autoComplete="off"
         />
@@ -130,7 +130,7 @@ const ComboBoxBase = forwardRef(<T,>(props: ComboBoxBaseProps<T>, ref: Forwarded
           {!props.nowLoading && props.data.map(item => (
             <Combobox.Option key={props.keySelector(item)} value={item}>
               {({ active }) => (
-                <div className={active ? 'bg-neutral-200' : ''}>
+                <div className={active ? 'bg-color-3' : ''}>
                   {props.textSelector(item)}
                 </div>
               )}

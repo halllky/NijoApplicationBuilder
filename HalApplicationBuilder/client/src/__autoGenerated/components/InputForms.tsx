@@ -13,7 +13,7 @@ export const Word = forwardRef((props: InputHTMLAttributes<HTMLInputElement>, re
 
   const className = props.readOnly
     ? `w-full outline-none px-1 cursor-default ${props.className}`
-    : `w-full outline-none px-1 border border-neutral-400 ${props.className}`
+    : `w-full outline-none px-1 border border-color-5 ${props.className}`
   return (
     <input
       onFocus={selectAll}
@@ -36,7 +36,7 @@ export const Description = forwardRef((props: TextareaHTMLAttributes<HTMLTextAre
 
   const className = props.readOnly
     ? `block w-full outline-none px-1 cursor-default ${props.className}`
-    : `block w-full outline-none px-1 border border-neutral-400 ${props.className}`
+    : `block w-full outline-none px-1 border border-color-5 ${props.className}`
   const selectIfReadOnly = useCallback((e: React.FocusEvent<HTMLTextAreaElement>) => {
     if (props.readOnly) e.target.select()
   }, [props.readOnly])

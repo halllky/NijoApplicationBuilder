@@ -111,7 +111,10 @@ const reducer = (state: State, action: Action) => {
 const GlobalFocusContext = createContext(null as unknown as [State, React.Dispatch<Action>])
 export const useGlobalFocusContext = () => useContext(GlobalFocusContext)
 
-export const GlobalFocusPage = ({ children }: { children?: React.ReactNode }) => {
+export const GlobalFocusPage = ({ children, className }: {
+  children?: React.ReactNode
+  className?: string
+}) => {
   const reducervalue = useReducer(reducer, {
     registered: [],
     lastFocused: new Map(),
@@ -145,7 +148,7 @@ export const GlobalFocusPage = ({ children }: { children?: React.ReactNode }) =>
 
   return (
     <GlobalFocusContext.Provider value={reducervalue}>
-      <div className="w-full h-full outline-none" onKeyDown={onKeyDown} tabIndex={0}>
+      <div className={`w-full h-full outline-none ${className}`} onKeyDown={onKeyDown} tabIndex={0}>
         {children}
       </div>
       <FocusBorder />

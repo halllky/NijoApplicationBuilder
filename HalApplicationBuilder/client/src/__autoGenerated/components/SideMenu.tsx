@@ -1,6 +1,6 @@
 import React, { useRef } from "react"
 import { Link } from "react-router-dom"
-import { ArrowsUpDownIcon, CircleStackIcon, PlayCircleIcon, UserCircleIcon } from "@heroicons/react/24/outline"
+import { ArrowsUpDownIcon, CircleStackIcon, Cog8ToothIcon, PlayCircleIcon, UserCircleIcon } from "@heroicons/react/24/outline"
 import { CopyableText } from "./CopyableText"
 import { menuItems, THIS_APPLICATION_NAME } from ".."
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
@@ -10,7 +10,7 @@ import * as GlobalFocus from "../hooks/GlobalFocus"
 
 export const SideMenu = () => {
   return (
-    <PanelGroup direction="vertical" className="bg-neutral-300" autoSaveId={LOCAL_STORAGE_KEYS.SIDEBAR_SIZE_Y}>
+    <PanelGroup direction="vertical" className="bg-color-4" autoSaveId={LOCAL_STORAGE_KEYS.SIDEBAR_SIZE_Y}>
 
       <Panel className="flex flex-col">
         <GlobalFocus.TabKeyJumpGroup>
@@ -25,14 +25,14 @@ export const SideMenu = () => {
         </GlobalFocus.TabKeyJumpGroup>
       </Panel>
 
-      <PanelResizeHandle className="h-1 border-b border-neutral-400" />
+      <PanelResizeHandle className="h-1 border-b border-color-5" />
 
       <Panel className="flex flex-col">
         <GlobalFocus.TabKeyJumpGroup>
           <nav className="flex-1 overflow-y-auto leading-none">
             <SideMenuLink url="/changes" icon={ArrowsUpDownIcon}>変更</SideMenuLink>
             <SideMenuLink url="/bagkground-tasks" icon={PlayCircleIcon}>バッチ処理</SideMenuLink>
-            <SideMenuLink url="/settings" icon={CircleStackIcon}>サーバー</SideMenuLink>
+            <SideMenuLink url="/settings" icon={Cog8ToothIcon}>設定</SideMenuLink>
             <SideMenuLink url="/account" icon={UserCircleIcon}>テスト太郎</SideMenuLink>
           </nav>
           <span className="p-1 text-sm whitespace-nowrap overflow-hidden">

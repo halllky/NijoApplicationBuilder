@@ -42,6 +42,108 @@ textarea:read-only {
   @apply bg-transparent;
 }
 
+.border-color-1 {
+  @apply border-neutral-50  dark:border-neutral-950;
+}
+.border-color-2 {
+  @apply border-neutral-100 dark:border-neutral-900;
+}
+.border-color-3 {
+  @apply border-neutral-200 dark:border-neutral-800;
+}
+.border-color-4 {
+  @apply border-neutral-300 dark:border-neutral-700;
+}
+.border-color-5 {
+  @apply border-neutral-400 dark:border-neutral-600;
+}
+.border-color-6 {
+  @apply border-neutral-500 dark:border-neutral-500;
+}
+.border-color-7 {
+  @apply border-neutral-600 dark:border-neutral-400;
+}
+.border-color-8 {
+  @apply border-neutral-700 dark:border-neutral-300;
+}
+.border-color-9 {
+  @apply border-neutral-800 dark:border-neutral-200;
+}
+.border-color-10 {
+  @apply border-neutral-900 dark:border-neutral-100;
+}
+.border-color-11 {
+  @apply border-neutral-950 dark:border-neutral-50;
+}
+
+.bg-color-1 {
+  @apply bg-neutral-50  dark:bg-neutral-950;
+}
+.bg-color-2 {
+  @apply bg-neutral-100 dark:bg-neutral-900;
+}
+.bg-color-3 {
+  @apply bg-neutral-200 dark:bg-neutral-800;
+}
+.bg-color-4 {
+  @apply bg-neutral-300 dark:bg-neutral-700;
+}
+.bg-color-5 {
+  @apply bg-neutral-400 dark:bg-neutral-600;
+}
+.bg-color-6 {
+  @apply bg-neutral-500 dark:bg-neutral-500;
+}
+.bg-color-7 {
+  @apply bg-neutral-600 dark:bg-neutral-400;
+}
+.bg-color-8 {
+  @apply bg-neutral-700 dark:bg-neutral-300;
+}
+.bg-color-9 {
+  @apply bg-neutral-800 dark:bg-neutral-200;
+}
+.bg-color-10 {
+  @apply bg-neutral-900 dark:bg-neutral-100;
+}
+.bg-color-11 {
+  @apply bg-neutral-950 dark:bg-neutral-50;
+}
+
+.text-color-1 {
+  @apply text-neutral-50  dark:text-neutral-950;
+}
+.text-color-2 {
+  @apply text-neutral-100 dark:text-neutral-900;
+}
+.text-color-3 {
+  @apply text-neutral-200 dark:text-neutral-800;
+}
+.text-color-4 {
+  @apply text-neutral-300 dark:text-neutral-700;
+}
+.text-color-5 {
+  @apply text-neutral-400 dark:text-neutral-600;
+}
+.text-color-6 {
+  @apply text-neutral-500 dark:text-neutral-500;
+}
+.text-color-7 {
+  @apply text-neutral-600 dark:text-neutral-400;
+}
+.text-color-8 {
+  @apply text-neutral-700 dark:text-neutral-300;
+}
+.text-color-9 {
+  @apply text-neutral-800 dark:text-neutral-200;
+}
+.text-color-10 {
+  @apply text-neutral-900 dark:text-neutral-100;
+}
+.text-color-11 {
+  @apply text-neutral-950 dark:text-neutral-50;
+}
+
 /* ag-grid */
 .ag-root-wrapper {
   border: none !important;

@@ -3,8 +3,8 @@ import React, { createContext, useContext, useMemo } from 'react'
 // 左列にキー、右列に値が並ぶテーブル
 
 const VALUE_COLUMN_MAX_LENGTH = '480px'
-const BORDER_OPTION = 'border-neutral-300'
-const BG_HEADER = 'bg-neutral-100'
+const BORDER_OPTION = 'border-color-4'
+const BG_HEADER = 'bg-color-2'
 
 const VTableContext = createContext({ maxIndent: 0 })
 
@@ -76,7 +76,7 @@ const Row = (props: {
       {!props.valueOnly && (
         <th colSpan={thColSpan} className={`text-left align-top ${BG_HEADER} border-t border-l border-r ${BORDER_OPTION}`}>
           <div className='flex gap-2 flex-wrap align-middle'>
-            <span className={`text-sm font-semibold select-none text-neutral-500`}>
+            <span className={`text-sm font-semibold select-none text-color-6`}>
               {props.label}
             </span>
             {props.keyOnly && props.children}

@@ -10,7 +10,7 @@ import { useHttpRequest } from '../hooks/useHttpRequest';
 
 export const ServerSettingScreen = () => {
 
-  const [{ apiDomain }, dispatch] = useAppContext()
+  const [{ apiDomain, darkMode }, dispatch] = useAppContext()
   const { get, post } = useHttpRequest()
 
   // --------------------------------------
@@ -100,6 +100,12 @@ export const ServerSettingScreen = () => {
           </Setting>
         </SettingSection>}
 
+      <SettingSection>
+        <Setting label="ダークモード">
+          <input type="checkbox" checked={darkMode || false} onChange={() => dispatch({ type: 'toggleDark' })} />
+        </Setting>
+      </SettingSection>
+
     </div>
   )
 }
@@ -130,7 +136,7 @@ const SettingSection = ({ title, sholder, children }: {
   children?: React.ReactNode
 }) => {
   return (
-    <section className="flex flex-col items-stretch space-y-2 border border-neutral-300 p-2">
+    <section className="flex flex-col items-stretch space-y-2 border border-color-4 p-2">
       <div className="flex justify-start items-center">
         {title && <h2 className="text-sm font-semibold select-none">{title}</h2>}
         {sholder}

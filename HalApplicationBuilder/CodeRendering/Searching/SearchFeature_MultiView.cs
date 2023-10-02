@@ -109,7 +109,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                             </div>
 
                             <FormProvider {...reactHookFormMethods}>
-                              <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1 p-1 bg-neutral-200`} onSubmit={handleSubmit(onSearch)}>
+                              <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1 p-1 bg-color-3`} onSubmit={handleSubmit(onSearch)}>
                     {{Search.VisibleMembers.SelectTextTemplate(member => $$"""
                                 <div className="flex">
                                   <div className="{{propNameWidth}}">
