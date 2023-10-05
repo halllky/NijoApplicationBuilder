@@ -50,7 +50,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
 
                     export default function () {
 
-                      const [, dispatch] = useAppContext()
+                      const [{ darkMode }, dispatch] = useAppContext()
                       useCtrlS(() => {
                         dispatch({ type: 'pushMsg', msg: '保存しました。' })
                       })
@@ -109,7 +109,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                             </div>
 
                             <FormProvider {...reactHookFormMethods}>
-                              <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1 p-1 bg-color-3`} onSubmit={handleSubmit(onSearch)}>
+                              <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1 p-1 bg-color-ridge`} onSubmit={handleSubmit(onSearch)}>
                     {{Search.VisibleMembers.SelectTextTemplate(member => $$"""
                                 <div className="flex">
                                   <div className="{{propNameWidth}}">
@@ -133,7 +133,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                           </TabKeyJumpGroup>
                     
                           <TabKeyJumpGroup>
-                            <div className="ag-theme-alpine compact flex-1">
+                            <div className={`ag-theme-alpine compact ${(darkMode ? 'dark' : '')} flex-1`}>
                               <AgGridReact
                                 rowData={data || []}
                                 columnDefs={columnDefs}

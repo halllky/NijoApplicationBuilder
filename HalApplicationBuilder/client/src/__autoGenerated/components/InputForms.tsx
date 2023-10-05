@@ -12,8 +12,8 @@ export const Word = forwardRef((props: InputHTMLAttributes<HTMLInputElement>, re
   useImperativeHandle(ref, () => inputRef.current!)
 
   const className = props.readOnly
-    ? `w-full outline-none px-1 cursor-default ${props.className}`
-    : `w-full outline-none px-1 border border-color-5 ${props.className}`
+    ? `bg-color-base w-full outline-none px-1 cursor-default ${props.className}`
+    : `bg-color-base w-full outline-none px-1 border border-color-5 ${props.className}`
   return (
     <input
       onFocus={selectAll}
@@ -35,8 +35,8 @@ export const Description = forwardRef((props: TextareaHTMLAttributes<HTMLTextAre
   useImperativeHandle(ref, () => textareaRef.current!)
 
   const className = props.readOnly
-    ? `block w-full outline-none px-1 cursor-default ${props.className}`
-    : `block w-full outline-none px-1 border border-color-5 ${props.className}`
+    ? `bg-color-base block w-full outline-none px-1 cursor-default ${props.className}`
+    : `bg-color-base block w-full outline-none px-1 border border-color-5 ${props.className}`
   const selectIfReadOnly = useCallback((e: React.FocusEvent<HTMLTextAreaElement>) => {
     if (props.readOnly) e.target.select()
   }, [props.readOnly])

@@ -10,7 +10,7 @@ import * as GlobalFocus from "../hooks/GlobalFocus"
 
 export const SideMenu = () => {
   return (
-    <PanelGroup direction="vertical" className="bg-color-4" autoSaveId={LOCAL_STORAGE_KEYS.SIDEBAR_SIZE_Y}>
+    <PanelGroup direction="vertical" className="bg-color-gutter" autoSaveId={LOCAL_STORAGE_KEYS.SIDEBAR_SIZE_Y}>
 
       <Panel className="flex flex-col">
         <GlobalFocus.TabKeyJumpGroup>
@@ -52,7 +52,7 @@ const SideMenuLink = ({ url, icon, children }: {
   const ref = useRef<HTMLAnchorElement>(null)
   const location = useLocation()
   const className = location.pathname.startsWith(url)
-    ? 'outline-none inline-block w-full p-1 ellipsis-ex font-bold bg-color-0'
+    ? 'outline-none inline-block w-full p-1 ellipsis-ex font-bold bg-color-base'
     : 'outline-none inline-block w-full p-1 ellipsis-ex'
   return (
     <NavLink ref={ref} to={url} className={className} {...GlobalFocus.useFocusTarget(ref)}>

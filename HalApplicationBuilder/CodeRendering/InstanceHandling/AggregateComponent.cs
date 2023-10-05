@@ -166,6 +166,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       {{arg}}: number
                     """)}}
                     }) => {
+                      const [{ darkMode }] = useAppContext()
                       const [{ },] = usePageContext()
                       const { register, watch, control } = useFormContext<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
                       const { fields, append, remove } = useFieldArray({
@@ -233,7 +234,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     """)}}
                         </VTable.Row>
                         <VTable.Row valueOnly indent={{{TableIndent - 1}}}>
-                          <div className="ag-theme-alpine compact h-64">
+                          <div className={`ag-theme-alpine compact ${(darkMode ? 'dark' : '')} h-64`}>
                             <AgGridReact
                               rowData={fields || []}
                               columnDefs={columnDefs}

@@ -82,44 +82,17 @@ textarea:read-only {
   @apply border-black dark:border-white;
 }
 
-.bg-color-0 {
-  @apply bg-white dark:bg-black;
+.bg-color-base {
+  @apply bg-white dark:bg-neutral-800;
 }
-.bg-color-1 {
-  @apply bg-neutral-50  dark:bg-neutral-950;
+.bg-color-ridge {
+  @apply bg-neutral-50 dark:bg-[#333333];
 }
-.bg-color-2 {
-  @apply bg-neutral-100 dark:bg-neutral-900;
+.bg-color-gutter {
+  @apply bg-neutral-200 dark:bg-neutral-950;
 }
-.bg-color-3 {
-  @apply bg-neutral-200 dark:bg-neutral-800;
-}
-.bg-color-4 {
-  @apply bg-neutral-300 dark:bg-neutral-700;
-}
-.bg-color-5 {
-  @apply bg-neutral-400 dark:bg-neutral-600;
-}
-.bg-color-6 {
-  @apply bg-neutral-500 dark:bg-neutral-500;
-}
-.bg-color-7 {
-  @apply bg-neutral-600 dark:bg-neutral-400;
-}
-.bg-color-8 {
+.bg-color-button {
   @apply bg-neutral-700 dark:bg-neutral-300;
-}
-.bg-color-9 {
-  @apply bg-neutral-800 dark:bg-neutral-200;
-}
-.bg-color-10 {
-  @apply bg-neutral-900 dark:bg-neutral-100;
-}
-.bg-color-11 {
-  @apply bg-neutral-950 dark:bg-neutral-50;
-}
-.bg-color-12 {
-  @apply bg-black dark:bg-white;
 }
 
 .text-color-0 {
@@ -170,11 +143,31 @@ textarea:read-only {
 .ag-theme-alpine.compact {
   --ag-grid-size: 3px;
   --ag-list-item-height: 20px;
-  /* neutral-200 */
-  --ag-header-background-color: #f3f4f6;
-  /* neutral-500 */
-  --ag-header-foreground-color: #737373;
+  /* bg-color-base に合わせる */
+  --ag-background-color: white;
+  --ag-odd-row-background-color: white;
+  /* text-color-12 に合わせる */
+  --ag-foreground-color: black;
+  /* bg-color-ridge に合わせる */
+  --ag-header-background-color: #fafafa;
+  /* SingleView中でのVTableのヘッダの文字と合わせる(text-color-7) */
+  --ag-header-foreground-color: #525252;
+  /* border-colorはデフォルトのままで十分 */
 }
+  .ag-theme-alpine.compact.dark {
+    /* bg-color-base に合わせる */
+    --ag-background-color: #262626;
+    --ag-odd-row-background-color: #262626;
+    /* text-color-12 に合わせる */
+    --ag-foreground-color: white;
+    /* bg-color-ridge に合わせる */
+    --ag-header-background-color: #333333;
+    /* SingleView中でのVTableのヘッダの文字と合わせる(text-color-7) */
+    --ag-header-foreground-color: #a3a3a3;
+    /* border-color-5 に合わせる */
+    --ag-border-color: #525252;
+    --ag-row-border-color: #525252;
+  }
   .ag-theme-alpine.compact .ag-header-cell {
     /* SingleView中でのVTableのヘッダの文字と合わせる */
     font-size: 14px;
