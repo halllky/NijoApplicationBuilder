@@ -1,6 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { AppContextProvider, useAppContext } from '../hooks/AppContext'
+import { AppContextProvider } from '../hooks/AppContext'
 import { Dashboard } from './Dashboard'
 import { MyAccount } from './MyAccount'
 import { ServerSettingScreen } from './ServerSetting'
@@ -9,7 +9,7 @@ import { UnCommitChanges } from './UnCommitChanges'
 import BackgroundTaskList from '../pages/BackgroundTask/list'
 import { routes } from '..';
 import { QueryClient, QueryClientProvider } from 'react-query';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { LOCAL_STORAGE_KEYS } from '../hooks/localStorageKeys';
 
 const queryClient = new QueryClient({
@@ -24,18 +24,12 @@ const queryClient = new QueryClient({
 function HalappRoot({ children }: {
   children?: React.ReactNode
 }) {
-  const [{ darkMode }] = useAppContext()
-  const className = useMemo(() => {
-    return darkMode
-      ? 'bg-color-base text-color-12 dark'
-      : 'bg-color-base text-color-12'
-  }, [darkMode])
 
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AppContextProvider>
-          <PanelGroup direction='horizontal' autoSaveId={LOCAL_STORAGE_KEYS.SIDEBAR_SIZE_X} className={className}>
+          <PanelGroup direction='horizontal' autoSaveId={LOCAL_STORAGE_KEYS.SIDEBAR_SIZE_X} className='bg-color-base text-color-12'>
             <Panel defaultSize={20}>
               <SideMenu />
             </Panel>

@@ -3,11 +3,10 @@ import React, { useCallback, useContext, useMemo, useReducer } from "react";
 import { UUID } from "uuidjs";
 import { Toast, ToastMessage } from "../components/Toast";
 import * as GlobalFocus from '../hooks/GlobalFocus'
-
-const LOCALSTORAGEKEY = '::HALAPP_APIDOMAIN::'
+import { LOCAL_STORAGE_KEYS } from "./localStorageKeys";
 
 export type AppState = {
-  popupMessages: ToastMessage[]
+  popupMessages?: ToastMessage[]
   apiDomain?: string
   darkMode?: boolean
 }
@@ -17,34 +16,45 @@ type Action
   | { type: 'changeDomain', value: string }
   | { type: 'toggleDark' }
 
-const createDefaultAppState = (): AppState => ({
-  popupMessages: [],
-  apiDomain: localStorage.getItem(LOCALSTORAGEKEY) || '',
-})
+const createDefaultAppState = (): AppState => {
+  const json = localStorage.getItem(LOCAL_STORAGE_KEYS.APPCONTEXT)
+  return json
+    ? JSON.parse(json) as AppState
+    : {}
+}
 const initialState = createDefaultAppState()
 const reducer: React.Reducer<AppState, Action> = (state, action) => {
+  const updated = {...state}
   switch (action.type) {
     case 'pushMsg': {
       const id = action.id ?? UUID.generate()
       const popupTime = moment().format('YYYY-MM-DD hh:mm:ss')
-      const popupMessages = [...state.popupMessages, { id, msg: action.msg, popupTime }]
-      return { ...state, popupMessages }
+      const message: ToastMessage = { id, msg: action.msg, popupTime }
+      if (Array.isArray(updated.popupMessages)) {
+        updated.popupMessages.push(message)
+      } else {
+        updated.popupMessages = [message]
+      }
+      break
     }
     case 'delMessage': {
-      const popupMessages = state.popupMessages.filter(m => m.id !== action.id)
-      return { ...state, popupMessages }
+      updated.popupMessages = updated.popupMessages?.filter(m => m.id !== action.id)
+      break
     }
     case 'changeDomain': {
-      localStorage.setItem(LOCALSTORAGEKEY, action.value)
-      return { ...state, apiDomain: action.value }
+      updated.apiDomain = action.value
+      break
     }
     case 'toggleDark': {
-      return { ...state, darkMode: !state.darkMode }
+      updated.darkMode = !updated.darkMode
+      break
     }
   }
+  localStorage.setItem(LOCAL_STORAGE_KEYS.APPCONTEXT, JSON.stringify(updated))
+  return updated
 }
 
-const AppContext = React.createContext<[AppState, React.Dispatch<Action>]>([{ popupMessages: [] }, undefined as any])
+const AppContext = React.createContext<[AppState, React.Dispatch<Action>]>(undefined as any)
 
 export const AppContextProvider = ({ children }: { children?: React.ReactNode }) => {
 
@@ -75,7 +85,7 @@ export const AppContextProvider = ({ children }: { children?: React.ReactNode })
 
           {/* TOAST MESSAGE */}
           <div className="fixed bottom-3 right-3" style={{ zIndex: 9999 }}>
-            {state.popupMessages.map(msg => <Toast key={msg.id} item={msg} />)}
+            {state.popupMessages?.map(msg => <Toast key={msg.id} item={msg} />)}
           </div>
         </GlobalFocus.GlobalFocusPage>
       </div>
