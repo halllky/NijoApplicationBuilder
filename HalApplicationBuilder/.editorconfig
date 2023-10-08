@@ -4,22 +4,22 @@
 root = true
 
 [*]
-indent_style = space
-indent_size = 2
-end_of_line = lf
-charset = utf-8
+brace_style = end_of_line
 trim_trailing_whitespace = true
 insert_final_newline = true
 
-[*.tt]
-end_of_line = crlf
+[*.{xml,json,gitignore}]
+end_of_line = lf
+charset = utf-8
+indent_style = space
+indent_size = 2
 
 [*.cs]
 end_of_line = crlf
-brace_style = end_of_line
+charset = utf-8
 indent_size = 4
 
 [*.{ts,tsx}]
-end_of_line = lf
-brace_style = end_of_line
+end_of_line = crlf
+charset = utf-8
 indent_size = 2
