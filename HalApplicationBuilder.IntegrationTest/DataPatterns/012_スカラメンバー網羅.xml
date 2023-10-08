@@ -13,9 +13,9 @@
 
     <日付時刻 is="datetime" />
     <日付 is="date" />
-    <年月 is="year-month" />
+    <年月 is="year-month" />-->
 
-    <真偽値 is="bool" />-->
+    <真偽値 is="bool" />
 
     <列挙体 is="MyEnum" />
   </親集約>

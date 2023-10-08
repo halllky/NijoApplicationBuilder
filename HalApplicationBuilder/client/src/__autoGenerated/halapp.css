@@ -82,19 +82,6 @@ textarea:read-only {
   @apply border-black dark:border-white;
 }
 
-.bg-color-base {
-  @apply bg-white dark:bg-neutral-800;
-}
-.bg-color-ridge {
-  @apply bg-neutral-50 dark:bg-[#333333];
-}
-.bg-color-gutter {
-  @apply bg-neutral-200 dark:bg-neutral-950;
-}
-.bg-color-button {
-  @apply bg-neutral-700 dark:bg-neutral-300;
-}
-
 .text-color-0 {
   @apply text-white dark:text-black;
 }
@@ -133,6 +120,59 @@ textarea:read-only {
 }
 .text-color-12 {
   @apply text-black dark:text-white;
+}
+
+.bg-color-0 {
+  @apply bg-white dark:bg-black;
+}
+.bg-color-1 {
+  @apply bg-neutral-50  dark:bg-neutral-950;
+}
+.bg-color-2 {
+  @apply bg-neutral-100 dark:bg-neutral-900;
+}
+.bg-color-3 {
+  @apply bg-neutral-200 dark:bg-neutral-800;
+}
+.bg-color-4 {
+  @apply bg-neutral-300 dark:bg-neutral-700;
+}
+.bg-color-5 {
+  @apply bg-neutral-400 dark:bg-neutral-600;
+}
+.bg-color-6 {
+  @apply bg-neutral-500 dark:bg-neutral-500;
+}
+.bg-color-7 {
+  @apply bg-neutral-600 dark:bg-neutral-400;
+}
+.bg-color-8 {
+  @apply bg-neutral-700 dark:bg-neutral-300;
+}
+.bg-color-9 {
+  @apply bg-neutral-800 dark:bg-neutral-200;
+}
+.bg-color-10 {
+  @apply bg-neutral-900 dark:bg-neutral-100;
+}
+.bg-color-11 {
+  @apply bg-neutral-950 dark:bg-neutral-50;
+}
+.bg-color-12 {
+  @apply bg-black dark:bg-white;
+}
+
+.bg-color-base {
+  @apply bg-white dark:bg-neutral-800;
+}
+.bg-color-ridge {
+  @apply bg-neutral-50 dark:bg-[#333333];
+}
+.bg-color-gutter {
+  @apply bg-neutral-200 dark:bg-neutral-950;
+}
+.bg-color-button {
+  @apply bg-neutral-700 dark:bg-neutral-300;
 }
 
 /* ag-grid */

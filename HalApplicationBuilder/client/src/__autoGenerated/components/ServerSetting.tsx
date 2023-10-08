@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { FieldValues, SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { UUID } from 'uuidjs';
 import { useAppContext } from '../hooks/AppContext';
-import { Word } from './InputForms';
+import { CheckBox, Word } from './InputForms';
 import { IconButton } from './IconButton';
 import { InlineMessageBar, BarMessage } from './InlineMessageBar';
 import { useHttpRequest } from '../hooks/useHttpRequest';
@@ -102,7 +102,7 @@ export const ServerSettingScreen = () => {
 
       <SettingSection>
         <Setting label="ダークモード">
-          <input type="checkbox" checked={darkMode || false} onChange={() => dispatch({ type: 'toggleDark' })} />
+          <CheckBox checked={darkMode || false} onChange={() => dispatch({ type: 'toggleDark' })} />
         </Setting>
       </SettingSection>
 

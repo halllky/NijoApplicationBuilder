@@ -380,10 +380,11 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             /// Createビュー兼シングルビュー: トグル
             /// </summary>
             public string Toggle() {
+                // checked属性はregisterに含まれないので自力で渡す必要がある
                 var registerName = _component.GetRegisterName(_prop);
                 var disabled = _component.IfReadOnly("disabled", _prop);
                 return $$"""
-                    <input type="checkbox" {...register({{registerName}})} {{disabled}} />
+                    <Components.CheckBox {...register({{registerName}})} checked={watch({{registerName}})} {{disabled}} />
                     """;
             }
 
