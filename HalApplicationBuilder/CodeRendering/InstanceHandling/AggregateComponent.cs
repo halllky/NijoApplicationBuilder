@@ -397,15 +397,17 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     <Components.Word {...register({{name}})} readOnly />
                     """;
                 var select = $$"""
-                    <select {...register({{name}})} className="{{INPUT_WIDTH}}">
-                      <option value="">
-                      </option>
+                    <Components.SyncComboBox
+                      reactHookFormId={{{name}}}
+                      data={useMemo(() => [
                     {{options.SelectTextTemplate(option => $$"""
-                      <option value="{{option.Key}}">
-                        {{option.Value}}
-                      </option>
+                        { key: '{{option.Key}}', text: '{{option.Value}}' },
                     """)}}
-                    </select>
+                      ], [])}
+                      keySelector={item => item.key}
+                      textSelector={item => item.text}
+                      className="{{INPUT_WIDTH}}"
+                    />
                     """;
 
                 return _mode switch {
