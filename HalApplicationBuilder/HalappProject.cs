@@ -147,6 +147,22 @@ namespace HalApplicationBuilder {
 
             return appSchema;
         }
+        internal bool ValidateSchema(out IEnumerable<string> errors) {
+            var errorList = new List<string>();
+            errors = errorList;
+
+            var builder = new AppSchemaBuilder();
+            var builderOk = SchemaXml.ConfigureBuilder(builder, out var errors1);
+            errorList.AddRange(errors1);
+
+            if (builderOk) {
+                var schemaOk = builder.TryBuild(out var _, out var errors2);
+                errorList.AddRange(errors2);
+                return schemaOk;
+            } else {
+                return false;
+            }
+        }
 
         /// <summary>
         /// このディレクトリがhalappのものとして妥当なものかどうかを検査します。

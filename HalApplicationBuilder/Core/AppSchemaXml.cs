@@ -8,6 +8,7 @@ using System.Xml.Linq;
 using System.IO;
 using HalApplicationBuilder.DotnetEx;
 using System.Linq.Expressions;
+using System.Xml;
 
 namespace HalApplicationBuilder.Core {
     public class AppSchemaXml {
@@ -22,16 +23,33 @@ namespace HalApplicationBuilder.Core {
         }
 
         public XDocument Load() {
+            if (TryLoad(out var xDocument, out var error)) {
+                return xDocument;
+            } else {
+                throw new XmlException(error);
+            }
+        }
+        public bool TryLoad(out XDocument xDocument, out string error) {
             var xmlFullPath = GetPath();
             using var stream = IO.OpenFileWithRetry(xmlFullPath);
             using var reader = new StreamReader(stream);
             var xmlContent = reader.ReadToEnd();
-            var xDocument = XDocument.Parse(xmlContent);
-            return xDocument;
+            try {
+                xDocument = XDocument.Parse(xmlContent);
+                error = string.Empty;
+                return true;
+            } catch (XmlException ex) {
+                xDocument = new XDocument();
+                error = ex.Message;
+                return false;
+            }
         }
 
         internal bool ConfigureBuilder(AppSchemaBuilder builder, out ICollection<string> errors) {
-            var xDocument = Load();
+            if (!TryLoad(out var xDocument, out var xmlError)) {
+                errors = new[] { xmlError };
+                return false;
+            }
             if (xDocument.Root == null) {
                 errors = new List<string> { "XMLが空です。" };
                 return false;
