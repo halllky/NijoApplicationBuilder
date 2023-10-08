@@ -9,7 +9,7 @@ namespace HalApplicationBuilder.DotnetEx {
     internal static class ILoggerExtension {
         internal static ILogger CreateConsoleLogger() {
             return LoggerFactory.Create(builder => {
-
+                builder.AddSimpleConsole();
             }).CreateLogger<Program>();
         }
     }

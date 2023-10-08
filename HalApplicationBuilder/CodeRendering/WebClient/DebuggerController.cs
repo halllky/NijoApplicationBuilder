@@ -15,6 +15,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient
         private readonly CodeRenderingContext _ctx;
 
         internal string RuntimeServerSettings => new Util.RuntimeSettings(_ctx).ServerSetiingTypeFullName;
+        internal const string RECREATE_DB_URL = "/HalappDebug/recreate-database";
 
         public override string FileName => $"HalappDebugger.cs";
 

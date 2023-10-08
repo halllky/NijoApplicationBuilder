@@ -39,7 +39,7 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                     // コードとDBを再作成
                     await Task.WhenAll(
                         Task.Run(SharedResource.Project.Migrator.DeleteAndRecreateDatabase),
-                        SharedResource.Project.Debugger.BuildAsync(ct.Token));
+                        SharedResource.Project.Debugger.BuildAsync(ct.Token, HalappProjectDebugger.E_NpmBuild.None));
 
                     dotnetRun = await SharedResource.Project.Debugger.CreateServerRunningProcess(ct.Token);
 
@@ -66,7 +66,7 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                     // コードとDBを再作成
                     await Task.WhenAll(
                         Task.Run(SharedResource.Project.Migrator.DeleteAndRecreateDatabase),
-                        SharedResource.Project.Debugger.BuildAsync(ct.Token));
+                        SharedResource.Project.Debugger.BuildAsync(ct.Token, HalappProjectDebugger.E_NpmBuild.None));
 
                     // 開始
                     dotnetRun = await SharedResource.Project.Debugger.CreateServerRunningProcess(ct.Token);

@@ -16,7 +16,7 @@ namespace HalApplicationBuilder.IntegrationTest.Perspectives {
                 using var ct = new CancellationTokenSource();
                 await Task.WhenAll(
                     Task.Run(SharedResource.Project.Migrator.DeleteAndRecreateDatabase),
-                    SharedResource.Project.Debugger.BuildAsync(ct.Token));
+                    SharedResource.Project.Debugger.BuildAsync(ct.Token, HalappProjectDebugger.E_NpmBuild.Build));
             } catch {
                 TestContext.Out.WriteLine("--- SCHEMA ---");
                 TestContext.Out.WriteLine(SharedResource.Project.BuildSchema().Graph.ToMermaidText());
