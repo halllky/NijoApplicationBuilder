@@ -24,14 +24,14 @@ const createDefaultAppState = (): AppState => {
 }
 const initialState = createDefaultAppState()
 const reducer: React.Reducer<AppState, Action> = (state, action) => {
-  const updated = {...state}
+  const updated = { ...state }
   switch (action.type) {
     case 'pushMsg': {
       const id = action.id ?? UUID.generate()
       const popupTime = moment().format('YYYY-MM-DD hh:mm:ss')
       const message: ToastMessage = { id, msg: action.msg, popupTime }
       if (Array.isArray(updated.popupMessages)) {
-        updated.popupMessages.push(message)
+        updated.popupMessages = [...updated.popupMessages, message]
       } else {
         updated.popupMessages = [message]
       }
