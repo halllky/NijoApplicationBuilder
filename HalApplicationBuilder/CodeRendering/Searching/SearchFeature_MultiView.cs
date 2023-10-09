@@ -35,7 +35,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
 
                 var s = new StringBuilder();
                 s.Append($$"""
-                    import React, { useState, useCallback } from 'react';
+                    import React, { useState, useCallback, useRef, useId } from 'react';
                     import { useCtrlS } from '../../hooks/useCtrlS';
                     import { useAppContext } from '../../hooks/AppContext';
                     import { AgGridReact } from 'ag-grid-react';
@@ -44,9 +44,9 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                     import { useQuery } from 'react-query';
                     import { FieldValues, SubmitHandler, useForm, FormProvider } from 'react-hook-form';
                     import { BookmarkIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
-                    import { IconButton } from '../../components';
+                    import { IconButton, AgGridWrapper } from '../../components';
                     import { useHttpRequest } from '../../hooks/useHttpRequest';
-                    import { TabKeyJumpGroup } from '../../hooks/GlobalFocus';
+                    import { TabKeyJumpGroup, useFocusTarget, useGlobalFocusContext } from '../../hooks/GlobalFocus';
 
                     export default function () {
 
@@ -87,14 +87,6 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                         navigate(`{{createView!.GetUrlStringForReact()}}`)
                       }, [navigate])
                     """)}}
-
-                    // フォーカス制御
-                    const gridWrapperRef = useRef<HTMLDivElement>(null)
-                    const gridWrapperFocusMethods = useFocusTarget(gridWrapperRef)
-                    const onGridWrapperFocused = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
-                      const cell = e.target.querySelector('.ag-cell')
-                      if (cell) (cell as HTMLElement).focus()
-                    }, [])
 
                       const [expanded, setExpanded] = useState(false)
 
@@ -139,19 +131,11 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                               </form>
                             </FormProvider>
                           </TabKeyJumpGroup>
-                    
-                          <TabKeyJumpGroup>
-                            <div className={`ag-theme-alpine compact ${(darkMode ? 'dark' : '')} flex-1`}
-                              ref={gridWrapperRef} {...gridWrapperFocusMethods} tabIndex={0} onFocus={onGridWrapperFocused}>
-                              <AgGridReact
-                                rowData={data || []}
-                                columnDefs={columnDefs}
-                                multiSortKey='ctrl'
-                                undoRedoCellEditing
-                                undoRedoCellEditingLimit={20}>
-                              </AgGridReact>
-                            </div>
-                          </TabKeyJumpGroup>
+
+                          <AgGridWrapper
+                            rowData={data || []}
+                            columnDefs={columnDefs}
+                          />
                         </div>
                       )
                     }

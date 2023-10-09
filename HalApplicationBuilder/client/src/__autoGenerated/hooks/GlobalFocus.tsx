@@ -221,6 +221,7 @@ export const TabKeyJumpGroup = ({ id, children }: {
 // * コントロール単位 *
 
 export const useFocusTarget = <T extends HTMLElement>(ref: React.RefObject<T>, options?: {
+  tabId?: string
   borderHidden?: true
   onMouseDown?: (e: React.MouseEvent) => void
 }) => {
@@ -230,7 +231,14 @@ export const useFocusTarget = <T extends HTMLElement>(ref: React.RefObject<T>, o
 
   // ページのコンテキストにこのエレメントを登録する
   useEffect(() => {
-    dispatch({ type: 'register', item: { tabId, controlId, ref, borderHidden: options?.borderHidden } })
+    dispatch({
+      type: 'register', item: {
+        tabId: options?.tabId ?? tabId,
+        controlId,
+        ref,
+        borderHidden: options?.borderHidden,
+      }
+    })
     return () => dispatch({ type: 'unregister', controlId })
   }, [])
 
