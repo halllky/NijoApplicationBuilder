@@ -88,6 +88,14 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                       }, [navigate])
                     """)}}
 
+                    // フォーカス制御
+                    const gridWrapperRef = useRef<HTMLDivElement>(null)
+                    const gridWrapperFocusMethods = useFocusTarget(gridWrapperRef)
+                    const onGridWrapperFocused = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
+                      const cell = e.target.querySelector('.ag-cell')
+                      if (cell) (cell as HTMLElement).focus()
+                    }, [])
+
                       const [expanded, setExpanded] = useState(false)
 
                       if (isFetching) return <></>
@@ -133,7 +141,8 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                           </TabKeyJumpGroup>
                     
                           <TabKeyJumpGroup>
-                            <div className={`ag-theme-alpine compact ${(darkMode ? 'dark' : '')} flex-1`}>
+                            <div className={`ag-theme-alpine compact ${(darkMode ? 'dark' : '')} flex-1`}
+                              ref={gridWrapperRef} {...gridWrapperFocusMethods} tabIndex={0} onFocus={onGridWrapperFocused}>
                               <AgGridReact
                                 rowData={data || []}
                                 columnDefs={columnDefs}

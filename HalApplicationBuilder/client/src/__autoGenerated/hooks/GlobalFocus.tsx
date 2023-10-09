@@ -1,6 +1,11 @@
 import React, { createContext, useCallback, useContext, useEffect, useId, useMemo, useReducer, useRef } from "react"
 
-type RegisteredItem = { tabId: string, controlId: string, ref: React.RefObject<HTMLElement> }
+type RegisteredItem = {
+  tabId: string
+  controlId: string
+  ref: React.RefObject<HTMLElement>
+  borderHidden?: true
+}
 type State = {
   registered: RegisteredItem[]
   active?: RegisteredItem
@@ -129,6 +134,9 @@ export const GlobalFocusPage = ({ children, className }: {
       case 'ArrowDown':
       case 'ArrowLeft':
       case 'ArrowRight': {
+        //ag-gridのキー制御と衝突するので
+        if ((e.target as HTMLElement).closest('.ag-theme-alpine') != null) break
+
         const elements = reducervalue[0].getHtmlElements()
         const nearestEl = findNearestElement(e.key, e.target as HTMLElement, elements)
         if (nearestEl) reducervalue[1]({ type: 'activate-by-element', el: nearestEl })
@@ -175,9 +183,10 @@ const FocusBorder = () => {
     ? (
       <div ref={ref}
         style={style}
-        className="absolute pointer-events-none
+        className={`absolute pointer-events-none
           outline-none border border-2 border-color-12
-          transition-all duration-100 ease-out">
+          transition-all duration-100 ease-out
+          ${active.borderHidden ? 'hidden' : ''}`}>
         <div className="border border-color-0 absolute top-0 left-0 right-0 bottom-0"></div>
         <div className="border border-color-0 absolute top-[-3px] left-[-3px] right-[-3px] bottom-[-3px]"></div>
       </div>
@@ -192,7 +201,11 @@ const FocusBorder = () => {
 type TabAreaContextValue = { tabId: string }
 const TabAreaContext = createContext({} as TabAreaContextValue)
 
-export const TabKeyJumpGroup = ({ id, children }: { id?: string, children?: React.ReactNode }) => {
+export const TabKeyJumpGroup = ({ id, children }: {
+  id?: string
+  children?: React.ReactNode
+  onFocus?: () => void
+}) => {
   const tabIdIfNotProvided = useId()
   const tabId = id ?? tabIdIfNotProvided
   const contextValue = useMemo<TabAreaContextValue>(() => ({ tabId }), [tabId])
@@ -207,7 +220,8 @@ export const TabKeyJumpGroup = ({ id, children }: { id?: string, children?: Reac
 // -------------------------------------------
 // * コントロール単位 *
 
-export const useFocusTarget = <T extends HTMLElement>(ref: React.RefObject<T>, additional?: {
+export const useFocusTarget = <T extends HTMLElement>(ref: React.RefObject<T>, options?: {
+  borderHidden?: true
   onMouseDown?: (e: React.MouseEvent) => void
 }) => {
   const [, dispatch] = useContext(GlobalFocusContext)
@@ -216,15 +230,15 @@ export const useFocusTarget = <T extends HTMLElement>(ref: React.RefObject<T>, a
 
   // ページのコンテキストにこのエレメントを登録する
   useEffect(() => {
-    dispatch({ type: 'register', item: { tabId, controlId, ref } })
+    dispatch({ type: 'register', item: { tabId, controlId, ref, borderHidden: options?.borderHidden } })
     return () => dispatch({ type: 'unregister', controlId })
   }, [])
 
   // イベント
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     dispatch({ type: 'activate-by-id', controlId })
-    additional?.onMouseDown?.(e)
-  }, [controlId, additional?.onMouseDown])
+    options?.onMouseDown?.(e)
+  }, [controlId, options?.onMouseDown])
 
   return {
     onMouseDown,
