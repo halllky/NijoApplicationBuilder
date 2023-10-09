@@ -135,6 +135,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                           <AgGridWrapper
                             rowData={data || []}
                             columnDefs={columnDefs}
+                            className="flex-1"
                           />
                         </div>
                       )

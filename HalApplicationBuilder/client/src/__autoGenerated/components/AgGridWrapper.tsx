@@ -3,14 +3,18 @@ import { TabKeyJumpGroup, useAppContext, useFocusTarget, useGlobalFocusContext }
 import { AgGridReact } from "ag-grid-react"
 import { CellFocusedEvent, ColDef } from "ag-grid-community"
 
-export const AgGridWrapper = <T,>({ rowData, columnDefs }: {
+export const AgGridWrapper = <T,>({ rowData, columnDefs, gridRef: argsGridRef, className }: {
   rowData?: T[]
   columnDefs?: ColDef<T>[]
+  gridRef?: React.MutableRefObject<AgGridReact<T> | null>
+  className?: string
 }) => {
   const [{ darkMode }] = useAppContext()
 
-  // フォーカス制御
   const gridRef = useRef<AgGridReact<T>>(null)
+  if (argsGridRef) argsGridRef.current = gridRef.current
+
+  // フォーカス制御
   const gridWrapperTabId = useId()
   const gridWrapperRef = useRef<HTMLDivElement>(null)
   const gridWrapperFocusMethods = useFocusTarget(gridWrapperRef, { tabId: gridWrapperTabId, borderHidden: true })
@@ -48,15 +52,14 @@ export const AgGridWrapper = <T,>({ rowData, columnDefs }: {
 
   return (
     <TabKeyJumpGroup id={gridWrapperTabId}>
-      <div className={`ag-theme-alpine compact ${(darkMode ? 'dark' : '')} flex-1`}
+      <div className={`ag-theme-alpine compact ${(darkMode ? 'dark' : '')} ${className}`}
         ref={gridWrapperRef} {...gridWrapperFocusMethods} tabIndex={0} onFocus={onGridWrapperFocused}>
         <AgGridReact
           ref={gridRef}
           rowData={rowData || []}
-          columnDefs={columnDefs} onCellKeyDown={e => {
-            e.event?.preventDefault()
-          }}
-          multiSortKey='ctrl'
+          columnDefs={columnDefs}
+          multiSortKey="ctrl"
+          rowSelection="multiple"
           undoRedoCellEditing
           undoRedoCellEditingLimit={20}
           onCellFocused={onCellFocused}>

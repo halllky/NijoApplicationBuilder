@@ -174,18 +174,14 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                         name: {{GetRegisterName()}},
                       })
 
-                      const gridApi = useRef<GridApi<typeof fields[0]> | null>(null)
-                      const onGridReady = useCallback((e: GridReadyEvent<typeof fields[0]>) => {
-                        gridApi.current = e.api
-                        e.api.getSelectedRows()
-                      }, [])
+                      const gridApi = useRef<AgGridReact<typeof fields[0]> | null>(null)
 
                       const onAdd = useCallback((e: React.MouseEvent) => {
                         append(AggregateType.{{createNewChildrenItem}}())
                         e.preventDefault()
                       }, [append])
                       const onRemove = useCallback((e: React.MouseEvent) => {
-                        const selectedRows = gridApi.current?.getSelectedRows() ?? []
+                        const selectedRows = gridApi.current?.api.getSelectedRows() ?? []
                         for (const row of selectedRows) {
                           const index = fields.indexOf(row)
                           remove(index)
@@ -234,17 +230,12 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     """)}}
                         </VTable.Row>
                         <VTable.Row valueOnly indent={{{TableIndent - 1}}}>
-                          <div className={`ag-theme-alpine compact ${(darkMode ? 'dark' : '')} h-64`}>
-                            <AgGridReact
-                              rowData={fields || []}
-                              columnDefs={columnDefs}
-                              rowSelection='multiple'
-                              multiSortKey='ctrl'
-                              undoRedoCellEditing
-                              undoRedoCellEditingLimit={20}
-                              onGridReady={onGridReady}>
-                            </AgGridReact>
-                          </div>
+                          <Components.AgGridWrapper
+                            rowData={fields}
+                            columnDefs={columnDefs}
+                            gridRef={gridApi}
+                            className="h-64"
+                          />
                         </VTable.Row>
                       </>
                     }
