@@ -11,7 +11,7 @@ type State = {
   active?: RegisteredItem
   lastFocused: Map<string, string>
   getTabs: () => { tabId: string, items: RegisteredItem[] }[]
-  getHtmlElements(): HTMLElement[]
+  getHtmlElements(tabId?: string): HTMLElement[]
   getLastFocusItem: (tabId: string) => RegisteredItem | undefined
 }
 type Action
@@ -47,14 +47,15 @@ const reducer = (state: State, action: Action) => {
     return list
   }, [] as { tabId: string, items: RegisteredItem[] }[])
 
-  updated.getHtmlElements = () => updated
+  updated.getHtmlElements = tabId => updated
     .registered
-    .map(x => x.ref.current)
-    .filter(current => {
-      if (current == null) return false
-      if (current.offsetParent == null) return false // 自身または親要素のいずれかが非表示ならnullになる
+    .filter(x => {
+      if (x.ref.current == null) return false
+      if (tabId !== undefined && x.tabId !== tabId) return false
+      if (x.ref.current.offsetParent == null) return false // 自身または親要素のいずれかが非表示ならnullになる
       return true
-    }) as HTMLElement[]
+    })
+    .map(x => x.ref.current as HTMLElement)
     || []
 
   updated.getLastFocusItem = (tabId: string) => {
@@ -129,6 +130,8 @@ export const GlobalFocusPage = ({ children, className }: {
   } as State)
 
   const onKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const state = reducervalue[0]
+    const dispatch = reducervalue[1]
     switch (e.key) {
       case 'ArrowUp':
       case 'ArrowDown':
@@ -137,15 +140,15 @@ export const GlobalFocusPage = ({ children, className }: {
         //ag-gridのキー制御と衝突するので
         if ((e.target as HTMLElement).closest('.ag-theme-alpine') != null) break
 
-        const elements = reducervalue[0].getHtmlElements()
+        const elements = state.getHtmlElements(state.active?.tabId)
         const nearestEl = findNearestElement(e.key, e.target as HTMLElement, elements)
-        if (nearestEl) reducervalue[1]({ type: 'activate-by-element', el: nearestEl })
+        if (nearestEl) dispatch({ type: 'activate-by-element', el: nearestEl })
         e.preventDefault()
         break
       }
       case 'Tab': {
-        if (e.shiftKey) reducervalue[1]({ type: 'move-to-previous-tab' })
-        else reducervalue[1]({ type: 'move-to-next-tab' })
+        if (e.shiftKey) dispatch({ type: 'move-to-previous-tab' })
+        else dispatch({ type: 'move-to-next-tab' })
         e.preventDefault()
         break
       }
