@@ -45,7 +45,7 @@ export const AgGridWrapper = <T,>({ rowData, columnDefs, gridRef: argsGridRef, c
       }
     } else {
       // セルがないときは次のエリアへ
-      dispatchGlobalFocus({ type: 'move-to-next-tab' })
+      dispatchGlobalFocus({ type: 'skip' })
     }
   }, [rowData, columnDefs, lastFocused])
 

@@ -6,13 +6,13 @@ type RegisteredItem = {
   ref: React.RefObject<HTMLElement>
   borderHidden?: true
 }
+type TabGroup = { tabId: string, items: RegisteredItem[] }
 type State = {
   registered: RegisteredItem[]
   active?: RegisteredItem
   lastFocused: Map<string, string>
-  getTabs: () => { tabId: string, items: RegisteredItem[] }[]
-  getHtmlElements(tabId?: string): HTMLElement[]
-  getLastFocusItem: (tabId: string) => RegisteredItem | undefined
+  tabGroups: TabGroup[]
+  tabMovingDirection?: 'prev' | 'next'
 }
 type Action
   = { type: 'register', item: RegisteredItem }
@@ -20,6 +20,7 @@ type Action
   | { type: 'activate-first-item', tabId: string }
   | { type: 'move-to-next-tab' }
   | { type: 'move-to-previous-tab' }
+  | { type: 'skip' }
   | { type: 'activate-by-id', controlId: string }
   | { type: 'activate-by-element', el: HTMLElement }
 
@@ -40,29 +41,14 @@ const reducer = (state: State, action: Action) => {
   }
   // ---------------------------
 
-  updated.getTabs = () => updated.registered.reduce((list, item) => {
-    const index = list.findIndex(x => x.tabId === item.tabId)
-    if (index === -1) list.push({ tabId: item.tabId, items: [item] })
-    else list[index].items.push(item)
+  updated.tabGroups = updated.registered.reduce((list, item) => {
+    if (list.length === 0 || list[list.length - 1].tabId !== item.tabId) {
+      list.push({ tabId: item.tabId, items: [item] })
+    } else {
+      list[list.length - 1].items.push(item)
+    }
     return list
   }, [] as { tabId: string, items: RegisteredItem[] }[])
-
-  updated.getHtmlElements = tabId => updated
-    .registered
-    .filter(x => {
-      if (x.ref.current == null) return false
-      if (tabId !== undefined && x.tabId !== tabId) return false
-      if (x.ref.current.offsetParent == null) return false // 自身または親要素のいずれかが非表示ならnullになる
-      return true
-    })
-    .map(x => x.ref.current as HTMLElement)
-    || []
-
-  updated.getLastFocusItem = (tabId: string) => {
-    const lastFocusControl = updated.lastFocused.get(tabId)
-    if (lastFocusControl === undefined) return undefined
-    return updated.registered.find(x => x.controlId === lastFocusControl)
-  }
 
   // ---------------------------
   const activate = (item: RegisteredItem | undefined) => {
@@ -80,26 +66,33 @@ const reducer = (state: State, action: Action) => {
       activate(updated.registered.find(x => x.ref.current === action.el))
       break
     }
-    case 'move-to-next-tab': {
-      const tabs = updated.getTabs()
-      const index = updated.active === undefined ? 0 : tabs.findIndex(x => x.tabId === updated.active!.tabId)
-      const nextTab = index === tabs.length - 1 ? tabs[0] : tabs[index + 1]
-      activate(updated.getLastFocusItem(nextTab.tabId) || nextTab.items[0])
-      break
-    }
-    case 'move-to-previous-tab': {
-      const tabs = updated.getTabs()
-      const index = updated.active === undefined ? 0 : tabs.findIndex(x => x.tabId === updated.active!.tabId)
-      const previousTab = index === 0 ? tabs[tabs.length - 1] : tabs[index - 1]
-      activate(updated.getLastFocusItem(previousTab.tabId) || previousTab.items[0])
+    case 'move-to-next-tab':
+    case 'move-to-previous-tab':
+    case 'skip': {
+      const index = updated.active
+        ? updated.tabGroups.findIndex(x => x.items.includes(updated.active!))
+        : 0
+      if (action.type === 'move-to-next-tab' || (action.type === 'skip' && updated.tabMovingDirection === 'next')) {
+        const nextGroup = index === updated.tabGroups.length - 1
+          ? updated.tabGroups[0]
+          : updated.tabGroups[index + 1]
+        activate(nextGroup.items[0])
+        updated.tabMovingDirection = 'next'
+      } else {
+        const previousGroup = index === 0
+          ? updated.tabGroups[updated.tabGroups.length - 1]
+          : updated.tabGroups[index - 1]
+        activate(previousGroup.items[previousGroup.items.length - 1])
+        updated.tabMovingDirection = 'prev'
+      }
       break
     }
     case 'activate-first-item': {
-      const item = updated
-        .getTabs()
-        .find(x => x.tabId === action.tabId)
-        ?.items[0]
-      if (item) activate(item)
+      const group = updated.tabGroups.find(x => x.tabId === action.tabId)
+      if (group) {
+        const visibleItems = getVisibleItems(group)
+        if (visibleItems.length > 0) activate(visibleItems[0])
+      }
       break
     }
     default:
@@ -123,10 +116,9 @@ export const GlobalFocusPage = ({ children, className }: {
 }) => {
   const reducervalue = useReducer(reducer, {
     registered: [],
+    tabGroups: [],
     lastFocused: new Map(),
-    getTabs: () => [],
-    getLastFocusItem: () => undefined,
-    getHtmlElements: () => [],
+    getTabGroups: () => [],
   } as State)
 
   const onKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -137,10 +129,15 @@ export const GlobalFocusPage = ({ children, className }: {
       case 'ArrowDown':
       case 'ArrowLeft':
       case 'ArrowRight': {
-        //ag-gridのキー制御と衝突するので
-        if ((e.target as HTMLElement).closest('.ag-theme-alpine') != null) break
+        if (!state.active) break
+        if ((e.target as HTMLElement).closest('.ag-theme-alpine') != null) break //ag-gridのキー制御と衝突するので
 
-        const elements = state.getHtmlElements(state.active?.tabId)
+        const group = state.tabGroups.find(x => x.items.includes(state.active!))
+        if (!group) break
+
+        const elements = getVisibleItems(group)
+          .filter(x => x !== state.active && x.ref.current)
+          .map(x => x.ref.current as HTMLElement)
         const nearestEl = findNearestElement(e.key, e.target as HTMLElement, elements)
         if (nearestEl) dispatch({ type: 'activate-by-element', el: nearestEl })
         e.preventDefault()
@@ -155,7 +152,7 @@ export const GlobalFocusPage = ({ children, className }: {
       default:
         break
     }
-  }, [reducervalue[0].getHtmlElements])
+  }, [reducervalue[0].tabGroups])
 
   return (
     <GlobalFocusContext.Provider value={reducervalue}>
@@ -278,6 +275,14 @@ export const Focusable = ({ children, className }: {
 
 // -------------------------------------------
 // * 以下、計算関数など *
+const getVisibleItems = (group: TabGroup): RegisteredItem[] => {
+  return group.items.filter(x => {
+    if (x.ref.current == null) return false
+    if (x.ref.current.offsetParent == null) return false // 自身または親要素のいずれかが非表示ならnullになる
+    return true
+  })
+}
+
 type Point = { x: number; y: number }
 type Direction = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'
 
