@@ -218,3 +218,11 @@ textarea:read-only {
     /* SingleView中でのVTableのヘッダの文字と合わせる */
     font-size: 14px;
   }
+
+/* GlobalFocusのフォーカスのborderが2pxなのでoutlineを足して合わせる */
+.ag-cell-focus:focus-within {
+    outline: solid 1px black !important;
+}
+.dark .ag-cell-focus:focus-within {
+    outline: solid 1px white !important;
+}
