@@ -351,9 +351,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var combobox = new KeywordSearching.ComboBox(refProperty.MemberAggregate);
             var registerName = GetRegisterName(refProperty);
             var callCombobox = _mode switch {
-                SingleView.E_Type.Create => combobox.RenderCaller(registerName, readOnly: false),
-                SingleView.E_Type.View => combobox.RenderCaller(registerName, readOnly: true),
-                SingleView.E_Type.Edit => combobox.RenderCaller(registerName, $"item?.{AggregateDetail.IS_LOADED}"),
+                SingleView.E_Type.Create => combobox.RenderCaller(registerName, "className='w-full'"),
+                SingleView.E_Type.View => combobox.RenderCaller(registerName, "className='w-full'", "readOnly"),
+                SingleView.E_Type.Edit => combobox.RenderCaller(registerName, "className='w-full'", $"readOnly={{item?.{AggregateDetail.IS_LOADED}}}"),
                 _ => throw new NotImplementedException(),
             };
 
@@ -440,7 +440,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       ], [])}
                       keySelector={item => item?.key || ''}
                       textSelector={item => item?.text || ''}
-                      className="{{INPUT_WIDTH}}"
+                      className="w-full"
                     />
                     """;
 

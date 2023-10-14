@@ -98,14 +98,12 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                 """;
         }
 
-        internal string RenderCaller(string raectHookFormId, bool readOnly) {
+        internal string RenderCaller(string raectHookFormId, params string[] attrs) {
+            var attributes = attrs
+                .Where(str => !string.IsNullOrWhiteSpace(str))
+                .Join(" ");
             return $$"""
-                <Components.{{ComponentName}} raectHookFormId={{{raectHookFormId}}} {{(readOnly ? "readOnly" : "")}} className="{{AggregateComponent.INPUT_WIDTH}}" />
-                """;
-        }
-        internal string RenderCaller(string raectHookFormId, string readOnlyCondition) {
-            return $$"""
-                <Components.{{ComponentName}} raectHookFormId={{{raectHookFormId}}} readOnly={{{readOnlyCondition}}} className="{{AggregateComponent.INPUT_WIDTH}}" />
+                <Components.{{ComponentName}} raectHookFormId={{{raectHookFormId}}} {{attributes}} />
                 """;
         }
     }
