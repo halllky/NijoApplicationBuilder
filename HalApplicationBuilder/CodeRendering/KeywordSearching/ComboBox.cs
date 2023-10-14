@@ -85,13 +85,15 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                 })
 
                 const queryKey = ['combo-{{_aggregate.Item.UniqueId}}']
-                const keySelector = (item: {{keyName.TypeScriptTypeName}}) => {
-                  return `{{keyName.GetKeys().Select(m => "${item." + m.MemberName + "}").Join("::")}}`
+                const keySelector = (item: {{keyName.TypeScriptTypeName}} | null) => {
+                  return item
+                    ? `{{keyName.GetKeys().Select(m => "${item." + m.MemberName + "}").Join("::")}}`
+                    : ``
                 }
                 const textSelector = (item: {{keyName.TypeScriptTypeName}} | null) => {
-                  return item == null
-                    ? ``
-                    : `{{keyName.GetNames().Select(m => "${item." + m.MemberName + "}").Join("&nbsp;")}}`
+                  return item
+                    ? `{{keyName.GetNames().Select(m => "${item." + m.MemberName + "}").Join("&nbsp;")}}`
+                    : ``
                 }
                 """;
         }

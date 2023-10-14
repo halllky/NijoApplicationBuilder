@@ -11,16 +11,16 @@ import { useFocusTarget } from "../hooks"
 type ComboBoxProps<T> = {
   selectedItem: T | null | undefined
   onSelectedItemChanged: (item: T | null | undefined) => void
-  keySelector: (item: T) => string
-  textSelector: (item: T) => string
+  keySelector: (item: T | null) => string
+  textSelector: (item: T | null) => string
   readOnly?: boolean
   className?: string
 }
 type SyncComboBoxProps<T> = React.SelectHTMLAttributes<HTMLSelectElement> & {
   data: T[]
   onSelectedItemChanged?: (item: T | null | undefined) => void
-  keySelector: (item: T) => string
-  textSelector: (item: T) => string
+  keySelector: (item: T | null) => string
+  textSelector: (item: T | null) => string
   readOnly?: boolean
   className?: string
   // ag-grid CellEditorの場合はrowIndexと組み合わせてこのコンポーネントの中でIDを組み立てる
@@ -57,7 +57,7 @@ export const SyncComboBox = forwardRef(<T,>(props: SyncComboBoxProps<T>, ref: Re
   }, [props.reactHookFormId, props.rowIndex])
   const selectedItem = useMemo(() => {
     const selectedItemKey = watch(rhfId)
-    return props.data.find(item => props.keySelector(item) === selectedItemKey)
+    return props.data.find(item => props.keySelector(item) === selectedItemKey) ?? null
   }, [props.data, watch(rhfId)])
 
   const onSelectedItemChanged = useCallback((item: T | null | undefined) => {
@@ -68,12 +68,13 @@ export const SyncComboBox = forwardRef(<T,>(props: SyncComboBoxProps<T>, ref: Re
   // フィルタリング処理
   const [keyword, setKeyword] = useState('')
   const filteredData = useMemo(() => {
-    return props.data.filter(item => {
+    const matched = props.data.filter(item => {
       if (!item) return false
       if (props.keySelector(item).includes(keyword)) return true
       if (props.textSelector(item).includes(keyword)) return true
       return false
     })
+    return [null, ...matched]
   }, [keyword, props.data, props.keySelector, props.textSelector])
 
   const onChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,9 +88,11 @@ export const SyncComboBox = forwardRef(<T,>(props: SyncComboBoxProps<T>, ref: Re
     isCancelAfterEnd: () => false,
   }))
 
+  const { data, ...rest } = props
+
   return (
-    <ComboBoxBase
-      {...props}
+    <ComboBoxBase<T | null>
+      {...rest}
       data={filteredData}
       nowLoading={false}
       onChangeKeyword={onChange}
@@ -170,7 +173,7 @@ const ComboBoxBase = <T,>(props: ComboBoxBaseProps<T>) => {
           displayValue={displayValue}
           onChange={props.onChangeKeyword}
           onBlur={props.onBlurKeyword}
-          className="w-full border border-color-5"
+          className="bg-color-base w-full border border-color-5"
           spellCheck="false"
           autoComplete="off"
           {...useFocusTarget(ref)}
@@ -188,7 +191,7 @@ const ComboBoxBase = <T,>(props: ComboBoxBaseProps<T>) => {
             <Combobox.Option key={item ? props.keySelector(item) : index} value={item}>
               {({ active }) => (
                 <div className={active ? 'bg-color-ridge' : ''}>
-                  {item ? props.textSelector(item) : undefined}
+                  {item ? props.textSelector(item) : ''}&nbsp;
                 </div>
               )}
             </Combobox.Option>

@@ -438,8 +438,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                         { key: '{{option.Key}}', text: '{{option.Value}}' },
                     """)}}
                       ], [])}
-                      keySelector={item => item.key}
-                      textSelector={item => item.text}
+                      keySelector={item => item?.key || ''}
+                      textSelector={item => item?.text || ''}
                       className="{{INPUT_WIDTH}}"
                     />
                     """;
