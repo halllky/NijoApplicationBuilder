@@ -274,8 +274,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                   )
                 }
 
-
-                {{_aggregate.EnumerateThisAndDescendants().SelectTextTemplate(agg => new AggregateComponent(agg, _type).Render())}}
+                {{new AggregateComponent(_aggregate, _type).Render()}}
+                {{_aggregate.EnumerateDescendantMembers().SelectTextTemplate(member => new AggregateComponent(member, _type).Render())}}
                 """;
         }
     }

@@ -4,8 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using static HalApplicationBuilder.CodeRendering.Searching.SearchFeature;
-using static HalApplicationBuilder.Core.AggregateMember;
 
 namespace HalApplicationBuilder.Core {
 
@@ -349,6 +347,23 @@ namespace HalApplicationBuilder.Core {
             }
         }
 
+        /// <summary>
+        /// TODO: このメソッドの記述場所がここなのが気持ち悪い
+        /// </summary>
+        internal static IEnumerable<AggregateMember.RelationMember> EnumerateDescendantMembers(this GraphNode<Aggregate> aggregate) {
+            foreach (var member in aggregate.GetMembers().OfType<AggregateMember.RelationMember>()) {
+                if (member is AggregateMember.Ref) continue;
+
+                yield return member;
+
+                foreach (var item in EnumerateDescendantMembers(member.MemberAggregate)) {
+                    yield return item;
+                }
+            }
+        }
+        /// <summary>
+        /// TODO: <see cref="EnumerateDescendantMembers(GraphNode{Aggregate})"/> と役割がほぼ重複
+        /// </summary>
         internal static IEnumerable<GraphNode<T>> EnumerateDescendants<T>(this GraphNode<T> graphNode) where T : IGraphNode {
             return graphNode.SelectNeighbors(node => node.Out
                 .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var value)

@@ -14,11 +14,20 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
     internal class AggregateComponent {
         internal AggregateComponent(GraphNode<Aggregate> aggregate, SingleView.E_Type type) {
+            if (!aggregate.IsRoot()) throw new ArgumentException("ルート集約でない場合はもう片方のコンストラクタを使用");
+
             _aggregate = aggregate;
+            _relationToParent = null;
+            _mode = type;
+        }
+        internal AggregateComponent(AggregateMember.RelationMember relationMember, SingleView.E_Type type) {
+            _aggregate = relationMember.MemberAggregate;
+            _relationToParent = relationMember;
             _mode = type;
         }
 
         private readonly GraphNode<Aggregate> _aggregate;
+        private readonly AggregateMember.RelationMember? _relationToParent;
         private readonly SingleView.E_Type _mode;
 
         private string ComponentName => $"{_aggregate.Item.TypeScriptTypeName}View";
@@ -48,9 +57,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         }
 
         internal string Render() {
-            if (!_aggregate.IsChildrenMember()) {
-
-                // Childrenでない集約のレンダリング
+            if (_relationToParent == null || _relationToParent is AggregateMember.Child) {
+                // ルート集約またはChildのレンダリング
                 return $$"""
                     const {{ComponentName}} = ({ {{Arguments.Join(", ")}} }: {
                     {{Arguments.SelectTextTemplate(arg => $$"""
@@ -60,12 +68,51 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       const [{ },] = usePageContext()
                       const { register, watch, getValues } = useFormContext<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
                       const item = getValues({{GetRegisterName()}})
-                    
+
                       return (
                         <>
                           {{WithIndent(RenderMembers(), "      ")}}
                         </>
                       )
+                    }
+                    """;
+
+            } else if (_relationToParent is AggregateMember.VariationItem variation) {
+                // Variationメンバーのレンダリング
+                var switchProp = GetRegisterName(_aggregate.GetParent()!.Initial, variation.Group);
+
+                return $$"""
+                    const {{ComponentName}} = ({ {{Arguments.Join(", ")}} }: {
+                    {{Arguments.SelectTextTemplate(arg => $$"""
+                      {{arg}}: number
+                    """)}}
+                    }) => {
+                      const [{ },] = usePageContext()
+                      const { register, watch, getValues } = useFormContext<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
+                      const item = getValues({{GetRegisterName()}})
+
+                      const body = (
+                        <>
+                          {{WithIndent(RenderMembers(), "      ")}}
+                        </>
+                      )
+
+                      return watch({{switchProp}}) === '{{variation.Key}}'
+                        ? (
+                          <>
+                            {body}
+                          </>
+                        ) : (
+                          <tr className="hidden">
+                            <td>
+                              <table>
+                                <tbody>
+                                  {body}
+                                </tbody>
+                              </table>
+                            </td>
+                          </tr>
+                        )
                     }
                     """;
 
@@ -256,7 +303,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         }
 
         private string RenderProperty(AggregateMember.Children children) {
-            var childrenComponent = new AggregateComponent(children.MemberAggregate, _mode);
+            var childrenComponent = new AggregateComponent(children, _mode);
 
             return $$"""
                 <VTable.Spacer indent={{{TableIndent}}} />
@@ -265,7 +312,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         }
 
         private string RenderProperty(AggregateMember.Child child) {
-            var childComponent = new AggregateComponent(child.MemberAggregate, _mode);
+            var childComponent = new AggregateComponent(child, _mode);
 
             return $$"""
                 <VTable.Spacer indent={{{TableIndent}}} />
@@ -275,13 +322,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         }
 
         private string RenderProperty(AggregateMember.VariationItem variation) {
-            var switchProp = GetRegisterName(variation.Group);
-            var childComponent = new AggregateComponent(variation.MemberAggregate, _mode);
-
+            var childComponent = new AggregateComponent(variation, _mode);
             return $$"""
-                {watch({{switchProp}}) === '{{variation.Key}}' && <>
                   {{WithIndent(childComponent.RenderCaller(), "  ")}}
-                </>}
                 """;
         }
 
@@ -444,17 +487,20 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         #endregion ラベル列の横幅
 
         private string GetRegisterName(AggregateMember.AggregateMemberBase? prop = null) {
+            return GetRegisterName(_aggregate, prop);
+        }
+        private static string GetRegisterName(GraphNode<Aggregate> aggregate, AggregateMember.AggregateMemberBase? prop = null) {
             var path = new List<string>();
             var i = 0;
-            foreach (var edge in _aggregate.PathFromEntry()) {
+            foreach (var edge in aggregate.PathFromEntry()) {
                 path.Add(edge.RelationName);
 
                 if (edge.Terminal.IsChildrenMember()) {
-                    if (edge.Terminal != _aggregate) {
+                    if (edge.Terminal != aggregate) {
                         // 祖先の中にChildrenがあるので配列番号を加える
                         path.Add("${index_" + i.ToString() + "}");
                         i++;
-                    } else if (edge.Terminal == _aggregate && prop != null) {
+                    } else if (edge.Terminal == aggregate && prop != null) {
                         // このコンポーネント自身がChildrenのとき
                         // - propがnull: useArrayFieldの登録名の作成なので配列番号を加えない
                         // - propがnullでない: mapの中のプロパティのレンダリングなので配列番号を加える

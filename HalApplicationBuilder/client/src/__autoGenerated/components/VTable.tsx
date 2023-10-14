@@ -96,6 +96,7 @@ const Row = (props: {
 
 const Spacer = (props: {
   indent?: number
+  className?: string
 }) => {
 
   const indentCount = useMemo(() => {
@@ -109,11 +110,11 @@ const Spacer = (props: {
 
   return indentCount === 0
     ? (
-      <tr>
+      <tr className={props.className}>
         <th colSpan={thColSpan} className={`h-6 border-t ${BORDER_OPTION}`}></th>
       </tr>
     ) : (
-      <tr>
+      <tr className={props.className}>
         {Array.from({ length: indentCount }).map((_, i) => (
           <th key={i} className={`border-l ${BORDER_OPTION} ${BG_HEADER}`}></th>
         ))}
