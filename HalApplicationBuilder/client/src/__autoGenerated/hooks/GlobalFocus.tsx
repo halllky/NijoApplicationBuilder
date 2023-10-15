@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useId, useMemo, useReducer, useRef, useState } from "react"
+import { useIMEOpened } from "."
 
 type RegisteredItem = {
   tabId: string
@@ -13,6 +14,7 @@ type State = {
   lastFocused: Map<string, string>
   tabGroups: TabGroup[]
   tabMovingDirection?: 'prev' | 'next'
+  editingControlId?: string
 }
 type Action
   = { type: 'register', item: RegisteredItem }
@@ -23,6 +25,8 @@ type Action
   | { type: 'skip' }
   | { type: 'activate-by-id', controlId: string }
   | { type: 'activate-by-element', el: HTMLElement }
+  | { type: 'start-editing', controlId: string }
+  | { type: 'end-editing' }
 
 const reducer = (state: State, action: Action) => {
   const updated = { ...state }
@@ -94,6 +98,14 @@ const reducer = (state: State, action: Action) => {
       }
       break
     }
+    case 'start-editing': {
+      updated.editingControlId = action.controlId
+      break
+    }
+    case 'end-editing': {
+      delete updated.editingControlId
+      break
+    }
     default:
       break
   }
@@ -120,6 +132,7 @@ export const GlobalFocusPage = ({ children, className }: {
     getTabGroups: () => [],
   } as State)
 
+  // activeが移動したらそのエレメントにフォーカスを当てる
   useEffect(() => {
     reducervalue[0].active?.ref.current?.focus()
   }, [reducervalue[0].active])
@@ -127,6 +140,10 @@ export const GlobalFocusPage = ({ children, className }: {
   const onKeyDown = useCallback((e: React.KeyboardEvent) => {
     const state = reducervalue[0]
     const dispatch = reducervalue[1]
+
+    // 編集中は制御しない
+    if (state.editingControlId) return
+
     switch (e.key) {
       case 'ArrowUp':
       case 'ArrowDown':
@@ -227,6 +244,7 @@ type UseFocusTargetOptions = {
   borderHidden?: true
   onMouseDown?: (e: React.MouseEvent) => void
   editable?: true
+  onStartEditing?: () => void
   onEndEditing?: () => void
 }
 export const useFocusTarget = <T extends HTMLElement>(ref: React.RefObject<T>, options?: UseFocusTargetOptions) => {
@@ -248,7 +266,7 @@ export const useFocusTarget = <T extends HTMLElement>(ref: React.RefObject<T>, o
   }, [])
 
   // 編集
-  const editing = useEditing(controlId, options)
+  const editing = useEditing(ref, controlId, options)
 
   // イベント
   const onMouseDown = useCallback((e: React.MouseEvent) => {
@@ -286,29 +304,81 @@ export const Focusable = ({ children, className }: {
 
 // -------------------------------------------
 // 編集
-const useEditing = (controlId: string, options?: UseFocusTargetOptions) => {
+const useEditing = <T extends HTMLElement>(ref: React.RefObject<T>, controlId: string, options?: UseFocusTargetOptions) => {
+  const [, dispatch] = useGlobalFocusContext()
+
   const onEndEditingRef = useRef(options?.onEndEditing || null)
   const [currentEditing, setCurrentEditing] = useState<{ controlId: string, onEndEditingRef: typeof onEndEditingRef } | null>(null)
 
+  // テキストボックスでEscを押したときに編集前の値に戻すための一時変数
+  const [beforeEdit, setBeforeEdit] = useState('')
+
+  // ------------------------------------------------------
   const isEditing = useMemo((): boolean => {
     return currentEditing?.controlId === controlId
   }, [controlId, currentEditing])
 
   const startEditing = useCallback(() => {
+    if (!options?.editable) return
     currentEditing?.onEndEditingRef.current?.()
     setCurrentEditing({ controlId, onEndEditingRef })
-  }, [controlId, currentEditing])
+    dispatch({ type: 'start-editing', controlId })
+    options?.onStartEditing?.()
+
+    // テキストボックス用
+    setBeforeEdit((ref.current as HTMLInputElement | null)?.value ?? '')
+  }, [options?.editable, controlId, currentEditing, options?.onStartEditing])
 
   const endEditing = useCallback(() => {
+    if (!options?.editable) return
     if (currentEditing?.controlId !== controlId) return
     setCurrentEditing(null)
+    dispatch({ type: 'end-editing' })
     options?.onEndEditing?.()
-  }, [controlId, currentEditing, options?.onEndEditing])
+  }, [options?.editable, controlId, currentEditing, options?.onEndEditing])
+
+  // -------------- テキストボックス用 --------------
+  const ime = useIMEOpened()
+  const onTextBoxKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // IME展開中は制御しない
+    if (ime) return
+
+    // 読み取り専用なら制御しない
+    if (!options?.editable) return
+
+    if (isEditing) {
+      if (e.key === 'Escape') {
+        // 編集前の値に戻す
+        if (ref.current) (ref.current as unknown as HTMLInputElement).value = beforeEdit
+        endEditing()
+        e.preventDefault()
+
+      } else if (e.key === 'Enter'
+        || e.key === 'Tab') {
+        endEditing()
+        e.preventDefault()
+      }
+    } else {
+      if (e.key.length === 1 // 文字か数字
+        || e.key === 'Enter'
+        || e.key === 'Space'
+        || e.key === 'F2') {
+        startEditing()
+      }
+    }
+  }, [options?.editable, isEditing, ime, beforeEdit])
+
+  // -------------------------------------------------------
 
   return {
     isEditing,
     startEditing,
     endEditing,
+    textBoxEditEvents: {
+      onDoubleClick: startEditing,
+      onBlur: endEditing,
+      onKeyDown: onTextBoxKeyDown,
+    },
   }
 }
 

@@ -1,31 +1,36 @@
-import { useCallback, useRef, forwardRef, useImperativeHandle, ForwardedRef, InputHTMLAttributes, TextareaHTMLAttributes } from "react"
+import React, { useEffect, useCallback, useRef, forwardRef, useImperativeHandle, ForwardedRef, InputHTMLAttributes, TextareaHTMLAttributes, useState } from "react"
 import { CheckIcon } from "@heroicons/react/24/solid"
-import { useFocusTarget } from "../hooks"
-
-const selectAll = (e: React.FocusEvent<HTMLInputElement>) => {
-  e.target.select()
-}
+import { useFocusTarget, useIMEOpened } from "../hooks"
 
 export const Word = forwardRef((props: InputHTMLAttributes<HTMLInputElement>, ref: ForwardedRef<HTMLInputElement | null>) => {
+
   // react-hook-formでregisterを使うにはforwardRefが必須。またフォーカスの制御にもuseRefが必須。
   // useImperativeHandleを使って通常のuseRefを親コンポーネントに渡すことで両立している
   const inputRef = useRef<HTMLInputElement>(null)
   useImperativeHandle(ref, () => inputRef.current!)
 
-  const { globalFocusEvents } = useFocusTarget(inputRef)
-  const className = props.readOnly
+  const { globalFocusEvents, isEditing, textBoxEditEvents } = useFocusTarget(inputRef, { editable: true })
+  const isReadOnly = props.readOnly || !isEditing
+
+  useEffect(() => {
+    if (isEditing) inputRef.current?.select()
+  }, [isEditing])
+
+  const className = isReadOnly
     ? `bg-color-base w-full outline-none px-1 cursor-default ${props.className}`
     : `bg-color-base w-full outline-none px-1 border border-color-5 ${props.className}`
+
   return (
     <input
-      onFocus={selectAll}
       {...props}
       ref={inputRef}
       type="text"
       className={className}
+      readOnly={isReadOnly}
       autoComplete="off"
       spellCheck={false}
       {...globalFocusEvents}
+      {...textBoxEditEvents}
     />
   )
 })
@@ -36,25 +41,56 @@ export const Description = forwardRef((props: TextareaHTMLAttributes<HTMLTextAre
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   useImperativeHandle(ref, () => textareaRef.current!)
 
-  const className = props.readOnly
+  const {
+    globalFocusEvents,
+    isEditing,
+    textBoxEditEvents,
+    startEditing,
+    endEditing,
+  } = useFocusTarget(textareaRef, { editable: true })
+  const isReadOnly = props.readOnly || !isEditing
+
+  const ime = useIMEOpened()
+  const onKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // IME展開中は制御しない
+    if (ime) return
+    // 読み取り専用なら制御しない
+    if (props.readOnly) return
+
+    if (isEditing) {
+      if (e.key === 'Escape'
+        || e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        endEditing()
+        e.preventDefault()
+        e.stopPropagation() // formのsubmitを防ぐ
+      }
+    } else {
+      if (e.key.length === 1 // 文字か数字
+        || e.key === 'Enter'
+        || e.key === 'Space'
+        || e.key === 'F2') {
+        startEditing()
+        e.preventDefault()
+      }
+    }
+  }, [ime, isEditing, startEditing, endEditing])
+
+  const className = isReadOnly
     ? `bg-color-base block w-full outline-none px-1 cursor-default ${props.className}`
     : `bg-color-base block w-full outline-none px-1 border border-color-5 ${props.className}`
-  const selectIfReadOnly = useCallback((e: React.FocusEvent<HTMLTextAreaElement>) => {
-    if (props.readOnly) e.target.select()
-  }, [props.readOnly])
-
-  const { globalFocusEvents } = useFocusTarget(textareaRef)
 
   return (
     <textarea
       {...props}
       ref={textareaRef}
       className={className}
+      readOnly={isReadOnly}
       autoComplete="off"
       spellCheck={false}
       rows={props.rows || 3}
-      onFocus={selectIfReadOnly}
       {...globalFocusEvents}
+      {...textBoxEditEvents}
+      onKeyDown={onKeyDown}
     />
   )
 })
