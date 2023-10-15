@@ -36,7 +36,6 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                 var s = new StringBuilder();
                 s.Append($$"""
                     import React, { useState, useCallback, useRef, useId } from 'react';
-                    import { useCtrlS } from '../../hooks/useCtrlS';
                     import { useAppContext } from '../../hooks/AppContext';
                     import { AgGridReact } from 'ag-grid-react';
                     import { ColDef } from 'ag-grid-community';
@@ -51,10 +50,6 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                     export default function () {
 
                       const [{ darkMode }, dispatch] = useAppContext()
-                      useCtrlS(() => {
-                        dispatch({ type: 'pushMsg', msg: '保存しました。' })
-                      })
-
                       const { get } = useHttpRequest()
                       const [param, setParam] = useState<FieldValues>({})
 

@@ -65,7 +65,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const [{ },] = usePageContext()
                       const { register, watch, getValues } = useFormContext<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
                       const item = getValues({{GetRegisterName()}})
 
@@ -87,7 +86,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const [{ },] = usePageContext()
                       const { register, watch, getValues } = useFormContext<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
                       const item = getValues({{GetRegisterName()}})
 
@@ -130,7 +128,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const [{ },] = usePageContext()
                       const { register, watch, control } = useFormContext<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
                       const { fields, append, remove } = useFieldArray({
                         control,
@@ -214,7 +211,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     """)}}
                     }) => {
                       const [{ darkMode }] = useAppContext()
-                      const [{ },] = usePageContext()
                       const { register, watch, control } = useFormContext<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
                       const { fields, append, remove } = useFieldArray({
                         control,

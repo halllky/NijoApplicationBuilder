@@ -135,7 +135,7 @@ export const GlobalFocusPage = ({ children, className }: {
   // activeが移動したらそのエレメントにフォーカスを当てる
   useEffect(() => {
     reducervalue[0].active?.ref.current?.focus()
-  }, [reducervalue[0].active])
+  }, [reducervalue])
 
   const onKeyDown = useCallback((e: React.KeyboardEvent) => {
     const state = reducervalue[0]
@@ -172,7 +172,7 @@ export const GlobalFocusPage = ({ children, className }: {
       default:
         break
     }
-  }, [reducervalue[0].tabGroups])
+  }, [reducervalue])
 
   return (
     <GlobalFocusContext.Provider value={reducervalue}>
@@ -263,7 +263,7 @@ export const useFocusTarget = <T extends HTMLElement>(ref: React.RefObject<T>, o
       }
     })
     return () => dispatch({ type: 'unregister', controlId })
-  }, [])
+  }, [controlId, dispatch, options?.borderHidden, options?.tabId, ref, tabId])
 
   // 編集
   const editing = useEditing(ref, controlId, options)
@@ -272,7 +272,7 @@ export const useFocusTarget = <T extends HTMLElement>(ref: React.RefObject<T>, o
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     dispatch({ type: 'activate-by-id', controlId })
     options?.onMouseDown?.(e)
-  }, [controlId, options?.onMouseDown])
+  }, [controlId, dispatch, options])
 
   return {
     globalFocusEvents: {
@@ -327,7 +327,7 @@ const useEditing = <T extends HTMLElement>(ref: React.RefObject<T>, controlId: s
 
     // テキストボックス用
     setBeforeEdit((ref.current as HTMLInputElement | null)?.value ?? '')
-  }, [options?.editable, controlId, currentEditing, options?.onStartEditing])
+  }, [options, currentEditing?.onEndEditingRef, controlId, dispatch, ref])
 
   const endEditing = useCallback(() => {
     if (!options?.editable) return
@@ -335,7 +335,7 @@ const useEditing = <T extends HTMLElement>(ref: React.RefObject<T>, controlId: s
     setCurrentEditing(null)
     dispatch({ type: 'end-editing' })
     options?.onEndEditing?.()
-  }, [options?.editable, controlId, currentEditing, options?.onEndEditing])
+  }, [options, currentEditing?.controlId, controlId, dispatch])
 
   // -------------- テキストボックス用 --------------
   const ime = useIMEOpened()
@@ -366,7 +366,7 @@ const useEditing = <T extends HTMLElement>(ref: React.RefObject<T>, controlId: s
         startEditing()
       }
     }
-  }, [options?.editable, isEditing, ime, beforeEdit])
+  }, [ime, options?.editable, isEditing, ref, beforeEdit, endEditing, startEditing])
 
   // -------------------------------------------------------
 

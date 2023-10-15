@@ -58,7 +58,7 @@ const reducer: React.Reducer<AppState, Action> = (state, action) => {
   return updated
 }
 
-const AppContext = React.createContext<[AppState, React.Dispatch<Action>]>(undefined as any)
+const AppContext = React.createContext<[AppState, React.Dispatch<Action>]>(undefined as never)
 
 export const AppContextProvider = ({ children }: { children?: React.ReactNode }) => {
 
