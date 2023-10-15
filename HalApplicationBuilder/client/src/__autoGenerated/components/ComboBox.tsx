@@ -163,6 +163,8 @@ const ComboBoxBase = <T,>(props: ComboBoxBaseProps<T>) => {
     return item ? props.textSelector(item) : ''
   }, [props.textSelector])
 
+  const zIndex = 'z-10' // すぐ下にag-gridがあるとOptionsが隠れてしまうため
+
   const ref = useRef(null)
 
   return (
@@ -182,7 +184,7 @@ const ComboBoxBase = <T,>(props: ComboBoxBaseProps<T>) => {
           <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
             <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
           </Combobox.Button>}
-        <Combobox.Options className="absolute mt-1 w-full overflow-auto bg-color-base py-1 shadow-lg focus:outline-none">
+        <Combobox.Options className={`absolute mt-1 w-full overflow-auto bg-color-base py-1 shadow-lg focus:outline-none ${zIndex}`}>
           {props.nowLoading &&
             <NowLoading />}
           {!props.nowLoading && props.data.length === 0 &&
