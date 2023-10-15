@@ -13,6 +13,7 @@ export const IconButton = (args: {
   className?: string
 }) => {
   const ref = useRef<HTMLButtonElement>(null)
+  const { globalFocusEvents } = useFocusTarget(ref)
 
   const flex = args.inline ? 'inline-flex' : 'flex'
   let className: string
@@ -32,7 +33,7 @@ export const IconButton = (args: {
       onClick={args.onClick}
       className={className}
       title={args.hideText && (args.children as string)}
-      {...useFocusTarget(ref)}
+      {...globalFocusEvents}
     >
 
       {args.icon && React.createElement(args.icon, { className: 'w-4' })}

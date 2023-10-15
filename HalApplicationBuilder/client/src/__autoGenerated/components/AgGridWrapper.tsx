@@ -17,7 +17,7 @@ export const AgGridWrapper = <T,>({ rowData, columnDefs, gridRef: argsGridRef, c
   // フォーカス制御
   const gridWrapperTabId = useId()
   const gridWrapperRef = useRef<HTMLDivElement>(null)
-  const gridWrapperFocusMethods = useFocusTarget(gridWrapperRef, { tabId: gridWrapperTabId, borderHidden: true })
+  const { globalFocusEvents } = useFocusTarget(gridWrapperRef, { tabId: gridWrapperTabId, borderHidden: true })
   const [, dispatchGlobalFocus] = useGlobalFocusContext()
 
   // 最後にフォーカスが当たっていたセルを記憶する
@@ -53,7 +53,7 @@ export const AgGridWrapper = <T,>({ rowData, columnDefs, gridRef: argsGridRef, c
   return (
     <TabKeyJumpGroup id={gridWrapperTabId}>
       <div className={`ag-theme-alpine compact ${(darkMode ? 'dark' : '')} ${className}`}
-        ref={gridWrapperRef} {...gridWrapperFocusMethods} tabIndex={0} onFocus={onGridWrapperFocused}>
+        ref={gridWrapperRef} {...globalFocusEvents} tabIndex={0} onFocus={onGridWrapperFocused}>
         <AgGridReact
           ref={gridRef}
           rowData={rowData || []}

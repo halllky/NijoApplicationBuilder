@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useId, useMemo, useReducer, useRef } from "react"
+import React, { createContext, useCallback, useContext, useEffect, useId, useMemo, useReducer, useRef, useState } from "react"
 
 type RegisteredItem = {
   tabId: string
@@ -219,12 +219,14 @@ export const TabKeyJumpGroup = ({ id, children }: {
 
 // -------------------------------------------
 // * コントロール単位 *
-
-export const useFocusTarget = <T extends HTMLElement>(ref: React.RefObject<T>, options?: {
+type UseFocusTargetOptions = {
   tabId?: string
   borderHidden?: true
   onMouseDown?: (e: React.MouseEvent) => void
-}) => {
+  editable?: true
+  onEndEditing?: () => void
+}
+export const useFocusTarget = <T extends HTMLElement>(ref: React.RefObject<T>, options?: UseFocusTargetOptions) => {
   const [, dispatch] = useContext(GlobalFocusContext)
   const { tabId } = useContext(TabAreaContext)
   const controlId = useId()
@@ -242,6 +244,9 @@ export const useFocusTarget = <T extends HTMLElement>(ref: React.RefObject<T>, o
     return () => dispatch({ type: 'unregister', controlId })
   }, [])
 
+  // 編集
+  const editing = useEditing(controlId, options)
+
   // イベント
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     dispatch({ type: 'activate-by-id', controlId })
@@ -249,7 +254,10 @@ export const useFocusTarget = <T extends HTMLElement>(ref: React.RefObject<T>, o
   }, [controlId, options?.onMouseDown])
 
   return {
-    onMouseDown,
+    globalFocusEvents: {
+      onMouseDown,
+    },
+    ...editing,
   }
 }
 
@@ -274,7 +282,35 @@ export const Focusable = ({ children, className }: {
 }
 
 // -------------------------------------------
-// * 以下、計算関数など *
+// 編集
+const useEditing = (controlId: string, options?: UseFocusTargetOptions) => {
+  const onEndEditingRef = useRef(options?.onEndEditing || null)
+  const [currentEditing, setCurrentEditing] = useState<{ controlId: string, onEndEditingRef: typeof onEndEditingRef } | null>(null)
+
+  const isEditing = useCallback((): boolean => {
+    return currentEditing?.controlId === controlId
+  }, [controlId, currentEditing])
+
+  const startEditing = useCallback(() => {
+    currentEditing?.onEndEditingRef.current?.()
+    setCurrentEditing({ controlId, onEndEditingRef })
+  }, [controlId, currentEditing])
+
+  const endEditing = useCallback(() => {
+    if (currentEditing?.controlId !== controlId) return
+    setCurrentEditing(null)
+    options?.onEndEditing?.()
+  }, [controlId, currentEditing, options?.onEndEditing])
+
+  return {
+    isEditing,
+    startEditing,
+    endEditing,
+  }
+}
+
+// -------------------------------------------
+// * 二次元計算 *
 const getVisibleItems = (group: TabGroup): RegisteredItem[] => {
   return group.items.filter(x => {
     if (x.ref.current == null) return false

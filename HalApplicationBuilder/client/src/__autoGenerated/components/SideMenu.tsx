@@ -48,12 +48,15 @@ const SideMenuLink = ({ url, icon, children }: {
   children?: React.ReactNode
 }) => {
   const ref = useRef<HTMLAnchorElement>(null)
+  const { globalFocusEvents } = GlobalFocus.useFocusTarget(ref)
+
   const location = useLocation()
   const className = location.pathname.startsWith(url)
     ? 'outline-none inline-block w-full p-1 ellipsis-ex font-bold bg-color-base'
     : 'outline-none inline-block w-full p-1 ellipsis-ex'
+
   return (
-    <NavLink ref={ref} to={url} className={className} {...GlobalFocus.useFocusTarget(ref)}>
+    <NavLink ref={ref} to={url} className={className} {...globalFocusEvents}>
       {React.createElement(icon ?? CircleStackIcon, { className: 'inline w-4 mr-1 opacity-70 align-middle' })}
       <span className="text-sm align-middle select-none">{children}</span>
     </NavLink>

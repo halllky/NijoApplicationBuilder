@@ -12,6 +12,7 @@ export const Word = forwardRef((props: InputHTMLAttributes<HTMLInputElement>, re
   const inputRef = useRef<HTMLInputElement>(null)
   useImperativeHandle(ref, () => inputRef.current!)
 
+  const { globalFocusEvents } = useFocusTarget(inputRef)
   const className = props.readOnly
     ? `bg-color-base w-full outline-none px-1 cursor-default ${props.className}`
     : `bg-color-base w-full outline-none px-1 border border-color-5 ${props.className}`
@@ -24,7 +25,7 @@ export const Word = forwardRef((props: InputHTMLAttributes<HTMLInputElement>, re
       className={className}
       autoComplete="off"
       spellCheck={false}
-      {...useFocusTarget(inputRef)}
+      {...globalFocusEvents}
     />
   )
 })
@@ -42,6 +43,8 @@ export const Description = forwardRef((props: TextareaHTMLAttributes<HTMLTextAre
     if (props.readOnly) e.target.select()
   }, [props.readOnly])
 
+  const { globalFocusEvents } = useFocusTarget(textareaRef)
+
   return (
     <textarea
       {...props}
@@ -51,7 +54,7 @@ export const Description = forwardRef((props: TextareaHTMLAttributes<HTMLTextAre
       spellCheck={false}
       rows={props.rows || 3}
       onFocus={selectIfReadOnly}
-      {...useFocusTarget(textareaRef)}
+      {...globalFocusEvents}
     />
   )
 })
@@ -67,13 +70,16 @@ export const CheckBox = forwardRef((props: InputHTMLAttributes<HTMLInputElement>
   const labelRef = useRef<HTMLLabelElement>(null)
   useImperativeHandle(ref, () => props.readOnly ? labelRef.current! : inputRef.current!)
 
+  const { globalFocusEvents: labelGlobalFocusEvents } = useFocusTarget(labelRef)
+  const { globalFocusEvents: inputGlobalFocusEvents } = useFocusTarget(inputRef)
+
   // readOnlyのときはcheckbox要素自体を消す。
   // disableやreadOnlyのときは値nullかundefinedでonChangeイベントが走ってしまうため。
   if (props.readOnly) return (
     <label
       ref={labelRef}
       className="relative w-6 h-6 inline-flex justify-center items-center"
-      {...useFocusTarget(labelRef)}
+      {...labelGlobalFocusEvents}
       tabIndex={0} // readOnlyのときはラベルにフォーカスを当てるため0にする
     >
       <span className={`w-5 h-5 inline-block
@@ -91,7 +97,7 @@ export const CheckBox = forwardRef((props: InputHTMLAttributes<HTMLInputElement>
         ref={inputRef}
         {...props}
         checked={props.checked || false} // nullが入るとuncontrolledコンポーネントになってしまうので
-        {...useFocusTarget(inputRef)}
+        {...inputGlobalFocusEvents}
       />
       <span className={`w-5 h-5 inline-block
         border border-color-5 rounded-sm

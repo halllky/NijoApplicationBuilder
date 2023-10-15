@@ -46,7 +46,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                     import { BookmarkIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
                     import { IconButton, AgGridWrapper } from '../../components';
                     import { useHttpRequest } from '../../hooks/useHttpRequest';
-                    import { TabKeyJumpGroup, useFocusTarget, useGlobalFocusContext } from '../../hooks/GlobalFocus';
+                    import { TabKeyJumpGroup } from '../../hooks/GlobalFocus';
 
                     export default function () {
 
