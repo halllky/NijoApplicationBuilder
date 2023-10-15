@@ -53,7 +53,6 @@ const reducer = (state: State, action: Action) => {
   // ---------------------------
   const activate = (item: RegisteredItem | undefined) => {
     updated.active = item
-    item?.ref.current?.focus()
     if (item) updated.lastFocused.set(item.tabId, item.controlId)
   }
 
@@ -120,6 +119,10 @@ export const GlobalFocusPage = ({ children, className }: {
     lastFocused: new Map(),
     getTabGroups: () => [],
   } as State)
+
+  useEffect(() => {
+    reducervalue[0].active?.ref.current?.focus()
+  }, [reducervalue[0].active])
 
   const onKeyDown = useCallback((e: React.KeyboardEvent) => {
     const state = reducervalue[0]
@@ -287,7 +290,7 @@ const useEditing = (controlId: string, options?: UseFocusTargetOptions) => {
   const onEndEditingRef = useRef(options?.onEndEditing || null)
   const [currentEditing, setCurrentEditing] = useState<{ controlId: string, onEndEditingRef: typeof onEndEditingRef } | null>(null)
 
-  const isEditing = useCallback((): boolean => {
+  const isEditing = useMemo((): boolean => {
     return currentEditing?.controlId === controlId
   }, [controlId, currentEditing])
 
