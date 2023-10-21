@@ -6,7 +6,6 @@ import { NowLoading } from "./NowLoading"
 import { useAppContext } from "../hooks/AppContext"
 import { Word } from "./InputForms"
 import { useFormContext } from "react-hook-form"
-import { useFocusTarget } from "../hooks"
 
 type ComboBoxProps<T> = {
   selectedItem: T | null | undefined
@@ -157,7 +156,6 @@ const ComboBoxBase = <T,>(props: ComboBoxBaseProps<T>) => {
   const zIndex = 'z-10' // すぐ下にag-gridがあるとOptionsが隠れてしまうため
 
   const ref = useRef(null)
-  const { globalFocusEvents } = useFocusTarget(ref)
 
   // ComboBoxのdisabledを使って読み取り専用にするとテキスト選択ができなくなるので
   if (props.readOnly) {
@@ -180,7 +178,6 @@ const ComboBoxBase = <T,>(props: ComboBoxBaseProps<T>) => {
           className="bg-color-base w-full border border-color-5"
           spellCheck="false"
           autoComplete="off"
-          {...globalFocusEvents}
         />
         {!props.readOnly &&
           <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">

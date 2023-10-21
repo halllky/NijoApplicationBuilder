@@ -194,9 +194,6 @@ textarea:read-only {
   --ag-header-foreground-color: #525252;
 
   /* border-colorはデフォルトのままで十分 */
-
-  /* GlobalFocus.tsxのボーダーと合わせる */
-  --ag-range-selection-border-color: black;
 }
   .ag-theme-alpine.compact.dark {
     /* bg-color-base に合わせる */
@@ -211,18 +208,8 @@ textarea:read-only {
     /* border-color-5 に合わせる */
     --ag-border-color: #525252;
     --ag-row-border-color: #525252;
-  /* GlobalFocus.tsxのボーダーと合わせる */
-  --ag-range-selection-border-color: white;
   }
   .ag-theme-alpine.compact .ag-header-cell {
     /* SingleView中でのVTableのヘッダの文字と合わせる */
     font-size: 14px;
   }
-
-/* GlobalFocusのフォーカスのborderが2pxなのでoutlineを足して合わせる */
-.ag-cell-focus:focus-within {
-    outline: solid 1px black !important;
-}
-.dark .ag-cell-focus:focus-within {
-    outline: solid 1px white !important;
-}

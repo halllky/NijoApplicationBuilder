@@ -5,37 +5,34 @@ import { menuItems, THIS_APPLICATION_NAME } from ".."
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import { NavLink, useLocation } from "react-router-dom"
 import { LOCAL_STORAGE_KEYS } from "../hooks/localStorageKeys"
-import * as GlobalFocus from "../hooks/GlobalFocus"
 
 export const SideMenu = () => {
   return (
-    <GlobalFocus.TabKeyJumpGroup>
-      <PanelGroup direction="vertical" className="bg-color-gutter" autoSaveId={LOCAL_STORAGE_KEYS.SIDEBAR_SIZE_Y}>
+    <PanelGroup direction="vertical" className="bg-color-gutter" autoSaveId={LOCAL_STORAGE_KEYS.SIDEBAR_SIZE_Y}>
 
-        <Panel className="flex flex-col">
-          <Link to='/' className="p-1 ellipsis-ex font-semibold select-none">
-            {THIS_APPLICATION_NAME}
-          </Link>
-          <nav className="flex-1 overflow-y-auto leading-none">
-            {menuItems.map(item =>
-              <SideMenuLink key={item.url} url={item.url}>{item.text}</SideMenuLink>
-            )}
-          </nav>
-        </Panel>
+      <Panel className="flex flex-col">
+        <Link to='/' className="p-1 ellipsis-ex font-semibold select-none">
+          {THIS_APPLICATION_NAME}
+        </Link>
+        <nav className="flex-1 overflow-y-auto leading-none">
+          {menuItems.map(item =>
+            <SideMenuLink key={item.url} url={item.url}>{item.text}</SideMenuLink>
+          )}
+        </nav>
+      </Panel>
 
-        <PanelResizeHandle className="h-1 border-b border-color-5" />
+      <PanelResizeHandle className="h-1 border-b border-color-5" />
 
-        <Panel className="flex flex-col">
-          <nav className="flex-1 overflow-y-auto leading-none">
-            <SideMenuLink url="/bagkground-tasks" icon={PlayCircleIcon}>バッチ処理</SideMenuLink>
-            <SideMenuLink url="/settings" icon={Cog8ToothIcon}>設定</SideMenuLink>
-          </nav>
-          <span className="p-1 text-sm whitespace-nowrap overflow-hidden">
-            ver. 0.9.0.0
-          </span>
-        </Panel>
-      </PanelGroup>
-    </GlobalFocus.TabKeyJumpGroup >
+      <Panel className="flex flex-col">
+        <nav className="flex-1 overflow-y-auto leading-none">
+          <SideMenuLink url="/bagkground-tasks" icon={PlayCircleIcon}>バッチ処理</SideMenuLink>
+          <SideMenuLink url="/settings" icon={Cog8ToothIcon}>設定</SideMenuLink>
+        </nav>
+        <span className="p-1 text-sm whitespace-nowrap overflow-hidden">
+          ver. 0.9.0.0
+        </span>
+      </Panel>
+    </PanelGroup>
   )
 }
 
@@ -44,8 +41,6 @@ const SideMenuLink = ({ url, icon, children }: {
   icon?: React.ElementType
   children?: React.ReactNode
 }) => {
-  const ref = useRef<HTMLAnchorElement>(null)
-  const { globalFocusEvents } = GlobalFocus.useFocusTarget(ref)
 
   const location = useLocation()
   const className = location.pathname.startsWith(url)
@@ -53,7 +48,7 @@ const SideMenuLink = ({ url, icon, children }: {
     : 'outline-none inline-block w-full p-1 ellipsis-ex'
 
   return (
-    <NavLink ref={ref} to={url} className={className} {...globalFocusEvents}>
+    <NavLink to={url} className={className}>
       {React.createElement(icon ?? CircleStackIcon, { className: 'inline w-4 mr-1 opacity-70 align-middle' })}
       <span className="text-sm align-middle select-none">{children}</span>
     </NavLink>

@@ -1,5 +1,4 @@
-import React, { useRef } from "react"
-import { useFocusTarget } from "../hooks/GlobalFocus"
+import React from "react"
 
 export const IconButton = (args: {
   onClick?: React.MouseEventHandler
@@ -12,8 +11,6 @@ export const IconButton = (args: {
   inline?: boolean
   className?: string
 }) => {
-  const ref = useRef<HTMLButtonElement>(null)
-  const { globalFocusEvents } = useFocusTarget(ref)
 
   const flex = args.inline ? 'inline-flex' : 'flex'
   let className: string
@@ -29,11 +26,9 @@ export const IconButton = (args: {
 
   return (
     <button
-      ref={ref}
       onClick={args.onClick}
       className={className}
       title={args.hideText && (args.children as string)}
-      {...globalFocusEvents}
     >
 
       {args.icon && React.createElement(args.icon, { className: 'w-4' })}

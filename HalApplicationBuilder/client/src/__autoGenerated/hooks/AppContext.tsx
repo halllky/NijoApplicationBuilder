@@ -2,7 +2,6 @@ import moment from "moment";
 import React, { useCallback, useContext, useMemo, useReducer, useState } from "react";
 import { UUID } from "uuidjs";
 import { Toast, ToastMessage } from "../components/Toast";
-import * as GlobalFocus from '../hooks/GlobalFocus'
 import { LOCAL_STORAGE_KEYS } from "./localStorageKeys";
 import { IMECheckerContext } from "./useIMEOpened";
 
@@ -90,15 +89,13 @@ export const AppContextProvider = ({ children }: { children?: React.ReactNode })
           onCompositionStart={() => setIsIMEOpen(true)}
           onCompositionEnd={() => setIsIMEOpen(false)}
         >
-          <GlobalFocus.GlobalFocusPage>
 
-            {children}
+          {children}
 
-            {/* TOAST MESSAGE */}
-            <div className="fixed bottom-3 right-3" style={{ zIndex: 9999 }}>
-              {state.popupMessages?.map(msg => <Toast key={msg.id} item={msg} />)}
-            </div>
-          </GlobalFocus.GlobalFocusPage>
+          {/* TOAST MESSAGE */}
+          <div className="fixed bottom-3 right-3" style={{ zIndex: 9999 }}>
+            {state.popupMessages?.map(msg => <Toast key={msg.id} item={msg} />)}
+          </div>
         </div>
       </IMECheckerContext.Provider>
     </AppContext.Provider>

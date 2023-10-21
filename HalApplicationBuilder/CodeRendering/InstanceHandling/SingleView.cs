@@ -126,8 +126,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                   useAppContext,
                   visitObject,
                   useHttpRequest,
-                  TabKeyJumpGroup,
-                  useGlobalFocusContext,
                 } from '../../hooks';
                 import * as AggregateType from '../../{{types.ImportName}}'
 
@@ -139,11 +137,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                   const [errorMessages, setErrorMessages] = useState<Components.BarMessage[]>([])
 
                   // 画面表示時
-                  const panelIentifier = useId()
-                  const [, dispatchFocusContext] = useGlobalFocusContext()
-                  useEffect(() => {
-                    dispatchFocusContext({ type: 'activate-first-item', tabId: panelIentifier })
-                  }, [])
                 {{If(_type == E_Type.Create, () => $$"""
                   const defaultValues = useMemo(() => {
                     return AggregateType.{{createEmptyObject}}()
@@ -236,33 +229,29 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 """).Else(() => $$"""
                       <form className="page-content-root">
                 """)}}
-                        <TabKeyJumpGroup id={panelIentifier}>
-                          <h1 className="flex text-base font-semibold select-none py-1">
-                            <Link to="{{multiViewUrl}}">{{_aggregate.Item.DisplayName}}</Link>
-                            &nbsp;&#047;&nbsp;
+                        <h1 className="flex text-base font-semibold select-none py-1">
+                          <Link to="{{multiViewUrl}}">{{_aggregate.Item.DisplayName}}</Link>
+                          &nbsp;&#047;&nbsp;
                 {{If(_type == E_Type.Create, () => $$"""
-                            新規作成
+                          新規作成
                 """).Else(() => $$"""
-                            <span className="select-all">{instanceName}</span>
+                          <span className="select-all">{instanceName}</span>
                 """)}}
-                            <div className="flex-1"></div>
-                          </h1>
+                          <div className="flex-1"></div>
+                        </h1>
 
-                          <VTable.Table maxIndent={{{maxIndent}}} headerWidth="{{headerWidth}}rem">
-                            {{new AggregateComponent(_aggregate, _type).RenderCaller()}}
-                          </VTable.Table>
-                        </TabKeyJumpGroup>
+                        <VTable.Table maxIndent={{{maxIndent}}} headerWidth="{{headerWidth}}rem">
+                          {{new AggregateComponent(_aggregate, _type).RenderCaller()}}
+                        </VTable.Table>
 
-                        <TabKeyJumpGroup>
-                          <Components.InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
+                        <Components.InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
                 {{If(_type == E_Type.Create, () => $$"""
-                          <Components.IconButton fill className="self-start" icon={BookmarkSquareIcon}>保存</Components.IconButton>
+                        <Components.IconButton fill className="self-start" icon={BookmarkSquareIcon}>保存</Components.IconButton>
                 """).ElseIf(_type == E_Type.View, () => $$"""
-                          <Components.IconButton fill className="self-start" icon={PencilIcon} onClick={navigateToEditView}>編集</Components.IconButton>
+                        <Components.IconButton fill className="self-start" icon={PencilIcon} onClick={navigateToEditView}>編集</Components.IconButton>
                 """).ElseIf(_type == E_Type.Edit, () => $$"""
-                          <Components.IconButton fill className="self-start" icon={BookmarkSquareIcon}>更新</Components.IconButton>
+                        <Components.IconButton fill className="self-start" icon={BookmarkSquareIcon}>更新</Components.IconButton>
                 """)}}
-                        </TabKeyJumpGroup>
                       </form>
                     </FormProvider>
                   )
