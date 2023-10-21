@@ -1,11 +1,8 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { AppContextProvider } from '../hooks/AppContext'
-import { Dashboard } from './Dashboard'
-import { MyAccount } from './MyAccount'
 import { ServerSettingScreen } from './ServerSetting'
 import { SideMenu } from './SideMenu';
-import { UnCommitChanges } from './UnCommitChanges'
 import BackgroundTaskList from '../pages/BackgroundTask/list'
 import { routes } from '..';
 import { QueryClient, QueryClientProvider } from 'react-query';
@@ -36,11 +33,9 @@ function HalappRoot({ children }: {
             <PanelResizeHandle className='w-1' />
             <Panel className="flex [&>*]:flex-1 items-stretch pr-1 pt-1 pb-1">
               <Routes>
-                <Route path='/' element={<Dashboard />} />
-                <Route path='/changes' element={<UnCommitChanges />} />
+                <Route path='/' element={<></>} />
                 <Route path='/bagkground-tasks' element={<BackgroundTaskList />} />
                 <Route path='/settings' element={<ServerSettingScreen />} />
-                <Route path='/account' element={<MyAccount />} />
                 {routes.map(route =>
                   <Route key={route.url} path={route.url} element={route.el} />
                 )}
