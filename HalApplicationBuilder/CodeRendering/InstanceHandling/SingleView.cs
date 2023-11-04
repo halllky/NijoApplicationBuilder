@@ -120,13 +120,11 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 import { ColDef, GridReadyEvent } from 'ag-grid-community';
                 import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
                 import { UUID } from 'uuidjs';
-                import * as Components from '../../components';
-                import { VTable } from '../../components/VTable';
-                import {
-                  useAppContext,
-                  visitObject,
-                  useHttpRequest,
-                } from '../../hooks';
+                import * as Input from '../../user-input';
+                import { VerticalForm as VForm } from '../../layout';
+                import { BarMessage, InlineMessageBar } from '../../decoration';
+                import { useAppContext } from '../../application';
+                import { visitObject, useHttpRequest } from '../../util';
                 import * as AggregateType from '../../{{types.ImportName}}'
 
                 export default function () {
@@ -134,7 +132,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                   // コンテキスト等
                   const [, dispatch] = useAppContext()
                   const { get, post } = useHttpRequest()
-                  const [errorMessages, setErrorMessages] = useState<Components.BarMessage[]>([])
+                  const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
 
                   // 画面表示時
                 {{If(_type == E_Type.Create, () => $$"""
@@ -240,17 +238,17 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                           <div className="flex-1"></div>
                         </h1>
 
-                        <VTable.Table maxIndent={{{maxIndent}}} headerWidth="{{headerWidth}}rem">
+                        <VForm.Root leftColumnWidth="{{headerWidth}}rem">
                           {{new AggregateComponent(_aggregate, _type).RenderCaller()}}
-                        </VTable.Table>
+                        </VForm.Root>
 
-                        <Components.InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
+                        <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
                 {{If(_type == E_Type.Create, () => $$"""
-                        <Components.IconButton fill className="self-start" icon={BookmarkSquareIcon}>保存</Components.IconButton>
+                        <Input.IconButton fill className="self-start" icon={BookmarkSquareIcon}>保存</Input.IconButton>
                 """).ElseIf(_type == E_Type.View, () => $$"""
-                        <Components.IconButton fill className="self-start" icon={PencilIcon} onClick={navigateToEditView}>編集</Components.IconButton>
+                        <Input.IconButton fill className="self-start" icon={PencilIcon} onClick={navigateToEditView}>編集</Input.IconButton>
                 """).ElseIf(_type == E_Type.Edit, () => $$"""
-                        <Components.IconButton fill className="self-start" icon={BookmarkSquareIcon}>更新</Components.IconButton>
+                        <Input.IconButton fill className="self-start" icon={BookmarkSquareIcon}>更新</Input.IconButton>
                 """)}}
                       </form>
                     </FormProvider>

@@ -4,7 +4,7 @@ import { CircleStackIcon, Cog8ToothIcon, PlayCircleIcon } from "@heroicons/react
 import { menuItems, THIS_APPLICATION_NAME } from ".."
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import { NavLink, useLocation } from "react-router-dom"
-import { LOCAL_STORAGE_KEYS } from "../hooks/localStorageKeys"
+import { LOCAL_STORAGE_KEYS } from "./localStorageKeys"
 
 export const SideMenu = () => {
   return (

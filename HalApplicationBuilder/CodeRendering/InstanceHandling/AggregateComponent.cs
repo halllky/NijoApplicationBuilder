@@ -65,7 +65,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const { register, watch, getValues } = useFormContext<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
+                      const { register, registerEx, watch, getValues } = Input.useFormContextEx<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
                       const item = getValues({{GetRegisterName()}})
 
                       return (
@@ -86,7 +86,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const { register, watch, getValues } = useFormContext<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
+                      const { registerEx, watch, getValues } = Input.useFormContextEx<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
                       const item = getValues({{GetRegisterName()}})
 
                       const body = (
@@ -128,7 +128,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const { register, watch, control } = useFormContext<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
+                      const { registerEx, watch, control } = Input.useFormContextEx<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
                       const { fields, append, remove } = useFieldArray({
                         control,
                         name: {{GetRegisterName()}},
@@ -146,30 +146,30 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     
                       return (
                         <>
-                          <VTable.Row keyOnly label="{{_aggregate.GetParent()!.RelationName}}" indent={{{TableIndent - 1}}}>
+                          <VForm.Section label="{{_aggregate.GetParent()!.RelationName}}">
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
-                            <Components.IconButton
+                            <Input.IconButton
                               underline
                               icon={PlusIcon}
                               onClick={onAdd}
                               className="self-start">
                               追加
-                            </Components.IconButton>
+                            </Input.IconButton>
                     """)}}
-                          </VTable.Row>
+                          </VForm.Section>
 
                           {fields.map((item, {{loopVar}}) => (
                             <React.Fragment key={item.{{AggregateDetail.OBJECT_ID}}}>
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
-                              <VTable.Row keyOnly indent={{{TableIndent + 1}}} className="relative">
-                                <Components.IconButton
+                              <VForm.Row keyOnly className="relative">
+                                <Input.IconButton
                                   underline
                                   icon={XMarkIcon}
                                   onClick={onRemove({{loopVar}})}
                                   className="absolute top-full right-0">
                                   削除
-                                </Components.IconButton>
-                              </VTable.Row>
+                                </Input.IconButton>
+                              </VForm.Row>
                     """)}}
                               {{WithIndent(RenderMembers(), "          ")}}
                             </React.Fragment>
@@ -195,7 +195,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     AggregateMember.Ref rm => new {
                         field = m.MemberName,
                         editable,
-                        cellEditor = "Components." + new ComboBox(rm.MemberAggregate).ComponentName,
+                        cellEditor = "Input." + new ComboBox(rm.MemberAggregate).ComponentName,
                         cellEditorParams = (IReadOnlyDictionary<string, string>)new Dictionary<string, string> {
                             { "raectHookFormId", $"(rowIndex: number) => `{GetRegisterName().Replace("`", "")}.${{rowIndex}}.{rm.MemberName}`" },
                         },
@@ -211,7 +211,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     """)}}
                     }) => {
                       const [{ darkMode }] = useAppContext()
-                      const { register, watch, control } = useFormContext<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
+                      const { registerEx, watch, control } = Input.useFormContextEx<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
                       const { fields, append, remove } = useFieldArray({
                         control,
                         name: {{GetRegisterName()}},
@@ -254,32 +254,34 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       ], [])
 
                       return <>
-                        <VTable.Row keyOnly label="{{_aggregate.GetParent()!.RelationName}}" indent={{{TableIndent - 1}}}>
+                        <VForm.Row fullWidth
+                          label={<>
+                            {{_aggregate.GetParent()!.RelationName}}
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
-                          <Components.IconButton
-                            underline
-                            inline
-                            icon={PlusIcon}
-                            onClick={onAdd}>
-                            追加
-                          </Components.IconButton>
-                          <Components.IconButton
-                            underline
-                            inline
-                            icon={XMarkIcon}
-                            onClick={onRemove}>
-                            削除
-                          </Components.IconButton>
+                            <Input.IconButton
+                              underline
+                              inline
+                              icon={PlusIcon}
+                              onClick={onAdd}>
+                              追加
+                            </Input.IconButton>
+                            <Input.IconButton
+                              underline
+                              inline
+                              icon={XMarkIcon}
+                              onClick={onRemove}>
+                              削除
+                            </Input.IconButton>
                     """)}}
-                        </VTable.Row>
-                        <VTable.Row valueOnly indent={{{TableIndent - 1}}}>
-                          <Components.AgGridWrapper
+                          </>}
+                        >
+                          <Input.AgGridWrapper
+                            ref={gridApi}
                             rowData={fields}
                             columnDefs={columnDefs}
-                            gridRef={gridApi}
                             className="h-64"
                           />
-                        </VTable.Row>
+                        </VForm.Row>
                       </>
                     }
                     """;
@@ -302,7 +304,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var childrenComponent = new AggregateComponent(children, _mode);
 
             return $$"""
-                <VTable.Spacer indent={{{TableIndent}}} />
+                <VForm.Spacer />
                 {{childrenComponent.RenderCaller()}}
                 """;
         }
@@ -311,9 +313,10 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var childComponent = new AggregateComponent(child, _mode);
 
             return $$"""
-                <VTable.Spacer indent={{{TableIndent}}} />
-                <VTable.Row keyOnly label="{{child.MemberName}}" indent={{{TableIndent}}} />
-                {{childComponent.RenderCaller()}}
+                <VForm.Spacer />
+                <VForm.Section label="{{child.MemberName}}">
+                  {{childComponent.RenderCaller()}}
+                </VForm.Secton>
                 """;
         }
 
@@ -329,17 +332,19 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var disabled = IfReadOnly("disabled", variationSwitch);
 
             return $$"""
-                <VTable.Spacer indent={{{TableIndent}}} />
-                <VTable.Row keyOnly label="{{variationSwitch.MemberName}}" indent={{{TableIndent}}}>
-                  <div className="flex-1 flex gap-2 flex-wrap">
+                <VForm.Spacer />
+                <VForm.Row label="{{variationSwitch.MemberName}}">
+                  <Input.RadioGroup
+                    {...registerEx({{switchProp}})}
+                    options={useMemo(() => [
                 {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
-                    <label>
-                      <input type="radio" value="{{variation.Key}}" {{disabled}} {...register({{switchProp}})} />
-                      {{variation.MemberName}}
-                    </label>
+                      { value: '{{variation.Key}}', text: '{{variation.MemberName}}' },
                 """)}}
+                    ], [])}
+                  />
+                  <div className="flex-1 flex gap-2 flex-wrap">
                   </div>
-                </VTable.Row>
+                </VForm.Row>
                 """;
         }
 
@@ -354,9 +359,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             };
 
             return $$"""
-                <VTable.Row label="{{refProperty.MemberName}}" indent={{{TableIndent}}}>
+                <VForm.Row label="{{refProperty.MemberName}}">
                   {{WithIndent(callCombobox, "  ")}}
-                </VTable.Row>
+                </VForm.Row>
                 """;
         }
 
@@ -364,17 +369,17 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         private string RenderProperty(AggregateMember.Schalar schalar) {
             if (schalar.Options.InvisibleInGui) {
                 return $$"""
-                    <VTable.Row className="hidden" indent={{{TableIndent}}}>
+                    <VForm.Row hidden>
                       <input type="hidden" {...register({{GetRegisterName(schalar)}})} />
-                    </VTable.Row>
+                    </VForm.Row>
                     """;
 
             } else {
                 var renderer = new ReactForm(this, schalar, _mode);
                 return $$"""
-                    <VTable.Row label="{{schalar.MemberName}}" indent={{{TableIndent}}}>
+                    <VForm.Row label="{{schalar.MemberName}}">
                       {{WithIndent(schalar.Options.MemberType.RenderUI(renderer), "  ")}}
-                    </VTable.Row>
+                    </VForm.Row>
                     """;
             }
         }
@@ -397,11 +402,11 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
                 if (multiline) {
                     return $$"""
-                        <Components.Description {...register({{name}})} className="{{INPUT_WIDTH}}" {{readOnly}} />
+                        <Input.Description {...registerEx({{name}})} className="{{INPUT_WIDTH}}" {{readOnly}} />
                         """;
                 } else {
                     return $$"""
-                        <Components.Word {...register({{name}})} className="{{INPUT_WIDTH}}" {{readOnly}} />
+                        <Input.Word {...registerEx({{name}})} className="{{INPUT_WIDTH}}" {{readOnly}} />
                         """;
                 }
             }
@@ -414,7 +419,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 var registerName = _component.GetRegisterName(_prop);
                 var readOnly = _component.IfReadOnly("readOnly", _prop);
                 return $$"""
-                    <Components.CheckBox {...register({{registerName}})} checked={watch({{registerName}})} {{readOnly}} />
+                    <Input.CheckBox {...registerEx({{registerName}})} {{readOnly}} />
                     """;
             }
 
@@ -423,41 +428,29 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             /// </summary>
             public string Selection(IEnumerable<KeyValuePair<string, string>> options) {
                 var name = _component.GetRegisterName(_prop);
-                var input = $$"""
-                    <Components.Word {...register({{name}})} readOnly />
-                    """;
-                var select = $$"""
-                    <Components.SyncComboBox
-                      reactHookFormId={{{name}}}
-                      data={useMemo(() => [
+                return $$"""
+                    <Input.Selection
+                      {...registerEx({{name}})}
+                      options={useMemo(() => [
                     {{options.SelectTextTemplate(option => $$"""
-                        { key: '{{option.Key}}', text: '{{option.Value}}' },
+                        { value: '{{option.Key}}', text: '{{option.Value}}' },
                     """)}}
                       ], [])}
-                      keySelector={item => item?.key || ''}
-                      textSelector={item => item?.text || ''}
-                      className="w-full"
+                      {{_mode switch {
+                        SingleView.E_Type.View => $"readOnly",
+                        SingleView.E_Type.Edit => _prop.Options.IsKey
+                            ? $"readOnly={{(item?.{AggregateDetail.IS_LOADED}}}"
+                            : string.Empty,
+                        _ => string.Empty,
+                      }}}
                     />
                     """;
-
-                return _mode switch {
-                    SingleView.E_Type.Create => select,
-                    SingleView.E_Type.View => input,
-                    SingleView.E_Type.Edit => _prop.Options.IsKey
-                        ? $$"""
-                            {(item?.{{AggregateDetail.IS_LOADED}})
-                              ? {{WithIndent(input, "    ")}}
-                              : {{WithIndent(select, "    ")}}}
-                            """
-                        : select,
-                    _ => throw new NotImplementedException(),
-                };
             }
 
             public string HiddenField() {
                 var registerName = _component.GetRegisterName(_prop);
                 return $$"""
-                    <input type="hidden" {...register({{registerName}})} />
+                    <input type="hidden" {...registerEx({{registerName}})} />
                     """;
             }
         }

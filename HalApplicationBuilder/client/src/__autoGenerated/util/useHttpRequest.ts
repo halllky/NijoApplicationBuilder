@@ -1,7 +1,7 @@
 import { useCallback } from "react"
 import { UUID } from "uuidjs"
-import { useAppContext } from "./AppContext"
-import { BarMessage } from "../components/InlineMessageBar"
+import { useAppContext } from "../application/AppContext"
+import { BarMessage } from "../decoration/InlineMessageBar"
 
 type HttpSendResult<T> = { ok: true, data: T } | { ok: false, errors: BarMessage[] }
 

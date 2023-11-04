@@ -2,7 +2,7 @@ import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo
 import { AgGridReact, AgGridReactProps } from "ag-grid-react"
 import { ColDef, GridReadyEvent, ICellEditorParams, ValueFormatterFunc } from "ag-grid-community"
 import { CustomComponent, CustomComponentRef, SelectionItem, useFormContextEx } from "./util"
-import { useAppContext } from "../hooks/AppContext"
+import { useAppContext } from "../application/AppContext"
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 import { useFieldArray, useFormContext } from "react-hook-form"

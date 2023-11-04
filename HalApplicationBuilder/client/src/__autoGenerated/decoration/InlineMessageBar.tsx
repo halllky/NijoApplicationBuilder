@@ -1,6 +1,6 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { useCallback } from 'react'
-import { IconButton } from './IconButton'
+import { IconButton } from '../user-input'
 
 export type BarMessage = {
   uuid: string

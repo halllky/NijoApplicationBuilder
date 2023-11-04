@@ -79,17 +79,18 @@ const Row = ((props: {
   label?: React.ReactNode
   fullWidth?: boolean
   children?: React.ReactNode
+  hidden?: boolean
 }) => {
   const { depth, tableStartDepth } = useContext(NearestSectionContext)
 
   return props.fullWidth
     ? <>
-      {props.label && (
+      {(!props.hidden && props.label) && (
         <IndentAndLabel fullWidth>
           {props.label}
         </IndentAndLabel>
       )}
-      <div className="flex flex-row">
+      <div className={`flex flex-row ${props.hidden && 'hidden'}`}>
         <Indent depth={depth} tableStartDepth={tableStartDepth} />
         <BodyCell table={tableStartDepth !== undefined} fullWidth>
           {props.children}

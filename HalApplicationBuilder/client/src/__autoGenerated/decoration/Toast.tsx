@@ -1,5 +1,5 @@
 import { XMarkIcon } from "@heroicons/react/24/outline"
-import { useAppContext } from "../hooks/AppContext"
+import { useAppContext } from "../application/AppContext"
 
 export type ToastMessage = {
   id: string

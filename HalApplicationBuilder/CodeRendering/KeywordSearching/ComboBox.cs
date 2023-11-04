@@ -12,28 +12,27 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
-    partial class ComboBox : TemplateBase {
+    partial class ComboBox {
         internal ComboBox(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
         }
 
         private readonly GraphNode<Aggregate> _aggregate;
 
-        public override string FileName => $"ComboBox{_aggregate.Item.DisplayName.ToFileNameSafe()}.tsx";
         internal string ComponentName => $"ComboBox{_aggregate.Item.DisplayName.ToCSharpSafe()}";
         internal string Api => new KeywordSearchingFeature(_aggregate).GetUri();
+        internal AggregateKeyName KeyName => new AggregateKeyName(_aggregate);
 
-        protected override string Template() {
-            var keyName = new AggregateKeyName(_aggregate);
-
+        internal static string RenderDeclaringFile(IEnumerable<GraphNode<Aggregate>> allAggregates) {
             return $$"""
                 import React, { useMemo, useCallback, forwardRef, useImperativeHandle } from "react"
                 import { useFormContext } from 'react-hook-form';
-                import { useHttpRequest } from "../hooks/useHttpRequest"
-                import { AsyncComboBox } from "../components"
-                import { {{keyName.TypeScriptTypeName}} } from "../types"
+                import { useHttpRequest } from "../util"
+                import { AsyncComboBox } from "../user-input"
+                import * as Types from "../types"
 
-                export const {{ComponentName}} = forwardRef(({ raectHookFormId, readOnly, className, rowIndex }: {
+                {{allAggregates.Select(a => new ComboBox(a)).SelectTextTemplate((combo, index) => $$"""
+                export const {{combo.ComponentName}} = forwardRef(({ raectHookFormId, readOnly, className, rowIndex }: {
                   // ag-grid CellEditorの場合はrowIndexと組み合わせてこのコンポーネントの中でIDを組み立てる
                   raectHookFormId: string | ((rowIndex: number) => string)
                   readOnly?: boolean
@@ -44,7 +43,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
 
                   const { get } = useHttpRequest()
                   const queryFn = useCallback(async (keyword: string) => {
-                    const response = await get<{{keyName.TypeScriptTypeName}}[]>(`{{Api}}`, { keyword })
+                    const response = await get<Types.{{combo.KeyName.TypeScriptTypeName}}[]>(`{{combo.Api}}`, { keyword })
                     return response.ok ? response.data : []
                   }, [get])
 
@@ -59,7 +58,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                     }
                   }, [raectHookFormId, rowIndex])
                   const selectedItem = watch(rhfId)
-                  const onSelectedItemChanged = useCallback((item: {{keyName.TypeScriptTypeName}} | null | undefined) => {
+                  const onSelectedItemChanged = useCallback((item: Types.{{combo.KeyName.TypeScriptTypeName}} | null | undefined) => {
                     setValue(rhfId, item)
                   }, [setValue, watch])
 
@@ -74,9 +73,9 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                     <AsyncComboBox
                       selectedItem={selectedItem}
                       onSelectedItemChanged={onSelectedItemChanged}
-                      keySelector={keySelector}
-                      textSelector={textSelector}
-                      queryKey={queryKey}
+                      keySelector={keySelector{{index}}}
+                      textSelector={textSelector{{index}}}
+                      queryKey={['combo-{{combo._aggregate.Item.UniqueId}}']}
                       queryFn={queryFn}
                       readOnly={readOnly}
                       className={className}
@@ -84,17 +83,17 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                   )
                 })
 
-                const queryKey = ['combo-{{_aggregate.Item.UniqueId}}']
-                const keySelector = (item: {{keyName.TypeScriptTypeName}} | null) => {
+                const keySelector{{index}} = (item: Types.{{combo.KeyName.TypeScriptTypeName}} | null) => {
                   return item
-                    ? `{{keyName.GetKeys().Select(m => "${item." + m.MemberName + "}").Join("::")}}`
+                    ? `{{combo.KeyName.GetKeys().Select(m => "${item." + m.MemberName + "}").Join("::")}}`
                     : ``
                 }
-                const textSelector = (item: {{keyName.TypeScriptTypeName}} | null) => {
+                const textSelector{{index}} = (item: Types.{{combo.KeyName.TypeScriptTypeName}} | null) => {
                   return item
-                    ? `{{keyName.GetNames().Select(m => "${item." + m.MemberName + "}").Join("&nbsp;")}}`
+                    ? `{{combo.KeyName.GetNames().Select(m => "${item." + m.MemberName + "}").Join("&nbsp;")}}`
                     : ``
                 }
+                """)}}
                 """;
         }
 
@@ -103,7 +102,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                 .Where(str => !string.IsNullOrWhiteSpace(str))
                 .Join(" ");
             return $$"""
-                <Components.{{ComponentName}} raectHookFormId={{{raectHookFormId}}} {{attributes}} />
+                <Input.{{ComponentName}} raectHookFormId={{{raectHookFormId}}} {{attributes}} />
                 """;
         }
     }

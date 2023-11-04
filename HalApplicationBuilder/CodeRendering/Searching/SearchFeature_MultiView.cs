@@ -35,16 +35,15 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
 
                 var s = new StringBuilder();
                 s.Append($$"""
-                    import React, { useState, useCallback, useRef, useId } from 'react';
-                    import { useAppContext } from '../../hooks/AppContext';
-                    import { AgGridReact } from 'ag-grid-react';
-                    import { ColDef } from 'ag-grid-community';
-                    import { Link, useNavigate } from 'react-router-dom';
-                    import { useQuery } from 'react-query';
+                    import React, { useState, useCallback } from 'react';
                     import { FieldValues, SubmitHandler, useForm, FormProvider } from 'react-hook-form';
+                    import { Link, useNavigate } from 'react-router-dom';
+                    import { ColDef } from 'ag-grid-community';
+                    import { useQuery } from 'react-query';
                     import { BookmarkIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
-                    import { IconButton, AgGridWrapper } from '../../components';
-                    import { useHttpRequest } from '../../hooks/useHttpRequest';
+                    import { useAppContext } from '../../application';
+                    import { IconButton, AgGridWrapper } from '../../user-input';
+                    import { useHttpRequest } from '../../util';
 
                     export default function () {
 

@@ -1,15 +1,18 @@
 import moment from "moment";
-import React, { useCallback, useContext, useMemo, useReducer, useState } from "react";
+import React, { useCallback, useContext, useMemo, useReducer, useRef } from "react";
 import { UUID } from "uuidjs";
-import { Toast, ToastMessage } from "../components/Toast";
+import { Toast, ToastMessage } from "../decoration/Toast";
 import { LOCAL_STORAGE_KEYS } from "./localStorageKeys";
-import { IMECheckerContext } from "./useIMEOpened";
+import { ImeContextProvider } from "../user-input";
 
-export type AppState = {
-  popupMessages?: ToastMessage[]
+export type ClientSettings = {
   apiDomain?: string
   darkMode?: boolean
 }
+export type ClientState = {
+  popupMessages?: ToastMessage[]
+}
+export type AppState = ClientSettings & ClientState
 type Action
   = { type: 'pushMsg', id?: string, msg: string }
   | { type: 'delMessage', id: string }
@@ -79,16 +82,12 @@ export const AppContextProvider = ({ children }: { children?: React.ReactNode })
       : 'w-full h-full'
   }, [state.darkMode])
 
-  const [isIMEOpen, setIsIMEOpen] = useState(false)
+  const rootElementRef = useRef<HTMLDivElement>(null)
 
   return (
     <AppContext.Provider value={[state, dispatchWithSetTimeout]}>
-      <IMECheckerContext.Provider value={{ isIMEOpen }}>
-        <div
-          className={rootCss}
-          onCompositionStart={() => setIsIMEOpen(true)}
-          onCompositionEnd={() => setIsIMEOpen(false)}
-        >
+      <ImeContextProvider elementRef={rootElementRef}>
+        <div ref={rootElementRef} className={rootCss}>
 
           {children}
 
@@ -97,7 +96,7 @@ export const AppContextProvider = ({ children }: { children?: React.ReactNode })
             {state.popupMessages?.map(msg => <Toast key={msg.id} item={msg} />)}
           </div>
         </div>
-      </IMECheckerContext.Provider>
+      </ImeContextProvider>
     </AppContext.Provider>
   )
 }

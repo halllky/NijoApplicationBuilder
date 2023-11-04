@@ -1,13 +1,12 @@
+import React from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { AppContextProvider } from '../hooks/AppContext'
+import { QueryClient, QueryClientProvider } from 'react-query';
+import { AppContextProvider } from './AppContext'
 import { ServerSettingScreen } from './ServerSetting'
 import { SideMenu } from './SideMenu';
-import BackgroundTaskList from '../pages/BackgroundTask/list'
 import { routes } from '..';
-import { QueryClient, QueryClientProvider } from 'react-query';
-import React from 'react';
-import { LOCAL_STORAGE_KEYS } from '../hooks/localStorageKeys';
+import { LOCAL_STORAGE_KEYS } from './localStorageKeys';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,7 +17,7 @@ const queryClient = new QueryClient({
   },
 })
 
-function HalappRoot({ children }: {
+export function HalappRoot({ children }: {
   children?: React.ReactNode
 }) {
 
@@ -34,7 +33,6 @@ function HalappRoot({ children }: {
             <Panel className="flex [&>*]:flex-1 items-stretch pr-1 pt-1 pb-1">
               <Routes>
                 <Route path='/' element={<></>} />
-                <Route path='/bagkground-tasks' element={<BackgroundTaskList />} />
                 <Route path='/settings' element={<ServerSettingScreen />} />
                 {routes.map(route =>
                   <Route key={route.url} path={route.url} element={route.el} />
@@ -49,5 +47,3 @@ function HalappRoot({ children }: {
     </QueryClientProvider>
   );
 }
-
-export default HalappRoot

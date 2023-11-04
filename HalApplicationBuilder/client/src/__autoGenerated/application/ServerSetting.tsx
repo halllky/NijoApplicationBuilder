@@ -2,15 +2,15 @@ import { ArrowPathIcon, BookmarkSquareIcon, PlusIcon, XMarkIcon } from '@heroico
 import { useCallback, useState } from 'react';
 import { FieldValues, SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { UUID } from 'uuidjs';
-import { useAppContext } from '../hooks/AppContext';
-import { CheckBox, Word } from './InputForms';
-import { IconButton } from './IconButton';
-import { InlineMessageBar, BarMessage } from './InlineMessageBar';
-import { useHttpRequest } from '../hooks/useHttpRequest';
+import { ClientSettings, useAppContext } from './AppContext';
+import * as Input from "../user-input";
+import { VerticalForm as VForm } from "../layout";
+import { InlineMessageBar, BarMessage } from '../decoration';
+import { useHttpRequest } from '../util';
 
 export const ServerSettingScreen = () => {
 
-  const [{ apiDomain, darkMode }, dispatch] = useAppContext()
+  const [appState, dispatch] = useAppContext()
   const { get, post } = useHttpRequest()
 
   // --------------------------------------
@@ -53,16 +53,46 @@ export const ServerSettingScreen = () => {
     setSettingErrors([...settingErrors, { uuid: UUID.generate(), text: 'ERROR!' }])
   }, [settingErrors])
 
+
+
+  const {
+    registerEx,
+    handleSubmit: handleSubmit2,
+  } = Input.useFormEx<ClientSettings>({ defaultValues: appState })
+
   return (
     <div className="page-content-root">
 
-      <SettingSection title="基本設定">
-        <Setting label="APIサーバーURL">
-          <Word value={apiDomain} onChange={e => dispatch({ type: 'changeDomain', value: e.target.value })} className="w-full" />
-        </Setting>
-      </SettingSection>
+      <VForm.Root>
+        <VForm.Section label="基本設定" table>
+          <VForm.Row label="APIサーバーURL">
+            <Input.Word {...registerEx(`apiDomain`)} />
+          </VForm.Row>
+          <VForm.Row label="ダークモード">
+            <Input.CheckBox {...registerEx(`darkMode`)} />
+          </VForm.Row>
+          <VForm.Row fullWidth>
+            <Input.IconButton underline icon={ArrowPathIcon} onClick={reload}>保存</Input.IconButton>
+          </VForm.Row>
+        </VForm.Section>
 
-      {process.env.NODE_ENV === 'development' &&
+        <VForm.Spacer />
+
+        {process.env.NODE_ENV === 'development' && (
+          <VForm.Section label="データベース設定" table>
+            <VForm.Row fullWidth>
+              <Input.IconButton underline icon={ArrowPathIcon} onClick={reload}>再読み込み</Input.IconButton>
+              <Input.IconButton fill onClick={recreateDatabase}>DB再作成</Input.IconButton>
+              <InlineMessageBar value={commandErrors} onChange={setCommandErrors} />
+            </VForm.Row>
+          </VForm.Section>
+        )}
+
+      </VForm.Root>
+
+      ------------------------------------------------------
+
+      {/* {process.env.NODE_ENV === 'development' &&
         <SettingSection
           title="データベース"
           sholder={<IconButton underline icon={ArrowPathIcon} onClick={reload}>再読み込み</IconButton>}
@@ -98,13 +128,7 @@ export const ServerSettingScreen = () => {
           <Setting label="DB再作成">
             <IconButton fill onClick={recreateDatabase}>実行</IconButton>
           </Setting>
-        </SettingSection>}
-
-      <SettingSection>
-        <Setting label="ダークモード">
-          <CheckBox checked={darkMode || false} onChange={() => dispatch({ type: 'toggleDark' })} />
-        </Setting>
-      </SettingSection>
+        </SettingSection>} */}
 
     </div>
   )
