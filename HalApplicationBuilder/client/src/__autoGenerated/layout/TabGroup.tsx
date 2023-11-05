@@ -14,11 +14,21 @@ export const TabGroup = <T,>(props: {
     return props.items.find(item => props.keySelector(item) === selectedItemKey)
   }, [props.items, selectedItemKey])
 
-  // 初期表示タブ
+  // タブの自動選択
   useEffect(() => {
-    if (selectedItemKey) return
-    if (props.items.length > 0) setSelectedItemKey(props.keySelector(props.items[0]))
-  }, [])
+    // 何も選択されていないとき
+    if (!selectedItemKey && props.items.length > 0) {
+      setSelectedItemKey(props.keySelector(props.items[0]))
+    }
+    // 選択中のタブが消えたとき
+    if (selectedItemKey && !props.items.some(item => props.keySelector(item) === selectedItemKey)) {
+      if (props.items.length === 0) {
+        setSelectedItemKey(undefined)
+      } else {
+        setSelectedItemKey(props.keySelector(props.items[0]))
+      }
+    }
+  }, [props.items])
 
   // ref
   const refs = useRef<React.RefObject<HTMLLIElement>[]>([])
@@ -54,12 +64,14 @@ export const TabGroup = <T,>(props: {
       </ul>
 
       {/* タブのコンテンツ（選択中以外はhidden） */}
-      {props.items.map((item, index) => (
-        <div key={index} className={`flex-1 p-1 border ${BORDER_COLOR} bg-color-base ${item !== selectedItem && 'hidden'}`}>
-          {props.children?.({ item, index })}
-        </div>
-      ))}
-    </div>
+      {
+        props.items.map((item, index) => (
+          <div key={index} className={`flex-1 p-1 border ${BORDER_COLOR} bg-color-base ${item !== selectedItem && 'hidden'}`}>
+            {props.children?.({ item, index })}
+          </div>
+        ))
+      }
+    </div >
   )
 }
 

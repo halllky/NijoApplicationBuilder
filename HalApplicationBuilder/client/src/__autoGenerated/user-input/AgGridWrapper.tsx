@@ -48,7 +48,7 @@ export const AgGridWrapper = forwardRef(<T,>(props: AgGridReactProps<T>, ref: Re
   } = props
 
   return (
-    <div ref={divRef} className={`ag-theme-alpine compact border border-color-4 ${(darkMode ? 'dark' : '')} ${className}`}>
+    <div ref={divRef} className={`ag-theme-alpine compact ${(darkMode ? 'dark' : '')} ${className}`}>
       <AgGridReact
         ref={gridRef}
         {...gridProps}

@@ -153,35 +153,37 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       }, [remove])
                     
                       return (
-                        <VForm.Row fullWidth>
-                          <Layout.TabGroup
-                            items={fields}
-                            keySelector={item => item.{{AggregateDetail.OBJECT_ID}} ?? ''}
+                        <VForm.Section table label="{{_aggregate.GetParent()!.RelationName}}">
+                          <VForm.Row fullWidth>
+                            <Layout.TabGroup
+                              items={fields}
+                              keySelector={item => item.{{AggregateDetail.OBJECT_ID}} ?? ''}
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
-                            onCreate={onCreate}
+                              onCreate={onCreate}
                     """)}}
-                          >
-                            {({ item, index: {{loopVar}} }) => (
-                              <VForm.Root>
-                                <VForm.Section>
-                                  {{WithIndent(RenderMembers(), "              ")}}
+                            >
+                              {({ item, index: {{loopVar}} }) => (
+                                <VForm.Root>
+                                  <VForm.Section table>
+                                    {{WithIndent(RenderMembers(), "                ")}}
 
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
-                                  <VForm.Row fullWidth>
-                                    <Input.IconButton
-                                      underline
-                                      icon={XMarkIcon}
-                                      onClick={onRemove({{loopVar}})}
-                                      className="absolute top-full right-0">
-                                      削除
-                                    </Input.IconButton>
-                                  </VForm.Row>
+                                    <VForm.Row fullWidth>
+                                      <Input.IconButton
+                                        underline
+                                        icon={XMarkIcon}
+                                        onClick={onRemove({{loopVar}})}
+                                        className="absolute top-full right-0">
+                                        削除
+                                      </Input.IconButton>
+                                    </VForm.Row>
                     """)}}
-                                </VForm.Section>
-                              </VForm.Root>
-                            )}
-                          </Layout.TabGroup>
-                        </VForm.Row>
+                                  </VForm.Section>
+                                </VForm.Root>
+                              )}
+                            </Layout.TabGroup>
+                          </VForm.Row>
+                        </VForm.Section>
                       )
                     }
                     """;
@@ -260,8 +262,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     """)}}
                       ], [])
 
-                      return <>
-                        <VForm.Row fullWidth
+                      return (
+                        <VForm.Section
+                          table
                           label={<>
                             {{_aggregate.GetParent()!.RelationName}}
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
@@ -282,14 +285,16 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     """)}}
                           </>}
                         >
-                          <Input.AgGridWrapper
-                            ref={gridApi}
-                            rowData={fields}
-                            columnDefs={columnDefs}
-                            className="h-64"
-                          />
-                        </VForm.Row>
-                      </>
+                          <VForm.Row fullWidth>
+                            <Input.AgGridWrapper
+                              ref={gridApi}
+                              rowData={fields}
+                              columnDefs={columnDefs}
+                              className="h-64 w-full"
+                            />
+                          </VForm.Row>
+                        </VForm.Section>
+                      )
                     }
                     """;
             }
@@ -300,7 +305,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 AggregateMember.Schalar x => RenderProperty(x),
                 AggregateMember.Ref x => RenderProperty(x),
                 AggregateMember.Child x => RenderProperty(x),
-                AggregateMember.VariationItem x => RenderProperty(x),
+                AggregateMember.VariationItem x => string.Empty, // Variationの分岐の中でレンダリングされるので // RenderProperty(x),
                 AggregateMember.Variation x => RenderProperty(x),
                 AggregateMember.Children x => RenderProperty(x),
                 _ => throw new NotImplementedException(),
@@ -311,9 +316,10 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var childrenComponent = new AggregateComponent(children, _mode);
 
             return $$"""
-                <VForm.Section label="{{children.MemberName}}" table>
-                  {{childrenComponent.RenderCaller()}}
-                </VForm.Section>
+                {{If (children.Owner.IsRoot(), () => $$"""
+                <VForm.Spacer />
+                """)}}
+                {{childrenComponent.RenderCaller()}}
                 """;
         }
 
@@ -321,6 +327,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var childComponent = new AggregateComponent(child, _mode);
 
             return $$"""
+                {{If(child.Owner.IsRoot(), () => $$"""
+                <VForm.Spacer />
+                """)}}
                 <VForm.Section label="{{child.MemberName}}" table>
                   {{childComponent.RenderCaller()}}
                 </VForm.Section>
@@ -330,9 +339,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         private string RenderProperty(AggregateMember.VariationItem variation) {
             var childComponent = new AggregateComponent(variation, _mode);
             return $$"""
-                <VForm.Section label="{{variation.MemberName}}" table>
-                  {{WithIndent(childComponent.RenderCaller(), "  ")}}
-                </VForm.Section>
+                {{WithIndent(childComponent.RenderCaller(), "")}}
                 """;
         }
 
@@ -341,20 +348,29 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var disabled = IfReadOnly("disabled", variationSwitch);
 
             return $$"""
-                <VForm.Row label="{{variationSwitch.MemberName}}">
-                  <Input.RadioGroupEmitsKey
-                    {...registerEx({{switchProp}})}
-                    options={[
-                {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
-                      { value: '{{variation.Key}}', text: '{{variation.MemberName}}' },
+                {{If(variationSwitch.Owner.IsRoot(), () => $$"""
+                <VForm.Spacer />
                 """)}}
-                    ]}
-                    keySelector={item => item.value}
-                    textSelector={item => item.text}
-                  />
-                  <div className="flex-1 flex gap-2 flex-wrap">
-                  </div>
-                </VForm.Row>
+                <VForm.Section
+                  table
+                  label={<>
+                    {{variationSwitch.MemberName}}
+                    <Input.RadioGroupEmitsKey
+                      {...registerEx({{switchProp}})}
+                      options={[
+                {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
+                        { value: '{{variation.Key}}', text: '{{variation.MemberName}}' },
+                """)}}
+                      ]}
+                      keySelector={item => item.value}
+                      textSelector={item => item.text}
+                    />
+                  </>}
+                >
+                {{variationSwitch.GetGroupItems().SelectTextTemplate(item => $$"""
+                  {{WithIndent(RenderProperty(item), "  ")}}
+                """)}}
+                </VForm.Section>
                 """;
         }
 
@@ -478,7 +494,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 .Max();
 
             var a = (maxCharWidth + 1) / 2; // tailwindのbasisはrem基準（全角文字n文字）のため偶数にそろえる
-            var b = a + 1; // ちょっと横幅に余裕をもたせるための +1
+            var b = a + 2; // ちょっと横幅に余裕をもたせるための +2
             var c = Math.Min(96, b * 4); // tailwindでは basis-96 が最大なので
 
             return $"basis-{c}";

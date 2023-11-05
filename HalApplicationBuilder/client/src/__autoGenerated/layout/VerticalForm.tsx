@@ -42,6 +42,7 @@ const Section = ((props: {
   label?: React.ReactNode
   table?: boolean
   children?: React.ReactNode
+  hidden?: boolean
 }) => {
   const { depth: parentDepth, tableStartDepth } = useContext(NearestSectionContext)
   const parentIsTable = tableStartDepth !== undefined
@@ -62,11 +63,11 @@ const Section = ((props: {
 
   return (
     <NearestSectionContext.Provider value={thisContextValue}>
-      <div className={`flex flex-row`}>
+      <div className={`flex flex-row ${props.hidden && 'hidden'}`}>
         <Indent depth={parentDepth} tableStartDepth={thisContextValue.tableStartDepth} />
         <div className={parentIsTable
-          ? `flex-1 text-sm font-semibold p-1 ${BG_COLOR_HEADER} border ${BORDER_COLOR} mt-[-1px]`
-          : `flex-1 text-sm font-semibold p-1`}>
+          ? `flex gap-1 flex-1 text-sm font-semibold p-1 ${BG_COLOR_HEADER} border ${BORDER_COLOR} mt-[-1px]`
+          : `flex gap-1 flex-1 text-sm font-semibold p-1`}>
           {props.label}
         </div>
       </div>
@@ -117,8 +118,8 @@ const BodyCell = ({ table, fullWidth, children }: {
 }) => {
   return (
     <div className={table
-      ? `bg-color-base flex-1 p-1 border ${BORDER_COLOR} ${!fullWidth && 'ml-[-1px]'} mt-[-1px]`
-      : `bg-color-base flex-1 p-1`}>
+      ? `bg-color-base flex-1 flex p-[1px] border ${BORDER_COLOR} ${!fullWidth && 'ml-[-1px]'} mt-[-1px]`
+      : `bg-color-base flex-1 flex p-[1px] `}>
       {children}
     </div>
   )
@@ -131,7 +132,6 @@ const IndentAndLabel = ({ fullWidth, children }: {
 }) => {
   const { leftColumnWidth } = useContext(FormLayoutContext)
   const { depth, tableStartDepth } = useContext(NearestSectionContext)
-
   return (
     <div
       style={{ flexBasis: fullWidth ? undefined : leftColumnWidth }}
@@ -171,7 +171,7 @@ const Spacer = () => {
   return <div className="m-3"></div>
 }
 // ----------------------------------------
-const BG_COLOR_HEADER = 'bg-color-4'
+const BG_COLOR_HEADER = 'bg-color-3'
 const BORDER_COLOR = 'border-color-5'
 
 // ----------------------------------------
