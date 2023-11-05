@@ -37,8 +37,11 @@ export const Num = defineCustomComponent<number>((props, ref) => {
     return isNaN(num) ? { ok: false } : { ok: true, formatted: num.toString() }
   }, [])
   const onChange = useCallback((value: string | undefined) => {
-    // ※TextInputBaseがonChangeを発火する時点でフォーマットは終わっているのでここでは検査しなくてよい
-    props.onChange?.(value === undefined ? undefined : Number(value))
+    // TODO: TextAreaBaseのonBlurでもバリデーションをかけているので冗長
+    const validated = onValidate(value ?? '')
+    props.onChange?.(validated.ok && validated.formatted !== ''
+      ? Number(validated.formatted)
+      : undefined)
   }, [props.onChange])
 
   const textRef = useRef<CustomComponentRef<string>>(null)
@@ -206,3 +209,43 @@ export const AsyncComboBox = defineCustomComponent(<T extends {},>(
 export const CheckBox = defineCustomComponent<boolean>((props, ref) => {
   return <ToggleBase ref={ref} {...props} />
 })
+
+/** チェックボックス（グリッド用） */
+export const BooleanComboBox = defineCustomComponent<boolean>((props, ref) => {
+
+  const value = useMemo(() => {
+    if (props.value === true) return booleanComboBoxOptions[0]
+    if (props.value === false) return booleanComboBoxOptions[1]
+    return undefined
+  }, [props.value])
+  const onChange = useCallback((value: (typeof booleanComboBoxOptions[0]) | undefined) => {
+    props.onChange?.(value?.boolValue)
+  }, [props.onChange])
+
+  const comboRef = useRef<CustomComponentRef>(null)
+  useImperativeHandle(ref, () => ({
+    getValue: () => {
+      const selectedItem = comboRef.current?.getValue()
+      if (selectedItem === booleanComboBoxOptions[0]) return true
+      if (selectedItem === booleanComboBoxOptions[1]) return false
+      return undefined
+    },
+    focus: () => comboRef.current?.focus(),
+  }))
+
+  return (
+    <ComboBox
+      ref={comboRef}
+      {...props}
+      options={booleanComboBoxOptions}
+      keySelector={item => item.text}
+      textSelector={item => item.text}
+      value={value}
+      onChange={onChange}
+    />
+  )
+})
+const booleanComboBoxOptions = [
+  { text: "○", boolValue: true },
+  { text: "-", boolValue: false },
+]

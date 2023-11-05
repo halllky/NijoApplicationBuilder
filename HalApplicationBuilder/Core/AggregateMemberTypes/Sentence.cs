@@ -12,6 +12,6 @@ namespace HalApplicationBuilder.Core.AggregateMemberTypes {
         public string RenderUI(IGuiFormRenderer ui) => ui.TextBox(multiline: true);
         public string GetGridCellEditorName() => "Input.Description";
         public IReadOnlyDictionary<string, string> GetGridCellEditorParams() => new Dictionary<string, string>();
-        public virtual string? GetGridCellFormatter() => null;
+        public virtual string GetGridCellValueFormatter() => string.Empty;
     }
 }

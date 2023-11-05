@@ -66,7 +66,9 @@ export const TextInputBase = defineCustomComponent<string, {
   const divRef = useRef<HTMLDivElement>(null)
   const onBlur: React.FocusEventHandler<HTMLInputElement> = useCallback(e => {
     // フォーマットされた値を表示に反映
-    setUnFormatText(getFormatted(unFormatText))
+    const formatted = getFormatted(unFormatText)
+    setUnFormatText(formatted)
+    if (onValidate) onChangeFormattedText?.(formatted)
 
     // コンボボックスではテキストにフォーカスが当たったままドロップダウンが展開されることがあるため
     // blur先がdivの外に移った時に強制的にドロップダウンを閉じる
@@ -74,7 +76,7 @@ export const TextInputBase = defineCustomComponent<string, {
       setOpen(false)
     }
     props.onBlur?.(e)
-  }, [props.onBlur, getFormatted, unFormatText])
+  }, [onChangeFormattedText, props.onBlur, getFormatted, unFormatText, onValidate])
 
   const onKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useCallback(e => {
     if (!open && e.altKey && e.key === 'ArrowDown') {

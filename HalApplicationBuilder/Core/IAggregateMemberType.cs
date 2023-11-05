@@ -13,6 +13,7 @@ namespace HalApplicationBuilder.Core {
         string RenderUI(IGuiFormRenderer ui);
         string GetGridCellEditorName();
         IReadOnlyDictionary<string, string> GetGridCellEditorParams();
+        string GetGridCellValueFormatter();
     }
     /// <summary>
     /// 検索処理の挙動
@@ -44,6 +45,7 @@ namespace HalApplicationBuilder.Core {
         public abstract string RenderUI(IGuiFormRenderer ui);
         public abstract string GetGridCellEditorName();
         public abstract IReadOnlyDictionary<string, string> GetGridCellEditorParams();
+        public virtual string GetGridCellValueFormatter() => string.Empty;
     }
 
 
@@ -57,6 +59,7 @@ namespace HalApplicationBuilder.Core {
         public abstract string RenderUI(IGuiFormRenderer ui);
         public abstract string GetGridCellEditorName();
         public abstract IReadOnlyDictionary<string, string> GetGridCellEditorParams();
+        public virtual string GetGridCellValueFormatter() => string.Empty;
         //object? Min { get; }
         //object? Max { get; }
     }

@@ -21,11 +21,12 @@ export const ToggleBase = defineCustomComponent<boolean>((props, ref) => {
   const forceRendering = useForceRendering()
   const emitChange = useCallback((checked: boolean) => {
     if (!inputRef.current) return
+    if (props.readOnly) return
     inputRef.current.checked = checked
     props.onChange?.(inputRef.current.checked)
     onChangeEx?.(checked)
     forceRendering()
-  }, [props.onChange, onChangeEx, forceRendering])
+  }, [props.onChange, props.readOnly, onChangeEx, forceRendering])
 
   const onChange: React.ChangeEventHandler<HTMLInputElement> = useCallback(e => {
     emitChange(e.target.checked)

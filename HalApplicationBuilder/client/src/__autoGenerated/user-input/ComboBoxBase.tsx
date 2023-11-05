@@ -63,7 +63,7 @@ export const ComboBoxBase = defineCustomComponent(<T extends {}>(
 
   // 入力中のテキストに近い最も適当な要素を取得する
   const getHighlightedOrAnyItem = useCallback(() => {
-    if (highlighted) {
+    if (highlighted && dropdownRef.current?.isOpened) {
       const found = filtered.find(item => props.keySelector(item) === highlighted)
       if (found) return found
     }
@@ -107,7 +107,7 @@ export const ComboBoxBase = defineCustomComponent(<T extends {}>(
       const anyItem = getHighlightedOrAnyItem()
       props.onChange?.(anyItem)
       setKeyword(undefined)
-      setHighlightItem(anyItem ? props.keySelector(anyItem) : '')
+      setHighlightItem('')
       dropdownRef.current?.close()
       e.preventDefault()
     }
@@ -115,6 +115,7 @@ export const ComboBoxBase = defineCustomComponent(<T extends {}>(
 
   const onClickItem: React.MouseEventHandler<HTMLLIElement> = useCallback(e => {
     selectItemByValue((e.target as HTMLLIElement).getAttribute('value') as string)
+    setHighlightItem('')
     dropdownRef.current?.close()
   }, [selectItemByValue])
 

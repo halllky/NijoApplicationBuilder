@@ -199,7 +199,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                         editable,
                         cellEditor = vm.Options.MemberType.GetGridCellEditorName(),
                         cellEditorParams = vm.Options.MemberType.GetGridCellEditorParams(),
-                        valueFormatter = string.Empty,
+                        valueFormatter = vm.Options.MemberType.GetGridCellValueFormatter(),
                     },
                     AggregateMember.Ref rm => new {
                         field = m.MemberName,
@@ -380,7 +380,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var callCombobox = _mode switch {
                 SingleView.E_Type.Create => combobox.RenderCaller(registerName, "className='w-full'"),
                 SingleView.E_Type.View => combobox.RenderCaller(registerName, "className='w-full'", "readOnly"),
-                SingleView.E_Type.Edit => combobox.RenderCaller(registerName, "className='w-full'", $"readOnly={{item?.{AggregateDetail.IS_LOADED}}}"),
+                SingleView.E_Type.Edit => combobox.RenderCaller(registerName, "className='w-full'", IfReadOnly("readOnly", refProperty)),
                 _ => throw new NotImplementedException(),
             };
 
@@ -545,6 +545,17 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 SingleView.E_Type.Create => "",
                 SingleView.E_Type.View => readOnly,
                 SingleView.E_Type.Edit => prop.IsKey
+                    ? $"{readOnly}={{item?.{AggregateDetail.IS_LOADED}}}"
+                    : $"",
+                _ => throw new NotImplementedException(),
+            };
+        }
+        // TODO: 上のメソッドと冗長
+        private string IfReadOnly(string readOnly, AggregateMember.Ref prop) {
+            return _mode switch {
+                SingleView.E_Type.Create => "",
+                SingleView.E_Type.View => readOnly,
+                SingleView.E_Type.Edit => prop.Relation.IsPrimary()
                     ? $"{readOnly}={{item?.{AggregateDetail.IS_LOADED}}}"
                     : $"",
                 _ => throw new NotImplementedException(),

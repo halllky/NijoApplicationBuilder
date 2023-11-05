@@ -108,7 +108,12 @@ namespace HalApplicationBuilder.CodeRendering.Util {
                         }
                     
                         public override void Write(Utf8JsonWriter writer, int? value, JsonSerializerOptions options) {
-                            writer.WriteStringValue(value?.ToString());
+                            if (value == null) {
+                                writer.WriteNullValue();
+                            } else {
+                                writer.WriteNumberValue((decimal)value);
+                            }
+                            // writer.WriteStringValue(value?.ToString());
                         }
                     }
                 }
