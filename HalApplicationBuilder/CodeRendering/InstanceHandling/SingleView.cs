@@ -196,24 +196,24 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 """)}}
                 {{If(_type == E_Type.Create, () => $$"""
                   const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
+                    setErrorMessages([])
                     const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{controller.CreateCommandApi}}`, data)
                     if (response.ok) {
                       dispatch({ type: 'pushMsg', msg: `${({{keyName.GetNames().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を作成しました。` })
-                      setErrorMessages([])
                       navigate(`{{GetUrlStringForReact(E_Type.View, keyName.GetKeys().Select(m => $"response.data.{m.MemberName}"))}}`)
                     } else {
-                      setErrorMessages([...errorMessages, ...response.errors])
+                      setErrorMessages([...response.errors])
                     }
                   }, [post, navigate, errorMessages, setErrorMessages, dispatch])
                 """).ElseIf(_type == E_Type.Edit, () => $$"""
                   const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
+                    setErrorMessages([])
                     const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{controller.UpdateCommandApi}}`, data)
                     if (response.ok) {
-                      setErrorMessages([])
                       dispatch({ type: 'pushMsg', msg: `${({{keyName.GetNames().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を更新しました。` })
                       navigate(`{{GetUrlStringForReact(E_Type.View, keysFromUrl)}}`)
                     } else {
-                      setErrorMessages([...errorMessages, ...response.errors])
+                      setErrorMessages([...response.errors])
                     }
                   }, [errorMessages, dispatch, post, navigate, {{keysFromUrl.Join(", ")}}])
                 """)}}

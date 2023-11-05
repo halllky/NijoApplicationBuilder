@@ -25,15 +25,17 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
 
         internal static string RenderDeclaringFile(IEnumerable<GraphNode<Aggregate>> allAggregates) {
             return $$"""
-                import React, { useCallback } from "react"
+                import React, { useState, useCallback } from "react"
                 import { useHttpRequest } from "../util"
                 import { AsyncComboBox, defineCustomComponent } from "../user-input"
                 import * as Types from "../types"
 
                 {{allAggregates.Select(a => new ComboBox(a)).SelectTextTemplate((combo, index) => $$"""
                 export const {{combo.ComponentName}} = defineCustomComponent<Types.{{combo.KeyName.TypeScriptTypeName}}>((props, ref) => {
+                  const [queryKey, setQueryKey] = useState<string>('combo-{{combo._aggregate.Item.UniqueId}}::')
                   const { get } = useHttpRequest()
                   const query = useCallback(async (keyword: string | undefined) => {
+                    setQueryKey(`combo-{{combo._aggregate.Item.UniqueId}}::${keyword ?? ''}`)
                     const response = await get<Types.{{combo.KeyName.TypeScriptTypeName}}[]>(`{{combo.Api}}`, { keyword })
                     return response.ok ? response.data : []
                   }, [get])
@@ -42,7 +44,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                     <AsyncComboBox
                       {...props}
                       ref={ref}
-                      queryKey="combo-{{combo._aggregate.Item.UniqueId}}"
+                      queryKey={queryKey}
                       query={query}
                       keySelector={item => JSON.stringify([{{combo.KeyName.GetKeys().Select(m => "item." + m.MemberName).Join(", ")}}])}
                       textSelector={item => `{{combo.KeyName.GetNames().Select(m => "${item." + m.MemberName + "}").Join("&nbsp;")}}`}
@@ -58,7 +60,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                 .Where(str => !string.IsNullOrWhiteSpace(str))
                 .Join(" ");
             return $$"""
-                <Input.{{ComponentName}} raectHookFormId={{{raectHookFormId}}} {{attributes}} />
+                <Input.{{ComponentName}} {...registerEx({{raectHookFormId}})} {{attributes}} />
                 """;
         }
     }

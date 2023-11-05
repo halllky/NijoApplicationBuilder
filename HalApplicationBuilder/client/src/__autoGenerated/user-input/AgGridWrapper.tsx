@@ -1,4 +1,5 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react"
+import { FieldArrayPath, FieldArrayWithId, FieldValues } from "react-hook-form"
 import { AgGridReact, AgGridReactProps } from "ag-grid-react"
 import { ColDef, GridReadyEvent, ICellEditorParams, ValueFormatterFunc } from "ag-grid-community"
 import { CustomComponent, CustomComponentRef, useFormContextEx } from "./util"
@@ -64,22 +65,54 @@ export const AgGridWrapper = forwardRef(<T,>(props: AgGridReactProps<T>, ref: Re
   )
 }) as <T>(p: AgGridReactProps<T> & { ref?: React.Ref<AgGridReact<T>> }) => JSX.Element;
 
-export const createColDef = <TRow,>(
-  arrayPath: string,
-  field: ColDef<TRow>['field'],
-  editor: CustomComponent,
-  valueFormatter?: ValueFormatterFunc<TRow>
-): ColDef<TRow> => ({
-  field,
-  cellDataType: false, // セル型の自動推論を無効にする
-  resizable: true,
-  editable: true,
-  valueFormatter: valueFormatter ?? defaultValueFormatter,
-  cellEditor: generateCellEditor(arrayPath, editor),
-  cellEditorPopup: true,
-})
 
-const generateCellEditor = (arrayPath: string, editor: CustomComponent) => {
+export const createColumnDefinitions = <
+  TRoot extends FieldValues = FieldValues,
+  TFieldArrayName extends FieldArrayPath<TRoot> = FieldArrayPath<TRoot>,
+  TRow extends FieldArrayWithId<TRoot, TFieldArrayName, "id"> = FieldArrayWithId<TRoot, TFieldArrayName, "id">
+>(
+  arrayPath: TFieldArrayName,
+  fn: (addColumn: (
+    field: ColDef<TRow>['field'],
+    editor: any,
+    editorProp?: {},
+    valueFormatter?: ValueFormatterFunc<TRow>,
+  ) => ColDef<TRow>) => ColDef<TRow>[]
+) => {
+  const defaultValueFormatter: ValueFormatterFunc<TRow> = item => {
+    switch (typeof item.value) {
+      case 'boolean':
+        return item.value ? '○' : '-'
+      case 'undefined':
+        return ''
+      case 'object':
+        if (item.value === null) return ''
+        const asOpt = item.value as { text: string } | undefined
+        if (typeof asOpt?.text === 'string') return asOpt.text
+        return JSON.stringify(item.value) // Unexpected object
+      default:
+        return item.value as string
+    }
+  }
+
+  return fn((
+    field: ColDef<TRow>['field'],
+    editor: any,
+    editorProp?: {},
+    valueFormatter?: ValueFormatterFunc<TRow>,
+  ): ColDef<TRow> => ({
+    field,
+    cellDataType: false, // セル型の自動推論を無効にする
+    resizable: true,
+    editable: true,
+    valueFormatter: valueFormatter ?? defaultValueFormatter,
+    cellEditor: generateCellEditor(arrayPath, editor, editorProp),
+    cellEditorParams: editorProp,
+    cellEditorPopup: true,
+  }))
+}
+
+export const generateCellEditor = (arrayPath: string, editor: any, editorProp?: {}) => {
   return React.memo(forwardRef<ICellEditorRef, ICellEditorParams>((props, ref) => {
 
     // 編集開始時にフォーカス
@@ -102,6 +135,7 @@ const generateCellEditor = (arrayPath: string, editor: CustomComponent) => {
         // getValueはblurより前に実行されるので、
         // TextInputBaseの値をこのタイミングで反映するためにonChangeを呼ぶ
         onChange?.(currentValue)
+        // TODO: ここでreact hook form にsetValueしないといけない
         return currentValue
       },
       isCancelBeforeStart: () => false,
@@ -113,32 +147,12 @@ const generateCellEditor = (arrayPath: string, editor: CustomComponent) => {
       className: 'border-none',
       value,
       onChange,
+      ...editorProp,
     })
   }))
 }
 
 // ----------------------------------
-
-const defaultValueFormatter: ValueFormatterFunc = ({ value }) => {
-  switch (typeof value) {
-    case 'boolean':
-      return value ? '○' : '-'
-
-    case 'undefined':
-      return ''
-
-    case 'object':
-      if (value === null) return ''
-
-      const asOpt = value as { text: string } | undefined
-      if (typeof asOpt?.text === 'string') return asOpt.text
-
-      return JSON.stringify(value) // Unexpected object
-
-    default:
-      return value as string
-  }
-}
 
 type ICellEditorRef = {
   /** ag-gridは編集終了時にこの名前の関数を呼んでエディターから通常セルに値を渡す */

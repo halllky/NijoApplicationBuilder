@@ -10,7 +10,7 @@ namespace HalApplicationBuilder.Core.AggregateMemberTypes {
         public override string GetCSharpTypeName() => "string";
         public override string GetTypeScriptTypeName() => "string";
         public override string RenderUI(IGuiFormRenderer ui) => string.Empty;
-        public override string GetGridCellEditorName() => "'agTextCellEditor'";
+        public override string GetGridCellEditorName() => "Input.SelectionEmitsKey";
         public override IReadOnlyDictionary<string, string> GetGridCellEditorParams() => new Dictionary<string, string>();
     }
 }

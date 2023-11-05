@@ -100,7 +100,7 @@ const Row = ((props: {
     </>
 
     : (
-      <div className="flex flex-row items-stretch">
+      <div className={`flex flex-row items-stretch ${props.hidden && 'hidden'}`}>
         <IndentAndLabel>
           {props.label}
         </IndentAndLabel>

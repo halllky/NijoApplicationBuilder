@@ -15,7 +15,7 @@ type TestData = {
   word?: string
   description?: string
   bbb?: string
-  num?: string
+  num?: number
   date?: string
   ym?: string
   combo?: { value: string, text: string }
@@ -82,7 +82,7 @@ const Option6ComboBox = Input.defineCustomComponent<{ value: string, text: strin
 })
 
 const createSampleData = (): TestData => ({
-  num: '123',
+  num: 123.45,
   check: true,
   checkWithoutLabel: true,
   word: 'あいうえお',

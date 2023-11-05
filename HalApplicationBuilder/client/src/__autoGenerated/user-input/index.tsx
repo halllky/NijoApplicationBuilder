@@ -8,6 +8,7 @@ import { RadioGroupBase, ToggleBase } from "./ToggleBase";
 import { useAppContext } from "../application";
 import { useQuery } from "react-query";
 
+export * from "./AggregateComboBox"
 export * from "./AgGridWrapper"
 export * from "./IconButton"
 export * from "./util"
@@ -23,14 +24,41 @@ export const Description = defineCustomComponent<string>((props, ref) => {
 })
 
 /** 数値 */
-export const Num = defineCustomComponent<string>((props, ref) => {
+export const Num = defineCustomComponent<number>((props, ref) => {
+
+  const strValue = useMemo(() => {
+    return props.value?.toString() ?? ''
+  }, [props.value])
+
   const onValidate: ValidationHandler = useCallback(value => {
     const normalized = normalize(value).replace(',', '') // 桁区切りのカンマを無視
     if (normalized === '') return { ok: true, formatted: '' }
     const num = Number(normalized)
     return isNaN(num) ? { ok: false } : { ok: true, formatted: num.toString() }
   }, [])
-  return <TextInputBase ref={ref} {...props} onValidate={onValidate} />
+  const onChange = useCallback((value: string | undefined) => {
+    // ※TextInputBaseがonChangeを発火する時点でフォーマットは終わっているのでここでは検査しなくてよい
+    props.onChange?.(value === undefined ? undefined : Number(value))
+  }, [props.onChange])
+
+  const textRef = useRef<CustomComponentRef<string>>(null)
+  useImperativeHandle(ref, () => ({
+    getValue: () => {
+      const validated = onValidate(textRef.current?.getValue() ?? '')
+      return validated.ok && validated.formatted !== ''
+        ? Number(validated.formatted)
+        : undefined
+    },
+    focus: () => textRef.current?.focus(),
+  }), [onValidate])
+
+  return <TextInputBase
+    ref={textRef}
+    {...props}
+    value={strValue}
+    onChange={onChange}
+    onValidate={onValidate}
+  />
 })
 
 /** 年月日 */
@@ -79,17 +107,14 @@ export const Selection = defineCustomComponent(<T extends {}>(
     : <RadioGroupBase ref={ref} {...props} />
 })
 
-/** ラジオボタン */
-export const RadioGroup = RadioGroupBase
-
 /** ラジオボタン（選択された要素ではなく選択された要素のキーを登録するためのもの） */
-export const RadioGroupEmitsKey = defineCustomComponent(<TItem extends {}>(
-  props: CustomComponentProps<string, {
+export const SelectionEmitsKey = defineCustomComponent(<TItem extends {}, TKey extends string = string>(
+  props: CustomComponentProps<TKey, {
     options: TItem[]
-    keySelector: (item: TItem) => string
+    keySelector: (item: TItem) => TKey
     textSelector: (item: TItem) => string
   }>,
-  ref: React.ForwardedRef<CustomComponentRef<string>>
+  ref: React.ForwardedRef<CustomComponentRef<TKey>>
 ) => {
   // value
   const value = useMemo(() => {
@@ -109,15 +134,26 @@ export const RadioGroupEmitsKey = defineCustomComponent(<TItem extends {}>(
     focus: () => radioRef.current?.focus(),
   }))
 
-  return (
-    <RadioGroupBase
-      ref={radioRef}
-      {...props}
-      value={value}
-      onChange={onChange}
-    />
-  )
+  return props.options.length > 5
+    ? (
+      <ComboBoxBase
+        ref={radioRef}
+        {...props}
+        value={value}
+        onChange={onChange}
+      />
+    ) : (
+      <RadioGroupBase
+        ref={radioRef}
+        {...props}
+        value={value}
+        onChange={onChange}
+      />
+    )
 })
+
+/** ラジオボタン */
+export const RadioGroup = RadioGroupBase
 
 /** コンボボックス（同期） */
 export const ComboBox = ComboBoxBase

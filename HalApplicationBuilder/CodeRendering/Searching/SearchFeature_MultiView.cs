@@ -195,6 +195,27 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                     }
                 }
                 /// <summary>
+                /// 検索条件： 数値
+                /// </summary>
+                public string Number() {
+                    if (_member.DbColumn.Options.MemberType.SearchBehavior == SearchBehavior.Range) {
+                        var from = GetRegisterName(Util.FromTo.FROM);
+                        var to = GetRegisterName(Util.FromTo.TO);
+                        return $$"""
+                            <input type="number" className="border w-40" {...register('{{from}}')} />
+                            〜
+                            <input type="number" className="border w-40" {...register('{{to}}')} />
+                            """;
+
+                    } else {
+                        var name = GetRegisterName();
+                        return $$"""
+                            <input type="number" className="border w-80" {...register('{{name}}')} />
+                            """;
+                    }
+                }
+
+                /// <summary>
                 /// 検索条件: トグル
                 /// </summary>
                 public string Toggle() {

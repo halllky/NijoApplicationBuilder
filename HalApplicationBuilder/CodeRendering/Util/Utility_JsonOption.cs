@@ -79,27 +79,32 @@ namespace HalApplicationBuilder.CodeRendering.Util {
                             
                     class {{INT_CONVERTER}} : JsonConverter<int?> {
                         public override int? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
-                            var jsonValue = reader.GetString()?.Trim();
-                            if (jsonValue == null) return null;
 
-                            var builder = new StringBuilder();
-                            foreach (var character in jsonValue) {
-                                if (character == ',' || character == '，') {
-                                    // カンマ区切りは無視
-                                    continue;
-                                } else if (character == '.' || character == '．') {
-                                    // 小数点以下は切り捨て
-                                    break;
-                                } else if (char.IsDigit(character)) {
-                                    // 全角数値は半角数値に変換
-                                    builder.Append(char.GetNumericValue(character));
-                                } else {
-                                    builder.Append(character);
-                                }
-                            }
+                            return reader.TryGetDecimal(out var dec)
+                                ? (int)dec
+                                : null;
 
-                            var converted = builder.ToString();
-                            return string.IsNullOrEmpty(converted) ? null : int.Parse(converted);
+                            // var jsonValue = reader.GetString()?.Trim();
+                            // if (jsonValue == null) return null;
+                            // 
+                            // var builder = new StringBuilder();
+                            // foreach (var character in jsonValue) {
+                            //     if (character == ',' || character == '，') {
+                            //         // カンマ区切りは無視
+                            //         continue;
+                            //     } else if (character == '.' || character == '．') {
+                            //         // 小数点以下は切り捨て
+                            //         break;
+                            //     } else if (char.IsDigit(character)) {
+                            //         // 全角数値は半角数値に変換
+                            //         builder.Append(char.GetNumericValue(character));
+                            //     } else {
+                            //         builder.Append(character);
+                            //     }
+                            // }
+                            // 
+                            // var converted = builder.ToString();
+                            // return string.IsNullOrEmpty(converted) ? null : int.Parse(converted);
                         }
                     
                         public override void Write(Utf8JsonWriter writer, int? value, JsonSerializerOptions options) {

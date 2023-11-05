@@ -10,7 +10,11 @@ namespace HalApplicationBuilder.Core.AggregateMemberTypes {
         public override string GetTypeScriptTypeName() => "boolean";
         public override SearchBehavior SearchBehavior => SearchBehavior.Strict;
         public override string RenderUI(IGuiFormRenderer ui) => ui.Toggle();
-        public override string GetGridCellEditorName() => "'agTextCellEditor'";
-        public override IReadOnlyDictionary<string, string> GetGridCellEditorParams() => new Dictionary<string, string>();
+        public override string GetGridCellEditorName() => "Input.ComboBox";
+        public override IReadOnlyDictionary<string, string> GetGridCellEditorParams() => new Dictionary<string, string> {
+            { "options", $"['○' as const, '-' as const]" },
+            { "keySelector", "(item: string) => item" },
+            { "textSelector", "(item: string) => item" },
+        };
     }
 }

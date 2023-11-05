@@ -245,15 +245,15 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     {{colDefs.SelectTextTemplate(def => $$"""
                         {
                           field: '{{def.field}}',
+                          cellDataType: false, // セル型の自動推論を無効にする
                           resizable: true,
                           sortable: false,
                           editable: {{def.editable}},
-                          cellEditor: {{def.cellEditor}},
-                          cellEditorParams: {
+                          cellEditor: Input.generateCellEditor({{GetRegisterName()}}, {{def.cellEditor}}, {
                     {{def.cellEditorParams.SelectTextTemplate(p => $$"""
                             {{p.Key}}: {{p.Value}},
                     """)}}
-                          },
+                          }),
                           cellEditorPopup: true,
                     {{If(def.valueFormatter != string.Empty, () => $$"""
                           valueFormatter: {{def.valueFormatter}},
@@ -355,7 +355,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                   table
                   label={<>
                     {{variationSwitch.MemberName}}
-                    <Input.RadioGroupEmitsKey
+                    <Input.SelectionEmitsKey
                       {...registerEx({{switchProp}})}
                       options={[
                 {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
@@ -436,6 +436,13 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                         """;
                 }
             }
+            public string Number() {
+                var name = _component.GetRegisterName(_prop);
+                var readOnly = _component.IfReadOnly("readOnly", _prop);
+                return $$"""
+                    <Input.Num {...registerEx({{name}})} className="{{INPUT_WIDTH}}" {{readOnly}} />
+                    """;
+            }
 
             /// <summary>
             /// Createビュー兼シングルビュー: トグル
@@ -455,13 +462,15 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             public string Selection(IEnumerable<KeyValuePair<string, string>> options) {
                 var name = _component.GetRegisterName(_prop);
                 return $$"""
-                    <Input.Selection
+                    <Input.SelectionEmitsKey
                       {...registerEx({{name}})}
-                      options={useMemo(() => [
+                      options={[
                     {{options.SelectTextTemplate(option => $$"""
-                        { value: '{{option.Key}}', text: '{{option.Value}}' },
+                        '{{option.Value}}' as const,
                     """)}}
-                      ], [])}
+                      ]}
+                      keySelector={item => item}
+                      textSelector={item => item}
                       {{_mode switch {
                         SingleView.E_Type.View => $"readOnly",
                         SingleView.E_Type.Edit => _prop.Options.IsKey
