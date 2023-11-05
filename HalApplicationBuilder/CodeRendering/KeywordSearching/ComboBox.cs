@@ -58,7 +58,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                     }
                   }, [raectHookFormId, rowIndex])
                   const selectedItem = watch(rhfId)
-                  const onSelectedItemChanged = useCallback((item: Types.{{combo.KeyName.TypeScriptTypeName}} | null | undefined) => {
+                  const onSelectedItemChanged = useCallback((item: Types.{{combo.KeyName.TypeScriptTypeName}} | undefined) => {
                     setValue(rhfId, item)
                   }, [setValue, watch])
 
@@ -71,8 +71,8 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
 
                   return (
                     <AsyncComboBox
-                      selectedItem={selectedItem}
-                      onSelectedItemChanged={onSelectedItemChanged}
+                      value={selectedItem}
+                      onChanged={onSelectedItemChanged}
                       keySelector={keySelector{{index}}}
                       textSelector={textSelector{{index}}}
                       queryKey={['combo-{{combo._aggregate.Item.UniqueId}}']}

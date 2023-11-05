@@ -1,7 +1,7 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react"
 import { AgGridReact, AgGridReactProps } from "ag-grid-react"
 import { ColDef, GridReadyEvent, ICellEditorParams, ValueFormatterFunc } from "ag-grid-community"
-import { CustomComponent, CustomComponentRef, SelectionItem, useFormContextEx } from "./util"
+import { CustomComponent, CustomComponentRef, useFormContextEx } from "./util"
 import { useAppContext } from "../application/AppContext"
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
@@ -73,12 +73,17 @@ type AgGridWrapperProps<T> = AgGridReactProps<T> & {
   name?: string
 }
 
-export const createColDef = <TRow,>(arrayPath: string, field: ColDef<TRow>['field'], editor: CustomComponent): ColDef<TRow> => ({
+export const createColDef = <TRow,>(
+  arrayPath: string,
+  field: ColDef<TRow>['field'],
+  editor: CustomComponent,
+  valueFormatter?: ValueFormatterFunc<TRow, any>
+): ColDef<TRow> => ({
   field,
   cellDataType: false, // セル型の自動推論を無効にする
   resizable: true,
   editable: true,
-  valueFormatter,
+  valueFormatter: ,
   cellEditor: generateCellEditor(arrayPath, editor),
   cellEditorPopup: true,
 })

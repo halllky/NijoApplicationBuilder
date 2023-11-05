@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static HalApplicationBuilder.Core.AggregateMember;
 
 namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
@@ -122,6 +123,17 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 var loopVar = $"index_{Arguments.Count}";
                 var createNewChildrenItem = new TSInitializerFunction(_aggregate).FunctionName;
 
+                var keys = _aggregate
+                    .GetKeys()
+                    // TODO: AggregateDetailと重複している。この条件を1カ所で書けるようにできないか
+                    .Where(m => m is not AggregateMember.KeyOfParent
+                             && m is not AggregateMember.KeyOfRefTarget);
+                var texts = _aggregate
+                    .GetNames()
+                    // TODO: AggregateDetailと重複している。この条件を1カ所で書けるようにできないか
+                    .Where(m => m is not AggregateMember.KeyOfParent
+                             && m is not AggregateMember.KeyOfRefTarget);
+
                 return $$"""
                     const {{ComponentName}} = ({ {{Arguments.Join(", ")}} }: {
                     {{Arguments.SelectTextTemplate(arg => $$"""
@@ -137,6 +149,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                         append(AggregateType.{{createNewChildrenItem}}())
                         e.preventDefault()
                       }, [append])
+                      const onCreate = useCallback(() => {
+                        append(AggregateType.{{createNewChildrenItem}}())
+                      }, [append])
                       const onRemove = useCallback((index: number) => {
                         return (e: React.MouseEvent) => {
                           remove(index)
@@ -145,36 +160,33 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       }, [remove])
                     
                       return (
-                        <>
-                          <VForm.Section label="{{_aggregate.GetParent()!.RelationName}}">
+                        <Layout.TabGroup
+                          items={fields}
+                          keySelector={item => JSON.stringify([{{keys.Select(x => $"item.{x.MemberName}").Join(", ")}}])}
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
-                            <Input.IconButton
-                              underline
-                              icon={PlusIcon}
-                              onClick={onAdd}
-                              className="self-start">
-                              追加
-                            </Input.IconButton>
+                          onCreate={onCreate}
                     """)}}
-                          </VForm.Section>
+                        >
+                          {({ item, index: {{loopVar}} }) => (
+                            <VForm.Root>
+                              <VForm.Section>
+                                {{WithIndent(RenderMembers(), "            ")}}
 
-                          {fields.map((item, {{loopVar}}) => (
-                            <React.Fragment key={item.{{AggregateDetail.OBJECT_ID}}}>
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
-                              <VForm.Row keyOnly className="relative">
-                                <Input.IconButton
-                                  underline
-                                  icon={XMarkIcon}
-                                  onClick={onRemove({{loopVar}})}
-                                  className="absolute top-full right-0">
-                                  削除
-                                </Input.IconButton>
-                              </VForm.Row>
+                                <VForm.Row fullWidth>
+                                  <Input.IconButton
+                                    underline
+                                    icon={XMarkIcon}
+                                    onClick={onRemove({{loopVar}})}
+                                    className="absolute top-full right-0">
+                                    削除
+                                  </Input.IconButton>
+                                </VForm.Row>
                     """)}}
-                              {{WithIndent(RenderMembers(), "          ")}}
-                            </React.Fragment>
-                          ))}
-                        </>
+                              </VForm.Section>
+                            </VForm.Root>
+                          )}
+                        </Layout.TabGroup>
                       )
                     }
                     """;
@@ -316,14 +328,16 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 <VForm.Spacer />
                 <VForm.Section label="{{child.MemberName}}">
                   {{childComponent.RenderCaller()}}
-                </VForm.Secton>
+                </VForm.Section>
                 """;
         }
 
         private string RenderProperty(AggregateMember.VariationItem variation) {
             var childComponent = new AggregateComponent(variation, _mode);
             return $$"""
+                <VForm.Section>
                   {{WithIndent(childComponent.RenderCaller(), "  ")}}
+                </VForm.Section>
                 """;
         }
 
