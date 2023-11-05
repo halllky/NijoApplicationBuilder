@@ -1,14 +1,13 @@
-import { useCallback, useId, useState } from "react";
+import React, { useCallback, useId, useMemo, useState } from "react";
 import { TextInputBase, ValidationHandler } from "./TextInputBase";
 import "dayjs/locale/ja";
 import { ComboBoxBase } from "./ComboBoxBase";
-import { SelectionItem, defineCustomComponent, normalize, parseAsDate } from "./util";
+import { CustomComponentProps, CustomComponentRef, defineCustomComponent, normalize, parseAsDate } from "./util";
 import { TextareaBase } from "./TextareaBase";
 import { RadioGroupBase, ToggleBase } from "./ToggleBase";
-import { useAppContext } from "../application/AppContext";
+import { useAppContext } from "../application";
 import { useQuery } from "react-query";
 
-export * from "./AggregateComboBox"
 export * from "./AgGridWrapper"
 export * from "./IconButton"
 export * from "./util"
@@ -67,25 +66,31 @@ export const YearMonth = defineCustomComponent<string>((props, ref) => {
 })
 
 /** ラジオボタン or コンボボックス */
-export const Selection = defineCustomComponent<SelectionItem, { options: SelectionItem[] }>((props, ref) => {
+export const Selection = defineCustomComponent(<T extends {}>(
+  props: CustomComponentProps<T, {
+    options: T[]
+    keySelector: (item: T) => string
+    textSelector: (item: T) => string
+  }>,
+  ref: React.ForwardedRef<CustomComponentRef<T>>
+) => {
   return props.options.length > 5
     ? <ComboBoxBase ref={ref} {...props} />
     : <RadioGroupBase ref={ref} {...props} />
 })
 
-/** ラジオボタン */
-export const RadioGroup = RadioGroupBase
-
 /** コンボボックス（同期） */
-export const ComboBox = defineCustomComponent<SelectionItem, { options: SelectionItem[] }>((props, ref) => {
-  return <ComboBoxBase ref={ref} {...props} />
-})
+export const ComboBox = ComboBoxBase
 
 /** コンボボックス（非同期） */
-export const AsyncComboBox = defineCustomComponent<SelectionItem, {
-  query: (keyword: string | undefined) => Promise<SelectionItem[]>
-  responseHandler: (data: unknown) => SelectionItem[]
-}>((props, ref) => {
+export const AsyncComboBox = defineCustomComponent(<T extends {},>(
+  props: CustomComponentProps<T, {
+    query: ((keyword: string | undefined) => Promise<T[]>)
+    keySelector: (item: T) => string
+    textSelector: (item: T) => string
+  }>,
+  ref: React.ForwardedRef<CustomComponentRef<T>>
+) => {
   // エラー処理
   const [, dispatch] = useAppContext()
 

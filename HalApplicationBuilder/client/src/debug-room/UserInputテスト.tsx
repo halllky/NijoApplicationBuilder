@@ -18,19 +18,19 @@ type TestData = {
   num?: string
   date?: string
   ym?: string
-  combo?: Input.SelectionItem
+  combo?: { value: string, text: string }
   check?: boolean
   checkWithoutLabel?: boolean
-  radio?: Input.SelectionItem
+  radio?: { value: string, text: string }
 }
-const radioOptions: Input.SelectionItem[] = [
+const radioOptions: { value: string, text: string }[] = [
   { value: '1', text: 'ひとつ' },
   { value: '2', text: 'ふたつ' },
   { value: '3', text: 'みっつ' },
   { value: '4', text: 'よっつ' },
   { value: '5', text: 'いつつ' },
 ]
-const comboOptions: Input.SelectionItem[] = [
+const comboOptions: { value: string, text: string }[] = [
   { value: '1', text: 'ひとつ' },
   { value: '2', text: 'ふたつ' },
   { value: '3', text: 'みっつ' },
@@ -39,20 +39,20 @@ const comboOptions: Input.SelectionItem[] = [
   { value: '6', text: 'むっつ' },
 ]
 
-const booleanOptions: Input.SelectionItem[] = [
+const booleanOptions: { value: string, text: string }[] = [
   { value: 'T', text: '○' },
   { value: 'F', text: '-' },
 ]
 
 const BooleanComboBox = forwardRef<Input.CustomComponentRef<boolean>, Input.CustomComponentProps<boolean, InputHTMLAttributes<HTMLInputElement>>>((props, ref) => {
-  const [selected, setSelected] = useState<Input.SelectionItem | undefined>()
+  const [selected, setSelected] = useState<{ value: string, text: string } | undefined>()
 
   useImperativeHandle(ref, () => ({
     getValue: () => comboRef.current?.getValue() === booleanOptions[0],
     focus: () => comboRef.current?.focus(),
   }), [])
 
-  const comboRef = useRef<Input.CustomComponentRef<Input.SelectionItem>>(null)
+  const comboRef = useRef<Input.CustomComponentRef<{ value: string, text: string }>>(null)
 
   return (
     <Input.ComboBox
@@ -61,15 +61,23 @@ const BooleanComboBox = forwardRef<Input.CustomComponentRef<boolean>, Input.Cust
       options={booleanOptions}
       value={selected}
       onChange={setSelected}
+      keySelector={item => item.value}
+      textSelector={item => item.text}
     />
   )
 })
 
 
 
-const Option6ComboBox = Input.defineCustomComponent<Input.SelectionItem>((props, ref) => {
+const Option6ComboBox = Input.defineCustomComponent<{ value: string, text: string }>((props, ref) => {
   return (
-    <Input.ComboBox ref={ref} {...props} options={comboOptions} />
+    <Input.ComboBox
+      ref={ref}
+      {...props}
+      options={comboOptions}
+      keySelector={item => item.value}
+      textSelector={item => item.text}
+    />
   )
 })
 
@@ -149,11 +157,27 @@ export const UserInputテスト = () => {
                   </tr>
                   <tr>
                     <th>radio</th>
-                    <td><Input.Selection {...registerEx(`radio`)} readOnly={readOnly} options={radioOptions} /></td>
+                    <td>
+                      <Input.Selection
+                        {...registerEx(`radio`)}
+                        readOnly={readOnly}
+                        options={radioOptions}
+                        keySelector={item => item.value}
+                        textSelector={item => item.text}
+                      />
+                    </td>
                   </tr>
                   <tr>
                     <th>ComboBox</th>
-                    <td><Input.Selection {...registerEx(`combo`)} readOnly={readOnly} options={comboOptions} /></td>
+                    <td>
+                      <Input.Selection
+                        {...registerEx(`combo`)}
+                        readOnly={readOnly}
+                        options={comboOptions}
+                        keySelector={item => item.value}
+                        textSelector={item => item.text}
+                      />
+                    </td>
                   </tr>
                   <tr>
                     <th>Check</th>

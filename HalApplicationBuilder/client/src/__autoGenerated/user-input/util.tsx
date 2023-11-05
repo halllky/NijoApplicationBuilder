@@ -45,7 +45,7 @@ export type CustomComponentProps<
     name?: string // 既定値であるHTMLAttributes<HTMLElement>にはnameがないので
     readOnly?: boolean // あったりなかったりするので
   }
-export type SelectionItem = { value: string, text: string }
+
 // ---------------------------------------------
 // カスタムコンポーネント共通に対して使うuseForm
 export const useFormEx = <T extends FieldValues = FieldValues>(props: UseFormProps<T>) => {

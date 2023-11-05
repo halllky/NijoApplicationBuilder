@@ -2,14 +2,14 @@ import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo
 import { AgGridReact, AgGridReactProps } from "ag-grid-react"
 import { ColDef, GridReadyEvent, ICellEditorParams, ValueFormatterFunc } from "ag-grid-community"
 import { CustomComponent, CustomComponentRef, useFormContextEx } from "./util"
-import { useAppContext } from "../application/AppContext"
+import { useAppContext } from "../application"
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 import { useFieldArray, useFormContext } from "react-hook-form"
 
 // TODO
 // - 【済】AgGridWrapperがReactHookForm用のnameを受け取るようにし、AgGrieWrapperの中でuseFieldArrayする
-// - 【済】カスタムセルに関するロジックを1カ所に集約する。
+// - カスタムセルに関するロジックを1カ所に集約する。
 //   その際、Num等のロジックが通常用とCellEditor用の2か所にばらけてはならない。
 //   - Input.tsx 内のコンポーネント全てに共通するAPIを策定するためにコンボボックスの型定義を精査
 //   - Input.tsx 内のコンポーネント全てに共通するAPIを策定する
@@ -77,13 +77,13 @@ export const createColDef = <TRow,>(
   arrayPath: string,
   field: ColDef<TRow>['field'],
   editor: CustomComponent,
-  valueFormatter?: ValueFormatterFunc<TRow, any>
+  valueFormatter?: ValueFormatterFunc<TRow>
 ): ColDef<TRow> => ({
   field,
   cellDataType: false, // セル型の自動推論を無効にする
   resizable: true,
   editable: true,
-  valueFormatter: ,
+  valueFormatter: valueFormatter ?? defaultValueFormatter,
   cellEditor: generateCellEditor(arrayPath, editor),
   cellEditorPopup: true,
 })
@@ -128,7 +128,7 @@ const generateCellEditor = (arrayPath: string, editor: CustomComponent) => {
 
 // ----------------------------------
 
-const valueFormatter: ValueFormatterFunc = ({ value }) => {
+const defaultValueFormatter: ValueFormatterFunc = ({ value }) => {
   switch (typeof value) {
     case 'boolean':
       return value ? '○' : '-'
@@ -139,7 +139,7 @@ const valueFormatter: ValueFormatterFunc = ({ value }) => {
     case 'object':
       if (value === null) return ''
 
-      const asOpt = value as SelectionItem | undefined
+      const asOpt = value as { text: string } | undefined
       if (typeof asOpt?.text === 'string') return asOpt.text
 
       return JSON.stringify(value) // Unexpected object

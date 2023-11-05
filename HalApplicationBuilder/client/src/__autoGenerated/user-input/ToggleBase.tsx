@@ -1,6 +1,6 @@
 import { CheckIcon } from "@heroicons/react/24/outline"
 import { useRef, useImperativeHandle, useState, useCallback, createRef } from "react"
-import { SelectionItem, defineCustomComponent } from "./util"
+import { CustomComponentProps, CustomComponentRef, defineCustomComponent } from "./util"
 import { TextInputBase } from "./TextInputBase"
 
 export const ToggleBase = defineCustomComponent<boolean>((props, ref) => {
@@ -63,13 +63,20 @@ export const ToggleBase = defineCustomComponent<boolean>((props, ref) => {
 })
 
 
-export const RadioGroupBase = defineCustomComponent<SelectionItem, { options: SelectionItem[] }>((props, ref) => {
+export const RadioGroupBase = defineCustomComponent(<T extends {}>(
+  props: CustomComponentProps<T, {
+    options: T[]
+    keySelector: (item: T) => string
+    textSelector: (item: T) => string
+  }>,
+  ref: React.ForwardedRef<CustomComponentRef<T>>
+) => {
 
   // 選択
   const setItem = useCallback((value: string | undefined) => {
-    const found = props.options.find(item => item.value === value)
+    const found = props.options.find(item => props.keySelector(item) === value)
     props.onChange?.(found)
-  }, [props.options])
+  }, [props.options, props.keySelector])
 
   // リスト選択
   const liRefs = useRef<React.RefObject<HTMLLIElement>[]>([])
@@ -81,7 +88,7 @@ export const RadioGroupBase = defineCustomComponent<SelectionItem, { options: Se
   const onChange: React.ChangeEventHandler<HTMLInputElement> = useCallback(e => {
     setItem(e.target.value)
   }, [setItem])
-  const onKeyDown = useCallback((e: React.KeyboardEvent, item: SelectionItem, index: number) => {
+  const onKeyDown = useCallback((e: React.KeyboardEvent, item: T, index: number) => {
     if (e.key === 'Enter' || e.key === ' ') {
       props.onChange?.(item)
       e.preventDefault()
@@ -100,7 +107,7 @@ export const RadioGroupBase = defineCustomComponent<SelectionItem, { options: Se
   }), [props.value, setItem])
 
   if (props.readOnly) return (
-    <TextInputBase value={props.value?.text} readOnly />
+    <TextInputBase value={props.value ? props.textSelector(props.value) : ''} readOnly />
   )
 
   return (
@@ -108,24 +115,24 @@ export const RadioGroupBase = defineCustomComponent<SelectionItem, { options: Se
       {props.options.map((item, index) => (
         <li
           ref={liRefs.current[index]}
-          key={item.value}
+          key={props.keySelector(item)}
           className={`inline-flex items-center gap-1
             cursor-pointer select-none
             focus-within:outline outline-1`}
           tabIndex={0}
-          onClick={() => setItem(item.value)}
+          onClick={() => setItem(props.keySelector(item))}
           onKeyDown={e => onKeyDown(e, item, index)}
         >
           <input
             type="radio"
             className="hidden"
             name={props.name}
-            value={item.value}
-            checked={item.value === props.value?.value}
+            value={props.keySelector(item)}
+            checked={!!props.value && props.keySelector(item) === props.keySelector(props.value)}
             onChange={onChange}
           />
-          <RadioButton checked={item.value === props.value?.value} />
-          {item.text}
+          <RadioButton checked={!!props.value && props.keySelector(item) === props.keySelector(props.value)} />
+          {props.textSelector(item)}
         </li>
       ))}
     </ul>
