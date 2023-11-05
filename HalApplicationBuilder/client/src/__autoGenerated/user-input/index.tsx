@@ -1,4 +1,4 @@
-import React, { useCallback, useId, useMemo, useState } from "react";
+import React, { useCallback, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { TextInputBase, ValidationHandler } from "./TextInputBase";
 import "dayjs/locale/ja";
 import { ComboBoxBase } from "./ComboBoxBase";
@@ -79,12 +79,53 @@ export const Selection = defineCustomComponent(<T extends {}>(
     : <RadioGroupBase ref={ref} {...props} />
 })
 
+/** ラジオボタン */
+export const RadioGroup = RadioGroupBase
+
+/** ラジオボタン（選択された要素ではなく選択された要素のキーを登録するためのもの） */
+export const RadioGroupEmitsKey = defineCustomComponent(<TItem extends {}>(
+  props: CustomComponentProps<string, {
+    options: TItem[]
+    keySelector: (item: TItem) => string
+    textSelector: (item: TItem) => string
+  }>,
+  ref: React.ForwardedRef<CustomComponentRef<string>>
+) => {
+  // value
+  const value = useMemo(() => {
+    return props.options.find(item => props.keySelector(item) === props.value)
+  }, [props.options, props.keySelector, props.value])
+  const onChange = useCallback((item: TItem | undefined) => {
+    props.onChange?.(item ? props.keySelector(item) : undefined)
+  }, [props.onChange, props.keySelector])
+
+  // ref
+  const radioRef = useRef<CustomComponentRef<TItem>>(null)
+  useImperativeHandle(ref, () => ({
+    getValue: () => {
+      const selectedItem = radioRef.current?.getValue()
+      return selectedItem ? props.keySelector(selectedItem) : undefined
+    },
+    focus: () => radioRef.current?.focus(),
+  }))
+
+  return (
+    <RadioGroupBase
+      ref={radioRef}
+      {...props}
+      value={value}
+      onChange={onChange}
+    />
+  )
+})
+
 /** コンボボックス（同期） */
 export const ComboBox = ComboBoxBase
 
 /** コンボボックス（非同期） */
 export const AsyncComboBox = defineCustomComponent(<T extends {},>(
   props: CustomComponentProps<T, {
+    queryKey?: string
     query: ((keyword: string | undefined) => Promise<T[]>)
     keySelector: (item: T) => string
     textSelector: (item: T) => string
@@ -107,9 +148,8 @@ export const AsyncComboBox = defineCustomComponent(<T extends {},>(
   }, [])
 
   // 検索結結果取得
-  const id = useId()
   const { data, refetch } = useQuery({
-    queryKey: id,
+    queryKey: props.queryKey,
     queryFn: async () => await props.query(keyword),
     onError: error => {
       dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })

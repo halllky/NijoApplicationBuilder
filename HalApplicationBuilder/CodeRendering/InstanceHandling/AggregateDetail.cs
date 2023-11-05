@@ -24,8 +24,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         /// </summary>
         internal const string IS_LOADED = "__loaded";
         /// <summary>
-        /// useFieldArrayの中で配列インデックスをキーに使うと新規追加されたコンボボックスが
-        /// その1個上の要素の更新と紐づいてしまうのでクライアント側で要素1個ずつにIDを振る
+        /// - useFieldArrayの中で配列インデックスをキーに使うと新規追加されたコンボボックスが
+        ///   その1個上の要素の更新と紐づいてしまうのでクライアント側で要素1個ずつにIDを振る
+        /// - TabGroupでどのタブがアクティブになっているかの判定にも使う
         /// </summary>
         internal const string OBJECT_ID = "__object_id";
 

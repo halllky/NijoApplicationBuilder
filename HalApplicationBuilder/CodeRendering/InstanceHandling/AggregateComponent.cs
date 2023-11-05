@@ -9,7 +9,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static HalApplicationBuilder.Core.AggregateMember;
 
 namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
@@ -102,15 +101,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                             {body}
                           </>
                         ) : (
-                          <tr className="hidden">
-                            <td>
-                              <table>
-                                <tbody>
-                                  {body}
-                                </tbody>
-                              </table>
-                            </td>
-                          </tr>
+                          <div className="hidden">
+                            {body}
+                          </div>
                         )
                     }
                     """;
@@ -160,33 +153,35 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                       }, [remove])
                     
                       return (
-                        <Layout.TabGroup
-                          items={fields}
-                          keySelector={item => JSON.stringify([{{keys.Select(x => $"item.{x.MemberName}").Join(", ")}}])}
+                        <VForm.Row fullWidth>
+                          <Layout.TabGroup
+                            items={fields}
+                            keySelector={item => item.{{AggregateDetail.OBJECT_ID}} ?? ''}
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
-                          onCreate={onCreate}
+                            onCreate={onCreate}
                     """)}}
-                        >
-                          {({ item, index: {{loopVar}} }) => (
-                            <VForm.Root>
-                              <VForm.Section>
-                                {{WithIndent(RenderMembers(), "            ")}}
+                          >
+                            {({ item, index: {{loopVar}} }) => (
+                              <VForm.Root>
+                                <VForm.Section>
+                                  {{WithIndent(RenderMembers(), "              ")}}
 
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
-                                <VForm.Row fullWidth>
-                                  <Input.IconButton
-                                    underline
-                                    icon={XMarkIcon}
-                                    onClick={onRemove({{loopVar}})}
-                                    className="absolute top-full right-0">
-                                    削除
-                                  </Input.IconButton>
-                                </VForm.Row>
+                                  <VForm.Row fullWidth>
+                                    <Input.IconButton
+                                      underline
+                                      icon={XMarkIcon}
+                                      onClick={onRemove({{loopVar}})}
+                                      className="absolute top-full right-0">
+                                      削除
+                                    </Input.IconButton>
+                                  </VForm.Row>
                     """)}}
-                              </VForm.Section>
-                            </VForm.Root>
-                          )}
-                        </Layout.TabGroup>
+                                </VForm.Section>
+                              </VForm.Root>
+                            )}
+                          </Layout.TabGroup>
+                        </VForm.Row>
                       )
                     }
                     """;
@@ -316,8 +311,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var childrenComponent = new AggregateComponent(children, _mode);
 
             return $$"""
-                <VForm.Spacer />
-                {{childrenComponent.RenderCaller()}}
+                <VForm.Section label="{{children.MemberName}}" table>
+                  {{childrenComponent.RenderCaller()}}
+                </VForm.Section>
                 """;
         }
 
@@ -325,8 +321,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var childComponent = new AggregateComponent(child, _mode);
 
             return $$"""
-                <VForm.Spacer />
-                <VForm.Section label="{{child.MemberName}}">
+                <VForm.Section label="{{child.MemberName}}" table>
                   {{childComponent.RenderCaller()}}
                 </VForm.Section>
                 """;
@@ -335,7 +330,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         private string RenderProperty(AggregateMember.VariationItem variation) {
             var childComponent = new AggregateComponent(variation, _mode);
             return $$"""
-                <VForm.Section>
+                <VForm.Section label="{{variation.MemberName}}" table>
                   {{WithIndent(childComponent.RenderCaller(), "  ")}}
                 </VForm.Section>
                 """;
@@ -346,15 +341,16 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var disabled = IfReadOnly("disabled", variationSwitch);
 
             return $$"""
-                <VForm.Spacer />
                 <VForm.Row label="{{variationSwitch.MemberName}}">
-                  <Input.RadioGroup
+                  <Input.RadioGroupEmitsKey
                     {...registerEx({{switchProp}})}
-                    options={useMemo(() => [
+                    options={[
                 {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
                       { value: '{{variation.Key}}', text: '{{variation.MemberName}}' },
                 """)}}
-                    ], [])}
+                    ]}
+                    keySelector={item => item.value}
+                    textSelector={item => item.text}
                   />
                   <div className="flex-1 flex gap-2 flex-wrap">
                   </div>

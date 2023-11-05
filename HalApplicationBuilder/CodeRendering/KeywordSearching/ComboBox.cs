@@ -25,74 +25,30 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
 
         internal static string RenderDeclaringFile(IEnumerable<GraphNode<Aggregate>> allAggregates) {
             return $$"""
-                import React, { useMemo, useCallback, forwardRef, useImperativeHandle } from "react"
-                import { useFormContext } from 'react-hook-form';
+                import React, { useCallback } from "react"
                 import { useHttpRequest } from "../util"
-                import { AsyncComboBox } from "../user-input"
+                import { AsyncComboBox, defineCustomComponent } from "../user-input"
                 import * as Types from "../types"
 
                 {{allAggregates.Select(a => new ComboBox(a)).SelectTextTemplate((combo, index) => $$"""
-                export const {{combo.ComponentName}} = forwardRef(({ raectHookFormId, readOnly, className, rowIndex }: {
-                  // ag-grid CellEditorの場合はrowIndexと組み合わせてこのコンポーネントの中でIDを組み立てる
-                  raectHookFormId: string | ((rowIndex: number) => string)
-                  readOnly?: boolean
-                  className?: string
-                  // ag-grid CellEditor用
-                  rowIndex?: number
-                }, ref) => {
-
+                export const {{combo.ComponentName}} = defineCustomComponent<Types.{{combo.KeyName.TypeScriptTypeName}}>((props, ref) => {
                   const { get } = useHttpRequest()
-                  const queryFn = useCallback(async (keyword: string) => {
+                  const query = useCallback(async (keyword: string | undefined) => {
                     const response = await get<Types.{{combo.KeyName.TypeScriptTypeName}}[]>(`{{combo.Api}}`, { keyword })
                     return response.ok ? response.data : []
                   }, [get])
 
-                  const { watch, setValue } = useFormContext()
-                  const rhfId = useMemo(() => {
-                    if (typeof raectHookFormId === 'string') {
-                      return raectHookFormId
-                    } else if (rowIndex !== undefined) {
-                      return raectHookFormId(rowIndex)
-                    } else {
-                      throw Error('IDが関数の場合(グリッドセルの場合)はrowIndex必須')
-                    }
-                  }, [raectHookFormId, rowIndex])
-                  const selectedItem = watch(rhfId)
-                  const onSelectedItemChanged = useCallback((item: Types.{{combo.KeyName.TypeScriptTypeName}} | undefined) => {
-                    setValue(rhfId, item)
-                  }, [setValue, watch])
-
-                  // ag-grid CellEditor用
-                  useImperativeHandle(ref, () => ({
-                    getValue: () => selectedItem,
-                    isCancelBeforeStart: () => false,
-                    isCancelAfterEnd: () => false,
-                  }))
-
                   return (
                     <AsyncComboBox
-                      value={selectedItem}
-                      onChanged={onSelectedItemChanged}
-                      keySelector={keySelector{{index}}}
-                      textSelector={textSelector{{index}}}
-                      queryKey={['combo-{{combo._aggregate.Item.UniqueId}}']}
-                      queryFn={queryFn}
-                      readOnly={readOnly}
-                      className={className}
+                      {...props}
+                      ref={ref}
+                      queryKey="combo-{{combo._aggregate.Item.UniqueId}}"
+                      query={query}
+                      keySelector={item => JSON.stringify([{{combo.KeyName.GetKeys().Select(m => "item." + m.MemberName).Join(", ")}}])}
+                      textSelector={item => `{{combo.KeyName.GetNames().Select(m => "${item." + m.MemberName + "}").Join("&nbsp;")}}`}
                     />
                   )
                 })
-
-                const keySelector{{index}} = (item: Types.{{combo.KeyName.TypeScriptTypeName}} | null) => {
-                  return item
-                    ? `{{combo.KeyName.GetKeys().Select(m => "${item." + m.MemberName + "}").Join("::")}}`
-                    : ``
-                }
-                const textSelector{{index}} = (item: Types.{{combo.KeyName.TypeScriptTypeName}} | null) => {
-                  return item
-                    ? `{{combo.KeyName.GetNames().Select(m => "${item." + m.MemberName + "}").Join("&nbsp;")}}`
-                    : ``
-                }
                 """)}}
                 """;
         }

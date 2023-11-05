@@ -5,10 +5,8 @@ import { CustomComponent, CustomComponentRef, useFormContextEx } from "./util"
 import { useAppContext } from "../application"
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
-import { useFieldArray, useFormContext } from "react-hook-form"
 
 // TODO
-// - 【済】AgGridWrapperがReactHookForm用のnameを受け取るようにし、AgGrieWrapperの中でuseFieldArrayする
 // - カスタムセルに関するロジックを1カ所に集約する。
 //   その際、Num等のロジックが通常用とCellEditor用の2か所にばらけてはならない。
 //   - Input.tsx 内のコンポーネント全てに共通するAPIを策定するためにコンボボックスの型定義を精査
@@ -28,15 +26,12 @@ import { useFieldArray, useFormContext } from "react-hook-form"
 // - できればvalueFormatterも上記APIが持つようにしたい。
 //   値から文字列への変換のロジックがInput内の各コンポーネント内にまとまるので
 
-export const AgGridWrapper = forwardRef(<T,>(props: AgGridWrapperProps<T>, ref: React.ForwardedRef<AgGridReact<T>>) => {
+export const AgGridWrapper = forwardRef(<T,>(props: AgGridReactProps<T>, ref: React.ForwardedRef<AgGridReact<T>>) => {
   const [{ darkMode }] = useAppContext()
 
   const divRef = useRef<HTMLDivElement>(null)
   const gridRef = useRef<AgGridReact<T>>(null)
   useImperativeHandle(ref, () => gridRef.current!)
-
-  const { control } = useFormContext()
-  const { fields } = useFieldArray({ control, name: props.name ?? '' })
 
   // 画面表示時
   const onGridReady = useCallback((e: GridReadyEvent<T>) => {
@@ -57,7 +52,7 @@ export const AgGridWrapper = forwardRef(<T,>(props: AgGridWrapperProps<T>, ref: 
       <AgGridReact
         ref={gridRef}
         {...gridProps}
-        rowData={props.rowData ?? (fields as T[])}
+        rowData={props.rowData}
         multiSortKey={props.multiSortKey ?? 'ctrl'}
         rowSelection={props.rowSelection ?? 'multiple'}
         undoRedoCellEditing={props.undoRedoCellEditing ?? true}
@@ -67,11 +62,7 @@ export const AgGridWrapper = forwardRef(<T,>(props: AgGridWrapperProps<T>, ref: 
       </AgGridReact>
     </div>
   )
-}) as <T>(p: AgGridWrapperProps<T> & { ref?: React.Ref<AgGridReact<T>> }) => JSX.Element;
-
-type AgGridWrapperProps<T> = AgGridReactProps<T> & {
-  name?: string
-}
+}) as <T>(p: AgGridReactProps<T> & { ref?: React.Ref<AgGridReact<T>> }) => JSX.Element;
 
 export const createColDef = <TRow,>(
   arrayPath: string,
