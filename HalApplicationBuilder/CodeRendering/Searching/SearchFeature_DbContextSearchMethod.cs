@@ -12,11 +12,12 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
     partial class SearchFeature {
         internal string RenderDbContextMethod() {
 
-            var selectClause = Members.Select(m => new {
+            var members = GetMembers().ToArray();
+            var selectClause = members.Select(m => new {
                 resultMemberName = m.SearchResultPropName,
                 dbColumnPath = m.DbColumn.GetFullPath().Join("."),
             });
-            var instanceNameProp = Members.SingleOrDefault(m => m.IsInstanceName)?.SearchResultPropName;
+            var instanceNameProp = members.SingleOrDefault(m => m.IsInstanceName)?.SearchResultPropName;
 
             return $$"""
                 namespace {{Context.Config.EntityNamespace}} {
@@ -38,7 +39,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                 """)}}
                             });
 
-                {{Members.SelectTextTemplate(member => 
+                {{members.SelectTextTemplate(member => 
                     If(member.DbColumn.Options.MemberType.SearchBehavior == SearchBehavior.Ambiguous, () => $$"""
                             if (!string.IsNullOrWhiteSpace(param.{{member.ConditionPropName}})) {
                                 var trimmed = param.{{member.ConditionPropName}}.Trim();

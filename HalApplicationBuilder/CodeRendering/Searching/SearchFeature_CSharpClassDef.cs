@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 namespace HalApplicationBuilder.CodeRendering.Searching {
     partial class SearchFeature {
         internal string RenderCSharpClassDef() {
+            var members = GetMembers().ToArray();
+
             return $$"""
                 #pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければなりません
 
@@ -22,7 +24,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                     /// {{DisplayName}}の一覧検索処理の検索条件を表すクラスです。
                     /// </summary>
                     public partial class {{SearchConditionClassName}} : {{SEARCHCONDITION_BASE_CLASS_NAME}} {
-                {{Members.SelectTextTemplate(member => TemplateTextHelper.If(member.DbColumn.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
+                {{members.SelectTextTemplate(member => TemplateTextHelper.If(member.DbColumn.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
                         public {{Util.FromTo.CLASSNAME}}<{{member.DbColumn.Options.MemberType.GetCSharpTypeName()}}> {{member.ConditionPropName}} { get; set; } = new();
                 """).Else(() => $$"""
                         public {{member.DbColumn.Options.MemberType.GetCSharpTypeName()}} {{member.ConditionPropName}} { get; set; }
@@ -33,7 +35,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                     /// {{DisplayName}}の一覧検索処理の検索結果1件を表すクラスです。
                     /// </summary>
                     public partial class {{SearchResultClassName}} {
-                {{Members.SelectTextTemplate(member => $$"""
+                {{members.SelectTextTemplate(member => $$"""
                         public {{member.DbColumn.Options.MemberType.GetCSharpTypeName()}} {{member.SearchResultPropName}} { get; set; }
                 """)}}
                     }

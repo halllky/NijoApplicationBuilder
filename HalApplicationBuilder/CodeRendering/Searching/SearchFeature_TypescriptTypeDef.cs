@@ -8,14 +8,16 @@ using System.Threading.Tasks;
 namespace HalApplicationBuilder.CodeRendering.Searching {
     partial class SearchFeature {
         internal string RenderTypescriptTypeDef() {
+            var members = GetMembers().ToArray();
+
             return $$"""
                 export type {{SearchConditionClassName}} = {
-                {{Members.SelectTextTemplate(member => $$"""
+                {{members.SelectTextTemplate(member => $$"""
                   {{member.ConditionPropName}}?: {{member.DbColumn.Options.MemberType.GetTypeScriptTypeName()}}
                 """)}}
                 }
                 export type {{SearchResultClassName}} = {
-                {{Members.SelectTextTemplate(member => $$"""
+                {{members.SelectTextTemplate(member => $$"""
                   {{member.SearchResultPropName}}?: {{member.DbColumn.Options.MemberType.GetTypeScriptTypeName()}}
                 """)}}
                 }

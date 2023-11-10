@@ -133,7 +133,7 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                     }
 
                     type RowType = {
-                    {{Search.Members.SelectTextTemplate(member => $$"""
+                    {{Search.GetMembers().SelectTextTemplate(member => $$"""
                       {{member.SearchResultPropName}}?: string | number | boolean
                     """)}}
                     }
