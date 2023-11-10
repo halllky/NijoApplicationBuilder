@@ -43,7 +43,9 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
         private IEnumerable<Member> GetMembers() {
             var descendantColumns = DbEntity
                 .EnumerateThisAndDescendants()
-                .Where(x => x.IsRoot() || x.IsChildMember())
+                .Where(x => x.EnumerateAncestorsAndThis()
+                    .All(ancestor => !ancestor.IsChildrenMember()
+                                  && !ancestor.IsVariationMember()))
                 .SelectMany(entity => entity.GetColumns());
 
             // 参照先のキーはdescendantColumnsの中に入っているが、名前は入っていないので、別途取得の必要あり
