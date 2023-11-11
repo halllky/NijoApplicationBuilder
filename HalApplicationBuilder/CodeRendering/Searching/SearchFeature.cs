@@ -56,8 +56,9 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                     .EnumerateThisAndDescendants()
                     .SelectMany(entity => entity.GetRefEdge());
                 refTargetColumns = pkRefTargets
-                    .SelectMany(agg => agg.Terminal.GetNames())
-                    .Where(member => !member.IsKey)
+                    .SelectMany(agg => agg.Terminal.GetMembers())
+                    .OfType<AggregateMember.ValueMember>()
+                    .Where(member => !member.IsKey && member.IsDisplayName)
                     .Select(member => member.GetDbColumn());
             } else {
                 refTargetColumns = Enumerable.Empty<DbColumn>();

@@ -122,9 +122,11 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     .Where(m => m is not AggregateMember.KeyOfParent
                              && m is not AggregateMember.KeyOfRefTarget);
                 var texts = _aggregate
-                    .GetNames()
+                    .GetMembers()
+                    .OfType<AggregateMember.ValueMember>()
                     // TODO: AggregateDetailと重複している。この条件を1カ所で書けるようにできないか
-                    .Where(m => m is not AggregateMember.KeyOfParent
+                    .Where(m => m.IsDisplayName
+                             && m is not AggregateMember.KeyOfParent
                              && m is not AggregateMember.KeyOfRefTarget);
 
                 return $$"""

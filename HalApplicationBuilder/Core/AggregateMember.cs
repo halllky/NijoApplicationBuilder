@@ -65,10 +65,6 @@ namespace HalApplicationBuilder.Core {
         internal static IEnumerable<ValueMember> GetKeys(this GraphNode<Aggregate> aggregate) {
             return new RefTargetKeyName(aggregate).GetKeys();
         }
-        /// <summary>糖衣構文</summary>
-        internal static IEnumerable<ValueMember> GetNames(this GraphNode<Aggregate> aggregate) {
-            return new RefTargetKeyName(aggregate).GetNames();
-        }
 
         internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<Aggregate> aggregate) {
             var parent = aggregate.GetParent();
