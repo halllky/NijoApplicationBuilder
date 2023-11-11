@@ -20,6 +20,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
         internal string RenderController(CodeRenderingContext ctx) {
             var controller = new WebClient.Controller(_aggregate.Item);
+            var args = GetEFCoreMethodArgs();
 
             return $$"""
                 namespace {{ctx.Config.RootNamespace}} {
@@ -27,9 +28,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     using {{ctx.Config.EntityNamespace}};
 
                     partial class {{controller.ClassName}} {
-                        [HttpDelete("{{WebClient.Controller.DELETE_ACTION_NAME}}/{key}")]
-                        public virtual IActionResult Delete(string key) {
-                            if (_dbContext.{{MethodName}}(key, out var errors)) {
+                        [HttpDelete("{{WebClient.Controller.DELETE_ACTION_NAME}}/{{args.Select(a => "{" + a.MemberName + "}").Join("/")}}")]
+                        public virtual IActionResult Delete({{args.Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}) {
+                            if (_dbContext.{{MethodName}}({{args.Select(a => a.MemberName).Join(", ")}}, out var errors)) {
                                 return Ok();
                             } else {
                                 return BadRequest(this.JsonContent(errors));
@@ -55,7 +56,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     using Microsoft.EntityFrameworkCore.Infrastructure;
 
                     partial class {{ctx.Config.DbContextName}} {
-                        public bool {{MethodName}}({{_aggregate.GetKeys().Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}, out ICollection<string> errors) {
+                        public bool {{MethodName}}({{GetEFCoreMethodArgs().Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}, out ICollection<string> errors) {
 
                             {{WithIndent(find.RenderDbEntityLoading("this", "entity", m => m.MemberName, tracks: true, includeRefs: false), "            ")}}
 
@@ -78,6 +79,10 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     }
                 }
                 """;
+        }
+
+        private IEnumerable<AggregateMember.ValueMember> GetEFCoreMethodArgs() {
+            return _aggregate.GetKeys();
         }
     }
 }
