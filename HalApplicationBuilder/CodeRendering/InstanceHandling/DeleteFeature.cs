@@ -43,7 +43,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
         internal string RenderEFCoreMethod(CodeRenderingContext ctx) {
             var controller = new WebClient.Controller(_aggregate.Item);
-            var param = new AggregateCreateCommand(_aggregate);
+            var args = GetEFCoreMethodArgs().ToArray();
             var find = new FindFeature(_aggregate);
 
             return $$"""
@@ -56,9 +56,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     using Microsoft.EntityFrameworkCore.Infrastructure;
 
                     partial class {{ctx.Config.DbContextName}} {
-                        public bool {{MethodName}}({{GetEFCoreMethodArgs().Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}, out ICollection<string> errors) {
+                        public bool {{MethodName}}({{args.Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}, out ICollection<string> errors) {
 
-                            {{WithIndent(find.RenderDbEntityLoading("this", "entity", m => m.MemberName, tracks: true, includeRefs: false), "            ")}}
+                            {{WithIndent(find.RenderDbEntityLoading("this", "entity", args.Select(a => a.MemberName).ToArray(), tracks: true, includeRefs: false), "            ")}}
 
                             if (entity == null) {
                                 errors = new[] { "削除対象のデータが見つかりません。" };

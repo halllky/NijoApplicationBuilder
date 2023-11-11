@@ -33,14 +33,34 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         internal const string FROM_DBENTITY = "FromDbEntity";
         internal const string TO_DBENTITY = "ToDbEntity";
 
-        internal IOrderedEnumerable<AggregateMember.AggregateMemberBase> GetAggregateDetailMembers() {
-            return GetAggregateDetailMembersOf(_aggregate).OrderBy(m => m.Order);
-        }
-        protected virtual IEnumerable<AggregateMember.AggregateMemberBase> GetAggregateDetailMembersOf(GraphNode<Aggregate> aggregate) {
-            return aggregate
+        internal IOrderedEnumerable<AggregateMember.AggregateMemberBase> GetOwnMembers() {
+            return _aggregate
                 .GetMembers()
                 .Where(m => m is not AggregateMember.KeyOfParent
-                         && m is not AggregateMember.KeyOfRefTarget);
+                         && m is not AggregateMember.KeyOfRefTarget)
+                .OrderBy(m => m.Order);
+        }
+
+        internal IEnumerable<AggregateMember.ValueMember> GetKeyMembers() {
+            static IEnumerable<AggregateMember.ValueMember> GetRecursively(GraphNode<Aggregate> agg) {
+                foreach (var member in agg.GetMembers().OrderBy(m => m.Order)) {
+                    if (member is AggregateMember.ValueMember valueMember
+                        && member is not AggregateMember.KeyOfRefTarget // 参照先のキーは else if のほうで列挙するので
+                        && valueMember.IsKey) {
+                        yield return valueMember;
+
+                    } else if (member is AggregateMember.Ref refMember
+                        && refMember.Relation.IsPrimary()) {
+                        foreach (var refKey in GetRecursively(refMember.MemberAggregate)) {
+                            yield return refKey;
+                        }
+                    }
+                }
+            }
+
+            foreach (var key in GetRecursively(_aggregate)) {
+                yield return key;
+            }
         }
 
         internal virtual string RenderCSharp(CodeRenderingContext ctx) {
@@ -55,7 +75,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     /// {{_aggregate.Item.DisplayName}}のデータ1件の詳細を表すクラスです。
                     /// </summary>
                     public partial class {{ClassName}} {
-                {{GetAggregateDetailMembers().SelectTextTemplate(prop => $$"""
+                {{GetOwnMembers().SelectTextTemplate(prop => $$"""
                         public {{prop.CSharpTypeName}} {{prop.MemberName}} { get; set; }
                 """)}}
 
@@ -71,7 +91,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         internal virtual string RenderTypeScript(CodeRenderingContext ctx) {
             return $$"""
                 export type {{_aggregate.Item.TypeScriptTypeName}} = {
-                {{GetAggregateDetailMembers().SelectTextTemplate(m => $$"""
+                {{GetOwnMembers().SelectTextTemplate(m => $$"""
                   {{m.MemberName}}?: {{m.TypeScriptTypename}}
                 """)}}
                   {{IS_LOADED}}?: boolean

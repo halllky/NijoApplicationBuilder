@@ -27,7 +27,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     /// {{_aggregate.Item.DisplayName}}のデータ作成コマンドです。
                     /// </summary>
                     public partial class {{ClassName}} {
-                {{GetAggregateDetailMembers().SelectTextTemplate(prop => $$"""
+                {{GetOwnMembers().SelectTextTemplate(prop => $$"""
                         public {{prop.CSharpTypeName}} {{prop.MemberName}} { get; set; }
                 """)}}
 

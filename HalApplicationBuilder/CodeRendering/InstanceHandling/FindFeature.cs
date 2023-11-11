@@ -54,6 +54,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         }
 
         internal string RenderEFCoreMethod(CodeRenderingContext _ctx) {
+            var args = GetEFCoreMethodArgs().ToArray();
 
             return $$"""
                 namespace {{_ctx.Config.EntityNamespace}} {
@@ -68,9 +69,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                         /// <summary>
                         /// {{_aggregate.Item.DisplayName}}のキー情報から対象データの詳細を検索して返します。
                         /// </summary>
-                        public {{FindMethodReturnType}}? {{FindMethodName}}({{_aggregate.GetKeys().Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}) {
+                        public {{FindMethodReturnType}}? {{FindMethodName}}({{args.Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}) {
 
-                            {{WithIndent(RenderDbEntityLoading("this", "entity", m => m.MemberName, tracks: false, includeRefs: true), "            ")}}
+                            {{WithIndent(RenderDbEntityLoading("this", "entity", args.Select(a => a.MemberName).ToArray(), tracks: false, includeRefs: true), "            ")}}
 
                             if (entity == null) return null;
 
@@ -82,7 +83,17 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 """;
         }
 
-        internal string RenderDbEntityLoading(string dbContextVarName, string entityVarName, Func<AggregateMember.ValueMember, string> memberSelector, bool tracks, bool includeRefs) {
+        private IEnumerable<AggregateMember.ValueMember> GetEFCoreMethodArgs() {
+            return _aggregate.GetKeys();
+        }
+
+        internal string RenderDbEntityLoading(string dbContextVarName, string entityVarName, IList<string> searchKeys, bool tracks, bool includeRefs) {
+
+            var keys = _aggregate
+                .GetKeys()
+                .ToArray();
+            if (keys.Length != searchKeys.Count)
+                throw new ArgumentException($"Keys count of find method of {_aggregate} are not match: must be {keys.Length}, actually ... {searchKeys.Join(", ")}.");
 
             // Include
             var includeEntities = _aggregate
@@ -116,9 +127,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 });
 
             // SingleOrDefault
-            var keys = _aggregate
-                .GetKeys()
-                .SelectTextTemplate(m => $"x.{m.GetDbColumn().Options.MemberName} == {memberSelector(m)}");
+            var keysExpression = keys
+                .SelectTextTemplate((m, i) => $"x.{m.GetDbColumn().Options.MemberName} == {searchKeys[i]}");
 
             return $$"""
                 var {{entityVarName}} = {{dbContextVarName}}.{{_aggregate.Item.DbSetName}}
@@ -130,7 +140,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 """ : $$"""
                     .ThenInclude(x => x.{{path.prop}})
                 """)}}
-                    .SingleOrDefault(x => {{WithIndent(keys, "                       && ")}});
+                    .SingleOrDefault(x => {{WithIndent(keysExpression, "                       && ")}});
                 """;
         }
 

@@ -43,7 +43,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     Value = $"'{group.VariationAggregates.First().Key}'",
                 });
             var uuid = new AggregateDetail(_instance)
-                .GetAggregateDetailMembers()
+                .GetOwnMembers()
                 .OfType<AggregateMember.ValueMember>()
                 .Where(member => member.Options.MemberType is Uuid)
                 .Select(member => new {

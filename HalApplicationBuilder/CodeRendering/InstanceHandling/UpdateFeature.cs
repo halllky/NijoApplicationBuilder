@@ -42,8 +42,13 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
         internal string RenderEFCoreMethod(CodeRenderingContext ctx) {
             var controller = new WebClient.Controller(_aggregate.Item);
-            var param = new AggregateCreateCommand(_aggregate);
             var find = new FindFeature(_aggregate);
+
+            var detail = new AggregateDetail(_aggregate);
+            var searchKeys = detail
+                .GetKeyMembers()
+                .Select(m => "after." + m.GetFullPath().Join("."))
+                .ToArray();
 
             return $$"""
                 namespace {{ctx.Config.EntityNamespace}} {
@@ -55,10 +60,10 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     using Microsoft.EntityFrameworkCore.Infrastructure;
 
                     partial class {{ctx.Config.DbContextName}} {
-                        public bool {{MethodName}}({{_aggregate.Item.ClassName}} after, out {{_aggregate.Item.ClassName}} updated, out ICollection<string> errors) {
+                        public bool {{MethodName}}({{detail.ClassName}} after, out {{detail.ClassName}} updated, out ICollection<string> errors) {
                             errors = new List<string>();
 
-                            {{WithIndent(find.RenderDbEntityLoading("this", "beforeDbEntity", m => $"after.{m.MemberName}", tracks: false, includeRefs: false), "            ")}}
+                            {{WithIndent(find.RenderDbEntityLoading("this", "beforeDbEntity", searchKeys, tracks: false, includeRefs: false), "            ")}}
 
                             if (beforeDbEntity == null) {
                                 updated = new {{_aggregate.Item.ClassName}}();

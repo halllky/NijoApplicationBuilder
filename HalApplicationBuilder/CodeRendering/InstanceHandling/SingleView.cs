@@ -84,7 +84,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 .EnumerateThisAndDescendants()
                 .SelectMany(
                     a => new AggregateDetail(a)
-                        .GetAggregateDetailMembers()
+                        .GetOwnMembers()
                         .Where(m => {
                             // 同じ行に値を表示せず、名前が長くても行の横幅いっぱい占有できるため、除外
                             if (m is AggregateMember.Child) return false;

@@ -47,7 +47,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         }
 
         private IEnumerable<AggregateMember.AggregateMemberBase>? _members;
-        private IEnumerable<AggregateMember.AggregateMemberBase> Members => _members ??= new AggregateDetail(_aggregate).GetAggregateDetailMembers();
+        private IEnumerable<AggregateMember.AggregateMemberBase> Members => _members ??= new AggregateDetail(_aggregate).GetOwnMembers();
 
         internal string RenderCaller() {
             var args = Arguments
