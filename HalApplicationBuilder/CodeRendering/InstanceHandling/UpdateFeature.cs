@@ -47,6 +47,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var detail = new AggregateDetail(_aggregate);
             var searchKeys = detail
                 .GetKeyMembers()
+                .Where(m => m is not AggregateMember.KeyOfRefTarget)
                 .Select(m => "after." + m.GetFullPath().Join("."))
                 .ToArray();
 

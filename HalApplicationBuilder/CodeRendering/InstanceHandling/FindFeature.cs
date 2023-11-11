@@ -83,14 +83,19 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 """;
         }
 
-        private IEnumerable<AggregateMember.ValueMember> GetEFCoreMethodArgs() {
-            return _aggregate.GetKeys();
+        private IEnumerable<AggregateMember.AggregateMemberBase> GetEFCoreMethodArgs() {
+            return _aggregate
+                .GetKeys()
+                .Where(m => m is AggregateMember.ValueMember
+                         && m is not AggregateMember.KeyOfRefTarget);
         }
 
         internal string RenderDbEntityLoading(string dbContextVarName, string entityVarName, IList<string> searchKeys, bool tracks, bool includeRefs) {
 
             var keys = _aggregate
                 .GetKeys()
+                .Where(m => m is AggregateMember.ValueMember
+                         && m is not AggregateMember.KeyOfRefTarget)
                 .ToArray();
             if (keys.Length != searchKeys.Count)
                 throw new ArgumentException($"Keys count of find method of {_aggregate} are not match: must be {keys.Length}, actually ... {searchKeys.Join(", ")}.");
@@ -128,7 +133,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
             // SingleOrDefault
             var keysExpression = keys
-                .SelectTextTemplate((m, i) => $"x.{m.GetDbColumn().Options.MemberName} == {searchKeys[i]}");
+                .SelectTextTemplate((m, i) => $"x.{m.MemberName} == {searchKeys[i]}");
 
             return $$"""
                 var {{entityVarName}} = {{dbContextVarName}}.{{_aggregate.Item.DbSetName}}
@@ -144,7 +149,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 """;
         }
 
-        internal string RenderCaller(Func<AggregateMember.ValueMember, string> nameSelector) {
+        internal string RenderCaller(Func<AggregateMember.AggregateMemberBase, string> nameSelector) {
             var members = _aggregate
                 .GetKeys()
                 .Select(member => nameSelector(member))

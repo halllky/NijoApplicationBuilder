@@ -31,7 +31,10 @@ namespace HalApplicationBuilder.Core {
         internal static IEnumerable<AggregateMemberBase> GetMembers(this GraphNode<Aggregate> aggregate) {
             var parent = aggregate.GetParent();
             if (parent != null) {
-                var parentPKs = parent.Initial.GetKeys().ToArray();
+                var parentPKs = parent.Initial
+                    .GetKeys()
+                    .OfType<ValueMember>()
+                    .ToArray();
                 for (var i = 0; i < parentPKs.Length; i++) {
                     yield return new KeyOfParent(aggregate, parentPKs[i], i);
                 }
@@ -61,9 +64,26 @@ namespace HalApplicationBuilder.Core {
         internal static IEnumerable<ValueMember> GetKeysAndNames(this GraphNode<Aggregate> aggregate) {
             return new RefTargetKeyName(aggregate).GetKeysAndNames();
         }
-        /// <summary>糖衣構文</summary>
-        internal static IEnumerable<ValueMember> GetKeys(this GraphNode<Aggregate> aggregate) {
-            return new RefTargetKeyName(aggregate).GetKeys();
+        internal static IEnumerable<AggregateMemberBase> GetKeys(this GraphNode<Aggregate> aggregate) {
+            //return new RefTargetKeyName(aggregate).GetKeys();
+            static IEnumerable<AggregateMemberBase> GetRecursively(GraphNode<Aggregate> agg) {
+                foreach (var member in agg.GetMembers().OrderBy(m => m.Order)) {
+                    if (member is ValueMember valueMember && valueMember.IsKey) {
+                        yield return valueMember;
+
+                    } else if (member is Ref refMember && refMember.Relation.IsPrimary()) {
+                        yield return refMember;
+
+                        foreach (var refKey in GetRecursively(refMember.MemberAggregate)) {
+                            yield return refKey;
+                        }
+                    }
+                }
+            }
+
+            foreach (var key in GetRecursively(aggregate)) {
+                yield return key;
+            }
         }
 
         internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<Aggregate> aggregate) {
@@ -220,6 +240,7 @@ namespace HalApplicationBuilder.Core {
             internal IEnumerable<KeyOfRefTarget> GetForeignKeys() {
                 return Relation.Terminal
                     .GetKeys()
+                    .OfType<ValueMember>()
                     .Select((refTargetMember, index) => new KeyOfRefTarget(this, refTargetMember, index));
             }
         }
