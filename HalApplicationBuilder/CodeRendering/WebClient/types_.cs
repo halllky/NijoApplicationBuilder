@@ -30,7 +30,7 @@ namespace HalApplicationBuilder.CodeRendering.WebClient {
 
                 {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new TSInitializerFunction(aggregate).Render())}}
 
-                {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new AggregateKeyName(aggregate).RenderTypeScriptDeclaring())}}
+                {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new RefTargetKeyName(aggregate).RenderTypeScriptDeclaring())}}
 
                 {{new Searching.SearchFeature(root.As<IEFCoreEntity>(), _ctx).RenderTypescriptTypeDef()}}
 

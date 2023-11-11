@@ -69,7 +69,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
             var find = new FindFeature(_aggregate);
 
-            var keyName = new AggregateKeyName(_aggregate);
+            var keyName = new RefTargetKeyName(_aggregate);
             var keysFromUrl = keyName.GetKeys().Select(m => $"urlKey{m.MemberName}").ToArray();
 
             var maxIndent = _aggregate

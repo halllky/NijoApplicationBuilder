@@ -95,7 +95,7 @@ namespace HalApplicationBuilder.CodeRendering {
                 {{_aggregate.EnumerateDescendants().SelectTextTemplate(ins => new AggregateDetail(ins).RenderCSharp(_ctx))}}
 
                 namespace {{_ctx.Config.RootNamespace}} {
-                    {{WithIndent(_aggregate.EnumerateThisAndDescendants().SelectTextTemplate(ins => new AggregateKeyName(ins).RenderCSharpDeclaring()), "    ")}}
+                    {{WithIndent(_aggregate.EnumerateThisAndDescendants().SelectTextTemplate(ins => new RefTargetKeyName(ins).RenderCSharpDeclaring()), "    ")}}
                 }
 
                 {{search.RenderCSharpClassDef()}}

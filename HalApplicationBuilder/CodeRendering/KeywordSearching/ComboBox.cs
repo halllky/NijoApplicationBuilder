@@ -21,7 +21,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
 
         internal string ComponentName => $"ComboBox{_aggregate.Item.DisplayName.ToCSharpSafe()}";
         internal string Api => new KeywordSearchingFeature(_aggregate).GetUri();
-        internal AggregateKeyName KeyName => new AggregateKeyName(_aggregate);
+        internal RefTargetKeyName KeyName => new RefTargetKeyName(_aggregate);
 
         internal static string RenderDeclaringFile(IEnumerable<GraphNode<Aggregate>> allAggregates) {
             return $$"""

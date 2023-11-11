@@ -55,7 +55,7 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
 
         internal string RenderDbContextMethod(CodeRenderingContext ctx) {
             const string LIKE = "like";
-            var keyName = new AggregateKeyName(_aggregate);
+            var keyName = new RefTargetKeyName(_aggregate);
 
             return $$"""
                 namespace {{ctx.Config.EntityNamespace}} {

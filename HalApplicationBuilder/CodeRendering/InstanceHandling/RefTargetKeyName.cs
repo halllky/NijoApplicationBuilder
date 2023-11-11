@@ -7,8 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
-    internal class AggregateKeyName {
-        internal AggregateKeyName(GraphNode<Aggregate> aggregate) {
+    internal class RefTargetKeyName {
+        internal RefTargetKeyName(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
         }
         private readonly GraphNode<Aggregate> _aggregate;

@@ -59,15 +59,15 @@ namespace HalApplicationBuilder.Core {
 
         /// <summary>糖衣構文</summary>
         internal static IEnumerable<ValueMember> GetKeysAndNames(this GraphNode<Aggregate> aggregate) {
-            return new AggregateKeyName(aggregate).GetKeysAndNames();
+            return new RefTargetKeyName(aggregate).GetKeysAndNames();
         }
         /// <summary>糖衣構文</summary>
         internal static IEnumerable<ValueMember> GetKeys(this GraphNode<Aggregate> aggregate) {
-            return new AggregateKeyName(aggregate).GetKeys();
+            return new RefTargetKeyName(aggregate).GetKeys();
         }
         /// <summary>糖衣構文</summary>
         internal static IEnumerable<ValueMember> GetNames(this GraphNode<Aggregate> aggregate) {
-            return new AggregateKeyName(aggregate).GetNames();
+            return new RefTargetKeyName(aggregate).GetNames();
         }
 
         internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<Aggregate> aggregate) {
@@ -218,8 +218,8 @@ namespace HalApplicationBuilder.Core {
             }
 
             internal override GraphEdge<Aggregate> Relation { get; }
-            internal override string CSharpTypeName => new AggregateKeyName(Relation.Terminal).CSharpClassName;
-            internal override string TypeScriptTypename => new AggregateKeyName(Relation.Terminal).TypeScriptTypeName;
+            internal override string CSharpTypeName => new RefTargetKeyName(Relation.Terminal).CSharpClassName;
+            internal override string TypeScriptTypename => new RefTargetKeyName(Relation.Terminal).TypeScriptTypeName;
 
             internal IEnumerable<KeyOfRefTarget> GetForeignKeys() {
                 return Relation.Terminal

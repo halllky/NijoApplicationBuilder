@@ -208,7 +208,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                         cellEditorParams = (IReadOnlyDictionary<string, string>)new Dictionary<string, string> {
                             { "raectHookFormId", $"(rowIndex: number) => `{GetRegisterName().Replace("`", "")}.${{rowIndex}}.{rm.MemberName}`" },
                         },
-                        valueFormatter = $"({{ value }}) => ({new AggregateKeyName(rm.MemberAggregate).GetNames().Select(m => $"value?.{m.MemberName}").Join(" + ")}) || ''",
+                        valueFormatter = $"({{ value }}) => ({new RefTargetKeyName(rm.MemberAggregate).GetNames().Select(m => $"value?.{m.MemberName}").Join(" + ")}) || ''",
                     },
                     _ => throw new NotImplementedException(),
                 });
