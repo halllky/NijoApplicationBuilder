@@ -268,10 +268,12 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             /// </summary>
             public string GetValueSourceFullPath(AggregateMember.KeyOfParent parentPK) {
                 var declaringMember = parentPK.GetDeclaringMember();
-                var x = _stack.Single(x => x.InstanceType == declaringMember.Owner);
-                var path = declaringMember.GetFullPath(x.MostRecent1To1Ancestor);
 
-                return $"{x.Instance}.{path.Join(".")}";
+                // SingleOrDefaultを使っているが必ず見つかる想定（ここで例外で止めずに出力されたソースコードで是非を判断する方が早いのでこうしている）
+                var x = _stack.SingleOrDefault(x => x.InstanceType == declaringMember.Owner);
+                var path = declaringMember.GetFullPath(x?.MostRecent1To1Ancestor);
+
+                return $"{x?.Instance}.{path.Join(".")}";
             }
 
             private class Item {
