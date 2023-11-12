@@ -18,10 +18,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
         internal IEnumerable<AggregateMember.AggregateMemberBase> GetKeysAndNames() {
             var keys = GetKeys().ToDictionary(x => x.MemberName);
-            var names = _aggregate
-                .GetMembers()
-                .OfType<AggregateMember.ValueMember>()
-                .Where(m => m.IsDisplayName && !keys.ContainsKey(m.MemberName));
+            var names = GetNames().Where(m => !keys.ContainsKey(m.MemberName));
             return keys.Values.Concat(names);
         }
         internal IEnumerable<AggregateMember.AggregateMemberBase> GetKeys() {
