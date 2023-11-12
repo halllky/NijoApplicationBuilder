@@ -60,10 +60,6 @@ namespace HalApplicationBuilder.Core {
             }
         }
 
-        /// <summary>糖衣構文</summary>
-        internal static IEnumerable<ValueMember> GetKeysAndNames(this GraphNode<Aggregate> aggregate) {
-            return new RefTargetKeyName(aggregate).GetKeysAndNames();
-        }
         internal static IEnumerable<AggregateMemberBase> GetKeys(this GraphNode<Aggregate> aggregate) {
             //return new RefTargetKeyName(aggregate).GetKeys();
             static IEnumerable<AggregateMemberBase> GetRecursively(GraphNode<Aggregate> agg) {

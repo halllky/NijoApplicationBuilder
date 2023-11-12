@@ -55,7 +55,31 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
 
         internal string RenderDbContextMethod(CodeRenderingContext ctx) {
             const string LIKE = "like";
+
             var keyName = new RefTargetKeyName(_aggregate);
+            var filterColumns = keyName
+                .GetKeysAndNames()
+                .OfType<AggregateMember.ValueMember>()
+                .Select(m => m.GetFullPath(_aggregate).Join("."));
+            var orderColumn = keyName
+                .GetKeysAndNames()
+                .OfType<AggregateMember.ValueMember>()
+                .First()
+                .MemberName;
+
+            string RenderKeyNameConvertingRecursively(GraphNode<Aggregate> agg) {
+                var keyNameClass = new RefTargetKeyName(agg);
+                return keyNameClass
+                    .GetKeysAndNames()
+                    .Where(m => m.Owner == agg)
+                    .SelectTextTemplate(m => m is AggregateMember.ValueMember vm ? $$"""
+                        {{m.MemberName}} = e.{{vm.GetDbColumn().GetFullPath(_aggregate.As<IEFCoreEntity>()).Join(".")}},
+                        """ : $$"""
+                        {{m.MemberName}} = new {{new RefTargetKeyName(((AggregateMember.Ref)m).MemberAggregate).CSharpClassName}}() {
+                            {{WithIndent(RenderKeyNameConvertingRecursively(((AggregateMember.Ref)m).MemberAggregate), "    ")}}
+                        },
+                        """);
+            }
 
             return $$"""
                 namespace {{ctx.Config.EntityNamespace}} {
@@ -71,23 +95,21 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                         /// {{_aggregate.Item.DisplayName}}をキーワードで検索します。
                         /// </summary>
                         public IEnumerable<{{keyName.CSharpClassName}}> {{DbcontextMeghodName}}(string? keyword) {
-                            var query = this.{{_aggregate.Item.DbSetName}}.Select(e => new {{keyName.CSharpClassName}} {
-                {{keyName.GetKeysAndNames().SelectTextTemplate(m => $$"""
-                                {{m.MemberName}} = e.{{m.GetDbColumn().GetFullPath(_aggregate.As<IEFCoreEntity>()).Join(".")}},
-                """)}}
-                            });
-                
+                            var query = (IQueryable<{{_aggregate.Item.EFCoreEntityClassName}}>)this.{{_aggregate.Item.DbSetName}};
+
                             if (!string.IsNullOrWhiteSpace(keyword)) {
                                 var {{LIKE}} = $"%{keyword.Trim().Replace("%", "\\%")}%";
-                                query = query.Where(item => {{WithIndent(keyName.GetKeysAndNames().SelectTextTemplate(m => $"EF.Functions.Like(item.{m.MemberName}, {LIKE})"), "                                         || ")}});
+                                query = query.Where(item => {{WithIndent(filterColumns.SelectTextTemplate(path => $"EF.Functions.Like(item.{path}, {LIKE})"), "                                         || ")}});
                             }
 
-                            query = query
-                                .OrderBy(m => m.{{keyName.GetKeysAndNames().First().MemberName}})
+                            var results = query
+                                .Select(e => new {{keyName.CSharpClassName}} {
+                                    {{WithIndent(RenderKeyNameConvertingRecursively(_aggregate), "                    ")}}
+                                })
+                                .OrderBy(m => m.{{orderColumn}})
                                 .Take({{LIST_BY_KEYWORD_MAX + 1}});
 
-                            return query
-                                .AsEnumerable();
+                            return results.AsEnumerable();
                         }
                     }
                 }

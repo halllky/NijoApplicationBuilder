@@ -16,19 +16,20 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         internal string CSharpClassName => $"{_aggregate.Item.ClassName}KeysAndNames";
         internal string TypeScriptTypeName => $"{_aggregate.Item.ClassName}KeysAndNames";
 
-        internal IEnumerable<AggregateMember.ValueMember> GetKeysAndNames() {
-            return _aggregate
+        internal IEnumerable<AggregateMember.AggregateMemberBase> GetKeysAndNames() {
+            var keys = GetKeys().ToDictionary(x => x.MemberName);
+            var names = _aggregate
                 .GetMembers()
                 .OfType<AggregateMember.ValueMember>()
-                .Where(member => member.IsKey || member.IsDisplayName);
+                .Where(m => m.IsDisplayName && !keys.ContainsKey(m.MemberName));
+            return keys.Values.Concat(names);
         }
-        internal IEnumerable<AggregateMember.ValueMember> GetKeys() {
+        internal IEnumerable<AggregateMember.AggregateMemberBase> GetKeys() {
             return _aggregate
-                .GetMembers()
-                .OfType<AggregateMember.ValueMember>()
-                .Where(member => member.IsKey);
+                .GetKeys()
+                .Where(m => m is not AggregateMember.KeyOfRefTarget);
         }
-        internal IEnumerable<AggregateMember.ValueMember> GetNames() {
+        internal IEnumerable<AggregateMember.AggregateMemberBase> GetNames() {
             return _aggregate
                 .GetMembers()
                 .OfType<AggregateMember.ValueMember>()

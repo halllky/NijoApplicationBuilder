@@ -129,13 +129,22 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                         """;
 
                 } else if (prop is AggregateMember.Ref refProp) {
-                    yield return $$"""
-                        {{refProp.MemberName}} = new() {
-                        {{refProp.MemberAggregate.GetKeysAndNames().SelectTextTemplate(m => $$"""
-                            {{m.MemberName}} = {{rootInstanceName}}.{{m.GetDbColumn().GetFullPath(rootInstance.As<IEFCoreEntity>()).Join(".")}},
-                        """)}}
-                        },
-                        """;
+
+                    string RenderKeyNameConvertingRecursively(AggregateMember.Ref refMember) {
+                        var keyNameClass = new RefTargetKeyName(refMember.MemberAggregate);
+
+                        return $$"""
+                            {{refMember.MemberName}} = new {{keyNameClass.CSharpClassName}}() {
+                            {{keyNameClass.GetKeysAndNames().SelectTextTemplate(m => m is AggregateMember.ValueMember vm ? $$"""
+                                {{m.MemberName}} = {{rootInstanceName}}.{{vm.GetDbColumn().GetFullPath(rootInstance.As<IEFCoreEntity>()).Join(".")}},
+                            """ : $$"""
+                                {{WithIndent(RenderKeyNameConvertingRecursively((AggregateMember.Ref)m), "    ")}}
+                            """)}}
+                            },
+                            """;
+                    }
+
+                    yield return RenderKeyNameConvertingRecursively(refProp);
 
                 } else if (prop is AggregateMember.Children children) {
                     var item = depth == 0 ? "item" : $"item{depth}";
