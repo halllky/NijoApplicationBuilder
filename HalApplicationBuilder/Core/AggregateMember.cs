@@ -237,6 +237,7 @@ namespace HalApplicationBuilder.Core {
                 return Relation.Terminal
                     .GetKeys()
                     .OfType<ValueMember>()
+                    .Where(refTargetMember => refTargetMember is not KeyOfRefTarget)
                     .Select((refTargetMember, index) => new KeyOfRefTarget(this, refTargetMember, index));
             }
         }
