@@ -27,18 +27,22 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         }
 
         internal string RenderController(CodeRenderingContext _ctx) {
-            var keys = _aggregate.GetKeys();
+            var keys = _aggregate
+                .GetKeys()
+                .Where(m => m is AggregateMember.ValueMember
+                         && m is not AggregateMember.KeyOfRefTarget)
+                .ToArray();
             var controller = new WebClient.Controller(_aggregate.Item);
 
             return $$"""
             namespace {{_ctx.Config.RootNamespace}} {
                 using Microsoft.AspNetCore.Mvc;
                 using {{_ctx.Config.EntityNamespace}};
-            
+
                 partial class {{controller.ClassName}} {
                     [HttpGet("{{ACTION_NAME}}/{{keys.Select(m => "{" + m.MemberName + "}").Join("/")}}")]
                     public virtual IActionResult Find({{keys.Select(m => $"{m.CSharpTypeName.ToNullable()} {m.MemberName}").Join(", ")}}) {
-            {{_aggregate.GetKeys().SelectTextTemplate(m => $$"""
+            {{keys.SelectTextTemplate(m => $$"""
                         if ({{m.MemberName}} == null) return BadRequest();
             """)}}
                         var instance = _dbContext.{{FindMethodName}}({{keys.Select(m => m.MemberName).Join(", ")}});
@@ -92,14 +96,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
         internal string RenderDbEntityLoading(string dbContextVarName, string entityVarName, IList<string> searchKeys, bool tracks, bool includeRefs) {
 
-            var keys = _aggregate
-                .GetKeys()
-                .Where(m => m is AggregateMember.ValueMember
-                         && m is not AggregateMember.KeyOfRefTarget)
-                .ToArray();
-            if (keys.Length != searchKeys.Count)
-                throw new ArgumentException($"Keys count of find method of {_aggregate} are not match: must be {keys.Length}, actually ... {searchKeys.Join(", ")}.");
-
             // Include
             var includeEntities = _aggregate
                 .EnumerateThisAndDescendants()
@@ -132,8 +128,11 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 });
 
             // SingleOrDefault
-            var keysExpression = keys
-                .SelectTextTemplate((m, i) => $"x.{m.MemberName} == {searchKeys[i]}");
+            var keys = _aggregate
+                .GetKeys()
+                .Where(m => m is AggregateMember.ValueMember
+                         && m is not AggregateMember.KeyOfRefTarget)
+                .SelectTextTemplate((m, i) => $"x.{m.GetFullPath().Join(".")} == {searchKeys.ElementAtOrDefault(i)}");
 
             return $$"""
                 var {{entityVarName}} = {{dbContextVarName}}.{{_aggregate.Item.DbSetName}}
@@ -145,19 +144,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 """ : $$"""
                     .ThenInclude(x => x.{{path.prop}})
                 """)}}
-                    .SingleOrDefault(x => {{WithIndent(keysExpression, "                       && ")}});
-                """;
-        }
-
-        internal string RenderCaller(Func<AggregateMember.AggregateMemberBase, string> nameSelector) {
-            var members = _aggregate
-                .GetKeys()
-                .Select(member => nameSelector(member))
-                .Join($",{Environment.NewLine}    ");
-
-            return $$"""
-                {{FindMethodName}}(
-                    {{members}})
+                    .SingleOrDefault(x => {{WithIndent(keys, "                       && ")}});
                 """;
         }
     }

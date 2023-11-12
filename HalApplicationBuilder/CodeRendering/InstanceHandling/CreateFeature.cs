@@ -46,6 +46,12 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var param = new AggregateCreateCommand(_aggregate);
             var find = new FindFeature(_aggregate);
 
+            var searchKeys = _aggregate
+                .GetKeys()
+                .Where(m => m is AggregateMember.ValueMember
+                         && m is not AggregateMember.KeyOfRefTarget)
+                .Select(m => $"dbEntity.{m.GetFullPath().Join(".")}");
+
             return $$"""
                 namespace {{ctx.Config.EntityNamespace}} {
                     using System;
@@ -54,12 +60,12 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     using System.Linq;
                     using Microsoft.EntityFrameworkCore;
                     using Microsoft.EntityFrameworkCore.Infrastructure;
-                
+
                     partial class {{ctx.Config.DbContextName}} {
                         public bool {{MethodName}}({{param.ClassName}} command, out {{_aggregate.Item.ClassName}} created, out ICollection<string> errors) {
                             var dbEntity = command.{{AggregateDetail.TO_DBENTITY}}();
                             this.Add(dbEntity);
-                
+
                             try {
                                 this.SaveChanges();
                             } catch (DbUpdateException ex) {
@@ -67,14 +73,14 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                                 errors = ex.GetMessagesRecursively("  ").ToList();
                                 return false;
                             }
-                
-                            var afterUpdate = this.{{WithIndent(find.RenderCaller(m => $"dbEntity.{m.MemberName}"), "            ")}};
+
+                            var afterUpdate = this.{{find.FindMethodName}}({{searchKeys.Join(", ")}});
                             if (afterUpdate == null) {
                                 created = new {{_aggregate.Item.ClassName}}();
                                 errors = new[] { "更新後のデータの再読み込みに失敗しました。" };
                                 return false;
                             }
-                
+
                             created = afterUpdate;
                             errors = new List<string>();
                             return true;

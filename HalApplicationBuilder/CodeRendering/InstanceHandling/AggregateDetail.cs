@@ -41,28 +41,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 .OrderBy(m => m.Order);
         }
 
-        internal IEnumerable<AggregateMember.ValueMember> GetKeyMembers() {
-            static IEnumerable<AggregateMember.ValueMember> GetRecursively(GraphNode<Aggregate> agg) {
-                foreach (var member in agg.GetMembers().OrderBy(m => m.Order)) {
-                    if (member is AggregateMember.ValueMember valueMember
-                        && member is not AggregateMember.KeyOfRefTarget // 参照先のキーは else if のほうで列挙するので
-                        && valueMember.IsKey) {
-                        yield return valueMember;
-
-                    } else if (member is AggregateMember.Ref refMember
-                        && refMember.Relation.IsPrimary()) {
-                        foreach (var refKey in GetRecursively(refMember.MemberAggregate)) {
-                            yield return refKey;
-                        }
-                    }
-                }
-            }
-
-            foreach (var key in GetRecursively(_aggregate)) {
-                yield return key;
-            }
-        }
-
         internal virtual string RenderCSharp(CodeRenderingContext ctx) {
             return $$"""
                 namespace {{ctx.Config.RootNamespace}} {

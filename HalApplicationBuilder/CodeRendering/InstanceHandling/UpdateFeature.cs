@@ -45,9 +45,10 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             var find = new FindFeature(_aggregate);
 
             var detail = new AggregateDetail(_aggregate);
-            var searchKeys = detail
-                .GetKeyMembers()
-                .Where(m => m is not AggregateMember.KeyOfRefTarget)
+            var searchKeys = _aggregate
+                .GetKeys()
+                .Where(m => m is AggregateMember.ValueMember
+                         && m is not AggregateMember.KeyOfRefTarget)
                 .Select(m => "after." + m.GetFullPath().Join("."))
                 .ToArray();
 
@@ -87,7 +88,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                                 return false;
                             }
 
-                            var afterUpdate = this.{{find.RenderCaller(m => $"afterDbEntity.{m.GetFullPath().Join(".")}")}};
+                            var afterUpdate = this.{{find.FindMethodName}}({{searchKeys.Join(", ")}});
                             if (afterUpdate == null) {
                                 updated = new {{_aggregate.Item.ClassName}}();
                                 errors.Add("更新後のデータの再読み込みに失敗しました。");
