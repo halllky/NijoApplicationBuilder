@@ -16,6 +16,8 @@ namespace HalApplicationBuilder.IntegrationTest {
         _010_ChildrenからChildrenへの参照,
         [FileName("011_ダブル.xml")]
         _011_ダブル,
+        [FileName("013_主キーにRef.xml")]
+        _013_主キーにRef,
 
         [FileName("100_RDRA.xml")]
         _100_RDRAxml,

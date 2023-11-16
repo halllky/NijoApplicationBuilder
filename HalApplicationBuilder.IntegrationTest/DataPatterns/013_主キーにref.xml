@@ -1,50 +1,28 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <自動テストで作成されたプロジェクト>
-  <メイン is="master-data">
+
+  <受注 is="master-data">
     <ID is="uuid" />
-    <メイン名称 is="name" />
+    <受注日 is="datetime" />
+    <明細 is="array">
+      <連番 is="key int" />
+      <商品名 is="word" />
+      <数量 is="int" />
+    </明細>
+  </受注>
 
-    <自身のキーを持たないメイン子配列 is="array">
-      <整数 is="int" />
-    </自身のキーを持たないメイン子配列>
+  <納品 is="master-data">
+    <受注 is="key ref-to:受注/明細" />
+    <納品日 is="datetime" />
+    <備考 is="array">
+      <本文 is="sentence" />
+    </備考>
+  </納品>
 
-    <自身のキーを持つメイン子配列 is="array">
-      <子配列自身のキー is="key int" />
-      <整数 is="int" />
-    </自身のキーを持つメイン子配列>
-  </メイン>
-
-  <主キーがRef is="master-data">
-    <メイン is="ref-to:メイン key" />
-    <名前 is="name" />
-  </主キーがRef>
-
-  <主キーの一部がRef is="master-data">
-    <メイン is="ref-to:メイン key" />
-    <自身のID is="uuid" />
-    <名前 is="name" />
-  </主キーの一部がRef>
-
-  <主キーが複数あり全部Ref is="master-data">
-    <メイン is="ref-to:メイン key" />
-    <メインB is="ref-to:メインB key" />
-    <自身のID is="uuid" />
-    <名前 is="name" />
-  </主キーが複数あり全部Ref>
-  <メインB is="master-data">
-    <ID is="uuid" />
-    <メインB名称 is="name" />
-  </メインB>
-
-  <集約の子に対するRefその1 is="master-data">
-    <メインの子 is="ref-to:メイン/自身のキーを持たないメイン子配列 key" />
-    <名前 is="name" />
-  </集約の子に対するRefその1>
-
-  <集約の子に対するRefその2 is="master-data">
-    <メインの子 is="ref-to:メイン/自身のキーを持つメイン子配列 key" />
-    <名前 is="name" />
-  </集約の子に対するRefその2>
+  <請求 is="master-data">
+    <納品 is="key ref-to:納品" />
+    <金額 is="int" />
+  </請求>
 
 </自動テストで作成されたプロジェクト>
