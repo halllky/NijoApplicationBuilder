@@ -61,24 +61,13 @@ namespace HalApplicationBuilder.Core {
         }
 
         internal static IEnumerable<AggregateMemberBase> GetKeys(this GraphNode<Aggregate> aggregate) {
-            //return new RefTargetKeyName(aggregate).GetKeys();
-            static IEnumerable<AggregateMemberBase> GetRecursively(GraphNode<Aggregate> agg) {
-                foreach (var member in agg.GetMembers().OrderBy(m => m.Order)) {
-                    if (member is ValueMember valueMember && valueMember.IsKey) {
-                        yield return valueMember;
+            foreach (var member in aggregate.GetMembers().OrderBy(m => m.Order)) {
+                if (member is ValueMember valueMember && valueMember.IsKey) {
+                    yield return valueMember;
 
-                    } else if (member is Ref refMember && refMember.Relation.IsPrimary()) {
-                        yield return refMember;
-
-                        foreach (var refKey in GetRecursively(refMember.MemberAggregate)) {
-                            yield return refKey;
-                        }
-                    }
+                } else if (member is Ref refMember && refMember.Relation.IsPrimary()) {
+                    yield return refMember;
                 }
-            }
-
-            foreach (var key in GetRecursively(aggregate)) {
-                yield return key;
             }
         }
 
@@ -237,33 +226,31 @@ namespace HalApplicationBuilder.Core {
                 return Relation.Terminal
                     .GetKeys()
                     .OfType<ValueMember>()
-                    .Where(refTargetMember => refTargetMember is not KeyOfRefTarget)
-                    .Select((refTargetMember, index) => new KeyOfRefTarget(this, refTargetMember, index));
+                    .Select((refTargetMember, index) => new KeyOfRefTarget(Relation.Initial, this, refTargetMember, index));
             }
         }
         internal class KeyOfRefTarget : ValueMember {
-            internal KeyOfRefTarget(Ref refMember, ValueMember refTargetMember, int refTargetMemberOrder) {
-                _refMember = refMember;
+            internal KeyOfRefTarget(GraphNode<Aggregate> owner, Ref refMember, ValueMember refTargetMember, int refTargetMemberOrder) {
+                Owner = owner;
                 Options = refTargetMember.Options.Clone(opt => {
-                    opt.MemberName = $"{refMember.MemberName}_{refTargetMember.MemberName}";
+                    opt.MemberName = refTargetMember.GetFullPath(owner).Join(".");
                     opt.IsKey = refMember.Relation.IsPrimary();
                     opt.IsDisplayName = refMember.Relation.IsInstanceName();
                     opt.IsRequired = refMember.Relation.IsRequired();
                 });
-                Original = refTargetMember;
+                Original = refTargetMember is KeyOfRefTarget refref ? refref.Original : refTargetMember;
                 Order = refMember.Order + (refTargetMemberOrder / 1000);
             }
-            private readonly Ref _refMember;
 
             internal override IReadOnlyMemberOptions Options { get; }
             internal override decimal Order { get; }
-            internal override GraphNode<Aggregate> Owner => _refMember.Owner;
+            internal override GraphNode<Aggregate> Owner { get; }
             internal ValueMember Original { get; }
         }
 
         internal class KeyOfParent : ValueMember {
-            internal KeyOfParent(GraphNode<Aggregate> childAggregate, ValueMember parentPK, int parentPkOrder) {
-                Owner = childAggregate;
+            internal KeyOfParent(GraphNode<Aggregate> owner, ValueMember parentPK, int parentPkOrder) {
+                Owner = owner;
                 Original = parentPK;
                 Options = parentPK.Options.Clone(opt => {
                     var declaring = GetDeclaringMember();

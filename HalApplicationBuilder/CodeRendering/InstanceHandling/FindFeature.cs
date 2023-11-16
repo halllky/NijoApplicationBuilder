@@ -29,8 +29,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         internal string RenderController(CodeRenderingContext _ctx) {
             var keys = _aggregate
                 .GetKeys()
-                .Where(m => m is AggregateMember.ValueMember
-                         && m is not AggregateMember.KeyOfRefTarget)
+                .Where(m => m is AggregateMember.ValueMember)
                 .ToArray();
             var controller = new WebClient.Controller(_aggregate.Item);
 
@@ -90,8 +89,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         private IEnumerable<AggregateMember.AggregateMemberBase> GetEFCoreMethodArgs() {
             return _aggregate
                 .GetKeys()
-                .Where(m => m is AggregateMember.ValueMember
-                         && m is not AggregateMember.KeyOfRefTarget);
+                .Where(m => m is AggregateMember.ValueMember);
         }
 
         internal string RenderDbEntityLoading(string dbContextVarName, string entityVarName, IList<string> searchKeys, bool tracks, bool includeRefs) {
@@ -130,8 +128,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             // SingleOrDefault
             var keys = _aggregate
                 .GetKeys()
-                .Where(m => m is AggregateMember.ValueMember
-                         && m is not AggregateMember.KeyOfRefTarget)
+                .Where(m => m is AggregateMember.ValueMember)
                 .SelectTextTemplate((m, i) => $"x.{m.GetFullPath().Join(".")} == {searchKeys.ElementAtOrDefault(i)}");
 
             return $$"""

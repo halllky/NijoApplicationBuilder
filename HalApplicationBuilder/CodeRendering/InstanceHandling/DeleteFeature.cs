@@ -84,8 +84,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         private IEnumerable<AggregateMember.AggregateMemberBase> GetEFCoreMethodArgs() {
             return _aggregate
                 .GetKeys()
-                .Where(m => m is AggregateMember.ValueMember
-                         && m is not AggregateMember.KeyOfRefTarget);
+                .Where(m => m is AggregateMember.ValueMember);
         }
     }
 }

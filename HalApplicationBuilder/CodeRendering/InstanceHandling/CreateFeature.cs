@@ -48,8 +48,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
             var searchKeys = _aggregate
                 .GetKeys()
-                .Where(m => m is AggregateMember.ValueMember
-                         && m is not AggregateMember.KeyOfRefTarget)
+                .Where(m => m is AggregateMember.ValueMember)
                 .Select(m => $"dbEntity.{m.GetFullPath().Join(".")}");
 
             return $$"""
