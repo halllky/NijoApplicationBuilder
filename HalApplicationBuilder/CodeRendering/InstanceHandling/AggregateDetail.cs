@@ -167,22 +167,31 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         private IEnumerable<string> RenderBodyOfToDbEntity(BodyRenderingContext context) {
             foreach (var prop in context.RenderingAggregate.GetMembers()) {
                 if (prop is AggregateMember.ValueMember valueMember) {
+                    // 参照先のキーの代入はRefの分岐でレンダリングするので
+                    if (!context.RenderingAggregate
+                        .EnumerateAncestorsAndThis()
+                        .Contains(valueMember.Declaring)) continue;
+
                     yield return $$"""
-                        {{valueMember.GetDbColumn().Options.MemberName}} = {{context.ValueSourceInstance}}.{{valueMember.GetFullPath(context.ValueSource).Join(".")}},
+                        {{valueMember.GetDbColumn().Options.MemberName}} = {{context.GetInstanceNameOf(valueMember.Declaring)}}.{{valueMember.GetFullPath(valueMember.Declaring).Join(".")}},
                         """;
 
                 } else if (prop is AggregateMember.Ref refProp) {
-                    continue; // 参照先のキーはValueMemberの分岐で処理済み
+                    foreach (var fk in refProp.GetForeignKeys()) {
+                        yield return $$"""
+                            {{fk.GetDbColumn().Options.MemberName}} = {{context.GetInstanceNameOf(refProp.Declaring)}}.{{fk.GetFullPath(refProp.Declaring).Join(".")}},
+                            """;
+                    }
 
                 } else if (prop is AggregateMember.Children children) {
                     var item = context.Depth == 0 ? "item" : $"item{context.Depth}";
                     var nav = children.GetNavigationProperty();
-                    var childProp = nav.Principal.GetFullPath(context.ValueSource).Join(".");
+                    var childProp = nav.Principal.GetFullPath(prop.Declaring).Join(".");
                     var childInstance = children.MemberAggregate;
                     var childDbEntityClass = $"{context.Config.EntityNamespace}.{nav.Relevant.Owner.Item.EFCoreEntityClassName}";
 
                     yield return $$"""
-                        {{children.MemberName}} = {{context.ValueSourceInstance}}.{{childProp}}.Select({{item}} => new {{childDbEntityClass}} {
+                        {{children.MemberName}} = {{context.GetInstanceNameOf(children.Declaring)}}.{{childProp}}.Select({{item}} => new {{childDbEntityClass}} {
                             {{WithIndent(RenderBodyOfToDbEntity(context.Nest(childInstance, item)), "    ")}}
                         }).ToList(),
                         """;
@@ -211,14 +220,11 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 _stack.Push(new Item {
                     Instance = instanceName,
                     InstanceType = aggregate,
-                    MostRecent1To1Ancestor = aggregate,
                 });
-                ValueSource = aggregate;
                 Config = config;
             }
             private BodyRenderingContext(Stack<Item> stack, GraphNode<Aggregate> valueSource, Config config) {
                 _stack = stack;
-                ValueSource = valueSource;
                 Config = config;
             }
             private readonly Stack<Item> _stack;
@@ -226,30 +232,29 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             public Config Config { get; }
 
             public GraphNode<Aggregate> RenderingAggregate => _stack.Peek().InstanceType;
-            public GraphNode<Aggregate> ValueSource { get; }
-            public string ValueSourceInstance => _stack.Peek().Instance;
             public int Depth => _stack.Count - 1;
+
+            public string GetInstanceNameOf(GraphNode<Aggregate> aggregate) {
+                if (aggregate.IsRoot()) {
+                    return "this";
+                } else {
+                    var depth = aggregate.EnumerateAncestors().Count();
+                    return depth == 1 ? "item" : $"item{depth - 1}";
+                }
+            }
 
             public BodyRenderingContext Nest(GraphNode<Aggregate> childAggregate, string? childInstanceName = null) {
                 var newStack = new Stack<Item>(_stack);
                 newStack.Push(new Item {
-                    Instance = childInstanceName ?? ValueSourceInstance,
+                    Instance = childInstanceName ?? GetInstanceNameOf(RenderingAggregate),
                     InstanceType = childAggregate,
-                    MostRecent1To1Ancestor = childInstanceName == null
-                        ? ValueSource
-                        : childAggregate,
                 });
-                var valueSource = childInstanceName == null ? ValueSource : childAggregate;
-                return new BodyRenderingContext(newStack, valueSource, Config);
+                return new BodyRenderingContext(newStack, childAggregate, Config);
             }
 
             private class Item {
                 public required string Instance { get; init; }
                 public required GraphNode<Aggregate> InstanceType { get; init; }
-                /// <summary>
-                /// 1対1で辿れるうちの直近の祖先（集約ルートまたはラムダ変数の型）
-                /// </summary>
-                public required GraphNode<Aggregate> MostRecent1To1Ancestor { get; init; }
             }
         }
         #endregion ToDbEntity
