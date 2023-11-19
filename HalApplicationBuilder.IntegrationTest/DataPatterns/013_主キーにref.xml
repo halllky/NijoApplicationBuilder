@@ -16,6 +16,7 @@
     <受注 is="key ref-to:受注/明細" />
     <納品日 is="datetime" />
     <備考 is="array">
+      <備考連番 is="key int" />
       <本文 is="sentence" />
     </備考>
   </納品>
