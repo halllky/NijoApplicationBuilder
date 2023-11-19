@@ -24,7 +24,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         internal IEnumerable<AggregateMember.AggregateMemberBase> GetKeys() {
             return _aggregate
                 .GetKeys()
-                .Where(m => m is AggregateMember.ValueMember);
+                .Where(m => _aggregate.EnumerateAncestorsAndThis().Contains(m.Declaring));
         }
         internal IEnumerable<AggregateMember.AggregateMemberBase> GetNames() {
             return _aggregate

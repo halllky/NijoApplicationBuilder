@@ -4,6 +4,7 @@
 
   <受注 is="master-data">
     <ID is="uuid" />
+    <表示名称 is="name" />
     <受注日 is="datetime" />
     <明細 is="array">
       <連番 is="key int" />
@@ -14,6 +15,7 @@
 
   <納品 is="master-data">
     <受注 is="key ref-to:受注/明細" />
+    <表示名称 is="name" />
     <納品日 is="datetime" />
     <備考 is="array">
       <備考連番 is="key int" />
@@ -23,6 +25,7 @@
 
   <請求 is="master-data">
     <納品 is="key ref-to:納品" />
+    <表示名称 is="name" />
     <金額 is="int" />
   </請求>
 
