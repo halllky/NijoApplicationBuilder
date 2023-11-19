@@ -151,60 +151,55 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
         #region ToDbEntity
         internal string ToDbEntity(CodeRenderingContext ctx) {
-            var context = new BodyRenderingContext(_aggregate, "this", ctx.Config);
-
             return $$"""
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}のオブジェクトをデータベースに保存する形に変換します。
                 /// </summary>
                 public {{ctx.Config.EntityNamespace}}.{{_aggregate.Item.EFCoreEntityClassName}} {{TO_DBENTITY}}() {
                     return new {{ctx.Config.EntityNamespace}}.{{_aggregate.Item.EFCoreEntityClassName}} {
-                        {{WithIndent(RenderBodyOfToDbEntity(context), "        ")}}
+                        {{WithIndent(RenderBodyOfToDbEntity(_aggregate, ctx.Config), "        ")}}
                     };
                 }
                 """;
         }
-        private IEnumerable<string> RenderBodyOfToDbEntity(BodyRenderingContext context) {
-            foreach (var prop in context.RenderingAggregate.GetMembers()) {
+        private IEnumerable<string> RenderBodyOfToDbEntity(GraphNode<Aggregate> renderingAggregate, Config config) {
+            foreach (var prop in renderingAggregate.GetMembers()) {
                 if (prop is AggregateMember.ValueMember valueMember) {
                     // 参照先のキーの代入はRefの分岐でレンダリングするので
-                    if (!context.RenderingAggregate
+                    if (!renderingAggregate
                         .EnumerateAncestorsAndThis()
                         .Contains(valueMember.Declaring)) continue;
 
                     yield return $$"""
-                        {{valueMember.GetDbColumn().Options.MemberName}} = {{context.GetInstanceNameOf(valueMember.Declaring)}}.{{valueMember.GetFullPath(valueMember.Declaring).Join(".")}},
+                        {{valueMember.GetDbColumn().Options.MemberName}} = {{GetInstanceNameOf(valueMember.Declaring)}}.{{valueMember.GetFullPath(valueMember.Declaring).Join(".")}},
                         """;
 
                 } else if (prop is AggregateMember.Ref refProp) {
                     foreach (var fk in refProp.GetForeignKeys()) {
                         yield return $$"""
-                            {{fk.GetDbColumn().Options.MemberName}} = {{context.GetInstanceNameOf(refProp.Declaring)}}.{{fk.GetFullPath(refProp.Declaring).Join(".")}},
+                            {{fk.GetDbColumn().Options.MemberName}} = {{GetInstanceNameOf(refProp.Declaring)}}.{{fk.GetFullPath(refProp.Declaring).Join(".")}},
                             """;
                     }
 
                 } else if (prop is AggregateMember.Children children) {
-                    var item = context.Depth == 0 ? "item" : $"item{context.Depth}";
                     var nav = children.GetNavigationProperty();
                     var childProp = nav.Principal.GetFullPath(prop.Declaring).Join(".");
-                    var childInstance = children.MemberAggregate;
-                    var childDbEntityClass = $"{context.Config.EntityNamespace}.{nav.Relevant.Owner.Item.EFCoreEntityClassName}";
+                    var childDbEntityClass = $"{config.EntityNamespace}.{nav.Relevant.Owner.Item.EFCoreEntityClassName}";
 
                     yield return $$"""
-                        {{children.MemberName}} = {{context.GetInstanceNameOf(children.Declaring)}}.{{childProp}}.Select({{item}} => new {{childDbEntityClass}} {
-                            {{WithIndent(RenderBodyOfToDbEntity(context.Nest(childInstance, item)), "    ")}}
+                        {{children.MemberName}} = {{GetInstanceNameOf(children.Declaring)}}.{{childProp}}.Select({{GetInstanceNameOf(children.MemberAggregate)}} => new {{childDbEntityClass}} {
+                            {{WithIndent(RenderBodyOfToDbEntity(children.MemberAggregate, config), "    ")}}
                         }).ToList(),
                         """;
 
                 } else if (prop is AggregateMember.RelationMember child) {
                     var nav = child.GetNavigationProperty();
                     var childProp = nav.Principal.PropertyName;
-                    var childInstance = child.MemberAggregate;
-                    var childDbEntityClass = $"{context.Config.EntityNamespace}.{nav.Relevant.Owner.Item.EFCoreEntityClassName}";
+                    var childDbEntityClass = $"{config.EntityNamespace}.{nav.Relevant.Owner.Item.EFCoreEntityClassName}";
 
                     yield return $$"""
                         {{child.MemberName}} = new {{childDbEntityClass}} {
-                            {{WithIndent(RenderBodyOfToDbEntity(context.Nest(childInstance)), "    ")}}
+                            {{WithIndent(RenderBodyOfToDbEntity(child.MemberAggregate, config), "    ")}}
                         },
                         """;
 
@@ -214,47 +209,12 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             }
         }
 
-        private class BodyRenderingContext {
-            public BodyRenderingContext(GraphNode<Aggregate> aggregate, string instanceName, Config config) {
-                _stack = new Stack<Item>();
-                _stack.Push(new Item {
-                    Instance = instanceName,
-                    InstanceType = aggregate,
-                });
-                Config = config;
-            }
-            private BodyRenderingContext(Stack<Item> stack, GraphNode<Aggregate> valueSource, Config config) {
-                _stack = stack;
-                Config = config;
-            }
-            private readonly Stack<Item> _stack;
-
-            public Config Config { get; }
-
-            public GraphNode<Aggregate> RenderingAggregate => _stack.Peek().InstanceType;
-            public int Depth => _stack.Count - 1;
-
-            public string GetInstanceNameOf(GraphNode<Aggregate> aggregate) {
-                if (aggregate.IsRoot()) {
-                    return "this";
-                } else {
-                    var depth = aggregate.EnumerateAncestors().Count();
-                    return depth == 1 ? "item" : $"item{depth - 1}";
-                }
-            }
-
-            public BodyRenderingContext Nest(GraphNode<Aggregate> childAggregate, string? childInstanceName = null) {
-                var newStack = new Stack<Item>(_stack);
-                newStack.Push(new Item {
-                    Instance = childInstanceName ?? GetInstanceNameOf(RenderingAggregate),
-                    InstanceType = childAggregate,
-                });
-                return new BodyRenderingContext(newStack, childAggregate, Config);
-            }
-
-            private class Item {
-                public required string Instance { get; init; }
-                public required GraphNode<Aggregate> InstanceType { get; init; }
+        private static string GetInstanceNameOf(GraphNode<Aggregate> aggregate) {
+            if (aggregate.IsRoot()) {
+                return "this";
+            } else {
+                var depth = aggregate.EnumerateAncestors().Count();
+                return depth == 1 ? "item" : $"item{depth - 1}";
             }
         }
         #endregion ToDbEntity
