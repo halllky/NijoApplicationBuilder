@@ -147,10 +147,21 @@ namespace HalApplicationBuilder.Core {
 
             internal virtual IEnumerable<string> GetFullPath(GraphNode<Aggregate>? since = null) {
                 var skip = since != null;
-                foreach (var edge in Owner.PathFromEntry()) {
+                var before = Owner;
+                foreach (var edge in Declaring.PathFromEntry()) {
                     if (skip && edge.Source?.As<Aggregate>() == since) skip = false;
                     if (skip) continue;
-                    yield return edge.RelationName;
+
+                    // PathFromEntryの列挙中に有向グラフの矢印の先から根本に向かって辿るパターンは
+                    // 参照先の集約の子から親に向かうパターンだけであり、
+                    // その場合は子の主キーに親の主キーが含まれているためGetFullPathでは列挙してほしくないため、スキップ
+                    if (before != edge.Terminal.As<Aggregate>()) {
+                        yield return edge.RelationName;
+                    }
+
+                    before = before == edge.Terminal.As<Aggregate>()
+                        ? edge.Initial.As<Aggregate>()
+                        : edge.Terminal.As<Aggregate>();
                 }
                 yield return MemberName;
             }
