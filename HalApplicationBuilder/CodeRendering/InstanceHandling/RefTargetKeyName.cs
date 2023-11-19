@@ -17,9 +17,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         internal string TypeScriptTypeName => $"{_aggregate.Item.ClassName}KeysAndNames";
 
         internal IEnumerable<AggregateMember.AggregateMemberBase> GetKeysAndNames() {
-            var keys = GetKeys().ToDictionary(x => x.MemberName);
-            var names = GetNames().Where(m => !keys.ContainsKey(m.MemberName));
-            return keys.Values.Concat(names);
+            return GetKeys().Union(GetNames());
         }
         internal IEnumerable<AggregateMember.AggregateMemberBase> GetKeys() {
             return _aggregate

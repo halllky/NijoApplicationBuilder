@@ -137,7 +137,7 @@ namespace HalApplicationBuilder.Core {
 
 
         #region MEMBER BASE
-        internal abstract class AggregateMemberBase {
+        internal abstract class AggregateMemberBase : ValueObject {
             internal abstract GraphNode<Aggregate> Owner { get; }
             internal abstract GraphNode<Aggregate> Declaring { get; }
             internal abstract string MemberName { get; }
@@ -167,6 +167,11 @@ namespace HalApplicationBuilder.Core {
             }
             public override string ToString() {
                 return GetFullPath().Join(".");
+            }
+            protected override IEnumerable<object?> ValueObjectIdentifiers() {
+                yield return Owner;
+                yield return Declaring;
+                yield return MemberName;
             }
         }
         internal abstract class ValueMember : AggregateMemberBase {
