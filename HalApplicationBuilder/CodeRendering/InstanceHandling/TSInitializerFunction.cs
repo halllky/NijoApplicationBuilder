@@ -18,29 +18,32 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
         internal string Render() {
             var children = _instance
-                .GetChildrenEdges()
-                .Select(edge => new {
-                    Key = edge.RelationName,
+                .GetMembers()
+                .OfType<AggregateMember.Children>()
+                .Select(member => new {
+                    Key = member.MemberName,
                     Value = $"[]",
                 });
             var child = _instance
-                .GetChildEdges()
-                .Select(edge => new {
-                    Key = edge.RelationName,
-                    Value = $"{new TSInitializerFunction(edge.Terminal).FunctionName}()",
+                .GetMembers()
+                .OfType<AggregateMember.Child>()
+                .Select(member => new {
+                    Key = member.MemberName,
+                    Value = $"{new TSInitializerFunction(member.MemberAggregate).FunctionName}()",
                 });
             var variation = _instance
-                .GetVariationGroups()
-                .SelectMany(group => group.VariationAggregates.Values)
-                .Select(edge => new {
-                    Key = edge.RelationName,
-                    Value = $"{new TSInitializerFunction(edge.Terminal).FunctionName}()",
+                .GetMembers()
+                .OfType<AggregateMember.VariationItem>()
+                .Select(member => new {
+                    Key = member.MemberName,
+                    Value = $"{new TSInitializerFunction(member.MemberAggregate).FunctionName}()",
                 });
             var variationSwitch = _instance
-                .GetVariationGroups()
-                .Select(group => new {
-                    Key = group.GroupName,
-                    Value = $"'{group.VariationAggregates.First().Key}'",
+                .GetMembers()
+                .OfType<AggregateMember.Variation>()
+                .Select(member => new {
+                    Key = member.MemberName,
+                    Value = $"'{member.GetGroupItems().First().Key}'",
                 });
             var uuid = new AggregateDetail(_instance)
                 .GetOwnMembers()

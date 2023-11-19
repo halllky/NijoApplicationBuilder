@@ -101,8 +101,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             if (includeRefs) {
                 var refEntities = _aggregate
                     .EnumerateThisAndDescendants()
-                    .SelectMany(entity => entity.GetRefEdge())
-                    .Select(edge => edge.Terminal);
+                    .SelectMany(entity => entity.GetMembers().OfType<AggregateMember.Ref>())
+                    .Select(member => member.MemberAggregate);
                 var refTargetAncestors = refEntities
                     .SelectMany(refTarget => refTarget.EnumerateAncestors())
                     .Select(edge => edge.Initial);

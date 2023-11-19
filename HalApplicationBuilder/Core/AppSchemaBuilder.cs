@@ -403,33 +403,6 @@ namespace HalApplicationBuilder.Core {
                 && (string)groupName != string.Empty;
         }
 
-        internal static IEnumerable<GraphNode<AggregateMemberNode>> GetMemberNodes(this GraphNode<Aggregate> aggregate) {
-            return aggregate.Out
-                .Where(edge => (string)edge.Attributes[REL_ATTR_RELATION_TYPE] == REL_ATTRVALUE_HAVING)
-                .Select(edge => edge.Terminal.As<AggregateMemberNode>());
-        }
-        internal static IEnumerable<GraphEdge<T>> GetChildrenEdges<T>(this GraphNode<T> graphNode) where T : IGraphNode {
-            return graphNode.Out
-                .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                            && (string)type == REL_ATTRVALUE_PARENT_CHILD
-                            && edge.Attributes.TryGetValue(REL_ATTR_MULTIPLE, out var isArray)
-                            && (bool)isArray)
-                .Select(edge => edge.As<T>());
-        }
-        internal static IEnumerable<GraphEdge<T>> GetChildEdges<T>(this GraphNode<T> graphNode) where T : IGraphNode {
-            return graphNode.Out
-                .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                            && (string)type == REL_ATTRVALUE_PARENT_CHILD
-                            && (!edge.Attributes.TryGetValue(REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray == false)
-                            && (!edge.Attributes.TryGetValue(REL_ATTR_VARIATIONGROUPNAME, out var groupName) || (string)groupName == string.Empty))
-                .Select(edge => edge.As<T>());
-        }
-        internal static IEnumerable<GraphEdge<T>> GetRefEdge<T>(this GraphNode<T> graphNode) where T : IGraphNode {
-            return graphNode.Out
-                .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                            && (string)type == REL_ATTRVALUE_REFERENCE)
-                .Select(edge => edge.As<T>());
-        }
         internal static IEnumerable<GraphEdge<T>> GetReferedEdges<T>(this GraphNode<T> graphNode) where T : IGraphNode {
             return graphNode.In
                 .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
@@ -437,22 +410,6 @@ namespace HalApplicationBuilder.Core {
                 .Select(edge => edge.As<T>());
         }
 
-        internal static IEnumerable<VariationGroup<T>> GetVariationGroups<T>(this GraphNode<T> graphNode) where T : IGraphNode {
-            return graphNode.Out
-                .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                            && (string)type == REL_ATTRVALUE_PARENT_CHILD
-                            && (!edge.Attributes.TryGetValue(REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray == false)
-                            && edge.Attributes.TryGetValue(REL_ATTR_VARIATIONGROUPNAME, out var groupName)
-                            && (string)groupName! != string.Empty)
-                .GroupBy(edge => (string)edge.Attributes[REL_ATTR_VARIATIONGROUPNAME])
-                .Select(group => new VariationGroup<T> {
-                    GroupName = group.Key,
-                    VariationAggregates = group.ToDictionary(
-                        edge => (string)edge.Attributes[REL_ATTR_VARIATIONSWITCH],
-                        edge => edge.As<T>()),
-                    MemberOrder = group.First().GetMemberOrder(),
-                });
-        }
 
         // ----------------------------- GraphEdge extensions -----------------------------
 

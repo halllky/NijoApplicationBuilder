@@ -108,10 +108,9 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     }
                     """;
 
-            } else if (_aggregate.GetChildEdges().Any()
-                    || _aggregate.GetChildrenEdges().Any()
-                    || _aggregate.GetVariationGroups().Any()) {
-
+            } else if (_aggregate.GetMembers().Any(m => m is AggregateMember.Child
+                                                     || m is AggregateMember.Children
+                                                     || m is AggregateMember.VariationItem)) {
                 // Childrenのレンダリング（子集約をもつ場合）
                 var loopVar = $"index_{Arguments.Count}";
                 var createNewChildrenItem = new TSInitializerFunction(_aggregate).FunctionName;

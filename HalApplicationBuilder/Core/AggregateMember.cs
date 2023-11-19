@@ -47,22 +47,57 @@ namespace HalApplicationBuilder.Core {
                     }
                 }
             }
-            foreach (var member in aggregate.GetMemberNodes()) {
-                yield return new Schalar(member);
+
+            var memberEdges = aggregate.Out.Where(edge =>
+                (string)edge.Attributes[DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE] == DirectedEdgeExtensions.REL_ATTRVALUE_HAVING);
+            foreach (var edge in memberEdges) {
+                yield return new Schalar(edge.Terminal.As<AggregateMemberNode>());
             }
-            foreach (var edge in aggregate.GetChildrenEdges()) {
-                yield return new Children(edge);
+
+            var childrenEdges = aggregate.Out.Where(edge =>
+                edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, out var type)
+                && (string)type == DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD
+                && edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_MULTIPLE, out var isArray)
+                && (bool)isArray);
+            foreach (var edge in childrenEdges) {
+                yield return new Children(edge.As<Aggregate>());
             }
-            foreach (var edge in aggregate.GetChildEdges()) {
-                yield return new Child(edge);
+
+            var childEdges = aggregate.Out.Where(edge =>
+                edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, out var type)
+                && (string)type == DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD
+                && (!edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray == false)
+                && (!edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, out var groupName) || (string)groupName == string.Empty));
+            foreach (var edge in childEdges) {
+                yield return new Child(edge.As<Aggregate>());
             }
-            foreach (var group in aggregate.GetVariationGroups()) {
+
+            var variationGroups = aggregate.Out
+                .Where(edge =>
+                    edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, out var type)
+                    && (string)type == DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD
+                    && (!edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray == false)
+                    && edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, out var groupName)
+                    && (string)groupName! != string.Empty)
+                .GroupBy(edge => (string)edge.Attributes[DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME])
+                .Select(group => new VariationGroup<Aggregate> {
+                    GroupName = group.Key,
+                    VariationAggregates = group.ToDictionary(
+                        edge => (string)edge.Attributes[DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH],
+                        edge => edge.As<Aggregate>()),
+                    MemberOrder = group.First().GetMemberOrder(),
+                });
+            foreach (var group in variationGroups) {
                 var variationGroup = new Variation(group);
                 yield return variationGroup;
                 foreach (var item in variationGroup.GetGroupItems()) yield return item;
             }
-            foreach (var edge in aggregate.GetRefEdge()) {
-                var refMember = new Ref(edge);
+
+            var refEdges = aggregate.Out.Where(edge =>
+                edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, out var type)
+                && (string)type == DirectedEdgeExtensions.REL_ATTRVALUE_REFERENCE);
+            foreach (var edge in refEdges) {
+                var refMember = new Ref(edge.As<Aggregate>());
                 yield return refMember;
                 foreach (var refPK in refMember.GetForeignKeys()) yield return refPK;
             }
