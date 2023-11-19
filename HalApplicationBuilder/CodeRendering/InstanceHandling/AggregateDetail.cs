@@ -36,8 +36,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         internal IOrderedEnumerable<AggregateMember.AggregateMemberBase> GetOwnMembers() {
             return _aggregate
                 .GetMembers()
-                .Where(m => m is not AggregateMember.KeyOfParent
-                         && m is not AggregateMember.KeyOfRefTarget)
+                .Where(m => m.Declaring == _aggregate)
                 .OrderBy(m => m.Order);
         }
 
@@ -95,11 +94,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         }
         private IEnumerable<string> RenderBodyOfFromDbEntity(GraphNode<Aggregate> instance, GraphNode<Aggregate> rootInstance, string rootInstanceName, int depth) {
             foreach (var prop in instance.GetMembers()) {
-                if (prop is AggregateMember.KeyOfParent) {
+                if (prop.Owner != prop.Declaring) {
                     continue; // 不要
-
-                } else if (prop is AggregateMember.KeyOfRefTarget) {
-                    continue; // Refの分岐でレンダリングするので
 
                 } else if (prop is AggregateMember.ValueMember valueMember) {
                     yield return $$"""
@@ -171,16 +167,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         }
         private IEnumerable<string> RenderBodyOfToDbEntity(BodyRenderingContext context) {
             foreach (var prop in context.RenderingAggregate.GetMembers()) {
-                if (prop is AggregateMember.KeyOfParent parentPK) {
-                    var fullpath = context.GetValueSourceFullPath(parentPK);
-                    yield return $$"""
-                        {{parentPK.GetDbColumn().Options.MemberName}} = {{fullpath}},
-                        """;
-
-                } else if (prop is AggregateMember.KeyOfRefTarget) {
-                    continue; // Refの分岐でレンダリングするので
-
-                } else if (prop is AggregateMember.ValueMember valueMember) {
+                if (prop is AggregateMember.ValueMember valueMember) {
                     yield return $$"""
                         {{valueMember.GetDbColumn().Options.MemberName}} = {{context.ValueSourceInstance}}.{{valueMember.GetFullPath(context.ValueSource).Join(".")}},
                         """;
@@ -189,7 +176,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                     var path = $"{context.ValueSourceInstance}.{refProp.GetFullPath(context.ValueSource).Join(".")}";
                     foreach (var fk in refProp.GetForeignKeys()) {
                         yield return $$"""
-                            {{fk.GetDbColumn().Options.MemberName}} = {{path}}.{{fk.Original.MemberName}},
+                            {{fk.GetDbColumn().Options.MemberName}} = {{path}}.{{fk.MemberName}},
                             """;
 
                     }
@@ -261,19 +248,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 });
                 var valueSource = childInstanceName == null ? ValueSource : childAggregate;
                 return new BodyRenderingContext(newStack, valueSource, Config);
-            }
-            /// <summary>
-            /// 集約クラスはは親の主キーを持っていないため、EFCoreエンティティの親の主キーは集約クラスのインスタンスの親から持ってくる必要がある。
-            /// またラムダ式の中だと単純にthisからのGetFullPathで適切な名前がとれないのでその辺の問題にも対応している
-            /// </summary>
-            public string GetValueSourceFullPath(AggregateMember.KeyOfParent parentPK) {
-                var declaringMember = parentPK.GetDeclaringMember();
-
-                // SingleOrDefaultを使っているが必ず見つかる想定（ここで例外で止めずに出力されたソースコードで是非を判断する方が早いのでこうしている）
-                var x = _stack.SingleOrDefault(x => x.InstanceType == declaringMember.Owner);
-                var path = declaringMember.GetFullPath(x?.MostRecent1To1Ancestor);
-
-                return $"{x?.Instance}.{path.Join(".")}";
             }
 
             private class Item {

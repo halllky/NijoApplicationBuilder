@@ -35,8 +35,16 @@ namespace HalApplicationBuilder.Core {
                     .GetKeys()
                     .OfType<ValueMember>()
                     .ToArray();
-                for (var i = 0; i < parentPKs.Length; i++) {
-                    yield return new KeyOfParent(aggregate, parentPKs[i], i);
+                foreach (var parentPk in parent.Initial.GetKeys()) {
+                    if (parentPk is Schalar schalar) {
+                        yield return new Schalar(schalar.GraphNode, owner: aggregate);
+
+                    } else if (parentPk is Variation variation) {
+                        yield return new Variation(variation.VariationGroup, owner: aggregate);
+
+                    } else if (parentPk is Ref @ref) {
+                        yield return new Ref(@ref.Relation, owner: aggregate);
+                    }
                 }
             }
             foreach (var member in aggregate.GetMemberNodes()) {
@@ -91,6 +99,7 @@ namespace HalApplicationBuilder.Core {
         #region MEMBER BASE
         internal abstract class AggregateMemberBase {
             internal abstract GraphNode<Aggregate> Owner { get; }
+            internal abstract GraphNode<Aggregate> Declaring { get; }
             internal abstract string MemberName { get; }
             internal abstract decimal Order { get; }
             internal abstract string CSharpTypeName { get; }
@@ -131,6 +140,7 @@ namespace HalApplicationBuilder.Core {
             internal abstract GraphEdge<Aggregate> Relation { get; }
 
             internal override GraphNode<Aggregate> Owner => Relation.Initial;
+            internal override GraphNode<Aggregate> Declaring => Relation.Initial;
             internal override string MemberName => Relation.RelationName;
             internal GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
             internal override decimal Order => Relation.GetMemberOrder();
@@ -144,14 +154,18 @@ namespace HalApplicationBuilder.Core {
 
         #region MEMBER IMPLEMEMT
         internal class Schalar : ValueMember {
-            internal Schalar(GraphNode<AggregateMemberNode> aggregateMemberNode) {
-                _node = aggregateMemberNode;
-            }
-            private readonly GraphNode<AggregateMemberNode> _node;
+            internal Schalar(GraphNode<AggregateMemberNode> aggregateMemberNode, GraphNode<Aggregate>? owner = null) {
+                GraphNode = aggregateMemberNode;
 
-            internal override GraphNode<Aggregate> Owner => _node.Source!.Initial.As<Aggregate>();
-            internal override IReadOnlyMemberOptions Options => _node.Item;
-            internal override decimal Order => _node.Source!.GetMemberOrder();
+                Owner = owner ?? aggregateMemberNode.Source!.Initial.As<Aggregate>();
+                Declaring = aggregateMemberNode.Source!.Initial.As<Aggregate>();
+            }
+            internal GraphNode<AggregateMemberNode> GraphNode { get; }
+            internal override GraphNode<Aggregate> Owner { get; }
+            internal override GraphNode<Aggregate> Declaring { get; }
+
+            internal override IReadOnlyMemberOptions Options => GraphNode.Item;
+            internal override decimal Order => GraphNode.Source!.GetMemberOrder();
         }
 
         internal class Children : RelationMember {
@@ -173,8 +187,8 @@ namespace HalApplicationBuilder.Core {
         }
 
         internal class Variation : ValueMember {
-            internal Variation(VariationGroup<Aggregate> group) {
-                _group = group;
+            internal Variation(VariationGroup<Aggregate> group, GraphNode<Aggregate>? owner = null) {
+                VariationGroup = group;
 
                 Options = new MemberOptions {
                     MemberName = group.GroupName,
@@ -184,15 +198,18 @@ namespace HalApplicationBuilder.Core {
                     IsRequired = group.RequiredAtDB,
                     InvisibleInGui = false,
                 };
-            }
-            private readonly VariationGroup<Aggregate> _group;
 
+                Owner = owner ?? group.Owner;
+                Declaring = group.Owner;
+            }
+            internal VariationGroup<Aggregate> VariationGroup { get; }
             internal override IReadOnlyMemberOptions Options { get; }
-            internal override GraphNode<Aggregate> Owner => _group.Owner;
-            internal override decimal Order => _group.MemberOrder;
+            internal override GraphNode<Aggregate> Owner { get; }
+            internal override GraphNode<Aggregate> Declaring { get; }
+            internal override decimal Order => VariationGroup.MemberOrder;
 
             internal IEnumerable<VariationItem> GetGroupItems() {
-                foreach (var kv in _group.VariationAggregates) {
+                foreach (var kv in VariationGroup.VariationAggregates) {
                     yield return new VariationItem(this, kv.Key, kv.Value);
                 }
             }
@@ -214,69 +231,24 @@ namespace HalApplicationBuilder.Core {
         }
 
         internal class Ref : RelationMember {
-            internal Ref(GraphEdge<Aggregate> edge) {
+            internal Ref(GraphEdge<Aggregate> edge, GraphNode<Aggregate>? owner = null) {
                 Relation = edge;
+                Owner = owner ?? base.Owner;
             }
-
+            internal override GraphNode<Aggregate> Owner { get; }
             internal override GraphEdge<Aggregate> Relation { get; }
             internal override string CSharpTypeName => new RefTargetKeyName(Relation.Terminal).CSharpClassName;
             internal override string TypeScriptTypename => new RefTargetKeyName(Relation.Terminal).TypeScriptTypeName;
 
-            internal IEnumerable<KeyOfRefTarget> GetForeignKeys() {
-                return Relation.Terminal
-                    .GetKeys()
-                    .OfType<ValueMember>()
-                    .Select((refTargetMember, index) => new KeyOfRefTarget(Relation.Initial, this, refTargetMember, index));
-            }
-        }
-        internal class KeyOfRefTarget : ValueMember {
-            internal KeyOfRefTarget(GraphNode<Aggregate> owner, Ref refMember, ValueMember refTargetMember, int refTargetMemberOrder) {
-                Owner = owner;
-                Options = refTargetMember.Options.Clone(opt => {
-                    opt.MemberName = refTargetMember.GetFullPath(owner).Join(".");
-                    opt.IsKey = refMember.Relation.IsPrimary();
-                    opt.IsDisplayName = refMember.Relation.IsInstanceName();
-                    opt.IsRequired = refMember.Relation.IsRequired();
-                });
-                Original = refTargetMember is KeyOfRefTarget refref ? refref.Original : refTargetMember;
-                Order = refMember.Order + (refTargetMemberOrder / 1000);
-            }
+            internal IEnumerable<ValueMember> GetForeignKeys() {
+                foreach (var fk in Relation.Terminal.GetKeys()) {
+                    if (fk is Schalar schalar) {
+                        yield return new Schalar(schalar.GraphNode, Relation.Initial);
 
-            internal override IReadOnlyMemberOptions Options { get; }
-            internal override decimal Order { get; }
-            internal override GraphNode<Aggregate> Owner { get; }
-            internal ValueMember Original { get; }
-        }
-
-        internal class KeyOfParent : ValueMember {
-            internal KeyOfParent(GraphNode<Aggregate> owner, ValueMember parentPK, int parentPkOrder) {
-                Owner = owner;
-                Original = parentPK;
-                Options = parentPK.Options.Clone(opt => {
-                    var declaring = GetDeclaringMember();
-                    opt.MemberName = declaring.Owner.Item.ClassName + declaring.MemberName;
-                });
-                Order = parentPK.Order + (parentPkOrder / 1000);
-            }
-
-            internal override GraphNode<Aggregate> Owner { get; }
-            internal override IReadOnlyMemberOptions Options { get; }
-            internal override decimal Order { get; }
-
-            /// <summary>
-            /// 大元が祖父母の主キーだった場合でも親のメンバーを返す
-            /// </summary>
-            internal ValueMember Original { get; }
-
-            /// <summary>
-            /// 大元が祖父母の主キーだった場合は祖父母のメンバーを返す
-            /// </summary>
-            internal ValueMember GetDeclaringMember() {
-                var member = Original;
-                while (member is KeyOfParent memberAsParentPK) {
-                    member = memberAsParentPK.Original;
+                    } else if (fk is Variation variation) {
+                        yield return new Variation(variation.VariationGroup, Relation.Initial);
+                    }
                 }
-                return member;
             }
         }
         #endregion MEMBER IMPLEMEMT

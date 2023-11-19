@@ -116,19 +116,6 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 var loopVar = $"index_{Arguments.Count}";
                 var createNewChildrenItem = new TSInitializerFunction(_aggregate).FunctionName;
 
-                var keys = _aggregate
-                    .GetKeys()
-                    // TODO: AggregateDetailと重複している。この条件を1カ所で書けるようにできないか
-                    .Where(m => m is not AggregateMember.KeyOfParent
-                             && m is not AggregateMember.KeyOfRefTarget);
-                var texts = _aggregate
-                    .GetMembers()
-                    .OfType<AggregateMember.ValueMember>()
-                    // TODO: AggregateDetailと重複している。この条件を1カ所で書けるようにできないか
-                    .Where(m => m.IsDisplayName
-                             && m is not AggregateMember.KeyOfParent
-                             && m is not AggregateMember.KeyOfRefTarget);
-
                 return $$"""
                     const {{ComponentName}} = ({ {{Arguments.Join(", ")}} }: {
                     {{Arguments.SelectTextTemplate(arg => $$"""
