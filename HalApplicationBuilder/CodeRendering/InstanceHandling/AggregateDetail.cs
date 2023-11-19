@@ -33,11 +33,10 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         internal const string FROM_DBENTITY = "FromDbEntity";
         internal const string TO_DBENTITY = "ToDbEntity";
 
-        internal IOrderedEnumerable<AggregateMember.AggregateMemberBase> GetOwnMembers() {
+        internal IEnumerable<AggregateMember.AggregateMemberBase> GetOwnMembers() {
             return _aggregate
                 .GetMembers()
-                .Where(m => m.Declaring == _aggregate)
-                .OrderBy(m => m.Order);
+                .Where(m => m.Declaring == _aggregate);
         }
 
         internal virtual string RenderCSharp(CodeRenderingContext ctx) {

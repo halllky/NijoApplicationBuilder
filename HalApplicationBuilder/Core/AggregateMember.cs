@@ -28,7 +28,12 @@ namespace HalApplicationBuilder.Core {
 
     internal static class AggregateMember {
 
-        internal static IEnumerable<AggregateMemberBase> GetMembers(this GraphNode<Aggregate> aggregate) {
+        internal static IOrderedEnumerable<AggregateMemberBase> GetMembers(this GraphNode<Aggregate> aggregate) {
+            return aggregate
+                .GetNonOrderedMembers()
+                .OrderBy(member => member.Order);
+        }
+        private static IEnumerable<AggregateMemberBase> GetNonOrderedMembers(this GraphNode<Aggregate> aggregate) {
             var parent = aggregate.GetParent();
             if (parent != null) {
                 var parentPKs = parent.Initial
@@ -104,7 +109,7 @@ namespace HalApplicationBuilder.Core {
         }
 
         internal static IEnumerable<AggregateMemberBase> GetKeys(this GraphNode<Aggregate> aggregate) {
-            foreach (var member in aggregate.GetMembers().OrderBy(m => m.Order)) {
+            foreach (var member in aggregate.GetMembers()) {
                 if (member is ValueMember valueMember && valueMember.IsKey) {
                     yield return valueMember;
 
