@@ -173,13 +173,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                         """;
 
                 } else if (prop is AggregateMember.Ref refProp) {
-                    var path = $"{context.ValueSourceInstance}.{refProp.GetFullPath(context.ValueSource).Join(".")}";
-                    foreach (var fk in refProp.GetForeignKeys()) {
-                        yield return $$"""
-                            {{fk.GetDbColumn().Options.MemberName}} = {{path}}.{{fk.MemberName}},
-                            """;
-
-                    }
+                    continue; // 参照先のキーはValueMemberの分岐で処理済み
 
                 } else if (prop is AggregateMember.Children children) {
                     var item = context.Depth == 0 ? "item" : $"item{context.Depth}";
