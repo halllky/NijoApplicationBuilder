@@ -42,11 +42,15 @@ namespace HalApplicationBuilder.Core {
                     .ToArray();
                 foreach (var parentPk in parent.Initial.GetKeys()) {
                     if (parentPk is Schalar schalar) {
-                        yield return new Schalar(schalar.GraphNode, owner: aggregate);
-
+                        yield return new Schalar(schalar.GraphNode, owner: aggregate) {
+                            ForeignKeyOf = schalar.ForeignKeyOf,
+                            InheritedTo = aggregate,
+                        };
                     } else if (parentPk is Variation variation) {
-                        yield return new Variation(variation.VariationGroup, owner: aggregate);
-
+                        yield return new Variation(variation.VariationGroup, owner: aggregate) {
+                            ForeignKeyOf = variation.ForeignKeyOf,
+                            InheritedTo = aggregate,
+                        };
                     } else if (parentPk is Ref @ref) {
                         yield return new Ref(@ref.Relation, owner: aggregate);
                     }
@@ -110,7 +114,10 @@ namespace HalApplicationBuilder.Core {
 
         internal static IEnumerable<AggregateMemberBase> GetKeys(this GraphNode<Aggregate> aggregate) {
             foreach (var member in aggregate.GetMembers()) {
-                if (member is ValueMember valueMember && valueMember.IsKey) {
+                if (member is ValueMember valueMember
+                    && valueMember.IsKey
+                    && (valueMember.ForeignKeyOf == null || valueMember.ForeignKeyOf.Relation.IsPrimary())) {
+
                     yield return valueMember;
 
                 } else if (member is Ref refMember && refMember.Relation.IsPrimary()) {
@@ -145,23 +152,13 @@ namespace HalApplicationBuilder.Core {
             internal abstract string CSharpTypeName { get; }
             internal abstract string TypeScriptTypename { get; }
 
-            internal virtual IEnumerable<string> GetFullPath(GraphNode<Aggregate>? since = null) {
+            internal virtual IEnumerable<string> GetFullPath(GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
                 var skip = since != null;
-                var before = Owner;
                 foreach (var edge in Declaring.PathFromEntry()) {
+                    if (until != null && edge.Source?.As<Aggregate>() == until) yield break;
                     if (skip && edge.Source?.As<Aggregate>() == since) skip = false;
                     if (skip) continue;
-
-                    // PathFromEntryの列挙中に有向グラフの矢印の先から根本に向かって辿るパターンは
-                    // 参照先の集約の子から親に向かうパターンだけであり、
-                    // その場合は子の主キーに親の主キーが含まれているためGetFullPathでは列挙してほしくないため、スキップ
-                    if (before != edge.Terminal.As<Aggregate>()) {
-                        yield return edge.RelationName;
-                    }
-
-                    before = before == edge.Terminal.As<Aggregate>()
-                        ? edge.Initial.As<Aggregate>()
-                        : edge.Terminal.As<Aggregate>();
+                    yield return edge.RelationName;
                 }
                 yield return MemberName;
             }
@@ -185,7 +182,10 @@ namespace HalApplicationBuilder.Core {
             internal bool IsDisplayName => Options.IsDisplayName
                                         || (!Owner.Item.HasNameMember && Options.IsKey); // 集約中に名前が無い場合はキーを名前のかわりに使う
 
-            internal DbColumn GetDbColumn() {
+            internal Ref? ForeignKeyOf { get; init; }
+            internal GraphNode<Aggregate>? InheritedTo { get; init; }
+
+            internal virtual DbColumn GetDbColumn() {
                 return new DbColumn {
                     Owner = Owner.As<IEFCoreEntity>(),
                     Options = Options,
@@ -222,6 +222,19 @@ namespace HalApplicationBuilder.Core {
 
             internal override IReadOnlyMemberOptions Options => GraphNode.Item;
             internal override decimal Order => GraphNode.Source!.GetMemberOrder();
+
+            internal override DbColumn GetDbColumn() {
+                return new DbColumn {
+                    Owner = Owner.As<IEFCoreEntity>(),
+                    Options = Options.Clone(opt => {
+                        // 祖先や参照先のキーの場合、子孫集約（参照元集約）独自のメンバーとの
+                        // 名称重複を避けるため、アタマに祖先や参照先の集約名をつける
+                        var prefix1 = ForeignKeyOf == null ? string.Empty : $"{ForeignKeyOf.MemberName}_";
+                        var prefix2 = Owner == Declaring ? string.Empty : $"{Declaring.Item.ClassName}_";
+                        opt.MemberName = prefix1 + prefix2 + MemberName;
+                    }),
+                };
+            }
         }
 
         internal class Children : RelationMember {
@@ -299,10 +312,16 @@ namespace HalApplicationBuilder.Core {
             internal IEnumerable<ValueMember> GetForeignKeys() {
                 foreach (var fk in Relation.Terminal.GetKeys()) {
                     if (fk is Schalar schalar) {
-                        yield return new Schalar(schalar.GraphNode, Relation.Initial);
+                        yield return new Schalar(schalar.GraphNode, Relation.Initial) {
+                            ForeignKeyOf = this,
+                            InheritedTo = schalar.InheritedTo,
+                        };
 
                     } else if (fk is Variation variation) {
-                        yield return new Variation(variation.VariationGroup, Relation.Initial);
+                        yield return new Variation(variation.VariationGroup, Relation.Initial) {
+                            ForeignKeyOf = this,
+                            InheritedTo = variation.InheritedTo,
+                        };
                     }
                 }
             }

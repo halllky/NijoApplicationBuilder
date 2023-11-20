@@ -59,10 +59,12 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
             var keyName = new RefTargetKeyName(_aggregate);
             var filterColumns = keyName
                 .GetKeysAndNames()
+                .Select(m => m.AggMember)
                 .OfType<AggregateMember.ValueMember>()
                 .Select(m => m.GetFullPath(_aggregate).Join("."));
             var orderColumn = keyName
                 .GetKeysAndNames()
+                .Select(m => m.AggMember)
                 .OfType<AggregateMember.ValueMember>()
                 .First()
                 .MemberName;
@@ -71,12 +73,12 @@ namespace HalApplicationBuilder.CodeRendering.KeywordSearching {
                 var keyNameClass = new RefTargetKeyName(agg);
                 return keyNameClass
                     .GetKeysAndNames()
-                    .Where(m => m.Owner == agg)
-                    .SelectTextTemplate(m => m is AggregateMember.ValueMember vm ? $$"""
+                    .Where(m => m.AggMember.Owner == agg)
+                    .SelectTextTemplate(m => m.AggMember is AggregateMember.ValueMember vm ? $$"""
                         {{m.MemberName}} = e.{{vm.GetDbColumn().GetFullPath(_aggregate.As<IEFCoreEntity>()).Join(".")}},
                         """ : $$"""
-                        {{m.MemberName}} = new {{new RefTargetKeyName(((AggregateMember.Ref)m).MemberAggregate).CSharpClassName}}() {
-                            {{WithIndent(RenderKeyNameConvertingRecursively(((AggregateMember.Ref)m).MemberAggregate), "    ")}}
+                        {{m.MemberName}} = new {{new RefTargetKeyName(((AggregateMember.Ref)m.AggMember).MemberAggregate).CSharpClassName}}() {
+                            {{WithIndent(RenderKeyNameConvertingRecursively(((AggregateMember.Ref)m.AggMember).MemberAggregate), "    ")}}
                         },
                         """);
             }

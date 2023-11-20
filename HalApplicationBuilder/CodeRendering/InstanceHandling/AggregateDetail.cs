@@ -108,10 +108,10 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
                         return $$"""
                             {{refMember.MemberName}} = new {{keyNameClass.CSharpClassName}}() {
-                            {{keyNameClass.GetKeysAndNames().SelectTextTemplate(m => m is AggregateMember.ValueMember vm ? $$"""
+                            {{keyNameClass.GetKeysAndNames().SelectTextTemplate(m => m.AggMember is AggregateMember.ValueMember vm ? $$"""
                                 {{m.MemberName}} = {{rootInstanceName}}.{{vm.GetDbColumn().GetFullPath(rootInstance.As<IEFCoreEntity>()).Join(".")}},
                             """ : $$"""
-                                {{WithIndent(RenderKeyNameConvertingRecursively((AggregateMember.Ref)m), "    ")}}
+                                {{WithIndent(RenderKeyNameConvertingRecursively((AggregateMember.Ref)m.AggMember), "    ")}}
                             """)}}
                             },
                             """;
@@ -170,24 +170,31 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                         .EnumerateAncestorsAndThis()
                         .Contains(valueMember.Declaring)) continue;
 
+                    var (instanceName, valueSource) = GetSourceInstanceOf(valueMember.Declaring);
+
                     yield return $$"""
-                        {{valueMember.GetDbColumn().Options.MemberName}} = {{GetInstanceNameOf(valueMember.Declaring)}}.{{valueMember.GetFullPath(valueMember.Declaring).Join(".")}},
+                        {{valueMember.GetDbColumn().Options.MemberName}} = {{instanceName}}.{{prop.GetFullPath(valueSource).Join(".")}},
                         """;
 
                 } else if (prop is AggregateMember.Ref refProp) {
+                    var keyNameClass = new RefTargetKeyName(refProp.MemberAggregate);
+                    var (instanceName, valueSource) = GetSourceInstanceOf(refProp.Declaring);
+
                     foreach (var fk in refProp.GetForeignKeys()) {
+                        // TODO; ↓ 「ルートを参照2」でここに入った時、GetPathOfのsinceが機能していない
                         yield return $$"""
-                            {{fk.GetDbColumn().Options.MemberName}} = {{GetInstanceNameOf(refProp.Declaring)}}.{{fk.GetFullPath(refProp.Declaring).Join(".")}},
+                            {{fk.GetDbColumn().Options.MemberName}} = {{instanceName}}.{{prop.GetFullPath(valueSource).Join(".")}}.{{keyNameClass.GetPathOf(fk).Join(".")}},
                             """;
                     }
 
                 } else if (prop is AggregateMember.Children children) {
                     var nav = children.GetNavigationProperty();
-                    var childProp = nav.Principal.GetFullPath(prop.Declaring).Join(".");
                     var childDbEntityClass = $"{config.EntityNamespace}.{nav.Relevant.Owner.Item.EFCoreEntityClassName}";
+                    var (instanceName, valueSource) = GetSourceInstanceOf(children.Declaring);
+                    var (item, _) = GetSourceInstanceOf(children.MemberAggregate);
 
                     yield return $$"""
-                        {{children.MemberName}} = {{GetInstanceNameOf(children.Declaring)}}.{{childProp}}.Select({{GetInstanceNameOf(children.MemberAggregate)}} => new {{childDbEntityClass}} {
+                        {{children.MemberName}} = {{instanceName}}.{{prop.GetFullPath(valueSource).Join(".")}}.Select({{item}} => new {{childDbEntityClass}} {
                             {{WithIndent(RenderBodyOfToDbEntity(children.MemberAggregate, config), "    ")}}
                         }).ToList(),
                         """;
@@ -209,13 +216,19 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             }
         }
 
-        private static string GetInstanceNameOf(GraphNode<Aggregate> aggregate) {
-            if (aggregate.IsRoot()) {
-                return "this";
-            } else {
-                var depth = aggregate.EnumerateAncestors().Count();
-                return depth == 1 ? "item" : $"item{depth - 1}";
-            }
+        /// <summary>
+        /// 集約ツリーの途中でChildrenが挟まるたびに Select(x => ...) によって値取得元インスタンスが変わる問題を解決する
+        /// </summary>
+        private static (string instanceName, GraphNode<Aggregate>) GetSourceInstanceOf(GraphNode<Aggregate> aggregate) {
+            var valueSourceAggregate = aggregate
+                .EnumerateAncestorsAndThis()
+                .Reverse()
+                .First(a => a.IsRoot() || a.IsChildrenMember());
+            var instanceName = valueSourceAggregate.IsRoot()
+                ? $"this"
+                : $"item{valueSourceAggregate.EnumerateAncestors().Count()}";
+
+            return (instanceName, valueSourceAggregate);
         }
         #endregion ToDbEntity
     }
