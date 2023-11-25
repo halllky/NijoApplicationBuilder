@@ -24,8 +24,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         internal IEnumerable<Member> GetKeys() {
             return _aggregate
                 .GetKeys()
-                // 自身または祖先の主キーもしくはRef。参照先の主キー(ValueMember)を除く
-                .Where(m => _aggregate.EnumerateAncestorsAndThis().Contains(m.Declaring))
+                .Where(m => m is not AggregateMember.ValueMember vm
+                         || !vm.IsKeyOfRefTarget)
                 .Select(m => new Member(m));
         }
         internal IEnumerable<Member> GetNames() {
@@ -85,13 +85,11 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
 
             internal string MemberName {
                 get {
-                    // 親の主キーと自身の主キーの名称重複を避けるためプレフィックスをつける
-                    var prefix2 = AggMember is AggregateMember.ValueMember vm2
-                        && vm2.InheritedTo != null
-                        && vm2.InheritedTo != AggMember.Declaring
-                        ? $"{AggMember.Declaring.Item.ClassName}_"
-                        : string.Empty;
-                    return prefix2 + AggMember.MemberName;
+                    //if (AggMember is AggregateMember.ValueMember vm
+                    //    && vm.IsKeyOfRefTarget) {
+                    //    return vm.Original!.MemberName;
+                    //}
+                    return AggMember.MemberName;
                 }
             }
             internal IEnumerable<string> GetFullPath(GraphNode<Aggregate>? since = null) {

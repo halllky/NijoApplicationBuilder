@@ -42,17 +42,15 @@ namespace HalApplicationBuilder.Core {
                     .ToArray();
                 foreach (var parentPk in parent.Initial.GetKeys()) {
                     if (parentPk is Schalar schalar) {
-                        yield return new Schalar(schalar.GraphNode, owner: aggregate) {
+                        yield return new Schalar(aggregate, (Schalar?)schalar.Original ?? schalar) {
                             ForeignKeyOf = schalar.ForeignKeyOf,
-                            InheritedTo = aggregate,
                         };
                     } else if (parentPk is Variation variation) {
-                        yield return new Variation(variation.VariationGroup, owner: aggregate) {
+                        yield return new Variation(aggregate, (Variation?)variation.Original ?? variation) {
                             ForeignKeyOf = variation.ForeignKeyOf,
-                            InheritedTo = aggregate,
                         };
                     } else if (parentPk is Ref @ref) {
-                        yield return new Ref(@ref.Relation, owner: aggregate);
+                        yield return new Ref(@ref.Relation, aggregate);
                     }
                 }
             }
@@ -172,23 +170,57 @@ namespace HalApplicationBuilder.Core {
             }
         }
         internal abstract class ValueMember : AggregateMemberBase {
+            protected ValueMember(ValueMember? original) {
+                Original = original;
+            }
+
             internal abstract IReadOnlyMemberOptions Options { get; }
 
-            internal sealed override string MemberName => Options.MemberName;
+            private string? _memberName;
+            internal sealed override string MemberName {
+                get {
+                    if (_memberName == null) {
+                        // 参照先のリレーション
+                        var relationPrefix = IsKeyOfRefTarget
+                            ? $"{ForeignKeyOf!.Relation.RelationName}_"
+                            : string.Empty;
+                        // 親の主キーの継承
+                        var parentPrefix = IsKeyOfAncestor
+                            ? $"{Original!.Owner.Item.ClassName}_"
+                            : string.Empty;
+                        // 自身の名前
+                        var name = Original == null
+                            ? Options.MemberName
+                            : Original.MemberName;
+
+                        _memberName
+                            = relationPrefix
+                            + parentPrefix
+                            + name;
+                    }
+                    return _memberName;
+                }
+            }
+
+            internal sealed override GraphNode<Aggregate> Declaring => Original?.Declaring ?? Owner;
             internal sealed override string CSharpTypeName => Options.MemberType.GetCSharpTypeName();
             internal sealed override string TypeScriptTypename => Options.MemberType.GetTypeScriptTypeName();
 
             internal bool IsKey => Options.IsKey;
             internal bool IsDisplayName => Options.IsDisplayName
                                         || (!Owner.Item.HasNameMember && Options.IsKey); // 集約中に名前が無い場合はキーを名前のかわりに使う
+            internal bool IsKeyOfAncestor => Original != null && Owner.EnumerateAncestors().Select(x=>x.Initial).Contains(Original.Owner);
+            internal bool IsKeyOfRefTarget => ForeignKeyOf != null;
 
+            internal ValueMember? Original { get; }
             internal Ref? ForeignKeyOf { get; init; }
-            internal GraphNode<Aggregate>? InheritedTo { get; init; }
 
             internal virtual DbColumn GetDbColumn() {
                 return new DbColumn {
                     Owner = Owner.As<IEFCoreEntity>(),
-                    Options = Options,
+                    Options = Options.Clone(opt => {
+                        opt.MemberName = MemberName;
+                    }),
                 };
             }
         }
@@ -210,15 +242,16 @@ namespace HalApplicationBuilder.Core {
 
         #region MEMBER IMPLEMEMT
         internal class Schalar : ValueMember {
-            internal Schalar(GraphNode<AggregateMemberNode> aggregateMemberNode, GraphNode<Aggregate>? owner = null) {
+            internal Schalar(GraphNode<AggregateMemberNode> aggregateMemberNode) : base(null) {
                 GraphNode = aggregateMemberNode;
-
-                Owner = owner ?? aggregateMemberNode.Source!.Initial.As<Aggregate>();
-                Declaring = aggregateMemberNode.Source!.Initial.As<Aggregate>();
+                Owner = aggregateMemberNode.Source!.Initial.As<Aggregate>();
+            }
+            internal Schalar(GraphNode<Aggregate> owner, Schalar original) : base(original) {
+                GraphNode = original.GraphNode;
+                Owner = owner;
             }
             internal GraphNode<AggregateMemberNode> GraphNode { get; }
             internal override GraphNode<Aggregate> Owner { get; }
-            internal override GraphNode<Aggregate> Declaring { get; }
 
             internal override IReadOnlyMemberOptions Options => GraphNode.Item;
             internal override decimal Order => GraphNode.Source!.GetMemberOrder();
@@ -227,11 +260,7 @@ namespace HalApplicationBuilder.Core {
                 return new DbColumn {
                     Owner = Owner.As<IEFCoreEntity>(),
                     Options = Options.Clone(opt => {
-                        // 祖先や参照先のキーの場合、子孫集約（参照元集約）独自のメンバーとの
-                        // 名称重複を避けるため、アタマに祖先や参照先の集約名をつける
-                        var prefix1 = ForeignKeyOf == null ? string.Empty : $"{ForeignKeyOf.MemberName}_";
-                        var prefix2 = Owner == Declaring ? string.Empty : $"{Declaring.Item.ClassName}_";
-                        opt.MemberName = prefix1 + prefix2 + MemberName;
+                        opt.MemberName = MemberName;
                     }),
                 };
             }
@@ -256,9 +285,8 @@ namespace HalApplicationBuilder.Core {
         }
 
         internal class Variation : ValueMember {
-            internal Variation(VariationGroup<Aggregate> group, GraphNode<Aggregate>? owner = null) {
+            internal Variation(VariationGroup<Aggregate> group) : base(null) {
                 VariationGroup = group;
-
                 Options = new MemberOptions {
                     MemberName = group.GroupName,
                     MemberType = new AggregateMemberTypes.VariationSwitch(),
@@ -267,14 +295,17 @@ namespace HalApplicationBuilder.Core {
                     IsRequired = group.RequiredAtDB,
                     InvisibleInGui = false,
                 };
-
-                Owner = owner ?? group.Owner;
-                Declaring = group.Owner;
+                Owner = group.Owner;
             }
+            internal Variation(GraphNode<Aggregate> owner, Variation original) : base(original) {
+                VariationGroup = original.VariationGroup;
+                Options = original.Options;
+                Owner = owner;
+            }
+
             internal VariationGroup<Aggregate> VariationGroup { get; }
             internal override IReadOnlyMemberOptions Options { get; }
             internal override GraphNode<Aggregate> Owner { get; }
-            internal override GraphNode<Aggregate> Declaring { get; }
             internal override decimal Order => VariationGroup.MemberOrder;
 
             internal IEnumerable<VariationItem> GetGroupItems() {
@@ -312,15 +343,13 @@ namespace HalApplicationBuilder.Core {
             internal IEnumerable<ValueMember> GetForeignKeys() {
                 foreach (var fk in Relation.Terminal.GetKeys()) {
                     if (fk is Schalar schalar) {
-                        yield return new Schalar(schalar.GraphNode, Relation.Initial) {
+                        yield return new Schalar(Relation.Initial, schalar) {
                             ForeignKeyOf = this,
-                            InheritedTo = schalar.InheritedTo,
                         };
 
                     } else if (fk is Variation variation) {
-                        yield return new Variation(variation.VariationGroup, Relation.Initial) {
+                        yield return new Variation(Relation.Initial, variation) {
                             ForeignKeyOf = this,
-                            InheritedTo = variation.InheritedTo,
                         };
                     }
                 }

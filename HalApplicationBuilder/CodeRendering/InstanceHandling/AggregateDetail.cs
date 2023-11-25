@@ -164,26 +164,31 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         }
         private IEnumerable<string> RenderBodyOfToDbEntity(GraphNode<Aggregate> renderingAggregate, Config config) {
             foreach (var prop in renderingAggregate.GetMembers()) {
-                if (prop is AggregateMember.ValueMember valueMember) {
+                if (prop is AggregateMember.ValueMember vm) {
                     // 参照先のキーの代入はRefの分岐でレンダリングするので
                     if (!renderingAggregate
                         .EnumerateAncestorsAndThis()
-                        .Contains(valueMember.Declaring)) continue;
+                        .Contains(vm.Declaring)) continue;
 
-                    var (instanceName, valueSource) = GetSourceInstanceOf(valueMember.Declaring);
+                    var (instanceName, valueSource) = GetSourceInstanceOf(vm.Declaring);
 
                     yield return $$"""
-                        {{valueMember.GetDbColumn().Options.MemberName}} = {{instanceName}}.{{prop.GetFullPath(valueSource).Join(".")}},
+                        {{vm.GetDbColumn().Options.MemberName}} = {{instanceName}}.{{(vm.Original ?? vm).GetFullPath(valueSource).Join(".")}},
                         """;
 
                 } else if (prop is AggregateMember.Ref refProp) {
                     var keyNameClass = new RefTargetKeyName(refProp.MemberAggregate);
                     var (instanceName, valueSource) = GetSourceInstanceOf(refProp.Declaring);
 
+                    //foreach (var fk in refProp.GetForeignKeys()) {
+                    //    // TODO; ↓ 「ルートを参照2」でここに入った時、GetPathOfのsinceが機能していない
+                    //    yield return $$"""
+                    //        {{fk.GetDbColumn().Options.MemberName}} = {{instanceName}}.{{prop.GetFullPath(valueSource).Join(".")}}.{{keyNameClass.GetPathOf(fk).Join(".")}},
+                    //        """;
+                    //}
                     foreach (var fk in refProp.GetForeignKeys()) {
-                        // TODO; ↓ 「ルートを参照2」でここに入った時、GetPathOfのsinceが機能していない
                         yield return $$"""
-                            {{fk.GetDbColumn().Options.MemberName}} = {{instanceName}}.{{prop.GetFullPath(valueSource).Join(".")}}.{{keyNameClass.GetPathOf(fk).Join(".")}},
+                            {{fk.GetDbColumn().Options.MemberName}} = {{instanceName}}.{{fk.GetFullPath(valueSource).Join(".")}},
                             """;
                     }
 
