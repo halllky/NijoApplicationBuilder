@@ -101,7 +101,7 @@ namespace HalApplicationBuilder {
                             // DB再作成
                             _log?.LogInformation("DBを削除して再作成します。");
                             using var client = new HttpClient();
-                            var uri = new Uri(GetDebugUrl(), CodeRendering.WebClient.DebuggerController.RECREATE_DB_URL);
+                            var uri = new Uri(GetDebugUrl(), Features.WebClient.DebuggerController.RECREATE_DB_URL);
                             var message = new HttpRequestMessage(HttpMethod.Post, uri);
                             var httpResponse = await client.SendAsync(message, cancelIfAbortOrReuild.Token);
                             if (!httpResponse.IsSuccessStatusCode) {

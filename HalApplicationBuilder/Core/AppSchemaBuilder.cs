@@ -238,8 +238,8 @@ namespace HalApplicationBuilder.Core {
             var halappEnums = new List<EnumDefinition>();
 
             // 基盤機能: バッチ処理
-            halappEntities.Add(CodeRendering.BackgroundService.BackgroundTaskEntity.CreateEntity());
-            halappEnums.Add(CodeRendering.BackgroundService.BackgroundTaskEntity.CreateBackgroundTaskStateEnum());
+            halappEntities.Add(Features.BackgroundService.BackgroundTaskEntity.CreateEntity());
+            halappEnums.Add(Features.BackgroundService.BackgroundTaskEntity.CreateBackgroundTaskStateEnum());
 
             // ---------------------------------------------------------
             // グラフを作成して返す

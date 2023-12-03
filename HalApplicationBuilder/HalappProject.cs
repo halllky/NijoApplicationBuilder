@@ -1,6 +1,6 @@
-using HalApplicationBuilder.CodeRendering;
-using HalApplicationBuilder.CodeRendering.EFCore;
-using HalApplicationBuilder.CodeRendering.WebClient;
+using HalApplicationBuilder.Features;
+using HalApplicationBuilder.Features.EFCore;
+using HalApplicationBuilder.Features.WebClient;
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
 using Microsoft.Extensions.Logging;

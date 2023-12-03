@@ -1,5 +1,5 @@
-using HalApplicationBuilder.CodeRendering.InstanceHandling;
-using HalApplicationBuilder.CodeRendering.Util;
+using HalApplicationBuilder.Features.InstanceHandling;
+using HalApplicationBuilder.Features.Util;
 using HalApplicationBuilder.DotnetEx;
 using Microsoft.Extensions.Options;
 using System;
