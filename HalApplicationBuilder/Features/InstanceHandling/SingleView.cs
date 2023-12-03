@@ -56,8 +56,8 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
             E_Type.Create => $"/{_aggregate.Item.UniqueId}/new",
 
             // React Router は全角文字非対応なので key0, key1, ... をURLに使う
-            E_Type.View => $"/{_aggregate.Item.UniqueId}/detail/{_aggregate.GetKeys().Select((_, i) => $":key{i}").Join("/")}",
-            E_Type.Edit => $"/{_aggregate.Item.UniqueId}/edit/{_aggregate.GetKeys().Select((_, i) => $":key{i}").Join("/")}",
+            E_Type.View => $"/{_aggregate.Item.UniqueId}/detail/{_aggregate.GetKeys().OfType<AggregateMember.ValueMember>().Select((_, i) => $":key{i}").Join("/")}",
+            E_Type.Edit => $"/{_aggregate.Item.UniqueId}/edit/{_aggregate.GetKeys().OfType<AggregateMember.ValueMember>().Select((_, i) => $":key{i}").Join("/")}",
 
             _ => throw new NotImplementedException(),
         };
@@ -70,7 +70,13 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
             var find = new FindFeature(_aggregate);
 
             var keyName = new RefTargetKeyName(_aggregate);
-            var keysFromUrl = keyName.GetKeyMembers().Select(m => $"urlKey{m.MemberName}").ToArray();
+            var keys = _aggregate
+                .GetKeys()
+                .OfType<AggregateMember.ValueMember>()
+                .ToArray();
+            var keysFromUrl = keys
+                .Select(m => $"urlKey{m.MemberName}")
+                .ToArray();
 
             var maxIndent = _aggregate
                 .EnumerateDescendants()
@@ -142,7 +148,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                     return AggregateType.{{createEmptyObject}}()
                   }, [])
                 """).Else(() => $$"""
-                  const { {{keyName.GetKeyMembers().Select((m, i) => $"key{i}: urlKey{m.MemberName}").Join(", ")}} } = useParams()
+                  const { {{keys.Select((m, i) => $"key{i}: urlKey{m.MemberName}").Join(", ")}} } = useParams()
                   const [instanceName, setInstanceName] = useState<string | undefined>('')
                   const [fetched, setFetched] = useState(false)
                   const defaultValues = useCallback(async () => {
@@ -200,7 +206,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                     const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{controller.CreateCommandApi}}`, data)
                     if (response.ok) {
                       dispatch({ type: 'pushMsg', msg: `${({{keyName.GetNameMembers().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を作成しました。` })
-                      navigate(`{{GetUrlStringForReact(E_Type.View, keyName.GetKeyMembers().Select(m => $"response.data.{m.MemberName}"))}}`)
+                      navigate(`{{GetUrlStringForReact(E_Type.View, keys.Select(m => AggregateDetail.GetPathOf("response.data", _aggregate, m).Join("?.")))}}`)
                     } else {
                       setErrorMessages([...response.errors])
                     }
