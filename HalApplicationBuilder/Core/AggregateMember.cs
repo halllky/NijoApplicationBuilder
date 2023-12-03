@@ -42,11 +42,11 @@ namespace HalApplicationBuilder.Core {
                     .ToArray();
                 foreach (var parentPk in parent.Initial.GetKeys()) {
                     if (parentPk is Schalar schalar) {
-                        yield return new Schalar(aggregate, (Schalar?)schalar.Original ?? schalar) {
+                        yield return new Schalar(aggregate, (Schalar?)schalar.Original ?? schalar, schalar.Declared) {
                             ForeignKeyOf = schalar.ForeignKeyOf,
                         };
                     } else if (parentPk is Variation variation) {
-                        yield return new Variation(aggregate, (Variation?)variation.Original ?? variation) {
+                        yield return new Variation(aggregate, (Variation?)variation.Original ?? variation, variation.Declared) {
                             ForeignKeyOf = variation.ForeignKeyOf,
                         };
                     } else if (parentPk is Ref @ref) {
@@ -144,18 +144,23 @@ namespace HalApplicationBuilder.Core {
         #region MEMBER BASE
         internal abstract class AggregateMemberBase : ValueObject {
             internal abstract GraphNode<Aggregate> Owner { get; }
-            internal abstract GraphNode<Aggregate> Declaring { get; }
+            internal abstract GraphNode<Aggregate> DeclaringAggregate { get; }
             internal abstract string MemberName { get; }
             internal abstract decimal Order { get; }
             internal abstract string CSharpTypeName { get; }
             internal abstract string TypeScriptTypename { get; }
 
-            internal virtual IEnumerable<string> GetFullPath(GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+            internal IEnumerable<GraphEdge> GetFullPathEdge(GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
                 var skip = since != null;
-                foreach (var edge in Declaring.PathFromEntry()) {
+                foreach (var edge in Owner.PathFromEntry()) {
                     if (until != null && edge.Source?.As<Aggregate>() == until) yield break;
                     if (skip && edge.Source?.As<Aggregate>() == since) skip = false;
                     if (skip) continue;
+                    yield return edge;
+                }
+            }
+            internal virtual IEnumerable<string> GetFullPath(GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+                foreach (var edge in GetFullPathEdge(since, until)) {
                     yield return edge.RelationName;
                 }
                 yield return MemberName;
@@ -165,13 +170,14 @@ namespace HalApplicationBuilder.Core {
             }
             protected override IEnumerable<object?> ValueObjectIdentifiers() {
                 yield return Owner;
-                yield return Declaring;
+                yield return DeclaringAggregate;
                 yield return MemberName;
             }
         }
         internal abstract class ValueMember : AggregateMemberBase {
-            protected ValueMember(ValueMember? original) {
+            protected ValueMember(ValueMember? original, ValueMember? declared) {
                 Original = original;
+                Declared = declared ?? this;
             }
 
             internal abstract IReadOnlyMemberOptions Options { get; }
@@ -202,7 +208,7 @@ namespace HalApplicationBuilder.Core {
                 }
             }
 
-            internal sealed override GraphNode<Aggregate> Declaring => Original?.Declaring ?? Owner;
+            internal sealed override GraphNode<Aggregate> DeclaringAggregate => Original?.DeclaringAggregate ?? Owner;
             internal sealed override string CSharpTypeName => Options.MemberType.GetCSharpTypeName();
             internal sealed override string TypeScriptTypename => Options.MemberType.GetTypeScriptTypeName();
 
@@ -213,6 +219,7 @@ namespace HalApplicationBuilder.Core {
             internal bool IsKeyOfRefTarget => ForeignKeyOf != null;
 
             internal ValueMember? Original { get; }
+            internal ValueMember Declared { get; }
             internal Ref? ForeignKeyOf { get; init; }
 
             internal virtual DbColumn GetDbColumn() {
@@ -228,7 +235,7 @@ namespace HalApplicationBuilder.Core {
             internal abstract GraphEdge<Aggregate> Relation { get; }
 
             internal override GraphNode<Aggregate> Owner => Relation.Initial;
-            internal override GraphNode<Aggregate> Declaring => Relation.Initial;
+            internal override GraphNode<Aggregate> DeclaringAggregate => Relation.Initial;
             internal override string MemberName => Relation.RelationName;
             internal GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
             internal override decimal Order => Relation.GetMemberOrder();
@@ -242,11 +249,11 @@ namespace HalApplicationBuilder.Core {
 
         #region MEMBER IMPLEMEMT
         internal class Schalar : ValueMember {
-            internal Schalar(GraphNode<AggregateMemberNode> aggregateMemberNode) : base(null) {
+            internal Schalar(GraphNode<AggregateMemberNode> aggregateMemberNode) : base(null, null) {
                 GraphNode = aggregateMemberNode;
                 Owner = aggregateMemberNode.Source!.Initial.As<Aggregate>();
             }
-            internal Schalar(GraphNode<Aggregate> owner, Schalar original) : base(original) {
+            internal Schalar(GraphNode<Aggregate> owner, Schalar original, ValueMember declared) : base(original, declared) {
                 GraphNode = original.GraphNode;
                 Owner = owner;
             }
@@ -285,7 +292,7 @@ namespace HalApplicationBuilder.Core {
         }
 
         internal class Variation : ValueMember {
-            internal Variation(VariationGroup<Aggregate> group) : base(null) {
+            internal Variation(VariationGroup<Aggregate> group) : base(null, null) {
                 VariationGroup = group;
                 Options = new MemberOptions {
                     MemberName = group.GroupName,
@@ -297,7 +304,7 @@ namespace HalApplicationBuilder.Core {
                 };
                 Owner = group.Owner;
             }
-            internal Variation(GraphNode<Aggregate> owner, Variation original) : base(original) {
+            internal Variation(GraphNode<Aggregate> owner, Variation original, ValueMember declared) : base(original, declared) {
                 VariationGroup = original.VariationGroup;
                 Options = original.Options;
                 Owner = owner;
@@ -343,12 +350,12 @@ namespace HalApplicationBuilder.Core {
             internal IEnumerable<ValueMember> GetForeignKeys() {
                 foreach (var fk in Relation.Terminal.GetKeys()) {
                     if (fk is Schalar schalar) {
-                        yield return new Schalar(Relation.Initial, schalar) {
+                        yield return new Schalar(Relation.Initial, schalar, schalar.Declared) {
                             ForeignKeyOf = this,
                         };
 
                     } else if (fk is Variation variation) {
-                        yield return new Variation(Relation.Initial, variation) {
+                        yield return new Variation(Relation.Initial, variation, variation.Declared) {
                             ForeignKeyOf = this,
                         };
                     }

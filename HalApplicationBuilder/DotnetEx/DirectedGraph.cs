@@ -182,6 +182,10 @@ namespace HalApplicationBuilder.DotnetEx {
             return list;
         }
 
+        internal GraphNode GetEntry() {
+            return PathFromEntry().FirstOrDefault()?.Source ?? this;
+        }
+
         internal GraphNode<T> As<T>() where T : IGraphNode {
             return this is GraphNode<T> t
                 ? t

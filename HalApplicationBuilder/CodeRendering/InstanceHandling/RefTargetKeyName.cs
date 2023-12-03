@@ -41,7 +41,7 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 public class {{CSharpClassName}} {
                 {{GetKeysAndNames().SelectTextTemplate(member => $$"""
                     [{{member.GetAnnotations().Join(", ")}}]
-                    public {{member.AggMember.CSharpTypeName}} {{member.MemberName}} { get; set; }
+                    public {{member.AggMember.CSharpTypeName}} {{member.AggMember.MemberName}} { get; set; }
                 """)}}
                 }
                 """;
@@ -50,31 +50,10 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             return $$"""
                 export type {{TypeScriptTypeName}} = {
                 {{GetKeysAndNames().SelectTextTemplate(member => $$"""
-                  {{member.MemberName}}: {{member.AggMember.CSharpTypeName}}
+                  {{member.AggMember.MemberName}}: {{member.AggMember.CSharpTypeName}}
                 """)}}
                 }
                 """;
-        }
-
-        internal IEnumerable<string> GetPathOf(AggregateMember.ValueMember fk) {
-            var skip = true;
-            foreach (var path in fk.Declaring.PathFromEntry()) {
-                // このクラスが定義しているメンバーに至るまでのパスは無視する
-                if (skip) {
-                    if (path.Terminal == _aggregate) skip = false;
-                    continue;
-                }
-
-                // 親の主キーはこのクラスで定義されているので、ピリオドでつなぐのではなくアンスコでつなぐ
-                if (fk.Declaring.EnumerateThisAndDescendants().Contains(path.Terminal.As<Aggregate>())
-                    && fk.Declaring.EnumerateThisAndDescendants().Contains(path.Initial.As<Aggregate>())) {
-                    break;
-                }
-
-                // RefTargetKeyName型プロパティのプロパティ名
-                yield return path.RelationName;
-            }
-            yield return new Member(fk).MemberName;
         }
 
         internal class Member : ValueObject {
@@ -82,20 +61,8 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 AggMember = source;
             }
             internal AggregateMember.AggregateMemberBase AggMember { get; }
+            public string MemberName => AggMember.MemberName;
 
-            internal string MemberName {
-                get {
-                    //if (AggMember is AggregateMember.ValueMember vm
-                    //    && vm.IsKeyOfRefTarget) {
-                    //    return vm.Original!.MemberName;
-                    //}
-                    return AggMember.MemberName;
-                }
-            }
-            internal IEnumerable<string> GetFullPath(GraphNode<Aggregate>? since = null) {
-                foreach (var path in AggMember.GetFullPath(since).SkipLast(1)) yield return path;
-                yield return MemberName;
-            }
             internal IEnumerable<string> GetAnnotations() {
                 var list = new List<string>();
                 if (AggMember is AggregateMember.ValueMember v && v.IsKey) list.Add("Key");
@@ -103,8 +70,14 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
                 if (AggMember is AggregateMember.ValueMember v2 && v2.IsDisplayName) list.Add("DisplayName");
                 return list;
             }
+            /// <summary>
+            /// <see cref="GetKeysAndNames"/> での重複除去のために値オブジェクトにしている
+            /// </summary>
             protected override IEnumerable<object?> ValueObjectIdentifiers() {
                 yield return AggMember;
+            }
+            public override string ToString() {
+                return AggMember.ToString();
             }
         }
     }

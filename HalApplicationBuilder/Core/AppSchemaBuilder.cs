@@ -377,6 +377,13 @@ namespace HalApplicationBuilder.Core {
             }
         }
 
+        internal static bool IsInTreeOf(this GraphNode<Aggregate> agg, GraphNode<Aggregate> target) {
+            return target
+                .GetRoot()
+                .EnumerateThisAndDescendants()
+                .Contains(agg);
+        }
+
         internal static bool IsChildrenMember(this GraphNode graphNode) {
             var parent = graphNode.GetParent();
             return parent != null
