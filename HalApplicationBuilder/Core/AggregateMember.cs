@@ -214,7 +214,7 @@ namespace HalApplicationBuilder.Core {
 
             internal bool IsKey => Options.IsKey;
             internal bool IsDisplayName => Options.IsDisplayName
-                                        || (!Owner.Item.HasNameMember && Options.IsKey); // 集約中に名前が無い場合はキーを名前のかわりに使う
+                                        || (Owner.Item.UseKeyInsteadOfName && Options.IsKey); // 集約中に名前が無い場合はキーを名前のかわりに使う
             internal bool IsKeyOfAncestor => Original != null && Owner.EnumerateAncestors().Select(x=>x.Initial).Contains(Original.Owner);
             internal bool IsKeyOfRefTarget => ForeignKeyOf != null;
 

@@ -201,7 +201,7 @@ namespace HalApplicationBuilder.Core {
 
                 if (successToParse) {
                     var displayName = aggregateDef.TreePath.BaseName;
-                    var aggregate = new Aggregate(aggregateId, displayName, hasNameMember, aggregateDef.Options);
+                    var aggregate = new Aggregate(aggregateId, displayName, !hasNameMember, aggregateDef.Options);
                     aggregates.Add(aggregateId, aggregate);
                 }
             }

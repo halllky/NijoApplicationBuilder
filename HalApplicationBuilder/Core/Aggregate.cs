@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Core {
     internal class Aggregate : ValueObject, IEFCoreEntity {
-        internal Aggregate(NodeId id, string displayName, bool hasNameMember, AggregateBuildOption options) {
+        internal Aggregate(NodeId id, string displayName, bool useKeyInsteadOfName, AggregateBuildOption options) {
             Id = id;
             DisplayName = displayName;
-            HasNameMember = hasNameMember;
+            UseKeyInsteadOfName = useKeyInsteadOfName;
             Options = options;
         }
 
@@ -25,7 +25,7 @@ namespace HalApplicationBuilder.Core {
         public string DbSetName => EFCoreEntityClassName;
 
         public IList<IReadOnlyMemberOptions> SchalarMembersNotRelatedToAggregate { get; } = new List<IReadOnlyMemberOptions>();
-        internal bool HasNameMember { get; }
+        internal bool UseKeyInsteadOfName { get; }
         internal AggregateBuildOption Options { get; }
 
         protected override IEnumerable<object?> ValueObjectIdentifiers() {
