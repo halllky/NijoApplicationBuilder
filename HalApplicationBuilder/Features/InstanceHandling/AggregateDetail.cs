@@ -76,6 +76,47 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                 """;
         }
 
+        /// <summary>
+        /// 以下の事情を考慮したパスを返す。
+        /// - Childrenのメンバーはthis等ではなくSelectのラムダ式の変数のメンバーになる
+        /// - 参照先のメンバーは <see cref="RefTargetKeyName"/> に生成されるメンバーになる
+        ///   - <see cref="RefTargetKeyName"/> のメンバーのうち祖先のキーはそのKeyNameクラスの中で定義されている
+        ///   - <see cref="RefTargetKeyName"/> のメンバーのうちさらに参照先のキーがある場合はKeyNameクラスの入れ子になる
+        /// </summary>
+        internal static IEnumerable<string> GetPathOf(string instance, GraphNode<Aggregate> entry, AggregateMember.ValueMember vm) {
+            // 移送元インスタンスを特定する
+            GraphNode<Aggregate> source;
+            if (vm.DeclaringAggregate.IsInTreeOf(entry)) {
+                source = vm.DeclaringAggregate;
+            } else {
+                // ツリー外に出る直前の集約がSourceInstance
+                source = entry;
+                foreach (var edge in vm.DeclaringAggregate.PathFromEntry()) {
+                    var a = edge.Initial.As<Aggregate>();
+                    if (a.IsInTreeOf(entry)) source = a;
+                }
+            }
+            var (instanceName, valueSource) = GetSourceInstanceOf(instance, source);
+
+            // 移送元プロパティを特定する
+            var original = vm;
+            while (true) {
+                if (original.Original == null) break;
+
+                // RefTargetKeyNameの都合上、
+                // 参照先の主キーに祖先のキーが含まれている場合は祖先でなく子孫のプロパティが移送元
+                if (!original.Owner.IsInTreeOf(entry)
+                    && original.IsKeyOfAncestor) break;
+
+                original = original.Original;
+            }
+
+            yield return instanceName;
+            foreach (var path in original.GetFullPath(valueSource)) {
+                yield return path;
+            }
+        }
+
 
         #region FromDbEntity
         internal string FromDbEntity(CodeRenderingContext ctx) {
@@ -162,40 +203,14 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                 }
                 """;
         }
-        private IEnumerable<string> RenderBodyOfToDbEntity(GraphNode<Aggregate> renderingAggregate, Config config) {
+        private static IEnumerable<string> RenderBodyOfToDbEntity(GraphNode<Aggregate> renderingAggregate, Config config) {
             foreach (var prop in renderingAggregate.GetMembers()) {
                 if (prop is AggregateMember.ValueMember vm) {
                     var entry = renderingAggregate.GetEntry().As<Aggregate>();
-
-                    // 移送元インスタンスを特定する
-                    GraphNode<Aggregate> source;
-                    if (vm.DeclaringAggregate.IsInTreeOf(entry)) {
-                        source = vm.DeclaringAggregate;
-                    } else {
-                        // ツリー外に出る直前の集約がSourceInstance
-                        source = entry;
-                        foreach (var edge in vm.DeclaringAggregate.PathFromEntry()) {
-                            var a = edge.Initial.As<Aggregate>();
-                            if (a.IsInTreeOf(renderingAggregate)) source = a;
-                        }
-                    }
-                    var (instanceName, valueSource) = GetSourceInstanceOf(source);
-
-                    // 移送元プロパティを特定する
-                    var original = vm;
-                    while (true) {
-                        if (original.Original == null) break;
-
-                        // RefTargetKeyNameの都合上、
-                        // 参照先の主キーに祖先のキーが含まれている場合は祖先でなく子孫のプロパティが移送元
-                        if (!original.Owner.IsInTreeOf(entry)
-                            && original.IsKeyOfAncestor) break;
-
-                        original = original.Original;
-                    }
+                    var path = GetPathOf("this", entry, vm);
 
                     yield return $$"""
-                        {{vm.GetDbColumn().Options.MemberName}} = {{instanceName}}.{{original.GetFullPath(valueSource).Join(".")}},
+                        {{vm.GetDbColumn().Options.MemberName}} = {{path.Join(".")}},
                         """;
 
                 } else if (prop is AggregateMember.Ref refProp) {
@@ -204,8 +219,8 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                 } else if (prop is AggregateMember.Children children) {
                     var nav = children.GetNavigationProperty();
                     var childDbEntityClass = $"{config.EntityNamespace}.{nav.Relevant.Owner.Item.EFCoreEntityClassName}";
-                    var (instanceName, valueSource) = GetSourceInstanceOf(children.DeclaringAggregate);
-                    var (item, _) = GetSourceInstanceOf(children.MemberAggregate);
+                    var (instanceName, valueSource) = GetSourceInstanceOf("this", children.DeclaringAggregate);
+                    var (item, _) = GetSourceInstanceOf("this", children.MemberAggregate);
 
                     yield return $$"""
                         {{children.MemberName}} = {{instanceName}}.{{prop.GetFullPath(valueSource).Join(".")}}.Select({{item}} => new {{childDbEntityClass}} {
@@ -233,13 +248,13 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
         /// <summary>
         /// 集約ツリーの途中でChildrenが挟まるたびに Select(x => ...) によって値取得元インスタンスが変わる問題を解決する
         /// </summary>
-        private static (string instanceName, GraphNode<Aggregate>) GetSourceInstanceOf(GraphNode<Aggregate> aggregate) {
+        private static (string instanceName, GraphNode<Aggregate>) GetSourceInstanceOf(string instance, GraphNode<Aggregate> aggregate) {
             var valueSourceAggregate = aggregate
                 .EnumerateAncestorsAndThis()
                 .Reverse()
                 .First(a => a.IsRoot() || a.IsChildrenMember());
             var instanceName = valueSourceAggregate.IsRoot()
-                ? $"this"
+                ? instance
                 : $"item{valueSourceAggregate.EnumerateAncestors().Count()}";
 
             return (instanceName, valueSourceAggregate);
