@@ -46,6 +46,7 @@ namespace HalApplicationBuilder.Features {
 
             return $$"""
                 #pragma warning disable CS8600 // Null リテラルまたは Null の可能性がある値を Null 非許容型に変換しています。
+                #pragma warning disable CS8604 // Null 参照引数の可能性があります。
                 #pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければなりません
                 #pragma warning disable IDE1006 // 命名スタイル
 

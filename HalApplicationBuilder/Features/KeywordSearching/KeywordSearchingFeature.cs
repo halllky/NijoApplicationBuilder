@@ -99,7 +99,7 @@ namespace HalApplicationBuilder.Features.KeywordSearching {
 
                             if (!string.IsNullOrWhiteSpace(keyword)) {
                                 var {{LIKE}} = $"%{keyword.Trim().Replace("%", "\\%")}%";
-                                query = query.Where(item => {{WithIndent(filterColumns.SelectTextTemplate(path => $"EF.Functions.Like(item.{path}, {LIKE})"), "                                         || ")}});
+                                query = query.Where(item => {{WithIndent(filterColumns.SelectTextTemplate(path => $"EF.Functions.Like(item.{path}.ToString(), {LIKE})"), "                                         || ")}});
                             }
 
                             var results = query
