@@ -54,6 +54,9 @@ namespace HalApplicationBuilder.CodeRendering.Searching {
                 var pkRefTargets = DbEntity
                     .As<Aggregate>()
                     .EnumerateThisAndDescendants()
+                    .Where(x => x.EnumerateAncestorsAndThis()
+                        .All(ancestor => !ancestor.IsChildrenMember()
+                                      && !ancestor.IsVariationMember()))
                     .SelectMany(entity => entity.GetMembers().OfType<AggregateMember.Ref>());
                 refTargetColumns = pkRefTargets
                     .SelectMany(member => member.MemberAggregate.GetMembers())
