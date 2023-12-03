@@ -18,30 +18,36 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
         internal string CSharpClassName => $"{_aggregate.Item.ClassName}KeysAndNames";
         internal string TypeScriptTypeName => $"{_aggregate.Item.ClassName}KeysAndNames";
 
-        internal IEnumerable<Member> GetKeysAndNames() {
+        internal IEnumerable<AggregateMember.AggregateMemberBase> GetKeysAndNames() {
             return GetKeys().Union(GetNames());
         }
-        internal IEnumerable<Member> GetKeys() {
+        internal IEnumerable<AggregateMember.AggregateMemberBase> GetKeys() {
             return _aggregate
                 .GetKeys()
                 .Where(m => m is not AggregateMember.ValueMember vm
-                         || !vm.IsKeyOfRefTarget)
-                .Select(m => new Member(m));
+                         || !vm.IsKeyOfRefTarget);
         }
-        internal IEnumerable<Member> GetNames() {
+        internal IEnumerable<AggregateMember.AggregateMemberBase> GetNames() {
             return _aggregate
                 .GetMembers()
                 .OfType<AggregateMember.ValueMember>()
-                .Where(member => member.IsDisplayName)
-                .Select(m => new Member(m));
+                .Where(member => member.IsDisplayName);
         }
 
         internal string RenderCSharpDeclaring() {
+            static IEnumerable<string> GetAnnotations(AggregateMember.AggregateMemberBase member) {
+                var list = new List<string>();
+                if (member is AggregateMember.ValueMember v && v.IsKey) list.Add("Key");
+                if (member is AggregateMember.Ref r && r.Relation.IsPrimary()) list.Add("Key");
+                if (member is AggregateMember.ValueMember v2 && v2.IsDisplayName) list.Add("DisplayName");
+                return list;
+            }
+
             return $$"""
                 public class {{CSharpClassName}} {
                 {{GetKeysAndNames().SelectTextTemplate(member => $$"""
-                    [{{member.GetAnnotations().Join(", ")}}]
-                    public {{member.AggMember.CSharpTypeName}} {{member.AggMember.MemberName}} { get; set; }
+                    [{{GetAnnotations(member).Join(", ")}}]
+                    public {{member.CSharpTypeName}} {{member.MemberName}} { get; set; }
                 """)}}
                 }
                 """;
@@ -50,35 +56,10 @@ namespace HalApplicationBuilder.CodeRendering.InstanceHandling {
             return $$"""
                 export type {{TypeScriptTypeName}} = {
                 {{GetKeysAndNames().SelectTextTemplate(member => $$"""
-                  {{member.AggMember.MemberName}}: {{member.AggMember.CSharpTypeName}}
+                  {{member.MemberName}}: {{member.CSharpTypeName}}
                 """)}}
                 }
                 """;
-        }
-
-        internal class Member : ValueObject {
-            internal Member(AggregateMember.AggregateMemberBase source) {
-                AggMember = source;
-            }
-            internal AggregateMember.AggregateMemberBase AggMember { get; }
-            public string MemberName => AggMember.MemberName;
-
-            internal IEnumerable<string> GetAnnotations() {
-                var list = new List<string>();
-                if (AggMember is AggregateMember.ValueMember v && v.IsKey) list.Add("Key");
-                if (AggMember is AggregateMember.Ref r && r.Relation.IsPrimary()) list.Add("Key");
-                if (AggMember is AggregateMember.ValueMember v2 && v2.IsDisplayName) list.Add("DisplayName");
-                return list;
-            }
-            /// <summary>
-            /// <see cref="GetKeysAndNames"/> での重複除去のために値オブジェクトにしている
-            /// </summary>
-            protected override IEnumerable<object?> ValueObjectIdentifiers() {
-                yield return AggMember;
-            }
-            public override string ToString() {
-                return AggMember.ToString();
-            }
         }
     }
 }
