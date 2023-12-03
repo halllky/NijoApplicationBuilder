@@ -40,7 +40,14 @@ namespace HalApplicationBuilder.Core {
             foreach (var edge in Owner.PathFromEntry()) {
                 if (skip && edge.Source?.As<IEFCoreEntity>() == since) skip = false;
                 if (skip) continue;
-                yield return edge.RelationName;
+
+                if (edge.Source == edge.Terminal
+                    && edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, out var type)
+                    && (string)type == DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD) {
+                    yield return NavigationProperty.PARENT; // 子から親に向かって辿る場合
+                } else {
+                    yield return edge.RelationName;
+                }
             }
             yield return Options.MemberName;
         }

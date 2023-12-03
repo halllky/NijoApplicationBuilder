@@ -161,7 +161,15 @@ namespace HalApplicationBuilder.Core {
             }
             internal virtual IEnumerable<string> GetFullPath(GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
                 foreach (var edge in GetFullPathEdge(since, until)) {
-                    yield return edge.RelationName;
+                    if (edge.Source == edge.Terminal
+                        && edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, out var type)
+                        && (string)type == DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD) {
+                        // 子から親に向かって辿る場合
+                        // ※自動生成されたソース中にこれが出現することはありえないはず
+                        yield return "__親__";
+                    } else {
+                        yield return edge.RelationName;
+                    }
                 }
                 yield return MemberName;
             }

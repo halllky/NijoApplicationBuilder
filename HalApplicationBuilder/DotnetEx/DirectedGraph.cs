@@ -186,6 +186,10 @@ namespace HalApplicationBuilder.DotnetEx {
             return PathFromEntry().FirstOrDefault()?.Source ?? this;
         }
 
+        internal GraphNode AsEntry() {
+            return new GraphNode(Item, _graph, null);
+        }
+
         internal GraphNode<T> As<T>() where T : IGraphNode {
             return this is GraphNode<T> t
                 ? t
@@ -251,6 +255,10 @@ namespace HalApplicationBuilder.DotnetEx {
     internal class GraphNode<T> : GraphNode where T : IGraphNode {
         internal GraphNode(T item, DirectedGraph graph, GraphEdge? source)
             : base(item, graph, source) { }
+
+        internal new GraphNode<T> AsEntry() {
+            return new GraphNode<T>(Item, _graph, null);
+        }
 
         internal new T Item => (T)base.Item;
     }

@@ -104,7 +104,7 @@ namespace HalApplicationBuilder.Features.KeywordSearching {
 
                             var results = query
                                 .Select(e => new {{keyName.CSharpClassName}} {
-                                    {{WithIndent(RenderKeyNameConvertingRecursively(_aggregate), "                    ")}}
+                                    {{WithIndent(RenderKeyNameConvertingRecursively(_aggregate.AsEntry()), "                    ")}}
                                 })
                                 .OrderBy(m => m.{{orderColumn}})
                                 .Take({{LIST_BY_KEYWORD_MAX + 1}});

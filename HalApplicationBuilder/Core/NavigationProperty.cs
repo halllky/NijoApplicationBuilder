@@ -69,7 +69,7 @@ namespace HalApplicationBuilder.Core {
                         || _relation.Terminal.IsChildrenMember()
                         || _relation.Terminal.IsVariationMember())
                         && _relation.Terminal.GetParent() == _relation) {
-                        return "Parent";
+                        return PARENT;
 
                     } else if (_relation.Terminal == Owner
                             && _relation.IsRef()) {
@@ -152,5 +152,7 @@ namespace HalApplicationBuilder.Core {
         protected override IEnumerable<object?> ValueObjectIdentifiers() {
             yield return _graphEdge;
         }
+
+        internal const string PARENT = "Parent";
     }
 }
