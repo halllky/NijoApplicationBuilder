@@ -18,16 +18,16 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
         internal string CSharpClassName => $"{_aggregate.Item.ClassName}KeysAndNames";
         internal string TypeScriptTypeName => $"{_aggregate.Item.ClassName}KeysAndNames";
 
-        internal IEnumerable<AggregateMember.AggregateMemberBase> GetKeysAndNames() {
-            return GetKeys().Union(GetNames());
+        internal IEnumerable<AggregateMember.AggregateMemberBase> GetMembers() {
+            return GetKeyMembers().Union(GetNameMembers());
         }
-        internal IEnumerable<AggregateMember.AggregateMemberBase> GetKeys() {
+        internal IEnumerable<AggregateMember.AggregateMemberBase> GetKeyMembers() {
             return _aggregate
                 .GetKeys()
-                .Where(m => m is not AggregateMember.ValueMember vm
-                         || !vm.IsKeyOfRefTarget);
+                .Where(m => m is AggregateMember.Ref
+                         || m is AggregateMember.ValueMember vm && !vm.IsKeyOfRefTarget);
         }
-        internal IEnumerable<AggregateMember.AggregateMemberBase> GetNames() {
+        internal IEnumerable<AggregateMember.AggregateMemberBase> GetNameMembers() {
             return _aggregate
                 .GetMembers()
                 .OfType<AggregateMember.ValueMember>()
@@ -45,7 +45,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
 
             return $$"""
                 public class {{CSharpClassName}} {
-                {{GetKeysAndNames().SelectTextTemplate(member => $$"""
+                {{GetMembers().SelectTextTemplate(member => $$"""
                     [{{GetAnnotations(member).Join(", ")}}]
                     public {{member.CSharpTypeName}} {{member.MemberName}} { get; set; }
                 """)}}
@@ -55,7 +55,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
         internal string RenderTypeScriptDeclaring() {
             return $$"""
                 export type {{TypeScriptTypeName}} = {
-                {{GetKeysAndNames().SelectTextTemplate(member => $$"""
+                {{GetMembers().SelectTextTemplate(member => $$"""
                   {{member.MemberName}}: {{member.CSharpTypeName}}
                 """)}}
                 }

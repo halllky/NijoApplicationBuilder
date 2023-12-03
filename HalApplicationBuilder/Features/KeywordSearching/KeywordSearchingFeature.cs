@@ -58,11 +58,11 @@ namespace HalApplicationBuilder.Features.KeywordSearching {
 
             var keyName = new RefTargetKeyName(_aggregate);
             var filterColumns = keyName
-                .GetKeysAndNames()
+                .GetMembers()
                 .OfType<AggregateMember.ValueMember>()
                 .Select(m => m.GetFullPath(_aggregate).Join("."));
             var orderColumn = keyName
-                .GetKeysAndNames()
+                .GetMembers()
                 .OfType<AggregateMember.ValueMember>()
                 .First()
                 .MemberName;
@@ -70,7 +70,7 @@ namespace HalApplicationBuilder.Features.KeywordSearching {
             string RenderKeyNameConvertingRecursively(GraphNode<Aggregate> agg) {
                 var keyNameClass = new RefTargetKeyName(agg);
                 return keyNameClass
-                    .GetKeysAndNames()
+                    .GetMembers()
                     .Where(m => m.Owner == agg)
                     .SelectTextTemplate(m => m is AggregateMember.ValueMember vm ? $$"""
                         {{m.MemberName}} = e.{{vm.GetDbColumn().GetFullPath(_aggregate.As<IEFCoreEntity>()).Join(".")}},

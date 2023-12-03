@@ -108,7 +108,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
 
                         return $$"""
                             {{refMember.MemberName}} = new {{keyNameClass.CSharpClassName}}() {
-                            {{keyNameClass.GetKeysAndNames().SelectTextTemplate(m => m is AggregateMember.ValueMember vm ? $$"""
+                            {{keyNameClass.GetMembers().SelectTextTemplate(m => m is AggregateMember.ValueMember vm ? $$"""
                                 {{m.MemberName}} = {{rootInstanceName}}.{{vm.GetDbColumn().GetFullPath(rootInstance.As<IEFCoreEntity>()).Join(".")}},
                             """ : $$"""
                                 {{WithIndent(RenderKeyNameConvertingRecursively((AggregateMember.Ref)m), "    ")}}

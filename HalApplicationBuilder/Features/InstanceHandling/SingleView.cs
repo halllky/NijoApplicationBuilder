@@ -70,7 +70,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
             var find = new FindFeature(_aggregate);
 
             var keyName = new RefTargetKeyName(_aggregate);
-            var keysFromUrl = keyName.GetKeys().Select(m => $"urlKey{m.MemberName}").ToArray();
+            var keysFromUrl = keyName.GetKeyMembers().Select(m => $"urlKey{m.MemberName}").ToArray();
 
             var maxIndent = _aggregate
                 .EnumerateDescendants()
@@ -142,7 +142,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                     return AggregateType.{{createEmptyObject}}()
                   }, [])
                 """).Else(() => $$"""
-                  const { {{keyName.GetKeys().Select((m, i) => $"key{i}: urlKey{m.MemberName}").Join(", ")}} } = useParams()
+                  const { {{keyName.GetKeyMembers().Select((m, i) => $"key{i}: urlKey{m.MemberName}").Join(", ")}} } = useParams()
                   const [instanceName, setInstanceName] = useState<string | undefined>('')
                   const [fetched, setFetched] = useState(false)
                   const defaultValues = useCallback(async () => {
@@ -153,7 +153,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                     setFetched(true)
                     if (response.ok) {
                       const responseData = response.data as AggregateType.{{_aggregate.Item.TypeScriptTypeName}}
-                      setInstanceName({{keyName.GetNames().Select(m => $"String(responseData.{m.MemberName})").Join(" + ")}})
+                      setInstanceName({{keyName.GetNameMembers().Select(m => $"String(responseData.{m.MemberName})").Join(" + ")}})
 
                       visitObject(responseData, obj => {
                         // 新規データのみ主キーを編集可能にするため、読込データと新規データを区別するためのフラグをつける
@@ -199,8 +199,8 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                     setErrorMessages([])
                     const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{controller.CreateCommandApi}}`, data)
                     if (response.ok) {
-                      dispatch({ type: 'pushMsg', msg: `${({{keyName.GetNames().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を作成しました。` })
-                      navigate(`{{GetUrlStringForReact(E_Type.View, keyName.GetKeys().Select(m => $"response.data.{m.MemberName}"))}}`)
+                      dispatch({ type: 'pushMsg', msg: `${({{keyName.GetNameMembers().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を作成しました。` })
+                      navigate(`{{GetUrlStringForReact(E_Type.View, keyName.GetKeyMembers().Select(m => $"response.data.{m.MemberName}"))}}`)
                     } else {
                       setErrorMessages([...response.errors])
                     }
@@ -210,7 +210,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                     setErrorMessages([])
                     const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{controller.UpdateCommandApi}}`, data)
                     if (response.ok) {
-                      dispatch({ type: 'pushMsg', msg: `${({{keyName.GetNames().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を更新しました。` })
+                      dispatch({ type: 'pushMsg', msg: `${({{keyName.GetNameMembers().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を更新しました。` })
                       navigate(`{{GetUrlStringForReact(E_Type.View, keysFromUrl)}}`)
                     } else {
                       setErrorMessages([...response.errors])

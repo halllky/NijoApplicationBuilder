@@ -262,15 +262,6 @@ namespace HalApplicationBuilder.Core {
 
             internal override IReadOnlyMemberOptions Options => GraphNode.Item;
             internal override decimal Order => GraphNode.Source!.GetMemberOrder();
-
-            internal override DbColumn GetDbColumn() {
-                return new DbColumn {
-                    Owner = Owner.As<IEFCoreEntity>(),
-                    Options = Options.Clone(opt => {
-                        opt.MemberName = MemberName;
-                    }),
-                };
-            }
         }
 
         internal class Children : RelationMember {

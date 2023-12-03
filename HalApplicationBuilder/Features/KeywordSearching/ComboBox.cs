@@ -46,8 +46,8 @@ namespace HalApplicationBuilder.Features.KeywordSearching {
                       ref={ref}
                       queryKey={queryKey}
                       query={query}
-                      keySelector={item => JSON.stringify([{{combo.KeyName.GetKeys().Select(m => "item." + m.MemberName).Join(", ")}}])}
-                      textSelector={item => `{{combo.KeyName.GetNames().Select(m => "${item." + m.MemberName + "}").Join("&nbsp;")}}`}
+                      keySelector={item => JSON.stringify([{{combo.KeyName.GetKeyMembers().Select(m => "item." + m.MemberName).Join(", ")}}])}
+                      textSelector={item => `{{combo.KeyName.GetNameMembers().Select(m => "${item." + m.MemberName + "}").Join("&nbsp;")}}`}
                     />
                   )
                 })
