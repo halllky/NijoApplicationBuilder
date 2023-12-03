@@ -35,18 +35,17 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
         }
 
         internal string RenderCSharpDeclaring() {
-            static IEnumerable<string> GetAnnotations(AggregateMember.AggregateMemberBase member) {
-                var list = new List<string>();
-                if (member is AggregateMember.ValueMember v && v.IsKey) list.Add("Key");
-                if (member is AggregateMember.Ref r && r.Relation.IsPrimary()) list.Add("Key");
-                if (member is AggregateMember.ValueMember v2 && v2.IsDisplayName) list.Add("DisplayName");
-                return list;
+            static string GetAnnotations(AggregateMember.AggregateMemberBase member) {
+                return member is AggregateMember.ValueMember v && v.IsKey
+                    || member is AggregateMember.Ref r && r.Relation.IsPrimary()
+                    ? "[Key]"
+                    : string.Empty;
             }
 
             return $$"""
                 public class {{CSharpClassName}} {
                 {{GetMembers().SelectTextTemplate(member => $$"""
-                    [{{GetAnnotations(member).Join(", ")}}]
+                    {{GetAnnotations(member)}}
                     public {{member.CSharpTypeName}} {{member.MemberName}} { get; set; }
                 """)}}
                 }
