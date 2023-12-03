@@ -144,7 +144,7 @@ namespace HalApplicationBuilder.Features.Searching {
                         resizable: true,
                         width: 50,
                         cellRenderer: ({ data }: { data: RowType }) => {
-                          const singleViewUrl = `{{singleView!.GetUrlStringForReact(aggregate!.GetKeys().Select(m => $"data.{m.MemberName}"))}}`
+                          const singleViewUrl = `{{singleView!.GetUrlStringForReact(aggregate!.GetKeys().OfType<AggregateMember.ValueMember>().Select(m => $"data.{m.MemberName}"))}}`
                           return <Link to={singleViewUrl} className="text-blue-400">詳細</Link>
                         },
                       },

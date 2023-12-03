@@ -55,7 +55,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
             return $$"""
                 export type {{TypeScriptTypeName}} = {
                 {{GetMembers().SelectTextTemplate(member => $$"""
-                  {{member.MemberName}}: {{member.CSharpTypeName}}
+                  {{member.MemberName}}: {{member.TypeScriptTypename}}
                 """)}}
                 }
                 """;
