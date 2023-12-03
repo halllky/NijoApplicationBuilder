@@ -227,6 +227,9 @@ namespace HalApplicationBuilder.Core {
                     Owner = Owner.As<IEFCoreEntity>(),
                     Options = Options.Clone(opt => {
                         opt.MemberName = MemberName;
+                        if (IsKeyOfRefTarget) {
+                            opt.IsKey = ForeignKeyOf!.Relation.IsPrimary();
+                        }
                     }),
                 };
             }
