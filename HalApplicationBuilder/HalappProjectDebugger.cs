@@ -27,8 +27,6 @@ namespace HalApplicationBuilder {
         /// </summary>
         public async Task StartDebugging(CancellationToken cancellationToken) {
 
-            if (!_project.IsValidDirectory()) return;
-
             // 以下の3種類のキャンセルがあるので統合する
             // - ユーザーの操作による halapp debug 全体のキャンセル
             // - 集約定義ファイル更新によるビルドのキャンセル
@@ -173,7 +171,7 @@ namespace HalApplicationBuilder {
         /// 実行中のソースファイルの変更は自動的に反映されません。
         /// </summary>
         internal Task<Task> CreateServerRunningProcess(CancellationToken cancellationToken) {
-            return _project.Terminal.RunBackground(new[] { "dotnet", "run", "--no-build", "--launch-profile", "https" }, AspCoreStartedRegex(), cancellationToken);
+            return _project.WebapiDirTerminal.RunBackground(new[] { "dotnet", "run", "--no-build", "--launch-profile", "https" }, AspCoreStartedRegex(), cancellationToken);
         }
 
         /// <summary>
@@ -193,7 +191,7 @@ namespace HalApplicationBuilder {
         /// launchSettings.jsonのhttpsプロファイルのapplicationUrlセクションの値を読み取ります。
         /// </summary>
         private string GetDebuggingServerUrl() {
-            var properties = Path.Combine(_project.ProjectRoot, "Properties");
+            var properties = Path.Combine(_project.WebApiProjectRoot, "Properties");
             if (!Directory.Exists(properties)) throw new DirectoryNotFoundException(properties);
             var launchSettings = Path.Combine(properties, "launchSettings.json");
             if (!File.Exists(launchSettings)) throw new FileNotFoundException(launchSettings);
@@ -222,7 +220,7 @@ namespace HalApplicationBuilder {
         /// </summary>
         /// <returns></returns>
         public Uri GetDebuggingClientUrl() {
-            var viteConfigTs = Path.Combine(_project.ProjectRoot, HalappProject.REACT_DIR, "vite.config.ts");
+            var viteConfigTs = Path.Combine(_project.WebClientProjectRoot, "vite.config.ts");
             if (!File.Exists(viteConfigTs))
                 throw new FileNotFoundException(viteConfigTs);
 
@@ -258,7 +256,7 @@ namespace HalApplicationBuilder {
         /// </summary>
         /// <param name="npm">npmのビルドをどうするか</param>
         public async Task BuildAsync(CancellationToken cancellationToken, E_NpmBuild npm) {
-            var dotnetBuild = _project.Terminal.Run(new[] { "dotnet", "build" }, cancellationToken);
+            var dotnetBuild = _project.WebapiDirTerminal.Run(new[] { "dotnet", "build" }, cancellationToken);
             var npmBuild = npm switch {
                 E_NpmBuild.Build => _project.ClientDirTerminal.Run(new[] { "npm", "run", "build" }, cancellationToken),
                 E_NpmBuild.OnlyCompilerCheck => _project.ClientDirTerminal.Run(new[] { "npm", "run", "tsc" }, cancellationToken),

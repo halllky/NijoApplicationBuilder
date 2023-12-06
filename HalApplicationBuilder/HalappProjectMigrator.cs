@@ -28,7 +28,7 @@ namespace HalApplicationBuilder {
         /// </summary>
         /// <returns></returns>
         public HalappProjectMigrator EnsureCreateDatabase() {
-            var dbDir = Path.Combine(_project.ProjectRoot, "bin", "Debug");
+            var dbDir = Path.Combine(_project.WebApiProjectRoot, "bin", "Debug");
             _log?.LogInformation($"EnsureCreateDatabase: {dbDir}");
 
             // sqliteファイル出力先フォルダが無い場合は作成する
@@ -55,7 +55,7 @@ namespace HalApplicationBuilder {
 
         internal IEnumerable<Migration> GetMigrations() {
             try {
-                var task = _project.Terminal
+                var task = _project.WebapiDirTerminal
                     .RunAndReadOutput(new[] {
                         "dotnet", "ef", "migrations", "list",
                         "--prefix-output", // ビルド状況やの行頭には "info:" が、マイグレーション名の行頭には "data:" がつくので、その識別のため
@@ -82,7 +82,7 @@ namespace HalApplicationBuilder {
         internal void RemoveMigrationsUntil(string migrationName) {
 
             // そのマイグレーションが適用済みだと migrations remove できないので、まず database update する
-            _project.Terminal.Run(new[] {
+            _project.WebapiDirTerminal.Run(new[] {
                 "dotnet", "ef", "database", "update", migrationName,
                 "--configuration", "Release",
                 _skipBuild ? "--no-build" : ""
@@ -92,7 +92,7 @@ namespace HalApplicationBuilder {
 
             // リリース済みマイグレーションより後のマイグレーションを消す
             while (GetMigrations().Last().Name != migrationName) {
-                _project.Terminal.Run(new[] {
+                _project.WebapiDirTerminal.Run(new[] {
                     "dotnet", "ef", "migrations", "remove",
                     "--configuration", "Release",
                     _skipBuild ? "--no-build" : ""
@@ -108,15 +108,15 @@ namespace HalApplicationBuilder {
                 File.Delete(path);
             }
 
-            var migrationDir = Path.Combine(_project.ProjectRoot, "Migrations");
+            var migrationDir = Path.Combine(_project.WebApiProjectRoot, "Migrations");
             if (Directory.Exists(migrationDir)) {
                 foreach (var file in Directory.GetFiles(migrationDir)) {
                     DeleteFile(file);
                 }
             }
-            DeleteFile(Path.Combine(_project.ProjectRoot, "bin", "Debug", "debug.sqlite3"));
-            DeleteFile(Path.Combine(_project.ProjectRoot, "bin", "Debug", "debug.sqlite3-shm"));
-            DeleteFile(Path.Combine(_project.ProjectRoot, "bin", "Debug", "debug.sqlite3-wal"));
+            DeleteFile(Path.Combine(_project.WebApiProjectRoot, "bin", "Debug", "debug.sqlite3"));
+            DeleteFile(Path.Combine(_project.WebApiProjectRoot, "bin", "Debug", "debug.sqlite3-shm"));
+            DeleteFile(Path.Combine(_project.WebApiProjectRoot, "bin", "Debug", "debug.sqlite3-wal"));
 
             _skipBuild = false;
         }
@@ -132,7 +132,7 @@ namespace HalApplicationBuilder {
             AddMigration(nextMigrationId);
         }
         internal void AddMigration(string nextMigrationId) {
-            _project.Terminal
+            _project.WebapiDirTerminal
                 .Run(new[] {
                     "dotnet", "ef", "migrations", "add", nextMigrationId,
                     "--configuration", "Release",
@@ -144,7 +144,7 @@ namespace HalApplicationBuilder {
         }
 
         internal void Migrate() {
-            _project.Terminal
+            _project.WebapiDirTerminal
                 .Run(new[] {
                     "dotnet", "ef", "database", "update",
                     "--configuration", "Release",
