@@ -62,6 +62,11 @@ namespace HalApplicationBuilder {
             var afterReplace = beforeReplace.Replace("REACT_AND_WEBAPI", config.RootNamespace);
             File.WriteAllText(programCs, afterReplace);
 
+            var beforeCsproj = Path.Combine(_project.WebApiProjectRoot, "REACT_AND_WEBAPI.csproj");
+            var afterCsproj = Path.Combine(_project.WebApiProjectRoot, $"{config.ApplicationName}.csproj");
+            File.Move(beforeCsproj, afterCsproj);
+            File.Move($"{beforeCsproj}.user", $"{afterCsproj}.user");
+
             return this;
         }
         /// <summary>
