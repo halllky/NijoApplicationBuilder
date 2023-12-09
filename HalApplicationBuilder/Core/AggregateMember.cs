@@ -37,10 +37,11 @@ namespace HalApplicationBuilder.Core {
             var parent = aggregate.GetParent();
             if (parent != null) {
                 var parentPKs = parent.Initial
+                    .As<Aggregate>()
                     .GetKeys()
                     .OfType<ValueMember>()
                     .ToArray();
-                foreach (var parentPk in parent.Initial.GetKeys()) {
+                foreach (var parentPk in parent.Initial.As<Aggregate>().GetKeys()) {
                     if (parentPk is Schalar schalar) {
                         yield return new Schalar(aggregate, (Schalar?)schalar.Original ?? schalar, schalar.Declared) {
                             ForeignKeyOf = schalar.ForeignKeyOf,

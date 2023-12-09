@@ -110,19 +110,19 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
 
                 // before, after それぞれの子孫インスタンスを一次配列に格納する
                 void RenderEntityArray(bool renderBefore) {
-                    if (paths.Any(path => path.Terminal.IsChildrenMember())) {
+                    if (paths.Any(path => path.Terminal.As<Aggregate>().IsChildrenMember())) {
                         // 子集約までの経路の途中に配列が含まれる場合
                         builder.AppendLine($"var arr{i}_{(renderBefore ? "before" : "after")} = {(renderBefore ? before : after)}");
 
                         var select = false;
                         foreach (var path in paths) {
-                            if (select && path.Terminal.IsChildrenMember()) {
+                            if (select && path.Terminal.As<Aggregate>().IsChildrenMember()) {
                                 builder.AppendLine($"    .SelectMany(x => x.{path.RelationName})");
                             } else if (select) {
                                 builder.AppendLine($"    .Select(x => x.{path.RelationName})");
                             } else {
                                 builder.AppendLine($"    .{path.RelationName}");
-                                if (path.Terminal.IsChildrenMember()) select = true;
+                                if (path.Terminal.As<Aggregate>().IsChildrenMember()) select = true;
                             }
                         }
                         builder.AppendLine($"    .ToArray();");

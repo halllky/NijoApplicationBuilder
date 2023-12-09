@@ -40,7 +40,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                 return _arguments ??= _aggregate
                     .PathFromEntry()
                     .Where(edge => edge.Terminal != _aggregate
-                                && edge.Terminal.IsChildrenMember())
+                                && edge.Terminal.As<Aggregate>().IsChildrenMember())
                     .Select((_, i) => $"index_{i}")
                     .ToArray();
             }
@@ -507,7 +507,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
             foreach (var edge in aggregate.PathFromEntry()) {
                 path.Add(edge.RelationName);
 
-                if (edge.Terminal.IsChildrenMember()) {
+                if (edge.Terminal.As<Aggregate>().IsChildrenMember()) {
                     if (edge.Terminal != aggregate) {
                         // 祖先の中にChildrenがあるので配列番号を加える
                         path.Add("${index_" + i.ToString() + "}");

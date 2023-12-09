@@ -264,7 +264,12 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                 }
 
                 {{new AggregateComponent(_aggregate, _type).Render()}}
-                {{_aggregate.EnumerateDescendantMembers().SelectTextTemplate(member => new AggregateComponent(member, _type).Render())}}
+                {{_aggregate
+                    .EnumerateThisAndDescendants()
+                    .SelectMany(desc => desc.GetMembers())
+                    .OfType<AggregateMember.RelationMember>()
+                    .Where(member => member is not AggregateMember.Ref)
+                    .SelectTextTemplate(member => new AggregateComponent(member, _type).Render())}}
                 """;
         }
     }

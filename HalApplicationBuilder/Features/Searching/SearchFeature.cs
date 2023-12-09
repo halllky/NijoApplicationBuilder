@@ -41,12 +41,15 @@ namespace HalApplicationBuilder.Features.Searching {
         private const string SEARCHCONDITION_PAGE_PROP_NAME = "__halapp__Page";
 
         private IEnumerable<Member> GetMembers() {
-            var descendantColumns = DbEntity
-                .EnumerateThisAndDescendants()
-                .Where(x => x.EnumerateAncestorsAndThis()
-                    .All(ancestor => !ancestor.IsChildrenMember()
-                                  && !ancestor.IsVariationMember()))
-                .SelectMany(entity => entity.GetColumns());
+            var descendantColumns = DbEntity.Item is not Aggregate
+                ? DbEntity.GetColumns()
+                : DbEntity
+                    .As<Aggregate>()
+                    .EnumerateThisAndDescendants()
+                    .Where(x => x.EnumerateAncestorsAndThis()
+                        .All(ancestor => !ancestor.IsChildrenMember()
+                                      && !ancestor.IsVariationMember()))
+                    .SelectMany(entity => entity.GetColumns());
 
             // 参照先のキーはdescendantColumnsの中に入っているが、名前は入っていないので、別途取得の必要あり
             IEnumerable<DbColumn> refTargetColumns;
