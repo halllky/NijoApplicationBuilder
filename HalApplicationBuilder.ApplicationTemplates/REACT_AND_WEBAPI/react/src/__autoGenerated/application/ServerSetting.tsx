@@ -19,7 +19,11 @@ export const ServerSettingScreen = () => {
   const recreateDatabase = useCallback(async () => {
     if (window.confirm('DBを再作成します。データは全て削除されます。よろしいですか？')) {
       const response = await post('/HalappDebug/recreate-database')
-      if (!response.ok) setCommandErrors([...commandErrors, ...response.errors])
+      if (response.ok) {
+        alert('DBを再作成しました。')
+      } else {
+        setCommandErrors([...commandErrors, ...response.errors])
+      }
     }
   }, [post, commandErrors, setCommandErrors])
 
