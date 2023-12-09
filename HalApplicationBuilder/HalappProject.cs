@@ -40,7 +40,7 @@ namespace HalApplicationBuilder {
 
             var tempDir = keepTempIferror
                 ? projectRootDir
-                : Directory.CreateTempSubdirectory("halapp.temp.").FullName;
+                : Path.Combine(Path.GetTempPath(), "halapp.temp." + Path.GetRandomFileName());
 
             var error = false;
             try {
