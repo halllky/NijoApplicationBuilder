@@ -96,7 +96,7 @@ namespace HalApplicationBuilder.IntegrationTest {
         /// テスト用データベースにSELECT文を発行します。
         /// </summary>
         public static IEnumerable<SqliteDataReader> ExecSql(this HalappProject project, string sql) {
-            var dataSource = Path.GetFullPath(Path.Combine(project.WebApiProjectRoot, $"bin/Debug/debug.sqlite3")).Replace("\\", "/");
+            var dataSource = Path.GetFullPath(Path.Combine(project.ProjectRoot, $"DEBUG.sqlite3")).Replace("\\", "/");
             var connStr = new SqliteConnectionStringBuilder();
             connStr.DataSource = dataSource;
             connStr.Pooling = false;

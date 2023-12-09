@@ -28,7 +28,7 @@ namespace HalApplicationBuilder {
         /// </summary>
         /// <returns></returns>
         public HalappProjectMigrator EnsureCreateDatabase() {
-            var dbDir = Path.Combine(_project.WebApiProjectRoot, "bin", "Debug");
+            var dbDir = _project.ProjectRoot;
             _log?.LogInformation($"EnsureCreateDatabase: {dbDir}");
 
             // sqliteファイル出力先フォルダが無い場合は作成する
@@ -114,9 +114,9 @@ namespace HalApplicationBuilder {
                     DeleteFile(file);
                 }
             }
-            DeleteFile(Path.Combine(_project.WebApiProjectRoot, "bin", "Debug", "debug.sqlite3"));
-            DeleteFile(Path.Combine(_project.WebApiProjectRoot, "bin", "Debug", "debug.sqlite3-shm"));
-            DeleteFile(Path.Combine(_project.WebApiProjectRoot, "bin", "Debug", "debug.sqlite3-wal"));
+            DeleteFile(Path.Combine(_project.ProjectRoot, "DEBUG.sqlite3"));
+            DeleteFile(Path.Combine(_project.ProjectRoot, "DEBUG.sqlite3-shm"));
+            DeleteFile(Path.Combine(_project.ProjectRoot, "DEBUG.sqlite3-wal"));
 
             _skipBuild = false;
         }

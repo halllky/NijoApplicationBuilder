@@ -108,7 +108,7 @@ namespace HalApplicationBuilder.Features.Util {
                             /// </summary>
                             public static {{SERVER}} {{GET_DEFAULT}}() {
                                 var connStr = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder();
-                                connStr.DataSource = "bin/Debug/debug.sqlite3";
+                                connStr.DataSource = "../DEBUG.sqlite3";
                                 connStr.Pooling = false; // デバッグ終了時にshm, walファイルが残らないようにするため
 
                                 return new {{SERVER}} {
