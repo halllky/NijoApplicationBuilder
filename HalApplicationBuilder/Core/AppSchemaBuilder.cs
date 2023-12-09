@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static HalApplicationBuilder.Features.Searching.SearchFeature;
 
 namespace HalApplicationBuilder.Core {
 
@@ -147,6 +148,7 @@ namespace HalApplicationBuilder.Core {
 
             // GraphNodeの組み立て
             var aggregates = new Dictionary<NodeId, Aggregate>();
+            var dataViews = new Dictionary<NodeId, DataView>();
             var aggregateMembers = new HashSet<AggregateMemberNode>();
             var edgesFromAggToAgg = new List<GraphEdgeInfo>();
             var edgesFromAggToMember = new List<GraphEdgeInfo>();
@@ -201,8 +203,18 @@ namespace HalApplicationBuilder.Core {
 
                 if (successToParse) {
                     var displayName = aggregateDef.TreePath.BaseName;
-                    var aggregate = new Aggregate(aggregateId, displayName, !hasNameMember, aggregateDef.Options);
-                    aggregates.Add(aggregateId, aggregate);
+                    if (aggregateDef.Options.Type == E_AggreateType.MasterData
+                        || !aggregateDef.TreePath.IsRoot) {
+                        var aggregate = new Aggregate(aggregateId, displayName, !hasNameMember, aggregateDef.Options);
+                        aggregates.Add(aggregateId, aggregate);
+
+                    } else if (aggregateDef.Options.Type == E_AggreateType.View) {
+                        var view = new DataView(aggregateId, displayName);
+                        dataViews.Add(aggregateId, view);
+
+                    } else {
+                        errors.Add($"'{aggregateDef.Options.Type}' のタイプ '{aggregateDef.Options.Type}' が不正です。");
+                    }
                 }
             }
 
@@ -213,7 +225,7 @@ namespace HalApplicationBuilder.Core {
                 var terminal = relation.Terminal.ToGraphNodeId();
 
                 // バリデーションおよびグラフ構成要素の作成: リレーションの集約ID
-                if (!aggregates.ContainsKey(initial)) {
+                if (!aggregates.ContainsKey(initial) && !dataViews.ContainsKey(initial)) {
                     errors.Add($"ID '{relation.Initial}' と対応する定義がありません。");
                     successToParse = false;
                 }
@@ -245,6 +257,7 @@ namespace HalApplicationBuilder.Core {
             // グラフを作成して返す
             var nodes = aggregates.Values
                 .Cast<IGraphNode>()
+                .Concat(dataViews.Values)
                 .Concat(aggregateMembers)
                 .Concat(halappEntities);
             var edges = edgesFromAggToAgg
@@ -263,7 +276,13 @@ namespace HalApplicationBuilder.Core {
         }
     }
 
+    public enum E_AggreateType {
+        MasterData,
+        View,
+    }
+
     public sealed class AggregateBuildOption {
+        public E_AggreateType? Type { get; set; }
         public bool? IsPrimary { get; set; }
         public bool? IsArray { get; set; }
         public GroupOption? IsVariationGroupMember { get; set; }

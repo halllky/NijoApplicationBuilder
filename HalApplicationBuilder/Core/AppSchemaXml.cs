@@ -190,7 +190,11 @@ namespace HalApplicationBuilder.Core {
             var parser = new XElementOptionCollection(keyValues, errors.Add);
 
             parser.IfExists("master-data")
-                .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force);
+                .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
+                .SetAggregateOption(opt => opt.Type, E_AggreateType.MasterData, E_Priority.Force);
+            parser.IfExists("view")
+                .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
+                .SetAggregateOption(opt => opt.Type, E_AggreateType.View, E_Priority.Force);
 
             parser.IfExists("section")
                 .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)

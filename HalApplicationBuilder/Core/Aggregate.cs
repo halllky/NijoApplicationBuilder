@@ -129,7 +129,8 @@ namespace HalApplicationBuilder.Core {
         internal static IEnumerable<GraphEdge<Aggregate>> GetReferedEdges(this GraphNode<Aggregate> graphNode) {
             return graphNode.In
                 .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                            && (string)type == REL_ATTRVALUE_REFERENCE)
+                            && (string)type == REL_ATTRVALUE_REFERENCE
+                            && edge.Initial.Item is Aggregate)
                 .Select(edge => edge.As<Aggregate>());
         }
     }

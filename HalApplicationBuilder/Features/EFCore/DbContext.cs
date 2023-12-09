@@ -18,6 +18,10 @@ namespace HalApplicationBuilder.Features.EFCore {
         public override string FileName => $"{_ctx.Config.DbContextName.ToFileNameSafe()}.cs";
 
         protected override string Template() {
+            var dbEntities = _ctx.Schema
+                .AllAggregates()
+                .Select(agg => agg.As<IEFCoreEntity>());
+
             return $$"""
                 using Microsoft.EntityFrameworkCore;
 
@@ -29,7 +33,7 @@ namespace HalApplicationBuilder.Features.EFCore {
                         /// <inheritdoc />
                         protected override void OnModelCreating(ModelBuilder modelBuilder) {
 
-                            {{WithIndent(_ctx.Schema.ToEFCoreGraph().Select(RenderEntity), "            ")}}
+                            {{WithIndent(dbEntities.Select(RenderEntity), "            ")}}
 
                             {{_ctx.Config.EntityNamespace}}.BackgroundTaskEntity.OnModelCreating(modelBuilder);
                         }

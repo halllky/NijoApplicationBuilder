@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static HalApplicationBuilder.Features.Searching.SearchFeature;
 
 namespace HalApplicationBuilder.Core {
     internal class AppSchema {
@@ -25,8 +24,8 @@ namespace HalApplicationBuilder.Core {
         internal IEnumerable<GraphNode<Aggregate>> RootAggregates() {
             return AllAggregates().Where(aggregate => aggregate.IsRoot());
         }
-        internal IEnumerable<GraphNode<IEFCoreEntity>> ToEFCoreGraph() {
-            return Graph.Only<IEFCoreEntity>();
+        internal IEnumerable<GraphNode<DataView>> DataViews() {
+            return Graph.Only<DataView>();
         }
 
         internal IReadOnlyCollection<EnumDefinition> EnumDefinitions { get; }
@@ -88,38 +87,32 @@ namespace HalApplicationBuilder.Core {
                     member => member is AggregateMember.ValueMember vm
                         ? vm.Options.MemberType.GetType().Name
                         : "-"
-                ),
-                (
+                ), (
                     nameof(AggregateMember.ValueMember.IsKey),
                     member => member is AggregateMember.ValueMember vm
                         ? vm.IsKey.ToString()
                         : "-"
-                ),
-                (
+                ), (
                     nameof(AggregateMember.ValueMember.IsDisplayName),
                     member => member is AggregateMember.ValueMember vm
                         ? vm.IsDisplayName.ToString()
                         : "-"
-                ),
-                (
+                ), (
                     nameof(AggregateMember.ValueMember.IsKeyOfAncestor),
                     member => member is AggregateMember.ValueMember vm
                         ? vm.IsKeyOfAncestor.ToString()
                         : "-"
-                ),
-                (
+                ), (
                     nameof(AggregateMember.ValueMember.IsKeyOfRefTarget),
                     member => member is AggregateMember.ValueMember vm
                         ? vm.IsKeyOfRefTarget.ToString()
                         : "-"
-                ),
-                (
+                ), (
                     nameof(AggregateMember.ValueMember.Options.IsRequired),
                     member => member is AggregateMember.ValueMember vm
                         ? vm.Options.IsRequired.ToString()
                         : "-"
-                ),
-                (
+                ), (
                     nameof(AggregateMember.ValueMember.Options.InvisibleInGui),
                     member => member is AggregateMember.ValueMember vm
                         ? vm.Options.InvisibleInGui.ToString()
