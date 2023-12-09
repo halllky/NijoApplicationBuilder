@@ -146,11 +146,10 @@
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="$(ProjectDir)..\HalApplicationBuilder.ApplicationTemplates\*.*" CopyToOutputDirectory="PreserveNewest" LinkBase="ApplicationTemplates\" />
     <Content Include="$(ProjectDir)..\HalApplicationBuilder.ApplicationTemplates\REACT_AND_WEBAPI\react\*.*" CopyToOutputDirectory="PreserveNewest" LinkBase="ApplicationTemplates\REACT_AND_WEBAPI\react\" />
     <Content Include="$(ProjectDir)..\HalApplicationBuilder.ApplicationTemplates\REACT_AND_WEBAPI\react\public\**" CopyToOutputDirectory="PreserveNewest" LinkBase="ApplicationTemplates\REACT_AND_WEBAPI\react\public\" />
     <Content Include="$(ProjectDir)..\HalApplicationBuilder.ApplicationTemplates\REACT_AND_WEBAPI\react\src\**" CopyToOutputDirectory="PreserveNewest" LinkBase="ApplicationTemplates\REACT_AND_WEBAPI\react\src\" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="$(ProjectDir)..\HalApplicationBuilder.ApplicationTemplates\REACT_AND_WEBAPI\webapi\*.*" CopyToOutputDirectory="PreserveNewest" LinkBase="ApplicationTemplates\REACT_AND_WEBAPI\webapi\" />
     <Content Include="$(ProjectDir)..\HalApplicationBuilder.ApplicationTemplates\REACT_AND_WEBAPI\webapi\Properties\**" CopyToOutputDirectory="PreserveNewest" LinkBase="ApplicationTemplates\REACT_AND_WEBAPI\webapi\Properties\" />
   </ItemGroup>

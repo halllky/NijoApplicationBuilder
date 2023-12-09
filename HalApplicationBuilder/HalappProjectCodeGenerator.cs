@@ -48,9 +48,14 @@ namespace HalApplicationBuilder {
             using var sw = new StreamWriter(xmlPath, append: false, encoding: new UTF8Encoding(false));
             sw.WriteLine(xmlContent.ToString());
 
+            // プロジェクトルートディレクトリのいろいろ作成
+            var halappExeDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
+            var gitignoreFrom = Path.Combine(halappExeDir, "ApplicationTemplates", ".gitignore");
+            var gitignoreTo = Path.Combine(_project.ProjectRoot, ".gitignore");
+            File.Copy(gitignoreFrom, gitignoreTo);
+
             // reactディレクトリのコピー
             // webapiディレクトリのコピー
-            var halappExeDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
             var reactProjectTemplate = Path.Combine(halappExeDir, "ApplicationTemplates", "REACT_AND_WEBAPI", "react");
             var webapiProjectTemplate = Path.Combine(halappExeDir, "ApplicationTemplates", "REACT_AND_WEBAPI", "webapi");
             DotnetEx.IO.CopyDirectory(reactProjectTemplate, _project.WebClientProjectRoot);
