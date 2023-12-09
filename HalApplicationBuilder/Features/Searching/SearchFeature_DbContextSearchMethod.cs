@@ -17,7 +17,6 @@ namespace HalApplicationBuilder.Features.Searching {
                 resultMemberName = m.SearchResultPropName,
                 dbColumnPath = m.DbColumn.GetFullPath().Join("."),
             });
-            var instanceNameProp = members.SingleOrDefault(m => m.IsInstanceName)?.SearchResultPropName;
 
             return $$"""
                 namespace {{Context.Config.EntityNamespace}} {
