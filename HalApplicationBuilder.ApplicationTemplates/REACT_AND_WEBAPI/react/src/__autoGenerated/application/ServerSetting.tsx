@@ -77,7 +77,7 @@ export const ServerSettingScreen = () => {
           <VForm.Row label="ダークモード">
             <Input.CheckBox
               value={appState.darkMode}
-              onChange={() => dispatch({ type: 'toggleDark' })}
+              onChange={v => dispatch({ type: 'changeDarkMode', value: v ?? false })}
             />
           </VForm.Row>
         </VForm.Section>

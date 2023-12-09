@@ -17,7 +17,7 @@ type Action
   = { type: 'pushMsg', id?: string, msg: string }
   | { type: 'delMessage', id: string }
   | { type: 'changeDomain', value: string }
-  | { type: 'toggleDark' }
+  | { type: 'changeDarkMode', value: boolean }
 
 const createDefaultAppState = (): AppState => {
   const json = localStorage.getItem(LOCAL_STORAGE_KEYS.APPCONTEXT)
@@ -48,8 +48,8 @@ const reducer: React.Reducer<AppState, Action> = (state, action) => {
       updated.apiDomain = action.value
       break
     }
-    case 'toggleDark': {
-      updated.darkMode = !updated.darkMode
+    case 'changeDarkMode': {
+      updated.darkMode = action.value
       break
     }
   }

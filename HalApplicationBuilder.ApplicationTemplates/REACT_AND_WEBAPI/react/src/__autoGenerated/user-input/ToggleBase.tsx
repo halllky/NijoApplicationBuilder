@@ -53,6 +53,7 @@ export const ToggleBase = defineCustomComponent<boolean>((props, ref) => {
         type={inputRef.current?.type ?? 'checkbox'}
         className={`opacity-0 absolute top-0 left-0 right-0 bottom-0
           ${inputRef.current?.readOnly ? 'hidden' : ''}`}
+        checked={valueEx}
         onChange={onChange}
         onKeyDown={onKeyDown}
       />
