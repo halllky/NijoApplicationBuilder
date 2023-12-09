@@ -96,16 +96,16 @@ namespace HalApplicationBuilder {
                             // 実行
                             dotnetRun = await CreateServerRunningProcess(cancelIfAbortOrStopRunning.Token);
 
-                            // DB再作成
-                            _log?.LogInformation("DBを削除して再作成します。");
-                            using var client = new HttpClient();
-                            var uri = new Uri(GetDebugUrl(), Features.WebClient.DebuggerController.RECREATE_DB_URL);
-                            var message = new HttpRequestMessage(HttpMethod.Post, uri);
-                            var httpResponse = await client.SendAsync(message, cancelIfAbortOrReuild.Token);
-                            if (!httpResponse.IsSuccessStatusCode) {
-                                var errorContent = await httpResponse.Content.ReadAsStringAsync(cancelIfAbortOrReuild.Token);
-                                _log?.LogInformation("DBの削除・再作成でエラーが発生しました: {ErrorContent}", errorContent);
-                            }
+                            //// DB再作成
+                            //_log?.LogInformation("DBを削除して再作成します。");
+                            //using var client = new HttpClient();
+                            //var uri = new Uri(GetDebugUrl(), Features.WebClient.DebuggerController.RECREATE_DB_URL);
+                            //var message = new HttpRequestMessage(HttpMethod.Post, uri);
+                            //var httpResponse = await client.SendAsync(message, cancelIfAbortOrReuild.Token);
+                            //if (!httpResponse.IsSuccessStatusCode) {
+                            //    var errorContent = await httpResponse.Content.ReadAsStringAsync(cancelIfAbortOrReuild.Token);
+                            //    _log?.LogInformation("DBの削除・再作成でエラーが発生しました: {ErrorContent}", errorContent);
+                            //}
 
                             _log?.LogInformation("アプリケーション実行中...");
                             _log?.LogInformation("CLIENT: {Url}", clientUrl);
@@ -178,7 +178,7 @@ namespace HalApplicationBuilder {
         /// デバッグ時に起動されるアプリケーションのURLを返します。
         /// </summary>
         public Uri GetDebugUrl() {
-            return new Uri(GetDebuggingServerUrl().Split(';')[1]);
+            return new Uri(GetDebuggingServerUrl().Split(';')[0]);
         }
         /// <summary>
         /// デバッグ時に起動されるSwagger UIのURLを返します。
