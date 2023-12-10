@@ -30,7 +30,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                     partial class {{controller.ClassName}} : ControllerBase {
                         [HttpPost("{{WebClient.Controller.CREATE_ACTION_NAME}}")]
                         public virtual IActionResult Create([FromBody] {{param.ClassName}} param) {
-                            if (_dbContext.{{MethodName}}(param, out var created, out var errors)) {
+                            if (_applicationService.{{MethodName}}(param, out var created, out var errors)) {
                                 return this.JsonContent(created);
                             } else {
                                 return BadRequest(this.JsonContent(errors));
@@ -42,6 +42,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
         }
 
         internal string RenderEFCoreMethod(CodeRenderingContext ctx) {
+            var appSrv = new ApplicationService(ctx.Config);
             var controller = new WebClient.Controller(_aggregate.Item);
             var param = new AggregateCreateCommand(_aggregate);
             var find = new FindFeature(_aggregate);
@@ -52,7 +53,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                 .Select(m => $"dbEntity.{m.GetFullPath().Join(".")}");
 
             return $$"""
-                namespace {{ctx.Config.EntityNamespace}} {
+                namespace {{ctx.Config.RootNamespace}} {
                     using System;
                     using System.Collections;
                     using System.Collections.Generic;
@@ -60,13 +61,13 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                     using Microsoft.EntityFrameworkCore;
                     using Microsoft.EntityFrameworkCore.Infrastructure;
 
-                    partial class {{ctx.Config.DbContextName}} {
-                        public bool {{MethodName}}({{param.ClassName}} command, out {{_aggregate.Item.ClassName}} created, out ICollection<string> errors) {
+                    partial class {{appSrv.ClassName}} {
+                        public virtual bool {{MethodName}}({{param.ClassName}} command, out {{_aggregate.Item.ClassName}} created, out ICollection<string> errors) {
                             var dbEntity = command.{{AggregateDetail.TO_DBENTITY}}();
-                            this.Add(dbEntity);
+                            {{appSrv.DbContext}}.Add(dbEntity);
 
                             try {
-                                this.SaveChanges();
+                                {{appSrv.DbContext}}.SaveChanges();
                             } catch (DbUpdateException ex) {
                                 created = new {{_aggregate.Item.ClassName}}();
                                 errors = ex.GetMessagesRecursively("  ").ToList();

@@ -32,7 +32,7 @@ namespace HalApplicationBuilder.Features.Searching {
 
         internal string SearchConditionClassName => $"{PhysicalName}SearchCondition";
         internal string SearchResultClassName => $"{PhysicalName}SearchResult";
-        internal string DbContextSearchMethodName => $"Search{PhysicalName}";
+        internal string AppServiceSearchMethodName => $"Search{PhysicalName}";
 
         internal string ReactPageUrl { get; }
         internal const string REACT_FILENAME = "list.tsx";

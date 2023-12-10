@@ -33,6 +33,8 @@ namespace HalApplicationBuilder.Features.WebClient {
         internal string DeleteCommandApi => $"/{SubDomain}/{DELETE_ACTION_NAME}";
 
         internal string Render(CodeRenderingContext _ctx) {
+            var appSrv = new ApplicationService(_ctx.Config);
+
             return $$"""
                 namespace {{_ctx.Config.RootNamespace}} {
                     using Microsoft.AspNetCore.Mvc;
@@ -41,12 +43,12 @@ namespace HalApplicationBuilder.Features.WebClient {
                     [ApiController]
                     [Route("{{SUBDOMAIN}}/[controller]")]
                     public partial class {{ClassName}} : ControllerBase {
-                        public {{ClassName}}(ILogger<{{ClassName}}> logger, {{_ctx.Config.DbContextNamespace}}.{{_ctx.Config.DbContextName}} dbContext) {
+                        public {{ClassName}}(ILogger<{{ClassName}}> logger, {{appSrv.ClassName}} applicationService) {
                             _logger = logger;
-                            _dbContext = dbContext;
+                            _applicationService = applicationService;
                         }
                         protected readonly ILogger<{{ClassName}}> _logger;
-                        protected readonly {{_ctx.Config.DbContextNamespace}}.{{_ctx.Config.DbContextName}} _dbContext;
+                        protected readonly {{appSrv.ClassName}} _applicationService;
                     }
                 }
                 """;

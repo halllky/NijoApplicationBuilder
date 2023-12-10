@@ -24,8 +24,8 @@ namespace HalApplicationBuilder.Features.Searching {
                             var condition = string.IsNullOrWhiteSpace(json)
                                 ? new {{SearchConditionClassName}}()
                                 : {{Utility.CLASSNAME}}.{{Utility.PARSE_JSON}}<{{SearchConditionClassName}}>(json);
-                            var searchResult = _dbContext
-                                .{{DbContextSearchMethodName}}(condition)
+                            var searchResult = _applicationService
+                                .{{AppServiceSearchMethodName}}(condition)
                                 .AsEnumerable();
                             return this.JsonContent(searchResult);
                         }

@@ -29,7 +29,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                     partial class {{controller.ClassName}} {
                         [HttpPost("{{WebClient.Controller.UPDATE_ACTION_NAME}}")]
                         public virtual IActionResult Update({{_aggregate.Item.ClassName}} param) {
-                            if (_dbContext.{{MethodName}}(param, out var updated, out var errors)) {
+                            if (_applicationService.{{MethodName}}(param, out var updated, out var errors)) {
                                 return this.JsonContent(updated);
                             } else {
                                 return BadRequest(this.JsonContent(errors));
@@ -41,6 +41,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
         }
 
         internal string RenderEFCoreMethod(CodeRenderingContext ctx) {
+            var appSrv = new ApplicationService(ctx.Config);
             var controller = new WebClient.Controller(_aggregate.Item);
             var find = new FindFeature(_aggregate);
 
@@ -52,7 +53,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                 .ToArray();
 
             return $$"""
-                namespace {{ctx.Config.EntityNamespace}} {
+                namespace {{ctx.Config.RootNamespace}} {
                     using System;
                     using System.Collections;
                     using System.Collections.Generic;
@@ -60,11 +61,11 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                     using Microsoft.EntityFrameworkCore;
                     using Microsoft.EntityFrameworkCore.Infrastructure;
 
-                    partial class {{ctx.Config.DbContextName}} {
-                        public bool {{MethodName}}({{detail.ClassName}} after, out {{detail.ClassName}} updated, out ICollection<string> errors) {
+                    partial class {{appSrv.ClassName}} {
+                        public virtual bool {{MethodName}}({{detail.ClassName}} after, out {{detail.ClassName}} updated, out ICollection<string> errors) {
                             errors = new List<string>();
 
-                            {{WithIndent(find.RenderDbEntityLoading("this", "beforeDbEntity", searchKeys, tracks: false, includeRefs: false), "            ")}}
+                            {{WithIndent(find.RenderDbEntityLoading(appSrv.DbContext, "beforeDbEntity", searchKeys, tracks: false, includeRefs: false), "            ")}}
 
                             if (beforeDbEntity == null) {
                                 updated = new {{_aggregate.Item.ClassName}}();
@@ -75,12 +76,12 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                             var afterDbEntity = after.{{AggregateDetail.TO_DBENTITY}}();
 
                             // Attach
-                            this.Entry(afterDbEntity).State = EntityState.Modified;
+                            {{appSrv.DbContext}}.Entry(afterDbEntity).State = EntityState.Modified;
 
-                            {{WithIndent(RenderDescendantsAttaching("this", "beforeDbEntity", "afterDbEntity"), "            ")}}
+                            {{WithIndent(RenderDescendantsAttaching(appSrv.DbContext, "beforeDbEntity", "afterDbEntity"), "            ")}}
 
                             try {
-                                this.SaveChanges();
+                                {{appSrv.DbContext}}.SaveChanges();
                             } catch (DbUpdateException ex) {
                                 updated = new {{_aggregate.Item.ClassName}}();
                                 foreach (var msg in ex.GetMessagesRecursively()) errors.Add(msg);

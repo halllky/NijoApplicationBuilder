@@ -30,7 +30,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                     partial class {{controller.ClassName}} {
                         [HttpDelete("{{WebClient.Controller.DELETE_ACTION_NAME}}/{{args.Select(a => "{" + a.MemberName + "}").Join("/")}}")]
                         public virtual IActionResult Delete({{args.Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}) {
-                            if (_dbContext.{{MethodName}}({{args.Select(a => a.MemberName).Join(", ")}}, out var errors)) {
+                            if (_applicationService.{{MethodName}}({{args.Select(a => a.MemberName).Join(", ")}}, out var errors)) {
                                 return Ok();
                             } else {
                                 return BadRequest(this.JsonContent(errors));
@@ -42,12 +42,13 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
         }
 
         internal string RenderEFCoreMethod(CodeRenderingContext ctx) {
+            var appSrv = new ApplicationService(ctx.Config);
             var controller = new WebClient.Controller(_aggregate.Item);
             var args = GetEFCoreMethodArgs().ToArray();
             var find = new FindFeature(_aggregate);
 
             return $$"""
-                namespace {{ctx.Config.EntityNamespace}} {
+                namespace {{ctx.Config.RootNamespace}} {
                     using System;
                     using System.Collections;
                     using System.Collections.Generic;
@@ -55,19 +56,20 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                     using Microsoft.EntityFrameworkCore;
                     using Microsoft.EntityFrameworkCore.Infrastructure;
 
-                    partial class {{ctx.Config.DbContextName}} {
-                        public bool {{MethodName}}({{args.Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}, out ICollection<string> errors) {
+                    partial class {{appSrv.ClassName}} {
+                        public virtual bool {{MethodName}}({{args.Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}, out ICollection<string> errors) {
 
-                            {{WithIndent(find.RenderDbEntityLoading("this", "entity", args.Select(a => a.MemberName).ToArray(), tracks: true, includeRefs: false), "            ")}}
+                            {{WithIndent(find.RenderDbEntityLoading(appSrv.DbContext, "entity", args.Select(a => a.MemberName).ToArray(), tracks: true, includeRefs: false), "            ")}}
 
                             if (entity == null) {
                                 errors = new[] { "削除対象のデータが見つかりません。" };
                                 return false;
                             }
 
-                            this.Remove(entity);
+                            {{appSrv.DbContext}}.Remove(entity);
+
                             try {
-                                this.SaveChanges();
+                                {{appSrv.DbContext}}.SaveChanges();
                             } catch (DbUpdateException ex) {
                                 errors = ex.GetMessagesRecursively().ToArray();
                                 return false;

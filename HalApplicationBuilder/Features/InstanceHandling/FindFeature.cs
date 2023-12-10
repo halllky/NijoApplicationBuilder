@@ -44,7 +44,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
             {{keys.SelectTextTemplate(m => $$"""
                         if ({{m.MemberName}} == null) return BadRequest();
             """)}}
-                        var instance = _dbContext.{{FindMethodName}}({{keys.Select(m => m.MemberName).Join(", ")}});
+                        var instance = _applicationService.{{FindMethodName}}({{keys.Select(m => m.MemberName).Join(", ")}});
                         if (instance == null) {
                             return NotFound();
                         } else {
@@ -57,10 +57,11 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
         }
 
         internal string RenderEFCoreMethod(CodeRenderingContext _ctx) {
+            var appSrv = new ApplicationService(_ctx.Config);
             var args = GetEFCoreMethodArgs().ToArray();
 
             return $$"""
-                namespace {{_ctx.Config.EntityNamespace}} {
+                namespace {{_ctx.Config.RootNamespace}} {
                     using System;
                     using System.Collections;
                     using System.Collections.Generic;
@@ -68,13 +69,13 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                     using Microsoft.EntityFrameworkCore;
                     using Microsoft.EntityFrameworkCore.Infrastructure;
 
-                    partial class {{_ctx.Config.DbContextName}} {
+                    partial class {{appSrv.ClassName}} {
                         /// <summary>
                         /// {{_aggregate.Item.DisplayName}}のキー情報から対象データの詳細を検索して返します。
                         /// </summary>
-                        public {{FindMethodReturnType}}? {{FindMethodName}}({{args.Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}) {
+                        public virtual {{FindMethodReturnType}}? {{FindMethodName}}({{args.Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}) {
 
-                            {{WithIndent(RenderDbEntityLoading("this", "entity", args.Select(a => a.MemberName).ToArray(), tracks: false, includeRefs: true), "            ")}}
+                            {{WithIndent(RenderDbEntityLoading(appSrv.DbContext, "entity", args.Select(a => a.MemberName).ToArray(), tracks: false, includeRefs: true), "            ")}}
 
                             if (entity == null) return null;
 

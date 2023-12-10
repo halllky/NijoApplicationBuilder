@@ -31,7 +31,7 @@ namespace HalApplicationBuilder.Features.KeywordSearching {
             return new WebClient.Controller(root.Item);
         }
 
-        internal string DbcontextMeghodName => $"SearchByKeyword{_aggregate.Item.DisplayName.ToCSharpSafe()}";
+        internal string AppServiceMeghodName => $"SearchByKeyword{_aggregate.Item.DisplayName.ToCSharpSafe()}";
 
         private const int LIST_BY_KEYWORD_MAX = 100;
 
@@ -45,7 +45,7 @@ namespace HalApplicationBuilder.Features.KeywordSearching {
                     partial class {{controller.ClassName}} {
                         [HttpGet("{{GetActionName()}}")]
                         public virtual IActionResult SearchByKeyword{{_aggregate.Item.UniqueId}}([FromQuery] string? keyword) {
-                            var items = _dbContext.{{DbcontextMeghodName}}(keyword);
+                            var items = _applicationService.{{AppServiceMeghodName}}(keyword);
                             return this.JsonContent(items);
                         }
                     }
@@ -54,6 +54,7 @@ namespace HalApplicationBuilder.Features.KeywordSearching {
         }
 
         internal string RenderDbContextMethod(CodeRenderingContext ctx) {
+            var appSrv = new ApplicationService(ctx.Config);
             const string LIKE = "like";
 
             var keyName = new RefTargetKeyName(_aggregate);
@@ -82,7 +83,7 @@ namespace HalApplicationBuilder.Features.KeywordSearching {
             }
 
             return $$"""
-                namespace {{ctx.Config.EntityNamespace}} {
+                namespace {{ctx.Config.RootNamespace}} {
                     using System;
                     using System.Collections;
                     using System.Collections.Generic;
@@ -90,12 +91,12 @@ namespace HalApplicationBuilder.Features.KeywordSearching {
                     using Microsoft.EntityFrameworkCore;
                     using Microsoft.EntityFrameworkCore.Infrastructure;
                 
-                    partial class {{ctx.Config.DbContextName}} {
+                    partial class {{appSrv.ClassName}} {
                         /// <summary>
                         /// {{_aggregate.Item.DisplayName}}をキーワードで検索します。
                         /// </summary>
-                        public IEnumerable<{{keyName.CSharpClassName}}> {{DbcontextMeghodName}}(string? keyword) {
-                            var query = (IQueryable<{{_aggregate.Item.EFCoreEntityClassName}}>)this.{{_aggregate.Item.DbSetName}};
+                        public virtual IEnumerable<{{keyName.CSharpClassName}}> {{AppServiceMeghodName}}(string? keyword) {
+                            var query = (IQueryable<{{_aggregate.Item.EFCoreEntityClassName}}>){{appSrv.DbContext}}.{{_aggregate.Item.DbSetName}};
 
                             if (!string.IsNullOrWhiteSpace(keyword)) {
                                 var {{LIKE}} = $"%{keyword.Trim().Replace("%", "\\%")}%";

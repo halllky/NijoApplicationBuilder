@@ -11,7 +11,7 @@ using static HalApplicationBuilder.Features.TemplateTextHelper;
 namespace HalApplicationBuilder.Features.Searching {
     partial class SearchFeature {
         internal string RenderDbContextMethod() {
-
+            var appSrv = new ApplicationService(Context.Config);
             var members = GetMembers().ToArray();
             var selectClause = members.Select(m => new {
                 resultMemberName = m.SearchResultPropName,
@@ -19,7 +19,7 @@ namespace HalApplicationBuilder.Features.Searching {
             });
 
             return $$"""
-                namespace {{Context.Config.EntityNamespace}} {
+                namespace {{Context.Config.RootNamespace}} {
                     using System;
                     using System.Collections;
                     using System.Collections.Generic;
@@ -27,12 +27,12 @@ namespace HalApplicationBuilder.Features.Searching {
                     using Microsoft.EntityFrameworkCore;
                     using Microsoft.EntityFrameworkCore.Infrastructure;
 
-                    partial class {{Context.Config.DbContextName}} {
+                    partial class {{appSrv.ClassName}} {
                         /// <summary>
                         /// {{DisplayName}}の一覧検索を行います。
                         /// </summary>
-                        public IEnumerable<{{SearchResultClassName}}> {{DbContextSearchMethodName}}({{SearchConditionClassName}} param) {
-                            var query = this.{{DbEntity.Item.DbSetName}}.Select(e => new {{SearchResultClassName}} {
+                        public virtual IEnumerable<{{SearchResultClassName}}> {{AppServiceSearchMethodName}}({{SearchConditionClassName}} param) {
+                            var query = {{appSrv.DbContext}}.{{DbEntity.Item.DbSetName}}.Select(e => new {{SearchResultClassName}} {
                 {{selectClause.SelectTextTemplate(x => $$"""
                                 {{x.resultMemberName}} = e.{{x.dbColumnPath}},
                 """)}}

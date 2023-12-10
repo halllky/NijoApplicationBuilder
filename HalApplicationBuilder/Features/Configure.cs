@@ -25,11 +25,16 @@ namespace HalApplicationBuilder.Features {
         private string RuntimeServerSettings => new Util.RuntimeSettings(_ctx).ServerSetiingTypeFullName;
 
         protected override string Template() {
+            var appSrv = new ApplicationService(_ctx.Config);
+
             return $$"""
                 namespace {{Namespace}} {
 
                     internal static class {{CLASSNAME}} {
 
+                        /// <summary>
+                        /// Webサーバー起動時初期設定
+                        /// </summary>
                         internal static void {{INIT_WEB_HOST_BUILDER}}(this WebApplicationBuilder builder) {
                             {{CONFIGURE_SERVICES}}(builder.Services);
 
@@ -48,29 +53,42 @@ namespace HalApplicationBuilder.Features {
                             });
 
                             builder.Services.AddControllers(option => {
+                                // エラーハンドリング
                                 option.Filters.Add<{{Namespace}}.HttpResponseExceptionFilter>();
 
                             }).AddJsonOptions(option => {
+                                // JSON日本語設定
                                 {{Util.Utility.CLASSNAME}}.{{Util.Utility.MODIFY_JSONOPTION}}(option.JsonSerializerOptions);
                             });
 
+                            // バッチ処理
                             builder.Services.AddHostedService<{{new BackgroundService.BackgroundTaskLauncher(_ctx).ClassFullname}}>();
                         }
 
+                        /// <summary>
+                        /// Webサーバー起動時初期設定
+                        /// </summary>
                         internal static void {{INIT_WEBAPPLICATION}}(this WebApplication app) {
                             // 前述AddCorsの設定をするならこちらも必要
                             app.UseCors();
                         }
-
+                
+                        /// <summary>
+                        /// バッチプロセス起動時初期設定
+                        /// </summary>
                         internal static void {{INIT_BATCH_PROCESS}}(this IServiceCollection services) {
                             {{CONFIGURE_SERVICES}}(services);
                         }
 
                         internal static void {{CONFIGURE_SERVICES}}(IServiceCollection services) {
+
+                            // アプリケーションサービス
+                            services.AddScoped<{{appSrv.ClassName}}, {{appSrv.ConcreteClass}}>();
+
+                            // DB接続
                             services.AddScoped<Microsoft.EntityFrameworkCore.DbContext>(provider => {
                                 return provider.GetRequiredService<{{_ctx.Config.DbContextNamespace}}.{{_ctx.Config.DbContextName}}>();
                             });
-
                             services.AddDbContext<{{_ctx.Config.DbContextNamespace}}.{{_ctx.Config.DbContextName}}>((provider, option) => {
                                 var setting = provider.GetRequiredService<{{RuntimeServerSettings}}>();
                                 var connStr = setting.{{Util.RuntimeSettings.GET_ACTIVE_CONNSTR}}();
@@ -78,6 +96,7 @@ namespace HalApplicationBuilder.Features {
                                 Microsoft.EntityFrameworkCore.SqliteDbContextOptionsBuilderExtensions.UseSqlite(option, connStr);
                             });
 
+                            // 実行時設定ファイル
                             services.AddScoped(_ => {
                                 var filename = "{{Util.RuntimeSettings.JSON_FILE_NAME}}";
                                 if (System.IO.File.Exists(filename)) {
@@ -93,6 +112,7 @@ namespace HalApplicationBuilder.Features {
                                 }
                             });
 
+                            // ログ
                             services.AddScoped<ILogger>(provider => {
                                 var setting = provider.GetRequiredService<{{RuntimeServerSettings}}>();
                                 return new {{DefaultLogger.CLASSNAME}}(setting.LogDirectory);
