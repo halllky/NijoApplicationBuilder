@@ -35,6 +35,10 @@ namespace HalApplicationBuilder.Features.WebClient {
                 {{new Searching.SearchFeature(root.As<IEFCoreEntity>(), _ctx).RenderTypescriptTypeDef()}}
 
                 """)}}
+
+                {{_ctx.Schema.DataViews().SelectTextTemplate(dataView => $$"""
+                {{new DataViewRenderer(dataView, _ctx).RenderTypeScriptDefinition()}}
+                """)}}
                 """;
         }
     }

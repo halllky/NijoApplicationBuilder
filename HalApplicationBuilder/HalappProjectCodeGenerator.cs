@@ -135,6 +135,9 @@ namespace HalApplicationBuilder {
                     foreach (var aggregate in ctx.Schema.RootAggregates()) {
                         genDir.Generate(new AggregateRenderer(aggregate, ctx));
                     }
+                    foreach (var dataView in ctx.Schema.DataViews()) {
+                        genDir.Generate(new DataViewRenderer(dataView, ctx));
+                    }
 
                     genDir.Directory("Util", utilDir => {
                         utilDir.Generate(new Features.Util.RuntimeSettings(ctx));
@@ -215,6 +218,11 @@ namespace HalApplicationBuilder {
                             aggregateDir.Generate(new SingleView(root, ctx, SingleView.E_Type.View));
                             aggregateDir.Generate(new SingleView(root, ctx, SingleView.E_Type.Edit));
                             aggregateDir.DeleteOtherFiles();
+                        });
+                    }
+                    foreach (var dataView in ctx.Schema.DataViews()) {
+                        pageDir.Directory(dataView.Item.DisplayName.ToFileNameSafe(), dataViewDir => {
+                            dataViewDir.Generate(new Features.Searching.SearchFeature(dataView.As<IEFCoreEntity>(), ctx).CreateReactPage());
                         });
                     }
 

@@ -86,6 +86,18 @@ namespace HalApplicationBuilder.Features.WebClient {
                     From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(editView.FileName)}",
                 };
             }
+
+            foreach (var dataView in _ctx.Schema.DataViews()) {
+                var physicalName = dataView.Item.DisplayName.ToCSharpSafe();
+
+                yield return new ImportedComponent {
+                    ShowMenu = true,
+                    Url = new Searching.SearchFeature(dataView.As<IEFCoreEntity>(), _ctx).ReactPageUrl,
+                    PhysicalName = $"{physicalName}MultiView",
+                    DisplayName = dataView.Item.DisplayName,
+                    From = $"./{physicalName}/{Path.GetFileNameWithoutExtension(Searching.SearchFeature.REACT_FILENAME)}",
+                };
+            }
         }
         private class ImportedComponent {
             internal required bool ShowMenu { get; init; }
