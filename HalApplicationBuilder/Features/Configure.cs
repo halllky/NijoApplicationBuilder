@@ -57,8 +57,8 @@ namespace HalApplicationBuilder.Features {
                                         {{Util.Utility.CLASSNAME}}.{{Util.Utility.MODIFY_JSONOPTION}}(option.JsonSerializerOptions);
                                     });
 
-                                    // バッチ処理
-                                    builder.Services.AddHostedService<{{BackgroundService.BackgroundTaskLauncher.CLASSNAME}}>();
+                                    //// バッチ処理
+                                    //builder.Services.AddHostedService<{{BackgroundService.BackgroundTaskLauncher.CLASSNAME}}>();
                                 }
 
                                 /// <summary>

@@ -57,7 +57,7 @@ namespace HalApplicationBuilder.Features.WebClient {
                     Url = new Searching.AggregateSearchFeature(aggregate).GetMultiView().Url,
                     PhysicalName = $"{aggregateName}MultiView",
                     DisplayName = aggregate.Item.DisplayName,
-                    From = $"./{dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(Searching.MultiView2.REACT_FILENAME)}",
+                    From = $"./{dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(Searching.MultiView.REACT_FILENAME)}",
                 };
 
                 if (aggregate.IsCreatable()) {

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace HalApplicationBuilder.Features.Util {
     internal class RuntimeSettings {
 
-        internal static string ServerSetiingTypeFullName => $".{nameof(RuntimeSettings)}.{SERVER}";
+        internal static string ServerSetiingTypeFullName => $"{nameof(RuntimeSettings)}.{SERVER}";
 
         private const string SERVER = "Server";
 

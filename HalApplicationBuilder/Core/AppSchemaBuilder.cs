@@ -237,9 +237,9 @@ namespace HalApplicationBuilder.Core {
             var halappEntities = new List<IGraphNode>();
             var halappEnums = new List<EnumDefinition>();
 
-            // 基盤機能: バッチ処理
-            halappEntities.Add(Features.BackgroundService.BackgroundTaskEntity.CreateEntity());
-            halappEnums.Add(Features.BackgroundService.BackgroundTaskEntity.CreateBackgroundTaskStateEnum());
+            //// 基盤機能: バッチ処理
+            //halappEntities.Add(Features.BackgroundService.BackgroundTaskEntity.CreateEntity());
+            //halappEnums.Add(Features.BackgroundService.BackgroundTaskEntity.CreateBackgroundTaskStateEnum());
 
             // ---------------------------------------------------------
             // グラフを作成して返す

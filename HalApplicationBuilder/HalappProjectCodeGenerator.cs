@@ -142,7 +142,7 @@ namespace HalApplicationBuilder {
                         utilDir.DeleteOtherFiles();
                     });
                     genDir.Directory("Web", controllerDir => {
-                        controllerDir.Generate(Features.Searching.MultiView2.RenderCSharpSearchConditionBaseClass());
+                        controllerDir.Generate(Features.Searching.MultiView.RenderCSharpSearchConditionBaseClass());
                         controllerDir.Generate(DebuggerController.Render());
                         controllerDir.DeleteOtherFiles();
                     });

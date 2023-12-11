@@ -36,7 +36,8 @@ namespace HalApplicationBuilder.Features {
 
                                 {{WithIndent(dbEntities.Select(RenderEntity), "            ")}}
 
-                                {{ctx.Config.EntityNamespace}}.BackgroundTaskEntity.OnModelCreating(modelBuilder);
+                                //// バッチ処理
+                                // {{ctx.Config.EntityNamespace}}.BackgroundTaskEntity.OnModelCreating(modelBuilder);
                             }
                         }
                     }
@@ -61,7 +62,7 @@ namespace HalApplicationBuilder.Features {
 
                 {{If(dbEntity.Item is Aggregate, () => $$"""
                     {{WithIndent(RenderNavigationPropertyOnModelCreating(dbEntity.As<Aggregate>()), "    ")}}
-                """)}}            
+                """)}}
                 });
                 """;
         }

@@ -130,9 +130,9 @@ namespace HalApplicationBuilder.Features.Searching {
                                 query = query.Where(x => x.{{field.PhysicalName}} == param.{{field.PhysicalName}});
                             }
                 """))}}
-                            if (param.{{MultiView2.SEARCHCONDITION_PAGE_PROP_NAME}} != null) {
+                            if (param.{{MultiView.SEARCHCONDITION_PAGE_PROP_NAME}} != null) {
                                 const int PAGE_SIZE = 20;
-                                var skip = param.{{MultiView2.SEARCHCONDITION_PAGE_PROP_NAME}}.Value * PAGE_SIZE;
+                                var skip = param.{{MultiView.SEARCHCONDITION_PAGE_PROP_NAME}}.Value * PAGE_SIZE;
                                 query = query.Skip(skip).Take(PAGE_SIZE);
                             }
 
@@ -143,7 +143,7 @@ namespace HalApplicationBuilder.Features.Searching {
                 """;
         }
 
-        internal MultiView2 GetMultiView() {
+        internal MultiView GetMultiView() {
             var fields = GetFields();
 
             var createView = new SingleView(_aggregate, SingleView.E_Type.Create);
@@ -154,7 +154,7 @@ namespace HalApplicationBuilder.Features.Searching {
                 .OfType<AggregateMember.ValueMember>()
                 .Select(m => m.GetDbColumn().GetFullPath().Join("_"));
 
-            return new MultiView2 {
+            return new MultiView {
                 DisplayName = _aggregate.Item.DisplayName,
                 Fields = fields.Values.ToArray(),
                 AppSrvMethodName = AppServiceSearchMethodName,

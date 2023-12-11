@@ -528,24 +528,15 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
             return string.IsNullOrEmpty(name) ? string.Empty : $"`{name}`";
         }
 
-        private string IfReadOnly(string readOnly, AggregateMember.ValueMember prop) {
+        private string IfReadOnly(string readOnly, AggregateMember.AggregateMemberBase prop) {
             return _mode switch {
                 SingleView.E_Type.Create => "",
                 SingleView.E_Type.View => readOnly,
-                SingleView.E_Type.Edit => prop.IsKey
-                    ? $"{readOnly}={{item?.{AggregateDetail.IS_LOADED}}}"
-                    : $"",
-                _ => throw new NotImplementedException(),
-            };
-        }
-        // TODO: 上のメソッドと冗長
-        private string IfReadOnly(string readOnly, AggregateMember.Ref prop) {
-            return _mode switch {
-                SingleView.E_Type.Create => "",
-                SingleView.E_Type.View => readOnly,
-                SingleView.E_Type.Edit => prop.Relation.IsPrimary()
-                    ? $"{readOnly}={{item?.{AggregateDetail.IS_LOADED}}}"
-                    : $"",
+                SingleView.E_Type.Edit
+                    => prop is AggregateMember.ValueMember vm && vm.IsKey
+                    || prop is AggregateMember.Ref @ref && @ref.Relation.IsPrimary()
+                        ? $"{readOnly}={{item?.{AggregateDetail.IS_LOADED}}}"
+                        : $"",
                 _ => throw new NotImplementedException(),
             };
         }

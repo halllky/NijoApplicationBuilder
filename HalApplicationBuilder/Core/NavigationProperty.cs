@@ -114,7 +114,7 @@ namespace HalApplicationBuilder.Core {
                     return _relation.Terminal
                         .GetKeys()
                         .OfType<AggregateMember.ValueMember>()
-                        .Where(key => key.Owner != key.DeclaringAggregate)
+                        .Where(key => key.IsKeyOfAncestor)
                         .Select(parentPk => parentPk.GetDbColumn());
 
                 } else if (_relation.Initial == Owner

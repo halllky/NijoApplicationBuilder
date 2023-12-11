@@ -25,7 +25,7 @@ export const SideMenu = () => {
 
       <Panel className="flex flex-col">
         <nav className="flex-1 overflow-y-auto leading-none">
-          <SideMenuLink url="/bagkground-tasks" icon={PlayCircleIcon}>バッチ処理</SideMenuLink>
+          {/*<SideMenuLink url="/bagkground-tasks" icon={PlayCircleIcon}>バッチ処理</SideMenuLink>*/}
           <SideMenuLink url="/settings" icon={Cog8ToothIcon}>設定</SideMenuLink>
         </nav>
         <span className="p-1 text-sm whitespace-nowrap overflow-hidden">
