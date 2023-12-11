@@ -30,10 +30,6 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>page.cs</LastGenOutput>
     </None>
-    <None Update="Features\EFCore\DbContextTemplate.tt">
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>DbContextTemplate.cs</LastGenOutput>
-    </None>
     <None Update="Features\DefaultRuntimeConfigTemplate.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>DefaultRuntimeConfigTemplate.cs</LastGenOutput>
@@ -57,22 +53,6 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>UIModelsTemplate.cs</LastGenOutput>
     </None>
-    <None Update="Features\EFCore\DbSetTemplate.tt">
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>DbSetTemplate.cs</LastGenOutput>
-    </None>
-    <None Update="Features\EFCore\EntityClassTemplate.tt">
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>EntityClassTemplate.cs</LastGenOutput>
-    </None>
-    <None Update="Features\EFCore\OnModelCreatingTemplate.tt">
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>OnModelCreatingTemplate.cs</LastGenOutput>
-    </None>
-    <None Update="Features\EFCore\SearchMethodTemplate.tt">
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>SearchMethodTemplate.cs</LastGenOutput>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Impl\SchalarValueSearchCondition.cs" />
@@ -93,11 +73,6 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>page.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Features\EFCore\DbContextTemplate.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>DbContextTemplate.tt</DependentUpon>
     </Compile>
     <Compile Update="Features\DefaultRuntimeConfigTemplate.cs">
       <DesignTime>True</DesignTime>
@@ -120,26 +95,6 @@
     </Compile>
     <Compile Update="Features\MvcMultiViewTemplate.cs">
       <DependentUpon>MvcMultiViewTemplate.tt</DependentUpon>
-    </Compile>
-    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="Features\EFCore\DbSetTemplate.cs">
-      <DependentUpon>DbSetTemplate.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="Features\EFCore\EntityClassTemplate.cs">
-      <DependentUpon>EntityClassTemplate.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="Features\EFCore\OnModelCreatingTemplate.cs">
-      <DependentUpon>OnModelCreatingTemplate.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="Features\EFCore\SearchMethodTemplate.cs">
-      <DependentUpon>SearchMethodTemplate.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
     </Compile>
   </ItemGroup>
   <ItemGroup>

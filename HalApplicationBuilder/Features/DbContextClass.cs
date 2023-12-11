@@ -8,9 +8,9 @@ using System.Text;
 using System.Threading.Tasks;
 using static HalApplicationBuilder.Features.TemplateTextHelper;
 
-namespace HalApplicationBuilder.Features.EFCore {
-    internal class DbContext {
-        internal DbContext(Config config) {
+namespace HalApplicationBuilder.Features {
+    internal class DbContextClass {
+        internal DbContextClass(Config config) {
             _config = config;
         }
         private readonly Config _config;

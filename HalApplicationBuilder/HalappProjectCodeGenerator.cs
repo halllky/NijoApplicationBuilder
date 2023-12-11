@@ -1,5 +1,4 @@
 using HalApplicationBuilder.Features;
-using HalApplicationBuilder.Features.EFCore;
 using HalApplicationBuilder.Features.InstanceHandling;
 using HalApplicationBuilder.Features.WebClient;
 using HalApplicationBuilder.Core;
@@ -11,11 +10,9 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using System.Reflection.Metadata;
 
 namespace HalApplicationBuilder {
     public sealed class HalappProjectCodeGenerator {
@@ -150,7 +147,7 @@ namespace HalApplicationBuilder {
                         controllerDir.DeleteOtherFiles();
                     });
                     genDir.Directory("EntityFramework", efDir => {
-                        efDir.Generate(new DbContext(config).RenderDeclaring());
+                        efDir.Generate(new DbContextClass(config).RenderDeclaring());
                         efDir.DeleteOtherFiles();
                     });
                     //genDir.Directory("BackgroundService", bsDir => {
