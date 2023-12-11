@@ -16,7 +16,7 @@ namespace HalApplicationBuilder.DotnetEx {
         public Guid Guid { get; }
 
         public string ToCSharSafe() {
-            return "_" + Guid.ToString().Replace("-", "");
+            return Guid.ToString().Replace("-", "");
         }
         public string ToFileSafe() {
             return Guid.ToString();

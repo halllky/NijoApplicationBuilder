@@ -16,6 +16,7 @@ namespace HalApplicationBuilder.DotnetEx {
             return str;
         }
         public static string ToUrlSafe(this string str) => System.Web.HttpUtility.UrlEncode(str);
+        public static string ToHashedString(this string str) => new HashedString(str).ToCSharSafe();
 
         /// <summary>
         /// 半角文字を1、全角文字を2として横幅を算出する。

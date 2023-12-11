@@ -147,7 +147,6 @@ namespace HalApplicationBuilder.Core {
 
             // GraphNodeの組み立て
             var aggregates = new Dictionary<NodeId, Aggregate>();
-            var dataViews = new Dictionary<NodeId, DataView>();
             var aggregateMembers = new HashSet<AggregateMemberNode>();
             var edgesFromAggToAgg = new List<GraphEdgeInfo>();
             var edgesFromAggToMember = new List<GraphEdgeInfo>();
@@ -202,18 +201,8 @@ namespace HalApplicationBuilder.Core {
 
                 if (successToParse) {
                     var displayName = aggregateDef.TreePath.BaseName;
-                    if (aggregateDef.Options.Type == E_AggreateType.MasterData
-                        || !aggregateDef.TreePath.IsRoot) {
-                        var aggregate = new Aggregate(aggregateId, displayName, !hasNameMember, aggregateDef.Options);
-                        aggregates.Add(aggregateId, aggregate);
-
-                    } else if (aggregateDef.Options.Type == E_AggreateType.View) {
-                        var view = new DataView(aggregateId, displayName);
-                        dataViews.Add(aggregateId, view);
-
-                    } else {
-                        errors.Add($"'{aggregateDef.Options.Type}' のタイプ '{aggregateDef.Options.Type}' が不正です。");
-                    }
+                    var aggregate = new Aggregate(aggregateId, displayName, !hasNameMember, aggregateDef.Options);
+                    aggregates.Add(aggregateId, aggregate);
                 }
             }
 
@@ -224,7 +213,7 @@ namespace HalApplicationBuilder.Core {
                 var terminal = relation.Terminal.ToGraphNodeId();
 
                 // バリデーションおよびグラフ構成要素の作成: リレーションの集約ID
-                if (!aggregates.ContainsKey(initial) && !dataViews.ContainsKey(initial)) {
+                if (!aggregates.ContainsKey(initial)) {
                     errors.Add($"ID '{relation.Initial}' と対応する定義がありません。");
                     successToParse = false;
                 }
@@ -256,7 +245,6 @@ namespace HalApplicationBuilder.Core {
             // グラフを作成して返す
             var nodes = aggregates.Values
                 .Cast<IGraphNode>()
-                .Concat(dataViews.Values)
                 .Concat(aggregateMembers)
                 .Concat(halappEntities);
             var edges = edgesFromAggToAgg

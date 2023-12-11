@@ -135,9 +135,6 @@ namespace HalApplicationBuilder {
                     foreach (var aggregate in ctx.Schema.RootAggregates()) {
                         genDir.Generate(new AggregateRenderer(aggregate, ctx));
                     }
-                    foreach (var dataView in ctx.Schema.DataViews()) {
-                        genDir.Generate(new DataViewRenderer(dataView).RenderCSharpCode(ctx));
-                    }
 
                     genDir.Directory("Util", utilDir => {
                         utilDir.Generate(new Features.Util.RuntimeSettings(ctx));
@@ -214,15 +211,10 @@ namespace HalApplicationBuilder {
                     foreach (var root in ctx.Schema.RootAggregates()) {
                         pageDir.Directory(GetAggDirName(root), aggregateDir => {
                             aggregateDir.Generate(new Features.Searching.AggregateSearchFeature(root).GetMultiView().RenderMultiView(ctx));
-                            aggregateDir.Generate(new SingleView(root, ctx, SingleView.E_Type.Create));
-                            aggregateDir.Generate(new SingleView(root, ctx, SingleView.E_Type.View));
-                            aggregateDir.Generate(new SingleView(root, ctx, SingleView.E_Type.Edit));
+                            if (root.IsCreatable()) aggregateDir.Generate(new SingleView(root, ctx, SingleView.E_Type.Create));
+                            if (root.IsStored()) aggregateDir.Generate(new SingleView(root, ctx, SingleView.E_Type.View));
+                            if (root.IsEditable()) aggregateDir.Generate(new SingleView(root, ctx, SingleView.E_Type.Edit));
                             aggregateDir.DeleteOtherFiles();
-                        });
-                    }
-                    foreach (var dataView in ctx.Schema.DataViews()) {
-                        pageDir.Directory(dataView.Item.DisplayName.ToFileNameSafe(), dataViewDir => {
-                            dataViewDir.Generate(new Features.DataViewRenderer(dataView).GetMultiView().RenderMultiView(ctx));
                         });
                     }
 

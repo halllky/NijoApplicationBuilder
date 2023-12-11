@@ -35,11 +35,6 @@ namespace HalApplicationBuilder.Features.WebClient {
                 {{new Searching.AggregateSearchFeature(root).GetMultiView().RenderTypeScriptTypeDef(_ctx)}}
 
                 """)}}
-
-                {{_ctx.Schema.DataViews().SelectTextTemplate(dataView => $$"""
-                // ------------------ {{dataView.Item.DisplayName}} ------------------
-                {{new DataViewRenderer(dataView).GetMultiView().RenderTypeScriptTypeDef(_ctx)}}
-                """)}}
                 """;
         }
     }

@@ -55,48 +55,44 @@ namespace HalApplicationBuilder.Features.WebClient {
 
                 yield return new ImportedComponent {
                     ShowMenu = true,
-                    Url = new Searching.AggregateSearchFeature(aggregate).GetMultiView().ReactPageUrl,
+                    Url = new Searching.AggregateSearchFeature(aggregate).GetMultiView().Url,
                     PhysicalName = $"{aggregateName}MultiView",
                     DisplayName = aggregate.Item.DisplayName,
                     From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(Searching.MultiView2.REACT_FILENAME)}",
                 };
 
-                var createView = new SingleView(aggregate, _ctx, SingleView.E_Type.Create);
-                var detailView = new SingleView(aggregate, _ctx, SingleView.E_Type.View);
-                var editView = new SingleView(aggregate, _ctx, SingleView.E_Type.Edit);
-                yield return new ImportedComponent {
-                    ShowMenu = false,
-                    Url = createView.Route,
-                    PhysicalName = $"{aggregateName}CreateView",
-                    DisplayName = aggregate.Item.DisplayName,
-                    From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(createView.FileName)}",
-                };
-                yield return new ImportedComponent {
-                    ShowMenu = false,
-                    Url = detailView.Route,
-                    PhysicalName = $"{aggregateName}DetailView",
-                    DisplayName = aggregate.Item.DisplayName,
-                    From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(detailView.FileName)}",
-                };
-                yield return new ImportedComponent {
-                    ShowMenu = false,
-                    Url = editView.Route,
-                    PhysicalName = $"{aggregateName}EditView",
-                    DisplayName = aggregate.Item.DisplayName,
-                    From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(editView.FileName)}",
-                };
-            }
+                if (aggregate.IsCreatable()) {
+                    var createView = new SingleView(aggregate, _ctx, SingleView.E_Type.Create);
+                    yield return new ImportedComponent {
+                        ShowMenu = false,
+                        Url = createView.Route,
+                        PhysicalName = $"{aggregateName}CreateView",
+                        DisplayName = aggregate.Item.DisplayName,
+                        From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(createView.FileName)}",
+                    };
+                }
 
-            foreach (var dataView in _ctx.Schema.DataViews()) {
-                var physicalName = dataView.Item.DisplayName.ToCSharpSafe();
+                if (aggregate.IsStored()) {
+                    var detailView = new SingleView(aggregate, _ctx, SingleView.E_Type.View);
+                    yield return new ImportedComponent {
+                        ShowMenu = false,
+                        Url = detailView.Route,
+                        PhysicalName = $"{aggregateName}DetailView",
+                        DisplayName = aggregate.Item.DisplayName,
+                        From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(detailView.FileName)}",
+                    };
+                }
 
-                yield return new ImportedComponent {
-                    ShowMenu = true,
-                    Url = new DataViewRenderer(dataView).GetMultiView().ReactPageUrl,
-                    PhysicalName = $"{physicalName}MultiView",
-                    DisplayName = dataView.Item.DisplayName,
-                    From = $"./{physicalName}/{Path.GetFileNameWithoutExtension(Searching.MultiView2.REACT_FILENAME)}",
-                };
+                if (aggregate.IsEditable()) {
+                    var editView = new SingleView(aggregate, _ctx, SingleView.E_Type.Edit);
+                    yield return new ImportedComponent {
+                        ShowMenu = false,
+                        Url = editView.Route,
+                        PhysicalName = $"{aggregateName}EditView",
+                        DisplayName = aggregate.Item.DisplayName,
+                        From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(editView.FileName)}",
+                    };
+                }
             }
         }
         private class ImportedComponent {

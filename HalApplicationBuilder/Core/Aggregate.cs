@@ -126,6 +126,19 @@ namespace HalApplicationBuilder.Core {
                 && (string)groupName != string.Empty;
         }
 
+        internal static bool IsStored(this GraphNode<Aggregate> aggregate) {
+            return aggregate.GetRoot().Item.Options.Type == E_AggreateType.MasterData;
+        }
+        internal static bool IsCreatable(this GraphNode<Aggregate> aggregate) {
+            return aggregate.GetRoot().Item.Options.Type == E_AggreateType.MasterData;
+        }
+        internal static bool IsEditable(this GraphNode<Aggregate> aggregate) {
+            return aggregate.GetRoot().Item.Options.Type == E_AggreateType.MasterData;
+        }
+        internal static bool IsDeletable(this GraphNode<Aggregate> aggregate) {
+            return aggregate.IsCreatable() && aggregate.IsEditable();
+        }
+
         internal static IEnumerable<GraphEdge<Aggregate>> GetReferedEdges(this GraphNode<Aggregate> graphNode) {
             return graphNode.In
                 .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)

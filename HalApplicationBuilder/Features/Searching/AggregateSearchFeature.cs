@@ -53,6 +53,33 @@ namespace HalApplicationBuilder.Features.Searching {
         }
 
         internal string RenderDbContextMethod(CodeRenderingContext ctx) {
+            return _aggregate.IsStored()
+                ? RenderSearchMethod(ctx)
+                : RenderNotImplementedSearchMethod(ctx);
+        }
+        /// <summary>
+        /// Viewなどオーバーライド前提のものの検索処理
+        /// </summary>
+        private string RenderNotImplementedSearchMethod(CodeRenderingContext ctx) {
+            var appSrv = new ApplicationService(ctx.Config);
+            var multiView = GetMultiView();
+
+            return $$"""
+                namespace {{ctx.Config.RootNamespace}} {
+                    partial class {{appSrv.ClassName}} {
+                        public virtual IEnumerable<{{multiView.SearchResultClassName}}> {{AppServiceSearchMethodName}}({{multiView.SearchConditionClassName}} conditions) {
+                            // このメソッドは自動生成の対象外です。
+                            // {{appSrv.ConcreteClass}}クラスでこのメソッドをオーバーライドして実装してください。
+                            return Enumerable.Empty<{{multiView.SearchResultClassName}}>();
+                        }
+                    }
+                }
+                """;
+        }
+        /// <summary>
+        /// 標準の検索処理
+        /// </summary>
+        private string RenderSearchMethod(CodeRenderingContext ctx) {
             var appSrv = new ApplicationService(ctx.Config);
             var fields = GetFields();
             var selectClause = fields.Select(field => new {
@@ -132,8 +159,12 @@ namespace HalApplicationBuilder.Features.Searching {
                 DisplayName = _aggregate.Item.DisplayName,
                 Fields = fields.Values.ToArray(),
                 AppSrvMethodName = AppServiceSearchMethodName,
-                CreateViewUrl = createView.GetUrlStringForReact(),
-                SingleViewUrlFunctionBody = data => singleView.GetUrlStringForReact(keys.Select(field => $"{data}.{field}")),
+                CreateViewUrl = _aggregate.IsCreatable()
+                    ? createView.GetUrlStringForReact()
+                    : null,
+                SingleViewUrlFunctionBody = _aggregate.IsStored()
+                    ? (data => singleView.GetUrlStringForReact(keys.Select(field => $"{data}.{field}")))
+                    : null,
             };
         }
     }

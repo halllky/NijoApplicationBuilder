@@ -30,7 +30,7 @@ namespace HalApplicationBuilder.Features.KeywordSearching {
                 import { AsyncComboBox, defineCustomComponent } from "../user-input"
                 import * as Types from "../types"
 
-                {{allAggregates.Select(a => new ComboBox(a)).SelectTextTemplate((combo, index) => $$"""
+                {{allAggregates.Where(a => a.IsStored()).Select(a => new ComboBox(a)).SelectTextTemplate((combo, index) => $$"""
                 export const {{combo.ComponentName}} = defineCustomComponent<Types.{{combo.KeyName.TypeScriptTypeName}}>((props, ref) => {
                   const [queryKey, setQueryKey] = useState<string>('combo-{{combo._aggregate.Item.UniqueId}}::')
                   const { get } = useHttpRequest()

@@ -137,6 +137,7 @@ namespace HalApplicationBuilder.Core {
             }
 
             foreach (var refered in aggregate.GetReferedEdges()) {
+                if (!refered.Initial.IsStored()) continue;
                 yield return new NavigationProperty(refered);
             }
         }

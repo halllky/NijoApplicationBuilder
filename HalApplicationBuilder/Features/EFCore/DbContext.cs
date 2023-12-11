@@ -20,6 +20,7 @@ namespace HalApplicationBuilder.Features.EFCore {
         protected override string Template() {
             var dbEntities = _ctx.Schema
                 .AllAggregates()
+                .Where(agg => agg.IsStored())
                 .Select(agg => agg.As<IEFCoreEntity>());
 
             return $$"""

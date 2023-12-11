@@ -25,7 +25,7 @@ namespace HalApplicationBuilder.Features.Searching {
         internal required Func<string, string>? SingleViewUrlFunctionBody { get; init; }
 
         internal const string REACT_FILENAME = "list.tsx";
-        internal string ReactPageUrl => $"/{DisplayName.ToUrlSafe()}";
+        internal string Url => $"/{DisplayName.ToHashedString()}";
         internal string SearchConditionClassName => $"{DisplayName.ToCSharpSafe()}SearchCondition";
         internal string SearchResultClassName => $"{DisplayName.ToCSharpSafe()}SearchResult";
 

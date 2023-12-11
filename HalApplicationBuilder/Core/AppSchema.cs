@@ -24,9 +24,6 @@ namespace HalApplicationBuilder.Core {
         internal IEnumerable<GraphNode<Aggregate>> RootAggregates() {
             return AllAggregates().Where(aggregate => aggregate.IsRoot());
         }
-        internal IEnumerable<GraphNode<DataView>> DataViews() {
-            return Graph.Only<DataView>();
-        }
 
         internal IReadOnlyCollection<EnumDefinition> EnumDefinitions { get; }
 
