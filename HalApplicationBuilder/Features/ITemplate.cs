@@ -26,6 +26,11 @@ namespace HalApplicationBuilder.Features {
         }
     }
 
+    internal class SourceFile {
+        internal required string FileName { get; init; }
+        internal required string Content { get; init; }
+    }
+
     /// <summary>
     /// テンプレート文字列簡略化用
     /// </summary>

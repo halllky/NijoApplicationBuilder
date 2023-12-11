@@ -1,5 +1,6 @@
 using HalApplicationBuilder.Core;
 using HalApplicationBuilder.DotnetEx;
+using HalApplicationBuilder.Features.Searching;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,50 +8,67 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Features {
-    internal class DataViewRenderer : TemplateBase {
-        internal DataViewRenderer(GraphNode<DataView> dataView, CodeRenderingContext ctx) {
+    internal class DataViewRenderer {
+        internal DataViewRenderer(GraphNode<DataView> dataView) {
             _dataView = dataView;
-            _ctx = ctx;
         }
 
         private readonly GraphNode<DataView> _dataView;
-        private readonly CodeRenderingContext _ctx;
 
-        public override string FileName => $"{_dataView.Item.DisplayName.ToFileNameSafe()}.cs";
         internal string AppSrvMethodName => $"Search{_dataView.Item.DisplayName.ToCSharpSafe()}";
 
-        protected override string Template() {
-            var controller = new WebClient.Controller(_dataView.Item);
-            var search = new Searching.SearchFeature(_dataView.As<IEFCoreEntity>(), _ctx);
-
-            return $$"""
-                {{controller.Render(_ctx)}}
-
-                {{search.RenderControllerAction()}}
-
-                {{RenderAppServiceMethod()}}
-                """;
+        internal MultiView2 GetMultiView() {
+            var fields = _dataView
+                .GetMembers()
+                .OfType<AggregateMember.ValueMember>()
+                .Select(m => new MultiViewField {
+                    MemberType = m.Options.MemberType,
+                    VisibleInGui = !m.Options.InvisibleInGui,
+                    PhysicalName = m.GetFullPath().Join("_"),
+                })
+                .ToArray();
+            return new MultiView2 {
+                DisplayName = _dataView.Item.DisplayName,
+                AppSrvMethodName = AppSrvMethodName,
+                Fields = fields,
+                CreateViewUrl = null,
+                SingleViewUrlFunctionBody = null,
+            };
         }
 
-        private string RenderAppServiceMethod() {
-            var appSrv = new ApplicationService(_ctx.Config);
-            var search = new Searching.SearchFeature(_dataView.As<IEFCoreEntity>(), _ctx);
+        internal SourceFile RenderCSharpCode(CodeRenderingContext ctx) {
+            var controller = new WebClient.Controller(_dataView.Item.DisplayName.ToCSharpSafe());
+            var multiView = GetMultiView();
+
+            var sourceCode = $$"""
+                {{controller.Render(ctx)}}
+
+                {{multiView.RenderAspNetController(ctx)}}
+
+                {{RenderAppServiceMethod(ctx)}}
+                """;
+
+            return new SourceFile {
+                FileName = $"{_dataView.Item.DisplayName.ToFileNameSafe()}.cs",
+                Content = sourceCode,
+            };
+        }
+
+        private string RenderAppServiceMethod(CodeRenderingContext ctx) {
+            var appSrv = new ApplicationService(ctx.Config);
+            var multiView = GetMultiView();
 
             return $$"""
-                namespace {{_ctx.Config.RootNamespace}} {
+                namespace {{ctx.Config.RootNamespace}} {
                     partial class {{appSrv.ClassName}} {
-                        public virtual IEnumerable<{{search.SearchResultClassName}}> {{AppSrvMethodName}}({{search.SearchConditionClassName}} conditions) {
+                        public virtual IEnumerable<{{multiView.SearchResultClassName}}> {{AppSrvMethodName}}({{multiView.SearchConditionClassName}} conditions) {
                             // このメソッドは自動生成の対象外です。
                             // {{appSrv.ConcreteClass}}クラスでこのメソッドをオーバーライドして実装してください。
-                            return Enumerable.Empty<{{search.SearchResultClassName}}>();
+                            return Enumerable.Empty<{{multiView.SearchResultClassName}}>();
                         }
                     }
                 }
                 """;
-        }
-
-        internal string RenderTypeScriptDefinition() {
-
         }
     }
 }

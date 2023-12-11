@@ -136,7 +136,7 @@ namespace HalApplicationBuilder {
                         genDir.Generate(new AggregateRenderer(aggregate, ctx));
                     }
                     foreach (var dataView in ctx.Schema.DataViews()) {
-                        genDir.Generate(new DataViewRenderer(dataView, ctx));
+                        genDir.Generate(new DataViewRenderer(dataView).RenderCSharpCode(ctx));
                     }
 
                     genDir.Directory("Util", utilDir => {
@@ -150,7 +150,7 @@ namespace HalApplicationBuilder {
                         utilDir.DeleteOtherFiles();
                     });
                     genDir.Directory("Web", controllerDir => {
-                        controllerDir.Generate(Features.Searching.SearchFeature.CreateSearchConditionBaseClassTemplate(ctx));
+                        controllerDir.Generate(Features.Searching.MultiView2.RenderCSharpSearchConditionBaseClass(ctx));
                         controllerDir.Generate(new DebuggerController(ctx));
                         controllerDir.DeleteOtherFiles();
                     });
@@ -213,7 +213,7 @@ namespace HalApplicationBuilder {
                 reactDir.Directory(REACT_PAGE_DIR, pageDir => {
                     foreach (var root in ctx.Schema.RootAggregates()) {
                         pageDir.Directory(GetAggDirName(root), aggregateDir => {
-                            aggregateDir.Generate(new Features.Searching.SearchFeature(root.As<IEFCoreEntity>(), ctx).CreateReactPage());
+                            aggregateDir.Generate(new Features.Searching.AggregateSearchFeature(root).GetMultiView().RenderMultiView(ctx));
                             aggregateDir.Generate(new SingleView(root, ctx, SingleView.E_Type.Create));
                             aggregateDir.Generate(new SingleView(root, ctx, SingleView.E_Type.View));
                             aggregateDir.Generate(new SingleView(root, ctx, SingleView.E_Type.Edit));
@@ -222,7 +222,7 @@ namespace HalApplicationBuilder {
                     }
                     foreach (var dataView in ctx.Schema.DataViews()) {
                         pageDir.Directory(dataView.Item.DisplayName.ToFileNameSafe(), dataViewDir => {
-                            dataViewDir.Generate(new Features.Searching.SearchFeature(dataView.As<IEFCoreEntity>(), ctx).CreateReactPage());
+                            dataViewDir.Generate(new Features.DataViewRenderer(dataView).GetMultiView().RenderMultiView(ctx));
                         });
                     }
 
@@ -263,6 +263,9 @@ namespace HalApplicationBuilder {
                 fn(new DirectorySetupper(System.IO.Path.Combine(Path, relativePath)));
             }
 
+            internal void Generate(SourceFile sourceFile) {
+                Generate(sourceFile.FileName, sourceFile.Content);
+            }
             internal void Generate(string filename, string content) {
                 var file = System.IO.Path.Combine(Path, filename);
 

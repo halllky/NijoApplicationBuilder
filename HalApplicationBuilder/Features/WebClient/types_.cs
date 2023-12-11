@@ -32,12 +32,13 @@ namespace HalApplicationBuilder.Features.WebClient {
 
                 {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new RefTargetKeyName(aggregate).RenderTypeScriptDeclaring())}}
 
-                {{new Searching.SearchFeature(root.As<IEFCoreEntity>(), _ctx).RenderTypescriptTypeDef()}}
+                {{new Searching.AggregateSearchFeature(root).GetMultiView().RenderTypeScriptTypeDef(_ctx)}}
 
                 """)}}
 
                 {{_ctx.Schema.DataViews().SelectTextTemplate(dataView => $$"""
-                {{new DataViewRenderer(dataView, _ctx).RenderTypeScriptDefinition()}}
+                // ------------------ {{dataView.Item.DisplayName}} ------------------
+                {{new DataViewRenderer(dataView).GetMultiView().RenderTypeScriptTypeDef(_ctx)}}
                 """)}}
                 """;
         }

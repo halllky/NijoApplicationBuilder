@@ -35,7 +35,8 @@ namespace HalApplicationBuilder.Features {
 
         protected override string Template() {
             var controller = new WebClient.Controller(_aggregate.Item);
-            var search = new Searching.SearchFeature(_aggregate.As<IEFCoreEntity>(), _ctx);
+            var search = new Searching.AggregateSearchFeature(_aggregate);
+            var multiView = search.GetMultiView();
             var find = new FindFeature(_aggregate);
             var create = new CreateFeature(_aggregate);
             var update = new UpdateFeature(_aggregate);
@@ -59,8 +60,8 @@ namespace HalApplicationBuilder.Features {
 
 
                 #region 一覧検索
-                {{search.RenderControllerAction()}}
-                {{search.RenderDbContextMethod()}}
+                {{multiView.RenderAspNetController(_ctx)}}
+                {{search.RenderDbContextMethod(_ctx)}}
                 #endregion 一覧検索
 
 
@@ -102,7 +103,7 @@ namespace HalApplicationBuilder.Features {
                     {{WithIndent(_aggregate.EnumerateThisAndDescendants().SelectTextTemplate(ins => new RefTargetKeyName(ins).RenderCSharpDeclaring()), "    ")}}
                 }
 
-                {{search.RenderCSharpClassDef()}}
+                {{multiView.RenderCSharpTypedef(_ctx)}}
                 namespace {{_ctx.Config.EntityNamespace}} {
                     using System;
                     using System.Collections;

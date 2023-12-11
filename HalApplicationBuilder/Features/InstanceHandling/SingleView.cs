@@ -64,7 +64,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
 
         protected override string Template() {
             var controller = new Controller(_aggregate.Item);
-            var multiViewUrl = new Searching.SearchFeature(_aggregate.As<IEFCoreEntity>(), _ctx).ReactPageUrl;
+            var multiViewUrl = new Searching.AggregateSearchFeature(_aggregate).GetMultiView().ReactPageUrl;
             var createEmptyObject = new TSInitializerFunction(_aggregate).FunctionName;
 
             var find = new FindFeature(_aggregate);

@@ -55,10 +55,10 @@ namespace HalApplicationBuilder.Features.WebClient {
 
                 yield return new ImportedComponent {
                     ShowMenu = true,
-                    Url = new Searching.SearchFeature(aggregate.As<IEFCoreEntity>(), _ctx).ReactPageUrl,
+                    Url = new Searching.AggregateSearchFeature(aggregate).GetMultiView().ReactPageUrl,
                     PhysicalName = $"{aggregateName}MultiView",
                     DisplayName = aggregate.Item.DisplayName,
-                    From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(Searching.SearchFeature.REACT_FILENAME)}",
+                    From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(Searching.MultiView2.REACT_FILENAME)}",
                 };
 
                 var createView = new SingleView(aggregate, _ctx, SingleView.E_Type.Create);
@@ -92,10 +92,10 @@ namespace HalApplicationBuilder.Features.WebClient {
 
                 yield return new ImportedComponent {
                     ShowMenu = true,
-                    Url = new Searching.SearchFeature(dataView.As<IEFCoreEntity>(), _ctx).ReactPageUrl,
+                    Url = new DataViewRenderer(dataView).GetMultiView().ReactPageUrl,
                     PhysicalName = $"{physicalName}MultiView",
                     DisplayName = dataView.Item.DisplayName,
-                    From = $"./{physicalName}/{Path.GetFileNameWithoutExtension(Searching.SearchFeature.REACT_FILENAME)}",
+                    From = $"./{physicalName}/{Path.GetFileNameWithoutExtension(Searching.MultiView2.REACT_FILENAME)}",
                 };
             }
         }

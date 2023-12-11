@@ -10,6 +10,7 @@ namespace HalApplicationBuilder.Features.Searching {
     /// <summary>
     /// 検索機能
     /// </summary>
+    [Obsolete]
     internal partial class SearchFeature {
         internal SearchFeature(GraphNode<IEFCoreEntity> dbEntity, CodeRenderingContext ctx) {
             DbEntity = dbEntity;
