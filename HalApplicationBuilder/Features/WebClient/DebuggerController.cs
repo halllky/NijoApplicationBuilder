@@ -4,28 +4,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HalApplicationBuilder.Features.WebClient
-{
-    partial class DebuggerController : TemplateBase
-    {
-        internal DebuggerController(CodeRenderingContext ctx)
-        {
-            _ctx = ctx;
-        }
-        private readonly CodeRenderingContext _ctx;
-
-        internal string RuntimeServerSettings => new Util.RuntimeSettings(_ctx).ServerSetiingTypeFullName;
+namespace HalApplicationBuilder.Features.WebClient {
+    internal class DebuggerController {
         internal const string RECREATE_DB_URL = "/HalappDebug/recreate-database";
 
-        public override string FileName => $"HalappDebugger.cs";
-
-        protected override string Template() {
-            return $$"""
+        internal static SourceFile Render() => new SourceFile {
+            FileName = $"HalappDebugger.cs",
+            RenderContent = ctx => $$"""
                 using Microsoft.AspNetCore.Mvc;
                 using System.Text.Json;
                 using Microsoft.EntityFrameworkCore;
 
-                namespace {{_ctx.Config.RootNamespace}};
+                namespace {{ctx.Config.RootNamespace}};
 
                 #if DEBUG
                 [ApiController]
@@ -40,7 +30,7 @@ namespace HalApplicationBuilder.Features.WebClient
 
                   [HttpPost("recreate-database")]
                   public HttpResponseMessage RecreateDatabase() {
-                    var dbContext = _provider.GetRequiredService<{{_ctx.Config.DbContextNamespace}}.{{_ctx.Config.DbContextName}}>();
+                    var dbContext = _provider.GetRequiredService<{{ctx.Config.DbContextNamespace}}.{{ctx.Config.DbContextName}}>();
                     dbContext.Database.EnsureDeleted();
                     dbContext.Database.EnsureCreated();
                     return new HttpResponseMessage {
@@ -51,11 +41,11 @@ namespace HalApplicationBuilder.Features.WebClient
 
                   [HttpGet("secret-settings")]
                   public IActionResult GetSecretSettings() {
-                    var runtimeSetting = _provider.GetRequiredService<{{RuntimeServerSettings}}>();
+                    var runtimeSetting = _provider.GetRequiredService<{{Util.RuntimeSettings.ServerSetiingTypeFullName}}>();
                     return this.JsonContent(runtimeSetting);
                   }
                   [HttpPost("secret-settings")]
-                  public IActionResult SetSecretSettings([FromBody] {{RuntimeServerSettings}} settings) {
+                  public IActionResult SetSecretSettings([FromBody] {{Util.RuntimeSettings.ServerSetiingTypeFullName}} settings) {
                     var json = settings.{{Util.RuntimeSettings.TO_JSON}}();
                     using var sw = new System.IO.StreamWriter("{{Util.RuntimeSettings.JSON_FILE_NAME}}", false, new System.Text.UTF8Encoding(false));
                     sw.WriteLine(json);
@@ -63,7 +53,7 @@ namespace HalApplicationBuilder.Features.WebClient
                   }
                 }
                 #endif
-                """;
-        }
+                """,
+        };
     }
 }

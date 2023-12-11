@@ -9,33 +9,32 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Features.WebClient {
-    partial class types : TemplateBase {
-        internal types(CodeRenderingContext ctx) {
-            _ctx = ctx;
-        }
+#pragma warning disable IDE1006 // 命名スタイル
+    internal class types {
+#pragma warning restore IDE1006 // 命名スタイル
 
-        private readonly CodeRenderingContext _ctx;
+        internal static string ImportName => Path.GetFileNameWithoutExtension(FILENAME);
+        private const string FILENAME = "types.ts";
 
-        public override string FileName => FILENAME;
-        public static string ImportName => Path.GetFileNameWithoutExtension(FILENAME);
-        public const string FILENAME = "types.ts";
+        internal static SourceFile Render() {
+            return new SourceFile {
+                FileName = FILENAME,
+                RenderContent = ctx =>  $$"""
+                    import { UUID } from "uuidjs"
 
-        protected override string Template() {
-            return $$"""
-                import { UUID } from "uuidjs"
+                    {{ctx.Schema.RootAggregates().SelectTextTemplate(root => $$"""
+                    // ------------------ {{root.Item.DisplayName}} ------------------
+                    {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new AggregateDetail(aggregate).RenderTypeScript(ctx))}}
 
-                {{_ctx.Schema.RootAggregates().SelectTextTemplate(root => $$"""
-                // ------------------ {{root.Item.DisplayName}} ------------------
-                {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new AggregateDetail(aggregate).RenderTypeScript(_ctx))}}
+                    {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new TSInitializerFunction(aggregate).Render())}}
 
-                {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new TSInitializerFunction(aggregate).Render())}}
+                    {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new RefTargetKeyName(aggregate).RenderTypeScriptDeclaring())}}
 
-                {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new RefTargetKeyName(aggregate).RenderTypeScriptDeclaring())}}
+                    {{new Searching.AggregateSearchFeature(root).GetMultiView().RenderTypeScriptTypeDef(ctx)}}
 
-                {{new Searching.AggregateSearchFeature(root).GetMultiView().RenderTypeScriptTypeDef(_ctx)}}
-
-                """)}}
-                """;
+                    """)}}
+                    """,
+            };
         }
     }
 }

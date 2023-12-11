@@ -6,17 +6,12 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Features.Util {
-    partial class DotnetExtensions : TemplateBase {
-        internal DotnetExtensions(Config config) {
-            _namespace = config.RootNamespace;
-        }
-        private readonly string _namespace;
+    internal class DotnetExtensions {
 
-        public override string FileName => $"DotnetExtensions.cs";
-
-        protected override string Template() {
-            return $$"""
-                namespace {{_namespace}} {
+        internal static SourceFile Render() => new SourceFile {
+            FileName = $"DotnetExtensions.cs",
+            RenderContent = ctx => $$"""
+                namespace {{ctx.Config.RootNamespace}} {
                     using System;
                     using System.Collections;
                     using System.Collections.Generic;
@@ -48,7 +43,7 @@ namespace HalApplicationBuilder.Features.Util {
                         }
                     }
                 }
-                """;
-        }
+                """,
+        };
     }
 }

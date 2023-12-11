@@ -6,37 +6,35 @@ using System.Threading.Tasks;
 using static HalApplicationBuilder.Features.BackgroundService.BackgroundTaskEntity;
 
 namespace HalApplicationBuilder.Features.BackgroundService {
-    internal class BackgroundTask : TemplateBase {
-        internal required CodeRenderingContext Context { get; init; }
+    internal class BackgroundTask {
 
-        public override string FileName => "BackgroundTask.cs";
-
-        protected override string Template() {
-            return $$"""
+        internal static SourceFile Render() => new SourceFile {
+            FileName = "BackgroundTask.cs",
+            RenderContent = ctx => $$"""
                 using System.Reflection;
                 using System.Text.Json;
 
-                namespace {{Context.Config.RootNamespace}} {
+                namespace {{ctx.Config.RootNamespace}} {
                     public abstract class BackgroundTask {
 
                         public abstract void Execute(JobChain job);
 
-                        public static void Schedule<TBatch, TParameter>(TParameter parameter, {{Context.Config.DbContextNamespace}}.{{Context.Config.DbContextName}} dbContext, DateTime now) where TBatch : BackgroundTask<TParameter> {
+                        public static void Schedule<TBatch, TParameter>(TParameter parameter, {{ctx.Config.DbContextNamespace}}.{{ctx.Config.DbContextName}} dbContext, DateTime now) where TBatch : BackgroundTask<TParameter> {
                             Schedule(typeof(TBatch), parameter, dbContext, now);
                         }
-                        public static void Schedule<TBatch>({{Context.Config.DbContextNamespace}}.{{Context.Config.DbContextName}} dbContext, DateTime now) where TBatch : BackgroundTask {
+                        public static void Schedule<TBatch>({{ctx.Config.DbContextNamespace}}.{{ctx.Config.DbContextName}} dbContext, DateTime now) where TBatch : BackgroundTask {
                             Schedule(typeof(TBatch), null, dbContext, now);
                         }
-                        public static void Schedule(Type batchType, {{Context.Config.DbContextNamespace}}.{{Context.Config.DbContextName}} dbContext, DateTime now) {
+                        public static void Schedule(Type batchType, {{ctx.Config.DbContextNamespace}}.{{ctx.Config.DbContextName}} dbContext, DateTime now) {
                             Schedule(batchType, null, dbContext, now);
                         }
-                        public static void Schedule(Type batchType, object? parameter, {{Context.Config.DbContextNamespace}}.{{Context.Config.DbContextName}} dbContext, DateTime now) {
+                        public static void Schedule(Type batchType, object? parameter, {{ctx.Config.DbContextNamespace}}.{{ctx.Config.DbContextName}} dbContext, DateTime now) {
                             var attribute = batchType.GetCustomAttribute<BackgroundTaskAttribute>()
                                 ?? throw new InvalidOperationException($"{batchType.Name} クラスに [BackgroundTask] 属性がついていません。");
                             var json = parameter == null
                                 ? string.Empty
                                 : JsonSerializer.Serialize(parameter);
-                            var entity = new {{Context.Config.EntityNamespace}}.{{CLASSNAME}} {
+                            var entity = new {{ctx.Config.EntityNamespace}}.{{CLASSNAME}} {
                                 {{COL_ID}} = Guid.NewGuid().ToString(),
                                 {{COL_NAME}} = attribute.DisplayName ?? batchType.Name,
                                 {{COL_BATCHTYPE}} = attribute.Id,
@@ -264,7 +262,7 @@ namespace HalApplicationBuilder.Features.BackgroundService {
                         }
                     }
                 }
-                """;
-        }
+                """,
+        };
     }
 }

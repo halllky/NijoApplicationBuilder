@@ -5,17 +5,13 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Features.Logging {
-    partial class DefaultLogger : TemplateBase {
-        internal DefaultLogger(string @namespace) {
-            _namespace = @namespace;
-        }
-        private readonly string _namespace;
-        public override string FileName => "DefaultLogger.cs";
+    internal class DefaultLogger {
         internal const string CLASSNAME = "DefaultLogger";
 
-        protected override string Template() {
-            return $$"""
-                namespace {{_namespace}} {
+        internal static SourceFile Render() => new SourceFile {
+            FileName = "DefaultLogger.cs",
+            RenderContent = ctx => $$"""
+                namespace {{ctx.Config.RootNamespace}} {
                     using System;
                     using System.IO;
                     using System.Text;
@@ -59,7 +55,7 @@ namespace HalApplicationBuilder.Features.Logging {
                         }
                     }
                 }
-                """;
-        }
+                """,
+        };
     }
 }

@@ -10,47 +10,46 @@ using HalApplicationBuilder.DotnetEx;
 
 namespace HalApplicationBuilder.Features.WebClient {
 #pragma warning disable IDE1006 // 命名スタイル
-    partial class index : TemplateBase {
+    internal class index {
 #pragma warning restore IDE1006 // 命名スタイル
 
-        internal index(CodeRenderingContext ctx, Func<GraphNode<Aggregate>, string> dirNameResolver) {
-            _ctx = ctx;
-            _dirNameResolver = dirNameResolver;
-        }
-        private readonly CodeRenderingContext _ctx;
-        private readonly Func<GraphNode<Aggregate>, string> _dirNameResolver;
+        internal static SourceFile Render(Func<GraphNode<Aggregate>, string> dirNameResolver) {
 
-        public override string FileName => "index.tsx";
+            return new SourceFile {
+                FileName = "index.tsx",
+                RenderContent = ctx => {
+                    var components = GetComponents(ctx.Schema.RootAggregates(), dirNameResolver).ToArray();
+                    return $$"""
+                        import './halapp.css';
+                        import 'ag-grid-community/styles/ag-grid.css';
+                        import 'ag-grid-community/styles/ag-theme-alpine.css';
 
-        protected override string Template() {
-            var components = GetComponents().ToArray();
+                        {{components.SelectTextTemplate(component => $$"""
+                        import {{component.PhysicalName}} from '{{component.From}}'
+                        """)}}
 
-            return $$"""
-                import './halapp.css';
-                import 'ag-grid-community/styles/ag-grid.css';
-                import 'ag-grid-community/styles/ag-theme-alpine.css';
+                        export const THIS_APPLICATION_NAME = '{{ctx.Schema.ApplicationName}}' as const
 
-                {{components.SelectTextTemplate(component => $$"""
-                import {{component.PhysicalName}} from '{{component.From}}'
-                """)}}
-
-                export const THIS_APPLICATION_NAME = '{{_ctx.Schema.ApplicationName}}' as const
-
-                export const routes: { url: string, el: JSX.Element }[] = [
-                {{components.SelectTextTemplate(component => $$"""
-                  { url: '{{component.Url}}', el: <{{component.PhysicalName}} /> },
-                """)}}
-                ]
-                export const menuItems: { url: string, text: string }[] = [
-                {{components.Where(c => c.ShowMenu).SelectTextTemplate(component => $$"""
-                  { url: '{{component.Url}}', text: '{{component.DisplayName}}' },
-                """)}}
-                ]
-                """;
+                        export const routes: { url: string, el: JSX.Element }[] = [
+                        {{components.SelectTextTemplate(component => $$"""
+                          { url: '{{component.Url}}', el: <{{component.PhysicalName}} /> },
+                        """)}}
+                        ]
+                        export const menuItems: { url: string, text: string }[] = [
+                        {{components.Where(c => c.ShowMenu).SelectTextTemplate(component => $$"""
+                          { url: '{{component.Url}}', text: '{{component.DisplayName}}' },
+                        """)}}
+                        ]
+                        """;
+                },
+            };
         }
 
-        private IEnumerable<ImportedComponent> GetComponents() {
-            foreach (var aggregate in _ctx.Schema.RootAggregates()) {
+        private static IEnumerable<ImportedComponent> GetComponents(
+            IEnumerable<GraphNode<Aggregate>> rootAggregates,
+            Func<GraphNode<Aggregate>, string> dirNameResolver) {
+
+            foreach (var aggregate in rootAggregates) {
                 var aggregateName = aggregate.Item.DisplayName.ToCSharpSafe();
 
                 yield return new ImportedComponent {
@@ -58,39 +57,39 @@ namespace HalApplicationBuilder.Features.WebClient {
                     Url = new Searching.AggregateSearchFeature(aggregate).GetMultiView().Url,
                     PhysicalName = $"{aggregateName}MultiView",
                     DisplayName = aggregate.Item.DisplayName,
-                    From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(Searching.MultiView2.REACT_FILENAME)}",
+                    From = $"./{dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(Searching.MultiView2.REACT_FILENAME)}",
                 };
 
                 if (aggregate.IsCreatable()) {
-                    var createView = new SingleView(aggregate, _ctx, SingleView.E_Type.Create);
+                    var createView = new SingleView(aggregate, SingleView.E_Type.Create);
                     yield return new ImportedComponent {
                         ShowMenu = false,
                         Url = createView.Route,
                         PhysicalName = $"{aggregateName}CreateView",
                         DisplayName = aggregate.Item.DisplayName,
-                        From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(createView.FileName)}",
+                        From = $"./{dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(createView.FileName)}",
                     };
                 }
 
                 if (aggregate.IsStored()) {
-                    var detailView = new SingleView(aggregate, _ctx, SingleView.E_Type.View);
+                    var detailView = new SingleView(aggregate, SingleView.E_Type.View);
                     yield return new ImportedComponent {
                         ShowMenu = false,
                         Url = detailView.Route,
                         PhysicalName = $"{aggregateName}DetailView",
                         DisplayName = aggregate.Item.DisplayName,
-                        From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(detailView.FileName)}",
+                        From = $"./{dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(detailView.FileName)}",
                     };
                 }
 
                 if (aggregate.IsEditable()) {
-                    var editView = new SingleView(aggregate, _ctx, SingleView.E_Type.Edit);
+                    var editView = new SingleView(aggregate, SingleView.E_Type.Edit);
                     yield return new ImportedComponent {
                         ShowMenu = false,
                         Url = editView.Route,
                         PhysicalName = $"{aggregateName}EditView",
                         DisplayName = aggregate.Item.DisplayName,
-                        From = $"./{_dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(editView.FileName)}",
+                        From = $"./{dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(editView.FileName)}",
                     };
                 }
             }

@@ -6,22 +6,16 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Features.Util {
-    partial class FromTo : TemplateBase {
-        internal FromTo(Config config) {
-            _namespace = config.RootNamespace;
-        }
-        private readonly string _namespace;
-
+    internal class FromTo {
         internal const string CLASSNAME = "FromTo";
         internal const string FROM = "From";
         internal const string TO = "To";
 
-        public override string FileName => $"FromTo.cs";
-
-        protected override string Template() {
-            return $$"""
+        internal static SourceFile Render() => new SourceFile {
+            FileName = $"FromTo.cs",
+            RenderContent = ctx => $$"""
                 using System;
-                namespace {{_namespace}} {
+                namespace {{ctx.Config.RootNamespace}} {
                     public partial class {{CLASSNAME}} {
                         public virtual object? {{FROM}} { get; set; }
                         public virtual object? {{TO}} { get; set; }
@@ -37,7 +31,7 @@ namespace HalApplicationBuilder.Features.Util {
                         }
                     }
                 }
-                """;
-        }
+                """,
+        };
     }
 }

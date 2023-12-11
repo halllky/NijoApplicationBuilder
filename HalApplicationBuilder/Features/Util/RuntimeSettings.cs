@@ -5,16 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Features.Util {
-    partial class RuntimeSettings : TemplateBase {
-        internal RuntimeSettings(CodeRenderingContext ctx) {
-            _ctx = ctx;
-        }
+    internal class RuntimeSettings {
 
-        private readonly CodeRenderingContext _ctx;
-
-        internal string ServerSetiingTypeFullName => $"{_ctx.Config.RootNamespace}.{nameof(RuntimeSettings)}.{SERVER}";
-
-        public override string FileName => $"RuntimeSettings.cs";
+        internal static string ServerSetiingTypeFullName => $".{nameof(RuntimeSettings)}.{SERVER}";
 
         private const string SERVER = "Server";
 
@@ -23,9 +16,10 @@ namespace HalApplicationBuilder.Features.Util {
         internal const string GET_DEFAULT = "GetDefault";
         internal const string GET_ACTIVE_CONNSTR = "GetActiveConnectionString";
 
-        protected override string Template() {
-            return $$"""
-                namespace {{_ctx.Config.RootNamespace}} {
+        internal static SourceFile Render() => new SourceFile {
+            FileName = $"RuntimeSettings.cs",
+            RenderContent = ctx => $$"""
+                namespace {{ctx.Config.RootNamespace}} {
                     using System.Text.Json;
                     using System.Text.Json.Serialization;
 
@@ -123,7 +117,7 @@ namespace HalApplicationBuilder.Features.Util {
                         }
                     }
                 }
-                """;
-        }
+                """,
+        };
     }
 }

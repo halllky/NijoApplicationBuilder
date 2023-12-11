@@ -23,9 +23,9 @@ namespace HalApplicationBuilder.Features {
         internal string DbContext = "DbContext";
         internal string CurrentTime = "CurrentTime";
 
-        internal string Render(CodeRenderingContext ctx) {
-
-            return $$"""
+        internal SourceFile Render() => new SourceFile {
+            FileName = FileName,
+            RenderContent = ctx => $$"""
                 namespace {{ctx.Config.RootNamespace}} {
                     using {{ctx.Config.DbContextNamespace}};
 
@@ -43,7 +43,7 @@ namespace HalApplicationBuilder.Features {
                         protected virtual DateTime {{CurrentTime}} => _currentTime ??= DateTime.Now;
                     }
                 }
-                """;
-        }
+                """,
+        };
     }
 }

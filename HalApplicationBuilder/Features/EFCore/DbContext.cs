@@ -9,50 +9,51 @@ using System.Threading.Tasks;
 using static HalApplicationBuilder.Features.TemplateTextHelper;
 
 namespace HalApplicationBuilder.Features.EFCore {
-    partial class DbContext : TemplateBase {
-        internal DbContext(CodeRenderingContext ctx) {
-            _ctx = ctx;
+    internal class DbContext {
+        internal DbContext(Config config) {
+            _config = config;
         }
-        private readonly CodeRenderingContext _ctx;
+        private readonly Config _config;
 
-        public override string FileName => $"{_ctx.Config.DbContextName.ToFileNameSafe()}.cs";
+        internal SourceFile RenderDeclaring() => new SourceFile {
+            FileName = $"{_config.DbContextName.ToFileNameSafe()}.cs",
+            RenderContent = ctx => {
+                var dbEntities = ctx.Schema
+                    .AllAggregates()
+                    .Where(agg => agg.IsStored())
+                    .Select(agg => agg.As<IEFCoreEntity>());
 
-        protected override string Template() {
-            var dbEntities = _ctx.Schema
-                .AllAggregates()
-                .Where(agg => agg.IsStored())
-                .Select(agg => agg.As<IEFCoreEntity>());
+                return $$"""
+                    using Microsoft.EntityFrameworkCore;
 
-            return $$"""
-                using Microsoft.EntityFrameworkCore;
+                    namespace {{ctx.Config.DbContextNamespace}} {
 
-                namespace {{_ctx.Config.DbContextNamespace}} {
+                        public partial class {{ctx.Config.DbContextName}} : DbContext {
+                            public {{ctx.Config.DbContextName}}(DbContextOptions<{{ctx.Config.DbContextName}}> options) : base(options) { }
 
-                    public partial class {{_ctx.Config.DbContextName}} : DbContext {
-                        public {{_ctx.Config.DbContextName}}(DbContextOptions<{{_ctx.Config.DbContextName}}> options) : base(options) { }
+                            /// <inheritdoc />
+                            protected override void OnModelCreating(ModelBuilder modelBuilder) {
 
-                        /// <inheritdoc />
-                        protected override void OnModelCreating(ModelBuilder modelBuilder) {
+                                {{WithIndent(dbEntities.Select(RenderEntity), "            ")}}
 
-                            {{WithIndent(dbEntities.Select(RenderEntity), "            ")}}
-
-                            {{_ctx.Config.EntityNamespace}}.BackgroundTaskEntity.OnModelCreating(modelBuilder);
+                                {{ctx.Config.EntityNamespace}}.BackgroundTaskEntity.OnModelCreating(modelBuilder);
+                            }
                         }
                     }
-                }
-                """;
-        }
+                    """;
+            },
+        };
 
         private string RenderEntity(GraphNode<IEFCoreEntity> dbEntity) {
             return $$"""
-                modelBuilder.Entity<{{_ctx.Config.EntityNamespace}}.{{dbEntity.Item.ClassName}}>(entity => {
-            
+                modelBuilder.Entity<{{_config.EntityNamespace}}.{{dbEntity.Item.ClassName}}>(entity => {
+
                     entity.HasKey(e => new {
                 {{dbEntity.GetColumns().Where(x => x.Options.IsKey).SelectTextTemplate(pk => $$"""
                         e.{{pk.Options.MemberName}},
                 """)}}
                     });
-            
+
                 {{dbEntity.GetColumns().SelectTextTemplate(col => $$"""
                     entity.Property(e => e.{{col.Options.MemberName}})
                         .IsRequired({{(col.Options.IsRequired ? "true" : "false")}});

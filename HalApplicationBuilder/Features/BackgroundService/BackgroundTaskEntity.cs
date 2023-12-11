@@ -106,12 +106,5 @@ namespace HalApplicationBuilder.Features.BackgroundService {
         internal const string ENUM_BGTASKSTATE_RUNNING = "Running";
         internal const string ENUM_BGTASKSTATE_SUCCESS = "Success";
         internal const string ENUM_BGTASKSTATE_FAULT = "Fault";
-
-        internal static Searching.SearchFeature CreateSearchFeature(DirectedGraph graph, CodeRenderingContext ctx) {
-            var bgTaskEntity = graph
-                .Single(node => node.Item.Id == GraphNodeId)
-                .As<IEFCoreEntity>();
-            return new Searching.SearchFeature(bgTaskEntity, ctx);
-        }
     }
 }

@@ -146,9 +146,8 @@ namespace HalApplicationBuilder.Features.Searching {
         internal MultiView2 GetMultiView() {
             var fields = GetFields();
 
-            // TODO: ctx
-            var createView = new SingleView(_aggregate, null!, SingleView.E_Type.Create);
-            var singleView = new SingleView(_aggregate, null!, SingleView.E_Type.View);
+            var createView = new SingleView(_aggregate, SingleView.E_Type.Create);
+            var singleView = new SingleView(_aggregate, SingleView.E_Type.View);
 
             var keys = _aggregate
                 .GetKeys()

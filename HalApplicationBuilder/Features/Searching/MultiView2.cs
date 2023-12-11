@@ -32,140 +32,137 @@ namespace HalApplicationBuilder.Features.Searching {
         internal const string SEARCHCONDITION_BASE_CLASS_NAME = "SearchConditionBase";
         internal const string SEARCHCONDITION_PAGE_PROP_NAME = "__halapp__Page";
 
-        internal SourceFile RenderMultiView(CodeRenderingContext ctx) {
+        internal SourceFile RenderMultiView() => new SourceFile {
+            FileName = REACT_FILENAME,
+            RenderContent = ctx => {
+                var useQueryKey = $"{DisplayName.ToCSharpSafe()}::search";
+                var searchApi = $"/{Controller.SUBDOMAIN}/{DisplayName.ToCSharpSafe()}/{Controller.SEARCH_ACTION_NAME}";
 
-            var useQueryKey = $"{DisplayName.ToCSharpSafe()}::search";
-            var searchApi = $"/{Controller.SUBDOMAIN}/{DisplayName.ToCSharpSafe()}/{Controller.SEARCH_ACTION_NAME}";
+                var fieldNames = Fields.Where(f => f.VisibleInGui).Select(f => f.PhysicalName);
+                var propNameWidth = AggregateComponent.GetPropNameFlexBasis(fieldNames);
 
-            var fieldNames = Fields.Where(f => f.VisibleInGui).Select(f => f.PhysicalName);
-            var propNameWidth = AggregateComponent.GetPropNameFlexBasis(fieldNames);
+                return $$"""
+                     import React, { useState, useCallback } from 'react';
+                     import { FieldValues, SubmitHandler, useForm, FormProvider } from 'react-hook-form';
+                     import { Link, useNavigate } from 'react-router-dom';
+                     import { ColDef } from 'ag-grid-community';
+                     import { useQuery } from 'react-query';
+                     import { BookmarkIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
+                     import { useAppContext } from '../../application';
+                     import { IconButton, AgGridWrapper } from '../../user-input';
+                     import { useHttpRequest } from '../../util';
 
-            var sourceCode = $$"""
-                 import React, { useState, useCallback } from 'react';
-                 import { FieldValues, SubmitHandler, useForm, FormProvider } from 'react-hook-form';
-                 import { Link, useNavigate } from 'react-router-dom';
-                 import { ColDef } from 'ag-grid-community';
-                 import { useQuery } from 'react-query';
-                 import { BookmarkIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
-                 import { useAppContext } from '../../application';
-                 import { IconButton, AgGridWrapper } from '../../user-input';
-                 import { useHttpRequest } from '../../util';
+                     export default function () {
 
-                 export default function () {
+                       const [{ darkMode }, dispatch] = useAppContext()
+                       const { get } = useHttpRequest()
+                       const [param, setParam] = useState<FieldValues>({})
 
-                   const [{ darkMode }, dispatch] = useAppContext()
-                   const { get } = useHttpRequest()
-                   const [param, setParam] = useState<FieldValues>({})
+                       const reactHookFormMethods = useForm()
+                       const register = reactHookFormMethods.register
+                       const handleSubmit = reactHookFormMethods.handleSubmit
+                       const reset = reactHookFormMethods.reset
 
-                   const reactHookFormMethods = useForm()
-                   const register = reactHookFormMethods.register
-                   const handleSubmit = reactHookFormMethods.handleSubmit
-                   const reset = reactHookFormMethods.reset
+                       const onSearch: SubmitHandler<FieldValues> = useCallback(data => {
+                         setParam(data)
+                       }, [])
+                       const onClear = useCallback((e: React.MouseEvent) => {
+                         reset()
+                         e.preventDefault()
+                       }, [reset])
+                       const { data, isFetching } = useQuery({
+                         queryKey: ['{{useQueryKey}}', JSON.stringify(param)],
+                         queryFn: async () => {
+                           const response = await get<RowType[]>(`{{searchApi}}`, { param })
+                           return response.ok ? response.data : []
+                         },
+                         onError: error => {
+                           dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
+                         },
+                       })
 
-                   const onSearch: SubmitHandler<FieldValues> = useCallback(data => {
-                     setParam(data)
-                   }, [])
-                   const onClear = useCallback((e: React.MouseEvent) => {
-                     reset()
-                     e.preventDefault()
-                   }, [reset])
-                   const { data, isFetching } = useQuery({
-                     queryKey: ['{{useQueryKey}}', JSON.stringify(param)],
-                     queryFn: async () => {
-                       const response = await get<RowType[]>(`{{searchApi}}`, { param })
-                       return response.ok ? response.data : []
-                     },
-                     onError: error => {
-                       dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
-                     },
-                   })
+                       const navigate = useNavigate()
+                     {{If(CreateViewUrl != null, () => $$"""
+                       const toCreateView = useCallback(() => {
+                         navigate(`{{CreateViewUrl}}`)
+                       }, [navigate])
+                     """)}}
 
-                   const navigate = useNavigate()
-                 {{If(CreateViewUrl != null, () => $$"""
-                   const toCreateView = useCallback(() => {
-                     navigate(`{{CreateViewUrl}}`)
-                   }, [navigate])
-                 """)}}
+                       const [expanded, setExpanded] = useState(false)
 
-                   const [expanded, setExpanded] = useState(false)
+                       if (isFetching) return <></>
 
-                   if (isFetching) return <></>
+                       return (
+                         <div className="page-content-root">
 
-                   return (
-                     <div className="page-content-root">
+                           <div className="flex flex-row justify-start items-center space-x-2">
+                             <div className='flex-1 flex flex-row items-center space-x-1 cursor-pointer'>
+                               <h1 className="text-base font-semibold select-none py-1">
+                                 {{DisplayName}}
+                               </h1>
+                               <IconButton underline icon={MagnifyingGlassIcon} onClick={() => setExpanded(!expanded)}>詳細検索</IconButton>
+                             </div>
+                     {{If(CreateViewUrl != null, () => $$"""
+                             <IconButton underline icon={PlusIcon} onClick={toCreateView}>新規作成</IconButton>
+                     """)}}
+                           </div>
 
-                       <div className="flex flex-row justify-start items-center space-x-2">
-                         <div className='flex-1 flex flex-row items-center space-x-1 cursor-pointer'>
-                           <h1 className="text-base font-semibold select-none py-1">
-                             {{DisplayName}}
-                           </h1>
-                           <IconButton underline icon={MagnifyingGlassIcon} onClick={() => setExpanded(!expanded)}>詳細検索</IconButton>
+                           <FormProvider {...reactHookFormMethods}>
+                             <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1 p-1 bg-color-ridge`} onSubmit={handleSubmit(onSearch)}>
+                     {{Fields.Where(f => f.VisibleInGui).SelectTextTemplate(field => $$"""
+                               <div className="flex">
+                                 <div className="{{propNameWidth}}">
+                                   <span className="text-sm select-none opacity-80">
+                                     {{field.PhysicalName}}
+                                   </span>
+                                 </div>
+                                 <div className="flex-1">
+                                   {{WithIndent(field.MemberType.RenderUI(new SearchConditionUiForm(field)), "              ")}}
+                                 </div>
+                               </div>
+                     """)}}
+                               <div className='flex flex-row justify-start space-x-1'>
+                                 <IconButton fill icon={MagnifyingGlassIcon}>検索</IconButton>
+                                 <IconButton outline onClick={onClear}>クリア</IconButton>
+                                 <div className='flex-1'></div>
+                                 <IconButton underline icon={BookmarkIcon}>この検索条件を保存</IconButton>
+                               </div>
+                             </form>
+                           </FormProvider>
+
+                           <AgGridWrapper
+                             rowData={data || []}
+                             columnDefs={columnDefs}
+                             className="flex-1"
+                           />
                          </div>
-                 {{If(CreateViewUrl != null, () => $$"""
-                         <IconButton underline icon={PlusIcon} onClick={toCreateView}>新規作成</IconButton>
-                 """)}}
-                       </div>
+                       )
+                     }
 
-                       <FormProvider {...reactHookFormMethods}>
-                         <form className={`${expanded ? '' : 'hidden'} flex flex-col space-y-1 p-1 bg-color-ridge`} onSubmit={handleSubmit(onSearch)}>
-                 {{Fields.Where(f => f.VisibleInGui).SelectTextTemplate(field => $$"""
-                           <div className="flex">
-                             <div className="{{propNameWidth}}">
-                               <span className="text-sm select-none opacity-80">
-                                 {{field.PhysicalName}}
-                               </span>
-                             </div>
-                             <div className="flex-1">
-                               {{WithIndent(field.MemberType.RenderUI(new SearchConditionUiForm(field)), "              ")}}
-                             </div>
-                           </div>
-                 """)}}
-                           <div className='flex flex-row justify-start space-x-1'>
-                             <IconButton fill icon={MagnifyingGlassIcon}>検索</IconButton>
-                             <IconButton outline onClick={onClear}>クリア</IconButton>
-                             <div className='flex-1'></div>
-                             <IconButton underline icon={BookmarkIcon}>この検索条件を保存</IconButton>
-                           </div>
-                         </form>
-                       </FormProvider>
+                     type RowType = {
+                     {{Fields.SelectTextTemplate(member => $$"""
+                       {{member.PhysicalName}}?: string | number | boolean
+                     """)}}
+                     }
 
-                       <AgGridWrapper
-                         rowData={data || []}
-                         columnDefs={columnDefs}
-                         className="flex-1"
-                       />
-                     </div>
-                   )
-                 }
-
-                 type RowType = {
-                 {{Fields.SelectTextTemplate(member => $$"""
-                   {{member.PhysicalName}}?: string | number | boolean
-                 """)}}
-                 }
-
-                 const columnDefs: ColDef<RowType>[] = [
-                 {{If(SingleViewUrlFunctionBody != null, () => $$"""
-                   {
-                     resizable: true,
-                     width: 50,
-                     cellRenderer: ({ data }: { data: RowType }) => {
-                       const singleViewUrl = `{{SingleViewUrlFunctionBody!("data")}}`
-                       return <Link to={singleViewUrl} className="text-blue-400">詳細</Link>
-                     },
-                   },
-                 """)}}
-                 {{Fields.Where(f => f.VisibleInGui).SelectTextTemplate(field => $$"""
-                   { field: '{{field.PhysicalName}}', resizable: true, sortable: true },
-                 """)}}
-                 ]
-                 """;
-
-            return new SourceFile {
-                FileName = REACT_FILENAME,
-                Content = sourceCode,
-            };
-        }
+                     const columnDefs: ColDef<RowType>[] = [
+                     {{If(SingleViewUrlFunctionBody != null, () => $$"""
+                       {
+                         resizable: true,
+                         width: 50,
+                         cellRenderer: ({ data }: { data: RowType }) => {
+                           const singleViewUrl = `{{SingleViewUrlFunctionBody!("data")}}`
+                           return <Link to={singleViewUrl} className="text-blue-400">詳細</Link>
+                         },
+                       },
+                     """)}}
+                     {{Fields.Where(f => f.VisibleInGui).SelectTextTemplate(field => $$"""
+                       { field: '{{field.PhysicalName}}', resizable: true, sortable: true },
+                     """)}}
+                     ]
+                     """;
+            },
+        };
         private class SearchConditionUiForm : IGuiFormRenderer {
             public SearchConditionUiForm(MultiViewField field) {
                 _field = field;
@@ -311,19 +308,15 @@ namespace HalApplicationBuilder.Features.Searching {
                 """;
         }
 
-        internal static SourceFile RenderCSharpSearchConditionBaseClass(CodeRenderingContext ctx) {
-            var sourceCode = $$"""
-                    namespace {{ctx.Config.RootNamespace}} {
-                        public abstract class {{SEARCHCONDITION_BASE_CLASS_NAME}} {
-                            public int? {{SEARCHCONDITION_PAGE_PROP_NAME}} { get; set; }
-                        }
+        internal static SourceFile RenderCSharpSearchConditionBaseClass() => new SourceFile {
+            FileName = "SearchConditionBase.cs",
+            RenderContent = ctx => $$"""
+                namespace {{ctx.Config.RootNamespace}} {
+                    public abstract class {{SEARCHCONDITION_BASE_CLASS_NAME}} {
+                        public int? {{SEARCHCONDITION_PAGE_PROP_NAME}} { get; set; }
                     }
-                    """;
-
-            return new SourceFile {
-                FileName = "SearchConditionBase.cs",
-                Content = sourceCode,
-            };
-        }
+                }
+                """,
+        };
     }
 }

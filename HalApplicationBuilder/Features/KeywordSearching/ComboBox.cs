@@ -12,7 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Features.KeywordSearching {
-    partial class ComboBox {
+    internal class ComboBox {
         internal ComboBox(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
         }
@@ -23,14 +23,15 @@ namespace HalApplicationBuilder.Features.KeywordSearching {
         internal string Api => new KeywordSearchingFeature(_aggregate).GetUri();
         internal RefTargetKeyName KeyName => new RefTargetKeyName(_aggregate);
 
-        internal static string RenderDeclaringFile(IEnumerable<GraphNode<Aggregate>> allAggregates) {
-            return $$"""
+        internal static SourceFile RenderDeclaringFile() => new SourceFile {
+            FileName = "AggregateComboBox.tsx",
+            RenderContent = ctx => $$"""
                 import React, { useState, useCallback } from "react"
                 import { useHttpRequest } from "../util"
                 import { AsyncComboBox, defineCustomComponent } from "../user-input"
                 import * as Types from "../types"
 
-                {{allAggregates.Where(a => a.IsStored()).Select(a => new ComboBox(a)).SelectTextTemplate((combo, index) => $$"""
+                {{ctx.Schema.AllAggregates().Where(a => a.IsStored()).Select(a => new ComboBox(a)).SelectTextTemplate((combo, index) => $$"""
                 export const {{combo.ComponentName}} = defineCustomComponent<Types.{{combo.KeyName.TypeScriptTypeName}}>((props, ref) => {
                   const [queryKey, setQueryKey] = useState<string>('combo-{{combo._aggregate.Item.UniqueId}}::')
                   const { get } = useHttpRequest()
@@ -52,8 +53,8 @@ namespace HalApplicationBuilder.Features.KeywordSearching {
                   )
                 })
                 """)}}
-                """;
-        }
+                """,
+        };
 
         internal string RenderCaller(string raectHookFormId, params string[] attrs) {
             var attributes = attrs

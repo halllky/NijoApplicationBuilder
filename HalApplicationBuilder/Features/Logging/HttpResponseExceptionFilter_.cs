@@ -6,20 +6,13 @@ using System.Threading.Tasks;
 using HalApplicationBuilder.Features.Util;
 
 namespace HalApplicationBuilder.Features.Logging {
-    internal class HttpResponseExceptionFilter : TemplateBase {
-        internal HttpResponseExceptionFilter(string rootnamespace) {
-            _namespace = rootnamespace;
-        }
+    internal class HttpResponseExceptionFilter {
+        internal const string CLASSNAME = "HttpResponseExceptionFilter";
 
-        private readonly string _namespace;
-        public override string FileName => "HttpResponseExceptionFilter.cs";
-        public const string CLASSNAME = "HttpResponseExceptionFilter";
-        public string ClassFullName => $"{_namespace}.{CLASSNAME}";
-
-        protected override string Template() {
-
-            return $$"""
-                namespace {{_namespace}} {
+        internal static SourceFile Render() => new SourceFile {
+            FileName = "HttpResponseExceptionFilter.cs",
+            RenderContent = ctx => $$"""
+                namespace {{ctx.Config.RootNamespace}} {
                     using Microsoft.AspNetCore.Mvc.Filters;
                     using Microsoft.AspNetCore.Mvc;
                     using System.Net;
@@ -49,7 +42,7 @@ namespace HalApplicationBuilder.Features.Logging {
                         }
                     }
                 }
-                """;
-        }
+                """,
+        };
     }
 }

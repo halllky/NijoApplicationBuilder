@@ -6,29 +6,9 @@ using System.Linq;
 using System.Text;
 
 namespace HalApplicationBuilder.Features {
-    internal interface ITemplate {
-        string FileName { get; }
-
-        string TransformText();
-    }
-
-    internal abstract class TemplateBase : ITemplate {
-
-        public abstract string FileName { get; }
-        protected abstract string Template();
-
-        public string TransformText() {
-            return Template();
-        }
-
-        protected static TemplateTextHelper If(bool condition, Func<string> template) {
-            return TemplateTextHelper.If(condition, template);
-        }
-    }
-
     internal class SourceFile {
         internal required string FileName { get; init; }
-        internal required string Content { get; init; }
+        internal required Func<CodeRenderingContext, string> RenderContent { get; init; }
     }
 
     /// <summary>

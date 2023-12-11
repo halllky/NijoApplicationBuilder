@@ -1,5 +1,4 @@
-using HalApplicationBuilder.Core;
-using HalApplicationBuilder.DotnetEx;
+using static HalApplicationBuilder.Features.TemplateTextHelper;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,23 +6,15 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Features {
-    internal class EnumDefs : TemplateBase {
-        internal EnumDefs(IReadOnlyCollection<EnumDefinition> enumDefinitions, CodeRenderingContext ctx) {
-            _enumDefinitions = enumDefinitions;
-            _ctx = ctx;
-        }
+    internal class EnumDefs {
 
-        private readonly IReadOnlyCollection<EnumDefinition> _enumDefinitions;
-        private readonly CodeRenderingContext _ctx;
-
-        public override string FileName => "Enum.cs";
-
-        protected override string Template() {
-            return $$"""
-                namespace {{_ctx.Config.RootNamespace}} {
+        internal static SourceFile Render() => new SourceFile {
+            FileName = "Enum.cs",
+            RenderContent = ctx => $$"""
+                namespace {{ctx.Config.RootNamespace}} {
                     using System.ComponentModel.DataAnnotations;
 
-                {{_enumDefinitions.SelectTextTemplate(def => $$"""
+                {{ctx.Schema.EnumDefinitions.SelectTextTemplate(def => $$"""
                     public enum {{def.Name}} {
                 {{def.Items.SelectTextTemplate(item => $$"""
                 {{If(!string.IsNullOrWhiteSpace(item.DisplayName), () => $$"""
@@ -34,7 +25,7 @@ namespace HalApplicationBuilder.Features {
                     }
                 """)}}
                 }
-                """;
-        }
+                """,
+        };
     }
 }
