@@ -19,10 +19,10 @@ namespace HalApplicationBuilder.Core {
 
         internal DirectedGraph Graph { get; }
         internal IEnumerable<GraphNode<Aggregate>> AllAggregates() {
-            return Graph.Only<Aggregate>(); // TODO: これだと全集約エントリーになってしまうのでは
+            return RootAggregates().SelectMany(a => a.EnumerateThisAndDescendants());
         }
         internal IEnumerable<GraphNode<Aggregate>> RootAggregates() {
-            return AllAggregates().Where(aggregate => aggregate.IsRoot());
+            return Graph.Only<Aggregate>().Where(aggregate => aggregate.IsRoot());
         }
 
         internal IReadOnlyCollection<EnumDefinition> EnumDefinitions { get; }
