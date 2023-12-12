@@ -122,17 +122,18 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                             } else if (select) {
                                 builder.AppendLine($"    .Select(x => x.{path.RelationName})");
                             } else {
-                                builder.AppendLine($"    .{path.RelationName}");
+                                builder.AppendLine($"    .{path.RelationName}?");
                                 if (path.Terminal.As<Aggregate>().IsChildrenMember()) select = true;
                             }
                         }
-                        builder.AppendLine($"    .ToArray();");
+                        builder.AppendLine($"    .OfType<{descendantDbEntities[i].Item.EFCoreEntityClassName}>()");
+                        builder.AppendLine($"    ?? Enumerable.Empty<{descendantDbEntities[i].Item.EFCoreEntityClassName}>();");
 
                     } else {
                         // 子集約までの経路の途中に配列が含まれない場合
-                        builder.AppendLine($"var arr{i}_{(renderBefore ? "before" : "after")} = new {descendantDbEntities[i].Item.EFCoreEntityClassName}[] {{");
-                        builder.AppendLine($"    {(renderBefore ? before : after)}.{paths.Select(p => p.RelationName).Join(".")},");
-                        builder.AppendLine($"}};");
+                        builder.AppendLine($"var arr{i}_{(renderBefore ? "before" : "after")} = new {descendantDbEntities[i].Item.EFCoreEntityClassName}?[] {{");
+                        builder.AppendLine($"    {(renderBefore ? before : after)}.{paths.Select(p => p.RelationName).Join("?.")},");
+                        builder.AppendLine($"}}.OfType<{descendantDbEntities[i].Item.EFCoreEntityClassName}>().ToArray();");
                     }
                 }
                 RenderEntityArray(true);
