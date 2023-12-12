@@ -28,7 +28,7 @@ export const TextareaBase = defineCustomComponent<string, {}, TextareaHTMLAttrib
     <textarea
       {...rest}
       ref={textareaRef}
-      value={value}
+      value={value ?? ''}
       className={props.readOnly
         ? `block w-full outline-none px-1 border border-color-4 bg-transparent cursor-default ${props.className}`
         : `block w-full outline-none px-1 border border-color-5 bg-color-base  ${props.className}`}

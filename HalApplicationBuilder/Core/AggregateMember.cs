@@ -10,6 +10,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace HalApplicationBuilder.Core {
 
@@ -43,7 +44,11 @@ namespace HalApplicationBuilder.Core {
                     .ToArray();
                 foreach (var parentPk in parent.Initial.As<Aggregate>().GetKeys()) {
                     if (parentPk is Schalar schalar) {
-                        yield return new Schalar(aggregate, (Schalar?)schalar.Original ?? schalar, schalar.Declared) {
+                        yield return new Schalar(
+                            aggregate,
+                            (Schalar?)schalar.Original ?? schalar,
+                            schalar.Declared,
+                            ((Schalar?)schalar.Original ?? schalar).GraphNode.Item) {
                             ForeignKeyOf = schalar.ForeignKeyOf,
                         };
                     } else if (parentPk is Variation variation) {
@@ -265,15 +270,17 @@ namespace HalApplicationBuilder.Core {
             internal Schalar(GraphNode<AggregateMemberNode> aggregateMemberNode) : base(null, null) {
                 GraphNode = aggregateMemberNode;
                 Owner = aggregateMemberNode.Source!.Initial.As<Aggregate>();
+                Options = GraphNode.Item;
             }
-            internal Schalar(GraphNode<Aggregate> owner, Schalar original, ValueMember declared) : base(original, declared) {
+            internal Schalar(GraphNode<Aggregate> owner, Schalar original, ValueMember declared, IReadOnlyMemberOptions options) : base(original, declared) {
                 GraphNode = original.GraphNode;
                 Owner = owner;
+                Options = options;
             }
             internal GraphNode<AggregateMemberNode> GraphNode { get; }
             internal override GraphNode<Aggregate> Owner { get; }
 
-            internal override IReadOnlyMemberOptions Options => GraphNode.Item;
+            internal override IReadOnlyMemberOptions Options { get; }
             internal override decimal Order => GraphNode.Source!.GetMemberOrder();
         }
 
@@ -354,7 +361,15 @@ namespace HalApplicationBuilder.Core {
             internal IEnumerable<ValueMember> GetForeignKeys() {
                 foreach (var fk in Relation.Terminal.GetKeys()) {
                     if (fk is Schalar schalar) {
-                        yield return new Schalar(Relation.Initial, schalar, schalar.Declared) {
+                        yield return new Schalar(
+                            Relation.Initial,
+                            schalar,
+                            schalar.Declared,
+                            schalar.GraphNode.Item.Clone(opt => {
+                                opt.IsKey = Relation.IsPrimary();
+                                opt.IsRequired = Relation.IsPrimary() || Relation.IsRequired();
+                                opt.IsDisplayName = Relation.IsInstanceName();
+                            })) {
                             ForeignKeyOf = this,
                         };
 
