@@ -9,6 +9,11 @@ namespace HalApplicationBuilder.Core {
 
     public sealed class AppSchemaBuilder {
 
+        public AppSchemaBuilder() {
+            // 基盤機能
+            Features.BackgroundService.BackgroundTaskEntity.EditSchema(this);
+        }
+
         private string? _applicationName;
         private readonly Dictionary<TreePath, AggregateBuildOption> _aggregates = new();
         private readonly Dictionary<TreePath, AggregateMemberBuildOption> _aggregateMembers = new();
@@ -233,27 +238,16 @@ namespace HalApplicationBuilder.Core {
             }
 
             // ---------------------------------------------------------
-            // 基盤機能
-            var halappEntities = new List<IGraphNode>();
-            var halappEnums = new List<EnumDefinition>();
-
-            //// 基盤機能: バッチ処理
-            //halappEntities.Add(Features.BackgroundService.BackgroundTaskEntity.CreateEntity());
-            //halappEnums.Add(Features.BackgroundService.BackgroundTaskEntity.CreateBackgroundTaskStateEnum());
-
-            // ---------------------------------------------------------
             // グラフを作成して返す
             var nodes = aggregates.Values
                 .Cast<IGraphNode>()
-                .Concat(aggregateMembers)
-                .Concat(halappEntities);
+                .Concat(aggregateMembers);
             var edges = edgesFromAggToAgg
                 .Concat(edgesFromAggToMember);
             if (!DirectedGraph.TryCreate(nodes, edges, out var graph, out var errors1)) {
                 foreach (var err in errors1) errors.Add(err);
             }
             var enums = builtEnums
-                .Concat(halappEnums)
                 .ToArray();
 
             appSchema = errors.Any()

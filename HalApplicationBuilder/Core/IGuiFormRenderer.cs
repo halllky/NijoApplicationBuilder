@@ -8,6 +8,7 @@ namespace HalApplicationBuilder.Core {
     public interface IGuiFormRenderer {
         string TextBox(bool multiline = false);
         string Number();
+        string DateTime();
 
         string Toggle();
 

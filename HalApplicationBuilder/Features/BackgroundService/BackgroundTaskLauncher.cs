@@ -13,7 +13,7 @@ namespace HalApplicationBuilder.Features.BackgroundService {
             FileName = "BackgroundTaskLauncher.cs",
             RenderContent = ctx => {
                 var dbContextFullName = $"{ctx.Config.DbContextNamespace}.{ctx.Config.DbContextName}";
-                var dbSetName = CreateEntity().DbSetName;
+                var dbSetName = ctx.Schema.GetAggregate(GraphNodeId).Item.DbSetName;
 
                 return $$"""
                     using Microsoft.EntityFrameworkCore;

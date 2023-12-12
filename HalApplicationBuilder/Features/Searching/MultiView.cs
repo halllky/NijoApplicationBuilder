@@ -169,9 +169,6 @@ namespace HalApplicationBuilder.Features.Searching {
             private readonly MultiViewField _field;
             private const string INPUT_WIDTH = AggregateComponent.INPUT_WIDTH;
 
-            /// <summary>
-            /// 検索条件: テキストボックス
-            /// </summary>
             public string TextBox(bool multiline = false) {
                 if (_field.MemberType.SearchBehavior == SearchBehavior.Range) {
                     return $$"""
@@ -186,9 +183,6 @@ namespace HalApplicationBuilder.Features.Searching {
                         """;
                 }
             }
-            /// <summary>
-            /// 検索条件： 数値
-            /// </summary>
             public string Number() {
                 if (_field.MemberType.SearchBehavior == SearchBehavior.Range) {
                     return $$"""
@@ -200,6 +194,20 @@ namespace HalApplicationBuilder.Features.Searching {
                 } else {
                     return $$"""
                         <Input.Num {...registerEx(`{{_field.PhysicalName}}`)} className="{{INPUT_WIDTH}}" />
+                        """;
+                }
+            }
+            public string DateTime() {
+                if (_field.MemberType.SearchBehavior == SearchBehavior.Range) {
+                    return $$"""
+                        <Input.Date {...registerEx(`{{_field.PhysicalName}}.{{Util.FromTo.FROM}}`)} className="{{INPUT_WIDTH}}" />
+                        〜
+                        <Input.Date {...registerEx(`{{_field.PhysicalName}}.{{Util.FromTo.TO}}`)} className="{{INPUT_WIDTH}}" />
+                        """;
+
+                } else {
+                    return $$"""
+                        <Input.Date {...registerEx(`{{_field.PhysicalName}}`)} className="{{INPUT_WIDTH}}" />
                         """;
                 }
             }
@@ -271,9 +279,11 @@ namespace HalApplicationBuilder.Features.Searching {
         internal string RenderTypeScriptTypeDef(CodeRenderingContext ctx) {
             return $$"""
                 export type {{SearchConditionClassName}} = {
-                {{Fields.SelectTextTemplate(field => $$"""
+                {{Fields.SelectTextTemplate(field => If(field.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
+                  {{field.PhysicalName}}?: { {{FromTo.FROM}}?: {{field.MemberType.GetTypeScriptTypeName()}}, {{FromTo.TO}}?: {{field.MemberType.GetTypeScriptTypeName()}} }
+                """).Else(() => $$"""
                   {{field.PhysicalName}}?: {{field.MemberType.GetTypeScriptTypeName()}}
-                """)}}
+                """))}}
                 }
                 export type {{SearchResultClassName}} = {
                 {{Fields.SelectTextTemplate(field => $$"""

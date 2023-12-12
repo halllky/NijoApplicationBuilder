@@ -431,6 +431,13 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                     <Input.Num {...registerEx({{name}})} className="{{INPUT_WIDTH}}" {{readOnly}} />
                     """;
             }
+            public string DateTime() {
+                var name = _component.GetRegisterName(_prop);
+                var readOnly = _component.IfReadOnly("readOnly", _prop);
+                return $$"""
+                    <Input.Date {...registerEx({{name}})} className="{{INPUT_WIDTH}}" {{readOnly}} />
+                    """;
+            }
 
             /// <summary>
             /// Createビュー兼シングルビュー: トグル
