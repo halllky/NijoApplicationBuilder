@@ -10,10 +10,10 @@
     <!--数値系-->
     <整数 is="int" />
     <!--<実数 is="decimal" />
-    <百分率 is="percentage" />
-    日付系
+    <百分率 is="percentage" />-->
+    <!--日付系-->
     <日付時刻 is="datetime" />
-    <日付 is="date" />
+    <!--<日付 is="date" />
     <年月 is="year-month" />-->
     <!--その他-->
     <参照 is="ref-to:参照先" />
@@ -29,10 +29,10 @@
       <!--数値系-->
       <整数 is="int" />
       <!--<実数 is="decimal" />
-      <百分率 is="percentage" />
-      日付系
+      <百分率 is="percentage" />-->
+      <!--日付系-->
       <日付時刻 is="datetime" />
-      <日付 is="date" />
+      <!--<日付 is="date" />
       <年月 is="year-month" />-->
       <!--その他-->
       <参照 is="ref-to:参照先" />

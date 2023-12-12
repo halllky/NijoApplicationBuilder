@@ -52,7 +52,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                     /// </summary>
                     public partial class {{ClassName}} {
                 {{GetOwnMembers().SelectTextTemplate(prop => $$"""
-                        public {{prop.CSharpTypeName}} {{prop.MemberName}} { get; set; }
+                        public {{prop.CSharpTypeName}}? {{prop.MemberName}} { get; set; }
                 """)}}
 
                 {{If(_aggregate.IsRoot(), () => $$"""
@@ -139,7 +139,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
 
                 } else if (prop is AggregateMember.ValueMember valueMember) {
                     yield return $$"""
-                        {{valueMember.MemberName}} = {{rootInstanceName}}.{{valueMember.GetFullPath(rootInstance).Join(".")}},
+                        {{valueMember.MemberName}} = {{rootInstanceName}}.{{valueMember.GetFullPath(rootInstance).Join("?.")}},
                         """;
 
                 } else if (prop is AggregateMember.Ref refProp) {
@@ -150,7 +150,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                         return $$"""
                             {{refMember.MemberName}} = new {{keyNameClass.CSharpClassName}}() {
                             {{keyNameClass.GetMembers().SelectTextTemplate(m => m is AggregateMember.ValueMember vm ? $$"""
-                                {{m.MemberName}} = {{rootInstanceName}}.{{vm.GetDbColumn().GetFullPath(rootInstance.As<IEFCoreEntity>()).Join(".")}},
+                                {{m.MemberName}} = {{rootInstanceName}}.{{vm.GetDbColumn().GetFullPath(rootInstance.As<IEFCoreEntity>()).Join("?.")}},
                             """ : $$"""
                                 {{WithIndent(RenderKeyNameConvertingRecursively((AggregateMember.Ref)m), "    ")}}
                             """)}}
@@ -164,7 +164,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                     var item = depth == 0 ? "item" : $"item{depth}";
                     var childClass = children.MemberAggregate.Item.ClassName;
                     var childInstance = children.MemberAggregate;
-                    var childFullPath = children.GetFullPath(rootInstance).Join(".");
+                    var childFullPath = children.GetFullPath(rootInstance).Join("?.");
 
                     yield return $$"""
                         {{children.MemberName}} = {{rootInstanceName}}.{{childFullPath}}.Select({{item}} => new {{childClass}} {
@@ -210,7 +210,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                     var path = GetPathOf("this", entry, vm);
 
                     yield return $$"""
-                        {{vm.GetDbColumn().Options.MemberName}} = {{path.Join(".")}},
+                        {{vm.GetDbColumn().Options.MemberName}} = {{path.Join("?.")}},
                         """;
 
                 } else if (prop is AggregateMember.Ref refProp) {
@@ -223,7 +223,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                     var (item, _) = GetSourceInstanceOf("this", children.MemberAggregate);
 
                     yield return $$"""
-                        {{children.MemberName}} = {{instanceName}}.{{prop.GetFullPath(valueSource).Join(".")}}.Select({{item}} => new {{childDbEntityClass}} {
+                        {{children.MemberName}} = {{instanceName}}.{{prop.GetFullPath(valueSource).Join("?.")}}.Select({{item}} => new {{childDbEntityClass}} {
                             {{WithIndent(RenderBodyOfToDbEntity(children.MemberAggregate, config), "    ")}}
                         }).ToList(),
                         """;

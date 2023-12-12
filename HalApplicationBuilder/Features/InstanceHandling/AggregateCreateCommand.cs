@@ -28,7 +28,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                     /// </summary>
                     public partial class {{ClassName}} {
                 {{GetOwnMembers().SelectTextTemplate(prop => $$"""
-                        public {{prop.CSharpTypeName}} {{prop.MemberName}} { get; set; }
+                        public {{prop.CSharpTypeName}}? {{prop.MemberName}} { get; set; }
                 """)}}
 
                         {{WithIndent(ToDbEntity(ctx), "        ")}}

@@ -308,9 +308,9 @@ namespace HalApplicationBuilder.Features.Searching {
                     /// </summary>
                     public partial class {{SearchConditionClassName}} : {{SEARCHCONDITION_BASE_CLASS_NAME}} {
                 {{Fields.SelectTextTemplate(member => If(member.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
-                        public {{Util.FromTo.CLASSNAME}}<{{member.MemberType.GetCSharpTypeName()}}> {{member.PhysicalName}} { get; set; } = new();
+                        public {{Util.FromTo.CLASSNAME}}<{{member.MemberType.GetCSharpTypeName()}}?> {{member.PhysicalName}} { get; set; } = new();
                 """).Else(() => $$"""
-                        public {{member.MemberType.GetCSharpTypeName()}} {{member.PhysicalName}} { get; set; }
+                        public {{member.MemberType.GetCSharpTypeName()}}? {{member.PhysicalName}} { get; set; }
                 """))}}
                     }
 
@@ -319,7 +319,7 @@ namespace HalApplicationBuilder.Features.Searching {
                     /// </summary>
                     public partial class {{SearchResultClassName}} {
                 {{Fields.SelectTextTemplate(member => $$"""
-                        public {{member.MemberType.GetCSharpTypeName()}} {{member.PhysicalName}} { get; set; }
+                        public {{member.MemberType.GetCSharpTypeName()}}? {{member.PhysicalName}} { get; set; }
                 """)}}
                     }
                 }

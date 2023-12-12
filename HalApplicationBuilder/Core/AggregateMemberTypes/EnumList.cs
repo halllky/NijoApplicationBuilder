@@ -13,7 +13,7 @@ namespace HalApplicationBuilder.Core.AggregateMemberTypes {
         public EnumDefinition Definition { get; }
 
         public override SearchBehavior SearchBehavior => SearchBehavior.Strict;
-        public override string GetCSharpTypeName() => $"{Definition.Name}?";
+        public override string GetCSharpTypeName() => Definition.Name;
         public override string GetTypeScriptTypeName() {
             return Definition.Items.Select(x => $"'{x.PhysicalName}'").Join(" | ");
         }

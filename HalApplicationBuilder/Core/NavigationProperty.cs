@@ -99,7 +99,7 @@ namespace HalApplicationBuilder.Core {
 
             internal string CSharpTypeName => OppositeIsMany
                 ? $"ICollection<{Opposite.Item.EFCoreEntityClassName}>"
-                : Opposite.Item.EFCoreEntityClassName;
+                : $"{Opposite.Item.EFCoreEntityClassName}?";
             internal string? Initializer => OppositeIsMany
                 ? $"new HashSet<{Opposite.Item.EFCoreEntityClassName}>()"
                 : null;

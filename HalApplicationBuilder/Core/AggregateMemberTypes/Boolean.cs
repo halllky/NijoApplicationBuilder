@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Core.AggregateMemberTypes {
     internal class Boolean : CategorizeType {
-        public override string GetCSharpTypeName() => "bool?";
+        public override string GetCSharpTypeName() => "bool";
         public override string GetTypeScriptTypeName() => "boolean";
         public override SearchBehavior SearchBehavior => SearchBehavior.Strict;
         public override string RenderUI(IGuiFormRenderer ui) => ui.Toggle();

@@ -40,7 +40,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
 
                 partial class {{controller.ClassName}} {
                     [HttpGet("{{ACTION_NAME}}/{{keys.Select(m => "{" + m.MemberName + "}").Join("/")}}")]
-                    public virtual IActionResult Find({{keys.Select(m => $"{m.CSharpTypeName.ToNullable()} {m.MemberName}").Join(", ")}}) {
+                    public virtual IActionResult Find({{keys.Select(m => $"{m.CSharpTypeName}? {m.MemberName}").Join(", ")}}) {
             {{keys.SelectTextTemplate(m => $$"""
                         if ({{m.MemberName}} == null) return BadRequest();
             """)}}
@@ -73,7 +73,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                         /// <summary>
                         /// {{_aggregate.Item.DisplayName}}のキー情報から対象データの詳細を検索して返します。
                         /// </summary>
-                        public virtual {{FindMethodReturnType}}? {{FindMethodName}}({{args.Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}) {
+                        public virtual {{FindMethodReturnType}}? {{FindMethodName}}({{args.Select(m => $"{m.CSharpTypeName}? {m.MemberName}").Join(", ")}}) {
 
                             {{WithIndent(RenderDbEntityLoading(appSrv.DbContext, "entity", args.Select(a => a.MemberName).ToArray(), tracks: false, includeRefs: true), "            ")}}
 

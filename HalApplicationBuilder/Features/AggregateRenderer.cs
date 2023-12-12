@@ -129,7 +129,7 @@ namespace HalApplicationBuilder.Features {
                         /// </summary>
                         public partial class {{ett.Item.EFCoreEntityClassName}} {
                     {{ett.GetColumns().SelectTextTemplate(col => $$"""
-                            public {{col.Options.MemberType.GetCSharpTypeName()}} {{col.Options.MemberName}} { get; set; }
+                            public {{col.Options.MemberType.GetCSharpTypeName()}}? {{col.Options.MemberName}} { get; set; }
                     """)}}
 
                     {{EnumerateNavigationProperties(ett).SelectTextTemplate(nav => $$"""

@@ -46,7 +46,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                 public class {{CSharpClassName}} {
                 {{GetMembers().SelectTextTemplate(member => $$"""
                     {{GetAnnotations(member)}}
-                    public {{member.CSharpTypeName}} {{member.MemberName}} { get; set; }
+                    public {{member.CSharpTypeName}}? {{member.MemberName}} { get; set; }
                 """)}}
                 }
                 """;
@@ -55,7 +55,7 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
             return $$"""
                 export type {{TypeScriptTypeName}} = {
                 {{GetMembers().SelectTextTemplate(member => $$"""
-                  {{member.MemberName}}: {{member.TypeScriptTypename}}
+                  {{member.MemberName}}?: {{member.TypeScriptTypename}}
                 """)}}
                 }
                 """;

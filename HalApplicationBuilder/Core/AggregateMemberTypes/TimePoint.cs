@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace HalApplicationBuilder.Core.AggregateMemberTypes {
     internal class TimePoint : SchalarType<DateTime> {
-        public override string GetCSharpTypeName() => "DateTime?";
+        public override string GetCSharpTypeName() => "DateTime";
         public override string GetTypeScriptTypeName() => "string";
         public override string RenderUI(IGuiFormRenderer ui) => ui.DateTime();
         public override string GetGridCellEditorName() => "Input.Date";
