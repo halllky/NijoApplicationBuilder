@@ -63,8 +63,8 @@ namespace HalApplicationBuilder.Features.Util {
                 : $"AggregateType.{new TSInitializerFunction(agg).FunctionName}()";
 
             string SetDummyValue(AggregateMember.AggregateMemberBase member) {
-                var path = member
-                    .GetFullPathEdge()
+                var path = member.Owner
+                    .PathFromEntry()
                     .Select(edge => edge.Terminal.As<Aggregate>().IsChildrenMember()
                         ? $"{edge.RelationName}[0]"
                         : edge.RelationName)

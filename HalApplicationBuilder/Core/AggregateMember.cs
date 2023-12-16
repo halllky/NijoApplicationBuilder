@@ -157,17 +157,12 @@ namespace HalApplicationBuilder.Core {
             internal abstract string CSharpTypeName { get; }
             internal abstract string TypeScriptTypename { get; }
 
-            internal IEnumerable<GraphEdge> GetFullPathEdge(GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
-                var skip = since != null;
-                foreach (var edge in Owner.PathFromEntry()) {
-                    if (until != null && edge.Source?.As<Aggregate>() == until) yield break;
-                    if (skip && edge.Source?.As<Aggregate>() == since) skip = false;
-                    if (skip) continue;
-                    yield return edge;
-                }
-            }
             internal virtual IEnumerable<string> GetFullPath(GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
-                foreach (var edge in GetFullPathEdge(since, until)) {
+                var path = Owner.PathFromEntry();
+                if (since != null) path = path.Since(since);
+                if (until != null) path = path.Until(until);
+
+                foreach (var edge in path) {
                     if (edge.Source == edge.Terminal
                         && edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, out var type)
                         && (string)type == DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD) {
