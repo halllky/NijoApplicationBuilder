@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using HalApplicationBuilder.Features.KeywordSearching;
+using HalApplicationBuilder.Core.AggregateMemberTypes;
 
 namespace HalApplicationBuilder.Features.Util {
     internal class DummyDataGenerator {
@@ -78,14 +79,16 @@ namespace HalApplicationBuilder.Features.Util {
                         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
                         return new string(chars[random.Next(chars.Length)], length);
                     }
+                    static string RandomEnum(EnumList enumList, Random random) {
+                        var randomItem = enumList
+                            .Definition
+                            .Items[random.Next(enumList.Definition.Items.Count)];
+                        return $"'{randomItem.PhysicalName}'";
+                    }
 
                     var dummyValue = schalar.Options.MemberType switch {
                         Core.AggregateMemberTypes.Boolean => "true",
-                        Core.AggregateMemberTypes.EnumList enumList => enumList
-                            .Definition
-                            .Items[random.Next(enumList.Definition.Items.Count)]
-                            .Value
-                            .ToString(),
+                        Core.AggregateMemberTypes.EnumList enumList => RandomEnum(enumList, random),
                         Core.AggregateMemberTypes.Id => $"'{random.Next(99999999):00000000}'",
                         Core.AggregateMemberTypes.Integer => random.Next(999999).ToString(),
                         Core.AggregateMemberTypes.Sentence => "'XXXXXXXXXXXXXX\\nXXXXXXXXXXXXXX'",
