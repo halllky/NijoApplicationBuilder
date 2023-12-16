@@ -22,6 +22,7 @@ namespace HalApplicationBuilder.DotnetEx {
         public override int GetHashCode() {
             return ValueObjectIdentifiers()
                 .Select(x => x != null ? x.GetHashCode() : 0)
+                .DefaultIfEmpty()
                 .Aggregate((x, y) => x ^ y);
         }
         public static bool operator ==(ValueObject? left, ValueObject? right) {

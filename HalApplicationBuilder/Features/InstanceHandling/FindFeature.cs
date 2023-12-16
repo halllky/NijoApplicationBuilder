@@ -98,17 +98,20 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
             // Include
             var includeEntities = _aggregate
                 .EnumerateThisAndDescendants()
-                .ToHashSet();
+                .ToList();
             if (includeRefs) {
                 var refEntities = _aggregate
-                    .GetMembers()
+                    .EnumerateThisAndDescendants()
+                    .SelectMany(agg => agg.GetMembers())
                     .Select(m => m.DeclaringAggregate);
                 foreach (var entity in refEntities) {
                     includeEntities.Add(entity);
                 }
             }
             var paths = includeEntities
-                .SelectMany(entity => entity.PathFromEntry())
+                .Select(entity => entity.PathFromEntry())
+                .Distinct()
+                .SelectMany(edge => edge)
                 .Select(edge => edge.As<Aggregate>())
                 .Select(edge => {
                     var source = edge.Source.As<Aggregate>();

@@ -170,7 +170,7 @@ namespace HalApplicationBuilder.DotnetEx {
         /// <summary>
         /// エントリーからの辺の一覧を返します。よりエントリーに近いほうから順番に返します。
         /// </summary>
-        internal IEnumerable<GraphEdge> PathFromEntry() {
+        internal GraphPath PathFromEntry() {
             var list = new List<GraphEdge>();
             var node = this;
             while (true) {
@@ -179,7 +179,7 @@ namespace HalApplicationBuilder.DotnetEx {
                 node = node.Source.Source;
             }
             list.Reverse();
-            return list;
+            return new GraphPath(list);
         }
 
         internal GraphNode GetEntry() {
@@ -268,6 +268,44 @@ namespace HalApplicationBuilder.DotnetEx {
 
         internal new GraphNode<T> Initial => base.Initial.As<T>();
         internal new GraphNode<T> Terminal => base.Terminal.As<T>();
+    }
+
+    /// <summary>
+    /// 同じ経路を同じオブジェクトと判定してDistinctやHashSetに使いたいためのクラス
+    /// </summary>
+    internal class GraphPath : ValueObject, IEnumerable<GraphEdge> {
+        internal GraphPath(IReadOnlyList<GraphEdge> edges) {
+            _edges = edges;
+        }
+        private readonly IReadOnlyList<GraphEdge> _edges;
+
+        /// <summary>
+        /// 指定のノード以降の区間のみを切り出す
+        /// </summary>
+        internal GraphPath Since(GraphNode node) {
+            var skip = true;
+            var list = new List<GraphEdge>();
+            foreach (var edge in _edges) {
+                if (skip && edge.Source == node) skip = false;
+                if (!skip) list.Add(edge);
+            }
+            return new GraphPath(list);
+        }
+        /// <summary>
+        /// 指定のノード以前の区間のみを切り出す
+        /// </summary>
+        internal GraphPath Until(GraphNode node) {
+            var list = new List<GraphEdge>();
+            foreach (var edge in _edges) {
+                if (edge.Source == node) break;
+                list.Add(edge);
+            }
+            return new GraphPath(list);
+        }
+
+        protected override IEnumerable<object?> ValueObjectIdentifiers() => _edges;
+        public IEnumerator<GraphEdge> GetEnumerator() => _edges.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
     #endregion COMPUTED
 
