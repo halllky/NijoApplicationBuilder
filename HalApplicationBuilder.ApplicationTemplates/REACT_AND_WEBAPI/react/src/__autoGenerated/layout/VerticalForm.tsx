@@ -118,8 +118,8 @@ const BodyCell = ({ table, fullWidth, children }: {
 }) => {
   return (
     <div className={table
-      ? `bg-color-base flex-1 flex p-[1px] border ${BORDER_COLOR} ${!fullWidth && 'ml-[-1px]'} mt-[-1px]`
-      : `bg-color-base flex-1 flex p-[1px] `}>
+      ? `bg-color-base flex-1 flex gap-2 p-[1px] border ${BORDER_COLOR} ${!fullWidth && 'ml-[-1px]'} mt-[-1px]`
+      : `bg-color-base flex-1 flex gap-2 p-[1px] `}>
       {children}
     </div>
   )

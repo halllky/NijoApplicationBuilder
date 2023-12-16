@@ -6,7 +6,7 @@ import { ClientSettings, useAppContext } from './AppContext';
 import * as Input from "../user-input";
 import { VerticalForm as VForm } from "../layout";
 import { InlineMessageBar, BarMessage } from '../decoration';
-import { useHttpRequest } from '../util';
+import { useDummyDataGenerator, useHttpRequest } from '../util';
 
 export const ServerSettingScreen = () => {
 
@@ -16,16 +16,25 @@ export const ServerSettingScreen = () => {
   // --------------------------------------
 
   const [commandErrors, setCommandErrors] = useState([] as BarMessage[])
+  const [withDummyData, setWithDummyData] = useState<boolean | undefined>(true)
+  const genereateDummyData = useDummyDataGenerator(setCommandErrors)
   const recreateDatabase = useCallback(async () => {
     if (window.confirm('DBを再作成します。データは全て削除されます。よろしいですか？')) {
       const response = await post('/HalappDebug/recreate-database')
       if (response.ok) {
+        if (withDummyData) {
+          const success = await genereateDummyData()
+          if (!success) {
+            alert('DBを再作成しましたがダミーデータ作成に失敗しました。')
+            return
+          }
+        }
         alert('DBを再作成しました。')
       } else {
         setCommandErrors([...commandErrors, ...response.errors])
       }
     }
-  }, [post, commandErrors, setCommandErrors])
+  }, [post, commandErrors, withDummyData, genereateDummyData])
 
   // --------------------------------------
 
@@ -86,11 +95,12 @@ export const ServerSettingScreen = () => {
 
         {process.env.NODE_ENV === 'development' && (
           <VForm.Section label="データベース" table>
-            <VForm.Row hidden={commandErrors.length === 0}>
+            <VForm.Row fullWidth hidden={commandErrors.length === 0}>
               <InlineMessageBar value={commandErrors} onChange={setCommandErrors} />
             </VForm.Row>
             <VForm.Row fullWidth>
               <Input.IconButton fill onClick={recreateDatabase}>DB再作成</Input.IconButton>
+              <Input.CheckBox value={withDummyData} onChange={setWithDummyData}>ダミーデータも併せて作成する</Input.CheckBox>
             </VForm.Row>
           </VForm.Section>
         )}

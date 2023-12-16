@@ -1,7 +1,7 @@
 import { PropsWithoutRef, forwardRef } from "react"
 
 export * from "./useHttpRequest"
-
+export * from "./useDummyDataGenerator"
 
 /**
  * forwardRefの戻り値の型定義がややこしいので単純化するためのラッピング関数
