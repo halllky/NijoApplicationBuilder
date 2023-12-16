@@ -66,35 +66,67 @@ export const Num = defineCustomComponent<number>((props, ref) => {
 
 /** 年月日 */
 export const Date = defineCustomComponent<string>((props, ref) => {
-  const onValidate: ValidationHandler = useCallback(value => {
-    const normalized = normalize(value)
-    if (normalized === '') return { ok: true, formatted: '' }
-    const parsed = parseAsDate(normalized, 'YYYY-MM-DD')
-    return parsed
-  }, [])
+  const value = useMemo(() => {
+    const validated = dateValidation(props.value ?? '')
+    return validated.ok ? validated.formatted : ''
+  }, [props.value])
   const overrideProps = {
     ...props,
+    value,
     className: `w-24 ${props.className}`,
     placeholder: props.placeholder ?? '0000-00-00',
+    onValidate: dateValidation,
   }
-  return <TextInputBase ref={ref} {...overrideProps} onValidate={onValidate} />
+  return <TextInputBase ref={ref} {...overrideProps} />
 })
+const dateValidation: ValidationHandler = value => {
+  const normalized = normalize(value)
+  if (normalized === '') return { ok: true, formatted: '' }
+  const parsed = parseAsDate(normalized, 'YYYY-MM-DD')
+  return parsed
+}
 
 /** 年月 */
-export const YearMonth = defineCustomComponent<string>((props, ref) => {
-  const onValidate: ValidationHandler = useCallback(value => {
-    const normalized = normalize(value)
-    if (normalized === '') return { ok: true, formatted: '' }
-    const parsed = parseAsDate(normalized, 'YYYY-MM')
-    return parsed
-  }, [])
+export const YearMonth = defineCustomComponent<number>((props, ref) => {
+  const textRef = useRef<CustomComponentRef<string>>(null)
+  useImperativeHandle(ref, () => ({
+    getValue: () => yearMonthConversion(textRef.current?.getValue() ?? ''),
+    focus: () => textRef.current?.focus(),
+  }), [])
+
+  const value = useMemo(() => {
+    if (props.value == undefined) return ''
+    const year = Math.floor(props.value / 100)
+    const month = props.value % 100
+    return `${year.toString().padStart(4, '0')}-${month.toString().padStart(2, '0')}`
+  }, [props.value])
+  const onChange = useCallback((value: string | undefined) => {
+    props.onChange?.(yearMonthConversion(value ?? ''))
+  }, [props.onChange])
+
   const overrideProps = {
     ...props,
+    value,
+    onChange,
     className: `w-20 ${props.className}`,
     placeholder: props.placeholder ?? '0000-00',
+    onValidate: yearMonthValidation,
   }
-  return <TextInputBase ref={ref} {...overrideProps} onValidate={onValidate} />
+
+  return <TextInputBase ref={textRef} {...overrideProps} />
 })
+const yearMonthValidation: ValidationHandler = value => {
+  const normalized = normalize(value)
+  if (normalized === '') return { ok: true, formatted: '' }
+  const parsed = parseAsDate(normalized, 'YYYY-MM')
+  return parsed
+}
+const yearMonthConversion = (value: string) => {
+  const validated = yearMonthValidation(value)
+  if (!validated.ok || validated.formatted === '') return undefined
+  const splitted = validated.formatted.split('-')
+  return (Number(splitted[0]) * 100) + Number(splitted[1])
+}
 
 /** ラジオボタン or コンボボックス */
 export const Selection = defineCustomComponent(<T extends {}>(

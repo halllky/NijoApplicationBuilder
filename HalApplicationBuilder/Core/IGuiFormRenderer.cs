@@ -8,7 +8,7 @@ namespace HalApplicationBuilder.Core {
     public interface IGuiFormRenderer {
         string TextBox(bool multiline = false);
         string Number();
-        string DateTime();
+        string DateTime(E_DateType dateType);
 
         string Toggle();
 
@@ -18,5 +18,12 @@ namespace HalApplicationBuilder.Core {
         string Selection(IEnumerable<KeyValuePair<string, string>> options);
 
         string HiddenField();
+
+        public enum E_DateType {
+            Year,
+            YearMonth,
+            Date,
+            DateTime,
+        }
     }
 }

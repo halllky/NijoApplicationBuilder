@@ -197,17 +197,22 @@ namespace HalApplicationBuilder.Features.Searching {
                         """;
                 }
             }
-            public string DateTime() {
+            public string DateTime(IGuiFormRenderer.E_DateType dateType) {
+                var componentName = dateType switch {
+                    IGuiFormRenderer.E_DateType.Year => "Input.Num",
+                    IGuiFormRenderer.E_DateType.YearMonth => "Input.YearMonth",
+                    _ => "Input.Date",
+                };
                 if (_field.MemberType.SearchBehavior == SearchBehavior.Range) {
                     return $$"""
-                        <Input.Date {...registerEx(`{{_field.PhysicalName}}.{{Util.FromTo.FROM}}`)} className="{{INPUT_WIDTH}}" />
+                        <{{componentName}} {...registerEx(`{{_field.PhysicalName}}.{{Util.FromTo.FROM}}`)} className="{{INPUT_WIDTH}}" />
                         〜
-                        <Input.Date {...registerEx(`{{_field.PhysicalName}}.{{Util.FromTo.TO}}`)} className="{{INPUT_WIDTH}}" />
+                        <{{componentName}} {...registerEx(`{{_field.PhysicalName}}.{{Util.FromTo.TO}}`)} className="{{INPUT_WIDTH}}" />
                         """;
 
                 } else {
                     return $$"""
-                        <Input.Date {...registerEx(`{{_field.PhysicalName}}`)} className="{{INPUT_WIDTH}}" />
+                        <{{componentName}} {...registerEx(`{{_field.PhysicalName}}`)} className="{{INPUT_WIDTH}}" />
                         """;
                 }
             }

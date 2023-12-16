@@ -4,17 +4,21 @@
   <親集約 is="master-data">
     <!--ID-->
     <ID is="uuid" />
+
     <!--文字列系-->
     <単語 is="word" />
     <文章 is="sentence" />
+
     <!--数値系-->
     <整数 is="int" />
-    <!--<実数 is="decimal" />
-    <百分率 is="percentage" />-->
+    <実数 is="decimal" />
+
     <!--日付系-->
     <日付時刻 is="datetime" />
-    <!--<日付 is="date" />
-    <年月 is="year-month" />-->
+    <日付 is="date" />
+    <年月 is="year-month" />
+    <年 is="year" />
+
     <!--その他-->
     <参照 is="ref-to:参照先" />
     <真偽値 is="bool" />
@@ -23,17 +27,21 @@
     <Children is="array">
       <!--ID-->
       <ID is="uuid" />
+
       <!--文字列系-->
       <単語 is="word" />
       <文章 is="sentence" />
+
       <!--数値系-->
       <整数 is="int" />
-      <!--<実数 is="decimal" />
-      <百分率 is="percentage" />-->
+      <実数 is="numeric" />
+
       <!--日付系-->
       <日付時刻 is="datetime" />
-      <!--<日付 is="date" />
-      <年月 is="year-month" />-->
+      <日付 is="date" />
+      <年月 is="year-month" />
+      <年 is="year" />
+
       <!--その他-->
       <参照 is="ref-to:参照先" />
       <真偽値 is="bool" />

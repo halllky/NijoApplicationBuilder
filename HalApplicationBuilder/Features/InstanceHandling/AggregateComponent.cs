@@ -431,11 +431,16 @@ namespace HalApplicationBuilder.Features.InstanceHandling {
                     <Input.Num {...registerEx({{name}})} className="{{INPUT_WIDTH}}" {{readOnly}} />
                     """;
             }
-            public string DateTime() {
+            public string DateTime(IGuiFormRenderer.E_DateType dateType) {
                 var name = _component.GetRegisterName(_prop);
                 var readOnly = _component.IfReadOnly("readOnly", _prop);
+                var componentName = dateType switch {
+                    IGuiFormRenderer.E_DateType.Year => "Input.Num",
+                    IGuiFormRenderer.E_DateType.YearMonth => "Input.YearMonth",
+                    _ => "Input.Date",
+                };
                 return $$"""
-                    <Input.Date {...registerEx({{name}})} className="{{INPUT_WIDTH}}" {{readOnly}} />
+                    <{{componentName}} {...registerEx({{name}})} className="{{INPUT_WIDTH}}" {{readOnly}} />
                     """;
             }
 

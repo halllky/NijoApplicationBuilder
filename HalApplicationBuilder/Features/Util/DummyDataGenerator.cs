@@ -91,8 +91,12 @@ namespace HalApplicationBuilder.Features.Util {
                         Core.AggregateMemberTypes.EnumList enumList => RandomEnum(enumList, random),
                         Core.AggregateMemberTypes.Id => $"'{random.Next(99999999):00000000}'",
                         Core.AggregateMemberTypes.Integer => random.Next(999999).ToString(),
+                        Core.AggregateMemberTypes.Numeric => $"{random.Next(999999)}.{random.Next(0, 99)}",
                         Core.AggregateMemberTypes.Sentence => "'XXXXXXXXXXXXXX\\nXXXXXXXXXXXXXX'",
-                        Core.AggregateMemberTypes.TimePoint => $"'{new DateTime(2000 ,1 ,1).AddDays(random.Next(3000)):yyyy-MM-dd}'",
+                        Core.AggregateMemberTypes.Year => random.Next(1990, 2040).ToString(),
+                        Core.AggregateMemberTypes.YearMonth => $"{random.Next(1990, 2040):0000}{random.Next(1, 12):00}",
+                        Core.AggregateMemberTypes.YearMonthDay => $"'{new DateTime(2000, 1, 1).AddDays(random.Next(3000)):yyyy-MM-dd}'",
+                        Core.AggregateMemberTypes.YearMonthDayTime => $"'{new DateTime(2000 ,1 ,1).AddDays(random.Next(3000)):yyyy-MM-dd}'",
                         Core.AggregateMemberTypes.Uuid => null, // 自動生成されるので
                         Core.AggregateMemberTypes.VariationSwitch => null, // Variationの分岐で処理済み
                         Core.AggregateMemberTypes.Word => $"'{RandomAlphabet(random, 10)}'",

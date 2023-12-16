@@ -14,8 +14,13 @@ namespace HalApplicationBuilder.Core {
                 .Register(TYPE_WORD, new Word())
                 .Register(TYPE_SENTENCE, new Sentence())
                 .Register(TYPE_INT, new Integer())
+                .Register(TYPE_DECIMAL, new Numeric())
+                .Register(TYPE_NUMERIC, new Numeric())
                 .Register(TYPE_BOOL, new AggregateMemberTypes.Boolean())
-                .Register(TYPE_DATETIME, new TimePoint());
+                .Register(TYPE_YEAR, new Year())
+                .Register(TYPE_YEARMONTH, new YearMonth())
+                .Register(TYPE_DATE, new YearMonthDay())
+                .Register(TYPE_DATETIME, new YearMonthDayTime());
             return resolver;
         }
         internal const string TYPE_ID = "id";
@@ -23,7 +28,12 @@ namespace HalApplicationBuilder.Core {
         internal const string TYPE_WORD = "word";
         internal const string TYPE_SENTENCE = "sentence";
         internal const string TYPE_INT = "int";
+        internal const string TYPE_DECIMAL = "decimal";
+        internal const string TYPE_NUMERIC = "numeric";
         internal const string TYPE_BOOL = "bool";
+        internal const string TYPE_YEAR = "year";
+        internal const string TYPE_YEARMONTH = "year-month";
+        internal const string TYPE_DATE = "date";
         internal const string TYPE_DATETIME = "datetime";
 
         private MemberTypeResolver() { }
