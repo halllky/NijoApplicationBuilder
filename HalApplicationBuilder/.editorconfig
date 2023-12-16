@@ -3,23 +3,18 @@
 # top-most EditorConfig file
 root = true
 
-[*]
-brace_style = end_of_line
-trim_trailing_whitespace = true
-insert_final_newline = true
-
-[*.{xml,json,gitignore}]
-end_of_line = lf
-charset = utf-8
-indent_style = space
-indent_size = 2
-
 [*.cs]
 end_of_line = crlf
 charset = utf-8
 indent_size = 4
+brace_style = end_of_line
+trim_trailing_whitespace = true
+insert_final_newline = true
 
-[*.{ts,tsx}]
-end_of_line = crlf
+[*.{js,jsx,ts,tsx,cjs,css,html,xml,json,gitignore,md}]
+end_of_line = lf
 charset = utf-8
 indent_size = 2
+brace_style = end_of_line
+trim_trailing_whitespace = true
+insert_final_newline = true
