@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HalApplicationBuilder", "HalApplicationBuilder\HalApplicationBuilder.csproj", "{F29A08C6-7DEF-4E75-980F-5BE6694E96A5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nijo", "Nijo\Nijo.csproj", "{11C9DBC1-98DE-41E0-86EC-BB773FADAB71}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HalApplicationBuilder.IntegrationTest", "HalApplicationBuilder.IntegrationTest\HalApplicationBuilder.IntegrationTest.csproj", "{1228B0B4-7257-441B-A556-D7CF0684C87A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nijo.IntegrationTest", "Nijo.IntegrationTest\Nijo.IntegrationTest.csproj", "{B5566556-5C4C-4891-B3F9-69AB0D1F3F53}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "自動テストで作成されたプロジェクト", "自動テストで作成されたプロジェクト\webapi\自動テストで作成されたプロジェクト.csproj", "{097D43B3-B499-4297-9B76-169818A8AA3E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "自動テストで作成されたプロジェクト", "自動テストで作成されたプロジェクト\webapi\自動テストで作成されたプロジェクト.csproj", "{98E77C78-F8F1-41DA-87EE-903B002C09B8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,18 +15,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{F29A08C6-7DEF-4E75-980F-5BE6694E96A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F29A08C6-7DEF-4E75-980F-5BE6694E96A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F29A08C6-7DEF-4E75-980F-5BE6694E96A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F29A08C6-7DEF-4E75-980F-5BE6694E96A5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1228B0B4-7257-441B-A556-D7CF0684C87A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1228B0B4-7257-441B-A556-D7CF0684C87A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1228B0B4-7257-441B-A556-D7CF0684C87A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1228B0B4-7257-441B-A556-D7CF0684C87A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{097D43B3-B499-4297-9B76-169818A8AA3E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{097D43B3-B499-4297-9B76-169818A8AA3E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{097D43B3-B499-4297-9B76-169818A8AA3E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{097D43B3-B499-4297-9B76-169818A8AA3E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{11C9DBC1-98DE-41E0-86EC-BB773FADAB71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{11C9DBC1-98DE-41E0-86EC-BB773FADAB71}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{11C9DBC1-98DE-41E0-86EC-BB773FADAB71}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{11C9DBC1-98DE-41E0-86EC-BB773FADAB71}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B5566556-5C4C-4891-B3F9-69AB0D1F3F53}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5566556-5C4C-4891-B3F9-69AB0D1F3F53}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5566556-5C4C-4891-B3F9-69AB0D1F3F53}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5566556-5C4C-4891-B3F9-69AB0D1F3F53}.Release|Any CPU.Build.0 = Release|Any CPU
+		{98E77C78-F8F1-41DA-87EE-903B002C09B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{98E77C78-F8F1-41DA-87EE-903B002C09B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{98E77C78-F8F1-41DA-87EE-903B002C09B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{98E77C78-F8F1-41DA-87EE-903B002C09B8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
