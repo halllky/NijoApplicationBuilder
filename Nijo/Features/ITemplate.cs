@@ -6,9 +6,9 @@ using System.Linq;
 using System.Text;
 
 namespace Nijo.Features {
-    internal class SourceFile {
-        internal required string FileName { get; init; }
-        internal required Func<CodeRenderingContext, string> RenderContent { get; init; }
+    public class SourceFile {
+        public required string FileName { get; init; }
+        public required Func<CodeRenderingContext, string> RenderContent { get; init; }
     }
 
     /// <summary>

@@ -6,8 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Features {
-    internal class CodeRenderingContext {
-        internal required Config Config { get; init; }
-        internal required AppSchema Schema { get; init; }
+    public class CodeRenderingContext {
+        public required Config Config { get; init; }
+        public required AppSchema Schema { get; init; }
     }
 }

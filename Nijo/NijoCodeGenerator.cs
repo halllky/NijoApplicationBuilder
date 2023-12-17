@@ -227,7 +227,7 @@ namespace Nijo {
             return this;
         }
 
-        private class DirectorySetupper {
+        public class DirectorySetupper {
             internal static void StartSetup(CodeRenderingContext ctx, string absolutePath, Action<DirectorySetupper> fn) {
                 var setupper = new DirectorySetupper(ctx, absolutePath);
                 setupper.Directory("", fn);
@@ -243,7 +243,7 @@ namespace Nijo {
             private readonly CodeRenderingContext _ctx;
 
             private readonly HashSet<string> _generated;
-            internal void Directory(string relativePath, Action<DirectorySetupper> fn) {
+            public void Directory(string relativePath, Action<DirectorySetupper> fn) {
                 var fullpath = System.IO.Path.Combine(Path, relativePath);
                 if (!System.IO.Directory.Exists(fullpath))
                     System.IO.Directory.CreateDirectory(fullpath);
@@ -253,7 +253,7 @@ namespace Nijo {
                 fn(new DirectorySetupper(_ctx, System.IO.Path.Combine(Path, relativePath)));
             }
 
-            internal void Generate(SourceFile sourceFile) {
+            public void Generate(SourceFile sourceFile) {
                 var file = System.IO.Path.Combine(Path, sourceFile.FileName);
 
                 _generated.Add(file);
@@ -267,7 +267,7 @@ namespace Nijo {
                 sw.WriteLine(content);
             }
 
-            internal void CopyFrom(string copySourceFile) {
+            public void CopyFrom(string copySourceFile) {
                 var copyTargetFile = System.IO.Path.Combine(Path, System.IO.Path.GetFileName(copySourceFile));
 
                 _generated.Add(copyTargetFile);
@@ -279,7 +279,7 @@ namespace Nijo {
                     writer.WriteLine(reader.ReadLine());
                 }
             }
-            internal void DeleteOtherFiles() {
+            public void DeleteOtherFiles() {
                 var deleteFiles = System.IO.Directory
                     .GetFiles(Path)
                     .Where(path => !_generated.Contains(path));
