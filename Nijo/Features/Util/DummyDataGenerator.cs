@@ -47,6 +47,8 @@ namespace Nijo.Features.Util {
         };
 
         private static string RenderAggregate(GraphNode<Aggregate> rootAggregate, int index, Random random) {
+            if (!rootAggregate.IsStored()) return string.Empty;
+
             var controller = new WebClient.Controller(rootAggregate.Item);
             var descendants = rootAggregate.EnumerateDescendants();
             var data = $"data{random.Next(99999999):00000000}";

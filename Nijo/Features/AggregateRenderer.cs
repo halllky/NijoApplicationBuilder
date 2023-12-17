@@ -54,10 +54,12 @@ namespace Nijo.Features {
                     """)}}
 
 
+                    {{If(_aggregate.IsSearchable(), () => $$"""
                     #region 一覧検索
                     {{multiView.RenderAspNetController(_ctx)}}
                     {{search.RenderDbContextMethod(_ctx)}}
                     #endregion 一覧検索
+                    """)}}
 
 
                     {{If(_aggregate.IsStored(), () => $$"""
@@ -107,7 +109,9 @@ namespace Nijo.Features {
                     }
                     """)}}
 
+                    {{If(_aggregate.IsSearchable(), () => $$"""
                     {{multiView.RenderCSharpTypedef(_ctx)}}
+                    """)}}
 
                     {{If(_aggregate.IsStored(), () => $$"""
                     namespace {{_ctx.Config.EntityNamespace}} {

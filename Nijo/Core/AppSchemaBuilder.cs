@@ -260,6 +260,7 @@ namespace Nijo.Core {
     public enum E_AggreateType {
         MasterData,
         View,
+        Command,
     }
 
     public sealed class AggregateBuildOption {

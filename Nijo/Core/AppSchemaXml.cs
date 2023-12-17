@@ -195,6 +195,9 @@ namespace Nijo.Core {
             parser.IfExists("view")
                 .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
                 .SetAggregateOption(opt => opt.Type, E_AggreateType.View, E_Priority.Force);
+            parser.IfExists("command")
+                .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
+                .SetAggregateOption(opt => opt.Type, E_AggreateType.Command, E_Priority.Force);
 
             parser.IfExists("section")
                 .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)

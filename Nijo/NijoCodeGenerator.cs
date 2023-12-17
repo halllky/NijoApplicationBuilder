@@ -205,7 +205,7 @@ namespace Nijo {
                 reactDir.Directory(REACT_PAGE_DIR, pageDir => {
                     foreach (var root in ctx.Schema.RootAggregates()) {
                         pageDir.Directory(GetAggDirName(root), aggregateDir => {
-                            aggregateDir.Generate(new Features.Searching.AggregateSearchFeature(root).GetMultiView().RenderMultiView());
+                            if (root.IsSearchable()) aggregateDir.Generate(new Features.Searching.AggregateSearchFeature(root).GetMultiView().RenderMultiView());
                             if (root.IsCreatable()) aggregateDir.Generate(new SingleView(root, SingleView.E_Type.Create).Render());
                             if (root.IsStored()) aggregateDir.Generate(new SingleView(root, SingleView.E_Type.View).Render());
                             if (root.IsEditable()) aggregateDir.Generate(new SingleView(root, SingleView.E_Type.Edit).Render());

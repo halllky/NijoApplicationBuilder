@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Nijo.Features.Searching;
 
 namespace Nijo.Features.InstanceHandling {
     internal class CreateFeature {
@@ -19,6 +20,10 @@ namespace Nijo.Features.InstanceHandling {
         internal string MethodName => $"Create{_aggregate.Item.DisplayName.ToCSharpSafe()}";
 
         internal string RenderController(CodeRenderingContext ctx) {
+            if (_aggregate.GetRoot().Item.Options.Type == E_AggreateType.Command) {
+                return new CommandExecuteFeature(_aggregate).RenderController(ctx);
+            }
+
             var controller = new WebClient.Controller(_aggregate.Item);
             var param = new AggregateCreateCommand(_aggregate);
 
@@ -42,6 +47,10 @@ namespace Nijo.Features.InstanceHandling {
         }
 
         internal string RenderEFCoreMethod(CodeRenderingContext ctx) {
+            if (_aggregate.GetRoot().Item.Options.Type == E_AggreateType.Command) {
+                return new CommandExecuteFeature(_aggregate).RenderEFCoreMethod(ctx);
+            }
+
             var appSrv = new ApplicationService(ctx.Config);
             var controller = new WebClient.Controller(_aggregate.Item);
             var param = new AggregateCreateCommand(_aggregate);
@@ -88,6 +97,65 @@ namespace Nijo.Features.InstanceHandling {
                     }
                 }
                 """;
+        }
+
+        /// <summary>
+        /// is="command" の集約のCreate処理
+        /// </summary>
+        internal class CommandExecuteFeature {
+            internal CommandExecuteFeature(GraphNode<Aggregate> aggregate) {
+                _aggregate = aggregate;
+            }
+            private readonly GraphNode<Aggregate> _aggregate;
+
+            internal string RenderController(CodeRenderingContext ctx) {
+                var create = new CreateFeature(_aggregate);
+                var controller = new WebClient.Controller(_aggregate.Item);
+                var param = new AggregateCreateCommand(_aggregate);
+
+                return $$"""
+                namespace {{ctx.Config.RootNamespace}} {
+                    using Microsoft.AspNetCore.Mvc;
+                    using {{ctx.Config.EntityNamespace}};
+
+                    partial class {{controller.ClassName}} : ControllerBase {
+                        [HttpPost("{{WebClient.Controller.CREATE_ACTION_NAME}}")]
+                        public virtual IActionResult Create([FromBody] {{param.ClassName}} param) {
+                            if (_applicationService.{{create.MethodName}}(param, out var errors)) {
+                                return Ok();
+                            } else {
+                                return BadRequest(this.JsonContent(errors));
+                            }
+                        }
+                    }
+                }
+                """;
+            }
+            internal string RenderEFCoreMethod(CodeRenderingContext ctx) {
+                var create = new CreateFeature(_aggregate);
+                var appSrv = new ApplicationService(ctx.Config);
+                var param = new AggregateCreateCommand(_aggregate);
+
+                return $$"""
+                namespace {{ctx.Config.RootNamespace}} {
+                    using System;
+                    using System.Collections;
+                    using System.Collections.Generic;
+                    using System.Linq;
+                    using Microsoft.EntityFrameworkCore;
+                    using Microsoft.EntityFrameworkCore.Infrastructure;
+
+                    partial class {{appSrv.ClassName}} {
+                        public virtual bool {{create.MethodName}}({{param.ClassName}} command, out ICollection<string> errors) {
+                            // このメソッドは自動生成の対象外です。
+                            // {{appSrv.ConcreteClass}}クラスでこのメソッドをオーバーライドして実装してください。
+                            errors = Array.Empty<string>();
+                            return true;
+                        }
+                    }
+                }
+                """;
+            }
         }
     }
 }

@@ -52,18 +52,20 @@ namespace Nijo.Features.WebClient {
             foreach (var aggregate in rootAggregates) {
                 var aggregateName = aggregate.Item.DisplayName.ToCSharpSafe();
 
-                yield return new ImportedComponent {
-                    ShowMenu = true,
-                    Url = new Searching.AggregateSearchFeature(aggregate).GetMultiView().Url,
-                    PhysicalName = $"{aggregateName}MultiView",
-                    DisplayName = aggregate.Item.DisplayName,
-                    From = $"./{dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(Searching.MultiView.REACT_FILENAME)}",
-                };
+                if (aggregate.IsSearchable()) {
+                    yield return new ImportedComponent {
+                        ShowMenu = true,
+                        Url = new Searching.AggregateSearchFeature(aggregate).GetMultiView().Url,
+                        PhysicalName = $"{aggregateName}MultiView",
+                        DisplayName = aggregate.Item.DisplayName,
+                        From = $"./{dirNameResolver(aggregate)}/{Path.GetFileNameWithoutExtension(Searching.MultiView.REACT_FILENAME)}",
+                    };
+                }
 
                 if (aggregate.IsCreatable()) {
                     var createView = new SingleView(aggregate, SingleView.E_Type.Create);
                     yield return new ImportedComponent {
-                        ShowMenu = false,
+                        ShowMenu = aggregate.GetRoot().Item.Options.Type == E_AggreateType.Command,
                         Url = createView.Route,
                         PhysicalName = $"{aggregateName}CreateView",
                         DisplayName = aggregate.Item.DisplayName,

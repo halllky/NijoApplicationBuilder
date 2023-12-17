@@ -11,7 +11,9 @@ namespace Nijo.Features.BackgroundService {
         internal static NodeId GraphNodeId => new NodeId($"NIJO::{CLASSNAME}");
 
         internal static void EditSchema(AppSchemaBuilder builder) {
-            builder.AddAggregate(new[] { GraphNodeId.Value });
+            builder.AddAggregate(new[] { GraphNodeId.Value }, new AggregateBuildOption {
+                Type = E_AggreateType.View,
+            });
 
             builder.AddAggregateMember(new[] { GraphNodeId.Value, COL_ID }, new AggregateMemberBuildOption {
                 IsPrimary = true,
