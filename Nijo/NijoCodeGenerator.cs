@@ -259,7 +259,12 @@ namespace Nijo {
                 _generated.Add(file);
 
                 using var sw = new StreamWriter(file, append: false, encoding: GetEncoding(file));
-                sw.WriteLine(sourceFile.RenderContent(_ctx));
+                var ext = System.IO.Path.GetExtension(file).ToLower();
+                sw.NewLine = ext == ".cs" ? "\r\n" : "\n";
+                var content = sourceFile
+                    .RenderContent(_ctx)
+                    .Replace(Environment.NewLine, sw.NewLine);
+                sw.WriteLine(content);
             }
 
             internal void CopyFrom(string copySourceFile) {
