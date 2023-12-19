@@ -15,7 +15,7 @@ namespace Nijo.Features.InstanceHandling {
 
         internal override string ClassName => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}CreateCommand";
 
-        internal override string RenderCSharp(CodeRenderingContext ctx) {
+        internal override string RenderCSharp(ICodeRenderingContext ctx) {
             return $$"""
                 namespace {{ctx.Config.RootNamespace}} {
                     using System;

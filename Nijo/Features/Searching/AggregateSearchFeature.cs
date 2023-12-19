@@ -52,7 +52,7 @@ namespace Nijo.Features.Searching {
             return fields;
         }
 
-        internal string RenderDbContextMethod(CodeRenderingContext ctx) {
+        internal string RenderDbContextMethod(ICodeRenderingContext ctx) {
             return _aggregate.IsStored()
                 ? RenderSearchMethod(ctx)
                 : RenderNotImplementedSearchMethod(ctx);
@@ -60,7 +60,7 @@ namespace Nijo.Features.Searching {
         /// <summary>
         /// Viewなどオーバーライド前提のものの検索処理
         /// </summary>
-        private string RenderNotImplementedSearchMethod(CodeRenderingContext ctx) {
+        private string RenderNotImplementedSearchMethod(ICodeRenderingContext ctx) {
             var appSrv = new ApplicationService(ctx.Config);
             var multiView = GetMultiView();
 
@@ -79,7 +79,7 @@ namespace Nijo.Features.Searching {
         /// <summary>
         /// 標準の検索処理
         /// </summary>
-        private string RenderSearchMethod(CodeRenderingContext ctx) {
+        private string RenderSearchMethod(ICodeRenderingContext ctx) {
             var appSrv = new ApplicationService(ctx.Config);
             var fields = GetFields();
             var selectClause = fields.Select(field => new {

@@ -1,3 +1,4 @@
+using Nijo.Core;
 using Nijo.DotnetEx;
 using System;
 using System.Collections;
@@ -8,7 +9,14 @@ using System.Text;
 namespace Nijo.Features {
     public class SourceFile {
         public required string FileName { get; init; }
-        public required Func<CodeRenderingContext, string> RenderContent { get; init; }
+        public required Func<ICodeRenderingContext, string> RenderContent { get; init; }
+    }
+
+    /// <summary>
+    /// DbContextやASP.NETのControllerのような複数機能にまたがるクラスのソースコードファイル
+    /// </summary>
+    public interface ISourceFileUsedByMultiFeature {
+        SourceFile GenerateSourceFile(GraphNode<Aggregate> aggregate, IEnumerable<string> insertedSourceCode);
     }
 
     /// <summary>

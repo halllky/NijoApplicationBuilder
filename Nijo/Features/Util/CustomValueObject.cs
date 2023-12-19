@@ -15,7 +15,7 @@ namespace Nijo.Features.Util {
         internal required string CLRTypeName { get; init; }
         internal required string ToDbValueFunction { get; init; }
         internal required string FromDbValueFunction { get; init; }
-        internal required Func<CodeRenderingContext, string> RenderSourceCode { get; init; }
+        internal required Func<ICodeRenderingContext, string> RenderSourceCode { get; init; }
 
         internal static IEnumerable<CustomValueObject> Enumerate() {
             yield return Year;

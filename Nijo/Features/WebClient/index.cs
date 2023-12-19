@@ -96,12 +96,12 @@ namespace Nijo.Features.WebClient {
                 }
             }
         }
-        private class ImportedComponent {
-            internal required bool ShowMenu { get; init; }
-            internal required string Url { get; init; }
-            internal required string PhysicalName { get; init; }
-            internal required string DisplayName { get; init; }
-            internal required string From { get; init; }
+        public class ImportedComponent {
+            public required bool ShowMenu { get; init; }
+            public required string Url { get; init; }
+            public required string PhysicalName { get; init; }
+            public required string DisplayName { get; init; }
+            public required string From { get; init; }
         }
     }
 }

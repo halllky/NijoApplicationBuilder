@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using static Nijo.Core.DirectedEdgeExtensions;
 
 namespace Nijo.Core {
-    internal class Aggregate : ValueObject, IEFCoreEntity {
+    public class Aggregate : ValueObject, IEFCoreEntity {
         internal Aggregate(NodeId id, string displayName, bool useKeyInsteadOfName, AggregateBuildOption options) {
             Id = id;
             DisplayName = displayName;

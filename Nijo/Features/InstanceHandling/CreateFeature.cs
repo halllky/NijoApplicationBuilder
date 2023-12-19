@@ -19,7 +19,7 @@ namespace Nijo.Features.InstanceHandling {
         internal string ArgType => _aggregate.Item.ClassName;
         internal string MethodName => $"Create{_aggregate.Item.DisplayName.ToCSharpSafe()}";
 
-        internal string RenderController(CodeRenderingContext ctx) {
+        internal string RenderController(ICodeRenderingContext ctx) {
             if (_aggregate.GetRoot().Item.Options.Type == E_AggreateType.Command) {
                 return new CommandExecuteFeature(_aggregate).RenderController(ctx);
             }
@@ -46,7 +46,7 @@ namespace Nijo.Features.InstanceHandling {
                 """;
         }
 
-        internal string RenderEFCoreMethod(CodeRenderingContext ctx) {
+        internal string RenderEFCoreMethod(ICodeRenderingContext ctx) {
             if (_aggregate.GetRoot().Item.Options.Type == E_AggreateType.Command) {
                 return new CommandExecuteFeature(_aggregate).RenderEFCoreMethod(ctx);
             }
@@ -102,13 +102,14 @@ namespace Nijo.Features.InstanceHandling {
         /// <summary>
         /// is="command" の集約のCreate処理
         /// </summary>
+        [Obsolete]
         internal class CommandExecuteFeature {
             internal CommandExecuteFeature(GraphNode<Aggregate> aggregate) {
                 _aggregate = aggregate;
             }
             private readonly GraphNode<Aggregate> _aggregate;
 
-            internal string RenderController(CodeRenderingContext ctx) {
+            internal string RenderController(ICodeRenderingContext ctx) {
                 var create = new CreateFeature(_aggregate);
                 var controller = new WebClient.Controller(_aggregate.Item);
                 var param = new AggregateCreateCommand(_aggregate);
@@ -131,7 +132,7 @@ namespace Nijo.Features.InstanceHandling {
                 }
                 """;
             }
-            internal string RenderEFCoreMethod(CodeRenderingContext ctx) {
+            internal string RenderEFCoreMethod(ICodeRenderingContext ctx) {
                 var create = new CreateFeature(_aggregate);
                 var appSrv = new ApplicationService(ctx.Config);
                 var param = new AggregateCreateCommand(_aggregate);

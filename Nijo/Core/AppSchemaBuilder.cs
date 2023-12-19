@@ -11,7 +11,7 @@ namespace Nijo.Core {
 
         public AppSchemaBuilder() {
             // 基盤機能
-            Features.BackgroundService.BackgroundTaskEntity.EditSchema(this);
+            new Features.BackgroundService.BackgroundTaskFeature().BuildSchema(this);
         }
 
         private string? _applicationName;
@@ -264,11 +264,13 @@ namespace Nijo.Core {
     }
 
     public sealed class AggregateBuildOption {
+        [Obsolete]
         public E_AggreateType? Type { get; set; }
         public bool? IsPrimary { get; set; }
         public bool? IsArray { get; set; }
         public GroupOption? IsVariationGroupMember { get; set; }
         public bool? InvisibleInGui { get; set; }
+        public string? Handler { get; set; }
 
         public sealed class GroupOption {
             public required string GroupName { get; init; }

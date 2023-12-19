@@ -9,9 +9,9 @@ namespace Nijo.DotnetEx {
     /// <summary>
     /// 有向グラフ
     /// </summary>
-    internal class DirectedGraph : IEnumerable<GraphNode> {
+    public class DirectedGraph : IEnumerable<GraphNode> {
 
-        internal static DirectedGraph Empty() {
+        public static DirectedGraph Empty() {
             return new DotnetEx.DirectedGraph(Enumerable.Empty<IGraphNode>(), new HashSet<GraphEdgeInfo>());
         }
 
@@ -23,7 +23,7 @@ namespace Nijo.DotnetEx {
         /// <param name="graph">作成されたグラフ</param>
         /// <param name="errors">グラフが作成できなかった場合、その理由の一覧</param>
         /// <returns>グラフを作成できたか否か</returns>
-        internal static bool TryCreate(
+        public static bool TryCreate(
             IEnumerable<IGraphNode> nodes,
             IEnumerable<GraphEdgeInfo> edges,
             out DirectedGraph graph,
@@ -66,7 +66,7 @@ namespace Nijo.DotnetEx {
         /// <param name="nodes">頂点</param>
         /// <param name="edges">辺</param>
         /// <returns>作成されたグラフ</returns>
-        internal static DirectedGraph Create(IEnumerable<IGraphNode> nodes, IEnumerable<GraphEdgeInfo> edges) {
+        public static DirectedGraph Create(IEnumerable<IGraphNode> nodes, IEnumerable<GraphEdgeInfo> edges) {
             if (!TryCreate(nodes, edges, out var graph, out var errors)) {
                 throw new InvalidOperationException($"Error occured when new directed graph is created:{Environment.NewLine}{string.Join(Environment.NewLine, errors)}");
             }
@@ -78,10 +78,10 @@ namespace Nijo.DotnetEx {
             Edges = edges;
         }
 
-        internal IReadOnlyDictionary<NodeId, IGraphNode> Nodes { get; }
-        internal IReadOnlySet<GraphEdgeInfo> Edges { get; }
+        public IReadOnlyDictionary<NodeId, IGraphNode> Nodes { get; }
+        public IReadOnlySet<GraphEdgeInfo> Edges { get; }
 
-        internal IEnumerable<GraphNode<T>> Only<T>() where T : IGraphNode {
+        public IEnumerable<GraphNode<T>> Only<T>() where T : IGraphNode {
             return this
                 .Where(node => node.Item is T)
                 .Select(node => node.As<T>());
@@ -118,15 +118,15 @@ namespace Nijo.DotnetEx {
     /// <summary>
     /// 有向グラフの頂点
     /// </summary>
-    internal class GraphNode : ValueObject {
-        internal GraphNode(IGraphNode item, DirectedGraph graph, GraphEdge? source) {
+    public class GraphNode : ValueObject {
+        public GraphNode(IGraphNode item, DirectedGraph graph, GraphEdge? source) {
             _graph = graph;
             Item = item;
             Source = source;
         }
         protected readonly DirectedGraph _graph;
 
-        internal IGraphNode Item { get; }
+        public IGraphNode Item { get; }
 
         private ICollection<GraphEdge>? _out;
         private ICollection<GraphEdge>? _in;
@@ -134,7 +134,7 @@ namespace Nijo.DotnetEx {
         /// <summary>
         /// この頂点から出て行く辺の一覧
         /// </summary>
-        internal IEnumerable<GraphEdge> Out {
+        public IEnumerable<GraphEdge> Out {
             get {
                 _out ??= _graph.Edges
                     .Where(edgeInfo => edgeInfo.Initial == Item.Id)
@@ -146,7 +146,7 @@ namespace Nijo.DotnetEx {
         /// <summary>
         /// この頂点に入る辺の一覧
         /// </summary>
-        internal IEnumerable<GraphEdge> In {
+        public IEnumerable<GraphEdge> In {
             get {
                 _in ??= _graph.Edges
                     .Where(edgeInfo => edgeInfo.Terminal == Item.Id)
@@ -165,12 +165,12 @@ namespace Nijo.DotnetEx {
         /// <summary>
         /// この頂点がどの経路を辿って生成されたか。Entryの最初の頂点の場合はnull
         /// </summary>
-        internal GraphEdge? Source { get; }
+        public GraphEdge? Source { get; }
 
         /// <summary>
         /// エントリーからの辺の一覧を返します。よりエントリーに近いほうから順番に返します。
         /// </summary>
-        internal GraphPath PathFromEntry() {
+        public GraphPath PathFromEntry() {
             var list = new List<GraphEdge>();
             var node = this;
             while (true) {
@@ -182,15 +182,15 @@ namespace Nijo.DotnetEx {
             return new GraphPath(list);
         }
 
-        internal GraphNode GetEntry() {
+        public GraphNode GetEntry() {
             return PathFromEntry().FirstOrDefault()?.Source ?? this;
         }
 
-        internal GraphNode AsEntry() {
+        public GraphNode AsEntry() {
             return new GraphNode(Item, _graph, null);
         }
 
-        internal GraphNode<T> As<T>() where T : IGraphNode {
+        public GraphNode<T> As<T>() where T : IGraphNode {
             return this is GraphNode<T> t
                 ? t
                 : new GraphNode<T>((T)Item, _graph, Source);
@@ -206,8 +206,8 @@ namespace Nijo.DotnetEx {
     /// <summary>
     /// 有向グラフの辺
     /// </summary>
-    internal class GraphEdge : ValueObject {
-        internal GraphEdge(GraphEdgeInfo info, DirectedGraph graph, GraphNode source) {
+    public class GraphEdge : ValueObject {
+        public GraphEdge(GraphEdgeInfo info, DirectedGraph graph, GraphNode source) {
             _graph = graph;
             _info = info;
             Source = source;
@@ -215,24 +215,24 @@ namespace Nijo.DotnetEx {
         private readonly GraphEdgeInfo _info;
         private readonly DirectedGraph _graph;
 
-        internal string RelationName => _info.RelationName;
-        internal IReadOnlyDictionary<string, object> Attributes => _info.Attributes;
+        public string RelationName => _info.RelationName;
+        public IReadOnlyDictionary<string, object> Attributes => _info.Attributes;
 
         /// <summary>
         /// 辺の始点ではなくこの辺がどこから辿ってきて生成されたか
         /// </summary>
-        internal GraphNode Source { get; }
+        public GraphNode Source { get; }
 
         private GraphNode? _initial;
         private GraphNode? _terminal;
         /// <summary>
         /// 辺の始点
         /// </summary>
-        internal GraphNode Initial => _initial ??= GoToNeighborNode(_info.Initial);
+        public GraphNode Initial => _initial ??= GoToNeighborNode(_info.Initial);
         /// <summary>
         /// 辺の終点
         /// </summary>
-        internal GraphNode Terminal => _terminal ??= GoToNeighborNode(_info.Terminal);
+        public GraphNode Terminal => _terminal ??= GoToNeighborNode(_info.Terminal);
 
         private GraphNode GoToNeighborNode(NodeId nodeId) {
             var newNode = new GraphNode(_graph.Nodes[nodeId], _graph, this);
@@ -240,7 +240,7 @@ namespace Nijo.DotnetEx {
             return newNode;
         }
 
-        internal GraphEdge<T> As<T>() where T : IGraphNode {
+        public GraphEdge<T> As<T>() where T : IGraphNode {
             return new GraphEdge<T>(_info, _graph, Source);
         }
 
@@ -252,29 +252,29 @@ namespace Nijo.DotnetEx {
         }
     }
 
-    internal class GraphNode<T> : GraphNode where T : IGraphNode {
-        internal GraphNode(T item, DirectedGraph graph, GraphEdge? source)
+    public class GraphNode<T> : GraphNode where T : IGraphNode {
+        public GraphNode(T item, DirectedGraph graph, GraphEdge? source)
             : base(item, graph, source) { }
 
-        internal new GraphNode<T> AsEntry() {
+        public new GraphNode<T> AsEntry() {
             return new GraphNode<T>(Item, _graph, null);
         }
 
-        internal new T Item => (T)base.Item;
+        public new T Item => (T)base.Item;
     }
-    internal class GraphEdge<T> : GraphEdge where T : IGraphNode {
-        internal GraphEdge(GraphEdgeInfo info, DirectedGraph graph, GraphNode source) : base(info, graph, source) {
+    public class GraphEdge<T> : GraphEdge where T : IGraphNode {
+        public GraphEdge(GraphEdgeInfo info, DirectedGraph graph, GraphNode source) : base(info, graph, source) {
         }
 
-        internal new GraphNode<T> Initial => base.Initial.As<T>();
-        internal new GraphNode<T> Terminal => base.Terminal.As<T>();
+        public new GraphNode<T> Initial => base.Initial.As<T>();
+        public new GraphNode<T> Terminal => base.Terminal.As<T>();
     }
 
     /// <summary>
     /// 同じ経路を同じオブジェクトと判定してDistinctやHashSetに使いたいためのクラス
     /// </summary>
-    internal class GraphPath : ValueObject, IEnumerable<GraphEdge> {
-        internal GraphPath(IReadOnlyList<GraphEdge> edges) {
+    public class GraphPath : ValueObject, IEnumerable<GraphEdge> {
+        public GraphPath(IReadOnlyList<GraphEdge> edges) {
             _edges = edges;
         }
         private readonly IReadOnlyList<GraphEdge> _edges;
@@ -282,7 +282,7 @@ namespace Nijo.DotnetEx {
         /// <summary>
         /// 指定のノード以降の区間のみを切り出す
         /// </summary>
-        internal GraphPath Since(GraphNode node) {
+        public GraphPath Since(GraphNode node) {
             var skip = true;
             var list = new List<GraphEdge>();
             foreach (var edge in _edges) {
@@ -294,7 +294,7 @@ namespace Nijo.DotnetEx {
         /// <summary>
         /// 指定のノード以前の区間のみを切り出す
         /// </summary>
-        internal GraphPath Until(GraphNode node) {
+        public GraphPath Until(GraphNode node) {
             var list = new List<GraphEdge>();
             foreach (var edge in _edges) {
                 if (edge.Source == node) break;
@@ -311,11 +311,11 @@ namespace Nijo.DotnetEx {
 
 
     #region VALUE
-    internal class NodeId : ValueObject {
-        internal NodeId(string value) {
+    public class NodeId : ValueObject {
+        public NodeId(string value) {
             Value = value;
         }
-        internal string Value { get; }
+        public string Value { get; }
 
         protected override IEnumerable<object?> ValueObjectIdentifiers() {
             yield return Value;
@@ -323,21 +323,23 @@ namespace Nijo.DotnetEx {
         public override string ToString() {
             return Value;
         }
+
+        public static NodeId Empty => new NodeId(string.Empty);
     }
-    internal interface IGraphNode {
+    public interface IGraphNode {
         NodeId Id { get; }
     }
-    internal sealed class GraphEdgeInfo {
-        internal required NodeId Initial { get; init; }
-        internal required NodeId Terminal { get; init; }
-        internal required string RelationName { get; init; }
-        internal IReadOnlyDictionary<string, object> Attributes { get; init; } = new Dictionary<string, object>();
+    public sealed class GraphEdgeInfo {
+        public required NodeId Initial { get; init; }
+        public required NodeId Terminal { get; init; }
+        public required string RelationName { get; init; }
+        public IReadOnlyDictionary<string, object> Attributes { get; init; } = new Dictionary<string, object>();
     }
     #endregion VALUE
 
 
-    internal static class DirectedGraphExtensions {
-        internal static IEnumerable<GraphNode<T>> SelectNeighbors<T>(this GraphNode<T> graphNode, Func<GraphNode<T>, IEnumerable<GraphNode<T>>> predicate) where T : IGraphNode {
+    public static class DirectedGraphExtensions {
+        public static IEnumerable<GraphNode<T>> SelectNeighbors<T>(this GraphNode<T> graphNode, Func<GraphNode<T>, IEnumerable<GraphNode<T>>> predicate) where T : IGraphNode {
             foreach (var item in predicate(graphNode)) {
                 yield return item;
 
@@ -346,7 +348,7 @@ namespace Nijo.DotnetEx {
                 }
             }
         }
-        internal static IEnumerable<GraphNode<T>> SelectThisAndNeighbors<T>(this GraphNode<T> graphNode, Func<GraphNode<T>, IEnumerable<GraphNode<T>>> predicate) where T : IGraphNode {
+        public static IEnumerable<GraphNode<T>> SelectThisAndNeighbors<T>(this GraphNode<T> graphNode, Func<GraphNode<T>, IEnumerable<GraphNode<T>>> predicate) where T : IGraphNode {
             yield return graphNode;
             foreach (var item in graphNode.SelectNeighbors(predicate)) {
                 yield return item;

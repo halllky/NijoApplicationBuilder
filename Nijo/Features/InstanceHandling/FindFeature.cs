@@ -26,7 +26,7 @@ namespace Nijo.Features.InstanceHandling {
             return $"`/{controller.SubDomain}/{ACTION_NAME}/{encoded.Join("/")}`";
         }
 
-        internal string RenderController(CodeRenderingContext _ctx) {
+        internal string RenderController(ICodeRenderingContext _ctx) {
             var keys = _aggregate
                 .GetKeys()
                 .Where(m => m is AggregateMember.ValueMember)
@@ -56,7 +56,7 @@ namespace Nijo.Features.InstanceHandling {
             """;
         }
 
-        internal string RenderEFCoreMethod(CodeRenderingContext _ctx) {
+        internal string RenderEFCoreMethod(ICodeRenderingContext _ctx) {
             var appSrv = new ApplicationService(_ctx.Config);
             var args = GetEFCoreMethodArgs().ToArray();
 

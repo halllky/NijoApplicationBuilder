@@ -10,8 +10,8 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Features.InstanceHandling {
-    internal class SingleView {
-        internal enum E_Type {
+    public class SingleView {
+        public enum E_Type {
             Create,
             View,
             Edit,

@@ -256,7 +256,7 @@ namespace Nijo.Features.Searching {
             }
         }
 
-        internal string RenderAspNetController(CodeRenderingContext ctx) {
+        internal string RenderAspNetController(ICodeRenderingContext ctx) {
             var controller = new WebClient.Controller(DisplayName.ToCSharpSafe());
 
             return $$"""
@@ -281,7 +281,7 @@ namespace Nijo.Features.Searching {
                 """;
         }
 
-        internal string RenderTypeScriptTypeDef(CodeRenderingContext ctx) {
+        internal string RenderTypeScriptTypeDef(ICodeRenderingContext ctx) {
             return $$"""
                 export type {{SearchConditionClassName}} = {
                 {{Fields.SelectTextTemplate(field => If(field.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
@@ -298,7 +298,7 @@ namespace Nijo.Features.Searching {
                 """;
         }
 
-        internal string RenderCSharpTypedef(CodeRenderingContext ctx) {
+        internal string RenderCSharpTypedef(ICodeRenderingContext ctx) {
             return $$"""
                 #pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければなりません
 

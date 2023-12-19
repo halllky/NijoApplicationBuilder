@@ -18,7 +18,7 @@ namespace Nijo.Features.InstanceHandling {
         internal string ArgType => _aggregate.Item.ClassName;
         internal string MethodName => $"Update{_aggregate.Item.DisplayName.ToCSharpSafe()}";
 
-        internal string RenderController(CodeRenderingContext ctx) {
+        internal string RenderController(ICodeRenderingContext ctx) {
             var controller = new WebClient.Controller(_aggregate.Item);
 
             return $$"""
@@ -40,7 +40,7 @@ namespace Nijo.Features.InstanceHandling {
                 """;
         }
 
-        internal string RenderEFCoreMethod(CodeRenderingContext ctx) {
+        internal string RenderEFCoreMethod(ICodeRenderingContext ctx) {
             var appSrv = new ApplicationService(ctx.Config);
             var controller = new WebClient.Controller(_aggregate.Item);
             var find = new FindFeature(_aggregate);

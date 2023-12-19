@@ -72,7 +72,7 @@ namespace Nijo.Features.Util {
                 """,
         };
 
-        private static string RenderIntConverter(CodeRenderingContext ctx) {
+        private static string RenderIntConverter(ICodeRenderingContext ctx) {
             return $$"""
                 namespace {{ctx.Config.RootNamespace}}.{{CUSTOM_CONVERTER_NAMESPACE}} {
                     using System.Text;

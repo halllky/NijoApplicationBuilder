@@ -35,7 +35,7 @@ namespace Nijo.Features.KeywordSearching {
 
         private const int LIST_BY_KEYWORD_MAX = 100;
 
-        internal string RenderController(CodeRenderingContext ctx) {
+        internal string RenderController(ICodeRenderingContext ctx) {
             var controller = GetController();
             return $$"""
                 namespace {{ctx.Config.RootNamespace}} {
@@ -53,7 +53,7 @@ namespace Nijo.Features.KeywordSearching {
                 """;
         }
 
-        internal string RenderDbContextMethod(CodeRenderingContext ctx) {
+        internal string RenderDbContextMethod(ICodeRenderingContext ctx) {
             var appSrv = new ApplicationService(ctx.Config);
             const string LIKE = "like";
 

@@ -7,10 +7,24 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Features.BackgroundService {
-    internal class BackgroundTaskEntity {
+
+    class BackgroundTaskFeature : NijoFeatureBase {
         internal static NodeId GraphNodeId => new NodeId($"NIJO::{CLASSNAME}");
 
-        internal static void EditSchema(AppSchemaBuilder builder) {
+        public override void GenerateCode(ICodeRenderingContext context) {
+            context.WebApiProject.RenderServiceProvider(serviceProvider => $$"""
+                {{serviceProvider}}.AddHostedService<BackgroundTaskLauncher>();
+                """);
+            context.AddQuery(GraphNodeId);
+            context.WebApiProject.EditDirectory(dir => {
+                dir.Directory("BackgorundTask", bgTaskDir => {
+                    bgTaskDir.Generate(BackgroundTask.Render());
+                    bgTaskDir.Generate(BackgroundTaskLauncher.Render());
+                });
+            });
+        }
+
+        public override void BuildSchema(AppSchemaBuilder builder) {
             builder.AddAggregate(new[] { GraphNodeId.Value }, new AggregateBuildOption {
                 Type = E_AggreateType.View,
             });

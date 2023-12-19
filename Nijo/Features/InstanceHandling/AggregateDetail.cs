@@ -39,7 +39,7 @@ namespace Nijo.Features.InstanceHandling {
                 .Where(m => m.DeclaringAggregate == _aggregate);
         }
 
-        internal virtual string RenderCSharp(CodeRenderingContext ctx) {
+        internal virtual string RenderCSharp(ICodeRenderingContext ctx) {
             return $$"""
                 namespace {{ctx.Config.RootNamespace}} {
                     using System;
@@ -64,7 +64,7 @@ namespace Nijo.Features.InstanceHandling {
                 """;
         }
 
-        internal virtual string RenderTypeScript(CodeRenderingContext ctx) {
+        internal virtual string RenderTypeScript(ICodeRenderingContext ctx) {
             return $$"""
                 export type {{_aggregate.Item.TypeScriptTypeName}} = {
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
@@ -119,7 +119,7 @@ namespace Nijo.Features.InstanceHandling {
 
 
         #region FromDbEntity
-        internal string FromDbEntity(CodeRenderingContext ctx) {
+        internal string FromDbEntity(ICodeRenderingContext ctx) {
             return $$"""
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}のデータベースから取得した内容を画面に表示する形に変換します。
@@ -191,7 +191,7 @@ namespace Nijo.Features.InstanceHandling {
 
 
         #region ToDbEntity
-        internal string ToDbEntity(CodeRenderingContext ctx) {
+        internal string ToDbEntity(ICodeRenderingContext ctx) {
             return $$"""
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}のオブジェクトをデータベースに保存する形に変換します。

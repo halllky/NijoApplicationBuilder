@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Features.WebClient {
-    internal class Controller {
+    public class Controller {
         internal Controller(string physicalName) {
             _physicalName = physicalName;
         }
@@ -16,7 +16,7 @@ namespace Nijo.Features.WebClient {
 
         private readonly string _physicalName;
 
-        internal string ClassName => $"{_physicalName}Controller";
+        public string ClassName => $"{_physicalName}Controller";
 
         internal const string SEARCH_ACTION_NAME = "list";
         internal const string CREATE_ACTION_NAME = "create";
@@ -32,7 +32,7 @@ namespace Nijo.Features.WebClient {
         internal string UpdateCommandApi => $"/{SubDomain}/{UPDATE_ACTION_NAME}";
         internal string DeleteCommandApi => $"/{SubDomain}/{DELETE_ACTION_NAME}";
 
-        internal string Render(CodeRenderingContext _ctx) {
+        internal string Render(ICodeRenderingContext _ctx) {
             var appSrv = new ApplicationService(_ctx.Config);
 
             return $$"""

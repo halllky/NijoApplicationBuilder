@@ -109,7 +109,9 @@
     <Content Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\webapi\Properties\**" CopyToOutputDirectory="PreserveNewest" LinkBase="ApplicationTemplates\REACT_AND_WEBAPI\webapi\Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Features\Wizard\" />
+    <Compile Remove="Features\Wizard\**" />
+    <EmbeddedResource Remove="Features\Wizard\**" />
+    <None Remove="Features\Wizard\**" />
   </ItemGroup>
   <ProjectExtensions>
     <MonoDevelop>
