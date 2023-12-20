@@ -12,15 +12,34 @@ namespace Nijo.Features.BackgroundService {
         internal static NodeId GraphNodeId => new NodeId($"NIJO::{CLASSNAME}");
 
         public override void GenerateCode(ICodeRenderingContext context) {
-            context.WebApiProject.RenderServiceProvider(serviceProvider => $$"""
-                {{serviceProvider}}.AddHostedService<BackgroundTaskLauncher>();
-                """);
-            context.AddQuery(GraphNodeId);
-            context.WebApiProject.EditDirectory(dir => {
-                dir.Directory("BackgorundTask", bgTaskDir => {
+            context.Render<Infrastucture>(infrastructure => {
+                infrastructure.ConfigureServicesWhenWebServer.Add(services => $$"""
+                    //// バッチ処理
+                    {{services}}.AddHostedService<BackgroundTaskLauncher>();
+                    """);
+
+                infrastructure.OnModelCreating.Add(builder => $$"""
+                    //// バッチ処理
+                    // {{context.Config.EntityNamespace}}.BackgroundTaskEntity.OnModelCreating({{builder}});
+                    """);
+            });
+            context.EditWebApiDirectory(genDir => {
+                genDir.Directory("BackgorundTask", bgTaskDir => {
                     bgTaskDir.Generate(BackgroundTask.Render());
                     bgTaskDir.Generate(BackgroundTaskLauncher.Render());
                 });
+
+                //genDir.Directory("BackgroundService", bsDir => {
+                //    bsDir.Generate(Features.BackgroundService.BackgroundTaskLauncher.Render());
+                //    bsDir.Generate(Features.BackgroundService.BackgroundTask.Render());
+
+                //    var bgTaskSearch = Features.BackgroundService.BackgroundTaskEntity.CreateSearchFeature(appSchema.Graph, ctx);
+                //    bsDir.Generate(bgTaskSearch.RenderControllerAction());
+                //    bsDir.Generate(bgTaskSearch.RenderCSharpClassDef());
+                //    bsDir.Generate(bgTaskSearch.RenderDbContextMethod());
+
+                //    bsDir.DeleteOtherFiles();
+                //});
             });
         }
 

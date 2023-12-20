@@ -13,10 +13,16 @@ namespace Nijo.Features {
     }
 
     /// <summary>
-    /// DbContextやASP.NETのControllerのような複数機能にまたがるクラスのソースコードファイル
+    /// DbContextやServiceProviderのビルドのような複数機能にまたがるクラスのソースコードファイル
     /// </summary>
     public interface ISourceFileUsedByMultiFeature {
-        SourceFile GenerateSourceFile(GraphNode<Aggregate> aggregate, IEnumerable<string> insertedSourceCode);
+        void GenerateSourceFile(ICodeRenderingContext context);
+    }
+    /// <summary>
+    /// 型定義やASP.NETのControllerのような複数機能にまたがるクラスのソースコードファイル
+    /// </summary>
+    public interface IAggregateSourceFileUsedByMultiFeature {
+        void GenerateSourceFile(ICodeRenderingContext context, GraphNode<Aggregate> aggregate);
     }
 
     /// <summary>

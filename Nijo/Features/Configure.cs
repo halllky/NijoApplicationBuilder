@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Core;
 using Nijo.Features.Logging;
+using static Nijo.Features.TemplateTextHelper;
 
 namespace Nijo.Features {
     internal class Configure {
@@ -16,7 +17,7 @@ namespace Nijo.Features {
 
         internal static string GetClassFullname(Config config) => $"{config.RootNamespace}.{CLASSNAME}";
 
-        internal static SourceFile Render() {
+        internal static SourceFile Render(Infrastucture infrastucture) {
             return new SourceFile {
                 FileName = "DefaultConfigurer.cs",
                 RenderContent = _ctx => {
@@ -57,8 +58,7 @@ namespace Nijo.Features {
                                         {{Util.Utility.CLASSNAME}}.{{Util.Utility.MODIFY_JSONOPTION}}(option.JsonSerializerOptions);
                                     });
 
-                                    //// バッチ処理
-                                    //builder.Services.AddHostedService<{{BackgroundService.BackgroundTaskLauncher.CLASSNAME}}>();
+                                    {{WithIndent(infrastucture.ConfigureServicesWhenWebServer.SelectTextTemplate(fn => fn.Invoke("builder.Services")), "           ")}}
                                 }
 
                                 /// <summary>
@@ -67,6 +67,8 @@ namespace Nijo.Features {
                                 internal static void {{INIT_WEBAPPLICATION}}(this WebApplication app) {
                                     // 前述AddCorsの設定をするならこちらも必要
                                     app.UseCors();
+
+                                    {{WithIndent(infrastucture.ConfigureApp.SelectTextTemplate(fn => fn.Invoke("app")), "           ")}}
                                 }
 
                                 /// <summary>
@@ -74,6 +76,8 @@ namespace Nijo.Features {
                                 /// </summary>
                                 internal static void {{INIT_BATCH_PROCESS}}(this IServiceCollection services) {
                                     {{CONFIGURE_SERVICES}}(services);
+
+                                    {{WithIndent(infrastucture.ConfigureServicesWhenBatchProcess.SelectTextTemplate(fn => fn.Invoke("services")), "           ")}}
                                 }
 
                                 internal static void {{CONFIGURE_SERVICES}}(IServiceCollection services) {
@@ -113,6 +117,8 @@ namespace Nijo.Features {
                                         var setting = provider.GetRequiredService<{{runtimeServerSettings}}>();
                                         return new {{DefaultLogger.CLASSNAME}}(setting.LogDirectory);
                                     });
+
+                                    {{WithIndent(infrastucture.ConfigureServices.SelectTextTemplate(fn => fn.Invoke("services")), "           ")}}
                                 }
                             }
 

@@ -31,27 +31,5 @@ namespace Nijo.Features.WebClient {
         internal string CreateCommandApi => $"/{SubDomain}/{CREATE_ACTION_NAME}";
         internal string UpdateCommandApi => $"/{SubDomain}/{UPDATE_ACTION_NAME}";
         internal string DeleteCommandApi => $"/{SubDomain}/{DELETE_ACTION_NAME}";
-
-        internal string Render(ICodeRenderingContext _ctx) {
-            var appSrv = new ApplicationService(_ctx.Config);
-
-            return $$"""
-                namespace {{_ctx.Config.RootNamespace}} {
-                    using Microsoft.AspNetCore.Mvc;
-                    using {{_ctx.Config.EntityNamespace}};
-
-                    [ApiController]
-                    [Route("{{SUBDOMAIN}}/[controller]")]
-                    public partial class {{ClassName}} : ControllerBase {
-                        public {{ClassName}}(ILogger<{{ClassName}}> logger, {{appSrv.ClassName}} applicationService) {
-                            _logger = logger;
-                            _applicationService = applicationService;
-                        }
-                        protected readonly ILogger<{{ClassName}}> _logger;
-                        protected readonly {{appSrv.ClassName}} _applicationService;
-                    }
-                }
-                """;
-        }
     }
 }

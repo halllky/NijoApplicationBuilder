@@ -17,11 +17,11 @@ namespace Nijo.Features {
             createCommand.ActionName = root => $"作成";
             createCommand.GenerateCode(context, rootAggregate);
 
-            context.WebApiProject.EditDirectory(genDir => {
+            context.EditWebApiDirectory(genDir => {
                 genDir.Generate(new AggregateRenderer(rootAggregate).Render());
             });
 
-            context.ReactProject.EditDirectory(reactDir => {
+            context.EditReactDirectory(reactDir => {
                 reactDir.Directory("pages", pageDir => {
                     pageDir.Directory(rootAggregate.Item.DisplayName.ToFileNameSafe(), aggregateDir => {
                         aggregateDir.Generate(new Searching.AggregateSearchFeature(rootAggregate).GetMultiView().RenderMultiView());

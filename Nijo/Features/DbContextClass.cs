@@ -15,7 +15,7 @@ namespace Nijo.Features {
         }
         private readonly Config _config;
 
-        internal SourceFile RenderDeclaring() => new SourceFile {
+        internal SourceFile RenderDeclaring(Infrastucture infrastucture) => new SourceFile {
             FileName = $"{_config.DbContextName.ToFileNameSafe()}.cs",
             RenderContent = ctx => {
                 var dbEntities = ctx.Schema
@@ -36,8 +36,7 @@ namespace Nijo.Features {
 
                                 {{WithIndent(dbEntities.Select(RenderEntity), "            ")}}
 
-                                //// バッチ処理
-                                // {{ctx.Config.EntityNamespace}}.BackgroundTaskEntity.OnModelCreating(modelBuilder);
+                                {{WithIndent(infrastucture.OnModelCreating.SelectTextTemplate(fn => fn.Invoke("modelBuilder")), "            ")}}
                             }
                         }
                     }
