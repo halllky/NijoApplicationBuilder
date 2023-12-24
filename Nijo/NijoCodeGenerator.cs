@@ -1,6 +1,6 @@
-using Nijo.Features;
-using Nijo.Features.InstanceHandling;
-using Nijo.Features.WebClient;
+using Nijo.Architecture;
+using Nijo.Architecture.InstanceHandling;
+using Nijo.Architecture.WebClient;
 using Nijo.Core;
 using Nijo.DotnetEx;
 using Microsoft.Extensions.Logging;
@@ -175,8 +175,8 @@ namespace Nijo {
         }
         internal static class Handlers {
             internal static KeyValuePair<string, Type> MasterData => KeyValuePair.Create("master-data", typeof(MasterDataFeature));
-            internal static KeyValuePair<string, Type> View => KeyValuePair.Create("view", typeof(Features.Searching.AggregateSearchFeature));
-            internal static KeyValuePair<string, Type> Command => KeyValuePair.Create("command", typeof(Features.Command.CommandFeature));
+            internal static KeyValuePair<string, Type> View => KeyValuePair.Create("view", typeof(Architecture.Searching.AggregateSearchFeature));
+            internal static KeyValuePair<string, Type> Command => KeyValuePair.Create("command", typeof(Architecture.Command.CommandFeature));
 
             internal static IEnumerable<KeyValuePair<string, Type>> GetAll() {
                 yield return MasterData;

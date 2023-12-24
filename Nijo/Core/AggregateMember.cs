@@ -1,5 +1,4 @@
-using Nijo.Features.InstanceHandling;
-using Nijo.Features.Util;
+using Nijo.Architecture.InstanceHandling;
 using Nijo.DotnetEx;
 using Microsoft.Extensions.Options;
 using System;

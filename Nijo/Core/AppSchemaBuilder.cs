@@ -9,9 +9,7 @@ namespace Nijo.Core {
 
     public sealed class AppSchemaBuilder {
 
-        public AppSchemaBuilder() {
-            // 基盤機能
-            new Features.BackgroundService.BackgroundTaskFeature().BuildSchema(this);
+        internal AppSchemaBuilder() {
         }
 
         private string? _applicationName;
