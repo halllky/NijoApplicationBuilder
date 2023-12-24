@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Features.InstanceHandling {
-    public class SingleView {
+    public class SingleView : Infrastucture.IReactPage {
         public enum E_Type {
             Create,
             View,
@@ -23,6 +23,18 @@ namespace Nijo.Features.InstanceHandling {
         }
         private readonly GraphNode<Aggregate> _aggregate;
         private readonly E_Type _type;
+
+        string Infrastucture.IReactPage.Url => Route;
+        string Infrastucture.IReactPage.DirNameInPageDir => _aggregate.Item.DisplayName.ToFileNameSafe();
+        string Infrastucture.IReactPage.ComponentPhysicalName => _type switch {
+            E_Type.Create => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}CreateView",
+            E_Type.View => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}DetailView",
+            E_Type.Edit => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}EditView",
+            _ => throw new NotImplementedException(),
+        };
+        bool Infrastucture.IReactPage.ShowMenu => false;
+        string? Infrastucture.IReactPage.LabelInMenu => null;
+        SourceFile Infrastucture.IReactPage.GetSourceFile() => Render();
 
         internal string FileName => _type switch {
             E_Type.Create => "new.tsx",

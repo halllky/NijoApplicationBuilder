@@ -38,22 +38,15 @@ namespace Nijo.Features.KeywordSearching {
         internal string RenderController(ICodeRenderingContext ctx) {
             var controller = GetController();
             return $$"""
-                namespace {{ctx.Config.RootNamespace}} {
-                    using Microsoft.AspNetCore.Mvc;
-                    using {{ctx.Config.EntityNamespace}};
-                
-                    partial class {{controller.ClassName}} {
-                        [HttpGet("{{GetActionName()}}")]
-                        public virtual IActionResult SearchByKeyword{{_aggregate.Item.UniqueId}}([FromQuery] string? keyword) {
-                            var items = _applicationService.{{AppServiceMeghodName}}(keyword);
-                            return this.JsonContent(items);
-                        }
-                    }
+                [HttpGet("{{GetActionName()}}")]
+                public virtual IActionResult SearchByKeyword{{_aggregate.Item.UniqueId}}([FromQuery] string? keyword) {
+                    var items = _applicationService.{{AppServiceMeghodName}}(keyword);
+                    return this.JsonContent(items);
                 }
                 """;
         }
 
-        internal string RenderDbContextMethod(ICodeRenderingContext ctx) {
+        internal string RenderAppSrvMethod(ICodeRenderingContext ctx) {
             var appSrv = new ApplicationService(ctx.Config);
             const string LIKE = "like";
 
@@ -83,36 +76,25 @@ namespace Nijo.Features.KeywordSearching {
             }
 
             return $$"""
-                namespace {{ctx.Config.RootNamespace}} {
-                    using System;
-                    using System.Collections;
-                    using System.Collections.Generic;
-                    using System.Linq;
-                    using Microsoft.EntityFrameworkCore;
-                    using Microsoft.EntityFrameworkCore.Infrastructure;
-                
-                    partial class {{appSrv.ClassName}} {
-                        /// <summary>
-                        /// {{_aggregate.Item.DisplayName}}をキーワードで検索します。
-                        /// </summary>
-                        public virtual IEnumerable<{{keyName.CSharpClassName}}> {{AppServiceMeghodName}}(string? keyword) {
-                            var query = (IQueryable<{{_aggregate.Item.EFCoreEntityClassName}}>){{appSrv.DbContext}}.{{_aggregate.Item.DbSetName}};
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}}をキーワードで検索します。
+                /// </summary>
+                public virtual IEnumerable<{{keyName.CSharpClassName}}> {{AppServiceMeghodName}}(string? keyword) {
+                    var query = (IQueryable<{{_aggregate.Item.EFCoreEntityClassName}}>){{appSrv.DbContext}}.{{_aggregate.Item.DbSetName}};
 
-                            if (!string.IsNullOrWhiteSpace(keyword)) {
-                                var {{LIKE}} = $"%{keyword.Trim().Replace("%", "\\%")}%";
-                                query = query.Where(item => {{WithIndent(filterColumns.SelectTextTemplate(path => $"EF.Functions.Like(item.{path}.ToString(), {LIKE})"), "                                         || ")}});
-                            }
-
-                            var results = query
-                                .Select(e => new {{keyName.CSharpClassName}} {
-                                    {{WithIndent(RenderKeyNameConvertingRecursively(_aggregate.AsEntry()), "                    ")}}
-                                })
-                                .OrderBy(m => m.{{orderColumn}})
-                                .Take({{LIST_BY_KEYWORD_MAX + 1}});
-
-                            return results.AsEnumerable();
-                        }
+                    if (!string.IsNullOrWhiteSpace(keyword)) {
+                        var {{LIKE}} = $"%{keyword.Trim().Replace("%", "\\%")}%";
+                        query = query.Where(item => {{WithIndent(filterColumns.SelectTextTemplate(path => $"EF.Functions.Like(item.{path}.ToString(), {LIKE})"), "                                 || ")}});
                     }
+
+                    var results = query
+                        .Select(e => new {{keyName.CSharpClassName}} {
+                            {{WithIndent(RenderKeyNameConvertingRecursively(_aggregate.AsEntry()), "            ")}}
+                        })
+                        .OrderBy(m => m.{{orderColumn}})
+                        .Take({{LIST_BY_KEYWORD_MAX + 1}});
+
+                    return results.AsEnumerable();
                 }
                 """;
         }

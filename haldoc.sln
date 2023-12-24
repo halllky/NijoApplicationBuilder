@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nijo.IntegrationTest", "Nij
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "自動テストで作成されたプロジェクト", "自動テストで作成されたプロジェクト\webapi\自動テストで作成されたプロジェクト.csproj", "{98E77C78-F8F1-41DA-87EE-903B002C09B8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nijo.Extensions", "Nijo.Extensions\Nijo.Extensions.csproj", "{39D699A9-0070-49CD-8F6C-42359D5F3396}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nijo.Extensions", "Nijo.Extensions\Nijo.Extensions.csproj", "{39D699A9-0070-49CD-8F6C-42359D5F3396}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

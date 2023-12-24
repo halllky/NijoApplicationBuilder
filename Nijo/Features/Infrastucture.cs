@@ -133,19 +133,20 @@ namespace Nijo.Features {
             context.EditWebApiDirectory(dir => {
                 var appSrv = new ApplicationService(context.Config);
                 var controller = new WebClient.Controller(aggregate.Item);
-                var find = new FindFeature(aggregate);
-                var create = new CreateFeature(aggregate);
-                var update = new UpdateFeature(aggregate);
-                var delete = new DeleteFeature(aggregate);
-                var keywordSearching = aggregate
-                    .EnumerateThisAndDescendants()
-                    .Select(a => new KeywordSearchingFeature(a));
 
                 dir.Generate(new SourceFile {
                     FileName = $"{aggregate.Item.DisplayName.ToFileNameSafe()}.cs",
                     RenderContent = _ => $$"""
                         namespace {{context.Config.RootNamespace}} {
+                            using System;
+                            using System.Collections;
+                            using System.Collections.Generic;
+                            using System.ComponentModel;
+                            using System.ComponentModel.DataAnnotations;
+                            using System.Linq;
                             using Microsoft.AspNetCore.Mvc;
+                            using Microsoft.EntityFrameworkCore;
+                            using Microsoft.EntityFrameworkCore.Infrastructure;
                             using {{context.Config.EntityNamespace}};
 
                             [ApiController]

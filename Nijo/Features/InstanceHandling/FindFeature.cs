@@ -26,7 +26,7 @@ namespace Nijo.Features.InstanceHandling {
             return $"`/{controller.SubDomain}/{ACTION_NAME}/{encoded.Join("/")}`";
         }
 
-        internal string RenderController(ICodeRenderingContext _ctx) {
+        internal string RenderController() {
             var keys = _aggregate
                 .GetKeys()
                 .Where(m => m is AggregateMember.ValueMember)
@@ -34,55 +34,37 @@ namespace Nijo.Features.InstanceHandling {
             var controller = new WebClient.Controller(_aggregate.Item);
 
             return $$"""
-            namespace {{_ctx.Config.RootNamespace}} {
-                using Microsoft.AspNetCore.Mvc;
-                using {{_ctx.Config.EntityNamespace}};
-
-                partial class {{controller.ClassName}} {
-                    [HttpGet("{{ACTION_NAME}}/{{keys.Select(m => "{" + m.MemberName + "}").Join("/")}}")]
-                    public virtual IActionResult Find({{keys.Select(m => $"{m.CSharpTypeName}? {m.MemberName}").Join(", ")}}) {
-            {{keys.SelectTextTemplate(m => $$"""
-                        if ({{m.MemberName}} == null) return BadRequest();
-            """)}}
-                        var instance = _applicationService.{{FindMethodName}}({{keys.Select(m => m.MemberName).Join(", ")}});
-                        if (instance == null) {
-                            return NotFound();
-                        } else {
-                            return this.JsonContent(instance);
-                        }
+                [HttpGet("{{ACTION_NAME}}/{{keys.Select(m => "{" + m.MemberName + "}").Join("/")}}")]
+                public virtual IActionResult Find({{keys.Select(m => $"{m.CSharpTypeName}? {m.MemberName}").Join(", ")}}) {
+                {{keys.SelectTextTemplate(m => $$"""
+                    if ({{m.MemberName}} == null) return BadRequest();
+                """)}}
+                    var instance = _applicationService.{{FindMethodName}}({{keys.Select(m => m.MemberName).Join(", ")}});
+                    if (instance == null) {
+                        return NotFound();
+                    } else {
+                        return this.JsonContent(instance);
                     }
                 }
-            }
-            """;
+                """;
         }
 
-        internal string RenderEFCoreMethod(ICodeRenderingContext _ctx) {
+        internal string RenderAppSrvMethod(ICodeRenderingContext _ctx) {
             var appSrv = new ApplicationService(_ctx.Config);
             var args = GetEFCoreMethodArgs().ToArray();
 
             return $$"""
-                namespace {{_ctx.Config.RootNamespace}} {
-                    using System;
-                    using System.Collections;
-                    using System.Collections.Generic;
-                    using System.Linq;
-                    using Microsoft.EntityFrameworkCore;
-                    using Microsoft.EntityFrameworkCore.Infrastructure;
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}}のキー情報から対象データの詳細を検索して返します。
+                /// </summary>
+                public virtual {{FindMethodReturnType}}? {{FindMethodName}}({{args.Select(m => $"{m.CSharpTypeName}? {m.MemberName}").Join(", ")}}) {
 
-                    partial class {{appSrv.ClassName}} {
-                        /// <summary>
-                        /// {{_aggregate.Item.DisplayName}}のキー情報から対象データの詳細を検索して返します。
-                        /// </summary>
-                        public virtual {{FindMethodReturnType}}? {{FindMethodName}}({{args.Select(m => $"{m.CSharpTypeName}? {m.MemberName}").Join(", ")}}) {
+                    {{WithIndent(RenderDbEntityLoading(appSrv.DbContext, "entity", args.Select(a => a.MemberName).ToArray(), tracks: false, includeRefs: true), "    ")}}
 
-                            {{WithIndent(RenderDbEntityLoading(appSrv.DbContext, "entity", args.Select(a => a.MemberName).ToArray(), tracks: false, includeRefs: true), "            ")}}
+                    if (entity == null) return null;
 
-                            if (entity == null) return null;
-
-                            var aggregateInstance = {{_aggregate.Item.ClassName}}.{{AggregateDetail.FROM_DBENTITY}}(entity);
-                            return aggregateInstance;
-                        }
-                    }
+                    var aggregateInstance = {{_aggregate.Item.ClassName}}.{{AggregateDetail.FROM_DBENTITY}}(entity);
+                    return aggregateInstance;
                 }
                 """;
         }

@@ -18,29 +18,22 @@ namespace Nijo.Features.InstanceHandling {
         internal string ArgType => _aggregate.Item.ClassName;
         internal string MethodName => $"Update{_aggregate.Item.DisplayName.ToCSharpSafe()}";
 
-        internal string RenderController(ICodeRenderingContext ctx) {
+        internal string RenderController() {
             var controller = new WebClient.Controller(_aggregate.Item);
 
             return $$"""
-                namespace {{ctx.Config.RootNamespace}} {
-                    using Microsoft.AspNetCore.Mvc;
-                    using {{ctx.Config.EntityNamespace}};
-
-                    partial class {{controller.ClassName}} {
-                        [HttpPost("{{WebClient.Controller.UPDATE_ACTION_NAME}}")]
-                        public virtual IActionResult Update({{_aggregate.Item.ClassName}} param) {
-                            if (_applicationService.{{MethodName}}(param, out var updated, out var errors)) {
-                                return this.JsonContent(updated);
-                            } else {
-                                return BadRequest(this.JsonContent(errors));
-                            }
-                        }
+                [HttpPost("{{WebClient.Controller.UPDATE_ACTION_NAME}}")]
+                public virtual IActionResult Update({{_aggregate.Item.ClassName}} param) {
+                    if (_applicationService.{{MethodName}}(param, out var updated, out var errors)) {
+                        return this.JsonContent(updated);
+                    } else {
+                        return BadRequest(this.JsonContent(errors));
                     }
                 }
                 """;
         }
 
-        internal string RenderEFCoreMethod(ICodeRenderingContext ctx) {
+        internal string RenderAppSrvMethod(ICodeRenderingContext ctx) {
             var appSrv = new ApplicationService(ctx.Config);
             var controller = new WebClient.Controller(_aggregate.Item);
             var find = new FindFeature(_aggregate);
@@ -53,51 +46,40 @@ namespace Nijo.Features.InstanceHandling {
                 .ToArray();
 
             return $$"""
-                namespace {{ctx.Config.RootNamespace}} {
-                    using System;
-                    using System.Collections;
-                    using System.Collections.Generic;
-                    using System.Linq;
-                    using Microsoft.EntityFrameworkCore;
-                    using Microsoft.EntityFrameworkCore.Infrastructure;
+                public virtual bool {{MethodName}}({{detail.ClassName}} after, out {{detail.ClassName}} updated, out ICollection<string> errors) {
+                    errors = new List<string>();
 
-                    partial class {{appSrv.ClassName}} {
-                        public virtual bool {{MethodName}}({{detail.ClassName}} after, out {{detail.ClassName}} updated, out ICollection<string> errors) {
-                            errors = new List<string>();
+                    {{WithIndent(find.RenderDbEntityLoading(appSrv.DbContext, "beforeDbEntity", searchKeys, tracks: false, includeRefs: false), "    ")}}
 
-                            {{WithIndent(find.RenderDbEntityLoading(appSrv.DbContext, "beforeDbEntity", searchKeys, tracks: false, includeRefs: false), "            ")}}
-
-                            if (beforeDbEntity == null) {
-                                updated = new {{_aggregate.Item.ClassName}}();
-                                errors.Add("更新対象のデータが見つかりません。");
-                                return false;
-                            }
-
-                            var afterDbEntity = after.{{AggregateDetail.TO_DBENTITY}}();
-
-                            // Attach
-                            {{appSrv.DbContext}}.Entry(afterDbEntity).State = EntityState.Modified;
-
-                            {{WithIndent(RenderDescendantsAttaching(appSrv.DbContext, "beforeDbEntity", "afterDbEntity"), "            ")}}
-
-                            try {
-                                {{appSrv.DbContext}}.SaveChanges();
-                            } catch (DbUpdateException ex) {
-                                updated = new {{_aggregate.Item.ClassName}}();
-                                foreach (var msg in ex.GetMessagesRecursively()) errors.Add(msg);
-                                return false;
-                            }
-
-                            var afterUpdate = this.{{find.FindMethodName}}({{searchKeys.Join(", ")}});
-                            if (afterUpdate == null) {
-                                updated = new {{_aggregate.Item.ClassName}}();
-                                errors.Add("更新後のデータの再読み込みに失敗しました。");
-                                return false;
-                            }
-                            updated = afterUpdate;
-                            return true;
-                        }
+                    if (beforeDbEntity == null) {
+                        updated = new {{_aggregate.Item.ClassName}}();
+                        errors.Add("更新対象のデータが見つかりません。");
+                        return false;
                     }
+
+                    var afterDbEntity = after.{{AggregateDetail.TO_DBENTITY}}();
+
+                    // Attach
+                    {{appSrv.DbContext}}.Entry(afterDbEntity).State = EntityState.Modified;
+
+                    {{WithIndent(RenderDescendantsAttaching(appSrv.DbContext, "beforeDbEntity", "afterDbEntity"), "    ")}}
+
+                    try {
+                        {{appSrv.DbContext}}.SaveChanges();
+                    } catch (DbUpdateException ex) {
+                        updated = new {{_aggregate.Item.ClassName}}();
+                        foreach (var msg in ex.GetMessagesRecursively()) errors.Add(msg);
+                        return false;
+                    }
+
+                    var afterUpdate = this.{{find.FindMethodName}}({{searchKeys.Join(", ")}});
+                    if (afterUpdate == null) {
+                        updated = new {{_aggregate.Item.ClassName}}();
+                        errors.Add("更新後のデータの再読み込みに失敗しました。");
+                        return false;
+                    }
+                    updated = afterUpdate;
+                    return true;
                 }
                 """;
         }
