@@ -9,9 +9,9 @@ using static Nijo.Features.BackgroundService.BackgroundTaskFeature;
 namespace Nijo.Features.BackgroundService {
     internal class BackgroundTask {
 
-        internal static SourceFile Render() => new SourceFile {
+        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
             FileName = "BackgroundTask.cs",
-            RenderContent = ctx => $$"""
+            RenderContent = () => $$"""
                 using System.Reflection;
                 using System.Text.Json;
 

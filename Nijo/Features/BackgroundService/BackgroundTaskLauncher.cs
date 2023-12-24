@@ -10,9 +10,9 @@ namespace Nijo.Features.BackgroundService {
     internal class BackgroundTaskLauncher {
         internal const string CLASSNAME = "BackgroundTaskLauncher";
 
-        internal static SourceFile Render() => new SourceFile {
+        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
             FileName = "BackgroundTaskLauncher.cs",
-            RenderContent = ctx => {
+            RenderContent = () => {
                 var dbContextFullName = $"{ctx.Config.DbContextNamespace}.{ctx.Config.DbContextName}";
                 var dbSetName = ctx.Schema.GetAggregate(GraphNodeId).Item.DbSetName;
 

@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 namespace Nijo.Features.Util {
     internal class DotnetExtensions {
 
-        internal static SourceFile Render() => new SourceFile {
+        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
             FileName = $"DotnetExtensions.cs",
-            RenderContent = ctx => $$"""
+            RenderContent = () => $$"""
                 namespace {{ctx.Config.RootNamespace}} {
                     using System;
                     using System.Collections;

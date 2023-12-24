@@ -90,7 +90,7 @@ namespace Nijo {
             File.Move(beforeCsproj, afterCsproj);
 
             // 自動生成されないクラスの初期値
-            var appSrv = new ApplicationService(config);
+            var appSrv = new ApplicationService();
             var overrideAppSrv = Path.Combine(_project.WebApiProjectRoot, appSrv.ConcreteClassFileName);
             File.WriteAllText(overrideAppSrv, $$"""
                 namespace {{config.RootNamespace}} {
@@ -222,7 +222,7 @@ namespace Nijo {
                 var ext = System.IO.Path.GetExtension(file).ToLower();
                 sw.NewLine = ext == ".cs" ? "\r\n" : "\n";
                 var content = sourceFile
-                    .RenderContent(_ctx)
+                    .RenderContent()
                     .Replace(Environment.NewLine, sw.NewLine);
                 sw.WriteLine(content);
             }

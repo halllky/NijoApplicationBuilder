@@ -18,11 +18,11 @@ namespace Nijo.Features {
 
         internal static string GetClassFullname(Config config) => $"{config.RootNamespace}.{CLASSNAME}";
 
-        internal static SourceFile Render(Infrastucture infrastucture) {
+        internal static SourceFile Render(ICodeRenderingContext _ctx, Infrastucture infrastucture) {
             return new SourceFile {
                 FileName = "DefaultConfigurer.cs",
-                RenderContent = _ctx => {
-                    var appSrv = new ApplicationService(_ctx.Config);
+                RenderContent = () => {
+                    var appSrv = new ApplicationService();
                     var runtimeServerSettings = Util.RuntimeSettings.ServerSetiingTypeFullName;
 
                     return $$"""

@@ -7,6 +7,6 @@ using System.Threading.Tasks;
 namespace Nijo.Util.CodeGenerating {
     public class SourceFile {
         public required string FileName { get; init; }
-        public required Func<ICodeRenderingContext, string> RenderContent { get; init; }
+        public required Func<string> RenderContent { get; init; }
     }
 }

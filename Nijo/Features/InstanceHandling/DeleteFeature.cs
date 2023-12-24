@@ -35,8 +35,8 @@ namespace Nijo.Features.InstanceHandling {
                 """;
         }
 
-        internal string RenderAppSrvMethod(ICodeRenderingContext ctx) {
-            var appSrv = new ApplicationService(ctx.Config);
+        internal string RenderAppSrvMethod() {
+            var appSrv = new ApplicationService();
             var controller = new WebClient.Controller(_aggregate.Item);
             var args = GetEFCoreMethodArgs().ToArray();
             var find = new FindFeature(_aggregate);

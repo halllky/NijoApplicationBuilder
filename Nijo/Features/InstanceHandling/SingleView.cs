@@ -76,7 +76,7 @@ namespace Nijo.Features.InstanceHandling {
 
         internal SourceFile Render() => new SourceFile {
             FileName = FileName,
-            RenderContent = ctx => {
+            RenderContent = () => {
                 var controller = new Controller(_aggregate.Item);
                 var multiViewUrl = Searching.AggregateSearchFeature.GetMultiView(_aggregate).Url;
                 var createEmptyObject = new TSInitializerFunction(_aggregate).FunctionName;

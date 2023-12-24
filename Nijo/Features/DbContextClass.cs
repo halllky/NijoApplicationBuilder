@@ -16,9 +16,9 @@ namespace Nijo.Features {
         }
         private readonly Config _config;
 
-        internal SourceFile RenderDeclaring(Infrastucture infrastucture) => new SourceFile {
+        internal SourceFile RenderDeclaring(ICodeRenderingContext ctx, Infrastucture infrastucture) => new SourceFile {
             FileName = $"{_config.DbContextName.ToFileNameSafe()}.cs",
-            RenderContent = ctx => {
+            RenderContent = () => {
                 var onModelCreatings = infrastucture._itemsByAggregate
                     .Where(x => x.Value.OnModelCreating.Any())
                     .Select(x => $"OnModelCreating_{x.Key.Item.ClassName}");

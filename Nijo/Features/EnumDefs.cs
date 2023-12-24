@@ -9,9 +9,9 @@ using Nijo.Util.CodeGenerating;
 namespace Nijo.Features {
     internal class EnumDefs {
 
-        internal static SourceFile Render() => new SourceFile {
+        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
             FileName = "Enum.cs",
-            RenderContent = ctx => $$"""
+            RenderContent = () => $$"""
                 namespace {{ctx.Config.RootNamespace}} {
                     using System.ComponentModel.DataAnnotations;
 

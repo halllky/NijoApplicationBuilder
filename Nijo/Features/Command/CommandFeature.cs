@@ -53,7 +53,7 @@ namespace Nijo.Features.Command {
                         }
                         """);
 
-                    var appSrv = new ApplicationService(context.Config);
+                    var appSrv = new ApplicationService();
                     builder.AppServiceMethods.Add(AppSrvMethod ?? $$"""
                         public virtual bool {{actionName}}({{command.ClassName}} command, out ICollection<string> errors) {
                             // このメソッドは自動生成の対象外です。

@@ -12,9 +12,9 @@ namespace Nijo.Features.Util {
         internal const string FROM = "From";
         internal const string TO = "To";
 
-        internal static SourceFile Render() => new SourceFile {
+        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
             FileName = $"FromTo.cs",
-            RenderContent = ctx => $$"""
+            RenderContent = () => $$"""
                 using System;
                 namespace {{ctx.Config.RootNamespace}} {
                     public partial class {{CLASSNAME}} {

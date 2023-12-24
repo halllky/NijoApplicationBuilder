@@ -44,7 +44,7 @@ namespace Nijo.Features.Searching {
 
         internal SourceFile RenderMultiView() => new SourceFile {
             FileName = REACT_FILENAME,
-            RenderContent = ctx => {
+            RenderContent = () => {
                 var useQueryKey = $"{DisplayName.ToCSharpSafe()}::search";
                 var searchApi = $"/{Controller.SUBDOMAIN}/{DisplayName.ToCSharpSafe()}/{Controller.SEARCH_ACTION_NAME}";
 
@@ -283,9 +283,9 @@ namespace Nijo.Features.Searching {
                 """;
         }
 
-        internal static SourceFile RenderCSharpSearchConditionBaseClass() => new SourceFile {
+        internal static SourceFile RenderCSharpSearchConditionBaseClass(ICodeRenderingContext ctx) => new SourceFile {
             FileName = "SearchConditionBase.cs",
-            RenderContent = ctx => $$"""
+            RenderContent = () => $$"""
                 namespace {{ctx.Config.RootNamespace}} {
                     public abstract class {{SEARCHCONDITION_BASE_CLASS_NAME}} {
                         public int? {{SEARCHCONDITION_PAGE_PROP_NAME}} { get; set; }

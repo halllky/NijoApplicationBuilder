@@ -127,9 +127,9 @@ namespace Nijo.Features.Util {
         };
 
 
-        internal static SourceFile Render() => new SourceFile {
+        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
             FileName = "ValueObjects.cs",
-            RenderContent = ctx => {
+            RenderContent = () => {
                 return $$"""
                     namespace {{ctx.Config.RootNamespace}} {
                         using Microsoft.EntityFrameworkCore.Storage.ValueConversion;

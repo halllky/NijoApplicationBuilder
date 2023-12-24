@@ -129,7 +129,7 @@ namespace Nijo.Features.Searching {
         /// Viewなどオーバーライド前提のものの検索処理
         /// </summary>
         private string RenderNotImplementedSearchMethod(ICodeRenderingContext ctx, GraphNode<Aggregate> rootAggregate) {
-            var appSrv = new ApplicationService(ctx.Config);
+            var appSrv = new ApplicationService();
             var multiView = GetMultiView(rootAggregate);
 
             return $$"""
@@ -144,7 +144,7 @@ namespace Nijo.Features.Searching {
         /// 標準の検索処理
         /// </summary>
         private string RenderSearchMethod(ICodeRenderingContext ctx, GraphNode<Aggregate> rootAggregate) {
-            var appSrv = new ApplicationService(ctx.Config);
+            var appSrv = new ApplicationService();
             var fields = GetFields(rootAggregate);
             var selectClause = fields.Select(field => new {
                 resultMemberName = field.Value.PhysicalName,

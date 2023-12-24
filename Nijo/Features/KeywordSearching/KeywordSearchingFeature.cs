@@ -36,7 +36,7 @@ namespace Nijo.Features.KeywordSearching {
 
         private const int LIST_BY_KEYWORD_MAX = 100;
 
-        internal string RenderController(ICodeRenderingContext ctx) {
+        internal string RenderController() {
             var controller = GetController();
             return $$"""
                 [HttpGet("{{GetActionName()}}")]
@@ -47,8 +47,8 @@ namespace Nijo.Features.KeywordSearching {
                 """;
         }
 
-        internal string RenderAppSrvMethod(ICodeRenderingContext ctx) {
-            var appSrv = new ApplicationService(ctx.Config);
+        internal string RenderAppSrvMethod() {
+            var appSrv = new ApplicationService();
             const string LIKE = "like";
 
             var keyName = new RefTargetKeyName(_aggregate);

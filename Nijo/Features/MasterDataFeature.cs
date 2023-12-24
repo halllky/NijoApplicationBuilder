@@ -20,7 +20,7 @@ namespace Nijo.Features {
             createCommand.CommandName = root => $"{root.Item.ClassName}新規作成";
             createCommand.ActionName = root => $"{root.Item.ClassName}作成";
             createCommand.ControllerAction = createFeature.RenderController();
-            createCommand.AppSrvMethod = createFeature.RenderAppSrvMethod(context);
+            createCommand.AppSrvMethod = createFeature.RenderAppSrvMethod();
             createCommand.GenerateCode(context, rootAggregate);
 
             // Search
@@ -37,9 +37,9 @@ namespace Nijo.Features {
                     builder.ControllerActions.Add(findFeature.RenderController());
                     builder.ControllerActions.Add(updateFeature.RenderController());
                     builder.ControllerActions.Add(deleteFeature.RenderController());
-                    builder.AppServiceMethods.Add(findFeature.RenderAppSrvMethod(context));
-                    builder.AppServiceMethods.Add(updateFeature.RenderAppSrvMethod(context));
-                    builder.AppServiceMethods.Add(deleteFeature.RenderAppSrvMethod(context));
+                    builder.AppServiceMethods.Add(findFeature.RenderAppSrvMethod());
+                    builder.AppServiceMethods.Add(updateFeature.RenderAppSrvMethod());
+                    builder.AppServiceMethods.Add(deleteFeature.RenderAppSrvMethod());
 
                     foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
                         var aggregateDetail = new AggregateDetail(aggregate);
@@ -55,8 +55,8 @@ namespace Nijo.Features {
                         var refTargetKeyName = new RefTargetKeyName(aggregate);
                         builder.DataClassDeclaring.Add(refTargetKeyName.RenderCSharpDeclaring());
                         builder.TypeScriptDataTypes.Add(refTargetKeyName.RenderTypeScriptDeclaring());
-                        builder.ControllerActions.Add(keywordSearching.RenderController(context));
-                        builder.AppServiceMethods.Add(keywordSearching.RenderAppSrvMethod(context));
+                        builder.ControllerActions.Add(keywordSearching.RenderController());
+                        builder.AppServiceMethods.Add(keywordSearching.RenderAppSrvMethod());
                     }
 
                     // DbContext

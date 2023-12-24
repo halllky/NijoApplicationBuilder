@@ -24,9 +24,9 @@ namespace Nijo.Features.KeywordSearching {
         internal string Api => new KeywordSearchingFeature(_aggregate).GetUri();
         internal RefTargetKeyName KeyName => new RefTargetKeyName(_aggregate);
 
-        internal static SourceFile RenderDeclaringFile() => new SourceFile {
+        internal static SourceFile RenderDeclaringFile(ICodeRenderingContext ctx) => new SourceFile {
             FileName = "AggregateComboBox.tsx",
-            RenderContent = ctx => $$"""
+            RenderContent = () => $$"""
                 import React, { useState, useCallback } from "react"
                 import { useHttpRequest } from "../util"
                 import { AsyncComboBox, defineCustomComponent } from "../user-input"

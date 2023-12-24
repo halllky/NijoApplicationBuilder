@@ -17,9 +17,9 @@ namespace Nijo.Features.Util {
         internal const string GET_DEFAULT = "GetDefault";
         internal const string GET_ACTIVE_CONNSTR = "GetActiveConnectionString";
 
-        internal static SourceFile Render() => new SourceFile {
+        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
             FileName = $"RuntimeSettings.cs",
-            RenderContent = ctx => $$"""
+            RenderContent = () => $$"""
                 namespace {{ctx.Config.RootNamespace}} {
                     using System.Text.Json;
                     using System.Text.Json.Serialization;

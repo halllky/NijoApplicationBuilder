@@ -15,9 +15,9 @@ namespace Nijo.Features.Util {
     internal class DummyDataGenerator {
         private const int DATA_COUNT = 4;
 
-        internal static SourceFile Render() => new SourceFile {
+        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
             FileName = "useDummyDataGenerator.ts",
-            RenderContent = ctx => {
+            RenderContent = () => {
                 var random = new Random(0);
                 var ordered = ctx.Schema
                     .RootAggregatesOrderByDataFlow()

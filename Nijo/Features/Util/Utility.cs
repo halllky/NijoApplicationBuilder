@@ -19,9 +19,9 @@ namespace Nijo.Features.Util {
         private const string CUSTOM_CONVERTER_NAMESPACE = "CustomJsonConverters";
         private const string INT_CONVERTER = "IntegerValueConverter";
 
-        internal static SourceFile RenderJsonConversionMethods() => new SourceFile {
+        internal static SourceFile RenderJsonConversionMethods(ICodeRenderingContext ctx) => new SourceFile {
             FileName = "JsonConversion.cs",
-            RenderContent = ctx => $$"""
+            RenderContent = () => $$"""
                 namespace {{ctx.Config.RootNamespace}} {
                     using System.Text.Json;
                     using System.Text.Json.Nodes;

@@ -50,8 +50,8 @@ namespace Nijo.Features.InstanceHandling {
                 """;
         }
 
-        internal string RenderAppSrvMethod(ICodeRenderingContext _ctx) {
-            var appSrv = new ApplicationService(_ctx.Config);
+        internal string RenderAppSrvMethod() {
+            var appSrv = new ApplicationService();
             var args = GetEFCoreMethodArgs().ToArray();
 
             return $$"""
