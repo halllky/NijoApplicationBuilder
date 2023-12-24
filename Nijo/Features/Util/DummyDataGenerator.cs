@@ -20,7 +20,7 @@ namespace Nijo.Features.Util {
                 var random = new Random(0);
                 var ordered = ctx.Schema
                     .RootAggregatesOrderByDataFlow()
-                    .Where(root => root.IsCreatable());
+                    .Where(root => root.Item.Options.Handler == NijoCodeGenerator.Handlers.MasterData.Key);
                 var xTimes = ordered
                     .SelectMany(root => Enumerable
                         .Repeat(root, DATA_COUNT)

@@ -127,23 +127,7 @@ namespace Nijo.Core {
         }
 
         internal static bool IsStored(this GraphNode<Aggregate> aggregate) {
-            return aggregate.GetRoot().Item.Options.Type == E_AggreateType.MasterData;
-        }
-        internal static bool IsSearchable(this GraphNode<Aggregate> aggregate) {
-            var type = aggregate.GetRoot().Item.Options.Type;
-            return type == E_AggreateType.MasterData
-                || type == E_AggreateType.View;
-        }
-        internal static bool IsCreatable(this GraphNode<Aggregate> aggregate) {
-            var type = aggregate.GetRoot().Item.Options.Type;
-            return type == E_AggreateType.MasterData
-                || type == E_AggreateType.Command;
-        }
-        internal static bool IsEditable(this GraphNode<Aggregate> aggregate) {
-            return aggregate.GetRoot().Item.Options.Type == E_AggreateType.MasterData;
-        }
-        internal static bool IsDeletable(this GraphNode<Aggregate> aggregate) {
-            return aggregate.IsCreatable() && aggregate.IsEditable();
+            return aggregate.GetRoot().Item.Options.Handler == NijoCodeGenerator.Handlers.MasterData.Key;
         }
 
         internal static IEnumerable<GraphEdge<Aggregate>> GetReferedEdges(this GraphNode<Aggregate> graphNode) {

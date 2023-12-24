@@ -77,7 +77,7 @@ namespace Nijo.Features.InstanceHandling {
             FileName = FileName,
             RenderContent = ctx => {
                 var controller = new Controller(_aggregate.Item);
-                var multiViewUrl = new Searching.AggregateSearchFeature(_aggregate).GetMultiView().Url;
+                var multiViewUrl = Searching.AggregateSearchFeature.GetMultiView(_aggregate).Url;
                 var createEmptyObject = new TSInitializerFunction(_aggregate).FunctionName;
 
                 var find = new FindFeature(_aggregate);

@@ -30,7 +30,7 @@ namespace Nijo.Features.WebClient {
 
                     {{root.EnumerateThisAndDescendants().SelectTextTemplate(aggregate => new RefTargetKeyName(aggregate).RenderTypeScriptDeclaring())}}
 
-                    {{new Searching.AggregateSearchFeature(root).GetMultiView().RenderTypeScriptTypeDef(ctx)}}
+                    {{Searching.AggregateSearchFeature.GetMultiView(root).RenderTypeScriptTypeDef(ctx)}}
 
                     """)}}
                     """,

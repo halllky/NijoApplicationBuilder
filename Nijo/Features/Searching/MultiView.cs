@@ -265,32 +265,6 @@ namespace Nijo.Features.Searching {
             }
         }
 
-        [Obsolete("AggregateSearchFeatureの中で直にレンダリングする")]
-        internal string RenderAspNetController(ICodeRenderingContext ctx) {
-            var controller = new WebClient.Controller(DisplayName.ToCSharpSafe());
-
-            return $$"""
-                namespace {{ctx.Config.RootNamespace}} {
-                    using Microsoft.AspNetCore.Mvc;
-                    using {{ctx.Config.EntityNamespace}};
-
-                    partial class {{controller.ClassName}} {
-                        [HttpGet("{{WebClient.Controller.SEARCH_ACTION_NAME}}")]
-                        public virtual IActionResult Search([FromQuery] string param) {
-                            var json = System.Web.HttpUtility.UrlDecode(param);
-                            var condition = string.IsNullOrWhiteSpace(json)
-                                ? new {{SearchConditionClassName}}()
-                                : {{Utility.CLASSNAME}}.{{Utility.PARSE_JSON}}<{{SearchConditionClassName}}>(json);
-                            var searchResult = _applicationService
-                                .{{AppSrvMethodName}}(condition)
-                                .AsEnumerable();
-                            return this.JsonContent(searchResult);
-                        }
-                    }
-                }
-                """;
-        }
-
         internal string RenderTypeScriptTypeDef(ICodeRenderingContext ctx) {
             return $$"""
                 export type {{SearchConditionClassName}} = {
@@ -304,40 +278,6 @@ namespace Nijo.Features.Searching {
                 {{Fields.SelectTextTemplate(field => $$"""
                   {{field.PhysicalName}}?: {{field.MemberType.GetTypeScriptTypeName()}}
                 """)}}
-                }
-                """;
-        }
-
-        [Obsolete("AggregateSearchFeatureの中で直にレンダリングする")]
-        internal string RenderCSharpTypedef(ICodeRenderingContext ctx) {
-            return $$"""
-                #pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければなりません
-
-                namespace {{ctx.Config.RootNamespace}} {
-                    using System;
-                    using System.Collections;
-                    using System.Collections.Generic;
-                    using System.Linq;
-
-                    /// <summary>
-                    /// {{DisplayName}}の一覧検索処理の検索条件を表すクラスです。
-                    /// </summary>
-                    public partial class {{SearchConditionClassName}} : {{SEARCHCONDITION_BASE_CLASS_NAME}} {
-                {{Fields.SelectTextTemplate(member => If(member.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
-                        public {{Util.FromTo.CLASSNAME}}<{{member.MemberType.GetCSharpTypeName()}}?> {{member.PhysicalName}} { get; set; } = new();
-                """).Else(() => $$"""
-                        public {{member.MemberType.GetCSharpTypeName()}}? {{member.PhysicalName}} { get; set; }
-                """))}}
-                    }
-
-                    /// <summary>
-                    /// {{DisplayName}}の一覧検索処理の検索結果1件を表すクラスです。
-                    /// </summary>
-                    public partial class {{SearchResultClassName}} {
-                {{Fields.SelectTextTemplate(member => $$"""
-                        public {{member.MemberType.GetCSharpTypeName()}}? {{member.PhysicalName}} { get; set; }
-                """)}}
-                    }
                 }
                 """;
         }

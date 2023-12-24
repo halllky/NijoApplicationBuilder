@@ -257,15 +257,7 @@ namespace Nijo.Core {
         }
     }
 
-    public enum E_AggreateType {
-        MasterData,
-        View,
-        Command,
-    }
-
     public sealed class AggregateBuildOption {
-        [Obsolete]
-        public E_AggreateType? Type { get; set; }
         public bool? IsPrimary { get; set; }
         public bool? IsArray { get; set; }
         public GroupOption? IsVariationGroupMember { get; set; }

@@ -23,7 +23,7 @@ namespace Nijo.Features {
             createCommand.GenerateCode(context, rootAggregate);
 
             // Search
-            var searchFeature = new Searching.AggregateSearchFeature2();
+            var searchFeature = new Searching.AggregateSearchFeature();
             searchFeature.GenerateCode(context, rootAggregate);
 
             context.Render<Infrastucture>(infra => {

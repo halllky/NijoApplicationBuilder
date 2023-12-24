@@ -30,7 +30,10 @@ namespace Nijo.Features.Command {
             });
 
             context.Render<Infrastucture>(infra => {
-                var command = new AggregateCreateCommand(rootAggregate);
+                var command = new AggregateCreateCommand(rootAggregate) {
+                    // ToDbEntityはApplicationServiceメソッド未生成の場合は使わないので
+                    RendersDbEntity = AppSrvMethod != null,
+                };
                 var commandName = CommandName(rootAggregate);
                 var actionName = ActionName(rootAggregate);
 

@@ -49,7 +49,7 @@ namespace Nijo.Features.InstanceHandling {
                     public {{prop.CSharpTypeName}}? {{prop.MemberName}} { get; set; }
                 """)}}
 
-                {{If(_aggregate.IsRoot() && _aggregate.IsStored(), () => $$"""
+                {{If(_aggregate.IsRoot(), () => $$"""
                     {{WithIndent(ToDbEntity(ctx), "    ")}}
                     {{WithIndent(FromDbEntity(ctx), "    ")}}
                 """)}}

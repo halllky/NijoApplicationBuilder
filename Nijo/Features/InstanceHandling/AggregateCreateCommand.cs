@@ -14,6 +14,7 @@ namespace Nijo.Features.InstanceHandling {
         }
 
         internal override string ClassName => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}CreateCommand";
+        internal bool RendersDbEntity { get; set; } = true;
 
         internal override string RenderCSharp(ICodeRenderingContext ctx) {
             return $$"""
@@ -25,7 +26,7 @@ namespace Nijo.Features.InstanceHandling {
                     public {{prop.CSharpTypeName}}? {{prop.MemberName}} { get; set; }
                 """)}}
 
-                {{If(_aggregate.IsStored(), () => $$"""
+                {{If(RendersDbEntity, () => $$"""
                     {{WithIndent(ToDbEntity(ctx), "    ")}}
                 """)}}
                 }

@@ -191,15 +191,12 @@ namespace Nijo.Core {
 
             parser.IfExists("master-data")
                 .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
-                .SetAggregateOption(opt => opt.Type, E_AggreateType.MasterData, E_Priority.Force)
                 .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Handlers.MasterData.Key, E_Priority.Force);
             parser.IfExists("view")
                 .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
-                .SetAggregateOption(opt => opt.Type, E_AggreateType.View, E_Priority.Force)
                 .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Handlers.View.Key, E_Priority.Force);
             parser.IfExists("command")
                 .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
-                .SetAggregateOption(opt => opt.Type, E_AggreateType.Command, E_Priority.Force)
                 .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Handlers.Command.Key, E_Priority.Force);
 
             parser.IfExists("section")

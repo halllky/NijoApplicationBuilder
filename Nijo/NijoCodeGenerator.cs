@@ -174,7 +174,7 @@ namespace Nijo {
         }
         internal static class Handlers {
             internal static KeyValuePair<string, Type> MasterData => KeyValuePair.Create("master-data", typeof(MasterDataFeature));
-            internal static KeyValuePair<string, Type> View => KeyValuePair.Create("view", typeof(Features.Searching.AggregateSearchFeature2));
+            internal static KeyValuePair<string, Type> View => KeyValuePair.Create("view", typeof(Features.Searching.AggregateSearchFeature));
             internal static KeyValuePair<string, Type> Command => KeyValuePair.Create("command", typeof(Features.Command.CommandFeature));
 
             internal static IEnumerable<KeyValuePair<string, Type>> GetAll() {
