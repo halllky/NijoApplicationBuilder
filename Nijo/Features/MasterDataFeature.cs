@@ -41,7 +41,11 @@ namespace Nijo.Features {
                     builder.AppServiceMethods.Add(deleteFeature.RenderAppSrvMethod(context));
 
                     foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
-                        builder.DataClassDeclaring.Add(new AggregateDetail(aggregate).RenderCSharp(context));
+                        var aggregateDetail = new AggregateDetail(aggregate);
+                        var initializerFunc = new TSInitializerFunction(aggregate);
+                        builder.DataClassDeclaring.Add(aggregateDetail.RenderCSharp(context));
+                        builder.TypeScriptDataTypes.Add(aggregateDetail.RenderTypeScript(context));
+                        builder.TypeScriptDataTypes.Add(initializerFunc.Render());
                     }
 
                     // KeywordSearching
@@ -49,15 +53,20 @@ namespace Nijo.Features {
                         var keywordSearching = new KeywordSearchingFeature(aggregate);
                         var refTargetKeyName = new RefTargetKeyName(aggregate);
                         builder.DataClassDeclaring.Add(refTargetKeyName.RenderCSharpDeclaring());
+                        builder.TypeScriptDataTypes.Add(refTargetKeyName.RenderTypeScriptDeclaring());
                         builder.ControllerActions.Add(keywordSearching.RenderController(context));
                         builder.AppServiceMethods.Add(keywordSearching.RenderAppSrvMethod(context));
                     }
 
-                    // DbContext, DbEntity
+                    // DbContext
                     builder.HasDbSet = true;
-                    builder.OnModelCreating.Add(modelBuilder => new DbContextClass(context.Config).RenderEntity(modelBuilder, rootAggregate));
+                    var dbContextClass = new DbContextClass(context.Config);
 
                     foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
+                        // OnModelCreating
+                        builder.OnModelCreating.Add(modelBuilder => dbContextClass.RenderEntity(modelBuilder, aggregate));
+
+                        // DbEntity
                         static IEnumerable<NavigationProperty.Item> EnumerateNavigationProperties(GraphNode<Aggregate> aggregate) {
                             foreach (var nav in aggregate.GetNavigationProperties()) {
                                 if (nav.Principal.Owner == aggregate) yield return nav.Principal;

@@ -13,19 +13,6 @@ namespace Nijo.Features {
     }
 
     /// <summary>
-    /// DbContextやServiceProviderのビルドのような複数機能にまたがるクラスのソースコードファイル
-    /// </summary>
-    public interface ISourceFileUsedByMultiFeature {
-        void GenerateSourceFile(ICodeRenderingContext context);
-    }
-    /// <summary>
-    /// 型定義やASP.NETのControllerのような複数機能にまたがるクラスのソースコードファイル
-    /// </summary>
-    public interface IAggregateSourceFileUsedByMultiFeature {
-        void GenerateSourceFile(ICodeRenderingContext context, GraphNode<Aggregate> aggregate);
-    }
-
-    /// <summary>
     /// テンプレート文字列簡略化用
     /// </summary>
     internal class TemplateTextHelper {

@@ -144,7 +144,7 @@ namespace Nijo.Features.InstanceHandling {
                     import { BarMessage, InlineMessageBar } from '../../decoration';
                     import { useAppContext } from '../../application';
                     import { visitObject, useHttpRequest } from '../../util';
-                    import * as AggregateType from '../../{{types.ImportName}}'
+                    import * as AggregateType from '../../types'
 
                     const VForm = Layout.VerticalForm
 

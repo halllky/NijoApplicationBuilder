@@ -119,6 +119,8 @@ namespace Nijo.Features.Searching {
                     } else {
                         builder.AppServiceMethods.Add(RenderNotImplementedSearchMethod(context, rootAggregate));
                     }
+
+                    builder.TypeScriptDataTypes.Add(multiView.RenderTypeScriptTypeDef(context));
                 });
             });
         }
@@ -130,14 +132,10 @@ namespace Nijo.Features.Searching {
             var multiView = GetMultiView(rootAggregate);
 
             return $$"""
-                namespace {{ctx.Config.RootNamespace}} {
-                    partial class {{appSrv.ClassName}} {
-                        public virtual IEnumerable<{{multiView.SearchResultClassName}}> {{AppServiceSearchMethodName(rootAggregate)}}({{multiView.SearchConditionClassName}} conditions) {
-                            // このメソッドは自動生成の対象外です。
-                            // {{appSrv.ConcreteClass}}クラスでこのメソッドをオーバーライドして実装してください。
-                            return Enumerable.Empty<{{multiView.SearchResultClassName}}>();
-                        }
-                    }
+                public virtual IEnumerable<{{multiView.SearchResultClassName}}> {{AppServiceSearchMethodName(rootAggregate)}}({{multiView.SearchConditionClassName}} conditions) {
+                    // このメソッドは自動生成の対象外です。
+                    // {{appSrv.ConcreteClass}}クラスでこのメソッドをオーバーライドして実装してください。
+                    return Enumerable.Empty<{{multiView.SearchResultClassName}}>();
                 }
                 """;
         }
