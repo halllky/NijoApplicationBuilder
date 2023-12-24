@@ -2,6 +2,7 @@ using Nijo.Core;
 using Nijo.DotnetEx;
 using Nijo.Features.InstanceHandling;
 using Nijo.Features.KeywordSearching;
+using Nijo.Util.CodeGenerating;
 using System;
 using System.Collections.Generic;
 using System.Linq;

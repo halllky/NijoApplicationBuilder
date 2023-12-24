@@ -1,7 +1,7 @@
 using Nijo.Core;
 using Nijo.DotnetEx;
 using Nijo.Features.InstanceHandling;
-using static Nijo.Features.TemplateTextHelper;
+using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Features.KeywordSearching;
 using Nijo.Core.AggregateMemberTypes;
+using Nijo.Util.CodeGenerating;
 
 namespace Nijo.Features.Util {
     internal class DummyDataGenerator {
@@ -98,7 +99,7 @@ namespace Nijo.Features.Util {
                         Core.AggregateMemberTypes.Year => random.Next(1990, 2040).ToString(),
                         Core.AggregateMemberTypes.YearMonth => $"{random.Next(1990, 2040):0000}{random.Next(1, 12):00}",
                         Core.AggregateMemberTypes.YearMonthDay => $"'{new DateTime(2000, 1, 1).AddDays(random.Next(3000)):yyyy-MM-dd}'",
-                        Core.AggregateMemberTypes.YearMonthDayTime => $"'{new DateTime(2000 ,1 ,1).AddDays(random.Next(3000)):yyyy-MM-dd}'",
+                        Core.AggregateMemberTypes.YearMonthDayTime => $"'{new DateTime(2000, 1, 1).AddDays(random.Next(3000)):yyyy-MM-dd}'",
                         Core.AggregateMemberTypes.Uuid => null, // 自動生成されるので
                         Core.AggregateMemberTypes.VariationSwitch => null, // Variationの分岐で処理済み
                         Core.AggregateMemberTypes.Word => $"'{RandomAlphabet(random, 10)}'",

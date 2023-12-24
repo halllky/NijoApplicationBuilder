@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Nijo.Util.CodeGenerating;
 using static Nijo.Features.BackgroundService.BackgroundTaskFeature;
 
 namespace Nijo.Features.BackgroundService {

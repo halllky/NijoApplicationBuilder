@@ -1,13 +1,14 @@
 using Nijo.Features.WebClient;
 using Nijo.Core;
 using Nijo.DotnetEx;
-using static Nijo.Features.TemplateTextHelper;
+using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Nijo.Util.CodeGenerating;
 
 namespace Nijo.Features.InstanceHandling {
     public class SingleView : Infrastucture.IReactPage {

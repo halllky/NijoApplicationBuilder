@@ -6,12 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Nijo.Features {
-    public class SourceFile {
-        public required string FileName { get; init; }
-        public required Func<ICodeRenderingContext, string> RenderContent { get; init; }
-    }
-
+namespace Nijo.Util.CodeGenerating {
     /// <summary>
     /// テンプレート文字列簡略化用
     /// </summary>

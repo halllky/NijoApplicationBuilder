@@ -1,13 +1,14 @@
 using Nijo.Core;
 using Nijo.DotnetEx;
 using Nijo.Features.InstanceHandling;
-using static Nijo.Features.TemplateTextHelper;
+using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Nijo.Features.Util;
+using Nijo.Util.CodeGenerating;
 
 namespace Nijo.Features.Searching {
     public class AggregateSearchFeature : NijoFeatureBaseByAggregate {

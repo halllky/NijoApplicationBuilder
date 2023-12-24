@@ -2,13 +2,14 @@ using Nijo.Core;
 using Nijo.Features.KeywordSearching;
 using Nijo.Features.WebClient;
 using Nijo.DotnetEx;
-using static Nijo.Features.TemplateTextHelper;
+using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Nijo.Util.CodeGenerating;
 
 namespace Nijo.Features.InstanceHandling {
 
@@ -304,7 +305,7 @@ namespace Nijo.Features.InstanceHandling {
             var childrenComponent = new AggregateComponent(children, _mode);
 
             return $$"""
-                {{If (children.Owner.IsRoot(), () => $$"""
+                {{If(children.Owner.IsRoot(), () => $$"""
                 <VForm.Spacer />
                 """)}}
                 {{childrenComponent.RenderCaller()}}

@@ -5,7 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Core;
 using Nijo.Features.Logging;
-using static Nijo.Features.TemplateTextHelper;
+using Nijo.Util.CodeGenerating;
+using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 
 namespace Nijo.Features {
     internal class Configure {

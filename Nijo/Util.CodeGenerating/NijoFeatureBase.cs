@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.Features {
+namespace Nijo.Util.CodeGenerating {
     public abstract class NijoFeatureBase {
         public virtual void BuildSchema(AppSchemaBuilder builder) { }
     }

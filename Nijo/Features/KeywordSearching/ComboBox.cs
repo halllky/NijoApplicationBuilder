@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Nijo.Util.CodeGenerating;
 
 namespace Nijo.Features.KeywordSearching {
     internal class ComboBox {

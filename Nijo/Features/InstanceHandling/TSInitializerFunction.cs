@@ -1,6 +1,7 @@
 using Nijo.Core;
 using Nijo.Core.AggregateMemberTypes;
 using Nijo.DotnetEx;
+using Nijo.Util.CodeGenerating;
 using System;
 using System.Collections.Generic;
 using System.Linq;

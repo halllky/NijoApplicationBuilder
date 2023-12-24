@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.VisualBasic;
+using Nijo.Util.CodeGenerating;
 
 namespace Nijo {
     public sealed class NijoCodeGenerator {
