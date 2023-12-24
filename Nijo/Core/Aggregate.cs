@@ -17,7 +17,7 @@ namespace Nijo.Core {
 
         public NodeId Id { get; }
         internal string DisplayName { get; }
-        internal string UniqueId => new HashedString(Id.ToString()).Guid.ToString().Replace("-", "");
+        internal string UniqueId => Id.Value.ToHashedString();
 
         public string ClassName => DisplayName.ToCSharpSafe();
         public string TypeScriptTypeName => DisplayName.ToCSharpSafe();

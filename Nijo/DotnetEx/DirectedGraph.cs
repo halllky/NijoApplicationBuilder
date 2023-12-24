@@ -92,8 +92,8 @@ namespace Nijo.DotnetEx {
             builder.AppendLine("graph TD;");
 
             foreach (var edge in Edges) {
-                var id1 = new HashedString(edge.Initial.Value).Guid.ToString();
-                var id2 = new HashedString(edge.Terminal.Value).Guid.ToString();
+                var id1 = edge.Initial.Value.ToHashedString();
+                var id2 = edge.Terminal.Value.ToHashedString();
                 var label1 = edge.Initial.Value.Replace("\"", "");
                 var label2 = edge.Terminal.Value.Replace("\"", "");
                 var relation = edge.RelationName.Replace("\"", "");

@@ -16,7 +16,14 @@ namespace Nijo.DotnetEx {
             return str;
         }
         public static string ToUrlSafe(this string str) => System.Web.HttpUtility.UrlEncode(str);
-        public static string ToHashedString(this string str) => new HashedString(str).ToCSharSafe();
+        public static string ToHashedString(this string str) {
+            byte[] stringBytes = System.Text.Encoding.UTF8.GetBytes(str);
+            byte[] hashedBytes = System.Security.Cryptography.MD5.Create().ComputeHash(stringBytes);
+            byte[] guidBytes = new byte[16];
+            Array.Copy(hashedBytes, 0, guidBytes, 0, 16);
+            var guid = new Guid(guidBytes);
+            return guid.ToString().Replace("-", "");
+        }
 
         /// <summary>
         /// 半角文字を1、全角文字を2として横幅を算出する。
