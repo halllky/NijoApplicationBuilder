@@ -13,6 +13,34 @@ namespace Nijo.Features.WebClient {
     internal class index {
 #pragma warning restore IDE1006 // 命名スタイル
 
+        internal static SourceFile Render(IEnumerable<Infrastucture.IReactPage> reactPages) => new SourceFile {
+            FileName = "index.tsx",
+            RenderContent = ctx => $$"""
+                import './nijo.css';
+                import 'ag-grid-community/styles/ag-grid.css';
+                import 'ag-grid-community/styles/ag-theme-alpine.css';
+
+                {{reactPages.SelectTextTemplate(page => $$"""
+                import {{page.ComponentPhysicalName}} from './{{Infrastucture.REACT_PAGE_DIR}}/{{page.DirNameInPageDir}}/{{Path.GetFileNameWithoutExtension(page.GetSourceFile().FileName)}}'
+                """)}}
+
+                export const THIS_APPLICATION_NAME = '{{ctx.Schema.ApplicationName}}' as const
+
+                export const routes: { url: string, el: JSX.Element }[] = [
+                {{reactPages.SelectTextTemplate(page => $$"""
+                  { url: '{{page.Url}}', el: <{{page.ComponentPhysicalName}} /> },
+                """)}}
+                ]
+                export const menuItems: { url: string, text: string }[] = [
+                {{reactPages.Where(p => p.ShowMenu).SelectTextTemplate(page => $$"""
+                  { url: '{{page.Url}}', text: '{{page.LabelInMenu}}' },
+                """)}}
+                ]
+                """,
+        };
+
+
+        [Obsolete]
         internal static SourceFile Render(Func<GraphNode<Aggregate>, string> dirNameResolver) {
 
             return new SourceFile {

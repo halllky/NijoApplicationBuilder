@@ -68,7 +68,7 @@ namespace Nijo.Features {
                                     // 前述AddCorsの設定をするならこちらも必要
                                     app.UseCors();
 
-                                    {{WithIndent(infrastucture.ConfigureApp.SelectTextTemplate(fn => fn.Invoke("app")), "           ")}}
+                                    {{WithIndent(infrastucture.ConfigureWebApp.SelectTextTemplate(fn => fn.Invoke("app")), "           ")}}
                                 }
 
                                 /// <summary>

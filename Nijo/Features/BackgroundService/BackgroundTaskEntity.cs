@@ -8,44 +8,51 @@ using System.Threading.Tasks;
 
 namespace Nijo.Features.BackgroundService {
 
-    class BackgroundTaskFeature : NijoFeatureBase {
+    class BackgroundTaskFeature : NijoFeatureBaseNonAggregate {
         internal static NodeId GraphNodeId => new NodeId($"NIJO::{CLASSNAME}");
 
         public override void GenerateCode(ICodeRenderingContext context) {
-            context.Render<Infrastucture>(infrastructure => {
-                infrastructure.ConfigureServicesWhenWebServer.Add(services => $$"""
-                    //// バッチ処理
-                    {{services}}.AddHostedService<BackgroundTaskLauncher>();
-                    """);
 
-                infrastructure.OnModelCreating.Add(builder => $$"""
-                    //// バッチ処理
-                    // {{context.Config.EntityNamespace}}.BackgroundTaskEntity.OnModelCreating({{builder}});
-                    """);
-            });
-            context.EditWebApiDirectory(genDir => {
-                genDir.Directory("BackgorundTask", bgTaskDir => {
-                    bgTaskDir.Generate(BackgroundTask.Render());
-                    bgTaskDir.Generate(BackgroundTaskLauncher.Render());
-                });
+            // TODO
 
-                //genDir.Directory("BackgroundService", bsDir => {
-                //    bsDir.Generate(Features.BackgroundService.BackgroundTaskLauncher.Render());
-                //    bsDir.Generate(Features.BackgroundService.BackgroundTask.Render());
+            //context.Render<Infrastucture>(infrastructure => {
+            //    infrastructure.ConfigureServicesWhenWebServer.Add(services => $$"""
+            //        //// バッチ処理
+            //        {{services}}.AddHostedService<BackgroundTaskLauncher>();
+            //        """);
 
-                //    var bgTaskSearch = Features.BackgroundService.BackgroundTaskEntity.CreateSearchFeature(appSchema.Graph, ctx);
-                //    bsDir.Generate(bgTaskSearch.RenderControllerAction());
-                //    bsDir.Generate(bgTaskSearch.RenderCSharpClassDef());
-                //    bsDir.Generate(bgTaskSearch.RenderDbContextMethod());
+            //    infrastructure.OnModelCreating.Add(builder => $$"""
+            //        //// バッチ処理
+            //        // {{context.Config.EntityNamespace}}.BackgroundTaskEntity.OnModelCreating({{builder}});
+            //        """);
+            //});
+            //context.EditWebApiDirectory(genDir => {
+            //    genDir.Directory("BackgorundTask", bgTaskDir => {
+            //        bgTaskDir.Generate(BackgroundTask.Render());
+            //        bgTaskDir.Generate(BackgroundTaskLauncher.Render());
+            //    });
 
-                //    bsDir.DeleteOtherFiles();
-                //});
-            });
+            //    //genDir.Directory("BackgroundService", bsDir => {
+            //    //    bsDir.Generate(Features.BackgroundService.BackgroundTaskLauncher.Render());
+            //    //    bsDir.Generate(Features.BackgroundService.BackgroundTask.Render());
+
+            //    //    var bgTaskSearch = Features.BackgroundService.BackgroundTaskEntity.CreateSearchFeature(appSchema.Graph, ctx);
+            //    //    bsDir.Generate(bgTaskSearch.RenderControllerAction());
+            //    //    bsDir.Generate(bgTaskSearch.RenderCSharpClassDef());
+            //    //    bsDir.Generate(bgTaskSearch.RenderDbContextMethod());
+
+            //    //    bsDir.DeleteOtherFiles();
+            //    //});
+            //});
         }
 
         public override void BuildSchema(AppSchemaBuilder builder) {
+
+            // TODO
+            return;
+
             builder.AddAggregate(new[] { GraphNodeId.Value }, new AggregateBuildOption {
-                Type = E_AggreateType.View,
+                Handler = "view",
             });
 
             builder.AddAggregateMember(new[] { GraphNodeId.Value, COL_ID }, new AggregateMemberBuildOption {

@@ -18,10 +18,9 @@ namespace Nijo.Features {
         internal SourceFile RenderDeclaring(Infrastucture infrastucture) => new SourceFile {
             FileName = $"{_config.DbContextName.ToFileNameSafe()}.cs",
             RenderContent = ctx => {
-                var dbEntities = ctx.Schema
-                    .AllAggregates()
-                    .Where(agg => agg.IsStored())
-                    .Select(agg => agg.As<IEFCoreEntity>());
+                var onModelCreatings = infrastucture._itemsByAggregate
+                    .Where(x => x.Value.OnModelCreating.Any())
+                    .Select(x => $"OnModelCreating_{x.Key.Item.ClassName}");
 
                 return $$"""
                     using Microsoft.EntityFrameworkCore;
@@ -33,10 +32,9 @@ namespace Nijo.Features {
 
                             /// <inheritdoc />
                             protected override void OnModelCreating(ModelBuilder modelBuilder) {
-
-                                {{WithIndent(dbEntities.Select(RenderEntity), "            ")}}
-
-                                {{WithIndent(infrastucture.OnModelCreating.SelectTextTemplate(fn => fn.Invoke("modelBuilder")), "            ")}}
+                    {{onModelCreatings.SelectTextTemplate(method => $$"""
+                                this.{{method}}(modelBuilder);
+                    """)}}
                             }
                         }
                     }
@@ -44,24 +42,22 @@ namespace Nijo.Features {
             },
         };
 
-        private string RenderEntity(GraphNode<IEFCoreEntity> dbEntity) {
+        internal string RenderEntity(string modelBuilder, GraphNode<Aggregate> aggregate) {
             return $$"""
-                modelBuilder.Entity<{{_config.EntityNamespace}}.{{dbEntity.Item.ClassName}}>(entity => {
+                {{modelBuilder}}.Entity<{{_config.EntityNamespace}}.{{aggregate.Item.EFCoreEntityClassName}}>(entity => {
 
                     entity.HasKey(e => new {
-                {{dbEntity.GetColumns().Where(x => x.Options.IsKey).SelectTextTemplate(pk => $$"""
+                {{aggregate.GetColumns().Where(x => x.Options.IsKey).SelectTextTemplate(pk => $$"""
                         e.{{pk.Options.MemberName}},
                 """)}}
                     });
 
-                {{dbEntity.GetColumns().SelectTextTemplate(col => $$"""
+                {{aggregate.GetColumns().SelectTextTemplate(col => $$"""
                     entity.Property(e => e.{{col.Options.MemberName}})
                         .IsRequired({{(col.Options.IsRequired ? "true" : "false")}});
                 """)}}
 
-                {{If(dbEntity.Item is Aggregate, () => $$"""
-                    {{WithIndent(RenderNavigationPropertyOnModelCreating(dbEntity.As<Aggregate>()), "    ")}}
-                """)}}
+                    {{WithIndent(RenderNavigationPropertyOnModelCreating(aggregate.As<Aggregate>()), "    ")}}
                 });
                 """;
         }

@@ -17,24 +17,17 @@ namespace Nijo.Features.InstanceHandling {
 
         internal override string RenderCSharp(ICodeRenderingContext ctx) {
             return $$"""
-                namespace {{ctx.Config.RootNamespace}} {
-                    using System;
-                    using System.Collections;
-                    using System.Collections.Generic;
-                    using System.Linq;
-                    
-                    /// <summary>
-                    /// {{_aggregate.Item.DisplayName}}のデータ作成コマンドです。
-                    /// </summary>
-                    public partial class {{ClassName}} {
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}}のデータ作成コマンドです。
+                /// </summary>
+                public partial class {{ClassName}} {
                 {{GetOwnMembers().SelectTextTemplate(prop => $$"""
-                        public {{prop.CSharpTypeName}}? {{prop.MemberName}} { get; set; }
+                    public {{prop.CSharpTypeName}}? {{prop.MemberName}} { get; set; }
                 """)}}
 
                 {{If(_aggregate.IsStored(), () => $$"""
-                        {{WithIndent(ToDbEntity(ctx), "        ")}}
+                    {{WithIndent(ToDbEntity(ctx), "    ")}}
                 """)}}
-                    }
                 }
                 """;
         }

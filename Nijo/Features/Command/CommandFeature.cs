@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 
 namespace Nijo.Features.Command {
     public class CommandFeature : NijoFeatureBaseByAggregate {
-        public override string KeywordInAppSchema => "command";
         public Func<GraphNode<Aggregate>, string> CommandName { get; set; } = root => root.Item.ClassName;
         public Func<GraphNode<Aggregate>, string> ActionName { get; set; } = root => "実行";
 
@@ -23,31 +22,36 @@ namespace Nijo.Features.Command {
                 });
             });
 
-            context.Render<AggregateRenderer>(rootAggregate, renderer => {
+            context.Render<Infrastucture>(infra => {
                 var command = new AggregateCreateCommand(rootAggregate);
                 var commandName = CommandName(rootAggregate);
                 var actionName = ActionName(rootAggregate);
 
-                renderer.ControllerActions.Add(_ => $$"""
-                    [HttpPost("{{actionName}}")]
-                    public virtual IActionResult {{actionName}}([FromBody] {{command.ClassName}}? param) {
-                        if (param == null) return BadRequest();
-                        if (_applicationService.{{actionName}}(param, out var errors)) {
-                            return Ok();
-                        } else {
-                            return BadRequest(this.JsonContent(errors));
-                        }
-                    }
-                    """);
+                infra.Aggregate(rootAggregate, builder => {
+                    builder.DataClassDeclaring.Add(command.RenderCSharp(context));
 
-                renderer.AppServiceMethods.Add(appSrv => $$"""
-                    public virtual bool {{actionName}}({{command.ClassName}} command, out ICollection<string> errors) {
-                        // このメソッドは自動生成の対象外です。
-                        // {{appSrv.ConcreteClass}}クラスでこのメソッドをオーバーライドして実装してください。
-                        errors = Array.Empty<string>();
-                        return true;
-                    }
-                    """);
+                    builder.ControllerActions.Add($$"""
+                        [HttpPost("{{actionName}}")]
+                        public virtual IActionResult {{actionName}}([FromBody] {{command.ClassName}}? param) {
+                            if (param == null) return BadRequest();
+                            if (_applicationService.{{actionName}}(param, out var errors)) {
+                                return Ok();
+                            } else {
+                                return BadRequest(this.JsonContent(errors));
+                            }
+                        }
+                        """);
+
+                    var appSrv = new ApplicationService(context.Config);
+                    builder.AppServiceMethods.Add($$"""
+                        public virtual bool {{actionName}}({{command.ClassName}} command, out ICollection<string> errors) {
+                            // このメソッドは自動生成の対象外です。
+                            // {{appSrv.ConcreteClass}}クラスでこのメソッドをオーバーライドして実装してください。
+                            errors = Array.Empty<string>();
+                            return true;
+                        }
+                        """);
+                });
             });
         }
     }

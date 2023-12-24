@@ -23,7 +23,7 @@ namespace Nijo.Core {
         public string TypeScriptTypeName => DisplayName.ToCSharpSafe();
         public string EFCoreEntityClassName => $"{DisplayName.ToCSharpSafe()}DbEntity";
         string IEFCoreEntity.ClassName => EFCoreEntityClassName;
-        public string DbSetName => EFCoreEntityClassName;
+        public string DbSetName => $"{ClassName}DbSet";
 
         public IList<IReadOnlyMemberOptions> SchalarMembersNotRelatedToAggregate { get; } = new List<IReadOnlyMemberOptions>();
         internal bool UseKeyInsteadOfName { get; }

@@ -17,7 +17,16 @@ namespace Nijo.Features.Searching {
         internal required bool VisibleInGui { get; init; }
     }
 
-    internal class MultiView {
+    internal class MultiView : Infrastucture.IReactPage {
+
+        string Infrastucture.IReactPage.Url => Url;
+        string Infrastucture.IReactPage.DirNameInPageDir => DisplayName.ToFileNameSafe();
+        string Infrastucture.IReactPage.ComponentPhysicalName => $"{DisplayName.ToCSharpSafe()}MultiView";
+        bool Infrastucture.IReactPage.ShowMenu => true;
+        string? Infrastucture.IReactPage.LabelInMenu => DisplayName;
+        SourceFile Infrastucture.IReactPage.GetSourceFile() => RenderMultiView();
+
+
         internal required string DisplayName { get; init; }
         internal required IReadOnlyList<MultiViewField> Fields { get; init; }
         internal required string AppSrvMethodName { get; init; }
@@ -256,6 +265,7 @@ namespace Nijo.Features.Searching {
             }
         }
 
+        [Obsolete("AggregateSearchFeatureの中で直にレンダリングする")]
         internal string RenderAspNetController(ICodeRenderingContext ctx) {
             var controller = new WebClient.Controller(DisplayName.ToCSharpSafe());
 
@@ -298,6 +308,7 @@ namespace Nijo.Features.Searching {
                 """;
         }
 
+        [Obsolete("AggregateSearchFeatureの中で直にレンダリングする")]
         internal string RenderCSharpTypedef(ICodeRenderingContext ctx) {
             return $$"""
                 #pragma warning disable CS8618 // null 非許容の変数には、コンストラクターの終了時に null 以外の値が入っていなければなりません

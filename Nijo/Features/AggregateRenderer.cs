@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using static Nijo.Features.TemplateTextHelper;
 
 namespace Nijo.Features {
-    internal partial class AggregateRenderer : IAggregateSourceFileUsedByMultiFeature {
+    internal partial class AggregateRenderer {
 
         internal AggregateRenderer(GraphNode<Aggregate> aggregate) {
             if (!aggregate.IsRoot())
@@ -97,111 +97,5 @@ namespace Nijo.Features {
         }
 
         public AggregateRenderer() { }
-
-        public List<Func<WebClient.Controller, string>> ControllerActions { get; } = new();
-        public List<Func<ApplicationService, string>> AppServiceMethods { get; } = new();
-
-        void IAggregateSourceFileUsedByMultiFeature.GenerateSourceFile(ICodeRenderingContext context, GraphNode<Aggregate> aggregate) {
-
-            context.EditWebApiDirectory(dir => {
-                var appSrv = new ApplicationService(context.Config);
-                var controller = new WebClient.Controller(aggregate.Item);
-                var search = new Searching.AggregateSearchFeature(aggregate);
-                var multiView = search.GetMultiView();
-                var find = new FindFeature(aggregate);
-                var create = new CreateFeature(aggregate);
-                var update = new UpdateFeature(aggregate);
-                var delete = new DeleteFeature(aggregate);
-                var keywordSearching = aggregate
-                    .EnumerateThisAndDescendants()
-                    .Select(a => new KeywordSearchingFeature(a));
-
-                dir.Generate(new SourceFile {
-                    FileName = $"{aggregate.Item.DisplayName.ToFileNameSafe()}.cs",
-                    RenderContent = _ => $$"""
-                        namespace {{context.Config.RootNamespace}} {
-                            using Microsoft.AspNetCore.Mvc;
-                            using {{context.Config.EntityNamespace}};
-                        
-                            [ApiController]
-                            [Route("{{WebClient.Controller.SUBDOMAIN}}/[controller]")]
-                            public partial class {{controller.ClassName}} : ControllerBase {
-                                public {{controller.ClassName}}(ILogger<{{controller.ClassName}}> logger, {{appSrv.ClassName}} applicationService) {
-                                    _logger = logger;
-                                    _applicationService = applicationService;
-                                }
-                                protected readonly ILogger<{{controller.ClassName}}> _logger;
-                                protected readonly {{appSrv.ClassName}} _applicationService;
-
-                                {{WithIndent(ControllerActions.SelectTextTemplate(fn => fn.Invoke(controller)), "        ")}}
-                            }
-
-                            partial class {{appSrv.ClassName}} {
-                                {{WithIndent(AppServiceMethods.SelectTextTemplate(fn => fn.Invoke(appSrv)), "        ")}}
-                            }
-
-
-                            #region データ構造
-                            {{If(aggregate.IsCreatable(), () => new AggregateCreateCommand(aggregate).RenderCSharp(context))}}
-                            {{If(aggregate.IsStored(), () => aggregate.EnumerateThisAndDescendants().SelectTextTemplate(ins => new AggregateDetail(ins).RenderCSharp(context)))}}
-
-                            {{If(aggregate.IsStored(), () => $$"""
-                            namespace {{context.Config.RootNamespace}} {
-                                using System.ComponentModel;
-                                using System.ComponentModel.DataAnnotations;
-
-                                {{WithIndent(aggregate.EnumerateThisAndDescendants().SelectTextTemplate(ins => new RefTargetKeyName(ins).RenderCSharpDeclaring()), "    ")}}
-                            }
-                            """)}}
-
-                            {{If(aggregate.IsSearchable(), () => $$"""
-                            {{multiView.RenderCSharpTypedef(context)}}
-                            """)}}
-
-                            {{If(aggregate.IsStored(), () => $$"""
-                            namespace {{context.Config.EntityNamespace}} {
-                                using System;
-                                using System.Collections;
-                                using System.Collections.Generic;
-                                using System.Linq;
-                                using Microsoft.EntityFrameworkCore;
-                                using Microsoft.EntityFrameworkCore.Infrastructure;
-
-                            {{aggregate.EnumerateThisAndDescendants().SelectTextTemplate(ett => $$"""
-                                /// <summary>
-                                /// {{ett.Item.DisplayName}}のデータベースに保存されるデータの形を表すクラスです。
-                                /// </summary>
-                                public partial class {{ett.Item.EFCoreEntityClassName}} {
-                            {{ett.GetColumns().SelectTextTemplate(col => $$"""
-                                    public {{col.Options.MemberType.GetCSharpTypeName()}}? {{col.Options.MemberName}} { get; set; }
-                            """)}}
-
-                            {{EnumerateNavigationProperties(ett).SelectTextTemplate(nav => $$"""
-                                    public virtual {{nav.CSharpTypeName}} {{nav.PropertyName}} { get; set; }
-                            """)}}
-
-                                    /// <summary>このオブジェクトと比較対象のオブジェクトの主キーが一致するかを返します。</summary>
-                                    public bool {{IEFCoreEntity.KEYEQUALS}}({{ett.Item.EFCoreEntityClassName}} entity) {
-                            {{ett.GetColumns().Where(c => c.Options.IsKey).SelectTextTemplate(col => $$"""
-                                        if (entity.{{col.Options.MemberName}} != this.{{col.Options.MemberName}}) return false;
-                            """)}}
-                                        return true;
-                                    }
-                                }
-                            """)}}
-
-                                partial class {{context.Config.DbContextName}} {
-                            {{aggregate.EnumerateThisAndDescendants().SelectTextTemplate(ett => $$"""
-                                    public DbSet<{{ett.Item.EFCoreEntityClassName}}> {{ett.Item.DbSetName}} { get; set; }
-                            """)}}
-                                }
-                            }
-                            """)}}
-                            #endregion データ構造
-                        }
-                        """,
-                });
-            });
-        }
     }
 }

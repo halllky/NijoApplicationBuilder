@@ -41,25 +41,18 @@ namespace Nijo.Features.InstanceHandling {
 
         internal virtual string RenderCSharp(ICodeRenderingContext ctx) {
             return $$"""
-                namespace {{ctx.Config.RootNamespace}} {
-                    using System;
-                    using System.Collections;
-                    using System.Collections.Generic;
-                    using System.Linq;
-                    
-                    /// <summary>
-                    /// {{_aggregate.Item.DisplayName}}のデータ1件の詳細を表すクラスです。
-                    /// </summary>
-                    public partial class {{ClassName}} {
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}}のデータ1件の詳細を表すクラスです。
+                /// </summary>
+                public partial class {{ClassName}} {
                 {{GetOwnMembers().SelectTextTemplate(prop => $$"""
-                        public {{prop.CSharpTypeName}}? {{prop.MemberName}} { get; set; }
+                    public {{prop.CSharpTypeName}}? {{prop.MemberName}} { get; set; }
                 """)}}
 
                 {{If(_aggregate.IsRoot() && _aggregate.IsStored(), () => $$"""
-                        {{WithIndent(ToDbEntity(ctx), "        ")}}
-                        {{WithIndent(FromDbEntity(ctx), "        ")}}
+                    {{WithIndent(ToDbEntity(ctx), "    ")}}
+                    {{WithIndent(FromDbEntity(ctx), "    ")}}
                 """)}}
-                    }
                 }
                 """;
         }
