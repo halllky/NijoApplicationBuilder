@@ -1,5 +1,5 @@
-using Nijo.Architecture.InstanceHandling;
-using Nijo.DotnetEx;
+using Nijo.Architecture.WebServer;
+using Nijo.Util.DotnetEx;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;

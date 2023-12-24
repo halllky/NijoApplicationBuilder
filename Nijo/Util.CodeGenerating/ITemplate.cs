@@ -1,5 +1,5 @@
 using Nijo.Core;
-using Nijo.DotnetEx;
+using Nijo.Util.DotnetEx;
 using System;
 using System.Collections;
 using System.Collections.Generic;

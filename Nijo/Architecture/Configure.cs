@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Nijo.Core;
-using Nijo.Architecture.Logging;
 using Nijo.Util.CodeGenerating;
 using static Nijo.Util.CodeGenerating.TemplateTextHelper;
+using Nijo.Features.Logging;
 
 namespace Nijo.Architecture {
     internal class Configure {
@@ -22,8 +22,8 @@ namespace Nijo.Architecture {
             return new SourceFile {
                 FileName = "DefaultConfigurer.cs",
                 RenderContent = () => {
-                    var appSrv = new ApplicationService();
-                    var runtimeServerSettings = Util.RuntimeSettings.ServerSetiingTypeFullName;
+                    var appSrv = new WebServer.ApplicationService();
+                    var runtimeServerSettings = RuntimeSettings.ServerSetiingTypeFullName;
 
                     return $$"""
                         namespace {{_ctx.Config.RootNamespace}} {
@@ -56,7 +56,7 @@ namespace Nijo.Architecture {
 
                                     }).AddJsonOptions(option => {
                                         // JSON日本語設定
-                                        {{Util.Utility.CLASSNAME}}.{{Util.Utility.MODIFY_JSONOPTION}}(option.JsonSerializerOptions);
+                                        {{Utility.UtilityClass.CLASSNAME}}.{{Utility.UtilityClass.MODIFY_JSONOPTION}}(option.JsonSerializerOptions);
                                     });
 
                                     {{WithIndent(infrastucture.ConfigureServicesWhenWebServer.SelectTextTemplate(fn => fn.Invoke("builder.Services")), "           ")}}
@@ -92,20 +92,20 @@ namespace Nijo.Architecture {
                                     });
                                     services.AddDbContext<{{_ctx.Config.DbContextNamespace}}.{{_ctx.Config.DbContextName}}>((provider, option) => {
                                         var setting = provider.GetRequiredService<{{runtimeServerSettings}}>();
-                                        var connStr = setting.{{Util.RuntimeSettings.GET_ACTIVE_CONNSTR}}();
+                                        var connStr = setting.{{RuntimeSettings.GET_ACTIVE_CONNSTR}}();
                                         Microsoft.EntityFrameworkCore.ProxiesExtensions.UseLazyLoadingProxies(option);
                                         Microsoft.EntityFrameworkCore.SqliteDbContextOptionsBuilderExtensions.UseSqlite(option, connStr);
                                     });
 
                                     // 実行時設定ファイル
                                     services.AddScoped(_ => {
-                                        var filename = "{{Util.RuntimeSettings.JSON_FILE_NAME}}";
+                                        var filename = "{{RuntimeSettings.JSON_FILE_NAME}}";
                                         if (System.IO.File.Exists(filename)) {
                                             using var stream = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                                             var parsed = System.Text.Json.JsonSerializer.Deserialize<{{runtimeServerSettings}}>(stream);
-                                            return parsed ?? {{runtimeServerSettings}}.{{Util.RuntimeSettings.GET_DEFAULT}}();
+                                            return parsed ?? {{runtimeServerSettings}}.{{RuntimeSettings.GET_DEFAULT}}();
                                         } else {
-                                            var setting = {{runtimeServerSettings}}.{{Util.RuntimeSettings.GET_DEFAULT}}();
+                                            var setting = {{runtimeServerSettings}}.{{RuntimeSettings.GET_DEFAULT}}();
                                             File.WriteAllText(filename, System.Text.Json.JsonSerializer.Serialize(setting, new System.Text.Json.JsonSerializerOptions {
                                                 WriteIndented = true,
                                             }));

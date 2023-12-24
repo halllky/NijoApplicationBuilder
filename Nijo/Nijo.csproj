@@ -108,8 +108,6 @@
     <Content Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\webapi\*.*" CopyToOutputDirectory="PreserveNewest" LinkBase="ApplicationTemplates\REACT_AND_WEBAPI\webapi\" />
     <Content Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\webapi\Properties\**" CopyToOutputDirectory="PreserveNewest" LinkBase="ApplicationTemplates\REACT_AND_WEBAPI\webapi\Properties\" />
   </ItemGroup>
-  <ItemGroup>
-  </ItemGroup>
   <ProjectExtensions>
     <MonoDevelop>
       <Properties>

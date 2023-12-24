@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using System.IO;
-using Nijo.DotnetEx;
+using Nijo.Util.DotnetEx;
 using System.Linq.Expressions;
 using System.Xml;
 

@@ -1,8 +1,8 @@
 using Nijo.Architecture;
-using Nijo.Architecture.InstanceHandling;
+using Nijo.Architecture.WebServer;
 using Nijo.Architecture.WebClient;
 using Nijo.Core;
-using Nijo.DotnetEx;
+using Nijo.Util.DotnetEx;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.VisualBasic;
 using Nijo.Util.CodeGenerating;
+using Nijo.Features;
 
 namespace Nijo {
     public sealed class NijoCodeGenerator {
@@ -58,8 +59,8 @@ namespace Nijo {
             // webapiディレクトリのコピー
             var reactProjectTemplate = Path.Combine(nijoExeDir, "ApplicationTemplates", "REACT_AND_WEBAPI", "react");
             var webapiProjectTemplate = Path.Combine(nijoExeDir, "ApplicationTemplates", "REACT_AND_WEBAPI", "webapi");
-            DotnetEx.IO.CopyDirectory(reactProjectTemplate, _project.WebClientProjectRoot);
-            DotnetEx.IO.CopyDirectory(webapiProjectTemplate, _project.WebApiProjectRoot);
+            Util.DotnetEx.IO.CopyDirectory(reactProjectTemplate, _project.WebClientProjectRoot);
+            Util.DotnetEx.IO.CopyDirectory(webapiProjectTemplate, _project.WebApiProjectRoot);
 
             // reactのデバッグ用コードを除去
             var debugRoom = Path.Combine(_project.WebClientProjectRoot, "src", "debug-room");
@@ -175,8 +176,8 @@ namespace Nijo {
         }
         internal static class Handlers {
             internal static KeyValuePair<string, Type> MasterData => KeyValuePair.Create("master-data", typeof(MasterDataFeature));
-            internal static KeyValuePair<string, Type> View => KeyValuePair.Create("view", typeof(Architecture.Searching.AggregateSearchFeature));
-            internal static KeyValuePair<string, Type> Command => KeyValuePair.Create("command", typeof(Architecture.Command.CommandFeature));
+            internal static KeyValuePair<string, Type> View => KeyValuePair.Create("view", typeof(AggregateSearchFeature));
+            internal static KeyValuePair<string, Type> Command => KeyValuePair.Create("command", typeof(CommandFeature));
 
             internal static IEnumerable<KeyValuePair<string, Type>> GetAll() {
                 yield return MasterData;

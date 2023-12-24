@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Nijo.Core;
-using Nijo.DotnetEx;
+using Nijo.Util.DotnetEx;
 using Microsoft.Extensions.Logging;
 
 [assembly: InternalsVisibleTo("Nijo.IntegrationTest")]
