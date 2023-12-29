@@ -1,5 +1,6 @@
 using Nijo.Core;
-using Nijo.DotnetEx;
+using Nijo.Util.DotnetEx;
+using Nijo.Util.CodeGenerating;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,11 +8,53 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Features.BackgroundService {
-    internal class BackgroundTaskEntity {
+
+    class BackgroundTaskFeature : NijoFeatureBaseNonAggregate {
         internal static NodeId GraphNodeId => new NodeId($"NIJO::{CLASSNAME}");
 
-        internal static void EditSchema(AppSchemaBuilder builder) {
-            builder.AddAggregate(new[] { GraphNodeId.Value });
+        public override void GenerateCode(ICodeRenderingContext context) {
+
+            // TODO
+
+            //context.Render<Infrastucture>(infrastructure => {
+            //    infrastructure.ConfigureServicesWhenWebServer.Add(services => $$"""
+            //        //// バッチ処理
+            //        {{services}}.AddHostedService<BackgroundTaskLauncher>();
+            //        """);
+
+            //    infrastructure.OnModelCreating.Add(builder => $$"""
+            //        //// バッチ処理
+            //        // {{context.Config.EntityNamespace}}.BackgroundTaskEntity.OnModelCreating({{builder}});
+            //        """);
+            //});
+            //context.EditWebApiDirectory(genDir => {
+            //    genDir.Directory("BackgorundTask", bgTaskDir => {
+            //        bgTaskDir.Generate(BackgroundTask.Render());
+            //        bgTaskDir.Generate(BackgroundTaskLauncher.Render());
+            //    });
+
+            //    //genDir.Directory("BackgroundService", bsDir => {
+            //    //    bsDir.Generate(Features.BackgroundService.BackgroundTaskLauncher.Render());
+            //    //    bsDir.Generate(Features.BackgroundService.BackgroundTask.Render());
+
+            //    //    var bgTaskSearch = Features.BackgroundService.BackgroundTaskEntity.CreateSearchFeature(appSchema.Graph, ctx);
+            //    //    bsDir.Generate(bgTaskSearch.RenderControllerAction());
+            //    //    bsDir.Generate(bgTaskSearch.RenderCSharpClassDef());
+            //    //    bsDir.Generate(bgTaskSearch.RenderDbContextMethod());
+
+            //    //    bsDir.DeleteOtherFiles();
+            //    //});
+            //});
+        }
+
+        public override void BuildSchema(AppSchemaBuilder builder) {
+
+            // TODO
+            return;
+
+            builder.AddAggregate(new[] { GraphNodeId.Value }, new AggregateBuildOption {
+                Handler = "view",
+            });
 
             builder.AddAggregateMember(new[] { GraphNodeId.Value, COL_ID }, new AggregateMemberBuildOption {
                 IsPrimary = true,

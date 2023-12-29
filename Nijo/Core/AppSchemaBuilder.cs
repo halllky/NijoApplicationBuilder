@@ -1,5 +1,5 @@
 using Nijo.Core.AggregateMemberTypes;
-using Nijo.DotnetEx;
+using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,9 +9,7 @@ namespace Nijo.Core {
 
     public sealed class AppSchemaBuilder {
 
-        public AppSchemaBuilder() {
-            // 基盤機能
-            Features.BackgroundService.BackgroundTaskEntity.EditSchema(this);
+        internal AppSchemaBuilder() {
         }
 
         private string? _applicationName;
@@ -257,17 +255,12 @@ namespace Nijo.Core {
         }
     }
 
-    public enum E_AggreateType {
-        MasterData,
-        View,
-    }
-
     public sealed class AggregateBuildOption {
-        public E_AggreateType? Type { get; set; }
         public bool? IsPrimary { get; set; }
         public bool? IsArray { get; set; }
         public GroupOption? IsVariationGroupMember { get; set; }
         public bool? InvisibleInGui { get; set; }
+        public string? Handler { get; set; }
 
         public sealed class GroupOption {
             public required string GroupName { get; init; }

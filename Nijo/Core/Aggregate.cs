@@ -1,4 +1,4 @@
-using Nijo.DotnetEx;
+using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using static Nijo.Core.DirectedEdgeExtensions;
 
 namespace Nijo.Core {
-    internal class Aggregate : ValueObject, IEFCoreEntity {
+    public class Aggregate : ValueObject, IEFCoreEntity {
         internal Aggregate(NodeId id, string displayName, bool useKeyInsteadOfName, AggregateBuildOption options) {
             Id = id;
             DisplayName = displayName;
@@ -17,13 +17,13 @@ namespace Nijo.Core {
 
         public NodeId Id { get; }
         internal string DisplayName { get; }
-        internal string UniqueId => new HashedString(Id.ToString()).Guid.ToString().Replace("-", "");
+        internal string UniqueId => Id.Value.ToHashedString();
 
         public string ClassName => DisplayName.ToCSharpSafe();
         public string TypeScriptTypeName => DisplayName.ToCSharpSafe();
         public string EFCoreEntityClassName => $"{DisplayName.ToCSharpSafe()}DbEntity";
         string IEFCoreEntity.ClassName => EFCoreEntityClassName;
-        public string DbSetName => EFCoreEntityClassName;
+        public string DbSetName => $"{ClassName}DbSet";
 
         public IList<IReadOnlyMemberOptions> SchalarMembersNotRelatedToAggregate { get; } = new List<IReadOnlyMemberOptions>();
         internal bool UseKeyInsteadOfName { get; }
@@ -127,16 +127,7 @@ namespace Nijo.Core {
         }
 
         internal static bool IsStored(this GraphNode<Aggregate> aggregate) {
-            return aggregate.GetRoot().Item.Options.Type == E_AggreateType.MasterData;
-        }
-        internal static bool IsCreatable(this GraphNode<Aggregate> aggregate) {
-            return aggregate.GetRoot().Item.Options.Type == E_AggreateType.MasterData;
-        }
-        internal static bool IsEditable(this GraphNode<Aggregate> aggregate) {
-            return aggregate.GetRoot().Item.Options.Type == E_AggreateType.MasterData;
-        }
-        internal static bool IsDeletable(this GraphNode<Aggregate> aggregate) {
-            return aggregate.IsCreatable() && aggregate.IsEditable();
+            return aggregate.GetRoot().Item.Options.Handler == NijoCodeGenerator.Handlers.MasterData.Key;
         }
 
         internal static IEnumerable<GraphEdge<Aggregate>> GetReferedEdges(this GraphNode<Aggregate> graphNode) {

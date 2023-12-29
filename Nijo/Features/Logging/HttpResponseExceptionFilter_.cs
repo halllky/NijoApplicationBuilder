@@ -3,15 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Nijo.Features.Util;
+using Nijo.Architecture.Utility;
+using Nijo.Util.CodeGenerating;
 
 namespace Nijo.Features.Logging {
     internal class HttpResponseExceptionFilter {
         internal const string CLASSNAME = "HttpResponseExceptionFilter";
 
-        internal static SourceFile Render() => new SourceFile {
+        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
             FileName = "HttpResponseExceptionFilter.cs",
-            RenderContent = ctx => $$"""
+            RenderContent = () => $$"""
                 namespace {{ctx.Config.RootNamespace}} {
                     using Microsoft.AspNetCore.Mvc.Filters;
                     using Microsoft.AspNetCore.Mvc;
@@ -32,7 +33,7 @@ namespace Nijo.Features.Logging {
                                 _logger.LogCritical(context.Exception, "Internal Server Error: {Url}", context.HttpContext.Request.GetDisplayUrl());
 
                                 context.Result = ((ControllerBase)context.Controller).JsonContent(new {
-                                    content = {{Utility.CLASSNAME}}.{{Utility.TO_JSON}}(new[] {
+                                    content = {{UtilityClass.CLASSNAME}}.{{UtilityClass.TO_JSON}}(new[] {
                                         context.Exception.ToString(),
                                     }),
                                 });

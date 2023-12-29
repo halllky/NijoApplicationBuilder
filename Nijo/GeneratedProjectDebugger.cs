@@ -1,4 +1,4 @@
-using Nijo.DotnetEx;
+using Nijo.Util.DotnetEx;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;

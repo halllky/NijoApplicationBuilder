@@ -3,15 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static Nijo.Features.BackgroundService.BackgroundTaskEntity;
+using Nijo.Architecture;
+using Nijo.Util.CodeGenerating;
+using static Nijo.Features.BackgroundService.BackgroundTaskFeature;
 
 namespace Nijo.Features.BackgroundService {
     internal class BackgroundTaskLauncher {
         internal const string CLASSNAME = "BackgroundTaskLauncher";
 
-        internal static SourceFile Render() => new SourceFile {
+        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
             FileName = "BackgroundTaskLauncher.cs",
-            RenderContent = ctx => {
+            RenderContent = () => {
                 var dbContextFullName = $"{ctx.Config.DbContextNamespace}.{ctx.Config.DbContextName}";
                 var dbSetName = ctx.Schema.GetAggregate(GraphNodeId).Item.DbSetName;
 
@@ -274,7 +276,7 @@ namespace Nijo.Features.BackgroundService {
                     }
 
                     namespace {{ctx.Config.EntityNamespace}} {
-                        public class {{BackgroundTaskEntity.CLASSNAME}} {
+                        public class {{BackgroundTaskFeature.CLASSNAME}} {
                             [JsonPropertyName("id")]
                             public string {{COL_ID}} { get; set; } = string.Empty;
                             [JsonPropertyName("name")]
@@ -293,7 +295,7 @@ namespace Nijo.Features.BackgroundService {
                             public DateTime? {{COL_FINISHTIME}} { get; set; }
 
                             public static void OnModelCreating(ModelBuilder modelBuilder) {
-                                modelBuilder.Entity<{{BackgroundTaskEntity.CLASSNAME}}>(e => {
+                                modelBuilder.Entity<{{BackgroundTaskFeature.CLASSNAME}}>(e => {
                                     e.HasKey(e => e.{{COL_ID}});
                                 });
                             }
@@ -302,7 +304,7 @@ namespace Nijo.Features.BackgroundService {
 
                     namespace {{ctx.Config.DbContextNamespace}} {
                         partial class {{ctx.Config.DbContextName}} {
-                            public virtual DbSet<{{ctx.Config.EntityNamespace}}.{{BackgroundTaskEntity.CLASSNAME}}> {{dbSetName}} { get; set; }
+                            public virtual DbSet<{{ctx.Config.EntityNamespace}}.{{BackgroundTaskFeature.CLASSNAME}}> {{dbSetName}} { get; set; }
                         }
                     }
 

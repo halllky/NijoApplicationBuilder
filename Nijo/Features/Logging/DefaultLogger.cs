@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Nijo.Util.CodeGenerating;
 
 namespace Nijo.Features.Logging {
     internal class DefaultLogger {
         internal const string CLASSNAME = "DefaultLogger";
 
-        internal static SourceFile Render() => new SourceFile {
+        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
             FileName = "DefaultLogger.cs",
-            RenderContent = ctx => $$"""
+            RenderContent = () => $$"""
                 namespace {{ctx.Config.RootNamespace}} {
                     using System;
                     using System.IO;

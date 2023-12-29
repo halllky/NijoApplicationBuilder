@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static Nijo.Features.BackgroundService.BackgroundTaskEntity;
+using Nijo.Util.CodeGenerating;
+using static Nijo.Features.BackgroundService.BackgroundTaskFeature;
 
 namespace Nijo.Features.BackgroundService {
     internal class BackgroundTask {
 
-        internal static SourceFile Render() => new SourceFile {
+        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
             FileName = "BackgroundTask.cs",
-            RenderContent = ctx => $$"""
+            RenderContent = () => $$"""
                 using System.Reflection;
                 using System.Text.Json;
 

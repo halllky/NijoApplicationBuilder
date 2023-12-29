@@ -1,4 +1,4 @@
-using Nijo.DotnetEx;
+using Nijo.Util.DotnetEx;
 using System;
 using System.IO;
 using System.Xml;

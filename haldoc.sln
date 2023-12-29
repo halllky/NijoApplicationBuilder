@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nijo.IntegrationTest", "Nij
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "自動テストで作成されたプロジェクト", "自動テストで作成されたプロジェクト\webapi\自動テストで作成されたプロジェクト.csproj", "{98E77C78-F8F1-41DA-87EE-903B002C09B8}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nijo.Extensions", "Nijo.Extensions\Nijo.Extensions.csproj", "{39D699A9-0070-49CD-8F6C-42359D5F3396}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{98E77C78-F8F1-41DA-87EE-903B002C09B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{98E77C78-F8F1-41DA-87EE-903B002C09B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{98E77C78-F8F1-41DA-87EE-903B002C09B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{39D699A9-0070-49CD-8F6C-42359D5F3396}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{39D699A9-0070-49CD-8F6C-42359D5F3396}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{39D699A9-0070-49CD-8F6C-42359D5F3396}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{39D699A9-0070-49CD-8F6C-42359D5F3396}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

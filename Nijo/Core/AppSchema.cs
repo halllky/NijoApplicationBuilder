@@ -1,4 +1,4 @@
-using Nijo.DotnetEx;
+using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Core {
-    internal class AppSchema {
+    public class AppSchema {
         internal static AppSchema Empty() => new(string.Empty, DirectedGraph.Empty(), new HashSet<EnumDefinition>());
 
         internal AppSchema(string appName, DirectedGraph directedGraph, IReadOnlyCollection<EnumDefinition> enumDefinitions) {
