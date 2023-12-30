@@ -27,7 +27,7 @@ export const TreeExplorer = ({ data, cy, className }: {
   }, [flattenTree, handleExpandCollapse])
 
   // グラフ中での可視状態の切り替え
-  const handleHidden = useCallback((node: TreeNode, hideInGraph: boolean) => {
+  const handleVisibility = useCallback((node: TreeNode, hideInGraph: boolean) => {
     const nodes = hideInGraph
       ? getDescendantsAndSelf(node)
       : [...getAncestors(node), ...getDescendantsAndSelf(node)]
@@ -38,10 +38,24 @@ export const TreeExplorer = ({ data, cy, className }: {
       cy?.nodes(`[id='${id}']`).style('display', hideInGraph ? 'none' : '')
     }
   }, [nodeState, cy])
+  // 全切り替え
+  const allHidden = useMemo(() => {
+    return flattenTree.every(node => nodeState.get(node.item.data.id ?? '')?.hideInGraph)
+  }, [flattenTree, nodeState])
+  const toggleVisibleAll = useCallback(() => {
+    const newValue = !allHidden
+    for (const node of flattenTree) {
+      const id = node.item.data.id ?? ''
+      nodeState.set(id, { ...nodeState.get(id), hideInGraph: newValue })
+    }
+    cy?.nodes().style('display', newValue ? 'none' : '')
+    setNodeState(new Map(nodeState))
+  }, [flattenTree, nodeState, allHidden])
 
   return (
     <div className={`flex flex-col ${className}`}>
-      <div>
+      <div className="pl-1">
+        <input type="checkbox" checked={!allHidden} onChange={toggleVisibleAll} />
         <button onClick={collapseAll}>ルートに折りたたむ</button>
       </div>
       <ul className="overflow-x-hidden select-none pl-1">
@@ -50,7 +64,7 @@ export const TreeExplorer = ({ data, cy, className }: {
             <input
               type="checkbox"
               checked={!nodeState.get(node.item.data.id ?? '')?.hideInGraph}
-              onChange={e => handleHidden(node, !e.target.checked)}
+              onChange={e => handleVisibility(node, !e.target.checked)}
             />
             <div style={{ minWidth: node.depth * 20, backgroundColor: 'tomato' }}></div>
             <CollapseButton
