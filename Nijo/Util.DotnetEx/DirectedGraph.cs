@@ -102,6 +102,21 @@ namespace Nijo.Util.DotnetEx {
 
             return builder.ToString();
         }
+        public string ToDotText() {
+            var builder = new StringBuilder();
+            builder.AppendLine("digraph G {");
+            foreach (var node in Nodes) {
+                builder.AppendLine($"  {node.Key.Value.ToHashedString()} [label=\"{node.Key.Value.Replace("\"", "”")}\"];");
+            }
+            foreach (var edge in Edges) {
+                var initial = edge.Initial.Value.ToHashedString();
+                var terminal = edge.Terminal.Value.ToHashedString();
+                builder.AppendLine($"  {initial} -> {terminal} [label=\"{edge.RelationName.Replace("\"", "”")}\"]");
+            }
+
+            builder.AppendLine("}");
+            return builder.ToString();
+        }
 
         public IEnumerator<GraphNode> GetEnumerator() {
             foreach (var node in Nodes.Values) {
