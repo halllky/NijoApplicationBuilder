@@ -52,15 +52,12 @@ namespace HalCodeAnalyzer {
                 .AddDocuments(docList.ToImmutableArray());
             var project = solution.GetProject(projectId) ?? throw new Exception("Failed to get project.");
             var compilation = await project.GetCompilationAsync() ?? throw new InvalidOperationException("Failed to compile.");
-            var classSymbols = compilation
-                .GetSymbolsWithName(name => true, SymbolFilter.Type)
-                .OfType<INamedTypeSymbol>();
 
             using var sw = new StreamWriter(@"aaaaa.txt", append: false, encoding: Encoding.UTF8);
             var walker = new SyntaxWalkerResearcher { _compilation = compilation };
-            //walker.OnLogout += (_, str) => {
-            //    sw.WriteLine(str);
-            //};
+            walker.OnLogout += (_, str) => {
+                sw.WriteLine(str);
+            };
 
             var nodes = new HashSet<NodeId>();
             var edges = new List<GraphEdgeInfo>();
@@ -73,7 +70,8 @@ namespace HalCodeAnalyzer {
 
             var graph = DirectedGraph.Create(
                 nodes.Select(id => new SimpleGraphNode { Id = id }),
-                edges.DistinctBy(edge => (edge.Initial, edge.RelationName, edge.Terminal)));
+                edges.DistinctBy(edge => (edge.Initial, edge.RelationName, edge.Terminal))
+                     .Where(edge => edge.Initial != edge.Terminal));
 
             //// mermaid.js に出力
             //sw.WriteLine(graph.ToMermaidText());
@@ -108,32 +106,57 @@ namespace HalCodeAnalyzer {
                 var symbolInfo = semanticModel.GetSymbolInfo(node);
 
                 // インターフェース経由でのメソッド呼び出しやオーバーロードがある場合はシンボルが一意に決まらず候補シンボルの配列に入る
-                ISymbol? symbol;
+                ISymbol? methodSymbol;
                 var warning = string.Empty;
                 if (symbolInfo.Symbol != null) {
-                    symbol = symbolInfo.Symbol;
+                    methodSymbol = symbolInfo.Symbol;
                 } else if (symbolInfo.CandidateSymbols.Length == 1) {
-                    symbol = symbolInfo.CandidateSymbols.Single();
+                    methodSymbol = symbolInfo.CandidateSymbols.Single();
                 } else if (symbolInfo.CandidateSymbols.Length >= 2) {
-                    symbol = symbolInfo.CandidateSymbols.First();
+                    methodSymbol = symbolInfo.CandidateSymbols.First();
                     warning += $"シンボル解決困難(候補{symbolInfo.CandidateSymbols.Length}個)({symbolInfo.CandidateReason})。";
                 } else {
-                    symbol = null;
+                    methodSymbol = null;
                 }
 
-                var caller = node
-                    .FirstAncestorOrSelf<ClassDeclarationSyntax>()?
-                    .Identifier
-                    .Text;
-                var methodName = symbol?.Name;
-                var declaringTypeName = symbol?.ContainingType.Name;
+                static IEnumerable<string> GetNamespace(INamespaceSymbol nsSymbol) {
+                    if (nsSymbol.ContainingNamespace != null) {
+                        foreach (var ancestor in GetNamespace(nsSymbol.ContainingNamespace)) {
+                            yield return ancestor;
+                        }
+                    }
+                    if (!string.IsNullOrWhiteSpace(nsSymbol.Name)) {
+                        yield return nsSymbol.Name;
+                    }
+                }
 
-                if (caller != null
-                    && methodName != null
-                    && declaringTypeName != null) {
+                var callerClassSyntax = node.FirstAncestorOrSelf<ClassDeclarationSyntax>();
+                var callerClass = callerClassSyntax != null
+                    ? semanticModel.GetDeclaredSymbol(callerClassSyntax)
+                    : null;
+                var methodName = methodSymbol?.Name;
 
-                    var initial = new NodeId(caller);
-                    var terminal = new NodeId(declaringTypeName);
+                var callerTypeFullName = new List<string>();
+                var declaringTypeFullName = new List<string>();
+                if (callerClass != null) {
+                    callerTypeFullName.AddRange(GetNamespace(callerClass.ContainingNamespace));
+                    callerTypeFullName.Add(callerClass.Name);
+                }
+                if (methodSymbol != null) {
+                    declaringTypeFullName.AddRange(GetNamespace(methodSymbol.ContainingType.ContainingNamespace));
+                    declaringTypeFullName.Add(methodSymbol.ContainingType.Name);
+                }
+
+                OnLogout?.Invoke(this,
+                    $"呼出: {callerTypeFullName.Join(".")},  " +
+                    $"宣言: {declaringTypeFullName.Join(".")}.{methodName}");
+
+                if (methodName != null
+                    && callerTypeFullName.Any()
+                    && declaringTypeFullName.Any()) {
+
+                    var initial = new NodeId(callerTypeFullName);
+                    var terminal = new NodeId(declaringTypeFullName);
                     AddGraphNode?.Invoke(this, initial);
                     AddGraphNode?.Invoke(this, terminal);
                     AddGraphEdge?.Invoke(this, new GraphEdgeInfo {

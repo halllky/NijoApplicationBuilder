@@ -20,9 +20,14 @@ namespace HalCodeAnalyzer {
 
             sw.WriteLine($$$"""
                 export default () => [
+                  // containers
+                {{{graph.SubGraphs.Select(group => $$"""
+                  { data: { id: '{{group.FullName.ToHashedString()}}', label: '{{group.Name}}', parent: {{(group.Parent == NodeGroup.Root ? "undefined" : $"'{group.Parent.FullName.ToHashedString()}'")}} } },
+                """).Join(Environment.NewLine)}}}
+
                   // nodes
                 {{{graph.Nodes.Select(node => $$"""
-                  { data: { id: '{{node.Key.Value.ToHashedString()}}', label: '{{node.Key}}', parent: undefined } },
+                  { data: { id: '{{node.Key.Value.ToHashedString()}}', label: '{{node.Key.BaseName}}', parent: {{(node.Key.Group == NodeGroup.Root ? "undefined" : $"'{node.Key.Group.FullName.ToHashedString()}'")}} } },
                 """).Join(Environment.NewLine)}}}
 
                   // edges

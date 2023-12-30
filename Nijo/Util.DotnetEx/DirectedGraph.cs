@@ -80,6 +80,10 @@ namespace Nijo.Util.DotnetEx {
 
         public IReadOnlyDictionary<NodeId, IGraphNode> Nodes { get; }
         public IReadOnlySet<GraphEdgeInfo> Edges { get; }
+        public IEnumerable<NodeGroup> SubGraphs => Nodes.Keys
+            .Select(node => node.Group)
+            .Distinct()
+            .Where(group => group != NodeGroup.Root);
 
         public IEnumerable<GraphNode<T>> Only<T>() where T : IGraphNode {
             return this
@@ -327,10 +331,17 @@ namespace Nijo.Util.DotnetEx {
 
     #region VALUE
     public class NodeId : ValueObject {
-        public NodeId(string value) {
-            Value = value;
+        public NodeId(string value) : this(new[] { value }) { }
+        public NodeId(IEnumerable<string> value) {
+            Group = new NodeGroup(value.SkipLast(1));
+
+            var escaped = value.Select(x => x.Replace(".", "．"));
+            BaseName = escaped.LastOrDefault() ?? string.Empty;
+            Value = escaped.Join(".");
         }
+        public NodeGroup Group { get; }
         public string Value { get; }
+        public string BaseName { get; }
 
         protected override IEnumerable<object?> ValueObjectIdentifiers() {
             yield return Value;
@@ -340,6 +351,42 @@ namespace Nijo.Util.DotnetEx {
         }
 
         public static NodeId Empty => new NodeId(string.Empty);
+    }
+    public sealed class NodeGroup : ValueObject {
+        public NodeGroup(string name)
+            : this(new[] { name }) { }
+        public NodeGroup(NodeGroup parent, string name)
+            : this(parent._value.Concat(new[] { name })) { }
+        public NodeGroup(IEnumerable<string> value) {
+            _value = value.Select(x => x.Replace(".", "．")).ToArray();
+        }
+        private readonly string[] _value;
+
+        public string Name => _value.LastOrDefault() ?? string.Empty;
+        public string FullName => _value.Join(".");
+        public int Depth => _value.Length;
+        public NodeGroup Parent => new NodeGroup(_value.SkipLast(1));
+
+        public bool Contains(NodeGroup group) {
+            if (group.Depth < Depth) {
+                return false;
+            }
+            for (int i = 0; i < _value.Length; i++) {
+                if (group._value[i] != _value[i]) return false;
+            }
+            return true;
+        }
+        public bool Contains(NodeId nodeId) {
+            return Contains(nodeId.Group);
+        }
+        public override string ToString() {
+            return FullName;
+        }
+        protected override IEnumerable<object?> ValueObjectIdentifiers() {
+            return _value;
+        }
+
+        public static NodeGroup Root => new(Enumerable.Empty<string>());
     }
     public interface IGraphNode {
         NodeId Id { get; }
