@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import cytoscape from 'cytoscape'
+// @ts-ignore
+import layoutExt from 'cytoscape-dagre'
 import './App.css'
 import enumerateData from './data'
+
+cytoscape.use(layoutExt)
 
 function App() {
   const divRef = useRef<HTMLDivElement>(null)
@@ -23,7 +27,11 @@ function App() {
           'target-arrow-shape': 'triangle',
           'curve-style': 'bezier',
         },
-      }]
+      }],
+      layout: {
+        name: 'dagre',
+        rankDir: 'LR',
+      } as any,
     }))
   }, [cy])
 
