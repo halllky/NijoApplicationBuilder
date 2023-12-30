@@ -11,8 +11,8 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using Nijo.Util.DotnetEx;
 
-namespace RoslynMermaidSample {
-    class Program {
+namespace HalCodeAnalyzer {
+    partial class Program {
 
         static async Task Main(string[] args) {
             // コマンドライン引数から csproj ファイルのパスを取得する
@@ -91,6 +91,9 @@ namespace RoslynMermaidSample {
             //    .DistinctBy(edge => (edge.Initial, edge.Terminal))
             //    .Select(edge => new Edge<object>(edge.Initial.Value, edge.Terminal.Value)));
             //// ここから先svgまで持っていく方法がない
+
+            // cytoscapeで表示
+            RenderAppTsx(graph);
         }
 
         private class SyntaxWalkerResearcher : CSharpSyntaxWalker {
