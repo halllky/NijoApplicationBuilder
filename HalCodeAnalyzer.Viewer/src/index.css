@@ -1,6 +1,6 @@
-* {
-  box-sizing: border-box;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 html,
 body,
@@ -9,9 +9,4 @@ body,
   height: 100%;
   margin: 0;
   padding: 0;
-}
-
-/* leftが親要素の半分の位置になってしまっているので修正 */
-.cytoscape-canvas-container>div>canvas {
-  left: 0;
 }

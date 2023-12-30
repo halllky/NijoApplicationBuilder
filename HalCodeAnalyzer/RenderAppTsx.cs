@@ -19,7 +19,9 @@ namespace HalCodeAnalyzer {
             using var sw = new StreamWriter(filepath, append: false, encoding: new UTF8Encoding(false, false));
 
             sw.WriteLine($$$"""
-                export default () => [
+                import cytoscape from 'cytoscape'
+
+                export default (): cytoscape.ElementDefinition[] => [
                   // containers
                 {{{graph.SubGraphs.Select(group => $$"""
                   { data: { id: '{{group.FullName.ToHashedString()}}', label: '{{group.Name}}', parent: {{(group.Parent == NodeGroup.Root ? "undefined" : $"'{group.Parent.FullName.ToHashedString()}'")}} } },
