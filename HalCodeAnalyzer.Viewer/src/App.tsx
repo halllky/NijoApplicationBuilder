@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import enumerateData from './data'
 
 import cytoscape from 'cytoscape'
@@ -37,7 +37,8 @@ function App() {
         name: 'dagre',
         rankDir: 'LR',
       } as any,
-    });
+    })
+    cyInstance.autolock(true);
     (cyInstance as any).navigator({
       container: '.cytoscape-navigator-container', // string | false | undefined. Supported strings: an element id selector (like "#someId"), or a className selector (like ".someClassName"). Otherwise an element will be created by the library.
       viewLiveFramerate: 0, // set false to update graph pan only on drag end; set 0 to do it instantly; set a number (frames per second) to update not more than N times per second
@@ -50,14 +51,47 @@ function App() {
     setCy(cyInstance)
   }, [cy])
 
+  // 位置固定
+  const [locked, setLocked] = useState(false)
+  const handleLockChanged: React.ChangeEventHandler<HTMLInputElement> = useCallback(e => {
+    if (!cy) {
+      setLocked(false)
+      return
+    }
+    setLocked(e.target.checked)
+    cy.autolock(e.target.checked)
+  }, [cy, locked])
+
+  // ズームリセット
+  const handleReset = useCallback(() => {
+    cy?.reset()
+  }, [cy])
+
   return (
     <div className="cytoscape-root" style={{
       position: 'relative',
       width: '100%',
       height: '100%',
       display: 'flex',
+      flexDirection: 'column',
       padding: 12,
     }}>
+      {/* ツールバー */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        gap: 12,
+      }}>
+        <label>
+          <input type="checkbox" checked={locked} onChange={handleLockChanged} />
+          ノード位置固定
+        </label>
+        <button onClick={handleReset}>
+          (0, 0) に戻る
+        </button>
+      </div>
+
       {/* キャンバス */}
       <div ref={divRef} className="cytoscape-canvas-container" style={{
         flex: 1,
