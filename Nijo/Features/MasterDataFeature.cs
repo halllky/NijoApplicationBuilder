@@ -29,7 +29,7 @@ namespace Nijo.Features {
             var searchFeature = new AggregateSearchFeature();
             searchFeature.GenerateCode(context, rootAggregate);
 
-            context.Render<Infrastucture>(infra => {
+            context.Render<Infrastructure>(infra => {
                 infra.Aggregate(rootAggregate, builder => {
 
                     // AggregateDetail (for Find, Update, Delete)
@@ -105,7 +105,7 @@ namespace Nijo.Features {
             var detailView = new SingleView(rootAggregate, SingleView.E_Type.View);
             var editView = new SingleView(rootAggregate, SingleView.E_Type.Edit);
 
-            context.Render<Infrastucture>(infra => {
+            context.Render<Infrastructure>(infra => {
                 infra.ReactPages.Add(detailView);
                 infra.ReactPages.Add(editView);
             });

@@ -16,7 +16,7 @@ namespace Nijo.Architecture.WebServer {
         }
         private readonly Config _config;
 
-        internal SourceFile RenderDeclaring(ICodeRenderingContext ctx, Infrastucture infrastucture) => new SourceFile {
+        internal SourceFile RenderDeclaring(ICodeRenderingContext ctx, Infrastructure infrastucture) => new SourceFile {
             FileName = $"{_config.DbContextName.ToFileNameSafe()}.cs",
             RenderContent = () => {
                 var onModelCreatings = infrastucture._itemsByAggregate

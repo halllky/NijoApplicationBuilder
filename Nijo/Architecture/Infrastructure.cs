@@ -15,7 +15,7 @@ using Nijo.Features.Logging;
 using Nijo.Architecture.WebClient;
 
 namespace Nijo.Architecture {
-    public sealed class Infrastucture : NijoFeatureBaseNonAggregate {
+    public sealed class Infrastructure : NijoFeatureBaseNonAggregate {
 
         // DefaultConfigure
         public List<Func<string, string>> ConfigureServices { get; } = new List<Func<string, string>>();

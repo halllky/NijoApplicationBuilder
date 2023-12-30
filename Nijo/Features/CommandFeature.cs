@@ -20,7 +20,7 @@ namespace Nijo.Features {
 
         public override void GenerateCode(ICodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
             var createView = new SingleView(rootAggregate, SingleView.E_Type.Create);
-            context.Render<Infrastucture>(infra => {
+            context.Render<Infrastructure>(infra => {
                 infra.ReactPages.Add(createView);
             });
 
@@ -32,7 +32,7 @@ namespace Nijo.Features {
                 });
             });
 
-            context.Render<Infrastucture>(infra => {
+            context.Render<Infrastructure>(infra => {
                 var command = new AggregateCreateCommand(rootAggregate) {
                     // ToDbEntityはApplicationServiceメソッド未生成の場合は使わないので
                     RendersDbEntity = AppSrvMethod != null,
