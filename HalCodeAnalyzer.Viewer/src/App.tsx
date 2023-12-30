@@ -13,46 +13,15 @@ Navigator.configure(cytoscape)
 ExpandCollapse.configure(cytoscape)
 
 function App() {
-  const data = useMemo(() => enumerateData(), [])
+  const elements = useMemo(() => enumerateData(), [])
   const [cy, setCy] = useState<cytoscape.Core>()
   const [initialized, setInitialized] = useState(false)
   const divRef = useCallback((divElement: HTMLDivElement | null) => {
     if (!divElement) return
     const cyInstance = cytoscape({
       container: divElement,
-      elements: data,
-      style: [{
-        selector: 'node',
-        css: {
-          'shape': 'round-rectangle',
-          'width': (node: any) => node.data('label')?.length * 10,
-          'text-valign': 'center',
-          'text-halign': 'center',
-          'border-width': '1px',
-          'border-color': '#909090',
-          'background-color': '#666666',
-          'background-opacity': .1,
-          'label': 'data(label)',
-        },
-      }, {
-        selector: 'node:parent', // 子要素をもつノードに適用される
-        css: {
-          'text-valign': 'top',
-          'color': '#707070',
-        },
-      }, {
-        selector: 'edge',
-        style: {
-          'target-arrow-shape': 'triangle',
-          'curve-style': 'bezier',
-        },
-      }, {
-        selector: 'edge:selected',
-        style: {
-          'label': 'data(label)',
-          'color': 'blue',
-        },
-      }],
+      elements,
+      style: STYLESHEET,
       layout: Layout.OPTIONS,
     })
     Navigator.setupCyInstance(cyInstance)
@@ -62,12 +31,12 @@ function App() {
       cyInstance.resize().fit().reset()
       setInitialized(true)
     }
-  }, [data, initialized])
+  }, [elements, initialized])
 
   return (
     <PanelGroup direction="horizontal">
       <Panel defaultSize={20}>
-        <TreeExplorer cy={cy} data={data} className="h-full" />
+        <TreeExplorer cy={cy} data={elements} className="h-full" />
       </Panel>
 
       <PanelResizeHandle style={{ width: 4 }} />
@@ -88,3 +57,36 @@ function App() {
 }
 
 export default App
+
+const STYLESHEET: cytoscape.CytoscapeOptions['style'] = [{
+  selector: 'node',
+  css: {
+    'shape': 'round-rectangle',
+    'width': (node: any) => node.data('label')?.length * 10,
+    'text-valign': 'center',
+    'text-halign': 'center',
+    'border-width': '1px',
+    'border-color': '#909090',
+    'background-color': '#666666',
+    'background-opacity': .1,
+    'label': 'data(label)',
+  },
+}, {
+  selector: 'node:parent', // 子要素をもつノードに適用される
+  css: {
+    'text-valign': 'top',
+    'color': '#707070',
+  },
+}, {
+  selector: 'edge',
+  style: {
+    'target-arrow-shape': 'triangle',
+    'curve-style': 'bezier',
+  },
+}, {
+  selector: 'edge:selected',
+  style: {
+    'label': 'data(label)',
+    'color': 'blue',
+  },
+}]
