@@ -12,6 +12,7 @@
   "dependencies": {
     "cytoscape": "^3.28.1",
     "cytoscape-dagre": "^2.5.0",
+    "cytoscape-navigator": "^2.0.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

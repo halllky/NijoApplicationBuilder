@@ -1,19 +1,24 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
+import enumerateData from './data'
+
 import cytoscape from 'cytoscape'
 // @ts-ignore
 import layoutExt from 'cytoscape-dagre'
-import './App.css'
-import enumerateData from './data'
+// @ts-ignore
+import cytospaceNavigator from 'cytoscape-navigator'
+// import 'cytoscape-context-menus/cytoscape-context-menus.css'
+import 'cytoscape-navigator/cytoscape.js-navigator.css'
 
 cytoscape.use(layoutExt)
+cytospaceNavigator(cytoscape)
 
 function App() {
-  const divRef = useRef<HTMLDivElement>(null)
   const [cy, setCy] = useState<cytoscape.Core>()
+  const divRef = useCallback((divElement: HTMLDivElement | null) => {
+    if (cy || !divElement) return
 
-  useEffect(() => {
-    if (!cy && divRef.current) setCy(cytoscape({
-      container: divRef.current,
+    const cyInstance = cytoscape({
+      container: divElement,
       elements: enumerateData(),
       style: [{
         selector: 'node',
@@ -32,19 +37,43 @@ function App() {
         name: 'dagre',
         rankDir: 'LR',
       } as any,
-    }))
+    });
+    (cyInstance as any).navigator({
+      container: '.cytoscape-navigator-container', // string | false | undefined. Supported strings: an element id selector (like "#someId"), or a className selector (like ".someClassName"). Otherwise an element will be created by the library.
+      viewLiveFramerate: 0, // set false to update graph pan only on drag end; set 0 to do it instantly; set a number (frames per second) to update not more than N times per second
+      thumbnailEventFramerate: 30, // max thumbnail's updates per second triggered by graph updates
+      thumbnailLiveFramerate: false,// max thumbnail's updates per second. Set false to disable
+      dblClickDelay: 200,// milliseconds
+      removeCustomContainer: true,// destroy the container specified by user on plugin destroy
+      rerenderDelay: 100, // ms to throttle rerender updates to the panzoom for performance
+    })
+    setCy(cyInstance)
   }, [cy])
 
   return (
-    <div style={{
+    <div className="cytoscape-root" style={{
+      position: 'relative',
       width: '100%',
       height: '100%',
       display: 'flex',
+      padding: 12,
     }}>
+      {/* キャンバス */}
       <div ref={divRef} className="cytoscape-canvas-container" style={{
-        margin: 12,
         flex: 1,
         border: '1px solid gray',
+      }}></div>
+
+      {/* ナビゲータ */}
+      <div className="cytoscape-navigator-container" style={{
+        position: 'absolute',
+        width: '20%',
+        height: '20%',
+        right: 24,
+        bottom: 24,
+        overflow: 'hidden', // オーバーレイのうちはみ出た部分を非表示にする
+        border: '1px solid gray',
+        background: '#fcfcfc',
       }}></div>
     </div>
   )
