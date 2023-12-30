@@ -15,34 +15,54 @@ ExpandCollapse.configure(cytoscape)
 function App() {
   const data = useMemo(() => enumerateData(), [])
   const [cy, setCy] = useState<cytoscape.Core>()
+  const [initialized, setInitialized] = useState(false)
   const divRef = useCallback((divElement: HTMLDivElement | null) => {
-    if (cy || !divElement) return
-
+    if (!divElement) return
     const cyInstance = cytoscape({
       container: divElement,
       elements: data,
       style: [{
         selector: 'node',
-        style: {
-          label: 'data(label)',
+        css: {
+          'shape': 'round-rectangle',
+          'width': (node: any) => node.data('label')?.length * 10,
+          'text-valign': 'center',
+          'text-halign': 'center',
+          'border-width': '1px',
+          'border-color': '#909090',
+          'background-color': '#666666',
+          'background-opacity': .1,
+          'label': 'data(label)',
+        },
+      }, {
+        selector: 'node:parent', // 子要素をもつノードに適用される
+        css: {
+          'text-valign': 'top',
+          'color': '#707070',
         },
       }, {
         selector: 'edge',
         style: {
-          label: 'data(label)',
           'target-arrow-shape': 'triangle',
           'curve-style': 'bezier',
+        },
+      }, {
+        selector: 'edge:selected',
+        style: {
+          'label': 'data(label)',
+          'color': 'blue',
         },
       }],
       layout: Layout.OPTIONS,
     })
     Navigator.setupCyInstance(cyInstance)
     ExpandCollapse.setupCyInstance(cyInstance)
-
     setCy(cyInstance)
-  }, [cy, data])
-
-
+    if (!initialized) {
+      cyInstance.resize().fit().reset()
+      setInitialized(true)
+    }
+  }, [data, initialized])
 
   return (
     <PanelGroup direction="horizontal">
