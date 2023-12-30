@@ -81,7 +81,7 @@ namespace Nijo.Util.DotnetEx {
         public IReadOnlyDictionary<NodeId, IGraphNode> Nodes { get; }
         public IReadOnlySet<GraphEdgeInfo> Edges { get; }
         public IEnumerable<NodeGroup> SubGraphs => Nodes.Keys
-            .Select(node => node.Group)
+            .SelectMany(node => node.Group.AncestorsAndSelf())
             .Distinct()
             .Where(group => group != NodeGroup.Root);
 
@@ -331,13 +331,16 @@ namespace Nijo.Util.DotnetEx {
 
     #region VALUE
     public class NodeId : ValueObject {
-        public NodeId(string value) : this(new[] { value }) { }
-        public NodeId(IEnumerable<string> value) {
-            Group = new NodeGroup(value.SkipLast(1));
-
-            var escaped = value.Select(x => x.Replace(".", "．"));
-            BaseName = escaped.LastOrDefault() ?? string.Empty;
-            Value = escaped.Join(".");
+        public NodeId(string value)
+            : this(value, NodeGroup.Root) { }
+        public NodeId(IEnumerable<string> value)
+            : this(value.LastOrDefault() ?? string.Empty, new NodeGroup(value.SkipLast(1))) { }
+        public NodeId(string basename, NodeGroup nodeGroup) {
+            Group = nodeGroup;
+            BaseName = basename.Replace(".", "．");
+            Value = Group == NodeGroup.Root
+                ? BaseName
+                : $"{Group.FullName}.{BaseName}";
         }
         public NodeGroup Group { get; }
         public string Value { get; }
@@ -384,6 +387,14 @@ namespace Nijo.Util.DotnetEx {
         }
         protected override IEnumerable<object?> ValueObjectIdentifiers() {
             return _value;
+        }
+
+        public IEnumerable<NodeGroup> AncestorsAndSelf() {
+            var group = this;
+            while (group != Root) {
+                yield return group;
+                group = group.Parent;
+            }
         }
 
         public static NodeGroup Root => new(Enumerable.Empty<string>());

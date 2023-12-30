@@ -22,6 +22,8 @@ namespace HalCodeAnalyzer {
                 return;
             }
 
+            var logoutMode = args.Length >= 2 && args[1] == "--logout";
+
             using var workspace = new AdhocWorkspace();
             var projectId = ProjectId.CreateNewId();
             var projectInfo = ProjectInfo.Create(
@@ -54,24 +56,31 @@ namespace HalCodeAnalyzer {
             var compilation = await project.GetCompilationAsync() ?? throw new InvalidOperationException("Failed to compile.");
 
             using var sw = new StreamWriter(@"aaaaa.txt", append: false, encoding: Encoding.UTF8);
-            var walker = new ClassDependencyCollector { _compilation = compilation };
-            walker.OnLogout += (_, str) => {
-                sw.WriteLine(str);
+            var walker = new ClassDependencyCollector {
+                _solution = solution,
+                _compilation = compilation,
             };
-
             var nodes = new HashSet<NodeId>();
             var edges = new List<GraphEdgeInfo>();
-            walker.AddGraphNode += (_, nodeId) => nodes.Add(nodeId);
-            walker.AddGraphEdge += (_, edge) => edges.Add(edge);
+
+            if (logoutMode) {
+                walker.OnLogout += (_, str) => sw.WriteLine(str);
+            } else {
+                walker.AddGraphNode += (_, nodeId) => nodes.Add(nodeId);
+                walker.AddGraphEdge += (_, edge) => edges.Add(edge);
+            }
 
             foreach (var syntaxTree in compilation.SyntaxTrees) {
                 walker.Visit(syntaxTree.GetRoot());
             }
 
-            var graph = DirectedGraph.Create(
-                nodes.Select(id => new SimpleGraphNode { Id = id }),
-                edges.DistinctBy(edge => (edge.Initial, edge.RelationName, edge.Terminal))
-                     .Where(edge => edge.Initial != edge.Terminal));
+            if (!logoutMode) {
+                var graph = DirectedGraph.Create(
+                    nodes.Select(id => new SimpleGraphNode { Id = id }),
+                    edges.DistinctBy(edge => (edge.Initial, edge.RelationName, edge.Terminal))
+                         .Where(edge => edge.Initial != edge.Terminal));
+                RenderAppTsx(graph);
+            }
 
             //// mermaid.js に出力
             //sw.WriteLine(graph.ToMermaidText());
@@ -79,8 +88,8 @@ namespace HalCodeAnalyzer {
             //Console.WriteLine("mmdc -i aaaaa.txt -o aaaaa.svg");
             //// 出力は可能だが要素数が多すぎて見づらい
 
-            // Graphviz(Dot言語)で出力
-            sw.WriteLine(graph.ToDotText());
+            //// Graphviz(Dot言語)で出力
+            //sw.WriteLine(graph.ToDotText());
 
             //// QuickGraphで出力（Sandwych.QuickGraph.Core）
             //var graph = new BidirectionalGraph<object, IEdge<object>>();
@@ -89,9 +98,6 @@ namespace HalCodeAnalyzer {
             //    .DistinctBy(edge => (edge.Initial, edge.Terminal))
             //    .Select(edge => new Edge<object>(edge.Initial.Value, edge.Terminal.Value)));
             //// ここから先svgまで持っていく方法がない
-
-            // cytoscapeで表示
-            RenderAppTsx(graph);
         }
 
         private class SimpleGraphNode : IGraphNode {

@@ -1,6 +1,14 @@
 {
   "profiles": {
-    "HalCodeAnalyzer": {
+    "WSL": {
+      "commandName": "WSL2",
+      "distributionName": ""
+    },
+    "LogMode": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\Users\\krpzx\\OneDrive\\ドキュメント\\local\\20230409_haldoc\\haldoc\\Nijo\\Nijo.csproj --logout"
+    },
+    "ToCytoscape": {
       "commandName": "Project",
       "commandLineArgs": "C:\\Users\\krpzx\\OneDrive\\ドキュメント\\local\\20230409_haldoc\\haldoc\\Nijo\\Nijo.csproj"
     }
