@@ -22,7 +22,7 @@ function App() {
       container: divElement,
       elements,
       style: STYLESHEET,
-      layout: Layout.OPTIONS,
+      layout: Layout.DEFAULT,
     })
     Navigator.setupCyInstance(cyInstance)
     ExpandCollapse.setupCyInstance(cyInstance)

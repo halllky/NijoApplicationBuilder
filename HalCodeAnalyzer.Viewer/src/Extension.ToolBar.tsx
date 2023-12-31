@@ -14,11 +14,15 @@ export const Toolbar = ({ cy, className }: {
     cy.autolock(e.target.checked)
   }, [cy, locked])
 
+  const [currentLayout, setCurrentLayout] = useState(Layout.DEFAULT.name)
+  const handleLayoutChanged: React.ChangeEventHandler<HTMLSelectElement> = useCallback(e => {
+    setCurrentLayout(e.target.value)
+  }, [])
   const handlePositionReset = useCallback(() => {
     if (!cy) return
-    cy.layout(Layout.OPTIONS)?.run()
+    cy.layout(Layout.OPTION_LIST[currentLayout])?.run()
     cy.resize().fit().reset()
-  }, [cy])
+  }, [cy, currentLayout])
   const handleExpandAll = useCallback(() => {
     const api = (cy as any)?.expandCollapse('get')
     api.expandAll()
@@ -32,6 +36,13 @@ export const Toolbar = ({ cy, className }: {
 
   return (
     <div className={`flex content-start items-center gap-3 ${className}`}>
+      <select value={currentLayout} onChange={handleLayoutChanged}>
+        {Object.entries(Layout.OPTION_LIST).map(([key]) => (
+          <option key={key} value={key}>
+            {key}
+          </option>
+        ))}
+      </select>
       <button onClick={handlePositionReset}>位置リセット</button>
       <label>
         <input type="checkbox" checked={locked} onChange={handleLockChanged} />
