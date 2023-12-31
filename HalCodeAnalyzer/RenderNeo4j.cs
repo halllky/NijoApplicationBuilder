@@ -18,9 +18,15 @@ namespace HalCodeAnalyzer {
             string GetHashedNodeId(NodeId nodeId) => nodeId.Value.ToHashedString();
 
             // node
+            var namespaces = graph.SubGraphs
+                .SelectMany(group => group.Ancestors())
+                .ToHashSet();
             foreach (var container in graph.SubGraphs) {
+                var nodeType = namespaces.Contains(container)
+                    ? "Namespace"
+                    : "Class";
                 sw.WriteLine($$"""
-                    CREATE ({{GetHashedGroupId(container)}}:ClassOrNamespace {name:'{{container.Name}}'})
+                    CREATE ({{GetHashedGroupId(container)}}:{{nodeType}} {name:'{{container.Name}}'})
                     """);
             }
             foreach (var node in graph.Nodes.Keys) {

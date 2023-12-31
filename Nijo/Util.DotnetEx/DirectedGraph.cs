@@ -389,11 +389,17 @@ namespace Nijo.Util.DotnetEx {
             return _value;
         }
 
-        public IEnumerable<NodeGroup> AncestorsAndSelf() {
-            var group = this;
+        public IEnumerable<NodeGroup> Ancestors() {
+            var group = Parent;
             while (group != Root) {
                 yield return group;
                 group = group.Parent;
+            }
+        }
+        public IEnumerable<NodeGroup> AncestorsAndSelf() {
+            yield return this;
+            foreach (var ancestor in Ancestors()) {
+                yield return ancestor;
             }
         }
 
