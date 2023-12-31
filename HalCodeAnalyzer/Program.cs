@@ -14,6 +14,12 @@ using Nijo.Util.DotnetEx;
 namespace HalCodeAnalyzer {
     partial class Program {
 
+        enum E_ExecutionMode {
+            Cytoscape,
+            Neo4j,
+            Log,
+        }
+
         static async Task Main(string[] args) {
             // コマンドライン引数から csproj ファイルのパスを取得する
             var projectPath = args[0];
@@ -22,7 +28,11 @@ namespace HalCodeAnalyzer {
                 return;
             }
 
-            var logoutMode = args.Length >= 2 && args[1] == "--logout";
+            var mode = (args.Length >= 2 ? args[1] : string.Empty) switch {
+                "--cytoscape" => E_ExecutionMode.Cytoscape,
+                "--neo4j" => E_ExecutionMode.Neo4j,
+                _ => E_ExecutionMode.Log,
+            };
 
             using var workspace = new AdhocWorkspace();
             var projectId = ProjectId.CreateNewId();
@@ -63,7 +73,7 @@ namespace HalCodeAnalyzer {
             var nodes = new HashSet<NodeId>();
             var edges = new List<GraphEdgeInfo>();
 
-            if (logoutMode) {
+            if (mode == E_ExecutionMode.Log) {
                 walker.OnLogout += (_, str) => sw.WriteLine(str);
             } else {
                 walker.AddGraphNode += (_, nodeId) => nodes.Add(nodeId);
@@ -74,12 +84,17 @@ namespace HalCodeAnalyzer {
                 walker.Visit(syntaxTree.GetRoot());
             }
 
-            if (!logoutMode) {
+            if (mode != E_ExecutionMode.Log) {
                 var graph = DirectedGraph.Create(
                     nodes.Select(id => new SimpleGraphNode { Id = id }),
                     edges.DistinctBy(edge => (edge.Initial, edge.RelationName, edge.Terminal))
                          .Where(edge => edge.Initial != edge.Terminal));
-                RenderAppTsx(graph);
+
+                if (mode == E_ExecutionMode.Cytoscape) {
+                    RenderAppTsx(graph);
+                } else if (mode == E_ExecutionMode.Neo4j) {
+                    RenderNeo4jCreateScript(graph);
+                }
             }
 
             //// mermaid.js に出力

@@ -22,7 +22,7 @@ namespace Nijo.Util.DotnetEx {
             byte[] guidBytes = new byte[16];
             Array.Copy(hashedBytes, 0, guidBytes, 0, 16);
             var guid = new Guid(guidBytes);
-            return guid.ToString().Replace("-", "");
+            return "x" + guid.ToString().Replace("-", "");
         }
 
         /// <summary>
