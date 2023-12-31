@@ -18,26 +18,45 @@ namespace HalCodeAnalyzer {
                 @"../../../../HalCodeAnalyzer.Viewer/src/data.ts"));
             using var sw = new StreamWriter(filepath, append: false, encoding: new UTF8Encoding(false, false));
 
+            var containers = graph.SubGraphs
+                .Where(group => group.Depth >= 2) // ルート名前空間は描画しない。
+                                                  // 全ノードがルート名前空間のノードの中に描画されてしまい
+                                                  // スワイプしたときに画面スクロールでなくルート名前空間のドラッグになってしまうため
+                .Select(group => new { id = ToIdStringOrUndefined(group), group })
+                .OrderBy(group => group.id);
+            var nodes = graph.Nodes
+                .Select(node => new { id = node.Key.Value.ToHashedString(), node = node.Key })
+                .OrderBy(x => x.id);
+            var edges = graph.Edges
+                .Select(edge => new { id = $"{edge.Initial}::{edge.RelationName}::{edge.Terminal}".ToHashedString(), edge })
+                .OrderBy(x => x.id);
+
             sw.WriteLine($$$"""
                 import cytoscape from 'cytoscape'
 
                 export default (): cytoscape.ElementDefinition[] => [
                   // containers
-                {{{graph.SubGraphs.Select(group => $$"""
-                  { data: { id: '{{group.FullName.ToHashedString()}}', label: '{{group.Name}}', parent: {{(group.Parent == NodeGroup.Root ? "undefined" : $"'{group.Parent.FullName.ToHashedString()}'")}} } },
+                {{{containers.Select(x => $$"""
+                  { data: { id: {{x.id}}, label: '{{x.group.Name}}', parent: {{ToIdStringOrUndefined(x.group.Parent)}} } },
                 """).Join(Environment.NewLine)}}}
 
                   // nodes
-                {{{graph.Nodes.Select(node => $$"""
-                  { data: { id: '{{node.Key.Value.ToHashedString()}}', label: '{{node.Key.BaseName}}', parent: {{(node.Key.Group == NodeGroup.Root ? "undefined" : $"'{node.Key.Group.FullName.ToHashedString()}'")}} } },
+                {{{nodes.Select(x => $$"""
+                  { data: { id: '{{x.id}}', label: '{{x.node.BaseName}}', parent: {{ToIdStringOrUndefined(x.node.Group)}} } },
                 """).Join(Environment.NewLine)}}}
 
                   // edges
-                {{{graph.Edges.Select(edge => $$"""
-                  { data: { id: '{{$"{edge.Initial}::{edge.RelationName}::{edge.Terminal}".ToHashedString()}}', label: '{{edge.RelationName}}', source: '{{edge.Initial.Value.ToHashedString()}}', target: '{{edge.Terminal.Value.ToHashedString()}}' } },
+                {{{edges.Select(x => $$"""
+                  { data: { id: '{{x.id}}', label: '{{x.edge.RelationName}}', source: '{{x.edge.Initial.Value.ToHashedString()}}', target: '{{x.edge.Terminal.Value.ToHashedString()}}' } },
                 """).Join(Environment.NewLine)}}}
                 ]
                 """.Replace(Environment.NewLine, "\n"));
+        }
+
+        private static string ToIdStringOrUndefined(NodeGroup group) {
+            return group == NodeGroup.Root
+                ? $"undefined"
+                : $"'{group.FullName.ToHashedString()}'";
         }
     }
 }

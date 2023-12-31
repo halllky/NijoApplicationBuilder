@@ -20,10 +20,14 @@ export const Toolbar = ({ cy, className }: {
     cy.resize().fit().reset()
   }, [cy])
   const handleExpandAll = useCallback(() => {
-    (cy as any)?.expandCollapse('get').expandAll()
+    const api = (cy as any)?.expandCollapse('get')
+    api.expandAll()
+    api.expandAllEdges()
   }, [cy])
   const handleCollapseAll = useCallback(() => {
-    (cy as any)?.expandCollapse('get').collapseAll()
+    const api = (cy as any)?.expandCollapse('get')
+    api.collapseAll()
+    api.collapseAllEdges()
   }, [cy])
 
   return (
