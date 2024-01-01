@@ -1,7 +1,7 @@
 import cytoscape from 'cytoscape'
 // @ts-ignore
 import cytospaceExpandCollapse from 'cytoscape-expand-collapse'
-import Layout from './Extension.Layout'
+import Layout from './GraphView.Layout'
 
 const configure = (cy: typeof cytoscape) => {
   cytospaceExpandCollapse(cy)

@@ -1,6 +1,6 @@
 import cytoscape from 'cytoscape'
 import { useCallback, useState } from 'react'
-import Layout from './Extension.Layout'
+import Layout from './GraphView.Layout'
 
 export const Toolbar = ({ cy, className }: {
   cy?: cytoscape.Core
