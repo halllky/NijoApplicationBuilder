@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes, InputHTMLAttributes, PropsWithoutRef, TextareaHTMLAttributes, forwardRef } from 'react'
+import { ButtonHTMLAttributes, Dispatch, InputHTMLAttributes, PropsWithoutRef, Reducer, TextareaHTMLAttributes, createContext, forwardRef, useContext, useReducer } from 'react'
 
 /** forwardRefの戻り値の型定義がややこしいので単純化するためのラッピング関数 */
 export const forwardRefEx = <TRef, TProps>(
@@ -83,4 +83,37 @@ export const Separator = () => {
   return (
     <hr className="bg-slate-300 border-none h-[1px] m-2" />
   )
+}
+
+
+// --------------------------------------------------
+// 状態の型定義からreducer等の型定義をするのを簡略化するための仕組み
+type ActionParam<TState, TKey extends keyof TState = keyof TState> = {
+  update: TKey
+  value: TState[TKey]
+}
+type FlatObjectContext<TState> = React.Context<[TState, Dispatch<ActionParam<TState>>]>
+
+const reducerForFlatObject: Reducer<{}, ActionParam<{}>> = (state, action) => {
+  return { ...state, [action.update]: action.value }
+}
+export const createContextForFlatObject = <TState,>(defaultValue: TState): FlatObjectContext<TState> => {
+  return createContext([
+    defaultValue,
+    (() => { }) as Dispatch<ActionParam<TState>>
+  ] as const)
+}
+export const useContextForFlatObject = <TState,>(ctx: FlatObjectContext<TState>) => {
+  return useContext(ctx) as [
+    TState,
+    <TKey extends keyof TState>(action: ActionParam<TState, TKey>) => TState
+  ]
+}
+export const useReducerForFlatObject = <TState,>(initialState: TState) => {
+  return useReducer(
+    reducerForFlatObject as unknown as Reducer<TState, ActionParam<TState>>,
+    initialState) as [
+      TState,
+      <TKey extends keyof TState>(action: ActionParam<TState, TKey>) => TState
+    ]
 }

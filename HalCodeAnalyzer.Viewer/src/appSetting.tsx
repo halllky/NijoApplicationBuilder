@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useFieldArray, useForm } from 'react-hook-form'
 import * as UUID from 'uuid'
-import * as Components from './UIComponents'
+import * as Components from './util'
 
 export type StoredSetting = {
   activeNeo4jServerId: string | undefined

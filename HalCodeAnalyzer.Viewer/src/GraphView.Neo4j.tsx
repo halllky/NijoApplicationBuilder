@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import neo4j, { Node, Relationship, Record } from 'neo4j-driver'
 import cytoscape from 'cytoscape'
-import * as Components from './UIComponents'
+import * as Components from './util'
 import { useStoredSettings } from './appSetting'
 
 const useNeo4jQuery = () => {

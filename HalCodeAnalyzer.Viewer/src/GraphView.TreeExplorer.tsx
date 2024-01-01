@@ -1,15 +1,14 @@
 import cytoscape from 'cytoscape'
 import { useCallback, useMemo, useState } from 'react'
+import GraphView from './GraphView'
 
-export const TreeExplorer = ({ data, cy, className }: {
+export const TreeExplorer = ({ className }: {
   className?: string
-  data?: cytoscape.ElementDefinition[]
-  cy?: cytoscape.Core
 }) => {
-
+  const [{ cy, elements }] = GraphView.useGraphContext()
   const flattenTree = useMemo(() => {
-    return flatten(data ? toTree(data) : [])
-  }, [data])
+    return flatten(toTree(elements))
+  }, [elements])
 
   const [nodeState, setNodeState] = useState<Map<string, TreeNodeState>>(new Map())
 
