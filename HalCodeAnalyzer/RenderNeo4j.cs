@@ -9,29 +9,35 @@ using System.Threading.Tasks;
 namespace HalCodeAnalyzer {
     partial class Program {
         private static void RenderNeo4jCreateScript(DirectedGraph graph) {
-            const string HAS_CHILD = "HAS_CHILD";
-            const string CALLS = "CALLS";
+            const string REL_HASCHILD = "HAS_CHILD";
+            const string REL_CALLS = "CALLS";
+            const string PROP_NAME = "name";
 
             using var sw = new StreamWriter(@"cypher-script.txt", append: false, encoding: Encoding.UTF8);
 
-            string GetHashedGroupId(NodeGroup group) => group.FullName.ToHashedString();
             string GetHashedNodeId(NodeId nodeId) => nodeId.Value.ToHashedString();
+            string? GetHashedGroupId(NodeGroup group) => group == NodeGroup.Root
+                ? null
+                : group.FullName.ToHashedString();
 
             // node
             var namespaces = graph.SubGraphs
                 .SelectMany(group => group.Ancestors())
                 .ToHashSet();
-            foreach (var container in graph.SubGraphs) {
-                var nodeType = namespaces.Contains(container)
-                    ? "Namespace"
-                    : "Class";
+            var nodes = graph.SubGraphs
+                .Select(container => new {
+                    id = GetHashedGroupId(container)!,
+                    type = namespaces.Contains(container) ? "Namespace" : "Class",
+                    name = container.Name,
+                })
+                .Concat(graph.Nodes.Keys.Select(node => new {
+                    id = GetHashedNodeId(node),
+                    type = "Method",
+                    name = node.BaseName,
+                }));
+            foreach (var node in nodes) {
                 sw.WriteLine($$"""
-                    CREATE ({{GetHashedGroupId(container)}}:{{nodeType}} {name:'{{container.Name}}'})
-                    """);
-            }
-            foreach (var node in graph.Nodes.Keys) {
-                sw.WriteLine($$"""
-                    CREATE ({{GetHashedNodeId(node)}}:Method {name:'{{node.BaseName}}'})
+                    CREATE ({{node.id}}:{{node.type}} {{{PROP_NAME}}:'{{node.name}}'})
                     """);
             }
             // edge(parent-child)
@@ -40,14 +46,14 @@ namespace HalCodeAnalyzer {
                 var parent = GetHashedGroupId(container.Parent);
                 var child = GetHashedGroupId(container);
                 sw.WriteLine($$"""
-                    CREATE ({{parent}})-[:{{HAS_CHILD}}]->({{child}})
+                    CREATE ({{parent}})-[:{{REL_HASCHILD}}]->({{child}})
                     """);
             }
             foreach (var node in graph.Nodes.Keys) {
                 var parent = GetHashedGroupId(node.Group);
                 var child = GetHashedNodeId(node);
                 sw.WriteLine($$"""
-                    CREATE ({{parent}})-[:{{HAS_CHILD}}]->({{child}})
+                    CREATE ({{parent}})-[:{{REL_HASCHILD}}]->({{child}})
                     """);
             }
             // edge(method calling)
@@ -55,9 +61,17 @@ namespace HalCodeAnalyzer {
                 var initial = GetHashedNodeId(edge.Initial);
                 var terminal = GetHashedNodeId(edge.Terminal);
                 sw.WriteLine($$"""
-                    CREATE ({{initial}})-[:{{CALLS}}]->({{terminal}})
+                    CREATE ({{initial}})-[:{{REL_CALLS}}]->({{terminal}})
                     """);
             }
+
+            Console.WriteLine($$"""
+                // 依存関係の収集を完了しました。以下のクエリを実行してください。
+                match (m1:Method)-[calling:CALLS]->(m2:Method)
+                optional match path1 = (m1)<-[r1:HAS_CHILD*]-()
+                optional match path2 = (m2)<-[r2:HAS_CHILD*]-()
+                return calling, r1, r2, nodes(path1), nodes(path2)
+                """);
         }
     }
 }

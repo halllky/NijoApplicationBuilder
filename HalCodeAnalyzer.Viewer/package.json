@@ -16,14 +16,19 @@
     "cytoscape-fcose": "^2.2.0",
     "cytoscape-klay": "^3.1.4",
     "cytoscape-navigator": "^2.0.2",
+    "neo4j-driver": "^5.15.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-resizable-panels": "^1.0.5"
+    "react-hook-form": "^7.49.2",
+    "react-resizable-panels": "^1.0.5",
+    "react-router-dom": "^6.21.1",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@types/cytoscape": "^3.19.16",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
+    "@types/uuid": "^9.0.7",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
     "@vitejs/plugin-react-swc": "^3.5.0",

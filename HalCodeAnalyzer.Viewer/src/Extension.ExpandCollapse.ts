@@ -9,7 +9,7 @@ const configure = (cy: typeof cytoscape) => {
 
 const setupCyInstance = (cy: cytoscape.Core) => {
   (cy as any).expandCollapse({
-    layoutBy: Layout.OPTIONS, // to rearrange after expand/collapse. It's just layout options or whole layout function. Choose your side!
+    layoutBy: Layout.DEFAULT, // to rearrange after expand/collapse. It's just layout options or whole layout function. Choose your side!
     // recommended usage: use cose-bilkent layout with randomize: false to preserve mental map upon expand/collapse
     fisheye: true, // whether to perform fisheye view after expand/collapse you can specify a function too
     animate: true, // whether to animate on drawing changes you can specify a function too
