@@ -1,10 +1,9 @@
 import { useCallback, useMemo, useState } from 'react'
 import neo4j, { Node, Relationship, Record } from 'neo4j-driver'
 import cytoscape from 'cytoscape'
-import * as Components from './util'
 import { useStoredSettings } from './appSetting'
 
-const useNeo4jQuery = () => {
+export const useNeo4jQueryRunner = () => {
   const { setting } = useStoredSettings()
   const driver = useMemo(() => {
     if (!setting.activeNeo4jServerId) return null
@@ -13,26 +12,32 @@ const useNeo4jQuery = () => {
     return neo4j.driver(serverConfig.url, neo4j.auth.basic(serverConfig.user, serverConfig.pass))
   }, [setting])
 
-  const [query, setQuery] = useState('')
-  const runQuery = useCallback(async () => {
+  const [nowLoading, setNowLoading] = useState(false)
+  const [queryResult, setLoadedData] = useState<cytoscape.ElementDefinition[]>(() => [])
+  const runQuery = useCallback(async (queryString: string) => {
     if (!driver) return
     const session = driver.session({ defaultAccessMode: neo4j.session.READ })
     const elements: { [id: string]: cytoscape.ElementDefinition } = {}
     const parentChildMap: { [child: string]: string } = {}
-    session.run(query).subscribe({
+    setNowLoading(true)
+    session.run(queryString).subscribe({
       onNext: record => neo4jQueryReusltToCytoscapeItem(record, elements, parentChildMap),
-      onError: console.error,
+      onError: err => {
+        console.error(err)
+        setNowLoading(false)
+      },
       onCompleted: async (summary) => {
         console.debug(summary)
         for (const node of Object.entries(elements)) {
           node[1].data.parent = parentChildMap[node[0]]
         }
-        console.table(Object.values(elements))
+        setLoadedData(Object.values(elements))
+        setNowLoading(false)
         await session.close()
       },
     })
-  }, [driver, query])
-  return { query, setQuery, runQuery }
+  }, [driver])
+  return { runQuery, queryResult, nowLoading }
 }
 
 /** ノードがこの名前のプロパティを持つ場合は表示名称に使われる */
@@ -73,28 +78,4 @@ const neo4jQueryReusltToCytoscapeItem = (
       parseValue(value)
     }
   }
-}
-
-// ------------------ UI -------------------------
-const QueryView = ({ className }: {
-  className?: string
-}) => {
-  const { query, setQuery, runQuery } = useNeo4jQuery()
-
-  return (
-    <div className={`flex flex-col ${className}`}>
-      <Components.Textarea
-        value={query}
-        onChange={e => setQuery(e.target.value)}
-        className="border boder-1"
-      />
-      <button onClick={runQuery}>
-        クエリ実行
-      </button>
-    </div>
-  )
-}
-
-export default {
-  QueryView,
 }

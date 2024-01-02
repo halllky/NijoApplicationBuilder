@@ -4,20 +4,51 @@ import ExpandCollapse from './GraphView.ExpandCollapse'
 import { Toolbar } from './GraphView.ToolBar'
 import Navigator from './GraphView.Navigator'
 import Layout from './GraphView.Layout'
-import enumerateData from './data'
-import { createContextForFlatObject, useContextForFlatObject, useReducerForFlatObject } from './util'
+// import enumerateData from './data'
+import { Components, ContextUtil, StorageUtil } from './util'
+import { useNeo4jQueryRunner } from './GraphView.Neo4j'
+import * as UUID from 'uuid'
+import { useParams } from 'react-router-dom'
 
 Layout.configure(cytoscape)
 Navigator.configure(cytoscape)
 ExpandCollapse.configure(cytoscape)
 
 const Page = () => {
+  // query editing
+  const { queryId } = useParams()
+  const [displayedQuery, setDisplayedQuery] = useState(() => createNewQuery())
+  const handleQueryStringEdit: React.ChangeEventHandler<HTMLTextAreaElement> = useCallback(e => {
+    setDisplayedQuery({
+      ...displayedQuery,
+      queryString: e.target.value,
+    })
+  }, [displayedQuery])
+
+  // Neo4j
+  const { load } = StorageUtil.useLocalStorage(queriesSerializer)
+  const { runQuery, queryResult, nowLoading } = useNeo4jQueryRunner()
+  useEffect(() => {
+    // 画面表示時、保存されているクエリ定義を取得しクエリ実行
+    if (!queryId) return
+    const queries = load()
+    if (!queries.ok) return
+    const loaded = queries.obj.find(q => q.queryId === queryId)
+    if (!loaded) return
+    setDisplayedQuery(loaded)
+    runQuery(loaded.queryString)
+  }, [queryId, load, runQuery])
+  const handleQueryRerun = useCallback(() => {
+    if (nowLoading) return
+    runQuery(displayedQuery.queryString)
+  }, [displayedQuery.queryString, nowLoading])
+
+  // Cytoscape
   const [{ cy, elements }, dispatch] = useGraphContext()
   const [initialized, setInitialized] = useState(false)
   useEffect(() => {
-    dispatch({ update: 'elements', value: enumerateData() })
-  }, [])
-
+    dispatch({ update: 'elements', value: queryResult })
+  }, [queryResult])
   const divRef = useCallback((divElement: HTMLDivElement | null) => {
     if (!divElement) return
     const cyInstance = cytoscape({
@@ -36,7 +67,12 @@ const Page = () => {
   }, [elements, initialized, dispatch])
 
   return (
-    <>
+    <div className="flex flex-col relative">
+      <Components.Textarea value={displayedQuery.queryString} onChange={handleQueryStringEdit} />
+      <Components.Button onClick={handleQueryRerun} className="self-end">
+        {nowLoading ? '読込中...' : '読込'}
+      </Components.Button>
+      <Components.Separator />
       <Toolbar cy={cy} className="mb-1" />
       <div ref={divRef} className="
         overflow-hidden [&>div>canvas]:left-0
@@ -44,7 +80,7 @@ const Page = () => {
         border border-1 border-slate-400">
       </div>
       <Navigator.Component className="absolute w-1/4 h-1/4 right-6 bottom-6 z-[200]" />
-    </>
+    </div>
   )
 }
 
@@ -81,6 +117,40 @@ const STYLESHEET: cytoscape.CytoscapeOptions['style'] = [{
   },
 }]
 
+// ------------------------------------------------------
+export type Query = {
+  queryId: string
+  name: string
+  queryString: string
+}
+const createNewQuery = (): Query => ({
+  queryId: UUID.v4(),
+  name: '',
+  queryString: '',
+})
+
+const queriesSerializer: StorageUtil.Serializer<Query[]> = {
+  storageKey: 'HALDIAGRAM::QUERIES',
+  serialize: obj => {
+    return JSON.stringify(obj)
+  },
+  deserialize: str => {
+    try {
+      const parsed: Partial<Query>[] = JSON.parse(str)
+      if (!Array.isArray(parsed)) return { ok: false }
+      const obj = parsed.map<Query>(item => ({
+        queryId: item.queryId ?? '',
+        name: item.name ?? '',
+        queryString: item.queryString ?? '',
+      }))
+      return { ok: true, obj }
+    } catch (error) {
+      console.error(`Failure to load application settings.`, error)
+      return { ok: false }
+    }
+  },
+}
+
 // ------------------- Context(TreeExplorerで使うために必要) -----------------------
 type GraphViewState = {
   cy: cytoscape.Core | undefined
@@ -90,12 +160,13 @@ const getEmptyGraphViewState = (): GraphViewState => ({
   cy: undefined,
   elements: [],
 })
-const GraphViewContext = createContextForFlatObject(getEmptyGraphViewState())
-const useGraphContext = () => useContextForFlatObject(GraphViewContext)
+const GraphViewContext = ContextUtil.createContextEx(getEmptyGraphViewState())
+const useGraphContext = () => ContextUtil.useContextEx(GraphViewContext)
+
 const ContextProvider = ({ children }: {
   children?: React.ReactNode
 }) => {
-  const reducerValue = useReducerForFlatObject(getEmptyGraphViewState())
+  const reducerValue = ContextUtil.useReducerEx(getEmptyGraphViewState())
   return (
     <GraphViewContext.Provider value={reducerValue}>
       {children}
@@ -106,5 +177,6 @@ const ContextProvider = ({ children }: {
 export default {
   Page,
   ContextProvider,
+  createNewQuery,
   useGraphContext,
 }
