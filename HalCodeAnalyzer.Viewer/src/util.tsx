@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes, Dispatch, InputHTMLAttributes, PropsWithoutRef, Reducer, TextareaHTMLAttributes, createContext, forwardRef, useCallback, useContext, useReducer } from 'react'
+import { ButtonHTMLAttributes, Dispatch, InputHTMLAttributes, PropsWithoutRef, Reducer, TextareaHTMLAttributes, createContext, forwardRef, useCallback, useContext, useEffect, useReducer, useState } from 'react'
 
 /** forwardRefの戻り値の型定義がややこしいので単純化するためのラッピング関数 */
 export const forwardRefEx = <TRef, TProps>(
@@ -91,22 +91,34 @@ export namespace Components {
 // ローカルストレージへの保存と復元
 export namespace StorageUtil {
   export type DeserializeResult<T> = { ok: true, obj: T } | { ok: false }
-  export type Serializer<T> = {
+  export type LocalStorageHandler<T> = {
     storageKey: string
     serialize: (obj: T) => string
     deserialize: (str: string) => DeserializeResult<T>
+    defaultValue: () => T
   }
-  export const useLocalStorage = <T,>(serializer: Serializer<T>) => {
+  export const useLocalStorage = <T,>(serializer: LocalStorageHandler<T>) => {
+    const [data, setData] = useState(() => serializer.defaultValue())
+
     const load = useCallback((): DeserializeResult<T> => {
       const serialized = localStorage.getItem(serializer.storageKey)
       if (serialized == null) return { ok: false }
       return serializer.deserialize(serialized)
     }, [serializer])
+
     const save = useCallback((obj: T) => {
       const serialized = serializer.serialize(obj)
       localStorage.setItem(serializer.storageKey, serialized)
+      const loadResult = load()
+      if (loadResult.ok) setData(loadResult.obj)
     }, [serializer])
-    return { load, save }
+
+    useEffect(() => {
+      const loadResult = load()
+      if (loadResult.ok) setData(loadResult.obj)
+    }, [])
+
+    return { data, save }
   }
 }
 

@@ -18,19 +18,18 @@ ExpandCollapse.configure(cytoscape)
 // ------------------------------------
 
 const usePages: SideMenu.UsePagesHook = () => {
-  const { load } = StorageUtil.useLocalStorage(queriesSerializer)
-  const menuItems = useMemo(() => {
-    const menuSection: SideMenu.SideMenuSection = {
-      url: '/', itemId: 'APP::HOME', label: 'ホーム', order: 0, children: [],
-    }
-    const loaded = load()
-    if (loaded.ok) {
-      menuSection.children?.push(...loaded.obj.map<SideMenu.SideMenuSectionItem>(query => ({
-        url: `/${query.queryId}`, itemId: `STOREDQUERY::${query.queryId}`, label: query.name,
-      })))
-    }
-    return [menuSection]
-  }, [])
+  const { data: storedQueries } = StorageUtil.useLocalStorage(queryStorageHandler)
+  const menuItems = useMemo((): SideMenu.SideMenuSection[] => [{
+    url: '/',
+    itemId: 'APP::HOME',
+    label: 'ホーム',
+    order: 0,
+    children: storedQueries.map<SideMenu.SideMenuSectionItem>(query => ({
+      url: `/${query.queryId}`,
+      itemId: `STOREDQUERY::${query.queryId}`,
+      label: query.name,
+    })),
+  }], [storedQueries])
 
   const Routes = useCallback((): React.ReactNode => <>
     <Route path="/" element={<Page />} />
@@ -44,39 +43,29 @@ const Page = () => {
 
   // query editing
   const { queryId } = useParams()
-  const { load, save } = StorageUtil.useLocalStorage(queriesSerializer)
+  const { data: storedQueries, save } = StorageUtil.useLocalStorage(queryStorageHandler)
   const [displayedQuery, setDisplayedQuery] = useState(() => createNewQuery())
+  const handleQueryNameEdit: React.ChangeEventHandler<HTMLInputElement> = useCallback(e => {
+    setDisplayedQuery({ ...displayedQuery, name: e.target.value })
+  }, [displayedQuery])
   const handleQueryStringEdit: React.ChangeEventHandler<HTMLTextAreaElement> = useCallback(e => {
-    setDisplayedQuery({
-      ...displayedQuery,
-      queryString: e.target.value,
-    })
+    setDisplayedQuery({ ...displayedQuery, queryString: e.target.value })
   }, [displayedQuery])
   const handleQuerySaving = useCallback(() => {
-    const newItem: Query = {
-      ...displayedQuery,
-      queryId: UUID.v4(),// 保存のたびに新規採番
-    }
-    const loadResult = load()
-    if (loadResult.ok) {
-      save([...loadResult.obj, newItem])
-    } else {
-      save([newItem])
-    }
-  }, [displayedQuery])
+    // 保存のたびに新規採番する
+    save([...storedQueries, { ...displayedQuery, queryId: UUID.v4() }])
+  }, [displayedQuery, storedQueries])
 
   // Neo4j
   const { runQuery, queryResult, nowLoading } = useNeo4jQueryRunner()
   useEffect(() => {
     // 画面表示時、保存されているクエリ定義を取得しクエリ実行
     if (!queryId) return
-    const queries = load()
-    if (!queries.ok) return
-    const loaded = queries.obj.find(q => q.queryId === queryId)
+    const loaded = storedQueries.find(q => q.queryId === queryId)
     if (!loaded) return
     setDisplayedQuery(loaded)
     runQuery(loaded.queryString)
-  }, [queryId, load, runQuery])
+  }, [queryId, storedQueries, runQuery])
   const handleQueryRerun = useCallback(() => {
     if (nowLoading) return
     runQuery(displayedQuery.queryString)
@@ -107,6 +96,7 @@ const Page = () => {
 
   return (
     <div className="flex flex-col relative">
+      <Components.Text value={displayedQuery.name} onChange={handleQueryNameEdit} />
       <Components.Textarea value={displayedQuery.queryString} onChange={handleQueryStringEdit} />
       <div className="flex gap-2 justify-end">
         <Components.Button onClick={handleQueryRerun}>
@@ -173,7 +163,7 @@ const createNewQuery = (): Query => ({
   queryString: '',
 })
 
-const queriesSerializer: StorageUtil.Serializer<Query[]> = {
+const queryStorageHandler: StorageUtil.LocalStorageHandler<Query[]> = {
   storageKey: 'HALDIAGRAM::QUERIES',
   serialize: obj => {
     return JSON.stringify(obj)
@@ -193,6 +183,7 @@ const queriesSerializer: StorageUtil.Serializer<Query[]> = {
       return { ok: false }
     }
   },
+  defaultValue: () => [],
 }
 
 // ------------------- Context(TreeExplorerで使うために必要) -----------------------
