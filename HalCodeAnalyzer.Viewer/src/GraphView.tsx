@@ -5,7 +5,7 @@ import { Toolbar } from './GraphView.ToolBar'
 import Navigator from './GraphView.Navigator'
 import Layout from './GraphView.Layout'
 // import enumerateData from './data'
-import { Components, ContextUtil, StorageUtil } from './util'
+import { Components, StorageUtil } from './util'
 import { useNeo4jQueryRunner } from './GraphView.Neo4j'
 import * as UUID from 'uuid'
 import { Route, useParams } from 'react-router-dom'
@@ -72,27 +72,25 @@ const Page = () => {
   }, [displayedQuery.queryString, nowLoading])
 
   // Cytoscape
-  const [{ cy, elements }, dispatch] = useGraphContext()
+  const [cy, setCy] = useState<cytoscape.Core>()
   const [initialized, setInitialized] = useState(false)
-  useEffect(() => {
-    dispatch({ update: 'elements', value: queryResult })
-  }, [queryResult])
   const divRef = useCallback((divElement: HTMLDivElement | null) => {
     if (!divElement) return
     const cyInstance = cytoscape({
       container: divElement,
-      elements,
+      elements: queryResult,
       style: STYLESHEET,
       layout: Layout.DEFAULT,
     })
     Navigator.setupCyInstance(cyInstance)
     ExpandCollapse.setupCyInstance(cyInstance)
-    dispatch({ update: 'cy', value: cyInstance })
+    setCy(cyInstance)
+
     if (!initialized) {
       cyInstance.resize().fit().reset()
       setInitialized(true)
     }
-  }, [elements, initialized, dispatch])
+  }, [queryResult, initialized])
 
   return (
     <div className="flex flex-col relative">
@@ -186,33 +184,8 @@ const queryStorageHandler: StorageUtil.LocalStorageHandler<Query[]> = {
   defaultValue: () => [],
 }
 
-// ------------------- Context(TreeExplorerで使うために必要) -----------------------
-type GraphViewState = {
-  cy: cytoscape.Core | undefined
-  elements: cytoscape.ElementDefinition[]
-}
-const getEmptyGraphViewState = (): GraphViewState => ({
-  cy: undefined,
-  elements: [],
-})
-const GraphViewContext = ContextUtil.createContextEx(getEmptyGraphViewState())
-const useGraphContext = () => ContextUtil.useContextEx(GraphViewContext)
-
-const ContextProvider = ({ children }: {
-  children?: React.ReactNode
-}) => {
-  const reducerValue = ContextUtil.useReducerEx(getEmptyGraphViewState())
-  return (
-    <GraphViewContext.Provider value={reducerValue}>
-      {children}
-    </GraphViewContext.Provider>
-  )
-}
-
 export default {
   usePages,
   Page,
-  ContextProvider,
   createNewQuery,
-  useGraphContext,
 }

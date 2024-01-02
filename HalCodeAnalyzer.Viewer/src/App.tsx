@@ -16,24 +16,22 @@ function App() {
 
   return (
     <BrowserRouter>
-      <GraphView.ContextProvider>
-        <PanelGroup direction="horizontal">
+      <PanelGroup direction="horizontal">
 
-          <Panel defaultSize={20} className="flex [&>*]:flex-1">
-            <SideMenu.Explorer sections={sideMenuItems} />
-          </Panel>
+        <Panel defaultSize={20} className="flex [&>*]:flex-1">
+          <SideMenu.Explorer sections={sideMenuItems} />
+        </Panel>
 
-          <PanelResizeHandle style={{ width: 4 }} />
+        <PanelResizeHandle style={{ width: 4 }} />
 
-          <Panel className="flex [&>*]:flex-1 [&>*]:min-w-0 p-2 border-l border-1 border-slate-400">
-            <Routes>
-              {queryPages.Routes()}
-              {appSettingPages.Routes()}
-            </Routes>
-          </Panel>
+        <Panel className="flex [&>*]:flex-1 [&>*]:min-w-0 p-2 border-l border-1 border-slate-400">
+          <Routes>
+            {queryPages.Routes()}
+            {appSettingPages.Routes()}
+          </Routes>
+        </Panel>
 
-        </PanelGroup>
-      </GraphView.ContextProvider>
+      </PanelGroup>
     </BrowserRouter>
   )
 }
