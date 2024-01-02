@@ -65,10 +65,14 @@ const Page = () => {
     setDisplayedQuery({ ...displayedQuery, queryString: e.target.value })
   }, [displayedQuery])
   const handleQuerySaving = useCallback(() => {
-    // 保存のたびに新規採番する
-    const newQueryId = UUID.v4()
-    save([...storedQueries, { ...displayedQuery, queryId: newQueryId }])
-    navigate(`/${newQueryId}`)
+    const index = storedQueries.findIndex(q => q.queryId === displayedQuery.queryId)
+    if (index === -1) {
+      save([...storedQueries, displayedQuery])
+      navigate(`/${displayedQuery.queryId}`)
+    } else {
+      storedQueries.splice(index, 1, displayedQuery)
+      save([...storedQueries])
+    }
   }, [displayedQuery, storedQueries])
 
   // Neo4j
@@ -119,7 +123,7 @@ const Page = () => {
           {nowLoading ? '読込中...' : '読込'}
         </Components.Button>
         <Components.Button onClick={handleQuerySaving}>
-          お気に入り登録
+          保存
         </Components.Button>
       </div>
       <Components.Separator />

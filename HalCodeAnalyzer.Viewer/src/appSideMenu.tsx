@@ -69,7 +69,7 @@ export const Explorer = ({ sections }: {
   const startRenaming = useCallback((node: Tree.TreeNode<SideMenuSectionItem>) => {
     setRenamingItem(node)
     setRenamingName(node.item.label)
-    renameRef.current?.focus()
+    window.setTimeout(() => renameRef.current?.focus(), 10)
   }, [])
   const endRenaming = useCallback(() => {
     renamingItem?.item.onRename?.(renamingName)
@@ -97,7 +97,13 @@ export const Explorer = ({ sections }: {
                 onChange={v => handleExpandCollapse(node, v)}
               />
               {renamingItem?.item.itemId === node.item.itemId && (
-                <Components.Text ref={renameRef} value={renamingName} onChange={e => setRenamingName(e.target.value)} onBlur={endRenaming} />
+                <Components.Text
+                  ref={renameRef}
+                  className="flex-1"
+                  value={renamingName}
+                  onChange={e => setRenamingName(e.target.value)}
+                  onBlur={endRenaming}
+                />
               )}
               {renamingItem?.item.itemId !== node.item.itemId && node.item.url && (
                 <Link to={node.item.url} className="flex-1 text-nowrap">
