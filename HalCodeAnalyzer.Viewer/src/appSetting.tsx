@@ -1,9 +1,21 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useFieldArray, useForm } from 'react-hook-form'
 import * as UUID from 'uuid'
 import { Components } from './util'
-import SideMenu from './appSideMenu'
+import * as SideMenu from './appSideMenu'
+import { Route } from 'react-router-dom'
 
+export const usePages: SideMenu.UsePagesHook = () => {
+  const menuItems = useMemo((): SideMenu.SideMenuSection[] => {
+    return [{ url: '/settings', itemId: 'APP::SETTING', label: '設定', order: 999 }]
+  }, [])
+  const Routes = useCallback((): React.ReactNode => (
+    <Route path="/settings" element={<AppSettingPage />} />
+  ), [])
+  return { menuItems, Routes }
+}
+
+// -------------------------------------
 export type StoredSetting = {
   activeNeo4jServerId: string | undefined
   neo4jServer: {

@@ -1,17 +1,13 @@
 import cytoscape from 'cytoscape'
 import React, { useCallback, useMemo, useState } from 'react'
 import GraphView from './GraphView'
-import { Components, ContextUtil, Tree } from './util'
+import { Components, Tree } from './util'
 import { Link } from 'react-router-dom'
 
-const getDefaultSideMenuState = () => ({
-  sections: [
-    { itemId: 'APP::HOME', label: 'ホーム', url: '/', order: 999 },
-    { itemId: 'APP::SETTINGS', label: '設定', url: '/settings', order: 999 },
-  ] as SideMenuSection[]
-})
-
-// -------------- フック ------------------
+export type UsePagesHook = () => {
+  menuItems: SideMenuSection[]
+  Routes: () => React.ReactNode
+}
 export type SideMenuSection = SideMenuSectionItem & {
   order?: number
 }
@@ -21,38 +17,12 @@ export type SideMenuSectionItem = {
   url?: string
   children?: SideMenuSectionItem[]
 }
-const SideMenuContext = ContextUtil.createContextEx(getDefaultSideMenuState())
-
-const useSideMenu = () => {
-  const [{ sections }, dispatch] = ContextUtil.useContextEx(SideMenuContext)
-  const registerMenu = useCallback((section: SideMenuSection) => {
-    const registered = sections.find(s => s.itemId === section.itemId)
-    if (registered === undefined) {
-      dispatch({ update: 'sections', value: [section, ...sections] })
-    } else if (registered.label !== section.label
-      || registered.children !== section.children) {
-      const value = [section, ...sections.filter(s => s.itemId !== section.itemId)]
-      dispatch({ update: 'sections', value })
-    }
-  }, [sections])
-  return { registerMenu }
-}
 
 // -------------- コンポーネント ------------------
-const ContextProvider = ({ children }: {
-  children?: React.ReactNode
+export const Explorer = ({ sections }: {
+  sections: SideMenuSection[]
 }) => {
-  const contextValue = ContextUtil.useReducerEx(getDefaultSideMenuState())
-  return (
-    <SideMenuContext.Provider value={contextValue}>
-      {children}
-    </SideMenuContext.Provider>
-  )
-}
-
-const Explorer = () => {
   // メニュー項目
-  const [{ sections }] = ContextUtil.useContextEx(SideMenuContext)
   const treeRoots = useMemo(() => {
     const ordered = Array.from(sections)
     ordered.sort((a, b) => {
@@ -79,10 +49,12 @@ const Explorer = () => {
     }
     setCollapsedIds(new Set(collapsedIds))
   }, [collapsedIds])
-  const getVisibleDescendantsAndSelf = useCallback((node: Tree.TreeNode<SideMenuSectionItem>) => {
-    return Tree
-      .getDescendantsAndSelf(node)
-      .filter(desc => Tree.getAncestors(desc).every(a => !collapsedIds.has(a.item.itemId)))
+  const getExpandedDescendantsAndSelf = useCallback((node: Tree.TreeNode<SideMenuSectionItem>) => {
+    const entireTree = Tree.getDescendantsAndSelf(node)
+    const expandedItems = entireTree.filter(desc => {
+      return Tree.getAncestors(desc).every(a => !collapsedIds.has(a.item.itemId))
+    })
+    return expandedItems
   }, [collapsedIds])
 
   return (
@@ -90,7 +62,7 @@ const Explorer = () => {
       {treeRoots.map((root, ix) => (
         <React.Fragment key={root.item.itemId}>
           {ix !== 0 && <Components.Separator />}
-          {getVisibleDescendantsAndSelf(root).map(node => (
+          {getExpandedDescendantsAndSelf(root).map(node => (
             <div key={node.item.itemId} className="flex items-center hover:bg-blue-200">
               <div style={{ minWidth: node.depth * 20 }}></div>
               <CollapseButton
@@ -100,11 +72,11 @@ const Explorer = () => {
               />
               {node.item.url ? (
                 <Link to={node.item.url} className="flex-1 text-nowrap">
-                  {node.item.label}
+                  {node.item.label || '(名前なし)'}
                 </Link>
               ) : (
                 <span className="flex-1 text-nowrap">
-                  {node.item.label}
+                  {node.item.label || '(名前なし)'}
                 </span>
               )}
             </div>
@@ -113,12 +85,6 @@ const Explorer = () => {
       ))}
     </div>
   )
-}
-
-export default {
-  ContextProvider,
-  Explorer,
-  useSideMenu,
 }
 
 // -------------- ふるい仕組み ------------------

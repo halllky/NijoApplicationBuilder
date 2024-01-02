@@ -1,32 +1,39 @@
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
-import { AppSettingPage } from './appSetting'
-import SideMenu from './appSideMenu'
+import { BrowserRouter, Routes } from 'react-router-dom'
+import * as AppSetting from './appSetting'
+import * as SideMenu from './appSideMenu'
 import GraphView from './GraphView'
+import { useMemo } from 'react'
 
 function App() {
+
+  const queryPages = GraphView.usePages()
+  const appSettingPages = AppSetting.usePages()
+  const sideMenuItems = useMemo(() => [
+    ...queryPages.menuItems,
+    ...appSettingPages.menuItems,
+  ], [queryPages.menuItems, appSettingPages.menuItems])
+
   return (
     <BrowserRouter>
-      <SideMenu.ContextProvider>
-        <GraphView.ContextProvider>
-          <PanelGroup direction="horizontal">
+      <GraphView.ContextProvider>
+        <PanelGroup direction="horizontal">
 
-            <Panel defaultSize={20} className="flex [&>*]:flex-1">
-              <SideMenu.Explorer />
-            </Panel>
+          <Panel defaultSize={20} className="flex [&>*]:flex-1">
+            <SideMenu.Explorer sections={sideMenuItems} />
+          </Panel>
 
-            <PanelResizeHandle style={{ width: 4 }} />
+          <PanelResizeHandle style={{ width: 4 }} />
 
-            <Panel className="flex [&>*]:flex-1 [&>*]:min-w-0 p-2 border-l border-1 border-slate-400">
-              <Routes>
-                <Route path="/" element={<GraphView.Page />} />
-                <Route path="/settings" element={<AppSettingPage />} />
-              </Routes>
-            </Panel>
+          <Panel className="flex [&>*]:flex-1 [&>*]:min-w-0 p-2 border-l border-1 border-slate-400">
+            <Routes>
+              {queryPages.Routes()}
+              {appSettingPages.Routes()}
+            </Routes>
+          </Panel>
 
-          </PanelGroup>
-        </GraphView.ContextProvider>
-      </SideMenu.ContextProvider>
+        </PanelGroup>
+      </GraphView.ContextProvider>
     </BrowserRouter>
   )
 }

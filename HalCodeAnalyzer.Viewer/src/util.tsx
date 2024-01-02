@@ -216,9 +216,9 @@ export namespace Tree {
   }
   export const getDescendants = <T,>(node: TreeNode<T>): TreeNode<T>[] => {
     const arr: TreeNode<T>[] = []
-    const pushRecursively = (node: TreeNode<T>): void => {
-      for (const child of node.children) {
-        arr.push(node)
+    const pushRecursively = (n: TreeNode<T>): void => {
+      for (const child of n.children) {
+        arr.push(child)
         pushRecursively(child)
       }
     }

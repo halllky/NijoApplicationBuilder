@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import cytoscape from 'cytoscape'
 import ExpandCollapse from './GraphView.ExpandCollapse'
 import { Toolbar } from './GraphView.ToolBar'
@@ -8,15 +8,43 @@ import Layout from './GraphView.Layout'
 import { Components, ContextUtil, StorageUtil } from './util'
 import { useNeo4jQueryRunner } from './GraphView.Neo4j'
 import * as UUID from 'uuid'
-import { useParams } from 'react-router-dom'
+import { Route, useParams } from 'react-router-dom'
+import * as SideMenu from './appSideMenu'
 
 Layout.configure(cytoscape)
 Navigator.configure(cytoscape)
 ExpandCollapse.configure(cytoscape)
 
+// ------------------------------------
+
+const usePages: SideMenu.UsePagesHook = () => {
+  const { load } = StorageUtil.useLocalStorage(queriesSerializer)
+  const menuItems = useMemo(() => {
+    const menuSection: SideMenu.SideMenuSection = {
+      url: '/', itemId: 'APP::HOME', label: 'ホーム', order: 0, children: [],
+    }
+    const loaded = load()
+    if (loaded.ok) {
+      menuSection.children?.push(...loaded.obj.map<SideMenu.SideMenuSectionItem>(query => ({
+        url: `/${query.queryId}`, itemId: `STOREDQUERY::${query.queryId}`, label: query.name,
+      })))
+    }
+    return [menuSection]
+  }, [])
+
+  const Routes = useCallback((): React.ReactNode => <>
+    <Route path="/" element={<Page />} />
+    <Route path="/:queryId" element={<Page />} />
+  </>, [])
+  return { menuItems, Routes }
+}
+
+// ------------------------------------
 const Page = () => {
+
   // query editing
   const { queryId } = useParams()
+  const { load, save } = StorageUtil.useLocalStorage(queriesSerializer)
   const [displayedQuery, setDisplayedQuery] = useState(() => createNewQuery())
   const handleQueryStringEdit: React.ChangeEventHandler<HTMLTextAreaElement> = useCallback(e => {
     setDisplayedQuery({
@@ -24,9 +52,20 @@ const Page = () => {
       queryString: e.target.value,
     })
   }, [displayedQuery])
+  const handleQuerySaving = useCallback(() => {
+    const newItem: Query = {
+      ...displayedQuery,
+      queryId: UUID.v4(),// 保存のたびに新規採番
+    }
+    const loadResult = load()
+    if (loadResult.ok) {
+      save([...loadResult.obj, newItem])
+    } else {
+      save([newItem])
+    }
+  }, [displayedQuery])
 
   // Neo4j
-  const { load } = StorageUtil.useLocalStorage(queriesSerializer)
   const { runQuery, queryResult, nowLoading } = useNeo4jQueryRunner()
   useEffect(() => {
     // 画面表示時、保存されているクエリ定義を取得しクエリ実行
@@ -69,9 +108,14 @@ const Page = () => {
   return (
     <div className="flex flex-col relative">
       <Components.Textarea value={displayedQuery.queryString} onChange={handleQueryStringEdit} />
-      <Components.Button onClick={handleQueryRerun} className="self-end">
-        {nowLoading ? '読込中...' : '読込'}
-      </Components.Button>
+      <div className="flex gap-2 justify-end">
+        <Components.Button onClick={handleQueryRerun}>
+          {nowLoading ? '読込中...' : '読込'}
+        </Components.Button>
+        <Components.Button onClick={handleQuerySaving}>
+          お気に入り登録
+        </Components.Button>
+      </div>
       <Components.Separator />
       <Toolbar cy={cy} className="mb-1" />
       <div ref={divRef} className="
@@ -175,6 +219,7 @@ const ContextProvider = ({ children }: {
 }
 
 export default {
+  usePages,
   Page,
   ContextProvider,
   createNewQuery,
