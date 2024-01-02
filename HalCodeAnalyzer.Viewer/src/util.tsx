@@ -153,23 +153,41 @@ export namespace Tree {
     depth: number
   }
 
-  export const toTree = <T,>(
-    items: T[],
-    idSelector: (item: T) => string,
-    parentIdSelector: (item: T) => string | null | undefined
-  ): TreeNode<T>[] => {
+  type ToTreeArgs<T>
+    = { getId: (item: T) => string, getParent: (item: T) => string | null | undefined, getChildren?: undefined }
+    | { getId: (item: T) => string, getParent?: undefined, getChildren: (item: T) => T[] | null | undefined }
+  export const toTree = <T,>(items: T[], fn: ToTreeArgs<T>): TreeNode<T>[] => {
     const treeNodes = new Map<string, TreeNode<T>>(items
       .map(item => [
-        idSelector(item),
+        fn.getId(item),
         { item, children: [], depth: -1 }
       ]))
     // 親子マッピング
-    for (const node of treeNodes) {
-      const parentId = parentIdSelector(node[1].item)
-      if (parentId == null) continue
-      const parent = treeNodes.get(parentId)
-      node[1].parent = parent
-      parent?.children.push(node[1])
+    if (fn.getParent) {
+      for (const node of treeNodes) {
+        const parentId = fn.getParent(node[1].item)
+        if (parentId == null) continue
+        const parent = treeNodes.get(parentId)
+        node[1].parent = parent
+        parent?.children.push(node[1])
+      }
+    } else {
+      const createChildrenRecursively = (parent: TreeNode<T>): void => {
+        const childrenItems = fn.getChildren(parent.item) ?? []
+        for (const childItem of childrenItems) {
+          const childNode: TreeNode<T> = {
+            item: childItem,
+            depth: parent.depth + 1,
+            parent,
+            children: [],
+          }
+          parent.children.push(childNode)
+          createChildrenRecursively(childNode)
+        }
+      }
+      for (const node of treeNodes) {
+        createChildrenRecursively(node[1])
+      }
     }
     // 深さ計算
     for (const node of treeNodes) {
@@ -190,20 +208,21 @@ export namespace Tree {
     }
     return arr.reverse()
   }
-  export const getDescendantsAndSelf = <T,>(node: TreeNode<T>): TreeNode<T>[] => {
-    return flatten([node])
-  }
   export const flatten = <T,>(nodes: TreeNode<T>[]): TreeNode<T>[] => {
+    return nodes.flatMap(node => getDescendantsAndSelf(node))
+  }
+  export const getDescendantsAndSelf = <T,>(node: TreeNode<T>): TreeNode<T>[] => {
+    return [node, ...getDescendants(node)]
+  }
+  export const getDescendants = <T,>(node: TreeNode<T>): TreeNode<T>[] => {
     const arr: TreeNode<T>[] = []
     const pushRecursively = (node: TreeNode<T>): void => {
-      arr.push(node)
       for (const child of node.children) {
+        arr.push(node)
         pushRecursively(child)
       }
     }
-    for (const node of nodes) {
-      pushRecursively(node)
-    }
+    pushRecursively(node)
     return arr
   }
   export const getDepth = <T,>(node: TreeNode<T>): number => {

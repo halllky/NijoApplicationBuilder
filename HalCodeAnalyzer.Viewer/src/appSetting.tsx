@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useFieldArray, useForm } from 'react-hook-form'
 import * as UUID from 'uuid'
 import { Components } from './util'
+import SideMenu from './appSideMenu'
 
 export type StoredSetting = {
   activeNeo4jServerId: string | undefined
