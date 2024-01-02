@@ -8,7 +8,7 @@ import Layout from './GraphView.Layout'
 import { Components, StorageUtil } from './util'
 import { useNeo4jQueryRunner } from './GraphView.Neo4j'
 import * as UUID from 'uuid'
-import { Route, useParams } from 'react-router-dom'
+import { Route, useNavigate, useParams } from 'react-router-dom'
 import * as SideMenu from './appSideMenu'
 
 Layout.configure(cytoscape)
@@ -45,6 +45,7 @@ const Page = () => {
   const { queryId } = useParams()
   const { data: storedQueries, save } = StorageUtil.useLocalStorage(queryStorageHandler)
   const [displayedQuery, setDisplayedQuery] = useState(() => createNewQuery())
+  const navigate = useNavigate()
   const handleQueryNameEdit: React.ChangeEventHandler<HTMLInputElement> = useCallback(e => {
     setDisplayedQuery({ ...displayedQuery, name: e.target.value })
   }, [displayedQuery])
@@ -53,7 +54,9 @@ const Page = () => {
   }, [displayedQuery])
   const handleQuerySaving = useCallback(() => {
     // 保存のたびに新規採番する
-    save([...storedQueries, { ...displayedQuery, queryId: UUID.v4() }])
+    const newQueryId = UUID.v4()
+    save([...storedQueries, { ...displayedQuery, queryId: newQueryId }])
+    navigate(`/${newQueryId}`)
   }, [displayedQuery, storedQueries])
 
   // Neo4j

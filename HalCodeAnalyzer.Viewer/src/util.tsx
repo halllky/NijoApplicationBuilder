@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes, Dispatch, InputHTMLAttributes, PropsWithoutRef, Reducer, TextareaHTMLAttributes, createContext, forwardRef, useCallback, useContext, useEffect, useReducer, useState } from 'react'
+import React, { ButtonHTMLAttributes, Dispatch, InputHTMLAttributes, PropsWithoutRef, Reducer, TextareaHTMLAttributes, createContext, forwardRef, useCallback, useContext, useEffect, useMemo, useReducer, useState } from 'react'
 
 /** forwardRefの戻り値の型定義がややこしいので単純化するためのラッピング関数 */
 export const forwardRefEx = <TRef, TProps>(
@@ -88,41 +88,6 @@ export namespace Components {
 }
 
 // --------------------------------------------------
-// ローカルストレージへの保存と復元
-export namespace StorageUtil {
-  export type DeserializeResult<T> = { ok: true, obj: T } | { ok: false }
-  export type LocalStorageHandler<T> = {
-    storageKey: string
-    serialize: (obj: T) => string
-    deserialize: (str: string) => DeserializeResult<T>
-    defaultValue: () => T
-  }
-  export const useLocalStorage = <T,>(serializer: LocalStorageHandler<T>) => {
-    const [data, setData] = useState(() => serializer.defaultValue())
-
-    const load = useCallback((): DeserializeResult<T> => {
-      const serialized = localStorage.getItem(serializer.storageKey)
-      if (serialized == null) return { ok: false }
-      return serializer.deserialize(serialized)
-    }, [serializer])
-
-    const save = useCallback((obj: T) => {
-      const serialized = serializer.serialize(obj)
-      localStorage.setItem(serializer.storageKey, serialized)
-      const loadResult = load()
-      if (loadResult.ok) setData(loadResult.obj)
-    }, [serializer])
-
-    useEffect(() => {
-      const loadResult = load()
-      if (loadResult.ok) setData(loadResult.obj)
-    }, [])
-
-    return { data, save }
-  }
-}
-
-// --------------------------------------------------
 // 状態の型定義からreducer等の型定義をするのを簡略化するための仕組み
 export namespace ContextUtil {
   type ActionParam<TState, TKey extends keyof TState = keyof TState> = {
@@ -153,6 +118,61 @@ export namespace ContextUtil {
         TState,
         <TKey extends keyof TState>(action: ActionParam<TState, TKey>) => TState
       ]
+  }
+}
+
+// --------------------------------------------------
+// ローカルストレージへの保存と復元
+export namespace StorageUtil {
+  export type DeserializeResult<T> = { ok: true, obj: T } | { ok: false }
+  export type LocalStorageHandler<T> = {
+    storageKey: string
+    serialize: (obj: T) => string
+    deserialize: (str: string) => DeserializeResult<T>
+    defaultValue: () => T
+  }
+
+  // アプリ全体でローカルストレージのデータの更新タイミングを同期するための仕組み
+  type LocalStorageData = { [storageKey: string]: unknown }
+  const LocalStorageContext = ContextUtil.createContextEx({} as LocalStorageData)
+  export const LocalStorageContextProvider = ({ children }: {
+    children?: React.ReactNode
+  }) => {
+    const contextValue = ContextUtil.useReducerEx({} as LocalStorageData)
+    return (
+      <LocalStorageContext.Provider value={contextValue}>
+        {children}
+      </LocalStorageContext.Provider>
+    )
+  }
+
+  export const useLocalStorage = <T,>(handler: LocalStorageHandler<T>) => {
+    const [dataSet, dispatch] = ContextUtil.useContextEx(LocalStorageContext)
+    const data: T = useMemo(() => {
+      const cachedData = dataSet[handler.storageKey] as T | undefined
+      return cachedData ?? handler.defaultValue()
+    }, [dataSet[handler.storageKey], handler.defaultValue])
+
+    useEffect(() => {
+      // 初期表示時、LocalStorageの値をキャッシュに読み込む
+      const serialized = localStorage.getItem(handler.storageKey)
+      if (serialized == null) return
+      const deserialized = handler.deserialize(serialized)
+      if (!deserialized.ok) {
+        // 保存されているが型が不正な場合
+        console.warn(`Failuer to parse local storage value as '${handler.storageKey}'.`)
+        return
+      }
+      dispatch({ update: handler.storageKey, value: deserialized.obj })
+    }, [handler])
+
+    const save = useCallback((value: T) => {
+      const serialized = handler.serialize(value)
+      localStorage.setItem(handler.storageKey, serialized)
+      dispatch({ update: handler.storageKey, value })
+    }, [handler])
+
+    return { data, save }
   }
 }
 

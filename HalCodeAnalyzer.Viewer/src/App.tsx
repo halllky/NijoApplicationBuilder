@@ -1,11 +1,22 @@
+import { useMemo } from 'react'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import { BrowserRouter, Routes } from 'react-router-dom'
 import * as AppSetting from './appSetting'
 import * as SideMenu from './appSideMenu'
 import GraphView from './GraphView'
-import { useMemo } from 'react'
+import { StorageUtil } from './util'
 
 function App() {
+  return (
+    <BrowserRouter>
+      <StorageUtil.LocalStorageContextProvider>
+        <AppInsideContext />
+      </StorageUtil.LocalStorageContextProvider>
+    </BrowserRouter>
+  )
+}
+
+function AppInsideContext() {
 
   const queryPages = GraphView.usePages()
   const appSettingPages = AppSetting.usePages()
@@ -15,24 +26,22 @@ function App() {
   ], [queryPages.menuItems, appSettingPages.menuItems])
 
   return (
-    <BrowserRouter>
-      <PanelGroup direction="horizontal">
+    <PanelGroup direction="horizontal">
 
-        <Panel defaultSize={20} className="flex [&>*]:flex-1">
-          <SideMenu.Explorer sections={sideMenuItems} />
-        </Panel>
+      <Panel defaultSize={20} className="flex [&>*]:flex-1">
+        <SideMenu.Explorer sections={sideMenuItems} />
+      </Panel>
 
-        <PanelResizeHandle style={{ width: 4 }} />
+      <PanelResizeHandle style={{ width: 4 }} />
 
-        <Panel className="flex [&>*]:flex-1 [&>*]:min-w-0 p-2 border-l border-1 border-slate-400">
-          <Routes>
-            {queryPages.Routes()}
-            {appSettingPages.Routes()}
-          </Routes>
-        </Panel>
+      <Panel className="flex [&>*]:flex-1 [&>*]:min-w-0 p-2 border-l border-1 border-slate-400">
+        <Routes>
+          {queryPages.Routes()}
+          {appSettingPages.Routes()}
+        </Routes>
+      </Panel>
 
-      </PanelGroup>
-    </BrowserRouter>
+    </PanelGroup>
   )
 }
 
