@@ -143,3 +143,70 @@ export namespace ContextUtil {
       ]
   }
 }
+
+// ------------------- 木構造データの操作 --------------------
+export namespace Tree {
+  export type TreeNode<T> = {
+    item: T
+    children: TreeNode<T>[]
+    parent?: TreeNode<T>
+    depth: number
+  }
+
+  export const toTree = <T,>(
+    items: T[],
+    idSelector: (item: T) => string,
+    parentIdSelector: (item: T) => string | null | undefined
+  ): TreeNode<T>[] => {
+    const treeNodes = new Map<string, TreeNode<T>>(items
+      .map(item => [
+        idSelector(item),
+        { item, children: [], depth: -1 }
+      ]))
+    // 親子マッピング
+    for (const node of treeNodes) {
+      const parentId = parentIdSelector(node[1].item)
+      if (parentId == null) continue
+      const parent = treeNodes.get(parentId)
+      node[1].parent = parent
+      parent?.children.push(node[1])
+    }
+    // 深さ計算
+    for (const node of treeNodes) {
+      node[1].depth = getDepth(node[1])
+    }
+    // ルートのみ返す
+    return Array
+      .from(treeNodes.values())
+      .filter(node => node.depth === 0)
+  }
+
+  export const getAncestors = <T,>(node: TreeNode<T>): TreeNode<T>[] => {
+    const arr: TreeNode<T>[] = []
+    let parent = node.parent
+    while (parent) {
+      arr.push(parent)
+      parent = parent.parent
+    }
+    return arr.reverse()
+  }
+  export const getDescendantsAndSelf = <T,>(node: TreeNode<T>): TreeNode<T>[] => {
+    return flatten([node])
+  }
+  export const flatten = <T,>(nodes: TreeNode<T>[]): TreeNode<T>[] => {
+    const arr: TreeNode<T>[] = []
+    const pushRecursively = (node: TreeNode<T>): void => {
+      arr.push(node)
+      for (const child of node.children) {
+        pushRecursively(child)
+      }
+    }
+    for (const node of nodes) {
+      pushRecursively(node)
+    }
+    return arr
+  }
+  export const getDepth = <T,>(node: TreeNode<T>): number => {
+    return getAncestors(node).length
+  }
+}
