@@ -1,5 +1,5 @@
 import cytoscape from 'cytoscape'
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
 import GraphView from './GraphView'
 import { Components, Tree } from './util'
 import { Link, useLocation } from 'react-router-dom'
@@ -16,6 +16,8 @@ export type SideMenuSectionItem = {
   label: string
   url?: string
   children?: SideMenuSectionItem[]
+  onRename?: (name: string) => void
+  actions?: { actionName: string, onClick: () => void }[]
 }
 
 // -------------- コンポーネント ------------------
@@ -60,6 +62,21 @@ export const Explorer = ({ sections }: {
   // 表示中の画面を強調する
   const { pathname } = useLocation()
 
+  // 名前変更
+  const [renamingItem, setRenamingItem] = useState<Tree.TreeNode<SideMenuSectionItem>>()
+  const [renamingName, setRenamingName] = useState<string>('')
+  const renameRef = useRef<HTMLInputElement>(null)
+  const startRenaming = useCallback((node: Tree.TreeNode<SideMenuSectionItem>) => {
+    setRenamingItem(node)
+    setRenamingName(node.item.label)
+    renameRef.current?.focus()
+  }, [])
+  const endRenaming = useCallback(() => {
+    renamingItem?.item.onRename?.(renamingName)
+    setRenamingItem(undefined)
+    setRenamingName('')
+  }, [renamingItem, renamingName])
+
   return (
     <div className="flex flex-col overflow-x-hidden select-none text-slate-100 bg-slate-700">
       {treeRoots.map((root, ix) => (
@@ -79,15 +96,29 @@ export const Explorer = ({ sections }: {
                 collapsed={collapsedIds.has(node.item.itemId)}
                 onChange={v => handleExpandCollapse(node, v)}
               />
-              {node.item.url ? (
+              {renamingItem?.item.itemId === node.item.itemId && (
+                <Components.Text ref={renameRef} value={renamingName} onChange={e => setRenamingName(e.target.value)} onBlur={endRenaming} />
+              )}
+              {renamingItem?.item.itemId !== node.item.itemId && node.item.url && (
                 <Link to={node.item.url} className="flex-1 text-nowrap">
                   {node.item.label || '(名前なし)'}
                 </Link>
-              ) : (
+              )}
+              {renamingItem?.item.itemId !== node.item.itemId && !node.item.url && (
                 <span className="flex-1 text-nowrap">
                   {node.item.label || '(名前なし)'}
                 </span>
               )}
+              {renamingItem === undefined && pathname === node.item.url && node.item.onRename && (
+                <Components.Button onClick={() => startRenaming(node)}>
+                  改名
+                </Components.Button>
+              )}
+              {renamingItem === undefined && pathname === node.item.url && node.item.actions?.map((act, actIx) => (
+                <Components.Button key={actIx} onClick={act.onClick}>
+                  {act.actionName}
+                </Components.Button>
+              ))}
             </div>
           ))}
         </React.Fragment>

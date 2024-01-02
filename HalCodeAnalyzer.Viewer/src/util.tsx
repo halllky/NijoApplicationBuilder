@@ -75,7 +75,10 @@ export namespace Components {
     return (
       <button ref={ref} {...rest}
         type={type ?? (submit ? 'submit' : 'button')}
-        className={`text-white bg-slate-500 border border-1 border-slate-700 px-1 ${className}`}
+        className={`text-white bg-slate-500
+          px-1 text-nowrap
+          border border-1 border-slate-700
+          ${className}`}
       ></button>
     )
   })

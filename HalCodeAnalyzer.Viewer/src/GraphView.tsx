@@ -18,7 +18,20 @@ ExpandCollapse.configure(cytoscape)
 // ------------------------------------
 
 const usePages: SideMenu.UsePagesHook = () => {
-  const { data: storedQueries } = StorageUtil.useLocalStorage(queryStorageHandler)
+  const navigate = useNavigate()
+  const { data: storedQueries, save } = StorageUtil.useLocalStorage(queryStorageHandler)
+  const deleteItem = useCallback((query: Query) => {
+    if (!confirm(`${query.name}を削除します。よろしいですか？`)) return
+    save(storedQueries.filter(q => q.queryId !== query.queryId))
+    navigate('/')
+  }, [storedQueries, save, navigate])
+  const renameItem = useCallback((query: Query, newName: string) => {
+    const updated = storedQueries.find(q => q.queryId === query.queryId)
+    if (!updated) { console.error(`Rename item '${query.name}' not found.`); return }
+    updated.name = newName
+    save([...storedQueries])
+  }, [storedQueries, save])
+
   const menuItems = useMemo((): SideMenu.SideMenuSection[] => [{
     url: '/',
     itemId: 'APP::HOME',
@@ -28,8 +41,10 @@ const usePages: SideMenu.UsePagesHook = () => {
       url: `/${query.queryId}`,
       itemId: `STOREDQUERY::${query.queryId}`,
       label: query.name,
+      onRename: newName => renameItem(query, newName),
+      actions: [{ actionName: '削除', onClick: () => deleteItem(query) }]
     })),
-  }], [storedQueries])
+  }], [storedQueries, deleteItem])
 
   const Routes = useCallback((): React.ReactNode => <>
     <Route path="/" element={<Page />} />
@@ -46,9 +61,6 @@ const Page = () => {
   const { data: storedQueries, save } = StorageUtil.useLocalStorage(queryStorageHandler)
   const [displayedQuery, setDisplayedQuery] = useState(() => createNewQuery())
   const navigate = useNavigate()
-  const handleQueryNameEdit: React.ChangeEventHandler<HTMLInputElement> = useCallback(e => {
-    setDisplayedQuery({ ...displayedQuery, name: e.target.value })
-  }, [displayedQuery])
   const handleQueryStringEdit: React.ChangeEventHandler<HTMLTextAreaElement> = useCallback(e => {
     setDisplayedQuery({ ...displayedQuery, queryString: e.target.value })
   }, [displayedQuery])
@@ -101,7 +113,6 @@ const Page = () => {
 
   return (
     <div className="flex flex-col gap-1 relative">
-      <Components.Text value={displayedQuery.name} onChange={handleQueryNameEdit} />
       <Components.Textarea value={displayedQuery.queryString} onChange={handleQueryStringEdit} />
       <div className="flex gap-2 justify-end">
         <Components.Button onClick={handleQueryRerun}>
