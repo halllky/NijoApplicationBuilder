@@ -2,7 +2,7 @@ import cytoscape from 'cytoscape'
 import React, { useCallback, useMemo, useState } from 'react'
 import GraphView from './GraphView'
 import { Components, Tree } from './util'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 export type UsePagesHook = () => {
   menuItems: SideMenuSection[]
@@ -57,13 +57,22 @@ export const Explorer = ({ sections }: {
     return expandedItems
   }, [collapsedIds])
 
+  // 表示中の画面を強調する
+  const { pathname } = useLocation()
+
   return (
-    <div className="flex flex-col overflow-x-hidden select-none">
+    <div className="flex flex-col overflow-x-hidden select-none text-slate-100 bg-slate-700">
       {treeRoots.map((root, ix) => (
         <React.Fragment key={root.item.itemId}>
           {ix !== 0 && <Components.Separator />}
           {getExpandedDescendantsAndSelf(root).map(node => (
-            <div key={node.item.itemId} className="flex items-center hover:bg-blue-200">
+            <div
+              key={node.item.itemId}
+              className={`flex items-center
+                ${pathname === node.item.url
+                  ? 'hover:bg-slate-300 text-black bg-white'
+                  : 'hover:bg-slate-600'}`}
+            >
               <div style={{ minWidth: node.depth * 20 }}></div>
               <CollapseButton
                 visible={node.children.length > 0}
@@ -185,7 +194,7 @@ const CollapseButton = ({ visible, collapsed, onChange }: {
 }) => {
   return (
     <span
-      className="flex justify-center min-w-6 text-slate-400"
+      className="flex justify-center min-w-6 opacity-50"
       style={{ visibility: visible ? undefined : 'hidden' }}
       onClick={() => onChange?.(!collapsed)}
     >

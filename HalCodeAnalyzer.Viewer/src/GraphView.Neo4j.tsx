@@ -13,13 +13,14 @@ export const useNeo4jQueryRunner = () => {
   }, [setting])
 
   const [nowLoading, setNowLoading] = useState(false)
-  const [queryResult, setLoadedData] = useState<cytoscape.ElementDefinition[]>(() => [])
+  const [queryResult, setQueryResult] = useState<cytoscape.ElementDefinition[]>(() => [])
   const runQuery = useCallback(async (queryString: string) => {
     if (!driver) return
     const session = driver.session({ defaultAccessMode: neo4j.session.READ })
     const elements: { [id: string]: cytoscape.ElementDefinition } = {}
     const parentChildMap: { [child: string]: string } = {}
     setNowLoading(true)
+    setQueryResult([])
     session.run(queryString).subscribe({
       onNext: record => neo4jQueryReusltToCytoscapeItem(record, elements, parentChildMap),
       onError: err => {
@@ -31,13 +32,17 @@ export const useNeo4jQueryRunner = () => {
         for (const node of Object.entries(elements)) {
           node[1].data.parent = parentChildMap[node[0]]
         }
-        setLoadedData(Object.values(elements))
+        setQueryResult(Object.values(elements))
         setNowLoading(false)
         await session.close()
       },
     })
   }, [driver])
-  return { runQuery, queryResult, nowLoading }
+  const clear = useCallback(() => {
+    setQueryResult([])
+  }, [])
+
+  return { runQuery, queryResult, nowLoading, clear }
 }
 
 /** ノードがこの名前のプロパティを持つ場合は表示名称に使われる */

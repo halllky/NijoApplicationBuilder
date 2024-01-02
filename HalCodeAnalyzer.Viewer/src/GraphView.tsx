@@ -60,14 +60,18 @@ const Page = () => {
   }, [displayedQuery, storedQueries])
 
   // Neo4j
-  const { runQuery, queryResult, nowLoading } = useNeo4jQueryRunner()
+  const { runQuery, clear, queryResult, nowLoading } = useNeo4jQueryRunner()
   useEffect(() => {
     // 画面表示時、保存されているクエリ定義を取得しクエリ実行
-    if (!queryId) return
-    const loaded = storedQueries.find(q => q.queryId === queryId)
-    if (!loaded) return
-    setDisplayedQuery(loaded)
-    runQuery(loaded.queryString)
+    if (queryId) {
+      const loaded = storedQueries.find(q => q.queryId === queryId)
+      if (!loaded) return
+      setDisplayedQuery(loaded)
+      runQuery(loaded.queryString)
+    } else {
+      setDisplayedQuery(createNewQuery())
+      clear()
+    }
   }, [queryId, storedQueries, runQuery])
   const handleQueryRerun = useCallback(() => {
     if (nowLoading) return
@@ -96,7 +100,7 @@ const Page = () => {
   }, [queryResult, initialized])
 
   return (
-    <div className="flex flex-col relative">
+    <div className="flex flex-col gap-1 relative">
       <Components.Text value={displayedQuery.name} onChange={handleQueryNameEdit} />
       <Components.Textarea value={displayedQuery.queryString} onChange={handleQueryStringEdit} />
       <div className="flex gap-2 justify-end">

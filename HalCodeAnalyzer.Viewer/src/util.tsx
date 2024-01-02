@@ -1,4 +1,4 @@
-import React, { ButtonHTMLAttributes, Dispatch, InputHTMLAttributes, PropsWithoutRef, Reducer, TextareaHTMLAttributes, createContext, forwardRef, useCallback, useContext, useEffect, useMemo, useReducer, useState } from 'react'
+import React, { ButtonHTMLAttributes, Dispatch, InputHTMLAttributes, PropsWithoutRef, Reducer, TextareaHTMLAttributes, createContext, forwardRef, useCallback, useContext, useEffect, useMemo, useReducer } from 'react'
 
 /** forwardRefの戻り値の型定義がややこしいので単純化するためのラッピング関数 */
 export const forwardRefEx = <TRef, TProps>(
@@ -203,6 +203,9 @@ export namespace Tree {
         node[1].parent = parent
         parent?.children.push(node[1])
       }
+      for (const node of treeNodes) {
+        node[1].depth = getDepth(node[1])
+      }
     } else {
       const createChildrenRecursively = (parent: TreeNode<T>): void => {
         const childrenItems = fn.getChildren(parent.item) ?? []
@@ -218,12 +221,9 @@ export namespace Tree {
         }
       }
       for (const node of treeNodes) {
+        node[1].depth = 0
         createChildrenRecursively(node[1])
       }
-    }
-    // 深さ計算
-    for (const node of treeNodes) {
-      node[1].depth = getDepth(node[1])
     }
     // ルートのみ返す
     return Array
