@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
-import { TreeExplorer } from './GraphView.TreeExplorer'
+import { TreeExplorer } from './appSideMenu'
 import { AppSettingPage } from './appSetting'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { Components } from './util'
