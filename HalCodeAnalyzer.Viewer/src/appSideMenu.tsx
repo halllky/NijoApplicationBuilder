@@ -1,9 +1,11 @@
-import cytoscape from 'cytoscape'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
-import GraphView from './GraphView'
-import { Components, Tree } from './util'
 import { Link, useLocation } from 'react-router-dom'
+import cytoscape from 'cytoscape'
+import * as Icon from '@ant-design/icons'
+import GraphView from './GraphView'
+import { Components, ReactHookUtil, Tree } from './util'
 
+// -------------- type ------------------
 export type UsePagesHook = () => {
   menuItems: SideMenuSection[]
   Routes: () => React.ReactNode
@@ -17,8 +19,18 @@ export type SideMenuSectionItem = {
   url?: string
   children?: SideMenuSectionItem[]
   onRename?: (name: string) => void
-  actions?: { actionName: string, onClick: () => void }[]
+  actions?: { icon: React.ElementType, actionName: string, onClick: () => void }[]
 }
+
+// -------------- hook ------------------
+export const [
+  SideMenuContextProvider,
+  useSideMenuContext,
+] = ReactHookUtil.defineContext(() => ({ showSideMenu: true }), state => ({
+  toggleSideMenu: () => {
+    return { ...state, showSideMenu: !state.showSideMenu }
+  },
+}))
 
 // -------------- コンポーネント ------------------
 export const Explorer = ({ sections }: {
@@ -33,13 +45,6 @@ export const Explorer = ({ sections }: {
       collapsedIds.delete(node.item.itemId)
     }
     setCollapsedIds(new Set(collapsedIds))
-  }, [collapsedIds])
-  const getExpandedDescendantsAndSelf = useCallback((node: Tree.TreeNode<SideMenuSectionItem>) => {
-    const entireTree = Tree.getDescendantsAndSelf(node)
-    const expandedItems = entireTree.filter(desc => {
-      return Tree.getAncestors(desc).every(a => !collapsedIds.has(a.item.itemId))
-    })
-    return expandedItems
   }, [collapsedIds])
 
   // メニュー項目
@@ -63,7 +68,7 @@ export const Explorer = ({ sections }: {
       return Tree.getAncestors(desc).every(a => !collapsedIds.has(a.item.itemId))
     })
     return expandedItems
-  }, [sections])
+  }, [sections, collapsedIds])
 
   // 表示中の画面を強調する
   const { pathname } = useLocation()
@@ -91,7 +96,7 @@ export const Explorer = ({ sections }: {
           className={`flex items-center
             ${pathname === node.item.url
               ? 'hover:bg-stone-200 border-1 border-stone-400 border-y bg-stone-100'
-              : 'hover:bg-stone-200 border-1 border-stone-400 border-r'}
+              : 'hover:bg-stone-200 border-1 border-r border-r-stone-400 border-y border-y-stone-300'}
             ${node.depth === 0 && 'font-bold'}`}
         >
           <div style={{ minWidth: node.depth * 20 }}></div>
@@ -110,22 +115,22 @@ export const Explorer = ({ sections }: {
             />
           )}
           {renamingItem?.item.itemId !== node.item.itemId && node.item.url && (
-            <Link to={node.item.url} className="flex-1 text-nowrap">
+            <Link to={node.item.url} className="flex-1 text-nowrap overflow-hidden text-ellipsis">
               {node.item.label || '(名前なし)'}
             </Link>
           )}
           {renamingItem?.item.itemId !== node.item.itemId && !node.item.url && (
-            <span className="flex-1 text-nowrap">
+            <span className="flex-1 text-nowrap overflow-hidden text-ellipsis">
               {node.item.label || '(名前なし)'}
             </span>
           )}
           {renamingItem === undefined && pathname === node.item.url && node.item.onRename && (
-            <Components.Button onClick={() => startRenaming(node)}>
+            <Components.Button onClick={() => startRenaming(node)} icon={Icon.EditOutlined}>
               改名
             </Components.Button>
           )}
           {renamingItem === undefined && pathname === node.item.url && node.item.actions?.map((act, actIx) => (
-            <Components.Button key={actIx} onClick={act.onClick}>
+            <Components.Button key={actIx} onClick={act.onClick} icon={act.icon}>
               {act.actionName}
             </Components.Button>
           ))}

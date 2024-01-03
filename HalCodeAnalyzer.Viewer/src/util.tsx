@@ -103,22 +103,36 @@ export namespace Components {
 
   type ButtonAttrs = {
     submit?: boolean
+    icon?: React.ElementType
   }
   export const Button = ReactHookUtil.forwardRefEx<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & ButtonAttrs>((props, ref) => {
     const {
       type,
+      icon,
+      title,
       submit,
       className,
+      children,
       ...rest
     } = props
+
+    const className2 = icon
+      ? `text-zinc-500 flex p-1 ${className}`
+      : `text-white bg-zinc-500 px-1 text-nowrap
+         border border-1 border-zinc-700
+         select-none
+         ${className}`
+
     return (
       <button ref={ref} {...rest}
         type={type ?? (submit ? 'submit' : 'button')}
-        className={`text-white bg-zinc-500
-          px-1 text-nowrap
-          border border-1 border-zinc-700
-          ${className}`}
-      ></button>
+        className={className2}
+        title={title ?? (icon ? (children as string) : undefined)}
+      >
+        {icon
+          ? React.createElement(icon)
+          : children}
+      </button>
     )
   })
 

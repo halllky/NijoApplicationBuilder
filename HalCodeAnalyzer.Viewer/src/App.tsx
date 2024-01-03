@@ -11,7 +11,9 @@ function App() {
     <BrowserRouter>
       <StorageUtil.LocalStorageContextProvider>
         <ErrorHandling.ErrorMessageContextProvider>
-          <AppInsideContext />
+          <SideMenu.SideMenuContextProvider>
+            <AppInsideContext />
+          </SideMenu.SideMenuContextProvider>
         </ErrorHandling.ErrorMessageContextProvider>
       </StorageUtil.LocalStorageContextProvider>
     </BrowserRouter>
@@ -27,19 +29,27 @@ function AppInsideContext() {
     ...appSettingPages.menuItems,
   ], [queryPages.menuItems, appSettingPages.menuItems])
 
+  // サイドメニュー表示非表示
+  const [{ showSideMenu }] = SideMenu.useSideMenuContext()
+
   return (
     <PanelGroup direction="horizontal">
 
-      <Panel defaultSize={20} className="flex [&>*]:flex-1">
+      <Panel defaultSize={20} className={`
+        flex [&>*]:flex-1
+        ${showSideMenu ? '' : 'hidden'}`}>
         <SideMenu.Explorer sections={sideMenuItems} />
       </Panel>
 
-      <PanelResizeHandle className="w-2 bg-zinc-100" />
+      {showSideMenu && (
+        <PanelResizeHandle className="w-2 bg-zinc-100" />
+      )}
 
-      <Panel className="
+      <Panel className={`
         flex flex-col
-        [&>*:first-child]:flex-1 [&>*:first-child]:min-h-0 py-2 pr-2
-        bg-zinc-100">
+        [&>*:first-child]:flex-1 [&>*:first-child]:min-h-0 py-2
+        ${showSideMenu ? 'pr-2' : 'px-2'}
+        bg-zinc-100`}>
         <Routes>
           {queryPages.Routes()}
           {appSettingPages.Routes()}
