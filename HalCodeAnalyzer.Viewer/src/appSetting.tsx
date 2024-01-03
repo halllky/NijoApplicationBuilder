@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useFieldArray, useForm } from 'react-hook-form'
 import * as UUID from 'uuid'
-import { Components, ErrorHandling } from './util'
+import { Components, StorageUtil } from './util'
 import * as SideMenu from './appSideMenu'
 import { Route } from 'react-router-dom'
 
@@ -26,48 +26,31 @@ export type StoredSetting = {
     pass: string
   }[]
 }
-export const getDefaultStoredSetting = (): StoredSetting => ({
-  activeNeo4jServerId: undefined,
-  neo4jServer: [],
-})
 
-const LOCALSTORAGE_KEY = 'HALDIAGRAM::SETTINGS'
 export const useStoredSettings = () => {
-  const [setting, setSetting] = useState(getDefaultStoredSetting())
-  const [, dispatch] = ErrorHandling.useMsgContext()
-
-  const loadSetting = useCallback((): StoredSetting => {
-    const json = localStorage.getItem(LOCALSTORAGE_KEY)
-    if (!json) return getDefaultStoredSetting()
-    try {
+  const { data, save } = StorageUtil.useLocalStorage<StoredSetting>(() => ({
+    storageKey: 'HALDIAGRAM::SETTINGS',
+    defaultValue: () => ({
+      activeNeo4jServerId: undefined,
+      neo4jServer: [],
+    }),
+    serialize: obj => JSON.stringify(obj),
+    deserialize: json => {
       const parsed: Partial<StoredSetting> = JSON.parse(json)
-      return {
+      const obj: StoredSetting = {
         activeNeo4jServerId: parsed.activeNeo4jServerId,
         neo4jServer: parsed.neo4jServer ?? [],
       }
-    } catch (error) {
-      dispatch(state => state.add('warn', `Failure to load application settings.\n${error}`))
-      return getDefaultStoredSetting()
-    }
-  }, [])
-
-  const saveSetting = useCallback((value: StoredSetting) => {
-    localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(value))
-    setSetting(loadSetting())
-  }, [loadSetting])
-
-  useEffect(() => {
-    const loaded = loadSetting()
-    setSetting(loaded)
-  }, [])
-
-  return { setting, saveSetting, loadSetting }
+      return { ok: true, obj }
+    },
+  }))
+  return { setting: data, saveSetting: save }
 }
 
 export const AppSettingPage = () => {
-  const { loadSetting, saveSetting } = useStoredSettings()
+  const { setting, saveSetting } = useStoredSettings()
   const { register, watch, setValue, control, handleSubmit } = useForm<StoredSetting>({
-    defaultValues: async () => loadSetting(),
+    defaultValues: setting,
   })
 
   // サーバー接続設定の配列

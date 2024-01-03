@@ -1,4 +1,4 @@
-import React, { ButtonHTMLAttributes, InputHTMLAttributes, PropsWithoutRef, TextareaHTMLAttributes, createContext, forwardRef, useCallback, useContext, useEffect, useMemo, useReducer } from 'react'
+import React, { ButtonHTMLAttributes, InputHTMLAttributes, PropsWithoutRef, TextareaHTMLAttributes, createContext, forwardRef, useCallback, useContext, useMemo, useReducer } from 'react'
 import * as UUID from 'uuid'
 
 export namespace ReactHookUtil {
@@ -45,6 +45,15 @@ export namespace ReactHookUtil {
     return forwardRef(fn) as (
       (props: PropsWithoutRef<TProps> & { ref?: React.Ref<TRef> }) => React.ReactNode
     )
+  }
+
+  // 強制アップデート
+  const forceUpdateReducer = (state: boolean, _?: undefined) => {
+    return !state
+  }
+  export const useForceUpdate = () => {
+    const [forceUpdateValue, triggerForceUpdate] = useReducer(forceUpdateReducer, false)
+    return { forceUpdateValue, triggerForceUpdate }
   }
 }
 
@@ -166,31 +175,35 @@ export namespace StorageUtil {
       return { ...state, [key]: value }
     },
   }))
-  export const useLocalStorage = <T,>(handler: LocalStorageHandler<T>) => {
-    const [dataSet, dispatch] = useLocalStorageContext()
-    const data: T = useMemo(() => {
-      const cachedData = dataSet[handler.storageKey] as T | undefined
-      return cachedData ?? handler.defaultValue()
-    }, [dataSet[handler.storageKey], handler.defaultValue])
+  export const useLocalStorage = <T,>(init: LocalStorageHandler<T> | (() => LocalStorageHandler<T>)) => {
+    const handler = useMemo(() => typeof init === 'function' ? init() : init, [])
+    const { forceUpdateValue, triggerForceUpdate } = ReactHookUtil.useForceUpdate()
+    const [, dispatchErrMsg] = ErrorHandling.useMsgContext()
 
-    useEffect(() => {
-      // 初期表示時、LocalStorageの値をキャッシュに読み込む
-      const serialized = localStorage.getItem(handler.storageKey)
-      if (serialized == null) return
-      const deserialized = handler.deserialize(serialized)
-      if (!deserialized.ok) {
-        // 保存されているが型が不正な場合
-        console.warn(`Failuer to parse local storage value as '${handler.storageKey}'.`)
-        return
+    const data: T = useMemo(() => {
+      try {
+        const serialized = localStorage.getItem(handler.storageKey)
+        if (serialized == null) return handler.defaultValue()
+
+        const deserializeResult = handler.deserialize(serialized)
+        if (deserializeResult?.ok !== true) {
+          dispatchErrMsg(msg => msg.add('warn', `Failuer to parse local storage value as '${handler.storageKey}'.`))
+          return handler.defaultValue()
+        }
+
+        return deserializeResult.obj
+
+      } catch (error) {
+        dispatchErrMsg(msg => msg.add('warn', error))
+        return handler.defaultValue()
       }
-      dispatch(state => state.cache(handler.storageKey, deserialized.obj))
-    }, [handler])
+    }, [forceUpdateValue])
 
     const save = useCallback((value: T) => {
       const serialized = handler.serialize(value)
       localStorage.setItem(handler.storageKey, serialized)
-      dispatch(state => state.cache(handler.storageKey, value))
-    }, [handler])
+      triggerForceUpdate()
+    }, [])
 
     return { data, save }
   }
