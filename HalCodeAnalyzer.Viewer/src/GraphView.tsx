@@ -169,9 +169,9 @@ const Page = () => {
           ))}
         </select>
         <Components.Button onClick={handlePositionReset}>
-          位置リセット
+          自動レイアウト
         </Components.Button>
-        <label>
+        <label className="text-nowrap">
           <input type="checkbox" checked={locked} onChange={handleLockChanged} />
           ノード位置固定
         </label>
@@ -185,7 +185,9 @@ const Page = () => {
         <div className="flex-1"></div>
 
         <Components.Button onClick={() => setShowDataSource(!showDataSource)} icon={showDataSource ? Icon.UpOutlined : Icon.DownOutlined} />
+        <span className="text-nowrap">
         データソース:Neo4j
+        </span>
         <Components.Button onClick={handleQueryRerun} icon={Icon.ReloadOutlined}>
           {nowLoading ? '読込中...' : '再読込'}
         </Components.Button>
