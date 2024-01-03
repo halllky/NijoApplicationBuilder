@@ -1,4 +1,5 @@
 import React, { ButtonHTMLAttributes, Dispatch, InputHTMLAttributes, PropsWithoutRef, Reducer, TextareaHTMLAttributes, createContext, forwardRef, useCallback, useContext, useEffect, useMemo, useReducer } from 'react'
+import * as UUID from 'uuid'
 
 /** forwardRefの戻り値の型定義がややこしいので単純化するためのラッピング関数 */
 export const forwardRefEx = <TRef, TProps>(
@@ -262,5 +263,116 @@ export namespace Tree {
   }
   export const getDepth = <T,>(node: TreeNode<T>): number => {
     return getAncestors(node).length
+  }
+}
+
+// ------------------- エラーハンドリング --------------------
+export namespace ErrorHandling {
+  type ErrMsg = { id: string, name?: string, message: string, type: 'error' | 'warn' }
+  type ErrMsgCtx = {
+    errorMessages: ErrMsg[]
+    addErrorMessages: (...messages: unknown[]) => void
+    addWarningMessages: (...messages: unknown[]) => void
+    clearErrorMessages: (filterOrItem?: string | ErrMsg) => void
+  }
+  type ReducerState = { errorMessages: ErrMsg[] }
+  type ReducerAction
+    = { type: 'add', msgs: Parameters<ErrMsgCtx['addErrorMessages']> }
+    | { type: 'add-warn', msgs: Parameters<ErrMsgCtx['addErrorMessages']> }
+    | { type: 'clear', nameOrItem: Parameters<ErrMsgCtx['clearErrorMessages']>[0] }
+  const reducer = (state: ReducerState, action: ReducerAction): ReducerState => {
+    switch (action.type) {
+      case 'add':
+      case 'add-warn':
+        const type = action.type === 'add-warn' ? 'warn' : 'error'
+        const flatten = action.msgs.flatMap(m => Array.isArray(m) ? m : [m])
+        const addedMessages = flatten.map<ErrMsg>(m => {
+          const id = UUID.v4()
+          if (typeof m === 'string') return { id, type, message: m }
+          const asErrMsg = m as Omit<ErrMsg, 'id'>
+          if (typeof asErrMsg.message === 'string') return { id, type, message: asErrMsg.message, name: asErrMsg.name }
+          return { id, type, message: m?.toString() ?? '' }
+        })
+        return { errorMessages: [...state.errorMessages, ...addedMessages] }
+      case 'clear':
+        if (!action.nameOrItem) {
+          return { errorMessages: [] }
+        } else if (typeof action.nameOrItem === 'string') {
+          const name = action.nameOrItem
+          return { errorMessages: state.errorMessages.filter(m => !m.name?.startsWith(name)) }
+        } else {
+          const id = action.nameOrItem.id
+          return { errorMessages: state.errorMessages.filter(m => m.id !== id) }
+        }
+    }
+  }
+
+  const getEmptyCtxValue = (): ErrMsgCtx => ({
+    errorMessages: [],
+    addErrorMessages: () => { },
+    addWarningMessages: () => { },
+    clearErrorMessages: () => { },
+  })
+  const ErrorMessageContext = createContext(getEmptyCtxValue())
+
+  export const useMsgContext = () => useContext(ErrorMessageContext)
+  export const ErrorMessageContextProvider = ({ children }: {
+    children?: React.ReactNode
+  }) => {
+    const [{ errorMessages }, dispatch] = useReducer(reducer, { errorMessages: [] })
+    const addErrorMessages: ErrMsgCtx['addErrorMessages'] = useCallback((...msgs) => {
+      dispatch({ type: 'add', msgs })
+    }, [])
+    const addWarningMessages: ErrMsgCtx['addErrorMessages'] = useCallback((...msgs) => {
+      dispatch({ type: 'add-warn', msgs })
+    }, [])
+    const clearErrorMessages: ErrMsgCtx['clearErrorMessages'] = useCallback(nameOrItem => {
+      dispatch({ type: 'clear', nameOrItem })
+    }, [])
+
+    return (
+      <ErrorMessageContext.Provider value={{
+        errorMessages,
+        addErrorMessages,
+        addWarningMessages,
+        clearErrorMessages
+      }}>
+        {children}
+      </ErrorMessageContext.Provider>
+    )
+  }
+  export const MessageList = ({ filter, className }: {
+    filter?: string
+    className?: string
+  }) => {
+    const { errorMessages, clearErrorMessages } = useMsgContext()
+    const filtered = useMemo(() => {
+      return filter
+        ? errorMessages.filter(m => m.name?.startsWith(filter))
+        : errorMessages
+    }, [errorMessages, filter])
+
+    return (
+      <ul className={`flex flex-col ${className}`}>
+        {filtered.map(msg => (
+          <li key={msg.id} className={`
+            flex gap-1 items-center
+            border border-1
+            ${msg.type === 'warn' ? 'border-amber-200' : 'border-rose-200'}
+            ${msg.type === 'warn' ? 'bg-amber-100' : 'bg-rose-100'}`}>
+            <span title={msg.message} className={`
+              flex-1
+              ${msg.type === 'warn' ? 'text-amber-700' : 'text-rose-600'}
+              overflow-hidden text-nowrap overflow-ellipsis
+              select-all`}>
+              {msg.message}
+            </span>
+            <Components.Button
+              onClick={() => clearErrorMessages(msg)}
+            >×</Components.Button>
+          </li>
+        ))}
+      </ul>
+    )
   }
 }

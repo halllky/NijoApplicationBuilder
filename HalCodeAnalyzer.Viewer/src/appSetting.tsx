@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useFieldArray, useForm } from 'react-hook-form'
 import * as UUID from 'uuid'
-import { Components } from './util'
+import { Components, ErrorHandling } from './util'
 import * as SideMenu from './appSideMenu'
 import { Route } from 'react-router-dom'
 
@@ -34,6 +34,7 @@ export const getDefaultStoredSetting = (): StoredSetting => ({
 const LOCALSTORAGE_KEY = 'HALDIAGRAM::SETTINGS'
 export const useStoredSettings = () => {
   const [setting, setSetting] = useState(getDefaultStoredSetting())
+  const { addWarningMessages } = ErrorHandling.useMsgContext()
 
   const loadSetting = useCallback((): StoredSetting => {
     const json = localStorage.getItem(LOCALSTORAGE_KEY)
@@ -45,7 +46,7 @@ export const useStoredSettings = () => {
         neo4jServer: parsed.neo4jServer ?? [],
       }
     } catch (error) {
-      console.error(`Failure to load application settings.`, error)
+      addWarningMessages(`Failure to load application settings.\n${error}`)
       return getDefaultStoredSetting()
     }
   }, [])

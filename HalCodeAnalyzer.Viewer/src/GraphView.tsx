@@ -5,7 +5,7 @@ import { Toolbar } from './GraphView.ToolBar'
 import Navigator from './GraphView.Navigator'
 import Layout from './GraphView.Layout'
 // import enumerateData from './data'
-import { Components, StorageUtil } from './util'
+import { Components, ErrorHandling, StorageUtil } from './util'
 import { useNeo4jQueryRunner } from './GraphView.Neo4j'
 import * as UUID from 'uuid'
 import { Route, useNavigate, useParams } from 'react-router-dom'
@@ -20,6 +20,7 @@ ExpandCollapse.configure(cytoscape)
 const usePages: SideMenu.UsePagesHook = () => {
   const navigate = useNavigate()
   const { data: storedQueries, save } = StorageUtil.useLocalStorage(queryStorageHandler)
+  const { addErrorMessages } = ErrorHandling.useMsgContext()
   const deleteItem = useCallback((query: Query) => {
     if (!confirm(`${query.name}を削除します。よろしいですか？`)) return
     save(storedQueries.filter(q => q.queryId !== query.queryId))
@@ -27,7 +28,7 @@ const usePages: SideMenu.UsePagesHook = () => {
   }, [storedQueries, save, navigate])
   const renameItem = useCallback((query: Query, newName: string) => {
     const updated = storedQueries.find(q => q.queryId === query.queryId)
-    if (!updated) { console.error(`Rename item '${query.name}' not found.`); return }
+    if (!updated) { addErrorMessages(`Rename item '${query.name}' not found.`); return }
     updated.name = newName
     save([...storedQueries])
   }, [storedQueries, save])
@@ -117,7 +118,11 @@ const Page = () => {
 
   return (
     <div className="flex flex-col gap-1 relative">
-      <Components.Textarea value={displayedQuery.queryString} onChange={handleQueryStringEdit} />
+      <Components.Textarea
+        value={displayedQuery.queryString}
+        onChange={handleQueryStringEdit}
+        className="font-mono"
+      />
       <div className="flex gap-2 justify-end">
         <Components.Button onClick={handleQueryRerun}>
           {nowLoading ? '読込中...' : '読込'}
