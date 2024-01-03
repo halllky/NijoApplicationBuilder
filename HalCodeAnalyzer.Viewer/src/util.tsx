@@ -1,98 +1,6 @@
 import React, { ButtonHTMLAttributes, InputHTMLAttributes, PropsWithoutRef, TextareaHTMLAttributes, createContext, forwardRef, useCallback, useContext, useEffect, useMemo, useReducer } from 'react'
 import * as UUID from 'uuid'
 
-/** forwardRefの戻り値の型定義がややこしいので単純化するためのラッピング関数 */
-export const forwardRefEx = <TRef, TProps>(
-  fn: (props: TProps, ref: React.ForwardedRef<TRef>) => React.ReactNode
-) => {
-  return forwardRef(fn) as (
-    (props: PropsWithoutRef<TProps> & { ref?: React.Ref<TRef> }) => React.ReactNode
-  )
-}
-
-// --------------------------------------------------
-// UIコンポーネント
-export namespace Components {
-  type InputWithLabelAttributes = {
-    labelText?: string
-    labelClassName?: string
-    inputClassName?: string
-  }
-  export const Text = forwardRefEx<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & InputWithLabelAttributes>((props, ref) => {
-    const {
-      labelText,
-      labelClassName,
-      inputClassName,
-      className,
-      autoComplete,
-      ...rest
-    } = props
-    return (
-      <label className={`flex ${className}`}>
-        {(labelText || labelClassName) && (
-          <span className={`select-none ${labelClassName}`}>
-            {labelText}
-          </span>)}
-        <input ref={ref} {...rest}
-          className={`flex-1 border border-1 border-slate-400 px-1 ${inputClassName}`}
-          autoComplete={autoComplete ?? 'off'}
-        />
-      </label>
-    )
-  })
-
-  export const Textarea = forwardRefEx<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement> & InputWithLabelAttributes>((props, ref) => {
-    const {
-      className,
-      spellCheck,
-      labelText,
-      labelClassName,
-      inputClassName,
-      ...rest
-    } = props
-    return (
-      <label className={`flex ${className}`}>
-        {(labelText || labelClassName) && (
-          <span className={`select-none ${labelClassName}`}>
-            {labelText}
-          </span>)}
-        <textarea ref={ref} {...rest}
-          className={`flex-1 border border-1 border-slate-400 px-1 ${inputClassName}`}
-          spellCheck={spellCheck ?? 'false'}
-        ></textarea>
-      </label>)
-  })
-
-  type ButtonAttrs = {
-    submit?: boolean
-  }
-  export const Button = forwardRefEx<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & ButtonAttrs>((props, ref) => {
-    const {
-      type,
-      submit,
-      className,
-      ...rest
-    } = props
-    return (
-      <button ref={ref} {...rest}
-        type={type ?? (submit ? 'submit' : 'button')}
-        className={`text-white bg-slate-500
-          px-1 text-nowrap
-          border border-1 border-slate-700
-          ${className}`}
-      ></button>
-    )
-  })
-
-  export const Separator = () => {
-    return (
-      <hr className="bg-slate-300 border-none h-[1px] m-2" />
-    )
-  }
-}
-
-// --------------------------------------------------
-// 状態の型定義からreducer等の型定義をするのを簡略化するための仕組み
 export namespace ReactHookUtil {
   // useReducerの簡略化
   type ReducerDef<S, M extends StateModifier<S>> = (state: S) => M
@@ -118,6 +26,96 @@ export namespace ReactHookUtil {
     const dummyDispatcher = (() => { }) as React.Dispatch<DispatchArg<S, M>>
     const context = createContext([getInitialState(), dummyDispatcher] as const)
     return [context, useReducerEx] as const
+  }
+
+  /** forwardRefの戻り値の型定義がややこしいので単純化するためのラッピング関数 */
+  export const forwardRefEx = <TRef, TProps>(
+    fn: (props: TProps, ref: React.ForwardedRef<TRef>) => React.ReactNode
+  ) => {
+    return forwardRef(fn) as (
+      (props: PropsWithoutRef<TProps> & { ref?: React.Ref<TRef> }) => React.ReactNode
+    )
+  }
+}
+
+// --------------------------------------------------
+// UIコンポーネント
+export namespace Components {
+  type InputWithLabelAttributes = {
+    labelText?: string
+    labelClassName?: string
+    inputClassName?: string
+  }
+  export const Text = ReactHookUtil.forwardRefEx<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & InputWithLabelAttributes>((props, ref) => {
+    const {
+      labelText,
+      labelClassName,
+      inputClassName,
+      className,
+      autoComplete,
+      ...rest
+    } = props
+    return (
+      <label className={`flex ${className}`}>
+        {(labelText || labelClassName) && (
+          <span className={`select-none ${labelClassName}`}>
+            {labelText}
+          </span>)}
+        <input ref={ref} {...rest}
+          className={`flex-1 border border-1 border-slate-400 px-1 ${inputClassName}`}
+          autoComplete={autoComplete ?? 'off'}
+        />
+      </label>
+    )
+  })
+
+  export const Textarea = ReactHookUtil.forwardRefEx<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement> & InputWithLabelAttributes>((props, ref) => {
+    const {
+      className,
+      spellCheck,
+      labelText,
+      labelClassName,
+      inputClassName,
+      ...rest
+    } = props
+    return (
+      <label className={`flex ${className}`}>
+        {(labelText || labelClassName) && (
+          <span className={`select-none ${labelClassName}`}>
+            {labelText}
+          </span>)}
+        <textarea ref={ref} {...rest}
+          className={`flex-1 border border-1 border-slate-400 px-1 ${inputClassName}`}
+          spellCheck={spellCheck ?? 'false'}
+        ></textarea>
+      </label>)
+  })
+
+  type ButtonAttrs = {
+    submit?: boolean
+  }
+  export const Button = ReactHookUtil.forwardRefEx<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & ButtonAttrs>((props, ref) => {
+    const {
+      type,
+      submit,
+      className,
+      ...rest
+    } = props
+    return (
+      <button ref={ref} {...rest}
+        type={type ?? (submit ? 'submit' : 'button')}
+        className={`text-white bg-slate-500
+          px-1 text-nowrap
+          border border-1 border-slate-700
+          ${className}`}
+      ></button>
+    )
+  })
+
+  export const Separator = () => {
+    return (
+      <hr className="bg-slate-300 border-none h-[1px] m-2" />
+    )
   }
 }
 
