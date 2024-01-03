@@ -34,7 +34,7 @@ export const getDefaultStoredSetting = (): StoredSetting => ({
 const LOCALSTORAGE_KEY = 'HALDIAGRAM::SETTINGS'
 export const useStoredSettings = () => {
   const [setting, setSetting] = useState(getDefaultStoredSetting())
-  const { addWarningMessages } = ErrorHandling.useMsgContext()
+  const [, dispatch] = ErrorHandling.useMsgContext()
 
   const loadSetting = useCallback((): StoredSetting => {
     const json = localStorage.getItem(LOCALSTORAGE_KEY)
@@ -46,7 +46,7 @@ export const useStoredSettings = () => {
         neo4jServer: parsed.neo4jServer ?? [],
       }
     } catch (error) {
-      addWarningMessages(`Failure to load application settings.\n${error}`)
+      dispatch(state => state.add('warn', `Failure to load application settings.\n${error}`))
       return getDefaultStoredSetting()
     }
   }, [])

@@ -1,4 +1,4 @@
-import React, { ButtonHTMLAttributes, Dispatch, InputHTMLAttributes, PropsWithoutRef, Reducer, TextareaHTMLAttributes, createContext, forwardRef, useCallback, useContext, useEffect, useMemo, useReducer } from 'react'
+import React, { ButtonHTMLAttributes, InputHTMLAttributes, PropsWithoutRef, TextareaHTMLAttributes, createContext, forwardRef, useCallback, useContext, useEffect, useMemo, useReducer } from 'react'
 import * as UUID from 'uuid'
 
 /** forwardRefの戻り値の型定義がややこしいので単純化するためのラッピング関数 */
@@ -93,35 +93,31 @@ export namespace Components {
 
 // --------------------------------------------------
 // 状態の型定義からreducer等の型定義をするのを簡略化するための仕組み
-export namespace ContextUtil {
-  type ActionParam<TState, TKey extends keyof TState = keyof TState> = {
-    update: TKey
-    value: TState[TKey]
+export namespace ReactHookUtil {
+  // useReducerの簡略化
+  type ReducerDef<S, M extends StateModifier<S>> = (state: S) => M
+  type StateModifier<S> = { [action: string]: (...args: any[]) => S }
+  type DispatchArg<S, M extends StateModifier<S>> = (modifier: M) => S
+  export const defineReducer = <S, M extends StateModifier<S>>(
+    reducerDef: ReducerDef<S, M>
+  ): React.Reducer<S, DispatchArg<S, M>> => {
+    return (state, action) => {
+      const modifier = reducerDef(state)
+      const newState = action(modifier)
+      return newState
+    }
   }
-  type FlatObjectContext<TState> = React.Context<[TState, Dispatch<ActionParam<TState>>]>
 
-  const reducerEx: Reducer<{}, ActionParam<{}>> = (state, action) => {
-    return { ...state, [action.update]: action.value }
-  }
-  export const createContextEx = <TState,>(defaultValue: TState): FlatObjectContext<TState> => {
-    return createContext([
-      defaultValue,
-      (() => { }) as Dispatch<ActionParam<TState>>
-    ] as const)
-  }
-  export const useContextEx = <TState,>(ctx: FlatObjectContext<TState>) => {
-    return useContext(ctx) as [
-      TState,
-      <TKey extends keyof TState>(action: ActionParam<TState, TKey>) => TState
-    ]
-  }
-  export const useReducerEx = <TState,>(initialState: TState) => {
-    return useReducer(
-      reducerEx as unknown as Reducer<TState, ActionParam<TState>>,
-      initialState) as [
-        TState,
-        <TKey extends keyof TState>(action: ActionParam<TState, TKey>) => TState
-      ]
+  // useContextの簡略化
+  export const defineContextAndReducer = <S, M extends StateModifier<S>>(
+    getInitialState: () => S,
+    reducerDef: ReducerDef<S, M>
+  ) => {
+    const reducer = defineReducer(reducerDef)
+    const useReducerEx = () => useReducer(reducer, getInitialState())
+    const dummyDispatcher = (() => { }) as React.Dispatch<DispatchArg<S, M>>
+    const context = createContext([getInitialState(), dummyDispatcher] as const)
+    return [context, useReducerEx] as const
   }
 }
 
@@ -138,11 +134,16 @@ export namespace StorageUtil {
 
   // アプリ全体でローカルストレージのデータの更新タイミングを同期するための仕組み
   type LocalStorageData = { [storageKey: string]: unknown }
-  const LocalStorageContext = ContextUtil.createContextEx({} as LocalStorageData)
+  const getInitialState = () => ({}) as LocalStorageData
+  const [LocalStorageContext, useLocalStorageReducer] = ReactHookUtil.defineContextAndReducer(getInitialState, state => ({
+    cache: <K extends keyof LocalStorageData>(key: K, value: LocalStorageData[K]) => {
+      return { ...state, [key]: value }
+    },
+  }))
   export const LocalStorageContextProvider = ({ children }: {
     children?: React.ReactNode
   }) => {
-    const contextValue = ContextUtil.useReducerEx({} as LocalStorageData)
+    const contextValue = useLocalStorageReducer()
     return (
       <LocalStorageContext.Provider value={contextValue}>
         {children}
@@ -151,7 +152,7 @@ export namespace StorageUtil {
   }
 
   export const useLocalStorage = <T,>(handler: LocalStorageHandler<T>) => {
-    const [dataSet, dispatch] = ContextUtil.useContextEx(LocalStorageContext)
+    const [dataSet, dispatch] = useContext(LocalStorageContext)
     const data: T = useMemo(() => {
       const cachedData = dataSet[handler.storageKey] as T | undefined
       return cachedData ?? handler.defaultValue()
@@ -167,13 +168,13 @@ export namespace StorageUtil {
         console.warn(`Failuer to parse local storage value as '${handler.storageKey}'.`)
         return
       }
-      dispatch({ update: handler.storageKey, value: deserialized.obj })
+      dispatch(state => state.cache(handler.storageKey, deserialized.obj))
     }, [handler])
 
     const save = useCallback((value: T) => {
       const serialized = handler.serialize(value)
       localStorage.setItem(handler.storageKey, serialized)
-      dispatch({ update: handler.storageKey, value })
+      dispatch(state => state.cache(handler.storageKey, value))
     }, [handler])
 
     return { data, save }
@@ -269,74 +270,40 @@ export namespace Tree {
 // ------------------- エラーハンドリング --------------------
 export namespace ErrorHandling {
   type ErrMsg = { id: string, name?: string, message: string, type: 'error' | 'warn' }
-  type ErrMsgCtx = {
-    errorMessages: ErrMsg[]
-    addErrorMessages: (...messages: unknown[]) => void
-    addWarningMessages: (...messages: unknown[]) => void
-    clearErrorMessages: (filterOrItem?: string | ErrMsg) => void
-  }
-  type ReducerState = { errorMessages: ErrMsg[] }
-  type ReducerAction
-    = { type: 'add', msgs: Parameters<ErrMsgCtx['addErrorMessages']> }
-    | { type: 'add-warn', msgs: Parameters<ErrMsgCtx['addErrorMessages']> }
-    | { type: 'clear', nameOrItem: Parameters<ErrMsgCtx['clearErrorMessages']>[0] }
-  const reducer = (state: ReducerState, action: ReducerAction): ReducerState => {
-    switch (action.type) {
-      case 'add':
-      case 'add-warn':
-        const type = action.type === 'add-warn' ? 'warn' : 'error'
-        const flatten = action.msgs.flatMap(m => Array.isArray(m) ? m : [m])
-        const addedMessages = flatten.map<ErrMsg>(m => {
-          const id = UUID.v4()
-          if (typeof m === 'string') return { id, type, message: m }
-          const asErrMsg = m as Omit<ErrMsg, 'id'>
-          if (typeof asErrMsg.message === 'string') return { id, type, message: asErrMsg.message, name: asErrMsg.name }
-          return { id, type, message: m?.toString() ?? '' }
-        })
-        return { errorMessages: [...state.errorMessages, ...addedMessages] }
-      case 'clear':
-        if (!action.nameOrItem) {
-          return { errorMessages: [] }
-        } else if (typeof action.nameOrItem === 'string') {
-          const name = action.nameOrItem
-          return { errorMessages: state.errorMessages.filter(m => !m.name?.startsWith(name)) }
-        } else {
-          const id = action.nameOrItem.id
-          return { errorMessages: state.errorMessages.filter(m => m.id !== id) }
-        }
-    }
-  }
-
-  const getEmptyCtxValue = (): ErrMsgCtx => ({
-    errorMessages: [],
-    addErrorMessages: () => { },
-    addWarningMessages: () => { },
-    clearErrorMessages: () => { },
-  })
-  const ErrorMessageContext = createContext(getEmptyCtxValue())
+  const getInitialState = () => ({ errorMessages: [] as ErrMsg[] })
+  const [ErrorMessageContext, useErrMsgReducer] = ReactHookUtil.defineContextAndReducer(getInitialState, state => ({
+    add: (type: ErrMsg['type'], ...messages: unknown[]) => {
+      const flatten = messages.flatMap(m => Array.isArray(m) ? m : [m])
+      const addedMessages = flatten.map<ErrMsg>(m => {
+        const id = UUID.v4()
+        if (typeof m === 'string') return { id, type, message: m }
+        const asErrMsg = m as Omit<ErrMsg, 'id'>
+        if (typeof asErrMsg.message === 'string') return { id, type, message: asErrMsg.message, name: asErrMsg.name }
+        return { id, type, message: m?.toString() ?? '' }
+      })
+      return { errorMessages: [...state.errorMessages, ...addedMessages] }
+    },
+    clear: (nameOrItem?: string | ErrMsg) => {
+      if (!nameOrItem) {
+        return { errorMessages: [] }
+      } else if (typeof nameOrItem === 'string') {
+        const name = nameOrItem
+        return { errorMessages: state.errorMessages.filter(m => !m.name?.startsWith(name)) }
+      } else {
+        const id = nameOrItem.id
+        return { errorMessages: state.errorMessages.filter(m => m.id !== id) }
+      }
+    },
+  }))
 
   export const useMsgContext = () => useContext(ErrorMessageContext)
   export const ErrorMessageContextProvider = ({ children }: {
     children?: React.ReactNode
   }) => {
-    const [{ errorMessages }, dispatch] = useReducer(reducer, { errorMessages: [] })
-    const addErrorMessages: ErrMsgCtx['addErrorMessages'] = useCallback((...msgs) => {
-      dispatch({ type: 'add', msgs })
-    }, [])
-    const addWarningMessages: ErrMsgCtx['addErrorMessages'] = useCallback((...msgs) => {
-      dispatch({ type: 'add-warn', msgs })
-    }, [])
-    const clearErrorMessages: ErrMsgCtx['clearErrorMessages'] = useCallback(nameOrItem => {
-      dispatch({ type: 'clear', nameOrItem })
-    }, [])
+    const contextValue = useErrMsgReducer()
 
     return (
-      <ErrorMessageContext.Provider value={{
-        errorMessages,
-        addErrorMessages,
-        addWarningMessages,
-        clearErrorMessages
-      }}>
+      <ErrorMessageContext.Provider value={contextValue}>
         {children}
       </ErrorMessageContext.Provider>
     )
@@ -345,7 +312,7 @@ export namespace ErrorHandling {
     filter?: string
     className?: string
   }) => {
-    const { errorMessages, clearErrorMessages } = useMsgContext()
+    const [{ errorMessages }, dispatch] = useMsgContext()
     const filtered = useMemo(() => {
       return filter
         ? errorMessages.filter(m => m.name?.startsWith(filter))
@@ -368,7 +335,7 @@ export namespace ErrorHandling {
               {msg.message}
             </span>
             <Components.Button
-              onClick={() => clearErrorMessages(msg)}
+              onClick={() => dispatch(state => state.clear(msg))}
             >×</Components.Button>
           </li>
         ))}

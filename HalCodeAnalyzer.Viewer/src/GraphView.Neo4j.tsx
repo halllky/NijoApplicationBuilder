@@ -15,7 +15,7 @@ export const useNeo4jQueryRunner = () => {
 
   const [nowLoading, setNowLoading] = useState(false)
   const [queryResult, setQueryResult] = useState<cytoscape.ElementDefinition[]>(() => [])
-  const { addErrorMessages } = ErrorHandling.useMsgContext()
+  const [, dispatch] = ErrorHandling.useMsgContext()
   const runQuery = useCallback(async (queryString: string) => {
     if (!driver) return
     const session = driver.session({ defaultAccessMode: neo4j.session.READ })
@@ -27,13 +27,13 @@ export const useNeo4jQueryRunner = () => {
     try {
       run = session.run(queryString)
     } catch (err) {
-      addErrorMessages(err)
+      dispatch(state => state.add('error', err))
       return
     }
     run.subscribe({
       onNext: record => neo4jQueryReusltToCytoscapeItem(record, elements, parentChildMap),
       onError: err => {
-        addErrorMessages(err)
+        dispatch(state => state.add('error', err))
         setNowLoading(false)
       },
       onCompleted: async (summary) => {
