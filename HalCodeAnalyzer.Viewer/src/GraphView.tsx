@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import cytoscape from 'cytoscape'
 import ExpandCollapse from './GraphView.ExpandCollapse'
-import { Toolbar } from './GraphView.ToolBar'
 import Navigator from './GraphView.Navigator'
 import Layout from './GraphView.Layout'
 // import enumerateData from './data'
@@ -10,6 +9,7 @@ import { useNeo4jQueryRunner } from './GraphView.Neo4j'
 import * as UUID from 'uuid'
 import { Route, useNavigate, useParams } from 'react-router-dom'
 import * as SideMenu from './appSideMenu'
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 
 Layout.configure(cytoscape)
 Navigator.configure(cytoscape)
@@ -116,30 +116,87 @@ const Page = () => {
     }
   }, [queryResult, initialized])
 
+  // ノード位置固定
+  const [locked, setLocked] = useState(false)
+  const handleLockChanged: React.ChangeEventHandler<HTMLInputElement> = useCallback(e => {
+    if (!cy) { setLocked(false); return }
+    setLocked(e.target.checked)
+    cy.autolock(e.target.checked)
+  }, [cy, locked])
+
+  // 自動レイアウト
+  const [currentLayout, setCurrentLayout] = useState(Layout.DEFAULT.name)
+  const handleLayoutChanged: React.ChangeEventHandler<HTMLSelectElement> = useCallback(e => {
+    setCurrentLayout(e.target.value)
+  }, [])
+  const handlePositionReset = useCallback(() => {
+    if (!cy) return
+    cy.layout(Layout.OPTION_LIST[currentLayout])?.run()
+    cy.resize().fit().reset()
+  }, [cy, currentLayout])
+
+  // ノードの折りたたみ/展開
+  const handleExpandAll = useCallback(() => {
+    const api = (cy as any)?.expandCollapse('get')
+    api.expandAll()
+    api.expandAllEdges()
+  }, [cy])
+  const handleCollapseAll = useCallback(() => {
+    const api = (cy as any)?.expandCollapse('get')
+    api.collapseAll()
+    api.collapseAllEdges()
+  }, [cy])
+
   return (
-    <div className="flex flex-col gap-1 relative">
-      <Components.Textarea
-        value={displayedQuery.queryString}
-        onChange={handleQueryStringEdit}
-        className="font-mono"
-      />
-      <div className="flex gap-2 justify-end">
+    <PanelGroup direction="vertical" className="flex flex-col relative">
+      <div className="flex content-start items-center gap-2 mb-2">
+        <select className="border border-1 border-zinc-400" value={currentLayout} onChange={handleLayoutChanged}>
+          {Object.entries(Layout.OPTION_LIST).map(([key]) => (
+            <option key={key} value={key}>
+              {key}
+            </option>
+          ))}
+        </select>
+        <Components.Button onClick={handlePositionReset}>
+          位置リセット
+        </Components.Button>
+        <label>
+          <input type="checkbox" checked={locked} onChange={handleLockChanged} />
+          ノード位置固定
+        </label>
+        <Components.Button onClick={handleExpandAll}>
+          すべて展開
+        </Components.Button>
+        <Components.Button onClick={handleCollapseAll}>
+          すべて折りたたむ
+        </Components.Button>
+        <div className="flex-1"></div>
         <Components.Button onClick={handleQueryRerun}>
-          {nowLoading ? '読込中...' : '読込'}
-        </Components.Button>
-        <Components.Button onClick={handleQuerySaving}>
-          保存
+          {nowLoading ? '読込中...' : '再読込'}
         </Components.Button>
       </div>
-      <Components.Separator />
-      <Toolbar cy={cy} className="mb-1" />
-      <div ref={divRef} className="
-        overflow-hidden [&>div>canvas]:left-0
-        flex-1
-        border border-1 border-slate-400">
-      </div>
-      <Navigator.Component className="absolute w-1/4 h-1/4 right-6 bottom-6 z-[200]" />
-    </div>
+      <Panel className="flex flex-col" defaultSize={16}>
+        <Components.Textarea
+          value={displayedQuery.queryString}
+          onChange={handleQueryStringEdit}
+          className="flex-1 font-mono"
+          inputClassName="resize-none"
+        />
+      </Panel>
+      <PanelResizeHandle className="h-2" />
+      <Panel className="flex flex-col relative bg-white">
+        <div ref={divRef} className="
+          overflow-hidden [&>div>canvas]:left-0
+          flex-1
+          border border-1 border-zinc-400">
+        </div>
+        <Navigator.Component className="absolute w-1/4 h-1/4 right-2 bottom-2 z-[200]" />
+        <Components.Button
+          onClick={handleQuerySaving}
+          className="absolute left-2 bottom-2 z-[300]"
+        >保存</Components.Button>
+      </Panel>
+    </PanelGroup>
   )
 }
 

@@ -72,7 +72,7 @@ export namespace Components {
             {labelText}
           </span>)}
         <input ref={ref} {...rest}
-          className={`flex-1 border border-1 border-slate-400 px-1 ${inputClassName}`}
+          className={`flex-1 border border-1 border-zinc-400 px-1 ${inputClassName}`}
           autoComplete={autoComplete ?? 'off'}
         />
       </label>
@@ -95,7 +95,7 @@ export namespace Components {
             {labelText}
           </span>)}
         <textarea ref={ref} {...rest}
-          className={`flex-1 border border-1 border-slate-400 px-1 ${inputClassName}`}
+          className={`flex-1 border border-1 border-zinc-400 px-1 ${inputClassName}`}
           spellCheck={spellCheck ?? 'false'}
         ></textarea>
       </label>)
@@ -114,17 +114,19 @@ export namespace Components {
     return (
       <button ref={ref} {...rest}
         type={type ?? (submit ? 'submit' : 'button')}
-        className={`text-white bg-slate-500
+        className={`text-white bg-zinc-500
           px-1 text-nowrap
-          border border-1 border-slate-700
+          border border-1 border-zinc-700
           ${className}`}
       ></button>
     )
   })
 
-  export const Separator = () => {
+  export const Separator = ({ className }: {
+    className?: string
+  }) => {
     return (
-      <hr className="bg-slate-300 border-none h-[1px] m-2" />
+      <hr className={`bg-zinc-300 border-none h-[1px] m-2 ${className}`} />
     )
   }
 }

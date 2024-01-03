@@ -24,23 +24,6 @@ export type SideMenuSectionItem = {
 export const Explorer = ({ sections }: {
   sections: SideMenuSection[]
 }) => {
-  // メニュー項目
-  const treeRoots = useMemo(() => {
-    const ordered = Array.from(sections)
-    ordered.sort((a, b) => {
-      const aOrder = a.order ?? Number.MAX_SAFE_INTEGER
-      const bOrder = b.order ?? Number.MAX_SAFE_INTEGER
-      if (aOrder < bOrder) return -1
-      if (aOrder > bOrder) return 1
-      return 0
-    })
-    const rootNodes = Tree.toTree(ordered as SideMenuSectionItem[], {
-      getId: x => x.itemId,
-      getChildren: x => x.children,
-    })
-    return rootNodes
-  }, [sections])
-
   // 展開/折りたたみ
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set())
   const handleExpandCollapse = useCallback((node: Tree.TreeNode<SideMenuSectionItem>, collapse: boolean) => {
@@ -58,6 +41,29 @@ export const Explorer = ({ sections }: {
     })
     return expandedItems
   }, [collapsedIds])
+
+  // メニュー項目
+  const treeNodes = useMemo(() => {
+    const ordered = Array.from(sections)
+    ordered.sort((a, b) => {
+      const aOrder = a.order ?? Number.MAX_SAFE_INTEGER
+      const bOrder = b.order ?? Number.MAX_SAFE_INTEGER
+      if (aOrder < bOrder) return -1
+      if (aOrder > bOrder) return 1
+      return 0
+    })
+    const rootNodes = Tree.toTree(ordered as SideMenuSectionItem[], {
+      getId: x => x.itemId,
+      getChildren: x => x.children,
+    })
+    const entireTree = rootNodes.flatMap(root => {
+      return Tree.getDescendantsAndSelf(root)
+    })
+    const expandedItems = entireTree.filter(desc => {
+      return Tree.getAncestors(desc).every(a => !collapsedIds.has(a.item.itemId))
+    })
+    return expandedItems
+  }, [sections])
 
   // 表示中の画面を強調する
   const { pathname } = useLocation()
@@ -78,57 +84,55 @@ export const Explorer = ({ sections }: {
   }, [renamingItem, renamingName])
 
   return (
-    <div className="flex flex-col overflow-x-hidden select-none text-slate-100 bg-slate-700">
-      {treeRoots.map((root, ix) => (
-        <React.Fragment key={root.item.itemId}>
-          {ix !== 0 && <Components.Separator />}
-          {getExpandedDescendantsAndSelf(root).map(node => (
-            <div
-              key={node.item.itemId}
-              className={`flex items-center
-                ${pathname === node.item.url
-                  ? 'hover:bg-slate-300 text-black bg-white'
-                  : 'hover:bg-slate-600'}`}
-            >
-              <div style={{ minWidth: node.depth * 20 }}></div>
-              <CollapseButton
-                visible={node.children.length > 0}
-                collapsed={collapsedIds.has(node.item.itemId)}
-                onChange={v => handleExpandCollapse(node, v)}
-              />
-              {renamingItem?.item.itemId === node.item.itemId && (
-                <Components.Text
-                  ref={renameRef}
-                  className="flex-1"
-                  value={renamingName}
-                  onChange={e => setRenamingName(e.target.value)}
-                  onBlur={endRenaming}
-                />
-              )}
-              {renamingItem?.item.itemId !== node.item.itemId && node.item.url && (
-                <Link to={node.item.url} className="flex-1 text-nowrap">
-                  {node.item.label || '(名前なし)'}
-                </Link>
-              )}
-              {renamingItem?.item.itemId !== node.item.itemId && !node.item.url && (
-                <span className="flex-1 text-nowrap">
-                  {node.item.label || '(名前なし)'}
-                </span>
-              )}
-              {renamingItem === undefined && pathname === node.item.url && node.item.onRename && (
-                <Components.Button onClick={() => startRenaming(node)}>
-                  改名
-                </Components.Button>
-              )}
-              {renamingItem === undefined && pathname === node.item.url && node.item.actions?.map((act, actIx) => (
-                <Components.Button key={actIx} onClick={act.onClick}>
-                  {act.actionName}
-                </Components.Button>
-              ))}
-            </div>
+    <div className="flex flex-col overflow-x-hidden select-none bg-stone-300">
+      {treeNodes.map(node => (
+        <div
+          key={node.item.itemId}
+          className={`flex items-center
+            ${pathname === node.item.url
+              ? 'hover:bg-stone-200 border-1 border-stone-400 border-y bg-stone-100'
+              : 'hover:bg-stone-200 border-1 border-stone-400 border-r'}
+            ${node.depth === 0 && 'font-bold'}`}
+        >
+          <div style={{ minWidth: node.depth * 20 }}></div>
+          <CollapseButton
+            visible={node.children.length > 0}
+            collapsed={collapsedIds.has(node.item.itemId)}
+            onChange={v => handleExpandCollapse(node, v)}
+          />
+          {renamingItem?.item.itemId === node.item.itemId && (
+            <Components.Text
+              ref={renameRef}
+              className="flex-1"
+              value={renamingName}
+              onChange={e => setRenamingName(e.target.value)}
+              onBlur={endRenaming}
+            />
+          )}
+          {renamingItem?.item.itemId !== node.item.itemId && node.item.url && (
+            <Link to={node.item.url} className="flex-1 text-nowrap">
+              {node.item.label || '(名前なし)'}
+            </Link>
+          )}
+          {renamingItem?.item.itemId !== node.item.itemId && !node.item.url && (
+            <span className="flex-1 text-nowrap">
+              {node.item.label || '(名前なし)'}
+            </span>
+          )}
+          {renamingItem === undefined && pathname === node.item.url && node.item.onRename && (
+            <Components.Button onClick={() => startRenaming(node)}>
+              改名
+            </Components.Button>
+          )}
+          {renamingItem === undefined && pathname === node.item.url && node.item.actions?.map((act, actIx) => (
+            <Components.Button key={actIx} onClick={act.onClick}>
+              {act.actionName}
+            </Components.Button>
           ))}
-        </React.Fragment>
+        </div>
       ))}
+      {/* 下のスペース埋め */}
+      <div className="flex-1 border-r border-1 border-stone-400"></div>
     </div>
   )
 }

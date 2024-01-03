@@ -34,12 +34,12 @@ function AppInsideContext() {
         <SideMenu.Explorer sections={sideMenuItems} />
       </Panel>
 
-      <PanelResizeHandle style={{ width: 8 }} />
+      <PanelResizeHandle className="w-2 bg-zinc-100" />
 
       <Panel className="
         flex flex-col
         [&>*:first-child]:flex-1 [&>*:first-child]:min-h-0 py-2 pr-2
-        bg-white">
+        bg-zinc-100">
         <Routes>
           {queryPages.Routes()}
           {appSettingPages.Routes()}

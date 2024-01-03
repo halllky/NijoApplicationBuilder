@@ -28,8 +28,8 @@ const Component = ({ className }: {
     <div className={`
       ${NAVIGATOR_CONTAINER}
       overflow-hidden
-      bg-slate-50
-      border border-1 border-slate-400
+      bg-zinc-50
+      border border-1 border-zinc-400
       ${className}`}>
     </div>
   )
