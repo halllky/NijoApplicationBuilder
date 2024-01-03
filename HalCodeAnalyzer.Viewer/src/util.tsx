@@ -17,15 +17,25 @@ export namespace ReactHookUtil {
   }
 
   // useContextの簡略化
-  export const defineContextAndReducer = <S, M extends StateModifier<S>>(
+  export const defineContext = <S, M extends StateModifier<S>>(
     getInitialState: () => S,
     reducerDef: ReducerDef<S, M>
   ) => {
     const reducer = defineReducer(reducerDef)
-    const useReducerEx = () => useReducer(reducer, getInitialState())
     const dummyDispatcher = (() => { }) as React.Dispatch<DispatchArg<S, M>>
-    const context = createContext([getInitialState(), dummyDispatcher] as const)
-    return [context, useReducerEx] as const
+    const ContextEx = createContext([getInitialState(), dummyDispatcher] as const)
+    /** App直下などに置く必要あり */
+    const ContextProvider = ({ children }: { children?: React.ReactNode }) => {
+      const contextValue = useReducer(reducer, getInitialState())
+      return (
+        <ContextEx.Provider value={contextValue}>
+          {children}
+        </ContextEx.Provider>
+      )
+    }
+    /** コンテキスト使用側はこれを使う */
+    const useContextEx = () => useContext(ContextEx)
+    return [ContextProvider, useContextEx] as const
   }
 
   /** forwardRefの戻り値の型定義がややこしいので単純化するためのラッピング関数 */
@@ -132,25 +142,16 @@ export namespace StorageUtil {
 
   // アプリ全体でローカルストレージのデータの更新タイミングを同期するための仕組み
   type LocalStorageData = { [storageKey: string]: unknown }
-  const getInitialState = () => ({}) as LocalStorageData
-  const [LocalStorageContext, useLocalStorageReducer] = ReactHookUtil.defineContextAndReducer(getInitialState, state => ({
+  export const [
+    LocalStorageContextProvider,
+    useLocalStorageContext,
+  ] = ReactHookUtil.defineContext(() => ({}) as LocalStorageData, state => ({
     cache: <K extends keyof LocalStorageData>(key: K, value: LocalStorageData[K]) => {
       return { ...state, [key]: value }
     },
   }))
-  export const LocalStorageContextProvider = ({ children }: {
-    children?: React.ReactNode
-  }) => {
-    const contextValue = useLocalStorageReducer()
-    return (
-      <LocalStorageContext.Provider value={contextValue}>
-        {children}
-      </LocalStorageContext.Provider>
-    )
-  }
-
   export const useLocalStorage = <T,>(handler: LocalStorageHandler<T>) => {
-    const [dataSet, dispatch] = useContext(LocalStorageContext)
+    const [dataSet, dispatch] = useLocalStorageContext()
     const data: T = useMemo(() => {
       const cachedData = dataSet[handler.storageKey] as T | undefined
       return cachedData ?? handler.defaultValue()
@@ -268,8 +269,10 @@ export namespace Tree {
 // ------------------- エラーハンドリング --------------------
 export namespace ErrorHandling {
   type ErrMsg = { id: string, name?: string, message: string, type: 'error' | 'warn' }
-  const getInitialState = () => ({ errorMessages: [] as ErrMsg[] })
-  const [ErrorMessageContext, useErrMsgReducer] = ReactHookUtil.defineContextAndReducer(getInitialState, state => ({
+  export const [
+    ErrorMessageContextProvider,
+    useMsgContext,
+  ] = ReactHookUtil.defineContext(() => ({ errorMessages: [] as ErrMsg[] }), state => ({
     add: (type: ErrMsg['type'], ...messages: unknown[]) => {
       const flatten = messages.flatMap(m => Array.isArray(m) ? m : [m])
       const addedMessages = flatten.map<ErrMsg>(m => {
@@ -293,19 +296,6 @@ export namespace ErrorHandling {
       }
     },
   }))
-
-  export const useMsgContext = () => useContext(ErrorMessageContext)
-  export const ErrorMessageContextProvider = ({ children }: {
-    children?: React.ReactNode
-  }) => {
-    const contextValue = useErrMsgReducer()
-
-    return (
-      <ErrorMessageContext.Provider value={contextValue}>
-        {children}
-      </ErrorMessageContext.Provider>
-    )
-  }
   export const MessageList = ({ filter, className }: {
     filter?: string
     className?: string
