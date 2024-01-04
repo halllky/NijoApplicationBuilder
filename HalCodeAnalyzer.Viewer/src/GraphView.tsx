@@ -98,24 +98,25 @@ const Page = () => {
 
   // Cytoscape
   const [cy, setCy] = useState<cytoscape.Core>()
-  const [initialized, setInitialized] = useState(false)
+  const [navInstance, setNavInstance] = useState<{ destroy: () => void }>()
   const divRef = useCallback((divElement: HTMLDivElement | null) => {
-    if (!divElement) return
-    const cyInstance = cytoscape({
-      container: divElement,
-      elements: queryResult,
-      style: STYLESHEET,
-      layout: Layout.DEFAULT,
-    })
-    Navigator.setupCyInstance(cyInstance)
-    ExpandCollapse.setupCyInstance(cyInstance)
-    setCy(cyInstance)
+    if (!cy && divElement) {
+      // 初期化
+      const cyInstance = cytoscape({
+        container: divElement,
+        elements: [],
+        style: STYLESHEET,
+        layout: Layout.DEFAULT,
+      })
+      setNavInstance(Navigator.setupCyInstance(cyInstance))
+      ExpandCollapse.setupCyInstance(cyInstance)
+      setCy(cyInstance)
 
-    if (!initialized) {
-      cyInstance.resize().fit().reset()
-      setInitialized(true)
+    } else if (cy && !divElement) {
+      // 破棄
+      navInstance?.destroy()
     }
-  }, [queryResult, initialized])
+  }, [cy, navInstance])
 
   // サイドメニューやデータソース欄の表示/非表示
   const [{ showSideMenu }, dispatchSideMenu] = SideMenu.useSideMenuContext()
@@ -152,6 +153,14 @@ const Page = () => {
     api.collapseAllEdges()
   }, [cy])
 
+  //
+  useEffect(() => {
+    cy?.elements().remove()
+    cy?.add(queryResult)
+    cy?.layout(Layout.OPTION_LIST[currentLayout])?.run()
+    // cy?.resize().fit().reset()
+  }, [queryResult])
+
   return (
     <PanelGroup direction="vertical" className="flex flex-col relative">
 
@@ -186,7 +195,7 @@ const Page = () => {
 
         <Components.Button onClick={() => setShowDataSource(!showDataSource)} icon={showDataSource ? Icon.UpOutlined : Icon.DownOutlined} />
         <span className="text-nowrap">
-        データソース:Neo4j
+          データソース:Neo4j
         </span>
         <Components.Button onClick={handleQueryRerun} icon={Icon.ReloadOutlined}>
           {nowLoading ? '読込中...' : '再読込'}
