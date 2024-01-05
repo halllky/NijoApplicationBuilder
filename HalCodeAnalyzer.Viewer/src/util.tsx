@@ -153,6 +153,14 @@ export namespace Components {
       <hr className={`bg-zinc-300 border-none h-[1px] m-2 ${className}`} />
     )
   }
+
+  export const NowLoading = ({ className }: {
+    className?: string
+  }) => {
+    return (
+      <div className={`animate-spin border-4 border-sky-500 border-t-transparent rounded-full ${className}`} aria-label="読み込み中"></div>
+    )
+  }
 }
 
 // --------------------------------------------------

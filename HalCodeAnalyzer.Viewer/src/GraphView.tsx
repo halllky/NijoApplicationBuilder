@@ -62,7 +62,6 @@ const Page = () => {
   const { queryId } = useParams()
   const { storedQueries, saveQueries } = useQueryRepository()
   const [displayedQuery, setDisplayedQuery] = useState(() => createNewQuery())
-  const [commitedQueryString, setCommitedQueryString] = useState(() => displayedQuery?.queryString ?? '')
   const navigate = useNavigate()
   const handleQueryStringEdit: React.ChangeEventHandler<HTMLTextAreaElement> = useCallback(e => {
     setDisplayedQuery({ ...displayedQuery, queryString: e.target.value })
@@ -102,7 +101,7 @@ const Page = () => {
 
   const { autoLayout, LayoutSelector } = Layout.useAutoLayout(cy)
   const { expandAll, collapseAll } = ExpandCollapse.useExpandCollapse(cy)
-  const { forceRerun, nowLoading } = useNeo4jQueryRunner(cy, commitedQueryString, autoLayout)
+  const { runQuery, nowLoading } = useNeo4jQueryRunner(cy, autoLayout)
 
   // サイドメニューやデータソース欄の表示/非表示
   const [{ showSideMenu }, dispatchSideMenu] = SideMenu.useSideMenuContext()
@@ -122,12 +121,8 @@ const Page = () => {
       ? storedQueries.find(q => q.queryId === queryId)
       : undefined
     setDisplayedQuery(loaded ?? createNewQuery())
-    setCommitedQueryString(loaded?.queryString ?? '')
-  }, [queryId, storedQueries])
-  const handleQueryRerun = useCallback(() => {
-    setCommitedQueryString(displayedQuery?.queryString ?? '')
-    forceRerun()
-  }, [displayedQuery?.queryString, forceRerun])
+    if (loaded?.queryString) runQuery(loaded.queryString)
+  }, [queryId])
 
   const resetViewPosition = useCallback(() => {
     cy?.resize().fit().reset()
@@ -164,7 +159,7 @@ const Page = () => {
         <span className="text-nowrap">
           データソース:Neo4j
         </span>
-        <Components.Button onClick={handleQueryRerun} icon={Icon.ReloadOutlined}>
+        <Components.Button onClick={() => runQuery(displayedQuery.queryString)} icon={Icon.ReloadOutlined}>
           {nowLoading ? '読込中...' : '再読込'}
         </Components.Button>
         <Components.Button onClick={handleQuerySaving}>
@@ -185,13 +180,16 @@ const Page = () => {
       {showDataSource && <PanelResizeHandle className="h-2" />}
 
       {/* グラフ */}
-      <Panel className="flex flex-col bg-white">
+      <Panel className="flex flex-col bg-white relative">
         <div ref={divRef} className="
           overflow-hidden [&>div>canvas]:left-0
           flex-1
           border border-1 border-zinc-400">
         </div>
-        <Navigator.Component className="absolute w-1/4 h-1/4 right-2 bottom-2 z-[200]" />
+        <Navigator.Component className="absolute w-[20vw] h-[20vh] right-2 bottom-2 z-[200]" />
+        {nowLoading && (
+          <Components.NowLoading className="w-10 h-10 absolute left-0 right-0 top-0 bottom-0 m-auto" />
+        )}
       </Panel>
     </PanelGroup>
   )
