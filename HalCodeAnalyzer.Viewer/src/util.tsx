@@ -1,4 +1,5 @@
-import React, { ButtonHTMLAttributes, InputHTMLAttributes, PropsWithoutRef, TextareaHTMLAttributes, createContext, forwardRef, useCallback, useContext, useMemo, useReducer } from 'react'
+import React, { ButtonHTMLAttributes, InputHTMLAttributes, PropsWithoutRef, TextareaHTMLAttributes, createContext, forwardRef, useCallback, useContext, useEffect, useMemo, useReducer, useState } from 'react'
+import * as Icon from '@ant-design/icons'
 import * as UUID from 'uuid'
 
 export namespace ReactHookUtil {
@@ -178,7 +179,7 @@ export namespace StorageUtil {
   export const useLocalStorage = <T,>(init: LocalStorageHandler<T> | (() => LocalStorageHandler<T>)) => {
     const handler = useMemo(() => typeof init === 'function' ? init() : init, [])
     const { forceUpdateValue, triggerForceUpdate } = ReactHookUtil.useForceUpdate()
-    const [, dispatchErrMsg] = Messaging.useMsgContext()
+    const [, dispatchMsg] = Messaging.useMsgContext()
 
     const data: T = useMemo(() => {
       try {
@@ -187,14 +188,14 @@ export namespace StorageUtil {
 
         const deserializeResult = handler.deserialize(serialized)
         if (deserializeResult?.ok !== true) {
-          dispatchErrMsg(msg => msg.push('warn', `Failuer to parse local storage value as '${handler.storageKey}'.`))
+          dispatchMsg(msg => msg.push('warn', `Failuer to parse local storage value as '${handler.storageKey}'.`))
           return handler.defaultValue()
         }
 
         return deserializeResult.obj
 
       } catch (error) {
-        dispatchErrMsg(msg => msg.push('warn', error))
+        dispatchMsg(msg => msg.push('warn', error))
         return handler.defaultValue()
       }
     }, [forceUpdateValue])
@@ -203,6 +204,7 @@ export namespace StorageUtil {
       const serialized = handler.serialize(value)
       localStorage.setItem(handler.storageKey, serialized)
       triggerForceUpdate()
+      dispatchMsg(msg => msg.push('info', '保存しました。'))
     }, [])
 
     return { data, save }
@@ -297,11 +299,24 @@ export namespace Tree {
 
 // ------------------- メッセージ --------------------
 export namespace Messaging {
-  type Msg = { id: string, name?: string, message: string, type: 'error' | 'warn' }
+  type Msg = {
+    id: string
+    name?: string
+    message: string
+    type: 'error' | 'warn' | 'info'
+  }
+  type State = {
+    inline: Msg[]
+    toast: Msg[]
+  }
+
   export const [
     ErrorMessageContextProvider,
     useMsgContext,
-  ] = ReactHookUtil.defineContext(() => ({ messages: [] as Msg[] }), state => ({
+  ] = ReactHookUtil.defineContext((): State => ({
+    inline: [] as Msg[],
+    toast: [] as Msg[],
+  }), state => ({
 
     push: (type: Msg['type'], ...messages: unknown[]) => {
       const flatten = messages.flatMap(m => Array.isArray(m) ? m : [m])
@@ -312,33 +327,47 @@ export namespace Messaging {
         if (typeof asErrMsg.message === 'string') return { id, type, message: asErrMsg.message, name: asErrMsg.name }
         return { id, type, message: m?.toString() ?? '' }
       })
-      return { messages: [...state.messages, ...addedMessages] }
+      if (type === 'info') {
+        return { ...state, toast: [...state.toast, ...addedMessages] }
+      } else {
+        return { ...state, inline: [...state.inline, ...addedMessages] }
+      }
     },
 
     clear: (nameOrItem?: string | Msg) => {
       if (!nameOrItem) {
-        return { messages: [] }
-      } else if (typeof nameOrItem === 'string') {
+        return { ...state, inline: [], toast: [] }
+      }
+
+      let filterFn: (msg: Msg) => boolean
+      if (typeof nameOrItem === 'string') {
         const name = nameOrItem
-        return { messages: state.messages.filter(m => !m.name?.startsWith(name)) }
+        filterFn = m => !m.name?.startsWith(name)
       } else {
         const id = nameOrItem.id
-        return { messages: state.messages.filter(m => m.id !== id) }
+        filterFn = m => m.id !== id
+      }
+
+      return {
+        ...state,
+        inline: state.inline.filter(filterFn),
+        toast: state.toast.filter(filterFn),
       }
     },
   }))
-  export const MessageList = ({ type, name, className }: {
+
+  export const InlineMessageList = ({ type, name, className }: {
     type?: Msg['type']
     name?: string
     className?: string
   }) => {
-    const [{ messages: messages }, dispatch] = useMsgContext()
+    const [{ inline }, dispatch] = useMsgContext()
     const filtered = useMemo(() => {
-      let arr = [...messages]
+      let arr = [...inline]
       if (type) arr = arr.filter(m => m.type === type)
       if (name) arr = arr.filter(m => m.name?.startsWith(name))
       return arr
-    }, [messages, name])
+    }, [inline, name])
 
     return (
       <ul className={`flex flex-col ${className}`}>
@@ -361,6 +390,61 @@ export namespace Messaging {
           </li>
         ))}
       </ul>
+    )
+  }
+
+  export const Toast = ({ type, name, className }: {
+    type?: Msg['type']
+    name?: string
+    className?: string
+  }) => {
+    const [{ toast },] = useMsgContext()
+    const filtered = useMemo(() => {
+      let arr = [...toast]
+      if (type) arr = arr.filter(m => m.type === type)
+      if (name) arr = arr.filter(m => m.name?.startsWith(name))
+      return arr
+    }, [toast, name])
+
+    return <>
+      {filtered.map(msg => (
+        <ToastMessage key={msg.id} msg={msg} className={className} />
+      ))}
+    </>
+  }
+  const ToastMessage = ({ msg, className }: {
+    msg: Msg
+    className?: string
+  }) => {
+    const [, dispatch] = useMsgContext()
+    const [visible, setVisible] = useState(true)
+    useEffect(() => {
+      const timer1 = setTimeout(() => {
+        setVisible(false)
+      }, 3000)
+      const timer2 = setTimeout(() => {
+        dispatch(state => state.clear(msg))
+      }, 5000)
+      return () => {
+        clearTimeout(timer1)
+        clearTimeout(timer2)
+      }
+    }, [])
+
+    return (
+      <div
+        onClick={() => dispatch(state => state.clear(msg))}
+        className={`
+          z-[300] select-none cursor-pointer overflow-hidden
+          ${(visible ? 'animate-slideIn' : 'animate-slideOut translate-x-[calc(-100%-1rem)]')}
+          fixed left-4 bottom-4 p-2 w-64 h-24
+          bg-sky-950 text-sky-50 border border-1 boder-sky-500
+          ${className}`}>
+        {msg.message}
+        <Icon.CloseOutlined
+          className="absolute right-2 top-2 pointer-none"
+        />
+      </div>
     )
   }
 }

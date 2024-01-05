@@ -54,9 +54,10 @@ function AppInsideContext() {
           {queryPages.Routes()}
           {appSettingPages.Routes()}
         </Routes>
-        <Messaging.MessageList />
+        <Messaging.InlineMessageList />
       </Panel>
 
+      <Messaging.Toast />
     </PanelGroup>
   )
 }
