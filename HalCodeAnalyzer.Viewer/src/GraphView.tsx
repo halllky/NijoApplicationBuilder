@@ -62,6 +62,7 @@ const Page = () => {
   const { queryId } = useParams()
   const { storedQueries, saveQueries } = useQueryRepository()
   const [displayedQuery, setDisplayedQuery] = useState(() => createNewQuery())
+  const [commitedQueryString, setCommitedQueryString] = useState(() => displayedQuery?.queryString ?? '')
   const navigate = useNavigate()
   const handleQueryStringEdit: React.ChangeEventHandler<HTMLTextAreaElement> = useCallback(e => {
     setDisplayedQuery({ ...displayedQuery, queryString: e.target.value })
@@ -76,25 +77,6 @@ const Page = () => {
       saveQueries([...storedQueries])
     }
   }, [displayedQuery, storedQueries])
-
-  // Neo4j
-  const { runQuery, clear, queryResult, nowLoading } = useNeo4jQueryRunner()
-  useEffect(() => {
-    // 画面表示時、保存されているクエリ定義を取得しクエリ実行
-    if (queryId) {
-      const loaded = storedQueries.find(q => q.queryId === queryId)
-      if (!loaded) return
-      setDisplayedQuery(loaded)
-      runQuery(loaded.queryString)
-    } else {
-      setDisplayedQuery(createNewQuery())
-      clear()
-    }
-  }, [queryId, storedQueries, runQuery])
-  const handleQueryRerun = useCallback(() => {
-    if (nowLoading) return
-    runQuery(displayedQuery.queryString)
-  }, [displayedQuery.queryString, nowLoading])
 
   // Cytoscape
   const [cy, setCy] = useState<cytoscape.Core>()
@@ -118,6 +100,10 @@ const Page = () => {
     }
   }, [cy, navInstance])
 
+  const { autoLayout, LayoutSelector } = Layout.useAutoLayout(cy)
+  const { expandAll, collapseAll } = ExpandCollapse.useExpandCollapse(cy)
+  const { forceRerun, nowLoading } = useNeo4jQueryRunner(cy, commitedQueryString, autoLayout)
+
   // サイドメニューやデータソース欄の表示/非表示
   const [{ showSideMenu }, dispatchSideMenu] = SideMenu.useSideMenuContext()
   const [showDataSource, setShowDataSource] = useState(true)
@@ -130,28 +116,23 @@ const Page = () => {
     cy.autolock(e.target.checked)
   }, [cy, locked])
 
-  // 自動レイアウト
-  const {
-    autoLayout,
-    LayoutSelector,
-  } = Layout.useAutoLayout(cy)
+  // 画面表示時、保存されているクエリ定義を取得しクエリ実行
+  useEffect(() => {
+    const loaded = queryId
+      ? storedQueries.find(q => q.queryId === queryId)
+      : undefined
+    setDisplayedQuery(loaded ?? createNewQuery())
+    setCommitedQueryString(loaded?.queryString ?? '')
+  }, [queryId, storedQueries])
+  const handleQueryRerun = useCallback(() => {
+    setCommitedQueryString(displayedQuery?.queryString ?? '')
+    forceRerun()
+  }, [displayedQuery?.queryString, forceRerun])
 
-  // ノードの折りたたみ/展開
-  const {
-    handleExpandAll,
-    handleCollapseAll,
-  } = ExpandCollapse.useExpandCollapse(cy)
-
-  //
-  const handlePositionReset = useCallback(() => {
+  const resetViewPosition = useCallback(() => {
     cy?.resize().fit().reset()
     autoLayout()
   }, [cy, autoLayout])
-  useEffect(() => {
-    cy?.elements().remove()
-    cy?.add(queryResult)
-    autoLayout()
-  }, [queryResult])
 
   return (
     <PanelGroup direction="vertical" className="flex flex-col relative">
@@ -163,17 +144,17 @@ const Page = () => {
           onClick={() => dispatchSideMenu(state => state.toggleSideMenu())}
         >メニュー</Components.Button>
         <LayoutSelector />
-        <Components.Button onClick={handlePositionReset}>
+        <Components.Button onClick={resetViewPosition}>
           自動レイアウト
         </Components.Button>
         <label className="text-nowrap">
           <input type="checkbox" checked={locked} onChange={handleLockChanged} />
           ノード位置固定
         </label>
-        <Components.Button onClick={handleExpandAll}>
+        <Components.Button onClick={expandAll}>
           すべて展開
         </Components.Button>
-        <Components.Button onClick={handleCollapseAll}>
+        <Components.Button onClick={collapseAll}>
           すべて折りたたむ
         </Components.Button>
 

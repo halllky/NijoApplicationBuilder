@@ -1,10 +1,15 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import neo4j, { Node, Relationship, Record } from 'neo4j-driver'
 import cytoscape from 'cytoscape'
 import { useStoredSettings } from './appSetting'
 import { Messaging } from './util'
 
-export const useNeo4jQueryRunner = () => {
+export const useNeo4jQueryRunner = (
+  cy: cytoscape.Core | undefined,
+  queryString: string | undefined,
+  onRerunQuery?: () => void,
+) => {
+  // 接続先DBの決定
   const { setting } = useStoredSettings()
   const driver = useMemo(() => {
     if (!setting.activeNeo4jServerId) return null
@@ -13,6 +18,7 @@ export const useNeo4jQueryRunner = () => {
     return neo4j.driver(serverConfig.url, neo4j.auth.basic(serverConfig.user, serverConfig.pass))
   }, [setting])
 
+  // クエリ実行
   const [nowLoading, setNowLoading] = useState(false)
   const [queryResult, setQueryResult] = useState<cytoscape.ElementDefinition[]>(() => [])
   const [, dispatch] = Messaging.useMsgContext()
@@ -47,11 +53,32 @@ export const useNeo4jQueryRunner = () => {
       },
     })
   }, [driver])
+
   const clear = useCallback(() => {
     setQueryResult([])
   }, [])
 
-  return { runQuery, queryResult, nowLoading, clear }
+  const forceRerun = useCallback(() => {
+    if (nowLoading) return
+    if (queryString) {
+      runQuery(queryString)
+    } else {
+      clear()
+    }
+  }, [runQuery, queryString, nowLoading])
+
+  useEffect(() => {
+    forceRerun()
+  }, [queryString])
+
+  // クエリ結果のcytoscapeへの反映
+  useEffect(() => {
+    cy?.elements().remove()
+    cy?.add(queryResult)
+    onRerunQuery?.()
+  }, [queryResult])
+
+  return { forceRerun, clear, nowLoading }
 }
 
 /** ノードがこの名前のプロパティを持つ場合は表示名称に使われる */

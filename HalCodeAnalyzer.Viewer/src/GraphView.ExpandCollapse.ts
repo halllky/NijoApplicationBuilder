@@ -33,20 +33,20 @@ const setupCyInstance = (cy: cytoscape.Core) => {
 }
 
 const useExpandCollapse = (cy: cytoscape.Core | undefined) => {
-  const handleExpandAll = useCallback(() => {
+  const expandAll = useCallback(() => {
     const api = (cy as any)?.expandCollapse('get')
     api.expandAll()
     api.expandAllEdges()
   }, [cy])
-  const handleCollapseAll = useCallback(() => {
+  const collapseAll = useCallback(() => {
     const api = (cy as any)?.expandCollapse('get')
     api.collapseAll()
     api.collapseAllEdges()
   }, [cy])
 
   return {
-    handleExpandAll,
-    handleCollapseAll,
+    expandAll,
+    collapseAll,
   }
 }
 
