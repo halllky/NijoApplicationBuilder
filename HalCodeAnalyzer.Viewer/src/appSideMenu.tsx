@@ -1,8 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import cytoscape from 'cytoscape'
 import * as Icon from '@ant-design/icons'
-import GraphView from './GraphView'
 import { Components, ReactHookUtil, Tree } from './util'
 
 // -------------- type ------------------
@@ -138,96 +136,6 @@ export const Explorer = ({ sections }: {
       ))}
       {/* 下のスペース埋め */}
       <div className="flex-1 border-r border-1 border-stone-400"></div>
-    </div>
-  )
-}
-
-// -------------- ふるい仕組み ------------------
-type CyElementTreeNode = Tree.TreeNode<cytoscape.ElementDefinition>
-type TreeNodeState = {
-  collapse?: boolean
-  hideInGraph?: boolean
-}
-const TreeExplorer = ({ className }: {
-  className?: string
-}) => {
-  const [{ cy, elements }] = GraphView.useGraphContext()
-  const flattenTree = useMemo(() => {
-    const nodes = elements.filter(item => !item.data.source) // edgeをはじく
-    const tree = Tree.toTree(nodes, {
-      getId: x => x.data.id ?? '',
-      getParent: x => x.data.parent,
-    })
-    return Tree.flatten(tree)
-  }, [elements])
-
-  const [nodeState, setNodeState] = useState<Map<string, TreeNodeState>>(new Map())
-
-  // 開閉
-  const handleExpandCollapse = useCallback((node: CyElementTreeNode, collapse: boolean) => {
-    const id = node.item.data.id ?? ''
-    nodeState.set(id, { ...nodeState.get(id), collapse })
-    setNodeState(new Map(nodeState))
-  }, [nodeState])
-  const isExpanded = useCallback((node: CyElementTreeNode): boolean => {
-    return Tree.getAncestors(node).every(a => !nodeState.get(a.item.data.id ?? '')?.collapse)
-  }, [nodeState])
-  const collapseAll = useCallback(() => {
-    for (const node of flattenTree) handleExpandCollapse(node, true)
-  }, [flattenTree, handleExpandCollapse])
-
-  // グラフ中での可視状態の切り替え
-  const handleVisibility = useCallback((node: CyElementTreeNode, hideInGraph: boolean) => {
-    const nodes = hideInGraph
-      ? Tree.getDescendantsAndSelf(node)
-      : [...Tree.getAncestors(node), ...Tree.getDescendantsAndSelf(node)]
-    for (const n of nodes) {
-      const id = n.item.data.id ?? ''
-      nodeState.set(id, { ...nodeState.get(id), hideInGraph })
-      setNodeState(new Map(nodeState))
-      cy?.nodes(`[id='${id}']`).style('display', hideInGraph ? 'none' : '')
-    }
-  }, [nodeState, cy])
-  // 全切り替え
-  const allHidden = useMemo(() => {
-    return flattenTree.every(node => nodeState.get(node.item.data.id ?? '')?.hideInGraph)
-  }, [flattenTree, nodeState])
-  const toggleVisibleAll = useCallback(() => {
-    const newValue = !allHidden
-    for (const node of flattenTree) {
-      const id = node.item.data.id ?? ''
-      nodeState.set(id, { ...nodeState.get(id), hideInGraph: newValue })
-    }
-    cy?.nodes().style('display', newValue ? 'none' : '')
-    setNodeState(new Map(nodeState))
-  }, [flattenTree, nodeState, allHidden])
-
-  return (
-    <div className={`flex flex-col ${className}`}>
-      <div className="pl-1">
-        <input type="checkbox" checked={!allHidden} onChange={toggleVisibleAll} />
-        <button onClick={collapseAll}>ルートに折りたたむ</button>
-      </div>
-      <ul className="overflow-x-hidden select-none pl-1">
-        {flattenTree.filter(node => isExpanded(node)).map(node => (
-          <li key={node.item.data.id} className="flex items-center overflow-hidden">
-            <input
-              type="checkbox"
-              checked={!nodeState.get(node.item.data.id ?? '')?.hideInGraph}
-              onChange={e => handleVisibility(node, !e.target.checked)}
-            />
-            <div style={{ minWidth: node.depth * 20, backgroundColor: 'tomato' }}></div>
-            <CollapseButton
-              visible={node.children.length > 0}
-              collapsed={nodeState.get(node.item.data.id ?? '')?.collapse}
-              onChange={v => handleExpandCollapse(node, v)}
-            />
-            <span className="flex-1">
-              {node.item.data.label}
-            </span>
-          </li>
-        ))}
-      </ul>
     </div>
   )
 }
