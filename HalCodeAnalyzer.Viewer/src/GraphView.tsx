@@ -8,7 +8,7 @@ import ExpandCollapse from './GraphView.ExpandCollapse'
 import Navigator from './GraphView.Navigator'
 import Layout from './GraphView.Layout'
 // import enumerateData from './data'
-import { Components, ErrorHandling, StorageUtil } from './util'
+import { Components, Messaging, StorageUtil } from './util'
 import { useNeo4jQueryRunner } from './GraphView.Neo4j'
 import * as SideMenu from './appSideMenu'
 
@@ -21,7 +21,7 @@ ExpandCollapse.configure(cytoscape)
 const usePages: SideMenu.UsePagesHook = () => {
   const navigate = useNavigate()
   const { data: storedQueries, save } = StorageUtil.useLocalStorage(queryStorageHandler)
-  const [, dispatch] = ErrorHandling.useMsgContext()
+  const [, dispatch] = Messaging.useMsgContext()
   const deleteItem = useCallback((query: Query) => {
     if (!confirm(`${query.name}を削除します。よろしいですか？`)) return
     save(storedQueries.filter(q => q.queryId !== query.queryId))
@@ -29,7 +29,7 @@ const usePages: SideMenu.UsePagesHook = () => {
   }, [storedQueries, save, navigate])
   const renameItem = useCallback((query: Query, newName: string) => {
     const updated = storedQueries.find(q => q.queryId === query.queryId)
-    if (!updated) { dispatch(state => state.add('error', `Rename item '${query.name}' not found.`)); return }
+    if (!updated) { dispatch(state => state.push('error', `Rename item '${query.name}' not found.`)); return }
     updated.name = newName
     save([...storedQueries])
   }, [storedQueries, save])

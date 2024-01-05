@@ -4,17 +4,17 @@ import { BrowserRouter, Routes } from 'react-router-dom'
 import * as AppSetting from './appSetting'
 import * as SideMenu from './appSideMenu'
 import GraphView from './GraphView'
-import { ErrorHandling, StorageUtil } from './util'
+import { Messaging, StorageUtil } from './util'
 
 function App() {
   return (
     <BrowserRouter>
       <StorageUtil.LocalStorageContextProvider>
-        <ErrorHandling.ErrorMessageContextProvider>
+        <Messaging.ErrorMessageContextProvider>
           <SideMenu.SideMenuContextProvider>
             <AppInsideContext />
           </SideMenu.SideMenuContextProvider>
-        </ErrorHandling.ErrorMessageContextProvider>
+        </Messaging.ErrorMessageContextProvider>
       </StorageUtil.LocalStorageContextProvider>
     </BrowserRouter>
   )
@@ -54,7 +54,7 @@ function AppInsideContext() {
           {queryPages.Routes()}
           {appSettingPages.Routes()}
         </Routes>
-        <ErrorHandling.MessageList />
+        <Messaging.MessageList />
       </Panel>
 
     </PanelGroup>

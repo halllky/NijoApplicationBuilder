@@ -178,7 +178,7 @@ export namespace StorageUtil {
   export const useLocalStorage = <T,>(init: LocalStorageHandler<T> | (() => LocalStorageHandler<T>)) => {
     const handler = useMemo(() => typeof init === 'function' ? init() : init, [])
     const { forceUpdateValue, triggerForceUpdate } = ReactHookUtil.useForceUpdate()
-    const [, dispatchErrMsg] = ErrorHandling.useMsgContext()
+    const [, dispatchErrMsg] = Messaging.useMsgContext()
 
     const data: T = useMemo(() => {
       try {
@@ -187,14 +187,14 @@ export namespace StorageUtil {
 
         const deserializeResult = handler.deserialize(serialized)
         if (deserializeResult?.ok !== true) {
-          dispatchErrMsg(msg => msg.add('warn', `Failuer to parse local storage value as '${handler.storageKey}'.`))
+          dispatchErrMsg(msg => msg.push('warn', `Failuer to parse local storage value as '${handler.storageKey}'.`))
           return handler.defaultValue()
         }
 
         return deserializeResult.obj
 
       } catch (error) {
-        dispatchErrMsg(msg => msg.add('warn', error))
+        dispatchErrMsg(msg => msg.push('warn', error))
         return handler.defaultValue()
       }
     }, [forceUpdateValue])
@@ -295,46 +295,50 @@ export namespace Tree {
   }
 }
 
-// ------------------- エラーハンドリング --------------------
-export namespace ErrorHandling {
-  type ErrMsg = { id: string, name?: string, message: string, type: 'error' | 'warn' }
+// ------------------- メッセージ --------------------
+export namespace Messaging {
+  type Msg = { id: string, name?: string, message: string, type: 'error' | 'warn' }
   export const [
     ErrorMessageContextProvider,
     useMsgContext,
-  ] = ReactHookUtil.defineContext(() => ({ errorMessages: [] as ErrMsg[] }), state => ({
-    add: (type: ErrMsg['type'], ...messages: unknown[]) => {
+  ] = ReactHookUtil.defineContext(() => ({ messages: [] as Msg[] }), state => ({
+
+    push: (type: Msg['type'], ...messages: unknown[]) => {
       const flatten = messages.flatMap(m => Array.isArray(m) ? m : [m])
-      const addedMessages = flatten.map<ErrMsg>(m => {
+      const addedMessages = flatten.map<Msg>(m => {
         const id = UUID.v4()
         if (typeof m === 'string') return { id, type, message: m }
-        const asErrMsg = m as Omit<ErrMsg, 'id'>
+        const asErrMsg = m as Omit<Msg, 'id'>
         if (typeof asErrMsg.message === 'string') return { id, type, message: asErrMsg.message, name: asErrMsg.name }
         return { id, type, message: m?.toString() ?? '' }
       })
-      return { errorMessages: [...state.errorMessages, ...addedMessages] }
+      return { messages: [...state.messages, ...addedMessages] }
     },
-    clear: (nameOrItem?: string | ErrMsg) => {
+
+    clear: (nameOrItem?: string | Msg) => {
       if (!nameOrItem) {
-        return { errorMessages: [] }
+        return { messages: [] }
       } else if (typeof nameOrItem === 'string') {
         const name = nameOrItem
-        return { errorMessages: state.errorMessages.filter(m => !m.name?.startsWith(name)) }
+        return { messages: state.messages.filter(m => !m.name?.startsWith(name)) }
       } else {
         const id = nameOrItem.id
-        return { errorMessages: state.errorMessages.filter(m => m.id !== id) }
+        return { messages: state.messages.filter(m => m.id !== id) }
       }
     },
   }))
-  export const MessageList = ({ filter, className }: {
-    filter?: string
+  export const MessageList = ({ type, name, className }: {
+    type?: Msg['type']
+    name?: string
     className?: string
   }) => {
-    const [{ errorMessages }, dispatch] = useMsgContext()
+    const [{ messages: messages }, dispatch] = useMsgContext()
     const filtered = useMemo(() => {
-      return filter
-        ? errorMessages.filter(m => m.name?.startsWith(filter))
-        : errorMessages
-    }, [errorMessages, filter])
+      let arr = [...messages]
+      if (type) arr = arr.filter(m => m.type === type)
+      if (name) arr = arr.filter(m => m.name?.startsWith(name))
+      return arr
+    }, [messages, name])
 
     return (
       <ul className={`flex flex-col ${className}`}>

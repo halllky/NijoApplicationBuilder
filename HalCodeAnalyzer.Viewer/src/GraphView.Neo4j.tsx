@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import neo4j, { Node, Relationship, Record } from 'neo4j-driver'
 import cytoscape from 'cytoscape'
 import { useStoredSettings } from './appSetting'
-import { ErrorHandling } from './util'
+import { Messaging } from './util'
 
 export const useNeo4jQueryRunner = () => {
   const { setting } = useStoredSettings()
@@ -15,7 +15,7 @@ export const useNeo4jQueryRunner = () => {
 
   const [nowLoading, setNowLoading] = useState(false)
   const [queryResult, setQueryResult] = useState<cytoscape.ElementDefinition[]>(() => [])
-  const [, dispatch] = ErrorHandling.useMsgContext()
+  const [, dispatch] = Messaging.useMsgContext()
   const runQuery = useCallback(async (queryString: string) => {
     if (!driver) return
     const session = driver.session({ defaultAccessMode: neo4j.session.READ })
@@ -27,13 +27,13 @@ export const useNeo4jQueryRunner = () => {
     try {
       run = session.run(queryString)
     } catch (err) {
-      dispatch(state => state.add('error', err))
+      dispatch(state => state.push('error', err))
       return
     }
     run.subscribe({
       onNext: record => neo4jQueryReusltToCytoscapeItem(record, elements, parentChildMap),
       onError: err => {
-        dispatch(state => state.add('error', err))
+        dispatch(state => state.push('error', err))
         setNowLoading(false)
       },
       onCompleted: async (summary) => {
