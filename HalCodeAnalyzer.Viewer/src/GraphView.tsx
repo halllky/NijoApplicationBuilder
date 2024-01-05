@@ -2,13 +2,13 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Route, useNavigate, useParams } from 'react-router-dom'
 import cytoscape from 'cytoscape'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
-import * as UUID from 'uuid'
 import * as Icon from '@ant-design/icons'
 import ExpandCollapse from './GraphView.ExpandCollapse'
 import Navigator from './GraphView.Navigator'
 import Layout from './GraphView.Layout'
 // import enumerateData from './data'
-import { Components, Messaging, StorageUtil } from './util'
+import { Components, Messaging } from './util'
+import { Query, createNewQuery, useQueryRepository } from './GraphView.Query'
 import { useNeo4jQueryRunner } from './GraphView.Neo4j'
 import * as SideMenu from './appSideMenu'
 
@@ -20,19 +20,19 @@ ExpandCollapse.configure(cytoscape)
 
 const usePages: SideMenu.UsePagesHook = () => {
   const navigate = useNavigate()
-  const { data: storedQueries, save } = StorageUtil.useLocalStorage(queryStorageHandler)
+  const { storedQueries, saveQueries } = useQueryRepository()
   const [, dispatchMessage] = Messaging.useMsgContext()
   const deleteItem = useCallback((query: Query) => {
     if (!confirm(`${query.name}を削除します。よろしいですか？`)) return
-    save(storedQueries.filter(q => q.queryId !== query.queryId))
+    saveQueries(storedQueries.filter(q => q.queryId !== query.queryId))
     navigate('/')
-  }, [storedQueries, save, navigate])
+  }, [storedQueries, saveQueries, navigate])
   const renameItem = useCallback((query: Query, newName: string) => {
     const updated = storedQueries.find(q => q.queryId === query.queryId)
     if (!updated) { dispatchMessage(state => state.push('error', `Rename item '${query.name}' not found.`)); return }
     updated.name = newName
-    save([...storedQueries])
-  }, [storedQueries, save])
+    saveQueries([...storedQueries])
+  }, [storedQueries, saveQueries])
 
   const menuItems = useMemo((): SideMenu.SideMenuSection[] => [{
     url: '/',
@@ -60,7 +60,7 @@ const Page = () => {
 
   // query editing
   const { queryId } = useParams()
-  const { data: storedQueries, save } = StorageUtil.useLocalStorage(queryStorageHandler)
+  const { storedQueries, saveQueries } = useQueryRepository()
   const [displayedQuery, setDisplayedQuery] = useState(() => createNewQuery())
   const navigate = useNavigate()
   const handleQueryStringEdit: React.ChangeEventHandler<HTMLTextAreaElement> = useCallback(e => {
@@ -69,11 +69,11 @@ const Page = () => {
   const handleQuerySaving = useCallback(() => {
     const index = storedQueries.findIndex(q => q.queryId === displayedQuery.queryId)
     if (index === -1) {
-      save([...storedQueries, displayedQuery])
+      saveQueries([...storedQueries, displayedQuery])
       navigate(`/${displayedQuery.queryId}`)
     } else {
       storedQueries.splice(index, 1, displayedQuery)
-      save([...storedQueries])
+      saveQueries([...storedQueries])
     }
   }, [displayedQuery, storedQueries])
 
@@ -131,34 +131,26 @@ const Page = () => {
   }, [cy, locked])
 
   // 自動レイアウト
-  const [currentLayout, setCurrentLayout] = useState(Layout.DEFAULT.name)
-  const handleLayoutChanged: React.ChangeEventHandler<HTMLSelectElement> = useCallback(e => {
-    setCurrentLayout(e.target.value)
-  }, [])
-  const handlePositionReset = useCallback(() => {
-    if (!cy) return
-    cy.layout(Layout.OPTION_LIST[currentLayout])?.run()
-    cy.resize().fit().reset()
-  }, [cy, currentLayout])
+  const {
+    autoLayout,
+    LayoutSelector,
+  } = Layout.useAutoLayout(cy)
 
   // ノードの折りたたみ/展開
-  const handleExpandAll = useCallback(() => {
-    const api = (cy as any)?.expandCollapse('get')
-    api.expandAll()
-    api.expandAllEdges()
-  }, [cy])
-  const handleCollapseAll = useCallback(() => {
-    const api = (cy as any)?.expandCollapse('get')
-    api.collapseAll()
-    api.collapseAllEdges()
-  }, [cy])
+  const {
+    handleExpandAll,
+    handleCollapseAll,
+  } = ExpandCollapse.useExpandCollapse(cy)
 
   //
+  const handlePositionReset = useCallback(() => {
+    cy?.resize().fit().reset()
+    autoLayout()
+  }, [cy, autoLayout])
   useEffect(() => {
     cy?.elements().remove()
     cy?.add(queryResult)
-    cy?.layout(Layout.OPTION_LIST[currentLayout])?.run()
-    // cy?.resize().fit().reset()
+    autoLayout()
   }, [queryResult])
 
   return (
@@ -170,13 +162,7 @@ const Page = () => {
           icon={showSideMenu ? Icon.LeftOutlined : Icon.RightOutlined}
           onClick={() => dispatchSideMenu(state => state.toggleSideMenu())}
         >メニュー</Components.Button>
-        <select className="border border-1 border-zinc-400" value={currentLayout} onChange={handleLayoutChanged}>
-          {Object.entries(Layout.OPTION_LIST).map(([key]) => (
-            <option key={key} value={key}>
-              {key}
-            </option>
-          ))}
-        </select>
+        <LayoutSelector />
         <Components.Button onClick={handlePositionReset}>
           自動レイアウト
         </Components.Button>
@@ -263,43 +249,7 @@ const STYLESHEET: cytoscape.CytoscapeOptions['style'] = [{
   },
 }]
 
-// ------------------------------------------------------
-export type Query = {
-  queryId: string
-  name: string
-  queryString: string
-}
-const createNewQuery = (): Query => ({
-  queryId: UUID.v4(),
-  name: '',
-  queryString: '',
-})
-
-const queryStorageHandler: StorageUtil.LocalStorageHandler<Query[]> = {
-  storageKey: 'HALDIAGRAM::QUERIES',
-  serialize: obj => {
-    return JSON.stringify(obj)
-  },
-  deserialize: str => {
-    try {
-      const parsed: Partial<Query>[] = JSON.parse(str)
-      if (!Array.isArray(parsed)) return { ok: false }
-      const obj = parsed.map<Query>(item => ({
-        queryId: item.queryId ?? '',
-        name: item.name ?? '',
-        queryString: item.queryString ?? '',
-      }))
-      return { ok: true, obj }
-    } catch (error) {
-      console.error(`Failure to load application settings.`, error)
-      return { ok: false }
-    }
-  },
-  defaultValue: () => [],
-}
-
 export default {
   usePages,
   Page,
-  createNewQuery,
 }

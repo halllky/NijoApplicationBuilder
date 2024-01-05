@@ -1,3 +1,4 @@
+import { useCallback, useState } from 'react'
 import cytoscape from 'cytoscape'
 // @ts-ignore
 import klay from 'cytoscape-klay'
@@ -27,8 +28,36 @@ const OPTION_LIST: { [key: string]: cytoscape.LayoutOptions } = {
 }
 const DEFAULT = OPTION_LIST['klay']
 
+const useAutoLayout = (cy: cytoscape.Core | undefined) => {
+  const [currentLayout, setCurrentLayout] = useState(DEFAULT.name)
+  const LayoutSelector = useCallback(() => {
+    return (
+      <select
+        className="border border-1 border-zinc-400"
+        value={currentLayout}
+        onChange={e => setCurrentLayout(e.target.value)}>
+        {Object.entries(OPTION_LIST).map(([key]) => (
+          <option key={key} value={key}>
+            {key}
+          </option>
+        ))}
+      </select>
+    )
+  }, [currentLayout])
+
+  const autoLayout = useCallback(() => {
+    cy?.layout(OPTION_LIST[currentLayout])?.run()
+  }, [cy, currentLayout])
+
+  return {
+    autoLayout,
+    LayoutSelector,
+  }
+}
+
 export default {
   OPTION_LIST,
   DEFAULT,
   configure,
+  useAutoLayout,
 }

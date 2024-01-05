@@ -1,3 +1,4 @@
+import { useCallback } from 'react'
 import cytoscape from 'cytoscape'
 // @ts-ignore
 import cytospaceExpandCollapse from 'cytoscape-expand-collapse'
@@ -31,7 +32,26 @@ const setupCyInstance = (cy: cytoscape.Core) => {
   })
 }
 
+const useExpandCollapse = (cy: cytoscape.Core | undefined) => {
+  const handleExpandAll = useCallback(() => {
+    const api = (cy as any)?.expandCollapse('get')
+    api.expandAll()
+    api.expandAllEdges()
+  }, [cy])
+  const handleCollapseAll = useCallback(() => {
+    const api = (cy as any)?.expandCollapse('get')
+    api.collapseAll()
+    api.collapseAllEdges()
+  }, [cy])
+
+  return {
+    handleExpandAll,
+    handleCollapseAll,
+  }
+}
+
 export default {
   configure,
   setupCyInstance,
+  useExpandCollapse,
 }
