@@ -34,32 +34,38 @@ namespace GraphDataSource {
       if (!cy) return
       cy.startBatch()
 
+      // データ洗い替え前のノード位置などを退避させておく
       const viewStateBeforeQuery1 = ViewState.getViewState(viewState, cy)
       const viewStateBeforeQuery = ExpandCollapse.getViewState(viewStateBeforeQuery1, cy)
 
       cy.elements().remove()
 
-      // ノード
       const nodeIds = new Set(Object.keys(dataSet.nodes))
-      for (const [id, node] of Object.entries(dataSet.nodes)) {
-        const label = node.label
-        const parent = node.parent && nodeIds.has(node.parent)
-          ? node.parent
-          : undefined // 親が結果セット中に存在しないノードは親なしとして表示
 
-        const element: cytoscape.ElementDefinition = { data: { id, label, parent } }
-        cy.add(element)
+      // 結果セット中に存在しないノードは仮ノードを作成して表示する
+      const ensureNodeExists = (id: string) => {
+        if (nodeIds.has(id)) return
+        nodeIds.add(id)
+        const label = id
+        cy.add({ data: { id, label } })
+      }
+
+      // ノード
+      for (const [id, node] of Object.entries(dataSet.nodes)) {
+        if (node.parent) ensureNodeExists(node.parent)
+
+        const label = node.label
+        const parent = node.parent
+        cy.add({ data: { id, label, parent } })
       }
 
       // エッジ
       for (const { source, target, label } of dataSet.edges) {
+        ensureNodeExists(source)
+        ensureNodeExists(target)
+
         const id = UUID.v4()
-
-        // 両端のうちいずれかが存在しないエッジはスキップ
-        if (!nodeIds.has(source) || !nodeIds.has(target)) continue
-
-        const element: cytoscape.ElementDefinition = { data: { id, source, target, label } }
-        cy.add(element)
+        cy.add({ data: { id, source, target, label } })
       }
 
       // ノード位置などViewStateの復元
