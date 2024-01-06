@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace HalCodeAnalyzer {
     partial class Program {
@@ -16,8 +17,8 @@ namespace HalCodeAnalyzer {
             using var sw = new StreamWriter(@"cypher-script.txt", append: false, encoding: Encoding.UTF8);
 
             string GetHashedNodeId(NodeId nodeId) => nodeId.Value.ToHashedString();
-            string? GetHashedGroupId(NodeGroup group) => group == NodeGroup.Root
-                ? null
+            string GetHashedGroupId(NodeGroup group) => group == NodeGroup.Root
+                ? string.Empty
                 : group.FullName.ToHashedString();
 
             // node
@@ -34,30 +35,37 @@ namespace HalCodeAnalyzer {
                     id = GetHashedNodeId(node),
                     type = "Method",
                     name = node.BaseName,
-                }));
+                }))
+                .OrderBy(node => node.id);
             foreach (var node in nodes) {
                 sw.WriteLine($$"""
                     CREATE ({{node.id}}:{{node.type}} {{{PROP_NAME}}:'{{node.name}}'})
                     """);
             }
+
             // edge(parent-child)
-            foreach (var container in graph.SubGraphs) {
-                if (container == NodeGroup.Root) continue;
-                var parent = GetHashedGroupId(container.Parent);
-                var child = GetHashedGroupId(container);
+            var parentChildPair = graph.SubGraphs
+                .Where(container => container.Parent != NodeGroup.Root)
+                .Select(container => new {
+                    parent = GetHashedGroupId(container.Parent),
+                    child = GetHashedGroupId(container),
+                }).Concat(graph.Nodes.Keys.Select(node => new {
+                    parent = GetHashedGroupId(node.Group),
+                    child = GetHashedNodeId(node),
+                }))
+                .OrderBy(pair => pair.parent)
+                .ThenBy(pair => pair.child);
+            foreach (var pair in parentChildPair) {
                 sw.WriteLine($$"""
-                    CREATE ({{parent}})-[:{{REL_HASCHILD}}]->({{child}})
+                    CREATE ({{pair.parent}})-[:{{REL_HASCHILD}}]->({{pair.child}})
                     """);
             }
-            foreach (var node in graph.Nodes.Keys) {
-                var parent = GetHashedGroupId(node.Group);
-                var child = GetHashedNodeId(node);
-                sw.WriteLine($$"""
-                    CREATE ({{parent}})-[:{{REL_HASCHILD}}]->({{child}})
-                    """);
-            }
+
             // edge(method calling)
-            foreach (var edge in graph.Edges) {
+            var edges = graph.Edges
+                .OrderBy(edge => edge.Initial.Value)
+                .ThenBy(edge => edge.Terminal.Value);
+            foreach (var edge in edges) {
                 var initial = GetHashedNodeId(edge.Initial);
                 var terminal = GetHashedNodeId(edge.Terminal);
                 sw.WriteLine($$"""
