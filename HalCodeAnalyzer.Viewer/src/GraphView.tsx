@@ -146,11 +146,18 @@ const Page = () => {
     } else if (e.ctrlKey && e.key === 's') {
       handleQuerySaving()
       e.preventDefault()
+    } else if (e.ctrlKey && e.key === 'b') {
+      dispatchSideMenu(state => state.toggleSideMenu())
+      setShowDataSource(!showDataSource)
     }
-  }, [runQuery, displayedQuery, handleQuerySaving])
+  }, [runQuery, displayedQuery, handleQuerySaving, showDataSource])
 
   return (
-    <PanelGroup direction="vertical" className="flex flex-col relative" onKeyDown={handleKeyDown}>
+    <PanelGroup
+      direction="vertical"
+      className="flex flex-col relative outline-none"
+      onKeyDown={handleKeyDown}
+      tabIndex={0}>
 
       {/* ツールバー */}
       <div className="flex content-start items-center gap-2 mb-2">
