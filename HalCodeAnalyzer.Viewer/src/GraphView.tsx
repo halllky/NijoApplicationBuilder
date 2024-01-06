@@ -8,7 +8,7 @@ import Navigator from './GraphView.Navigator'
 import Layout from './GraphView.Layout'
 // import enumerateData from './data'
 import { Components, Messaging } from './util'
-import { Query, createNewQuery, useQueryRepository } from './GraphView.Query'
+import ViewState, { Query, createNewQuery, useQueryRepository } from './GraphView.Query'
 import { useNeo4jQueryRunner } from './GraphView.Neo4j'
 import * as SideMenu from './appSideMenu'
 
@@ -57,25 +57,8 @@ const usePages: SideMenu.UsePagesHook = () => {
 
 // ------------------------------------
 const Page = () => {
-
-  // query editing
   const { queryId } = useParams()
-  const { storedQueries, saveQueries } = useQueryRepository()
-  const [displayedQuery, setDisplayedQuery] = useState(() => createNewQuery())
-  const navigate = useNavigate()
-  const handleQueryStringEdit: React.ChangeEventHandler<HTMLTextAreaElement> = useCallback(e => {
-    setDisplayedQuery({ ...displayedQuery, queryString: e.target.value })
-  }, [displayedQuery])
-  const handleQuerySaving = useCallback(() => {
-    const index = storedQueries.findIndex(q => q.queryId === displayedQuery.queryId)
-    if (index === -1) {
-      saveQueries([...storedQueries, displayedQuery])
-      navigate(`/${displayedQuery.queryId}`)
-    } else {
-      storedQueries.splice(index, 1, displayedQuery)
-      saveQueries([...storedQueries])
-    }
-  }, [displayedQuery, storedQueries])
+  const [, dispatchMessage] = Messaging.useMsgContext()
 
   // Cytoscape
   const [cy, setCy] = useState<cytoscape.Core>()
@@ -99,9 +82,29 @@ const Page = () => {
     }
   }, [cy, navInstance])
 
+  // query editing
+  const { storedQueries, saveQueries } = useQueryRepository()
+  const [displayedQuery, setDisplayedQuery] = useState(() => createNewQuery())
+  const navigate = useNavigate()
+  const handleQueryStringEdit: React.ChangeEventHandler<HTMLTextAreaElement> = useCallback(e => {
+    setDisplayedQuery({ ...displayedQuery, queryString: e.target.value })
+  }, [displayedQuery])
+  const handleQuerySaving = useCallback(() => {
+    const saveItem1 = cy ? ViewState.getViewState(displayedQuery, cy) : displayedQuery
+    const saveItem = cy ? ExpandCollapse.getViewState(saveItem1, cy) : saveItem1
+    const index = storedQueries.findIndex(q => q.queryId === saveItem.queryId)
+    if (index === -1) {
+      saveQueries([...storedQueries, saveItem])
+      navigate(`/${saveItem.queryId}`)
+    } else {
+      storedQueries.splice(index, 1, saveItem)
+      saveQueries([...storedQueries])
+    }
+  }, [displayedQuery, storedQueries, cy])
+
   const { autoLayout, LayoutSelector } = Layout.useAutoLayout(cy)
   const { expandAll, collapseAll } = ExpandCollapse.useExpandCollapse(cy)
-  const { runQuery, nowLoading } = useNeo4jQueryRunner(cy, autoLayout)
+  const { runQuery, nowLoading } = useNeo4jQueryRunner(cy)
 
   // サイドメニューやデータソース欄の表示/非表示
   const [{ showSideMenu }, dispatchSideMenu] = SideMenu.useSideMenuContext()
@@ -115,19 +118,24 @@ const Page = () => {
     cy.autolock(e.target.checked)
   }, [cy, locked])
 
-  // 画面表示時、保存されているクエリ定義を取得しクエリ実行
+  // 画面表示時
   useEffect(() => {
-    const loaded = queryId
-      ? storedQueries.find(q => q.queryId === queryId)
-      : undefined
-    setDisplayedQuery(loaded ?? createNewQuery())
-    if (loaded?.queryString) runQuery(loaded.queryString)
-  }, [queryId])
+    if (!cy) return // queryIdが設定されたあとdivが初期化される前にuseEffectが実行されてしまうので
+    let loaded: Query | undefined
+    if (queryId) {
+      loaded = storedQueries.find(q => q.queryId === queryId)
+      if (!loaded) dispatchMessage(msg => msg.push('error', `Query id '${queryId}' is not found.`))
+    }
+    if (!loaded) loaded = createNewQuery()
+    setDisplayedQuery(loaded)
+    runQuery(loaded)
+  }, [queryId, runQuery])
 
   const resetViewPosition = useCallback(() => {
     cy?.resize().fit().reset()
     autoLayout()
-  }, [cy, autoLayout])
+    setDisplayedQuery({ ...displayedQuery, nodePositions: {} })
+  }, [cy, autoLayout, displayedQuery])
 
   return (
     <PanelGroup direction="vertical" className="flex flex-col relative">
@@ -159,7 +167,7 @@ const Page = () => {
         <span className="text-nowrap">
           データソース:Neo4j
         </span>
-        <Components.Button onClick={() => runQuery(displayedQuery.queryString)} icon={Icon.ReloadOutlined}>
+        <Components.Button onClick={() => runQuery(displayedQuery)} icon={Icon.ReloadOutlined}>
           {nowLoading ? '読込中...' : '再読込'}
         </Components.Button>
         <Components.Button onClick={handleQuerySaving}>

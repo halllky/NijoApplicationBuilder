@@ -3,8 +3,10 @@ import neo4j, { Node, Relationship, Record } from 'neo4j-driver'
 import cytoscape from 'cytoscape'
 import { useStoredSettings } from './appSetting'
 import { Messaging } from './util'
+import ViewState, { Query } from './GraphView.Query'
+import ExpandCollapse from './GraphView.ExpandCollapse'
 
-export const useNeo4jQueryRunner = (cy: cytoscape.Core | undefined, onRerunQuery?: () => void) => {
+export const useNeo4jQueryRunner = (cy: cytoscape.Core | undefined) => {
   // 接続先DBの決定
   const { setting } = useStoredSettings()
   const driver = useMemo(() => {
@@ -17,16 +19,18 @@ export const useNeo4jQueryRunner = (cy: cytoscape.Core | undefined, onRerunQuery
   // クエリ実行
   const [nowLoading, setNowLoading] = useState(false)
   const [, dispatchMsg] = Messaging.useMsgContext()
-  const runQuery = useCallback(async (queryString: string) => {
+  const runQuery = useCallback(async (query: Query) => {
     if (!driver) return
     const session = driver.session({ defaultAccessMode: neo4j.session.READ })
     const elements: { [id: string]: cytoscape.ElementDefinition } = {}
     const parentChildMap: { [child: string]: string } = {}
+    const viewStateBeforeQuery1 = cy ? ViewState.getViewState(query, cy) : query
+    const viewStateBeforeQuery = cy ? ExpandCollapse.getViewState(viewStateBeforeQuery1, cy) : viewStateBeforeQuery1
     setNowLoading(true)
     cy?.elements().remove()
     let run: ReturnType<typeof session.run>
     try {
-      run = session.run(queryString)
+      run = session.run(query.queryString)
     } catch (err) {
       dispatchMsg(state => state.push('error', err))
       return
@@ -39,17 +43,23 @@ export const useNeo4jQueryRunner = (cy: cytoscape.Core | undefined, onRerunQuery
       },
       onCompleted: async (summary) => {
         console.debug(summary)
+        // 親子関係の設定
         for (const node of Object.entries(elements)) {
           node[1].data.parent = parentChildMap[node[0]]
         }
-        cy?.elements().remove()
-        cy?.add(Object.values(elements))
-        onRerunQuery?.()
+        // cytoscapeへの反映
+        if (cy) {
+          cy.add(Object.values(elements))
+          ViewState.restoreViewState(viewStateBeforeQuery, cy)
+          ExpandCollapse.restoreViewState(viewStateBeforeQuery, cy)
+        } else {
+          dispatchMsg(msg => msg.push('warn', 'cy is undefined'))
+        }
         setNowLoading(false)
         await session.close()
       },
     })
-  }, [cy, driver, onRerunQuery])
+  }, [cy, driver])
 
   const clear = useCallback(() => {
     cy?.elements().remove()

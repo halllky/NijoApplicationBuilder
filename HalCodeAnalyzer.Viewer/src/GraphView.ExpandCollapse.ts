@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import cytoscape from 'cytoscape'
 // @ts-ignore
 import cytospaceExpandCollapse from 'cytoscape-expand-collapse'
-import Layout from './GraphView.Layout'
+import { Query } from './GraphView.Query'
 
 const configure = (cy: typeof cytoscape) => {
   cytospaceExpandCollapse(cy)
@@ -10,10 +10,10 @@ const configure = (cy: typeof cytoscape) => {
 
 const setupCyInstance = (cy: cytoscape.Core) => {
   (cy as any).expandCollapse({
-    layoutBy: Layout.DEFAULT, // to rearrange after expand/collapse. It's just layout options or whole layout function. Choose your side!
+    layoutBy: null, // to rearrange after expand/collapse. It's just layout options or whole layout function. Choose your side!
     // recommended usage: use cose-bilkent layout with randomize: false to preserve mental map upon expand/collapse
-    fisheye: true, // whether to perform fisheye view after expand/collapse you can specify a function too
-    animate: true, // whether to animate on drawing changes you can specify a function too
+    fisheye: false, // whether to perform fisheye view after expand/collapse you can specify a function too
+    animate: false, // whether to animate on drawing changes you can specify a function too
     animationDuration: 1000, // when animate is true, the duration in milliseconds of the animation
     ready: function () { },  // callback when expand/collapse initialized
     undoable: false, // and if undoRedoExtension exists,
@@ -50,8 +50,25 @@ const useExpandCollapse = (cy: cytoscape.Core | undefined) => {
   }
 }
 
+const getViewState = (beforeState: Query, cy: cytoscape.Core): Query => {
+  const api = (cy as any)?.expandCollapse('get')
+  const collapsedNodes = api
+    .getAllCollapsedChildrenRecursively()
+    .map((node: cytoscape.NodeSingular) => node.id())
+  return { ...beforeState, collapsedNodes }
+}
+const restoreViewState = (viewState: Query, cy: cytoscape.Core) => {
+  // const api = (cy as any)?.expandCollapse('get')
+  // for (const nodeId of viewState.collapsedNodes) {
+  //   const node = cy.getElementById(nodeId)
+  //   if (node) api.collapse(node[0])
+  // }
+}
+
 export default {
   configure,
   setupCyInstance,
   useExpandCollapse,
+  getViewState,
+  restoreViewState,
 }
