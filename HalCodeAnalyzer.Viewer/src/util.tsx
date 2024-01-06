@@ -398,26 +398,38 @@ export namespace Messaging {
     }, [inline, name])
 
     return (
-      <ul className={`flex flex-col ${className}`}>
-        {filtered.map(msg => (
-          <li key={msg.id} className={`
-            flex gap-1 items-center
-            border border-1
-            ${msg.type === 'warn' ? 'border-amber-200' : 'border-rose-200'}
-            ${msg.type === 'warn' ? 'bg-amber-100' : 'bg-rose-100'}`}>
-            <span title={msg.message} className={`
-              flex-1
-              ${msg.type === 'warn' ? 'text-amber-700' : 'text-rose-600'}
-              overflow-hidden text-nowrap overflow-ellipsis
-              select-all`}>
-              {msg.message}
-            </span>
-            <Components.Button
-              onClick={() => dispatch(state => state.clear(msg))}
-            >×</Components.Button>
-          </li>
-        ))}
-      </ul>
+      <div className={`flex flex-col ${className}`}>
+        <ul className="flex-1 flex flex-col overflow-auto max-h-32">
+          {filtered.map(msg => (
+            <li key={msg.id} className={`
+              flex gap-1 items-center
+              border border-1
+              ${msg.type === 'warn' ? 'border-amber-200' : 'border-rose-200'}
+              ${msg.type === 'warn' ? 'bg-amber-100' : 'bg-rose-100'}`}>
+              <span title={msg.message} className={`
+                flex-1
+                ${msg.type === 'warn' ? 'text-amber-700' : 'text-rose-600'}
+                overflow-hidden text-nowrap overflow-ellipsis
+                select-all`}>
+                {msg.message}
+              </span>
+              <Components.Button
+                onClick={() => dispatch(state => state.clear(msg))}
+                icon={Icon.CloseOutlined}
+              />
+            </li>
+          ))}
+        </ul>
+        {filtered.length > 5 && (
+          <div className="flex text-sm select-none items-center">
+            {filtered.length}件の警告とエラー
+            <div className="flex-1"></div>
+            <Components.Button onClick={() => dispatch(msg => msg.clear(name))}>
+              すべてクリア
+            </Components.Button>
+          </div>
+        )}
+      </div>
     )
   }
 

@@ -35,7 +35,11 @@ export const useNeo4jQueryRunner = (cy: cytoscape.Core | undefined) => {
       return
     }
     run.subscribe({
-      onNext: record => neo4jQueryReusltToCytoscapeItem(record, dataSet, parentChildMap),
+      onNext: record => neo4jQueryReusltToCytoscapeItem(
+        record,
+        dataSet,
+        parentChildMap,
+        dispatchMsg),
       onError: err => {
         dispatchMsg(state => state.push('error', err))
         setNowLoading(false)
@@ -69,7 +73,8 @@ const CHILD = 'HAS_CHILD'
 const neo4jQueryReusltToCytoscapeItem = (
   record: Record,
   dataSet: GraphDataSource.DataSet,
-  parentChildMap: { [child: string]: string }
+  parentChildMap: { [child: string]: string },
+  dispatchMsg: ReturnType<typeof Messaging.useMsgContext>['1'],
 ): void => {
   const parseValue = (value: any) => {
     if (value instanceof Relationship && value.type === CHILD) {
@@ -87,6 +92,7 @@ const neo4jQueryReusltToCytoscapeItem = (
       dataSet.nodes[id] = ({ label })
 
     } else {
+      dispatchMsg(msg => msg.push('warn', 'Failure to handle qurey result.'))
       console.warn('Failure to handle qurey result.', record)
     }
   }
