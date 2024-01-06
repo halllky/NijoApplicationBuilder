@@ -10,6 +10,7 @@ import Layout from './GraphView.Layout'
 import { Components, Messaging } from './util'
 import ViewState, { Query, createNewQuery, useQueryRepository } from './GraphView.Query'
 import { useNeo4jQueryRunner } from './GraphView.Neo4j'
+import GraphDataSource from './GraphView.DataSource'
 import * as SideMenu from './appSideMenu'
 
 Layout.configure(cytoscape)
@@ -104,7 +105,8 @@ const Page = () => {
 
   const { autoLayout, LayoutSelector } = Layout.useAutoLayout(cy)
   const { expandAll, collapseAll } = ExpandCollapse.useExpandCollapse(cy)
-  const { runQuery, nowLoading } = useNeo4jQueryRunner(cy)
+  const { currentQueryResult, runQuery, nowLoading } = useNeo4jQueryRunner(cy)
+  GraphDataSource.useDataSource(cy, currentQueryResult, displayedQuery)
 
   // サイドメニューやデータソース欄の表示/非表示
   const [{ showSideMenu }, dispatchSideMenu] = SideMenu.useSideMenuContext()
