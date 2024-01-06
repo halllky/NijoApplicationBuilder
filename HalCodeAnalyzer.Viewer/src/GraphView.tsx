@@ -137,8 +137,18 @@ const Page = () => {
     setDisplayedQuery({ ...displayedQuery, nodePositions: {} })
   }, [cy, autoLayout, displayedQuery])
 
+  const handleKeyDown: React.KeyboardEventHandler<React.ElementType> = useCallback(e => {
+    if (e.ctrlKey && e.key === 'Enter') {
+      runQuery(displayedQuery)
+      e.preventDefault()
+    } else if (e.ctrlKey && e.key === 's') {
+      handleQuerySaving()
+      e.preventDefault()
+    }
+  }, [runQuery, displayedQuery, handleQuerySaving])
+
   return (
-    <PanelGroup direction="vertical" className="flex flex-col relative">
+    <PanelGroup direction="vertical" className="flex flex-col relative" onKeyDown={handleKeyDown}>
 
       {/* ツールバー */}
       <div className="flex content-start items-center gap-2 mb-2">
@@ -168,10 +178,10 @@ const Page = () => {
           データソース:Neo4j
         </span>
         <Components.Button onClick={() => runQuery(displayedQuery)} icon={Icon.ReloadOutlined}>
-          {nowLoading ? '読込中...' : '再読込'}
+          {nowLoading ? '読込中...' : '再読込(Ctrl + Enter)'}
         </Components.Button>
         <Components.Button onClick={handleQuerySaving}>
-          保存
+          保存(Ctrl+S)
         </Components.Button>
       </div>
 

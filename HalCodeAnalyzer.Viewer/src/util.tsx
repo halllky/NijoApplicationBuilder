@@ -1,4 +1,4 @@
-import React, { ButtonHTMLAttributes, InputHTMLAttributes, PropsWithoutRef, TextareaHTMLAttributes, createContext, forwardRef, useCallback, useContext, useEffect, useMemo, useReducer, useState } from 'react'
+import React, { ButtonHTMLAttributes, InputHTMLAttributes, PropsWithoutRef, TextareaHTMLAttributes, createContext, forwardRef, useCallback, useContext, useEffect, useImperativeHandle, useMemo, useReducer, useRef, useState } from 'react'
 import * as Icon from '@ant-design/icons'
 import * as UUID from 'uuid'
 
@@ -96,19 +96,39 @@ export namespace Components {
       labelText,
       labelClassName,
       inputClassName,
+      onKeyDown,
       ...rest
     } = props
+
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
+    useImperativeHandle(ref, () => textareaRef.current!)
+    const handleKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = useCallback(e => {
+      onKeyDown?.(e)
+      if (e.key === 'Tab' && textareaRef.current) {
+        const start = textareaRef.current.selectionStart
+        const text = textareaRef.current.value
+        textareaRef.current.value
+          = text.substring(0, start)
+          + '\t'
+          + text.substring(start, text.length)
+        textareaRef.current.setSelectionRange(start + 1, start + 1)
+        e.preventDefault()
+      }
+    }, [onKeyDown])
+
     return (
       <label className={`flex ${className}`}>
         {(labelText || labelClassName) && (
           <span className={`select-none ${labelClassName}`}>
             {labelText}
           </span>)}
-        <textarea ref={ref} {...rest}
+        <textarea ref={textareaRef} {...rest}
           className={`flex-1 border border-1 border-zinc-400 px-1 ${inputClassName}`}
           spellCheck={spellCheck ?? 'false'}
+          onKeyDown={handleKeyDown}
         ></textarea>
-      </label>)
+      </label>
+    )
   })
 
   type ButtonAttrs = {
