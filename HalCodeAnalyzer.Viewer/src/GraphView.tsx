@@ -109,7 +109,7 @@ const Page = () => {
   GraphDataSource.useDataSource(cy, currentQueryResult, displayedQuery)
 
   // サイドメニューやデータソース欄の表示/非表示
-  const [{ showSideMenu }, dispatchSideMenu] = SideMenu.useSideMenuContext()
+  const [, dispatchSideMenu] = SideMenu.useSideMenuContext()
   const [showDataSource, setShowDataSource] = useState(true)
 
   // ノード位置固定
@@ -162,17 +162,34 @@ const Page = () => {
       {/* ツールバー */}
       <div className="flex content-start items-center gap-2 mb-2">
         <Components.Button
-          icon={showSideMenu ? Icon.LeftOutlined : Icon.RightOutlined}
+          icon={Icon.MenuOutlined}
           onClick={() => dispatchSideMenu(state => state.toggleSideMenu())}
         >メニュー</Components.Button>
+
+        {/* クエリ名 */}
+        <label className="text-nowrap flex cursor-pointer">
+          {displayedQuery.name}
+          <Components.Button
+            onClick={() => setShowDataSource(!showDataSource)}
+            icon={showDataSource ? Icon.UpOutlined : Icon.DownOutlined}
+          />
+        </label>
+        <Components.Button onClick={() => runQuery(displayedQuery)}>
+          {nowLoading ? '読込中...' : '再読込(Ctrl+Enter)'}
+        </Components.Button>
+
+        <div className="flex-1"></div>
+
         <LayoutSelector />
         <Components.Button onClick={resetViewPosition}>
           自動レイアウト
         </Components.Button>
+
         <label className="text-nowrap">
           <input type="checkbox" checked={locked} onChange={handleLockChanged} />
           ノード位置固定
         </label>
+
         <Components.Button onClick={expandAll}>
           すべて展開
         </Components.Button>
@@ -180,15 +197,6 @@ const Page = () => {
           すべて折りたたむ
         </Components.Button>
 
-        <div className="flex-1"></div>
-
-        <Components.Button onClick={() => setShowDataSource(!showDataSource)} icon={showDataSource ? Icon.UpOutlined : Icon.DownOutlined} />
-        <span className="text-nowrap">
-          データソース:Neo4j
-        </span>
-        <Components.Button onClick={() => runQuery(displayedQuery)} icon={Icon.ReloadOutlined}>
-          {nowLoading ? '読込中...' : '再読込(Ctrl + Enter)'}
-        </Components.Button>
         <Components.Button onClick={handleQuerySaving}>
           保存(Ctrl+S)
         </Components.Button>
