@@ -1,0 +1,9 @@
+{
+  "type": "neo4j",
+  "connection": {
+    "host": "neo4j://localhost:7687",
+    "user": "neo4j",
+    "pass": "nijonijo"
+  },
+  "query": "MATCH(n)\nRETURN n"
+}

@@ -1,10 +1,11 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import { BrowserRouter, Routes } from 'react-router-dom'
 import * as AppSetting from './appSetting'
 import * as SideMenu from './appSideMenu'
 import GraphView from './GraphView'
 import { Messaging, StorageUtil } from './util'
+import useTauriApi from './useTauriApi'
 
 function App() {
   return (
@@ -21,6 +22,13 @@ function App() {
 }
 
 function AppInsideContext() {
+
+  const { getFileSpecifiedCliArgs } = useTauriApi()
+  useEffect(() => {
+    (async () => {
+      console.log(await getFileSpecifiedCliArgs())
+    })()
+  }, [])
 
   const queryPages = GraphView.usePages()
   const appSettingPages = AppSetting.usePages()
