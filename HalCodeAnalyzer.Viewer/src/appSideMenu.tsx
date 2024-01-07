@@ -21,14 +21,27 @@ export type SideMenuSectionItem = {
 }
 
 // -------------- hook ------------------
+type AppState = { showSideMenu: boolean }
+const getDefaultAppState = (): AppState => ({ showSideMenu: true })
+
 export const [
   SideMenuContextProvider,
   useSideMenuContext,
-] = ReactHookUtil.defineContext(() => ({ showSideMenu: true }), state => ({
-  toggleSideMenu: () => {
-    return { ...state, showSideMenu: !state.showSideMenu }
-  },
-}))
+] = ReactHookUtil.defineContext(
+  getDefaultAppState,
+  state => ({
+    toggleSideMenu: () => {
+      return { ...state, showSideMenu: !state.showSideMenu }
+    },
+  }),
+  () => ({
+    storageKey: 'HALDIAGRAM::APPVIEWSTATE',
+    defaultValue: getDefaultAppState,
+    serialize: obj => JSON.stringify(obj),
+    deserialize: str => ({ ok: true, obj: JSON.parse(str) }),
+    noMessageOnSave: true,
+  }),
+)
 
 // -------------- コンポーネント ------------------
 export const Explorer = ({ sections }: {

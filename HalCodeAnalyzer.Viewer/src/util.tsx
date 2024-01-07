@@ -18,24 +18,40 @@ export namespace ReactHookUtil {
   }
 
   // useContextの簡略化
+  type ReducerEx<S, M extends StateModifier<S>> = React.Reducer<S, DispatchArg<S, M>>
+  type ProviderComponent = (props: { children?: React.ReactNode }) => JSX.Element
   export const defineContext = <S, M extends StateModifier<S>>(
     getInitialState: () => S,
-    reducerDef: ReducerDef<S, M>
+    reducerDef: ReducerDef<S, M>,
+    localStorageSaveLoadSettings?: Parameters<typeof StorageUtil.useLocalStorage<S>>['0']
   ) => {
     const reducer = defineReducer(reducerDef)
     const dummyDispatcher = (() => { }) as React.Dispatch<DispatchArg<S, M>>
     const ContextEx = createContext([getInitialState(), dummyDispatcher] as const)
     /** App直下などに置く必要あり */
-    const ContextProvider = ({ children }: { children?: React.ReactNode }) => {
-      const contextValue = useReducer(reducer, getInitialState())
-      return (
-        <ContextEx.Provider value={contextValue}>
-          {children}
-        </ContextEx.Provider>
-      )
-    }
+    const ContextProvider: ProviderComponent = !localStorageSaveLoadSettings
+
+      // 状態をlocalstorageに保存しない場合
+      ? ({ children }) => {
+        const contextValue = useReducer(reducer, getInitialState())
+        return <ContextEx.Provider value={contextValue}>{children}</ContextEx.Provider>
+      }
+
+      // 状態をlocalstorageに保存する場合
+      : ({ children }) => {
+        const { data, save } = StorageUtil.useLocalStorage(localStorageSaveLoadSettings)
+        const reducerWithSave: ReducerEx<S, M> = useCallback((state, action) => {
+          const updated = reducer(state, action)
+          save(updated)
+          return updated
+        }, [save])
+        const contextValue = useReducer(reducerWithSave, data)
+        return <ContextEx.Provider value={contextValue}>{children}</ContextEx.Provider>
+      }
+
     /** コンテキスト使用側はこれを使う */
     const useContextEx = () => useContext(ContextEx)
+
     return [ContextProvider, useContextEx] as const
   }
 
@@ -192,14 +208,12 @@ export namespace StorageUtil {
     serialize: (obj: T) => string
     deserialize: (str: string) => DeserializeResult<T>
     defaultValue: () => T
+    noMessageOnSave?: boolean
   }
 
   // アプリ全体でローカルストレージのデータの更新タイミングを同期するための仕組み
   type LocalStorageData = { [storageKey: string]: unknown }
-  export const [
-    LocalStorageContextProvider,
-    useLocalStorageContext,
-  ] = ReactHookUtil.defineContext(() => ({}) as LocalStorageData, state => ({
+  export const [LocalStorageContextProvider] = ReactHookUtil.defineContext(() => ({}) as LocalStorageData, state => ({
     cache: <K extends keyof LocalStorageData>(key: K, value: LocalStorageData[K]) => {
       return { ...state, [key]: value }
     },
@@ -232,7 +246,9 @@ export namespace StorageUtil {
       const serialized = handler.serialize(value)
       localStorage.setItem(handler.storageKey, serialized)
       triggerForceUpdate()
-      dispatchMsg(msg => msg.push('info', '保存しました。'))
+      if (!handler.noMessageOnSave) {
+        dispatchMsg(msg => msg.push('info', '保存しました。'))
+      }
     }, [])
 
     return { data, save }
