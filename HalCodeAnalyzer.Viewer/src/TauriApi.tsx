@@ -1,43 +1,23 @@
-import { useCallback, useEffect, useReducer } from 'react'
-import { invoke } from '@tauri-apps/api'
+import { useCallback } from 'react'
+import { invoke, window as windowApi } from '@tauri-apps/api'
 import { UnknownDataSource } from './Graph.DataSource'
-import { Messaging, ReactHookUtil } from './util'
-
-// 未使用 セキュリティの問題でReactからfsを使えない
-const [CtxProvider, useTauriContext] = ReactHookUtil.defineContext(
-  (): { targetFileName?: string } => ({}),
-  state => ({
-    changeTargetFile: (targetFileName: string) => {
-      return { ...state, targetFileName }
-    },
-  }),
-
-  (Ctx, reducer) => ({ children }) => {
-    const [, dispatchMessage] = Messaging.useMsgContext()
-    const contextValue = useReducer(reducer, {})
-    useEffect(() => {
-      invoke('get_openedfile_fullpath').then(result => {
-        contextValue[1](state => state.changeTargetFile(result as string))
-      }).catch((err: Error) => {
-        dispatchMessage(msg => msg.push('error', err))
-      })
-    }, [])
-    return <Ctx.Provider value={contextValue}>{children}</Ctx.Provider>
-  },
-)
-
-export const TauriApiContextProvider = CtxProvider
+import { Messaging } from './util'
 
 export const useTauriApi = () => {
   const [, dispatchMessage] = Messaging.useMsgContext()
 
   const readTargetFile = useCallback(async (): Promise<UnknownDataSource | undefined> => {
     try {
-      const json: string = await invoke('read_target_file_contents')
-      const obj = JSON.parse(json)
-      if (!json) throw new Error(`File is empty.`)
-      if (typeof obj !== 'object') throw new Error(`File contents is not json object: ${json}`)
-      return obj as UnknownDataSource
+      const obj: OpenedFile = await invoke('read_target_file_contents')
+      if (typeof obj !== 'object'
+        || typeof obj.fullpath !== 'string'
+        || typeof obj.contents !== 'string')
+        throw new Error(`File open result is invalid object: ${JSON.stringify(obj)}`)
+
+      windowApi.appWindow.setTitle(getBasename(obj.fullpath))
+
+      const dataSource: UnknownDataSource = JSON.parse(obj.contents)
+      return dataSource
     } catch (error) {
       dispatchMessage(msg => msg.push('error', error))
       return undefined
@@ -57,4 +37,15 @@ export const useTauriApi = () => {
     readTargetFile,
     writeTargetFile,
   }
+}
+
+type OpenedFile = {
+  fullpath: string
+  contents: string
+}
+const getBasename = (fullpath: string) => {
+  const splitted = fullpath
+    .replace('\\', '/')
+    .split('/')
+  return splitted[splitted.length - 1]
 }

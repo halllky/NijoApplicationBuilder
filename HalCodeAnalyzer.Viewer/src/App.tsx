@@ -1,14 +1,11 @@
 import GraphView from './Graph'
 import { Messaging, StorageUtil } from './util'
-import { TauriApiContextProvider } from './TauriApi'
 
 function App() {
   return (
     <Messaging.ErrorMessageContextProvider>
       <StorageUtil.LocalStorageContextProvider>
-        <TauriApiContextProvider>
-          <GraphView />
-        </TauriApiContextProvider>
+        <GraphView />
       </StorageUtil.LocalStorageContextProvider>
     </Messaging.ErrorMessageContextProvider>
   )

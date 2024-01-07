@@ -9,7 +9,6 @@ use std::path::PathBuf;
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
-            get_openedfile_fullpath,
             read_target_file_contents,
             write_target_file_contents,
         ])
@@ -17,7 +16,6 @@ fn main() {
         .expect("error while running tauri application");
 }
 
-#[tauri::command]
 fn get_openedfile_fullpath() -> String {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
@@ -37,8 +35,22 @@ fn get_openedfile_fullpath() -> String {
     return joined_str.to_string();
 }
 
+#[derive(serde::Serialize)]
+struct OpenedFile {
+    fullpath: String,
+    contents: String,
+}
+impl OpenedFile {
+    fn empty() -> OpenedFile {
+        OpenedFile {
+            fullpath: String::new(),
+            contents: String::new(),
+        }
+    }
+}
+
 #[tauri::command]
-fn read_target_file_contents() -> String {
+fn read_target_file_contents() -> OpenedFile {
     let file_path = &get_openedfile_fullpath();
     let mut file = match File::open(file_path) {
         Ok(f) => f,
@@ -48,15 +60,18 @@ fn read_target_file_contents() -> String {
                 Ok(cd) => println!("Current directory: {}", cd.display()),
                 Err(err) => println!("{}", err),
             }
-            return String::new();
+            return OpenedFile::empty();
         }
     };
     let mut contents = String::new();
     if let Err(err) = file.read_to_string(&mut contents) {
         println!("Failed to read file: {}", err);
-        return String::new();
+        return OpenedFile::empty();
     }
-    return contents;
+    return OpenedFile {
+        fullpath: file_path.to_string(),
+        contents,
+    };
 }
 
 #[tauri::command]
