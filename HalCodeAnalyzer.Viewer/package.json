@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "tsc": "tsc --noEmit",
+    "tauri": "tauri",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
@@ -27,6 +28,7 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^1.5.9",
     "@types/cytoscape": "^3.19.16",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
