@@ -44,7 +44,7 @@ export default function () {
       saveDataSource()
       e.preventDefault()
     }
-  }, [reload, saveDataSource, showDataSource])
+  }, [reload, saveDataSource])
 
   return (
     <PanelGroup
@@ -56,14 +56,10 @@ export default function () {
       {/* ツールバー */}
       <div className="flex content-start items-center gap-2 mb-2">
 
-        {/* クエリ名 */}
-        <label className="text-nowrap flex cursor-pointer">
-          {viewState.name}
-          <Components.Button
-            onClick={() => setShowDataSource(x => x.toggle())}
-            icon={showDataSource ? Icon.UpOutlined : Icon.DownOutlined}
-          />
-        </label>
+        <Components.Button
+          onClick={() => setShowDataSource(x => x.toggle())}
+          icon={showDataSource ? Icon.UpOutlined : Icon.DownOutlined}
+        />
         <Components.Button onClick={reload}>
           {nowLoading ? '読込中...' : '再読込(Ctrl+Enter)'}
         </Components.Button>
