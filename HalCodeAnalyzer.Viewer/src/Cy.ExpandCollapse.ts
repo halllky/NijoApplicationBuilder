@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import cytoscape from 'cytoscape'
 // @ts-ignore
 import cytospaceExpandCollapse from 'cytoscape-expand-collapse'
-import { Query } from './GraphView.Query'
+import { ViewState } from './Graph.ViewState'
 
 const configure = (cy: typeof cytoscape) => {
   cytospaceExpandCollapse(cy)
@@ -50,14 +50,14 @@ const useExpandCollapse = (cy: cytoscape.Core | undefined) => {
   }
 }
 
-const getViewState = (beforeState: Query, cy: cytoscape.Core): Query => {
+const getViewState = (beforeState: ViewState, cy: cytoscape.Core): ViewState => {
   const api = (cy as any)?.expandCollapse('get')
   const collapsedNodes = api
     .getAllCollapsedChildrenRecursively()
     .map((node: cytoscape.NodeSingular) => node.id())
   return { ...beforeState, collapsedNodes }
 }
-const restoreViewState = (viewState: Query, cy: cytoscape.Core) => {
+const restoreViewState = (viewState: ViewState, cy: cytoscape.Core) => {
   console.debug('Restore View State is skipped.', viewState, cy)
   // const api = (cy as any)?.expandCollapse('get')
   // for (const nodeId of viewState.collapsedNodes) {

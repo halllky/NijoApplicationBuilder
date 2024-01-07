@@ -1,73 +1,66 @@
-import { useEffect, useMemo } from 'react'
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
-import { BrowserRouter, Routes } from 'react-router-dom'
-import * as AppSetting from './appSetting'
-import * as SideMenu from './appSideMenu'
-import GraphView from './GraphView'
+import GraphView from './Graph'
 import { Messaging, StorageUtil } from './util'
-import useTauriApi from './useTauriApi'
+import { TauriApiContextProvider } from './TauriApi'
 
 function App() {
   return (
-    <BrowserRouter>
+    <Messaging.ErrorMessageContextProvider>
       <StorageUtil.LocalStorageContextProvider>
-        <Messaging.ErrorMessageContextProvider>
-          <SideMenu.SideMenuContextProvider>
-            <AppInsideContext />
-          </SideMenu.SideMenuContextProvider>
-        </Messaging.ErrorMessageContextProvider>
+        <TauriApiContextProvider>
+          <GraphView />
+        </TauriApiContextProvider>
       </StorageUtil.LocalStorageContextProvider>
-    </BrowserRouter>
+    </Messaging.ErrorMessageContextProvider>
   )
 }
 
-function AppInsideContext() {
+// function AppInsideContext() {
 
-  const { getFileSpecifiedCliArgs } = useTauriApi()
-  useEffect(() => {
-    (async () => {
-      console.log(await getFileSpecifiedCliArgs())
-    })()
-  }, [])
+//   const { getFileSpecifiedCliArgs } = useTauriApi()
+//   useEffect(() => {
+//     (async () => {
+//       console.log(await getFileSpecifiedCliArgs())
+//     })()
+//   }, [])
 
-  const queryPages = GraphView.usePages()
-  const appSettingPages = AppSetting.usePages()
-  const sideMenuItems = useMemo(() => [
-    ...queryPages.menuItems,
-    ...appSettingPages.menuItems,
-  ], [queryPages.menuItems, appSettingPages.menuItems])
+//   const queryPages = GraphView.usePages()
+//   const appSettingPages = AppSetting.usePages()
+//   const sideMenuItems = useMemo(() => [
+//     ...queryPages.menuItems,
+//     ...appSettingPages.menuItems,
+//   ], [queryPages.menuItems, appSettingPages.menuItems])
 
-  // サイドメニュー表示非表示
-  const [{ showSideMenu }] = SideMenu.useSideMenuContext()
+//   // サイドメニュー表示非表示
+//   const [{ showSideMenu }] = SideMenu.useSideMenuContext()
 
-  return (
-    <PanelGroup direction="horizontal">
+//   return (
+//     <PanelGroup direction="horizontal">
 
-      <Panel defaultSize={20} className={`
-        flex [&>*]:flex-1
-        ${showSideMenu ? '' : 'hidden'}`}>
-        <SideMenu.Explorer sections={sideMenuItems} />
-      </Panel>
+//       <Panel defaultSize={20} className={`
+//         flex [&>*]:flex-1
+//         ${showSideMenu ? '' : 'hidden'}`}>
+//         <SideMenu.Explorer sections={sideMenuItems} />
+//       </Panel>
 
-      {showSideMenu && (
-        <PanelResizeHandle className="w-2 bg-zinc-100" />
-      )}
+//       {showSideMenu && (
+//         <PanelResizeHandle className="w-2 bg-zinc-100" />
+//       )}
 
-      <Panel className={`
-        flex flex-col
-        [&>*:first-child]:flex-1 [&>*:first-child]:min-h-0 py-2
-        ${showSideMenu ? 'pr-2' : 'px-2'}
-        bg-zinc-100`}>
-        <Routes>
-          {queryPages.Routes()}
-          {appSettingPages.Routes()}
-        </Routes>
-        <Messaging.InlineMessageList />
-      </Panel>
+//       <Panel className={`
+//         flex flex-col
+//         [&>*:first-child]:flex-1 [&>*:first-child]:min-h-0 py-2
+//         ${showSideMenu ? 'pr-2' : 'px-2'}
+//         bg-zinc-100`}>
+//         <Routes>
+//           {queryPages.Routes()}
+//           {appSettingPages.Routes()}
+//         </Routes>
+//         <Messaging.InlineMessageList />
+//       </Panel>
 
-      <Messaging.Toast />
-    </PanelGroup>
-  )
-}
+//       <Messaging.Toast />
+//     </PanelGroup>
+//   )
+// }
 
 export default App

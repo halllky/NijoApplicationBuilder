@@ -17,37 +17,40 @@ export namespace ReactHookUtil {
     }
   }
 
+  // ファイルを超えてDispatcherの型を推論したいことがあるので
+  export type DispatcherOf<TReducer>
+    = TReducer extends React.Reducer<any, DispatchArg<any, infer TModifier>>
+    ? Dispatcher<TModifier>
+    : never
+  type Dispatcher<TModifier>
+    = TModifier extends StateModifier<infer TState>
+    ? ((modifier: DispatchArg<TState, TModifier>) => void)
+    : never
+
   // useContextの簡略化
   type ReducerEx<S, M extends StateModifier<S>> = React.Reducer<S, DispatchArg<S, M>>
+  type ContextEx<S, M extends StateModifier<S>> = React.Context<readonly [S, React.Dispatch<DispatchArg<S, M>>]>
   type ProviderComponent = (props: { children?: React.ReactNode }) => JSX.Element
   export const defineContext = <S, M extends StateModifier<S>>(
     getInitialState: () => S,
     reducerDef: ReducerDef<S, M>,
-    localStorageSaveLoadSettings?: Parameters<typeof StorageUtil.useLocalStorage<S>>['0']
+    craeteProviderContext?: (Context: ContextEx<S, M>, reducer: ReducerEx<S, M>) => ProviderComponent
   ) => {
     const reducer = defineReducer(reducerDef)
     const dummyDispatcher = (() => { }) as React.Dispatch<DispatchArg<S, M>>
     const ContextEx = createContext([getInitialState(), dummyDispatcher] as const)
     /** App直下などに置く必要あり */
-    const ContextProvider: ProviderComponent = !localStorageSaveLoadSettings
-
-      // 状態をlocalstorageに保存しない場合
-      ? ({ children }) => {
+    const ContextProvider: ProviderComponent
+      = craeteProviderContext?.(ContextEx, reducer)
+      // 既定のコンテキストプロバイダー
+      ?? (({ children }) => {
         const contextValue = useReducer(reducer, getInitialState())
-        return <ContextEx.Provider value={contextValue}>{children}</ContextEx.Provider>
-      }
-
-      // 状態をlocalstorageに保存する場合
-      : ({ children }) => {
-        const { data, save } = StorageUtil.useLocalStorage(localStorageSaveLoadSettings)
-        const reducerWithSave: ReducerEx<S, M> = useCallback((state, action) => {
-          const updated = reducer(state, action)
-          save(updated)
-          return updated
-        }, [save])
-        const contextValue = useReducer(reducerWithSave, data)
-        return <ContextEx.Provider value={contextValue}>{children}</ContextEx.Provider>
-      }
+        return (
+          <ContextEx.Provider value={contextValue}>
+            {children}
+          </ContextEx.Provider>
+        )
+      })
 
     /** コンテキスト使用側はこれを使う */
     const useContextEx = () => useContext(ContextEx)
@@ -71,6 +74,15 @@ export namespace ReactHookUtil {
   export const useForceUpdate = () => {
     const [forceUpdateValue, triggerForceUpdate] = useReducer(forceUpdateReducer, false)
     return { forceUpdateValue, triggerForceUpdate }
+  }
+
+  // トグル
+  const toggleReducer = defineReducer((state: boolean) => ({
+    toggle: () => !state,
+    setValue: (v: boolean) => v,
+  }))
+  export const useToggle = (initialState?: boolean) => {
+    return useReducer(toggleReducer, initialState ?? false)
   }
 }
 
@@ -196,6 +208,22 @@ export namespace Components {
     return (
       <div className={`animate-spin border-4 border-sky-500 border-t-transparent rounded-full ${className}`} aria-label="読み込み中"></div>
     )
+  }
+
+  export const Modal = ({ children }: {
+    children?: React.ReactNode
+  }) => {
+    return <>
+      <div className="
+        z-[998] fixed inset-0 w-screen
+        bg-gray-500 bg-opacity-75 transition-opacity
+        flex justify-center items-center">
+        <dialog open className="p-2 rounded bg-white">
+          {children}
+        </dialog>
+      </div>
+
+    </>
   }
 }
 
@@ -363,6 +391,8 @@ export namespace Messaging {
   }), state => ({
 
     push: (type: Msg['type'], ...messages: unknown[]) => {
+      if (type === 'error') console.error(...messages)
+
       const flatten = messages.flatMap(m => Array.isArray(m) ? m : [m])
       const addedMessages = flatten.map<Msg>(m => {
         const id = UUID.v4()
