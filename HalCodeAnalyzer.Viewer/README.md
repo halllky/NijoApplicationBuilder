@@ -14,3 +14,8 @@ Tauri
 ```
 npm run tauri dev
 ```
+
+# Release
+```
+npm run tauri build
+```

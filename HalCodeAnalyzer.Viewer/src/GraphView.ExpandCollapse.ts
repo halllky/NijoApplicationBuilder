@@ -58,6 +58,7 @@ const getViewState = (beforeState: Query, cy: cytoscape.Core): Query => {
   return { ...beforeState, collapsedNodes }
 }
 const restoreViewState = (viewState: Query, cy: cytoscape.Core) => {
+  console.debug('Restore View State is skipped.', viewState, cy)
   // const api = (cy as any)?.expandCollapse('get')
   // for (const nodeId of viewState.collapsedNodes) {
   //   const node = cy.getElementById(nodeId)
