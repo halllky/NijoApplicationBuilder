@@ -113,10 +113,10 @@ const Editor: DataSourceEditor<Neo4jDataSource> = ({
 }) => {
   const [showSettingModal, setShowSettingModal] = useState(false)
   const handleQueryStringEdit: React.ChangeEventHandler<HTMLTextAreaElement> = useCallback(e => {
-    onChange({ ...value, query: e.target.value })
+    if (value) onChange({ ...value, query: e.target.value })
   }, [value, onChange])
   const handleConnectionEdit = useCallback((connection: Neo4jDataSource['connection']) => {
-    onChange({ ...value, connection })
+    if (value) onChange({ ...value, connection })
     setShowSettingModal(false)
   }, [value, onChange])
   const handleCancelConnEdit = useCallback(() => {
@@ -126,7 +126,7 @@ const Editor: DataSourceEditor<Neo4jDataSource> = ({
   return (
     <div className={`relative flex ${className}`}>
       <Components.Textarea
-        value={value.query}
+        value={value?.query}
         onChange={handleQueryStringEdit}
         className="flex-1 font-mono"
         inputClassName="resize-none"
@@ -138,7 +138,7 @@ const Editor: DataSourceEditor<Neo4jDataSource> = ({
         設定
       </Components.Button>
 
-      {showSettingModal && (
+      {showSettingModal && value && (
         <Components.Modal>
           <ConnectionSettingView
             value={value.connection}
