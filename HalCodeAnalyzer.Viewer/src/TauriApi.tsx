@@ -45,7 +45,7 @@ type OpenedFile = {
 }
 const getBasename = (fullpath: string) => {
   const splitted = fullpath
-    .replace('\\', '/')
+    .replaceAll('\\', '/')
     .split('/')
   return splitted[splitted.length - 1]
 }
