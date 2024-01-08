@@ -162,29 +162,43 @@ export namespace Components {
   type ButtonAttrs = {
     submit?: boolean
     icon?: React.ElementType
+    outlined?: boolean
   }
   export const Button = ReactHookUtil.forwardRefEx<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & ButtonAttrs>((props, ref) => {
     const {
       type,
       icon,
+      outlined,
       title,
       submit,
-      className,
+      className: additionalClassName,
       children,
       ...rest
     } = props
 
-    const className2 = icon
-      ? `text-zinc-500 flex p-1 ${className}`
-      : `text-white bg-zinc-500 px-1 text-nowrap
-         border border-1 border-zinc-700
-         select-none
-         ${className}`
+    let className: string
+    if (icon) {
+      className
+        = 'text-zinc-500 flex p-1 '
+        + additionalClassName
+    } else if (outlined) {
+      className
+        = 'text-zinc-500 px-1 text-nowrap '
+        + 'border border-1 border-zinc-500 '
+        + 'select-none '
+        + additionalClassName
+    } else {
+      className
+        = 'text-white bg-zinc-500 px-1 text-nowrap '
+        + 'border border-1 border-zinc-500 '
+        + 'select-none '
+        + additionalClassName
+    }
 
     return (
       <button ref={ref} {...rest}
         type={type ?? (submit ? 'submit' : 'button')}
-        className={className2}
+        className={className}
         title={title ?? (icon ? (children as string) : undefined)}
       >
         {icon

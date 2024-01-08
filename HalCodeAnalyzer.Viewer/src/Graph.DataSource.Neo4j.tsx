@@ -129,12 +129,13 @@ const Editor: DataSourceEditor<Neo4jDataSource> = ({
         value={value?.query}
         onChange={handleQueryStringEdit}
         className="flex-1 font-mono"
-        inputClassName="resize-none"
+        inputClassName="resize-none whitespace-pre text-lg"
       />
 
       <Components.Button
         onClick={() => setShowSettingModal(true)}
-        icon={Icon.SettingOutlined}>
+        icon={Icon.SettingOutlined}
+        className="absolute right-1 top-1 text-lg">
         設定
       </Components.Button>
 
@@ -177,7 +178,7 @@ const ConnectionSettingView = (props: {
       />
       <Components.Separator />
       <div className="flex">
-        <Components.Button onClick={props.onCancel}>キャンセル</Components.Button>
+        <Components.Button outlined onClick={props.onCancel}>キャンセル</Components.Button>
         <div className="flex-1"></div>
         <Components.Button submit>保存</Components.Button>
       </div>

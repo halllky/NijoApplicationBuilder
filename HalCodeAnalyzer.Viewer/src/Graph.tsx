@@ -49,7 +49,7 @@ export default function () {
   return (
     <PanelGroup
       direction="vertical"
-      className="flex flex-col relative outline-none p-2"
+      className="flex flex-col relative outline-none p-2 bg-zinc-200"
       onKeyDown={handleKeyDown}
       tabIndex={0}>
 
@@ -60,32 +60,24 @@ export default function () {
           onClick={() => setShowDataSource(x => x.toggle())}
           icon={showDataSource ? Icon.UpOutlined : Icon.DownOutlined}
         />
-        <Components.Button onClick={reload}>
+        <Components.Button outlined onClick={reload}>
           {nowLoading ? '読込中...' : '再読込(Ctrl+Enter)'}
         </Components.Button>
 
         <div className="flex-1"></div>
 
         <LayoutSelector />
-        <Components.Button onClick={reset}>
-          自動レイアウト
-        </Components.Button>
+        <Components.Button outlined onClick={reset}>自動レイアウト</Components.Button>
 
-        <label className="text-nowrap">
+        <label className="text-nowrap flex gap-1">
           <input type="checkbox" checked={nodesLocked} onChange={toggleNodesLocked} />
           ノード位置固定
         </label>
 
-        <Components.Button onClick={expandAll}>
-          すべて展開
-        </Components.Button>
-        <Components.Button onClick={collapseAll}>
-          すべて折りたたむ
-        </Components.Button>
+        <Components.Button outlined onClick={expandAll}>すべて展開</Components.Button>
+        <Components.Button outlined onClick={collapseAll}>すべて折りたたむ</Components.Button>
 
-        <Components.Button onClick={saveDataSource}>
-          保存(Ctrl+S)
-        </Components.Button>
+        <Components.Button onClick={saveDataSource}>保存(Ctrl+S)</Components.Button>
       </div>
 
       {/* データソース */}
