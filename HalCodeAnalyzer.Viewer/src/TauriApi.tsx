@@ -8,7 +8,7 @@ export const useTauriApi = () => {
 
   const readTargetFile = useCallback(async (): Promise<UnknownDataSource | undefined> => {
     try {
-      const obj: OpenedFile = await invoke('read_target_file_contents')
+      const obj: OpenedFile = await invoke('load_file', { suffix: SUFFIX.DATA_FILE })
       if (typeof obj !== 'object'
         || typeof obj.fullpath !== 'string'
         || typeof obj.contents !== 'string')
@@ -27,7 +27,7 @@ export const useTauriApi = () => {
   const writeTargetFile = useCallback(async (obj: UnknownDataSource) => {
     try {
       const contents = JSON.stringify(obj, undefined, '  ')
-      await invoke('write_target_file_contents', { contents })
+      await invoke('save_flie', { contents, suffix: SUFFIX.DATA_FILE })
     } catch (error) {
       dispatchMessage(msg => msg.push('error', error))
     }
@@ -38,6 +38,11 @@ export const useTauriApi = () => {
     writeTargetFile,
   }
 }
+
+const SUFFIX = {
+  DATA_FILE: '',
+  VIEWSTATE_FILE: '.viewState',
+} as const
 
 type OpenedFile = {
   fullpath: string

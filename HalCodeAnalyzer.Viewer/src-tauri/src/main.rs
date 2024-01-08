@@ -8,15 +8,12 @@ use std::path::PathBuf;
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![
-            read_target_file_contents,
-            write_target_file_contents,
-        ])
+        .invoke_handler(tauri::generate_handler![load_file, save_file,])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
 
-fn get_openedfile_fullpath() -> String {
+fn get_openedfile_fullpath(filename_suffix: String) -> String {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
         return String::new();
@@ -29,8 +26,8 @@ fn get_openedfile_fullpath() -> String {
     };
     let joined = cd.join(file_path);
     let joined_str = match joined.to_str() {
-        Some(value) => value,
-        None => file_path,
+        Some(value) => value.to_owned() + &filename_suffix,
+        None => file_path.to_owned() + &filename_suffix,
     };
     return joined_str.to_string();
 }
@@ -50,8 +47,8 @@ impl OpenedFile {
 }
 
 #[tauri::command]
-fn read_target_file_contents() -> OpenedFile {
-    let file_path = &get_openedfile_fullpath();
+fn load_file(suffix: String) -> OpenedFile {
+    let file_path = &get_openedfile_fullpath(suffix);
     let mut file = match File::open(file_path) {
         Ok(f) => f,
         Err(err) => {
@@ -75,8 +72,8 @@ fn read_target_file_contents() -> OpenedFile {
 }
 
 #[tauri::command]
-fn write_target_file_contents(contents: String) {
-    let file_path = &get_openedfile_fullpath();
+fn save_file(suffix: String, contents: String) {
+    let file_path = &get_openedfile_fullpath(suffix);
     let mut file = match File::create(file_path) {
         Ok(f) => f,
         Err(err) => {
