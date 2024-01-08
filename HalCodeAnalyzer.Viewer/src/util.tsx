@@ -404,9 +404,8 @@ export namespace Messaging {
   ] = ReactHookUtil.defineContext((): State => ({
     inline: [] as Msg[],
     toast: [] as Msg[],
-  }), state => ({
-
-    push: (type: Msg['type'], ...messages: unknown[]) => {
+  }), state => {
+    const push = (type: Msg['type'], ...messages: unknown[]) => {
       if (type === 'error') console.error(...messages)
 
       const flatten = messages.flatMap(m => Array.isArray(m) ? m : [m])
@@ -422,13 +421,11 @@ export namespace Messaging {
       } else {
         return { ...state, inline: [...state.inline, ...addedMessages] }
       }
-    },
-
-    clear: (nameOrItem?: string | Msg) => {
+    }
+    const clear = (nameOrItem?: string | Msg) => {
       if (!nameOrItem) {
         return { ...state, inline: [], toast: [] }
       }
-
       let filterFn: (msg: Msg) => boolean
       if (typeof nameOrItem === 'string') {
         const name = nameOrItem
@@ -437,14 +434,21 @@ export namespace Messaging {
         const id = nameOrItem.id
         filterFn = m => m.id !== id
       }
-
       return {
         ...state,
         inline: state.inline.filter(filterFn),
         toast: state.toast.filter(filterFn),
       }
-    },
-  }))
+    }
+
+    return {
+      push,
+      clear,
+      error: (...messages: unknown[]) => push('error', ...messages),
+      warn: (...messages: unknown[]) => push('warn', ...messages),
+      info: (...messages: unknown[]) => push('info', ...messages),
+    }
+  })
 
   export const InlineMessageList = ({ type, name, className }: {
     type?: Msg['type']
