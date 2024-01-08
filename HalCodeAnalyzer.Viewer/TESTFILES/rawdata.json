@@ -1,0 +1,52 @@
+{
+  "nodes": {
+    "a": {
+      "label": "aaa"
+    },
+    "b": {
+      "label": "bbb"
+    },
+    "c": {
+      "label": "ccc",
+      "parent": "b"
+    },
+    "d": {
+      "label": "ddd",
+      "parent": "b"
+    },
+    "e": {
+      "label": "eee",
+      "parent": "c"
+    },
+    "f": {
+      "label": "fff",
+      "parent": "c"
+    },
+    "g": {
+      "label": "ggg",
+      "parent": "d"
+    },
+    "h": {
+      "label": "hhh",
+      "parent": "d"
+    }
+  },
+  "edges": [
+    {
+      "source": "e",
+      "target": "g"
+    },
+    {
+      "source": "e",
+      "target": "g"
+    },
+    {
+      "source": "f",
+      "target": "g"
+    },
+    {
+      "source": "f",
+      "target": "h"
+    }
+  ]
+}

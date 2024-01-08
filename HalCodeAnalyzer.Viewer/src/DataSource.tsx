@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react'
 import { useNeo4jDataSource } from './DataSource.Neo4j'
+import { useFileDataSource } from './DataSource.File'
 
 export type DataSet = {
   nodes: { [id: string]: Node }
@@ -22,13 +23,15 @@ export const createEmptyDataSet = (): DataSet => ({
 
 export const useDataSourceHandler = () => {
 
+  const fileDataSetHandler = useFileDataSource()
   const neo4jHandler = useNeo4jDataSource()
   const defineHandler = useCallback((dataSource: UnknownDataSource): IDataSourceHandler => {
     return [
+      fileDataSetHandler,
       neo4jHandler,
       DefaultHandler,
     ].find(h => h.match(dataSource?.type))!
-  }, [neo4jHandler])
+  }, [fileDataSetHandler, neo4jHandler])
 
   return { defineHandler }
 }
@@ -36,7 +39,7 @@ export const useDataSourceHandler = () => {
 // ---------------------------
 export interface IDataSourceHandler {
   match: (type: string | undefined) => boolean
-  Editor: DataSourceEditor
+  Editor: DataSourceEditor | undefined
   reload: ReloadFunc
 }
 export type ReloadFunc<T = any> = (dataSource: T) => Promise<DataSet>

@@ -91,10 +91,11 @@ function App() {
       {/* ツールバー */}
       <div className="flex content-start items-center gap-2 mb-2">
 
-        <Components.Button
-          onClick={() => setShowDataSource(x => x.toggle())}
-          icon={showDataSource ? Icon.UpOutlined : Icon.DownOutlined}
-        />
+        {dsHandler?.Editor && (
+          <Components.Button
+            onClick={() => setShowDataSource(x => x.toggle())}
+            icon={showDataSource ? Icon.UpOutlined : Icon.DownOutlined}
+          />)}
         <Components.Button outlined onClick={() => dataSource && reload(dataSource)}>
           {nowLoading ? '読込中...' : '再読込(Ctrl+Enter)'}
         </Components.Button>
@@ -116,17 +117,19 @@ function App() {
       </div>
 
       {/* データソース */}
-      <Panel defaultSize={16} className={`flex flex-col ${!showDataSource && 'hidden'}`}>
-        {dsHandler && (
+      {dsHandler?.Editor && (
+        <Panel defaultSize={16} className={`flex flex-col ${!showDataSource && 'hidden'}`}>
           <dsHandler.Editor
             value={dataSource}
             onChange={setDataSource}
             className="flex-1"
           />
-        )}
-      </Panel>
+        </Panel>
+      )}
 
-      {showDataSource && <PanelResizeHandle className="h-2" />}
+      {showDataSource && dsHandler?.Editor && (
+        <PanelResizeHandle className="h-2" />
+      )}
 
       {/* グラフ */}
       <Panel className="flex flex-col bg-white relative">
