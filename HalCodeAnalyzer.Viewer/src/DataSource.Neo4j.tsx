@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import neo4j, { Node, Relationship, Record } from 'neo4j-driver'
 import * as Icon from '@ant-design/icons'
-import { DataSet, DataSourceEditor, IDataSourceHandler, ReloadFunc, createEmptyDataSet } from './Graph.DataSource'
+import { DataSet, DataSourceEditor, IDataSourceHandler, ReloadFunc, createEmptyDataSet } from './DataSource'
 import { Components, Messaging } from './util'
 
 const match: IDataSourceHandler['match'] = type => type === 'neo4j'

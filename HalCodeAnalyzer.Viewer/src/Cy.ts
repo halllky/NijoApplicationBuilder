@@ -5,7 +5,7 @@ import Navigator from './Cy.Navigator'
 import AutoLayout from './Cy.AutoLayout'
 import ExpandCollapse from './Cy.ExpandCollapse'
 import { ViewState, useViewState } from './Cy.SaveLoad'
-import { DataSet } from './Graph.DataSource'
+import { DataSet } from './DataSource'
 import { ReactHookUtil } from './util'
 import { USER_SETTING } from './UserSetting'
 
@@ -54,7 +54,7 @@ export const useCytoscape = () => {
 
   const { collectViewState, applyViewState } = useViewState(cy)
 
-  const apply = useCallback(async (dataSet: DataSet, viewState: ViewState) => {
+  const applyToCytoscape = useCallback(async (dataSet: DataSet, viewState: ViewState) => {
     if (!cy) return
     try {
       cy.startBatch()
@@ -103,7 +103,7 @@ export const useCytoscape = () => {
 
   return {
     containerRef,
-    apply,
+    applyToCytoscape,
     reset,
     expandAll,
     collapseAll,

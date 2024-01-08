@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react'
-import { useNeo4jDataSource } from './Graph.DataSource.Neo4j'
+import { useNeo4jDataSource } from './DataSource.Neo4j'
 
 export type DataSet = {
   nodes: { [id: string]: Node }
