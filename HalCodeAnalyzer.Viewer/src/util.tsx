@@ -224,20 +224,22 @@ export namespace Components {
     )
   }
 
-  export const Modal = ({ children }: {
+  export const Modal = ({ children, open, className }: {
     children?: React.ReactNode
+    className?: string
+    open: boolean
   }) => {
-    return <>
-      <div className="
+    return (
+      <div className={`
         z-[998] fixed inset-0 w-screen
         bg-gray-500 bg-opacity-75 transition-opacity
-        flex justify-center items-center">
-        <dialog open className="p-2 rounded bg-white">
+        flex justify-center items-center
+        ${open ? undefined : 'hidden'}`}>
+        <dialog open={open} className={`p-2 rounded bg-white ${className}`}>
           {children}
         </dialog>
       </div>
-
-    </>
+    )
   }
 }
 

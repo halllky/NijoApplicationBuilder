@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import cytoscape from 'cytoscape'
 import * as UUID from 'uuid'
 import Navigator from './Cy.Navigator'
@@ -114,6 +114,11 @@ export const useCytoscape = (
       setNowLoading(false)
     }
   }, [cy, reloadDataSet])
+
+  // 画面初期表示時、データソース変更時に自動再読み込み
+  useEffect(() => {
+    reload()
+  }, [reload])
 
   return {
     containerRef,

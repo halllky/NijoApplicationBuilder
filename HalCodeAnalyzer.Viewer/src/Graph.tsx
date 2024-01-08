@@ -37,10 +37,7 @@ export default function () {
   const [showDataSource, setShowDataSource] = ReactHookUtil.useToggle(true)
 
   const handleKeyDown: React.KeyboardEventHandler<React.ElementType> = useCallback(e => {
-    if (e.ctrlKey && e.key === 'Enter') {
-      reload()
-      e.preventDefault()
-    } else if (e.ctrlKey && e.key === 's') {
+    if (e.ctrlKey && e.key === 's') {
       saveDataSource()
       e.preventDefault()
     }

@@ -111,25 +111,26 @@ const Editor: DataSourceEditor<Neo4jDataSource> = ({
   onChange,
   className,
 }) => {
+  const { register, handleSubmit, getValues } = useForm<Neo4jDataSource>({ defaultValues: value })
   const [showSettingModal, setShowSettingModal] = useState(false)
-  const handleQueryStringEdit: React.ChangeEventHandler<HTMLTextAreaElement> = useCallback(e => {
-    if (value) onChange({ ...value, query: e.target.value })
-  }, [value, onChange])
-  const handleConnectionEdit = useCallback((connection: Neo4jDataSource['connection']) => {
-    if (value) onChange({ ...value, connection })
-    setShowSettingModal(false)
-  }, [value, onChange])
-  const handleCancelConnEdit = useCallback(() => {
-    setShowSettingModal(false)
-  }, [])
+
+  const handleKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = useCallback(e => {
+    if (e.ctrlKey && e.key === 'Enter') {
+      onChange(getValues())
+      e.preventDefault()
+    }
+  }, [onChange, getValues])
 
   return (
-    <div className={`relative flex ${className}`}>
+    <form
+      className={`relative flex ${className}`}
+      onSubmit={handleSubmit(onChange)}
+    >
       <Components.Textarea
-        value={value?.query}
-        onChange={handleQueryStringEdit}
         className="flex-1 font-mono"
         inputClassName="resize-none whitespace-pre text-lg"
+        onKeyDown={handleKeyDown}
+        {...register('query')}
       />
 
       <Components.Button
@@ -139,49 +140,21 @@ const Editor: DataSourceEditor<Neo4jDataSource> = ({
         設定
       </Components.Button>
 
-      {showSettingModal && value && (
-        <Components.Modal>
-          <ConnectionSettingView
-            value={value.connection}
-            onChange={handleConnectionEdit}
-            onCancel={handleCancelConnEdit}
-          />
-        </Components.Modal>
-      )}
-    </div>
-  )
-}
-
-const ConnectionSettingView = (props: {
-  value: Neo4jDataSource['connection']
-  onChange: (v: Neo4jDataSource['connection']) => void
-  onCancel: () => void
-  className?: string
-}) => {
-  const { register, handleSubmit } = useForm<Neo4jDataSource['connection']>({
-    defaultValues: props.value
-  })
-
-  return (
-    <form
-      onSubmit={handleSubmit(props.onChange)}
-      className={`flex flex-col gap-1 ${props.className}`}
-    >
-      <Components.Text type="url" labelText="URL" labelClassName="basis-24" placeholder="neo4j://localhost:7687"
-        {...register(`host`)}
-      />
-      <Components.Text type="text" labelText="USER" labelClassName="basis-24" placeholder="neo4j"
-        {...register(`user`)}
-      />
-      <Components.Text type="password" labelText="PASSWORD" labelClassName="basis-24"
-        {...register(`pass`)}
-      />
-      <Components.Separator />
-      <div className="flex">
-        <Components.Button outlined onClick={props.onCancel}>キャンセル</Components.Button>
-        <div className="flex-1"></div>
-        <Components.Button submit>保存</Components.Button>
-      </div>
+      <Components.Modal open={showSettingModal} className="flex flex-col gap-1">
+        <Components.Text type="url" labelText="URL" labelClassName="basis-24" placeholder="neo4j://localhost:7687"
+          {...register(`connection.host`)}
+        />
+        <Components.Text type="text" labelText="USER" labelClassName="basis-24" placeholder="neo4j"
+          {...register(`connection.user`)}
+        />
+        <Components.Text type="password" labelText="PASSWORD" labelClassName="basis-24"
+          {...register(`connection.pass`)}
+        />
+        <Components.Separator />
+        <Components.Button onClick={() => setShowSettingModal(false)} className="self-end">
+          閉じる
+        </Components.Button>
+      </Components.Modal>
     </form>
   )
 }
