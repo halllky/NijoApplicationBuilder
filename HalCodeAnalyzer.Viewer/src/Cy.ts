@@ -7,6 +7,7 @@ import ExpandCollapse from './Cy.ExpandCollapse'
 import { ViewState, useViewState } from './Cy.SaveLoad'
 import { DataSet } from './Graph.DataSource'
 import { ReactHookUtil } from './util'
+import { USER_SETTING } from './UserSetting'
 
 AutoLayout.configure(cytoscape)
 Navigator.configure(cytoscape)
@@ -24,6 +25,7 @@ export const useCytoscape = () => {
         elements: [],
         style: STYLESHEET,
         layout: AutoLayout.DEFAULT,
+        wheelSensitivity: USER_SETTING.wheelSensitivity.value,
       })
       setNavInstance(Navigator.setupCyInstance(cyInstance))
       ExpandCollapse.setupCyInstance(cyInstance)
