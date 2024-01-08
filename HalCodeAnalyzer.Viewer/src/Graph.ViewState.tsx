@@ -1,27 +1,51 @@
-import { useReducer } from 'react'
-import { ReactHookUtil } from './util'
+import { useCallback, useEffect, useReducer } from 'react'
+import { Messaging, ReactHookUtil } from './util'
+import { useTauriApi } from './TauriApi'
 
 export type ViewState = {
-  name: string
   nodePositions: { [nodeId: string]: cytoscape.Position }
   collapsedNodes: string[]
 }
 
-export const createNewQuery = (): ViewState => ({
-  name: '',
+export const getEmptyViewState = (): ViewState => ({
   nodePositions: {},
   collapsedNodes: [],
 })
 
 const viewStateReducer = ReactHookUtil.defineReducer((state: ViewState) => ({
-  rename: (name: string) => ({ ...state, name }),
+  load: (value: ViewState) => ({ ...value }),
   clear: () => ({ ...state, nodePositions: {}, collapsedNodes: [] }),
 }))
 export type ViewStateDispatcher = ReactHookUtil.DispatcherOf<typeof viewStateReducer>
 
 export const useViewState = () => {
-  const [viewState, dispatchViewState] = useReducer(viewStateReducer, createNewQuery())
-  return [viewState, dispatchViewState] as const
+  const [viewState, dispatchViewState] = useReducer(viewStateReducer, getEmptyViewState())
+  const [, dispatchMessage] = Messaging.useMsgContext()
+  const { loadViewStateFile, saveViewStateFile } = useTauriApi()
+
+  // 初期表示時
+  useEffect(() => {
+    loadViewStateFile().then(obj => {
+      dispatchViewState(vs => vs.load(obj))
+    }).catch(err => {
+      dispatchMessage(msg => msg.error(err))
+    })
+  }, [])
+
+  const saveViewState = useCallback(async () => {
+    try {
+      await saveViewStateFile(viewState)
+      dispatchMessage(msg => msg.info('保存しました。'))
+    } catch (error) {
+      dispatchMessage(msg => msg.error(error))
+    }
+  }, [viewState])
+
+  return {
+    viewState,
+    dispatchViewState,
+    saveViewState,
+  }
 }
 
 const getViewState = (beforeState: ViewState, cy: cytoscape.Core): ViewState => {

@@ -26,19 +26,25 @@ export const useDataSource = () => {
   const [, dispatchMessage] = Messaging.useMsgContext()
 
   // データソースの読み込みと保存
-  const { readTargetFile, writeTargetFile } = useTauriApi()
+  const { loadTargetFile, saveTargetFile } = useTauriApi()
   const [dataSource, setDataSource] = useState<UnknownDataSource>()
   useEffect(() => {
-    readTargetFile().then(obj => {
+    loadTargetFile().then(obj => {
       setDataSource(obj)
+    }).catch(err => {
+      dispatchMessage(msg => msg.error(err))
     })
   }, [])
 
   const saveDataSource = useCallback(async () => {
     if (!dataSource) return
-    await writeTargetFile(dataSource)
-    dispatchMessage(msg => msg.push('info', '保存しました。'))
-  }, [dataSource, writeTargetFile])
+    try {
+      await saveTargetFile(dataSource)
+      dispatchMessage(msg => msg.info('保存しました。'))
+    } catch (error) {
+      dispatchMessage(msg => msg.error(error))
+    }
+  }, [dataSource])
 
   // ハンドラの決定
   const neo4jHandler = useNeo4jDataSource()

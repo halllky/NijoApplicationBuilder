@@ -9,10 +9,11 @@ import { useCytoscape } from './Cy'
 import Navigator from './Cy.Navigator'
 
 export default function () {
-  const [
+  const {
     viewState,
     dispatchViewState,
-  ] = useViewState()
+    saveViewState,
+  } = useViewState()
 
   const {
     dataSource,
@@ -37,12 +38,17 @@ export default function () {
   // データソース欄の表示/非表示
   const [showDataSource, setShowDataSource] = ReactHookUtil.useToggle(true)
 
+  const saveAll = useCallback(() => {
+    saveDataSource()
+    saveViewState()
+  }, [saveDataSource, saveViewState])
+
   const handleKeyDown: React.KeyboardEventHandler<React.ElementType> = useCallback(e => {
     if (e.ctrlKey && e.key === 's') {
-      saveDataSource()
+      saveAll()
       e.preventDefault()
     }
-  }, [reload, saveDataSource])
+  }, [reload, saveAll])
 
   return (
     <PanelGroup
@@ -75,7 +81,7 @@ export default function () {
         <Components.Button outlined onClick={expandAll}>すべて展開</Components.Button>
         <Components.Button outlined onClick={collapseAll}>すべて折りたたむ</Components.Button>
 
-        <Components.Button onClick={saveDataSource}>保存(Ctrl+S)</Components.Button>
+        <Components.Button onClick={saveAll}>保存(Ctrl+S)</Components.Button>
       </div>
 
       {/* データソース */}

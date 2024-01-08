@@ -1,41 +1,52 @@
 import { useCallback } from 'react'
 import { invoke, window as windowApi } from '@tauri-apps/api'
 import { UnknownDataSource } from './Graph.DataSource'
-import { Messaging } from './util'
+import { ViewState, getEmptyViewState } from './Graph.ViewState'
 
 export const useTauriApi = () => {
-  const [, dispatchMessage] = Messaging.useMsgContext()
 
-  const readTargetFile = useCallback(async (): Promise<UnknownDataSource | undefined> => {
-    try {
-      const obj: OpenedFile = await invoke('load_file', { suffix: SUFFIX.DATA_FILE })
-      if (typeof obj !== 'object'
-        || typeof obj.fullpath !== 'string'
-        || typeof obj.contents !== 'string')
-        throw new Error(`File open result is invalid object: ${JSON.stringify(obj)}`)
+  // --------------- データファイル --------------------
+  const loadTargetFile = useCallback(async (): Promise<UnknownDataSource> => {
+    const dataFile: OpenedFile = await invoke('load_file', { suffix: SUFFIX.DATA_FILE })
+    if (typeof dataFile !== 'object'
+      || typeof dataFile.fullpath !== 'string'
+      || typeof dataFile.contents !== 'string'
+      || !dataFile.contents)
+      throw new Error(`File open result is invalid object: ${JSON.stringify(dataFile)}`)
 
-      windowApi.appWindow.setTitle(getBasename(obj.fullpath))
-
-      const dataSource: UnknownDataSource = JSON.parse(obj.contents)
-      return dataSource
-    } catch (error) {
-      dispatchMessage(msg => msg.push('error', error))
-      return undefined
-    }
+    windowApi.appWindow.setTitle(getBasename(dataFile.fullpath))
+    return JSON.parse(dataFile.contents) as UnknownDataSource
   }, [])
 
-  const writeTargetFile = useCallback(async (obj: UnknownDataSource) => {
-    try {
-      const contents = JSON.stringify(obj, undefined, '  ')
-      await invoke('save_flie', { contents, suffix: SUFFIX.DATA_FILE })
-    } catch (error) {
-      dispatchMessage(msg => msg.push('error', error))
-    }
+  const saveTargetFile = useCallback(async (obj: UnknownDataSource) => {
+    const contents = JSON.stringify(obj, undefined, '  ')
+    await invoke('save_file', { contents, suffix: SUFFIX.DATA_FILE })
   }, [])
+
+  // --------------- ビューステートファイル --------------------
+  const loadViewStateFile = useCallback(async (): Promise<ViewState> => {
+    const vsFile: OpenedFile = await invoke('load_file', { suffix: SUFFIX.VIEWSTATE_FILE })
+    if (typeof vsFile !== 'object'
+      || typeof vsFile.fullpath !== 'string'
+      || typeof vsFile.contents !== 'string'
+      || !vsFile.contents) {
+      return getEmptyViewState()
+    }
+
+    return JSON.parse(vsFile.contents) as ViewState
+  }, [])
+
+  const saveViewStateFile = useCallback(async (obj: ViewState) => {
+    const contents = JSON.stringify(obj, undefined, '  ')
+    await invoke('save_file', { contents, suffix: SUFFIX.VIEWSTATE_FILE })
+  }, [])
+
 
   return {
-    readTargetFile,
-    writeTargetFile,
+    loadTargetFile,
+    saveTargetFile,
+    loadViewStateFile,
+    saveViewStateFile,
   }
 }
 

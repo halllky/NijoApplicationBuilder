@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![load_file, save_file,])
+        .invoke_handler(tauri::generate_handler![load_file, save_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
