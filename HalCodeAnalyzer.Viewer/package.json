@@ -16,7 +16,6 @@
     "@tauri-apps/api": "^1.5.3",
     "cytoscape": "^3.28.1",
     "cytoscape-dagre": "^2.5.0",
-    "cytoscape-expand-collapse": "^4.1.0",
     "cytoscape-fcose": "^2.2.0",
     "cytoscape-klay": "^3.1.4",
     "cytoscape-navigator": "^2.0.2",
@@ -25,7 +24,6 @@
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.49.2",
     "react-resizable-panels": "^1.0.5",
-    "react-router-dom": "^6.21.1",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
