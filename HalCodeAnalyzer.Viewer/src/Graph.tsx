@@ -1,19 +1,16 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import * as Icon from '@ant-design/icons'
 // import enumerateData from './data'
 import { Components, Messaging, ReactHookUtil } from './util'
 import { useDataSource } from './Graph.DataSource'
-import { useViewState } from './Graph.ViewState'
 import { useCytoscape } from './Cy'
 import Navigator from './Cy.Navigator'
+import { useTauriApi } from './TauriApi'
 
 export default function () {
-  const {
-    viewState,
-    dispatchViewState,
-    saveViewState,
-  } = useViewState()
+  const [, dispatchMessage] = Messaging.useMsgContext()
+  const { saveViewStateFile, loadViewStateFile } = useTauriApi()
 
   const {
     dataSource,
@@ -23,7 +20,7 @@ export default function () {
   } = useDataSource()
 
   const {
-    reload,
+    apply,
     containerRef,
     reset,
     expandAll,
@@ -31,24 +28,54 @@ export default function () {
     LayoutSelector,
     nodesLocked,
     toggleNodesLocked,
-    nowProcessing,
     hasNoElements,
-  } = useCytoscape(reloadDataSet, viewState, dispatchViewState)
+    collectViewState,
+  } = useCytoscape()
+
+  // -----------------------------------------------------
+
+  // 読込
+  const [nowLoading, setNowLoading] = useState(true)
+  const reload = useCallback(async () => {
+    setNowLoading(true)
+    try {
+      const dataSet = await reloadDataSet()
+      const viewState = await loadViewStateFile()
+      apply(dataSet, viewState)
+    } catch (error) {
+      dispatchMessage(msg => msg.error(error))
+    } finally {
+      setNowLoading(false)
+    }
+  }, [reloadDataSet, loadViewStateFile])
+
+  useEffect(() => {
+    const timer = setTimeout(reload, 500)
+    return () => clearTimeout(timer)
+  }, [reload])
+
+  // 保存
+  const saveAll = useCallback(async () => {
+    try {
+      await saveDataSource()
+      const viewState = collectViewState()
+      await saveViewStateFile(viewState)
+      dispatchMessage(msg => msg.info('保存しました。'))
+    } catch (error) {
+      dispatchMessage(msg => msg.error(error))
+    }
+  }, [saveDataSource, collectViewState])
 
   // データソース欄の表示/非表示
   const [showDataSource, setShowDataSource] = ReactHookUtil.useToggle(true)
 
-  const saveAll = useCallback(() => {
-    saveDataSource()
-    saveViewState()
-  }, [saveDataSource, saveViewState])
-
+  // キー操作
   const handleKeyDown: React.KeyboardEventHandler<React.ElementType> = useCallback(e => {
     if (e.ctrlKey && e.key === 's') {
       saveAll()
       e.preventDefault()
     }
-  }, [reload, saveAll])
+  }, [saveAll])
 
   return (
     <PanelGroup
@@ -65,7 +92,7 @@ export default function () {
           icon={showDataSource ? Icon.UpOutlined : Icon.DownOutlined}
         />
         <Components.Button outlined onClick={reload}>
-          {nowProcessing ? '読込中...' : '再読込(Ctrl+Enter)'}
+          {nowLoading ? '読込中...' : '再読込(Ctrl+Enter)'}
         </Components.Button>
 
         <div className="flex-1"></div>
@@ -99,7 +126,7 @@ export default function () {
           border border-1 border-zinc-400">
         </div>
         <Navigator.Component hasNoElements={hasNoElements} className="absolute w-[20vw] h-[20vh] right-2 bottom-2 z-[200]" />
-        {nowProcessing && (
+        {nowLoading && (
           <Components.NowLoading className="w-10 h-10 absolute left-0 right-0 top-0 bottom-0 m-auto" />
         )}
       </Panel>

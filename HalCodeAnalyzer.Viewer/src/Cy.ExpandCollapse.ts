@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import cytoscape from 'cytoscape'
 // @ts-ignore
 import cytospaceExpandCollapse from 'cytoscape-expand-collapse'
-import { ViewState } from './Graph.ViewState'
+import { ViewState } from './Cy.SaveLoad'
 
 const configure = (cy: typeof cytoscape) => {
   cytospaceExpandCollapse(cy)

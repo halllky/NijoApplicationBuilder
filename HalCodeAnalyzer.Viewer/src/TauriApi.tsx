@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { invoke, window as windowApi } from '@tauri-apps/api'
 import { UnknownDataSource } from './Graph.DataSource'
-import { ViewState, getEmptyViewState } from './Graph.ViewState'
+import { ViewState, getEmptyViewState } from './Cy.SaveLoad'
 
 export const useTauriApi = () => {
 
@@ -52,7 +52,7 @@ export const useTauriApi = () => {
 
 const SUFFIX = {
   DATA_FILE: '',
-  VIEWSTATE_FILE: '.viewState',
+  VIEWSTATE_FILE: '.viewstate',
 } as const
 
 type OpenedFile = {

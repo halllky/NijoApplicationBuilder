@@ -1,24 +1,18 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import cytoscape from 'cytoscape'
 import * as UUID from 'uuid'
 import Navigator from './Cy.Navigator'
 import AutoLayout from './Cy.AutoLayout'
 import ExpandCollapse from './Cy.ExpandCollapse'
-import VS, { ViewState, ViewStateDispatcher } from './Graph.ViewState'
+import { ViewState, useViewState } from './Cy.SaveLoad'
 import { DataSet } from './Graph.DataSource'
-import { Messaging, ReactHookUtil } from './util'
+import { ReactHookUtil } from './util'
 
 AutoLayout.configure(cytoscape)
 Navigator.configure(cytoscape)
 ExpandCollapse.configure(cytoscape)
 
-export const useCytoscape = (
-  reloadDataSet: () => Promise<DataSet>,
-  viewState: ViewState,
-  dispatchViewState: ViewStateDispatcher
-) => {
-  const [, dispatchMsg] = Messaging.useMsgContext()
-
+export const useCytoscape = () => {
   const [cy, setCy] = useState<cytoscape.Core>()
   const [navInstance, setNavInstance] = useState<{ destroy: () => void }>()
 
@@ -54,22 +48,17 @@ export const useCytoscape = (
 
   const reset = useCallback(() => {
     autoLayout()
-    dispatchViewState(state => state.clear())
   }, [autoLayout])
 
-  const [nowLoading, setNowLoading] = useState(false)
-  const reload = useCallback(async () => {
+  const { collectViewState, applyViewState } = useViewState(cy)
+
+  const apply = useCallback(async (dataSet: DataSet, viewState: ViewState) => {
     if (!cy) return
     try {
-      setNowLoading(true)
-
-      const dataSet = await reloadDataSet()
-
       cy.startBatch()
 
       // データ洗い替え前のノード位置などを退避させておく
-      const viewStateBeforeQuery1 = VS.getViewState(viewState, cy)
-      const viewStateBeforeQuery = ExpandCollapse.getViewState(viewStateBeforeQuery1, cy)
+      const viewStateBeforeQuery = collectViewState()
 
       cy.elements().remove()
 
@@ -102,35 +91,25 @@ export const useCytoscape = (
       }
 
       // ノード位置などViewStateの復元
-      VS.restoreViewState(viewStateBeforeQuery, cy)
-      ExpandCollapse.restoreViewState(viewStateBeforeQuery, cy)
-
-      cy.endBatch()
-
-    } catch (error) {
-      dispatchMsg(msg => msg.push('error', error))
+      applyViewState(viewState)
+      applyViewState(viewStateBeforeQuery)
 
     } finally {
-      setNowLoading(false)
+      cy.endBatch()
     }
-  }, [cy, reloadDataSet])
-
-  // 画面初期表示時、データソース変更時に自動再読み込み
-  useEffect(() => {
-    reload()
-  }, [reload])
+  }, [cy, collectViewState, applyViewState])
 
   return {
     containerRef,
-    reload,
+    apply,
     reset,
     expandAll,
     collapseAll,
     LayoutSelector,
     nodesLocked,
     toggleNodesLocked,
-    nowProcessing: nowLoading,
     hasNoElements: (cy?.elements().length ?? 0) === 0,
+    collectViewState,
   }
 }
 
