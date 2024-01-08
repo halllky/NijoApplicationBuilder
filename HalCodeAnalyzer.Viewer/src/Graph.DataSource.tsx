@@ -32,7 +32,7 @@ export const useDataSource = () => {
     readTargetFile().then(obj => {
       setDataSource(obj)
     })
-  }, [readTargetFile])
+  }, [])
 
   const saveDataSource = useCallback(async () => {
     if (!dataSource) return
@@ -50,17 +50,8 @@ export const useDataSource = () => {
   }, [dataSource?.type])
 
   // 再読み込み
-  const [nowLoading, setNowLoading] = useState(false)
   const reloadDataSet = useCallback(async () => {
-    try {
-      setNowLoading(true)
-      return await handler.reload(dataSource)
-    } catch (error) {
-      dispatchMessage(msg => msg.push('error', error))
-      return createEmptyDataSet()
-    } finally {
-      setNowLoading(false)
-    }
+    return await handler.reload(dataSource)
   }, [handler, dataSource])
 
   const DataSourceEditor = useCallback((props: {
@@ -80,7 +71,6 @@ export const useDataSource = () => {
     dataSource,
     saveDataSource,
     reloadDataSet,
-    nowLoading,
     DataSourceEditor,
   }
 }

@@ -6,7 +6,7 @@ import AutoLayout from './Cy.AutoLayout'
 import ExpandCollapse from './Cy.ExpandCollapse'
 import VS, { ViewState, ViewStateDispatcher } from './Graph.ViewState'
 import { DataSet } from './Graph.DataSource'
-import { ReactHookUtil } from './util'
+import { Messaging, ReactHookUtil } from './util'
 
 AutoLayout.configure(cytoscape)
 Navigator.configure(cytoscape)
@@ -17,6 +17,8 @@ export const useCytoscape = (
   viewState: ViewState,
   dispatchViewState: ViewStateDispatcher
 ) => {
+  const [, dispatchMsg] = Messaging.useMsgContext()
+
   const [cy, setCy] = useState<cytoscape.Core>()
   const [navInstance, setNavInstance] = useState<{ destroy: () => void }>()
 
@@ -51,57 +53,66 @@ export const useCytoscape = (
   }, [cy, nodesLocked])
 
   const reset = useCallback(() => {
-    cy?.resize().fit().reset()
     autoLayout()
     dispatchViewState(state => state.clear())
-  }, [cy])
+  }, [autoLayout])
 
+  const [nowLoading, setNowLoading] = useState(false)
   const reload = useCallback(async () => {
     if (!cy) return
+    try {
+      setNowLoading(true)
 
-    const dataSet = await reloadDataSet()
+      const dataSet = await reloadDataSet()
 
-    cy.startBatch()
+      cy.startBatch()
 
-    // データ洗い替え前のノード位置などを退避させておく
-    const viewStateBeforeQuery1 = VS.getViewState(viewState, cy)
-    const viewStateBeforeQuery = ExpandCollapse.getViewState(viewStateBeforeQuery1, cy)
+      // データ洗い替え前のノード位置などを退避させておく
+      const viewStateBeforeQuery1 = VS.getViewState(viewState, cy)
+      const viewStateBeforeQuery = ExpandCollapse.getViewState(viewStateBeforeQuery1, cy)
 
-    cy.elements().remove()
+      cy.elements().remove()
 
-    const nodeIds = new Set(Object.keys(dataSet.nodes))
+      const nodeIds = new Set(Object.keys(dataSet.nodes))
 
-    // 結果セット中に存在しないノードは仮ノードを作成して表示する
-    const ensureNodeExists = (id: string) => {
-      if (nodeIds.has(id)) return
-      nodeIds.add(id)
-      const label = id
-      cy.add({ data: { id, label } })
+      // 結果セット中に存在しないノードは仮ノードを作成して表示する
+      const ensureNodeExists = (id: string) => {
+        if (nodeIds.has(id)) return
+        nodeIds.add(id)
+        const label = id
+        cy.add({ data: { id, label } })
+      }
+
+      // ノード
+      for (const [id, node] of Object.entries(dataSet.nodes)) {
+        if (node.parent) ensureNodeExists(node.parent)
+
+        const label = node.label
+        const parent = node.parent
+        cy.add({ data: { id, label, parent } })
+      }
+
+      // エッジ
+      for (const { source, target, label } of dataSet.edges) {
+        ensureNodeExists(source)
+        ensureNodeExists(target)
+
+        const id = UUID.v4()
+        cy.add({ data: { id, source, target, label } })
+      }
+
+      // ノード位置などViewStateの復元
+      VS.restoreViewState(viewStateBeforeQuery, cy)
+      ExpandCollapse.restoreViewState(viewStateBeforeQuery, cy)
+
+      cy.endBatch()
+
+    } catch (error) {
+      dispatchMsg(msg => msg.push('error', error))
+
+    } finally {
+      setNowLoading(false)
     }
-
-    // ノード
-    for (const [id, node] of Object.entries(dataSet.nodes)) {
-      if (node.parent) ensureNodeExists(node.parent)
-
-      const label = node.label
-      const parent = node.parent
-      cy.add({ data: { id, label, parent } })
-    }
-
-    // エッジ
-    for (const { source, target, label } of dataSet.edges) {
-      ensureNodeExists(source)
-      ensureNodeExists(target)
-
-      const id = UUID.v4()
-      cy.add({ data: { id, source, target, label } })
-    }
-
-    // ノード位置などViewStateの復元
-    VS.restoreViewState(viewStateBeforeQuery, cy)
-    ExpandCollapse.restoreViewState(viewStateBeforeQuery, cy)
-
-    cy.endBatch()
   }, [cy, reloadDataSet])
 
   return {
@@ -113,6 +124,7 @@ export const useCytoscape = (
     LayoutSelector,
     nodesLocked,
     toggleNodesLocked,
+    nowProcessing: nowLoading,
   }
 }
 

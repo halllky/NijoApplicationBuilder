@@ -45,8 +45,10 @@ const useAutoLayout = (cy: cytoscape.Core | undefined) => {
     )
   }, [currentLayout])
 
-  const autoLayout = useCallback(() => {
-    cy?.layout(OPTION_LIST[currentLayout])?.run()
+  const autoLayout = useCallback((fit?: boolean) => {
+    if (!cy) return
+    if (fit) cy.resize().fit().reset()
+    cy.layout(OPTION_LIST[currentLayout])?.run()
   }, [cy, currentLayout])
 
   return {

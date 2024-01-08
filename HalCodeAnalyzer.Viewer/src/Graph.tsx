@@ -18,7 +18,6 @@ export default function () {
     dataSource,
     reloadDataSet,
     saveDataSource,
-    nowLoading,
     DataSourceEditor,
   } = useDataSource()
 
@@ -31,6 +30,7 @@ export default function () {
     LayoutSelector,
     nodesLocked,
     toggleNodesLocked,
+    nowProcessing,
   } = useCytoscape(reloadDataSet, viewState, dispatchViewState)
 
   // データソース欄の表示/非表示
@@ -61,7 +61,7 @@ export default function () {
           icon={showDataSource ? Icon.UpOutlined : Icon.DownOutlined}
         />
         <Components.Button outlined onClick={reload}>
-          {nowLoading ? '読込中...' : '再読込(Ctrl+Enter)'}
+          {nowProcessing ? '読込中...' : '再読込(Ctrl+Enter)'}
         </Components.Button>
 
         <div className="flex-1"></div>
@@ -95,7 +95,7 @@ export default function () {
           border border-1 border-zinc-400">
         </div>
         <Navigator.Component className="absolute w-[20vw] h-[20vh] right-2 bottom-2 z-[200]" />
-        {nowLoading && (
+        {nowProcessing && (
           <Components.NowLoading className="w-10 h-10 absolute left-0 right-0 top-0 bottom-0 m-auto" />
         )}
       </Panel>
