@@ -31,6 +31,7 @@ export default function () {
     nodesLocked,
     toggleNodesLocked,
     nowProcessing,
+    hasNoElements,
   } = useCytoscape(reloadDataSet, viewState, dispatchViewState)
 
   // データソース欄の表示/非表示
@@ -91,7 +92,7 @@ export default function () {
           flex-1
           border border-1 border-zinc-400">
         </div>
-        <Navigator.Component className="absolute w-[20vw] h-[20vh] right-2 bottom-2 z-[200]" />
+        <Navigator.Component hasNoElements={hasNoElements} className="absolute w-[20vw] h-[20vh] right-2 bottom-2 z-[200]" />
         {nowProcessing && (
           <Components.NowLoading className="w-10 h-10 absolute left-0 right-0 top-0 bottom-0 m-auto" />
         )}

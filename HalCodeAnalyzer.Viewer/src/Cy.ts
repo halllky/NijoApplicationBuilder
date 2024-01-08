@@ -130,6 +130,7 @@ export const useCytoscape = (
     nodesLocked,
     toggleNodesLocked,
     nowProcessing: nowLoading,
+    hasNoElements: (cy?.elements().length ?? 0) === 0,
   }
 }
 

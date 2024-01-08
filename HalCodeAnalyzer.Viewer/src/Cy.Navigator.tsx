@@ -22,12 +22,14 @@ const setupCyInstance = (cy: cytoscape.Core) => {
   return nav as { destroy: () => void }
 }
 
-const Component = ({ className }: {
+const Component = ({ className, hasNoElements }: {
   className?: string
+  hasNoElements: boolean
 }) => {
   return (
     <div className={`
       ${NAVIGATOR_CONTAINER}
+      ${hasNoElements && 'invisible'}
       overflow-hidden
       bg-zinc-50
       border border-1 border-zinc-400
