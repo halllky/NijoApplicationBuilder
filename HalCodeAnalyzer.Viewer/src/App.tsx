@@ -95,7 +95,7 @@ function App() {
           onClick={() => setShowDataSource(x => x.toggle())}
           icon={showDataSource ? Icon.UpOutlined : Icon.DownOutlined}
         />
-        <Components.Button outlined onClick={reload}>
+        <Components.Button outlined onClick={() => dataSource && reload(dataSource)}>
           {nowLoading ? '読込中...' : '再読込(Ctrl+Enter)'}
         </Components.Button>
 
