@@ -1,7 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { useTauriApi } from './TauriApi'
+import React, { useCallback } from 'react'
 import { useNeo4jDataSource } from './Graph.DataSource.Neo4j'
-import { Messaging } from './util'
 
 export type DataSet = {
   nodes: { [id: string]: Node }
@@ -22,63 +20,17 @@ export const createEmptyDataSet = (): DataSet => ({
   edges: [],
 })
 
-export const useDataSource = () => {
-  const [, dispatchMessage] = Messaging.useMsgContext()
+export const useDataSourceHandler = () => {
 
-  // データソースの読み込みと保存
-  const { loadTargetFile, saveTargetFile } = useTauriApi()
-  const [dataSource, setDataSource] = useState<UnknownDataSource>()
-  useEffect(() => {
-    loadTargetFile().then(obj => {
-      setDataSource(obj)
-    }).catch(err => {
-      dispatchMessage(msg => msg.error(err))
-    })
-  }, [])
-
-  const saveDataSource = useCallback(async () => {
-    if (!dataSource) return
-    try {
-      await saveTargetFile(dataSource)
-      dispatchMessage(msg => msg.info('保存しました。'))
-    } catch (error) {
-      dispatchMessage(msg => msg.error(error))
-    }
-  }, [dataSource])
-
-  // ハンドラの決定
   const neo4jHandler = useNeo4jDataSource()
-  const handler: IDataSourceHandler = useMemo(() => {
+  const defineHandler = useCallback((dataSource: UnknownDataSource): IDataSourceHandler => {
     return [
       neo4jHandler,
       DefaultHandler,
     ].find(h => h.match(dataSource?.type))!
-  }, [dataSource?.type])
+  }, [neo4jHandler])
 
-  // 再読み込み
-  const reloadDataSet = useCallback(async () => {
-    return await handler.reload(dataSource)
-  }, [handler, dataSource])
-
-  const DataSourceEditor = useCallback((props: {
-    dataSource: UnknownDataSource | undefined
-    className?: string
-  }) => {
-    return (
-      <handler.Editor
-        value={props.dataSource}
-        onChange={setDataSource}
-        className={props.className}
-      />
-    )
-  }, [handler.Editor])
-
-  return {
-    dataSource,
-    saveDataSource,
-    reloadDataSet,
-    DataSourceEditor,
-  }
+  return { defineHandler }
 }
 
 // ---------------------------

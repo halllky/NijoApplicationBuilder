@@ -1,5 +1,4 @@
-import React, { useCallback, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useCallback, useMemo, useState } from 'react'
 import neo4j, { Node, Relationship, Record } from 'neo4j-driver'
 import * as Icon from '@ant-design/icons'
 import { DataSet, DataSourceEditor, IDataSourceHandler, ReloadFunc, createEmptyDataSet } from './Graph.DataSource'
@@ -56,11 +55,11 @@ export const useNeo4jDataSource = (): IDataSourceHandler => {
     }
   }, [])
 
-  return {
+  return useMemo(() => ({
     match,
     Editor,
     reload,
-  }
+  }), [reload])
 }
 
 // ----------------------------------------
@@ -107,30 +106,19 @@ const neo4jQueryReusltToCytoscapeItem = (
 
 // ----------------------------------------
 const Editor: DataSourceEditor<Neo4jDataSource> = ({
-  value,
+  value: ds,
   onChange,
   className,
 }) => {
-  const { register, handleSubmit, getValues } = useForm<Neo4jDataSource>({ defaultValues: value })
   const [showSettingModal, setShowSettingModal] = useState(false)
 
-  const handleKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = useCallback(e => {
-    if (e.ctrlKey && e.key === 'Enter') {
-      onChange(getValues())
-      e.preventDefault()
-    }
-  }, [onChange, getValues])
-
   return (
-    <form
-      className={`relative flex ${className}`}
-      onSubmit={handleSubmit(onChange)}
-    >
+    <div className={`relative flex ${className}`}>
       <Components.Textarea
         className="flex-1 font-mono"
         inputClassName="resize-none whitespace-pre text-lg"
-        onKeyDown={handleKeyDown}
-        {...register('query')}
+        value={ds?.query ?? ''}
+        onChange={e => ds && onChange({ ...ds, query: e.target.value })}
       />
 
       <Components.Button
@@ -141,20 +129,25 @@ const Editor: DataSourceEditor<Neo4jDataSource> = ({
       </Components.Button>
 
       <Components.Modal open={showSettingModal} className="flex flex-col gap-1">
-        <Components.Text type="url" labelText="URL" labelClassName="basis-24" placeholder="neo4j://localhost:7687"
-          {...register(`connection.host`)}
+        <Components.Text
+          type="url" labelText="URL" labelClassName="basis-24"
+          placeholder="neo4j://localhost:7687"
+          value={ds?.connection.host}
+          onChange={e => ds && onChange({ ...ds, connection: { ...ds.connection, host: e.target.value } })}
         />
         <Components.Text type="text" labelText="USER" labelClassName="basis-24" placeholder="neo4j"
-          {...register(`connection.user`)}
+          value={ds?.connection.user}
+          onChange={e => ds && onChange({ ...ds, connection: { ...ds.connection, user: e.target.value } })}
         />
         <Components.Text type="password" labelText="PASSWORD" labelClassName="basis-24"
-          {...register(`connection.pass`)}
+          value={ds?.connection.pass}
+          onChange={e => ds && onChange({ ...ds, connection: { ...ds.connection, pass: e.target.value } })}
         />
         <Components.Separator />
         <Components.Button onClick={() => setShowSettingModal(false)} className="self-end">
           閉じる
         </Components.Button>
       </Components.Modal>
-    </form>
+    </div>
   )
 }

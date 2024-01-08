@@ -3,21 +3,18 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import * as Icon from '@ant-design/icons'
 // import enumerateData from './data'
 import { Components, Messaging, ReactHookUtil } from './util'
-import { useDataSource } from './Graph.DataSource'
+import { useDataSourceHandler, UnknownDataSource, IDataSourceHandler } from './Graph.DataSource'
 import { useCytoscape } from './Cy'
 import Navigator from './Cy.Navigator'
 import { useTauriApi } from './TauriApi'
 
 export default function () {
   const [, dispatchMessage] = Messaging.useMsgContext()
-  const { saveViewStateFile, loadViewStateFile } = useTauriApi()
+  const { loadTargetFile, saveTargetFile, saveViewStateFile, loadViewStateFile } = useTauriApi()
 
-  const {
-    dataSource,
-    reloadDataSet,
-    saveDataSource,
-    DataSourceEditor,
-  } = useDataSource()
+  const [dataSource, setDataSource] = useState<UnknownDataSource>()
+  const [dsHandler, setDsHandler] = useState<IDataSourceHandler>()
+  const { defineHandler } = useDataSourceHandler()
 
   const {
     apply,
@@ -36,46 +33,54 @@ export default function () {
 
   // 読込
   const [nowLoading, setNowLoading] = useState(true)
-  const reload = useCallback(async () => {
+  const reload = useCallback(async (source: UnknownDataSource) => {
     setNowLoading(true)
     try {
-      const dataSet = await reloadDataSet()
+      const handler = defineHandler(source)
+      const dataSet = await handler.reload(source)
       const viewState = await loadViewStateFile()
+      setDataSource(source)
+      setDsHandler(handler)
       apply(dataSet, viewState)
     } catch (error) {
       dispatchMessage(msg => msg.error(error))
     } finally {
       setNowLoading(false)
     }
-  }, [reloadDataSet, loadViewStateFile])
+  }, [apply, defineHandler, loadViewStateFile])
 
   useEffect(() => {
-    const timer = setTimeout(reload, 500)
+    const timer = setTimeout(async () => {
+      reload(await loadTargetFile())
+    }, 500)
     return () => clearTimeout(timer)
   }, [reload])
 
   // 保存
   const saveAll = useCallback(async () => {
     try {
-      await saveDataSource()
+      if (dataSource) await saveTargetFile(dataSource)
       const viewState = collectViewState()
       await saveViewStateFile(viewState)
       dispatchMessage(msg => msg.info('保存しました。'))
     } catch (error) {
       dispatchMessage(msg => msg.error(error))
     }
-  }, [saveDataSource, collectViewState])
+  }, [dataSource, collectViewState])
 
   // データソース欄の表示/非表示
   const [showDataSource, setShowDataSource] = ReactHookUtil.useToggle(true)
 
   // キー操作
   const handleKeyDown: React.KeyboardEventHandler<React.ElementType> = useCallback(e => {
-    if (e.ctrlKey && e.key === 's') {
+    if (e.ctrlKey && e.key === 'Enter') {
+      if (dataSource) reload(dataSource)
+      e.preventDefault()
+    } else if (e.ctrlKey && e.key === 's') {
       saveAll()
       e.preventDefault()
     }
-  }, [saveAll])
+  }, [reload, dataSource, saveAll])
 
   return (
     <PanelGroup
@@ -113,7 +118,13 @@ export default function () {
 
       {/* データソース */}
       <Panel defaultSize={16} className={`flex flex-col ${!showDataSource && 'hidden'}`}>
-        <DataSourceEditor dataSource={dataSource} className="flex-1" />
+        {dsHandler && (
+          <dsHandler.Editor
+            value={dataSource}
+            onChange={setDataSource}
+            className="flex-1"
+          />
+        )}
       </Panel>
 
       {showDataSource && <PanelResizeHandle className="h-2" />}
