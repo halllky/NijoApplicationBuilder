@@ -1,3 +1,5 @@
+/TESTFILES/*.debug.json*
+
 /.vite
 
 # Logs
