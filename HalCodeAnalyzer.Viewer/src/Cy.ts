@@ -27,6 +27,14 @@ export const useCytoscape = () => {
         wheelSensitivity: USER_SETTING.wheelSensitivity.value,
       })
       setNavInstance(Navigator.setupCyInstance(cyInstance))
+
+      // Cytoscapeは標準でcanvas要素のmousedownでフォーカスを外す処理をしており
+      // これによりcanvasを操作しているときにキーボードショートカットが使えないため
+      // 無理やり再フォーカスさせてkeydownがトリガーされるようにする。
+      cyInstance.on('mousedown', () => {
+        divElement.focus()
+      })
+
       setCy(cyInstance)
 
     } else if (cy && !divElement) {
