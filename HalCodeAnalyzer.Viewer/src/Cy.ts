@@ -46,6 +46,10 @@ export const useCytoscape = () => {
   const { autoLayout, LayoutSelector } = AutoLayout.useAutoLayout(cy)
   const expandCollapseActions = ExpandCollapse.useExpandCollapse(cy)
 
+  const selectAll = useCallback(() => {
+    cy?.nodes().select()
+  }, [cy])
+
   // ノード位置固定
   const [nodesLocked, changeNodesLocked] = ReactHookUtil.useToggle()
   const toggleNodesLocked = useCallback(() => {
@@ -110,6 +114,7 @@ export const useCytoscape = () => {
   return {
     containerRef,
     applyToCytoscape,
+    selectAll,
     reset,
     ...expandCollapseActions,
     LayoutSelector,

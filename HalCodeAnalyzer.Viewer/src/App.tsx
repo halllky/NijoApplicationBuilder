@@ -27,6 +27,7 @@ function App() {
     toggleNodesLocked,
     hasNoElements,
     collectViewState,
+    ...otherActions
   } = useCytoscape()
 
   // -----------------------------------------------------
@@ -80,11 +81,14 @@ function App() {
     } else if (e.ctrlKey && e.key === 's') {
       saveAll()
       e.preventDefault()
+    } else if (e.ctrlKey && e.key === 'a') {
+      otherActions.selectAll()
+      e.preventDefault()
     } else if (e.key === 'Space' || e.key === ' ') {
       toggleExpandCollapse()
       e.preventDefault()
     }
-  }, [reload, dataSource, saveAll, toggleExpandCollapse])
+  }, [reload, dataSource, saveAll, toggleExpandCollapse, otherActions])
 
   return (
     <PanelGroup
