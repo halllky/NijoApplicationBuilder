@@ -34,19 +34,23 @@
   "edges": [
     {
       "source": "e",
-      "target": "g"
+      "target": "g",
+      "label": "e->g"
     },
     {
       "source": "e",
-      "target": "g"
+      "target": "g",
+      "label": "e->g"
     },
     {
       "source": "f",
-      "target": "g"
+      "target": "g",
+      "label": "f->g"
     },
     {
       "source": "f",
-      "target": "h"
+      "target": "h",
+      "label": "f->h"
     }
   ]
 }

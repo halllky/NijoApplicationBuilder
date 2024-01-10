@@ -19,8 +19,9 @@ function App() {
     applyToCytoscape,
     containerRef,
     reset,
-    expandAll,
-    collapseAll,
+    expandSelections,
+    collapseSelections,
+    toggleExpandCollapse,
     LayoutSelector,
     nodesLocked,
     toggleNodesLocked,
@@ -72,14 +73,18 @@ function App() {
 
   // キー操作
   const handleKeyDown: React.KeyboardEventHandler<React.ElementType> = useCallback(e => {
+    // console.log(e.key)
     if (e.ctrlKey && e.key === 'Enter') {
       if (dataSource) reload(dataSource)
       e.preventDefault()
     } else if (e.ctrlKey && e.key === 's') {
       saveAll()
       e.preventDefault()
+    } else if (e.key === 'Space' || e.key === ' ') {
+      toggleExpandCollapse()
+      e.preventDefault()
     }
-  }, [reload, dataSource, saveAll])
+  }, [reload, dataSource, saveAll, toggleExpandCollapse])
 
   return (
     <PanelGroup
@@ -110,8 +115,8 @@ function App() {
           ノード位置固定
         </label>
 
-        <Components.Button outlined onClick={expandAll}>すべて展開</Components.Button>
-        <Components.Button outlined onClick={collapseAll}>すべて折りたたむ</Components.Button>
+        <Components.Button outlined onClick={expandSelections}>展開</Components.Button>
+        <Components.Button outlined onClick={collapseSelections}>折りたたむ</Components.Button>
 
         <Components.Button onClick={saveAll}>保存(Ctrl+S)</Components.Button>
       </div>

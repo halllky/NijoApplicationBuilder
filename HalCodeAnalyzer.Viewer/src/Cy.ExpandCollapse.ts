@@ -1,79 +1,176 @@
 import { useCallback } from 'react'
 import cytoscape from 'cytoscape'
-// // @ts-ignore
-// import cytospaceExpandCollapse from 'cytoscape-expand-collapse'
-import { ViewState } from './Cy.SaveLoad'
+import * as UUID from 'uuid'
 
-const configure = (cy: typeof cytoscape) => {
-  console.debug('skipped.', cy)
-  // cytospaceExpandCollapse(cy)
-}
 
-const setupCyInstance = (cy: cytoscape.Core) => {
-  console.debug('skipped.', cy)
-  // (cy as any).expandCollapse({
-  //   layoutBy: null, // to rearrange after expand/collapse. It's just layout options or whole layout function. Choose your side!
-  //   // recommended usage: use cose-bilkent layout with randomize: false to preserve mental map upon expand/collapse
-  //   fisheye: false, // whether to perform fisheye view after expand/collapse you can specify a function too
-  //   animate: false, // whether to animate on drawing changes you can specify a function too
-  //   animationDuration: 1000, // when animate is true, the duration in milliseconds of the animation
-  //   ready: function () { },  // callback when expand/collapse initialized
-  //   undoable: false, // and if undoRedoExtension exists,
+export const useExpandCollapse = (cy: cytoscape.Core | undefined) => {
 
-  //   cueEnabled: true, // Whether cues are enabled
-  //   expandCollapseCuePosition: 'top-left', // default cue position is top left you can specify a function per node too
-  //   expandCollapseCueSize: 12, // size of expand-collapse cue
-  //   expandCollapseCueLineSize: 8, // size of lines used for drawing plus-minus icons
-  //   expandCueImage: undefined, // image of expand icon if undefined draw regular expand cue
-  //   collapseCueImage: undefined, // image of collapse icon if undefined draw regular collapse cue
-  //   expandCollapseCueSensitivity: 1, // sensitivity of expand-collapse cues
-  //   edgeTypeInfo: "edgeType", // the name of the field that has the edge type, retrieved from edge.data(), can be a function, if reading the field returns undefined the collapsed edge type will be "unknown"
-  //   groupEdgesOfSameTypeOnCollapse: false, // if true, the edges to be collapsed will be grouped according to their types, and the created collapsed edges will have same type as their group. if false the collapased edge will have "unknown" type.
-  //   allowNestedEdgeCollapse: true, // when you want to collapse a compound edge (edge which contains other edges) and normal edge, should it collapse without expanding the compound first
-  //   zIndex: 100,// z-index value of the canvas in which cue ımages are drawn
-  // })
-}
+  const collapse = useCallback((nodes: cytoscape.NodeCollection) => {
+    if (!cy) return
+    cy.batch(() => {
+      // 子ノードをもたないものはたためないのでスキップ
+      const nodesToBeCollapsed = nodes.filter(n => n.isParent())
 
-const useExpandCollapse = (cy: cytoscape.Core | undefined) => {
-  const expandAll = useCallback(() => {
-    // const api = (cy as any)?.expandCollapse('get')
-    // api.expandAll()
-    // api.expandAllEdges()
+      // グラフ中に存在しないサマリーエッジをaddする
+      nodesToBeCollapsed.data(IS_COLLAPSED, true)
+      const virtualEdges = nodesToBeCollapsed
+        .descendants()
+        .connectedEdges()
+        .map(edge => getVirtualEdge(edge, cy))
+      for (const edge of virtualEdges) {
+        if (!edge) continue
+        if (cy.hasElementWithId(edge.id())) continue
+        cy.add(edge)
+      }
+
+      // 各collapasedNodesの子孫を非表示にする。
+      // CytosccontainerNodesape.jsでは両端のうちどちらかのノードにdisplay:noneが付与されているエッジは非表示になる。
+      nodesToBeCollapsed.descendants().style('display', 'none')
+    })
   }, [cy])
-  const collapseAll = useCallback(() => {
-    // const api = (cy as any)?.expandCollapse('get')
-    // api.collapseAll()
-    // api.collapseAllEdges()
+
+
+  const expand = useCallback((nodes: cytoscape.NodeCollection) => {
+    if (!cy) return
+    cy.batch(() => {
+      const descendantsToBeShown: cytoscape.NodeSingular[] = []
+      const descendantsStillHidden: cytoscape.NodeSingular[] = []
+      const summaryEdgesToBeRemoved: cytoscape.EdgeSingular[] = []
+
+      for (const node of nodes) {
+        // ひらく必要が無いノードはスキップ
+        if (node.data(IS_COLLAPSED) == undefined) continue
+
+        // ひらかれるノードの操作
+        node.removeData(IS_COLLAPSED)
+        summaryEdgesToBeRemoved.push(...node.connectedEdges(`[${SUMMARISE}]`))
+
+        // ひらかれるノードの子孫ノードの操作
+        for (const descendant of node.descendants()) {
+          if (descendant.ancestors(`[${IS_COLLAPSED}]`).length === 0) {
+            descendantsToBeShown.push(descendant)
+          } else {
+            descendantsStillHidden.push(descendant)
+          }
+        }
+      }
+
+      // 新たに表示されるノードに接続するサマリーエッジ
+      const virtualEdges = cy.collection(descendantsStillHidden)
+        .connectedEdges()
+        .map(edge => getVirtualEdge(edge, cy))
+
+      // 更新
+      cy.remove(cy.collection(summaryEdgesToBeRemoved))
+      cy.collection(descendantsToBeShown).style('display', '')
+      for (const edge of virtualEdges) {
+        if (!edge) continue
+        if (cy.hasElementWithId(edge.id())) continue
+        cy.add(edge)
+      }
+    })
   }, [cy])
+
+
+  // -------------------- syntax sugar ------------------------
+  const expandSelections = useCallback(() => {
+    if (cy) expand(cy.nodes(':selected'))
+  }, [cy, expand])
+
+  const collapseSelections = useCallback(() => {
+    if (cy) collapse(cy.nodes(':selected'))
+  }, [cy, collapse])
+
+  const toggleExpandCollapse = useCallback(() => {
+    if (!cy) return
+    const selected = cy.nodes(':selected')
+    if (selected.length === 0) return
+    if (selected[0].data(IS_COLLAPSED) === undefined) {
+      collapse(selected)
+    } else {
+      expand(selected)
+    }
+  }, [cy, expand, collapse])
 
   return {
-    expandAll,
-    collapseAll,
+    expandSelections,
+    collapseSelections,
+    toggleExpandCollapse,
   }
 }
 
-const getViewState = (beforeState: ViewState, cy: cytoscape.Core): ViewState => {
-  console.debug('skipped.', beforeState, cy)
-  return beforeState
-  // const api = (cy as any)?.expandCollapse('get')
-  // const collapsedNodes = api
-  //   .getAllCollapsedChildrenRecursively()
-  //   .map((node: cytoscape.NodeSingular) => node.id())
-  // return { ...beforeState, collapsedNodes }
-}
-const restoreViewState = (viewState: ViewState, cy: cytoscape.Core) => {
-  console.debug('Restore View State is skipped.', viewState, cy)
-  // const api = (cy as any)?.expandCollapse('get')
-  // for (const nodeId of viewState.collapsedNodes) {
-  //   const node = cy.getElementById(nodeId)
-  //   if (node) api.collapse(node[0])
-  // }
+
+/**
+ * 実際に表示に使用されるエッジを返す。
+ * 折りたたまれた結果sourceもtargetも同じノードになる場合はundefined
+ */
+const getVirtualEdge = (edge: cytoscape.EdgeSingular, cy: cytoscape.Core): cytoscape.EdgeSingular | undefined => {
+
+  // 実際に表示されるノードがどれかを調べる
+  const virtualSource = getVisibleAncestor(edge.source()).id()
+  const virtualTarget = getVisibleAncestor(edge.target()).id()
+
+  // 両端がどちらも可視であれば引数のエッジがそのまま表示される
+  if (virtualSource === edge.source().id()
+    && virtualTarget === edge.target().id()) {
+    return edge
+  }
+
+  const virtualEdge = cy.edges(`[source = "${virtualSource}"][target = "${virtualTarget}"]`)
+
+  if (virtualEdge.length === 0) {
+    // 折りたたまれた結果sourceもtargetも同じノードになる場合
+    if (virtualSource === virtualTarget) return undefined
+
+    // サマリーエッジの作成
+    const data: cytoscape.EdgeDataDefinition = {
+      id: UUID.v4(),
+      source: virtualSource,
+      target: virtualTarget,
+      [SUMMARISE]: [edge.id()],
+    }
+    const newVirtualEdge = cy.add({ data })
+    return newVirtualEdge
+
+  } else if (virtualEdge.length === 1) {
+    // 既存のサマリーエッジにこのエッジを追加
+    const summarisedEdgeIdList = new Set<string>([edge.id()])
+    virtualEdge[0].data(SUMMARISE, summarisedEdgeIdList)
+    return virtualEdge[0]
+
+  } else {
+    throw new Error('virtual edges should be unique.')
+  }
 }
 
-export default {
-  configure,
-  setupCyInstance,
-  useExpandCollapse,
-  getViewState,
-  restoreViewState,
+
+/** 引数のノードの祖先のうち可視のものを返す */
+const getVisibleAncestor = (node: cytoscape.NodeSingular) => {
+  // 祖先をルートから順に辿って最初にCOLLAPSED属性がついているのが表示されるノード
+  const ancestors: cytoscape.NodeSingular[] = []
+  let parent: cytoscape.NodeSingular | undefined = node.parent()[0]
+  while (parent !== undefined) {
+    ancestors.push(parent)
+    parent = parent.parent()[0]
+  }
+  ancestors.reverse()
+  for (const ancestor of ancestors) {
+    if (ancestor.data(IS_COLLAPSED)) return ancestor
+  }
+  // 祖先がいずれも折りたたみ状態でなければ引数のノード自身が表示される
+  return node
 }
+
+
+/**
+ * 折りたたまれて見えなくなったノードではなく
+ * それらの見えなくなったノードの親のノードにつく属性
+ */
+const IS_COLLAPSED = 'COLLAPSED'
+
+/**
+ * サマリーエッジ。
+ * 折り畳みにより非表示となった子孫ノードに接続するエッジをまとめたエッジ。
+ * dataの値にはまとめたエッジのidを格納している
+ */
+const SUMMARISE = 'SUMMARISE'

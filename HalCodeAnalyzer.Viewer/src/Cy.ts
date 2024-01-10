@@ -3,7 +3,7 @@ import cytoscape from 'cytoscape'
 import * as UUID from 'uuid'
 import Navigator from './Cy.Navigator'
 import AutoLayout from './Cy.AutoLayout'
-import ExpandCollapse from './Cy.ExpandCollapse'
+import * as ExpandCollapse from './Cy.ExpandCollapse'
 import { ViewState, useViewState } from './Cy.SaveLoad'
 import { DataSet } from './DataSource'
 import { ReactHookUtil } from './util'
@@ -11,7 +11,6 @@ import { USER_SETTING } from './UserSetting'
 
 AutoLayout.configure(cytoscape)
 Navigator.configure(cytoscape)
-ExpandCollapse.configure(cytoscape)
 
 export const useCytoscape = () => {
   const [cy, setCy] = useState<cytoscape.Core>()
@@ -28,7 +27,6 @@ export const useCytoscape = () => {
         wheelSensitivity: USER_SETTING.wheelSensitivity.value,
       })
       setNavInstance(Navigator.setupCyInstance(cyInstance))
-      ExpandCollapse.setupCyInstance(cyInstance)
       setCy(cyInstance)
 
     } else if (cy && !divElement) {
@@ -38,7 +36,7 @@ export const useCytoscape = () => {
   }, [cy, navInstance])
 
   const { autoLayout, LayoutSelector } = AutoLayout.useAutoLayout(cy)
-  const { expandAll, collapseAll } = ExpandCollapse.useExpandCollapse(cy)
+  const expandCollapseActions = ExpandCollapse.useExpandCollapse(cy)
 
   // ノード位置固定
   const [nodesLocked, changeNodesLocked] = ReactHookUtil.useToggle()
@@ -105,8 +103,7 @@ export const useCytoscape = () => {
     containerRef,
     applyToCytoscape,
     reset,
-    expandAll,
-    collapseAll,
+    ...expandCollapseActions,
     LayoutSelector,
     nodesLocked,
     toggleNodesLocked,
@@ -118,15 +115,23 @@ export const useCytoscape = () => {
 const STYLESHEET: cytoscape.CytoscapeOptions['style'] = [{
   selector: 'node',
   css: {
-    'shape': 'round-rectangle',
+    'shape': 'rectangle',
     'width': (node: any) => node.data('label')?.length * 10,
     'text-valign': 'center',
     'text-halign': 'center',
     'border-width': '1px',
     'border-color': '#909090',
     'background-color': '#666666',
+    'border-opacity': .5,
     'background-opacity': .1,
     'label': 'data(label)',
+  },
+}, {
+  selector: 'node:selected',
+  style: {
+    'border-color': '#FF4F02',
+    'border-opacity': 1,
+    'border-width': '2px',
   },
 }, {
   selector: 'node:parent', // 子要素をもつノードに適用される
@@ -139,11 +144,16 @@ const STYLESHEET: cytoscape.CytoscapeOptions['style'] = [{
   style: {
     'target-arrow-shape': 'triangle',
     'curve-style': 'bezier',
+    'width': '1px',
   },
 }, {
   selector: 'edge:selected',
   style: {
     'label': 'data(label)',
-    'color': 'blue',
+    'color': '#FF4F02',
+    'line-color': '#FF4F02',
+    'source-arrow-color': '#FF4F02',
+    'target-arrow-color': '#FF4F02',
+    'width': '2px',
   },
 }]
