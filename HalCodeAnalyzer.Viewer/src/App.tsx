@@ -89,12 +89,12 @@ function App() {
   return (
     <PanelGroup
       direction="vertical"
-      className="flex flex-col relative outline-none p-2 bg-zinc-200"
+      className="flex flex-col relative outline-none bg-zinc-200"
       onKeyDown={handleKeyDown}
       tabIndex={0}>
 
       {/* ツールバー */}
-      <div className="flex content-start items-center gap-2 mb-2">
+      <div className="flex content-start items-center gap-2 p-1">
 
         {dsHandler?.Editor && (
           <Components.Button
@@ -141,7 +141,7 @@ function App() {
         <div ref={containerRef} className="
           overflow-hidden [&>div>canvas]:left-0
           flex-1
-          border border-1 border-zinc-400 outline-none"
+          outline-none"
           tabIndex={0}>
         </div>
         <Navigator.Component hasNoElements={hasNoElements} className="absolute w-[20vw] h-[20vh] right-2 bottom-2 z-[200]" />
