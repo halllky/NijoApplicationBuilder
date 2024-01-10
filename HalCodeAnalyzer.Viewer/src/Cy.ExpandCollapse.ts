@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import cytoscape from 'cytoscape'
 import * as UUID from 'uuid'
+import { ViewState } from './Cy.SaveLoad'
 
 
 export const useExpandCollapse = (cy: cytoscape.Core | undefined) => {
@@ -92,10 +93,31 @@ export const useExpandCollapse = (cy: cytoscape.Core | undefined) => {
     }
   }, [cy, expand, collapse])
 
+
+  // ------------ 保存・復元 ----------------
+  const toViewState = useCallback((): ViewState['collapsedNodes'] => {
+    return cy?.nodes(`[${IS_COLLAPSED}]`).map(n => n.id()) ?? []
+  }, [cy])
+
+  const applyViewState = useCallback((viewState: ViewState): void => {
+    if (!cy) return
+    const set = new Set(viewState.collapsedNodes)
+    for (const node of cy.nodes(`[${IS_COLLAPSED}]`)) {
+      if (set.has(node.id())) continue
+      expand(node)
+    }
+    for (const nodeId of set) {
+      collapse(cy.nodes(`[id = "${nodeId}"]`))
+    }
+  }, [cy, expand, collapse])
+
+
   return {
     expandSelections,
     collapseSelections,
     toggleExpandCollapse,
+    toViewState,
+    applyViewState,
   }
 }
 
