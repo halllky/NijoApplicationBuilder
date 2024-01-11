@@ -57,7 +57,9 @@ export const useExpandCollapse = (cy: cytoscape.Core | undefined) => {
       }
 
       // 新たに表示されるノードに接続するサマリーエッジ
-      const virtualEdges = cy.collection(descendantsStillHidden)
+      const virtualEdges = cy
+        .collection(descendantsToBeShown)
+        .union(descendantsStillHidden)
         .connectedEdges()
         .map(edge => getVirtualEdge(edge, cy))
 
