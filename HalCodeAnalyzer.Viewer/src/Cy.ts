@@ -5,7 +5,7 @@ import Navigator from './Cy.Navigator'
 import AutoLayout from './Cy.AutoLayout'
 import * as ExpandCollapse from './Cy.ExpandCollapse'
 import { ViewState, useViewState } from './Cy.SaveLoad'
-import { DataSet } from './DataSource'
+import * as DS from './DataSource'
 import { ReactHookUtil } from './util'
 import { USER_SETTING } from './UserSetting'
 
@@ -64,7 +64,7 @@ export const useCytoscape = () => {
 
   const { collectViewState, applyViewState } = useViewState(cy)
 
-  const applyToCytoscape = useCallback(async (dataSet: DataSet, viewState: ViewState) => {
+  const applyToCytoscape = useCallback(async (dataSet: DS.DataSet, viewState: ViewState) => {
     if (!cy) return
     try {
       cy.startBatch()
@@ -85,9 +85,30 @@ export const useCytoscape = () => {
       }
 
       // ノード
-      for (const [id, node] of Object.entries(dataSet.nodes)) {
-        if (node.parent) ensureNodeExists(node.parent)
+      // 以下の理由により親から順番に追加する必要がある
+      // - parentはaddのタイミングでのみ設定でき、不変
+      // - addのタイミングで親ノードがグラフ中に存在しない場合、自動的にundefinedになる
+      const nodesWithDepth = Object.entries(dataSet.nodes).reduce((arr, [id, node]) => {
+        let depth = 0
+        let parentId = node.parent
+        while (parentId) {
+          const parent = dataSet.nodes[parentId]
+          if (!parent) break // 親のIDは指定されているがグラフ中に存在しない場合
+          depth++
+          parentId = parent.parent
+        }
+        arr.push({ id, node, depth })
+        return arr
+      }, [] as { id: string, node: DS.Node, depth: number }[])
 
+      nodesWithDepth.sort((a, b) => {
+        if (a.depth < b.depth) return -1
+        if (a.depth > b.depth) return 1
+        return 0
+      })
+
+      for (const { id, node } of nodesWithDepth) {
+        if (node.parent) ensureNodeExists(node.parent)
         const label = node.label
         const parent = node.parent
         cy.add({ data: { id, label, parent } })
