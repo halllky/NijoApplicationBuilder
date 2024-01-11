@@ -31,7 +31,6 @@ function App() {
   } = useCytoscape()
 
   // -----------------------------------------------------
-
   // 読込
   const [nowLoading, setNowLoading] = useState(true)
   const reload = useCallback(async (source: UnknownDataSource) => {
@@ -49,6 +48,9 @@ function App() {
       setNowLoading(false)
     }
   }, [applyToCytoscape, defineHandler, loadViewStateFile])
+  const reloadByCurrentData = useCallback(async () => {
+    if (dataSource) await reload(dataSource)
+  }, [dataSource, reload])
 
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -57,6 +59,7 @@ function App() {
     return () => clearTimeout(timer)
   }, [reload])
 
+  // -----------------------------------------------------
   // 保存
   const saveAll = useCallback(async () => {
     try {
@@ -69,16 +72,15 @@ function App() {
     }
   }, [dataSource, collectViewState])
 
+  // -----------------------------------------------------
   // データソース欄の表示/非表示
   const [showDataSource, setShowDataSource] = ReactHookUtil.useToggle(true)
 
+  // -----------------------------------------------------
   // キー操作
   const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = useCallback(e => {
     // console.log(e.key)
-    if (e.ctrlKey && e.key === 'Enter') {
-      if (dataSource) reload(dataSource)
-      e.preventDefault()
-    } else if (e.ctrlKey && e.key === 's') {
+    if (e.ctrlKey && e.key === 's') {
       saveAll()
       e.preventDefault()
     } else if (e.ctrlKey && e.key === 'a') {
@@ -88,23 +90,20 @@ function App() {
       toggleExpandCollapse()
       e.preventDefault()
     }
-  }, [reload, dataSource, saveAll, toggleExpandCollapse, otherActions])
+  }, [reloadByCurrentData, dataSource, saveAll, toggleExpandCollapse, otherActions])
+
 
   return (
-    <PanelGroup
-      direction="vertical"
-      className="flex flex-col relative outline-none bg-zinc-200"
-      tabIndex={0}>
+    <div className="h-full flex flex-col relative outline-none bg-zinc-200" tabIndex={0}>
 
       {/* ツールバー */}
       <div className="flex content-start items-center gap-2 p-1">
-
         {dsHandler?.Editor && (
           <Components.Button
             onClick={() => setShowDataSource(x => x.toggle())}
             icon={showDataSource ? Icon.UpOutlined : Icon.DownOutlined}
           />)}
-        <Components.Button outlined onClick={() => dataSource && reload(dataSource)}>
+        <Components.Button outlined onClick={reloadByCurrentData}>
           {nowLoading ? '読込中...' : '再読込(Ctrl+Enter)'}
         </Components.Button>
 
@@ -124,39 +123,45 @@ function App() {
         <Components.Button onClick={saveAll}>保存(Ctrl+S)</Components.Button>
       </div>
 
-      {/* データソース */}
-      {dsHandler?.Editor && (
-        <Panel defaultSize={16} className={`flex flex-col ${!showDataSource && 'hidden'}`}>
-          <dsHandler.Editor
-            value={dataSource}
-            onChange={setDataSource}
-            className="flex-1"
-          />
+      <PanelGroup direction="vertical" className="flex-1">
+
+        {/* データソース */}
+        <Panel
+          defaultSize={16}
+          className={`flex flex-col ${!showDataSource && 'hidden'}`}>
+          {dsHandler?.Editor && (
+            <dsHandler.Editor
+              value={dataSource}
+              onChange={setDataSource}
+              onReload={reloadByCurrentData}
+              className="flex-1"
+            />
+          )}
         </Panel>
-      )}
 
-      {showDataSource && dsHandler?.Editor && (
-        <PanelResizeHandle className="h-2" />
-      )}
+        <PanelResizeHandle
+          className={`h-2 ${!showDataSource && 'hidden'}`}
+        />
 
-      {/* グラフ */}
-      <Panel className="flex flex-col bg-white relative">
-        <div ref={containerRef} className="
+        {/* グラフ */}
+        <Panel className="flex flex-col bg-white relative">
+          <div ref={containerRef} className="
           overflow-hidden [&>div>canvas]:left-0
           flex-1
           outline-none"
-          tabIndex={0}
-          onKeyDown={handleKeyDown}>
-        </div>
-        <Navigator.Component hasNoElements={hasNoElements} className="absolute w-[20vw] h-[20vh] right-2 bottom-2 z-[200]" />
-        {nowLoading && (
-          <Components.NowLoading className="w-10 h-10 absolute left-0 right-0 top-0 bottom-0 m-auto" />
-        )}
-      </Panel>
+            tabIndex={0}
+            onKeyDown={handleKeyDown}>
+          </div>
+          <Navigator.Component hasNoElements={hasNoElements} className="absolute w-[20vw] h-[20vh] right-2 bottom-2 z-[200]" />
+          {nowLoading && (
+            <Components.NowLoading className="w-10 h-10 absolute left-0 right-0 top-0 bottom-0 m-auto" />
+          )}
+        </Panel>
 
-      <Messaging.InlineMessageList />
-      <Messaging.Toast />
-    </PanelGroup>
+        <Messaging.InlineMessageList />
+        <Messaging.Toast />
+      </PanelGroup>
+    </div>
   )
 }
 

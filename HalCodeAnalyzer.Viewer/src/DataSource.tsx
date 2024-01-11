@@ -50,6 +50,7 @@ export type UnknownDataSource = {
 export type DataSourceEditor<T = any> = (props: {
   value: T | undefined
   onChange: (v: T) => void
+  onReload: () => void
   className?: string
 }) => React.ReactNode
 

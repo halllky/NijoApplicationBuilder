@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import neo4j, { Node, Relationship, Record } from 'neo4j-driver'
 import * as Icon from '@ant-design/icons'
 import { DataSet, DataSourceEditor, IDataSourceHandler, ReloadFunc, createEmptyDataSet } from './DataSource'
@@ -108,17 +108,25 @@ const neo4jQueryReusltToCytoscapeItem = (
 const Editor: DataSourceEditor<Neo4jDataSource> = ({
   value: ds,
   onChange,
+  onReload,
   className,
 }) => {
   const [showSettingModal, setShowSettingModal] = useState(false)
+  const handleKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = useCallback(e => {
+    if (e.ctrlKey && e.key === 'Enter') {
+      onReload()
+      e.preventDefault()
+    }
+  }, [onReload])
 
   return (
     <div className={`relative flex ${className}`}>
       <Components.Textarea
-        className="flex-1 font-mono"
+        className="flex-1 font-mono mt-2 mx-2"
         inputClassName="resize-none whitespace-pre text-lg"
         value={ds?.query ?? ''}
         onChange={e => ds && onChange({ ...ds, query: e.target.value })}
+        onKeyDown={handleKeyDown}
       />
 
       <Components.Button
