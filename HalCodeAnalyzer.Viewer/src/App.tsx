@@ -73,7 +73,7 @@ function App() {
   const [showDataSource, setShowDataSource] = ReactHookUtil.useToggle(true)
 
   // キー操作
-  const handleKeyDown: React.KeyboardEventHandler<React.ElementType> = useCallback(e => {
+  const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = useCallback(e => {
     // console.log(e.key)
     if (e.ctrlKey && e.key === 'Enter') {
       if (dataSource) reload(dataSource)
@@ -94,7 +94,6 @@ function App() {
     <PanelGroup
       direction="vertical"
       className="flex flex-col relative outline-none bg-zinc-200"
-      onKeyDown={handleKeyDown}
       tabIndex={0}>
 
       {/* ツールバー */}
@@ -146,7 +145,8 @@ function App() {
           overflow-hidden [&>div>canvas]:left-0
           flex-1
           outline-none"
-          tabIndex={0}>
+          tabIndex={0}
+          onKeyDown={handleKeyDown}>
         </div>
         <Navigator.Component hasNoElements={hasNoElements} className="absolute w-[20vw] h-[20vh] right-2 bottom-2 z-[200]" />
         {nowLoading && (
