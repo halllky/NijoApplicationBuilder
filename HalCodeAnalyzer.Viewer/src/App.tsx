@@ -73,8 +73,9 @@ function App() {
   }, [dataSource, collectViewState])
 
   // -----------------------------------------------------
-  // データソース欄の表示/非表示
+  // 表示/非表示
   const [showDataSource, setShowDataSource] = ReactHookUtil.useToggle(true)
+  const [showExplorer, setShowExplorer] = ReactHookUtil.useToggle(true)
 
   // -----------------------------------------------------
   // キー操作
@@ -94,74 +95,83 @@ function App() {
 
 
   return (
-    <div className="h-full flex flex-col relative outline-none bg-zinc-200" tabIndex={0}>
+    <PanelGroup direction="horizontal" className="w-full h-full bg-zinc-200">
 
-      {/* ツールバー */}
-      <div className="flex content-start items-center gap-2 p-1">
-        {dsHandler?.Editor && (
+      {/* エクスプローラ */}
+      <Panel className={`${!showExplorer && 'hidden'}`}>
+
+      </Panel>
+
+      <PanelResizeHandle className={`w-2 ${!showExplorer && 'hidden'}`} />
+
+      <Panel className="flex flex-col">
+
+        {/* ツールバー */}
+        <div className="flex content-start items-center gap-2 p-1">
           <Components.Button
-            onClick={() => setShowDataSource(x => x.toggle())}
-            icon={showDataSource ? Icon.UpOutlined : Icon.DownOutlined}
-          />)}
-        <Components.Button outlined onClick={reloadByCurrentData}>
-          {nowLoading ? '読込中...' : '再読込(Ctrl+Enter)'}
-        </Components.Button>
-
-        <div className="flex-1"></div>
-
-        <LayoutSelector />
-        <Components.Button outlined onClick={reset}>自動レイアウト</Components.Button>
-
-        <label className="text-nowrap flex gap-1">
-          <input type="checkbox" checked={nodesLocked} onChange={toggleNodesLocked} />
-          ノード位置固定
-        </label>
-
-        <Components.Button outlined onClick={expandSelections}>展開</Components.Button>
-        <Components.Button outlined onClick={collapseSelections}>折りたたむ</Components.Button>
-
-        <Components.Button onClick={saveAll}>保存(Ctrl+S)</Components.Button>
-      </div>
-
-      <PanelGroup direction="vertical" className="flex-1">
-
-        {/* データソース */}
-        <Panel
-          defaultSize={16}
-          className={`flex flex-col ${!showDataSource && 'hidden'}`}>
+            onClick={() => setShowExplorer(x => x.toggle())}
+            icon={Icon.MenuOutlined}
+          />
           {dsHandler?.Editor && (
-            <dsHandler.Editor
-              value={dataSource}
-              onChange={setDataSource}
-              onReload={reloadByCurrentData}
-              className="flex-1"
-            />
-          )}
-        </Panel>
+            <Components.Button
+              onClick={() => setShowDataSource(x => x.toggle())}
+              icon={showDataSource ? Icon.UpOutlined : Icon.DownOutlined}
+            />)}
+          <Components.Button outlined onClick={reloadByCurrentData}>
+            {nowLoading ? '読込中...' : '再読込(Ctrl+Enter)'}
+          </Components.Button>
 
-        <PanelResizeHandle
-          className={`h-2 ${!showDataSource && 'hidden'}`}
-        />
+          <div className="flex-1"></div>
 
-        {/* グラフ */}
-        <Panel className="flex flex-col bg-white relative">
-          <div ref={containerRef} className="
-          overflow-hidden [&>div>canvas]:left-0
-          flex-1
-          outline-none"
-            tabIndex={0}
-            onKeyDown={handleKeyDown}>
-          </div>
-          <Navigator.Component hasNoElements={hasNoElements} className="absolute w-[20vw] h-[20vh] right-2 bottom-2 z-[200]" />
-          {nowLoading && (
-            <Components.NowLoading className="w-10 h-10 absolute left-0 right-0 top-0 bottom-0 m-auto" />
-          )}
-        </Panel>
+          <LayoutSelector />
+          <Components.Button outlined onClick={reset}>自動レイアウト</Components.Button>
 
-        <Messaging.InlineMessageList />
-        <Messaging.Toast />
-      </PanelGroup>
-    </div>
+          <label className="text-nowrap flex gap-1">
+            <input type="checkbox" checked={nodesLocked} onChange={toggleNodesLocked} />
+            ノード位置固定
+          </label>
+
+          <Components.Button outlined onClick={expandSelections}>展開</Components.Button>
+          <Components.Button outlined onClick={collapseSelections}>折りたたむ</Components.Button>
+
+          <Components.Button onClick={saveAll}>保存(Ctrl+S)</Components.Button>
+        </div>
+
+        <PanelGroup direction="vertical" className="flex-1">
+          {/* データソース */}
+          <Panel
+            defaultSize={16}
+            className={`flex flex-col ${!showDataSource && 'hidden'}`}>
+            {dsHandler?.Editor && (
+              <dsHandler.Editor
+                value={dataSource}
+                onChange={setDataSource}
+                onReload={reloadByCurrentData}
+                className="flex-1"
+              />
+            )}
+          </Panel>
+
+          <PanelResizeHandle className={`h-2 ${!showDataSource && 'hidden'}`} />
+
+          {/* グラフ */}
+          <Panel className="bg-white relative">
+            <div ref={containerRef}
+              className="overflow-hidden [&>div>canvas]:left-0 h-full w-full outline-none"
+              tabIndex={0}
+              onKeyDown={handleKeyDown}>
+            </div>
+            <Navigator.Component hasNoElements={hasNoElements} className="absolute w-[20vw] h-[20vh] right-2 bottom-2 z-[200]" />
+            {nowLoading && (
+              <Components.NowLoading className="w-10 h-10 absolute left-0 right-0 top-0 bottom-0 m-auto" />
+            )}
+          </Panel>
+
+          <Messaging.InlineMessageList />
+          <Messaging.Toast />
+        </PanelGroup>
+      </Panel>
+    </PanelGroup>
   )
 }
 

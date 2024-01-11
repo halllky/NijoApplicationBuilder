@@ -122,7 +122,7 @@ const Editor: DataSourceEditor<Neo4jDataSource> = ({
   return (
     <div className={`relative flex ${className}`}>
       <Components.Textarea
-        className="flex-1 font-mono mt-2 mx-2"
+        className="flex-1 font-mono mt-2"
         inputClassName="resize-none whitespace-pre text-lg"
         value={ds?.query ?? ''}
         onChange={e => ds && onChange({ ...ds, query: e.target.value })}
