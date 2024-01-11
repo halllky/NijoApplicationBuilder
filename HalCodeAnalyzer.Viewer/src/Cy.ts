@@ -133,6 +133,7 @@ export const useCytoscape = () => {
   }, [cy, collectViewState, applyViewState])
 
   return {
+    cy,
     containerRef,
     applyToCytoscape,
     selectAll,

@@ -16,6 +16,7 @@ function App() {
   const { defineHandler } = useDataSourceHandler()
 
   const {
+    cy,
     applyToCytoscape,
     containerRef,
     reset,
@@ -93,13 +94,47 @@ function App() {
     }
   }, [reloadByCurrentData, dataSource, saveAll, toggleExpandCollapse, otherActions])
 
+  // -----------------------------------------------------
+  // 選択中の要素のプロパティ
+  const [detailJson, setDetailJson] = useState('')
+  const updateDetailJson = useCallback(() => {
+    if (!cy) {
+      setDetailJson('')
+      return
+    }
+    let str: string[] = []
+    const selected = [...cy.nodes(':selected'), ...cy.edges(':selected')]
+    if (selected.length >= 1) {
+      const data = selected[0].data()
+      let obj: {}
+      if (data.source && data.target) {
+        obj = {
+          ...data,
+          source: cy.$id(data.source).data(),
+          target: cy.$id(data.target).data(),
+        }
+      } else {
+        obj = data
+      }
+      str.push(JSON.stringify(obj, undefined, '  '))
+    }
+    if (selected.length >= 2) {
+      str.push(`...ほか ${selected.length - 1} 件の選択`)
+    }
+    setDetailJson(str.join('\n'))
+  }, [cy])
 
   return (
     <PanelGroup direction="horizontal" className="w-full h-full bg-zinc-200">
 
       {/* エクスプローラ */}
-      <Panel className={`${!showExplorer && 'hidden'}`}>
-
+      <Panel defaultSize={16} className={`flex flex-col ${!showExplorer && 'hidden'}`}>
+        <Components.Button onClick={updateDetailJson}>
+          プロパティ
+        </Components.Button>
+        <span className="flex-1 whitespace-pre">
+          {detailJson}
+        </span>
       </Panel>
 
       <PanelResizeHandle className={`w-2 ${!showExplorer && 'hidden'}`} />
