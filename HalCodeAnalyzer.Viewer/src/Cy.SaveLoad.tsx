@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import cytoscape from 'cytoscape'
+import ExpandCollapseFunctions from './Cy.ExpandCollapse'
 
 export type ViewState = {
   nodePositions: { [nodeId: string]: cytoscape.Position }
@@ -23,6 +24,10 @@ export const useViewState = (cy: cytoscape.Core | undefined) => {
         y: Math.trunc(pos.y * 10000) / 10000,
       }
     }
+
+    // 折りたたみ状態の保存
+    viewState.collapsedNodes = ExpandCollapseFunctions(cy).toViewState()
+
     return viewState
   }, [cy])
 
@@ -35,6 +40,10 @@ export const useViewState = (cy: cytoscape.Core | undefined) => {
       const pos = viewState.nodePositions[node.id()]
       if (pos) node.position(pos)
     }
+
+    // 折りたたみ状態の復元
+    ExpandCollapseFunctions(cy).applyViewState(viewState)
+
   }, [cy])
 
   return {

@@ -1,9 +1,9 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import cytoscape from 'cytoscape'
 import * as UUID from 'uuid'
 import Navigator from './Cy.Navigator'
 import AutoLayout from './Cy.AutoLayout'
-import * as ExpandCollapse from './Cy.ExpandCollapse'
+import ExpandCollapseFunctions from './Cy.ExpandCollapse'
 import { ViewState, useViewState } from './Cy.SaveLoad'
 import * as DS from './DataSource'
 import { ReactHookUtil } from './util'
@@ -44,7 +44,9 @@ export const useCytoscape = () => {
   }, [cy, navInstance])
 
   const { autoLayout, LayoutSelector } = AutoLayout.useAutoLayout(cy)
-  const expandCollapseActions = ExpandCollapse.useExpandCollapse(cy)
+  const { actions: expandCollapseActions } = useMemo(() => {
+    return ExpandCollapseFunctions(cy)
+  }, [cy])
 
   const selectAll = useCallback(() => {
     cy?.nodes().select()
