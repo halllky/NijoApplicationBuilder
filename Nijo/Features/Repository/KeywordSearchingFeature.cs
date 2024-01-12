@@ -56,7 +56,7 @@ namespace Nijo.Features.Repository {
             var filterColumns = keyName
                 .GetMembers()
                 .OfType<AggregateMember.ValueMember>()
-                .Select(m => m.GetFullPath(_aggregate).Join("."));
+                .Select(m => m.GetFullPath(_aggregate).Join(".") + (m.CSharpTypeName == "string" ? "" : ".ToString()"));
             var orderColumn = keyName
                 .GetMembers()
                 .OfType<AggregateMember.ValueMember>()
@@ -86,7 +86,7 @@ namespace Nijo.Features.Repository {
 
                     if (!string.IsNullOrWhiteSpace(keyword)) {
                         var {{LIKE}} = $"%{keyword.Trim().Replace("%", "\\%")}%";
-                        query = query.Where(item => {{WithIndent(filterColumns.SelectTextTemplate(path => $"EF.Functions.Like(item.{path}.ToString(), {LIKE})"), "                                 || ")}});
+                        query = query.Where(item => {{WithIndent(filterColumns.SelectTextTemplate(path => $"EF.Functions.Like(item.{path}, {LIKE})"), "                                 || ")}});
                     }
 
                     var results = query
