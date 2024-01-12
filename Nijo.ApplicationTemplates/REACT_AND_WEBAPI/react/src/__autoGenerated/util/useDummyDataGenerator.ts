@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useHttpRequest } from './useHttpRequest'
+import { useHttpRequest } from './Http'
 import { BarMessage } from '..'
 
 export const useDummyDataGenerator = (setErrorMessages: (msgs: BarMessage[]) => void) => {

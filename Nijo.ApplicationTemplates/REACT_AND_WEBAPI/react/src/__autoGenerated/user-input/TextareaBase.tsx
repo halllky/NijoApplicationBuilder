@@ -1,5 +1,5 @@
 import React, { TextareaHTMLAttributes, useCallback, useImperativeHandle, useRef } from "react"
-import { defineCustomComponent } from "./util"
+import { defineCustomComponent } from "../util"
 
 export const TextareaBase = defineCustomComponent<string, {}, TextareaHTMLAttributes<HTMLTextAreaElement>>((props, ref) => {
 

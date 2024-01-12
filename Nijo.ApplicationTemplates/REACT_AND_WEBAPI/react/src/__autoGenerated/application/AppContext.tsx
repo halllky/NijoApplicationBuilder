@@ -3,7 +3,7 @@ import React, { useCallback, useContext, useMemo, useReducer, useRef } from "rea
 import { UUID } from "uuidjs";
 import { Toast, ToastMessage } from "../decoration/Toast";
 import { LOCAL_STORAGE_KEYS } from "./localStorageKeys";
-import { ImeContextProvider } from "../user-input";
+import { ImeContextProvider } from "../util";
 
 export type ClientSettings = {
   apiDomain?: string

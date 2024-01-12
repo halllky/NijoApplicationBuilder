@@ -1,8 +1,8 @@
 import React, { useCallback, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { TextInputBase, ValidationHandler } from "./TextInputBase";
+import { TextInputBase } from "./TextInputBase";
 import "dayjs/locale/ja";
 import { ComboBoxBase } from "./ComboBoxBase";
-import { CustomComponentProps, CustomComponentRef, defineCustomComponent, normalize, parseAsDate } from "./util";
+import { CustomComponentProps, CustomComponentRef, ValidationHandler, defineCustomComponent, normalize, parseAsDate } from "../util";
 import { TextareaBase } from "./TextareaBase";
 import { RadioGroupBase, ToggleBase } from "./ToggleBase";
 import { useAppContext } from "../application";
@@ -11,7 +11,6 @@ import { useQuery } from "react-query";
 export * from "./AggregateComboBox"
 export * from "./AgGridWrapper"
 export * from "./IconButton"
-export * from "./util"
 
 /** 単語 */
 export const Word = defineCustomComponent<string>((props, ref) => {

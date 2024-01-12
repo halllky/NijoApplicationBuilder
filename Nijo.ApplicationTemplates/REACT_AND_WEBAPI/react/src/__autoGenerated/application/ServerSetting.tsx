@@ -6,7 +6,7 @@ import { ClientSettings, useAppContext } from './AppContext';
 import * as Input from "../user-input";
 import { VerticalForm as VForm } from "../layout";
 import { InlineMessageBar, BarMessage } from '../decoration';
-import { useDummyDataGenerator, useHttpRequest } from '../util';
+import { useDummyDataGenerator, useFormEx, useHttpRequest } from '../util';
 
 export const ServerSettingScreen = () => {
 
@@ -71,7 +71,7 @@ export const ServerSettingScreen = () => {
   const {
     registerEx,
     handleSubmit: handleSubmit2,
-  } = Input.useFormEx<ClientSettings>({ defaultValues: appState })
+  } = useFormEx<ClientSettings>({ defaultValues: appState })
 
   return (
     <div className="page-content-root">

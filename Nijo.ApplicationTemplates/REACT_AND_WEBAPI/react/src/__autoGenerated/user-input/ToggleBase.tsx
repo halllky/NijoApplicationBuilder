@@ -1,6 +1,6 @@
 import { CheckIcon } from "@heroicons/react/24/outline"
 import { useRef, useImperativeHandle, useState, useCallback, createRef } from "react"
-import { CustomComponentProps, CustomComponentRef, defineCustomComponent } from "./util"
+import { CustomComponentProps, CustomComponentRef, defineCustomComponent } from "../util"
 import { TextInputBase } from "./TextInputBase"
 
 export const ToggleBase = defineCustomComponent<boolean>((props, ref) => {
