@@ -89,9 +89,9 @@ export const ComboBoxBase = defineCustomComponent(<T extends {}>(
     setHighlightItem(anyItem ? props.keySelector(anyItem) : '')
   }, [getHighlightedOrAnyItem, props.onChange, props.onBlur, props.keySelector])
 
-  const ime = useIMEOpened()
+  const [{ isImeOpen }] = useIMEOpened()
   const onKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useCallback(e => {
-    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !ime) {
+    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !isImeOpen) {
       if (!dropdownRef.current?.isOpened) {
         dropdownRef.current?.open()
         highlightAnyItem()
@@ -103,7 +103,7 @@ export const ComboBoxBase = defineCustomComponent(<T extends {}>(
       e.preventDefault()
     }
     // ドロップダウン中のハイライトが当たっている要素の選択を確定する
-    if (e.key === 'Enter' && !ime) {
+    if (e.key === 'Enter' && !isImeOpen) {
       const anyItem = getHighlightedOrAnyItem()
       props.onChange?.(anyItem)
       setKeyword(undefined)
@@ -111,7 +111,7 @@ export const ComboBoxBase = defineCustomComponent(<T extends {}>(
       dropdownRef.current?.close()
       e.preventDefault()
     }
-  }, [ime, getHighlightedOrAnyItem, highlightAnyItem, highlightUpItem, highlightDownItem, props.keySelector])
+  }, [isImeOpen, getHighlightedOrAnyItem, highlightAnyItem, highlightUpItem, highlightDownItem, props.keySelector])
 
   const onClickItem: React.MouseEventHandler<HTMLLIElement> = useCallback(e => {
     selectItemByValue((e.target as HTMLLIElement).getAttribute('value') as string)

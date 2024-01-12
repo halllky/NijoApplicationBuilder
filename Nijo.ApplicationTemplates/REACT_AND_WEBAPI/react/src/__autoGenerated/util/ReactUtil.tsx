@@ -27,17 +27,18 @@ type Dispatcher<TModifier>
 // useContextの簡略化
 type ReducerEx<S, M extends StateModifier<S>> = React.Reducer<S, DispatchArg<S, M>>
 type ContextEx<S, M extends StateModifier<S>> = React.Context<readonly [S, React.Dispatch<DispatchArg<S, M>>]>
-type ProviderComponent = (props: { children?: React.ReactNode }) => JSX.Element
-export const defineContext = <S, M extends StateModifier<S>>(
+type ProviderComponentDefaultProp = { children?: React.ReactNode }
+type ProviderComponent<P extends ProviderComponentDefaultProp> = (props: P) => JSX.Element
+export const defineContext = <S, M extends StateModifier<S>, P extends ProviderComponentDefaultProp = ProviderComponentDefaultProp>(
   getInitialState: () => S,
   reducerDef: ReducerDef<S, M>,
-  craeteProviderContext?: (Context: ContextEx<S, M>, reducer: ReducerEx<S, M>) => ProviderComponent
+  craeteProviderContext?: (Context: ContextEx<S, M>, reducer: ReducerEx<S, M>) => ProviderComponent<P>
 ) => {
   const reducer = defineReducer(reducerDef)
   const dummyDispatcher = (() => { }) as React.Dispatch<DispatchArg<S, M>>
   const ContextEx = React.createContext([getInitialState(), dummyDispatcher] as const)
   /** App直下などに置く必要あり */
-  const ContextProvider: ProviderComponent
+  const ContextProvider: ProviderComponent<P>
     = craeteProviderContext?.(ContextEx, reducer)
     // 既定のコンテキストプロバイダー
     ?? (({ children }) => {
