@@ -18,7 +18,7 @@ namespace Nijo.Architecture {
 
         internal static string GetClassFullname(Config config) => $"{config.RootNamespace}.{CLASSNAME}";
 
-        internal static SourceFile Render(ICodeRenderingContext _ctx, Infrastucture infrastucture) {
+        internal static SourceFile Render(ICodeRenderingContext _ctx, Infrastructure infrastucture) {
             return new SourceFile {
                 FileName = "DefaultConfigurer.cs",
                 RenderContent = () => {

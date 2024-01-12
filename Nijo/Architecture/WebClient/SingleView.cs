@@ -12,7 +12,7 @@ using Nijo.Features;
 using Nijo.Architecture.WebServer;
 
 namespace Nijo.Architecture.WebClient {
-    public class SingleView : Infrastucture.IReactPage {
+    public class SingleView : Infrastructure.IReactPage {
         public enum E_Type {
             Create,
             View,
@@ -26,17 +26,17 @@ namespace Nijo.Architecture.WebClient {
         private readonly GraphNode<Aggregate> _aggregate;
         private readonly E_Type _type;
 
-        string Infrastucture.IReactPage.Url => Route;
-        string Infrastucture.IReactPage.DirNameInPageDir => _aggregate.Item.DisplayName.ToFileNameSafe();
-        string Infrastucture.IReactPage.ComponentPhysicalName => _type switch {
+        string Infrastructure.IReactPage.Url => Route;
+        string Infrastructure.IReactPage.DirNameInPageDir => _aggregate.Item.DisplayName.ToFileNameSafe();
+        string Infrastructure.IReactPage.ComponentPhysicalName => _type switch {
             E_Type.Create => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}CreateView",
             E_Type.View => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}DetailView",
             E_Type.Edit => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}EditView",
             _ => throw new NotImplementedException(),
         };
-        bool Infrastucture.IReactPage.ShowMenu => false;
-        string? Infrastucture.IReactPage.LabelInMenu => null;
-        SourceFile Infrastucture.IReactPage.GetSourceFile() => Render();
+        bool Infrastructure.IReactPage.ShowMenu => false;
+        string? Infrastructure.IReactPage.LabelInMenu => null;
+        SourceFile Infrastructure.IReactPage.GetSourceFile() => Render();
 
         internal string FileName => _type switch {
             E_Type.Create => "new.tsx",

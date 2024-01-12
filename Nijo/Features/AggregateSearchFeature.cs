@@ -77,7 +77,7 @@ namespace Nijo.Features {
         public override void GenerateCode(ICodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
             var multiView = GetMultiView(rootAggregate);
 
-            context.Render<Infrastucture>(infra => {
+            context.Render<Infrastructure>(infra => {
                 infra.ReactPages.Add(multiView);
 
                 infra.Aggregate(rootAggregate, builder => {

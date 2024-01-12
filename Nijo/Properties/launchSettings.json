@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Nijo": {
+      "commandName": "Project",
+      "hotReloadEnabled": true
+    }
+  }
+}

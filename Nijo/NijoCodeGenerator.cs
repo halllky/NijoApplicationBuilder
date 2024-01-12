@@ -148,7 +148,7 @@ namespace Nijo {
             }
 
             // 絶対作成する機能を登録する
-            ctx.Render<Infrastucture>(_ => { });
+            ctx.Render<Infrastructure>(_ => { });
 
             // 複数の集約から1個のソースが作成されるものはこのタイミングで作成
             ctx.OnEndContext();

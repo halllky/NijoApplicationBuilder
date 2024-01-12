@@ -80,6 +80,10 @@ namespace Nijo.Util.DotnetEx {
 
         public IReadOnlyDictionary<NodeId, IGraphNode> Nodes { get; }
         public IReadOnlySet<GraphEdgeInfo> Edges { get; }
+        public IEnumerable<NodeGroup> SubGraphs => Nodes.Keys
+            .SelectMany(node => node.Group.AncestorsAndSelf())
+            .Distinct()
+            .Where(group => group != NodeGroup.Root);
 
         public IEnumerable<GraphNode<T>> Only<T>() where T : IGraphNode {
             return this
@@ -100,6 +104,21 @@ namespace Nijo.Util.DotnetEx {
                 builder.AppendLine($"  {id1}(\"{label1}\") --\"{relation}\"--> {id2}(\"{label2}\");");
             }
 
+            return builder.ToString();
+        }
+        public string ToDotText() {
+            var builder = new StringBuilder();
+            builder.AppendLine("digraph G {");
+            foreach (var node in Nodes) {
+                builder.AppendLine($"  {node.Key.Value.ToHashedString()} [label=\"{node.Key.Value.Replace("\"", "”")}\"];");
+            }
+            foreach (var edge in Edges) {
+                var initial = edge.Initial.Value.ToHashedString();
+                var terminal = edge.Terminal.Value.ToHashedString();
+                builder.AppendLine($"  {initial} -> {terminal} [label=\"{edge.RelationName.Replace("\"", "”")}\"]");
+            }
+
+            builder.AppendLine("}");
             return builder.ToString();
         }
 
@@ -312,10 +331,20 @@ namespace Nijo.Util.DotnetEx {
 
     #region VALUE
     public class NodeId : ValueObject {
-        public NodeId(string value) {
-            Value = value;
+        public NodeId(string value)
+            : this(value, NodeGroup.Root) { }
+        public NodeId(IEnumerable<string> value)
+            : this(value.LastOrDefault() ?? string.Empty, new NodeGroup(value.SkipLast(1))) { }
+        public NodeId(string basename, NodeGroup nodeGroup) {
+            Group = nodeGroup;
+            BaseName = basename.Replace(".", "．");
+            Value = Group == NodeGroup.Root
+                ? BaseName
+                : $"{Group.FullName}.{BaseName}";
         }
+        public NodeGroup Group { get; }
         public string Value { get; }
+        public string BaseName { get; }
 
         protected override IEnumerable<object?> ValueObjectIdentifiers() {
             yield return Value;
@@ -325,6 +354,56 @@ namespace Nijo.Util.DotnetEx {
         }
 
         public static NodeId Empty => new NodeId(string.Empty);
+    }
+    public sealed class NodeGroup : ValueObject {
+        public NodeGroup(string name)
+            : this(new[] { name }) { }
+        public NodeGroup(NodeGroup parent, string name)
+            : this(parent._value.Concat(new[] { name })) { }
+        public NodeGroup(IEnumerable<string> value) {
+            _value = value.Select(x => x.Replace(".", "．")).ToArray();
+        }
+        private readonly string[] _value;
+
+        public string Name => _value.LastOrDefault() ?? string.Empty;
+        public string FullName => _value.Join(".");
+        public int Depth => _value.Length;
+        public NodeGroup Parent => new NodeGroup(_value.SkipLast(1));
+
+        public bool Contains(NodeGroup group) {
+            if (group.Depth < Depth) {
+                return false;
+            }
+            for (int i = 0; i < _value.Length; i++) {
+                if (group._value[i] != _value[i]) return false;
+            }
+            return true;
+        }
+        public bool Contains(NodeId nodeId) {
+            return Contains(nodeId.Group);
+        }
+        public override string ToString() {
+            return FullName;
+        }
+        protected override IEnumerable<object?> ValueObjectIdentifiers() {
+            return _value;
+        }
+
+        public IEnumerable<NodeGroup> Ancestors() {
+            var group = Parent;
+            while (group != Root) {
+                yield return group;
+                group = group.Parent;
+            }
+        }
+        public IEnumerable<NodeGroup> AncestorsAndSelf() {
+            yield return this;
+            foreach (var ancestor in Ancestors()) {
+                yield return ancestor;
+            }
+        }
+
+        public static NodeGroup Root => new(Enumerable.Empty<string>());
     }
     public interface IGraphNode {
         NodeId Id { get; }
