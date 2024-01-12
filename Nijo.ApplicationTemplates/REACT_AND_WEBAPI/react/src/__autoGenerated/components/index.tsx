@@ -11,6 +11,7 @@ import { useQuery } from "react-query";
 export * from "./AggregateComboBox"
 export * from "./AgGridWrapper"
 export * from "./IconButton"
+export * from "./NowLoading"
 
 /** 単語 */
 export const Word = defineCustomComponent<string>((props, ref) => {

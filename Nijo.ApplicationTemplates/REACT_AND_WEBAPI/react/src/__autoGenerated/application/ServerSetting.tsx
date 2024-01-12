@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { FieldValues, SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { UUID } from 'uuidjs';
 import { ClientSettings, useAppContext } from './AppContext';
-import * as Input from "../user-input";
+import * as Input from "../components";
 import { VerticalForm as VForm } from "../layout";
 import { InlineMessageBar, BarMessage } from '../decoration';
 import { useDummyDataGenerator, useFormEx, useHttpRequest } from '../util';
