@@ -10,7 +10,7 @@ using Nijo.Util.CodeGenerating;
 using Nijo.Architecture;
 using Nijo.Architecture.WebServer;
 
-namespace Nijo.Features.Storing {
+namespace Nijo.Features.Repository {
     internal class UpdateFeature {
         internal UpdateFeature(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;

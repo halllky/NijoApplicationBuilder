@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Core.AggregateMemberTypes;
 using Nijo.Util.CodeGenerating;
-using Nijo.Features.Storing;
+using Nijo.Features.Repository;
 using Nijo.Architecture.WebClient;
 
 namespace Nijo.Features.Debugging {

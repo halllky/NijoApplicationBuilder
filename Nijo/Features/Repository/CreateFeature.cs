@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Nijo.Architecture;
 using Nijo.Architecture.WebServer;
 
-namespace Nijo.Features.Storing {
+namespace Nijo.Features.Repository {
     internal class CreateFeature {
         internal CreateFeature(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;

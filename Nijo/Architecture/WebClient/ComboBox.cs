@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
-using Nijo.Features.Storing;
+using Nijo.Features.Repository;
 
 namespace Nijo.Architecture.WebClient {
     internal class ComboBox {

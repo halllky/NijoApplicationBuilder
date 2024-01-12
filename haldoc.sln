@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "自動テストで作成さ
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nijo.Extensions", "Nijo.Extensions\Nijo.Extensions.csproj", "{39D699A9-0070-49CD-8F6C-42359D5F3396}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HalCodeAnalyzer", "HalCodeAnalyzer\HalCodeAnalyzer.csproj", "{2E2DD350-20E5-4103-B627-3E9C85EC83A5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HalCodeAnalyzer", "HalCodeAnalyzer\HalCodeAnalyzer.csproj", "{2E2DD350-20E5-4103-B627-3E9C85EC83A5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

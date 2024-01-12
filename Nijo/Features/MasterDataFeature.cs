@@ -9,7 +9,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Nijo.Architecture;
-using Nijo.Features.Storing;
+using Nijo.Features.Repository;
 using Nijo.Architecture.WebClient;
 
 namespace Nijo.Features {
