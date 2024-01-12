@@ -65,7 +65,7 @@ namespace Nijo.Architecture.WebClient {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const { register, registerEx, watch, getValues } = Input.useFormContextEx<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
+                      const { register, registerEx, watch, getValues } = useFormContextEx<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
                       const item = getValues({{GetRegisterName()}})
 
                       return (
@@ -86,7 +86,7 @@ namespace Nijo.Architecture.WebClient {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const { registerEx, watch, getValues } = Input.useFormContextEx<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
+                      const { registerEx, watch, getValues } = useFormContextEx<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
                       const item = getValues({{GetRegisterName()}})
 
                       const body = (
@@ -121,7 +121,7 @@ namespace Nijo.Architecture.WebClient {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const { registerEx, watch, control } = Input.useFormContextEx<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
+                      const { registerEx, watch, control } = useFormContextEx<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
                       const { fields, append, remove } = useFieldArray({
                         control,
                         name: {{GetRegisterName()}},
@@ -208,7 +208,7 @@ namespace Nijo.Architecture.WebClient {
                     """)}}
                     }) => {
                       const [{ darkMode }] = useAppContext()
-                      const { registerEx, watch, control } = Input.useFormContextEx<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
+                      const { registerEx, watch, control } = useFormContextEx<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
                       const { fields, append, remove } = useFieldArray({
                         control,
                         name: {{GetRegisterName()}},

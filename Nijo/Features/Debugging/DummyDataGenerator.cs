@@ -30,7 +30,7 @@ namespace Nijo.Features.Debugging {
 
                 return $$"""
                     import { useCallback } from 'react'
-                    import { useHttpRequest } from './useHttpRequest'
+                    import { useHttpRequest } from './Http'
                     import { BarMessage } from '../decoration'
                     import * as AggregateType from '../types'
 

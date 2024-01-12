@@ -141,11 +141,11 @@ namespace Nijo.Architecture.WebClient {
                     import { ColDef, GridReadyEvent } from 'ag-grid-community';
                     import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
                     import { UUID } from 'uuidjs';
-                    import * as Input from '../../user-input';
+                    import * as Input from '../../components';
                     import * as Layout from '../../layout';
                     import { BarMessage, InlineMessageBar } from '../../decoration';
                     import { useAppContext } from '../../application';
-                    import { visitObject, useHttpRequest } from '../../util';
+                    import { visitObject, useHttpRequest, useFormContextEx } from '../../util';
                     import * as AggregateType from '../../types'
 
                     const VForm = Layout.VerticalForm

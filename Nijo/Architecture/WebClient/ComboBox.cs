@@ -28,8 +28,8 @@ namespace Nijo.Architecture.WebClient {
             FileName = "AggregateComboBox.tsx",
             RenderContent = () => $$"""
                 import React, { useState, useCallback } from "react"
-                import { useHttpRequest } from "../util"
-                import { AsyncComboBox, defineCustomComponent } from "../user-input"
+                import { useHttpRequest, defineCustomComponent } from "../util"
+                import { AsyncComboBox } from "../components"
                 import * as Types from "../types"
 
                 {{ctx.Schema.AllAggregates().Where(a => a.IsStored()).Select(a => new ComboBox(a)).SelectTextTemplate((combo, index) => $$"""

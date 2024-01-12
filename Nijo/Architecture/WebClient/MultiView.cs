@@ -57,8 +57,8 @@ namespace Nijo.Architecture.WebClient {
                     import { useQuery } from 'react-query';
                     import { BookmarkIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
                     import { useAppContext } from '../../application';
-                    import * as Input from '../../user-input';
-                    import { useHttpRequest } from '../../util';
+                    import * as Input from '../../components';
+                    import { useFormEx, useHttpRequest } from '../../util';
                     import * as AggregateType from '../../types';
 
                     export default function () {
@@ -67,7 +67,7 @@ namespace Nijo.Architecture.WebClient {
                       const { get } = useHttpRequest()
                       const [param, setParam] = useState<FieldValues>({})
 
-                      const reactHookFormMethods = Input.useFormEx<AggregateType.{{SearchConditionClassName}}>({})
+                      const reactHookFormMethods = useFormEx<AggregateType.{{SearchConditionClassName}}>({})
                       const { registerEx, handleSubmit, reset } = reactHookFormMethods
 
                       const onSearch: SubmitHandler<FieldValues> = useCallback(data => {
