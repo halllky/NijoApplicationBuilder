@@ -1,5 +1,5 @@
 import React, { HTMLAttributes, useContext, useMemo } from "react";
-import { forwardRefEx } from "../util";
+import { forwardRefEx } from "../util/ReactUtil";
 
 const Root = forwardRefEx<HTMLDivElement, HTMLAttributes<HTMLDivElement> & RootContextValue & {
   label?: React.ReactNode

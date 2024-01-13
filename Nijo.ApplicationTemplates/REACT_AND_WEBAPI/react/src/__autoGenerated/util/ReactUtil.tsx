@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useCallback, useReducer } from "react"
 
 // useReducerの簡略化
 type ReducerDef<S, M extends StateModifier<S>> = (state: S) => M
@@ -73,3 +73,78 @@ const toggleReducer = defineReducer((state: boolean) => ({
 export const useToggle = (initialState?: boolean) => {
   return React.useReducer(toggleReducer, initialState ?? false)
 }
+
+// --------------------------------------------------
+// 配列ref
+export const useRefArray = <T,>(arr: any[]) => {
+  const elementRefs = React.useRef<React.RefObject<T>[]>([])
+  for (let i = 0; i < arr.length; i++) {
+    elementRefs.current[i] = React.createRef()
+  }
+  return elementRefs
+}
+
+// --------------------------------------------------
+// 配列選択
+type SelectionState = {
+  cursor: number | undefined
+  selected: Set<number>
+  isSelected: (index: number) => boolean
+}
+export const useListSelection = <T extends HTMLElement = HTMLElement>(arr: any[], elementRefs?: React.MutableRefObject<React.RefObject<T>[]>) => {
+  const [{ cursor, isSelected }, dispatchSelection] = useReducer(selectionReducer, undefined, (): SelectionState => ({
+    cursor: undefined,
+    selected: new Set(),
+    isSelected: () => false,
+  }))
+
+  const handleKeyNavigation: React.KeyboardEventHandler<HTMLElement> = useCallback(e => {
+    if (e.key === 'ArrowDown') {
+      let nextIndex: number
+      if (cursor === undefined) {
+        nextIndex = 0
+      } else if (cursor >= arr.length - 1) {
+        nextIndex = 0
+      } else {
+        nextIndex = cursor + 1
+      }
+      dispatchSelection(x => x.selectOne(nextIndex))
+      elementRefs?.current[nextIndex].current?.scrollIntoView({ block: 'nearest' })
+      e.preventDefault()
+
+    } else if (e.key === 'ArrowUp') {
+      let prevIndex: number
+      if (cursor === undefined) {
+        prevIndex = 0
+      } else if (cursor <= 0) {
+        prevIndex = arr.length - 1
+      } else {
+        prevIndex = cursor - 1
+      }
+      dispatchSelection(x => x.selectOne(prevIndex))
+      elementRefs?.current[prevIndex].current?.scrollIntoView({ block: 'nearest' })
+      e.preventDefault()
+    }
+  }, [cursor, arr])
+
+  return {
+    activeItemIndex: cursor,
+    isSelected,
+    dispatchSelection,
+    handleKeyNavigation,
+  }
+}
+const selectionReducer = defineReducer((state: SelectionState) => ({
+  selectOne: (index: number) => ({
+    ...state,
+    cursor: index,
+    selected: new Set([index]),
+    isSelected: i => i === index,
+  }),
+  selectAll: () => ({
+    ...state,
+    cursor: undefined,
+    selected: new Set<number>(),
+    isSelected: () => true,
+  }),
+}))

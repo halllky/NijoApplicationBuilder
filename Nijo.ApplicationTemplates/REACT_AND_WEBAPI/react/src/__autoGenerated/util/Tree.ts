@@ -6,7 +6,7 @@ export type TreeNode<T> = {
   depth: number
 }
 
-type ToTreeArgs<T>
+export type ToTreeArgs<T>
   = { getId: (item: T) => string, getParent: (item: T) => string | null | undefined, getChildren?: undefined }
   | { getId: (item: T) => string, getParent?: undefined, getChildren: (item: T) => T[] | null | undefined }
 export const toTree = <T,>(items: T[], fn: ToTreeArgs<T>): TreeNode<T>[] => {

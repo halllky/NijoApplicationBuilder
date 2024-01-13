@@ -213,6 +213,10 @@ textarea:read-only {
   @apply bg-neutral-700 dark:bg-neutral-300;
 }
 
+.bg-color-selected {
+  @apply bg-sky-500 bg-opacity-25;
+}
+
 /* ag-grid */
 .ag-root-wrapper {
   border: none !important;
