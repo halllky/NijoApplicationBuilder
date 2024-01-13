@@ -1,17 +1,15 @@
-import React from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { QueryClient, QueryClientProvider } from 'react-query';
-import { UserSettingContextProvider, useUserSetting } from '../util';
-import { ServerSettingScreen } from '../util/UserSetting'
-import { SideMenu } from './SideMenu';
-import { routes } from '..';
-import { MsgContextProvider, Toast, InlineMessageList } from "../util"
+import React from 'react'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from 'react-query'
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
+import { SideMenu } from './SideMenu'
+import { routes } from '..'
+import * as Util from '../util'
 
 function ApplicationRootInContext({ children }: {
   children?: React.ReactNode
 }) {
-  const { data: { darkMode } } = useUserSetting()
+  const { data: { darkMode } } = Util.useUserSetting()
 
   return (
     <PanelGroup
@@ -28,7 +26,7 @@ function ApplicationRootInContext({ children }: {
       <Panel className="flex flex-col [&>:first-child]:flex-1 pr-1 pt-1 pb-1">
         <Routes>
           <Route path='/' element={<></>} />
-          <Route path='/settings' element={<ServerSettingScreen />} />
+          <Route path='/settings' element={<Util.ServerSettingScreen />} />
           {routes.map(route =>
             <Route key={route.url} path={route.url} element={route.el} />
           )}
@@ -36,7 +34,7 @@ function ApplicationRootInContext({ children }: {
           <Route path='*' element={<p>Not found.</p>} />
         </Routes>
 
-        <InlineMessageList />
+        <Util.InlineMessageList />
       </Panel>
     </PanelGroup>
   )
@@ -48,14 +46,14 @@ export function ApplicationRoot({ children }: {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <MsgContextProvider>
-          <UserSettingContextProvider>
+        <Util.MsgContextProvider>
+          <Util.UserSettingContextProvider>
             <ApplicationRootInContext>
               {children}
             </ApplicationRootInContext>
-            <Toast />
-          </UserSettingContextProvider>
-        </MsgContextProvider>
+            <Util.Toast />
+          </Util.UserSettingContextProvider>
+        </Util.MsgContextProvider>
       </BrowserRouter>
     </QueryClientProvider >
   )
