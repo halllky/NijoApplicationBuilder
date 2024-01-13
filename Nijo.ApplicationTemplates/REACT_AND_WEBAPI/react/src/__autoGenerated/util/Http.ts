@@ -1,5 +1,5 @@
 import { useCallback } from "react"
-import { useUserSetting } from "../application"
+import { useUserSetting } from "./UserSetting"
 import { useMsgContext } from "./Notification"
 
 type HttpSendResult<T> = { ok: true, data: T } | { ok: false }

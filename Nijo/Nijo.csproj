@@ -103,10 +103,10 @@
   <ItemGroup>
     <Content Include="$(ProjectDir)..\Nijo.ApplicationTemplates\*.*" CopyToOutputDirectory="PreserveNewest" LinkBase="ApplicationTemplates\" />
     <Content Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\react\*.*" CopyToOutputDirectory="PreserveNewest" LinkBase="ApplicationTemplates\REACT_AND_WEBAPI\react\" />
-    <Content Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\react\public\**" CopyToOutputDirectory="PreserveNewest" LinkBase="ApplicationTemplates\REACT_AND_WEBAPI\react\public\" />
-    <Content Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\react\src\**" CopyToOutputDirectory="PreserveNewest" LinkBase="ApplicationTemplates\REACT_AND_WEBAPI\react\src\" />
+    <Content Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\react\public\**\*.*" CopyToOutputDirectory="PreserveNewest" LinkBase="ApplicationTemplates\REACT_AND_WEBAPI\react\public\" />
+    <Content Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\react\src\**\*.*" CopyToOutputDirectory="PreserveNewest" LinkBase="ApplicationTemplates\REACT_AND_WEBAPI\react\src\" />
     <Content Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\webapi\*.*" CopyToOutputDirectory="PreserveNewest" LinkBase="ApplicationTemplates\REACT_AND_WEBAPI\webapi\" />
-    <Content Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\webapi\Properties\**" CopyToOutputDirectory="PreserveNewest" LinkBase="ApplicationTemplates\REACT_AND_WEBAPI\webapi\Properties\" />
+    <Content Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\webapi\Properties\**\*.*" CopyToOutputDirectory="PreserveNewest" LinkBase="ApplicationTemplates\REACT_AND_WEBAPI\webapi\Properties\" />
   </ItemGroup>
   <ProjectExtensions>
     <MonoDevelop>

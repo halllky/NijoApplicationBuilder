@@ -1,8 +1,24 @@
 import { useCallback, useState } from 'react';
-import { UserSettings, useUserSetting } from './UserSetting';
 import * as Input from "../components";
 import { VerticalForm as VForm } from "../layout";
-import { useDummyDataGenerator, useFormEx, useHttpRequest, useMsgContext } from '../util';
+import { useFormEx } from './Validation'
+import { useMsgContext } from './Notification'
+import { useHttpRequest } from './Http'
+import { defineStorageContext } from './Storage'
+import { useDummyDataGenerator } from './useDummyDataGenerator'
+
+export type UserSettings = {
+  apiDomain?: string
+  darkMode?: boolean
+}
+
+export const [UserSettingContextProvider, useUserSetting] = defineStorageContext<UserSettings>({
+  storageKey: 'appcontext',
+  defaultValue: () => ({}),
+  serialize: obj => JSON.stringify(obj),
+  deserialize: str => ({ ok: true, obj: JSON.parse(str) as UserSettings }),
+})
+
 
 export const ServerSettingScreen = () => {
 

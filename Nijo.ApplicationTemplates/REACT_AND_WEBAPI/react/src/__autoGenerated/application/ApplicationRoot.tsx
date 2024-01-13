@@ -2,8 +2,8 @@ import React from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { QueryClient, QueryClientProvider } from 'react-query';
-import { UserSettingContextProvider, useUserSetting } from './UserSetting';
-import { ServerSettingScreen } from './ServerSetting'
+import { UserSettingContextProvider, useUserSetting } from '../util';
+import { ServerSettingScreen } from '../util/UserSetting'
 import { SideMenu } from './SideMenu';
 import { routes } from '..';
 import { MsgContextProvider, Toast, InlineMessageList } from "../util"
