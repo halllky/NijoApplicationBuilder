@@ -1,6 +1,5 @@
 export * from './menu'
 export * from './application'
-export * from './decoration'
 export * from './layout'
 export * from './components'
 export * from './util'

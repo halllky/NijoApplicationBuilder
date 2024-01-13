@@ -1,12 +1,12 @@
 import { useCallback } from "react"
-import { UUID } from "uuidjs"
-import { useAppContext } from "../application/AppContext"
-import { BarMessage } from "../decoration/InlineMessageBar"
+import { useUserSetting } from "../application"
+import { useMsgContext } from "./Notification"
 
-type HttpSendResult<T> = { ok: true, data: T } | { ok: false, errors: BarMessage[] }
+type HttpSendResult<T> = { ok: true, data: T } | { ok: false }
 
 export const useHttpRequest = () => {
-  const [{ apiDomain }, dispatch] = useAppContext()
+  const { data: { apiDomain } } = useUserSetting()
+  const [, dispatchMsg] = useMsgContext()
 
   const sendHttpRequest = useCallback(async <T>([url, option]: Parameters<typeof fetch>): Promise<HttpSendResult<T>> => {
     try {
@@ -16,7 +16,7 @@ export const useHttpRequest = () => {
         const data = JSON.parse(text) as T
         return { ok: true, data }
       } else {
-        dispatch({ type: 'pushMsg', msg: `ERROR(${url})` })
+        dispatchMsg(msg => msg.error(`ERROR(${url})`))
 
         // エラーメッセージの抽出
         let errorMessages: string[]
@@ -38,18 +38,21 @@ export const useHttpRequest = () => {
         } catch {
           errorMessages = [text]
         }
-        const errors: BarMessage[] = errorMessages.map(text => ({ uuid: UUID.generate(), text }))
-        return { ok: false, errors }
+        dispatchMsg(msg => msg.error(...errorMessages))
+        return { ok: false }
       }
 
     } catch (error) {
-      dispatch({ type: 'pushMsg', msg: `${error}(${url})` })
-      return { ok: false, errors: [] }
+      dispatchMsg(msg => msg.error(`${error}(${url})`))
+      return { ok: false }
     }
-  }, [dispatch])
+  }, [])
 
   const get = useCallback(async <T = object>(url: string, param: { [key: string]: unknown } = {}): Promise<HttpSendResult<T>> => {
-    if (!apiDomain) return { ok: false, errors: [{ uuid: UUID.generate(), text: 'サーバーが設定されていません。' }] }
+    if (!apiDomain) {
+      dispatchMsg(msg => msg.error('サーバーが設定されていません。'))
+      return { ok: false }
+    }
     const query = new URLSearchParams()
     for (const key of Object.keys(param)) {
       let value: string
@@ -65,13 +68,16 @@ export const useHttpRequest = () => {
   }, [apiDomain, sendHttpRequest])
 
   const post = useCallback(async <T>(url: string, data: object = {}): Promise<HttpSendResult<T>> => {
-    if (!apiDomain) return { ok: false, errors: [{ uuid: UUID.generate(), text: 'サーバーが設定されていません。' }] }
+    if (!apiDomain) {
+      dispatchMsg(msg => msg.error('サーバーが設定されていません。'))
+      return { ok: false }
+    }
     return await sendHttpRequest([`${apiDomain}${url}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     }])
-  }, [apiDomain, dispatch])
+  }, [apiDomain])
 
   return { get, post }
 }

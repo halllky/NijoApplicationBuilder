@@ -3,7 +3,7 @@ import { FieldArrayPath, FieldArrayWithId, FieldValues } from "react-hook-form"
 import { AgGridReact, AgGridReactProps } from "ag-grid-react"
 import { ColDef, GridReadyEvent, ICellEditorParams, ValueFormatterFunc } from "ag-grid-community"
 import { CustomComponentRef, useFormContextEx } from "../util"
-import { useAppContext } from "../application"
+import { useUserSetting } from "../application"
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 
@@ -28,7 +28,7 @@ import 'ag-grid-community/styles/ag-theme-alpine.css'
 //   値から文字列への変換のロジックがInput内の各コンポーネント内にまとまるので
 
 export const AgGridWrapper = forwardRef(<T,>(props: AgGridReactProps<T>, ref: React.ForwardedRef<AgGridReact<T>>) => {
-  const [{ darkMode }] = useAppContext()
+  const { data: { darkMode } } = useUserSetting()
 
   const divRef = useRef<HTMLDivElement>(null)
   const gridRef = useRef<AgGridReact<T>>(null)

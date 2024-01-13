@@ -16,7 +16,7 @@ type State = {
 }
 
 export const [
-  ErrorMessageContextProvider,
+  MsgContextProvider,
   useMsgContext,
 ] = ReactHookUtil.defineContext((): State => ({
   inline: [] as Msg[],
@@ -59,7 +59,6 @@ export const [
   }
 
   return {
-    push,
     clear,
     error: (...messages: unknown[]) => push('error', ...messages),
     warn: (...messages: unknown[]) => push('warn', ...messages),

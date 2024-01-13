@@ -4,11 +4,10 @@ import { CircleStackIcon, Cog8ToothIcon, PlayCircleIcon } from "@heroicons/react
 import { menuItems, THIS_APPLICATION_NAME } from ".."
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import { NavLink, useLocation } from "react-router-dom"
-import { LOCAL_STORAGE_KEYS } from "./localStorageKeys"
 
 export const SideMenu = () => {
   return (
-    <PanelGroup direction="vertical" className="bg-color-gutter" autoSaveId={LOCAL_STORAGE_KEYS.SIDEBAR_SIZE_Y}>
+    <PanelGroup direction="vertical" className="bg-color-gutter" autoSaveId="LOCAL_STORAGE_KEY.SIDEBAR_SIZE_Y">
 
       <Panel className="flex flex-col">
         <Link to='/' className="p-1 ellipsis-ex font-semibold select-none">

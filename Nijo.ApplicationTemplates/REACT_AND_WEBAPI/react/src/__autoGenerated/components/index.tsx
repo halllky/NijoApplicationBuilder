@@ -5,7 +5,7 @@ import { ComboBoxBase } from "./ComboBoxBase";
 import { CustomComponentProps, CustomComponentRef, ValidationHandler, defineCustomComponent, normalize, parseAsDate } from "../util";
 import { TextareaBase } from "./TextareaBase";
 import { RadioGroupBase, ToggleBase } from "./ToggleBase";
-import { useAppContext } from "../application";
+import { useMsgContext } from "../util";
 import { useQuery } from "react-query";
 
 export * from "./AggregateComboBox"
@@ -203,10 +203,8 @@ export const AsyncComboBox = defineCustomComponent(<T extends {},>(
   }>,
   ref: React.ForwardedRef<CustomComponentRef<T>>
 ) => {
-  // エラー処理
-  const [, dispatch] = useAppContext()
-
   // 検索処理発火
+  const [, dispatchMsg] = useMsgContext()
   const [keyword, setKeyword] = useState<string | undefined>()
   const [setTimeoutHandle, setSetTimeoutHandle] = useState<NodeJS.Timeout | undefined>(undefined)
   const onKeywordChanged = useCallback((value: string | undefined) => {
@@ -223,7 +221,7 @@ export const AsyncComboBox = defineCustomComponent(<T extends {},>(
     queryKey: props.queryKey,
     queryFn: async () => await props.query(keyword),
     onError: error => {
-      dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
+      dispatchMsg(msg => msg.error(`ERROR!: ${JSON.stringify(error)}`))
     },
   })
 

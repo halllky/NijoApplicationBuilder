@@ -143,8 +143,7 @@ namespace Nijo.Architecture.WebClient {
                     import { UUID } from 'uuidjs';
                     import * as Input from '../../components';
                     import * as Layout from '../../layout';
-                    import { BarMessage, InlineMessageBar } from '../../decoration';
-                    import { useAppContext } from '../../application';
+                    import { useMsgContext } from '../../util';
                     import { visitObject, useHttpRequest, useFormContextEx } from '../../util';
                     import * as AggregateType from '../../types'
 
@@ -153,9 +152,8 @@ namespace Nijo.Architecture.WebClient {
                     export default function () {
 
                       // コンテキスト等
-                      const [, dispatch] = useAppContext()
+                      const [, dispatchMsg] = useMsgContext()
                       const { get, post } = useHttpRequest()
-                      const [errorMessages, setErrorMessages] = useState<BarMessage[]>([])
 
                       // 画面表示時
                     {{If(_type == E_Type.Create, () => $$"""
@@ -217,26 +215,20 @@ namespace Nijo.Architecture.WebClient {
                     """)}}
                     {{If(_type == E_Type.Create, () => $$"""
                       const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-                        setErrorMessages([])
                         const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{controller.CreateCommandApi}}`, data)
                         if (response.ok) {
-                          dispatch({ type: 'pushMsg', msg: `${({{keyName.GetNameMembers().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を作成しました。` })
+                          dispatchMsg(msg => msg.info(`${({{keyName.GetNameMembers().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を作成しました。`))
                           navigate(`{{GetUrlStringForReact(E_Type.View, keys.Select(m => AggregateDetail.GetPathOf("response.data", _aggregate, m).Join("?.")))}}`)
-                        } else {
-                          setErrorMessages([...response.errors])
                         }
-                      }, [post, navigate, errorMessages, setErrorMessages, dispatch])
+                      }, [post, navigate])
                     """).ElseIf(_type == E_Type.Edit, () => $$"""
                       const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
-                        setErrorMessages([])
                         const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{controller.UpdateCommandApi}}`, data)
                         if (response.ok) {
-                          dispatch({ type: 'pushMsg', msg: `${({{keyName.GetNameMembers().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を更新しました。` })
+                          dispatchMsg(msg => msg.info(`${({{keyName.GetNameMembers().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を更新しました。`))
                           navigate(`{{GetUrlStringForReact(E_Type.View, keysFromUrl)}}`)
-                        } else {
-                          setErrorMessages([...response.errors])
                         }
-                      }, [errorMessages, dispatch, post, navigate, {{keysFromUrl.Join(", ")}}])
+                      }, [post, navigate, {{keysFromUrl.Join(", ")}}])
                     """)}}
 
                     {{If(_type == E_Type.View || _type == E_Type.Edit, () => $$"""
@@ -265,7 +257,6 @@ namespace Nijo.Architecture.WebClient {
                               {{new AggregateComponent(_aggregate, _type).RenderCaller()}}
                             </VForm.Root>
 
-                            <InlineMessageBar value={errorMessages} onChange={setErrorMessages} />
                     {{If(_type == E_Type.Create, () => $$"""
                             <Input.IconButton fill className="self-start" icon={BookmarkSquareIcon}>保存</Input.IconButton>
                     """).ElseIf(_type == E_Type.View, () => $$"""

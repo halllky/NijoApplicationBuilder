@@ -31,10 +31,9 @@ namespace Nijo.Features.Debugging {
                 return $$"""
                     import { useCallback } from 'react'
                     import { useHttpRequest } from './Http'
-                    import { BarMessage } from '../decoration'
                     import * as AggregateType from '../types'
 
-                    export const useDummyDataGenerator = (setErrorMessages: (msgs: BarMessage[]) => void) => {
+                    export const useDummyDataGenerator = () => {
                       const { get, post } = useHttpRequest()
 
                       return useCallback(async () => {
@@ -42,7 +41,7 @@ namespace Nijo.Features.Debugging {
                         {{WithIndent(xTimes.SelectTextTemplate(x => RenderAggregate(x.root, x.index, random)), "    ")}}
 
                         return true
-                      }, [post, setErrorMessages])
+                      }, [post])
                     }
                     """;
             },
@@ -143,10 +142,7 @@ namespace Nijo.Features.Debugging {
                 """)}}
 
                 const {{response}} = await post<AggregateType.{{rootAggregate.Item.TypeScriptTypeName}}>(`{{controller.CreateCommandApi}}`, {{data}})
-                if (!{{response}}.ok) {
-                  setErrorMessages([...{{response}}.errors])
-                  return false
-                }
+                if (!{{response}}.ok) return false
 
                 """;
         }

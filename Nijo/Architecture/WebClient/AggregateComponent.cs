@@ -209,7 +209,6 @@ namespace Nijo.Architecture.WebClient {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const [{ darkMode }] = useAppContext()
                       const { registerEx, watch, control } = useFormContextEx<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
                       const { fields, append, remove } = useFieldArray({
                         control,

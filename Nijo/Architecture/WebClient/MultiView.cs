@@ -56,14 +56,14 @@ namespace Nijo.Architecture.WebClient {
                     import { ColDef } from 'ag-grid-community';
                     import { useQuery } from 'react-query';
                     import { BookmarkIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
-                    import { useAppContext } from '../../application';
+                    import { useMsgContext } from '../../util';
                     import * as Input from '../../components';
                     import { useFormEx, useHttpRequest } from '../../util';
                     import * as AggregateType from '../../types';
 
                     export default function () {
 
-                      const [{ darkMode }, dispatch] = useAppContext()
+                      const [, dispatchMsg] = useMsgContext()
                       const { get } = useHttpRequest()
                       const [param, setParam] = useState<FieldValues>({})
 
@@ -84,7 +84,7 @@ namespace Nijo.Architecture.WebClient {
                           return response.ok ? response.data : []
                         },
                         onError: error => {
-                          dispatch({ type: 'pushMsg', msg: `ERROR!: ${JSON.stringify(error)}` })
+                          dispatchMsg(msg => msg.error(`ERROR!: ${JSON.stringify(error)}`))
                         },
                       })
 
