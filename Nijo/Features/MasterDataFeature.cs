@@ -70,7 +70,7 @@ namespace Nijo.Features {
                         builder.OnModelCreating.Add(modelBuilder => dbContextClass.RenderEntity(modelBuilder, aggregate));
 
                         // DbEntity
-                        static IEnumerable<NavigationProperty.Item> EnumerateNavigationProperties(GraphNode<Aggregate> aggregate) {
+                        static IEnumerable<NavigationProperty.PrincipalOrRelevant> EnumerateNavigationProperties(GraphNode<Aggregate> aggregate) {
                             foreach (var nav in aggregate.GetNavigationProperties()) {
                                 if (nav.Principal.Owner == aggregate) yield return nav.Principal;
                                 if (nav.Relevant.Owner == aggregate) yield return nav.Relevant;

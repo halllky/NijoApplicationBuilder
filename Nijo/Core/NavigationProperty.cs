@@ -15,23 +15,23 @@ namespace Nijo.Core {
 
             var parent = relation.Terminal.GetParent();
             if (relation.Terminal.IsChildMember() && relation == parent) {
-                Principal = new Item(relation, relation.Initial);
-                Relevant = new Item(relation, relation.Terminal);
+                Principal = new PrincipalOrRelevant(relation, relation.Initial);
+                Relevant = new PrincipalOrRelevant(relation, relation.Terminal);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
             } else if (relation.Terminal.IsVariationMember() && relation == parent) {
-                Principal = new Item(relation, relation.Initial);
-                Relevant = new Item(relation, relation.Terminal);
+                Principal = new PrincipalOrRelevant(relation, relation.Initial);
+                Relevant = new PrincipalOrRelevant(relation, relation.Terminal);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
             } else if (relation.Terminal.IsChildrenMember() && relation == parent) {
-                Principal = new Item(relation, relation.Initial);
-                Relevant = new Item(relation, relation.Terminal);
+                Principal = new PrincipalOrRelevant(relation, relation.Initial);
+                Relevant = new PrincipalOrRelevant(relation, relation.Terminal);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade;
 
             } else if (relation.IsRef()) {
-                Principal = new Item(relation, relation.Terminal);
-                Relevant = new Item(relation, relation.Initial);
+                Principal = new PrincipalOrRelevant(relation, relation.Terminal);
+                Relevant = new PrincipalOrRelevant(relation, relation.Initial);
                 OnPrincipalDeleted = Microsoft.EntityFrameworkCore.DeleteBehavior.NoAction;
 
             } else {
@@ -43,14 +43,14 @@ namespace Nijo.Core {
         /// <summary>
         /// 主たるエンティティ側のナビゲーションプロパティ
         /// </summary>
-        internal Item Principal { get; }
+        internal PrincipalOrRelevant Principal { get; }
         /// <summary>
         /// 従たるエンティティ側のナビゲーションプロパティ
         /// </summary>
-        internal Item Relevant { get; }
+        internal PrincipalOrRelevant Relevant { get; }
 
-        internal class Item : ValueObject {
-            internal Item(GraphEdge<Aggregate> relation, GraphNode<Aggregate> initialOrTerminal) {
+        internal class PrincipalOrRelevant : ValueObject {
+            internal PrincipalOrRelevant(GraphEdge<Aggregate> relation, GraphNode<Aggregate> initialOrTerminal) {
                 _relation = relation;
                 Owner = initialOrTerminal;
                 Opposite = initialOrTerminal == relation.Initial
@@ -84,6 +84,21 @@ namespace Nijo.Core {
                 get {
                     if (_relation.Terminal == Owner
                         && _relation.IsRef()) {
+
+                        if (!_relation.IsPrimary()) return true;
+
+                        // このRef以外の主キーがあるかどうか（複合キーかどうか）を調べている
+                        var relationAsRef = Opposite
+                            .GetKeys()
+                            .Single(key => key is AggregateMember.Ref @ref
+                                        && @ref.Relation == _relation)
+                            as AggregateMember.Ref;
+                        if (Opposite.GetKeys().All(key => key == relationAsRef
+                                                       || key is AggregateMember.ValueMember vm
+                                                       && vm.ForeignKeyOf == relationAsRef)) {
+                            return false;
+                        }
+
                         return true;
 
                     } else if (_relation.Terminal.IsChildrenMember()
