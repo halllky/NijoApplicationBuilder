@@ -57,7 +57,7 @@ namespace Nijo.Architecture.WebClient {
                     import { useQuery } from 'react-query';
                     import { BookmarkIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
                     import { useMsgContext } from '../../util';
-                    import * as Input from '../../components';
+                    import * as Input from '../../input';
                     import * as AgGridHelper from '../../collection';
                     import { useFormEx, useHttpRequest } from '../../util';
                     import * as AggregateType from '../../types';

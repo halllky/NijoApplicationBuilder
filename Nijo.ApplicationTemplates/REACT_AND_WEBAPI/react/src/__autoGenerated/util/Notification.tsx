@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import * as Icon from "@heroicons/react/24/outline"
 import { UUID } from "uuidjs"
 import * as ReactHookUtil from "./ReactUtil"
-import * as Components from "../components"
+import * as Components from "../input"
 
 type Msg = {
   id: string

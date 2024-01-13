@@ -141,7 +141,7 @@ namespace Nijo.Architecture.WebClient {
                     import { ColDef, GridReadyEvent } from 'ag-grid-community';
                     import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
                     import { UUID } from 'uuidjs';
-                    import * as Input from '../../components';
+                    import * as Input from '../../input';
                     import * as Layout from '../../collection';
                     import * as AgGridHelper from '../../collection';
                     import { useMsgContext } from '../../util';

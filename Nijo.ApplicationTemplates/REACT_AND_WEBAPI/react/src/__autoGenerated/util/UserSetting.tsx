@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import * as Input from "../components";
+import * as Input from "../input";
 import { VerticalForm as VForm } from "../collection";
 import { useFormEx } from './Validation'
 import { useMsgContext } from './Notification'
