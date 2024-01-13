@@ -188,6 +188,7 @@ namespace Nijo.Architecture.WebClient {
                         cellEditor = vm.Options.MemberType.GetGridCellEditorName(),
                         cellEditorParams = vm.Options.MemberType.GetGridCellEditorParams(),
                         valueFormatter = vm.Options.MemberType.GetGridCellValueFormatter(),
+                        hide = vm.Options.InvisibleInGui,
                     },
                     AggregateMember.Ref rm => new {
                         field = m.MemberName,
@@ -197,6 +198,7 @@ namespace Nijo.Architecture.WebClient {
                             { "raectHookFormId", $"(rowIndex: number) => `{GetRegisterName().Replace("`", "")}.${{rowIndex}}.{rm.MemberName}`" },
                         },
                         valueFormatter = $"({{ value }}) => ({new RefTargetKeyName(rm.MemberAggregate).GetNameMembers().Select(m => $"value?.{m.MemberName}").Join(" + ")}) || ''",
+                        hide = false,
                     },
                     _ => throw new NotImplementedException(),
                 });
@@ -237,6 +239,7 @@ namespace Nijo.Architecture.WebClient {
                           resizable: true,
                           sortable: false,
                           editable: {{def.editable}},
+                          hide: {{(def.hide ? "true" : "false")}},
                           cellEditor: Input.generateCellEditor({{GetRegisterName()}}, {{def.cellEditor}}, {
                     {{def.cellEditorParams.SelectTextTemplate(p => $$"""
                             {{p.Key}}: {{p.Value}},
