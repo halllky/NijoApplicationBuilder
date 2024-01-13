@@ -157,14 +157,18 @@ const ToastMessage = ({ msg, className }: {
     <div
       onClick={() => dispatch(state => state.clear(msg))}
       className={`
-        z-[300] select-none cursor-pointer overflow-hidden
+        z-[300] flex select-none cursor-pointer overflow-hidden
         ${(visible ? 'animate-slideIn' : 'animate-slideOut translate-x-[calc(-100%-1rem)]')}
         fixed left-4 bottom-4 p-2 w-64 h-24
         bg-sky-950 text-sky-50 border border-1 boder-sky-500
         ${className}`}>
-      {msg.message}
-      <Icon.XMarkIcon
-        className="absolute right-2 top-2 pointer-none"
+      <span className="flex-1">
+        {msg.message}
+      </span>
+      <Components.IconButton
+        inline
+        icon={Icon.XMarkIcon}
+        className="self-start"
       />
     </div>
   )
