@@ -43,9 +43,9 @@ export const ToggleBase = defineCustomComponent<boolean>((props, ref) => {
     <label className="relative inline-flex justify-center items-center focus-within:outline outline-1">
       <span className={`w-4 h-4 inline-block border rounded-sm
         ${props.readOnly ? 'ml-1' : ''}
-        ${inputRef.current?.checked ? 'border-color-8' : 'border-color-5'}
-        ${inputRef.current?.checked ? 'bg-color-8' : 'bg-color-base'}`}>
-        <CheckIcon className={inputRef.current?.checked ? 'text-color-1' : 'invisible'} />
+        ${valueEx ? 'border-color-8' : 'border-color-5'}
+        ${valueEx ? 'bg-color-8' : 'bg-color-base'}`}>
+        <CheckIcon className={valueEx ? 'text-color-1' : 'invisible'} />
       </span>
       <input
         {...rest}

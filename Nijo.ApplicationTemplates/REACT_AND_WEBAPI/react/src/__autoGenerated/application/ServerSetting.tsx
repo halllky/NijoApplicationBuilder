@@ -31,14 +31,17 @@ export const ServerSettingScreen = () => {
   }, [post, withDummyData, genereateDummyData])
 
   return (
-    <div className="page-content-root">
-      <VForm.Root onSubmit={handleSubmit(save)}>
+    <form className="page-content-root" onSubmit={handleSubmit(save)}>
+      <VForm.Root>
         <VForm.Section label="基本設定" table>
           <VForm.Row label="APIサーバーURL">
             <Input.Word {...registerEx('apiDomain')} />
           </VForm.Row>
           <VForm.Row label="ダークモード">
             <Input.CheckBox {...registerEx('darkMode')} />
+          </VForm.Row>
+          <VForm.Row fullWidth>
+            <button>更新</button>
           </VForm.Row>
         </VForm.Section>
 
@@ -54,6 +57,6 @@ export const ServerSettingScreen = () => {
         )}
 
       </VForm.Root>
-    </div>
+    </form>
   )
 }
