@@ -65,15 +65,6 @@ export const forwardRefEx = <TRef, TProps>(
   )
 }
 
-// 強制アップデート
-const forceUpdateReducer = (state: boolean, _?: undefined) => {
-  return !state
-}
-export const useForceUpdate = () => {
-  const [forceUpdateValue, triggerForceUpdate] = React.useReducer(forceUpdateReducer, false)
-  return { forceUpdateValue, triggerForceUpdate }
-}
-
 // トグル
 const toggleReducer = defineReducer((state: boolean) => ({
   toggle: () => !state,
