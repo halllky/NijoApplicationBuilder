@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import * as Input from "../components";
-import { VerticalForm as VForm } from "../layout";
+import { VerticalForm as VForm } from "../collection";
 import { useFormEx } from './Validation'
 import { useMsgContext } from './Notification'
 import { useHttpRequest } from './Http'

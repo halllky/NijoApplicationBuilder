@@ -142,7 +142,8 @@ namespace Nijo.Architecture.WebClient {
                     import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
                     import { UUID } from 'uuidjs';
                     import * as Input from '../../components';
-                    import * as Layout from '../../layout';
+                    import * as Layout from '../../collection';
+                    import * as AgGridHelper from '../../collection';
                     import { useMsgContext } from '../../util';
                     import { visitObject, useHttpRequest, useFormContextEx } from '../../util';
                     import * as AggregateType from '../../types'

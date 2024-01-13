@@ -58,6 +58,7 @@ namespace Nijo.Architecture.WebClient {
                     import { BookmarkIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
                     import { useMsgContext } from '../../util';
                     import * as Input from '../../components';
+                    import * as AgGridHelper from '../../collection';
                     import { useFormEx, useHttpRequest } from '../../util';
                     import * as AggregateType from '../../types';
 
@@ -137,7 +138,7 @@ namespace Nijo.Architecture.WebClient {
                             </form>
                           </FormProvider>
 
-                          <Input.AgGridWrapper
+                          <AgGridHelper.AgGridWrapper
                             rowData={data || []}
                             columnDefs={columnDefs}
                             className="flex-1"

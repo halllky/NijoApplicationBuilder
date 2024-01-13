@@ -9,7 +9,6 @@ import { useMsgContext } from "../util";
 import { useQuery } from "react-query";
 
 export * from "./AggregateComboBox"
-export * from "./AgGridWrapper"
 export * from "./IconButton"
 export * from "./NowLoading"
 

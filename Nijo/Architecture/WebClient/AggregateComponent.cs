@@ -239,7 +239,7 @@ namespace Nijo.Architecture.WebClient {
                           sortable: false,
                           editable: {{def.editable}},
                           hide: {{(def.hide ? "true" : "false")}},
-                          cellEditor: Input.generateCellEditor({{GetRegisterName()}}, {{def.cellEditor}}, {
+                          cellEditor: AgGridHelper.generateCellEditor({{GetRegisterName()}}, {{def.cellEditor}}, {
                     {{def.cellEditorParams.SelectTextTemplate(p => $$"""
                             {{p.Key}}: {{p.Value}},
                     """)}}
@@ -276,7 +276,7 @@ namespace Nijo.Architecture.WebClient {
                           </>}
                         >
                           <VForm.Row fullWidth>
-                            <Input.AgGridWrapper
+                            <AgGridHelper.AgGridWrapper
                               ref={gridApi}
                               rowData={fields}
                               columnDefs={columnDefs}
