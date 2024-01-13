@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer } from "react"
+import { useCallback, useReducer } from "react"
 import { defineContext } from "./ReactUtil"
 import { useMsgContext } from "./Notification"
 
@@ -26,24 +26,22 @@ export const defineStorageContext = <T,>(handler: LocalStorageHandler<T>) => {
     // プロバイダ
     (Ctx, reducer) => ({ children }) => {
       const [, dispatchMsg] = useMsgContext()
-      const reducerValue = useReducer(reducer, handler.defaultValue())
-
-      // 画面表示時読み込み
-      useEffect(() => {
+      const reducerValue = useReducer(reducer, (() => {
+        // 画面表示時読み込み
         try {
           const serialized = localStorage.getItem(handler.storageKey)
           if (serialized == null) {
-            reducerValue[1](state => state.setValue(handler.defaultValue()))
+            return handler.defaultValue()
           } else {
             const deserializeResult = handler.deserialize(serialized)
             if (deserializeResult?.ok !== true) throw new Error(`Failuer to parse local storage value as '${handler.storageKey}'.`)
-            reducerValue[1](state => state.setValue(deserializeResult.obj))
+            return deserializeResult.obj
           }
         } catch (error) {
           dispatchMsg(msg => msg.warn(error))
-          reducerValue[1](state => state.setValue(handler.defaultValue()))
+          return handler.defaultValue()
         }
-      }, [])
+      })())
 
       return (
         <Ctx.Provider value={reducerValue}>
