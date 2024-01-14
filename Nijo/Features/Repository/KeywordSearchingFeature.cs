@@ -54,11 +54,11 @@ namespace Nijo.Features.Repository {
 
             var keyName = new RefTargetKeyName(_aggregate);
             var filterColumns = keyName
-                .GetMembers()
+                .GetOwnMembers()
                 .OfType<AggregateMember.ValueMember>()
                 .Select(m => m.GetFullPath(_aggregate).Join(".") + (m.CSharpTypeName == "string" ? "" : ".ToString()"));
             var orderColumn = keyName
-                .GetMembers()
+                .GetOwnMembers()
                 .OfType<AggregateMember.ValueMember>()
                 .First()
                 .MemberName;
@@ -66,7 +66,7 @@ namespace Nijo.Features.Repository {
             string RenderKeyNameConvertingRecursively(GraphNode<Aggregate> agg) {
                 var keyNameClass = new RefTargetKeyName(agg);
                 return keyNameClass
-                    .GetMembers()
+                    .GetOwnMembers()
                     .Where(m => m.Owner == agg)
                     .SelectTextTemplate(m => m is AggregateMember.ValueMember vm ? $$"""
                         {{m.MemberName}} = e.{{vm.GetDbColumn().GetFullPath(_aggregate.As<IEFCoreEntity>()).Join(".")}},

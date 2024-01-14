@@ -19,21 +19,30 @@ namespace Nijo.Architecture.WebServer {
         internal string CSharpClassName => $"{_aggregate.Item.ClassName}KeysAndNames";
         internal string TypeScriptTypeName => $"{_aggregate.Item.ClassName}KeysAndNames";
 
-        // TODO: 正確には"GetOwnMembers"が正しい？
-        internal IEnumerable<AggregateMember.AggregateMemberBase> GetMembers() {
-            return GetKeyMembers().Union(GetNameMembers());
+        /// <summary>
+        /// このクラスで宣言されるメンバーのみを列挙する。
+        /// つまり、親や参照先は入れ子オブジェクトとして列挙されるに留まり、親や参照先のキー等は列挙されない。
+        /// </summary>
+        internal IEnumerable<AggregateMember.AggregateMemberBase> GetOwnMembers() {
+            return GetOwnKeyMembers().Union(GetOwnNameMembers());
         }
 
-        // TODO: 正確には"GetOwnKeyMembers"が正しい？
-        internal IEnumerable<AggregateMember.AggregateMemberBase> GetKeyMembers() {
+        /// <summary>
+        /// このクラスで宣言されるキーのみを列挙する。
+        /// つまり、親や参照先は入れ子オブジェクトとして列挙されるに留まり、親や参照先のキーは列挙されない。
+        /// </summary>
+        internal IEnumerable<AggregateMember.AggregateMemberBase> GetOwnKeyMembers() {
             return _aggregate
                 .GetKeys()
                 .Where(m => m is AggregateMember.Ref
                          || m is AggregateMember.ValueMember vm
                          && vm.Declared.Owner == vm.Owner);
         }
-        // TODO: 正確には"GetOwnNameMembers"が正しい？
-        internal IEnumerable<AggregateMember.AggregateMemberBase> GetNameMembers() {
+        /// <summary>
+        /// このクラスで宣言される名前のみを列挙する。
+        /// つまり、親や参照先は入れ子オブジェクトとして列挙されるに留まり、親や参照先の名前は列挙されない。
+        /// </summary>
+        internal IEnumerable<AggregateMember.AggregateMemberBase> GetOwnNameMembers() {
             return _aggregate
                 .GetMembers()
                 .OfType<AggregateMember.ValueMember>()
@@ -50,7 +59,7 @@ namespace Nijo.Architecture.WebServer {
 
             return $$"""
                 public class {{CSharpClassName}} {
-                {{GetMembers().SelectTextTemplate(member => $$"""
+                {{GetOwnMembers().SelectTextTemplate(member => $$"""
                     {{GetAnnotations(member)}}
                     public {{member.CSharpTypeName}}? {{member.MemberName}} { get; set; }
                 """)}}
@@ -60,7 +69,7 @@ namespace Nijo.Architecture.WebServer {
         internal string RenderTypeScriptDeclaring() {
             return $$"""
                 export type {{TypeScriptTypeName}} = {
-                {{GetMembers().SelectTextTemplate(member => $$"""
+                {{GetOwnMembers().SelectTextTemplate(member => $$"""
                   {{member.MemberName}}?: {{member.TypeScriptTypename}}
                 """)}}
                 }

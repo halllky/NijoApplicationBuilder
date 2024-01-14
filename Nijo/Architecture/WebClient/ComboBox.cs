@@ -48,8 +48,8 @@ namespace Nijo.Architecture.WebClient {
                       ref={ref}
                       queryKey={queryKey}
                       query={query}
-                      keySelector={item => JSON.stringify([{{combo.KeyName.GetKeyMembers().Select(m => "item." + m.MemberName).Join(", ")}}])}
-                      textSelector={item => `{{combo.KeyName.GetNameMembers().Select(m => "${item." + m.MemberName + "}").Join("&nbsp;")}}`}
+                      keySelector={item => JSON.stringify([{{combo.KeyName.GetOwnKeyMembers().Select(m => "item." + m.MemberName).Join(", ")}}])}
+                      textSelector={item => `{{combo.KeyName.GetOwnNameMembers().Select(m => "${item." + m.MemberName + "}").Join("&nbsp;")}}`}
                     />
                   )
                 })
