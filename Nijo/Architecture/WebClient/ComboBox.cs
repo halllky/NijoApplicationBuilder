@@ -39,10 +39,12 @@ namespace Nijo.Architecture.WebClient {
         private static string Render(GraphNode<Aggregate> aggregate, int index) {
             var combo = new ComboBox(aggregate);
             var keys = aggregate
+                .AsEntry()
                 .GetKeys()
                 .OfType<AggregateMember.ValueMember>()
                 .Select(vm => vm.Declared.GetFullPath().Join("?."));
             var names = aggregate
+                .AsEntry()
                 .GetNames()
                 .OfType<AggregateMember.ValueMember>()
                 .Select(vm => vm.Declared.GetFullPath().Join("?."));

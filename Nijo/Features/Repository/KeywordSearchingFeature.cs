@@ -58,11 +58,12 @@ namespace Nijo.Features.Repository {
                 .Union(_aggregate.GetNames())
                 .OfType<AggregateMember.ValueMember>()
                 .Select(m => m.Declared.GetFullPath(_aggregate).Join(".") + (m.CSharpTypeName == "string" ? "" : ".ToString()"));
-            var orderColumn = keyName
-                .GetOwnMembers()
+            var orderColumn = _aggregate
+                .AsEntry() // OrderByはSelect後のオブジェクトを子集約起点で辿るので
+                .GetKeys()
                 .OfType<AggregateMember.ValueMember>()
-                .First()
-                .MemberName;
+                .Select(m => m.Declared.GetFullPath().Join("."))
+                .First();
 
             string RenderKeyNameConvertingRecursively(GraphNode<Aggregate> agg) {
                 var keyNameClass = new RefTargetKeyName(agg);
@@ -72,8 +73,8 @@ namespace Nijo.Features.Repository {
                     .SelectTextTemplate(m => m is AggregateMember.ValueMember vm ? $$"""
                         {{m.MemberName}} = e.{{vm.GetDbColumn().GetFullPath(_aggregate.As<IEFCoreEntity>()).Join(".")}},
                         """ : $$"""
-                        {{m.MemberName}} = new {{new RefTargetKeyName(((AggregateMember.Ref)m).MemberAggregate).CSharpClassName}}() {
-                            {{WithIndent(RenderKeyNameConvertingRecursively(((AggregateMember.Ref)m).MemberAggregate), "    ")}}
+                        {{m.MemberName}} = new {{new RefTargetKeyName(((AggregateMember.RelationMember)m).MemberAggregate).CSharpClassName}}() {
+                            {{WithIndent(RenderKeyNameConvertingRecursively(((AggregateMember.RelationMember)m).MemberAggregate), "    ")}}
                         },
                         """);
             }

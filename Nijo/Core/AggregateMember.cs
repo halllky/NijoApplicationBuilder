@@ -10,6 +10,8 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using static Nijo.Architecture.Infrastructure;
+using static Nijo.Core.AggregateMember;
 
 namespace Nijo.Core {
 
@@ -34,28 +36,11 @@ namespace Nijo.Core {
                 .OrderBy(member => member.Order);
         }
         private static IEnumerable<AggregateMemberBase> GetNonOrderedMembers(this GraphNode<Aggregate> aggregate) {
-            var parent = aggregate.GetParent();
-            if (parent != null) {
-                var parentPKs = parent.Initial
-                    .As<Aggregate>()
-                    .GetKeys()
-                    .OfType<ValueMember>()
-                    .ToArray();
-                foreach (var parentPk in parent.Initial.As<Aggregate>().GetKeys()) {
-                    if (parentPk is Schalar schalar) {
-                        yield return new Schalar(
-                            aggregate,
-                            (Schalar?)schalar.Original ?? schalar,
-                            schalar.Declared,
-                            ((Schalar?)schalar.Original ?? schalar).GraphNode.Item) {
-                        };
-                    } else if (parentPk is Variation variation) {
-                        yield return new Variation(aggregate, (Variation?)variation.Original ?? variation, variation.Declared) {
-                        };
-                    } else if (parentPk is Ref @ref) {
-                        yield return new Ref(@ref.Relation, aggregate);
-                    }
-                }
+            var parentEdge = aggregate.GetParent();
+            if (parentEdge != null) {
+                var parent = new Parent(parentEdge, aggregate);
+                yield return parent;
+                foreach (var parentPK in parent.GetForeignKeys()) yield return parentPK;
             }
 
             var memberEdges = aggregate.Out.Where(edge =>
@@ -120,6 +105,9 @@ namespace Nijo.Core {
 
                 } else if (member is Ref refMember && refMember.Relation.IsPrimary()) {
                     yield return refMember;
+
+                } else if (member is Parent parent) {
+                    yield return parent;
                 }
             }
         }
@@ -130,16 +118,14 @@ namespace Nijo.Core {
 
                 } else if (member is Ref refMember && refMember.Relation.IsInstanceName()) {
                     yield return refMember;
+
+                } else if (member is Parent parent) {
+                    yield return parent;
                 }
             }
         }
 
         internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<Aggregate> aggregate) {
-            var parent = aggregate.GetParent();
-            if (parent != null) {
-                yield return new NavigationProperty(parent);
-            }
-
             foreach (var member in aggregate.GetMembers()) {
                 if (member is not RelationMember relationMember) continue;
                 yield return relationMember.GetNavigationProperty();
@@ -167,15 +153,7 @@ namespace Nijo.Core {
                 if (until != null) path = path.Until(until);
 
                 foreach (var edge in path) {
-                    if (edge.Source == edge.Terminal
-                        && edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, out var type)
-                        && (string)type == DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD) {
-                        // 子から親に向かって辿る場合
-                        // ※自動生成されたソース中にこれが出現することはありえないはず
-                        yield return "__親__";
-                    } else {
-                        yield return edge.RelationName;
-                    }
+                    yield return edge.RelationName;
                 }
                 yield return MemberName;
             }
@@ -229,11 +207,11 @@ namespace Nijo.Core {
         }
         internal abstract class RelationMember : AggregateMemberBase {
             internal abstract GraphEdge<Aggregate> Relation { get; }
+            internal abstract GraphNode<Aggregate> MemberAggregate { get; }
 
             internal override GraphNode<Aggregate> Owner => Relation.Initial;
             internal override GraphNode<Aggregate> DeclaringAggregate => Relation.Initial;
             internal override string MemberName => Relation.RelationName;
-            internal GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
             internal override decimal Order => Relation.GetMemberOrder();
 
             internal NavigationProperty GetNavigationProperty() {
@@ -267,6 +245,7 @@ namespace Nijo.Core {
                 Relation = edge;
             }
             internal override GraphEdge<Aggregate> Relation { get; }
+            internal override GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
             internal override string CSharpTypeName => $"List<{Relation.Terminal.Item.ClassName}>";
             internal override string TypeScriptTypename => $"{Relation.Terminal.Item.TypeScriptTypeName}[]";
         }
@@ -276,6 +255,7 @@ namespace Nijo.Core {
                 Relation = edge;
             }
             internal override GraphEdge<Aggregate> Relation { get; }
+            internal override GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
             internal override string CSharpTypeName => Relation.Terminal.Item.ClassName;
             internal override string TypeScriptTypename => Relation.Terminal.Item.TypeScriptTypeName;
         }
@@ -319,6 +299,7 @@ namespace Nijo.Core {
             }
 
             internal override GraphEdge<Aggregate> Relation { get; }
+            internal override GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
             internal Variation Group { get; }
             internal string Key { get; }
 
@@ -333,6 +314,7 @@ namespace Nijo.Core {
             }
             internal override GraphNode<Aggregate> Owner { get; }
             internal override GraphEdge<Aggregate> Relation { get; }
+            internal override GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
             internal override string CSharpTypeName => new RefTargetKeyName(Relation.Terminal).CSharpClassName;
             internal override string TypeScriptTypename => new RefTargetKeyName(Relation.Terminal).TypeScriptTypeName;
 
@@ -350,6 +332,37 @@ namespace Nijo.Core {
                             }));
 
                     } else if (fk is Variation variation) {
+                        yield return new Variation(Relation.Initial, variation, variation.Declared);
+                    }
+                }
+            }
+        }
+        internal class Parent : RelationMember {
+            internal Parent(GraphEdge<Aggregate> edge, GraphNode<Aggregate>? owner = null) {
+                Relation = edge;
+                Owner = owner ?? base.Owner;
+            }
+            internal override GraphEdge<Aggregate> Relation { get; }
+            internal override GraphNode<Aggregate> MemberAggregate => Relation.Initial;
+            internal override GraphNode<Aggregate> Owner { get; }
+
+            internal override string CSharpTypeName => new RefTargetKeyName(Relation.Initial).CSharpClassName;
+            internal override string TypeScriptTypename => new RefTargetKeyName(Relation.Initial).TypeScriptTypeName;
+
+            internal IEnumerable<ValueMember> GetForeignKeys() {
+                foreach (var parentPk in Relation.Initial.GetKeys()) {
+                    if (parentPk is Schalar schalar) {
+                        yield return new Schalar(
+                            Relation.Terminal,
+                            schalar,
+                            schalar.Declared,
+                            schalar.GraphNode.Item.Clone(opt => {
+                                opt.IsKey = true;
+                                opt.IsRequired = true;
+                                opt.IsDisplayName = true;
+                            }));
+
+                    } else if (parentPk is Variation variation) {
                         yield return new Variation(Relation.Initial, variation, variation.Declared);
                     }
                 }

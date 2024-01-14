@@ -35,8 +35,8 @@ namespace Nijo.Architecture.WebServer {
             return _aggregate
                 .GetKeys()
                 .Where(m => m is AggregateMember.Ref
-                         || m is AggregateMember.ValueMember vm
-                         && vm.Declared.Owner == vm.Owner);
+                         || m is AggregateMember.Parent
+                         || m is AggregateMember.ValueMember vm && vm.Declared.Owner == vm.Owner);
         }
         /// <summary>
         /// このクラスで宣言される名前のみを列挙する。
@@ -44,15 +44,17 @@ namespace Nijo.Architecture.WebServer {
         /// </summary>
         internal IEnumerable<AggregateMember.AggregateMemberBase> GetOwnNameMembers() {
             return _aggregate
-                .GetMembers()
-                .OfType<AggregateMember.ValueMember>()
-                .Where(member => member.IsDisplayName);
+                .GetNames()
+                .Where(m => m is AggregateMember.Ref
+                         || m is AggregateMember.Parent
+                         || m is AggregateMember.ValueMember vm && vm.Declared.Owner == vm.Owner);
         }
 
         internal string RenderCSharpDeclaring() {
             static string GetAnnotations(AggregateMember.AggregateMemberBase member) {
                 return member is AggregateMember.ValueMember v && v.IsKey
                     || member is AggregateMember.Ref r && r.Relation.IsPrimary()
+                    || member is AggregateMember.Parent
                     ? "[Key]"
                     : string.Empty;
             }

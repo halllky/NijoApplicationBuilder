@@ -281,7 +281,8 @@ namespace Nijo.Architecture.WebClient {
                             .EnumerateThisAndDescendants()
                             .SelectMany(desc => desc.GetMembers())
                             .OfType<AggregateMember.RelationMember>()
-                            .Where(member => member is not AggregateMember.Ref)
+                            .Where(member => member is not AggregateMember.Ref
+                                          && member is not AggregateMember.Parent)
                             .SelectTextTemplate(member => new AggregateComponent(member, _type).Render())}}
                     """;
             },

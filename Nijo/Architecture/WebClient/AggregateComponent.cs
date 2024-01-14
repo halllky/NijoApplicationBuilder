@@ -144,7 +144,7 @@ namespace Nijo.Architecture.WebClient {
                     """)}}
 
                       return (
-                        <VForm.Section table label="{{_aggregate.GetParent()!.RelationName}}">
+                        <VForm.Section table label="{{_aggregate.GetParent()?.RelationName}}">
                           <VForm.Row fullWidth>
                             <Layout.TabGroup
                               items={fields}
@@ -209,12 +209,12 @@ namespace Nijo.Architecture.WebClient {
                         var keys = rm.MemberAggregate
                             .GetKeys()
                             .OfType<AggregateMember.ValueMember>()
-                            .Select(m => m.GetFullPath(since: _aggregate).Join("?."));
+                            .Select(m => m.Declared.GetFullPath(since: _aggregate).Join("?."));
                         var names = rm.MemberAggregate
                             .GetMembers()
                             .OfType<AggregateMember.ValueMember>()
                             .Where(member => member.IsDisplayName)
-                            .Select(m => m.GetFullPath(since: _aggregate).Join("?."));
+                            .Select(m => m.Declared.GetFullPath(since: _aggregate).Join("?."));
                         return new {
                             field = m.MemberName,
                             editable,
@@ -295,7 +295,7 @@ namespace Nijo.Architecture.WebClient {
                         <VForm.Section
                           table
                           label={<>
-                            {{_aggregate.GetParent()!.RelationName}}
+                            {{_aggregate.GetParent()?.RelationName}}
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
                             <Input.IconButton
                               underline
