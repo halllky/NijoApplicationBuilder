@@ -18,6 +18,7 @@ namespace Nijo.IntegrationTest.Perspectives {
                 npmProcess = await terminal.RunBackground(
                     new[] { "npm", "run", "dev" },
                     new Regex("➜"),
+                    Encoding.UTF8,
                     ct.Token);
 
                 await Task.Delay(1000, ct.Token);

@@ -49,11 +49,16 @@ namespace Nijo.Util.DotnetEx {
         /// </summary>
         /// <param name="readyChecker">準備が完了したかどうかを標準出力に照らし合わせて判定します。</param>
         /// <returns>1こめのTaskは準備完了までを表すタスク。2こめのTaskはキャンセルされるまで永続的に実行されるタスク。</returns>
-        internal async Task<Task> RunBackground(IEnumerable<string> command, Regex readyChecker, CancellationToken cancellationToken) {
-            var logName = $"'{command.Join(" ")}'";
+        internal async Task<Task> RunBackground(
+            IEnumerable<string> command,
+            Regex readyChecker,
+            Encoding outputEncoding,
+            CancellationToken cancellationToken) {
+
+            using var logScope = _logger.BeginScope($"'{command.Join(" ")}'");
 
             // バックグラウンド処理の準備が整うまで
-            var process = CreateProcess(command);
+            var process = CreateProcess(command, outputEncoding);
             try {
                 bool ready = false;
                 void CheckIfReady(object sender, DataReceivedEventArgs e) {
@@ -65,7 +70,7 @@ namespace Nijo.Util.DotnetEx {
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
 
-                _logger.LogInformation("{Command}: Start (PID = {PID})", logName, process.Id);
+                _logger.LogInformation("Start (PID = {PID})", process.Id);
 
                 await Task.Run(async () => {
                     while (!ready) {
@@ -75,17 +80,17 @@ namespace Nijo.Util.DotnetEx {
 
                 process.OutputDataReceived -= CheckIfReady;
 
-                _logger.LogInformation("{Command}: Ready", logName);
+                _logger.LogInformation("Ready");
 
             } catch (TaskCanceledException) {
-                _logger.LogInformation("{Command}: Cancelled", logName);
-                await EnsureKill(process, logName);
+                _logger.LogInformation("Cancelled");
+                await EnsureKill(process);
                 process.Dispose();
                 throw;
 
             } catch (Exception ex) {
-                _logger.LogCritical(ex, "{Command}: Error", logName);
-                await EnsureKill(process, logName);
+                _logger.LogCritical(ex, "Error");
+                await EnsureKill(process);
                 process.Dispose();
                 throw;
             }
@@ -97,13 +102,13 @@ namespace Nijo.Util.DotnetEx {
                         await Task.Delay(100, cancellationToken);
                     }
                     if (process.ExitCode != 0) {
-                        throw new InvalidOperationException($"{logName}: Exit code is '{process.ExitCode}'");
+                        throw new InvalidOperationException($"Exit code is '{process.ExitCode}'");
                     }
                 } catch (OperationCanceledException) {
-                    _logger.LogInformation("{Command}: Cancelled", logName);
+                    _logger.LogInformation("Cancelled");
 
                 } finally {
-                    await EnsureKill(process, logName);
+                    await EnsureKill(process);
                     process.Dispose();
                 }
             }, CancellationToken.None); // タスク開始前にキャンセルされてしまうとEnsureKillを通らなくなるのでCancellationToken.None
@@ -112,7 +117,7 @@ namespace Nijo.Util.DotnetEx {
         /// <summary>
         /// 新しいProcessオブジェクトを作成します。
         /// </summary>
-        private Process CreateProcess(IEnumerable<string> command) {
+        private Process CreateProcess(IEnumerable<string> command, Encoding? outputEncoding = null) {
             // 引数解釈
             if (!command.Any()) throw new ArgumentException("Command must contain more than 1.", nameof(command));
             var filename = command.First();
@@ -135,11 +140,11 @@ namespace Nijo.Util.DotnetEx {
 
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.StandardOutputEncoding = Encoding.UTF8;
-            process.StartInfo.StandardErrorEncoding = Encoding.UTF8;
+            process.StartInfo.StandardOutputEncoding = outputEncoding;
+            process.StartInfo.StandardErrorEncoding = outputEncoding;
 
             process.OutputDataReceived += OnStdOut;
-            process.ErrorDataReceived += OnStdOut;
+            process.ErrorDataReceived += OnStdErr;
 
             return process;
         }
@@ -147,7 +152,7 @@ namespace Nijo.Util.DotnetEx {
         /// コマンドの単純実行
         /// </summary>
         private async Task ExecuteProcess(IEnumerable<string> command, Func<Process, Task> taskAwaiter) {
-            var logName = $"'{command.Join(" ")}'";
+            using var logScope = _logger.BeginScope($"'{command.Join(" ")}'");
 
             // プロセス開始
             using var process = CreateProcess(command);
@@ -157,33 +162,33 @@ namespace Nijo.Util.DotnetEx {
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
 
-                _logger.LogInformation("{Command}: Start (PID = {PID})", logName, process.Id);
+                _logger.LogInformation("Start (PID = {PID})", process.Id);
 
                 pid = process.Id;
 
                 await taskAwaiter(process);
 
                 if (process.ExitCode != 0) {
-                    throw new InvalidOperationException($"{logName}: Exit code is '{process.ExitCode}'");
+                    throw new InvalidOperationException($"Exit code is '{process.ExitCode}'");
                 }
 
             } catch (TaskCanceledException) {
-                _logger.LogInformation("{Command}: Cancelled", logName);
+                _logger.LogInformation("Cancelled");
                 throw;
 
             } catch (Exception ex) {
-                _logger.LogCritical(ex, "{Command}: Error", logName);
+                _logger.LogCritical(ex, "Error");
                 throw;
 
             } finally {
-                await EnsureKill(process, logName);
+                await EnsureKill(process);
             }
         }
         /// <summary>
         /// プロセスツリーを確実に終了させます。
         /// </summary>
         /// <param name="process">プロセスID</param>
-        private async Task EnsureKill(Process process, string logName) {
+        private async Task EnsureKill(Process process) {
             int? pid = null;
             try {
                 if (process.HasExited) return;
@@ -199,13 +204,13 @@ namespace Nijo.Util.DotnetEx {
                 await kill.WaitForExitAsync(CancellationToken.None); // キャンセル不可
 
                 if (kill.ExitCode == 0) {
-                    _logger.LogInformation("{Command}: Success to task kill (PID = {PID})", logName, pid);
+                    _logger.LogInformation("Success to task kill (PID = {PID})", pid);
                 } else {
-                    _logger.LogInformation("{Command}: Exit code of TASKKILL is '{ExitCode}' (PID = {PID})", logName, kill.ExitCode, pid);
+                    _logger.LogInformation("Exit code of TASKKILL is '{ExitCode}' (PID = {PID})", kill.ExitCode, pid);
                 }
 
             } catch (Exception ex) {
-                _logger.LogError(ex, "{Command}: Failed to task kill (PID = {PID})", logName, pid);
+                _logger.LogError(ex, "Failed to task kill (PID = {PID})", pid);
             }
         }
 

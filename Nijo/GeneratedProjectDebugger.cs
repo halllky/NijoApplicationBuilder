@@ -107,7 +107,7 @@ namespace Nijo {
                             //    _log?.LogInformation("DBの削除・再作成でエラーが発生しました: {ErrorContent}", errorContent);
                             //}
 
-                            _log?.LogInformation("アプリケーション実行中...");
+                            _log?.LogInformation("Now application is ready.");
                             _log?.LogInformation("CLIENT: {Url}", clientUrl);
                             _log?.LogInformation("SERVER: {Url}", serverUrl);
 
@@ -163,7 +163,11 @@ namespace Nijo {
         /// クライアントサイドプロセスのコマンドを作成します。
         /// </summary>
         internal Task<Task> CreateClientRunningProcess(CancellationToken cancellationToken) {
-            return _project.ClientDirTerminal.RunBackground(new[] { "npm", "run", "dev" }, ViteReadyConsole(), cancellationToken);
+            return _project.ClientDirTerminal.RunBackground(
+                new[] { "npm", "run", "dev" },
+                new Regex("➜"),
+                Encoding.UTF8,
+                cancellationToken);
         }
         /// <summary>
         /// サーバーサイドプロセスのコマンドを作成します。
@@ -171,7 +175,11 @@ namespace Nijo {
         /// 実行中のソースファイルの変更は自動的に反映されません。
         /// </summary>
         internal Task<Task> CreateServerRunningProcess(CancellationToken cancellationToken) {
-            return _project.WebapiDirTerminal.RunBackground(new[] { "dotnet", "run", "--no-build", "--launch-profile", "https" }, AspCoreStartedRegex(), cancellationToken);
+            return _project.WebapiDirTerminal.RunBackground(
+                new[] { "dotnet", "run", "--no-build", "--launch-profile", "https" },
+                new Regex("Now listening on:"),
+                Console.OutputEncoding,
+                cancellationToken);
         }
 
         /// <summary>
@@ -270,10 +278,5 @@ namespace Nijo {
             OnlyCompilerCheck,
             None,
         }
-
-        [GeneratedRegex("Now listening on:")]
-        private static partial Regex AspCoreStartedRegex();
-        [GeneratedRegex("➜")]
-        private static partial Regex ViteReadyConsole();
     }
 }

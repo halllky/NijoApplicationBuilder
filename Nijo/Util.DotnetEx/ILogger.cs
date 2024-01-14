@@ -9,8 +9,11 @@ namespace Nijo.Util.DotnetEx {
     internal static class ILoggerExtension {
         internal static ILogger CreateConsoleLogger() {
             return LoggerFactory.Create(builder => {
-                builder.AddSimpleConsole();
-            }).CreateLogger<Program>();
+                builder.AddSimpleConsole(opt => {
+                    opt.SingleLine = true;
+                    opt.IncludeScopes = true;
+                });
+            }).CreateLogger(string.Empty);
         }
     }
 }
