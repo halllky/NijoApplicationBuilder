@@ -29,7 +29,8 @@ namespace Nijo.Architecture.WebServer {
             return _aggregate
                 .GetKeys()
                 .Where(m => m is AggregateMember.Ref
-                         || m is AggregateMember.ValueMember vm && !vm.IsKeyOfRefTarget);
+                         || m is AggregateMember.ValueMember vm
+                         && vm.Declared.Owner == vm.Owner);
         }
         // TODO: 正確には"GetOwnNameMembers"が正しい？
         internal IEnumerable<AggregateMember.AggregateMemberBase> GetNameMembers() {

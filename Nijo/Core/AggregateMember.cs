@@ -48,11 +48,9 @@ namespace Nijo.Core {
                             (Schalar?)schalar.Original ?? schalar,
                             schalar.Declared,
                             ((Schalar?)schalar.Original ?? schalar).GraphNode.Item) {
-                            ForeignKeyOf = schalar.ForeignKeyOf,
                         };
                     } else if (parentPk is Variation variation) {
                         yield return new Variation(aggregate, (Variation?)variation.Original ?? variation, variation.Declared) {
-                            ForeignKeyOf = variation.ForeignKeyOf,
                         };
                     } else if (parentPk is Ref @ref) {
                         yield return new Ref(@ref.Relation, aggregate);
@@ -117,10 +115,7 @@ namespace Nijo.Core {
 
         internal static IEnumerable<AggregateMemberBase> GetKeys(this GraphNode<Aggregate> aggregate) {
             foreach (var member in aggregate.GetMembers()) {
-                if (member is ValueMember valueMember
-                    && valueMember.IsKey
-                    && (valueMember.ForeignKeyOf == null || valueMember.ForeignKeyOf.Relation.IsPrimary())) {
-
+                if (member is ValueMember valueMember && valueMember.IsKey) {
                     yield return valueMember;
 
                 } else if (member is Ref refMember && refMember.Relation.IsPrimary()) {
@@ -191,31 +186,7 @@ namespace Nijo.Core {
 
             internal abstract IReadOnlyMemberOptions Options { get; }
 
-            private string? _memberName;
-            internal sealed override string MemberName {
-                get {
-                    if (_memberName == null) {
-                        // 参照先のリレーション
-                        var relationPrefix = IsKeyOfRefTarget
-                            ? $"{ForeignKeyOf!.Relation.RelationName}_"
-                            : string.Empty;
-                        // 親の主キーの継承
-                        var parentPrefix = IsKeyOfAncestor
-                            ? $"{Original!.Owner.Item.ClassName}_"
-                            : string.Empty;
-                        // 自身の名前
-                        var name = Original == null
-                            ? Options.MemberName
-                            : Original.MemberName;
-
-                        _memberName
-                            = relationPrefix
-                            + parentPrefix
-                            + name;
-                    }
-                    return _memberName;
-                }
-            }
+            internal sealed override string MemberName => Original == null ? Options.MemberName : Original.MemberName;
 
             internal sealed override GraphNode<Aggregate> DeclaringAggregate => Original?.DeclaringAggregate ?? Owner;
             internal sealed override string CSharpTypeName => Options.MemberType.GetCSharpTypeName();
@@ -224,21 +195,24 @@ namespace Nijo.Core {
             internal bool IsKey => Options.IsKey;
             internal bool IsDisplayName => Options.IsDisplayName
                                         || (Owner.Item.UseKeyInsteadOfName && Options.IsKey); // 集約中に名前が無い場合はキーを名前のかわりに使う
-            internal bool IsKeyOfAncestor => Original != null && Owner.EnumerateAncestors().Select(x=>x.Initial).Contains(Original.Owner);
-            internal bool IsKeyOfRefTarget => ForeignKeyOf != null;
 
+            /// <summary>
+            /// このメンバーが親や参照先のメンバーを継承したものである場合、
+            /// <see cref="AggregateMemberBase.Owner"/> の1つ隣の集約のメンバー。
+            /// 継承されたものでない場合はnull。
+            /// </summary>
             internal ValueMember? Original { get; }
+            /// <summary>
+            /// このメンバーが親や参照先のメンバーを継承したものである場合、その一番大元のメンバー。
+            /// </summary>
             internal ValueMember Declared { get; }
-            internal Ref? ForeignKeyOf { get; init; }
+
 
             internal virtual DbColumn GetDbColumn() {
                 return new DbColumn {
                     Owner = Owner.As<IEFCoreEntity>(),
                     Options = Options.Clone(opt => {
                         opt.MemberName = MemberName;
-                        if (IsKeyOfRefTarget) {
-                            opt.IsKey = ForeignKeyOf!.Relation.IsPrimary();
-                        }
                     }),
                 };
             }
@@ -363,14 +337,10 @@ namespace Nijo.Core {
                                 opt.IsKey = Relation.IsPrimary();
                                 opt.IsRequired = Relation.IsPrimary() || Relation.IsRequired();
                                 opt.IsDisplayName = Relation.IsInstanceName();
-                            })) {
-                            ForeignKeyOf = this,
-                        };
+                            }));
 
                     } else if (fk is Variation variation) {
-                        yield return new Variation(Relation.Initial, variation, variation.Declared) {
-                            ForeignKeyOf = this,
-                        };
+                        yield return new Variation(Relation.Initial, variation, variation.Declared);
                     }
                 }
             }

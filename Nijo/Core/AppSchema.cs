@@ -99,11 +99,6 @@ namespace Nijo.Core {
                         ? vm.Declared.MemberName
                         : "-"
                 ), (
-                    nameof(AggregateMember.ValueMember.ForeignKeyOf),
-                    member => member is AggregateMember.ValueMember vm
-                        ? (vm.ForeignKeyOf?.MemberName ?? "null")
-                        : "-"
-                ), (
                     nameof(AggregateMember.RelationMember.Relation),
                     member => member is AggregateMember.RelationMember rel
                         ? rel.Relation.ToString()
@@ -136,16 +131,6 @@ namespace Nijo.Core {
                     nameof(AggregateMember.ValueMember.IsDisplayName),
                     member => member is AggregateMember.ValueMember vm
                         ? vm.IsDisplayName.ToString()
-                        : "-"
-                ), (
-                    nameof(AggregateMember.ValueMember.IsKeyOfAncestor),
-                    member => member is AggregateMember.ValueMember vm
-                        ? vm.IsKeyOfAncestor.ToString()
-                        : "-"
-                ), (
-                    nameof(AggregateMember.ValueMember.IsKeyOfRefTarget),
-                    member => member is AggregateMember.ValueMember vm
-                        ? vm.IsKeyOfRefTarget.ToString()
                         : "-"
                 ), (
                     nameof(AggregateMember.ValueMember.Options.IsRequired),

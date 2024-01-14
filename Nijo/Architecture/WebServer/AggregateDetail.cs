@@ -92,21 +92,8 @@ namespace Nijo.Architecture.WebServer {
             }
             var (instanceName, valueSource) = GetSourceInstanceOf(instance, source);
 
-            // 移送元プロパティを特定する
-            var original = vm;
-            while (true) {
-                if (original.Original == null) break;
-
-                // RefTargetKeyNameの都合上、
-                // 参照先の主キーに祖先のキーが含まれている場合は祖先でなく子孫のプロパティが移送元
-                if (!original.Owner.IsInTreeOf(entry)
-                    && original.IsKeyOfAncestor) break;
-
-                original = original.Original;
-            }
-
             yield return instanceName;
-            foreach (var path in original.GetFullPath(valueSource)) {
+            foreach (var path in vm.Declared.GetFullPath(valueSource)) {
                 yield return path;
             }
         }
