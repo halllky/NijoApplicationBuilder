@@ -133,10 +133,8 @@ namespace Nijo.Util.DotnetEx {
             }
             process.StartInfo.WorkingDirectory = _workingDirectory;
 
-            process.StartInfo.RedirectStandardInput = true;
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.StandardInputEncoding = Encoding.UTF8;
             process.StartInfo.StandardOutputEncoding = Encoding.UTF8;
             process.StartInfo.StandardErrorEncoding = Encoding.UTF8;
 
