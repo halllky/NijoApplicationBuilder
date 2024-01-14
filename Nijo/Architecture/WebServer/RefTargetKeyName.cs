@@ -19,15 +19,19 @@ namespace Nijo.Architecture.WebServer {
         internal string CSharpClassName => $"{_aggregate.Item.ClassName}KeysAndNames";
         internal string TypeScriptTypeName => $"{_aggregate.Item.ClassName}KeysAndNames";
 
+        // TODO: 正確には"GetOwnMembers"が正しい？
         internal IEnumerable<AggregateMember.AggregateMemberBase> GetMembers() {
             return GetKeyMembers().Union(GetNameMembers());
         }
+
+        // TODO: 正確には"GetOwnKeyMembers"が正しい？
         internal IEnumerable<AggregateMember.AggregateMemberBase> GetKeyMembers() {
             return _aggregate
                 .GetKeys()
                 .Where(m => m is AggregateMember.Ref
                          || m is AggregateMember.ValueMember vm && !vm.IsKeyOfRefTarget);
         }
+        // TODO: 正確には"GetOwnNameMembers"が正しい？
         internal IEnumerable<AggregateMember.AggregateMemberBase> GetNameMembers() {
             return _aggregate
                 .GetMembers()

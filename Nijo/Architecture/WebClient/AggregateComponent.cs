@@ -184,26 +184,64 @@ namespace Nijo.Architecture.WebClient {
                 var loopVar = $"index_{Arguments.Count}";
                 var createNewChildrenItem = new TSInitializerFunction(_aggregate).FunctionName;
                 var editable = _mode == SingleView.E_Type.View ? "false" : "true";
-                var colDefs = Members.Select(m => m switch {
-                    AggregateMember.ValueMember vm => new {
-                        field = m.MemberName,
-                        editable,
-                        cellEditor = vm.Options.MemberType.GetGridCellEditorName(),
-                        cellEditorParams = vm.Options.MemberType.GetGridCellEditorParams(),
-                        valueFormatter = vm.Options.MemberType.GetGridCellValueFormatter(),
-                        hide = vm.Options.InvisibleInGui,
-                    },
-                    AggregateMember.Ref rm => new {
-                        field = m.MemberName,
-                        editable,
-                        cellEditor = "Input." + new ComboBox(rm.MemberAggregate).ComponentName,
-                        cellEditorParams = (IReadOnlyDictionary<string, string>)new Dictionary<string, string> {
-                            { "raectHookFormId", $"(rowIndex: number) => `{GetRegisterName().Replace("`", "")}.${{rowIndex}}.{rm.MemberName}`" },
-                        },
-                        valueFormatter = $"({{ value }}) => ({new RefTargetKeyName(rm.MemberAggregate).GetNameMembers().Select(m => $"value?.{m.MemberName}").Join(" + ")}) || ''",
-                        hide = false,
-                    },
-                    _ => throw new NotImplementedException(),
+                var colDefs = Members.Select(m => {
+                    if (m is AggregateMember.ValueMember vm) {
+                        var cellEditor = vm.Options.MemberType.GetGridCellEditorName();
+                        var cellEditorParam = vm.Options.MemberType.GetGridCellEditorParams();
+
+                        return new {
+                            field = m.MemberName,
+                            editable,
+                            valueFormatter = vm.Options.MemberType.GetGridCellValueFormatter(),
+                            hide = vm.Options.InvisibleInGui,
+                            cell = $$"""
+                                cellEditor: AgGridHelper.generateCellEditor({{GetRegisterName()}}, {{cellEditor}}, {
+                                {{cellEditorParam.SelectTextTemplate(p => $$"""
+                                  {{p.Key}}: {{p.Value}},
+                                """)}}
+                                }),
+                                """,
+                        };
+                    } else if (m is AggregateMember.Ref rm) {
+                        var keyName = new RefTargetKeyName(rm.MemberAggregate);
+                        var singleView = new SingleView(rm.MemberAggregate, SingleView.E_Type.View);
+                        var combobox = new ComboBox(rm.MemberAggregate);
+                        var keys = rm.MemberAggregate
+                            .GetKeys()
+                            .OfType<AggregateMember.ValueMember>()
+                            .Select(m => m.GetFullPath(since: _aggregate).Join("?."));
+                        var names = rm.MemberAggregate
+                            .GetMembers()
+                            .OfType<AggregateMember.ValueMember>()
+                            .Where(member => member.IsDisplayName)
+                            .Select(m => m.GetFullPath(since: _aggregate).Join("?."));
+                        return new {
+                            field = m.MemberName,
+                            editable,
+                            valueFormatter = $"({{ value }}) => ({keyName.GetNameMembers().Select(m => $"value?.{m.MemberName}").Join(" + ")}) || ''",
+                            hide = false,
+                            cell = _mode == SingleView.E_Type.View
+                                ? $$"""
+                                cellRenderer: ({ data }: { data: typeof fields[0] }) => {
+                                  const singleViewUrl = `{{singleView.GetUrlStringForReact(keys.Select(k => $"data.{k}"))}}`
+                                  return (
+                                    <Link to={singleViewUrl} className="text-link">
+                                {{names.SelectTextTemplate(n => $$"""
+                                      {data.{{n}}}
+                                """)}}
+                                    </Link>
+                                  )
+                                },
+                                """
+                                : $$"""
+                                cellEditor: AgGridHelper.generateCellEditor({{GetRegisterName()}}, Input.{{combobox.ComponentName}}, {
+                                  raectHookFormId: (rowIndex: number) => `{{GetRegisterName().Replace("`", "")}}.${rowIndex}.{{rm.MemberName}}`,
+                                }),
+                                """,
+                        };
+                    } else {
+                        throw new NotImplementedException();
+                    }
                 });
 
                 return $$"""
@@ -244,11 +282,7 @@ namespace Nijo.Architecture.WebClient {
                           sortable: false,
                           editable: {{def.editable}},
                           hide: {{(def.hide ? "true" : "false")}},
-                          cellEditor: AgGridHelper.generateCellEditor({{GetRegisterName()}}, {{def.cellEditor}}, {
-                    {{def.cellEditorParams.SelectTextTemplate(p => $$"""
-                            {{p.Key}}: {{p.Value}},
-                    """)}}
-                          }),
+                          {{WithIndent(def.cell, "      ")}}
                           cellEditorPopup: true,
                     {{If(def.valueFormatter != string.Empty, () => $$"""
                           valueFormatter: {{def.valueFormatter}},
