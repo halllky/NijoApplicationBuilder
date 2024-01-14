@@ -127,6 +127,7 @@ namespace Nijo.Architecture.WebClient {
                         control,
                         name: {{GetRegisterName()}},
                       })
+                    {{If(_mode != SingleView.E_Type.View, () => $$"""
                       const onAdd = useCallback((e: React.MouseEvent) => {
                         append(AggregateType.{{createNewChildrenItem}}())
                         e.preventDefault()
@@ -140,7 +141,8 @@ namespace Nijo.Architecture.WebClient {
                           e.preventDefault()
                         }
                       }, [remove])
-                    
+                    """)}}
+
                       return (
                         <VForm.Section table label="{{_aggregate.GetParent()!.RelationName}}">
                           <VForm.Row fullWidth>
@@ -218,6 +220,7 @@ namespace Nijo.Architecture.WebClient {
 
                       const gridApi = useRef<AgGridReact<typeof fields[0]> | null>(null)
 
+                    {{If(_mode != SingleView.E_Type.View, () => $$"""
                       const onAdd = useCallback((e: React.MouseEvent) => {
                         append(AggregateType.{{createNewChildrenItem}}())
                         e.preventDefault()
@@ -230,6 +233,7 @@ namespace Nijo.Architecture.WebClient {
                         }
                         e.preventDefault()
                       }, [remove, fields])
+                    """)}}
 
                       const columnDefs = useMemo<ColDef<typeof fields[0]>[]>(() => [
                     {{colDefs.SelectTextTemplate(def => $$"""
