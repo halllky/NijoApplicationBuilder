@@ -24,6 +24,7 @@ export const Button = forwardRefEx<HTMLButtonElement, React.ButtonHTMLAttributes
 
   let className = 'flex items-center select-none text-color-7'
   if (outlined) className += ' border border-1 border-color-7'
+  if (!icon) className += ' px-1'
   if (additionalClassName) className += ' ' + additionalClassName
 
   let title: string | undefined

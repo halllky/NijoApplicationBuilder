@@ -121,7 +121,7 @@ namespace Nijo.Architecture.WebClient {
                         (a, m) => new {
                             m.MemberName,
                             IndentWidth = a.EnumerateAncestors().Count() * INDENT_WIDTH, // インデント1個の幅をだいたい1.5remとして計算
-                            NameWidthRem = (m.MemberName.CalculateCharacterWidth() / 2) * 1.0m, // tailwindの1remがだいたい全角文字1文字分
+                            NameWidthRem = (m.MemberName.CalculateCharacterWidth() / 2) * 1.2m, // tailwindの1.2remがだいたい全角文字1文字分
                         });
                 // インデント込みで最も横幅が長いメンバーの横幅を計算
                 var longestHeaderWidthRem = headersWidthRem

@@ -66,7 +66,7 @@ export const ServerSettingScreen = () => {
         {process.env.NODE_ENV === 'development' && (
           <VForm.Section label="データベース" table>
             <VForm.Row fullWidth>
-              <Input.IconButton fill onClick={recreateDatabase}>DB再作成</Input.IconButton>
+              <Input.Button outlined onClick={recreateDatabase}>DB再作成</Input.Button>
               <Input.CheckBox value={withDummyData} onChange={setWithDummyData}>ダミーデータも併せて作成する</Input.CheckBox>
             </VForm.Row>
           </VForm.Section>
