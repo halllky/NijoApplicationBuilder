@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
 using Nijo.Architecture.WebServer;
+using System.ComponentModel;
 
 namespace Nijo.Architecture.WebClient {
 
@@ -365,20 +366,38 @@ namespace Nijo.Architecture.WebClient {
         }
 
         private string RenderProperty(AggregateMember.Ref refProperty) {
-            var combobox = new ComboBox(refProperty.MemberAggregate);
-            var registerName = GetRegisterName(refProperty);
-            var callCombobox = _mode switch {
-                SingleView.E_Type.Create => combobox.RenderCaller(registerName, "className='w-full'"),
-                SingleView.E_Type.View => combobox.RenderCaller(registerName, "className='w-full'", "readOnly"),
-                SingleView.E_Type.Edit => combobox.RenderCaller(registerName, "className='w-full'", IfReadOnly("readOnly", refProperty)),
-                _ => throw new NotImplementedException(),
-            };
+            if (_mode == SingleView.E_Type.View) {
+                // リンク
+                var singleView = new SingleView(refProperty.MemberAggregate, SingleView.E_Type.View);
+                var keys = refProperty.MemberAggregate
+                    .GetKeys()
+                    .OfType<AggregateMember.ValueMember>()
+                    .Select(m => m.GetFullPath().Join("."));
+                return $$"""
+                    <VForm.Row label="{{refProperty.MemberName}}">
+                      <Link className="underline" to={`{{singleView.GetUrlStringForReact(keys.Select(k => $"getValues('{k}')"))}}`}>
+                    {{keys.SelectTextTemplate(k => $$"""
+                        {getValues('{{k}}')}
+                    """)}}
+                      </Link>
+                    </VForm.Row>
+                    """;
 
-            return $$"""
-                <VForm.Row label="{{refProperty.MemberName}}">
-                  {{WithIndent(callCombobox, "  ")}}
-                </VForm.Row>
-                """;
+            } else {
+                // コンボボックス
+                var registerName = GetRegisterName(refProperty);
+                var combobox = new ComboBox(refProperty.MemberAggregate);
+                var component = _mode switch {
+                    SingleView.E_Type.Create => combobox.RenderCaller(registerName, "className='w-full'"),
+                    SingleView.E_Type.Edit => combobox.RenderCaller(registerName, "className='w-full'", IfReadOnly("readOnly", refProperty)),
+                    _ => throw new NotImplementedException(),
+                };
+                return $$"""
+                    <VForm.Row label="{{refProperty.MemberName}}">
+                      {{WithIndent(component, "  ")}}
+                    </VForm.Row>
+                    """;
+            }
         }
 
         #region SCHALAR PROPERTY
