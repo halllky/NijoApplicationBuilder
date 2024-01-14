@@ -57,7 +57,7 @@ export const ServerSettingScreen = () => {
             <Input.CheckBox {...registerEx('darkMode')} />
           </VForm.Row>
           <VForm.Row fullWidth>
-            <button>更新</button>
+            <Input.Button outlined submit>更新</Input.Button>
           </VForm.Row>
         </VForm.Section>
 

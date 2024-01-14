@@ -375,7 +375,7 @@ namespace Nijo.Architecture.WebClient {
                     .Select(m => m.GetFullPath().Join("."));
                 return $$"""
                     <VForm.Row label="{{refProperty.MemberName}}">
-                      <Link className="underline" to={`{{singleView.GetUrlStringForReact(keys.Select(k => $"getValues('{k}')"))}}`}>
+                      <Link className="text-link" to={`{{singleView.GetUrlStringForReact(keys.Select(k => $"getValues('{k}')"))}}`}>
                     {{keys.SelectTextTemplate(k => $$"""
                         {getValues('{{k}}')}
                     """)}}

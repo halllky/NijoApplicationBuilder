@@ -160,7 +160,7 @@ namespace Nijo.Architecture.WebClient {
                         width: 50,
                         cellRenderer: ({ data }: { data: RowType }) => {
                           const singleViewUrl = `{{SingleViewUrlFunctionBody!("data")}}`
-                          return <Link to={singleViewUrl} className="text-blue-400">詳細</Link>
+                          return <Link to={singleViewUrl} className="text-link">詳細</Link>
                         },
                       },
                     """)}}
