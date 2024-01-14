@@ -53,10 +53,11 @@ namespace Nijo.Features.Repository {
             const string LIKE = "like";
 
             var keyName = new RefTargetKeyName(_aggregate);
-            var filterColumns = keyName
-                .GetOwnMembers()
+            var filterColumns = _aggregate
+                .GetKeys()
+                .Union(_aggregate.GetNames())
                 .OfType<AggregateMember.ValueMember>()
-                .Select(m => m.GetFullPath(_aggregate).Join(".") + (m.CSharpTypeName == "string" ? "" : ".ToString()"));
+                .Select(m => m.Declared.GetFullPath(_aggregate).Join(".") + (m.CSharpTypeName == "string" ? "" : ".ToString()"));
             var orderColumn = keyName
                 .GetOwnMembers()
                 .OfType<AggregateMember.ValueMember>()

@@ -218,7 +218,7 @@ namespace Nijo.Architecture.WebClient {
                         return new {
                             field = m.MemberName,
                             editable,
-                            valueFormatter = $"({{ value }}) => ({keyName.GetOwnNameMembers().Select(m => $"value?.{m.MemberName}").Join(" + ")}) || ''",
+                            valueFormatter = $"({{ value }}) => ({keys.Select(path => $"value?.{path}").Join(" + ")}) || ''",
                             hide = false,
                             cell = _mode == SingleView.E_Type.View
                                 ? $$"""

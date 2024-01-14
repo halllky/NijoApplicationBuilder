@@ -123,6 +123,16 @@ namespace Nijo.Core {
                 }
             }
         }
+        internal static IEnumerable<AggregateMemberBase> GetNames(this GraphNode<Aggregate> aggregate) {
+            foreach (var member in aggregate.GetMembers()) {
+                if (member is ValueMember valueMember && valueMember.IsDisplayName) {
+                    yield return valueMember;
+
+                } else if (member is Ref refMember && refMember.Relation.IsInstanceName()) {
+                    yield return refMember;
+                }
+            }
+        }
 
         internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<Aggregate> aggregate) {
             var parent = aggregate.GetParent();
