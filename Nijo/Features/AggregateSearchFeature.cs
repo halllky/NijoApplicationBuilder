@@ -51,12 +51,13 @@ namespace Nijo.Features {
                 .SelectMany(entity => entity.GetColumns());
 
             // 参照先のキーはdescendantColumnsの中に入っているが、名前は入っていないので、別途取得の必要あり
-            var refTargetColumns = rootAndDescendants
+            var refTargets = rootAndDescendants
                 .SelectMany(entity => entity.GetMembers())
-                .OfType<AggregateMember.Ref>()
-                .SelectMany(member => member.MemberAggregate.GetMembers())
+                .OfType<AggregateMember.Ref>();
+            var refTargetColumns = refTargets
+                .SelectMany(@ref => @ref.MemberAggregate.GetNames())
+                .Except(refTargets.SelectMany(@ref => @ref.MemberAggregate.GetKeys()))
                 .OfType<AggregateMember.ValueMember>()
-                .Where(member => !member.IsKey && member.IsDisplayName)
                 .Select(member => member.GetDbColumn());
 
             var fields = descendantColumns
