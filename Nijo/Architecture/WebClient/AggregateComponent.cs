@@ -204,26 +204,38 @@ namespace Nijo.Architecture.WebClient {
                         };
                     } else if (m is AggregateMember.Ref rm) {
                         var keyName = new RefTargetKeyName(rm.MemberAggregate);
-                        var singleView = new SingleView(rm.MemberAggregate, SingleView.E_Type.View);
                         var combobox = new ComboBox(rm.MemberAggregate);
                         var keys = rm.MemberAggregate
                             .GetKeys()
                             .OfType<AggregateMember.ValueMember>()
                             .Select(m => m.Declared.GetFullPath(since: _aggregate).Join("?."));
+                        var keysForValueFormatter = rm.MemberAggregate
+                            .GetKeys()
+                            .OfType<AggregateMember.ValueMember>()
+                            .Select(m => m.Declared.GetFullPath(since: _aggregate).Skip(1).Join("?."));
                         var names = rm.MemberAggregate
                             .GetMembers()
                             .OfType<AggregateMember.ValueMember>()
                             .Where(member => member.IsDisplayName)
                             .Select(m => m.Declared.GetFullPath(since: _aggregate).Join("?."));
+
+                        // 参照先SingleViewへのリンク
+                        var singleView = new SingleView(rm.MemberAggregate.GetRoot(), SingleView.E_Type.View);
+                        var keysOfRoot = rm.MemberAggregate
+                            .GetRoot()
+                            .GetKeys()
+                            .OfType<AggregateMember.ValueMember>()
+                            .Select(m => m.Declared.GetFullPath(since: _aggregate).Join("?."));
+
                         return new {
                             field = m.MemberName,
                             editable,
-                            valueFormatter = $"({{ value }}) => ({keys.Select(path => $"value?.{path}").Join(" + ")}) || ''",
+                            valueFormatter = $"({{ value }}) => ({keysForValueFormatter.Select(path => $"value?.{path}").Join(" + ")}) || ''",
                             hide = false,
                             cell = _mode == SingleView.E_Type.View
                                 ? $$"""
                                 cellRenderer: ({ data }: { data: typeof fields[0] }) => {
-                                  const singleViewUrl = `{{singleView.GetUrlStringForReact(keys.Select(k => $"data.{k}"))}}`
+                                  const singleViewUrl = `{{singleView.GetUrlStringForReact(keysOfRoot.Select(k => $"data.{k}"))}}`
                                   return (
                                     <Link to={singleViewUrl} className="text-link">
                                 {{names.SelectTextTemplate(n => $$"""

@@ -20,6 +20,7 @@ namespace Nijo.Architecture.WebClient {
         }
 
         internal SingleView(GraphNode<Aggregate> aggregate, E_Type type) {
+            if (!aggregate.IsRoot()) throw new ArgumentException("Descendant aggregate cannot have SingleView.");
             _aggregate = aggregate;
             _type = type;
         }
