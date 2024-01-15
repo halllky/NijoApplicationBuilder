@@ -42,21 +42,18 @@ namespace Nijo.Features {
         }
         private static IReadOnlyDictionary<DbColumn, MultiViewField> GetFields(GraphNode<Aggregate> rootAggregate) {
 
-            var descendantColumns = rootAggregate
-                .EnumerateThisAndDescendants()
-                .Where(x => x.EnumerateAncestorsAndThis()
-                .All(ancestor => !ancestor.IsChildrenMember()
-                              && !ancestor.IsVariationMember()))
-                .SelectMany(entity => entity.GetColumns());
-
-            // 参照先のキーはdescendantColumnsの中に入っているが、名前は入っていないので、別途取得の必要あり
-            var pkRefTargets = rootAggregate
+            var rootAndDescendants = rootAggregate
                 .EnumerateThisAndDescendants()
                 .Where(x => x.EnumerateAncestorsAndThis()
                              .All(ancestor => !ancestor.IsChildrenMember()
-                                           && !ancestor.IsVariationMember()))
-                .SelectMany(entity => entity.GetMembers().OfType<AggregateMember.Ref>());
-            var refTargetColumns = pkRefTargets
+                                           && !ancestor.IsVariationMember()));
+            var descendantColumns = rootAndDescendants
+                .SelectMany(entity => entity.GetColumns());
+
+            // 参照先のキーはdescendantColumnsの中に入っているが、名前は入っていないので、別途取得の必要あり
+            var refTargetColumns = rootAndDescendants
+                .SelectMany(entity => entity.GetMembers())
+                .OfType<AggregateMember.Ref>()
                 .SelectMany(member => member.MemberAggregate.GetMembers())
                 .OfType<AggregateMember.ValueMember>()
                 .Where(member => !member.IsKey && member.IsDisplayName)
