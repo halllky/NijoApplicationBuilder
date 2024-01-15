@@ -417,15 +417,22 @@ namespace Nijo.Architecture.WebClient {
         private string RenderProperty(AggregateMember.Ref refProperty) {
             if (_mode == SingleView.E_Type.View) {
                 // リンク
-                var singleView = new SingleView(refProperty.MemberAggregate, SingleView.E_Type.View);
-                var keys = refProperty.MemberAggregate
+                var singleView = new SingleView(refProperty.MemberAggregate.GetRoot(), SingleView.E_Type.View);
+                var linkKeys = refProperty.MemberAggregate
+                    .GetRoot()
                     .GetKeys()
                     .OfType<AggregateMember.ValueMember>()
                     .Select(m => m.GetFullPath().Join("."));
+
+                var names = refProperty.MemberAggregate
+                    .GetNames()
+                    .OfType<AggregateMember.ValueMember>()
+                    .Select(m => m.GetFullPath().Join("."));
+
                 return $$"""
                     <VForm.Row label="{{refProperty.MemberName}}">
-                      <Link className="text-link" to={`{{singleView.GetUrlStringForReact(keys.Select(k => $"getValues('{k}')"))}}`}>
-                    {{keys.SelectTextTemplate(k => $$"""
+                      <Link className="text-link" to={`{{singleView.GetUrlStringForReact(linkKeys.Select(k => $"getValues('{k}')"))}}`}>
+                    {{names.SelectTextTemplate(k => $$"""
                         {getValues('{{k}}')}
                     """)}}
                       </Link>
