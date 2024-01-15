@@ -1,17 +1,11 @@
 using Nijo.Architecture.WebServer;
 using Nijo.Util.DotnetEx;
-using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Xml.Linq;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using static Nijo.Architecture.Infrastructure;
-using static Nijo.Core.AggregateMember;
 
 namespace Nijo.Core {
 
@@ -113,10 +107,15 @@ namespace Nijo.Core {
         }
         internal static IEnumerable<AggregateMemberBase> GetNames(this GraphNode<Aggregate> aggregate) {
             foreach (var member in aggregate.GetMembers()) {
-                if (member is ValueMember valueMember && valueMember.IsDisplayName) {
+                if (member is ValueMember valueMember
+                    && valueMember.Declared.Owner == aggregate
+                    && valueMember.IsDisplayName) {
+
                     yield return valueMember;
 
-                } else if (member is Ref refMember && refMember.Relation.IsInstanceName()) {
+                } else if (member is Ref refMember
+                    && refMember.Relation.IsInstanceName()) {
+
                     yield return refMember;
 
                 } else if (member is Parent parent) {

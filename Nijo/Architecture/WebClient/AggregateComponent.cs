@@ -214,9 +214,8 @@ namespace Nijo.Architecture.WebClient {
                             .OfType<AggregateMember.ValueMember>()
                             .Select(m => m.Declared.GetFullPath(since: _aggregate).Skip(1).Join("?."));
                         var names = rm.MemberAggregate
-                            .GetMembers()
+                            .GetNames()
                             .OfType<AggregateMember.ValueMember>()
-                            .Where(member => member.IsDisplayName)
                             .Select(m => m.Declared.GetFullPath(since: _aggregate).Join("?."));
 
                         // 参照先SingleViewへのリンク
