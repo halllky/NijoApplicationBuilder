@@ -54,9 +54,10 @@ namespace Nijo.Features {
             var refTargets = rootAndDescendants
                 .SelectMany(entity => entity.GetMembers())
                 .OfType<AggregateMember.Ref>();
-            var refTargetColumns = refTargets
-                .SelectMany(@ref => @ref.MemberAggregate.GetNames())
-                .Except(refTargets.SelectMany(@ref => @ref.MemberAggregate.GetKeys()))
+            var refTargetKeys = refTargets.SelectMany(@ref => @ref.MemberAggregate.GetKeys());
+            var refTargetNames = refTargets.SelectMany(@ref => @ref.MemberAggregate.GetNames());
+             var refTargetColumns = refTargetNames
+                .Except(refTargetKeys)
                 .OfType<AggregateMember.ValueMember>()
                 .Select(member => member.GetDbColumn());
 
