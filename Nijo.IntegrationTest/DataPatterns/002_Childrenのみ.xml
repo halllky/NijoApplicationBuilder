@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <自動テストで作成されたプロジェクト>
-  <親集約 is="master-data">
+  <親集約 is="write-model">
     <親集約ID is="id" />
     <親集約名 is="name" />
     <子集約 is="array">

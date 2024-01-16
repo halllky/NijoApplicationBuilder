@@ -96,7 +96,7 @@ const createData = () => [
   { data: { id: 'x7d84a035c6db88d0185b62a822e5831f', label: 'Integer', parent: 'x75b0bc186388f5a7500d189475dafa94' } },
   { data: { id: 'x7fbe25f6e633d56d237589c71b5d4edd', label: 'VariationSwitch', parent: 'x75b0bc186388f5a7500d189475dafa94' } },
   { data: { id: 'x874220918c06db57f23ff8a8ee75a3f4', label: 'GeneratedProjectDebugger', parent: 'xe2009418a7401e5eab3ee692d5cbe58a' } },
-  { data: { id: 'x87ee4483c4f08737fe24837e3d106474', label: 'MasterDataFeature', parent: 'xf1c79ce4d23b341f30a90e400bd3dc54' } },
+  { data: { id: 'x87ee4483c4f08737fe24837e3d106474', label: 'WriteModelFeature', parent: 'xf1c79ce4d23b341f30a90e400bd3dc54' } },
   { data: { id: 'x88eb38922efea0b859d16fb9f7a7a0cc', label: 'Controller', parent: 'x959d851488f01da28073d623c5421bb7' } },
   { data: { id: 'x8985b35e6bd6da0fa8ed2dfaf965adb6', label: 'DbContextClass', parent: 'x114bd953d0482f6e9dc52792cd3f7054' } },
   { data: { id: 'x8a29a8e2e5d62e9e1e04df8d6a4064cb', label: 'SingleView', parent: 'x959d851488f01da28073d623c5421bb7' } },

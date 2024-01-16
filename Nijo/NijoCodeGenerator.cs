@@ -16,6 +16,7 @@ using System.Xml.Linq;
 using Microsoft.VisualBasic;
 using Nijo.Util.CodeGenerating;
 using Nijo.Features;
+using Nijo.Features.WriteModel;
 
 namespace Nijo {
     public sealed class NijoCodeGenerator {
@@ -133,7 +134,7 @@ namespace Nijo {
             var aggregateFeatures = features
                 .OfType<NijoFeatureBaseByAggregate>()
                 .ToArray();
-            var defaultFeature = aggregateFeatures.Single(f => f is MasterDataFeature);
+            var defaultFeature = aggregateFeatures.Single(f => f is WriteModel);
             var handlers = Handlers
                 .GetAll()
                 .ToDictionary(kv => kv.Key, kv => aggregateFeatures.Single(f => f.GetType() == kv.Value));
@@ -142,7 +143,7 @@ namespace Nijo {
                     && handlers.TryGetValue(rootAggregate.Item.Options.Handler, out var feature)) {
                     feature.GenerateCode(ctx, rootAggregate);
                 } else {
-                    // 特に指定の無い集約はMasterData扱い
+                    // 特に指定の無い集約はWriteModel扱い
                     defaultFeature.GenerateCode(ctx, rootAggregate);
                 }
             }
@@ -175,12 +176,12 @@ namespace Nijo {
             }
         }
         internal static class Handlers {
-            internal static KeyValuePair<string, Type> MasterData => KeyValuePair.Create("master-data", typeof(MasterDataFeature));
+            internal static KeyValuePair<string, Type> WriteModel => KeyValuePair.Create("write-model", typeof(WriteModel));
             internal static KeyValuePair<string, Type> View => KeyValuePair.Create("view", typeof(AggregateSearchFeature));
             internal static KeyValuePair<string, Type> Command => KeyValuePair.Create("command", typeof(CommandFeature));
 
             internal static IEnumerable<KeyValuePair<string, Type>> GetAll() {
-                yield return MasterData;
+                yield return WriteModel;
                 yield return View;
                 yield return Command;
             }

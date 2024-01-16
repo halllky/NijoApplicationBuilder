@@ -2,7 +2,7 @@
 
 <自動テストで作成されたプロジェクト>
 
-  <アクター is="master-data">
+  <アクター is="write-model">
     <アクターID is="uuid" />
     <アクター名 is="name" />
     <種別 is="variation">
@@ -14,7 +14,7 @@
     </種別>
   </アクター>
 
-  <ユースケース is="master-data">
+  <ユースケース is="write-model">
     <ユースケースID is="uuid" />
     <概要 is="sentence name" />
     <主体 is="ref-to:アクター" />
@@ -24,7 +24,7 @@
     </関連機能>
   </ユースケース>
 
-  <機能 is="master-data">
+  <機能 is="write-model">
     <機能ID is="uuid" />
     <機能名 is="name" />
     <参照更新の別 is="E_参照更新" />

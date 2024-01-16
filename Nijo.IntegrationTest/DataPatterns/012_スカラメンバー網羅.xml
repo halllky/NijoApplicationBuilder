@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <自動テストで作成されたプロジェクト>
-  <親集約 is="master-data">
+  <親集約 is="write-model">
     <!--ID-->
     <ID is="uuid" />
 
@@ -55,7 +55,7 @@
     <選択肢3 />
   </MyEnum>
 
-  <参照先 is="master-data">
+  <参照先 is="write-model">
     <参照先ID is="uuid" />
     <Name is="name" />
   </参照先>

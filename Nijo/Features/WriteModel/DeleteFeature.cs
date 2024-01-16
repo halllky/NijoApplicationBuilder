@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Architecture.WebServer;
 
-namespace Nijo.Features.Repository {
+namespace Nijo.Features.WriteModel {
     internal class DeleteFeature {
         internal DeleteFeature(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
