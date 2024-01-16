@@ -175,8 +175,14 @@ namespace Nijo.Core {
 
             internal abstract IReadOnlyMemberOptions Options { get; }
 
-            internal sealed override string MemberName => Inherits?.Member.MemberName ?? Options.MemberName;
-
+            private string? _membername;
+            internal sealed override string MemberName {
+                get {
+                    return _membername ??= Inherits == null
+                        ? Options.MemberName
+                        : $"{Inherits.Relation.RelationName}_{Inherits.Member.MemberName}";
+                }
+            }
             internal sealed override GraphNode<Aggregate> DeclaringAggregate => Inherits?.Member.DeclaringAggregate ?? Owner;
             internal sealed override string CSharpTypeName => Options.MemberType.GetCSharpTypeName();
             internal sealed override string TypeScriptTypename => Options.MemberType.GetTypeScriptTypeName();

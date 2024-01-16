@@ -52,14 +52,16 @@ namespace Nijo.Features.Repository {
             var appSrv = new ApplicationService();
             const string LIKE = "like";
 
+            // キーワード検索は子孫集約のDbEntityが基点になる
+            var entry = _aggregate.AsEntry();
+
             var keyName = new RefTargetKeyName(_aggregate);
-            var filterColumns = _aggregate
+            var filterColumns = entry
                 .GetKeys()
-                .Union(_aggregate.GetNames())
+                .Union(entry.GetNames())
                 .OfType<AggregateMember.ValueMember>()
-                .Select(m => m.Declared.GetFullPath(_aggregate).Join(".") + (m.CSharpTypeName == "string" ? "" : ".ToString()"));
-            var orderColumn = _aggregate
-                .AsEntry() // OrderByはSelect後のオブジェクトを子集約起点で辿るので
+                .Select(m => m.Declared.GetFullPath().Join(".") + (m.CSharpTypeName == "string" ? "" : ".ToString()"));
+            var orderColumn = entry
                 .GetKeys()
                 .OfType<AggregateMember.ValueMember>()
                 .Select(m => m.Declared.GetFullPath().Join("."))
