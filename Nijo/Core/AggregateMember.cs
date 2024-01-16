@@ -166,16 +166,16 @@ namespace Nijo.Core {
             }
         }
         internal abstract class ValueMember : AggregateMemberBase {
-            protected ValueMember(ValueMember? original, ValueMember? declared) {
-                Original = original;
+            protected ValueMember(ValueMember.InheritInfo? inherits, ValueMember? declared) {
+                Inherits = inherits;
                 Declared = declared ?? this;
             }
 
             internal abstract IReadOnlyMemberOptions Options { get; }
 
-            internal sealed override string MemberName => Original == null ? Options.MemberName : Original.MemberName;
+            internal sealed override string MemberName => Inherits?.Member.MemberName ?? Options.MemberName;
 
-            internal sealed override GraphNode<Aggregate> DeclaringAggregate => Original?.DeclaringAggregate ?? Owner;
+            internal sealed override GraphNode<Aggregate> DeclaringAggregate => Inherits?.Member.DeclaringAggregate ?? Owner;
             internal sealed override string CSharpTypeName => Options.MemberType.GetCSharpTypeName();
             internal sealed override string TypeScriptTypename => Options.MemberType.GetTypeScriptTypeName();
 
@@ -184,11 +184,9 @@ namespace Nijo.Core {
                                         || (Owner.Item.UseKeyInsteadOfName && Options.IsKey); // 集約中に名前が無い場合はキーを名前のかわりに使う
 
             /// <summary>
-            /// このメンバーが親や参照先のメンバーを継承したものである場合、
-            /// <see cref="AggregateMemberBase.Owner"/> の1つ隣の集約のメンバー。
-            /// 継承されたものでない場合はnull。
+            /// このメンバーが親や参照先のメンバーを継承したものである場合はこのプロパティに値が入る。
             /// </summary>
-            internal ValueMember? Original { get; }
+            internal InheritInfo? Inherits { get; }
             /// <summary>
             /// このメンバーが親や参照先のメンバーを継承したものである場合、その一番大元のメンバー。
             /// </summary>
@@ -203,7 +201,13 @@ namespace Nijo.Core {
                     }),
                 };
             }
+
+            internal class InheritInfo {
+                internal required GraphEdge<Aggregate> Relation { get; init; }
+                internal required ValueMember Member { get; init; }
+            }
         }
+
         internal abstract class RelationMember : AggregateMemberBase {
             internal abstract GraphEdge<Aggregate> Relation { get; }
             internal abstract GraphNode<Aggregate> MemberAggregate { get; }
@@ -227,8 +231,8 @@ namespace Nijo.Core {
                 Owner = aggregateMemberNode.Source!.Initial.As<Aggregate>();
                 Options = GraphNode.Item;
             }
-            internal Schalar(GraphNode<Aggregate> owner, Schalar original, ValueMember declared, IReadOnlyMemberOptions options) : base(original, declared) {
-                GraphNode = original.GraphNode;
+            internal Schalar(GraphNode<Aggregate> owner, InheritInfo inherits, ValueMember declared, IReadOnlyMemberOptions options) : base(inherits, declared) {
+                GraphNode = ((Schalar)inherits.Member).GraphNode;
                 Owner = owner;
                 Options = options;
             }
@@ -272,9 +276,9 @@ namespace Nijo.Core {
                 };
                 Owner = group.Owner;
             }
-            internal Variation(GraphNode<Aggregate> owner, Variation original, ValueMember declared) : base(original, declared) {
-                VariationGroup = original.VariationGroup;
-                Options = original.Options;
+            internal Variation(GraphNode<Aggregate> owner, InheritInfo inherits, ValueMember declared) : base(inherits, declared) {
+                VariationGroup = ((Variation)inherits.Member).VariationGroup;
+                Options = inherits.Member.Options;
                 Owner = owner;
             }
 
@@ -322,7 +326,7 @@ namespace Nijo.Core {
                     if (fk is Schalar schalar) {
                         yield return new Schalar(
                             Relation.Initial,
-                            schalar,
+                            new ValueMember.InheritInfo { Relation = Relation, Member = schalar, },
                             schalar.Declared,
                             schalar.GraphNode.Item.Clone(opt => {
                                 opt.IsKey = Relation.IsPrimary();
@@ -331,7 +335,10 @@ namespace Nijo.Core {
                             }));
 
                     } else if (fk is Variation variation) {
-                        yield return new Variation(Relation.Initial, variation, variation.Declared);
+                        yield return new Variation(
+                            Relation.Initial,
+                            new ValueMember.InheritInfo { Relation = Relation, Member = variation },
+                            variation.Declared);
                     }
                 }
             }
@@ -353,7 +360,7 @@ namespace Nijo.Core {
                     if (parentPk is Schalar schalar) {
                         yield return new Schalar(
                             Relation.Terminal,
-                            schalar,
+                            new ValueMember.InheritInfo { Relation = Relation, Member = schalar },
                             schalar.Declared,
                             schalar.GraphNode.Item.Clone(opt => {
                                 opt.IsKey = true;
@@ -362,7 +369,10 @@ namespace Nijo.Core {
                             }));
 
                     } else if (parentPk is Variation variation) {
-                        yield return new Variation(Relation.Initial, variation, variation.Declared);
+                        yield return new Variation(
+                            Relation.Initial,
+                            new ValueMember.InheritInfo { Relation = Relation, Member = variation },
+                            variation.Declared);
                     }
                 }
             }
