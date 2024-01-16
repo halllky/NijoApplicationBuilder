@@ -86,9 +86,9 @@ namespace Nijo.Core {
                     "メンバー型",
                     member => member.GetType().Name
                 ), (
-                    nameof(AggregateMember.ValueMember.Original),
+                    nameof(AggregateMember.ValueMember.Inherits),
                     member => member is AggregateMember.ValueMember vm
-                        ? (vm.Original?.MemberName ?? "null")
+                        ? (vm.Inherits?.Member.MemberName ?? "null")
                         : "-"
                 ), (
                     nameof(AggregateMember.AggregateMemberBase.DeclaringAggregate),

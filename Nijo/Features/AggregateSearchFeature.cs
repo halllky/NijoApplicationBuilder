@@ -56,19 +56,32 @@ namespace Nijo.Features {
                 .OfType<AggregateMember.Ref>();
             var refTargetKeys = refTargets.SelectMany(@ref => @ref.MemberAggregate.GetKeys());
             var refTargetNames = refTargets.SelectMany(@ref => @ref.MemberAggregate.GetNames());
-             var refTargetColumns = refTargetNames
-                .Except(refTargetKeys)
-                .OfType<AggregateMember.ValueMember>()
-                .Select(member => member.GetDbColumn());
+            var refTargetColumns = refTargetNames
+               .Except(refTargetKeys)
+               .OfType<AggregateMember.ValueMember>()
+               .Select(member => member.GetDbColumn());
+
+            // 名称重複の解決
+            var nameCount = descendantColumns
+                .Concat(refTargetColumns)
+                .GroupBy(col => col.Options.MemberName)
+                .ToDictionary(g => g.Key, _ => 0);
 
             var fields = descendantColumns
                 .Concat(refTargetColumns)
                 .ToDictionary(
                     col => col,
-                    col => new MultiViewField {
-                        MemberType = col.Options.MemberType,
-                        VisibleInGui = !col.Options.InvisibleInGui,
-                        PhysicalName = col.GetFullPath().Join("_"),
+                    col => {
+                        // 名称重複の解決
+                        var ix = nameCount[col.Options.MemberName];
+                        var suffix = ix == 0 ? string.Empty : ix.ToString();
+                        nameCount[col.Options.MemberName] = ix + 1;
+
+                        return new MultiViewField {
+                            MemberType = col.Options.MemberType,
+                            VisibleInGui = !col.Options.InvisibleInGui,
+                            PhysicalName = col.Options.MemberName + suffix,
+                        };
                     });
             return fields;
         }

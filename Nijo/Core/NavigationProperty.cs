@@ -69,7 +69,7 @@ namespace Nijo.Core {
                         || _relation.Terminal.IsChildrenMember()
                         || _relation.Terminal.IsVariationMember())
                         && _relation.Terminal.GetParent() == _relation) {
-                        return PARENT;
+                        return AggregateMember.PARENT_PROPNAME;
 
                     } else if (_relation.Terminal == Owner
                             && _relation.IsRef()) {
@@ -82,24 +82,22 @@ namespace Nijo.Core {
             }
             internal bool OppositeIsMany {
                 get {
-                    if (_relation.Terminal == Owner
-                        && _relation.IsRef()) {
+                    if (_relation.Terminal == Owner && _relation.IsRef()) {
 
-                        if (!_relation.IsPrimary()) return true;
-
-                        // このRef以外の主キーがあるかどうか（複合キーかどうか）を調べている
-                        var relationAsRef = Opposite
-                            .GetKeys()
-                            .Single(key => key is AggregateMember.Ref @ref
-                                        && @ref.Relation == _relation)
-                            as AggregateMember.Ref;
-                        if (Opposite.GetKeys().All(key => key == relationAsRef
-                                                       || key is AggregateMember.ValueMember vm
-                                                       && vm.Original?.Owner == relationAsRef)) {
-                            return false;
+                        if (!_relation.IsPrimary()) {
+                            return true;
                         }
 
-                        return true;
+                        // このRef以外の主キーがある（=複合キーである）ならば1対多
+                        var keyGroups = Opposite
+                            .GetKeys()
+                            .OfType<AggregateMember.ValueMember>()
+                            .GroupBy(vm => vm.Inherits?.Relation);
+                        if (keyGroups.Any(group => group.Key != _relation)) {
+                            return true;
+                        }
+
+                        return false;
 
                     } else if (_relation.Terminal.IsChildrenMember()
                             && _relation.Terminal.GetParent() == _relation
@@ -130,7 +128,7 @@ namespace Nijo.Core {
                     return _relation.Terminal
                         .GetKeys()
                         .OfType<AggregateMember.ValueMember>()
-                        .Where(key => key.Original?.Owner == parent)
+                        .Where(key => key.Inherits?.Relation == parent)
                         .Select(parentPk => parentPk.GetDbColumn());
 
                 } else if (_relation.Initial == Owner
@@ -168,7 +166,5 @@ namespace Nijo.Core {
         protected override IEnumerable<object?> ValueObjectIdentifiers() {
             yield return _graphEdge;
         }
-
-        internal const string PARENT = "Parent";
     }
 }

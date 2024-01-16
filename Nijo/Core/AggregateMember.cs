@@ -138,6 +138,8 @@ namespace Nijo.Core {
 
 
         #region MEMBER BASE
+        internal const string PARENT_PROPNAME = "Parent";
+
         internal abstract class AggregateMemberBase : ValueObject {
             internal abstract GraphNode<Aggregate> Owner { get; }
             internal abstract GraphNode<Aggregate> DeclaringAggregate { get; }
@@ -152,30 +154,36 @@ namespace Nijo.Core {
                 if (until != null) path = path.Until(until);
 
                 foreach (var edge in path) {
-                    yield return edge.RelationName;
+                    if (edge.Source == edge.Terminal
+                        && edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, out var type)
+                        && (string)type == DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD) {
+                        yield return PARENT_PROPNAME; // 子から親に向かって辿る場合
+                    } else {
+                        yield return edge.RelationName;
+                    }
                 }
                 yield return MemberName;
             }
             public override string ToString() {
                 return GetFullPath().Join(".");
             }
-            protected override IEnumerable<object?> ValueObjectIdentifiers() {
-                yield return Owner;
-                yield return DeclaringAggregate;
-                yield return MemberName;
-            }
         }
         internal abstract class ValueMember : AggregateMemberBase {
-            protected ValueMember(ValueMember? original, ValueMember? declared) {
-                Original = original;
-                Declared = declared ?? this;
+            protected ValueMember(InheritInfo? inherits) {
+                Inherits = inherits;
             }
 
             internal abstract IReadOnlyMemberOptions Options { get; }
 
-            internal sealed override string MemberName => Original == null ? Options.MemberName : Original.MemberName;
-
-            internal sealed override GraphNode<Aggregate> DeclaringAggregate => Original?.DeclaringAggregate ?? Owner;
+            private string? _membername;
+            internal sealed override string MemberName {
+                get {
+                    return _membername ??= Inherits == null
+                        ? Options.MemberName
+                        : $"{Inherits.Relation.RelationName}_{Inherits.Member.MemberName}";
+                }
+            }
+            internal sealed override GraphNode<Aggregate> DeclaringAggregate => Inherits?.Member.DeclaringAggregate ?? Owner;
             internal sealed override string CSharpTypeName => Options.MemberType.GetCSharpTypeName();
             internal sealed override string TypeScriptTypename => Options.MemberType.GetTypeScriptTypeName();
 
@@ -184,15 +192,13 @@ namespace Nijo.Core {
                                         || (Owner.Item.UseKeyInsteadOfName && Options.IsKey); // 集約中に名前が無い場合はキーを名前のかわりに使う
 
             /// <summary>
-            /// このメンバーが親や参照先のメンバーを継承したものである場合、
-            /// <see cref="AggregateMemberBase.Owner"/> の1つ隣の集約のメンバー。
-            /// 継承されたものでない場合はnull。
+            /// このメンバーが親や参照先のメンバーを継承したものである場合はこのプロパティに値が入る。
             /// </summary>
-            internal ValueMember? Original { get; }
+            internal InheritInfo? Inherits { get; }
             /// <summary>
             /// このメンバーが親や参照先のメンバーを継承したものである場合、その一番大元のメンバー。
             /// </summary>
-            internal ValueMember Declared { get; }
+            internal ValueMember Declared => Inherits?.Member.Declared ?? this;
 
 
             internal virtual DbColumn GetDbColumn() {
@@ -203,7 +209,13 @@ namespace Nijo.Core {
                     }),
                 };
             }
+
+            internal class InheritInfo {
+                internal required GraphEdge<Aggregate> Relation { get; init; }
+                internal required ValueMember Member { get; init; }
+            }
         }
+
         internal abstract class RelationMember : AggregateMemberBase {
             internal abstract GraphEdge<Aggregate> Relation { get; }
             internal abstract GraphNode<Aggregate> MemberAggregate { get; }
@@ -216,19 +228,24 @@ namespace Nijo.Core {
             internal NavigationProperty GetNavigationProperty() {
                 return new NavigationProperty(Relation);
             }
+
+            protected override IEnumerable<object?> ValueObjectIdentifiers() {
+                yield return Owner;
+                yield return Relation;
+            }
         }
         #endregion MEMBER BASE
 
 
         #region MEMBER IMPLEMEMT
         internal class Schalar : ValueMember {
-            internal Schalar(GraphNode<AggregateMemberNode> aggregateMemberNode) : base(null, null) {
+            internal Schalar(GraphNode<AggregateMemberNode> aggregateMemberNode) : base(null) {
                 GraphNode = aggregateMemberNode;
                 Owner = aggregateMemberNode.Source!.Initial.As<Aggregate>();
                 Options = GraphNode.Item;
             }
-            internal Schalar(GraphNode<Aggregate> owner, Schalar original, ValueMember declared, IReadOnlyMemberOptions options) : base(original, declared) {
-                GraphNode = original.GraphNode;
+            internal Schalar(GraphNode<Aggregate> owner, InheritInfo inherits, IReadOnlyMemberOptions options) : base(inherits) {
+                GraphNode = ((Schalar)inherits.Member).GraphNode;
                 Owner = owner;
                 Options = options;
             }
@@ -237,6 +254,13 @@ namespace Nijo.Core {
 
             internal override IReadOnlyMemberOptions Options { get; }
             internal override decimal Order => GraphNode.Source!.GetMemberOrder();
+
+            protected override IEnumerable<object?> ValueObjectIdentifiers() {
+                yield return Owner;
+                yield return GraphNode;
+                yield return Inherits?.Relation;
+                yield return Inherits?.Member;
+            }
         }
 
         internal class Children : RelationMember {
@@ -260,7 +284,7 @@ namespace Nijo.Core {
         }
 
         internal class Variation : ValueMember {
-            internal Variation(VariationGroup<Aggregate> group) : base(null, null) {
+            internal Variation(VariationGroup<Aggregate> group) : base(null) {
                 VariationGroup = group;
                 Options = new MemberOptions {
                     MemberName = group.GroupName,
@@ -272,9 +296,9 @@ namespace Nijo.Core {
                 };
                 Owner = group.Owner;
             }
-            internal Variation(GraphNode<Aggregate> owner, Variation original, ValueMember declared) : base(original, declared) {
-                VariationGroup = original.VariationGroup;
-                Options = original.Options;
+            internal Variation(GraphNode<Aggregate> owner, InheritInfo inherits) : base(inherits) {
+                VariationGroup = ((Variation)inherits.Member).VariationGroup;
+                Options = inherits.Member.Options;
                 Owner = owner;
             }
 
@@ -287,6 +311,13 @@ namespace Nijo.Core {
                 foreach (var kv in VariationGroup.VariationAggregates) {
                     yield return new VariationItem(this, kv.Key, kv.Value);
                 }
+            }
+
+            protected override IEnumerable<object?> ValueObjectIdentifiers() {
+                yield return Owner;
+                yield return VariationGroup.GroupName;
+                yield return Inherits?.Relation;
+                yield return Inherits?.Member;
             }
         }
 
@@ -322,8 +353,7 @@ namespace Nijo.Core {
                     if (fk is Schalar schalar) {
                         yield return new Schalar(
                             Relation.Initial,
-                            schalar,
-                            schalar.Declared,
+                            new ValueMember.InheritInfo { Relation = Relation, Member = schalar, },
                             schalar.GraphNode.Item.Clone(opt => {
                                 opt.IsKey = Relation.IsPrimary();
                                 opt.IsRequired = Relation.IsPrimary() || Relation.IsRequired();
@@ -331,7 +361,9 @@ namespace Nijo.Core {
                             }));
 
                     } else if (fk is Variation variation) {
-                        yield return new Variation(Relation.Initial, variation, variation.Declared);
+                        yield return new Variation(
+                            Relation.Initial,
+                            new ValueMember.InheritInfo { Relation = Relation, Member = variation });
                     }
                 }
             }
@@ -344,6 +376,7 @@ namespace Nijo.Core {
             internal override GraphEdge<Aggregate> Relation { get; }
             internal override GraphNode<Aggregate> MemberAggregate => Relation.Initial;
             internal override GraphNode<Aggregate> Owner { get; }
+            internal override string MemberName => PARENT_PROPNAME;
 
             internal override string CSharpTypeName => new RefTargetKeyName(Relation.Initial).CSharpClassName;
             internal override string TypeScriptTypename => new RefTargetKeyName(Relation.Initial).TypeScriptTypeName;
@@ -353,8 +386,7 @@ namespace Nijo.Core {
                     if (parentPk is Schalar schalar) {
                         yield return new Schalar(
                             Relation.Terminal,
-                            schalar,
-                            schalar.Declared,
+                            new ValueMember.InheritInfo { Relation = Relation, Member = schalar },
                             schalar.GraphNode.Item.Clone(opt => {
                                 opt.IsKey = true;
                                 opt.IsRequired = true;
@@ -362,7 +394,9 @@ namespace Nijo.Core {
                             }));
 
                     } else if (parentPk is Variation variation) {
-                        yield return new Variation(Relation.Initial, variation, variation.Declared);
+                        yield return new Variation(
+                            Relation.Terminal,
+                            new ValueMember.InheritInfo { Relation = Relation, Member = variation });
                     }
                 }
             }
