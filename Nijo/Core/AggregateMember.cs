@@ -366,7 +366,7 @@ namespace Nijo.Core {
 
                     } else if (parentPk is Variation variation) {
                         yield return new Variation(
-                            Relation.Initial,
+                            Relation.Terminal,
                             new ValueMember.InheritInfo { Relation = Relation, Member = variation });
                     }
                 }
