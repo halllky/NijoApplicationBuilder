@@ -69,7 +69,7 @@ namespace Nijo.Core {
                         || _relation.Terminal.IsChildrenMember()
                         || _relation.Terminal.IsVariationMember())
                         && _relation.Terminal.GetParent() == _relation) {
-                        return PARENT;
+                        return AggregateMember.PARENT_PROPNAME;
 
                     } else if (_relation.Terminal == Owner
                             && _relation.IsRef()) {
@@ -166,7 +166,5 @@ namespace Nijo.Core {
         protected override IEnumerable<object?> ValueObjectIdentifiers() {
             yield return _graphEdge;
         }
-
-        internal const string PARENT = "Parent";
     }
 }

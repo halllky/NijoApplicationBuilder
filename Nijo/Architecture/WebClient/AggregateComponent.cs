@@ -422,12 +422,12 @@ namespace Nijo.Architecture.WebClient {
                     .GetRoot()
                     .GetKeys()
                     .OfType<AggregateMember.ValueMember>()
-                    .Select(m => m.GetFullPath().Join("."));
+                    .Select(m => m.Declared.GetFullPath().Join("."));
 
                 var names = refProperty.MemberAggregate
                     .GetNames()
                     .OfType<AggregateMember.ValueMember>()
-                    .Select(m => m.GetFullPath().Join("."));
+                    .Select(m => m.Declared.GetFullPath().Join("."));
 
                 return $$"""
                     <VForm.Row label="{{refProperty.MemberName}}">

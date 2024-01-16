@@ -138,6 +138,8 @@ namespace Nijo.Core {
 
 
         #region MEMBER BASE
+        internal const string PARENT_PROPNAME = "Parent";
+
         internal abstract class AggregateMemberBase : ValueObject {
             internal abstract GraphNode<Aggregate> Owner { get; }
             internal abstract GraphNode<Aggregate> DeclaringAggregate { get; }
@@ -152,7 +154,13 @@ namespace Nijo.Core {
                 if (until != null) path = path.Until(until);
 
                 foreach (var edge in path) {
-                    yield return edge.RelationName;
+                    if (edge.Source == edge.Terminal
+                        && edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, out var type)
+                        && (string)type == DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD) {
+                        yield return PARENT_PROPNAME; // 子から親に向かって辿る場合
+                    } else {
+                        yield return edge.RelationName;
+                    }
                 }
                 yield return MemberName;
             }
@@ -362,6 +370,7 @@ namespace Nijo.Core {
             internal override GraphEdge<Aggregate> Relation { get; }
             internal override GraphNode<Aggregate> MemberAggregate => Relation.Initial;
             internal override GraphNode<Aggregate> Owner { get; }
+            internal override string MemberName => PARENT_PROPNAME;
 
             internal override string CSharpTypeName => new RefTargetKeyName(Relation.Initial).CSharpClassName;
             internal override string TypeScriptTypename => new RefTargetKeyName(Relation.Initial).TypeScriptTypeName;
