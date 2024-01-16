@@ -144,7 +144,7 @@ namespace Nijo.Architecture.WebClient {
                     """)}}
 
                       return (
-                        <VForm.Section table label="{{_aggregate.GetParent()!.RelationName}}">
+                        <VForm.Section table label="{{_aggregate.GetParent()?.RelationName}}">
                           <VForm.Row fullWidth>
                             <Layout.TabGroup
                               items={fields}
@@ -204,26 +204,37 @@ namespace Nijo.Architecture.WebClient {
                         };
                     } else if (m is AggregateMember.Ref rm) {
                         var keyName = new RefTargetKeyName(rm.MemberAggregate);
-                        var singleView = new SingleView(rm.MemberAggregate, SingleView.E_Type.View);
                         var combobox = new ComboBox(rm.MemberAggregate);
                         var keys = rm.MemberAggregate
                             .GetKeys()
                             .OfType<AggregateMember.ValueMember>()
-                            .Select(m => m.GetFullPath(since: _aggregate).Join("?."));
-                        var names = rm.MemberAggregate
-                            .GetMembers()
+                            .Select(m => m.Declared.GetFullPath(since: _aggregate).Join("?."));
+                        var keysForValueFormatter = rm.MemberAggregate
+                            .GetKeys()
                             .OfType<AggregateMember.ValueMember>()
-                            .Where(member => member.IsDisplayName)
-                            .Select(m => m.GetFullPath(since: _aggregate).Join("?."));
+                            .Select(m => m.Declared.GetFullPath(since: _aggregate).Skip(1).Join("?."));
+                        var names = rm.MemberAggregate
+                            .GetNames()
+                            .OfType<AggregateMember.ValueMember>()
+                            .Select(m => m.Declared.GetFullPath(since: _aggregate).Join("?."));
+
+                        // 参照先SingleViewへのリンク
+                        var singleView = new SingleView(rm.MemberAggregate.GetRoot(), SingleView.E_Type.View);
+                        var keysOfRoot = rm.MemberAggregate
+                            .GetRoot()
+                            .GetKeys()
+                            .OfType<AggregateMember.ValueMember>()
+                            .Select(m => m.Declared.GetFullPath(since: _aggregate).Join("?."));
+
                         return new {
                             field = m.MemberName,
                             editable,
-                            valueFormatter = $"({{ value }}) => ({keyName.GetNameMembers().Select(m => $"value?.{m.MemberName}").Join(" + ")}) || ''",
+                            valueFormatter = $"({{ value }}) => ({keysForValueFormatter.Select(path => $"value?.{path}").Join(" + ")}) || ''",
                             hide = false,
                             cell = _mode == SingleView.E_Type.View
                                 ? $$"""
                                 cellRenderer: ({ data }: { data: typeof fields[0] }) => {
-                                  const singleViewUrl = `{{singleView.GetUrlStringForReact(keys.Select(k => $"data.{k}"))}}`
+                                  const singleViewUrl = `{{singleView.GetUrlStringForReact(keysOfRoot.Select(k => $"data.{k}"))}}`
                                   return (
                                     <Link to={singleViewUrl} className="text-link">
                                 {{names.SelectTextTemplate(n => $$"""
@@ -295,7 +306,7 @@ namespace Nijo.Architecture.WebClient {
                         <VForm.Section
                           table
                           label={<>
-                            {{_aggregate.GetParent()!.RelationName}}
+                            {{_aggregate.GetParent()?.RelationName}}
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
                             <Input.IconButton
                               underline
@@ -406,15 +417,22 @@ namespace Nijo.Architecture.WebClient {
         private string RenderProperty(AggregateMember.Ref refProperty) {
             if (_mode == SingleView.E_Type.View) {
                 // リンク
-                var singleView = new SingleView(refProperty.MemberAggregate, SingleView.E_Type.View);
-                var keys = refProperty.MemberAggregate
+                var singleView = new SingleView(refProperty.MemberAggregate.GetRoot(), SingleView.E_Type.View);
+                var linkKeys = refProperty.MemberAggregate
+                    .GetRoot()
                     .GetKeys()
                     .OfType<AggregateMember.ValueMember>()
                     .Select(m => m.GetFullPath().Join("."));
+
+                var names = refProperty.MemberAggregate
+                    .GetNames()
+                    .OfType<AggregateMember.ValueMember>()
+                    .Select(m => m.GetFullPath().Join("."));
+
                 return $$"""
                     <VForm.Row label="{{refProperty.MemberName}}">
-                      <Link className="text-link" to={`{{singleView.GetUrlStringForReact(keys.Select(k => $"getValues('{k}')"))}}`}>
-                    {{keys.SelectTextTemplate(k => $$"""
+                      <Link className="text-link" to={`{{singleView.GetUrlStringForReact(linkKeys.Select(k => $"getValues('{k}')"))}}`}>
+                    {{names.SelectTextTemplate(k => $$"""
                         {getValues('{{k}}')}
                     """)}}
                       </Link>

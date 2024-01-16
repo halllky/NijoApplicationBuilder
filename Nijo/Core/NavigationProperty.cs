@@ -95,7 +95,7 @@ namespace Nijo.Core {
                             as AggregateMember.Ref;
                         if (Opposite.GetKeys().All(key => key == relationAsRef
                                                        || key is AggregateMember.ValueMember vm
-                                                       && vm.ForeignKeyOf == relationAsRef)) {
+                                                       && vm.Original?.Owner == relationAsRef)) {
                             return false;
                         }
 
@@ -120,16 +120,17 @@ namespace Nijo.Core {
                 : null;
 
             internal IEnumerable<DbColumn> GetForeignKeys() {
+                var parent = _relation.Terminal.GetParent();
                 if (_relation.Terminal == Owner
+                    && parent == _relation
                     && (_relation.Terminal.IsChildMember()
                     || _relation.Terminal.IsChildrenMember()
-                    || _relation.Terminal.IsVariationMember())
-                    && _relation.Terminal.GetParent() == _relation) {
+                    || _relation.Terminal.IsVariationMember())) {
 
                     return _relation.Terminal
                         .GetKeys()
                         .OfType<AggregateMember.ValueMember>()
-                        .Where(key => key.IsKeyOfAncestor)
+                        .Where(key => key.Original?.Owner == parent)
                         .Select(parentPk => parentPk.GetDbColumn());
 
                 } else if (_relation.Initial == Owner

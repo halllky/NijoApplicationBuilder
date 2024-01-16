@@ -20,6 +20,7 @@ namespace Nijo.Architecture.WebClient {
         }
 
         internal SingleView(GraphNode<Aggregate> aggregate, E_Type type) {
+            if (!aggregate.IsRoot()) throw new ArgumentException("Descendant aggregate cannot have SingleView.");
             _aggregate = aggregate;
             _type = type;
         }
@@ -91,6 +92,12 @@ namespace Nijo.Architecture.WebClient {
                     .ToArray();
                 var keysFromUrl = keys
                     .Select(m => $"urlKey{m.MemberName}")
+                    .ToArray();
+
+                var names = _aggregate
+                    .GetNames()
+                    .OfType<AggregateMember.ValueMember>()
+                    .Select(vm => vm.Declared.GetFullPath().Join("?."))
                     .ToArray();
 
                 var maxIndent = _aggregate
@@ -173,7 +180,7 @@ namespace Nijo.Architecture.WebClient {
                         setFetched(true)
                         if (response.ok) {
                           const responseData = response.data as AggregateType.{{_aggregate.Item.TypeScriptTypeName}}
-                          setInstanceName({{keyName.GetNameMembers().Select(m => $"String(responseData.{m.MemberName})").Join(" + ")}})
+                          setInstanceName({{names.Select(path => $"String(responseData.{path})").Join(" + ")}})
 
                           visitObject(responseData, obj => {
                             // 新規データのみ主キーを編集可能にするため、読込データと新規データを区別するためのフラグをつける
@@ -218,7 +225,7 @@ namespace Nijo.Architecture.WebClient {
                       const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
                         const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{controller.CreateCommandApi}}`, data)
                         if (response.ok) {
-                          dispatchMsg(msg => msg.info(`${({{keyName.GetNameMembers().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を作成しました。`))
+                          dispatchMsg(msg => msg.info(`${({{names.Select(path => $"String(response.data.{path})").Join(" + ")}})}を作成しました。`))
                           navigate(`{{GetUrlStringForReact(E_Type.View, keys.Select(m => AggregateDetail.GetPathOf("response.data", _aggregate, m).Join("?.")))}}`)
                         }
                       }, [post, navigate])
@@ -226,7 +233,7 @@ namespace Nijo.Architecture.WebClient {
                       const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
                         const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{controller.UpdateCommandApi}}`, data)
                         if (response.ok) {
-                          dispatchMsg(msg => msg.info(`${({{keyName.GetNameMembers().Select(m => $"String(response.data.{m.MemberName})").Join(" + ")}})}を更新しました。`))
+                          dispatchMsg(msg => msg.info(`${({{names.Select(path => $"String(response.data.{path})").Join(" + ")}})}を更新しました。`))
                           navigate(`{{GetUrlStringForReact(E_Type.View, keysFromUrl)}}`)
                         }
                       }, [post, navigate, {{keysFromUrl.Join(", ")}}])
@@ -275,7 +282,8 @@ namespace Nijo.Architecture.WebClient {
                             .EnumerateThisAndDescendants()
                             .SelectMany(desc => desc.GetMembers())
                             .OfType<AggregateMember.RelationMember>()
-                            .Where(member => member is not AggregateMember.Ref)
+                            .Where(member => member is not AggregateMember.Ref
+                                          && member is not AggregateMember.Parent)
                             .SelectTextTemplate(member => new AggregateComponent(member, _type).Render())}}
                     """;
             },

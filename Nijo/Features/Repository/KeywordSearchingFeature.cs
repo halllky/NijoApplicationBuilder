@@ -53,26 +53,28 @@ namespace Nijo.Features.Repository {
             const string LIKE = "like";
 
             var keyName = new RefTargetKeyName(_aggregate);
-            var filterColumns = keyName
-                .GetMembers()
+            var filterColumns = _aggregate
+                .GetKeys()
+                .Union(_aggregate.GetNames())
                 .OfType<AggregateMember.ValueMember>()
-                .Select(m => m.GetFullPath(_aggregate).Join(".") + (m.CSharpTypeName == "string" ? "" : ".ToString()"));
-            var orderColumn = keyName
-                .GetMembers()
+                .Select(m => m.Declared.GetFullPath(_aggregate).Join(".") + (m.CSharpTypeName == "string" ? "" : ".ToString()"));
+            var orderColumn = _aggregate
+                .AsEntry() // OrderByはSelect後のオブジェクトを子集約起点で辿るので
+                .GetKeys()
                 .OfType<AggregateMember.ValueMember>()
-                .First()
-                .MemberName;
+                .Select(m => m.Declared.GetFullPath().Join("."))
+                .First();
 
             string RenderKeyNameConvertingRecursively(GraphNode<Aggregate> agg) {
                 var keyNameClass = new RefTargetKeyName(agg);
                 return keyNameClass
-                    .GetMembers()
+                    .GetOwnMembers()
                     .Where(m => m.Owner == agg)
                     .SelectTextTemplate(m => m is AggregateMember.ValueMember vm ? $$"""
                         {{m.MemberName}} = e.{{vm.GetDbColumn().GetFullPath(_aggregate.As<IEFCoreEntity>()).Join(".")}},
                         """ : $$"""
-                        {{m.MemberName}} = new {{new RefTargetKeyName(((AggregateMember.Ref)m).MemberAggregate).CSharpClassName}}() {
-                            {{WithIndent(RenderKeyNameConvertingRecursively(((AggregateMember.Ref)m).MemberAggregate), "    ")}}
+                        {{m.MemberName}} = new {{new RefTargetKeyName(((AggregateMember.RelationMember)m).MemberAggregate).CSharpClassName}}() {
+                            {{WithIndent(RenderKeyNameConvertingRecursively(((AggregateMember.RelationMember)m).MemberAggregate), "    ")}}
                         },
                         """);
             }
