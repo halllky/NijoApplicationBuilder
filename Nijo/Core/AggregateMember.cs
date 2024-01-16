@@ -166,9 +166,8 @@ namespace Nijo.Core {
             }
         }
         internal abstract class ValueMember : AggregateMemberBase {
-            protected ValueMember(ValueMember.InheritInfo? inherits, ValueMember? declared) {
+            protected ValueMember(InheritInfo? inherits) {
                 Inherits = inherits;
-                Declared = declared ?? this;
             }
 
             internal abstract IReadOnlyMemberOptions Options { get; }
@@ -190,7 +189,7 @@ namespace Nijo.Core {
             /// <summary>
             /// このメンバーが親や参照先のメンバーを継承したものである場合、その一番大元のメンバー。
             /// </summary>
-            internal ValueMember Declared { get; }
+            internal ValueMember Declared => Inherits?.Member.Declared ?? this;
 
 
             internal virtual DbColumn GetDbColumn() {
@@ -226,12 +225,12 @@ namespace Nijo.Core {
 
         #region MEMBER IMPLEMEMT
         internal class Schalar : ValueMember {
-            internal Schalar(GraphNode<AggregateMemberNode> aggregateMemberNode) : base(null, null) {
+            internal Schalar(GraphNode<AggregateMemberNode> aggregateMemberNode) : base(null) {
                 GraphNode = aggregateMemberNode;
                 Owner = aggregateMemberNode.Source!.Initial.As<Aggregate>();
                 Options = GraphNode.Item;
             }
-            internal Schalar(GraphNode<Aggregate> owner, InheritInfo inherits, ValueMember declared, IReadOnlyMemberOptions options) : base(inherits, declared) {
+            internal Schalar(GraphNode<Aggregate> owner, InheritInfo inherits, IReadOnlyMemberOptions options) : base(inherits) {
                 GraphNode = ((Schalar)inherits.Member).GraphNode;
                 Owner = owner;
                 Options = options;
@@ -264,7 +263,7 @@ namespace Nijo.Core {
         }
 
         internal class Variation : ValueMember {
-            internal Variation(VariationGroup<Aggregate> group) : base(null, null) {
+            internal Variation(VariationGroup<Aggregate> group) : base(null) {
                 VariationGroup = group;
                 Options = new MemberOptions {
                     MemberName = group.GroupName,
@@ -276,7 +275,7 @@ namespace Nijo.Core {
                 };
                 Owner = group.Owner;
             }
-            internal Variation(GraphNode<Aggregate> owner, InheritInfo inherits, ValueMember declared) : base(inherits, declared) {
+            internal Variation(GraphNode<Aggregate> owner, InheritInfo inherits) : base(inherits) {
                 VariationGroup = ((Variation)inherits.Member).VariationGroup;
                 Options = inherits.Member.Options;
                 Owner = owner;
@@ -327,7 +326,6 @@ namespace Nijo.Core {
                         yield return new Schalar(
                             Relation.Initial,
                             new ValueMember.InheritInfo { Relation = Relation, Member = schalar, },
-                            schalar.Declared,
                             schalar.GraphNode.Item.Clone(opt => {
                                 opt.IsKey = Relation.IsPrimary();
                                 opt.IsRequired = Relation.IsPrimary() || Relation.IsRequired();
@@ -337,8 +335,7 @@ namespace Nijo.Core {
                     } else if (fk is Variation variation) {
                         yield return new Variation(
                             Relation.Initial,
-                            new ValueMember.InheritInfo { Relation = Relation, Member = variation },
-                            variation.Declared);
+                            new ValueMember.InheritInfo { Relation = Relation, Member = variation });
                     }
                 }
             }
@@ -361,7 +358,6 @@ namespace Nijo.Core {
                         yield return new Schalar(
                             Relation.Terminal,
                             new ValueMember.InheritInfo { Relation = Relation, Member = schalar },
-                            schalar.Declared,
                             schalar.GraphNode.Item.Clone(opt => {
                                 opt.IsKey = true;
                                 opt.IsRequired = true;
@@ -371,8 +367,7 @@ namespace Nijo.Core {
                     } else if (parentPk is Variation variation) {
                         yield return new Variation(
                             Relation.Initial,
-                            new ValueMember.InheritInfo { Relation = Relation, Member = variation },
-                            variation.Declared);
+                            new ValueMember.InheritInfo { Relation = Relation, Member = variation });
                     }
                 }
             }
