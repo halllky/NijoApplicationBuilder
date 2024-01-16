@@ -159,11 +159,6 @@ namespace Nijo.Core {
             public override string ToString() {
                 return GetFullPath().Join(".");
             }
-            protected override IEnumerable<object?> ValueObjectIdentifiers() {
-                yield return Owner;
-                yield return DeclaringAggregate;
-                yield return MemberName;
-            }
         }
         internal abstract class ValueMember : AggregateMemberBase {
             protected ValueMember(InheritInfo? inherits) {
@@ -219,6 +214,11 @@ namespace Nijo.Core {
             internal NavigationProperty GetNavigationProperty() {
                 return new NavigationProperty(Relation);
             }
+
+            protected override IEnumerable<object?> ValueObjectIdentifiers() {
+                yield return Owner;
+                yield return Relation;
+            }
         }
         #endregion MEMBER BASE
 
@@ -240,6 +240,13 @@ namespace Nijo.Core {
 
             internal override IReadOnlyMemberOptions Options { get; }
             internal override decimal Order => GraphNode.Source!.GetMemberOrder();
+
+            protected override IEnumerable<object?> ValueObjectIdentifiers() {
+                yield return Owner;
+                yield return GraphNode;
+                yield return Inherits?.Relation;
+                yield return Inherits?.Member;
+            }
         }
 
         internal class Children : RelationMember {
@@ -290,6 +297,13 @@ namespace Nijo.Core {
                 foreach (var kv in VariationGroup.VariationAggregates) {
                     yield return new VariationItem(this, kv.Key, kv.Value);
                 }
+            }
+
+            protected override IEnumerable<object?> ValueObjectIdentifiers() {
+                yield return Owner;
+                yield return VariationGroup.GroupName;
+                yield return Inherits?.Relation;
+                yield return Inherits?.Member;
             }
         }
 
