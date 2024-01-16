@@ -106,20 +106,34 @@ namespace Nijo.Core {
             }
         }
         internal static IEnumerable<AggregateMemberBase> GetNames(this GraphNode<Aggregate> aggregate) {
+            var useKeyAsName = true;
+
             foreach (var member in aggregate.GetMembers()) {
-                if (member is ValueMember valueMember
-                    && valueMember.Declared.Owner == aggregate
-                    && valueMember.IsDisplayName) {
-
+                if (member is ValueMember valueMember && valueMember.IsDisplayName) {
                     yield return valueMember;
+                    useKeyAsName = false;
 
-                } else if (member is Ref refMember
-                    && refMember.Relation.IsInstanceName()) {
-
+                } else if (member is Ref refMember && refMember.Relation.IsInstanceName()) {
                     yield return refMember;
+                    useKeyAsName = false;
 
                 } else if (member is Parent parent) {
                     yield return parent;
+                }
+            }
+
+            // 名前が定義されていない集約の場合はキーを表示名に使う
+            if (useKeyAsName) {
+                foreach (var key in aggregate.GetKeys()) {
+                    if (key is ValueMember) {
+                        yield return key;
+
+                    } else if (key is Ref) {
+                        yield return key;
+
+                    } else if (key is Parent) {
+                        // 親は最初のループで返しているので無視
+                    }
                 }
             }
         }
@@ -188,8 +202,7 @@ namespace Nijo.Core {
             internal sealed override string TypeScriptTypename => Options.MemberType.GetTypeScriptTypeName();
 
             internal bool IsKey => Options.IsKey;
-            internal bool IsDisplayName => Options.IsDisplayName
-                                        || (Owner.Item.UseKeyInsteadOfName && Options.IsKey); // 集約中に名前が無い場合はキーを名前のかわりに使う
+            internal bool IsDisplayName => Options.IsDisplayName;
 
             /// <summary>
             /// このメンバーが親や参照先のメンバーを継承したものである場合はこのプロパティに値が入る。
@@ -357,7 +370,6 @@ namespace Nijo.Core {
                             schalar.GraphNode.Item.Clone(opt => {
                                 opt.IsKey = Relation.IsPrimary();
                                 opt.IsRequired = Relation.IsPrimary() || Relation.IsRequired();
-                                opt.IsDisplayName = Relation.IsInstanceName();
                             }));
 
                     } else if (fk is Variation variation) {
@@ -390,7 +402,6 @@ namespace Nijo.Core {
                             schalar.GraphNode.Item.Clone(opt => {
                                 opt.IsKey = true;
                                 opt.IsRequired = true;
-                                opt.IsDisplayName = true;
                             }));
 
                     } else if (parentPk is Variation variation) {
