@@ -127,7 +127,9 @@ namespace Nijo.Core {
         }
 
         internal static bool IsStored(this GraphNode<Aggregate> aggregate) {
-            return aggregate.GetRoot().Item.Options.Handler == NijoCodeGenerator.Handlers.WriteModel.Key;
+            var handler = aggregate.GetRoot().Item.Options.Handler;
+            return handler == NijoCodeGenerator.Handlers.WriteModel.Key
+                || handler == NijoCodeGenerator.Handlers.ReadModel.Key;
         }
 
         internal static IEnumerable<GraphEdge<Aggregate>> GetReferedEdges(this GraphNode<Aggregate> graphNode) {

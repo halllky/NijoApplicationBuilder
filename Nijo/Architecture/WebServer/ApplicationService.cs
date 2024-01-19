@@ -29,13 +29,13 @@ namespace Nijo.Architecture.WebServer {
                             {{ServiceProvider}} = serviceProvider;
                         }
 
-                        protected IServiceProvider {{ServiceProvider}} { get; }
+                        public IServiceProvider {{ServiceProvider}} { get; }
 
                         private {{ctx.Config.DbContextName}}? _dbContext;
-                        protected virtual {{ctx.Config.DbContextName}} {{DbContext}} => _dbContext ??= {{ServiceProvider}}.GetRequiredService<{{ctx.Config.DbContextName}}>();
+                        public virtual {{ctx.Config.DbContextName}} {{DbContext}} => _dbContext ??= {{ServiceProvider}}.GetRequiredService<{{ctx.Config.DbContextName}}>();
 
                         private DateTime? _currentTime;
-                        protected virtual DateTime {{CurrentTime}} => _currentTime ??= DateTime.Now;
+                        public virtual DateTime {{CurrentTime}} => _currentTime ??= DateTime.Now;
                     }
                 }
                 """,

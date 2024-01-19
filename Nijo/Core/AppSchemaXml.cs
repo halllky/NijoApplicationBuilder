@@ -192,6 +192,9 @@ namespace Nijo.Core {
             parser.IfExists(NijoCodeGenerator.Handlers.WriteModel.Key)
                 .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
                 .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Handlers.WriteModel.Key, E_Priority.Force);
+            parser.IfExists(NijoCodeGenerator.Handlers.ReadModel.Key)
+                .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
+                .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Handlers.ReadModel.Key, E_Priority.Force);
             parser.IfExists("view")
                 .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
                 .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Handlers.View.Key, E_Priority.Force);

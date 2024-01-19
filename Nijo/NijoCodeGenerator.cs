@@ -177,11 +177,13 @@ namespace Nijo {
         }
         internal static class Handlers {
             internal static KeyValuePair<string, Type> WriteModel => KeyValuePair.Create("write-model", typeof(WriteModel));
+            internal static KeyValuePair<string, Type> ReadModel => KeyValuePair.Create("read-model", typeof(Features.ReadModel.ReadModel));
             internal static KeyValuePair<string, Type> View => KeyValuePair.Create("view", typeof(AggregateSearchFeature));
             internal static KeyValuePair<string, Type> Command => KeyValuePair.Create("command", typeof(CommandFeature));
 
             internal static IEnumerable<KeyValuePair<string, Type>> GetAll() {
                 yield return WriteModel;
+                yield return ReadModel;
                 yield return View;
                 yield return Command;
             }
