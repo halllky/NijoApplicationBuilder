@@ -10,12 +10,12 @@ using System.Threading.Tasks;
 namespace Nijo.Features.BackgroundService {
 
     partial class BackgroundTask {
-        internal static NodeId GraphNodeId => new NodeId($"NIJO::{ENTITY_CLASSNAME}");
+        internal static NodeId GraphNodeId => new NodeId($"/NIJO::{ENTITY_CLASSNAME}");
 
         private static void AddBgTaskEntity(AppSchemaBuilder builder) {
 
-            builder.AddAggregate(new[] { GraphNodeId.Value }, new AggregateBuildOption {
-                Handler = "view",
+            builder.AddAggregate(new[] { GraphNodeId.Value.Replace("/", string.Empty) }, new AggregateBuildOption {
+                Handler = NijoCodeGenerator.Handlers.View.Key,
             });
 
             builder.AddAggregateMember(new[] { GraphNodeId.Value, COL_ID }, new AggregateMemberBuildOption {
