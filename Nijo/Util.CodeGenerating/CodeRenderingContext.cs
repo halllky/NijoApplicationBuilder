@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Util.CodeGenerating {
-    internal class CodeRenderingContext : ICodeRenderingContext {
+    public class CodeRenderingContext {
         public required Config Config { get; init; }
         public required AppSchema Schema { get; init; }
         internal NijoCodeGenerator.DirectorySetupper? WebapiDir { get; set; }

@@ -14,7 +14,7 @@ namespace Nijo.Features.BackgroundService {
             AddBgTaskEntity(builder);
         }
 
-        public override void GenerateCode(ICodeRenderingContext context) {
+        public override void GenerateCode(CodeRenderingContext context) {
             var aggregate = context.Schema.GetAggregate(GraphNodeId);
 
             var searchFeature = new AggregateSearchFeature();

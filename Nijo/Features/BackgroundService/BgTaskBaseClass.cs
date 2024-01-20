@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Nijo.Features.BackgroundService {
     partial class BackgroundTask {
 
-        private static SourceFile BgTaskBaseClass(ICodeRenderingContext ctx) => new SourceFile {
+        private static SourceFile BgTaskBaseClass(CodeRenderingContext ctx) => new SourceFile {
             FileName = "BackgroundTask.cs",
             RenderContent = () => $$"""
                 using System.Reflection;

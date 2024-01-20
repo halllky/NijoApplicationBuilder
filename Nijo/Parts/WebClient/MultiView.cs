@@ -265,7 +265,7 @@ namespace Nijo.Parts.WebClient {
             }
         }
 
-        internal string RenderTypeScriptTypeDef(ICodeRenderingContext ctx) {
+        internal string RenderTypeScriptTypeDef(CodeRenderingContext ctx) {
             return $$"""
                 export type {{SearchConditionClassName}} = {
                 {{Fields.SelectTextTemplate(field => If(field.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
@@ -282,7 +282,7 @@ namespace Nijo.Parts.WebClient {
                 """;
         }
 
-        internal static SourceFile RenderCSharpSearchConditionBaseClass(ICodeRenderingContext ctx) => new SourceFile {
+        internal static SourceFile RenderCSharpSearchConditionBaseClass(CodeRenderingContext ctx) => new SourceFile {
             FileName = "SearchConditionBase.cs",
             RenderContent = () => $$"""
                 namespace {{ctx.Config.RootNamespace}} {

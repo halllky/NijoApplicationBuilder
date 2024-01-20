@@ -18,7 +18,7 @@ namespace Nijo.Parts.WebServer {
         public string DbContext = "DbContext";
         public string CurrentTime = "CurrentTime";
 
-        internal SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
+        internal SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
             FileName = FileName,
             RenderContent = () => $$"""
                 namespace {{ctx.Config.RootNamespace}} {

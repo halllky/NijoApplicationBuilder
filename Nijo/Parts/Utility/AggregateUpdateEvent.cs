@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Nijo.Parts.Utility {
     internal class AggregateUpdateEvent {
-        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
+        internal static SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
             FileName = "AggregateUpdateEvent.cs",
             RenderContent = () => $$"""
                 using System;

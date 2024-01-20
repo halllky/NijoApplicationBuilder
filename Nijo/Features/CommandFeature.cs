@@ -18,7 +18,7 @@ namespace Nijo.Features {
         public string? ControllerAction { get; set; }
         public string? AppSrvMethod { get; set; }
 
-        public override void GenerateCode(ICodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
+        public override void GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
             var createView = new SingleView(rootAggregate, SingleView.E_Type.Create);
             context.Render<Infrastructure>(infra => {
                 infra.ReactPages.Add(createView);

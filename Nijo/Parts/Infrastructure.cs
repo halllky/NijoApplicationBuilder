@@ -51,7 +51,7 @@ namespace Nijo.Parts {
             fn(item);
         }
 
-        public override void GenerateCode(ICodeRenderingContext context) {
+        public override void GenerateCode(CodeRenderingContext context) {
             context.EditWebApiDirectory(genDir => {
                 genDir.Generate(Configure.Render(context, this));
                 genDir.Generate(EnumDefs.Render(context));
@@ -160,7 +160,7 @@ namespace Nijo.Parts {
             SourceFile GetSourceFile();
         }
 
-        private void RenderWebapiAggregateFile(ICodeRenderingContext context, GraphNode<Aggregate> aggregate, ByAggregate byAggregate) {
+        private void RenderWebapiAggregateFile(CodeRenderingContext context, GraphNode<Aggregate> aggregate, ByAggregate byAggregate) {
 
             context.EditWebApiDirectory(dir => {
                 var appSrv = new ApplicationService();

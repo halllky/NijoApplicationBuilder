@@ -9,7 +9,7 @@ using Nijo.Util.CodeGenerating;
 namespace Nijo.Features.BackgroundService {
     partial class BackgroundTask {
 
-        private static SourceFile Launcher(ICodeRenderingContext ctx) => new SourceFile {
+        private static SourceFile Launcher(CodeRenderingContext ctx) => new SourceFile {
             FileName = "BackgroundTaskLauncher.cs",
             RenderContent = () => {
                 var dbContextFullName = $"{ctx.Config.DbContextNamespace}.{ctx.Config.DbContextName}";

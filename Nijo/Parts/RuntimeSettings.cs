@@ -17,7 +17,7 @@ namespace Nijo.Parts {
         internal const string GET_DEFAULT = "GetDefault";
         internal const string GET_ACTIVE_CONNSTR = "GetActiveConnectionString";
 
-        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
+        internal static SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
             FileName = $"RuntimeSettings.cs",
             RenderContent = () => $$"""
                 namespace {{ctx.Config.RootNamespace}} {

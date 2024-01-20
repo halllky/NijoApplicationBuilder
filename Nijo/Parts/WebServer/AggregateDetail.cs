@@ -40,7 +40,7 @@ namespace Nijo.Parts.WebServer {
                 .Where(m => m.DeclaringAggregate == _aggregate);
         }
 
-        internal virtual string RenderCSharp(ICodeRenderingContext ctx) {
+        internal virtual string RenderCSharp(CodeRenderingContext ctx) {
             return $$"""
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}のデータ1件の詳細を表すクラスです。
@@ -58,7 +58,7 @@ namespace Nijo.Parts.WebServer {
                 """;
         }
 
-        internal virtual string RenderTypeScript(ICodeRenderingContext ctx) {
+        internal virtual string RenderTypeScript(CodeRenderingContext ctx) {
             return $$"""
                 export type {{_aggregate.Item.TypeScriptTypeName}} = {
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
@@ -100,7 +100,7 @@ namespace Nijo.Parts.WebServer {
 
 
         #region FromDbEntity
-        internal string FromDbEntity(ICodeRenderingContext ctx) {
+        internal string FromDbEntity(CodeRenderingContext ctx) {
             return $$"""
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}のデータベースから取得した内容を画面に表示する形に変換します。
@@ -175,7 +175,7 @@ namespace Nijo.Parts.WebServer {
 
 
         #region ToDbEntity
-        internal string ToDbEntity(ICodeRenderingContext ctx) {
+        internal string ToDbEntity(CodeRenderingContext ctx) {
             return $$"""
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}のオブジェクトをデータベースに保存する形に変換します。

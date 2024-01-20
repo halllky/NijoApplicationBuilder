@@ -17,7 +17,7 @@ namespace Nijo.Parts.WebServer {
         internal override string ClassName => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}CreateCommand";
         internal bool RendersDbEntity { get; set; } = true;
 
-        internal override string RenderCSharp(ICodeRenderingContext ctx) {
+        internal override string RenderCSharp(CodeRenderingContext ctx) {
             return $$"""
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}のデータ作成コマンドです。

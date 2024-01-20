@@ -88,7 +88,7 @@ namespace Nijo.Features {
 
         public bool? UseDefaultSearchLogic { get; set; }
 
-        public override void GenerateCode(ICodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
+        public override void GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
             var multiView = GetMultiView(rootAggregate);
 
             context.Render<Infrastructure>(infra => {
@@ -144,7 +144,7 @@ namespace Nijo.Features {
         /// <summary>
         /// Viewなどオーバーライド前提のものの検索処理
         /// </summary>
-        private string RenderNotImplementedSearchMethod(ICodeRenderingContext ctx, GraphNode<Aggregate> rootAggregate) {
+        private string RenderNotImplementedSearchMethod(CodeRenderingContext ctx, GraphNode<Aggregate> rootAggregate) {
             var appSrv = new ApplicationService();
             var multiView = GetMultiView(rootAggregate);
 
@@ -159,7 +159,7 @@ namespace Nijo.Features {
         /// <summary>
         /// 標準の検索処理
         /// </summary>
-        private string RenderSearchMethod(ICodeRenderingContext ctx, GraphNode<Aggregate> rootAggregate) {
+        private string RenderSearchMethod(CodeRenderingContext ctx, GraphNode<Aggregate> rootAggregate) {
             var appSrv = new ApplicationService();
             var fields = GetFields(rootAggregate);
             var selectClause = fields.Select(field => new {

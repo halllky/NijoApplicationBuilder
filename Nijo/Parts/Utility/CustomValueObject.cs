@@ -16,7 +16,7 @@ namespace Nijo.Parts.Utility {
         internal required string CLRTypeName { get; init; }
         internal required string ToDbValueFunction { get; init; }
         internal required string FromDbValueFunction { get; init; }
-        internal required Func<ICodeRenderingContext, string> RenderSourceCode { get; init; }
+        internal required Func<CodeRenderingContext, string> RenderSourceCode { get; init; }
 
         internal static IEnumerable<CustomValueObject> Enumerate() {
             yield return Year;
@@ -127,7 +127,7 @@ namespace Nijo.Parts.Utility {
         };
 
 
-        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
+        internal static SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
             FileName = "ValueObjects.cs",
             RenderContent = () => {
                 return $$"""

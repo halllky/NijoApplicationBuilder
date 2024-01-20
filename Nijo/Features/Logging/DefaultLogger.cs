@@ -9,7 +9,7 @@ namespace Nijo.Features.Logging {
     internal class DefaultLogger {
         internal const string CLASSNAME = "DefaultLogger";
 
-        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
+        internal static SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
             FileName = "DefaultLogger.cs",
             RenderContent = () => $$"""
                 namespace {{ctx.Config.RootNamespace}} {

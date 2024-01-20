@@ -12,7 +12,7 @@ namespace Nijo.Parts.Utility {
         internal const string FROM = "From";
         internal const string TO = "To";
 
-        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
+        internal static SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
             FileName = $"FromTo.cs",
             RenderContent = () => $$"""
                 using System;

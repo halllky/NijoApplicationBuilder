@@ -24,7 +24,7 @@ namespace Nijo.Parts.WebClient {
         internal string Api => new KeywordSearchingFeature(_aggregate).GetUri();
         internal RefTargetKeyName KeyName => new RefTargetKeyName(_aggregate);
 
-        internal static SourceFile RenderDeclaringFile(ICodeRenderingContext ctx) => new SourceFile {
+        internal static SourceFile RenderDeclaringFile(CodeRenderingContext ctx) => new SourceFile {
             FileName = "AggregateComboBox.tsx",
             RenderContent = () => $$"""
                 import React, { useState, useCallback } from "react"

@@ -9,7 +9,7 @@ using Nijo.Util.CodeGenerating;
 namespace Nijo.Parts.WebServer {
     internal class EnumDefs {
 
-        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
+        internal static SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
             FileName = "Enum.cs",
             RenderContent = () => $$"""
                 namespace {{ctx.Config.RootNamespace}} {

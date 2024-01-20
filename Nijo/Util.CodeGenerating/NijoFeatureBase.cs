@@ -11,9 +11,9 @@ namespace Nijo.Util.CodeGenerating {
         public virtual void BuildSchema(AppSchemaBuilder builder) { }
     }
     public abstract class NijoFeatureBaseNonAggregate : NijoFeatureBase {
-        public virtual void GenerateCode(ICodeRenderingContext context) { }
+        public virtual void GenerateCode(CodeRenderingContext context) { }
     }
     public abstract class NijoFeatureBaseByAggregate : NijoFeatureBase {
-        public virtual void GenerateCode(ICodeRenderingContext context, GraphNode<Aggregate> rootAggregate) { }
+        public virtual void GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) { }
     }
 }

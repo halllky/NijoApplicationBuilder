@@ -19,7 +19,7 @@ namespace Nijo.Parts.Utility {
         private const string CUSTOM_CONVERTER_NAMESPACE = "CustomJsonConverters";
         private const string INT_CONVERTER = "IntegerValueConverter";
 
-        internal static SourceFile RenderJsonConversionMethods(ICodeRenderingContext ctx) => new SourceFile {
+        internal static SourceFile RenderJsonConversionMethods(CodeRenderingContext ctx) => new SourceFile {
             FileName = "JsonConversion.cs",
             RenderContent = () => $$"""
                 namespace {{ctx.Config.RootNamespace}} {
@@ -73,7 +73,7 @@ namespace Nijo.Parts.Utility {
                 """,
         };
 
-        private static string RenderIntConverter(ICodeRenderingContext ctx) {
+        private static string RenderIntConverter(CodeRenderingContext ctx) {
             return $$"""
                 namespace {{ctx.Config.RootNamespace}}.{{CUSTOM_CONVERTER_NAMESPACE}} {
                     using System.Text;

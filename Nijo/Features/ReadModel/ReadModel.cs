@@ -26,7 +26,7 @@ namespace Nijo.Features.ReadModel {
                 """;
         }
 
-        public override void GenerateCode(ICodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
+        public override void GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
 
             // WriteModelへのリンクを作成する
             // TOOD: ↑ is="ref-to:…" によって自動的に作成されるのでは？

@@ -14,7 +14,7 @@ using Nijo.Parts.WebClient;
 namespace Nijo.Features.WriteModel {
     internal class WriteModel : NijoFeatureBaseByAggregate {
 
-        public override void GenerateCode(ICodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
+        public override void GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
             // Create
             var createCommand = new CommandFeature();
             var createFeature = new CreateFeature(rootAggregate);

@@ -10,7 +10,7 @@ namespace Nijo.Features.Logging {
     internal class HttpResponseExceptionFilter {
         internal const string CLASSNAME = "HttpResponseExceptionFilter";
 
-        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
+        internal static SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
             FileName = "HttpResponseExceptionFilter.cs",
             RenderContent = () => $$"""
                 namespace {{ctx.Config.RootNamespace}} {

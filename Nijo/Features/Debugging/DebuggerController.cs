@@ -10,7 +10,7 @@ namespace Nijo.Features.Debugging {
     internal class DebuggerController {
         internal const string RECREATE_DB_URL = "/WebDebugger/recreate-database";
 
-        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
+        internal static SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
             FileName = $"WebDebugger.cs",
             RenderContent = () => $$"""
                 using Microsoft.AspNetCore.Mvc;
