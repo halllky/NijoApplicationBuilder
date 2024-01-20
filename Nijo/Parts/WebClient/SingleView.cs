@@ -12,7 +12,7 @@ using Nijo.Features;
 using Nijo.Parts.WebServer;
 
 namespace Nijo.Parts.WebClient {
-    public class SingleView : Infrastructure.IReactPage {
+    public class SingleView : CodeRenderingContext.IReactPage {
         public enum E_Type {
             Create,
             View,
@@ -27,17 +27,17 @@ namespace Nijo.Parts.WebClient {
         private readonly GraphNode<Aggregate> _aggregate;
         private readonly E_Type _type;
 
-        string Infrastructure.IReactPage.Url => Route;
-        string Infrastructure.IReactPage.DirNameInPageDir => _aggregate.Item.DisplayName.ToFileNameSafe();
-        string Infrastructure.IReactPage.ComponentPhysicalName => _type switch {
+        string CodeRenderingContext.IReactPage.Url => Route;
+        string CodeRenderingContext.IReactPage.DirNameInPageDir => _aggregate.Item.DisplayName.ToFileNameSafe();
+        string CodeRenderingContext.IReactPage.ComponentPhysicalName => _type switch {
             E_Type.Create => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}CreateView",
             E_Type.View => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}DetailView",
             E_Type.Edit => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}EditView",
             _ => throw new NotImplementedException(),
         };
-        bool Infrastructure.IReactPage.ShowMenu => false;
-        string? Infrastructure.IReactPage.LabelInMenu => null;
-        SourceFile Infrastructure.IReactPage.GetSourceFile() => Render();
+        bool CodeRenderingContext.IReactPage.ShowMenu => false;
+        string? CodeRenderingContext.IReactPage.LabelInMenu => null;
+        SourceFile CodeRenderingContext.IReactPage.GetSourceFile() => Render();
 
         internal string FileName => _type switch {
             E_Type.Create => "new.tsx",

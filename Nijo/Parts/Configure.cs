@@ -18,7 +18,7 @@ namespace Nijo.Parts {
 
         internal static string GetClassFullname(Config config) => $"{config.RootNamespace}.{CLASSNAME}";
 
-        internal static SourceFile Render(CodeRenderingContext _ctx, Infrastructure infrastucture) {
+        internal static SourceFile Render(CodeRenderingContext _ctx) {
             return new SourceFile {
                 FileName = "DefaultConfigurer.cs",
                 RenderContent = () => {
@@ -59,7 +59,7 @@ namespace Nijo.Parts {
                                         {{Utility.UtilityClass.CLASSNAME}}.{{Utility.UtilityClass.MODIFY_JSONOPTION}}(option.JsonSerializerOptions);
                                     });
 
-                                    {{WithIndent(infrastucture.ConfigureServicesWhenWebServer.SelectTextTemplate(fn => fn.Invoke("builder.Services")), "           ")}}
+                                    {{WithIndent(_ctx.ConfigureServicesWhenWebServer.SelectTextTemplate(fn => fn.Invoke("builder.Services")), "           ")}}
                                 }
 
                                 /// <summary>
@@ -69,7 +69,7 @@ namespace Nijo.Parts {
                                     // 前述AddCorsの設定をするならこちらも必要
                                     app.UseCors();
 
-                                    {{WithIndent(infrastucture.ConfigureWebApp.SelectTextTemplate(fn => fn.Invoke("app")), "           ")}}
+                                    {{WithIndent(_ctx.ConfigureWebApp.SelectTextTemplate(fn => fn.Invoke("app")), "           ")}}
                                 }
 
                                 /// <summary>
@@ -78,7 +78,7 @@ namespace Nijo.Parts {
                                 internal static void {{INIT_BATCH_PROCESS}}(this IServiceCollection services) {
                                     {{CONFIGURE_SERVICES}}(services);
 
-                                    {{WithIndent(infrastucture.ConfigureServicesWhenBatchProcess.SelectTextTemplate(fn => fn.Invoke("services")), "           ")}}
+                                    {{WithIndent(_ctx.ConfigureServicesWhenBatchProcess.SelectTextTemplate(fn => fn.Invoke("services")), "           ")}}
                                 }
 
                                 internal static void {{CONFIGURE_SERVICES}}(IServiceCollection services) {
@@ -119,7 +119,7 @@ namespace Nijo.Parts {
                                         return new {{DefaultLogger.CLASSNAME}}(setting.LogDirectory);
                                     });
 
-                                    {{WithIndent(infrastucture.ConfigureServices.SelectTextTemplate(fn => fn.Invoke("services")), "           ")}}
+                                    {{WithIndent(_ctx.ConfigureServices.SelectTextTemplate(fn => fn.Invoke("services")), "           ")}}
                                 }
                             }
 

@@ -16,10 +16,10 @@ namespace Nijo.Parts.WebServer {
         }
         private readonly Config _config;
 
-        internal SourceFile RenderDeclaring(CodeRenderingContext ctx, Infrastructure infrastucture) => new SourceFile {
+        internal SourceFile RenderDeclaring(CodeRenderingContext ctx) => new SourceFile {
             FileName = $"{_config.DbContextName.ToFileNameSafe()}.cs",
             RenderContent = () => {
-                var onModelCreatings = infrastucture._itemsByAggregate
+                var onModelCreatings = ctx._itemsByAggregate
                     .Where(x => x.Value.OnModelCreating.Any())
                     .Select(x => $"OnModelCreating_{x.Key.Item.ClassName}");
 

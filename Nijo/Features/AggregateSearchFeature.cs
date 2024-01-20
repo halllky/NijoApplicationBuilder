@@ -91,54 +91,52 @@ namespace Nijo.Features {
         public override void GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
             var multiView = GetMultiView(rootAggregate);
 
-            context.Render<Infrastructure>(infra => {
-                infra.ReactPages.Add(multiView);
+            context.ReactPages.Add(multiView);
 
-                infra.Aggregate(rootAggregate, builder => {
-                    builder.DataClassDeclaring.Add($$"""
-                        /// <summary>
-                        /// {{multiView.DisplayName}}の一覧検索処理の検索条件を表すクラスです。
-                        /// </summary>
-                        public partial class {{multiView.SearchConditionClassName}} : {{MultiView.SEARCHCONDITION_BASE_CLASS_NAME}} {
-                        {{multiView.Fields.SelectTextTemplate(member => If(member.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
-                            public {{FromTo.CLASSNAME}}<{{member.MemberType.GetCSharpTypeName()}}?> {{member.PhysicalName}} { get; set; } = new();
-                        """).Else(() => $$"""
-                            public {{member.MemberType.GetCSharpTypeName()}}? {{member.PhysicalName}} { get; set; }
-                        """))}}
-                        }
-
-                        /// <summary>
-                        /// {{multiView.DisplayName}}の一覧検索処理の検索結果1件を表すクラスです。
-                        /// </summary>
-                        public partial class {{multiView.SearchResultClassName}} {
-                        {{multiView.Fields.SelectTextTemplate(member => $$"""
-                            public {{member.MemberType.GetCSharpTypeName()}}? {{member.PhysicalName}} { get; set; }
-                        """)}}
-                        }
-                        """);
-
-                    builder.ControllerActions.Add($$"""
-                        [HttpGet("{{Parts.WebClient.Controller.SEARCH_ACTION_NAME}}")]
-                        public virtual IActionResult Search([FromQuery] string param) {
-                            var json = System.Web.HttpUtility.UrlDecode(param);
-                            var condition = string.IsNullOrWhiteSpace(json)
-                                ? new {{multiView.SearchConditionClassName}}()
-                                : {{UtilityClass.CLASSNAME}}.{{UtilityClass.PARSE_JSON}}<{{multiView.SearchConditionClassName}}>(json);
-                            var searchResult = _applicationService
-                                .{{multiView.AppSrvMethodName}}(condition)
-                                .AsEnumerable();
-                            return this.JsonContent(searchResult);
-                        }
-                        """);
-
-                    if (UseDefaultSearchLogic == true || rootAggregate.IsStored()) {
-                        builder.AppServiceMethods.Add(RenderSearchMethod(context, rootAggregate));
-                    } else {
-                        builder.AppServiceMethods.Add(RenderNotImplementedSearchMethod(context, rootAggregate));
+            context.Aggregate(rootAggregate, builder => {
+                builder.DataClassDeclaring.Add($$"""
+                    /// <summary>
+                    /// {{multiView.DisplayName}}の一覧検索処理の検索条件を表すクラスです。
+                    /// </summary>
+                    public partial class {{multiView.SearchConditionClassName}} : {{MultiView.SEARCHCONDITION_BASE_CLASS_NAME}} {
+                    {{multiView.Fields.SelectTextTemplate(member => If(member.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
+                        public {{FromTo.CLASSNAME}}<{{member.MemberType.GetCSharpTypeName()}}?> {{member.PhysicalName}} { get; set; } = new();
+                    """).Else(() => $$"""
+                        public {{member.MemberType.GetCSharpTypeName()}}? {{member.PhysicalName}} { get; set; }
+                    """))}}
                     }
 
-                    builder.TypeScriptDataTypes.Add(multiView.RenderTypeScriptTypeDef(context));
-                });
+                    /// <summary>
+                    /// {{multiView.DisplayName}}の一覧検索処理の検索結果1件を表すクラスです。
+                    /// </summary>
+                    public partial class {{multiView.SearchResultClassName}} {
+                    {{multiView.Fields.SelectTextTemplate(member => $$"""
+                        public {{member.MemberType.GetCSharpTypeName()}}? {{member.PhysicalName}} { get; set; }
+                    """)}}
+                    }
+                    """);
+
+                builder.ControllerActions.Add($$"""
+                    [HttpGet("{{Parts.WebClient.Controller.SEARCH_ACTION_NAME}}")]
+                    public virtual IActionResult Search([FromQuery] string param) {
+                        var json = System.Web.HttpUtility.UrlDecode(param);
+                        var condition = string.IsNullOrWhiteSpace(json)
+                            ? new {{multiView.SearchConditionClassName}}()
+                            : {{UtilityClass.CLASSNAME}}.{{UtilityClass.PARSE_JSON}}<{{multiView.SearchConditionClassName}}>(json);
+                        var searchResult = _applicationService
+                            .{{multiView.AppSrvMethodName}}(condition)
+                            .AsEnumerable();
+                        return this.JsonContent(searchResult);
+                    }
+                    """);
+
+                if (UseDefaultSearchLogic == true || rootAggregate.IsStored()) {
+                    builder.AppServiceMethods.Add(RenderSearchMethod(context, rootAggregate));
+                } else {
+                    builder.AppServiceMethods.Add(RenderNotImplementedSearchMethod(context, rootAggregate));
+                }
+
+                builder.TypeScriptDataTypes.Add(multiView.RenderTypeScriptTypeDef(context));
             });
         }
         /// <summary>
