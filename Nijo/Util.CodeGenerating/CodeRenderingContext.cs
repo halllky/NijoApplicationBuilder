@@ -1,4 +1,5 @@
 using Nijo.Core;
+using Nijo.Parts;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
@@ -6,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Nijo.Core.EnumDefinition;
 
 namespace Nijo.Util.CodeGenerating {
     public class CodeRenderingContext {
@@ -26,25 +28,17 @@ namespace Nijo.Util.CodeGenerating {
             internal GraphNode<Aggregate> _aggregate;
             internal Type _sourceType;
         }
-        private readonly Dictionary<Type, List<Action<object>>> _multiFeatureFiles = new();
+        private readonly List<Action<Infrastructure>> _infraActions = new();
         private readonly Dictionary<AggregateMultiFeatureSourceKeys, List<Action<object>>> _aggregateMultiFeatureFiles = new();
 
-        public void Render<T>(Action<T> handler) where T : NijoFeatureBaseNonAggregate {
-            var action = (object arg) => handler((T)arg);
-            if (_multiFeatureFiles.TryGetValue(typeof(T), out var list)) {
-                list.Add(action);
-            } else {
-                _multiFeatureFiles.Add(typeof(T), new List<Action<object>> { action });
-            }
+        public void Render<T>(Action<T> fn) where T : Infrastructure {
+            _infraActions.Add(infra => fn((T)infra));
         }
         private void GenerateMultiFeatureSources() {
-            foreach (var item in _multiFeatureFiles) {
-                var instance = (NijoFeatureBaseNonAggregate)Activator.CreateInstance(item.Key)!;
-                foreach (var action in item.Value) {
-                    action.Invoke(instance);
-                }
-                instance.GenerateCode(this);
-            }
+            var infra = new Infrastructure();
+            foreach (var action in _infraActions) action.Invoke(infra);
+            infra.GenerateCode(this);
+
             foreach (var item in _aggregateMultiFeatureFiles) {
                 var instance = (NijoFeatureBaseByAggregate)Activator.CreateInstance(item.Key._sourceType)!;
                 foreach (var action in item.Value) {
