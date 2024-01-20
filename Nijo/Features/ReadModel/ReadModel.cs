@@ -10,12 +10,12 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Features.ReadModel {
-    internal class ReadModel : NijoFeatureBaseByAggregate {
+    internal class ReadModel : IModel {
 
         private const string CONTROLLER_ACTION_NAME = "reload";
 
         internal static string AppSrvMethodName(GraphNode<Aggregate> rootAggregate) {
-            if (rootAggregate.Item.Options.Handler != NijoCodeGenerator.Handlers.ReadModel.Key)
+            if (rootAggregate.Item.Options.Handler != NijoCodeGenerator.Models.ReadModel.Key)
                 throw new InvalidOperationException($"{rootAggregate.Item} is not a read model.");
             return $"Reload{rootAggregate.Item.ClassName}";
         }
@@ -26,13 +26,10 @@ namespace Nijo.Features.ReadModel {
                 """;
         }
 
-        public override void GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
+        void IModel.GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
 
             // WriteModelへのリンクを作成する
             // TOOD: ↑ is="ref-to:…" によって自動的に作成されるのでは？
-
-            // WriteModelの登録更新削除処理にUpdateを埋め込む
-            // TODO: ↑ WriteModelのほうで実装する
 
             // MultiView, 検索処理を作成する
             var searchFeature = new AggregateSearchFeature();

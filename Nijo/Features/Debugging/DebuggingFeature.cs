@@ -1,3 +1,4 @@
+using Nijo.Core;
 using Nijo.Parts;
 using Nijo.Util.CodeGenerating;
 using System;
@@ -7,9 +8,11 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Features.Debugging {
-    internal class DebuggingFeature : NijoFeatureBaseNonAggregate {
+    internal class DebuggingFeature : IFeature {
+        public void BuildSchema(AppSchemaBuilder builder) {
+        }
 
-        public override void GenerateCode(CodeRenderingContext context) {
+        public void GenerateCode(CodeRenderingContext context) {
 
             context.EditWebApiDirectory(dir => {
                 dir.Directory(App.ASP_CONTROLLER_DIR, controllerDir => {

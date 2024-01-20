@@ -189,18 +189,12 @@ namespace Nijo.Core {
             var keyValues = ToKeyValues(element, errors);
             var parser = new XElementOptionCollection(keyValues, errors.Add);
 
-            parser.IfExists(NijoCodeGenerator.Handlers.WriteModel.Key)
+            parser.IfExists(NijoCodeGenerator.Models.WriteModel.Key)
                 .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
-                .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Handlers.WriteModel.Key, E_Priority.Force);
-            parser.IfExists(NijoCodeGenerator.Handlers.ReadModel.Key)
+                .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Models.WriteModel.Key, E_Priority.Force);
+            parser.IfExists(NijoCodeGenerator.Models.ReadModel.Key)
                 .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
-                .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Handlers.ReadModel.Key, E_Priority.Force);
-            parser.IfExists("view")
-                .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
-                .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Handlers.View.Key, E_Priority.Force);
-            parser.IfExists("command")
-                .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
-                .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Handlers.Command.Key, E_Priority.Force);
+                .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Models.ReadModel.Key, E_Priority.Force);
 
             parser.IfExists("section")
                 .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)

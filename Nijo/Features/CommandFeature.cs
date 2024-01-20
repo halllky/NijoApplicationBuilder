@@ -11,14 +11,14 @@ using Nijo.Parts;
 using Nijo.Parts.WebClient;
 
 namespace Nijo.Features {
-    public class CommandFeature : NijoFeatureBaseByAggregate {
+    public class CommandFeature {
         public Func<GraphNode<Aggregate>, string> CommandName { get; set; } = root => root.Item.ClassName;
         public Func<GraphNode<Aggregate>, string> ActionName { get; set; } = root => "実行";
 
         public string? ControllerAction { get; set; }
         public string? AppSrvMethod { get; set; }
 
-        public override void GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
+        public void GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
             var createView = new SingleView(rootAggregate, SingleView.E_Type.Create);
             context.AddPage(createView);
 

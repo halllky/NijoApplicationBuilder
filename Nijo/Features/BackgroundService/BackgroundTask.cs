@@ -8,13 +8,13 @@ using Nijo.Core;
 using Nijo.Util.CodeGenerating;
 
 namespace Nijo.Features.BackgroundService {
-    internal partial class BackgroundTask : NijoFeatureBaseNonAggregate {
+    internal partial class BackgroundTask : IFeature {
 
-        public override void BuildSchema(AppSchemaBuilder builder) {
+        public void BuildSchema(AppSchemaBuilder builder) {
             AddBgTaskEntity(builder);
         }
 
-        public override void GenerateCode(CodeRenderingContext context) {
+        public void GenerateCode(CodeRenderingContext context) {
             var aggregate = context.Schema.GetAggregate(GraphNodeId);
 
             var searchFeature = new AggregateSearchFeature();

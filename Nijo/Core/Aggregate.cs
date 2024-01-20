@@ -129,15 +129,15 @@ namespace Nijo.Core {
 
         internal static bool IsStored(this GraphNode<Aggregate> aggregate) {
             var handler = aggregate.GetRoot().Item.Options.Handler;
-            return handler == NijoCodeGenerator.Handlers.WriteModel.Key
-                || handler == NijoCodeGenerator.Handlers.ReadModel.Key;
+            return handler == NijoCodeGenerator.Models.WriteModel.Key
+                || handler == NijoCodeGenerator.Models.ReadModel.Key;
         }
 
         /// <summary>
         /// このReadModelが依存する集約を列挙する
         /// </summary>
         internal static IEnumerable<GraphNode<Aggregate>> GetDependency(this GraphNode<Aggregate> readModel) {
-            if (readModel.Item.Options.Handler != NijoCodeGenerator.Handlers.ReadModel.Key)
+            if (readModel.Item.Options.Handler != NijoCodeGenerator.Models.ReadModel.Key)
                 throw new InvalidOperationException($"{readModel.Item} is not a read model.");
 
             foreach (var edge in readModel.Out) {
@@ -150,7 +150,7 @@ namespace Nijo.Core {
         /// このWriteModelに依存する集約を列挙する
         /// </summary>
         internal static IEnumerable<GraphNode<Aggregate>> GetDependents(this GraphNode<Aggregate> writeModel) {
-            if (writeModel.Item.Options.Handler != NijoCodeGenerator.Handlers.WriteModel.Key)
+            if (writeModel.Item.Options.Handler != NijoCodeGenerator.Models.WriteModel.Key)
                 throw new InvalidOperationException($"{writeModel.Item} is not a write model.");
 
             foreach (var edge in writeModel.In) {

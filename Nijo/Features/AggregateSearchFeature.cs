@@ -13,7 +13,7 @@ using Nijo.Parts.WebClient;
 using Nijo.Parts.WebServer;
 
 namespace Nijo.Features {
-    public class AggregateSearchFeature : NijoFeatureBaseByAggregate {
+    public class AggregateSearchFeature {
         internal static MultiView GetMultiView(GraphNode<Aggregate> rootAggregate) {
             var fields = GetFields(rootAggregate);
 
@@ -88,7 +88,7 @@ namespace Nijo.Features {
 
         public bool? UseDefaultSearchLogic { get; set; }
 
-        public override void GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
+        public void GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
             var multiView = GetMultiView(rootAggregate);
 
             context.AddPage(multiView);

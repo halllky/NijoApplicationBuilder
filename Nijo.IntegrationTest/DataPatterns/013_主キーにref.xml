@@ -36,14 +36,14 @@
     <金額 is="int" />
   </入金>
 
-  <状況 is="view">
+  <!--<状況 is="view">
     <受注 is="ref-to:受注" />
     <受注数 is="int" />
     <納品数 is="int" />
     <請求額合計 is="int" />
     <入金済額合計 is="int" />
     <ステータス is="word" />
-  </状況>
+  </状況>-->
 
   <状況2 is="read-model" dependsOn="受注 納品 請求 入金">
     <受注 is="ref-to:受注 key" />

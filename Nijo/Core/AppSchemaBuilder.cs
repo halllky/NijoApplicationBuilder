@@ -102,7 +102,7 @@ namespace Nijo.Core {
                     },
                 });
             var readModelDependency = aggregateDefs
-                .Where(aggregate => aggregate.Options.Handler == NijoCodeGenerator.Handlers.ReadModel.Key)
+                .Where(aggregate => aggregate.Options.Handler == NijoCodeGenerator.Models.ReadModel.Key)
                 .SelectMany(
                     aggregate => aggregate.Options.DependsOn,
                     (aggregate, dependent) => new { aggregate, dependent })

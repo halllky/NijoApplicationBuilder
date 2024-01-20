@@ -1,8 +1,6 @@
 using Nijo.Parts.WebServer;
 using Nijo.Core;
 using Nijo.Util.CodeGenerating;
-using Nijo.Features;
-using Nijo.Features.WriteModel;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -16,6 +14,24 @@ using System.Xml.Linq;
 
 namespace Nijo {
     public sealed class NijoCodeGenerator {
+
+        internal IEnumerable<IFeature> GetFeatures() {
+            yield return new Features.Debugging.DebuggingFeature();
+            yield return new Features.Logging.LoggingFeature();
+            yield return new Features.BackgroundService.BackgroundTask();
+        }
+
+        internal static class Models {
+            internal static KeyValuePair<string, Func<IModel>> WriteModel => KeyValuePair.Create("write-model", () => (IModel)new Features.WriteModel.WriteModel());
+            internal static KeyValuePair<string, Func<IModel>> ReadModel => KeyValuePair.Create("read-model", () => (IModel)new Features.ReadModel.ReadModel());
+
+            internal static IEnumerable<KeyValuePair<string, Func<IModel>>> GetAll() {
+                yield return WriteModel;
+                yield return ReadModel;
+            }
+        }
+
+
         internal NijoCodeGenerator(GeneratedProject project, ILogger? log) {
             _project = project;
             _log = log;
@@ -121,17 +137,14 @@ namespace Nijo {
 
             var features = GetFeatures().ToArray();
             var nonAggregateFeatures = features
-                .OfType<NijoFeatureBaseNonAggregate>();
+                .OfType<IFeature>();
             foreach (var feature in nonAggregateFeatures) {
                 feature.GenerateCode(ctx);
             }
 
-            var aggregateFeatures = features
-                .OfType<NijoFeatureBaseByAggregate>()
-                .ToArray();
-            var handlers = Handlers
+            var handlers = Models
                 .GetAll()
-                .ToDictionary(kv => kv.Key, kv => aggregateFeatures.Single(f => f.GetType() == kv.Value));
+                .ToDictionary(kv => kv.Key, kv => kv.Value.Invoke());
             foreach (var rootAggregate in ctx.Schema.RootAggregates()) {
                 if (!string.IsNullOrWhiteSpace(rootAggregate.Item.Options.Handler)
                     && handlers.TryGetValue(rootAggregate.Item.Options.Handler, out var feature)) {
@@ -146,37 +159,6 @@ namespace Nijo {
 
             _log?.LogInformation($"コード自動生成終了: {_project.ProjectRoot}");
             return this;
-        }
-
-        internal IEnumerable<NijoFeatureBase> GetFeatures() {
-            var featureAssemblies = new[] { Assembly.GetExecutingAssembly() };
-
-            var featureTypes = featureAssemblies
-                .SelectMany(assembly => assembly.GetTypes())
-                .Where(type => !type.IsAbstract && type.IsSubclassOf(typeof(NijoFeatureBase)));
-
-            foreach (var type in featureTypes) {
-                NijoFeatureBase instance;
-                try {
-                    instance = (NijoFeatureBase)Activator.CreateInstance(type)!;
-                } catch (Exception ex) {
-                    throw new InvalidOperationException($"{nameof(NijoFeatureBase)} クラスには引数なしのコンストラクタが必要です。", ex);
-                }
-                yield return instance;
-            }
-        }
-        internal static class Handlers {
-            internal static KeyValuePair<string, Type> WriteModel => KeyValuePair.Create("write-model", typeof(WriteModel));
-            internal static KeyValuePair<string, Type> ReadModel => KeyValuePair.Create("read-model", typeof(Features.ReadModel.ReadModel));
-            internal static KeyValuePair<string, Type> View => KeyValuePair.Create("view", typeof(AggregateSearchFeature));
-            internal static KeyValuePair<string, Type> Command => KeyValuePair.Create("command", typeof(CommandFeature));
-
-            internal static IEnumerable<KeyValuePair<string, Type>> GetAll() {
-                yield return WriteModel;
-                yield return ReadModel;
-                yield return View;
-                yield return Command;
-            }
         }
 
         /// <summary>

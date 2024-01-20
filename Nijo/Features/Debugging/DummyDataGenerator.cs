@@ -22,7 +22,7 @@ namespace Nijo.Features.Debugging {
                 var random = new Random(0);
                 var ordered = ctx.Schema
                     .RootAggregatesOrderByDataFlow()
-                    .Where(root => root.Item.Options.Handler == NijoCodeGenerator.Handlers.WriteModel.Key);
+                    .Where(root => root.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key);
                 var xTimes = ordered
                     .SelectMany(root => Enumerable
                         .Repeat(root, DATA_COUNT)

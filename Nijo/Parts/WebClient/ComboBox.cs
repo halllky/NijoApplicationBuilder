@@ -34,7 +34,7 @@ namespace Nijo.Parts.WebClient {
 
                 {{ctx.Schema
                     .AllAggregates()
-                    .Where(a => a.GetRoot().Item.Options.Handler == NijoCodeGenerator.Handlers.WriteModel.Key)
+                    .Where(a => a.GetRoot().Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key)
                     .SelectTextTemplate(Render)}}
                 """,
         };
