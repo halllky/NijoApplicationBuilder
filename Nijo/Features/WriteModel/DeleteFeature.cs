@@ -7,8 +7,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Nijo.Architecture.WebServer;
+using Nijo.Util.CodeGenerating;
 
-namespace Nijo.Features.Repository {
+namespace Nijo.Features.WriteModel {
     internal class DeleteFeature {
         internal DeleteFeature(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
@@ -40,16 +41,24 @@ namespace Nijo.Features.Repository {
             var controller = new Architecture.WebClient.Controller(_aggregate.Item);
             var args = GetEFCoreMethodArgs().ToArray();
             var find = new FindFeature(_aggregate);
+            var instanceClass = new AggregateDetail(_aggregate).ClassName;
 
             return $$"""
                 public virtual bool {{MethodName}}({{args.Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}, out ICollection<string> errors) {
 
-                    {{WithIndent(find.RenderDbEntityLoading(appSrv.DbContext, "entity", args.Select(a => a.MemberName).ToArray(), tracks: true, includeRefs: false), "    ")}}
+                    {{WithIndent(find.RenderDbEntityLoading(
+                        appSrv.DbContext,
+                        "entity",
+                        args.Select(a => a.MemberName).ToArray(),
+                        tracks: true,
+                        includeRefs: true), "    ")}}
 
                     if (entity == null) {
                         errors = new[] { "削除対象のデータが見つかりません。" };
                         return false;
                     }
+
+                    var deleted = {{instanceClass}}.{{AggregateDetail.FROM_DBENTITY}}(entity);
 
                     {{appSrv.DbContext}}.Remove(entity);
 
@@ -59,6 +68,14 @@ namespace Nijo.Features.Repository {
                         errors = ex.GetMessagesRecursively().ToArray();
                         return false;
                     }
+
+                    // {{_aggregate.Item.DisplayName}}の更新をトリガーとする処理を実行します。
+                    var updateEvent = new AggregateUpdateEvent<{{instanceClass}}> {
+                        Deleted = new[] { deleted },
+                    };
+                    {{_aggregate.GetDependents().SelectTextTemplate(readModel => $$"""
+                    {{WithIndent(ReadModel.ReadModel.RenderUpdateCalling(readModel, "updateEvent"), "    ")}}
+                    """)}}
 
                     errors = Array.Empty<string>();
                     return true;

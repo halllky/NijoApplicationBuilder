@@ -37,7 +37,20 @@ namespace Nijo.Architecture.WebServer {
                                 this.{{method}}(modelBuilder);
                     """)}}
                             }
+
+                            /// <inheritdoc />
+                            protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {
+                                optionsBuilder.LogTo(sql => {
+                                    if (OutSqlToVisualStudio) {
+                                        System.Diagnostics.Debug.WriteLine("---------------------");
+                                        System.Diagnostics.Debug.WriteLine(sql);
+                                    }
+                                }, LogLevel.Information);
+                            }
+                            /// <summary>デバッグ用</summary>
+                            public bool OutSqlToVisualStudio { get; set; } = false;
                         }
+
                     }
                     """;
             },

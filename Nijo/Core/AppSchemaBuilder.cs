@@ -101,7 +101,23 @@ namespace Nijo.Core {
                         { DirectedEdgeExtensions.REL_ATTR_MEMBER_ORDER, x.member.Order },
                     },
                 });
-            var relationDefs = parentAndChild.Concat(refs);
+            var readModelDependency = aggregateDefs
+                .Where(aggregate => aggregate.Options.Handler == NijoCodeGenerator.Handlers.ReadModel.Key)
+                .SelectMany(
+                    aggregate => aggregate.Options.DependsOn,
+                    (aggregate, dependent) => new { aggregate, dependent })
+                .Select(x => new {
+                    Initial = x.aggregate.TreePath,
+                    Terminal = TreePath.FromString(x.dependent),
+                    RelationName = "Depends On",
+                    Attributes = new Dictionary<string, object> {
+                        { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_DEPENDSON },
+                    },
+                });
+
+            var relationDefs = parentAndChild
+                .Concat(refs)
+                .Concat(readModelDependency);
 
             // ---------------------------------------------------------
             // バリデーションおよびドメインクラスへの変換
@@ -261,6 +277,7 @@ namespace Nijo.Core {
         public GroupOption? IsVariationGroupMember { get; set; }
         public bool? InvisibleInGui { get; set; }
         public string? Handler { get; set; }
+        public List<string> DependsOn { get; } = new();
 
         public sealed class GroupOption {
             public required string GroupName { get; init; }
@@ -286,6 +303,7 @@ namespace Nijo.Core {
         internal const string REL_ATTRVALUE_HAVING = "having";
         internal const string REL_ATTRVALUE_PARENT_CHILD = "child";
         internal const string REL_ATTRVALUE_REFERENCE = "reference";
+        internal const string REL_ATTRVALUE_DEPENDSON = "depends-on";
         internal const string REL_ATTRVALUE_AGG_2_ETT = "aggregate-dbentity";
         internal const string REL_ATTRVALUE_AGG_2_INS = "aggregate-instance";
 

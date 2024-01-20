@@ -10,7 +10,7 @@ using Nijo.Util.CodeGenerating;
 using Nijo.Architecture;
 using Nijo.Architecture.WebServer;
 
-namespace Nijo.Features.Repository {
+namespace Nijo.Features.WriteModel {
     internal class UpdateFeature {
         internal UpdateFeature(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
@@ -52,7 +52,12 @@ namespace Nijo.Features.Repository {
                 public virtual bool {{MethodName}}({{detail.ClassName}} after, out {{detail.ClassName}} updated, out ICollection<string> errors) {
                     errors = new List<string>();
 
-                    {{WithIndent(find.RenderDbEntityLoading(appSrv.DbContext, "beforeDbEntity", searchKeys, tracks: false, includeRefs: false), "    ")}}
+                    {{WithIndent(find.RenderDbEntityLoading(
+                        appSrv.DbContext,
+                        "beforeDbEntity",
+                        searchKeys,
+                        tracks: false,
+                        includeRefs: true), "    ")}}
 
                     if (beforeDbEntity == null) {
                         updated = new {{_aggregate.Item.ClassName}}();
@@ -60,6 +65,7 @@ namespace Nijo.Features.Repository {
                         return false;
                     }
 
+                    var beforeUpdate = {{detail.ClassName}}.{{AggregateDetail.FROM_DBENTITY}}(beforeDbEntity);
                     var afterDbEntity = after.{{AggregateDetail.TO_DBENTITY}}();
 
                     // Attach
@@ -81,6 +87,15 @@ namespace Nijo.Features.Repository {
                         errors.Add("更新後のデータの再読み込みに失敗しました。");
                         return false;
                     }
+
+                    // {{_aggregate.Item.DisplayName}}の更新をトリガーとする処理を実行します。
+                    var updateEvent = new AggregateUpdateEvent<{{detail.ClassName}}> {
+                        Modified = new AggregateBeforeAfter<{{detail.ClassName}}>[] { new() { Before = beforeUpdate, After = afterUpdate } },
+                    };
+                    {{_aggregate.GetDependents().SelectTextTemplate(readModel => $$"""
+                    {{WithIndent(ReadModel.ReadModel.RenderUpdateCalling(readModel, "updateEvent"), "    ")}}
+                    """)}}
+
                     updated = afterUpdate;
                     return true;
                 }

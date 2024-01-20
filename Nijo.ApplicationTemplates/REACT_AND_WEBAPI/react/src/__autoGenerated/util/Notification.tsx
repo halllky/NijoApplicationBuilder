@@ -91,7 +91,7 @@ export const InlineMessageList = ({ type, name, className }: {
             <span title={msg.message} className={`
               flex-1
               ${msg.type === 'warn' ? 'text-amber-700' : 'text-rose-600'}
-              overflow-hidden text-nowrap overflow-ellipsis
+              overflow-hidden text-nowrap overflow-ellipsis whitespace-pre
               select-all`}>
               {msg.message}
             </span>

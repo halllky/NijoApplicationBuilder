@@ -9,11 +9,10 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Nijo.Architecture;
-using Nijo.Features.Repository;
 using Nijo.Architecture.WebClient;
 
-namespace Nijo.Features {
-    internal class MasterDataFeature : NijoFeatureBaseByAggregate {
+namespace Nijo.Features.WriteModel {
+    internal class WriteModel : NijoFeatureBaseByAggregate {
 
         public override void GenerateCode(ICodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
             // Create

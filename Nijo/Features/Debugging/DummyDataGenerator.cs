@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Core.AggregateMemberTypes;
 using Nijo.Util.CodeGenerating;
-using Nijo.Features.Repository;
+using Nijo.Features.WriteModel;
 using Nijo.Architecture.WebClient;
 
 namespace Nijo.Features.Debugging {
@@ -22,7 +22,7 @@ namespace Nijo.Features.Debugging {
                 var random = new Random(0);
                 var ordered = ctx.Schema
                     .RootAggregatesOrderByDataFlow()
-                    .Where(root => root.Item.Options.Handler == NijoCodeGenerator.Handlers.MasterData.Key);
+                    .Where(root => root.Item.Options.Handler == NijoCodeGenerator.Handlers.WriteModel.Key);
                 var xTimes = ordered
                     .SelectMany(root => Enumerable
                         .Repeat(root, DATA_COUNT)

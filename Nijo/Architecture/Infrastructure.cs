@@ -60,6 +60,7 @@ namespace Nijo.Architecture {
                 genDir.Directory("Util", utilDir => {
                     utilDir.Generate(RuntimeSettings.Render(context));
                     utilDir.Generate(Utility.DotnetExtensions.Render(context));
+                    utilDir.Generate(Utility.AggregateUpdateEvent.Render(context));
                     utilDir.Generate(Utility.FromTo.Render(context));
                     utilDir.Generate(Utility.UtilityClass.RenderJsonConversionMethods(context));
                     utilDir.Generate(HttpResponseExceptionFilter.Render(context));

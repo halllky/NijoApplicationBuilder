@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <自動テストで作成されたプロジェクト>
-  <集約A is="master-data">
+  <集約A is="write-model">
     <ID is="id" />
     <名前 is="name" />
     <従属項目 is="int" />

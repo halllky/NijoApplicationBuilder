@@ -1,3 +1,4 @@
+using Nijo.Features.ReadModel;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
@@ -127,7 +128,36 @@ namespace Nijo.Core {
         }
 
         internal static bool IsStored(this GraphNode<Aggregate> aggregate) {
-            return aggregate.GetRoot().Item.Options.Handler == NijoCodeGenerator.Handlers.MasterData.Key;
+            var handler = aggregate.GetRoot().Item.Options.Handler;
+            return handler == NijoCodeGenerator.Handlers.WriteModel.Key
+                || handler == NijoCodeGenerator.Handlers.ReadModel.Key;
+        }
+
+        /// <summary>
+        /// このReadModelが依存する集約を列挙する
+        /// </summary>
+        internal static IEnumerable<GraphNode<Aggregate>> GetDependency(this GraphNode<Aggregate> readModel) {
+            if (readModel.Item.Options.Handler != NijoCodeGenerator.Handlers.ReadModel.Key)
+                throw new InvalidOperationException($"{readModel.Item} is not a read model.");
+
+            foreach (var edge in readModel.Out) {
+                if (!edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)) continue;
+                if ((string)type != REL_ATTRVALUE_DEPENDSON) continue;
+                yield return edge.Terminal.As<Aggregate>();
+            }
+        }
+        /// <summary>
+        /// このWriteModelに依存する集約を列挙する
+        /// </summary>
+        internal static IEnumerable<GraphNode<Aggregate>> GetDependents(this GraphNode<Aggregate> writeModel) {
+            if (writeModel.Item.Options.Handler != NijoCodeGenerator.Handlers.WriteModel.Key)
+                throw new InvalidOperationException($"{writeModel.Item} is not a write model.");
+
+            foreach (var edge in writeModel.In) {
+                if (!edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)) continue;
+                if ((string)type != REL_ATTRVALUE_DEPENDSON) continue;
+                yield return edge.Initial.As<Aggregate>();
+            }
         }
 
         internal static IEnumerable<GraphEdge<Aggregate>> GetReferedEdges(this GraphNode<Aggregate> graphNode) {
