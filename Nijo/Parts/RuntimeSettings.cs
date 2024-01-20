@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
 
-namespace Nijo.Architecture {
+namespace Nijo.Parts {
     internal class RuntimeSettings {
 
         internal static string ServerSetiingTypeFullName => $"{nameof(RuntimeSettings)}.{SERVER}";

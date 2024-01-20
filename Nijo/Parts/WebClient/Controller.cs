@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.Architecture.WebClient {
+namespace Nijo.Parts.WebClient {
     public class Controller {
         internal Controller(string physicalName) {
             _physicalName = physicalName;

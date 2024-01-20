@@ -1,5 +1,5 @@
-using Nijo.Architecture.WebServer;
-using Nijo.Architecture.Utility;
+using Nijo.Parts.WebServer;
+using Nijo.Parts.Utility;
 using Nijo.Core;
 using Nijo.Util.DotnetEx;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
 using Nijo.Features.WriteModel;
 
-namespace Nijo.Architecture.WebClient {
+namespace Nijo.Parts.WebClient {
     internal class ComboBox {
         internal ComboBox(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;

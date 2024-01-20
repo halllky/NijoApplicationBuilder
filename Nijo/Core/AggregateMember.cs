@@ -1,4 +1,4 @@
-using Nijo.Architecture.WebServer;
+using Nijo.Parts.WebServer;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;

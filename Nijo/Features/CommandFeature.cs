@@ -1,14 +1,14 @@
 using Nijo.Core;
 using Nijo.Util.DotnetEx;
-using Nijo.Architecture.WebServer;
+using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Nijo.Architecture;
-using Nijo.Architecture.WebClient;
+using Nijo.Parts;
+using Nijo.Parts.WebClient;
 
 namespace Nijo.Features {
     public class CommandFeature : NijoFeatureBaseByAggregate {

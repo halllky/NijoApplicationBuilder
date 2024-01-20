@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.Architecture.Utility {
+namespace Nijo.Parts.Utility {
     internal class DotnetExtensions {
 
         internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {

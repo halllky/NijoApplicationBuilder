@@ -1,5 +1,5 @@
-using Nijo.Architecture.WebServer;
-using Nijo.Architecture.Utility;
+using Nijo.Parts.WebServer;
+using Nijo.Parts.Utility;
 using Nijo.Core;
 using Nijo.Util.DotnetEx;
 using System;
@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 using Nijo.Util.CodeGenerating;
-using Nijo.Architecture;
+using Nijo.Parts;
 
 namespace Nijo.Features.WriteModel {
     internal class KeywordSearchingFeature {
@@ -28,9 +28,9 @@ namespace Nijo.Features.WriteModel {
             return $"/{controller.SubDomain}/{GetActionName()}";
         }
 
-        private Architecture.WebClient.Controller GetController() {
+        private Parts.WebClient.Controller GetController() {
             var root = _aggregate.GetRoot();
-            return new Architecture.WebClient.Controller(root.Item);
+            return new Parts.WebClient.Controller(root.Item);
         }
 
         internal string AppServiceMeghodName => $"SearchByKeyword{_aggregate.Item.DisplayName.ToCSharpSafe()}";

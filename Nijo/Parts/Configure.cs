@@ -8,7 +8,7 @@ using Nijo.Util.CodeGenerating;
 using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 using Nijo.Features.Logging;
 
-namespace Nijo.Architecture {
+namespace Nijo.Parts {
     internal class Configure {
         internal const string CLASSNAME = "DefaultConfigurer";
         internal const string INIT_WEB_HOST_BUILDER = "InitWebHostBuilder";

@@ -6,11 +6,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Nijo.Architecture.Utility;
+using Nijo.Parts.Utility;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Nijo.Util.CodeGenerating;
 
-namespace Nijo.Architecture.WebServer {
+namespace Nijo.Parts.WebServer {
     internal class AggregateDetail {
         internal AggregateDetail(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;

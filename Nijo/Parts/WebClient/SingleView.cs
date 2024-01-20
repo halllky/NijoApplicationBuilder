@@ -9,9 +9,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
 using Nijo.Features;
-using Nijo.Architecture.WebServer;
+using Nijo.Parts.WebServer;
 
-namespace Nijo.Architecture.WebClient {
+namespace Nijo.Parts.WebClient {
     public class SingleView : Infrastructure.IReactPage {
         public enum E_Type {
             Create,

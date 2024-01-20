@@ -6,11 +6,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Nijo.Architecture.Utility;
+using Nijo.Parts.Utility;
 using Nijo.Util.CodeGenerating;
-using Nijo.Architecture;
-using Nijo.Architecture.WebClient;
-using Nijo.Architecture.WebServer;
+using Nijo.Parts;
+using Nijo.Parts.WebClient;
+using Nijo.Parts.WebServer;
 
 namespace Nijo.Features {
     public class AggregateSearchFeature : NijoFeatureBaseByAggregate {
@@ -118,7 +118,7 @@ namespace Nijo.Features {
                         """);
 
                     builder.ControllerActions.Add($$"""
-                        [HttpGet("{{Architecture.WebClient.Controller.SEARCH_ACTION_NAME}}")]
+                        [HttpGet("{{Parts.WebClient.Controller.SEARCH_ACTION_NAME}}")]
                         public virtual IActionResult Search([FromQuery] string param) {
                             var json = System.Web.HttpUtility.UrlDecode(param);
                             var condition = string.IsNullOrWhiteSpace(json)

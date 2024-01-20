@@ -1,4 +1,4 @@
-using Nijo.Architecture.Utility;
+using Nijo.Parts.Utility;
 using Nijo.Core;
 using Nijo.Util.DotnetEx;
 using System;
@@ -8,8 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 using Nijo.Util.CodeGenerating;
-using Nijo.Architecture;
-using Nijo.Architecture.WebServer;
+using Nijo.Parts;
+using Nijo.Parts.WebServer;
 
 namespace Nijo.Features.WriteModel {
     internal class FindFeature {
@@ -24,7 +24,7 @@ namespace Nijo.Features.WriteModel {
         private const string ACTION_NAME = "detail";
 
         internal string GetUrlStringForReact(IEnumerable<string> keyVariables) {
-            var controller = new Architecture.WebClient.Controller(_aggregate.Item);
+            var controller = new Parts.WebClient.Controller(_aggregate.Item);
             var encoded = keyVariables.Select(key => $"${{window.encodeURI({key})}}");
             return $"`/{controller.SubDomain}/{ACTION_NAME}/{encoded.Join("/")}`";
         }
@@ -34,7 +34,7 @@ namespace Nijo.Features.WriteModel {
                 .GetKeys()
                 .Where(m => m is AggregateMember.ValueMember)
                 .ToArray();
-            var controller = new Architecture.WebClient.Controller(_aggregate.Item);
+            var controller = new Parts.WebClient.Controller(_aggregate.Item);
 
             return $$"""
                 [HttpGet("{{ACTION_NAME}}/{{keys.Select(m => "{" + m.MemberName + "}").Join("/")}}")]

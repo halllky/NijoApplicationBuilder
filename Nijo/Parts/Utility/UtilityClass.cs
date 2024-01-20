@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
 
-namespace Nijo.Architecture.Utility {
+namespace Nijo.Parts.Utility {
     internal class UtilityClass {
         internal const string CLASSNAME = "Util";
         internal const string GET_JSONOPTION = "GetJsonSrializerOptions";

@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
 
-namespace Nijo.Architecture.WebServer {
+namespace Nijo.Parts.WebServer {
     internal class EnumDefs {
 
         internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {

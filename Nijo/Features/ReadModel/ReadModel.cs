@@ -1,5 +1,5 @@
-using Nijo.Architecture;
-using Nijo.Architecture.WebServer;
+using Nijo.Parts;
+using Nijo.Parts.WebServer;
 using Nijo.Core;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;

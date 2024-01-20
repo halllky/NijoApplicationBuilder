@@ -1,6 +1,6 @@
 using Nijo.Core;
 using Nijo.Util.DotnetEx;
-using Nijo.Architecture.WebServer;
+using Nijo.Parts.WebServer;
 using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 using System;
 using System.Collections.Generic;
@@ -12,9 +12,9 @@ using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
 using Nijo.Features.Debugging;
 using Nijo.Features.Logging;
-using Nijo.Architecture.WebClient;
+using Nijo.Parts.WebClient;
 
-namespace Nijo.Architecture {
+namespace Nijo.Parts {
     public sealed class Infrastructure : NijoFeatureBaseNonAggregate {
 
         // DefaultConfigure

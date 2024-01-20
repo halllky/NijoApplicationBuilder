@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Nijo.Architecture.WebServer;
+using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 
 namespace Nijo.Features.WriteModel {
@@ -21,11 +21,11 @@ namespace Nijo.Features.WriteModel {
         internal string MethodName => $"Delete{_aggregate.Item.DisplayName.ToCSharpSafe()}";
 
         internal string RenderController() {
-            var controller = new Architecture.WebClient.Controller(_aggregate.Item);
+            var controller = new Parts.WebClient.Controller(_aggregate.Item);
             var args = GetEFCoreMethodArgs();
 
             return $$"""
-                [HttpDelete("{{Architecture.WebClient.Controller.DELETE_ACTION_NAME}}/{{args.Select(a => "{" + a.MemberName + "}").Join("/")}}")]
+                [HttpDelete("{{Parts.WebClient.Controller.DELETE_ACTION_NAME}}/{{args.Select(a => "{" + a.MemberName + "}").Join("/")}}")]
                 public virtual IActionResult Delete({{args.Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}) {
                     if (_applicationService.{{MethodName}}({{args.Select(a => a.MemberName).Join(", ")}}, out var errors)) {
                         return Ok();
@@ -38,7 +38,7 @@ namespace Nijo.Features.WriteModel {
 
         internal string RenderAppSrvMethod() {
             var appSrv = new ApplicationService();
-            var controller = new Architecture.WebClient.Controller(_aggregate.Item);
+            var controller = new Parts.WebClient.Controller(_aggregate.Item);
             var args = GetEFCoreMethodArgs().ToArray();
             var find = new FindFeature(_aggregate);
             var instanceClass = new AggregateDetail(_aggregate).ClassName;

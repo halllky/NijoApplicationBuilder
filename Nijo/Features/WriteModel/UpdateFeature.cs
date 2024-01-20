@@ -7,8 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
-using Nijo.Architecture;
-using Nijo.Architecture.WebServer;
+using Nijo.Parts;
+using Nijo.Parts.WebServer;
 
 namespace Nijo.Features.WriteModel {
     internal class UpdateFeature {
@@ -22,10 +22,10 @@ namespace Nijo.Features.WriteModel {
         internal string MethodName => $"Update{_aggregate.Item.DisplayName.ToCSharpSafe()}";
 
         internal string RenderController() {
-            var controller = new Architecture.WebClient.Controller(_aggregate.Item);
+            var controller = new Parts.WebClient.Controller(_aggregate.Item);
 
             return $$"""
-                [HttpPost("{{Architecture.WebClient.Controller.UPDATE_ACTION_NAME}}")]
+                [HttpPost("{{Parts.WebClient.Controller.UPDATE_ACTION_NAME}}")]
                 public virtual IActionResult Update({{_aggregate.Item.ClassName}} param) {
                     if (_applicationService.{{MethodName}}(param, out var updated, out var errors)) {
                         return this.JsonContent(updated);
@@ -38,7 +38,7 @@ namespace Nijo.Features.WriteModel {
 
         internal string RenderAppSrvMethod() {
             var appSrv = new ApplicationService();
-            var controller = new Architecture.WebClient.Controller(_aggregate.Item);
+            var controller = new Parts.WebClient.Controller(_aggregate.Item);
             var find = new FindFeature(_aggregate);
 
             var detail = new AggregateDetail(_aggregate);

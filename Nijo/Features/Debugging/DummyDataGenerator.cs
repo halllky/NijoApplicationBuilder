@@ -1,6 +1,6 @@
 using Nijo.Core;
 using Nijo.Util.DotnetEx;
-using Nijo.Architecture.WebServer;
+using Nijo.Parts.WebServer;
 using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 using System;
 using System.Collections.Generic;
@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using Nijo.Core.AggregateMemberTypes;
 using Nijo.Util.CodeGenerating;
 using Nijo.Features.WriteModel;
-using Nijo.Architecture.WebClient;
+using Nijo.Parts.WebClient;
 
 namespace Nijo.Features.Debugging {
     internal class DummyDataGenerator {
@@ -50,7 +50,7 @@ namespace Nijo.Features.Debugging {
         private static string RenderAggregate(GraphNode<Aggregate> rootAggregate, int index, Random random) {
             if (!rootAggregate.IsStored()) return string.Empty;
 
-            var controller = new Architecture.WebClient.Controller(rootAggregate.Item);
+            var controller = new Parts.WebClient.Controller(rootAggregate.Item);
             var descendants = rootAggregate.EnumerateDescendants();
             var data = $"data{random.Next(99999999):00000000}";
 

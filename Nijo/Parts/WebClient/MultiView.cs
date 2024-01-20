@@ -1,6 +1,6 @@
 using Nijo.Core;
 using Nijo.Util.DotnetEx;
-using Nijo.Architecture.Utility;
+using Nijo.Parts.Utility;
 using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 using System;
 using System.Collections.Generic;
@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
 
-namespace Nijo.Architecture.WebClient {
+namespace Nijo.Parts.WebClient {
     internal class MultiViewField {
         internal required string PhysicalName { get; init; }
         internal required IAggregateMemberType MemberType { get; init; }

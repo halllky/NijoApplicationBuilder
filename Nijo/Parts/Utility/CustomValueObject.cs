@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Nijo.Util.DotnetEx;
 using Nijo.Util.CodeGenerating;
 
-namespace Nijo.Architecture.Utility {
+namespace Nijo.Parts.Utility {
     /// <summary>
     /// 作ったは良いものの検索処理のEFCoreメソッドの組み立てが面倒なので保留
     /// </summary>

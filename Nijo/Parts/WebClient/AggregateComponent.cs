@@ -8,10 +8,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
-using Nijo.Architecture.WebServer;
+using Nijo.Parts.WebServer;
 using System.ComponentModel;
 
-namespace Nijo.Architecture.WebClient {
+namespace Nijo.Parts.WebClient {
 
     internal class AggregateComponent {
         internal AggregateComponent(GraphNode<Aggregate> aggregate, SingleView.E_Type type) {

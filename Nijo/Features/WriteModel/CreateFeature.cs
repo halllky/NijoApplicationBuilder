@@ -5,8 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Nijo.Architecture;
-using Nijo.Architecture.WebServer;
+using Nijo.Parts;
+using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 
@@ -22,11 +22,11 @@ namespace Nijo.Features.WriteModel {
         internal string MethodName => $"Create{_aggregate.Item.DisplayName.ToCSharpSafe()}";
 
         internal string RenderController() {
-            var controller = new Architecture.WebClient.Controller(_aggregate.Item);
+            var controller = new Parts.WebClient.Controller(_aggregate.Item);
             var param = new AggregateCreateCommand(_aggregate);
 
             return $$"""
-                [HttpPost("{{Architecture.WebClient.Controller.CREATE_ACTION_NAME}}")]
+                [HttpPost("{{Parts.WebClient.Controller.CREATE_ACTION_NAME}}")]
                 public virtual IActionResult Create([FromBody] {{param.ClassName}} param) {
                     if (_applicationService.{{MethodName}}(param, out var created, out var errors)) {
                         return this.JsonContent(created);
@@ -39,7 +39,7 @@ namespace Nijo.Features.WriteModel {
 
         internal string RenderAppSrvMethod() {
             var appSrv = new ApplicationService();
-            var controller = new Architecture.WebClient.Controller(_aggregate.Item);
+            var controller = new Parts.WebClient.Controller(_aggregate.Item);
             var instanceClass = new AggregateDetail(_aggregate).ClassName;
             var param = new AggregateCreateCommand(_aggregate);
             var find = new FindFeature(_aggregate);

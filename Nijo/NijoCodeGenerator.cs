@@ -1,6 +1,6 @@
-using Nijo.Architecture;
-using Nijo.Architecture.WebServer;
-using Nijo.Architecture.WebClient;
+using Nijo.Parts;
+using Nijo.Parts.WebServer;
+using Nijo.Parts.WebClient;
 using Nijo.Core;
 using Nijo.Util.DotnetEx;
 using Microsoft.Extensions.Logging;

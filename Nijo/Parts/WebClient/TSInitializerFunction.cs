@@ -1,4 +1,4 @@
-using Nijo.Architecture.WebServer;
+using Nijo.Parts.WebServer;
 using Nijo.Core;
 using Nijo.Core.AggregateMemberTypes;
 using Nijo.Util.DotnetEx;
@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.Architecture.WebClient {
+namespace Nijo.Parts.WebClient {
     internal class TSInitializerFunction {
         internal TSInitializerFunction(GraphNode<Aggregate> instance) {
             _instance = instance;

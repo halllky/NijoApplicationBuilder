@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 using Nijo.Util.CodeGenerating;
 
-namespace Nijo.Architecture.WebServer {
+namespace Nijo.Parts.WebServer {
     internal class DbContextClass {
         internal DbContextClass(Config config) {
             _config = config;
