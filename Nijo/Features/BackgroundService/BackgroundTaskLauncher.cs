@@ -5,13 +5,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Architecture;
 using Nijo.Util.CodeGenerating;
-using static Nijo.Features.BackgroundService.BackgroundTaskFeature;
 
 namespace Nijo.Features.BackgroundService {
-    internal class BackgroundTaskLauncher {
-        internal const string CLASSNAME = "BackgroundTaskLauncher";
+    partial class BackgroundTask {
 
-        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
+        private static SourceFile Launcher(ICodeRenderingContext ctx) => new SourceFile {
             FileName = "BackgroundTaskLauncher.cs",
             RenderContent = () => {
                 var dbContextFullName = $"{ctx.Config.DbContextNamespace}.{ctx.Config.DbContextName}";
@@ -29,7 +27,7 @@ namespace Nijo.Features.BackgroundService {
                     using System.Threading.Tasks;
 
                     namespace {{ctx.Config.RootNamespace}} {
-                        public sealed class {{CLASSNAME}} : Microsoft.Extensions.Hosting.BackgroundService {
+                        public sealed class {{LAUNCHER_CLASSNAME}} : Microsoft.Extensions.Hosting.BackgroundService {
 
                             protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
                                 var serviceCollection = new ServiceCollection();
@@ -276,7 +274,7 @@ namespace Nijo.Features.BackgroundService {
                     }
 
                     namespace {{ctx.Config.EntityNamespace}} {
-                        public class {{BackgroundTaskFeature.CLASSNAME}} {
+                        public class {{ENTITY_CLASSNAME}} {
                             [JsonPropertyName("id")]
                             public string {{COL_ID}} { get; set; } = string.Empty;
                             [JsonPropertyName("name")]
@@ -295,7 +293,7 @@ namespace Nijo.Features.BackgroundService {
                             public DateTime? {{COL_FINISHTIME}} { get; set; }
 
                             public static void OnModelCreating(ModelBuilder modelBuilder) {
-                                modelBuilder.Entity<{{BackgroundTaskFeature.CLASSNAME}}>(e => {
+                                modelBuilder.Entity<{{ENTITY_CLASSNAME}}>(e => {
                                     e.HasKey(e => e.{{COL_ID}});
                                 });
                             }
@@ -304,7 +302,7 @@ namespace Nijo.Features.BackgroundService {
 
                     namespace {{ctx.Config.DbContextNamespace}} {
                         partial class {{ctx.Config.DbContextName}} {
-                            public virtual DbSet<{{ctx.Config.EntityNamespace}}.{{BackgroundTaskFeature.CLASSNAME}}> {{dbSetName}} { get; set; }
+                            public virtual DbSet<{{ctx.Config.EntityNamespace}}.{{ENTITY_CLASSNAME}}> {{dbSetName}} { get; set; }
                         }
                     }
 
