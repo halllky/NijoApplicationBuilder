@@ -14,60 +14,60 @@ namespace Nijo.Features.BackgroundService {
 
         private static void AddBgTaskEntity(AppSchemaBuilder builder) {
 
-            builder.AddAggregate(new[] { GraphNodeId.Value.Replace("/", string.Empty) }, new AggregateBuildOption {
-                Handler = NijoCodeGenerator.Handlers.View.Key,
-            });
+            var nodeId = GraphNodeId.Value.Replace("/", string.Empty);
 
-            builder.AddAggregateMember(new[] { GraphNodeId.Value, COL_ID }, new AggregateMemberBuildOption {
+            builder.AddAggregate(new[] { nodeId });
+
+            builder.AddAggregateMember(new[] { nodeId, COL_ID }, new AggregateMemberBuildOption {
                 IsPrimary = true,
                 IsDisplayName = false,
                 MemberType = MemberTypeResolver.TYPE_ID,
                 IsRequired = true,
                 InvisibleInGui = false,
             });
-            builder.AddAggregateMember(new[] { GraphNodeId.Value, COL_NAME }, new AggregateMemberBuildOption {
+            builder.AddAggregateMember(new[] { nodeId, COL_NAME }, new AggregateMemberBuildOption {
                 IsPrimary = false,
                 IsDisplayName = true,
                 MemberType = MemberTypeResolver.TYPE_WORD,
                 IsRequired = true,
                 InvisibleInGui = false,
             });
-            builder.AddAggregateMember(new[] { GraphNodeId.Value, COL_BATCHTYPE }, new AggregateMemberBuildOption {
+            builder.AddAggregateMember(new[] { nodeId, COL_BATCHTYPE }, new AggregateMemberBuildOption {
                 IsPrimary = false,
                 IsDisplayName = false,
                 MemberType = MemberTypeResolver.TYPE_WORD,
                 IsRequired = true,
                 InvisibleInGui = false,
             });
-            builder.AddAggregateMember(new[] { GraphNodeId.Value, COL_PARAMETERJSON }, new AggregateMemberBuildOption {
+            builder.AddAggregateMember(new[] { nodeId, COL_PARAMETERJSON }, new AggregateMemberBuildOption {
                 IsPrimary = false,
                 IsDisplayName = false,
                 MemberType = MemberTypeResolver.TYPE_WORD,
                 IsRequired = true,
                 InvisibleInGui = false,
             });
-            builder.AddAggregateMember(new[] { GraphNodeId.Value, COL_STATE }, new AggregateMemberBuildOption {
+            builder.AddAggregateMember(new[] { nodeId, COL_STATE }, new AggregateMemberBuildOption {
                 IsPrimary = false,
                 IsDisplayName = false,
                 MemberType = ENUM_BGTASKSTATE,
                 IsRequired = true,
                 InvisibleInGui = false,
             });
-            builder.AddAggregateMember(new[] { GraphNodeId.Value, COL_REQUESTTIME }, new AggregateMemberBuildOption {
+            builder.AddAggregateMember(new[] { nodeId, COL_REQUESTTIME }, new AggregateMemberBuildOption {
                 IsPrimary = false,
                 IsDisplayName = false,
                 MemberType = MemberTypeResolver.TYPE_DATETIME,
                 IsRequired = true,
                 InvisibleInGui = false,
             });
-            builder.AddAggregateMember(new[] { GraphNodeId.Value, COL_STARTTIME }, new AggregateMemberBuildOption {
+            builder.AddAggregateMember(new[] { nodeId, COL_STARTTIME }, new AggregateMemberBuildOption {
                 IsPrimary = false,
                 IsDisplayName = false,
                 MemberType = MemberTypeResolver.TYPE_DATETIME,
                 IsRequired = false,
                 InvisibleInGui = false,
             });
-            builder.AddAggregateMember(new[] { GraphNodeId.Value, COL_FINISHTIME }, new AggregateMemberBuildOption {
+            builder.AddAggregateMember(new[] { nodeId, COL_FINISHTIME }, new AggregateMemberBuildOption {
                 IsPrimary = false,
                 IsDisplayName = false,
                 MemberType = MemberTypeResolver.TYPE_DATETIME,

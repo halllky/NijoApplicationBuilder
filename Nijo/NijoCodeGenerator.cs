@@ -133,7 +133,6 @@ namespace Nijo {
             var aggregateFeatures = features
                 .OfType<NijoFeatureBaseByAggregate>()
                 .ToArray();
-            var defaultFeature = aggregateFeatures.Single(f => f is WriteModel);
             var handlers = Handlers
                 .GetAll()
                 .ToDictionary(kv => kv.Key, kv => aggregateFeatures.Single(f => f.GetType() == kv.Value));
@@ -142,8 +141,7 @@ namespace Nijo {
                     && handlers.TryGetValue(rootAggregate.Item.Options.Handler, out var feature)) {
                     feature.GenerateCode(ctx, rootAggregate);
                 } else {
-                    // 特に指定の無い集約はWriteModel扱い
-                    defaultFeature.GenerateCode(ctx, rootAggregate);
+                    // 特に指定の無い集約は処理対象外
                 }
             }
 
