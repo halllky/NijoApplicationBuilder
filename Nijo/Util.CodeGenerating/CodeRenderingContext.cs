@@ -37,18 +37,6 @@ namespace Nijo.Util.CodeGenerating {
                 _multiFeatureFiles.Add(typeof(T), new List<Action<object>> { action });
             }
         }
-        public void Render<T>(GraphNode<Aggregate> aggregate, Action<T> handler) where T : NijoFeatureBaseByAggregate {
-            var action = (object arg) => handler((T)arg);
-            var key = new AggregateMultiFeatureSourceKeys {
-                _aggregate = aggregate,
-                _sourceType = typeof(T),
-            };
-            if (_aggregateMultiFeatureFiles.TryGetValue(key, out var list)) {
-                list.Add(action);
-            } else {
-                _aggregateMultiFeatureFiles.Add(key, new List<Action<object>> { action });
-            }
-        }
         private void GenerateMultiFeatureSources() {
             foreach (var item in _multiFeatureFiles) {
                 var instance = (NijoFeatureBaseNonAggregate)Activator.CreateInstance(item.Key)!;
