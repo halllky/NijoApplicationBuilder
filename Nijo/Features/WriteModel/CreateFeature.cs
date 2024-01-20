@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Architecture;
 using Nijo.Architecture.WebServer;
+using Nijo.Util.CodeGenerating;
+using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 
 namespace Nijo.Features.WriteModel {
     internal class CreateFeature {
@@ -38,6 +40,7 @@ namespace Nijo.Features.WriteModel {
         internal string RenderAppSrvMethod() {
             var appSrv = new ApplicationService();
             var controller = new Architecture.WebClient.Controller(_aggregate.Item);
+            var instanceClass = new AggregateDetail(_aggregate).ClassName;
             var param = new AggregateCreateCommand(_aggregate);
             var find = new FindFeature(_aggregate);
 
@@ -47,27 +50,36 @@ namespace Nijo.Features.WriteModel {
                 .Select(m => $"dbEntity.{m.GetFullPath().Join(".")}");
 
             return $$"""
-                public virtual bool {{MethodName}}({{param.ClassName}} command, out {{_aggregate.Item.ClassName}} created, out ICollection<string> errors) {
+                public virtual bool {{MethodName}}({{param.ClassName}} command, out {{instanceClass}} created, out ICollection<string> errors) {
                     var dbEntity = command.{{AggregateDetail.TO_DBENTITY}}();
                     {{appSrv.DbContext}}.Add(dbEntity);
 
                     try {
                         {{appSrv.DbContext}}.SaveChanges();
                     } catch (DbUpdateException ex) {
-                        created = new {{_aggregate.Item.ClassName}}();
+                        created = new {{instanceClass}}();
                         errors = ex.GetMessagesRecursively("  ").ToList();
                         return false;
                     }
 
                     var afterUpdate = this.{{find.FindMethodName}}({{searchKeys.Join(", ")}});
                     if (afterUpdate == null) {
-                        created = new {{_aggregate.Item.ClassName}}();
+                        created = new {{instanceClass}}();
                         errors = new[] { "更新後のデータの再読み込みに失敗しました。" };
                         return false;
                     }
 
                     created = afterUpdate;
                     errors = new List<string>();
+
+                    // {{_aggregate.Item.DisplayName}}の更新をトリガーとする処理を実行します。
+                    var updateEvent = new AggregateUpdateEvent<{{instanceClass}}> {
+                        Created = new[] { afterUpdate },
+                    };
+                    {{_aggregate.GetDependents().SelectTextTemplate(readModel => $$"""
+                    {{WithIndent(ReadModel.ReadModel.RenderUpdateCalling(readModel, "updateEvent"), "    ")}}
+                    """)}}
+
                     return true;
                 }
                 """;

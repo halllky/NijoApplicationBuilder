@@ -272,6 +272,16 @@ namespace Nijo.Core {
                 memberOption.MemberType = parser.NotHandledKeys.Single();
             }
 
+            // ReadModelのトリガー
+            var dependsOn = element.Attribute("dependsOn")?.Value;
+            if (dependsOn != null) {
+                var dependencies = dependsOn
+                    .Split(' ')
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .Select(name => name.Trim());
+                aggregateOption.DependsOn.AddRange(dependencies);
+            }
+
             return new ParsedXElement {
                 Source = element,
                 ElementType = elementType,

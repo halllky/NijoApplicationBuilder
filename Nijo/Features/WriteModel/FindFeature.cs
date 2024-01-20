@@ -62,7 +62,12 @@ namespace Nijo.Features.WriteModel {
                 /// </summary>
                 public virtual {{FindMethodReturnType}}? {{FindMethodName}}({{args.Select(m => $"{m.CSharpTypeName}? {m.MemberName}").Join(", ")}}) {
 
-                    {{WithIndent(RenderDbEntityLoading(appSrv.DbContext, "entity", args.Select(a => a.MemberName).ToArray(), tracks: false, includeRefs: true), "    ")}}
+                    {{WithIndent(RenderDbEntityLoading(
+                        appSrv.DbContext,
+                        "entity",
+                        args.Select(a => a.MemberName).ToArray(),
+                        tracks: false,
+                        includeRefs: true), "    ")}}
 
                     if (entity == null) return null;
 

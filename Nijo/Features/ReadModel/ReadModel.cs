@@ -19,6 +19,12 @@ namespace Nijo.Features.ReadModel {
                 throw new InvalidOperationException($"{rootAggregate.Item} is not a read model.");
             return $"Reload{rootAggregate.Item.ClassName}";
         }
+        internal static string RenderUpdateCalling(GraphNode<Aggregate> readModel, string aggregateChangedEvent) {
+            var reload = AppSrvMethodName(readModel);
+            return $$"""
+                this.{{reload}}({{aggregateChangedEvent}});
+                """;
+        }
 
         public override void GenerateCode(ICodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
 
@@ -68,15 +74,19 @@ namespace Nijo.Features.ReadModel {
                     // - 一度の更新でどのエンティティまでIncludeすればよいかの自動判別が難しい
                     // - ReadModelの主キーが必ずしもWriteModelの集約1種類へのRefのみで構成されるとは限らない
                     var entity = $"{rootAggregate.Item.EFCoreEntityClassName}?";
+                    var dependencies = rootAggregate
+                        .GetDependency()
+                        .Select(writeModel => writeModel.GetRoot())
+                        .Distinct();
+
                     builder.AppServiceMethods.Add($$"""
                         /// <summary>
                         /// {{rootAggregate.Item.DisplayName}}のデータ1件の更新処理。
-                        /// 
-                        /// この処理は以下のタイミングで実行されます。
-                        /// - 依存するデータの追加・削除・更新処理の後、コミットされる前
-                        /// - 画面などからID指定でデータの洗い替えが指示されたとき
+                        /// 画面などからID指定でデータの洗い替えが指示されたときに実行されます。
                         /// </summary>
                         public virtual void {{reload}}({{appServiceArgs.Select(k => $"{k.CsType} {k.VarName}").Join(", ")}}) {
+                            /// <see cref="{{appSrv.ConcreteClass}}"/>クラスでこのメソッドをオーバーライドして、
+                            /// DbContextを操作し、対象データを追加、更新または削除する処理を実装してください。
 
                             // 実装例:
                             // var source = {{dbContext}}.<算出元データ>
@@ -97,10 +107,17 @@ namespace Nijo.Features.ReadModel {
                             //
                             // if (insert) {{dbContext}}.{{dbSet}}.Add(readModel);
                             // _applicationService.{{dbContext}}.SaveChanges();
-                            // return;
-
-                            return;
                         }
+                        {{dependencies.SelectTextTemplate(writeModel => $$"""
+                        /// <summary>
+                        /// {{rootAggregate.Item.DisplayName}}のデータの更新処理。
+                        /// {{writeModel.Item.DisplayName}}が追加・削除・更新された後、コミットされる前に実行されます。
+                        /// </summary>
+                        public virtual void {{reload}}(AggregateUpdateEvent<{{new AggregateDetail(writeModel).ClassName}}> ev) {
+                            /// <see cref="{{appSrv.ConcreteClass}}"/>クラスでこのメソッドをオーバーライドして、
+                            /// DbContextを操作し、対象データを追加、更新または削除する処理を実装してください。
+                        }
+                        """)}}
                         """);
 
                     // AggregateDetailクラス定義を作成する
