@@ -1,4 +1,3 @@
-using Nijo.Parts;
 using Nijo.Parts.WebServer;
 using Nijo.Core;
 using Nijo.Util.CodeGenerating;
@@ -8,8 +7,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Nijo.Features;
 
-namespace Nijo.Features.ReadModel {
+namespace Nijo.Models.ReadModel {
     internal class ReadModel : IModel {
 
         private const string CONTROLLER_ACTION_NAME = "reload";
@@ -161,7 +161,7 @@ namespace Nijo.Features.ReadModel {
                         """);
                 }
             });
-           
+
         }
 
     }

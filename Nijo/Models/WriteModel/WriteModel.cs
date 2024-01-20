@@ -10,8 +10,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Parts;
 using Nijo.Parts.WebClient;
+using Nijo.Features;
 
-namespace Nijo.Features.WriteModel {
+namespace Nijo.Models.WriteModel {
     internal class WriteModel : IModel {
 
         void IModel.GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {

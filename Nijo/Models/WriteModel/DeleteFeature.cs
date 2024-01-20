@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 
-namespace Nijo.Features.WriteModel {
+namespace Nijo.Models.WriteModel {
     internal class DeleteFeature {
         internal DeleteFeature(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;

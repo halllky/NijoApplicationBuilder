@@ -1,4 +1,3 @@
-using Nijo.Features.ReadModel;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;

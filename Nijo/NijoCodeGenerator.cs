@@ -11,6 +11,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Nijo.Models;
+using Nijo.Features;
 
 namespace Nijo {
     public sealed class NijoCodeGenerator {
@@ -22,8 +24,8 @@ namespace Nijo {
         }
 
         internal static class Models {
-            internal static KeyValuePair<string, Func<IModel>> WriteModel => KeyValuePair.Create("write-model", () => (IModel)new Features.WriteModel.WriteModel());
-            internal static KeyValuePair<string, Func<IModel>> ReadModel => KeyValuePair.Create("read-model", () => (IModel)new Features.ReadModel.ReadModel());
+            internal static KeyValuePair<string, Func<IModel>> WriteModel => KeyValuePair.Create("write-model", () => (IModel)new Nijo.Models.WriteModel.WriteModel());
+            internal static KeyValuePair<string, Func<IModel>> ReadModel => KeyValuePair.Create("read-model", () => (IModel)new Nijo.Models.ReadModel.ReadModel());
 
             internal static IEnumerable<KeyValuePair<string, Func<IModel>>> GetAll() {
                 yield return WriteModel;

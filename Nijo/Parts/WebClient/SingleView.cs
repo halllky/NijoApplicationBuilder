@@ -83,7 +83,7 @@ namespace Nijo.Parts.WebClient {
                 var multiViewUrl = AggregateSearchFeature.GetMultiView(_aggregate).Url;
                 var createEmptyObject = new TSInitializerFunction(_aggregate).FunctionName;
 
-                var find = new Features.WriteModel.FindFeature(_aggregate);
+                var find = new Models.WriteModel.FindFeature(_aggregate);
 
                 var keyName = new RefTargetKeyName(_aggregate);
                 var keys = _aggregate

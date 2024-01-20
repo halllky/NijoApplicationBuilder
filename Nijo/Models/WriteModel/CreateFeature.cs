@@ -10,7 +10,7 @@ using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 
-namespace Nijo.Features.WriteModel {
+namespace Nijo.Models.WriteModel {
     internal class CreateFeature {
         internal CreateFeature(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;

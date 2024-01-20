@@ -11,7 +11,7 @@ using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 using Nijo.Util.CodeGenerating;
 using Nijo.Parts;
 
-namespace Nijo.Features.WriteModel {
+namespace Nijo.Models.WriteModel {
     internal class KeywordSearchingFeature {
         internal KeywordSearchingFeature(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
