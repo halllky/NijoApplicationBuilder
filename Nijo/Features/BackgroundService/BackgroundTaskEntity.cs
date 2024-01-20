@@ -9,103 +9,65 @@ using System.Threading.Tasks;
 
 namespace Nijo.Features.BackgroundService {
 
-    class BackgroundTaskFeature : NijoFeatureBaseNonAggregate {
-        internal static NodeId GraphNodeId => new NodeId($"NIJO::{CLASSNAME}");
+    partial class BackgroundTask {
+        internal static NodeId GraphNodeId => new NodeId($"/NIJO::{ENTITY_CLASSNAME}");
 
-        public override void GenerateCode(ICodeRenderingContext context) {
+        private static void AddBgTaskEntity(AppSchemaBuilder builder) {
 
-            // TODO
+            var nodeId = GraphNodeId.Value.Replace("/", string.Empty);
 
-            //context.Render<Infrastucture>(infrastructure => {
-            //    infrastructure.ConfigureServicesWhenWebServer.Add(services => $$"""
-            //        //// バッチ処理
-            //        {{services}}.AddHostedService<BackgroundTaskLauncher>();
-            //        """);
+            builder.AddAggregate(new[] { nodeId });
 
-            //    infrastructure.OnModelCreating.Add(builder => $$"""
-            //        //// バッチ処理
-            //        // {{context.Config.EntityNamespace}}.BackgroundTaskEntity.OnModelCreating({{builder}});
-            //        """);
-            //});
-            //context.EditWebApiDirectory(genDir => {
-            //    genDir.Directory("BackgorundTask", bgTaskDir => {
-            //        bgTaskDir.Generate(BackgroundTask.Render());
-            //        bgTaskDir.Generate(BackgroundTaskLauncher.Render());
-            //    });
-
-            //    //genDir.Directory("BackgroundService", bsDir => {
-            //    //    bsDir.Generate(Features.BackgroundService.BackgroundTaskLauncher.Render());
-            //    //    bsDir.Generate(Features.BackgroundService.BackgroundTask.Render());
-
-            //    //    var bgTaskSearch = Features.BackgroundService.BackgroundTaskEntity.CreateSearchFeature(appSchema.Graph, ctx);
-            //    //    bsDir.Generate(bgTaskSearch.RenderControllerAction());
-            //    //    bsDir.Generate(bgTaskSearch.RenderCSharpClassDef());
-            //    //    bsDir.Generate(bgTaskSearch.RenderDbContextMethod());
-
-            //    //    bsDir.DeleteOtherFiles();
-            //    //});
-            //});
-        }
-
-        public override void BuildSchema(AppSchemaBuilder builder) {
-
-            // TODO
-            return;
-
-            builder.AddAggregate(new[] { GraphNodeId.Value }, new AggregateBuildOption {
-                Handler = "view",
-            });
-
-            builder.AddAggregateMember(new[] { GraphNodeId.Value, COL_ID }, new AggregateMemberBuildOption {
+            builder.AddAggregateMember(new[] { nodeId, COL_ID }, new AggregateMemberBuildOption {
                 IsPrimary = true,
                 IsDisplayName = false,
                 MemberType = MemberTypeResolver.TYPE_ID,
                 IsRequired = true,
                 InvisibleInGui = false,
             });
-            builder.AddAggregateMember(new[] { GraphNodeId.Value, COL_NAME }, new AggregateMemberBuildOption {
+            builder.AddAggregateMember(new[] { nodeId, COL_NAME }, new AggregateMemberBuildOption {
                 IsPrimary = false,
                 IsDisplayName = true,
                 MemberType = MemberTypeResolver.TYPE_WORD,
                 IsRequired = true,
                 InvisibleInGui = false,
             });
-            builder.AddAggregateMember(new[] { GraphNodeId.Value, COL_BATCHTYPE }, new AggregateMemberBuildOption {
+            builder.AddAggregateMember(new[] { nodeId, COL_BATCHTYPE }, new AggregateMemberBuildOption {
                 IsPrimary = false,
                 IsDisplayName = false,
                 MemberType = MemberTypeResolver.TYPE_WORD,
                 IsRequired = true,
                 InvisibleInGui = false,
             });
-            builder.AddAggregateMember(new[] { GraphNodeId.Value, COL_PARAMETERJSON }, new AggregateMemberBuildOption {
+            builder.AddAggregateMember(new[] { nodeId, COL_PARAMETERJSON }, new AggregateMemberBuildOption {
                 IsPrimary = false,
                 IsDisplayName = false,
                 MemberType = MemberTypeResolver.TYPE_WORD,
                 IsRequired = true,
                 InvisibleInGui = false,
             });
-            builder.AddAggregateMember(new[] { GraphNodeId.Value, COL_STATE }, new AggregateMemberBuildOption {
+            builder.AddAggregateMember(new[] { nodeId, COL_STATE }, new AggregateMemberBuildOption {
                 IsPrimary = false,
                 IsDisplayName = false,
                 MemberType = ENUM_BGTASKSTATE,
                 IsRequired = true,
                 InvisibleInGui = false,
             });
-            builder.AddAggregateMember(new[] { GraphNodeId.Value, COL_REQUESTTIME }, new AggregateMemberBuildOption {
+            builder.AddAggregateMember(new[] { nodeId, COL_REQUESTTIME }, new AggregateMemberBuildOption {
                 IsPrimary = false,
                 IsDisplayName = false,
                 MemberType = MemberTypeResolver.TYPE_DATETIME,
                 IsRequired = true,
                 InvisibleInGui = false,
             });
-            builder.AddAggregateMember(new[] { GraphNodeId.Value, COL_STARTTIME }, new AggregateMemberBuildOption {
+            builder.AddAggregateMember(new[] { nodeId, COL_STARTTIME }, new AggregateMemberBuildOption {
                 IsPrimary = false,
                 IsDisplayName = false,
                 MemberType = MemberTypeResolver.TYPE_DATETIME,
                 IsRequired = false,
                 InvisibleInGui = false,
             });
-            builder.AddAggregateMember(new[] { GraphNodeId.Value, COL_FINISHTIME }, new AggregateMemberBuildOption {
+            builder.AddAggregateMember(new[] { nodeId, COL_FINISHTIME }, new AggregateMemberBuildOption {
                 IsPrimary = false,
                 IsDisplayName = false,
                 MemberType = MemberTypeResolver.TYPE_DATETIME,
@@ -121,21 +83,22 @@ namespace Nijo.Features.BackgroundService {
             });
         }
 
-        internal const string CLASSNAME = "BackgroundTaskEntity";
+        private const string ENTITY_CLASSNAME = "BackgroundTaskEntity";
+        private const string LAUNCHER_CLASSNAME = "BackgroundTaskLauncher";
 
-        internal const string COL_ID = "Id";
-        internal const string COL_NAME = "Name";
-        internal const string COL_BATCHTYPE = "BatchType";
-        internal const string COL_PARAMETERJSON = "ParameterJson";
-        internal const string COL_STATE = "State";
-        internal const string COL_REQUESTTIME = "RequestTime";
-        internal const string COL_STARTTIME = "StartTime";
-        internal const string COL_FINISHTIME = "FinishTime";
+        private const string COL_ID = "JobId";
+        private const string COL_NAME = "Name";
+        private const string COL_BATCHTYPE = "BatchType";
+        private const string COL_PARAMETERJSON = "ParameterJson";
+        private const string COL_STATE = "State";
+        private const string COL_REQUESTTIME = "RequestTime";
+        private const string COL_STARTTIME = "StartTime";
+        private const string COL_FINISHTIME = "FinishTime";
 
-        internal const string ENUM_BGTASKSTATE = "E_BackgroundTaskState";
-        internal const string ENUM_BGTASKSTATE_WAITTOSTART = "WaitToStart";
-        internal const string ENUM_BGTASKSTATE_RUNNING = "Running";
-        internal const string ENUM_BGTASKSTATE_SUCCESS = "Success";
-        internal const string ENUM_BGTASKSTATE_FAULT = "Fault";
+        private const string ENUM_BGTASKSTATE = "E_BackgroundTaskState";
+        private const string ENUM_BGTASKSTATE_WAITTOSTART = "WaitToStart";
+        private const string ENUM_BGTASKSTATE_RUNNING = "Running";
+        private const string ENUM_BGTASKSTATE_SUCCESS = "Success";
+        private const string ENUM_BGTASKSTATE_FAULT = "Fault";
     }
 }

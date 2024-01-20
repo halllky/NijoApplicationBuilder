@@ -5,13 +5,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Architecture;
 using Nijo.Util.CodeGenerating;
-using static Nijo.Features.BackgroundService.BackgroundTaskFeature;
 
 namespace Nijo.Features.BackgroundService {
-    internal class BackgroundTaskLauncher {
-        internal const string CLASSNAME = "BackgroundTaskLauncher";
+    partial class BackgroundTask {
 
-        internal static SourceFile Render(ICodeRenderingContext ctx) => new SourceFile {
+        private static SourceFile Launcher(ICodeRenderingContext ctx) => new SourceFile {
             FileName = "BackgroundTaskLauncher.cs",
             RenderContent = () => {
                 var dbContextFullName = $"{ctx.Config.DbContextNamespace}.{ctx.Config.DbContextName}";
@@ -29,7 +27,7 @@ namespace Nijo.Features.BackgroundService {
                     using System.Threading.Tasks;
 
                     namespace {{ctx.Config.RootNamespace}} {
-                        public sealed class {{CLASSNAME}} : Microsoft.Extensions.Hosting.BackgroundService {
+                        public sealed class {{LAUNCHER_CLASSNAME}} : Microsoft.Extensions.Hosting.BackgroundService {
 
                             protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
                                 var serviceCollection = new ServiceCollection();
@@ -120,20 +118,25 @@ namespace Nijo.Features.BackgroundService {
                             /// </summary>
                             private BackgroundTask FindTaskByID(string batchType) {
                                 var assembly = Assembly.GetExecutingAssembly();
-                                var types = assembly
-                                    .GetTypes()
-                                    .Select(type => new { type, attr = type.GetCustomAttribute<BackgroundTaskAttribute>() })
-                                    .Where(x => x.attr?.Id == batchType)
-                                    .ToArray();
-                                if (types.Length == 0)
-                                    throw new InvalidOperationException($"バッチID '{batchType}' と対応するバッチが見つかりません。");
-                                if (types.Length >= 2)
-                                    throw new InvalidOperationException($"バッチID '{batchType}' と対応するバッチが複数見つかりました。");
 
-                                var type = types[0].type;
-                                var instance = Activator.CreateInstance(type) ?? throw new InvalidOperationException($"バッチ {batchType}: '{type.Name}' クラスのインスタンス化に失敗しました。引数なしコンストラクタがあるか等確認してください。");
-                                if (instance is not BackgroundTask backgroundTask) throw new InvalidOperationException($"バッチ {batchType}: '{type.Name}' クラスは{nameof(BackgroundTask)}クラスを継承している必要があります。");
-                                return backgroundTask;
+                                foreach (var type in assembly.GetTypes()) {
+                                    if (!type.IsSubclassOf(typeof(BackgroundTask))) continue;
+
+                                    BackgroundTask instance;
+                                    try {
+                                        instance = (BackgroundTask)Activator.CreateInstance(type);
+                                    } catch {
+                                        continue;
+                                    }
+
+                                    if (instance.BatchTypeId != batchType) continue;
+
+                                    return instance;
+                                }
+
+                                throw new InvalidOperationException(
+                                    $"バッチID '{batchType}' と対応するバッチが見つかりません。" +
+                                    $"IDの指定を誤っていないか、またそのクラスに引数なしコンストラクタがあるかを確認してください。");
                             }
 
                             /// <summary>
@@ -187,8 +190,8 @@ namespace Nijo.Features.BackgroundService {
                                 var ids = completedTasks.Keys.ToArray();
                                 var entities = dbContext
                                     .{{dbSetName}}
-                                    .Where(e => ids.Contains(e.Id))
-                                    .ToDictionary(e => e.Id);
+                                    .Where(e => ids.Contains(e.{{COL_ID}}))
+                                    .ToDictionary(e => e.{{COL_ID}});
                                 var list = completedTasks.ToDictionary(
                                     kv => kv.Key,
                                     kv => entities.GetValueOrDefault(kv.Key));
@@ -264,19 +267,10 @@ namespace Nijo.Features.BackgroundService {
                             }
                             public TParameter Parameter { get; }
                         }
-
-                        [System.AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-                        sealed class BackgroundTaskAttribute : Attribute {
-                            public BackgroundTaskAttribute(string id) {
-                                Id = id;
-                            }
-                            public string Id { get; }
-                            public string? DisplayName { get; set; }
-                        }
                     }
 
                     namespace {{ctx.Config.EntityNamespace}} {
-                        public class {{BackgroundTaskFeature.CLASSNAME}} {
+                        public class {{ENTITY_CLASSNAME}} {
                             [JsonPropertyName("id")]
                             public string {{COL_ID}} { get; set; } = string.Empty;
                             [JsonPropertyName("name")]
@@ -295,7 +289,7 @@ namespace Nijo.Features.BackgroundService {
                             public DateTime? {{COL_FINISHTIME}} { get; set; }
 
                             public static void OnModelCreating(ModelBuilder modelBuilder) {
-                                modelBuilder.Entity<{{BackgroundTaskFeature.CLASSNAME}}>(e => {
+                                modelBuilder.Entity<{{ENTITY_CLASSNAME}}>(e => {
                                     e.HasKey(e => e.{{COL_ID}});
                                 });
                             }
@@ -304,7 +298,7 @@ namespace Nijo.Features.BackgroundService {
 
                     namespace {{ctx.Config.DbContextNamespace}} {
                         partial class {{ctx.Config.DbContextName}} {
-                            public virtual DbSet<{{ctx.Config.EntityNamespace}}.{{BackgroundTaskFeature.CLASSNAME}}> {{dbSetName}} { get; set; }
+                            public virtual DbSet<{{ctx.Config.EntityNamespace}}.{{ENTITY_CLASSNAME}}> {{dbSetName}} { get; set; }
                         }
                     }
 

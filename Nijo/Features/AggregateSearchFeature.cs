@@ -86,6 +86,8 @@ namespace Nijo.Features {
             return fields;
         }
 
+        public bool? UseDefaultSearchLogic { get; set; }
+
         public override void GenerateCode(ICodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
             var multiView = GetMultiView(rootAggregate);
 
@@ -129,7 +131,7 @@ namespace Nijo.Features {
                         }
                         """);
 
-                    if (rootAggregate.IsStored()) {
+                    if (UseDefaultSearchLogic == true || rootAggregate.IsStored()) {
                         builder.AppServiceMethods.Add(RenderSearchMethod(context, rootAggregate));
                     } else {
                         builder.AppServiceMethods.Add(RenderNotImplementedSearchMethod(context, rootAggregate));

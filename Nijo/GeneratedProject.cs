@@ -129,6 +129,12 @@ namespace Nijo {
             if (!SchemaXml.ConfigureBuilder(builder, out var errors)) {
                 throw new InvalidOperationException(errors.Join(Environment.NewLine));
             }
+
+            // Nijo標準機能
+            foreach (var feature in CodeGenerator.GetFeatures()) {
+                feature.BuildSchema(builder);
+            }
+
             if (!builder.TryBuild(out var appSchema, out var errors1)) {
                 throw new InvalidOperationException(errors1.Join(Environment.NewLine));
             }
