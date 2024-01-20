@@ -221,6 +221,14 @@ namespace Nijo {
                 sw.WriteLine(content);
             }
 
+            /// <summary>
+            /// コピー先のファイルがこのコンテキスト内で一度も生成されていない場合のみコピーを実行する
+            /// </summary>
+            public void CopyIfNotHandled(string copySourceFile) {
+                var copyTargetFile = System.IO.Path.Combine(Path, System.IO.Path.GetFileName(copySourceFile));
+                if (_ctx.IsHandled(copyTargetFile)) return;
+                CopyFrom(copySourceFile);
+            }
             public void CopyFrom(string copySourceFile) {
                 var copyTargetFile = System.IO.Path.Combine(Path, System.IO.Path.GetFileName(copySourceFile));
                 _ctx.Handle(copyTargetFile);

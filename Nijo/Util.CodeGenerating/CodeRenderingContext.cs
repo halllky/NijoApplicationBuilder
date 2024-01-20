@@ -42,12 +42,13 @@ namespace Nijo.Util.CodeGenerating {
         #region 生成されなかったファイルの削除
         private readonly HashSet<string> _handled = new();
         internal void Handle(string fullpath) => _handled.Add(Path.GetFullPath(fullpath));
+        internal bool IsHandled(string fullpath) => _handled.Contains(Path.GetFullPath(fullpath));
         private void CleanUnhandledFilesAndDirectories() {
             var allFiles
                 = Directory.GetFiles(_webapiDir!.Path, "*", SearchOption.AllDirectories)
                 .Concat(Directory.GetFiles(_reactDir!.Path, "*", SearchOption.AllDirectories));
             foreach (var file in allFiles) {
-                if (_handled.Contains(Path.GetFullPath(file))) continue;
+                if (IsHandled(file)) continue;
                 if (!File.Exists(file)) continue;
                 File.Delete(file);
             }
@@ -55,7 +56,7 @@ namespace Nijo.Util.CodeGenerating {
                 = Directory.GetDirectories(_webapiDir!.Path, "*", SearchOption.AllDirectories)
                 .Concat(Directory.GetDirectories(_reactDir!.Path, "*", SearchOption.AllDirectories));
             foreach (var dir in allDirectories) {
-                if (_handled.Contains(Path.GetFullPath(dir))) continue;
+                if (IsHandled(dir)) continue;
                 if (!Directory.Exists(dir)) continue;
                 Directory.Delete(dir, true);
             }
