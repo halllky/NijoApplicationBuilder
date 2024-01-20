@@ -38,7 +38,7 @@ namespace Nijo.Features.ReadModel {
             var searchFeature = new AggregateSearchFeature();
             searchFeature.GenerateCode(context, rootAggregate);
 
-            context.Aggregate(rootAggregate, builder => {
+            context.UseAggregateFile(rootAggregate, builder => {
                 var appSrv = new ApplicationService();
                 var dbContext = appSrv.DbContext;
                 var dbSet = rootAggregate.Item.DbSetName;

@@ -16,12 +16,9 @@ namespace Nijo.Parts.WebServer {
         }
         private readonly Config _config;
 
-        internal SourceFile RenderDeclaring(CodeRenderingContext ctx) => new SourceFile {
+        internal SourceFile RenderDeclaring(CodeRenderingContext ctx, IEnumerable<string> onModelCreating) => new SourceFile {
             FileName = $"{_config.DbContextName.ToFileNameSafe()}.cs",
             RenderContent = () => {
-                var onModelCreatings = ctx._itemsByAggregate
-                    .Where(x => x.Value.OnModelCreating.Any())
-                    .Select(x => $"OnModelCreating_{x.Key.Item.ClassName}");
 
                 return $$"""
                     using Microsoft.EntityFrameworkCore;
@@ -33,7 +30,7 @@ namespace Nijo.Parts.WebServer {
 
                             /// <inheritdoc />
                             protected override void OnModelCreating(ModelBuilder modelBuilder) {
-                    {{onModelCreatings.SelectTextTemplate(method => $$"""
+                    {{onModelCreating.SelectTextTemplate(method => $$"""
                                 this.{{method}}(modelBuilder);
                     """)}}
                             }

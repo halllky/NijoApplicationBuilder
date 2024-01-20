@@ -28,7 +28,7 @@ namespace Nijo.Features.WriteModel {
             var searchFeature = new AggregateSearchFeature();
             searchFeature.GenerateCode(context, rootAggregate);
 
-            context.Aggregate(rootAggregate, builder => {
+            context.UseAggregateFile(rootAggregate, builder => {
 
                 // AggregateDetail (for Find, Update, Delete)
                 var findFeature = new FindFeature(rootAggregate);
@@ -102,8 +102,8 @@ namespace Nijo.Features.WriteModel {
             var detailView = new SingleView(rootAggregate, SingleView.E_Type.View);
             var editView = new SingleView(rootAggregate, SingleView.E_Type.Edit);
 
-            context.ReactPages.Add(detailView);
-            context.ReactPages.Add(editView);
+            context.AddPage(detailView);
+            context.AddPage(editView);
 
             context.EditReactDirectory(reactDir => {
                 reactDir.Directory("pages", pageDir => {

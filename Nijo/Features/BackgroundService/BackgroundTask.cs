@@ -28,12 +28,12 @@ namespace Nijo.Features.BackgroundService {
                 });
             });
 
-            context.ConfigureServicesWhenWebServer.Add(services => $$"""
+            context.ConfigureServicesWhenWebServer(services => $$"""
                 //// バッチ処理
                 {{services}}.AddHostedService<BackgroundTaskLauncher>();
                 """);
 
-            context.Aggregate(aggregate, builder => {
+            context.UseAggregateFile(aggregate, builder => {
                 builder.OnModelCreating.Add(modelBuilder => $$"""
                     {{ENTITY_CLASSNAME}}.OnModelCreating({{modelBuilder}});
                     """);

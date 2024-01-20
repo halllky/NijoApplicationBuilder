@@ -20,7 +20,7 @@ namespace Nijo.Features {
 
         public override void GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
             var createView = new SingleView(rootAggregate, SingleView.E_Type.Create);
-            context.ReactPages.Add(createView);
+            context.AddPage(createView);
 
             context.EditReactDirectory(reactDir => {
                 reactDir.Directory("pages", pages => {
@@ -37,7 +37,7 @@ namespace Nijo.Features {
             var commandName = CommandName(rootAggregate);
             var actionName = ActionName(rootAggregate);
 
-            context.Aggregate(rootAggregate, builder => {
+            context.UseAggregateFile(rootAggregate, builder => {
                 builder.DataClassDeclaring.Add(command.RenderCSharp(context));
 
                 builder.ControllerActions.Add(ControllerAction ?? $$"""

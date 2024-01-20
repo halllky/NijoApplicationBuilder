@@ -91,9 +91,9 @@ namespace Nijo.Features {
         public override void GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
             var multiView = GetMultiView(rootAggregate);
 
-            context.ReactPages.Add(multiView);
+            context.AddPage(multiView);
 
-            context.Aggregate(rootAggregate, builder => {
+            context.UseAggregateFile(rootAggregate, builder => {
                 builder.DataClassDeclaring.Add($$"""
                     /// <summary>
                     /// {{multiView.DisplayName}}の一覧検索処理の検索条件を表すクラスです。
