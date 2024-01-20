@@ -4,7 +4,6 @@ using Nijo.Parts;
 using Nijo.Parts.WebClient;
 using Nijo.Parts.WebServer;
 using Nijo.Util.DotnetEx;
-using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,11 +13,22 @@ using System.Threading.Tasks;
 using System.Reflection;
 
 namespace Nijo.Util.CodeGenerating {
-    public class CodeRenderingContext {
-        public required Config Config { get; init; }
-        public required AppSchema Schema { get; init; }
+    public sealed class CodeRenderingContext {
+        internal CodeRenderingContext() { }
+
         internal NijoCodeGenerator.DirectorySetupper? WebapiDir { get; set; }
         internal NijoCodeGenerator.DirectorySetupper? ReactDir { get; set; }
+
+        public required Config Config { get; init; }
+        public required AppSchema Schema { get; init; }
+
+        public List<Func<string, string>> ConfigureServices { get; } = new List<Func<string, string>>();
+        public List<Func<string, string>> ConfigureServicesWhenWebServer { get; } = new List<Func<string, string>>();
+        public List<Func<string, string>> ConfigureServicesWhenBatchProcess { get; } = new List<Func<string, string>>();
+        public List<Func<string, string>> ConfigureWebApp { get; } = new List<Func<string, string>>();
+
+        public List<IReactPage> ReactPages { get; } = new List<IReactPage>();
+
         public void EditWebApiDirectory(Action<NijoCodeGenerator.DirectorySetupper> webapiDirHandler) => webapiDirHandler.Invoke(WebapiDir!);
         public void EditReactDirectory(Action<NijoCodeGenerator.DirectorySetupper> reactDirHandler) => reactDirHandler.Invoke(ReactDir!);
 
@@ -47,23 +57,10 @@ namespace Nijo.Util.CodeGenerating {
             }
         }
 
-        internal readonly Dictionary<GraphNode<Aggregate>, ByAggregate> _itemsByAggregate = new();
-        public sealed class ByAggregate {
-            // DbContext
-            public bool HasDbSet { get; set; }
-            public List<Func<string, string>> OnModelCreating { get; } = new();
-
-            // AggregateRenderer
-            public List<string> ControllerActions { get; } = new();
-            public List<string> AppServiceMethods { get; } = new();
-            public List<string> DataClassDeclaring { get; } = new();
-
-            // react
-            public List<string> TypeScriptDataTypes { get; } = new List<string>();
-        }
-        public void Aggregate(GraphNode<Aggregate> aggregate, Action<ByAggregate> fn) {
+        internal readonly Dictionary<GraphNode<Aggregate>, AggregateFile> _itemsByAggregate = new();
+        public void Aggregate(GraphNode<Aggregate> aggregate, Action<AggregateFile> fn) {
             if (!_itemsByAggregate.TryGetValue(aggregate, out var item)) {
-                item = new ByAggregate();
+                item = new AggregateFile(aggregate);
                 _itemsByAggregate.Add(aggregate, item);
             }
             fn(item);
@@ -96,17 +93,7 @@ namespace Nijo.Util.CodeGenerating {
 
 
         #region アプリケーション基盤レンダリング
-
-        // DefaultConfigure
-        public List<Func<string, string>> ConfigureServices { get; } = new List<Func<string, string>>();
-        public List<Func<string, string>> ConfigureServicesWhenWebServer { get; } = new List<Func<string, string>>();
-        public List<Func<string, string>> ConfigureServicesWhenBatchProcess { get; } = new List<Func<string, string>>();
-        public List<Func<string, string>> ConfigureWebApp { get; } = new List<Func<string, string>>();
-
-        // react
-        public List<IReactPage> ReactPages { get; } = new List<IReactPage>();
-
-        public void GenerateCode() {
+        private void GenerateCode() {
             EditWebApiDirectory(genDir => {
                 genDir.Generate(Configure.Render(this));
                 genDir.Generate(EnumDefs.Render(this));
@@ -128,11 +115,11 @@ namespace Nijo.Util.CodeGenerating {
                 genDir.Directory("EntityFramework", efDir => {
                     efDir.Generate(new DbContextClass(Config).RenderDeclaring(this));
                 });
-            });
 
-            foreach (var item in _itemsByAggregate) {
-                RenderWebapiAggregateFile(item.Key, item.Value);
-            }
+                foreach (var aggFile in _itemsByAggregate.Values) {
+                    genDir.Generate(aggFile.Render(this));
+                }
+            });
 
             EditReactDirectory(reactDir => {
                 var reactProjectTemplate = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "ApplicationTemplates", "REACT_AND_WEBAPI", "react");
@@ -171,81 +158,6 @@ namespace Nijo.Util.CodeGenerating {
         }
 
         internal const string REACT_PAGE_DIR = "pages";
-
-        public interface IReactPage {
-            string Url { get; }
-            string DirNameInPageDir { get; }
-            string ComponentPhysicalName { get; }
-            bool ShowMenu { get; }
-            string? LabelInMenu { get; }
-            SourceFile GetSourceFile();
-        }
-
-        private void RenderWebapiAggregateFile(GraphNode<Aggregate> aggregate, ByAggregate byAggregate) {
-
-            EditWebApiDirectory(dir => {
-                var appSrv = new ApplicationService();
-                var controller = new Parts.WebClient.Controller(aggregate.Item);
-
-                dir.Generate(new SourceFile {
-                    FileName = $"{aggregate.Item.DisplayName.ToFileNameSafe()}.cs",
-                    RenderContent = () => $$"""
-                        namespace {{Config.RootNamespace}} {
-                            using System;
-                            using System.Collections;
-                            using System.Collections.Generic;
-                            using System.ComponentModel;
-                            using System.ComponentModel.DataAnnotations;
-                            using System.Linq;
-                            using Microsoft.AspNetCore.Mvc;
-                            using Microsoft.EntityFrameworkCore;
-                            using Microsoft.EntityFrameworkCore.Infrastructure;
-                            using {{Config.EntityNamespace}};
-
-                            [ApiController]
-                            [Route("{{Parts.WebClient.Controller.SUBDOMAIN}}/[controller]")]
-                            public partial class {{controller.ClassName}} : ControllerBase {
-                                public {{controller.ClassName}}(ILogger<{{controller.ClassName}}> logger, {{appSrv.ClassName}} applicationService) {
-                                    _logger = logger;
-                                    _applicationService = applicationService;
-                                }
-                                protected readonly ILogger<{{controller.ClassName}}> _logger;
-                                protected readonly {{appSrv.ClassName}} _applicationService;
-
-                                {{WithIndent(byAggregate.ControllerActions, "        ")}}
-                            }
-
-
-                            partial class {{appSrv.ClassName}} {
-                                {{WithIndent(byAggregate.AppServiceMethods, "        ")}}
-                            }
-
-
-                        #region データ構造クラス
-                            {{WithIndent(byAggregate.DataClassDeclaring, "    ")}}
-                        #endregion データ構造クラス
-                        }
-
-                        namespace {{Config.DbContextNamespace}} {
-                            using {{Config.RootNamespace}};
-                            using Microsoft.EntityFrameworkCore;
-
-                            partial class {{Config.DbContextName}} {
-                        {{If(byAggregate.HasDbSet, () => aggregate.EnumerateThisAndDescendants().SelectTextTemplate(agg => $$"""
-                                public virtual DbSet<{{agg.Item.EFCoreEntityClassName}}> {{agg.Item.DbSetName}} { get; set; }
-                        """))}}
-
-                        {{If(byAggregate.OnModelCreating.Any(), () => $$"""
-                                private void OnModelCreating_{{aggregate.Item.ClassName}}(ModelBuilder modelBuilder) {
-                                    {{WithIndent(byAggregate.OnModelCreating.SelectTextTemplate(fn => fn.Invoke("modelBuilder")), "            ")}}
-                                }
-                        """)}}
-                            }
-                        }
-                        """,
-                });
-            });
-        }
         #endregion アプリケーション基盤レンダリング
     }
 }

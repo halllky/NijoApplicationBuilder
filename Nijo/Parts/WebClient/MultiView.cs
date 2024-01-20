@@ -16,14 +16,14 @@ namespace Nijo.Parts.WebClient {
         internal required bool VisibleInGui { get; init; }
     }
 
-    internal class MultiView : CodeRenderingContext.IReactPage {
+    internal class MultiView : IReactPage {
 
-        string CodeRenderingContext.IReactPage.Url => Url;
-        string CodeRenderingContext.IReactPage.DirNameInPageDir => DisplayName.ToFileNameSafe();
-        string CodeRenderingContext.IReactPage.ComponentPhysicalName => $"{DisplayName.ToCSharpSafe()}MultiView";
-        bool CodeRenderingContext.IReactPage.ShowMenu => true;
-        string? CodeRenderingContext.IReactPage.LabelInMenu => DisplayName;
-        SourceFile CodeRenderingContext.IReactPage.GetSourceFile() => RenderMultiView();
+        string IReactPage.Url => Url;
+        string IReactPage.DirNameInPageDir => DisplayName.ToFileNameSafe();
+        string IReactPage.ComponentPhysicalName => $"{DisplayName.ToCSharpSafe()}MultiView";
+        bool IReactPage.ShowMenu => true;
+        string? IReactPage.LabelInMenu => DisplayName;
+        SourceFile IReactPage.GetSourceFile() => RenderMultiView();
 
 
         internal required string DisplayName { get; init; }
