@@ -118,20 +118,25 @@ namespace Nijo.Features.BackgroundService {
                             /// </summary>
                             private BackgroundTask FindTaskByID(string batchType) {
                                 var assembly = Assembly.GetExecutingAssembly();
-                                var types = assembly
-                                    .GetTypes()
-                                    .Select(type => new { type, attr = type.GetCustomAttribute<BackgroundTaskAttribute>() })
-                                    .Where(x => x.attr?.Id == batchType)
-                                    .ToArray();
-                                if (types.Length == 0)
-                                    throw new InvalidOperationException($"バッチID '{batchType}' と対応するバッチが見つかりません。");
-                                if (types.Length >= 2)
-                                    throw new InvalidOperationException($"バッチID '{batchType}' と対応するバッチが複数見つかりました。");
 
-                                var type = types[0].type;
-                                var instance = Activator.CreateInstance(type) ?? throw new InvalidOperationException($"バッチ {batchType}: '{type.Name}' クラスのインスタンス化に失敗しました。引数なしコンストラクタがあるか等確認してください。");
-                                if (instance is not BackgroundTask backgroundTask) throw new InvalidOperationException($"バッチ {batchType}: '{type.Name}' クラスは{nameof(BackgroundTask)}クラスを継承している必要があります。");
-                                return backgroundTask;
+                                foreach (var type in assembly.GetTypes()) {
+                                    if (!type.IsSubclassOf(typeof(BackgroundTask))) continue;
+
+                                    BackgroundTask instance;
+                                    try {
+                                        instance = (BackgroundTask)Activator.CreateInstance(type);
+                                    } catch {
+                                        continue;
+                                    }
+
+                                    if (instance.BatchTypeId != batchType) continue;
+
+                                    return instance;
+                                }
+
+                                throw new InvalidOperationException(
+                                    $"バッチID '{batchType}' と対応するバッチが見つかりません。" +
+                                    $"IDの指定を誤っていないか、またそのクラスに引数なしコンストラクタがあるかを確認してください。");
                             }
 
                             /// <summary>
@@ -185,8 +190,8 @@ namespace Nijo.Features.BackgroundService {
                                 var ids = completedTasks.Keys.ToArray();
                                 var entities = dbContext
                                     .{{dbSetName}}
-                                    .Where(e => ids.Contains(e.Id))
-                                    .ToDictionary(e => e.Id);
+                                    .Where(e => ids.Contains(e.{{COL_ID}}))
+                                    .ToDictionary(e => e.{{COL_ID}});
                                 var list = completedTasks.ToDictionary(
                                     kv => kv.Key,
                                     kv => entities.GetValueOrDefault(kv.Key));
@@ -261,15 +266,6 @@ namespace Nijo.Features.BackgroundService {
                                 Parameter = parameter;
                             }
                             public TParameter Parameter { get; }
-                        }
-
-                        [System.AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-                        sealed class BackgroundTaskAttribute : Attribute {
-                            public BackgroundTaskAttribute(string id) {
-                                Id = id;
-                            }
-                            public string Id { get; }
-                            public string? DisplayName { get; set; }
                         }
                     }
 

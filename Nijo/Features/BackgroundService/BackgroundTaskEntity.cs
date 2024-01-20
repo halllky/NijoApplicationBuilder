@@ -86,7 +86,7 @@ namespace Nijo.Features.BackgroundService {
         private const string ENTITY_CLASSNAME = "BackgroundTaskEntity";
         private const string LAUNCHER_CLASSNAME = "BackgroundTaskLauncher";
 
-        private const string COL_ID = "Id";
+        private const string COL_ID = "JobId";
         private const string COL_NAME = "Name";
         private const string COL_BATCHTYPE = "BatchType";
         private const string COL_PARAMETERJSON = "ParameterJson";

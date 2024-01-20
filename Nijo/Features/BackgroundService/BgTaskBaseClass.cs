@@ -17,27 +17,21 @@ namespace Nijo.Features.BackgroundService {
                 namespace {{ctx.Config.RootNamespace}} {
                     public abstract class BackgroundTask {
 
+                        public abstract string BatchTypeId { get; }
+                        public abstract string BatchTypeName { get; }
                         public abstract void Execute(JobChain job);
 
-                        public static void Schedule<TBatch, TParameter>(TParameter parameter, {{ctx.Config.DbContextNamespace}}.{{ctx.Config.DbContextName}} dbContext, DateTime now) where TBatch : BackgroundTask<TParameter> {
-                            Schedule(typeof(TBatch), parameter, dbContext, now);
+                        public void Schedule({{ctx.Config.DbContextNamespace}}.{{ctx.Config.DbContextName}} dbContext, DateTime now) {
+                            Schedule(null, dbContext, now);
                         }
-                        public static void Schedule<TBatch>({{ctx.Config.DbContextNamespace}}.{{ctx.Config.DbContextName}} dbContext, DateTime now) where TBatch : BackgroundTask {
-                            Schedule(typeof(TBatch), null, dbContext, now);
-                        }
-                        public static void Schedule(Type batchType, {{ctx.Config.DbContextNamespace}}.{{ctx.Config.DbContextName}} dbContext, DateTime now) {
-                            Schedule(batchType, null, dbContext, now);
-                        }
-                        public static void Schedule(Type batchType, object? parameter, {{ctx.Config.DbContextNamespace}}.{{ctx.Config.DbContextName}} dbContext, DateTime now) {
-                            var attribute = batchType.GetCustomAttribute<BackgroundTaskAttribute>()
-                                ?? throw new InvalidOperationException($"{batchType.Name} クラスに [BackgroundTask] 属性がついていません。");
+                        protected void Schedule(object? parameter, {{ctx.Config.DbContextNamespace}}.{{ctx.Config.DbContextName}} dbContext, DateTime now) {
                             var json = parameter == null
                                 ? string.Empty
                                 : JsonSerializer.Serialize(parameter);
                             var entity = new {{ctx.Config.EntityNamespace}}.{{ENTITY_CLASSNAME}} {
                                 {{COL_ID}} = Guid.NewGuid().ToString(),
-                                {{COL_NAME}} = attribute.DisplayName ?? batchType.Name,
-                                {{COL_BATCHTYPE}} = attribute.Id,
+                                {{COL_NAME}} = BatchTypeName,
+                                {{COL_BATCHTYPE}} = BatchTypeId,
                                 {{COL_PARAMETERJSON}} = json,
                                 {{COL_REQUESTTIME}} = now,
                                 {{COL_STATE}} = {{ENUM_BGTASKSTATE}}.{{ENUM_BGTASKSTATE_WAITTOSTART}},
@@ -49,6 +43,10 @@ namespace Nijo.Features.BackgroundService {
                     public abstract class BackgroundTask<TParameter> : BackgroundTask {
                         public abstract void Execute(JobChainWithParameter<TParameter> job);
                         public sealed override void Execute(JobChain job) => Execute((JobChainWithParameter<TParameter>)job);
+
+                        public void Schedule(TParameter parameter, {{ctx.Config.DbContextNamespace}}.{{ctx.Config.DbContextName}} dbContext, DateTime now) {
+                            base.Schedule(parameter, dbContext, now);
+                        }
                     }
 
 

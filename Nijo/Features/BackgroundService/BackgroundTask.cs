@@ -27,6 +27,13 @@ namespace Nijo.Features.BackgroundService {
                     //// バッチ処理
                     {{services}}.AddHostedService<BackgroundTaskLauncher>();
                     """);
+
+                var aggregate = context.Schema.GetAggregate(GraphNodeId);
+                infra.Aggregate(aggregate, builder => {
+                    builder.OnModelCreating.Add(modelBuilder => $$"""
+                        {{ENTITY_CLASSNAME}}.OnModelCreating({{modelBuilder}});
+                        """);
+                });
             });
         }
     }
