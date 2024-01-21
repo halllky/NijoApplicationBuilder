@@ -11,13 +11,11 @@ using System.Threading.Tasks;
 using Nijo.Parts.Utility;
 
 namespace Nijo.Features.BatchUpdate {
-    internal class BatchUpdateTask {
+    partial class BatchUpdateFeature {
 
-        internal static SourceFile Render(CodeRenderingContext context) {
+        private static SourceFile RenderTaskDefinition(CodeRenderingContext context) {
             var appSrv = new ApplicationService();
-            var availableAggregates = context.Schema
-                .RootAggregates()
-                .Where(a => a.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key);
+            var availableAggregates = GetAvailableAggregates(context).ToArray();
 
             return new SourceFile {
                 FileName = "BatchUpdateTask.cs",
@@ -129,9 +127,6 @@ namespace Nijo.Features.BatchUpdate {
                 """;
         }
 
-        private static string GetKey(GraphNode<Aggregate> aggregate) {
-            return aggregate.Item.ClassName;
-        }
         private static string UpdateMethodName(GraphNode<Aggregate> aggregate) {
             return "BatchUpdate" + aggregate.Item.ClassName;
         }
