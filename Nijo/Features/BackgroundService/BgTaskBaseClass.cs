@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Features.BackgroundService {
-    partial class BackgroundTask {
+    partial class BgTaskFeature {
 
         private static SourceFile BgTaskBaseClass(CodeRenderingContext ctx) => new SourceFile {
             FileName = "BackgroundTask.cs",
@@ -16,36 +16,36 @@ namespace Nijo.Features.BackgroundService {
 
                 namespace {{ctx.Config.RootNamespace}} {
                     public abstract class BackgroundTask {
-
                         public abstract string BatchTypeId { get; }
-                        public abstract string BatchTypeName { get; }
-                        public abstract void Execute(JobChain job);
 
-                        public void Schedule({{ctx.Config.DbContextNamespace}}.{{ctx.Config.DbContextName}} dbContext, DateTime now) {
-                            Schedule(null, dbContext, now);
+                        public abstract string JobName { get; }
+                        public virtual string GetJobName(object? parameter) {
+                            return JobName;
                         }
-                        protected void Schedule(object? parameter, {{ctx.Config.DbContextNamespace}}.{{ctx.Config.DbContextName}} dbContext, DateTime now) {
-                            var json = parameter == null
-                                ? string.Empty
-                                : JsonSerializer.Serialize(parameter);
-                            var entity = new {{ctx.Config.EntityNamespace}}.{{ENTITY_CLASSNAME}} {
-                                {{COL_ID}} = Guid.NewGuid().ToString(),
-                                {{COL_NAME}} = BatchTypeName,
-                                {{COL_BATCHTYPE}} = BatchTypeId,
-                                {{COL_PARAMETERJSON}} = json,
-                                {{COL_REQUESTTIME}} = now,
-                                {{COL_STATE}} = {{ENUM_BGTASKSTATE}}.{{ENUM_BGTASKSTATE_WAITTOSTART}},
-                            };
-                            dbContext.Add(entity);
-                            dbContext.SaveChanges();
+
+                        public virtual IEnumerable<string> ValidateParameter(object? parameter) {
+                            yield break;
                         }
+
+                        public abstract void Execute(JobChain job);
                     }
                     public abstract class BackgroundTask<TParameter> : BackgroundTask {
-                        public abstract void Execute(JobChainWithParameter<TParameter> job);
-                        public sealed override void Execute(JobChain job) => Execute((JobChainWithParameter<TParameter>)job);
+                        public abstract string GetJobName(TParameter parameter);
+                        public override sealed string JobName => string.Empty;
+                        public override sealed string GetJobName(object? parameter) {
+                            return this.GetJobName((TParameter)parameter!);
+                        }
 
-                        public void Schedule(TParameter parameter, {{ctx.Config.DbContextNamespace}}.{{ctx.Config.DbContextName}} dbContext, DateTime now) {
-                            base.Schedule(parameter, dbContext, now);
+                        public virtual IEnumerable<string> ValidateParameter(TParameter parameter) {
+                            yield break;
+                        }
+                        public override sealed IEnumerable<string> ValidateParameter(object? parameter) {
+                            return this.ValidateParameter((TParameter)parameter!);
+                        }
+
+                        public abstract void Execute(JobChainWithParameter<TParameter> job);
+                        public override sealed void Execute(JobChain job) {
+                            Execute((JobChainWithParameter<TParameter>)job);
                         }
                     }
 

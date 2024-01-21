@@ -4,14 +4,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Nijo.Parts;
+using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 
 namespace Nijo.Features.BackgroundService {
-    partial class BackgroundTask {
+    partial class BgTaskFeature {
 
         private static SourceFile Launcher(CodeRenderingContext ctx) => new SourceFile {
             FileName = "BackgroundTaskLauncher.cs",
             RenderContent = () => {
+                var appSrv = new ApplicationService();
                 var dbContextFullName = $"{ctx.Config.DbContextNamespace}.{ctx.Config.DbContextName}";
                 var dbSetName = ctx.Schema.GetAggregate(GraphNodeId).Item.DbSetName;
 
@@ -254,6 +256,7 @@ namespace Nijo.Features.BackgroundService {
 
                             public IServiceProvider ServiceProvider => _serviceScope.ServiceProvider;
                             public ILogger Logger => ServiceProvider.GetRequiredService<ILogger>();
+                            public {{appSrv.ClassName}} AppSrv => ServiceProvider.GetRequiredService<{{appSrv.ClassName}}>();
                             public {{dbContextFullName}} DbContext => ServiceProvider.GetRequiredService<{{dbContextFullName}}>();
 
                             void IDisposable.Dispose() {

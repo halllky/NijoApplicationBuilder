@@ -8,7 +8,7 @@ using Nijo.Core;
 using Nijo.Util.CodeGenerating;
 
 namespace Nijo.Features.BackgroundService {
-    internal partial class BackgroundTask : IFeature {
+    internal partial class BgTaskFeature : IFeature {
 
         public void BuildSchema(AppSchemaBuilder builder) {
             AddBgTaskEntity(builder);

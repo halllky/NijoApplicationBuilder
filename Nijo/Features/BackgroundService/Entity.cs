@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Nijo.Features.BackgroundService {
 
-    partial class BackgroundTask {
+    partial class BgTaskFeature {
         internal static NodeId GraphNodeId => new NodeId($"/NIJO::{ENTITY_CLASSNAME}");
 
         private static void AddBgTaskEntity(AppSchemaBuilder builder) {
