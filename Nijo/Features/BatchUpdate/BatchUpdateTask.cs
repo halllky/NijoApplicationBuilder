@@ -111,9 +111,9 @@ namespace Nijo.Features.BatchUpdate {
                                         throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
                                     break;
                                 case E_BatchUpdateAction.Delete:
-                                    var key = item.Data as object[]
-                                        ?? throw new InvalidOperationException($"パラメータを削除対象データのキーの配列に変換できません。");
-                                    if (!scopedAppSrv.{{delete.MethodName}}({{delKeys.Select((k, i) => $"({k.CsType})key[{i}]").Join(", ")}}, out errors))
+                                    var serializedData = {{UtilityClass.CLASSNAME}}.{{UtilityClass.TO_JSON}}(item.Data);
+                                    var key = {{UtilityClass.CLASSNAME}}.{{UtilityClass.PARSE_JSON_AS_OBJARR}}(serializedData);
+                                    if (!scopedAppSrv.{{delete.MethodName}}({{delKeys.Select((k, i) => $"({k.CsType})key[{i}]!").Join(", ")}}, out errors))
                                         throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
                                     break;
                                 default:
