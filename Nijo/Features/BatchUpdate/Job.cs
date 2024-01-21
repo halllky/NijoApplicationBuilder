@@ -12,6 +12,7 @@ using Nijo.Parts.Utility;
 
 namespace Nijo.Features.BatchUpdate {
     partial class BatchUpdateFeature {
+        private const string JOBKEY = "NIJO-BATCH-UPDATE";
 
         private static SourceFile RenderTaskDefinition(CodeRenderingContext context) {
             var appSrv = new ApplicationService();
@@ -38,7 +39,7 @@ namespace Nijo.Features.BatchUpdate {
                         }
 
                         public class BatchUpdateTask : BackgroundTask<BatchUpdateParameter> {
-                            public override string BatchTypeId => "NIJO::BATCH-UPDATE";
+                            public override string BatchTypeId => "{{JOBKEY}}";
 
                             public override string GetJobName(BatchUpdateParameter param) {
                                 return $"一括アップデート（{param.DataType}）";

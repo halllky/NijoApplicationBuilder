@@ -6,9 +6,16 @@ using System.Threading.Tasks;
 using Nijo.Parts;
 using Nijo.Core;
 using Nijo.Util.CodeGenerating;
+using Nijo.Parts.WebClient;
 
 namespace Nijo.Features.BackgroundService {
     internal partial class BgTaskFeature : IFeature {
+
+        public static string GetApiURL(CodeRenderingContext ctx) {
+            var bgTaskAggregate = ctx.Schema.GetAggregate(GraphNodeId);
+            var controller = new Controller(bgTaskAggregate.Item);
+            return $"{controller.SubDomain}/{SCHEDULE}";
+        }
 
         public void BuildSchema(AppSchemaBuilder builder) {
             AddBgTaskEntity(builder);

@@ -9,10 +9,12 @@ using System.Threading.Tasks;
 namespace Nijo.Features.BackgroundService {
     partial class BgTaskFeature {
 
+        private const string SCHEDULE = "schedule";
+
         private string RenderAspControllerAction(CodeRenderingContext ctx) {
             return $$"""
-                [HttpPost("schedule")]
-                public virtual IActionResult Schedule([FromQuery] string? jobType, [FromBody] object? param) {
+                [HttpPost("{{SCHEDULE}}/{jobType}")]
+                public virtual IActionResult Schedule(string? jobType, [FromBody] object? param) {
                     if (string.IsNullOrWhiteSpace(jobType)) {
                         return BadRequest("ジョブ種別を指定してください。");
 

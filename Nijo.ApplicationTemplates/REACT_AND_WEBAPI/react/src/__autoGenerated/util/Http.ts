@@ -13,8 +13,13 @@ export const useHttpRequest = () => {
       const response = await fetch(url, option)
       if (response.ok) {
         const text = await response.text()
-        const data = JSON.parse(text) as T
-        return { ok: true, data }
+        try {
+          const data = JSON.parse(text) as T
+          return { ok: true, data }
+        } catch {
+          dispatchMsg(msg => msg.warn(`処理は成功しましたがサーバーからのレスポンスを解釈できませんでした: ${text}`))
+          return { ok: false }
+        }
       } else {
         dispatchMsg(msg => msg.error(`ERROR(${url})`))
 
