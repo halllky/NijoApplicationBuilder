@@ -48,10 +48,6 @@ namespace Nijo.Features.BackgroundService {
                             return JobName;
                         }
 
-                        public virtual object? ToParameterType(object? parameter) {
-                            return parameter;
-                        }
-
                         public virtual IEnumerable<string> ValidateParameter(object? parameter) {
                             yield break;
                         }
@@ -64,20 +60,14 @@ namespace Nijo.Features.BackgroundService {
                         public abstract string GetJobName(TParameter parameter);
                         public override sealed string JobName => string.Empty;
                         public override sealed string GetJobName(object? parameter) {
-                            return this.GetJobName((TParameter)ToParameterType(parameter)!);
-                        }
-
-                        public override object? ToParameterType(object? parameter) {
-                            if (parameter == null) return new TParameter();
-                            var json = parameter as string ?? {{UtilityClass.CLASSNAME}}.{{UtilityClass.TO_JSON}}(parameter);
-                            return {{UtilityClass.CLASSNAME}}.{{UtilityClass.PARSE_JSON}}<TParameter>(json);
+                            return this.GetJobName({{UtilityClass.CLASSNAME}}.{{UtilityClass.ENSURE_OBJECT_TYPE}}<TParameter>(parameter));
                         }
 
                         public virtual IEnumerable<string> ValidateParameter(TParameter parameter) {
                             yield break;
                         }
                         public override sealed IEnumerable<string> ValidateParameter(object? parameter) {
-                            return this.ValidateParameter((TParameter)ToParameterType(parameter)!);
+                            return this.ValidateParameter({{UtilityClass.CLASSNAME}}.{{UtilityClass.ENSURE_OBJECT_TYPE}}<TParameter>(parameter));
                         }
 
                         public abstract void Execute(JobChainWithParameter<TParameter> job);

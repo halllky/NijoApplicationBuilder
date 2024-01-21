@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Nijo.Parts;
+using Nijo.Parts.Utility;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 
@@ -132,7 +133,7 @@ namespace Nijo.Features.BackgroundService {
 
                                         object parsed;
                                         try {
-                                            parsed = backgroundTask.ToParameterType(entity.{{COL_PARAMETERJSON}})!;
+                                            parsed = {{UtilityClass.CLASSNAME}}.{{UtilityClass.ENSURE_OBJECT_TYPE}}(entity.ParameterJson, genericType);
                                         } catch (JsonException ex) {
                                             throw new InvalidOperationException($"バッチID {entity.{{COL_ID}}} のパラメータを {genericType.Name} 型のJSONとして解釈できません。", ex);
                                         }

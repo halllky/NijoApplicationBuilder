@@ -14,6 +14,7 @@ namespace Nijo.Parts.Utility {
         internal const string MODIFY_JSONOPTION = "ModifyJsonSrializerOptions";
         internal const string TO_JSON = "ToJson";
         internal const string PARSE_JSON = "ParseJson";
+        internal const string ENSURE_OBJECT_TYPE = "EnsureObjectType";
         internal const string PARSE_JSON_AS_OBJARR = "ParseJsonAsObjectArray";
 
         private const string CUSTOM_CONVERTER_NAMESPACE = "CustomJsonConverters";
@@ -51,6 +52,10 @@ namespace Nijo.Parts.Utility {
                             if (json == null) throw new ArgumentNullException(nameof(json));
                             return JsonSerializer.Deserialize<T>(json, {{GET_JSONOPTION}}())!;
                         }
+                        public static object {{PARSE_JSON}}(string? json, Type type) {
+                            if (json == null) throw new ArgumentNullException(nameof(json));
+                            return JsonSerializer.Deserialize(json, type, {{GET_JSONOPTION}}())!;
+                        }
                         /// <summary>
                         /// 単に <see cref="JsonSerializer.Deserialize(JsonElement, Type, JsonSerializerOptions?)"/> で object?[] を指定すると JsonElement[] 型になり各要素のキャストができないためその回避
                         /// </summary>
@@ -66,6 +71,20 @@ namespace Nijo.Parts.Utility {
                                     _ => jsonElement,
                                 }))
                                 .ToArray();
+                        }
+                        /// <summary>
+                        /// JSONから復元されたオブジェクトを事後的に特定の型として扱いたいときに用いる
+                        /// </summary>
+                        public static T {{ENSURE_OBJECT_TYPE}}<T>(object? obj) where T : new() {
+                            return (T){{ENSURE_OBJECT_TYPE}}(obj, typeof(T));
+                        }
+                        /// <summary>
+                        /// JSONから復元されたオブジェクトを事後的に特定の型として扱いたいときに用いる
+                        /// </summary>
+                        public static object {{ENSURE_OBJECT_TYPE}}(object? obj, Type type) {
+                            if (obj == null) return Activator.CreateInstance(type) ?? throw new ArgumentException(nameof(type));
+                            var json = obj as string ?? {{TO_JSON}}(obj);
+                            return {{PARSE_JSON}}(json, type);
                         }
                     }
                 }
