@@ -11,11 +11,12 @@ namespace Nijo.Features.BackgroundService {
         private string RenderAppSrvMethod(CodeRenderingContext ctx) {
 
             return $$"""
+                #region 非同期処理
                 public bool TryScheduleJob<TJob>(out ICollection<string> errors) where TJob : BackgroundTask, new() {
-                    TrySchedule(null, out errors);
+                    return TryScheduleJob<TJob>(null, out errors);
                 }
-                public bool TryScheduleJob<TJob>(TParameter parameter, out ICollection<string> errors) where TJob : BackgroundTask<TParameter>, new() {
-                    TryScheduleJob(parameter, out errors);
+                public bool TryScheduleJob<TJob, TParameter>(TParameter parameter, out ICollection<string> errors) where TJob : BackgroundTask<TParameter>, new() {
+                    return TryScheduleJob<TJob>(parameter, out errors);
                 }
                 private bool TryScheduleJob<TJob>(object? parameter, out ICollection<string> errors) where TJob : BackgroundTask, new() {
                     var job = new TJob();
@@ -24,7 +25,7 @@ namespace Nijo.Features.BackgroundService {
 
                     var json = parameter == null
                         ? string.Empty
-                        : JsonSerializer.Serialize(parameter);
+                        : System.Text.Json.JsonSerializer.Serialize(parameter);
 
                     var entity = new {{ctx.Config.EntityNamespace}}.{{ENTITY_CLASSNAME}} {
                         {{COL_ID}} = Guid.NewGuid().ToString(),
@@ -39,6 +40,7 @@ namespace Nijo.Features.BackgroundService {
 
                     return true;
                 }
+                #endregion 非同期処理
                 """;
         }
 

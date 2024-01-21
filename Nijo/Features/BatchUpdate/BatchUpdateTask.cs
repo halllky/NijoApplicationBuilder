@@ -2,6 +2,7 @@ using Nijo.Core;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
+using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,14 +22,20 @@ namespace Nijo.Features.BatchUpdate {
                 FileName = "BatchUpdateTask.cs",
                 RenderContent = () => $$"""
                     namespace {{context.Config.RootNamespace}} {
+                        using System.Text.Json;
+
                         public class BatchUpdateParameter {
                             public required string DataType { get; set; }
-                            public required BatchUpdateData Data { get; set; }
+                            public List<BatchUpdateData> Items { get; set; } = new();
                         }
                         public class BatchUpdateData {
-                            public List<object> Added { get; set; } = new();
-                            public List<object> Deleted { get; set; } = new();
-                            public List<object> Modified { get; set; } = new();
+                            public required E_BatchUpdateAction Action { get; set; }
+                            public required string DataJson { get; set; }
+                        }
+                        public enum E_BatchUpdateAction {
+                            Add,
+                            Modify,
+                            Delete,
                         }
 
                         public class BatchUpdateTask : BackgroundTask<BatchUpdateParameter> {
@@ -47,17 +54,78 @@ namespace Nijo.Features.BatchUpdate {
 
                             public override void Execute(JobChainWithParameter<BatchUpdateParameter> job) {
                                 job.Section("更新処理実行", context => {
-
+                                    switch (context.Parameter.DataType) {
+                    {{availableAggregates.SelectTextTemplate(agg => $$"""
+                                        case "{{GetKey(agg)}}": {{UpdateMethodName(agg)}}(context); break;
+                    """)}}
+                                        default: throw new InvalidOperationException($"識別子 '{context.Parameter.DataType}' と対応する一括更新処理はありません。");
+                                    }
                                 });
                             }
+                    {{availableAggregates.SelectTextTemplate(agg => $$"""
+
+                            {{WithIndent(RenderUpdateMethod(agg, context), "        ")}}
+                    """)}}
                         }
                     }
                     """,
             };
         }
 
+        private static string RenderUpdateMethod(GraphNode<Aggregate> agg, CodeRenderingContext context) {
+            var appSrv = new ApplicationService().ClassName;
+            var create = new Models.WriteModel.CreateFeature(agg);
+            var update = new Models.WriteModel.UpdateFeature(agg);
+            var delete = new Models.WriteModel.DeleteFeature(agg);
+            var delKeys = KeyArray.Create(agg, nullable: false);
+
+            return $$"""
+                private void {{UpdateMethodName(agg)}}(BackgroundTaskContext<BatchUpdateParameter> context) {
+                    for (int i = 0; i < context.Parameter.Items.Count; i++) {
+                        using var logScope = context.Logger.BeginScope($"{i + 1}件目");
+                        using var serviceScope = context.ServiceProvider.CreateScope();
+                        var scopedAppSrv = serviceScope.ServiceProvider.GetRequiredService<{{appSrv}}>();
+                        var item = context.Parameter.Items[i];
+
+                        try {
+                            ICollection<string> errors;
+                            switch (item.Action) {
+                                case E_BatchUpdateAction.Add:
+                                    var cmd = JsonSerializer.Deserialize<{{create.ArgType}}>(item.DataJson)
+                                        ?? throw new InvalidOperationException($"パラメータを{nameof({{create.ArgType}})}型に変換できません。");
+                                    if (!scopedAppSrv.{{create.MethodName}}(cmd, out var _, out errors))
+                                        throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
+                                    break;
+                                case E_BatchUpdateAction.Modify:
+                                    var data = JsonSerializer.Deserialize<{{update.ArgType}}>(item.DataJson)
+                                        ?? throw new InvalidOperationException($"パラメータを{nameof({{update.ArgType}})}型に変換できません。");
+                                    if (!scopedAppSrv.{{update.MethodName}}(data, out var _, out errors))
+                                        throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
+                                    break;
+                                case E_BatchUpdateAction.Delete:
+                                    var delKey = JsonSerializer.Deserialize<object[]>(item.DataJson)
+                                        ?? throw new InvalidOperationException($"パラメータを削除対象データのキーの配列に変換できません。");
+                                    if (!scopedAppSrv.{{delete.MethodName}}({{delKeys.Select((k, i) => $"({k.CsType})delKey[{i}]").Join(", ")}}, out errors))
+                                        throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
+                                    break;
+                                default:
+                                    throw new InvalidOperationException($"認識できない更新処理種別です: {item.Action}");
+                            }
+                        } catch (Exception ex) {
+                            context.Logger.LogError(ex, "更新処理に失敗しました。");
+                            continue;
+                        }
+                        context.Logger.LogInformation("正常終了");
+                    }
+                }
+                """;
+        }
+
         private static string GetKey(GraphNode<Aggregate> aggregate) {
             return aggregate.Item.ClassName;
+        }
+        private static string UpdateMethodName(GraphNode<Aggregate> aggregate) {
+            return "BatchUpdate" + aggregate.Item.ClassName;
         }
     }
 }

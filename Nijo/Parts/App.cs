@@ -25,6 +25,7 @@ namespace Nijo.Parts {
         internal List<Func<string, string>> ConfigureWebApp { get; } = new List<Func<string, string>>();
 
         internal List<IReactPage> ReactPages { get; } = new List<IReactPage>();
+        internal List<string> AppSrvMethods { get; } = new List<string>();
 
         internal readonly Dictionary<GraphNode<Aggregate>, AggregateFile> _itemsByAggregate = new();
         internal void Aggregate(GraphNode<Aggregate> aggregate, Action<AggregateFile> fn) {
@@ -44,7 +45,7 @@ namespace Nijo.Parts {
                     ConfigureServicesWhenBatchProcess,
                     ConfigureServices));
                 genDir.Generate(EnumDefs.Render(context));
-                genDir.Generate(new ApplicationService().Render(context));
+                genDir.Generate(new ApplicationService().Render(context, AppSrvMethods));
 
                 genDir.Directory(ASP_UTIL_DIR, utilDir => {
                     utilDir.Generate(RuntimeSettings.Render(context));

@@ -32,6 +32,7 @@ namespace Nijo.Util.CodeGenerating {
         public void ConfigureServicesWhenBatchProcess(Func<string, string> fn) => _app.ConfigureServicesWhenBatchProcess.Add(fn);
         public void ConfigureWebApp(Func<string, string> fn) => _app.ConfigureWebApp.Add(fn);
         public void AddPage(IReactPage page) => _app.ReactPages.Add(page);
+        public void AddAppSrvMethod(string source) => _app.AppSrvMethods.Add(source);
 
         internal void OnEndContext() {
             _app.GenerateCode(this);

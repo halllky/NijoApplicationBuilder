@@ -21,9 +21,12 @@ namespace Nijo.Features.BackgroundService {
             searchFeature.UseDefaultSearchLogic = true;
             searchFeature.GenerateCode(context, aggregate);
 
+            context.AddAppSrvMethod(RenderAppSrvMethod(context));
+
             context.EditWebApiDirectory(webDir => {
                 webDir.Directory("BackgroundTask", bgDir => {
                     bgDir.Generate(BgTaskBaseClass(context));
+                    bgDir.Generate(JobChainClass(context));
                     bgDir.Generate(Launcher(context));
                 });
             });
