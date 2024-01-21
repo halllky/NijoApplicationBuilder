@@ -40,6 +40,8 @@ namespace Nijo.Features.BackgroundService {
                 builder.OnModelCreating.Add(modelBuilder => $$"""
                     {{ENTITY_CLASSNAME}}.OnModelCreating({{modelBuilder}});
                     """);
+
+                builder.ControllerActions.Add(RenderAspControllerAction(context));
             });
         }
     }

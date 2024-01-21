@@ -25,12 +25,12 @@ namespace Nijo.Features.BatchUpdate {
                         using System.Text.Json;
 
                         public class BatchUpdateParameter {
-                            public required string DataType { get; set; }
-                            public List<BatchUpdateData> Items { get; set; } = new();
+                            public string? DataType { get; set; }
+                            public List<BatchUpdateData>? Items { get; set; } = new();
                         }
                         public class BatchUpdateData {
-                            public required E_BatchUpdateAction Action { get; set; }
-                            public required string DataJson { get; set; }
+                            public E_BatchUpdateAction? Action { get; set; }
+                            public string? DataJson { get; set; }
                         }
                         public enum E_BatchUpdateAction {
                             Add,
@@ -81,13 +81,20 @@ namespace Nijo.Features.BatchUpdate {
 
             return $$"""
                 private void {{UpdateMethodName(agg)}}(BackgroundTaskContext<BatchUpdateParameter> context) {
+                    if (context.Parameter.Items == null || context.Parameter.Items.Count == 0) {
+                        context.Logger.LogWarning("パラメータが０件です。");
+                        return;
+                    }
                     for (int i = 0; i < context.Parameter.Items.Count; i++) {
                         using var logScope = context.Logger.BeginScope($"{i + 1}件目");
-                        using var serviceScope = context.ServiceProvider.CreateScope();
-                        var scopedAppSrv = serviceScope.ServiceProvider.GetRequiredService<{{appSrv}}>();
-                        var item = context.Parameter.Items[i];
-
                         try {
+                            var item = context.Parameter.Items[i];
+                            if (item.Action == null) throw new InvalidOperationException("登録・更新・削除のいずれかを指定してください。");
+                            if (string.IsNullOrWhiteSpace(item.DataJson)) throw new InvalidOperationException("データが空です。");
+
+                            using var serviceScope = context.ServiceProvider.CreateScope();
+                            var scopedAppSrv = serviceScope.ServiceProvider.GetRequiredService<{{appSrv}}>();
+
                             ICollection<string> errors;
                             switch (item.Action) {
                                 case E_BatchUpdateAction.Add:
@@ -103,9 +110,9 @@ namespace Nijo.Features.BatchUpdate {
                                         throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
                                     break;
                                 case E_BatchUpdateAction.Delete:
-                                    var delKey = JsonSerializer.Deserialize<object[]>(item.DataJson)
+                                    var key = JsonSerializer.Deserialize<object[]>(item.DataJson)
                                         ?? throw new InvalidOperationException($"パラメータを削除対象データのキーの配列に変換できません。");
-                                    if (!scopedAppSrv.{{delete.MethodName}}({{delKeys.Select((k, i) => $"({k.CsType})delKey[{i}]").Join(", ")}}, out errors))
+                                    if (!scopedAppSrv.{{delete.MethodName}}({{delKeys.Select((k, i) => $"({k.CsType})key[{i}]").Join(", ")}}, out errors))
                                         throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
                                     break;
                                 default:

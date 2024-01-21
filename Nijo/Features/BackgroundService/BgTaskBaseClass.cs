@@ -1,3 +1,4 @@
+using Nijo.Parts.Utility;
 using Nijo.Util.CodeGenerating;
 using System;
 using System.Collections.Generic;
@@ -16,11 +17,39 @@ namespace Nijo.Features.BackgroundService {
 
                 namespace {{ctx.Config.RootNamespace}} {
                     public abstract class BackgroundTask {
+
+                        /// <summary>
+                        /// バッチIDと対応するクラスのインスタンスを作成して返します。
+                        /// </summary>
+                        public static BackgroundTask FindTaskByID(string batchType) {
+                            var assembly = Assembly.GetExecutingAssembly();
+                            foreach (var type in assembly.GetTypes()) {
+                                if (type.IsAbstract) continue;
+                                if (!type.IsSubclassOf(typeof(BackgroundTask))) continue;
+                                try {
+                                    var instance = (BackgroundTask?)Activator.CreateInstance(type);
+                                    if (instance == null) continue;
+                                    if (instance.BatchTypeId != batchType) continue;
+                                    return instance;
+                                } catch {
+                                    continue;
+                                }
+                            }
+                            throw new InvalidOperationException(
+                                $"ジョブ種別 '{batchType}' と対応するバッチが見つかりません。" +
+                                $"種別の指定を誤っていないか、またそのクラスに引数なしコンストラクタがあるかを確認してください。");
+                        }
+
+
                         public abstract string BatchTypeId { get; }
 
                         public abstract string JobName { get; }
                         public virtual string GetJobName(object? parameter) {
                             return JobName;
+                        }
+
+                        public virtual object? ToParameterType(object? parameter) {
+                            return parameter;
                         }
 
                         public virtual IEnumerable<string> ValidateParameter(object? parameter) {
@@ -30,18 +59,25 @@ namespace Nijo.Features.BackgroundService {
                         public abstract void Execute(JobChain job);
                     }
 
-                    public abstract class BackgroundTask<TParameter> : BackgroundTask {
+                    public abstract class BackgroundTask<TParameter> : BackgroundTask where TParameter : new() {
+
                         public abstract string GetJobName(TParameter parameter);
                         public override sealed string JobName => string.Empty;
                         public override sealed string GetJobName(object? parameter) {
-                            return this.GetJobName((TParameter)parameter!);
+                            return this.GetJobName((TParameter)ToParameterType(parameter)!);
+                        }
+
+                        public override object? ToParameterType(object? parameter) {
+                            if (parameter == null) return new TParameter();
+                            var json = parameter as string ?? {{UtilityClass.CLASSNAME}}.{{UtilityClass.TO_JSON}}(parameter);
+                            return {{UtilityClass.CLASSNAME}}.{{UtilityClass.PARSE_JSON}}<TParameter>(json);
                         }
 
                         public virtual IEnumerable<string> ValidateParameter(TParameter parameter) {
                             yield break;
                         }
                         public override sealed IEnumerable<string> ValidateParameter(object? parameter) {
-                            return this.ValidateParameter((TParameter)parameter!);
+                            return this.ValidateParameter((TParameter)ToParameterType(parameter)!);
                         }
 
                         public abstract void Execute(JobChainWithParameter<TParameter> job);

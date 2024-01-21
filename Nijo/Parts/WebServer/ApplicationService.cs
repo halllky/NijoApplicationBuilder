@@ -38,7 +38,7 @@ namespace Nijo.Parts.WebServer {
                         private DateTime? _currentTime;
                         public virtual DateTime {{CurrentTime}} => _currentTime ??= DateTime.Now;
 
-                        {{WithIndent(methods.SelectTextTemplate(source => source), "        ")}}
+                        {{WithIndent(methods, "        ")}}
                     }
                 }
                 """,
