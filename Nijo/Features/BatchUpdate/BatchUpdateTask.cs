@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Nijo.Parts.Utility;
 
 namespace Nijo.Features.BatchUpdate {
     internal class BatchUpdateTask {
@@ -30,7 +31,7 @@ namespace Nijo.Features.BatchUpdate {
                         }
                         public class BatchUpdateData {
                             public E_BatchUpdateAction? Action { get; set; }
-                            public string? DataJson { get; set; }
+                            public object? Data { get; set; }
                         }
                         public enum E_BatchUpdateAction {
                             Add,
@@ -90,7 +91,7 @@ namespace Nijo.Features.BatchUpdate {
                         try {
                             var item = context.Parameter.Items[i];
                             if (item.Action == null) throw new InvalidOperationException("登録・更新・削除のいずれかを指定してください。");
-                            if (string.IsNullOrWhiteSpace(item.DataJson)) throw new InvalidOperationException("データが空です。");
+                            if (item.Data == null) throw new InvalidOperationException("データが空です。");
 
                             using var serviceScope = context.ServiceProvider.CreateScope();
                             var scopedAppSrv = serviceScope.ServiceProvider.GetRequiredService<{{appSrv}}>();
@@ -98,19 +99,19 @@ namespace Nijo.Features.BatchUpdate {
                             ICollection<string> errors;
                             switch (item.Action) {
                                 case E_BatchUpdateAction.Add:
-                                    var cmd = JsonSerializer.Deserialize<{{create.ArgType}}>(item.DataJson)
+                                    var cmd = {{UtilityClass.CLASSNAME}}.{{UtilityClass.ENSURE_OBJECT_TYPE}}<{{create.ArgType}}>(item.Data)
                                         ?? throw new InvalidOperationException($"パラメータを{nameof({{create.ArgType}})}型に変換できません。");
                                     if (!scopedAppSrv.{{create.MethodName}}(cmd, out var _, out errors))
                                         throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
                                     break;
                                 case E_BatchUpdateAction.Modify:
-                                    var data = JsonSerializer.Deserialize<{{update.ArgType}}>(item.DataJson)
+                                    var data = {{UtilityClass.CLASSNAME}}.{{UtilityClass.ENSURE_OBJECT_TYPE}}<{{update.ArgType}}>(item.Data)
                                         ?? throw new InvalidOperationException($"パラメータを{nameof({{update.ArgType}})}型に変換できません。");
                                     if (!scopedAppSrv.{{update.MethodName}}(data, out var _, out errors))
                                         throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
                                     break;
                                 case E_BatchUpdateAction.Delete:
-                                    var key = JsonSerializer.Deserialize<object[]>(item.DataJson)
+                                    var key = item.Data as object[]
                                         ?? throw new InvalidOperationException($"パラメータを削除対象データのキーの配列に変換できません。");
                                     if (!scopedAppSrv.{{delete.MethodName}}({{delKeys.Select((k, i) => $"({k.CsType})key[{i}]").Join(", ")}}, out errors))
                                         throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
