@@ -4,14 +4,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Nijo.Parts;
+using Nijo.Parts.Utility;
+using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 
 namespace Nijo.Features.BackgroundService {
-    partial class BackgroundTask {
+    partial class BgTaskFeature {
 
         private static SourceFile Launcher(CodeRenderingContext ctx) => new SourceFile {
             FileName = "BackgroundTaskLauncher.cs",
             RenderContent = () => {
+                var appSrv = new ApplicationService();
                 var dbContextFullName = $"{ctx.Config.DbContextNamespace}.{ctx.Config.DbContextName}";
                 var dbSetName = ctx.Schema.GetAggregate(GraphNodeId).Item.DbSetName;
 
@@ -76,7 +79,7 @@ namespace Nijo.Features.BackgroundService {
                                         var contextFactory = new BackgroundTaskContextFactory(now, services, directory);
                                         foreach (var entity in queued) {
                                             try {
-                                                var backgroundTask = FindTaskByID(entity.{{COL_BATCHTYPE}});
+                                                var backgroundTask = BackgroundTask.FindTaskByID(entity.{{COL_BATCHTYPE}});
                                                 var executeArgument = CreateExecuteArgument(backgroundTask, entity, contextFactory, stoppingToken);
 
                                                 var task = Task.Run(() => {
@@ -114,32 +117,6 @@ namespace Nijo.Features.BackgroundService {
                             }
 
                             /// <summary>
-                            /// バッチIDと対応するクラスのインスタンスを作成して返します。
-                            /// </summary>
-                            private BackgroundTask FindTaskByID(string batchType) {
-                                var assembly = Assembly.GetExecutingAssembly();
-
-                                foreach (var type in assembly.GetTypes()) {
-                                    if (!type.IsSubclassOf(typeof(BackgroundTask))) continue;
-
-                                    BackgroundTask instance;
-                                    try {
-                                        instance = (BackgroundTask)Activator.CreateInstance(type);
-                                    } catch {
-                                        continue;
-                                    }
-
-                                    if (instance.BatchTypeId != batchType) continue;
-
-                                    return instance;
-                                }
-
-                                throw new InvalidOperationException(
-                                    $"バッチID '{batchType}' と対応するバッチが見つかりません。" +
-                                    $"IDの指定を誤っていないか、またそのクラスに引数なしコンストラクタがあるかを確認してください。");
-                            }
-
-                            /// <summary>
                             /// ジョブの起動指示をもとに実行用のオブジェクトを作成して返します。
                             /// </summary>
                             private static JobChain CreateExecuteArgument(BackgroundTask backgroundTask, {{ctx.Config.EntityNamespace}}.BackgroundTaskEntity entity, BackgroundTaskContextFactory contextFactory, CancellationToken stoppingToken) {
@@ -156,7 +133,7 @@ namespace Nijo.Features.BackgroundService {
 
                                         object parsed;
                                         try {
-                                            parsed = JsonSerializer.Deserialize(entity.{{COL_PARAMETERJSON}}, genericType)!;
+                                            parsed = {{UtilityClass.CLASSNAME}}.{{UtilityClass.ENSURE_OBJECT_TYPE}}(entity.ParameterJson, genericType);
                                         } catch (JsonException ex) {
                                             throw new InvalidOperationException($"バッチID {entity.{{COL_ID}}} のパラメータを {genericType.Name} 型のJSONとして解釈できません。", ex);
                                         }
@@ -254,6 +231,7 @@ namespace Nijo.Features.BackgroundService {
 
                             public IServiceProvider ServiceProvider => _serviceScope.ServiceProvider;
                             public ILogger Logger => ServiceProvider.GetRequiredService<ILogger>();
+                            public {{appSrv.ClassName}} AppSrv => ServiceProvider.GetRequiredService<{{appSrv.ClassName}}>();
                             public {{dbContextFullName}} DbContext => ServiceProvider.GetRequiredService<{{dbContextFullName}}>();
 
                             void IDisposable.Dispose() {

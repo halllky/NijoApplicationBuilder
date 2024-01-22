@@ -18,7 +18,7 @@ namespace Nijo.Models.WriteModel {
 
         private readonly GraphNode<Aggregate> _aggregate;
 
-        internal string ArgType => _aggregate.Item.ClassName;
+        internal string ArgType => new AggregateCreateCommand(_aggregate).ClassName;
         internal string MethodName => $"Create{_aggregate.Item.DisplayName.ToCSharpSafe()}";
 
         internal string RenderController() {

@@ -1,3 +1,4 @@
+using Nijo.Parts.Utility;
 using Nijo.Util.CodeGenerating;
 using System;
 using System.Collections.Generic;
@@ -6,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Features.BackgroundService {
-    partial class BackgroundTask {
+    partial class BgTaskFeature {
 
         private static SourceFile BgTaskBaseClass(CodeRenderingContext ctx) => new SourceFile {
             FileName = "BackgroundTask.cs",
@@ -17,246 +18,61 @@ namespace Nijo.Features.BackgroundService {
                 namespace {{ctx.Config.RootNamespace}} {
                     public abstract class BackgroundTask {
 
-                        public abstract string BatchTypeId { get; }
-                        public abstract string BatchTypeName { get; }
-                        public abstract void Execute(JobChain job);
-
-                        public void Schedule({{ctx.Config.DbContextNamespace}}.{{ctx.Config.DbContextName}} dbContext, DateTime now) {
-                            Schedule(null, dbContext, now);
-                        }
-                        protected void Schedule(object? parameter, {{ctx.Config.DbContextNamespace}}.{{ctx.Config.DbContextName}} dbContext, DateTime now) {
-                            var json = parameter == null
-                                ? string.Empty
-                                : JsonSerializer.Serialize(parameter);
-                            var entity = new {{ctx.Config.EntityNamespace}}.{{ENTITY_CLASSNAME}} {
-                                {{COL_ID}} = Guid.NewGuid().ToString(),
-                                {{COL_NAME}} = BatchTypeName,
-                                {{COL_BATCHTYPE}} = BatchTypeId,
-                                {{COL_PARAMETERJSON}} = json,
-                                {{COL_REQUESTTIME}} = now,
-                                {{COL_STATE}} = {{ENUM_BGTASKSTATE}}.{{ENUM_BGTASKSTATE_WAITTOSTART}},
-                            };
-                            dbContext.Add(entity);
-                            dbContext.SaveChanges();
-                        }
-                    }
-                    public abstract class BackgroundTask<TParameter> : BackgroundTask {
-                        public abstract void Execute(JobChainWithParameter<TParameter> job);
-                        public sealed override void Execute(JobChain job) => Execute((JobChainWithParameter<TParameter>)job);
-
-                        public void Schedule(TParameter parameter, {{ctx.Config.DbContextNamespace}}.{{ctx.Config.DbContextName}} dbContext, DateTime now) {
-                            base.Schedule(parameter, dbContext, now);
-                        }
-                    }
-
-
-                    public class JobChain {
-                        public JobChain(string jobId, Stack<string> currentSections, BackgroundTaskContextFactory contextFactory, CancellationToken cancellationToken) {
-                            _jobId = jobId;
-                            _currentSections = currentSections;
-                            _contextFactory = contextFactory;
-                            _cancellationToken = cancellationToken;
-                        }
-
-                        protected readonly string _jobId;
-                        protected readonly Stack<string> _currentSections;
-                        protected readonly BackgroundTaskContextFactory _contextFactory;
-                        protected readonly CancellationToken _cancellationToken;
-
-                        private bool _initialized = false;
-
-                        protected T SectionBase<T>(string sectionName, Func<BackgroundTaskContext> createContext, Func<BackgroundTaskContext, T> execute) {
-                            using var context = createContext();
-                            try {
-                                _cancellationToken.ThrowIfCancellationRequested();
-
-                                if (!_initialized) {
-                                    _initialized = true;
-                                    Directory.CreateDirectory(context.WorkingDirectory);
+                        /// <summary>
+                        /// バッチIDと対応するクラスのインスタンスを作成して返します。
+                        /// </summary>
+                        public static BackgroundTask FindTaskByID(string batchType) {
+                            var assembly = Assembly.GetExecutingAssembly();
+                            foreach (var type in assembly.GetTypes()) {
+                                if (type.IsAbstract) continue;
+                                if (!type.IsSubclassOf(typeof(BackgroundTask))) continue;
+                                try {
+                                    var instance = (BackgroundTask?)Activator.CreateInstance(type);
+                                    if (instance == null) continue;
+                                    if (instance.BatchTypeId != batchType) continue;
+                                    return instance;
+                                } catch {
+                                    continue;
                                 }
-
-                                _currentSections.Push(sectionName);
-                                context.Logger.LogInformation("処理開始: {Section}", string.Join(" > ", _currentSections.Reverse()));
-                                var returnValue = execute(context);
-                                context.Logger.LogInformation("処理終了: {Section}", string.Join(" > ", _currentSections.Reverse()));
-                                _currentSections.Pop();
-
-                                return returnValue;
-
-                            } catch (OperationCanceledException) {
-                                context.Logger.LogInformation("処理がキャンセルされました。");
-                                throw;
-
-                            } catch (Exception ex) {
-                                context.Logger.LogInformation(ex, "処理「{Section}」中にエラーが発生しました: {Message}", sectionName, ex.Message);
-                                throw;
                             }
+                            throw new InvalidOperationException(
+                                $"ジョブ種別 '{batchType}' と対応するバッチが見つかりません。" +
+                                $"種別の指定を誤っていないか、またそのクラスに引数なしコンストラクタがあるかを確認してください。");
                         }
 
-                        public JobChain Section(string sectionName, Action<BackgroundTaskContext> callback) {
-                            return SectionBase(sectionName, () => {
-                                return _contextFactory.CraeteScopedContext(_jobId);
-                            }, context => {
-                                callback(context);
-                                return this;
-                            });
+
+                        public abstract string BatchTypeId { get; }
+
+                        public abstract string JobName { get; }
+                        public virtual string GetJobName(object? parameter) {
+                            return JobName;
                         }
-                        public JobChain<TReturnType> Section<TReturnType>(string sectionName, Func<BackgroundTaskContext, TReturnType> callback) {
-                            return SectionBase(sectionName, () => {
-                                return _contextFactory.CraeteScopedContext(_jobId);
-                            }, context => {
-                                var result = callback(context);
-                                return new JobChain<TReturnType>(result, _jobId, _currentSections, _contextFactory, _cancellationToken);
-                            });
+
+                        public virtual IEnumerable<string> ValidateParameter(object? parameter) {
+                            yield break;
                         }
-                        public JobChain Section(string sectionName, Func<BackgroundTaskContext, Task> callback) {
-                            return SectionBase(sectionName, () => {
-                                return _contextFactory.CraeteScopedContext(_jobId);
-                            }, context => {
-                                var task = callback(context);
-                                task.Wait();
-                                return this;
-                            });
-                        }
-                        public JobChain<TReturnType> Section<TReturnType>(string sectionName, Func<BackgroundTaskContext, Task<TReturnType>> callback) {
-                            return SectionBase(sectionName, () => {
-                                return _contextFactory.CraeteScopedContext(_jobId);
-                            }, context => {
-                                var task = callback(context);
-                                task.Wait();
-                                return new JobChain<TReturnType>(task.Result, _jobId, _currentSections, _contextFactory, _cancellationToken);
-                            });
-                        }
+
+                        public abstract void Execute(JobChain job);
                     }
-                    public sealed class JobChain<TSectionInput> : JobChain {
-                        public JobChain(TSectionInput sectionInput, string jobId, Stack<string> currentSections, BackgroundTaskContextFactory contextFactory, CancellationToken cancellationToken)
-                            : base(jobId, currentSections, contextFactory, cancellationToken) {
-                            _sectionInput = sectionInput;
+
+                    public abstract class BackgroundTask<TParameter> : BackgroundTask where TParameter : new() {
+
+                        public abstract string GetJobName(TParameter parameter);
+                        public override sealed string JobName => string.Empty;
+                        public override sealed string GetJobName(object? parameter) {
+                            return this.GetJobName({{UtilityClass.CLASSNAME}}.{{UtilityClass.ENSURE_OBJECT_TYPE}}<TParameter>(parameter));
                         }
 
-                        private readonly TSectionInput _sectionInput;
-
-                        public JobChain Section(string sectionName, Action<BackgroundTaskContext, TSectionInput> callback) {
-                            return SectionBase(sectionName, () => {
-                                return _contextFactory.CraeteScopedContext(_jobId);
-                            }, context => {
-                                callback(context, _sectionInput);
-                                return this;
-                            });
+                        public virtual IEnumerable<string> ValidateParameter(TParameter parameter) {
+                            yield break;
                         }
-                        public JobChain Section(string sectionName, Func<BackgroundTaskContext, TSectionInput, Task> callback) {
-                            return SectionBase(sectionName, () => {
-                                return _contextFactory.CraeteScopedContext(_jobId);
-                            }, context => {
-                                var task = callback(context, _sectionInput);
-                                task.Wait();
-                                return this;
-                            });
-                        }
-                        public JobChain<TSectionOutput> Section<TSectionOutput>(string sectionName, Func<BackgroundTaskContext, TSectionInput, TSectionOutput> callback) {
-                            return SectionBase(sectionName, () => {
-                                return _contextFactory.CraeteScopedContext(_jobId);
-                            }, context => {
-                                var result = callback(context, _sectionInput);
-                                return new JobChain<TSectionOutput>(result, _jobId, _currentSections, _contextFactory, _cancellationToken);
-                            });
-                        }
-                        public JobChain<TSectionOutput> Section<TSectionOutput>(string sectionName, Func<BackgroundTaskContext, TSectionInput, Task<TSectionOutput>> callback) {
-                            return SectionBase(sectionName, () => {
-                                return _contextFactory.CraeteScopedContext(_jobId);
-                            }, context => {
-                                var task = callback(context, _sectionInput);
-                                task.Wait();
-                                return new JobChain<TSectionOutput>(task.Result, _jobId, _currentSections, _contextFactory, _cancellationToken);
-                            });
-                        }
-                    }
-                    public class JobChainWithParameter<TParameter> : JobChain {
-                        public JobChainWithParameter(string jobId, TParameter parameter, Stack<string> currentSections, BackgroundTaskContextFactory contextFactory, CancellationToken cancellationToken)
-                            : base(jobId, currentSections, contextFactory, cancellationToken) {
-                            _parameter = parameter;
+                        public override sealed IEnumerable<string> ValidateParameter(object? parameter) {
+                            return this.ValidateParameter({{UtilityClass.CLASSNAME}}.{{UtilityClass.ENSURE_OBJECT_TYPE}}<TParameter>(parameter));
                         }
 
-                        private readonly TParameter _parameter;
-
-                        public JobChainWithParameter<TParameter> Section(string sectionName, Action<BackgroundTaskContext<TParameter>> callback) {
-                            return SectionBase(sectionName, () => {
-                                return _contextFactory.CraeteScopedContext(_jobId, _parameter);
-                            }, context => {
-                                callback((BackgroundTaskContext<TParameter>)context);
-                                return this;
-                            });
-                        }
-                        public JobChainWithParameter<TParameter> Section(string sectionName, Func<BackgroundTaskContext<TParameter>, Task> callback) {
-                            return SectionBase(sectionName, () => {
-                                return _contextFactory.CraeteScopedContext(_jobId, _parameter);
-                            }, context => {
-                                var task = callback((BackgroundTaskContext<TParameter>)context);
-                                task.Wait();
-                                return this;
-                            });
-                        }
-                        public JobChainWithParameter<TParameter, TSectionOutput> Section<TSectionOutput>(string sectionName, Func<BackgroundTaskContext<TParameter>, TSectionOutput> callback) {
-                            return SectionBase(sectionName, () => {
-                                return _contextFactory.CraeteScopedContext(_jobId, _parameter);
-                            }, context => {
-                                var result = callback((BackgroundTaskContext<TParameter>)context);
-                                return new JobChainWithParameter<TParameter, TSectionOutput>(result, _jobId, _parameter, _currentSections, _contextFactory, _cancellationToken);
-                            });
-                        }
-                        public JobChainWithParameter<TParameter, TSectionOutput> Section<TSectionOutput>(string sectionName, Func<BackgroundTaskContext<TParameter>, Task<TSectionOutput>> callback) {
-                            return SectionBase(sectionName, () => {
-                                return _contextFactory.CraeteScopedContext(_jobId, _parameter);
-                            }, context => {
-                                var task = callback((BackgroundTaskContext<TParameter>)context);
-                                task.Wait();
-                                return new JobChainWithParameter<TParameter, TSectionOutput>(task.Result, _jobId, _parameter, _currentSections, _contextFactory, _cancellationToken);
-                            });
-                        }
-                    }
-                    public class JobChainWithParameter<TParameter, TSectionInput> : JobChain {
-                        public JobChainWithParameter(TSectionInput sectionInput, string jobId, TParameter parameter, Stack<string> currentSections, BackgroundTaskContextFactory contextFactory, CancellationToken cancellationToken)
-                            : base(jobId, currentSections, contextFactory, cancellationToken) {
-                            _parameter = parameter;
-                            _sectionInput = sectionInput;
-                        }
-
-                        private readonly TParameter _parameter;
-                        private readonly TSectionInput _sectionInput;
-
-                        public JobChainWithParameter<TParameter, TSectionInput> Section(string sectionName, Action<BackgroundTaskContext<TParameter>, TSectionInput> callback) {
-                            return SectionBase(sectionName, () => {
-                                return _contextFactory.CraeteScopedContext(_jobId, _parameter);
-                            }, context => {
-                                callback((BackgroundTaskContext<TParameter>)context, _sectionInput);
-                                return this;
-                            });
-                        }
-                        public JobChainWithParameter<TParameter, TSectionInput> Section(string sectionName, Func<BackgroundTaskContext<TParameter>, TSectionInput, Task> callback) {
-                            return SectionBase(sectionName, () => {
-                                return _contextFactory.CraeteScopedContext(_jobId, _parameter);
-                            }, context => {
-                                var task = callback((BackgroundTaskContext<TParameter>)context, _sectionInput);
-                                task.Wait();
-                                return this;
-                            });
-                        }
-                        public JobChainWithParameter<TParameter, TSectionOutput> Section<TSectionOutput>(string sectionName, Func<BackgroundTaskContext<TParameter>, TSectionInput, TSectionOutput> callback) {
-                            return SectionBase(sectionName, () => {
-                                return _contextFactory.CraeteScopedContext(_jobId, _parameter);
-                            }, context => {
-                                var result = callback((BackgroundTaskContext<TParameter>)context, _sectionInput);
-                                return new JobChainWithParameter<TParameter, TSectionOutput>(result, _jobId, _parameter, _currentSections, _contextFactory, _cancellationToken);
-                            });
-                        }
-                        public JobChainWithParameter<TParameter, TSectionOutput> Section<TSectionOutput>(string sectionName, Func<BackgroundTaskContext<TParameter>, TSectionInput, Task<TSectionOutput>> callback) {
-                            return SectionBase(sectionName, () => {
-                                return _contextFactory.CraeteScopedContext(_jobId, _parameter);
-                            }, context => {
-                                var task = callback((BackgroundTaskContext<TParameter>)context, _sectionInput);
-                                task.Wait();
-                                return new JobChainWithParameter<TParameter, TSectionOutput>(task.Result, _jobId, _parameter, _currentSections, _contextFactory, _cancellationToken);
-                            });
+                        public abstract void Execute(JobChainWithParameter<TParameter> job);
+                        public override sealed void Execute(JobChain job) {
+                            Execute((JobChainWithParameter<TParameter>)job);
                         }
                     }
                 }

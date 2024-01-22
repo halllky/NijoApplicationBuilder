@@ -1,5 +1,6 @@
 using Nijo.Core;
 using Nijo.Util.CodeGenerating;
+using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +19,7 @@ namespace Nijo.Parts.WebServer {
         public string DbContext = "DbContext";
         public string CurrentTime = "CurrentTime";
 
-        internal SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
+        internal SourceFile Render(CodeRenderingContext ctx, IEnumerable<string> methods) => new SourceFile {
             FileName = FileName,
             RenderContent = () => $$"""
                 namespace {{ctx.Config.RootNamespace}} {
@@ -36,6 +37,8 @@ namespace Nijo.Parts.WebServer {
 
                         private DateTime? _currentTime;
                         public virtual DateTime {{CurrentTime}} => _currentTime ??= DateTime.Now;
+
+                        {{WithIndent(methods, "        ")}}
                     }
                 }
                 """,

@@ -6,9 +6,16 @@ using System.Threading.Tasks;
 using Nijo.Parts;
 using Nijo.Core;
 using Nijo.Util.CodeGenerating;
+using Nijo.Parts.WebClient;
 
 namespace Nijo.Features.BackgroundService {
-    internal partial class BackgroundTask : IFeature {
+    internal partial class BgTaskFeature : IFeature {
+
+        public static string GetApiURL(CodeRenderingContext ctx) {
+            var bgTaskAggregate = ctx.Schema.GetAggregate(GraphNodeId);
+            var controller = new Controller(bgTaskAggregate.Item);
+            return $"{controller.SubDomain}/{SCHEDULE}";
+        }
 
         public void BuildSchema(AppSchemaBuilder builder) {
             AddBgTaskEntity(builder);
@@ -21,9 +28,12 @@ namespace Nijo.Features.BackgroundService {
             searchFeature.UseDefaultSearchLogic = true;
             searchFeature.GenerateCode(context, aggregate);
 
+            context.AddAppSrvMethod(RenderAppSrvMethod(context));
+
             context.EditWebApiDirectory(webDir => {
                 webDir.Directory("BackgroundTask", bgDir => {
                     bgDir.Generate(BgTaskBaseClass(context));
+                    bgDir.Generate(JobChainClass(context));
                     bgDir.Generate(Launcher(context));
                 });
             });
@@ -37,6 +47,8 @@ namespace Nijo.Features.BackgroundService {
                 builder.OnModelCreating.Add(modelBuilder => $$"""
                     {{ENTITY_CLASSNAME}}.OnModelCreating({{modelBuilder}});
                     """);
+
+                builder.ControllerActions.Add(RenderAspControllerAction(context));
             });
         }
     }
