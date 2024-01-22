@@ -117,7 +117,7 @@ namespace Nijo.Core {
                 ? $"new HashSet<{Opposite.Item.EFCoreEntityClassName}>()"
                 : null;
 
-            internal IEnumerable<DbColumn> GetForeignKeys() {
+            internal IEnumerable<AggregateMember.ValueMember> GetForeignKeys() {
                 var parent = _relation.Terminal.GetParent();
                 if (_relation.Terminal == Owner
                     && parent == _relation
@@ -128,8 +128,7 @@ namespace Nijo.Core {
                     return _relation.Terminal
                         .GetKeys()
                         .OfType<AggregateMember.ValueMember>()
-                        .Where(key => key.Inherits?.Relation == parent)
-                        .Select(parentPk => parentPk.GetDbColumn());
+                        .Where(key => key.Inherits?.Relation == parent);
 
                 } else if (_relation.Initial == Owner
                         && _relation.IsRef()) {
@@ -138,11 +137,10 @@ namespace Nijo.Core {
                         .GetMembers()
                         .OfType<AggregateMember.Ref>()
                         .Where(refMember => refMember.Relation == _relation)
-                        .SelectMany(refMember => refMember.GetForeignKeys())
-                        .Select(refTargetKey => refTargetKey.GetDbColumn());
+                        .SelectMany(refMember => refMember.GetForeignKeys());
 
                 } else {
-                    return Enumerable.Empty<DbColumn>();
+                    return Enumerable.Empty<AggregateMember.ValueMember>();
                 }
             }
 

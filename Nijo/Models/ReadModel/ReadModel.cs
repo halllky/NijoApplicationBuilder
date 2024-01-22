@@ -142,8 +142,8 @@ namespace Nijo.Models.ReadModel {
                         /// {{aggregate.Item.DisplayName}}のデータベースに保存されるデータの形を表すクラスです。
                         /// </summary>
                         public partial class {{aggregate.Item.EFCoreEntityClassName}} {
-                        {{aggregate.GetColumns().SelectTextTemplate(col => $$"""
-                            public {{col.Options.MemberType.GetCSharpTypeName()}}? {{col.Options.MemberName}} { get; set; }
+                        {{aggregate.GetMembers().OfType<AggregateMember.ValueMember>().SelectTextTemplate(col => $$"""
+                            public {{col.Options.MemberType.GetCSharpTypeName()}}? {{col.MemberName}} { get; set; }
                         """)}}
 
                         {{EnumerateNavigationProperties(aggregate).SelectTextTemplate(nav => $$"""
@@ -152,8 +152,8 @@ namespace Nijo.Models.ReadModel {
 
                             /// <summary>このオブジェクトと比較対象のオブジェクトの主キーが一致するかを返します。</summary>
                             public bool {{Aggregate.KEYEQUALS}}({{aggregate.Item.EFCoreEntityClassName}} entity) {
-                        {{aggregate.GetColumns().Where(c => c.Options.IsKey).SelectTextTemplate(col => $$"""
-                                if (entity.{{col.Options.MemberName}} != this.{{col.Options.MemberName}}) return false;
+                        {{aggregate.GetKeys().OfType<AggregateMember.ValueMember>().SelectTextTemplate(col => $$"""
+                                if (entity.{{col.MemberName}} != this.{{col.MemberName}}) return false;
                         """)}}
                                 return true;
                             }

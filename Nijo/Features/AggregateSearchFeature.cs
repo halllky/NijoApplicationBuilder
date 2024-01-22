@@ -22,7 +22,7 @@ namespace Nijo.Features {
             var keys = rootAggregate
                 .GetKeys()
                 .OfType<AggregateMember.ValueMember>()
-                .Select(m => m.GetDbColumn().GetFullPath().Join("_"));
+                .Select(m => m.GetFullPath().Join("_"));
 
             return new MultiView {
                 DisplayName = rootAggregate.Item.DisplayName,
@@ -39,7 +39,7 @@ namespace Nijo.Features {
         private static string AppServiceSearchMethodName(GraphNode<Aggregate> rootAggregate) {
             return $"Search{rootAggregate.Item.DisplayName.ToCSharpSafe()}";
         }
-        private static IReadOnlyDictionary<DbColumn, MultiViewField> GetFields(GraphNode<Aggregate> rootAggregate) {
+        private static IReadOnlyDictionary<AggregateMember.ValueMember, MultiViewField> GetFields(GraphNode<Aggregate> rootAggregate) {
 
             var rootAndDescendants = rootAggregate
                 .EnumerateThisAndDescendants()
@@ -47,7 +47,7 @@ namespace Nijo.Features {
                              .All(ancestor => !ancestor.IsChildrenMember()
                                            && !ancestor.IsVariationMember()));
             var descendantColumns = rootAndDescendants
-                .SelectMany(entity => entity.GetColumns());
+                .SelectMany(entity => entity.GetMembers().OfType<AggregateMember.ValueMember>());
 
             // 参照先のキーはdescendantColumnsの中に入っているが、名前は入っていないので、別途取得の必要あり
             var refTargets = rootAndDescendants
@@ -57,29 +57,28 @@ namespace Nijo.Features {
             var refTargetNames = refTargets.SelectMany(@ref => @ref.MemberAggregate.GetNames());
             var refTargetColumns = refTargetNames
                .Except(refTargetKeys)
-               .OfType<AggregateMember.ValueMember>()
-               .Select(member => member.GetDbColumn());
+               .OfType<AggregateMember.ValueMember>();
 
             // 名称重複の解決
             var nameCount = descendantColumns
                 .Concat(refTargetColumns)
-                .GroupBy(col => col.Options.MemberName)
+                .GroupBy(col => col.MemberName)
                 .ToDictionary(g => g.Key, _ => 0);
 
             var fields = descendantColumns
                 .Concat(refTargetColumns)
                 .ToDictionary(
-                    col => col,
-                    col => {
+                    vm => vm,
+                    vm => {
                         // 名称重複の解決
-                        var ix = nameCount[col.Options.MemberName];
+                        var ix = nameCount[vm.MemberName];
                         var suffix = ix == 0 ? string.Empty : ix.ToString();
-                        nameCount[col.Options.MemberName] = ix + 1;
+                        nameCount[vm.MemberName] = ix + 1;
 
                         return new MultiViewField {
-                            MemberType = col.Options.MemberType,
-                            VisibleInGui = !col.Options.InvisibleInGui,
-                            PhysicalName = col.Options.MemberName + suffix,
+                            MemberType = vm.Options.MemberType,
+                            VisibleInGui = !vm.Options.InvisibleInGui,
+                            PhysicalName = vm.MemberName + suffix,
                         };
                     });
             return fields;

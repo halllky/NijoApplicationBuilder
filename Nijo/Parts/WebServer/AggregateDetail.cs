@@ -133,7 +133,7 @@ namespace Nijo.Parts.WebServer {
                         return $$"""
                             {{refOrParent.MemberName}} = new {{keyNameClass.CSharpClassName}}() {
                             {{keyNameClass.GetOwnMembers().SelectTextTemplate(m => m is AggregateMember.ValueMember vm ? $$"""
-                                {{m.MemberName}} = {{rootInstanceName}}.{{vm.GetDbColumn().GetFullPath(rootInstance).Join("?.")}},
+                                {{m.MemberName}} = {{rootInstanceName}}.{{vm.GetFullPath(rootInstance).Join("?.")}},
                             """ : $$"""
                                 {{WithIndent(RenderKeyNameConvertingRecursively((AggregateMember.RelationMember)m), "    ")}}
                             """)}}
@@ -193,7 +193,7 @@ namespace Nijo.Parts.WebServer {
                     var path = GetPathOf("this", entry, vm);
 
                     yield return $$"""
-                        {{vm.GetDbColumn().Options.MemberName}} = {{path.First()}}.{{path.Skip(1).Join("?.")}},
+                        {{vm.MemberName}} = {{path.First()}}.{{path.Skip(1).Join("?.")}},
                         """;
 
                 } else if (prop is AggregateMember.Ref refProp) {

@@ -57,13 +57,13 @@ namespace Nijo.Parts.WebServer {
                 {{modelBuilder}}.Entity<{{_config.EntityNamespace}}.{{aggregate.Item.EFCoreEntityClassName}}>(entity => {
 
                     entity.HasKey(e => new {
-                {{aggregate.GetColumns().Where(x => x.Options.IsKey).SelectTextTemplate(pk => $$"""
-                        e.{{pk.Options.MemberName}},
+                {{aggregate.GetKeys().OfType<AggregateMember.ValueMember>().SelectTextTemplate(pk => $$"""
+                        e.{{pk.MemberName}},
                 """)}}
                     });
 
-                {{aggregate.GetColumns().SelectTextTemplate(col => $$"""
-                    entity.Property(e => e.{{col.Options.MemberName}})
+                {{aggregate.GetMembers().OfType<AggregateMember.ValueMember>().SelectTextTemplate(col => $$"""
+                    entity.Property(e => e.{{col.MemberName}})
                         .IsRequired({{(col.Options.IsRequired ? "true" : "false")}});
                 """)}}
 
@@ -99,7 +99,7 @@ namespace Nijo.Parts.WebServer {
                     yield return $"    .HasForeignKey(e => new {{";
                 }
                 foreach (var fk in nav.Relevant.GetForeignKeys()) {
-                    yield return $"        e.{fk.Options.MemberName},";
+                    yield return $"        e.{fk.MemberName},";
                 }
                 yield return $"    }})";
 

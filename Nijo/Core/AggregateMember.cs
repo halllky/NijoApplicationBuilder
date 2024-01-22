@@ -213,16 +213,6 @@ namespace Nijo.Core {
             /// </summary>
             internal ValueMember Declared => Inherits?.Member.Declared ?? this;
 
-
-            internal virtual DbColumn GetDbColumn() {
-                return new DbColumn {
-                    Owner = Owner,
-                    Options = Options.Clone(opt => {
-                        opt.MemberName = MemberName;
-                    }),
-                };
-            }
-
             internal class InheritInfo {
                 internal required GraphEdge<Aggregate> Relation { get; init; }
                 internal required ValueMember Member { get; init; }
