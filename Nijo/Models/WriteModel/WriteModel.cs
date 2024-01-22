@@ -89,7 +89,7 @@ namespace Nijo.Models.WriteModel {
                         """)}}
 
                             /// <summary>このオブジェクトと比較対象のオブジェクトの主キーが一致するかを返します。</summary>
-                            public bool {{IEFCoreEntity.KEYEQUALS}}({{aggregate.Item.EFCoreEntityClassName}} entity) {
+                            public bool {{Aggregate.KEYEQUALS}}({{aggregate.Item.EFCoreEntityClassName}} entity) {
                         {{aggregate.GetColumns().Where(c => c.Options.IsKey).SelectTextTemplate(col => $$"""
                                 if (entity.{{col.Options.MemberName}} != this.{{col.Options.MemberName}}) return false;
                         """)}}

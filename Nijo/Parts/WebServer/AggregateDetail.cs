@@ -134,7 +134,7 @@ namespace Nijo.Parts.WebServer {
                         return $$"""
                             {{refOrParent.MemberName}} = new {{keyNameClass.CSharpClassName}}() {
                             {{keyNameClass.GetOwnMembers().SelectTextTemplate(m => m is AggregateMember.ValueMember vm ? $$"""
-                                {{m.MemberName}} = {{rootInstanceName}}.{{vm.GetDbColumn().GetFullPath(rootInstance.As<IEFCoreEntity>()).Join("?.")}},
+                                {{m.MemberName}} = {{rootInstanceName}}.{{vm.GetDbColumn().GetFullPath(rootInstance).Join("?.")}},
                             """ : $$"""
                                 {{WithIndent(RenderKeyNameConvertingRecursively((AggregateMember.RelationMember)m), "    ")}}
                             """)}}

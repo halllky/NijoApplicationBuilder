@@ -141,7 +141,7 @@ namespace Nijo.Models.WriteModel {
 
                 // ChangeState変更
                 builder.AppendLine($"foreach (var a in arr{i}_after) {{");
-                builder.AppendLine($"    var b = arr{i}_before.SingleOrDefault(b => b.{IEFCoreEntity.KEYEQUALS}(a));");
+                builder.AppendLine($"    var b = arr{i}_before.SingleOrDefault(b => b.{Aggregate.KEYEQUALS}(a));");
                 builder.AppendLine($"    if (b == null) {{");
                 builder.AppendLine($"        {dbContext}.Entry(a).State = EntityState.Added;");
                 builder.AppendLine($"    }} else {{");
@@ -150,7 +150,7 @@ namespace Nijo.Models.WriteModel {
                 builder.AppendLine($"}}");
 
                 builder.AppendLine($"foreach (var b in arr{i}_before) {{");
-                builder.AppendLine($"    var a = arr{i}_after.SingleOrDefault(a => a.{IEFCoreEntity.KEYEQUALS}(b));");
+                builder.AppendLine($"    var a = arr{i}_after.SingleOrDefault(a => a.{Aggregate.KEYEQUALS}(b));");
                 builder.AppendLine($"    if (a == null) {{");
                 builder.AppendLine($"        {dbContext}.Entry(b).State = EntityState.Deleted;");
                 builder.AppendLine($"    }}");

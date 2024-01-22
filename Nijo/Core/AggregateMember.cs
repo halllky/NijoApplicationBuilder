@@ -216,7 +216,7 @@ namespace Nijo.Core {
 
             internal virtual DbColumn GetDbColumn() {
                 return new DbColumn {
-                    Owner = Owner.As<IEFCoreEntity>(),
+                    Owner = Owner,
                     Options = Options.Clone(opt => {
                         opt.MemberName = MemberName;
                     }),

@@ -73,7 +73,7 @@ namespace Nijo.Models.WriteModel {
                     .GetOwnMembers()
                     .Where(m => m.Owner == agg)
                     .SelectTextTemplate(m => m is AggregateMember.ValueMember vm ? $$"""
-                        {{m.MemberName}} = e.{{vm.GetDbColumn().GetFullPath(_aggregate.As<IEFCoreEntity>()).Join(".")}},
+                        {{m.MemberName}} = e.{{vm.GetDbColumn().GetFullPath(_aggregate).Join(".")}},
                         """ : $$"""
                         {{m.MemberName}} = new {{new RefTargetKeyName(((AggregateMember.RelationMember)m).MemberAggregate).CSharpClassName}}() {
                             {{WithIndent(RenderKeyNameConvertingRecursively(((AggregateMember.RelationMember)m).MemberAggregate), "    ")}}

@@ -11,34 +11,21 @@ namespace Nijo.Core {
     internal static class DbColumnExtensions {
 
         internal static IEnumerable<DbColumn> GetColumns(this GraphNode<Aggregate> aggregate) {
-            return aggregate.As<IEFCoreEntity>().GetColumns();
-        }
-        internal static IEnumerable<DbColumn> GetColumns(this GraphNode<IEFCoreEntity> dbEntity) {
-            var nonAggregateColumns = dbEntity.Item
-                .SchalarMembersNotRelatedToAggregate
-                .Select(options => new DbColumn {
-                    Owner = dbEntity,
-                    Options = options,
-                });
-            var aggregateColumns = dbEntity.Item is Aggregate
-                ? dbEntity.As<Aggregate>()
-                          .GetMembers()
-                          .OfType<AggregateMember.ValueMember>()
-                          .Select(member => member.GetDbColumn())
-                : Enumerable.Empty<DbColumn>();
-
-            return nonAggregateColumns.Concat(aggregateColumns);
+            return aggregate
+                .GetMembers()
+                .OfType<AggregateMember.ValueMember>()
+                .Select(member => member.GetDbColumn());
         }
     }
 
     internal class DbColumn {
-        internal required GraphNode<IEFCoreEntity> Owner { get; init; }
+        internal required GraphNode<Aggregate> Owner { get; init; }
         internal required IReadOnlyMemberOptions Options { get; init; }
 
-        internal IEnumerable<string> GetFullPath(GraphNode<IEFCoreEntity>? since = null) {
+        internal IEnumerable<string> GetFullPath(GraphNode<Aggregate>? since = null) {
             var skip = since != null;
             foreach (var edge in Owner.PathFromEntry()) {
-                if (skip && edge.Source?.As<IEFCoreEntity>() == since) skip = false;
+                if (skip && edge.Source?.As<Aggregate>() == since) skip = false;
                 if (skip) continue;
 
                 if (edge.Source == edge.Terminal

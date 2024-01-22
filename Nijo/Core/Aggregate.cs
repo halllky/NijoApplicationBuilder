@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using static Nijo.Core.DirectedEdgeExtensions;
 
 namespace Nijo.Core {
-    public class Aggregate : ValueObject, IEFCoreEntity {
+    public class Aggregate : ValueObject, IGraphNode {
         internal Aggregate(NodeId id, string displayName, bool useKeyInsteadOfName, AggregateBuildOption options) {
             Id = id;
             DisplayName = displayName;
@@ -22,10 +22,8 @@ namespace Nijo.Core {
         public string ClassName => DisplayName.ToCSharpSafe();
         public string TypeScriptTypeName => DisplayName.ToCSharpSafe();
         public string EFCoreEntityClassName => $"{DisplayName.ToCSharpSafe()}DbEntity";
-        string IEFCoreEntity.ClassName => EFCoreEntityClassName;
         public string DbSetName => $"{ClassName}DbSet";
 
-        public IList<IReadOnlyMemberOptions> SchalarMembersNotRelatedToAggregate { get; } = new List<IReadOnlyMemberOptions>();
         internal bool UseKeyInsteadOfName { get; }
         internal AggregateBuildOption Options { get; }
 
@@ -34,6 +32,8 @@ namespace Nijo.Core {
         }
 
         public override string ToString() => $"Aggregate[{Id}]";
+
+        internal const string KEYEQUALS = "KeyEquals";
     }
 
     internal static class AggregateExtensions {
