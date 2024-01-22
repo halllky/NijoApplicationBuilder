@@ -24,19 +24,4 @@ namespace Nijo.Core {
         bool IsRequired { get; }
         bool InvisibleInGui { get; }
     }
-
-    public static class MemberOptionsExtensions {
-        public static IReadOnlyMemberOptions Clone(this IReadOnlyMemberOptions options, Action<MemberOptions> overwrite) {
-            var clone = new MemberOptions {
-                MemberName = options.MemberName,
-                MemberType = options.MemberType,
-                IsKey = options.IsKey,
-                IsDisplayName = options.IsDisplayName,
-                IsRequired = options.IsRequired,
-                InvisibleInGui = options.InvisibleInGui,
-            };
-            overwrite(clone);
-            return clone;
-        }
-    }
 }

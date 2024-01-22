@@ -64,7 +64,7 @@ namespace Nijo.Parts.WebServer {
 
                 {{aggregate.GetMembers().OfType<AggregateMember.ValueMember>().SelectTextTemplate(col => $$"""
                     entity.Property(e => e.{{col.MemberName}})
-                        .IsRequired({{(col.Options.IsRequired ? "true" : "false")}});
+                        .IsRequired({{(col.IsRequired ? "true" : "false")}});
                 """)}}
 
                     {{WithIndent(RenderNavigationPropertyOnModelCreating(aggregate.As<Aggregate>()), "    ")}}

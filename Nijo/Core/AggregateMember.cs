@@ -201,8 +201,35 @@ namespace Nijo.Core {
             internal sealed override string CSharpTypeName => Options.MemberType.GetCSharpTypeName();
             internal sealed override string TypeScriptTypename => Options.MemberType.GetTypeScriptTypeName();
 
-            internal bool IsKey => Options.IsKey;
+            internal bool IsKey {
+                get {
+                    if (Inherits?.Relation.IsParentChild() == true) {
+                        return true;
+
+                    } else if (Inherits?.Relation.IsRef() == true) {
+                        return Inherits.Relation.IsPrimary();
+
+                    } else {
+                        return Options.IsKey;
+                    }
+                }
+            }
             internal bool IsDisplayName => Options.IsDisplayName;
+
+            internal bool IsRequired {
+                get {
+                    if (Inherits?.Relation.IsParentChild() == true) {
+                        return true;
+
+                    } else if (Inherits?.Relation.IsRef() == true) {
+                        return Inherits.Relation.IsPrimary()
+                            || Inherits.Relation.IsRequired();
+
+                    } else {
+                        return Options.IsRequired;
+                    }
+                }
+            }
 
             /// <summary>
             /// このメンバーが親や参照先のメンバーを継承したものである場合はこのプロパティに値が入る。
@@ -357,10 +384,7 @@ namespace Nijo.Core {
                         yield return new Schalar(
                             Relation.Initial,
                             new ValueMember.InheritInfo { Relation = Relation, Member = schalar, },
-                            schalar.GraphNode.Item.Clone(opt => {
-                                opt.IsKey = Relation.IsPrimary();
-                                opt.IsRequired = Relation.IsPrimary() || Relation.IsRequired();
-                            }));
+                            schalar.GraphNode.Item);
 
                     } else if (fk is Variation variation) {
                         yield return new Variation(
@@ -389,10 +413,7 @@ namespace Nijo.Core {
                         yield return new Schalar(
                             Relation.Terminal,
                             new ValueMember.InheritInfo { Relation = Relation, Member = schalar },
-                            schalar.GraphNode.Item.Clone(opt => {
-                                opt.IsKey = true;
-                                opt.IsRequired = true;
-                            }));
+                            schalar.GraphNode.Item);
 
                     } else if (parentPk is Variation variation) {
                         yield return new Variation(

@@ -335,6 +335,10 @@ namespace Nijo.Core {
             return graphEdge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
                 && (string)type == REL_ATTRVALUE_REFERENCE;
         }
+        internal static bool IsParentChild(this GraphEdge graphEdge) {
+            return graphEdge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
+                && (string)type == REL_ATTRVALUE_PARENT_CHILD;
+        }
 
         internal static int GetMemberOrder(this GraphEdge graphEdge) {
             return (int)graphEdge.Attributes[REL_ATTR_MEMBER_ORDER];

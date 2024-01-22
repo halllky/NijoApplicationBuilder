@@ -133,9 +133,9 @@ namespace Nijo.Core {
                         ? vm.IsDisplayName.ToString()
                         : "-"
                 ), (
-                    nameof(AggregateMember.ValueMember.Options.IsRequired),
+                    nameof(AggregateMember.ValueMember.IsRequired),
                     member => member is AggregateMember.ValueMember vm
-                        ? vm.Options.IsRequired.ToString()
+                        ? vm.IsRequired.ToString()
                         : "-"
                 ), (
                     nameof(AggregateMember.ValueMember.Options.InvisibleInGui),
