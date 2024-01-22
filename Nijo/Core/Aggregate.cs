@@ -66,8 +66,7 @@ namespace Nijo.Core {
             GraphNode<Aggregate>? node = graphNode;
             while (true) {
                 edge = node.In
-                    .SingleOrDefault(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                                          && (string)type == REL_ATTRVALUE_PARENT_CHILD)?
+                    .SingleOrDefault(edge => edge.IsParentChild())?
                     .As<Aggregate>();
 
                 if (edge == null) break;
@@ -81,9 +80,9 @@ namespace Nijo.Core {
         }
 
         internal static IEnumerable<GraphNode<Aggregate>> EnumerateDescendants(this GraphNode<Aggregate> graphNode) {
-            return graphNode.SelectNeighbors(node => node.Out
-                .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var value)
-                            && (string)value == REL_ATTRVALUE_PARENT_CHILD)
+            return graphNode.SelectNeighbors(node => node
+                .Out
+                .Where(edge => edge.IsParentChild())
                 .Select(edge => edge.Terminal.As<Aggregate>()));
         }
         internal static IEnumerable<GraphNode<Aggregate>> EnumerateThisAndDescendants(this GraphNode<Aggregate> graphNode) {
@@ -103,24 +102,18 @@ namespace Nijo.Core {
         internal static bool IsChildrenMember(this GraphNode<Aggregate> graphNode) {
             var parent = graphNode.GetParent();
             return parent != null
-                && parent.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                && (string)type == REL_ATTRVALUE_PARENT_CHILD
                 && parent.Attributes.TryGetValue(REL_ATTR_MULTIPLE, out var isArray)
                 && (bool)isArray;
         }
         internal static bool IsChildMember(this GraphNode<Aggregate> graphNode) {
             var parent = graphNode.GetParent();
             return parent != null
-                && parent.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                && (string)type == REL_ATTRVALUE_PARENT_CHILD
                 && (!parent.Attributes.TryGetValue(REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray == false)
                 && (!parent.Attributes.TryGetValue(REL_ATTR_VARIATIONGROUPNAME, out var groupName) || (string)groupName == string.Empty);
         }
         internal static bool IsVariationMember(this GraphNode<Aggregate> graphNode) {
             var parent = graphNode.GetParent();
             return parent != null
-                && parent.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                && (string)type == REL_ATTRVALUE_PARENT_CHILD
                 && (!parent.Attributes.TryGetValue(REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray == false)
                 && parent.Attributes.TryGetValue(REL_ATTR_VARIATIONGROUPNAME, out var groupName)
                 && (string)groupName != string.Empty;

@@ -44,8 +44,7 @@ namespace Nijo.Core {
             }
 
             var childrenEdges = aggregate.Out.Where(edge =>
-                edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, out var type)
-                && (string)type == DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD
+                edge.IsParentChild()
                 && edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_MULTIPLE, out var isArray)
                 && (bool)isArray);
             foreach (var edge in childrenEdges) {
@@ -53,8 +52,7 @@ namespace Nijo.Core {
             }
 
             var childEdges = aggregate.Out.Where(edge =>
-                edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, out var type)
-                && (string)type == DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD
+                edge.IsParentChild()
                 && (!edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray == false)
                 && (!edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, out var groupName) || (string)groupName == string.Empty));
             foreach (var edge in childEdges) {
@@ -63,8 +61,7 @@ namespace Nijo.Core {
 
             var variationGroups = aggregate.Out
                 .Where(edge =>
-                    edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, out var type)
-                    && (string)type == DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD
+                    edge.IsParentChild()
                     && (!edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray == false)
                     && edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, out var groupName)
                     && (string)groupName! != string.Empty)
@@ -168,9 +165,7 @@ namespace Nijo.Core {
                 if (until != null) path = path.Until(until);
 
                 foreach (var edge in path) {
-                    if (edge.Source == edge.Terminal
-                        && edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, out var type)
-                        && (string)type == DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD) {
+                    if (edge.Source == edge.Terminal && edge.IsParentChild()) {
                         yield return PARENT_PROPNAME; // 子から親に向かって辿る場合
                     } else {
                         yield return edge.RelationName;
