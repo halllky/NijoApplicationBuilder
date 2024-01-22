@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Core;
 using Nijo.Util.CodeGenerating;
-using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 using Nijo.Features.Logging;
 
 namespace Nijo.Parts {

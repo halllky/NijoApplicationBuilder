@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Nijo.Parts;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
-using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 
 namespace Nijo.Models.WriteModel {
     internal class CreateFeature {

@@ -1,6 +1,5 @@
 using Nijo.Core;
 using Nijo.Util.DotnetEx;
-using static Nijo.Util.CodeGenerating.TemplateTextHelper;
 using System;
 using System.Collections.Generic;
 using System.IO;
