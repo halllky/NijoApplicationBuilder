@@ -304,8 +304,6 @@ namespace Nijo.Core {
         internal const string REL_ATTRVALUE_PARENT_CHILD = "child";
         internal const string REL_ATTRVALUE_REFERENCE = "reference";
         internal const string REL_ATTRVALUE_DEPENDSON = "depends-on";
-        internal const string REL_ATTRVALUE_AGG_2_ETT = "aggregate-dbentity";
-        internal const string REL_ATTRVALUE_AGG_2_INS = "aggregate-instance";
 
         internal const string REL_ATTR_MULTIPLE = "multiple";
         internal const string REL_ATTR_VARIATIONGROUPNAME = "variation-group-name";
