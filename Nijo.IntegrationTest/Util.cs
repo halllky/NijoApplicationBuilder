@@ -26,7 +26,7 @@ namespace Nijo.IntegrationTest {
 
         internal static void AssertHttpResponseIsOK(HttpResponseMessage httpResponseMessage) {
             try {
-                Assert.True(httpResponseMessage.IsSuccessStatusCode);
+                Assert.That(httpResponseMessage.IsSuccessStatusCode, Is.True);
             } catch {
                 var task = httpResponseMessage.Content.ReadAsStringAsync();
                 task.Wait();
