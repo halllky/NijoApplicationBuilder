@@ -14,6 +14,13 @@ namespace Nijo.IntegrationTest {
         public DataPattern(string path) {
             _xmlFilePath = path;
         }
+        public DataPattern(E_DataPattern pattern) {
+            var fieldInfo = typeof(E_DataPattern).GetField(pattern.ToString())
+                ?? throw new ArgumentException(nameof(pattern));
+            var attr = (FileNameAttribute?)Attribute.GetCustomAttribute(fieldInfo, typeof(FileNameAttribute))
+                ?? throw new ArgumentException(nameof(pattern));
+            _xmlFilePath = Path.Combine(DataPatternsDir(), attr.Value);
+        }
 
         private readonly string _xmlFilePath;
 
@@ -39,11 +46,12 @@ namespace Nijo.IntegrationTest {
             return GetXmlFileName();
         }
 
-        public static IEnumerable<object> Collect() {
+        private static string DataPatternsDir() {
             var root = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..");
-            var dir = Path.Combine(root, "DataPatterns");
-            if (!Directory.Exists(dir)) throw new DirectoryNotFoundException(dir);
-            foreach (var file in Directory.GetFiles(dir)) {
+            return Path.Combine(root, "DataPatterns");
+        }
+        public static IEnumerable<object> Collect() {
+            foreach (var file in Directory.GetFiles(DataPatternsDir())) {
                 yield return new object[] { new DataPattern(file) };
             }
         }
