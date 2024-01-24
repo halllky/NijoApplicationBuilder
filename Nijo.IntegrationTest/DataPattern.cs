@@ -47,7 +47,7 @@ namespace Nijo.IntegrationTest {
         }
 
         private static string DataPatternsDir() {
-            var root = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..");
+            var root = Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", "..");
             return Path.Combine(root, "DataPatterns");
         }
         public static IEnumerable<object> Collect() {

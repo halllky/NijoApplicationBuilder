@@ -12,7 +12,7 @@ namespace Nijo.IntegrationTest.Perspectives {
         [UseDataPatterns]
         public async Task Deleteできるか(DataPattern pattern) {
 
-            await If(pattern).When(E_DataPattern._000_主キー1個の集約xml, async () => {
+            await If(pattern).When(E_DataPattern._000_単純な集約, async () => {
                 var res1 = await SharedResource.Project.Post("/api/集約A/create", new {
                     ID = "111",
                 });

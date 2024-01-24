@@ -39,7 +39,7 @@ namespace Nijo.IntegrationTest.Perspectives {
             // とりあえずもっとも単純なパターンで書き換えてみる
             // (デフォルトでもバックグランドタスク用のテーブルが生成されているはずなので
             // 敢えて集約定義を書かなくても十分判定可能かもしれない)
-            var test1xml = new DataPattern(E_DataPattern._000_主キー1個の集約xml).LoadXmlString();
+            var test1xml = new DataPattern(E_DataPattern._000_単純な集約).LoadXmlString();
             File.WriteAllText(project.SchemaXml.GetPath(), test1xml);
 
             // 何らかのDBアクセスする処理が正常終了するかを確認

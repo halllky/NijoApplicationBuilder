@@ -1,8 +1,8 @@
 namespace Nijo.IntegrationTest {
     public enum E_DataPattern {
 
-        [FileName("000_主キー1個の集約.xml")]
-        _000_主キー1個の集約xml,
+        [FileName("000_単純な集約.xml")]
+        _000_単純な集約,
         [FileName("001_Refのみ.xml")]
         _001_Refのみxml,
         [FileName("002_Childrenのみ.xml")]
