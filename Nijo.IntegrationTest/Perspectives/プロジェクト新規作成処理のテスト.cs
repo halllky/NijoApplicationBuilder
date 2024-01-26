@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Nijo.IntegrationTest.Perspectives {
     internal class プロジェクト新規作成処理のテスト {
-        [Test]
+        [Test, CancelAfter(300000)]
         public async Task 正常終了するか() {
             var logger = new TestContextLogger();
 
