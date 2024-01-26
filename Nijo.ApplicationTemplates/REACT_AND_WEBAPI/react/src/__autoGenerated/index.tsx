@@ -26,13 +26,17 @@ const queryClient = new QueryClient({
 function ApplicationRootInContext({ children }: {
   children?: React.ReactNode
 }) {
-  const { data: { darkMode } } = Util.useUserSetting()
+  const { data: {
+    darkMode,
+    fontFamily,
+  } } = Util.useUserSetting()
 
   return (
     <PanelGroup
       direction='horizontal'
       autoSaveId="LOCAL_STORAGE_KEY.SIDEBAR_SIZE_X"
-      className={darkMode ? 'dark' : undefined}>
+      className={darkMode ? 'dark' : undefined}
+      style={{ fontFamily: fontFamily ?? Util.DEFAULT_FONT_FAMILY }}>
 
       {/* サイドメニュー */}
       <Panel defaultSize={20}>

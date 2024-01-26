@@ -2,7 +2,7 @@ import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo
 import { FieldArrayPath, FieldArrayWithId, FieldValues } from "react-hook-form"
 import { AgGridReact, AgGridReactProps } from "ag-grid-react"
 import { ColDef, GridReadyEvent, ICellEditorParams, ValueFormatterFunc } from "ag-grid-community"
-import { CustomComponentRef, useFormContextEx, useUserSetting } from "../util"
+import * as Util from "../util"
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 
@@ -27,7 +27,10 @@ import 'ag-grid-community/styles/ag-theme-alpine.css'
 //   値から文字列への変換のロジックがInput内の各コンポーネント内にまとまるので
 
 export const AgGridWrapper = forwardRef(<T,>(props: AgGridReactProps<T>, ref: React.ForwardedRef<AgGridReact<T>>) => {
-  const { data: { darkMode } } = useUserSetting()
+  const { data: {
+    darkMode,
+    fontFamily,
+  } } = Util.useUserSetting()
 
   const divRef = useRef<HTMLDivElement>(null)
   const gridRef = useRef<AgGridReact<T>>(null)
@@ -48,7 +51,10 @@ export const AgGridWrapper = forwardRef(<T,>(props: AgGridReactProps<T>, ref: Re
   } = props
 
   return (
-    <div ref={divRef} className={`ag-theme-alpine compact ${(darkMode ? 'dark' : '')} ${className}`}>
+    <div ref={divRef}
+      className={`ag-theme-alpine compact ${(darkMode ? 'dark' : '')} ${className}`}
+      style={{ fontFamily: fontFamily ?? Util.DEFAULT_FONT_FAMILY }}
+    >
       <AgGridReact
         ref={gridRef}
         {...gridProps}
@@ -115,13 +121,13 @@ export const generateCellEditor = (arrayPath: string, editor: any, editorProp?: 
   return React.memo(forwardRef<ICellEditorRef, ICellEditorParams>((props, ref) => {
 
     // 編集開始時にフォーカス
-    const customRef = useRef<CustomComponentRef>(null)
+    const customRef = useRef<Util.CustomComponentRef>(null)
     useEffect(() => {
       customRef.current?.focus()
     }, [])
 
     // for react hook form
-    const { registerEx } = useFormContextEx()
+    const { registerEx } = Util.useFormContextEx()
     const name = useMemo(() => {
       return `${arrayPath}.[${props.rowIndex}].${props.colDef.field}`
     }, [props.rowIndex, props.colDef.field])

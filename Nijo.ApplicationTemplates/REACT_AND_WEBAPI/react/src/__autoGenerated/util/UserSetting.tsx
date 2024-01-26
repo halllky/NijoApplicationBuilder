@@ -10,7 +10,13 @@ import { useDummyDataGenerator } from './useDummyDataGenerator'
 export type UserSettings = {
   apiDomain?: string
   darkMode?: boolean
+  fontFamily?: string
 }
+export const DEFAULT_FONT_FAMILY = [
+  'Arial',
+  '"BIZ UDGothic"',
+  'sans-serif'
+].join(',')
 
 export const [UserSettingContextProvider, useUserSetting] = defineStorageContext<UserSettings>({
   storageKey: 'appcontext',
@@ -55,6 +61,9 @@ export const ServerSettingScreen = () => {
           </VForm.Row>
           <VForm.Row label="ダークモード">
             <Input.CheckBox {...registerEx('darkMode')} />
+          </VForm.Row>
+          <VForm.Row label="フォント(font-family)">
+            <Input.Word {...registerEx('fontFamily')} />
           </VForm.Row>
           <VForm.Row fullWidth>
             <Input.Button outlined submit>更新</Input.Button>
