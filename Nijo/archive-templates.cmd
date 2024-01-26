@@ -10,7 +10,7 @@ set OUT_DIR=%PROJECT_DIR%%2
 
 set ZIP_PATH=%OUT_DIR%templates.zip
 set UNZIP_PATH=%OUT_DIR%ApplicationTemplates
-set TEMPLATE_DIR=%PROJECT_DIR%..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI
+set TEMPLATE_DIR=%PROJECT_DIR%..\Nijo.ApplicationTemplates
 
 @REM -------------------------------------------
 echo:
