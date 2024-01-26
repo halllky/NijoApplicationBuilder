@@ -54,33 +54,27 @@
 - npm
   - 公式サイトからダウンロードしてください。
 
-このリポジトリをcloneし、ビルドして `halapp.exe` を作成する(開発中のためバイナリは提供できていません。ご了承ください)。
+このリポジトリをcloneし、ビルドして `nijo.exe` を作成する(開発中のためバイナリは提供できていません。ご了承ください)。
 以降の手順は、このコマンドラインツールを使用して進めていきます。
 
 新しいアプリケーションを作成する
 
 ```bash
-halapp create YourApplicationName
+nijo create YourApplicationName
 ```
 
-デバッグを開始する
+ビルド
+- `build.bat` を実行する
 
-```bash
-cd YourApplicationName
-halapp debug --verbose
-```
-
-以下の情報が表示されるはずなので、控えておく
-
-- `npm start` が実行されているURL（特に何もしていない場合は `http://localhost:3000` のはず）
-- `dotnet run` が実行されているURL
-
-ブラウザを開いて上記のnpmのURLにアクセスする
-画面のメインメニューから「設定」を開き、サーバーURL欄に上記で控えたdotnetのURLを入力する
-
-前述の手順で作成した `YourApplicationName` フォルダの中にある `halapp.xml` ファイルを編集すると、画面とDBに反映される。XMLの編集はお好みのテキストエディタで可
+デバッグ
+- `debug.bat` を実行する
+- 以下の情報が表示されるはずなので、控えておく
+  - CLIENT: ブラウザからの閲覧用。 `npm start` が実行されているURL
+  - SERVER: WebAPIのURL。 `dotnet run` が実行されているURL
+- ブラウザを開いて `CLIENT` のURLにアクセスする
+- 画面のメインメニューから「設定」を開き、サーバーURL欄に上記で控えた `SERVER` のURLを入力して「更新」
 
 ---
 ## :cherry_blossom: Documentation
-### `halapp.xml` の記述ルール
+### `nijo.xml` の記述ルール
 執筆中
