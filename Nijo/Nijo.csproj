@@ -97,8 +97,11 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\react\**\*.*" LinkBase="テンプレ.REACT\" />
-    <Content Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\webapi\**\*.*" LinkBase="テンプレ.WEBAPI\" />
+    <EmbeddedResource Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\react\*.*" LinkBase="テンプレ\REACT_AND_WEBAPI\react\" />
+    <EmbeddedResource Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\react\public\**\*.*" LinkBase="テンプレ\REACT_AND_WEBAPI\react\public\" />
+    <EmbeddedResource Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\react\src\**\*.*" LinkBase="テンプレ\REACT_AND_WEBAPI\react\src\" />
+    <EmbeddedResource Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\webapi\*.*" LinkBase="テンプレ\REACT_AND_WEBAPI\webapi\" />
+    <EmbeddedResource Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\webapi\Properties\**\*.*" LinkBase="テンプレ\REACT_AND_WEBAPI\webapi\Properties\" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
@@ -113,7 +116,4 @@
       </Properties>
     </MonoDevelop>
   </ProjectExtensions>
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="call archive-templates.cmd $(ProjectDir) $(OutDir)" />
-  </Target>
 </Project>

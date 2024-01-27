@@ -39,6 +39,8 @@ namespace Nijo.Util.CodeGenerating {
             CleanUnhandledFilesAndDirectories();
         }
 
+        public Assembly ExecutingAssembly => _executingAssembly ??= Assembly.GetExecutingAssembly();
+        private Assembly? _executingAssembly;
 
         #region 生成されなかったファイルの削除
         private readonly HashSet<string> _handled = new();
