@@ -22,7 +22,9 @@ echo:
 
 @REM zip化
 pushd %TEMPLATE_DIR%
+git stash push
 git archive --output="%ZIP_PATH%" HEAD
+git stash pop
 popd
 
 @REM 現在の解凍後ディレクトリを削除
