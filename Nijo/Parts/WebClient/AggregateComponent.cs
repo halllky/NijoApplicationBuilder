@@ -266,40 +266,39 @@ namespace Nijo.Parts.WebClient {
                         name: {{GetRegisterName()}},
                       })
 
-                      const gridApi = useRef<AgGridReact<typeof fields[0]> | null>(null)
-
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
                       const onAdd = useCallback((e: React.MouseEvent) => {
                         append(AggregateType.{{createNewChildrenItem}}())
                         e.preventDefault()
                       }, [append])
                       const onRemove = useCallback((e: React.MouseEvent) => {
-                        const selectedRows = gridApi.current?.api.getSelectedRows() ?? []
-                        for (const row of selectedRows) {
-                          const index = fields.indexOf(row)
-                          remove(index)
-                        }
-                        e.preventDefault()
+                        // const selectedRows = gridApi.current?.api.getSelectedRows() ?? []
+                        // for (const row of selectedRows) {
+                        //   const index = fields.indexOf(row)
+                        //   remove(index)
+                        // }
+                        // e.preventDefault()
                       }, [remove, fields])
                     """)}}
 
-                      const columnDefs = useMemo<ColDef<typeof fields[0]>[]>(() => [
+                      const options = useMemo<Layout.DataTableProps<typeof fields[0]>>(() => ({
+                        getLabel: () => '',
+                        getId: () => '', // ツリー構造をとらないので不要
+                        getChildren: () => undefined, // ツリー構造をとらないので不要
+                        columns: [
                     {{colDefs.SelectTextTemplate(def => $$"""
-                        {
-                          field: '{{def.field}}',
-                          cellDataType: false, // セル型の自動推論を無効にする
-                          resizable: true,
-                          sortable: false,
-                          editable: {{def.editable}},
-                          hide: {{(def.hide ? "true" : "false")}},
-                          {{WithIndent(def.cell, "      ")}}
-                          cellEditorPopup: true,
+                          {
+                            accessorKey: '{{def.field}}',
+                            cellDataType: false, // セル型の自動推論を無効にする
+                            // editable: {{def.editable}},
+                            // hide: {{(def.hide ? "true" : "false")}},
                     {{If(def.valueFormatter != string.Empty, () => $$"""
-                          valueFormatter: {{def.valueFormatter}},
+                            // valueFormatter: {{def.valueFormatter}},
                     """)}}
-                        },
+                          },
                     """)}}
-                      ], [])
+                        ],
+                      }), [])
 
                       return (
                         <VForm.Section
@@ -325,10 +324,9 @@ namespace Nijo.Parts.WebClient {
                           </>}
                         >
                           <VForm.Row fullWidth>
-                            <AgGridHelper.AgGridWrapper
-                              ref={gridApi}
-                              rowData={fields}
-                              columnDefs={columnDefs}
+                            <Layout.DataTable
+                              data={fields}
+                              {...options}
                               className="h-64 w-full"
                             />
                           </VForm.Row>

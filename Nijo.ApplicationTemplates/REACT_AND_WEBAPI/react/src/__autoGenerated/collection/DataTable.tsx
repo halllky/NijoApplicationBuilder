@@ -10,7 +10,7 @@ export type DataTableProps<T> = Tree.ToTreeArgs<T> & {
   columns?: RT.ColumnDef<Tree.TreeNode<T>>[]
   className?: string
   getId: (row: T) => string
-  getLabel: (row: T) => string
+  getLabel: (row: T) => React.ReactNode
 }
 
 export const DataTable = <T,>(props: DataTableProps<T>) => {
