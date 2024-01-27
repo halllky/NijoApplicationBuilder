@@ -53,7 +53,7 @@ export const AgGridWrapper = forwardRef(<T,>(props: AgGridReactProps<T>, ref: Re
   return (
     <div ref={divRef}
       className={`ag-theme-alpine compact ${(darkMode ? 'dark' : '')} ${className}`}
-      style={{ fontFamily: fontFamily ?? Util.DEFAULT_FONT_FAMILY }}
+      style={{ fontFamily: fontFamily ? fontFamily : Util.DEFAULT_FONT_FAMILY }}
     >
       <AgGridReact
         ref={gridRef}

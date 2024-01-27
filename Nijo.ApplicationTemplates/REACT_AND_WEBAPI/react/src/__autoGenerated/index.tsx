@@ -36,7 +36,7 @@ function ApplicationRootInContext({ children }: {
       direction='horizontal'
       autoSaveId="LOCAL_STORAGE_KEY.SIDEBAR_SIZE_X"
       className={darkMode ? 'dark' : undefined}
-      style={{ fontFamily: fontFamily ?? Util.DEFAULT_FONT_FAMILY }}>
+      style={{ fontFamily: fontFamily ? fontFamily : Util.DEFAULT_FONT_FAMILY }}>
 
       {/* サイドメニュー */}
       <Panel defaultSize={20}>

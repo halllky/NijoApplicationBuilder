@@ -63,7 +63,7 @@ export const ServerSettingScreen = () => {
             <Input.CheckBox {...registerEx('darkMode')} />
           </VForm.Row>
           <VForm.Row label="フォント(font-family)">
-            <Input.Word {...registerEx('fontFamily')} />
+            <Input.Word {...registerEx('fontFamily')} className="flex-1" />
           </VForm.Row>
           <VForm.Row fullWidth>
             <Input.Button outlined submit>更新</Input.Button>
