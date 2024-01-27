@@ -82,6 +82,15 @@ export const getDepth = <T,>(node: TreeNode<T>): number => {
   return getAncestors(node).length
 }
 
+export const getChildren = <T,>(t: T, selector: ToTreeArgs<T>, flatten: T[]): T[] => {
+  if (selector.getParent) {
+    const id = selector.getId(t)
+    return flatten.filter(x => selector.getParent(x) === id)
+  } else {
+    return selector.getChildren(t) ?? []
+  }
+}
+
 /**
  * ツリー構造をもつオブジェクトに対して再帰的に処理を行います。
  */
