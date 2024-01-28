@@ -1,4 +1,4 @@
-import React, { useCallback, useImperativeHandle, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import * as RT from '@tanstack/react-table'
 import * as Icon from '@heroicons/react/24/outline'
 import * as Util from '../util'
@@ -34,9 +34,13 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   // 列
   const columnHelper = useMemo(() => RT.createColumnHelper<Tree.TreeNode<T>>(), [])
   const columns = useMemo(() => {
-    return props.treeView
+    const colDefs = props.treeView
       ? ([getRowHeader(columnHelper, props), ...(props.columns ?? [])])
       : (props.columns ?? [])
+    return colDefs.map(col => ({
+      ...col,
+      cell: col.cell ?? (DEFAULT_CELL as RT.ColumnDefTemplate<RT.CellContext<Util.TreeNode<T>, unknown>>),
+    }))
   }, [props.columns, props.treeView?.rowHeader])
 
   // 表
@@ -51,8 +55,8 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   }), [dataAsTree, columns, selectionOptions])
 
   const api = RT.useReactTable(optoins)
-  const { selectRow, clearSelection, handleSelectionKeyDown, getCellBackColor } = useSelection<Tree.TreeNode<T>>(api)
-  const { editingCell, startEditing, CellEditor } = useCellEditing<Tree.TreeNode<T>>(props.editArrayPath)
+  const { editing, editingCell, startEditing, CellEditor } = useCellEditing<Tree.TreeNode<T>>(props.editArrayPath)
+  const { selectRow, clearSelection, handleSelectionKeyDown, getCellBackColor } = useSelection<Tree.TreeNode<T>>(editing, api)
   const { columnSizeVars, getColWidth, ResizeHandler } = useColumnResizing(api)
 
   const handleBlur: React.FocusEventHandler<HTMLDivElement> = useCallback(e => {
@@ -124,7 +128,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
               >
                 {row.getVisibleCells().map(cell => (
                   <td key={cell.id}
-                    className={'relative overflow-x-hidden border-r border-1 border-color-3 '
+                    className={'relative border-r border-1 border-color-3 '
                       + getCellBackColor(row)}
                     style={getTdStickeyStyle(cell)}
                     onDoubleClick={() => startEditing(cell)}
@@ -132,7 +136,6 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
                     {RT.flexRender(
                       cell.column.columnDef.cell,
                       cell.getContext())}
-                    &nbsp; {/* <= すべての値が空の行がつぶれるのを防ぐ */}
                     {cell === editingCell && (
                       <CellEditor className="absolute top-0 left-0 min-w-12 min-h-4" />
                     )}
@@ -159,38 +162,63 @@ const useCellEditing = <T,>(arrayPath: string | undefined) => {
     setEditingCell(cell)
   }, [arrayPath])
 
-  const commitEditing = useCallback((value: unknown) => {
-    if (arrayPath && editingCell) {
-      const array = getValues(arrayPath) as []
-      const row = array[editingCell.row.index] as { [key: string]: unknown }
-      row[editingCell.column.id] = value
-      setValue(arrayPath, [...array])
-    }
-    setEditingCell(undefined)
-  }, [arrayPath, editingCell, getValues, setValue])
-
-  const cancelEditing = useCallback(() => {
-    setEditingCell(undefined)
-  }, [])
-
   const CellEditor = useCallback(({ className }: { className?: string }) => {
-    const [uncomittedValue, setUnComittedValue] = useState<unknown>()
+    const [uncomittedValue, setUnComittedValue] = useState<unknown>(() => {
+      const name = `${arrayPath}.[${editingCell?.row.index}].${editingCell?.column.id}`
+      return getValues(name)
+    })
+
+    const commitEditing = useCallback(() => {
+      if (arrayPath && editingCell) {
+        const array = getValues(arrayPath) as []
+        const row = array[editingCell.row.index] as { [key: string]: unknown }
+        row[editingCell.column.id] = uncomittedValue
+        setValue(arrayPath, [...array])
+      }
+      setEditingCell(undefined)
+    }, [arrayPath, editingCell, getValues, setValue, uncomittedValue])
+
+    const cancelEditing = useCallback(() => {
+      setEditingCell(undefined)
+    }, [])
+
+    const handleKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = useCallback(e => {
+      if (e.ctrlKey && e.key === 'Enter') {
+        commitEditing()
+        e.stopPropagation()
+        e.preventDefault()
+      } else if (e.key === 'Escape') {
+        cancelEditing()
+        e.preventDefault()
+      }
+    }, [uncomittedValue])
+
+    const editorRef = useRef<Util.CustomComponentRef<any>>(null)
+    useEffect(() => {
+      editorRef.current?.focus()
+    }, [])
+
     return (
-      <div className={className}>
+      <div className={`z-10 ${className}`}>
         <Input.Description
+          ref={editorRef}
           value={uncomittedValue as any}
           onChange={setUnComittedValue}
-          onBlur={() => commitEditing(uncomittedValue)}
+          onKeyDown={handleKeyDown}
+          className="block resize"
         />
+        <div className="flex justify-start gap-1">
+          <Input.Button className="text-xs" onClick={commitEditing}>確定(Ctrl+Enter)</Input.Button>
+          <Input.Button className="text-xs" onClick={cancelEditing}>キャンセル(Esc)</Input.Button>
+        </div>
       </div>
     )
-  }, [editingCell])
+  }, [editingCell, arrayPath])
 
   return {
+    editing: editingCell !== undefined,
     editingCell,
     startEditing,
-    commitEditing,
-    cancelEditing,
     CellEditor,
   }
 }
@@ -208,7 +236,7 @@ const useSelectionOption = () => {
     selectionOptions,
   }
 }
-const useSelection = <T,>(api: RT.Table<T>) => {
+const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
   const [activeRow, setActiveRow] = useState<RT.Row<T> | undefined>(undefined)
   const [selectionStart, setSelectionStart] = useState<RT.Row<T> | undefined>(undefined)
 
@@ -249,6 +277,7 @@ const useSelection = <T,>(api: RT.Table<T>) => {
   }, [api])
 
   const handleSelectionKeyDown: React.KeyboardEventHandler<HTMLElement> = useCallback(e => {
+    if (editing) return
     if (e.ctrlKey && e.key === 'a') {
       api.toggleAllRowsSelected(true)
       e.preventDefault()
@@ -276,7 +305,7 @@ const useSelection = <T,>(api: RT.Table<T>) => {
         return
       }
     }
-  }, [api, selectRow, activeRow])
+  }, [editing, api, selectRow, activeRow])
 
   return {
     selectRow,
@@ -333,6 +362,16 @@ const getRowHeader = <T,>(
   ),
 })
 const ROW_HEADER_ID = '__tree_explorer_row_header__'
+
+// -----------------------------------------------
+const DEFAULT_CELL: RT.ColumnDefTemplate<RT.CellContext<Util.TreeNode<unknown>, unknown>> = cellProps => {
+  return (
+    <span className="block w-full overflow-hidden whitespace-nowrap">
+      {cellProps.getValue() as React.ReactNode}
+      &nbsp; {/* <= すべての値が空の行がつぶれるのを防ぐ */}
+    </span>
+  )
+}
 
 // -----------------------------------------------
 /** 列幅変更 */
