@@ -13,6 +13,8 @@ export type DataTableProps<T> = {
     rowHeader: (row: T) => React.ReactNode
   }
   editArrayPath?: string
+  children?: React.ReactNode
+  keepSelectWhenNotFocus?: boolean
 }
 export type DataTableRef<T> = {
   getSelectedItems: () => T[]
@@ -49,10 +51,16 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   }), [dataAsTree, columns, selectionOptions])
 
   const api = RT.useReactTable(optoins)
-  const { selectRow, handleSelectionKeyDown, getCellBackColor } = useSelection<Tree.TreeNode<T>>(api)
+  const { selectRow, clearSelection, handleSelectionKeyDown, getCellBackColor } = useSelection<Tree.TreeNode<T>>(api)
   const { editingCell, startEditing, CellEditor } = useCellEditing<Tree.TreeNode<T>>(props.editArrayPath)
   const { columnSizeVars, getColWidth, ResizeHandler } = useColumnResizing(api)
 
+  const handleBlur: React.FocusEventHandler<HTMLDivElement> = useCallback(e => {
+    if (props.keepSelectWhenNotFocus) return
+    // フォーカスの移動先がこの要素の中(ex: props.children)にある場合
+    if (e.target.contains(e.relatedTarget)) return
+    clearSelection()
+  }, [props.keepSelectWhenNotFocus, clearSelection])
   const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = useCallback(e => {
     // console.log(e.key)
     if (e.key === ' ') {
@@ -67,67 +75,75 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   useImperativeHandle(ref, () => ({
     getSelectedItems: () => api.getSelectedRowModel().flatRows.map(row => row.original.item),
     getSelectedIndexes: () => api.getSelectedRowModel().flatRows.map(row => row.index),
+    clearSelection,
   }))
 
   return (
-    <div
-      className={`overflow-auto select-none outline-none border border-1 border-color-4 bg-color-2 ${props.className}`}
+    <div className={`flex flex-col outline-none ${props.className}`}
+      onBlur={handleBlur}
       onKeyDown={handleKeyDown}
       tabIndex={0}
     >
-      <table
-        className="table-fixed border-separate border-spacing-0"
-        style={{ ...columnSizeVars, width: api.getTotalSize() }}
-      >
-        {/* ヘッダ */}
-        <thead>
-          {api.getHeaderGroups().map(headerGroup => (
-            <tr key={headerGroup.id}>
+      {props.children && (
+        <div className="flex gap-1 justify-start">
+          {props.children}
+        </div>
+      )}
+      <div className="flex-1 overflow-auto select-none border border-1 border-color-4 bg-color-2">
+        <table
+          className="table-fixed border-separate border-spacing-0"
+          style={{ ...columnSizeVars, width: api.getTotalSize() }}
+        >
+          {/* ヘッダ */}
+          <thead>
+            {api.getHeaderGroups().map(headerGroup => (
+              <tr key={headerGroup.id}>
 
-              {headerGroup.headers.map(header => (
-                <th key={header.id}
-                  className="relative overflow-x-hidden text-start sticky top-0 pl-1 bg-color-3"
-                  style={{ width: getColWidth(header), ...getThStickeyStyle(header) }}>
-                  {!header.isPlaceholder && RT.flexRender(
-                    header.column.columnDef.header,
-                    header.getContext())}
-                  <ResizeHandler header={header} />
-                </th>
-              ))}
+                {headerGroup.headers.map(header => (
+                  <th key={header.id}
+                    className="relative overflow-x-hidden text-start sticky top-0 pl-1 bg-color-3"
+                    style={{ width: getColWidth(header), ...getThStickeyStyle(header) }}>
+                    {!header.isPlaceholder && RT.flexRender(
+                      header.column.columnDef.header,
+                      header.getContext())}
+                    <ResizeHandler header={header} />
+                  </th>
+                ))}
 
-            </tr>
-          ))}
-        </thead>
+              </tr>
+            ))}
+          </thead>
 
-        {/* ボディ */}
-        <tbody>
-          {api.getRowModel().flatRows.filter(row => row.getIsAllParentsExpanded()).map(row => (
-            <tr
-              key={row.id}
-              className={`leading-tight ` + (row.getIsSelected() ? 'bg-color-selected' : undefined)}
-              onClick={e => selectRow(row, e)}
-            >
-              {row.getVisibleCells().map(cell => (
-                <td key={cell.id}
-                  className={'relative overflow-x-hidden border-r border-1 border-color-3 '
-                    + getCellBackColor(row)}
-                  style={getTdStickeyStyle(cell)}
-                  onDoubleClick={() => startEditing(cell)}
-                >
-                  {RT.flexRender(
-                    cell.column.columnDef.cell,
-                    cell.getContext())}
-                  &nbsp; {/* <= すべての値が空の行がつぶれるのを防ぐ */}
-                  {cell === editingCell && (
-                    <CellEditor className="absolute top-0 left-0 min-w-12 min-h-4" />
-                  )}
-                </td>
-              ))}
+          {/* ボディ */}
+          <tbody>
+            {api.getRowModel().flatRows.filter(row => row.getIsAllParentsExpanded()).map(row => (
+              <tr
+                key={row.id}
+                className={`leading-tight ` + (row.getIsSelected() ? 'bg-color-selected' : undefined)}
+                onClick={e => selectRow(row, e)}
+              >
+                {row.getVisibleCells().map(cell => (
+                  <td key={cell.id}
+                    className={'relative overflow-x-hidden border-r border-1 border-color-3 '
+                      + getCellBackColor(row)}
+                    style={getTdStickeyStyle(cell)}
+                    onDoubleClick={() => startEditing(cell)}
+                  >
+                    {RT.flexRender(
+                      cell.column.columnDef.cell,
+                      cell.getContext())}
+                    &nbsp; {/* <= すべての値が空の行がつぶれるのを防ぐ */}
+                    {cell === editingCell && (
+                      <CellEditor className="absolute top-0 left-0 min-w-12 min-h-4" />
+                    )}
+                  </td>
+                ))}
 
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 })
@@ -226,6 +242,12 @@ const useSelection = <T,>(api: RT.Table<T>) => {
     }
   }, [api, activeRow, selectionStart])
 
+  const clearSelection = useCallback(() => {
+    api.resetRowSelection()
+    setActiveRow(undefined)
+    setSelectionStart(undefined)
+  }, [api])
+
   const handleSelectionKeyDown: React.KeyboardEventHandler<HTMLElement> = useCallback(e => {
     if (e.ctrlKey && e.key === 'a') {
       api.toggleAllRowsSelected(true)
@@ -258,6 +280,7 @@ const useSelection = <T,>(api: RT.Table<T>) => {
 
   return {
     selectRow,
+    clearSelection,
     handleSelectionKeyDown,
     getCellBackColor,
   }
