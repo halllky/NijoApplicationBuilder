@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useReducer, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import * as RT from '@tanstack/react-table'
 import * as Icon from '@heroicons/react/24/outline'
 import * as Util from '../util'
@@ -12,6 +12,7 @@ export type DataTableProps<T> = {
   treeView?: Tree.ToTreeArgs<T> & {
     rowHeader: (row: T) => React.ReactNode
   }
+  editArrayPath?: string
 }
 
 export const DataTable = <T,>(props: DataTableProps<T>) => {
@@ -44,7 +45,8 @@ export const DataTable = <T,>(props: DataTableProps<T>) => {
   }), [dataAsTree, columns, selectionOptions])
 
   const api = RT.useReactTable(optoins)
-  const { selectRow, handleSelectionKeyDown, getCellBackColor } = useSelection<Util.TreeNode<T>>(api)
+  const { selectRow, handleSelectionKeyDown, getCellBackColor } = useSelection<Tree.TreeNode<T>>(api)
+  const { editingCell, startEditing, CellEditor } = useCellEditing<Tree.TreeNode<T>>(props.editArrayPath)
   const { columnSizeVars, getColWidth, ResizeHandler } = useColumnResizing(api)
 
   const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = useCallback(e => {
@@ -98,13 +100,18 @@ export const DataTable = <T,>(props: DataTableProps<T>) => {
             >
               {row.getVisibleCells().map(cell => (
                 <td key={cell.id}
-                  className={'overflow-x-hidden border-r border-1 border-color-3 '
+                  className={'relative overflow-x-hidden border-r border-1 border-color-3 '
                     + getCellBackColor(row)}
-                  style={getTdStickeyStyle(cell)}>
+                  style={getTdStickeyStyle(cell)}
+                  onDoubleClick={() => startEditing(cell)}
+                >
                   {RT.flexRender(
                     cell.column.columnDef.cell,
                     cell.getContext())}
                   &nbsp; {/* <= すべての値が空の行がつぶれるのを防ぐ */}
+                  {cell === editingCell && (
+                    <CellEditor className="absolute top-0 left-0 min-w-12 min-h-4" />
+                  )}
                 </td>
               ))}
 
@@ -117,7 +124,54 @@ export const DataTable = <T,>(props: DataTableProps<T>) => {
 }
 
 // -----------------------------------------------
-/** 選択 */
+/** 編集 */
+const useCellEditing = <T,>(arrayPath: string | undefined) => {
+  const [editingCell, setEditingCell] = useState<RT.Cell<T, unknown> | undefined>(undefined)
+  const { getValues, setValue } = Util.useFormContextEx()
+
+  const startEditing = useCallback((cell: RT.Cell<T, unknown>) => {
+    if (!arrayPath) return // 値が編集されてもコミットできないので編集開始しない
+    setEditingCell(cell)
+  }, [arrayPath])
+
+  const commitEditing = useCallback((value: unknown) => {
+    if (arrayPath && editingCell) {
+      const array = getValues(arrayPath) as []
+      const row = array[editingCell.row.index] as { [key: string]: unknown }
+      row[editingCell.column.id] = value
+      setValue(arrayPath, [...array])
+    }
+    setEditingCell(undefined)
+  }, [arrayPath, editingCell, getValues, setValue])
+
+  const cancelEditing = useCallback(() => {
+    setEditingCell(undefined)
+  }, [])
+
+  const CellEditor = useCallback(({ className }: { className?: string }) => {
+    const [uncomittedValue, setUnComittedValue] = useState<unknown>()
+    return (
+      <div className={className}>
+        <Input.Description
+          value={uncomittedValue as any}
+          onChange={setUnComittedValue}
+          onBlur={() => commitEditing(uncomittedValue)}
+        />
+      </div>
+    )
+  }, [editingCell])
+
+  return {
+    editingCell,
+    startEditing,
+    commitEditing,
+    cancelEditing,
+    CellEditor,
+  }
+}
+
+// -----------------------------------------------
+/** 行選択 */
 const useSelectionOption = () => {
   const [rowSelection, onRowSelectionChange] = useState<RT.RowSelectionState>({})
   const selectionOptions: Partial<RT.TableOptions<Tree.TreeNode<any>>> = {
@@ -250,7 +304,7 @@ const ROW_HEADER_ID = '__tree_explorer_row_header__'
 
 // -----------------------------------------------
 /** 列幅変更 */
-const useColumnResizing = <T,>(api: RT.Table<Util.TreeNode<T>>) => {
+const useColumnResizing = <T,>(api: RT.Table<Tree.TreeNode<T>>) => {
 
   const columnSizeVars = useMemo(() => {
     const headers = api.getFlatHeaders()
@@ -263,12 +317,12 @@ const useColumnResizing = <T,>(api: RT.Table<Util.TreeNode<T>>) => {
     return colSizes
   }, [api.getState().columnSizingInfo])
 
-  const getColWidth = useCallback((header: RT.Header<Util.TreeNode<T>, unknown>) => {
+  const getColWidth = useCallback((header: RT.Header<Tree.TreeNode<T>, unknown>) => {
     return `calc(var(--header-${header?.id}-size) * 1px)`
   }, [])
 
   const ResizeHandler = useCallback(({ header }: {
-    header: RT.Header<Util.TreeNode<T>, unknown>
+    header: RT.Header<Tree.TreeNode<T>, unknown>
   }) => {
     return (
       <div {...{

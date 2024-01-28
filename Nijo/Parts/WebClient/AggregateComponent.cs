@@ -284,6 +284,9 @@ namespace Nijo.Parts.WebClient {
                     """)}}
 
                       const options = useMemo<Layout.DataTableProps<typeof fields[0]>>(() => ({
+                    {{If(_mode != SingleView.E_Type.View, () => $$"""
+                        editArrayPath: {{GetRegisterName()}},
+                    """)}}
                         columns: [
                     {{colDefs.SelectTextTemplate(def => $$"""
                           {
