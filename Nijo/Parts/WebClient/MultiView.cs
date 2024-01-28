@@ -136,9 +136,9 @@ namespace Nijo.Parts.WebClient {
                           </FormProvider>
 
                           <DataTable
-                            data={data || []}
+                            data={data}
                             {...options}
-                            className="flex-1"
+                            className="flex-1 text-sm"
                           />
                         </div>
                       )
@@ -151,17 +151,20 @@ namespace Nijo.Parts.WebClient {
                     }
 
                     const options: DataTableProps<RowType> = {
-                      getLabel: row => {
-                    {{If(SingleViewUrlFunctionBody != null, () => $$"""
-                        const singleViewUrl = `{{SingleViewUrlFunctionBody!("row")}}`
-                        return <Link to={singleViewUrl} className="text-link">詳細</Link>
-                    """).Else(() => $$"""
-                        return ''
-                    """)}}
-                      },
-                      getId: () => '', // ツリー構造をとらないので不要
-                      getChildren: () => undefined, // ツリー構造をとらないので不要
                       columns: [
+                    {{If(SingleViewUrlFunctionBody != null, () => $$"""
+                        {
+                          id: 'default-column::actions',
+                          accessorFn: () => undefined,
+                          header: '',
+                          size: 40, // 「詳細」の文字幅ぐらい
+                          cell: cellProps => {
+                            const row = cellProps.row.original.item
+                            const singleViewUrl = `{{SingleViewUrlFunctionBody!("row")}}`
+                            return <Link to={singleViewUrl} className="text-link">詳細</Link>
+                          },
+                        },
+                    """)}}
                     {{Fields.Where(f => f.VisibleInGui).SelectTextTemplate(field => $$"""
                         { accessorKey: '{{field.PhysicalName}}' },
                     """)}}

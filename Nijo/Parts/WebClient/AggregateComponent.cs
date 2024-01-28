@@ -282,9 +282,6 @@ namespace Nijo.Parts.WebClient {
                     """)}}
 
                       const options = useMemo<Layout.DataTableProps<typeof fields[0]>>(() => ({
-                        getLabel: () => '',
-                        getId: () => '', // ツリー構造をとらないので不要
-                        getChildren: () => undefined, // ツリー構造をとらないので不要
                         columns: [
                     {{colDefs.SelectTextTemplate(def => $$"""
                           {
@@ -327,7 +324,7 @@ namespace Nijo.Parts.WebClient {
                             <Layout.DataTable
                               data={fields}
                               {...options}
-                              className="h-64 w-full"
+                              className="h-64 w-full text-sm"
                             />
                           </VForm.Row>
                         </VForm.Section>

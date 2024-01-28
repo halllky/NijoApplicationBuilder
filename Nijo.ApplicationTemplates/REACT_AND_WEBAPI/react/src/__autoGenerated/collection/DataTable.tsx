@@ -5,31 +5,43 @@ import * as Util from '../util'
 import * as Tree from '../util'
 import * as Input from '../input'
 
-export type DataTableProps<T> = Tree.ToTreeArgs<T> & {
+export type DataTableProps<T> = {
   data?: T[]
   columns?: RT.ColumnDef<Tree.TreeNode<T>>[]
   className?: string
-  getId: (row: T) => string
-  getLabel: (row: T) => React.ReactNode
+  treeView?: Tree.ToTreeArgs<T> & {
+    rowHeader: (row: T) => React.ReactNode
+  }
 }
 
 export const DataTable = <T,>(props: DataTableProps<T>) => {
-
-  const columnHelper = useMemo(() => RT.createColumnHelper<Tree.TreeNode<T>>(), [])
+  // 行
   const dataAsTree = useMemo(() => {
     if (!props.data) return []
-    return Tree.toTree(props.data, props)
+    return props.treeView
+      ? Tree.toTree(props.data, props.treeView)
+      // ツリー表示に関する設定が無い場合は親子関係のないフラットな配列にする
+      : Tree.toTree(props.data, undefined)
   }, [props.data])
 
+  // 列
+  const columnHelper = useMemo(() => RT.createColumnHelper<Tree.TreeNode<T>>(), [])
+  const columns = useMemo(() => {
+    return props.treeView
+      ? ([getRowHeader(columnHelper, props), ...(props.columns ?? [])])
+      : (props.columns ?? [])
+  }, [props.columns, props.treeView?.rowHeader])
+
+  // 表
   const { selectionOptions } = useSelectionOption()
   const optoins: RT.TableOptions<Tree.TreeNode<T>> = useMemo(() => ({
     data: dataAsTree,
-    columns: [getRowHeader(columnHelper, props), ...(props.columns ?? [])],
+    columns,
     getSubRows: row => row.children,
     getCoreRowModel: RT.getCoreRowModel(),
     ...selectionOptions,
     ...COLUMN_RESIZE_OPTION,
-  }), [dataAsTree, props.columns, columnHelper, selectionOptions])
+  }), [dataAsTree, columns, selectionOptions])
 
   const api = RT.useReactTable(optoins)
   const { selectRow, handleSelectionKeyDown, getCellBackColor } = useSelection<Util.TreeNode<T>>(api)
@@ -48,7 +60,7 @@ export const DataTable = <T,>(props: DataTableProps<T>) => {
 
   return (
     <div
-      className={`overflow-auto select-none outline-none border border-1 border-stone-300 bg-stone-100 ${props.className}`}
+      className={`overflow-auto select-none outline-none border border-1 border-color-4 bg-color-2 ${props.className}`}
       onKeyDown={handleKeyDown}
       tabIndex={0}
     >
@@ -63,7 +75,7 @@ export const DataTable = <T,>(props: DataTableProps<T>) => {
 
               {headerGroup.headers.map(header => (
                 <th key={header.id}
-                  className="relative overflow-x-hidden text-start sticky top-0 bg-stone-200"
+                  className="relative overflow-x-hidden text-start sticky top-0 pl-1 bg-color-3"
                   style={{ width: getColWidth(header), ...getThStickeyStyle(header) }}>
                   {!header.isPlaceholder && RT.flexRender(
                     header.column.columnDef.header,
@@ -81,12 +93,12 @@ export const DataTable = <T,>(props: DataTableProps<T>) => {
           {api.getRowModel().flatRows.filter(row => row.getIsAllParentsExpanded()).map(row => (
             <tr
               key={row.id}
-              className={`leading-tight ` + (row.getIsSelected() ? 'bg-sky-100' : undefined)}
+              className={`leading-tight ` + (row.getIsSelected() ? 'bg-color-selected' : undefined)}
               onClick={e => selectRow(row, e)}
             >
               {row.getVisibleCells().map(cell => (
                 <td key={cell.id}
-                  className={'overflow-x-hidden border-r border-1 border-stone-200 '
+                  className={'overflow-x-hidden border-r border-1 border-color-3 '
                     + getCellBackColor(row)}
                   style={getTdStickeyStyle(cell)}>
                   {RT.flexRender(
@@ -121,7 +133,7 @@ const useSelection = <T,>(api: RT.Table<T>) => {
   const [selectionStart, setSelectionStart] = useState<RT.Row<T> | undefined>(undefined)
 
   const getCellBackColor = useCallback((row: RT.Row<T>) => {
-    return row.getIsSelected() ? 'bd-sky-200' : 'bg-white'
+    return row.getIsSelected() ? 'bd-color-selected' : 'bg-color-0'
   }, [])
 
   const selectRow = useCallback((row: RT.Row<T>, e: { shiftKey: boolean, ctrlKey: boolean }) => {
@@ -228,7 +240,7 @@ const getRowHeader = <T,>(
       </Input.Button>
 
       <span className="flex-1 whitespace-nowrap">
-        {props.getLabel(api.row.original.item)}
+        {props.treeView?.rowHeader(api.row.original.item)}
       </span>
     </div>
   ),
@@ -262,8 +274,9 @@ const useColumnResizing = <T,>(api: RT.Table<Util.TreeNode<T>>) => {
         onDoubleClick: () => header.column.resetSize(),
         onMouseDown: header.getResizeHandler(),
         onTouchStart: header.getResizeHandler(),
-        className: `absolute top-0 bottom-0 right-0 w-3 cursor-ew-resize`,
-      }} />
+        className: `absolute top-0 bottom-0 right-0 w-3 cursor-ew-resize border-r border-color-4`,
+      }}>
+      </div>
     )
   }, [])
 

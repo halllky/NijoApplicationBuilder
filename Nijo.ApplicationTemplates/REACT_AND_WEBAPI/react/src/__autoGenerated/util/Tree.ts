@@ -9,14 +9,14 @@ export type TreeNode<T> = {
 export type ToTreeArgs<T>
   = { getId: (item: T) => string, getParent: (item: T) => string | null | undefined, getChildren?: undefined }
   | { getId: (item: T) => string, getParent?: undefined, getChildren: (item: T) => T[] | null | undefined }
-export const toTree = <T,>(items: T[], fn: ToTreeArgs<T>): TreeNode<T>[] => {
+export const toTree = <T,>(items: T[], fn: ToTreeArgs<T> | undefined): TreeNode<T>[] => {
   const treeNodes = new Map<string, TreeNode<T>>(items
-    .map(item => [
-      fn.getId(item),
+    .map((item, index) => [
+      fn?.getId(item) ?? index.toString(),
       { item, children: [], depth: -1 }
     ]))
   // 親子マッピング
-  if (fn.getParent) {
+  if (fn?.getParent) {
     for (const node of treeNodes) {
       const parentId = fn.getParent(node[1].item)
       if (parentId == null) continue
@@ -29,7 +29,7 @@ export const toTree = <T,>(items: T[], fn: ToTreeArgs<T>): TreeNode<T>[] => {
     }
   } else {
     const createChildrenRecursively = (parent: TreeNode<T>): void => {
-      const childrenItems = fn.getChildren(parent.item) ?? []
+      const childrenItems = fn?.getChildren(parent.item) ?? []
       for (const childItem of childrenItems) {
         const childNode: TreeNode<T> = {
           item: childItem,
@@ -80,15 +80,6 @@ export const getDescendants = <T,>(node: TreeNode<T>): TreeNode<T>[] => {
 }
 export const getDepth = <T,>(node: TreeNode<T>): number => {
   return getAncestors(node).length
-}
-
-export const getChildren = <T,>(t: T, selector: ToTreeArgs<T>, flatten: T[]): T[] => {
-  if (selector.getParent) {
-    const id = selector.getId(t)
-    return flatten.filter(x => selector.getParent(x) === id)
-  } else {
-    return selector.getChildren(t) ?? []
-  }
 }
 
 /**
