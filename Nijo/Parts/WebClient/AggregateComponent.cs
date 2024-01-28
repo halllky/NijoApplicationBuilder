@@ -276,12 +276,12 @@ namespace Nijo.Parts.WebClient {
                       }, [append])
                       const onRemove = useCallback((e: React.MouseEvent) => {
                         const selectedRowIndexes = dtRef.current?.getSelectedIndexes() ?? []
-                        for (const index of selectedRowIndexes) remove(index)
+                        for (const index of selectedRowIndexes.sort((a, b) => b - a)) remove(index)
                         e.preventDefault()
                       }, [remove])
                     """)}}
 
-                      const options = useMemo<Layout.DataTableProps<typeof fields[0]>>(() => ({
+                      const options = useMemo<Layout.DataTableProps<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>>(() => ({
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
                         editArrayPath: {{GetRegisterName()}},
                     """)}}
