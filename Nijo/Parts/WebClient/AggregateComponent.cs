@@ -308,20 +308,16 @@ namespace Nijo.Parts.WebClient {
                           label={<>
                             {{_aggregate.GetParent()?.RelationName}}
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
-                            <Input.IconButton
-                              underline
-                              inline
+                            <Input.Button
                               icon={PlusIcon}
                               onClick={onAdd}>
                               追加
-                            </Input.IconButton>
-                            <Input.IconButton
-                              underline
-                              inline
+                            </Input.Button>
+                            <Input.Button
                               icon={XMarkIcon}
                               onClick={onRemove}>
                               削除
-                            </Input.IconButton>
+                            </Input.Button>
                     """)}}
                           </>}
                         >
