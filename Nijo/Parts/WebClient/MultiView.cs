@@ -169,7 +169,7 @@ namespace Nijo.Parts.WebClient {
                     {{Fields.Where(f => f.VisibleInGui).SelectTextTemplate(field => $$"""
                         {
                           id: '{{field.PhysicalName}}',
-                          accessorFn: row => row.item.{{field.ValueMember.GetFullPath().Join(".")}}
+                          accessorFn: row => row.item.{{field.PhysicalName}},
                         },
                     """)}}
                       ],
