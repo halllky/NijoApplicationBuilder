@@ -10,6 +10,7 @@ using Nijo.Util.CodeGenerating;
 
 namespace Nijo.Parts.WebClient {
     internal class MultiViewField {
+        internal required AggregateMember.ValueMember ValueMember { get; init; }
         internal required string PhysicalName { get; init; }
         internal required IAggregateMemberType MemberType { get; init; }
         internal required bool VisibleInGui { get; init; }
@@ -166,7 +167,10 @@ namespace Nijo.Parts.WebClient {
                         },
                     """)}}
                     {{Fields.Where(f => f.VisibleInGui).SelectTextTemplate(field => $$"""
-                        { accessorKey: '{{field.PhysicalName}}' },
+                        {
+                          id: '{{field.PhysicalName}}',
+                          accessorFn: row => row.item.{{field.ValueMember.GetFullPath().Join(".")}}
+                        },
                     """)}}
                       ],
                     }

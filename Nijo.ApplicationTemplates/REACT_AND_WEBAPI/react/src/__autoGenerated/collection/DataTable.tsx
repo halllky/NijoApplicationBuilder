@@ -104,6 +104,7 @@ export const DataTable = <T,>(props: DataTableProps<T>) => {
                   {RT.flexRender(
                     cell.column.columnDef.cell,
                     cell.getContext())}
+                  &nbsp; {/* <= すべての値が空の行がつぶれるのを防ぐ */}
                 </td>
               ))}
 

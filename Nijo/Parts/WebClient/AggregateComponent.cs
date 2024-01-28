@@ -190,6 +190,7 @@ namespace Nijo.Parts.WebClient {
 
                         return new {
                             field = m.MemberName,
+                            fieldWithPath = m.GetFullPath(since: _aggregate).Join("."),
                             editable,
                             valueFormatter = vm.Options.MemberType.GetGridCellValueFormatter(),
                             hide = vm.Options.InvisibleInGui,
@@ -227,6 +228,7 @@ namespace Nijo.Parts.WebClient {
 
                         return new {
                             field = m.MemberName,
+                            fieldWithPath = m.GetFullPath(since: _aggregate).Join("."),
                             editable,
                             valueFormatter = $"({{ value }}) => ({keysForValueFormatter.Select(path => $"value?.{path}").Join(" + ")}) || ''",
                             hide = false,
@@ -285,8 +287,8 @@ namespace Nijo.Parts.WebClient {
                         columns: [
                     {{colDefs.SelectTextTemplate(def => $$"""
                           {
-                            accessorKey: '{{def.field}}',
-                            cellDataType: false, // セル型の自動推論を無効にする
+                            id: '{{def.field}}',
+                            accessorFn: row => row.item.{{def.fieldWithPath}},
                             // editable: {{def.editable}},
                             // hide: {{(def.hide ? "true" : "false")}},
                     {{If(def.valueFormatter != string.Empty, () => $$"""

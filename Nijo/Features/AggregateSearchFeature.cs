@@ -76,6 +76,7 @@ namespace Nijo.Features {
                         nameCount[vm.MemberName] = ix + 1;
 
                         return new MultiViewField {
+                            ValueMember = vm,
                             MemberType = vm.Options.MemberType,
                             VisibleInGui = !vm.Options.InvisibleInGui,
                             PhysicalName = vm.MemberName + suffix,
