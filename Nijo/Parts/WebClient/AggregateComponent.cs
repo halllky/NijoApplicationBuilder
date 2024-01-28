@@ -267,6 +267,7 @@ namespace Nijo.Parts.WebClient {
                         control,
                         name: {{GetRegisterName()}},
                       })
+                      const dtRef = useRef<Layout.DataTableRef<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>>(null)
 
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
                       const onAdd = useCallback((e: React.MouseEvent) => {
@@ -274,13 +275,10 @@ namespace Nijo.Parts.WebClient {
                         e.preventDefault()
                       }, [append])
                       const onRemove = useCallback((e: React.MouseEvent) => {
-                        // const selectedRows = gridApi.current?.api.getSelectedRows() ?? []
-                        // for (const row of selectedRows) {
-                        //   const index = fields.indexOf(row)
-                        //   remove(index)
-                        // }
-                        // e.preventDefault()
-                      }, [remove, fields])
+                        const selectedRowIndexes = dtRef.current?.getSelectedIndexes() ?? []
+                        for (const index of selectedRowIndexes) remove(index)
+                        e.preventDefault()
+                      }, [remove])
                     """)}}
 
                       const options = useMemo<Layout.DataTableProps<typeof fields[0]>>(() => ({
@@ -323,6 +321,7 @@ namespace Nijo.Parts.WebClient {
                         >
                           <VForm.Row fullWidth>
                             <Layout.DataTable
+                              ref={dtRef}
                               data={fields}
                               {...options}
                               className="h-64 w-full text-sm"

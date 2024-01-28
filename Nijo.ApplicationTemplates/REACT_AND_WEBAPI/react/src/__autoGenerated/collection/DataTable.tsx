@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useImperativeHandle, useMemo, useState } from 'react'
 import * as RT from '@tanstack/react-table'
 import * as Icon from '@heroicons/react/24/outline'
 import * as Util from '../util'
@@ -14,8 +14,12 @@ export type DataTableProps<T> = {
   }
   editArrayPath?: string
 }
+export type DataTableRef<T> = {
+  getSelectedItems: () => T[]
+  getSelectedIndexes: () => number[]
+}
 
-export const DataTable = <T,>(props: DataTableProps<T>) => {
+export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: React.ForwardedRef<DataTableRef<T>>) => {
   // 行
   const dataAsTree = useMemo(() => {
     if (!props.data) return []
@@ -59,6 +63,11 @@ export const DataTable = <T,>(props: DataTableProps<T>) => {
     handleSelectionKeyDown(e)
     if (e.defaultPrevented) return
   }, [api, handleSelectionKeyDown])
+
+  useImperativeHandle(ref, () => ({
+    getSelectedItems: () => api.getSelectedRowModel().flatRows.map(row => row.original.item),
+    getSelectedIndexes: () => api.getSelectedRowModel().flatRows.map(row => row.index),
+  }))
 
   return (
     <div
@@ -121,7 +130,7 @@ export const DataTable = <T,>(props: DataTableProps<T>) => {
       </table>
     </div>
   )
-}
+})
 
 // -----------------------------------------------
 /** 編集 */
