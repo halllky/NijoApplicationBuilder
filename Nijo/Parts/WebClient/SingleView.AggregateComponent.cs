@@ -194,6 +194,7 @@ namespace Nijo.Parts.WebClient {
                             editable,
                             valueFormatter = vm.Options.MemberType.GetGridCellValueFormatter(),
                             hide = vm.Options.InvisibleInGui,
+                            cellEditorName = vm.Options.MemberType.GetGridCellEditorName(),
                             cell = $$"""
                                 cellEditor: AgGridHelper.generateCellEditor({{GetRegisterName()}}, {{cellEditor}}, {
                                 {{cellEditorParam.SelectTextTemplate(p => $$"""
@@ -232,6 +233,7 @@ namespace Nijo.Parts.WebClient {
                             editable,
                             valueFormatter = $"({{ value }}) => ({keysForValueFormatter.Select(path => $"value?.{path}").Join(" + ")}) || ''",
                             hide = false,
+                            cellEditorName = $"Input.{combobox.ComponentName}",
                             cell = _mode == SingleView.E_Type.View
                                 ? $$"""
                                 cellRenderer: ({ data }: { data: typeof fields[0] }) => {
@@ -263,7 +265,7 @@ namespace Nijo.Parts.WebClient {
                     """)}}
                     }) => {
                       const { registerEx, watch, control } = useFormContextEx<AggregateType.{{_aggregate.GetRoot().Item.TypeScriptTypeName}}>()
-                      const { fields, append, remove } = useFieldArray({
+                      const { fields, append, remove, update } = useFieldArray({
                         control,
                         name: {{GetRegisterName()}},
                       })
@@ -283,13 +285,16 @@ namespace Nijo.Parts.WebClient {
 
                       const options = useMemo<Layout.DataTableProps<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>>(() => ({
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
-                        editArrayPath: {{GetRegisterName()}},
+                        onChangeRow: update,
                     """)}}
                         columns: [
                     {{colDefs.SelectTextTemplate(def => $$"""
                           {
                             id: '{{def.field}}',
                             accessorFn: row => row.item.{{def.fieldWithPath}},
+                    {{If(_mode != SingleView.E_Type.View, () => $$"""
+                            cellEditor: {{def.cellEditorName}},
+                    """)}}
                             // editable: {{def.editable}},
                             // hide: {{(def.hide ? "true" : "false")}},
                     {{If(def.valueFormatter != string.Empty, () => $$"""

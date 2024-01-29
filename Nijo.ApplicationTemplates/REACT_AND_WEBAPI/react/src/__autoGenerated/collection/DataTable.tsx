@@ -7,7 +7,7 @@ import * as Input from '../input'
 
 export type DataTableProps<T> = {
   data?: T[]
-  onChange?: (data: T[]) => void
+  onChangeRow?: (index: number, data: T) => void
   columns?: ColumnDefEx<Tree.TreeNode<T>>[]
   className?: string
   treeView?: Tree.ToTreeArgs<T> & {
@@ -161,9 +161,9 @@ const useCellEditing = <T,>(props: DataTableProps<T>) => {
   const [editingCell, setEditingCell] = useState<RT.Cell<Tree.TreeNode<T>, unknown> | undefined>(undefined)
 
   const startEditing = useCallback((cell: RT.Cell<Tree.TreeNode<T>, unknown>) => {
-    if (!props.onChange) return // 値が編集されてもコミットできないので編集開始しない
+    if (!props.onChangeRow) return // 値が編集されてもコミットできないので編集開始しない
     setEditingCell(cell)
-  }, [props.onChange])
+  }, [props.onChangeRow])
 
   const CellEditor = useCallback(({ className }: { className?: string }) => {
     const [uncomittedValue, setUnComittedValue] = useState<unknown>(() => {
@@ -183,13 +183,14 @@ const useCellEditing = <T,>(props: DataTableProps<T>) => {
     }, [])
 
     const commitEditing = useCallback(() => {
-      if (props.data && props.onChange && editingCell) {
+      if (props.data && props.onChangeRow && editingCell) {
         const item = editingCell.row.original.item as { [key: string]: unknown }
         item[editingCell.column.id] = editorRef.current?.getValue()
-        props.onChange([...props.data])
+        props.onChangeRow(props.data.indexOf(item as T), item as T)
+        console.log(editingCell.row.index, props.data.indexOf(item as T))
       }
       setEditingCell(undefined)
-    }, [props.data, props.onChange, editingCell])
+    }, [props.data, props.onChangeRow, editingCell])
 
     const cancelEditing = useCallback(() => {
       setEditingCell(undefined)
@@ -221,7 +222,7 @@ const useCellEditing = <T,>(props: DataTableProps<T>) => {
         </div>
       </div>
     )
-  }, [editingCell, props.data, props.onChange])
+  }, [editingCell, props.data, props.onChangeRow])
 
   return {
     editing: editingCell !== undefined,
