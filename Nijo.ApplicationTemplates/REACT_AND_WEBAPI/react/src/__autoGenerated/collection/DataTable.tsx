@@ -89,7 +89,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       tabIndex={0}
     >
       {props.children && (
-        <div className="flex gap-1 justify-start">
+        <div className="flex gap-1 justify-start items-center">
           {props.children}
         </div>
       )}
