@@ -7,15 +7,19 @@ import * as Input from '../input'
 
 export type DataTableProps<T> = {
   data?: T[]
-  columns?: RT.ColumnDef<Tree.TreeNode<T>>[]
+  onChange?: (data: T[]) => void
+  columns?: ColumnDefEx<Tree.TreeNode<T>>[]
   className?: string
   treeView?: Tree.ToTreeArgs<T> & {
     rowHeader: (row: T) => React.ReactNode
   }
-  editArrayPath?: string
   children?: React.ReactNode
   keepSelectWhenNotFocus?: boolean
 }
+export type ColumnDefEx<T> = RT.ColumnDef<T> & {
+  cellEditor?: Util.CustomComponent
+}
+
 export type DataTableRef<T> = {
   getSelectedItems: () => T[]
   getSelectedIndexes: () => number[]
@@ -55,7 +59,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   }), [dataAsTree, columns, selectionOptions])
 
   const api = RT.useReactTable(optoins)
-  const { editing, editingCell, startEditing, CellEditor } = useCellEditing<Tree.TreeNode<T>>(props.editArrayPath)
+  const { editing, editingCell, startEditing, CellEditor } = useCellEditing<T>(props)
   const { selectRow, clearSelection, handleSelectionKeyDown, getCellBackColor } = useSelection<Tree.TreeNode<T>>(editing, api)
   const { columnSizeVars, getColWidth, ResizeHandler } = useColumnResizing(api)
 
@@ -83,7 +87,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   }))
 
   return (
-    <div className={`flex flex-col outline-none ${props.className}`}
+    <div className={`flex flex-col outline-none overflow-hidden ${props.className}`}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
       tabIndex={0}
@@ -153,30 +157,39 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
 // -----------------------------------------------
 /** 編集 */
-const useCellEditing = <T,>(arrayPath: string | undefined) => {
-  const [editingCell, setEditingCell] = useState<RT.Cell<T, unknown> | undefined>(undefined)
-  const { getValues, setValue } = Util.useFormContextEx()
+const useCellEditing = <T,>(props: DataTableProps<T>) => {
+  const [editingCell, setEditingCell] = useState<RT.Cell<Tree.TreeNode<T>, unknown> | undefined>(undefined)
 
-  const startEditing = useCallback((cell: RT.Cell<T, unknown>) => {
-    if (!arrayPath) return // 値が編集されてもコミットできないので編集開始しない
+  const startEditing = useCallback((cell: RT.Cell<Tree.TreeNode<T>, unknown>) => {
+    if (!props.onChange) return // 値が編集されてもコミットできないので編集開始しない
     setEditingCell(cell)
-  }, [arrayPath])
+  }, [props.onChange])
 
   const CellEditor = useCallback(({ className }: { className?: string }) => {
     const [uncomittedValue, setUnComittedValue] = useState<unknown>(() => {
-      const name = `${arrayPath}.[${editingCell?.row.index}].${editingCell?.column.id}`
-      return getValues(name)
+      if (!editingCell?.column.id) return undefined
+      const row = editingCell?.row.original.item as { [key: string]: unknown }
+      return row?.[editingCell.column.id]
     })
 
+    const cellEditor: Util.CustomComponent = useMemo(() => {
+      const editor = (editingCell?.column.columnDef as ColumnDefEx<T>)?.cellEditor
+      return editor ?? Input.Description
+    }, [editingCell?.column])
+
+    const editorRef = useRef<Util.CustomComponentRef<any>>(null)
+    useEffect(() => {
+      editorRef.current?.focus()
+    }, [])
+
     const commitEditing = useCallback(() => {
-      if (arrayPath && editingCell) {
-        const array = getValues(arrayPath) as []
-        const row = array[editingCell.row.index] as { [key: string]: unknown }
-        row[editingCell.column.id] = uncomittedValue
-        setValue(arrayPath, [...array])
+      if (props.data && props.onChange && editingCell) {
+        const item = editingCell.row.original.item as { [key: string]: unknown }
+        item[editingCell.column.id] = editorRef.current?.getValue()
+        props.onChange([...props.data])
       }
       setEditingCell(undefined)
-    }, [arrayPath, editingCell, getValues, setValue, uncomittedValue])
+    }, [props.data, props.onChange, editingCell])
 
     const cancelEditing = useCallback(() => {
       setEditingCell(undefined)
@@ -191,29 +204,24 @@ const useCellEditing = <T,>(arrayPath: string | undefined) => {
         cancelEditing()
         e.preventDefault()
       }
-    }, [uncomittedValue])
-
-    const editorRef = useRef<Util.CustomComponentRef<any>>(null)
-    useEffect(() => {
-      editorRef.current?.focus()
-    }, [])
+    }, [commitEditing, cancelEditing])
 
     return (
       <div className={`z-10 ${className}`}>
-        <Input.Description
-          ref={editorRef}
-          value={uncomittedValue as any}
-          onChange={setUnComittedValue}
-          onKeyDown={handleKeyDown}
-          className="block resize"
-        />
+        {React.createElement(cellEditor, {
+          ref: editorRef,
+          value: uncomittedValue,
+          onChange: setUnComittedValue,
+          onKeyDown: handleKeyDown,
+          className: 'block resize',
+        })}
         <div className="flex justify-start gap-1">
           <Input.Button className="text-xs" onClick={commitEditing}>確定(Ctrl+Enter)</Input.Button>
           <Input.Button className="text-xs" onClick={cancelEditing}>キャンセル(Esc)</Input.Button>
         </div>
       </div>
     )
-  }, [editingCell, arrayPath])
+  }, [editingCell, props.data, props.onChange])
 
   return {
     editing: editingCell !== undefined,
