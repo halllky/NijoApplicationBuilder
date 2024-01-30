@@ -60,7 +60,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
   const api = RT.useReactTable(optoins)
   const { editing, editingCell, startEditing, CellEditor } = useCellEditing<T>(props)
-  const { selectRow, clearSelection, handleSelectionKeyDown, getCellBackColor } = useSelection<Tree.TreeNode<T>>(editing, api)
+  const { selectRow, clearSelection, handleSelectionKeyDown, SelectionDecoration } = useSelection<Tree.TreeNode<T>>(editing, api)
   const { columnSizeVars, getColWidth, ResizeHandler } = useColumnResizing(api)
 
   const handleBlur: React.FocusEventHandler<HTMLDivElement> = useCallback(e => {
@@ -107,10 +107,10 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
             {api.getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id}>
 
-                {headerGroup.headers.map(header => (
+                {headerGroup.headers.map((header, colIx) => (
                   <th key={header.id}
-                    className="relative overflow-x-hidden text-start sticky top-0 pl-1 bg-color-3"
-                    style={{ width: getColWidth(header), ...getThStickeyStyle(header) }}>
+                    className="relative overflow-hidden p-0 text-start bg-color-3"
+                    style={{ width: getColWidth(header), ...getThStickeyStyle(header, colIx) }}>
                     {!header.isPlaceholder && RT.flexRender(
                       header.column.columnDef.header,
                       header.getContext())}
@@ -123,18 +123,17 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
           </thead>
 
           {/* ボディ */}
-          <tbody>
+          <tbody className="bg-color-0">
             {api.getRowModel().flatRows.filter(row => row.getIsAllParentsExpanded()).map(row => (
               <tr
                 key={row.id}
                 className={`leading-tight ` + (row.getIsSelected() ? 'bg-color-selected' : undefined)}
                 onClick={e => selectRow(row, e)}
               >
-                {row.getVisibleCells().map(cell => (
+                {row.getVisibleCells().map((cell, colIx) => (
                   <td key={cell.id}
-                    className={'relative border-r border-1 border-color-3 '
-                      + getCellBackColor(row)}
-                    style={getTdStickeyStyle(cell)}
+                    className="relative overflow-hidden p-0 border-r border-1 border-color-3"
+                    style={getTdStickeyStyle(cell, colIx)}
                     onDoubleClick={() => startEditing(cell)}
                   >
                     {RT.flexRender(
@@ -208,7 +207,7 @@ const useCellEditing = <T,>(props: DataTableProps<T>) => {
     }, [commitEditing, cancelEditing])
 
     return (
-      <div className={`z-10 ${className}`}>
+      <div className={className} style={{ zIndex: ZINDEX_CELLEDITOR }}>
         {React.createElement(cellEditor, {
           ref: editorRef,
           value: uncomittedValue,
@@ -248,10 +247,6 @@ const useSelectionOption = () => {
 const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
   const [activeRow, setActiveRow] = useState<RT.Row<T> | undefined>(undefined)
   const [selectionStart, setSelectionStart] = useState<RT.Row<T> | undefined>(undefined)
-
-  const getCellBackColor = useCallback((row: RT.Row<T>) => {
-    return row.getIsSelected() ? 'bd-color-selected' : 'bg-color-0'
-  }, [])
 
   const selectRow = useCallback((row: RT.Row<T>, e: { shiftKey: boolean, ctrlKey: boolean }) => {
     if (e.ctrlKey) {
@@ -316,25 +311,38 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
     }
   }, [editing, api, selectRow, activeRow])
 
+  const SelectionDecoration = useCallback(() => {
+    return (
+      <div className="bd-color-selected"></div>
+    )
+  }, [])
+
   return {
     selectRow,
     clearSelection,
     handleSelectionKeyDown,
-    getCellBackColor,
+    SelectionDecoration,
   }
 }
 
 // -----------------------------------------------
 // 行列ヘッダ固定
-const getThStickeyStyle = (header: RT.Header<any, unknown>): React.CSSProperties => ({
-  left: header.column.id === ROW_HEADER_ID ? '0' : undefined,
-  // y方向にスクロールしたときに行ヘッダの列のtdが上にかぶさってthが見えなくなるのを防ぐ
-  zIndex: header.column.id === ROW_HEADER_ID ? 1 : undefined,
+const getThStickeyStyle = (header: RT.Header<any, unknown>, colIndex: number): React.CSSProperties => ({
+  position: 'sticky',
+  top: 0,
+  left: header.column.id === ROW_HEADER_ID ? 0 : undefined,
+  zIndex: ZINDEX_BASE_TH - colIndex,
 })
-const getTdStickeyStyle = (cell: RT.Cell<any, unknown>): React.CSSProperties => ({
-  left: cell.column.id === ROW_HEADER_ID ? '0' : undefined,
+const getTdStickeyStyle = (cell: RT.Cell<any, unknown>, colIndex: number): React.CSSProperties => ({
   position: cell.column.id === ROW_HEADER_ID ? 'sticky' : undefined,
+  left: cell.column.id === ROW_HEADER_ID ? 0 : undefined,
+  zIndex: ZINDEX_BASE_TD - colIndex,
 })
+
+// 列数が4000列を超える場合は表示がおかしくなるが普通はそんなに無いだろう
+const ZINDEX_CELLEDITOR = 8001
+const ZINDEX_BASE_TH = 8000
+const ZINDEX_BASE_TD = 4000
 
 // -----------------------------------------------
 /** 行ヘッダ */
@@ -344,7 +352,7 @@ const getRowHeader = <T,>(
 ): RT.ColumnDef<Tree.TreeNode<T>> => helper.display({
   id: ROW_HEADER_ID,
   header: api => (
-    <div>
+    <div className="inline-block h-full w-full bg-color-3">
       <Input.Button
         icon={Icon.MinusIcon} iconOnly small outlined className="m-1"
         onClick={() => api.table.toggleAllRowsExpanded()}>
@@ -353,9 +361,11 @@ const getRowHeader = <T,>(
     </div>
   ),
   cell: api => (
-    <div className="inline-flex gap-1 w-full"
+    <div className="relative inline-flex gap-1 w-full bg-color-0"
       style={{ paddingLeft: api.row.depth * 24 }}>
-
+      {api.row.getIsSelected() && (
+        <div className="absolute pointer-events-none top-0 left-0 bottom-0 right-0 bg-color-selected"></div>
+      )}
       <Input.Button
         iconOnly small
         icon={api.row.getIsExpanded() ? Icon.ChevronDownIcon : Icon.ChevronRightIcon}
