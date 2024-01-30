@@ -67,12 +67,16 @@ nijo create YourApplicationName
 - `build.bat` を実行する
 
 デバッグ
-- `debug.bat` を実行する
-- 以下の情報が表示されるはずなので、控えておく
-  - CLIENT: ブラウザからの閲覧用。 `npm start` が実行されているURL
-  - SERVER: WebAPIのURL。 `dotnet run` が実行されているURL
-- ブラウザを開いて `CLIENT` のURLにアクセスする
-- 画面のメインメニューから「設定」を開き、サーバーURL欄に上記で控えた `SERVER` のURLを入力して「更新」
+- Reactテンプレートプロジェクトのデバッグ
+  - `Nijo.ApplicationTemplates` フォルダ内にあるReactテンプレートのルートで `npm run dev`
+- 自動生成されたプロジェクトのデバッグ
+  - `Nijo.IntegrationTest` プロジェクトのいずれかのデータパターンで自動生成
+  - `debug.bat` を実行する
+  - 以下の情報が表示されるはずなので、控えておく
+    - CLIENT: ブラウザからの閲覧用。 `npm start` が実行されているURL
+    - SERVER: WebAPIのURL。 `dotnet run` が実行されているURL
+  - ブラウザを開いて `CLIENT` のURLにアクセスする
+  - 画面のメインメニューから「設定」を開き、サーバーURL欄に上記で控えた `SERVER` のURLを入力して「更新」
 
 ---
 ## :cherry_blossom: Documentation
