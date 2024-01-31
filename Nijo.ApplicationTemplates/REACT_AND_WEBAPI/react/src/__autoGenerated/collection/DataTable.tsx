@@ -80,6 +80,8 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     if (e.defaultPrevented) return
   }, [api, handleSelectionKeyDown])
 
+  const editingTdRef = useRef<HTMLTableCellElement>(null)
+
   useImperativeHandle(ref, () => ({
     getSelectedItems: () => api.getSelectedRowModel().flatRows.map(row => row.original.item),
     getSelectedIndexes: () => api.getSelectedRowModel().flatRows.map(row => row.index),
@@ -97,7 +99,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
           {props.children}
         </div>
       )}
-      <div className="flex-1 overflow-auto select-none border border-1 border-color-4 bg-color-2">
+      <div className="flex-1 overflow-auto select-none relative border border-1 border-color-4 bg-color-2">
         <table
           className="table-fixed border-separate border-spacing-0"
           style={{ ...columnSizeVars, width: api.getTotalSize() }}
@@ -132,6 +134,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
               >
                 {row.getVisibleCells().map((cell, colIx) => (
                   <td key={cell.id}
+                    ref={cell === editingCell ? editingTdRef : undefined}
                     className="relative overflow-hidden p-0 border-r border-1 border-color-3"
                     style={getTdStickeyStyle(cell, colIx)}
                     onDoubleClick={() => startEditing(cell)}
@@ -139,9 +142,6 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
                     {RT.flexRender(
                       cell.column.columnDef.cell,
                       cell.getContext())}
-                    {cell === editingCell && (
-                      <CellEditor className="absolute top-0 left-0 min-w-12 min-h-4" />
-                    )}
                   </td>
                 ))}
 
@@ -149,6 +149,10 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
             ))}
           </tbody>
         </table>
+
+        {editing && (
+          <CellEditor editingTd={editingTdRef} />
+        )}
       </div>
     </div>
   )
@@ -164,7 +168,9 @@ const useCellEditing = <T,>(props: DataTableProps<T>) => {
     setEditingCell(cell)
   }, [props.onChangeRow])
 
-  const CellEditor = useCallback(({ className }: { className?: string }) => {
+  const CellEditor = useCallback(({ editingTd }: {
+    editingTd: React.RefObject<HTMLTableCellElement>
+  }) => {
     const [uncomittedValue, setUnComittedValue] = useState<unknown>(() => {
       if (!editingCell?.column.id) return undefined
       const row = editingCell?.row.original.item as { [key: string]: unknown }
@@ -176,23 +182,30 @@ const useCellEditing = <T,>(props: DataTableProps<T>) => {
       return editor ?? Input.Description
     }, [editingCell?.column])
 
-    const editorRef = useRef<Util.CustomComponentRef<any>>(null)
-    useEffect(() => {
-      editorRef.current?.focus()
-    }, [])
-
     const commitEditing = useCallback(() => {
       if (props.data && props.onChangeRow && editingCell) {
         const item = editingCell.row.original.item as { [key: string]: unknown }
         item[editingCell.column.id] = editorRef.current?.getValue()
         props.onChangeRow(props.data.indexOf(item as T), item as T)
-        console.log(editingCell.row.index, props.data.indexOf(item as T))
       }
       setEditingCell(undefined)
     }, [props.data, props.onChangeRow, editingCell])
 
     const cancelEditing = useCallback(() => {
       setEditingCell(undefined)
+    }, [])
+
+    const editorRef = useRef<Util.CustomComponentRef<any>>(null)
+    const containerRef = useRef<HTMLDivElement>(null)
+    useEffect(() => {
+      // エディタを編集対象セルの位置に移動させる
+      if (editingTd.current && containerRef.current) {
+        containerRef.current.style.left = `${editingTd.current.offsetLeft}px`
+        containerRef.current.style.top = `${editingTd.current.offsetTop}px`
+      }
+      // エディタにフォーカスを当ててスクロール
+      editorRef.current?.focus()
+      containerRef.current?.scrollIntoView({ behavior: 'instant' })
     }, [])
 
     const handleKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = useCallback(e => {
@@ -207,7 +220,10 @@ const useCellEditing = <T,>(props: DataTableProps<T>) => {
     }, [commitEditing, cancelEditing])
 
     return (
-      <div className={className} style={{ zIndex: ZINDEX_CELLEDITOR }}>
+      <div ref={containerRef}
+        className="absolute min-w-12 min-h-4"
+        style={{ zIndex: ZINDEX_CELLEDITOR }}
+      >
         {React.createElement(cellEditor, {
           ref: editorRef,
           value: uncomittedValue,
@@ -215,10 +231,10 @@ const useCellEditing = <T,>(props: DataTableProps<T>) => {
           onKeyDown: handleKeyDown,
           className: 'block resize',
         })}
-        <div className="flex justify-start gap-1">
-          <Input.Button className="text-xs" onClick={commitEditing}>確定(Ctrl+Enter)</Input.Button>
-          <Input.Button className="text-xs" onClick={cancelEditing}>キャンセル(Esc)</Input.Button>
-        </div>
+        {/* <div className="flex justify-start gap-1">
+          <Input.IconButton fill className="text-xs" onClick={commitEditing}>確定(Ctrl+Enter)</Input.IconButton>
+          <Input.IconButton fill className="text-xs" onClick={cancelEditing}>キャンセル(Esc)</Input.IconButton>
+        </div> */}
       </div>
     )
   }, [editingCell, props.data, props.onChangeRow])
