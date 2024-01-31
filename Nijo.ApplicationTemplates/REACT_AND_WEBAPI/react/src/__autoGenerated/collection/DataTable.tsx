@@ -59,7 +59,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   }), [dataAsTree, columns, selectionOptions])
 
   const api = RT.useReactTable(optoins)
-  const { editing, editingCell, startEditing, cancelEditing, CellEditor } = useCellEditing<T>(props)
+  const { editing, editingCell, startEditing, cancelEditing, CellEditor, editingTdRef } = useCellEditing<T>(props)
   const { selectRow, clearSelection, handleSelectionKeyDown, SelectionDecoration } = useSelection<Tree.TreeNode<T>>(editing, api)
   const { columnSizeVars, getColWidth, ResizeHandler } = useColumnResizing(api)
 
@@ -82,8 +82,6 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     handleSelectionKeyDown(e)
     if (e.defaultPrevented) return
   }, [api, handleSelectionKeyDown])
-
-  const editingTdRef = useRef<HTMLTableCellElement>(null)
 
   useImperativeHandle(ref, () => ({
     getSelectedItems: () => api.getSelectedRowModel().flatRows.map(row => row.original.item),
@@ -154,7 +152,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
         </table>
 
         {editing && (
-          <CellEditor editingTd={editingTdRef} />
+          <CellEditor />
         )}
       </div>
     </div>
@@ -165,6 +163,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 /** 編集 */
 const useCellEditing = <T,>(props: DataTableProps<T>) => {
   const [editingCell, setEditingCell] = useState<RT.Cell<Tree.TreeNode<T>, unknown> | undefined>(undefined)
+  const editingTdRef = useRef<HTMLTableCellElement>(null)
 
   const startEditing = useCallback((cell: RT.Cell<Tree.TreeNode<T>, unknown>) => {
     if (!props.onChangeRow) return // 値が編集されてもコミットできないので編集開始しない
@@ -175,9 +174,7 @@ const useCellEditing = <T,>(props: DataTableProps<T>) => {
     setEditingCell(undefined)
   }, [])
 
-  const CellEditor = useCallback(({ editingTd }: {
-    editingTd: React.RefObject<HTMLTableCellElement>
-  }) => {
+  const CellEditor = useCallback(() => {
     const [uncomittedValue, setUnComittedValue] = useState<unknown>(() => {
       if (!editingCell?.column.id) return undefined
       const row = editingCell?.row.original.item as { [key: string]: unknown }
@@ -202,9 +199,9 @@ const useCellEditing = <T,>(props: DataTableProps<T>) => {
     const containerRef = useRef<HTMLDivElement>(null)
     useEffect(() => {
       // エディタを編集対象セルの位置に移動させる
-      if (editingTd.current && containerRef.current) {
-        containerRef.current.style.left = `${editingTd.current.offsetLeft}px`
-        containerRef.current.style.top = `${editingTd.current.offsetTop}px`
+      if (editingTdRef.current && containerRef.current) {
+        containerRef.current.style.left = `${editingTdRef.current.offsetLeft}px`
+        containerRef.current.style.top = `${editingTdRef.current.offsetTop}px`
       }
       // エディタにフォーカスを当ててスクロール
       editorRef.current?.focus()
@@ -252,6 +249,7 @@ const useCellEditing = <T,>(props: DataTableProps<T>) => {
     startEditing,
     cancelEditing,
     CellEditor,
+    editingTdRef,
   }
 }
 
