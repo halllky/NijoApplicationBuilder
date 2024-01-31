@@ -59,7 +59,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   }), [dataAsTree, columns, selectionOptions])
 
   const api = RT.useReactTable(optoins)
-  const { editing, editingCell, startEditing, CellEditor } = useCellEditing<T>(props)
+  const { editing, editingCell, startEditing, cancelEditing, CellEditor } = useCellEditing<T>(props)
   const { selectRow, clearSelection, handleSelectionKeyDown, SelectionDecoration } = useSelection<Tree.TreeNode<T>>(editing, api)
   const { columnSizeVars, getColWidth, ResizeHandler } = useColumnResizing(api)
 
@@ -75,6 +75,9 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       for (const row of api.getSelectedRowModel().flatRows) row.toggleExpanded()
       e.preventDefault()
       return
+    } else if (e.key === 'Escape' && editing) {
+      cancelEditing()
+      e.preventDefault()
     }
     handleSelectionKeyDown(e)
     if (e.defaultPrevented) return
@@ -168,6 +171,10 @@ const useCellEditing = <T,>(props: DataTableProps<T>) => {
     setEditingCell(cell)
   }, [props.onChangeRow])
 
+  const cancelEditing = useCallback(() => {
+    setEditingCell(undefined)
+  }, [])
+
   const CellEditor = useCallback(({ editingTd }: {
     editingTd: React.RefObject<HTMLTableCellElement>
   }) => {
@@ -191,10 +198,6 @@ const useCellEditing = <T,>(props: DataTableProps<T>) => {
       setEditingCell(undefined)
     }, [props.data, props.onChangeRow, editingCell])
 
-    const cancelEditing = useCallback(() => {
-      setEditingCell(undefined)
-    }, [])
-
     const editorRef = useRef<Util.CustomComponentRef<any>>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     useEffect(() => {
@@ -205,7 +208,11 @@ const useCellEditing = <T,>(props: DataTableProps<T>) => {
       }
       // エディタにフォーカスを当ててスクロール
       editorRef.current?.focus()
-      containerRef.current?.scrollIntoView({ behavior: 'instant' })
+      containerRef.current?.scrollIntoView({
+        behavior: 'instant',
+        block: 'nearest',
+        inline: 'nearest',
+      })
     }, [])
 
     const handleKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = useCallback(e => {
@@ -221,7 +228,7 @@ const useCellEditing = <T,>(props: DataTableProps<T>) => {
 
     return (
       <div ref={containerRef}
-        className="absolute min-w-12 min-h-4"
+        className="absolute min-w-4 min-h-4"
         style={{ zIndex: ZINDEX_CELLEDITOR }}
       >
         {React.createElement(cellEditor, {
@@ -243,6 +250,7 @@ const useCellEditing = <T,>(props: DataTableProps<T>) => {
     editing: editingCell !== undefined,
     editingCell,
     startEditing,
+    cancelEditing,
     CellEditor,
   }
 }
