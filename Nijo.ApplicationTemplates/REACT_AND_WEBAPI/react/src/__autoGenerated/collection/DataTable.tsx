@@ -59,9 +59,26 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   }), [dataAsTree, columns, selectionOptions])
 
   const api = RT.useReactTable(optoins)
-  const { editing, editingCell, startEditing, cancelEditing, CellEditor, editingTdRef } = useCellEditing<T>(props)
-  const { selectRow, clearSelection, handleSelectionKeyDown, SelectionDecoration } = useSelection<Tree.TreeNode<T>>(editing, api)
-  const { columnSizeVars, getColWidth, ResizeHandler } = useColumnResizing(api)
+
+  const {
+    editing,
+    editingCell,
+    startEditing,
+    cancelEditing,
+    CellEditor,
+    editingTdRef,
+  } = useCellEditing<T>(props)
+  const {
+    selectRow,
+    clearSelection,
+    handleSelectionKeyDown,
+    SelectionDecoration,
+  } = useSelection<Tree.TreeNode<T>>(editing, api)
+  const {
+    columnSizeVars,
+    getColWidth,
+    ResizeHandler,
+  } = useColumnResizing(api)
 
   const handleBlur: React.FocusEventHandler<HTMLDivElement> = useCallback(e => {
     if (props.keepSelectWhenNotFocus) return
