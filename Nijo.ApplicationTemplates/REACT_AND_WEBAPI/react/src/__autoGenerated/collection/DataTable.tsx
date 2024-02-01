@@ -73,7 +73,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     caretCell,
     clearSelection,
     handleSelectionKeyDown,
-    activeTdRefCallback,
+    caretTdRefCallback,
     ActiveCellBorder,
   } = useSelection<Tree.TreeNode<T>>(editing, api)
 
@@ -84,7 +84,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   } = useColumnResizing(api)
 
   const tdRefCallback = (td: HTMLTableCellElement | null, cell: RT.Cell<Tree.TreeNode<T>, unknown>) => {
-    activeTdRefCallback(td, cell)
+    caretTdRefCallback(td, cell)
     editingTdRefCallback(td, cell)
   }
 
@@ -156,7 +156,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
             {api.getRowModel().flatRows.filter(row => row.getIsAllParentsExpanded()).map(row => (
               <tr
                 key={row.id}
-                className={`leading-tight ` + (row.getIsSelected() ? 'bg-color-selected' : undefined)}
+                className="leading-tight"
                 onClick={e => selectRow(row, e)}
               >
                 {row.getVisibleCells().map((cell, colIx) => (
@@ -177,8 +177,9 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
           </tbody>
         </table>
 
-        <ActiveCellBorder caretCell={caretCell} api={api} />
-
+        {!editing && (
+          <ActiveCellBorder caretCell={caretCell} api={api} />
+        )}
         {editing && (
           <CellEditor />
         )}
@@ -298,8 +299,10 @@ const useSelectionOption = () => {
   }
 }
 const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
-  const [caretCell, setCaretCell] = useState<RT.Cell<T, unknown> | undefined>(undefined)
-  const [selectionStart, setSelectionStart] = useState<RT.Row<T> | undefined>(undefined)
+  const [caretCell, setCaretCell] = useState<RT.Cell<T, unknown> | undefined>()
+  const [selectionStart, setSelectionStart] = useState<RT.Cell<T, unknown> | undefined>()
+  const caretTdRef = useRef<HTMLTableCellElement>()
+  const selectionStartTdRef = useRef<HTMLTableCellElement>()
 
   const selectRow = useCallback((row: RT.Row<T>, e: { shiftKey: boolean, ctrlKey: boolean }) => {
     if (e.ctrlKey) {
@@ -308,7 +311,7 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
     } else if (e.shiftKey && selectionStart) {
       // 範囲選択
       const flatRows = api.getRowModel().flatRows
-      const ix1 = flatRows.indexOf(selectionStart)
+      const ix1 = flatRows.indexOf(selectionStart.row)
       const ix2 = flatRows.indexOf(row)
       const since = Math.min(ix1, ix2)
       const until = Math.max(ix1, ix2)
@@ -322,8 +325,9 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
     } else {
       // シングル選択。引数のrowのみが選択されている状態にする
       api.setRowSelection({ [row.id]: true })
-      setCaretCell(row.getVisibleCells()[0])
-      setSelectionStart(row)
+      const cell = row.getVisibleCells()[0]
+      setCaretCell(cell)
+      setSelectionStart(cell)
     }
   }, [api, caretCell, selectionStart])
 
@@ -331,6 +335,8 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
     api.resetRowSelection()
     setCaretCell(undefined)
     setSelectionStart(undefined)
+    caretTdRef.current = undefined
+    selectionStartTdRef.current = undefined
   }, [api])
 
   const handleSelectionKeyDown: React.KeyboardEventHandler<HTMLElement> = useCallback(e => {
@@ -364,10 +370,10 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
     }
   }, [editing, api, selectRow, caretCell])
 
-  const activeTdRef = useRef<HTMLTableCellElement>()
-  const activeTdRefCallback = useCallback((td: HTMLTableCellElement | null, cell: RT.Cell<T, unknown>) => {
-    if (td && cell === caretCell) activeTdRef.current = td
-  }, [caretCell])
+  const caretTdRefCallback = useCallback((td: HTMLTableCellElement | null, cell: RT.Cell<T, unknown>) => {
+    if (td && cell === caretCell) caretTdRef.current = td
+    if (td && cell === selectionStart) selectionStartTdRef.current = td
+  }, [caretCell, selectionStart])
 
   const ActiveCellBorder = useCallback((props: {
     caretCell: typeof caretCell
@@ -375,17 +381,31 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
   }) => {
     const divRef = useRef<HTMLDivElement>(null)
     useEffect(() => {
-      if (!activeTdRef.current || !divRef.current) return
-      divRef.current.style.left = `${activeTdRef.current.offsetLeft}px`
-      divRef.current.style.top = `${activeTdRef.current.offsetTop}px`
-      divRef.current.style.width = `${activeTdRef.current.offsetWidth}px`
-      divRef.current.style.height = `${activeTdRef.current.offsetHeight}px`
+      const head = caretTdRef.current
+      const root = selectionStartTdRef.current
+      if (!head || !root || !divRef.current) return
+      const left = Math.min(
+        head.offsetLeft,
+        root.offsetLeft)
+      const right = Math.max(
+        head.offsetLeft + head.offsetWidth,
+        root.offsetLeft + root.offsetWidth)
+      const top = Math.min(
+        head.offsetTop,
+        root.offsetTop)
+      const bottom = Math.max(
+        head.offsetTop + head.offsetHeight,
+        root.offsetTop + root.offsetHeight)
+      divRef.current.style.left = `${left}px`
+      divRef.current.style.top = `${top}px`
+      divRef.current.style.width = `${right - left}px`
+      divRef.current.style.height = `${bottom - top}px`
       divRef.current.style.zIndex = ZINDEX_CELLEDITOR.toString()
-    }, [props.caretCell, api.getState().columnSizing])
+    }, [props.caretCell, api.getState().columnSizing, api.getState().expanded])
 
     return (
       <div ref={divRef}
-        className="absolute pointer-events-none outline outline-2 outline-offset-[-2px]"
+        className="absolute pointer-events-none outline outline-2 outline-offset-[-2px] bg-color-selected"
       ></div>
     )
   }, [])
@@ -395,7 +415,7 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
     caretCell,
     clearSelection,
     handleSelectionKeyDown,
-    activeTdRefCallback,
+    caretTdRefCallback,
     ActiveCellBorder,
   }
 }
@@ -438,9 +458,6 @@ const getRowHeader = <T,>(
   cell: api => (
     <div className="relative inline-flex gap-1 w-full bg-color-0"
       style={{ paddingLeft: api.row.depth * 24 }}>
-      {api.row.getIsSelected() && (
-        <div className="absolute pointer-events-none top-0 left-0 bottom-0 right-0 bg-color-selected"></div>
-      )}
       <Input.Button
         iconOnly small
         icon={api.row.getIsExpanded() ? Icon.ChevronDownIcon : Icon.ChevronRightIcon}
