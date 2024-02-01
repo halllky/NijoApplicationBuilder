@@ -62,23 +62,31 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
   const {
     editing,
-    editingCell,
     startEditing,
     cancelEditing,
     CellEditor,
-    editingTdRef,
+    editingTdRefCallback,
   } = useCellEditing<T>(props)
+
   const {
     selectRow,
+    activeCell,
     clearSelection,
     handleSelectionKeyDown,
-    SelectionDecoration,
+    activeTdRefCallback,
+    ActiveCellBorder,
   } = useSelection<Tree.TreeNode<T>>(editing, api)
+
   const {
     columnSizeVars,
     getColWidth,
     ResizeHandler,
   } = useColumnResizing(api)
+
+  const tdRefCallback = (td: HTMLTableCellElement | null, cell: RT.Cell<Tree.TreeNode<T>, unknown>) => {
+    activeTdRefCallback(td, cell)
+    editingTdRefCallback(td, cell)
+  }
 
   const handleBlur: React.FocusEventHandler<HTMLDivElement> = useCallback(e => {
     if (props.keepSelectWhenNotFocus) return
@@ -86,6 +94,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     if (e.target.contains(e.relatedTarget)) return
     clearSelection()
   }, [props.keepSelectWhenNotFocus, clearSelection])
+
   const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = useCallback(e => {
     // console.log(e.key)
     if (e.key === ' ') {
@@ -152,7 +161,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
               >
                 {row.getVisibleCells().map((cell, colIx) => (
                   <td key={cell.id}
-                    ref={cell === editingCell ? editingTdRef : undefined}
+                    ref={td => tdRefCallback(td, cell)}
                     className="relative overflow-hidden p-0 border-r border-1 border-color-3"
                     style={getTdStickeyStyle(cell, colIx)}
                     onDoubleClick={() => startEditing(cell)}
@@ -168,6 +177,8 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
           </tbody>
         </table>
 
+        <ActiveCellBorder activeCell={activeCell} api={api} />
+
         {editing && (
           <CellEditor />
         )}
@@ -180,7 +191,11 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 /** 編集 */
 const useCellEditing = <T,>(props: DataTableProps<T>) => {
   const [editingCell, setEditingCell] = useState<RT.Cell<Tree.TreeNode<T>, unknown> | undefined>(undefined)
-  const editingTdRef = useRef<HTMLTableCellElement>(null)
+
+  const editingTdRef = useRef<HTMLTableCellElement>()
+  const editingTdRefCallback = useCallback((td: HTMLTableCellElement | null, cell: RT.Cell<Tree.TreeNode<T>, unknown>) => {
+    if (td && cell === editingCell) editingTdRef.current = td
+  }, [editingCell])
 
   const startEditing = useCallback((cell: RT.Cell<Tree.TreeNode<T>, unknown>) => {
     if (!props.onChangeRow) return // 値が編集されてもコミットできないので編集開始しない
@@ -262,16 +277,15 @@ const useCellEditing = <T,>(props: DataTableProps<T>) => {
 
   return {
     editing: editingCell !== undefined,
-    editingCell,
     startEditing,
     cancelEditing,
     CellEditor,
-    editingTdRef,
+    editingTdRefCallback,
   }
 }
 
 // -----------------------------------------------
-/** 行選択 */
+/** 選択 */
 const useSelectionOption = () => {
   const [rowSelection, onRowSelectionChange] = useState<RT.RowSelectionState>({})
   const selectionOptions: Partial<RT.TableOptions<Tree.TreeNode<any>>> = {
@@ -284,7 +298,7 @@ const useSelectionOption = () => {
   }
 }
 const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
-  const [activeRow, setActiveRow] = useState<RT.Row<T> | undefined>(undefined)
+  const [activeCell, setActiveCell] = useState<RT.Cell<T, unknown> | undefined>(undefined)
   const [selectionStart, setSelectionStart] = useState<RT.Row<T> | undefined>(undefined)
 
   const selectRow = useCallback((row: RT.Row<T>, e: { shiftKey: boolean, ctrlKey: boolean }) => {
@@ -303,19 +317,19 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
         newState[flatRows[i].id] = true
       }
       api.setRowSelection(newState)
-      setActiveRow(row)
+      setActiveCell(row.getVisibleCells()[0])
 
     } else {
       // シングル選択。引数のrowのみが選択されている状態にする
       api.setRowSelection({ [row.id]: true })
-      setActiveRow(row)
+      setActiveCell(row.getVisibleCells()[0])
       setSelectionStart(row)
     }
-  }, [api, activeRow, selectionStart])
+  }, [api, activeCell, selectionStart])
 
   const clearSelection = useCallback(() => {
     api.resetRowSelection()
-    setActiveRow(undefined)
+    setActiveCell(undefined)
     setSelectionStart(undefined)
   }, [api])
 
@@ -327,14 +341,14 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
 
     } else if (!e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
       const flatRows = api.getRowModel().flatRows
-      if (!activeRow) {
+      if (!activeCell) {
         // 未選択の状態なので先頭行を選択
         if (flatRows.length >= 1) selectRow(flatRows[0], e)
         e.preventDefault()
         return
       }
       // 1つ上または下の行を選択
-      let ix = flatRows.indexOf(activeRow)
+      let ix = flatRows.indexOf(activeCell.row)
       if (e.key === 'ArrowUp') ix--; else ix++
       while (e.key === 'ArrowUp' ? (ix > -1) : (ix < flatRows.length)) {
         const row = flatRows[ix]
@@ -348,19 +362,41 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
         return
       }
     }
-  }, [editing, api, selectRow, activeRow])
+  }, [editing, api, selectRow, activeCell])
 
-  const SelectionDecoration = useCallback(() => {
+  const activeTdRef = useRef<HTMLTableCellElement>()
+  const activeTdRefCallback = useCallback((td: HTMLTableCellElement | null, cell: RT.Cell<T, unknown>) => {
+    if (td && cell === activeCell) activeTdRef.current = td
+  }, [activeCell])
+
+  const ActiveCellBorder = useCallback((props: {
+    activeCell: typeof activeCell
+    api: typeof api
+  }) => {
+    const divRef = useRef<HTMLDivElement>(null)
+    useEffect(() => {
+      if (!activeTdRef.current || !divRef.current) return
+      divRef.current.style.left = `${activeTdRef.current.offsetLeft}px`
+      divRef.current.style.top = `${activeTdRef.current.offsetTop}px`
+      divRef.current.style.width = `${activeTdRef.current.offsetWidth}px`
+      divRef.current.style.height = `${activeTdRef.current.offsetHeight}px`
+      divRef.current.style.zIndex = ZINDEX_CELLEDITOR.toString()
+    }, [props.activeCell, api.getState().columnSizing])
+
     return (
-      <div className="bd-color-selected"></div>
+      <div ref={divRef}
+        className="absolute pointer-events-none outline outline-2 outline-offset-[-2px]"
+      ></div>
     )
   }, [])
 
   return {
     selectRow,
+    activeCell,
     clearSelection,
     handleSelectionKeyDown,
-    SelectionDecoration,
+    activeTdRefCallback,
+    ActiveCellBorder,
   }
 }
 
