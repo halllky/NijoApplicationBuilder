@@ -70,7 +70,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
   const {
     selectRow,
-    activeCell,
+    caretCell,
     clearSelection,
     handleSelectionKeyDown,
     activeTdRefCallback,
@@ -177,7 +177,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
           </tbody>
         </table>
 
-        <ActiveCellBorder activeCell={activeCell} api={api} />
+        <ActiveCellBorder caretCell={caretCell} api={api} />
 
         {editing && (
           <CellEditor />
@@ -298,7 +298,7 @@ const useSelectionOption = () => {
   }
 }
 const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
-  const [activeCell, setActiveCell] = useState<RT.Cell<T, unknown> | undefined>(undefined)
+  const [caretCell, setCaretCell] = useState<RT.Cell<T, unknown> | undefined>(undefined)
   const [selectionStart, setSelectionStart] = useState<RT.Row<T> | undefined>(undefined)
 
   const selectRow = useCallback((row: RT.Row<T>, e: { shiftKey: boolean, ctrlKey: boolean }) => {
@@ -317,19 +317,19 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
         newState[flatRows[i].id] = true
       }
       api.setRowSelection(newState)
-      setActiveCell(row.getVisibleCells()[0])
+      setCaretCell(row.getVisibleCells()[0])
 
     } else {
       // シングル選択。引数のrowのみが選択されている状態にする
       api.setRowSelection({ [row.id]: true })
-      setActiveCell(row.getVisibleCells()[0])
+      setCaretCell(row.getVisibleCells()[0])
       setSelectionStart(row)
     }
-  }, [api, activeCell, selectionStart])
+  }, [api, caretCell, selectionStart])
 
   const clearSelection = useCallback(() => {
     api.resetRowSelection()
-    setActiveCell(undefined)
+    setCaretCell(undefined)
     setSelectionStart(undefined)
   }, [api])
 
@@ -341,14 +341,14 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
 
     } else if (!e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
       const flatRows = api.getRowModel().flatRows
-      if (!activeCell) {
+      if (!caretCell) {
         // 未選択の状態なので先頭行を選択
         if (flatRows.length >= 1) selectRow(flatRows[0], e)
         e.preventDefault()
         return
       }
       // 1つ上または下の行を選択
-      let ix = flatRows.indexOf(activeCell.row)
+      let ix = flatRows.indexOf(caretCell.row)
       if (e.key === 'ArrowUp') ix--; else ix++
       while (e.key === 'ArrowUp' ? (ix > -1) : (ix < flatRows.length)) {
         const row = flatRows[ix]
@@ -362,15 +362,15 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
         return
       }
     }
-  }, [editing, api, selectRow, activeCell])
+  }, [editing, api, selectRow, caretCell])
 
   const activeTdRef = useRef<HTMLTableCellElement>()
   const activeTdRefCallback = useCallback((td: HTMLTableCellElement | null, cell: RT.Cell<T, unknown>) => {
-    if (td && cell === activeCell) activeTdRef.current = td
-  }, [activeCell])
+    if (td && cell === caretCell) activeTdRef.current = td
+  }, [caretCell])
 
   const ActiveCellBorder = useCallback((props: {
-    activeCell: typeof activeCell
+    caretCell: typeof caretCell
     api: typeof api
   }) => {
     const divRef = useRef<HTMLDivElement>(null)
@@ -381,7 +381,7 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
       divRef.current.style.width = `${activeTdRef.current.offsetWidth}px`
       divRef.current.style.height = `${activeTdRef.current.offsetHeight}px`
       divRef.current.style.zIndex = ZINDEX_CELLEDITOR.toString()
-    }, [props.activeCell, api.getState().columnSizing])
+    }, [props.caretCell, api.getState().columnSizing])
 
     return (
       <div ref={divRef}
@@ -392,7 +392,7 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
 
   return {
     selectRow,
-    activeCell,
+    caretCell,
     clearSelection,
     handleSelectionKeyDown,
     activeTdRefCallback,
