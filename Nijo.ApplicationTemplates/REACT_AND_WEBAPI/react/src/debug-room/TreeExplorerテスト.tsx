@@ -16,13 +16,22 @@ const setting: DataTableProps<ReturnType<typeof createData>[0]> = {
       </span>
     ),
   }, {
-    id: '__parent__',
-    accessorFn: row => row.item.data.parent,
-  }, {
     id: 'setterTest',
     accessorFn: row => (row.item as any).setterTest,
     cellEditor: Input.Num,
-  }],
+  },
+  { id: '000', accessorFn: row => row.item.data.parent },
+  { id: '001', accessorFn: row => row.item.data.parent },
+  { id: '002', accessorFn: row => row.item.data.parent },
+  { id: '003', accessorFn: row => row.item.data.parent },
+  { id: '004', accessorFn: row => row.item.data.parent },
+  { id: '005', accessorFn: row => row.item.data.parent },
+  { id: '006', accessorFn: row => row.item.data.parent },
+  { id: '007', accessorFn: row => row.item.data.parent },
+  { id: '008', accessorFn: row => row.item.data.parent },
+  { id: '009', accessorFn: row => row.item.data.parent },
+  { id: '010', accessorFn: row => row.item.data.parent },
+  ],
   treeView: {
     getId: row => row.data.id,
     rowHeader: row => row.data.label,
@@ -51,7 +60,7 @@ export default function () {
       direction="horizontal"
       className="w-full h-full"
       style={{ fontFamily: '"Arial", "BIZ UDゴシック"', fontSize: 14 }}>
-      <Panel className="flex border p-2">
+      <Panel className="flex border p-2" defaultSize={65}>
         <DataTable
           data={data}
           onChangeRow={updateRow}
@@ -592,4 +601,44 @@ const createData = () => [
   { data: { id: 'xfd37d0bff35b7c6247317e851e973ed5', label: 'ElementTypeIs', parent: 'x0a0a96e74da337edabba0ac0e2557b43' } },
   { data: { id: 'xfecd338eec1622bf7237f98fe0adc7ec', label: 'Open', parent: 'x6dec6cf1a547f5ac834a4fba9f831e07' } },
   { data: { id: 'xffbdd362ece998d968eabc795b399344', label: 'GetReferedEdges', parent: 'xe5934df59eb92be066a47df67a0e65f5' } },
+  // 縦スクロール確認用
+  { data: { id: '0001', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0002', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0003', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0004', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0005', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0006', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0007', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0008', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0009', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0010', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0011', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0012', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0013', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0014', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0015', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0016', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0017', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0018', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0019', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0020', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0021', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0022', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0023', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0024', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0025', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0026', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0027', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0028', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0029', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0030', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0031', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0032', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0033', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0034', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0035', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0036', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0037', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0038', label: 'ああああああああああああ', parent: 'undefined' } },
+  { data: { id: '0039', label: 'ああああああああああああ', parent: 'undefined' } },
 ]
