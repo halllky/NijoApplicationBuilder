@@ -6,6 +6,7 @@ import { DataTableProps, DataTableRef } from './DataTable.Public'
 import { getRowHeader, ROW_HEADER_ID, TABLE_ZINDEX } from './DataTable.Parts'
 import { useCellEditing } from './DataTable.Editing'
 import { useSelection } from './DataTable.Selecting'
+import { COLUMN_RESIZE_OPTION, useColumnResizing } from './DataTable.ColResize'
 
 export * from './DataTable.Public'
 
@@ -195,52 +196,4 @@ const DEFAULT_CELL: RT.ColumnDefTemplate<RT.CellContext<Util.TreeNode<unknown>, 
       &nbsp; {/* <= すべての値が空の行がつぶれるのを防ぐ */}
     </span>
   )
-}
-
-// -----------------------------------------------
-/** 列幅変更 */
-const useColumnResizing = <T,>(api: RT.Table<Tree.TreeNode<T>>) => {
-
-  const columnSizeVars = useMemo(() => {
-    const headers = api.getFlatHeaders()
-    const colSizes: { [key: string]: number } = {}
-    for (let i = 0; i < headers.length; i++) {
-      const header = headers[i]!
-      colSizes[`--header-${header.id}-size`] = header.getSize()
-      colSizes[`--col-${header.column.id}-size`] = header.column.getSize()
-    }
-    return colSizes
-  }, [api.getState().columnSizingInfo])
-
-  const getColWidth = useCallback((header: RT.Header<Tree.TreeNode<T>, unknown>) => {
-    return `calc(var(--header-${header?.id}-size) * 1px)`
-  }, [])
-
-  const ResizeHandler = useCallback(({ header }: {
-    header: RT.Header<Tree.TreeNode<T>, unknown>
-  }) => {
-    return (
-      <div {...{
-        onDoubleClick: () => header.column.resetSize(),
-        onMouseDown: header.getResizeHandler(),
-        onTouchStart: header.getResizeHandler(),
-        className: `absolute top-0 bottom-0 right-0 w-3 cursor-ew-resize border-r border-color-4`,
-      }}>
-      </div>
-    )
-  }, [])
-
-  return {
-    columnSizeVars,
-    getColWidth,
-    ResizeHandler,
-  }
-}
-
-const COLUMN_RESIZE_OPTION: Partial<RT.TableOptions<Tree.TreeNode<any>>> = {
-  defaultColumn: {
-    minSize: 60,
-    maxSize: 800,
-  },
-  columnResizeMode: 'onChange',
 }
