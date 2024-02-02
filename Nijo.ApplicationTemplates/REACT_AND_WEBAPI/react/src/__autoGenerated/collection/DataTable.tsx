@@ -160,13 +160,13 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
               <tr
                 key={row.id}
                 className="leading-tight"
-                onClick={e => selectObject({ row }, e)}
               >
                 {row.getVisibleCells().map((cell, colIx) => (
                   <td key={cell.id}
                     ref={td => tdRefCallback(td, cell)}
                     className="relative overflow-hidden p-0 border-r border-1 border-color-3"
                     style={getTdStickeyStyle(cell, colIx)}
+                    onClick={e => selectObject({ cell }, e)}
                     onDoubleClick={() => startEditing(cell)}
                   >
                     {RT.flexRender(
@@ -326,19 +326,30 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T>>) => 
 
     } else if (e.shiftKey && selectionStart) {
       // 範囲選択
-      const caret = obj.row
-        ? obj.row.getVisibleCells()[0]
-        : obj.cell
-      setCaretCell(caret)
+      if (obj.row) {
+        setCaretCell(obj.row.getVisibleCells()[0])
+      } else if (obj.cell.column.id === ROW_HEADER_ID) {
+        // 行ヘッダが選択された場合は行全体の選択に読み替え
+        setCaretCell(obj.cell.row.getVisibleCells()[0])
+      } else {
+        setCaretCell(obj.cell)
+      }
 
     } else {
       // シングル選択。引数のrowのみが選択されている状態にする
       if (obj.row) {
         const visibleCells = obj.row.getVisibleCells()
-        if (visibleCells.length > 0) {
-          setCaretCell(visibleCells[0])
-          setSelectionStart(visibleCells[visibleCells.length - 1])
-        }
+        if (visibleCells.length === 0) return
+        setCaretCell(visibleCells[0])
+        setSelectionStart(visibleCells[visibleCells.length - 1])
+
+      } else if (obj.cell.column.id === ROW_HEADER_ID) {
+        // 行ヘッダが選択された場合は行全体の選択に読み替え
+        const visibleCells = obj.cell.row.getVisibleCells()
+        if (visibleCells.length === 0) return
+        setCaretCell(visibleCells[0])
+        setSelectionStart(visibleCells[visibleCells.length - 1])
+
       } else {
         setCaretCell(obj.cell)
         setSelectionStart(obj.cell)
@@ -367,17 +378,38 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T>>) => 
         e.preventDefault()
         return
       }
-      // 1つ上または下の行を選択
-      let ix = flatRows.indexOf(caretCell.row)
-      if (e.key === 'ArrowUp') ix--; else ix++
-      while (e.key === 'ArrowUp' ? (ix > -1) : (ix < flatRows.length)) {
-        const row = flatRows[ix]
+      // 1つ上または下のセルを選択
+      let rowIndex = flatRows.indexOf(caretCell.row)
+      if (e.key === 'ArrowUp') rowIndex--; else rowIndex++
+      while (e.key === 'ArrowUp' ? (rowIndex > -1) : (rowIndex < flatRows.length)) {
+        const row = flatRows[rowIndex]
         if (row === undefined) return
         if (!row.getIsAllParentsExpanded()) {
-          if (e.key === 'ArrowUp') ix--; else ix++
+          if (e.key === 'ArrowUp') rowIndex--; else rowIndex++
           continue
         }
-        selectObject({ row }, e)
+        const colIndex = caretCell.row.getAllCells().indexOf(caretCell)
+        selectObject({ cell: row.getAllCells()[colIndex] }, e)
+        e.preventDefault()
+        return
+
+      }
+    } else if (!e.ctrlKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      const flatRows = api.getRowModel().flatRows
+      if (!caretCell) {
+        // 未選択の状態なので先頭行を選択
+        if (flatRows.length >= 1) selectObject({ row: flatRows[0] }, e)
+        e.preventDefault()
+        return
+      }
+      // 1つ左または右のセルを選択
+      const allCells = caretCell.row.getAllCells()
+      let colIndex = allCells.indexOf(caretCell)
+      if (e.key === 'ArrowLeft') colIndex--; else colIndex++
+      while (e.key === 'ArrowLeft' ? (colIndex > -1) : (colIndex < allCells.length)) {
+        const neighborCell = allCells[colIndex]
+        if (neighborCell === undefined) return
+        selectObject({ cell: neighborCell }, e)
         e.preventDefault()
         return
       }
@@ -398,6 +430,7 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T>>) => 
       const head = caretTdRef.current
       const root = selectionStartTdRef.current
       if (!head || !root || !divRef.current) return
+
       const left = Math.min(
         head.offsetLeft,
         root.offsetLeft)
@@ -410,11 +443,18 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T>>) => 
       const bottom = Math.max(
         head.offsetTop + head.offsetHeight,
         root.offsetTop + root.offsetHeight)
+
       divRef.current.style.left = `${left}px`
       divRef.current.style.top = `${top}px`
       divRef.current.style.width = `${right - left}px`
       divRef.current.style.height = `${bottom - top}px`
+
       divRef.current.style.zIndex = ZINDEX_CELLEDITOR.toString()
+      divRef.current.scrollIntoView({
+        behavior: 'instant',
+        block: 'nearest',
+        inline: 'nearest',
+      })
     }, [props.caretCell, api.getState().columnSizing, api.getState().expanded])
 
     return (
