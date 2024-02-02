@@ -69,13 +69,15 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   } = useCellEditing<T>(props)
 
   const {
-    selectRow,
+    selectObject,
     caretCell,
     clearSelection,
     handleSelectionKeyDown,
     caretTdRefCallback,
     ActiveCellBorder,
-  } = useSelection<Tree.TreeNode<T>>(editing, api)
+    getSelectedRows,
+    getSelectedIndexes,
+  } = useSelection<T>(editing, api)
 
   const {
     columnSizeVars,
@@ -98,20 +100,21 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = useCallback(e => {
     // console.log(e.key)
     if (e.key === ' ') {
-      for (const row of api.getSelectedRowModel().flatRows) row.toggleExpanded()
+      for (const row of getSelectedRows()) row.toggleExpanded()
       e.preventDefault()
       return
     } else if (e.key === 'Escape' && editing) {
       cancelEditing()
       e.preventDefault()
+      return
     }
     handleSelectionKeyDown(e)
     if (e.defaultPrevented) return
-  }, [api, handleSelectionKeyDown])
+  }, [getSelectedRows, handleSelectionKeyDown])
 
   useImperativeHandle(ref, () => ({
-    getSelectedItems: () => api.getSelectedRowModel().flatRows.map(row => row.original.item),
-    getSelectedIndexes: () => api.getSelectedRowModel().flatRows.map(row => row.index),
+    getSelectedItems: () => getSelectedRows().map(row => row.original.item),
+    getSelectedIndexes,
     clearSelection,
   }))
 
@@ -157,7 +160,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
               <tr
                 key={row.id}
                 className="leading-tight"
-                onClick={e => selectRow(row, e)}
+                onClick={e => selectObject({ row }, e)}
               >
                 {row.getVisibleCells().map((cell, colIx) => (
                   <td key={cell.id}
@@ -298,41 +301,52 @@ const useSelectionOption = () => {
     selectionOptions,
   }
 }
-const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
-  const [caretCell, setCaretCell] = useState<RT.Cell<T, unknown> | undefined>()
-  const [selectionStart, setSelectionStart] = useState<RT.Cell<T, unknown> | undefined>()
+const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T>>) => {
+  const [caretCell, setCaretCell] = useState<RT.Cell<Tree.TreeNode<T>, unknown> | undefined>()
+  const [selectionStart, setSelectionStart] = useState<RT.Cell<Tree.TreeNode<T>, unknown> | undefined>()
   const caretTdRef = useRef<HTMLTableCellElement>()
   const selectionStartTdRef = useRef<HTMLTableCellElement>()
 
-  const selectRow = useCallback((row: RT.Row<T>, e: { shiftKey: boolean, ctrlKey: boolean }) => {
-    if (e.ctrlKey) {
-      row.toggleSelected(undefined, { selectChildren: false })
+  type SelectTarget
+    = { all: true }
+    | { all?: undefined, row: RT.Row<Tree.TreeNode<T>>, cell?: undefined }
+    | { all?: undefined, row?: undefined, cell: RT.Cell<Tree.TreeNode<T>, unknown> }
+  const selectObject = useCallback((obj: SelectTarget, e: { shiftKey: boolean }) => {
+    if (obj.all) {
+      // 全選択
+      const flatRows = api.getRowModel().flatRows
+      const firstRow = flatRows[0]
+      const lastRow = flatRows[flatRows.length - 1]
+      const firstRowVisibleCells = firstRow?.getVisibleCells()
+      const lastRowVisibleCells = lastRow?.getVisibleCells()
+      const topLeftCell = firstRowVisibleCells?.[0]
+      const bottomRightCell = lastRowVisibleCells?.[lastRowVisibleCells.length - 1]
+      setCaretCell(topLeftCell)
+      setSelectionStart(bottomRightCell)
 
     } else if (e.shiftKey && selectionStart) {
       // 範囲選択
-      const flatRows = api.getRowModel().flatRows
-      const ix1 = flatRows.indexOf(selectionStart.row)
-      const ix2 = flatRows.indexOf(row)
-      const since = Math.min(ix1, ix2)
-      const until = Math.max(ix1, ix2)
-      const newState: { [key: string]: true } = {}
-      for (let i = since; i <= until; i++) {
-        newState[flatRows[i].id] = true
-      }
-      api.setRowSelection(newState)
-      setCaretCell(row.getVisibleCells()[0])
+      const caret = obj.row
+        ? obj.row.getVisibleCells()[0]
+        : obj.cell
+      setCaretCell(caret)
 
     } else {
       // シングル選択。引数のrowのみが選択されている状態にする
-      api.setRowSelection({ [row.id]: true })
-      const cell = row.getVisibleCells()[0]
-      setCaretCell(cell)
-      setSelectionStart(cell)
+      if (obj.row) {
+        const visibleCells = obj.row.getVisibleCells()
+        if (visibleCells.length > 0) {
+          setCaretCell(visibleCells[0])
+          setSelectionStart(visibleCells[visibleCells.length - 1])
+        }
+      } else {
+        setCaretCell(obj.cell)
+        setSelectionStart(obj.cell)
+      }
     }
-  }, [api, caretCell, selectionStart])
+  }, [api, selectionStart])
 
   const clearSelection = useCallback(() => {
-    api.resetRowSelection()
     setCaretCell(undefined)
     setSelectionStart(undefined)
     caretTdRef.current = undefined
@@ -342,14 +356,14 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
   const handleSelectionKeyDown: React.KeyboardEventHandler<HTMLElement> = useCallback(e => {
     if (editing) return
     if (e.ctrlKey && e.key === 'a') {
-      api.toggleAllRowsSelected(true)
+      selectObject({ all: true }, e)
       e.preventDefault()
 
     } else if (!e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
       const flatRows = api.getRowModel().flatRows
       if (!caretCell) {
         // 未選択の状態なので先頭行を選択
-        if (flatRows.length >= 1) selectRow(flatRows[0], e)
+        if (flatRows.length >= 1) selectObject({ row: flatRows[0] }, e)
         e.preventDefault()
         return
       }
@@ -363,14 +377,14 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
           if (e.key === 'ArrowUp') ix--; else ix++
           continue
         }
-        selectRow(row, e)
+        selectObject({ row }, e)
         e.preventDefault()
         return
       }
     }
-  }, [editing, api, selectRow, caretCell])
+  }, [editing, api, selectObject, caretCell])
 
-  const caretTdRefCallback = useCallback((td: HTMLTableCellElement | null, cell: RT.Cell<T, unknown>) => {
+  const caretTdRefCallback = useCallback((td: HTMLTableCellElement | null, cell: RT.Cell<Tree.TreeNode<T>, unknown>) => {
     if (td && cell === caretCell) caretTdRef.current = td
     if (td && cell === selectionStart) selectionStartTdRef.current = td
   }, [caretCell, selectionStart])
@@ -410,13 +424,35 @@ const useSelection = <T,>(editing: boolean, api: RT.Table<T>) => {
     )
   }, [])
 
+  const getSelectedRows = useCallback(() => {
+    if (!caretCell || !selectionStart) return []
+    const flatRows = api.getRowModel().flatRows
+    const ix1 = flatRows.indexOf(selectionStart.row)
+    const ix2 = flatRows.indexOf(caretCell.row)
+    const since = Math.min(ix1, ix2)
+    const until = Math.max(ix1, ix2)
+    return flatRows.slice(since, until + 1)
+  }, [api, caretCell, selectionStart])
+
+  const getSelectedIndexes = useCallback(() => {
+    if (!caretCell || !selectionStart) return []
+    const flatRows = api.getRowModel().flatRows
+    const ix1 = flatRows.indexOf(selectionStart.row)
+    const ix2 = flatRows.indexOf(caretCell.row)
+    const since = Math.min(ix1, ix2)
+    const until = Math.max(ix1, ix2)
+    return [...Array(until - since + 1)].map((_, i) => i + since)
+  }, [api])
+
   return {
-    selectRow,
+    selectObject,
     caretCell,
     clearSelection,
     handleSelectionKeyDown,
     caretTdRefCallback,
     ActiveCellBorder,
+    getSelectedRows,
+    getSelectedIndexes,
   }
 }
 
