@@ -3,18 +3,6 @@ import * as RT from '@tanstack/react-table'
 import * as Tree from '../util'
 import { ROW_HEADER_ID, ZINDEX_CELLEDITOR } from './DataTable.Parts'
 
-export const useSelectionOption = () => {
-  const [rowSelection, onRowSelectionChange] = useState<RT.RowSelectionState>({})
-  const selectionOptions: Partial<RT.TableOptions<Tree.TreeNode<any>>> = {
-    onRowSelectionChange,
-    enableSubRowSelection: true,
-    state: { rowSelection },
-  }
-  return {
-    selectionOptions,
-  }
-}
-
 export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T>>) => {
   const [caretCell, setCaretCell] = useState<RT.Cell<Tree.TreeNode<T>, unknown> | undefined>()
   const [selectionStart, setSelectionStart] = useState<RT.Cell<Tree.TreeNode<T>, unknown> | undefined>()

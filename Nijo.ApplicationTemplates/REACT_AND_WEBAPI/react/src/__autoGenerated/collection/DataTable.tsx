@@ -5,7 +5,7 @@ import * as Tree from '../util'
 import { DataTableProps, DataTableRef } from './DataTable.Public'
 import { getRowHeader, ROW_HEADER_ID, ZINDEX_BASE_TH, ZINDEX_BASE_TD } from './DataTable.Parts'
 import { useCellEditing } from './DataTable.Editing'
-import { useSelectionOption, useSelection } from './DataTable.Selecting'
+import { useSelection } from './DataTable.Selecting'
 
 export * from './DataTable.Public'
 
@@ -32,15 +32,13 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   }, [props.columns, props.treeView?.rowHeader])
 
   // 表
-  const { selectionOptions } = useSelectionOption()
   const optoins: RT.TableOptions<Tree.TreeNode<T>> = useMemo(() => ({
     data: dataAsTree,
     columns,
     getSubRows: row => row.children,
     getCoreRowModel: RT.getCoreRowModel(),
-    ...selectionOptions,
     ...COLUMN_RESIZE_OPTION,
-  }), [dataAsTree, columns, selectionOptions])
+  }), [dataAsTree, columns])
 
   const api = RT.useReactTable(optoins)
 
