@@ -3,7 +3,7 @@ import * as RT from '@tanstack/react-table'
 import * as Util from '../util'
 import * as Tree from '../util'
 import { DataTableProps, DataTableRef } from './DataTable.Public'
-import { getRowHeader, ROW_HEADER_ID, ZINDEX_BASE_TH, ZINDEX_BASE_TD } from './DataTable.Parts'
+import { getRowHeader, ROW_HEADER_ID, TABLE_ZINDEX } from './DataTable.Parts'
 import { useCellEditing } from './DataTable.Editing'
 import { useSelection } from './DataTable.Selecting'
 
@@ -179,12 +179,12 @@ const getThStickeyStyle = (header: RT.Header<any, unknown>, colIndex: number): R
   position: 'sticky',
   top: 0,
   left: header.column.id === ROW_HEADER_ID ? 0 : undefined,
-  zIndex: ZINDEX_BASE_TH - colIndex,
+  zIndex: TABLE_ZINDEX.BASE_TH - colIndex,
 })
 const getTdStickeyStyle = (cell: RT.Cell<any, unknown>, colIndex: number): React.CSSProperties => ({
   position: cell.column.id === ROW_HEADER_ID ? 'sticky' : undefined,
   left: cell.column.id === ROW_HEADER_ID ? 0 : undefined,
-  zIndex: ZINDEX_BASE_TD - colIndex,
+  zIndex: TABLE_ZINDEX.BASE_TD - colIndex,
 })
 
 // -----------------------------------------------

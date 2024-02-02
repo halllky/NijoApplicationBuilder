@@ -8,9 +8,11 @@ import { DataTableProps } from './DataTable.Public'
 // z-index
 
 // 列数が4000列を超える場合は表示がおかしくなるが普通はそんなに無いだろう
-export const ZINDEX_CELLEDITOR = 8001
-export const ZINDEX_BASE_TH = 8000
-export const ZINDEX_BASE_TD = 4000
+export const TABLE_ZINDEX = {
+  CELLEDITOR: 8001 as const,
+  BASE_TH: 8000 as const,
+  BASE_TD: 4000 as const,
+}
 
 // --------------------------------------------
 // 行ヘッダ

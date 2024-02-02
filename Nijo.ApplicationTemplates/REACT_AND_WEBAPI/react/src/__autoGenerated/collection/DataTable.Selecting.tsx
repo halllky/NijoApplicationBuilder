@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import * as RT from '@tanstack/react-table'
 import * as Tree from '../util'
-import { ROW_HEADER_ID, ZINDEX_CELLEDITOR } from './DataTable.Parts'
+import { ROW_HEADER_ID, TABLE_ZINDEX } from './DataTable.Parts'
 
 export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T>>) => {
   const [caretCell, setCaretCell] = useState<RT.Cell<Tree.TreeNode<T>, unknown> | undefined>()
@@ -151,7 +151,7 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
       divRef.current.style.width = `${right - left}px`
       divRef.current.style.height = `${bottom - top}px`
 
-      divRef.current.style.zIndex = ZINDEX_CELLEDITOR.toString()
+      divRef.current.style.zIndex = TABLE_ZINDEX.CELLEDITOR.toString()
       divRef.current.scrollIntoView({
         behavior: 'instant',
         block: 'nearest',

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as RT from '@tanstack/react-table'
 import { DataTableProps, ColumnDefEx } from './DataTable.Public'
-import { ZINDEX_CELLEDITOR } from './DataTable.Parts'
+import { TABLE_ZINDEX } from './DataTable.Parts'
 import * as Input from '../input'
 import * as Tree from '../util'
 import * as Util from '../util'
@@ -75,7 +75,7 @@ export const useCellEditing = <T,>(props: DataTableProps<T>) => {
     return (
       <div ref={containerRef}
         className="absolute min-w-4 min-h-4"
-        style={{ zIndex: ZINDEX_CELLEDITOR }}
+        style={{ zIndex: TABLE_ZINDEX.CELLEDITOR }}
       >
         {React.createElement(cellEditor, {
           ref: editorRef,
