@@ -116,11 +116,12 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
     containsRowHeader: boolean
     api: typeof api
   }) => {
-    const divRef = useRef<HTMLDivElement>(null)
+    const svgRef = useRef<SVGSVGElement>(null)
+    const maskBlackRef = useRef<SVGRectElement>(null)
     useEffect(() => {
       const head = caretTdRef.current
       const root = selectionStartTdRef.current
-      if (!head || !root || !divRef.current) return
+      if (!head || !root || !svgRef.current || !maskBlackRef.current) return
 
       const left = Math.min(
         head.offsetLeft,
@@ -135,22 +136,25 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
         head.offsetTop + head.offsetHeight,
         root.offsetTop + root.offsetHeight)
 
-      divRef.current.style.left = `${left}px`
-      divRef.current.style.top = `${top}px`
-      divRef.current.style.width = `${right - left}px`
-      divRef.current.style.height = `${bottom - top}px`
+      svgRef.current.style.left = `${left}px`
+      svgRef.current.style.top = `${top}px`
+      svgRef.current.style.width = `${right - left}px`
+      svgRef.current.style.height = `${bottom - top}px`
 
-      divRef.current.style.zIndex = props.containsRowHeader
+      maskBlackRef.current.setAttribute('x', `${root.offsetLeft - left}px`)
+      maskBlackRef.current.setAttribute('y', `${root.offsetTop - top}px`)
+      maskBlackRef.current.style.width = `${root.offsetWidth}px`
+      maskBlackRef.current.style.height = `${root.offsetHeight}px`
+
+      svgRef.current.style.zIndex = props.containsRowHeader
         ? TABLE_ZINDEX.ROWHEADER_SELECTION.toString()
         : TABLE_ZINDEX.SELECTION.toString()
 
-      setTimeout(() => {
-        divRef.current?.scrollIntoView({
-          behavior: 'instant',
-          block: 'nearest',
-          inline: 'nearest',
-        })
-      }, 100) // duration-100しているので100ms後の位置でスクロールさせる
+      svgRef.current?.scrollIntoView({
+        behavior: 'instant',
+        block: 'nearest',
+        inline: 'nearest',
+      })
     }, [
       containsRowHeader,
       props.caretCell,
@@ -159,9 +163,24 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
     ])
 
     return (
-      <div ref={divRef}
-        className="absolute pointer-events-none duration-100 outline outline-2 outline-offset-[-2px] bg-color-selected"
-      ></div>
+      <svg ref={svgRef}
+        version="1.1"
+        xmlns="http://www.w3.org/2000/svg"
+        xmlnsXlink="http://www.w3.org/1999/xlink"
+        className="pointer-events-none absolute outline outline-2 outline-offset-[-2px] border-[3px] border border-color-0"
+      >
+        <defs>
+          <mask id="selection-start-mask">
+            <rect fill="white" x="0" y="0" width="calc(Infinity)" height="calc(Infinity)" />
+            <rect ref={maskBlackRef} fill="black" />
+          </mask>
+        </defs>
+        <rect
+          x="0" y="0" width="100%" height="100%"
+          className="fill-black opacity-[.15]"
+          mask="url(#selection-start-mask)"
+        />
+      </svg>
     )
   }, [])
 
