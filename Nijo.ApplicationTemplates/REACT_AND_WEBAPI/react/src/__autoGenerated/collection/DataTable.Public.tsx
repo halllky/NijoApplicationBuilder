@@ -11,7 +11,6 @@ export type DataTableProps<T> = {
     rowHeader: (row: T) => React.ReactNode
   }
   children?: React.ReactNode
-  keepSelectWhenNotFocus?: boolean
 }
 export type ColumnDefEx<T> = RT.ColumnDef<T> & {
   cellEditor?: Util.CustomComponent

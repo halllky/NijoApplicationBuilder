@@ -11,11 +11,36 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
   const selectionStartTdRef = useRef<HTMLTableCellElement>()
 
   type SelectTarget
-    = { all: RT.Table<Tree.TreeNode<T>> }
-    | { all?: undefined, cell: RT.Cell<Tree.TreeNode<T>, unknown> }
+    = { cell: RT.Cell<Tree.TreeNode<T>, unknown>, shiftKey: boolean }
+    | { any: RT.Table<Tree.TreeNode<T>>, cell?: undefined }
+    | { all: RT.Table<Tree.TreeNode<T>>, cell?: undefined, any?: undefined }
 
-  const selectObject = useCallback((obj: SelectTarget, e: { shiftKey: boolean }) => {
-    if (obj.all) {
+  const selectObject = useCallback((obj: SelectTarget) => {
+    if (obj.cell) {
+      if (obj.cell.column.id === ROW_HEADER_ID) {
+        // シングル選択（行ヘッダが選択された場合）
+        const visibleCells = obj.cell.row.getVisibleCells()
+        if (visibleCells.length === 0) return
+        setCaretCell(visibleCells[0])
+        if (!obj.shiftKey) setSelectionStart(visibleCells[visibleCells.length - 1])
+        setContainsRowHeader(true)
+
+      } else {
+        // シングル選択
+        setCaretCell(obj.cell)
+        if (!obj.shiftKey) setSelectionStart(obj.cell)
+        setContainsRowHeader(false)
+      }
+
+    } else if (obj.any) {
+      // 何か選択
+      const cell = obj.any.getRowModel().flatRows[0]?.getAllCells()?.[0]
+      if (cell) {
+        setCaretCell(cell)
+        setContainsRowHeader(false)
+      }
+
+    } else {
       // 全選択
       const flatRows = obj.all.getRowModel().flatRows
       const firstRow = flatRows[0]
@@ -27,47 +52,23 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
       setCaretCell(topLeftCell)
       setSelectionStart(bottomRightCell)
       setContainsRowHeader(true)
-
-    } else if (obj.cell.column.id === ROW_HEADER_ID) {
-      // シングル選択（行ヘッダが選択された場合）
-      const visibleCells = obj.cell.row.getVisibleCells()
-      if (visibleCells.length === 0) return
-      setCaretCell(visibleCells[0])
-      if (!e.shiftKey) setSelectionStart(visibleCells[visibleCells.length - 1])
-      setContainsRowHeader(true)
-
-    } else {
-      // シングル選択
-      setCaretCell(obj.cell)
-      if (!e.shiftKey) setSelectionStart(obj.cell)
-      setContainsRowHeader(false)
     }
-  }, [])
-
-  const clearSelection = useCallback(() => {
-    setCaretCell(undefined)
-    setSelectionStart(undefined)
-    setContainsRowHeader(false)
-    caretTdRef.current = undefined
-    selectionStartTdRef.current = undefined
   }, [])
 
   const handleSelectionKeyDown: React.KeyboardEventHandler<HTMLElement> = useCallback(e => {
     if (editing) return
     if (e.ctrlKey && e.key === 'a') {
-      selectObject({ all: api }, e)
+      selectObject({ all: api })
       e.preventDefault()
 
     } else if (!e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-      const flatRows = api.getRowModel().flatRows
       if (!caretCell) {
-        // 未選択の状態なので先頭行を選択
-        const cell = flatRows[0]?.getAllCells()?.[0]
-        if (cell) selectObject({ cell }, e)
+        selectObject({ any: api })
         e.preventDefault()
         return
       }
       // 1つ上または下のセルを選択
+      const flatRows = api.getRowModel().flatRows
       let rowIndex = flatRows.indexOf(caretCell.row)
       if (e.key === 'ArrowUp') rowIndex--; else rowIndex++
       while (e.key === 'ArrowUp' ? (rowIndex > -1) : (rowIndex < flatRows.length)) {
@@ -78,17 +79,14 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
           continue
         }
         const colIndex = caretCell.row.getAllCells().indexOf(caretCell)
-        selectObject({ cell: row.getAllCells()[colIndex] }, e)
+        selectObject({ cell: row.getAllCells()[colIndex], shiftKey: e.shiftKey })
         e.preventDefault()
         return
 
       }
     } else if (!e.ctrlKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
-      const flatRows = api.getRowModel().flatRows
       if (!caretCell) {
-        // 未選択の状態なので先頭行を選択
-        const cell = flatRows[0]?.getAllCells()?.[0]
-        if (cell) selectObject({ cell }, e)
+        selectObject({ any: api })
         e.preventDefault()
         return
       }
@@ -99,7 +97,7 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
       while (e.key === 'ArrowLeft' ? (colIndex > -1) : (colIndex < allCells.length)) {
         const neighborCell = allCells[colIndex]
         if (neighborCell === undefined) return
-        selectObject({ cell: neighborCell }, e)
+        selectObject({ cell: neighborCell, shiftKey: e.shiftKey })
         e.preventDefault()
         return
       }
@@ -211,15 +209,17 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
   }, [api])
 
   return {
+    caretCell,
     selectObject,
-    clearSelection,
     handleSelectionKeyDown,
     caretTdRefCallback,
+
     ActiveCellBorder,
     activeCellBorderProps: {
       caretCell,
       containsRowHeader,
     },
+
     getSelectedRows,
     getSelectedIndexes,
   }

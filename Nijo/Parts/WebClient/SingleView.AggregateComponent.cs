@@ -312,7 +312,7 @@ namespace Nijo.Parts.WebClient {
                               ref={dtRef}
                               data={fields}
                               {...options}
-                              className="h-64 w-full text-sm"
+                              className="h-64 w-full"
                             >
                             {{_aggregate.GetParent()?.RelationName}}
                     {{If(_mode != SingleView.E_Type.View, () => $$"""

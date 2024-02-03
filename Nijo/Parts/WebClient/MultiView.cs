@@ -139,7 +139,7 @@ namespace Nijo.Parts.WebClient {
                           <DataTable
                             data={data}
                             {...options}
-                            className="flex-1 text-sm"
+                            className="flex-1"
                           />
                         </div>
                       )

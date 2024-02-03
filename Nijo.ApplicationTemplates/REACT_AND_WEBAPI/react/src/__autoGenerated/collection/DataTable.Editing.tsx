@@ -23,7 +23,9 @@ export const useCellEditing = <T,>(props: DataTableProps<T>) => {
     setEditingCell(undefined)
   }, [])
 
-  const CellEditor = useCallback(() => {
+  const CellEditor = useCallback(({ onEndEditing }: {
+    onEndEditing?: () => void
+  }) => {
     const [uncomittedValue, setUnComittedValue] = useState<unknown>(() => {
       if (!editingCell?.column.id) return undefined
       const row = editingCell?.row.original.item as { [key: string]: unknown }
@@ -42,7 +44,13 @@ export const useCellEditing = <T,>(props: DataTableProps<T>) => {
         props.onChangeRow(props.data.indexOf(item as T), item as T)
       }
       setEditingCell(undefined)
-    }, [props.data, props.onChangeRow, editingCell])
+      onEndEditing?.()
+    }, [props.data, props.onChangeRow, editingCell, onEndEditing])
+
+    const cancelEditing2 = useCallback(() => {
+      setEditingCell(undefined)
+      onEndEditing?.()
+    }, [onEndEditing])
 
     const editorRef = useRef<Util.CustomComponentRef<any>>(null)
     const containerRef = useRef<HTMLDivElement>(null)
@@ -67,10 +75,10 @@ export const useCellEditing = <T,>(props: DataTableProps<T>) => {
         e.stopPropagation()
         e.preventDefault()
       } else if (e.key === 'Escape') {
-        cancelEditing()
+        cancelEditing2()
         e.preventDefault()
       }
-    }, [commitEditing, cancelEditing])
+    }, [commitEditing, cancelEditing2])
 
     return (
       <div ref={containerRef}
@@ -86,7 +94,7 @@ export const useCellEditing = <T,>(props: DataTableProps<T>) => {
         })}
         {/* <div className="flex justify-start gap-1">
           <Input.IconButton fill className="text-xs" onClick={commitEditing}>確定(Ctrl+Enter)</Input.IconButton>
-          <Input.IconButton fill className="text-xs" onClick={cancelEditing}>キャンセル(Esc)</Input.IconButton>
+          <Input.IconButton fill className="text-xs" onClick={cancelEditing2}>キャンセル(Esc)</Input.IconButton>
         </div> */}
       </div>
     )

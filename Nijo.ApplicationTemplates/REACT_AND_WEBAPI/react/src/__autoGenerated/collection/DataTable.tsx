@@ -1,4 +1,4 @@
-import React, { useCallback, useImperativeHandle, useMemo } from 'react'
+import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import * as RT from '@tanstack/react-table'
 import * as Util from '../util'
 import * as Tree from '../util'
@@ -52,8 +52,8 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   } = useCellEditing<T>(props)
 
   const {
+    caretCell,
     selectObject,
-    clearSelection,
     handleSelectionKeyDown,
     caretTdRefCallback,
     ActiveCellBorder,
@@ -73,12 +73,21 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     editingTdRefCallback(td, cell)
   }
 
+  const [isActive, setIsActive] = useState(false)
+  const handleFocus: React.FocusEventHandler<HTMLDivElement> = useCallback(() => {
+    setIsActive(true)
+    if (!caretCell) selectObject({ any: api })
+  }, [caretCell])
   const handleBlur: React.FocusEventHandler<HTMLDivElement> = useCallback(e => {
-    if (props.keepSelectWhenNotFocus) return
-    // フォーカスの移動先がこの要素の中(ex: props.children)にある場合
-    if (e.target.contains(e.relatedTarget)) return
-    clearSelection()
-  }, [props.keepSelectWhenNotFocus, clearSelection])
+    // フォーカスの移動先がこの要素の中にある場合(ex: props.children)はfalseにしない
+    if (!e.target.contains(e.relatedTarget)) setIsActive(false)
+  }, [])
+
+  // セル編集完了時にフォーカスが外れてキー操作ができなくなるのを防ぐ
+  const containerRef = useRef<HTMLDivElement>(null)
+  const onEndEditing = useCallback(() => {
+    containerRef.current?.focus()
+  }, [])
 
   const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = useCallback(e => {
     // console.log(e.key)
@@ -90,19 +99,25 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       cancelEditing()
       e.preventDefault()
       return
+    } else if (e.key === 'F2' && !editing && caretCell) {
+      startEditing(caretCell)
+      e.preventDefault()
+      return
     }
+
     handleSelectionKeyDown(e)
     if (e.defaultPrevented) return
-  }, [getSelectedRows, handleSelectionKeyDown])
+  }, [caretCell, getSelectedRows, handleSelectionKeyDown])
 
   useImperativeHandle(ref, () => ({
     getSelectedItems: () => getSelectedRows().map(row => row.original.item),
     getSelectedIndexes,
-    clearSelection,
   }))
 
   return (
-    <div className={`flex flex-col outline-none overflow-hidden ${props.className}`}
+    <div ref={containerRef}
+      className={`flex flex-col outline-none overflow-hidden ${props.className}`}
+      onFocus={handleFocus}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
       tabIndex={0}
@@ -124,7 +139,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
                 {headerGroup.headers.map(header => (
                   <th key={header.id}
-                    className="relative overflow-hidden p-0 text-start bg-color-3"
+                    className="relative overflow-hidden px-1 py-0 text-start bg-color-3"
                     style={{ width: getColWidth(header), ...getThStickeyStyle(header) }}>
                     {!header.isPlaceholder && RT.flexRender(
                       header.column.columnDef.header,
@@ -149,7 +164,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
                     ref={td => tdRefCallback(td, cell)}
                     className="relative overflow-hidden p-0 border-r border-1 border-color-3"
                     style={getTdStickeyStyle(cell)}
-                    onMouseDown={e => selectObject({ cell }, e)}
+                    onMouseDown={e => selectObject({ cell, shiftKey: e.shiftKey })}
                     onDoubleClick={() => startEditing(cell)}
                   >
                     {RT.flexRender(
@@ -163,11 +178,11 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
           </tbody>
         </table>
 
-        {!editing && (
+        {isActive && !editing && (
           <ActiveCellBorder api={api} {...activeCellBorderProps} />
         )}
         {editing && (
-          <CellEditor />
+          <CellEditor onEndEditing={onEndEditing} />
         )}
       </div>
     </div>
@@ -191,7 +206,7 @@ const getTdStickeyStyle = (cell: RT.Cell<any, unknown>): React.CSSProperties => 
 // -----------------------------------------------
 const DEFAULT_CELL: RT.ColumnDefTemplate<RT.CellContext<Util.TreeNode<unknown>, unknown>> = cellProps => {
   return (
-    <span className="block w-full overflow-hidden whitespace-nowrap">
+    <span className="block w-full px-1 overflow-hidden whitespace-nowrap">
       {cellProps.getValue() as React.ReactNode}
       &nbsp; {/* <= すべての値が空の行がつぶれるのを防ぐ */}
     </span>
