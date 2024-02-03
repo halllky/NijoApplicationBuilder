@@ -24,10 +24,11 @@ export const Description = defineCustomComponent<string>((props, ref) => {
 
 /** 数値 */
 export const Num = defineCustomComponent<number>((props, ref) => {
+  const { value, onChange, ...rest } = props
 
   const strValue = useMemo(() => {
-    return props.value?.toString() ?? ''
-  }, [props.value])
+    return value?.toString() ?? ''
+  }, [value])
 
   const onValidate: ValidationHandler = useCallback(value => {
     const normalized = normalize(value).replace(',', '') // 桁区切りのカンマを無視
@@ -35,13 +36,13 @@ export const Num = defineCustomComponent<number>((props, ref) => {
     const num = Number(normalized)
     return isNaN(num) ? { ok: false } : { ok: true, formatted: num.toString() }
   }, [])
-  const onChange = useCallback((value: string | undefined) => {
+  const handleChange = useCallback((value: string | undefined) => {
     // TODO: TextAreaBaseのonBlurでもバリデーションをかけているので冗長
     const validated = onValidate(value ?? '')
-    props.onChange?.(validated.ok && validated.formatted !== ''
+    onChange?.(validated.ok && validated.formatted !== ''
       ? Number(validated.formatted)
       : undefined)
-  }, [props.onChange])
+  }, [onChange, onValidate])
 
   const textRef = useRef<CustomComponentRef<string>>(null)
   useImperativeHandle(ref, () => ({
@@ -56,9 +57,9 @@ export const Num = defineCustomComponent<number>((props, ref) => {
 
   return <TextInputBase
     ref={textRef}
-    {...props}
+    {...rest}
     value={strValue}
-    onChange={onChange}
+    onChange={handleChange}
     onValidate={onValidate}
   />
 })
@@ -87,26 +88,28 @@ const dateValidation: ValidationHandler = value => {
 
 /** 年月 */
 export const YearMonth = defineCustomComponent<number>((props, ref) => {
+  const { value, onChange, ...rest } = props
+
   const textRef = useRef<CustomComponentRef<string>>(null)
   useImperativeHandle(ref, () => ({
     getValue: () => yearMonthConversion(textRef.current?.getValue() ?? ''),
     focus: () => textRef.current?.focus(),
   }), [])
 
-  const value = useMemo(() => {
-    if (props.value == undefined) return ''
-    const year = Math.floor(props.value / 100)
-    const month = props.value % 100
+  const strValue = useMemo(() => {
+    if (value == undefined) return ''
+    const year = Math.floor(value / 100)
+    const month = value % 100
     return `${year.toString().padStart(4, '0')}-${month.toString().padStart(2, '0')}`
-  }, [props.value])
-  const onChange = useCallback((value: string | undefined) => {
-    props.onChange?.(yearMonthConversion(value ?? ''))
-  }, [props.onChange])
+  }, [value])
+  const handleChange = useCallback((value: string | undefined) => {
+    onChange?.(yearMonthConversion(value ?? ''))
+  }, [onChange])
 
   const overrideProps = {
-    ...props,
-    value,
-    onChange,
+    ...rest,
+    value: strValue,
+    onChange: handleChange,
     className: `w-20 ${props.className}`,
     placeholder: props.placeholder ?? '0000-00',
     onValidate: yearMonthValidation,
@@ -150,38 +153,44 @@ export const SelectionEmitsKey = defineCustomComponent(<TItem extends {}, TKey e
   }>,
   ref: React.ForwardedRef<CustomComponentRef<TKey>>
 ) => {
+  const { options, keySelector, value, onChange, ...rest } = props
+
   // value
-  const value = useMemo(() => {
-    return props.options.find(item => props.keySelector(item) === props.value)
-  }, [props.options, props.keySelector, props.value])
-  const onChange = useCallback((item: TItem | undefined) => {
-    props.onChange?.(item ? props.keySelector(item) : undefined)
-  }, [props.onChange, props.keySelector])
+  const objValue = useMemo(() => {
+    return options.find(item => keySelector(item) === value)
+  }, [options, keySelector, value])
+  const handleChange = useCallback((item: TItem | undefined) => {
+    onChange?.(item ? keySelector(item) : undefined)
+  }, [onChange, keySelector])
 
   // ref
   const radioRef = useRef<CustomComponentRef<TItem>>(null)
   useImperativeHandle(ref, () => ({
     getValue: () => {
       const selectedItem = radioRef.current?.getValue()
-      return selectedItem ? props.keySelector(selectedItem) : undefined
+      return selectedItem ? keySelector(selectedItem) : undefined
     },
     focus: () => radioRef.current?.focus(),
   }))
 
-  return props.options.length > 5
+  return options.length > 5
     ? (
       <ComboBoxBase
         ref={radioRef}
-        {...props}
-        value={value}
-        onChange={onChange}
+        {...rest}
+        options={options}
+        keySelector={keySelector}
+        value={objValue}
+        onChange={handleChange}
       />
     ) : (
       <RadioGroupBase
         ref={radioRef}
-        {...props}
-        value={value}
-        onChange={onChange}
+        {...rest}
+        options={options}
+        keySelector={keySelector}
+        value={objValue}
+        onChange={handleChange}
       />
     )
 })
@@ -202,18 +211,7 @@ export const AsyncComboBox = defineCustomComponent(<T extends {},>(
   }>,
   ref: React.ForwardedRef<CustomComponentRef<T>>
 ) => {
-  // 検索処理発火
   const [, dispatchMsg] = useMsgContext()
-  const [keyword, setKeyword] = useState<string | undefined>()
-  const [setTimeoutHandle, setSetTimeoutHandle] = useState<NodeJS.Timeout | undefined>(undefined)
-  const onKeywordChanged = useCallback((value: string | undefined) => {
-    setKeyword(value)
-    if (setTimeoutHandle !== undefined) clearTimeout(setTimeoutHandle)
-    setSetTimeoutHandle(setTimeout(() => {
-      refetch()
-      setSetTimeoutHandle(undefined)
-    }, 300))
-  }, [])
 
   // 検索結結果取得
   const { data, refetch } = useQuery({
@@ -223,6 +221,18 @@ export const AsyncComboBox = defineCustomComponent(<T extends {},>(
       dispatchMsg(msg => msg.error(`ERROR!: ${JSON.stringify(error)}`))
     },
   })
+
+  // 検索処理発火
+  const [keyword, setKeyword] = useState<string | undefined>()
+  const [setTimeoutHandle, setSetTimeoutHandle] = useState<NodeJS.Timeout | undefined>(undefined)
+  const onKeywordChanged = useCallback((value: string | undefined) => {
+    setKeyword(value)
+    if (setTimeoutHandle !== undefined) clearTimeout(setTimeoutHandle)
+    setSetTimeoutHandle(setTimeout(() => {
+      refetch()
+      setSetTimeoutHandle(undefined)
+    }, 300))
+  }, [refetch, setTimeoutHandle])
 
   return (
     <ComboBoxBase
@@ -241,15 +251,16 @@ export const CheckBox = defineCustomComponent<boolean>((props, ref) => {
 
 /** チェックボックス（グリッド用） */
 export const BooleanComboBox = defineCustomComponent<boolean>((props, ref) => {
+  const { value, onChange, ...rest } = props
 
-  const value = useMemo(() => {
-    if (props.value === true) return booleanComboBoxOptions[0]
-    if (props.value === false) return booleanComboBoxOptions[1]
+  const objValue = useMemo(() => {
+    if (value === true) return booleanComboBoxOptions[0]
+    if (value === false) return booleanComboBoxOptions[1]
     return undefined
-  }, [props.value])
-  const onChange = useCallback((value: (typeof booleanComboBoxOptions[0]) | undefined) => {
-    props.onChange?.(value?.boolValue)
-  }, [props.onChange])
+  }, [value])
+  const handleChange = useCallback((value: (typeof booleanComboBoxOptions[0]) | undefined) => {
+    onChange?.(value?.boolValue)
+  }, [onChange])
 
   const comboRef = useRef<CustomComponentRef>(null)
   useImperativeHandle(ref, () => ({
@@ -265,12 +276,12 @@ export const BooleanComboBox = defineCustomComponent<boolean>((props, ref) => {
   return (
     <ComboBox
       ref={comboRef}
-      {...props}
+      {...rest}
       options={booleanComboBoxOptions}
       keySelector={item => item.text}
       textSelector={item => item.text}
-      value={value}
-      onChange={onChange}
+      value={objValue}
+      onChange={handleChange}
     />
   )
 })

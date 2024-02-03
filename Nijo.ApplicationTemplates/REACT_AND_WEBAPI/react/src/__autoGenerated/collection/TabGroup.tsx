@@ -1,63 +1,72 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react"
 import { forwardRefEx } from "../util"
 
-export const TabGroup = <T,>(props: {
+type TabGroupArgs<T> = {
   items: T[]
   keySelector: (item: T) => string
   nameSelector?: (item: T) => string
   onCreate?: () => void
   onRemove?: () => void
   children?: (args: { item: T, index: number }) => React.ReactNode
-}) => {
+}
+
+export const TabGroup = <T,>({
+  items,
+  keySelector,
+  nameSelector,
+  onCreate,
+  onRemove,
+  children,
+}: TabGroupArgs<T>) => {
   const [selectedItemKey, setSelectedItemKey] = useState<string | undefined>(undefined)
   const selectedItem = useMemo(() => {
-    return props.items.find(item => props.keySelector(item) === selectedItemKey)
-  }, [props.items, selectedItemKey])
+    return items.find(item => keySelector(item) === selectedItemKey)
+  }, [items, selectedItemKey, keySelector])
 
   // タブの自動選択
   useEffect(() => {
     // 何も選択されていないとき
-    if (!selectedItemKey && props.items.length > 0) {
-      setSelectedItemKey(props.keySelector(props.items[0]))
+    if (!selectedItemKey && items.length > 0) {
+      setSelectedItemKey(keySelector(items[0]))
     }
     // 選択中のタブが消えたとき
-    if (selectedItemKey && !props.items.some(item => props.keySelector(item) === selectedItemKey)) {
-      if (props.items.length === 0) {
+    if (selectedItemKey && !items.some(item => keySelector(item) === selectedItemKey)) {
+      if (items.length === 0) {
         setSelectedItemKey(undefined)
       } else {
-        setSelectedItemKey(props.keySelector(props.items[0]))
+        setSelectedItemKey(keySelector(items[0]))
       }
     }
-  }, [props.items])
+  }, [items, keySelector, selectedItemKey])
 
   // ref
   const refs = useRef<React.RefObject<HTMLLIElement>[]>([])
-  for (let i = 0; i < props.items.length; i++) {
+  for (let i = 0; i < items.length; i++) {
     refs.current[i] = React.createRef()
   }
-  refs.current[props.items.length] = React.createRef()
+  refs.current[items.length] = React.createRef()
 
   return (
     <div className="flex flex-col cursor-pointer">
 
       {/* タブパネルのボタン */}
       <ul className="w-full flex flex-wrap gap-1">
-        {props.items.map((item, index) => (
+        {items.map((item, index) => (
           <TabButton
             key={index}
             ref={refs.current[index]}
-            active={props.keySelector(item) === selectedItemKey}
-            onActivate={() => setSelectedItemKey(props.keySelector(item))}
-            onMoveNext={() => index < props.items.length && refs.current[index + 1].current?.focus()}
+            active={keySelector(item) === selectedItemKey}
+            onActivate={() => setSelectedItemKey(keySelector(item))}
+            onMoveNext={() => index < items.length && refs.current[index + 1].current?.focus()}
             onMovePrev={() => index > 0 && refs.current[index - 1].current?.focus()}
           >
-            {props.nameSelector?.(item) ?? (index + 1)}
+            {nameSelector?.(item) ?? (index + 1)}
           </TabButton>
         ))}
         <TabButton addButton
-          ref={refs.current[props.items.length]}
-          onActivate={() => props.onCreate?.()}
-          onMovePrev={() => props.items.length > 0 && refs.current[props.items.length - 1].current?.focus()}
+          ref={refs.current[items.length]}
+          onActivate={() => onCreate?.()}
+          onMovePrev={() => items.length > 0 && refs.current[items.length - 1].current?.focus()}
         >
           +追加
         </TabButton>
@@ -65,9 +74,9 @@ export const TabGroup = <T,>(props: {
 
       {/* タブのコンテンツ（選択中以外はhidden） */}
       {
-        props.items.map((item, index) => (
+        items.map((item, index) => (
           <div key={index} className={`flex-1 p-1 border ${BORDER_COLOR} bg-color-base ${item !== selectedItem && 'hidden'}`}>
-            {props.children?.({ item, index })}
+            {children?.({ item, index })}
           </div>
         ))
       }
@@ -94,7 +103,7 @@ const TabButton = forwardRefEx<HTMLLIElement, {
       onMoveNext?.()
       e.preventDefault()
     }
-  }, [onActivate])
+  }, [onActivate, onMoveNext, onMovePrev])
 
   const className = addButton
     ? `select-none inline-flex justify-center items-center px-1`

@@ -3,7 +3,7 @@ import { DropDownApi, TextInputBase } from "./TextInputBase"
 import { CustomComponentProps, CustomComponentRef, defineCustomComponent, normalize, useIMEOpened } from "../util"
 
 export const ComboBoxBase = defineCustomComponent(<T extends {}>(
-  props: CustomComponentProps<T, {
+  props2: CustomComponentProps<T, {
     options: T[]
     keySelector: (item: T) => string
     textSelector: (item: T) => string
@@ -11,83 +11,93 @@ export const ComboBoxBase = defineCustomComponent(<T extends {}>(
   }>,
   ref: React.ForwardedRef<CustomComponentRef<T>>
 ) => {
+  const {
+    options,
+    keySelector,
+    textSelector,
+    value,
+    onChange,
+    onBlur,
+    readOnly,
+    onKeywordChanged,
+  } = props2
 
   const dropdownRef = useRef<DropDownApi>(null)
 
   // フィルタリング
   const [keyword, setKeyword] = useState<string | undefined>(undefined) // フォーカスを当ててから何か入力された場合のみundefinedでなくなる
   useEffect(() => {
-  }, [props.options, keyword])
+  }, [options, keyword])
   const filtered = useMemo(() => {
-    if (keyword === undefined) return [...props.options]
+    if (keyword === undefined) return [...options]
     const normalized = normalize(keyword)
-    if (!normalized) return [...props.options]
-    return props.options.filter(item => props.textSelector(item).includes(normalized))
-  }, [props.options, keyword, props.textSelector])
+    if (!normalized) return [...options]
+    return options.filter(item => textSelector(item).includes(normalized))
+  }, [options, keyword, textSelector])
 
   // リストのカーソル移動
   const [highlighted, setHighlightItem] = useState('')
   const highlightAnyItem = useCallback(() => {
-    if (props.value) {
-      setHighlightItem(props.keySelector(props.value))
+    if (value) {
+      setHighlightItem(keySelector(value))
     } else if (filtered.length > 0) {
-      setHighlightItem(props.keySelector(filtered[0]))
+      setHighlightItem(keySelector(filtered[0]))
     } else {
       setHighlightItem('')
     }
-  }, [props.value, filtered, props.keySelector])
+  }, [value, filtered, keySelector])
   const highlightUpItem = useCallback(() => {
-    const currentIndex = filtered.findIndex(item => props.keySelector(item) === highlighted)
+    const currentIndex = filtered.findIndex(item => keySelector(item) === highlighted)
     if (currentIndex === -1) {
-      if (filtered.length > 0) setHighlightItem(props.keySelector(filtered[0]))
+      if (filtered.length > 0) setHighlightItem(keySelector(filtered[0]))
     } else if (currentIndex > 0) {
-      setHighlightItem(props.keySelector(filtered[currentIndex - 1]))
+      setHighlightItem(keySelector(filtered[currentIndex - 1]))
     }
-  }, [filtered, highlighted, props.keySelector])
+  }, [filtered, highlighted, keySelector])
   const highlightDownItem = useCallback(() => {
-    const currentIndex = filtered.findIndex(item => props.keySelector(item) === highlighted)
+    const currentIndex = filtered.findIndex(item => keySelector(item) === highlighted)
     if (currentIndex === -1) {
-      if (filtered.length > 0) setHighlightItem(props.keySelector(filtered[0]))
+      if (filtered.length > 0) setHighlightItem(keySelector(filtered[0]))
     } else if (currentIndex < (filtered.length - 1)) {
-      setHighlightItem(props.keySelector(filtered[currentIndex + 1]))
+      setHighlightItem(keySelector(filtered[currentIndex + 1]))
     }
-  }, [filtered, highlighted, props.keySelector])
+  }, [filtered, highlighted, keySelector])
 
   // 選択
   const selectItemByValue = useCallback((value: string | undefined) => {
-    const foundItem = props.options.find(item => props.keySelector(item) === value)
-    setHighlightItem(foundItem ? props.keySelector(foundItem) : '')
+    const foundItem = options.find(item => keySelector(item) === value)
+    setHighlightItem(foundItem ? keySelector(foundItem) : '')
     setKeyword(undefined)
-    props.onChange?.(foundItem)
-  }, [props.options, props.onChange, props.keySelector])
+    onChange?.(foundItem)
+  }, [options, onChange, keySelector])
 
   // 入力中のテキストに近い最も適当な要素を取得する
   const getHighlightedOrAnyItem = useCallback(() => {
     if (highlighted && dropdownRef.current?.isOpened) {
-      const found = filtered.find(item => props.keySelector(item) === highlighted)
+      const found = filtered.find(item => keySelector(item) === highlighted)
       if (found) return found
     }
-    if (keyword === undefined && props.value) return props.value
+    if (keyword === undefined && value) return value
     if (dropdownRef.current?.isOpened === false) return undefined
     if (keyword && normalize(keyword) === '') return undefined
     if (filtered.length > 0) return filtered[0]
     return undefined
-  }, [props.value, keyword, filtered, highlighted, props.keySelector])
+  }, [value, keyword, filtered, highlighted, keySelector])
 
   // events
   const onChangeKeyword = useCallback((value: string | undefined) => {
     dropdownRef.current?.open()
     setKeyword(value)
-    props.onKeywordChanged?.(value)
-  }, [props.onKeywordChanged])
+    onKeywordChanged?.(value)
+  }, [onKeywordChanged])
 
-  const onBlur: React.FocusEventHandler<HTMLInputElement> = useCallback(e => {
+  const handleBlur: React.FocusEventHandler<HTMLInputElement> = useCallback(e => {
     const anyItem = getHighlightedOrAnyItem()
-    props.onChange?.(anyItem)
-    props.onBlur?.(e)
+    onChange?.(anyItem)
+    onBlur?.(e)
     setKeyword(undefined)
-    setHighlightItem(anyItem ? props.keySelector(anyItem) : '')
-  }, [getHighlightedOrAnyItem, props.onChange, props.onBlur, props.keySelector])
+    setHighlightItem(anyItem ? keySelector(anyItem) : '')
+  }, [getHighlightedOrAnyItem, onChange, onBlur, keySelector])
 
   const [{ isImeOpen }] = useIMEOpened()
   const onKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useCallback(e => {
@@ -105,13 +115,13 @@ export const ComboBoxBase = defineCustomComponent(<T extends {}>(
     // ドロップダウン中のハイライトが当たっている要素の選択を確定する
     if (e.key === 'Enter' && !isImeOpen) {
       const anyItem = getHighlightedOrAnyItem()
-      props.onChange?.(anyItem)
+      onChange?.(anyItem)
       setKeyword(undefined)
       setHighlightItem('')
       dropdownRef.current?.close()
       e.preventDefault()
     }
-  }, [isImeOpen, getHighlightedOrAnyItem, highlightAnyItem, highlightUpItem, highlightDownItem, props.keySelector])
+  }, [isImeOpen, getHighlightedOrAnyItem, highlightAnyItem, highlightUpItem, highlightDownItem, onChange])
 
   const onClickItem: React.MouseEventHandler<HTMLLIElement> = useCallback(e => {
     selectItemByValue((e.target as HTMLLIElement).getAttribute('value') as string)
@@ -127,16 +137,16 @@ export const ComboBoxBase = defineCustomComponent(<T extends {}>(
 
   const displayText = useMemo(() => {
     if (keyword !== undefined) return keyword
-    if (props.value !== undefined) return props.textSelector(props.value)
+    if (value !== undefined) return textSelector(value)
     return ''
-  }, [keyword, props.value, props.textSelector])
+  }, [keyword, value, textSelector])
 
   return (
     <TextInputBase
       ref={textBaseRef}
-      readOnly={props.readOnly}
+      readOnly={readOnly}
       value={displayText}
-      onBlur={onBlur}
+      onBlur={handleBlur}
       onChange={onChangeKeyword}
       onKeyDown={onKeyDown}
       dropdownRef={dropdownRef}
@@ -147,12 +157,12 @@ export const ComboBoxBase = defineCustomComponent(<T extends {}>(
           )}
           {filtered.map(item => (
             <ListItem
-              key={props.keySelector(item)}
-              value={props.keySelector(item)}
-              active={props.keySelector(item) === highlighted}
+              key={keySelector(item)}
+              value={keySelector(item)}
+              active={keySelector(item) === highlighted}
               onClick={onClickItem}
             >
-              {props.textSelector(item)}
+              {textSelector(item)}
             </ListItem>
           ))}
         </ul>

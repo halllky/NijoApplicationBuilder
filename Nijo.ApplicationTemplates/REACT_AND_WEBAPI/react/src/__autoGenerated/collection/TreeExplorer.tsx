@@ -10,25 +10,35 @@ export type ExplorerArgs<T> = Tree.ToTreeArgs<T> & {
   className?: string
 }
 
-export const TreeExplorer = <T,>(props: ExplorerArgs<T>) => {
+export const TreeExplorer = <T,>({
+  data,
+  getId,
+  getLabel,
+  getParent,
+  getChildren,
+  className,
+}: ExplorerArgs<T>) => {
   const [filter, setFilter] = useState<string | undefined>('')
   const [expanded, dispatchExpand] = useReducer(expandCollapseReducer, undefined, () => new Set<string>())
 
+  const toTreeLogic = useMemo(() => ({
+    getId,
+    getChildren,
+    getParent,
+  }) as Tree.ToTreeArgs<T>, [getId, getChildren, getParent])
   const dataAsTree = useMemo(() => {
-    if (!props.data) return []
-    const flatten = Tree.flatten(Tree.toTree(props.data, props))
+    if (!data) return []
+    const flatten = Tree.flatten(Tree.toTree(data, toTreeLogic))
     let visible: typeof flatten
     if (filter) {
-      visible = flatten.filter(node => props
-        .getLabel(node.item)
-        .includes(filter))
+      visible = flatten.filter(node => getLabel(node.item).includes(filter))
     } else {
       visible = flatten.filter(node => Tree
         .getAncestors(node)
-        .every(a => expanded.has(props.getId(a.item))))
+        .every(a => expanded.has(getId(a.item))))
     }
     return visible
-  }, [props.data, expanded, filter])
+  }, [data, expanded, filter, getId, getLabel, toTreeLogic])
 
   const liRefs = Util.useRefArray<HTMLLIElement>(dataAsTree)
   const {
@@ -42,16 +52,16 @@ export const TreeExplorer = <T,>(props: ExplorerArgs<T>) => {
     handleKeyNavigation(e)
     if (e.key === ' ') {
       if (activeItemIndex !== undefined) {
-        const id = props.getId(dataAsTree[activeItemIndex].item)
+        const id = getId(dataAsTree[activeItemIndex].item)
         dispatchExpand(x => x.toggle(id))
         e.preventDefault()
       }
     }
-  }, [handleKeyNavigation, activeItemIndex, dataAsTree])
+  }, [handleKeyNavigation, activeItemIndex, dataAsTree, getId])
 
   return (
     <div
-      className={`flex flex-col select-none overflow-x-hidden outline-none ${props.className}`}
+      className={`flex flex-col select-none overflow-x-hidden outline-none ${className}`}
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
@@ -73,7 +83,7 @@ export const TreeExplorer = <T,>(props: ExplorerArgs<T>) => {
         {dataAsTree.map((node, ix) => (
           <li
             ref={liRefs.current[ix]}
-            key={props.getId(node.item)}
+            key={getId(node.item)}
             className={'flex items-center gap-1 '
               + (isSelected(ix) ? 'bg-color-selected' : '')}
             onClick={() => dispatchSelection(x => x.selectOne(ix))}
@@ -82,17 +92,17 @@ export const TreeExplorer = <T,>(props: ExplorerArgs<T>) => {
               <div style={{ width: node.depth * 20 }}></div>
             )}
             <Input.Button
-              icon={expanded.has(props.getId(node.item)) ? Icon.ChevronDownIcon : Icon.ChevronRightIcon}
+              icon={expanded.has(getId(node.item)) ? Icon.ChevronDownIcon : Icon.ChevronRightIcon}
               iconOnly small
               className={(node.children.length === 0 || filter)
                 ? 'invisible'
                 : undefined}
-              onClick={() => dispatchExpand(x => x.toggle(props.getId(node.item)))}
+              onClick={() => dispatchExpand(x => x.toggle(getId(node.item)))}
             >
               折りたたむ
             </Input.Button>
             <span className="flex-1 whitespace-nowrap overflow-x-hidden">
-              {props.getLabel(node.item)}
+              {getLabel(node.item)}
             </span>
           </li>
         ))}

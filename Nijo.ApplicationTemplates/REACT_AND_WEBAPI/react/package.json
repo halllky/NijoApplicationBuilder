@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "tsc": "tsc --noEmit",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint2": "eslint . --ext ts,tsx --no-eslintrc --config .eslintrc.deps-check.cjs",
     "preview": "vite preview"
   },
   "dependencies": {

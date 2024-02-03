@@ -6,6 +6,10 @@ export const TextareaBase = defineCustomComponent<string, {}, TextareaHTMLAttrib
   const {
     onChange,
     value,
+    readOnly,
+    onFocus,
+    rows,
+    className,
     ...rest
   } = props
 
@@ -16,10 +20,10 @@ export const TextareaBase = defineCustomComponent<string, {}, TextareaHTMLAttrib
     focus: () => textareaRef.current?.focus(),
   }), [])
 
-  const onFocus: React.FocusEventHandler<HTMLTextAreaElement> = useCallback(e => {
-    if (props.readOnly) textareaRef.current?.select()
-    props.onFocus?.(e)
-  }, [props.onFocus, props.readOnly])
+  const handleFocus: React.FocusEventHandler<HTMLTextAreaElement> = useCallback(e => {
+    if (readOnly) textareaRef.current?.select()
+    onFocus?.(e)
+  }, [onFocus, readOnly])
   const onTextChange: React.ChangeEventHandler<HTMLTextAreaElement> = useCallback(e => {
     onChange?.(e.target.value)
   }, [onChange])
@@ -29,13 +33,14 @@ export const TextareaBase = defineCustomComponent<string, {}, TextareaHTMLAttrib
       {...rest}
       ref={textareaRef}
       value={value ?? ''}
-      className={props.readOnly
-        ? `block w-full outline-none px-1 border border-color-4 bg-transparent cursor-default ${props.className}`
-        : `block w-full outline-none px-1 border border-color-5 bg-color-base  ${props.className}`}
+      className={readOnly
+        ? `block w-full outline-none px-1 border border-color-4 bg-transparent cursor-default ${className}`
+        : `block w-full outline-none px-1 border border-color-5 bg-color-base  ${className}`}
       autoComplete="off"
       spellCheck={false}
-      rows={props.rows || 3}
-      onFocus={onFocus}
+      rows={rows || 3}
+      readOnly={readOnly}
+      onFocus={handleFocus}
       onChange={onTextChange}
     />
   )

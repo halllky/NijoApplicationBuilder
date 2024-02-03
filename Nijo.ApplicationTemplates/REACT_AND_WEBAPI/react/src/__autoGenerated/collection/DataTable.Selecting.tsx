@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import * as RT from '@tanstack/react-table'
 import * as Tree from '../util'
 import { ROW_HEADER_ID, TABLE_ZINDEX } from './DataTable.Parts'
@@ -110,10 +110,56 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
     if (td && cell.id === selectionStart?.id) selectionStartTdRef.current = td
   }, [caretCell, selectionStart])
 
-  const ActiveCellBorder = useCallback((props: {
-    caretCell: typeof caretCell
+  const ActiveCellBorder = useMemo(() => {
+    return prepareActiveRangeSvg<T>(caretTdRef, selectionStartTdRef)
+  }, [])
+
+  const getSelectedRows = useCallback(() => {
+    if (!caretCell || !selectionStart) return []
+    const flatRows = api.getRowModel().flatRows
+    const ix1 = flatRows.indexOf(selectionStart.row)
+    const ix2 = flatRows.indexOf(caretCell.row)
+    const since = Math.min(ix1, ix2)
+    const until = Math.max(ix1, ix2)
+    return flatRows.slice(since, until + 1)
+  }, [api, caretCell, selectionStart])
+
+  const getSelectedIndexes = useCallback(() => {
+    if (!caretCell || !selectionStart) return []
+    const flatRows = api.getRowModel().flatRows
+    const ix1 = flatRows.indexOf(selectionStart.row)
+    const ix2 = flatRows.indexOf(caretCell.row)
+    const since = Math.min(ix1, ix2)
+    const until = Math.max(ix1, ix2)
+    return [...Array(until - since + 1)].map((_, i) => i + since)
+  }, [api, caretCell, selectionStart])
+
+  return {
+    caretCell,
+    selectObject,
+    handleSelectionKeyDown,
+    caretTdRefCallback,
+
+    ActiveCellBorder,
+    activeCellBorderProps: {
+      caretCell,
+      containsRowHeader,
+    },
+
+    getSelectedRows,
+    getSelectedIndexes,
+  }
+}
+
+
+function prepareActiveRangeSvg<T>(
+  caretTdRef: React.MutableRefObject<HTMLTableCellElement | undefined>,
+  selectionStartTdRef: React.MutableRefObject<HTMLTableCellElement | undefined>,
+) {
+  return ({ caretCell, containsRowHeader, api }: {
+    caretCell: RT.Cell<Tree.TreeNode<T>, unknown> | undefined
     containsRowHeader: boolean
-    api: typeof api
+    api: RT.Table<Tree.TreeNode<T>>
   }) => {
     const svgRef = useRef<SVGSVGElement>(null)
     const maskBlackRef = useRef<SVGRectElement>(null)
@@ -151,7 +197,7 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
       maskBlackRef.current.style.width = `${root.offsetWidth}px`
       maskBlackRef.current.style.height = `${root.offsetHeight}px`
 
-      svgRef.current.style.zIndex = props.containsRowHeader
+      svgRef.current.style.zIndex = containsRowHeader
         ? TABLE_ZINDEX.ROWHEADER_SELECTION.toString()
         : TABLE_ZINDEX.SELECTION.toString()
 
@@ -162,8 +208,12 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
       })
     }, [
       containsRowHeader,
-      props.caretCell,
+      caretCell,
+      // 列幅変更時に範囲を再計算するため必要な依存
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       api.getState().columnSizing,
+      // 行の折りたたみ変更時に範囲を再計算するため必要な依存
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       api.getState().expanded,
     ])
 
@@ -187,41 +237,5 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
         />
       </svg>
     )
-  }, [])
-
-  const getSelectedRows = useCallback(() => {
-    if (!caretCell || !selectionStart) return []
-    const flatRows = api.getRowModel().flatRows
-    const ix1 = flatRows.indexOf(selectionStart.row)
-    const ix2 = flatRows.indexOf(caretCell.row)
-    const since = Math.min(ix1, ix2)
-    const until = Math.max(ix1, ix2)
-    return flatRows.slice(since, until + 1)
-  }, [api, caretCell, selectionStart])
-
-  const getSelectedIndexes = useCallback(() => {
-    if (!caretCell || !selectionStart) return []
-    const flatRows = api.getRowModel().flatRows
-    const ix1 = flatRows.indexOf(selectionStart.row)
-    const ix2 = flatRows.indexOf(caretCell.row)
-    const since = Math.min(ix1, ix2)
-    const until = Math.max(ix1, ix2)
-    return [...Array(until - since + 1)].map((_, i) => i + since)
-  }, [api, caretCell, selectionStart])
-
-  return {
-    caretCell,
-    selectObject,
-    handleSelectionKeyDown,
-    caretTdRefCallback,
-
-    ActiveCellBorder,
-    activeCellBorderProps: {
-      caretCell,
-      containsRowHeader,
-    },
-
-    getSelectedRows,
-    getSelectedIndexes,
   }
 }

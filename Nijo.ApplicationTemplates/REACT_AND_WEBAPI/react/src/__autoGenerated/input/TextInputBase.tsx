@@ -17,7 +17,13 @@ export const TextInputBase = defineCustomComponent<string, {
     onValidate,
     dropdownRef,
     value,
+    readOnly,
+    placeholder,
+    className,
     onChange: onChangeFormattedText,
+    onFocus,
+    onBlur,
+    onKeyDown,
     ...rest
   } = props
 
@@ -57,13 +63,13 @@ export const TextInputBase = defineCustomComponent<string, {
     if (onValidate === undefined) onChangeFormattedText?.(e.target.value)
   }, [onValidate, onChangeFormattedText])
 
-  const onFocus: React.FocusEventHandler<HTMLInputElement> = useCallback(e => {
+  const handleFocus: React.FocusEventHandler<HTMLInputElement> = useCallback(e => {
     inputRef.current?.select()
-    props.onFocus?.(e)
-  }, [props.onFocus])
+    onFocus?.(e)
+  }, [onFocus])
 
   const divRef = useRef<HTMLDivElement>(null)
-  const onBlur: React.FocusEventHandler<HTMLInputElement> = useCallback(e => {
+  const handleBlur: React.FocusEventHandler<HTMLInputElement> = useCallback(e => {
     // フォーマットされた値を表示に反映
     const formatted = getFormatted(unFormatText)
     setUnFormatText(formatted)
@@ -74,10 +80,10 @@ export const TextInputBase = defineCustomComponent<string, {
     if (divRef.current && e.relatedTarget && !divRef.current.contains(e.relatedTarget)) {
       setOpen(false)
     }
-    props.onBlur?.(e)
-  }, [onChangeFormattedText, props.onBlur, getFormatted, unFormatText, onValidate])
+    onBlur?.(e)
+  }, [onChangeFormattedText, onBlur, getFormatted, unFormatText, onValidate])
 
-  const onKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useCallback(e => {
+  const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useCallback(e => {
     if (!open && e.altKey && e.key === 'ArrowDown') {
       setOpen(true)
       e.preventDefault()
@@ -89,8 +95,8 @@ export const TextInputBase = defineCustomComponent<string, {
     if (e.key === 'Enter') {
       e.preventDefault() // Enterキーでsubmitされるのを防ぐ
     }
-    props.onKeyDown?.(e)
-  }, [props.onKeyDown])
+    onKeyDown?.(e)
+  }, [onKeyDown, open])
 
   useImperativeHandle(ref, () => ({
     getValue: () => getFormatted(unFormatText),
@@ -100,9 +106,9 @@ export const TextInputBase = defineCustomComponent<string, {
   return (
     <div
       ref={divRef}
-      className={props.readOnly
-        ? `inline-flex relative ${props.className} border border-transparent`
-        : `inline-flex relative ${props.className} border border-color-5 bg-color-base text-color-12`}
+      className={readOnly
+        ? `inline-flex relative ${className} border border-transparent`
+        : `inline-flex relative ${className} border border-color-5 bg-color-base text-color-12`}
     >
       <input
         {...rest}
@@ -112,19 +118,20 @@ export const TextInputBase = defineCustomComponent<string, {
         className="outline-none flex-1 min-w-0 px-1 bg-transparent"
         spellCheck="false"
         autoComplete="off"
-        placeholder={props.readOnly ? undefined : props.placeholder}
-        onKeyDown={onKeyDown}
-        onFocus={onFocus}
-        onBlur={onBlur}
+        readOnly={readOnly}
+        placeholder={readOnly ? undefined : placeholder}
+        onKeyDown={handleKeyDown}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         onChange={onChange}
       />
-      {!props.readOnly && dropdownBody &&
+      {!readOnly && dropdownBody &&
         <ChevronUpDownIcon
           className="w-6 text-color-5 border-l border-color-5 cursor-pointer"
           onClick={onSideButtonClick}
         />}
 
-      {open && !props.readOnly && dropdownBody &&
+      {open && !readOnly && dropdownBody &&
         <Dropdown onClose={onClose}>
           {dropdownBody}
         </Dropdown>}
@@ -133,7 +140,7 @@ export const TextInputBase = defineCustomComponent<string, {
 })
 
 
-const Dropdown = (props: {
+const Dropdown = ({ onClose, children }: {
   onClose?: () => void
   children?: DropDownBody
 }) => {
@@ -151,23 +158,23 @@ const Dropdown = (props: {
     const handleClickOutside = (e: MouseEvent) => {
       if (!divRef.current) return
       if (divRef.current.contains(e.target as HTMLElement)) return
-      props.onClose?.()
+      onClose?.()
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [divRef, props.onClose])
+  }, [divRef, onClose])
 
   const onBlur: React.FocusEventHandler = useCallback(e => {
-    props.onClose?.()
-  }, [props.onClose])
+    onClose?.()
+  }, [onClose])
   const onKeyDown: React.KeyboardEventHandler = useCallback(e => {
     if (e.key === 'Escape') {
-      props.onClose?.()
+      onClose?.()
       e.preventDefault()
     }
-  }, [props.onClose])
+  }, [onClose])
 
   return (
     <div
@@ -176,7 +183,7 @@ const Dropdown = (props: {
       onBlur={onBlur}
       onKeyDown={onKeyDown}
     >
-      {props.children?.({ focusRef })}
+      {children?.({ focusRef })}
     </div>
   )
 }

@@ -21,7 +21,7 @@ export const ROW_HEADER_ID = '__tree_explorer_row_header__'
 
 export const getRowHeader = <T,>(
   helper: RT.ColumnHelper<Tree.TreeNode<T>>,
-  props: DataTableProps<T>
+  treeView: DataTableProps<T>['treeView']
 ): RT.ColumnDef<Tree.TreeNode<T>> => helper.display({
   id: ROW_HEADER_ID,
   header: api => (
@@ -45,7 +45,7 @@ export const getRowHeader = <T,>(
       </Input.Button>
 
       <span className="flex-1 whitespace-nowrap">
-        {props.treeView?.rowHeader(api.row.original.item)}
+        {treeView?.rowHeader(api.row.original.item)}
       </span>
     </div>
   ),

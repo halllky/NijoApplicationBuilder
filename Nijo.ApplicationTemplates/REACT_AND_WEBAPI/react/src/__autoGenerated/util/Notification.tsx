@@ -77,7 +77,7 @@ export const InlineMessageList = ({ type, name, className }: {
     if (type) arr = arr.filter(m => m.type === type)
     if (name) arr = arr.filter(m => m.name?.startsWith(name))
     return arr
-  }, [inline, name])
+  }, [inline, name, type])
 
   return (
     <div className={`flex flex-col ${className}`}>
@@ -126,7 +126,7 @@ export const Toast = ({ type, name, className }: {
     if (type) arr = arr.filter(m => m.type === type)
     if (name) arr = arr.filter(m => m.name?.startsWith(name))
     return arr
-  }, [toast, name])
+  }, [toast, name, type])
 
   return <>
     {filtered.map(msg => (
@@ -151,7 +151,7 @@ const ToastMessage = ({ msg, className }: {
       clearTimeout(timer1)
       clearTimeout(timer2)
     }
-  }, [])
+  }, [dispatch, msg])
 
   return (
     <div

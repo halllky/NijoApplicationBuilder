@@ -11,26 +11,30 @@ import { COLUMN_RESIZE_OPTION, useColumnResizing } from './DataTable.ColResize'
 export * from './DataTable.Public'
 
 export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: React.ForwardedRef<DataTableRef<T>>) => {
+  const {
+    data,
+    columns: propsColumns,
+    treeView,
+    className,
+  } = props
+
   // 行
   const dataAsTree = useMemo(() => {
-    if (!props.data) return []
-    return props.treeView
-      ? Tree.toTree(props.data, props.treeView)
-      // ツリー表示に関する設定が無い場合は親子関係のないフラットな配列にする
-      : Tree.toTree(props.data, undefined)
-  }, [props.data])
+    if (!data) return []
+    return Tree.toTree(data, treeView)
+  }, [data, treeView])
 
   // 列
   const columnHelper = useMemo(() => RT.createColumnHelper<Tree.TreeNode<T>>(), [])
   const columns = useMemo(() => {
-    const colDefs = props.treeView
-      ? ([getRowHeader(columnHelper, props), ...(props.columns ?? [])])
-      : (props.columns ?? [])
+    const colDefs = treeView
+      ? ([getRowHeader(columnHelper, treeView), ...(propsColumns ?? [])])
+      : (propsColumns ?? [])
     return colDefs.map(col => ({
       ...col,
       cell: col.cell ?? (DEFAULT_CELL as RT.ColumnDefTemplate<RT.CellContext<Util.TreeNode<T>, unknown>>),
     }))
-  }, [props.columns, props.treeView?.rowHeader])
+  }, [propsColumns, columnHelper, treeView])
 
   // 表
   const optoins: RT.TableOptions<Tree.TreeNode<T>> = useMemo(() => ({
@@ -78,7 +82,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   const handleFocus: React.FocusEventHandler<HTMLDivElement> = useCallback(() => {
     setIsActive(true)
     if (!caretCell) selectObject({ any: api })
-  }, [caretCell])
+  }, [api, caretCell, selectObject])
   const handleBlur: React.FocusEventHandler<HTMLDivElement> = useCallback(e => {
     // フォーカスの移動先がこの要素の中にある場合はfalseにしない
     if (!e.target.contains(e.relatedTarget)) setIsActive(false)
@@ -111,7 +115,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
     handleSelectionKeyDown(e)
     if (e.defaultPrevented) return
-  }, [caretCell, getSelectedRows, handleSelectionKeyDown])
+  }, [api, editing, caretCell, getSelectedRows, handleSelectionKeyDown, startEditing, cancelEditing])
 
   useImperativeHandle(ref, () => ({
     getSelectedItems: () => getSelectedRows().map(row => row.original.item),
@@ -120,7 +124,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
   return (
     <div ref={containerRef}
-      className={`outline-none overflow-auto select-none relative bg-color-2 border border-1 border-color-4 ${props.className}`}
+      className={`outline-none overflow-auto select-none relative bg-color-2 border border-1 border-color-4 ${className}`}
       onFocus={handleFocus}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}

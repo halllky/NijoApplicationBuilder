@@ -125,7 +125,7 @@ export const useListSelection = <T extends HTMLElement = HTMLElement>(arr: any[]
       elementRefs?.current[prevIndex].current?.scrollIntoView({ block: 'nearest' })
       e.preventDefault()
     }
-  }, [cursor, arr])
+  }, [cursor, arr, elementRefs])
 
   return {
     activeItemIndex: cursor,

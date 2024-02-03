@@ -50,7 +50,7 @@ export const ServerSettingScreen = () => {
       }
       dispatchMsg(msg => msg.info('DBを再作成しました。'))
     }
-  }, [post, withDummyData, genereateDummyData])
+  }, [post, withDummyData, genereateDummyData, dispatchMsg])
 
   return (
     <form className="page-content-root" onSubmit={handleSubmit(save)}>

@@ -8,6 +8,7 @@ export const ToggleBase = defineCustomComponent<boolean>((props, ref) => {
     children,
     onChange: onChangeEx,
     value: valueEx,
+    readOnly,
     ...rest
   } = props
 
@@ -17,16 +18,14 @@ export const ToggleBase = defineCustomComponent<boolean>((props, ref) => {
     focus: () => inputRef.current?.focus(),
   }), [])
 
-
   const forceRendering = useForceRendering()
   const emitChange = useCallback((checked: boolean) => {
     if (!inputRef.current) return
-    if (props.readOnly) return
+    if (readOnly) return
     inputRef.current.checked = checked
-    props.onChange?.(inputRef.current.checked)
     onChangeEx?.(checked)
     forceRendering()
-  }, [props.onChange, props.readOnly, onChangeEx, forceRendering])
+  }, [readOnly, onChangeEx, forceRendering])
 
   const onChange: React.ChangeEventHandler<HTMLInputElement> = useCallback(e => {
     emitChange(e.target.checked)
@@ -37,7 +36,7 @@ export const ToggleBase = defineCustomComponent<boolean>((props, ref) => {
       emitChange(!inputRef.current?.checked)
       e.preventDefault()
     }
-  }, [emitChange, inputRef.current?.checked])
+  }, [emitChange])
 
   return (
     <label className="relative inline-flex justify-center items-center focus-within:outline outline-1">
@@ -54,6 +53,7 @@ export const ToggleBase = defineCustomComponent<boolean>((props, ref) => {
         className={`opacity-0 absolute top-0 left-0 right-0 bottom-0
           ${inputRef.current?.readOnly ? 'hidden' : ''}`}
         checked={valueEx}
+        readOnly={readOnly}
         onChange={onChange}
         onKeyDown={onKeyDown}
       />
@@ -73,68 +73,77 @@ export const RadioGroupBase = defineCustomComponent(<T extends {}>(
   }>,
   ref: React.ForwardedRef<CustomComponentRef<T>>
 ) => {
+  const {
+    options,
+    keySelector,
+    textSelector,
+    value,
+    onChange,
+    name,
+    readOnly,
+  } = props
 
   // 選択
   const setItem = useCallback((value: string | undefined) => {
-    const found = props.options.find(item => props.keySelector(item) === value)
-    props.onChange?.(found)
-  }, [props.options, props.keySelector])
+    const found = options.find(item => keySelector(item) === value)
+    onChange?.(found)
+  }, [options, keySelector, onChange])
 
   // リスト選択
   const liRefs = useRef<React.RefObject<HTMLLIElement>[]>([])
-  for (let i = 0; i < props.options.length; i++) {
+  for (let i = 0; i < options.length; i++) {
     liRefs.current[i] = createRef()
   }
 
   // イベント
-  const onChange: React.ChangeEventHandler<HTMLInputElement> = useCallback(e => {
+  const handleChange: React.ChangeEventHandler<HTMLInputElement> = useCallback(e => {
     setItem(e.target.value)
   }, [setItem])
   const onKeyDown = useCallback((e: React.KeyboardEvent, item: T, index: number) => {
     if (e.key === 'Enter' || e.key === ' ') {
-      props.onChange?.(item)
+      onChange?.(item)
       e.preventDefault()
     } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
       if (index > 0) liRefs.current[index - 1].current?.focus()
       e.preventDefault()
     } else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
-      if (index < props.options.length - 1) liRefs.current[index + 1].current?.focus()
+      if (index < options.length - 1) liRefs.current[index + 1].current?.focus()
       e.preventDefault()
     }
-  }, [props.options, props.onChange])
+  }, [options, onChange])
 
   useImperativeHandle(ref, () => ({
-    getValue: () => props.value,
+    getValue: () => value,
     focus: () => liRefs.current[0]?.current?.focus(),
-  }), [props.value, setItem])
+  }), [value])
 
-  if (props.readOnly) return (
-    <TextInputBase value={props.value ? props.textSelector(props.value) : ''} readOnly />
+  if (readOnly) return (
+    <TextInputBase value={value ? textSelector(value) : ''} readOnly />
   )
 
   return (
     <ul className="flex flex-wrap gap-x-2 gap-y-1">
-      {props.options.map((item, index) => (
+      {options.map((item, index) => (
         <li
           ref={liRefs.current[index]}
-          key={props.keySelector(item)}
+          key={keySelector(item)}
           className={`inline-flex items-center gap-1
             cursor-pointer select-none
             focus-within:outline outline-1`}
           tabIndex={0}
-          onClick={() => setItem(props.keySelector(item))}
+          onClick={() => setItem(keySelector(item))}
           onKeyDown={e => onKeyDown(e, item, index)}
         >
           <input
             type="radio"
             className="hidden"
-            name={props.name}
-            value={props.keySelector(item)}
-            checked={!!props.value && props.keySelector(item) === props.keySelector(props.value)}
-            onChange={onChange}
+            name={name}
+            value={keySelector(item)}
+            checked={!!value && keySelector(item) === keySelector(value)}
+            onChange={handleChange}
           />
-          <RadioButton checked={!!props.value && props.keySelector(item) === props.keySelector(props.value)} />
-          {props.textSelector(item)}
+          <RadioButton checked={!!value && keySelector(item) === keySelector(value)} />
+          {textSelector(item)}
         </li>
       ))}
     </ul>

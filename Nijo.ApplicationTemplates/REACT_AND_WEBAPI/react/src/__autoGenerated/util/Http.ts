@@ -51,7 +51,7 @@ export const useHttpRequest = () => {
       dispatchMsg(msg => msg.error(`${error}(${url})`))
       return { ok: false }
     }
-  }, [])
+  }, [dispatchMsg])
 
   const get = useCallback(async <T = object>(url: string, param: { [key: string]: unknown } = {}): Promise<HttpSendResult<T>> => {
     if (!apiDomain) {
@@ -70,7 +70,7 @@ export const useHttpRequest = () => {
     }
     const queryString = query.toString()
     return await sendHttpRequest([queryString ? `${apiDomain}${url}?${queryString}` : `${apiDomain}${url}`])
-  }, [apiDomain, sendHttpRequest])
+  }, [apiDomain, sendHttpRequest, dispatchMsg])
 
   const post = useCallback(async <T>(url: string, data: object = {}): Promise<HttpSendResult<T>> => {
     if (!apiDomain) {
@@ -82,7 +82,7 @@ export const useHttpRequest = () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     }])
-  }, [apiDomain])
+  }, [apiDomain, sendHttpRequest, dispatchMsg])
 
   return { get, post }
 }

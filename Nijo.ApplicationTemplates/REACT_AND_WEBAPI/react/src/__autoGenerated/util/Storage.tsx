@@ -63,7 +63,7 @@ export const defineStorageContext = <T,>(handler: LocalStorageHandler<T>) => {
         dispatchMsg(msg => msg.info('保存しました。'))
       }
       dispatchCache(state => state.setValue(value))
-    }, [])
+    }, [dispatchMsg, dispatchCache])
 
     return { data: cache, save }
   }

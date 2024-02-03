@@ -21,6 +21,10 @@ export const useColumnResizing = <T,>(api: RT.Table<Tree.TreeNode<T>>) => {
       colSizes[`--col-${header.column.id}-size`] = header.column.getSize()
     }
     return colSizes
+
+    // @tanstack/react-table の仕様上、
+    // columnSizingInfoオブジェクトの参照が変わったタイミングでの列幅再計算が妥当
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api.getState().columnSizingInfo])
 
   const getColWidth = useCallback((header: RT.Header<Tree.TreeNode<T>, unknown>) => {
