@@ -53,11 +53,11 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
   const {
     selectObject,
-    caretCell,
     clearSelection,
     handleSelectionKeyDown,
     caretTdRefCallback,
     ActiveCellBorder,
+    activeCellBorderProps,
     getSelectedRows,
     getSelectedIndexes,
   } = useSelection<T>(editing, api)
@@ -122,10 +122,10 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
             {api.getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id}>
 
-                {headerGroup.headers.map((header, colIx) => (
+                {headerGroup.headers.map(header => (
                   <th key={header.id}
                     className="relative overflow-hidden p-0 text-start bg-color-3"
-                    style={{ width: getColWidth(header), ...getThStickeyStyle(header, colIx) }}>
+                    style={{ width: getColWidth(header), ...getThStickeyStyle(header) }}>
                     {!header.isPlaceholder && RT.flexRender(
                       header.column.columnDef.header,
                       header.getContext())}
@@ -144,11 +144,11 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
                 key={row.id}
                 className="leading-tight"
               >
-                {row.getVisibleCells().map((cell, colIx) => (
+                {row.getVisibleCells().map(cell => (
                   <td key={cell.id}
                     ref={td => tdRefCallback(td, cell)}
                     className="relative overflow-hidden p-0 border-r border-1 border-color-3"
-                    style={getTdStickeyStyle(cell, colIx)}
+                    style={getTdStickeyStyle(cell)}
                     onClick={e => selectObject({ cell }, e)}
                     onDoubleClick={() => startEditing(cell)}
                   >
@@ -164,7 +164,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
         </table>
 
         {!editing && (
-          <ActiveCellBorder caretCell={caretCell} api={api} />
+          <ActiveCellBorder api={api} {...activeCellBorderProps} />
         )}
         {editing && (
           <CellEditor />
@@ -176,16 +176,16 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
 // -----------------------------------------------
 // 行列ヘッダ固定
-const getThStickeyStyle = (header: RT.Header<any, unknown>, colIndex: number): React.CSSProperties => ({
+const getThStickeyStyle = (header: RT.Header<any, unknown>): React.CSSProperties => ({
   position: 'sticky',
   top: 0,
   left: header.column.id === ROW_HEADER_ID ? 0 : undefined,
-  zIndex: TABLE_ZINDEX.BASE_TH - colIndex,
+  zIndex: header.column.id === ROW_HEADER_ID ? TABLE_ZINDEX.ROWHEADER_THEAD : TABLE_ZINDEX.THEAD,
 })
-const getTdStickeyStyle = (cell: RT.Cell<any, unknown>, colIndex: number): React.CSSProperties => ({
+const getTdStickeyStyle = (cell: RT.Cell<any, unknown>): React.CSSProperties => ({
   position: cell.column.id === ROW_HEADER_ID ? 'sticky' : undefined,
   left: cell.column.id === ROW_HEADER_ID ? 0 : undefined,
-  zIndex: TABLE_ZINDEX.BASE_TD - colIndex,
+  zIndex: cell.column.id === ROW_HEADER_ID ? TABLE_ZINDEX.ROWHEADER : undefined,
 })
 
 // -----------------------------------------------

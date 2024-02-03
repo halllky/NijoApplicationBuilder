@@ -6,6 +6,7 @@ import { ROW_HEADER_ID, TABLE_ZINDEX } from './DataTable.Parts'
 export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T>>) => {
   const [caretCell, setCaretCell] = useState<RT.Cell<Tree.TreeNode<T>, unknown> | undefined>()
   const [selectionStart, setSelectionStart] = useState<RT.Cell<Tree.TreeNode<T>, unknown> | undefined>()
+  const [containsRowHeader, setContainsRowHeader] = useState(false)
   const caretTdRef = useRef<HTMLTableCellElement>()
   const selectionStartTdRef = useRef<HTMLTableCellElement>()
 
@@ -13,6 +14,7 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
     = { all: true }
     | { all?: undefined, row: RT.Row<Tree.TreeNode<T>>, cell?: undefined }
     | { all?: undefined, row?: undefined, cell: RT.Cell<Tree.TreeNode<T>, unknown> }
+
   const selectObject = useCallback((obj: SelectTarget, e: { shiftKey: boolean }) => {
     if (obj.all) {
       // 全選択
@@ -25,16 +27,20 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
       const bottomRightCell = lastRowVisibleCells?.[lastRowVisibleCells.length - 1]
       setCaretCell(topLeftCell)
       setSelectionStart(bottomRightCell)
+      setContainsRowHeader(true)
 
     } else if (e.shiftKey && selectionStart) {
       // 範囲選択
       if (obj.row) {
         setCaretCell(obj.row.getVisibleCells()[0])
+        setContainsRowHeader(true)
       } else if (obj.cell.column.id === ROW_HEADER_ID) {
         // 行ヘッダが選択された場合は行全体の選択に読み替え
         setCaretCell(obj.cell.row.getVisibleCells()[0])
+        setContainsRowHeader(true)
       } else {
         setCaretCell(obj.cell)
+        setContainsRowHeader(false)
       }
 
     } else {
@@ -44,6 +50,7 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
         if (visibleCells.length === 0) return
         setCaretCell(visibleCells[0])
         setSelectionStart(visibleCells[visibleCells.length - 1])
+        setContainsRowHeader(true)
 
       } else if (obj.cell.column.id === ROW_HEADER_ID) {
         // 行ヘッダが選択された場合は行全体の選択に読み替え
@@ -51,10 +58,12 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
         if (visibleCells.length === 0) return
         setCaretCell(visibleCells[0])
         setSelectionStart(visibleCells[visibleCells.length - 1])
+        setContainsRowHeader(true)
 
       } else {
         setCaretCell(obj.cell)
         setSelectionStart(obj.cell)
+        setContainsRowHeader(false)
       }
     }
   }, [api, selectionStart])
@@ -62,6 +71,7 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
   const clearSelection = useCallback(() => {
     setCaretCell(undefined)
     setSelectionStart(undefined)
+    setContainsRowHeader(false)
     caretTdRef.current = undefined
     selectionStartTdRef.current = undefined
   }, [api])
@@ -125,6 +135,7 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
 
   const ActiveCellBorder = useCallback((props: {
     caretCell: typeof caretCell
+    containsRowHeader: boolean
     api: typeof api
   }) => {
     const divRef = useRef<HTMLDivElement>(null)
@@ -151,13 +162,16 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
       divRef.current.style.width = `${right - left}px`
       divRef.current.style.height = `${bottom - top}px`
 
-      divRef.current.style.zIndex = TABLE_ZINDEX.CELLEDITOR.toString()
+      divRef.current.style.zIndex = props.containsRowHeader
+        ? TABLE_ZINDEX.ROWHEADER_SELECTION.toString()
+        : TABLE_ZINDEX.SELECTION.toString()
+
       divRef.current.scrollIntoView({
         behavior: 'instant',
         block: 'nearest',
         inline: 'nearest',
       })
-    }, [props.caretCell, api.getState().columnSizing, api.getState().expanded])
+    }, [containsRowHeader, props.caretCell, api.getState().columnSizing, api.getState().expanded])
 
     return (
       <div ref={divRef}
@@ -188,11 +202,14 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
 
   return {
     selectObject,
-    caretCell,
     clearSelection,
     handleSelectionKeyDown,
     caretTdRefCallback,
     ActiveCellBorder,
+    activeCellBorderProps: {
+      caretCell,
+      containsRowHeader,
+    },
     getSelectedRows,
     getSelectedIndexes,
   }

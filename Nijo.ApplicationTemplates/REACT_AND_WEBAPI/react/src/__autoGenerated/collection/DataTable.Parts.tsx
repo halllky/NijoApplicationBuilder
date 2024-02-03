@@ -6,12 +6,13 @@ import { DataTableProps } from './DataTable.Public'
 
 // --------------------------------------------
 // z-index
-
-// 列数が4000列を超える場合は表示がおかしくなるが普通はそんなに無いだろう
 export const TABLE_ZINDEX = {
-  CELLEDITOR: 8001 as const,
-  BASE_TH: 8000 as const,
-  BASE_TD: 4000 as const,
+  CELLEDITOR: 30 as const,
+  ROWHEADER_THEAD: 21 as const,
+  THEAD: 20 as const,
+  ROWHEADER_SELECTION: 11 as const,
+  ROWHEADER: 10 as const,
+  SELECTION: 1 as const,
 }
 
 // --------------------------------------------
@@ -33,7 +34,7 @@ export const getRowHeader = <T,>(
     </div>
   ),
   cell: api => (
-    <div className="relative inline-flex gap-1 w-full bg-color-0"
+    <div className="relative flex gap-1 w-full bg-color-0"
       style={{ paddingLeft: api.row.depth * 24 }}>
       <Input.Button
         iconOnly small
