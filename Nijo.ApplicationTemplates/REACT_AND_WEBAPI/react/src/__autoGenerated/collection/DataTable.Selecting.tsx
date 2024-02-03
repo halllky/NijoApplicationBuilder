@@ -207,7 +207,7 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
     const since = Math.min(ix1, ix2)
     const until = Math.max(ix1, ix2)
     return [...Array(until - since + 1)].map((_, i) => i + since)
-  }, [api])
+  }, [api, caretCell, selectionStart])
 
   return {
     caretCell,

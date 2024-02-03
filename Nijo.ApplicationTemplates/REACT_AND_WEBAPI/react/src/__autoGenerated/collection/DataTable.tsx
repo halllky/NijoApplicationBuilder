@@ -120,14 +120,14 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
   return (
     <div ref={containerRef}
-      className={`outline-none overflow-auto select-none relative bg-color-2 ${props.className}`}
+      className={`outline-none overflow-auto select-none relative bg-color-2 border border-1 border-color-4 ${props.className}`}
       onFocus={handleFocus}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
       tabIndex={0}
     >
       <table
-        className="table-fixed border-separate border-spacing-0"
+        className="table-fixed border-separate border-spacing-0 border-b border-1 border-color-4"
         style={{ ...columnSizeVars, width: api.getTotalSize() }}
       >
         {/* ヘッダ */}
@@ -160,7 +160,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
               {row.getVisibleCells().map(cell => (
                 <td key={cell.id}
                   ref={td => tdRefCallback(td, cell)}
-                  className="relative overflow-hidden p-0 border-r border-1 border-color-3"
+                  className="relative overflow-hidden p-0 border-r border-1 border-color-4"
                   style={getTdStickeyStyle(cell)}
                   onMouseDown={e => selectObject({ cell, shiftKey: e.shiftKey })}
                   onDoubleClick={() => startEditing(cell)}
