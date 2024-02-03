@@ -119,9 +119,15 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
     const svgRef = useRef<SVGSVGElement>(null)
     const maskBlackRef = useRef<SVGRectElement>(null)
     useEffect(() => {
+      if (!svgRef.current || !maskBlackRef.current) return
+
       const head = caretTdRef.current
       const root = selectionStartTdRef.current
-      if (!head || !root || !svgRef.current || !maskBlackRef.current) return
+      if (!head || !root) {
+        svgRef.current.style.display = 'none'
+        return
+      }
+      svgRef.current.style.display = ''
 
       const left = Math.min(
         head.offsetLeft,
