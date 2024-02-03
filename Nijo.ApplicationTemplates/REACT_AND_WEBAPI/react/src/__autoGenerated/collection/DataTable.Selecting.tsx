@@ -11,14 +11,13 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
   const selectionStartTdRef = useRef<HTMLTableCellElement>()
 
   type SelectTarget
-    = { all: true }
-    | { all?: undefined, row: RT.Row<Tree.TreeNode<T>>, cell?: undefined }
-    | { all?: undefined, row?: undefined, cell: RT.Cell<Tree.TreeNode<T>, unknown> }
+    = { all: RT.Table<Tree.TreeNode<T>> }
+    | { all?: undefined, cell: RT.Cell<Tree.TreeNode<T>, unknown> }
 
   const selectObject = useCallback((obj: SelectTarget, e: { shiftKey: boolean }) => {
     if (obj.all) {
       // 全選択
-      const flatRows = api.getRowModel().flatRows
+      const flatRows = obj.all.getRowModel().flatRows
       const firstRow = flatRows[0]
       const lastRow = flatRows[flatRows.length - 1]
       const firstRowVisibleCells = firstRow?.getVisibleCells()
@@ -29,44 +28,21 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
       setSelectionStart(bottomRightCell)
       setContainsRowHeader(true)
 
-    } else if (e.shiftKey && selectionStart) {
-      // 範囲選択
-      if (obj.row) {
-        setCaretCell(obj.row.getVisibleCells()[0])
-        setContainsRowHeader(true)
-      } else if (obj.cell.column.id === ROW_HEADER_ID) {
-        // 行ヘッダが選択された場合は行全体の選択に読み替え
-        setCaretCell(obj.cell.row.getVisibleCells()[0])
-        setContainsRowHeader(true)
-      } else {
-        setCaretCell(obj.cell)
-        setContainsRowHeader(false)
-      }
+    } else if (obj.cell.column.id === ROW_HEADER_ID) {
+      // シングル選択（行ヘッダが選択された場合）
+      const visibleCells = obj.cell.row.getVisibleCells()
+      if (visibleCells.length === 0) return
+      setCaretCell(visibleCells[0])
+      if (!e.shiftKey) setSelectionStart(visibleCells[visibleCells.length - 1])
+      setContainsRowHeader(true)
 
     } else {
-      // シングル選択。引数のrowのみが選択されている状態にする
-      if (obj.row) {
-        const visibleCells = obj.row.getVisibleCells()
-        if (visibleCells.length === 0) return
-        setCaretCell(visibleCells[0])
-        setSelectionStart(visibleCells[visibleCells.length - 1])
-        setContainsRowHeader(true)
-
-      } else if (obj.cell.column.id === ROW_HEADER_ID) {
-        // 行ヘッダが選択された場合は行全体の選択に読み替え
-        const visibleCells = obj.cell.row.getVisibleCells()
-        if (visibleCells.length === 0) return
-        setCaretCell(visibleCells[0])
-        setSelectionStart(visibleCells[visibleCells.length - 1])
-        setContainsRowHeader(true)
-
-      } else {
-        setCaretCell(obj.cell)
-        setSelectionStart(obj.cell)
-        setContainsRowHeader(false)
-      }
+      // シングル選択
+      setCaretCell(obj.cell)
+      if (!e.shiftKey) setSelectionStart(obj.cell)
+      setContainsRowHeader(false)
     }
-  }, [api, selectionStart])
+  }, [])
 
   const clearSelection = useCallback(() => {
     setCaretCell(undefined)
@@ -74,19 +50,20 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
     setContainsRowHeader(false)
     caretTdRef.current = undefined
     selectionStartTdRef.current = undefined
-  }, [api])
+  }, [])
 
   const handleSelectionKeyDown: React.KeyboardEventHandler<HTMLElement> = useCallback(e => {
     if (editing) return
     if (e.ctrlKey && e.key === 'a') {
-      selectObject({ all: true }, e)
+      selectObject({ all: api }, e)
       e.preventDefault()
 
     } else if (!e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
       const flatRows = api.getRowModel().flatRows
       if (!caretCell) {
         // 未選択の状態なので先頭行を選択
-        if (flatRows.length >= 1) selectObject({ row: flatRows[0] }, e)
+        const cell = flatRows[0]?.getAllCells()?.[0]
+        if (cell) selectObject({ cell }, e)
         e.preventDefault()
         return
       }
@@ -110,7 +87,8 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
       const flatRows = api.getRowModel().flatRows
       if (!caretCell) {
         // 未選択の状態なので先頭行を選択
-        if (flatRows.length >= 1) selectObject({ row: flatRows[0] }, e)
+        const cell = flatRows[0]?.getAllCells()?.[0]
+        if (cell) selectObject({ cell }, e)
         e.preventDefault()
         return
       }
