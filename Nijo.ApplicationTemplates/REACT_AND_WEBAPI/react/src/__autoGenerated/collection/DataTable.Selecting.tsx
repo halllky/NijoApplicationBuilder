@@ -141,8 +141,8 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
       svgRef.current.style.width = `${right - left}px`
       svgRef.current.style.height = `${bottom - top}px`
 
-      maskBlackRef.current.setAttribute('x', `${root.offsetLeft - left}px`)
-      maskBlackRef.current.setAttribute('y', `${root.offsetTop - top}px`)
+      maskBlackRef.current.setAttribute('x', `${root.offsetLeft - left - 3}px`) // 3はボーダーの分
+      maskBlackRef.current.setAttribute('y', `${root.offsetTop - top - 3}px`) // 3はボーダーの分
       maskBlackRef.current.style.width = `${root.offsetWidth}px`
       maskBlackRef.current.style.height = `${root.offsetHeight}px`
 
