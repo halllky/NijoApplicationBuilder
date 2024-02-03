@@ -149,7 +149,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
                     ref={td => tdRefCallback(td, cell)}
                     className="relative overflow-hidden p-0 border-r border-1 border-color-3"
                     style={getTdStickeyStyle(cell)}
-                    onClick={e => selectObject({ cell }, e)}
+                    onMouseDown={e => selectObject({ cell }, e)}
                     onDoubleClick={() => startEditing(cell)}
                   >
                     {RT.flexRender(

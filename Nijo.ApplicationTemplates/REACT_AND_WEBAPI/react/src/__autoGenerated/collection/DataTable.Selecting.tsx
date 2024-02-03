@@ -166,16 +166,23 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
         ? TABLE_ZINDEX.ROWHEADER_SELECTION.toString()
         : TABLE_ZINDEX.SELECTION.toString()
 
-      divRef.current.scrollIntoView({
-        behavior: 'instant',
-        block: 'nearest',
-        inline: 'nearest',
-      })
-    }, [containsRowHeader, props.caretCell, api.getState().columnSizing, api.getState().expanded])
+      setTimeout(() => {
+        divRef.current?.scrollIntoView({
+          behavior: 'instant',
+          block: 'nearest',
+          inline: 'nearest',
+        })
+      }, 100) // duration-100しているので100ms後の位置でスクロールさせる
+    }, [
+      containsRowHeader,
+      props.caretCell,
+      api.getState().columnSizing,
+      api.getState().expanded,
+    ])
 
     return (
       <div ref={divRef}
-        className="absolute pointer-events-none outline outline-2 outline-offset-[-2px] bg-color-selected"
+        className="absolute pointer-events-none duration-100 outline outline-2 outline-offset-[-2px] bg-color-selected"
       ></div>
     )
   }, [])
