@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import * as RT from '@tanstack/react-table'
 import * as Util from '../util'
 import * as Tree from '../util'
@@ -48,6 +48,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     startEditing,
     cancelEditing,
     CellEditor,
+    cellEditorProps,
     editingTdRefCallback,
   } = useCellEditing<T>(props)
 
@@ -79,7 +80,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     if (!caretCell) selectObject({ any: api })
   }, [caretCell])
   const handleBlur: React.FocusEventHandler<HTMLDivElement> = useCallback(e => {
-    // フォーカスの移動先がこの要素の中にある場合(ex: props.children)はfalseにしない
+    // フォーカスの移動先がこの要素の中にある場合はfalseにしない
     if (!e.target.contains(e.relatedTarget)) setIsActive(false)
   }, [])
 
@@ -100,7 +101,10 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       e.preventDefault()
       return
     } else if (e.key === 'F2' && !editing && caretCell) {
-      startEditing(caretCell)
+      // caretCellは更新前の古いセルなので最新の配列から検索しなおす TODO:caretCellのidだけをstateにもつようにする
+      const row = api.getRow(caretCell.row.id)
+      const cell = row.getAllCells().find(x => x.id === caretCell.id)
+      if (cell) startEditing(cell)
       e.preventDefault()
       return
     }
@@ -116,75 +120,68 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
   return (
     <div ref={containerRef}
-      className={`flex flex-col outline-none overflow-hidden ${props.className}`}
+      className={`outline-none overflow-auto select-none relative bg-color-2 ${props.className}`}
       onFocus={handleFocus}
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
       tabIndex={0}
     >
-      {props.children && (
-        <div className="flex gap-1 justify-start items-center">
-          {props.children}
-        </div>
+      <table
+        className="table-fixed border-separate border-spacing-0"
+        style={{ ...columnSizeVars, width: api.getTotalSize() }}
+      >
+        {/* ヘッダ */}
+        <thead>
+          {api.getHeaderGroups().map(headerGroup => (
+            <tr key={headerGroup.id}>
+
+              {headerGroup.headers.map(header => (
+                <th key={header.id}
+                  className="relative overflow-hidden px-1 py-0 text-start bg-color-3"
+                  style={{ width: getColWidth(header), ...getThStickeyStyle(header) }}>
+                  {!header.isPlaceholder && RT.flexRender(
+                    header.column.columnDef.header,
+                    header.getContext())}
+                  <ResizeHandler header={header} />
+                </th>
+              ))}
+
+            </tr>
+          ))}
+        </thead>
+
+        {/* ボディ */}
+        <tbody className="bg-color-0">
+          {api.getRowModel().flatRows.filter(row => row.getIsAllParentsExpanded()).map(row => (
+            <tr
+              key={row.id}
+              className="leading-tight"
+            >
+              {row.getVisibleCells().map(cell => (
+                <td key={cell.id}
+                  ref={td => tdRefCallback(td, cell)}
+                  className="relative overflow-hidden p-0 border-r border-1 border-color-3"
+                  style={getTdStickeyStyle(cell)}
+                  onMouseDown={e => selectObject({ cell, shiftKey: e.shiftKey })}
+                  onDoubleClick={() => startEditing(cell)}
+                >
+                  {RT.flexRender(
+                    cell.column.columnDef.cell,
+                    cell.getContext())}
+                </td>
+              ))}
+
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {isActive && !editing && (
+        <ActiveCellBorder api={api} {...activeCellBorderProps} />
       )}
-      <div className="flex-1 overflow-auto select-none relative border border-1 border-color-4 bg-color-2">
-        <table
-          className="table-fixed border-separate border-spacing-0"
-          style={{ ...columnSizeVars, width: api.getTotalSize() }}
-        >
-          {/* ヘッダ */}
-          <thead>
-            {api.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id}>
-
-                {headerGroup.headers.map(header => (
-                  <th key={header.id}
-                    className="relative overflow-hidden px-1 py-0 text-start bg-color-3"
-                    style={{ width: getColWidth(header), ...getThStickeyStyle(header) }}>
-                    {!header.isPlaceholder && RT.flexRender(
-                      header.column.columnDef.header,
-                      header.getContext())}
-                    <ResizeHandler header={header} />
-                  </th>
-                ))}
-
-              </tr>
-            ))}
-          </thead>
-
-          {/* ボディ */}
-          <tbody className="bg-color-0">
-            {api.getRowModel().flatRows.filter(row => row.getIsAllParentsExpanded()).map(row => (
-              <tr
-                key={row.id}
-                className="leading-tight"
-              >
-                {row.getVisibleCells().map(cell => (
-                  <td key={cell.id}
-                    ref={td => tdRefCallback(td, cell)}
-                    className="relative overflow-hidden p-0 border-r border-1 border-color-3"
-                    style={getTdStickeyStyle(cell)}
-                    onMouseDown={e => selectObject({ cell, shiftKey: e.shiftKey })}
-                    onDoubleClick={() => startEditing(cell)}
-                  >
-                    {RT.flexRender(
-                      cell.column.columnDef.cell,
-                      cell.getContext())}
-                  </td>
-                ))}
-
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {isActive && !editing && (
-          <ActiveCellBorder api={api} {...activeCellBorderProps} />
-        )}
-        {editing && (
-          <CellEditor onEndEditing={onEndEditing} />
-        )}
-      </div>
+      {editing && (
+        <CellEditor onEndEditing={onEndEditing} {...cellEditorProps} />
+      )}
     </div>
   )
 })

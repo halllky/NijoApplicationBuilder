@@ -8,22 +8,52 @@ import * as Util from '../util'
 
 export const useCellEditing = <T,>(props: DataTableProps<T>) => {
   const [editingCell, setEditingCell] = useState<RT.Cell<Tree.TreeNode<T>, unknown> | undefined>(undefined)
+  const [editingItemIndex, setEditingItemIndex] = useState<number | undefined>()
 
   const editingTdRef = useRef<HTMLTableCellElement>()
   const editingTdRefCallback = useCallback((td: HTMLTableCellElement | null, cell: RT.Cell<Tree.TreeNode<T>, unknown>) => {
-    if (td && cell === editingCell) editingTdRef.current = td
+    if (td && cell.id === editingCell?.id) editingTdRef.current = td
   }, [editingCell])
 
   const startEditing = useCallback((cell: RT.Cell<Tree.TreeNode<T>, unknown>) => {
     if (!props.onChangeRow) return // 値が編集されてもコミットできないので編集開始しない
     setEditingCell(cell)
-  }, [props.onChangeRow])
+    setEditingItemIndex(props.data?.indexOf(cell.row.original.item))
+  }, [props.data, props.onChangeRow])
 
   const cancelEditing = useCallback(() => {
     setEditingCell(undefined)
   }, [])
 
-  const CellEditor = useCallback(({ onEndEditing }: {
+  const CellEditor = useMemo(() => {
+    return prepareCellEditor(setEditingCell, editingTdRef)
+  }, [])
+
+  return {
+    editing: editingCell !== undefined,
+    startEditing,
+    cancelEditing,
+
+    CellEditor,
+    cellEditorProps: {
+      editingCell,
+      editingItemIndex,
+      onChangeRow: props.onChangeRow,
+      data: props.data,
+    },
+    editingTdRefCallback,
+  }
+}
+
+
+function prepareCellEditor<T,>(
+  setEditingCell: (v: RT.Cell<Tree.TreeNode<T>, unknown> | undefined) => void,
+  editingTdRef: React.MutableRefObject<HTMLTableCellElement | undefined>,
+) {
+  return ({ editingItemIndex, onChangeRow, editingCell, onEndEditing }: {
+    editingItemIndex: number | undefined,
+    onChangeRow: DataTableProps<T>['onChangeRow']
+    editingCell: RT.Cell<Tree.TreeNode<T>, unknown> | undefined
     onEndEditing?: () => void
   }) => {
     const [uncomittedValue, setUnComittedValue] = useState<unknown>(() => {
@@ -38,16 +68,16 @@ export const useCellEditing = <T,>(props: DataTableProps<T>) => {
     }, [editingCell?.column])
 
     const commitEditing = useCallback(() => {
-      if (props.data && props.onChangeRow && editingCell) {
-        const item = editingCell.row.original.item as { [key: string]: unknown }
+      if (editingItemIndex !== undefined && onChangeRow && editingCell) {
+        const item = { ...editingCell.row.original.item } as { [key: string]: unknown }
         item[editingCell.column.id] = editorRef.current?.getValue()
-        props.onChangeRow(props.data.indexOf(item as T), item as T)
+        onChangeRow(editingItemIndex, item as T)
       }
       setEditingCell(undefined)
       onEndEditing?.()
-    }, [props.data, props.onChangeRow, editingCell, onEndEditing])
+    }, [editingItemIndex, onChangeRow, editingCell, onEndEditing])
 
-    const cancelEditing2 = useCallback(() => {
+    const cancelEditing = useCallback(() => {
       setEditingCell(undefined)
       onEndEditing?.()
     }, [onEndEditing])
@@ -75,10 +105,10 @@ export const useCellEditing = <T,>(props: DataTableProps<T>) => {
         e.stopPropagation()
         e.preventDefault()
       } else if (e.key === 'Escape') {
-        cancelEditing2()
+        cancelEditing()
         e.preventDefault()
       }
-    }, [commitEditing, cancelEditing2])
+    }, [commitEditing, cancelEditing])
 
     return (
       <div ref={containerRef}
@@ -98,13 +128,5 @@ export const useCellEditing = <T,>(props: DataTableProps<T>) => {
         </div> */}
       </div>
     )
-  }, [editingCell, props.data, props.onChangeRow])
-
-  return {
-    editing: editingCell !== undefined,
-    startEditing,
-    cancelEditing,
-    CellEditor,
-    editingTdRefCallback,
   }
 }

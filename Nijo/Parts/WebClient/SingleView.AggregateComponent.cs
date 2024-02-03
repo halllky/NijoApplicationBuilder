@@ -308,26 +308,27 @@ namespace Nijo.Parts.WebClient {
                       return (
                         <VForm.Section>
                           <VForm.Row fullWidth>
+                            {{_aggregate.GetParent()?.RelationName}}
+                    {{If(_mode != SingleView.E_Type.View, () => $$"""
+                            <Input.Button
+                              icon={PlusIcon}
+                              onClick={onAdd}>
+                              追加
+                            </Input.Button>
+                            <Input.Button
+                              icon={XMarkIcon}
+                              onClick={onRemove}>
+                              削除
+                            </Input.Button>
+                    """)}}
+                          </VForm.Row>
+                          <VForm.Row fullWidth>
                             <Layout.DataTable
                               ref={dtRef}
                               data={fields}
                               {...options}
                               className="h-64 w-full"
-                            >
-                            {{_aggregate.GetParent()?.RelationName}}
-                    {{If(_mode != SingleView.E_Type.View, () => $$"""
-                              <Input.Button
-                                icon={PlusIcon}
-                                onClick={onAdd}>
-                                追加
-                              </Input.Button>
-                              <Input.Button
-                                icon={XMarkIcon}
-                                onClick={onRemove}>
-                                削除
-                              </Input.Button>
-                    """)}}
-                            </Layout.DataTable>
+                            />
                           </VForm.Row>
                         </VForm.Section>
                       )

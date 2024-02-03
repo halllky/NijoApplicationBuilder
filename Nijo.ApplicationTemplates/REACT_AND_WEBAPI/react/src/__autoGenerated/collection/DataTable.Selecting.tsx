@@ -37,6 +37,7 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
       const cell = obj.any.getRowModel().flatRows[0]?.getAllCells()?.[0]
       if (cell) {
         setCaretCell(cell)
+        setSelectionStart(cell)
         setContainsRowHeader(false)
       }
 
@@ -105,8 +106,8 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
   }, [editing, api, selectObject, caretCell])
 
   const caretTdRefCallback = useCallback((td: HTMLTableCellElement | null, cell: RT.Cell<Tree.TreeNode<T>, unknown>) => {
-    if (td && cell === caretCell) caretTdRef.current = td
-    if (td && cell === selectionStart) selectionStartTdRef.current = td
+    if (td && cell.id === caretCell?.id) caretTdRef.current = td
+    if (td && cell.id === selectionStart?.id) selectionStartTdRef.current = td
   }, [caretCell, selectionStart])
 
   const ActiveCellBorder = useCallback((props: {

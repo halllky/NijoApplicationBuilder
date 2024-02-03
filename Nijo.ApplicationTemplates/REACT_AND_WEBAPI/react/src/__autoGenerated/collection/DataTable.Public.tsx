@@ -10,7 +10,6 @@ export type DataTableProps<T> = {
   treeView?: Tree.ToTreeArgs<T> & {
     rowHeader: (row: T) => React.ReactNode
   }
-  children?: React.ReactNode
 }
 export type ColumnDefEx<T> = RT.ColumnDef<T> & {
   cellEditor?: Util.CustomComponent
