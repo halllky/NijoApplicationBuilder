@@ -232,7 +232,7 @@ function prepareActiveRangeSvg<T>(
         </defs>
         <rect
           x="0" y="0" width="100%" height="100%"
-          className="fill-black opacity-[.15]"
+          className="bg-color-selected-svg"
           mask="url(#selection-start-mask)"
         />
       </svg>

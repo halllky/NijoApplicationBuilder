@@ -215,3 +215,7 @@ textarea:read-only {
 .bg-color-selected {
   @apply bg-sky-500 bg-opacity-25;
 }
+
+.bg-color-selected-svg {
+  @apply fill-black dark:fill-white opacity-25;
+}
