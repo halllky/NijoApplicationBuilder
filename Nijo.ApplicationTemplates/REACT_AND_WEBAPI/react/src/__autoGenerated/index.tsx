@@ -11,8 +11,6 @@ export * from './input'
 export * from './util'
 
 import './nijo-default-style.css'
-import 'ag-grid-community/styles/ag-grid.css'
-import 'ag-grid-community/styles/ag-theme-alpine.css'
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -25,11 +25,11 @@ export type CustomComponent<TValue = any, TAdditionalProp extends {} = {}, TElem
 
 export interface CustomComponentRef<T = any> {
   /**
-   * ag-gridのエディターとして表示されたときの編集終了時に参照される。
+   * DataTableのエディターとして表示されたときの編集終了時に参照される。
    * getValueはblurイベントより先に呼び出される
    */
   getValue: () => T | undefined
-  /** ag-gridのエディターとして表示されたときの初回フォーカスに使う */
+  /** DataTableのエディターとして表示されたときの初回フォーカスに使う */
   focus: () => void
 }
 

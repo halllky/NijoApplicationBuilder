@@ -195,13 +195,6 @@ namespace Nijo.Parts.WebClient {
                             valueFormatter = vm.Options.MemberType.GetGridCellValueFormatter(),
                             hide = vm.Options.InvisibleInGui,
                             cellEditorName = vm.Options.MemberType.GetGridCellEditorName(),
-                            cell = $$"""
-                                cellEditor: AgGridHelper.generateCellEditor({{GetRegisterName()}}, {{cellEditor}}, {
-                                {{cellEditorParam.SelectTextTemplate(p => $$"""
-                                  {{p.Key}}: {{p.Value}},
-                                """)}}
-                                }),
-                                """,
                         };
                     } else if (m is AggregateMember.Ref rm) {
                         var keyName = new RefTargetKeyName(rm.MemberAggregate);
@@ -234,24 +227,6 @@ namespace Nijo.Parts.WebClient {
                             valueFormatter = $"({{ value }}) => ({keysForValueFormatter.Select(path => $"value?.{path}").Join(" + ")}) || ''",
                             hide = false,
                             cellEditorName = $"Input.{combobox.ComponentName}",
-                            cell = _mode == SingleView.E_Type.View
-                                ? $$"""
-                                cellRenderer: ({ data }: { data: typeof fields[0] }) => {
-                                  const singleViewUrl = `{{singleView.GetUrlStringForReact(keysOfRoot.Select(k => $"data.{k}"))}}`
-                                  return (
-                                    <Link to={singleViewUrl} className="text-link">
-                                {{names.SelectTextTemplate(n => $$"""
-                                      {data.{{n}}}
-                                """)}}
-                                    </Link>
-                                  )
-                                },
-                                """
-                                : $$"""
-                                cellEditor: AgGridHelper.generateCellEditor({{GetRegisterName()}}, Input.{{combobox.ComponentName}}, {
-                                  raectHookFormId: (rowIndex: number) => `{{GetRegisterName().Replace("`", "")}}.${rowIndex}.{{rm.MemberName}}`,
-                                }),
-                                """,
                         };
                     } else {
                         throw new NotImplementedException();
