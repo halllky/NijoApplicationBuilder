@@ -11,9 +11,13 @@ export type DataTableProps<T> = {
     rowHeader: (row: T) => React.ReactNode
   }
 }
-export type ColumnDefEx<T> = RT.ColumnDef<T> & {
-  cellEditor?: Util.CustomComponent
-}
+export type ColumnDefEx<T> = RT.ColumnDef<T> & ({
+  cellEditor?: never
+  setValue?: never
+} | {
+  cellEditor: Util.CustomComponent
+  setValue: (data: T, value: any) => void
+})
 
 export type DataTableRef<T> = {
   getSelectedItems: () => T[]

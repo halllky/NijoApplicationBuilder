@@ -57,21 +57,24 @@ function prepareCellEditor<T,>(
     onEndEditing?: () => void
   }) => {
     const [uncomittedValue, setUnComittedValue] = useState<unknown>(() => {
-      if (!editingCell?.column.id) return undefined
-      const row = editingCell?.row.original.item as { [key: string]: unknown }
-      return row?.[editingCell.column.id]
+      if (!editingCell?.column.accessorFn || editingItemIndex === undefined) return undefined
+      return editingCell.column.accessorFn(editingCell.row.original, editingItemIndex)
     })
 
     const cellEditor: Util.CustomComponent = useMemo(() => {
-      const editor = (editingCell?.column.columnDef as ColumnDefEx<T>)?.cellEditor
+      const editor = (editingCell?.column.columnDef as ColumnDefEx<Tree.TreeNode<T>>)?.cellEditor
       return editor ?? Input.Description
     }, [editingCell?.column])
 
     const commitEditing = useCallback(() => {
       if (editingItemIndex !== undefined && onChangeRow && editingCell) {
-        const item = { ...editingCell.row.original.item } as { [key: string]: unknown }
-        item[editingCell.column.id] = editorRef.current?.getValue()
-        onChangeRow(editingItemIndex, item as T)
+        const setValue = (editingCell?.column.columnDef as ColumnDefEx<Tree.TreeNode<T>>)?.setValue
+        if (!setValue) {
+          // セッターがないのにこのコンポーネントが存在するのはあり得ないのでエラー
+          throw new Error('value setter is not defined.')
+        }
+        setValue(editingCell.row.original, editorRef.current?.getValue())
+        onChangeRow(editingItemIndex, editingCell.row.original.item)
       }
       setEditingCell(undefined)
       onEndEditing?.()
