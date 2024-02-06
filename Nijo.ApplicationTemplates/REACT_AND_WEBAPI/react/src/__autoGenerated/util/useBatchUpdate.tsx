@@ -114,11 +114,9 @@ export type LocalRepositoryArgs<T> = {
   serialize: (t: T) => string
   deserialize: (str: string) => T
 }
-export type LocalRepositoryStateAndKey = {
+export type LocalRepositoryStateAndKeyAndItem<T> = {
   itemKey: string
   state: LocalRepositoryState
-}
-export type LocalRepositoryStateAndKeyAndItem<T> = LocalRepositoryStateAndKey & {
   item: T
 }
 
@@ -160,33 +158,32 @@ export const useLocalRepository = <T,>({
     }
   }, [dataTypeKey, deserialize, loadRecords])
 
-  const getLocalRepositoryState = useCallback(async (itemKey: string): Promise<LocalRepositoryStateAndKey> => {
-    const state = (await loadOne(itemKey))?.state ?? ''
-    return { itemKey, state }
-  }, [loadOne, dataTypeKey, getItemKey])
+  const getLocalRepositoryState = useCallback(async (itemKey: string): Promise<LocalRepositoryState> => {
+    return (await loadOne(itemKey))?.state ?? ''
+  }, [loadOne, dataTypeKey])
 
-  const addToLocalRepository = useCallback(async (item: T): Promise<LocalRepositoryStateAndKey> => {
+  const addToLocalRepository = useCallback(async (item: T): Promise<LocalRepositoryStateAndKeyAndItem<T>> => {
     const itemKey = UUID.generate()
     const itemName = getItemName?.(item) ?? ''
     const serializedItem = serialize(item)
     const state: LocalRepositoryState = '+'
     await setToDb({ state, dataTypeKey, itemKey, itemName, serializedItem })
-    return { itemKey, state }
+    return { itemKey, state, item }
   }, [dataTypeKey, setToDb, getItemName, serialize])
 
-  const updateLocalRepositoryItem = useCallback(async (itemKey: string, item: T): Promise<LocalRepositoryStateAndKey> => {
+  const updateLocalRepositoryItem = useCallback(async (itemKey: string, item: T): Promise<LocalRepositoryStateAndKeyAndItem<T>> => {
     const serializedItem = serialize(item)
     const itemName = getItemName?.(item) ?? ''
-    const stateBeforeUpdate = (await getLocalRepositoryState(itemKey)).state
+    const stateBeforeUpdate = await getLocalRepositoryState(itemKey)
     const state: LocalRepositoryState = stateBeforeUpdate === '+' || stateBeforeUpdate === '-'
       ? stateBeforeUpdate
       : '*'
     await setToDb({ dataTypeKey, itemKey, itemName, serializedItem, state })
-    return { itemKey, state }
+    return { itemKey, state, item }
   }, [dataTypeKey, setToDb, serialize, getItemName, getLocalRepositoryState])
 
   const deleteLocalRepositoryItem = useCallback(async (itemKey: string, item: T): Promise<{ remains: boolean }> => {
-    const stateBeforeUpdate = (await getLocalRepositoryState(itemKey)).state
+    const stateBeforeUpdate = await getLocalRepositoryState(itemKey)
     if (stateBeforeUpdate === '+') {
       await delFromDb([dataTypeKey, itemKey])
       return { remains: false }
@@ -199,6 +196,14 @@ export const useLocalRepository = <T,>({
     }
   }, [dataTypeKey, delFromDb, setToDb, serialize, getItemName, getLocalRepositoryState])
 
+  const commit = useCallback(async (itemKey: string): Promise<void> => {
+    await delFromDb([dataTypeKey, itemKey])
+  }, [delFromDb, dataTypeKey])
+
+  const reset = useCallback(async (itemKey: string): Promise<void> => {
+    await delFromDb([dataTypeKey, itemKey])
+  }, [delFromDb, dataTypeKey])
+
   return {
     ready,
     loadAll,
@@ -207,6 +212,8 @@ export const useLocalRepository = <T,>({
     addToLocalRepository,
     updateLocalRepositoryItem,
     deleteLocalRepositoryItem,
+    commit,
+    reset,
   }
 }
 
