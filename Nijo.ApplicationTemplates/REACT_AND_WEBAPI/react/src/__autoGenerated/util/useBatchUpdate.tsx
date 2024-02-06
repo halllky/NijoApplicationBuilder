@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useReducer, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useMemo, useReducer, useState } from 'react'
 import { UUID } from 'uuidjs'
 import * as ReactUtil from './ReactUtil'
 import * as Validation from './Validation'
@@ -8,31 +8,22 @@ import { useFieldArray } from 'react-hook-form'
 
 // 一覧/特定集約 共用
 
-export type ChangeType
-  = undefined // No Change
+export type LocalRepositoryState
+  = '' // No Change
   | '+' // Add
   | '*' // Modify
   | '-' // Delete
 
-export type LocalRepositoryArgs<T> = {
-  dataTypeKey: string
-  getItemKey: (t: T) => IDBValidKey
-  getItemName?: (t: T) => string
-  getNewItem: () => T
-  serialize: (t: T) => string
-  deserialize: (str: string) => T
-}
-export type ItemWithLocalRepositoryState<T> = {
+type LocalRepositoryStoredItem = {
   dataTypeKey: string
   itemKey: string
   itemName: string
-  item: T
-  changeType: ChangeType
+  serializedItem: string
+  state: LocalRepositoryState
 }
-export type LocalRepositoryItem = Omit<ItemWithLocalRepositoryState<unknown>, 'item'>
 
-const useIndexedDbLocalRepositoryTable = <T,>() => {
-  return useIndexedDbTable<ItemWithLocalRepositoryState<T>>({
+const useIndexedDbLocalRepositoryTable = () => {
+  return useIndexedDbTable<LocalRepositoryStoredItem>({
     dbName: '::nijo::',
     dbVersion: 1,
     tableName: 'LocalRepository',
@@ -43,134 +34,181 @@ const useIndexedDbLocalRepositoryTable = <T,>() => {
 // -------------------------------------------------
 // ローカルリポジトリ変更一覧
 
-export const useLocalRepositoryList = () => {
-  const { loadRecords, deleteRecord } = useIndexedDbLocalRepositoryTable()
-
-  const loadAll = useCallback(async (): Promise<LocalRepositoryItem[]> => {
-    return await loadRecords()
-  }, [loadRecords])
-
-  const commitChanges = useCallback(async (): Promise<void> => {
-    throw new Error()
-  }, [])
-
-  const clearChanges = useCallback(async (): Promise<void> => {
-    throw new Error()
-  }, [])
-
-  return {
-    loadAll,
-    commitChanges,
-    clearChanges,
-  }
+export type LocalRepositoryItemListItem = {
+  dataTypeKey: string
+  itemKey: string
+  itemName: string
+  state: LocalRepositoryState
 }
 
-const {
-  reducer: localRepositoryReducer,
-  ContextProvider: LocalRepositoryContextProviderInternal,
-  useContext: useLocalRepositoryListContext,
-} = ReactUtil.defineContext2(
-  (): LocalRepositoryItem[] => [],
-  state => ({
-    addChangeList: (...items: LocalRepositoryItem[]) => [...state, ...items],
-    clearChangeList: () => [],
-  })
-)
+type LocalRepositoryContextValue = {
+  changes: LocalRepositoryItemListItem[]
+  setToLocalRepository: (value: LocalRepositoryStoredItem) => Promise<void>
+  deleteFromLocalRepository: (key: IDBValidKey) => Promise<void>
+  ready: boolean
+}
+const LocalRepositoryContext = React.createContext<LocalRepositoryContextValue>({
+  changes: [],
+  setToLocalRepository: () => Promise.resolve(),
+  deleteFromLocalRepository: () => Promise.resolve(),
+  ready: false,
+})
 
 export const LocalRepositoryContextProvider = ({ children }: {
   children?: React.ReactNode
 }) => {
-  const { loadAll } = useLocalRepositoryList()
-  const [state, dispatch] = useReducer(localRepositoryReducer, undefined, () => [])
-  const memorized = useMemo(() => [state, dispatch] as const, [state, dispatch])
+  const { ready, loadRecords, setRecord, deleteRecord } = useIndexedDbLocalRepositoryTable()
+  const [changes, setChanges] = useState<LocalRepositoryItemListItem[]>([])
+
+  const reload = useCallback(async () => {
+    const records = await loadRecords()
+    const changes = records.map(r => ({
+      dataTypeKey: r.dataTypeKey,
+      state: r.state,
+      itemKey: r.itemKey,
+      itemName: r.itemName,
+    }))
+    setChanges(changes)
+  }, [loadRecords, setChanges])
+
+  const setToLocalRepository = useCallback(async (data: LocalRepositoryStoredItem) => {
+    await setRecord(data)
+    await reload()
+  }, [setRecord, reload])
+
+  const deleteFromLocalRepository = useCallback(async (key: IDBValidKey) => {
+    await deleteRecord(key)
+    await reload()
+  }, [deleteRecord, reload])
+
+  const contextValue: LocalRepositoryContextValue = useMemo(() => ({
+    changes,
+    setToLocalRepository,
+    deleteFromLocalRepository,
+    ready,
+  }), [changes, setToLocalRepository, deleteFromLocalRepository, ready])
 
   useEffect(() => {
-    loadAll().then(data => {
-      dispatch(state => state.addChangeList(...data))
-    })
-  }, [loadAll])
+    if (ready) reload()
+  }, [reload, ready])
 
   return (
-    <LocalRepositoryContextProviderInternal value={memorized}>
+    <LocalRepositoryContext.Provider value={contextValue}>
       {children}
-    </LocalRepositoryContextProviderInternal>
+    </LocalRepositoryContext.Provider>
   )
+}
+
+export const useLocalRepositoryChangeList = () => {
+  const { ready, changes } = useContext(LocalRepositoryContext)
+  return { ready, changes }
 }
 
 // -------------------------------------------------
 // 特定の集約の変更
 
+export type LocalRepositoryArgs<T> = {
+  dataTypeKey: string
+  getItemKey: (t: T) => IDBValidKey
+  getItemName?: (t: T) => string
+  serialize: (t: T) => string
+  deserialize: (str: string) => T
+}
+export type LocalRepositoryStateAndKey = {
+  itemKey: string
+  state: LocalRepositoryState
+}
+export type LocalRepositoryStateAndKeyAndItem<T> = LocalRepositoryStateAndKey & {
+  item: T
+}
+
 export const useLocalRepository = <T,>({
   dataTypeKey,
   getItemKey,
   getItemName,
-  getNewItem,
   serialize,
   deserialize,
 }: LocalRepositoryArgs<T>) => {
 
-  const { loadRecords, setRecord, deleteRecord } = useIndexedDbLocalRepositoryTable<T>()
-  const rhf = Validation.useFormEx<{ items: ItemWithLocalRepositoryState<T>[] }>({})
-  const { fields, insert, remove, update } = useFieldArray({ name: 'items', control: rhf.control })
-  const [, dispatchInmemory] = useLocalRepositoryListContext()
-  const paging = usePaging()
+  const {
+    ready,
+    setToLocalRepository: setToDb,
+    deleteFromLocalRepository: delFromDb,
+  } = useContext(LocalRepositoryContext)
+  const {
+    loadRecords,
+  } = useIndexedDbLocalRepositoryTable()
 
-  const items: ItemWithLocalRepositoryState<T>[] = fields
+  const loadAll = useCallback(async (): Promise<LocalRepositoryStateAndKeyAndItem<T>[]> => {
+    const records = await loadRecords(x => x.dataTypeKey === dataTypeKey)
+    return records.map(x => ({
+      item: deserialize(x.serializedItem),
+      itemKey: x.itemKey,
+      state: x.state,
+    }))
+  }, [dataTypeKey, deserialize, loadRecords])
 
-  const createNewItem = useCallback(async (): Promise<string> => {
-    const itemKey = UUID.generate()
-    const itemName = '新しいデータ'
-    const changeType: ChangeType = '+'
-    const item = getNewItem()
-    const newItem = { dataTypeKey, itemKey, itemName, changeType, item }
-
-    await setRecord(newItem)
-    dispatchInmemory(state => state.addChangeList(newItem))
-    insert(0, newItem)
-
-    return itemKey
-  }, [dataTypeKey, getNewItem, setRecord])
-
-  const modifyItem = useCallback(async (item: ItemWithLocalRepositoryState<T>): Promise<void> => {
-    const updated: ItemWithLocalRepositoryState<T> = { ...item, changeType: '*' }
-    await setRecord(updated)
-    const index = fields.findIndex(x => x.itemKey === updated.itemKey)
-    if (index !== -1) update(index, updated)
-  }, [setRecord, fields, update])
-
-  const markToDelete = useCallback(async (...items: ItemWithLocalRepositoryState<T>[]): Promise<void> => {
-    for (const item of items) {
-      const deleted: ItemWithLocalRepositoryState<T> = { ...item, changeType: '*' }
-      await setRecord(deleted)
-      const index = fields.findIndex(x => x.itemKey === deleted.itemKey)
-      if (index !== -1) update(index, deleted)
+  const loadOne = useCallback(async (itemKey: string): Promise<LocalRepositoryStateAndKeyAndItem<T> | undefined> => {
+    const records = await loadRecords(x =>
+      x.dataTypeKey === dataTypeKey
+      && x.itemKey === itemKey)
+    if (records.length === 0) return undefined
+    return {
+      item: deserialize(records[0].serializedItem),
+      itemKey: records[0].itemKey,
+      state: records[0].state,
     }
-  }, [setRecord, fields, update])
+  }, [dataTypeKey, deserialize, loadRecords])
+
+  const getLocalRepositoryState = useCallback(async (itemKey: string): Promise<LocalRepositoryStateAndKey> => {
+    const state = (await loadOne(itemKey))?.state ?? ''
+    return { itemKey, state }
+  }, [loadOne, dataTypeKey, getItemKey])
+
+  const addToLocalRepository = useCallback(async (item: T): Promise<LocalRepositoryStateAndKey> => {
+    const itemKey = UUID.generate()
+    const itemName = getItemName?.(item) ?? ''
+    const serializedItem = serialize(item)
+    const state: LocalRepositoryState = '+'
+    await setToDb({ state, dataTypeKey, itemKey, itemName, serializedItem })
+    return { itemKey, state }
+  }, [dataTypeKey, setToDb, getItemName, serialize])
+
+  const updateLocalRepositoryItem = useCallback(async (itemKey: string, item: T): Promise<LocalRepositoryStateAndKey> => {
+    const serializedItem = serialize(item)
+    const itemName = getItemName?.(item) ?? ''
+    const stateBeforeUpdate = (await getLocalRepositoryState(itemKey)).state
+    const state: LocalRepositoryState = stateBeforeUpdate === '+' || stateBeforeUpdate === '-'
+      ? stateBeforeUpdate
+      : '*'
+    await setToDb({ dataTypeKey, itemKey, itemName, serializedItem, state })
+    return { itemKey, state }
+  }, [dataTypeKey, setToDb, serialize, getItemName, getLocalRepositoryState])
+
+  const deleteLocalRepositoryItem = useCallback(async (itemKey: string, item: T): Promise<{ remains: boolean }> => {
+    const stateBeforeUpdate = (await getLocalRepositoryState(itemKey)).state
+    if (stateBeforeUpdate === '+') {
+      await delFromDb([dataTypeKey, itemKey])
+      return { remains: false }
+    } else {
+      const serializedItem = serialize(item)
+      const itemName = getItemName?.(item) ?? ''
+      const state: LocalRepositoryState = '-'
+      await setToDb({ dataTypeKey, itemKey, itemName, serializedItem, state })
+      return { remains: true }
+    }
+  }, [dataTypeKey, delFromDb, setToDb, serialize, getItemName, getLocalRepositoryState])
 
   return {
-    items,
-    ...paging,
-    createNewItem,
-    modifyItem,
-    markToDelete,
-    rhf,
+    ready,
+    loadAll,
+    loadOne,
+    getLocalRepositoryState,
+    addToLocalRepository,
+    updateLocalRepositoryItem,
+    deleteLocalRepositoryItem,
   }
 }
-
-// API検討途中
-// const {
-//   items,
-//   currentPage, showPrevPage, showNextPage,
-//   append, remove, udpate,
-//   commitChanges, clearChanges,
-// } = useLocalRepository({
-//   dataTypeKey: '集約A',
-//   getItemKey: obj => [obj.key1, obj.key2],
-//   initializer: () => ({ name: 'デフォルト名' }),
-//   serialize: obj => JSON.stringify(obj),
-//   deserialize: str => JSON.parse(str),
-// })
-
 
 // -----------------------------------------------
 // Paging
@@ -218,6 +256,7 @@ const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }: {
 
   const [, dispatchMsg] = Notification.useMsgContext()
   const [db, setDb] = useState<IDBDatabase>()
+  const [ready, setReady] = useState(false)
 
   // データベースを開く
   useEffect(() => {
@@ -227,6 +266,7 @@ const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }: {
     }
     request.onsuccess = ev => {
       setDb((ev.target as IDBOpenDBRequest).result)
+      setReady(true)
     }
     request.onupgradeneeded = ev => {
       const db = (ev.target as IDBOpenDBRequest).result
@@ -240,7 +280,7 @@ const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }: {
 
   /** データ追加更新 */
   const setRecord = useCallback((data: T): Promise<void> => {
-    if (!db) { dispatchMsg(msg => msg.error('データベースが初期化されていません。')); return Promise.resolve() }
+    if (!db) throw Promise.reject('データベースが初期化されていません。')
     return new Promise<void>((resolve, reject) => {
       const transaction = db.transaction([tableName], 'readwrite')
       const objectStore = transaction.objectStore(tableName)
@@ -252,7 +292,7 @@ const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }: {
 
   /** データ削除 */
   const deleteRecord = useCallback((key: IDBValidKey): Promise<void> => {
-    if (!db) { dispatchMsg(msg => msg.error('データベースが初期化されていません。')); return Promise.resolve() }
+    if (!db) throw Promise.reject('データベースが初期化されていません。')
     return new Promise<void>((resolve, reject) => {
       const transaction = db.transaction([tableName], 'readwrite')
       const objectStore = transaction.objectStore(tableName)
@@ -263,7 +303,7 @@ const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }: {
   }, [db, tableName, dispatchMsg])
 
   const loadRecords = useCallback((filter?: (data: T) => boolean): Promise<T[]> => {
-    if (!db) { dispatchMsg(msg => msg.error('データベースが初期化されていません。')); return Promise.resolve([]) }
+    if (!db) throw Promise.reject('データベースが初期化されていません。')
     return new Promise((resolve, reject) => {
       const transaction = db.transaction([tableName], 'readonly')
       const objectStore = transaction.objectStore(tableName)
@@ -285,7 +325,7 @@ const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }: {
   }, [db, tableName, dispatchMsg])
 
   const count = useCallback(async (filter?: (data: T) => boolean): Promise<number> => {
-    if (!db) { dispatchMsg(msg => msg.error('データベースが初期化されていません。')); return Promise.resolve(0) }
+    if (!db) throw Promise.reject('データベースが初期化されていません。')
     return new Promise((resolve, reject) => {
       const transaction = db.transaction([tableName], 'readonly')
       const objectStore = transaction.objectStore(tableName)
@@ -308,6 +348,7 @@ const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }: {
   }, [db, tableName, dispatchMsg])
 
   return {
+    ready,
     setRecord,
     deleteRecord,
     loadRecords,

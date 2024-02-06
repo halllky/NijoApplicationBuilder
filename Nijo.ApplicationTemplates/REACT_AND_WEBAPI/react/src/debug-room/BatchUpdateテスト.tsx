@@ -20,39 +20,76 @@ export default function () {
 
 const Page = () => {
 
-  const { } = Util.useLocalRepositoryList()
-  const { items, rhf: { registerEx }, createNewItem, modifyItem, markToDelete } = Util.useLocalRepository(REPOS_SETTING)
-  const dtRef = useRef<Collection.DataTableRef<Util.ItemWithLocalRepositoryState<TestData>>>(null)
+  // ローカルリポジトリのデータ一覧
+  const {
+    changes,
+    ready: changeListIsReady,
+  } = Util.useLocalRepositoryChangeList()
 
-  // デバッグ用
-  const handleReset = useCallback(async () => {
-    // const initialDummyData = createDefaultData()
-    // reset(initialDummyData)
-    // for (const item of initialDummyData.items) {
-    //   await createNewItem(DATA_TYPE_KEY, item)
-    // }
-  }, [])
+  // MultiView
+  const {
+    ready: multiViewIsReady,
+    loadAll,
+    loadOne,
+    addToLocalRepository,
+    updateLocalRepositoryItem,
+    deleteLocalRepositoryItem,
+  } = Util.useLocalRepository(REPOS_SETTING)
 
-  // 一時保存
-  const handleSave = useCallback(async () => {
-    // // TODO: 1件ずつ保存してしまっている
-    // // TODO: RHF側でadd/modify/deleteの区別を持っていない
-    // for (const item of fields) {
+  const { control, reset } = Util.useFormEx<{ items: Util.LocalRepositoryStateAndKeyAndItem<TestData>[] }>({})
+  const { fields, append, update, remove } = useFieldArray({ name: 'items', control })
+  const [, dispatchMsg] = Util.useMsgContext()
+  const dtRef = useRef<Collection.DataTableRef<Util.LocalRepositoryStateAndKeyAndItem<TestData>>>(null)
 
-    //   await saveLocal({ changeType, contentsJson, dataTypeKey, itemKey, itemName })
-    // }
-  }, [])
+  useEffect(() => {
+    if (multiViewIsReady) {
+      loadAll().then(items => {
+        reset({ items })
+      })
+    }
+  }, [loadAll, reset, multiViewIsReady])
 
-  // データ操作
-  const handleAdd: React.MouseEventHandler<HTMLButtonElement> = useCallback(async e => {
-    const newItemId = await createNewItem()
-    // TODO: ↑ここで生成したIDがどこにも保持されない
-  }, [createNewItem])
+  const handleAdd: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
+    const item: TestData = { name: '新規データ' }
+    const { itemKey, state } = await addToLocalRepository(item)
+    append({ item, itemKey, state })
+  }, [append, addToLocalRepository])
 
-  const handleRemove: React.MouseEventHandler<HTMLButtonElement> = useCallback(e => {
+  const handleUpdateRow = useCallback((index: number, row: Util.LocalRepositoryStateAndKeyAndItem<TestData>) => {
+    update(index, row)
+    updateLocalRepositoryItem(row.itemKey, row.item)
+  }, [update, updateLocalRepositoryItem])
+
+  const handleRemove: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
     if (!dtRef.current) return
-    markToDelete(...dtRef.current.getSelectedItems())
-  }, [markToDelete])
+    // TODO: itemとindexまとめてほしい
+    const items = dtRef.current.getSelectedItems()
+    const indexes = dtRef.current.getSelectedIndexes()
+    const deleted: number[] = []
+    for (let i = 0; i < indexes.length; i++) {
+      const { itemKey, item } = items[i]
+      const { remains } = await deleteLocalRepositoryItem(itemKey, item)
+      if (!remains) deleted.push(indexes[i])
+    }
+    remove(deleted)
+  }, [remove, deleteLocalRepositoryItem])
+
+  const handleReload = useCallback(async () => {
+    const items = await loadAll()
+    reset({ items })
+  }, [loadAll, reset])
+
+  const handleCreateDummy = useCallback(async () => {
+    const initialDummyData = createDefaultData()
+    for (const item of initialDummyData.items) {
+      const { itemKey, state } = await addToLocalRepository(item)
+      append({ item, itemKey, state })
+    }
+  }, [append, addToLocalRepository])
+
+  const handleSave = useCallback(() => {
+    dispatchMsg(msg => msg.info('保存しました。\n※何もしていません'))
+  }, [dispatchMsg])
 
   return (
     <PanelGroup
@@ -62,7 +99,7 @@ const Page = () => {
     >
       <Panel defaultSize={20}>
         <Collection.DataTable
-          data={undefined} // TODO
+          data={changes}
           columns={LIST_COLS}
           className="h-full"
         />
@@ -72,18 +109,19 @@ const Page = () => {
 
       <Panel className="flex flex-col">
         <div className="flex gap-2 justify-start">
-          <Input.Button onClick={handleAdd}>一時保存</Input.Button>
+          <Input.Button onClick={handleSave}>一時保存</Input.Button>
           <div className="basis-4"></div>
           <Input.Button onClick={handleAdd}>追加</Input.Button>
           <Input.Button onClick={handleRemove}>削除</Input.Button>
           <div className="flex-1"></div>
-          <Input.Button onClick={handleReset}>初期化</Input.Button>
+          <Input.Button onClick={handleReload}>再読込</Input.Button>
+          <Input.Button onClick={handleCreateDummy}>ダミー</Input.Button>
         </div>
         <Collection.DataTable
           ref={dtRef}
-          data={items}
+          data={fields}
           columns={CONTENTS_COLS}
-          onChangeRow={(ix, data) => modifyItem(data)}
+          onChangeRow={handleUpdateRow}
           className="flex-1"
         />
         <Util.InlineMessageList />
@@ -102,14 +140,14 @@ type TestData = {
   numValue?: number
 }
 
-const LIST_COLS: Collection.ColumnDefEx<Util.TreeNode<Util.ContextItem>>[] = [
-  { id: 'col0', header: '', accessorFn: x => x.item.changeType },
+const LIST_COLS: Collection.ColumnDefEx<Util.TreeNode<Util.LocalRepositoryItemListItem>>[] = [
+  { id: 'col0', header: '　', accessorFn: x => x.item.state },
   { id: 'col1', header: '　', accessorFn: x => x.item.itemName },
 ]
-const CONTENTS_COLS: Collection.ColumnDefEx<Util.TreeNode<Util.ItemWithLocalRepositoryState<TestData>>>[] = [
-  { id: 'key', header: 'key', accessorFn: x => x.item.item.key, cellEditor: Input.Word },
-  { id: 'name', header: '名前', accessorFn: x => x.item.item.name, cellEditor: Input.Word },
-  { id: 'numValue', header: '数値', accessorFn: x => x.item.item.numValue, cellEditor: Input.Num },
+const CONTENTS_COLS: Collection.ColumnDefEx<Util.TreeNode<Util.LocalRepositoryStateAndKeyAndItem<TestData>>>[] = [
+  { id: 'key', header: 'key', accessorFn: x => x.item.item.key, setValue: (x, v) => x.item.item.key = v, cellEditor: Input.Word },
+  { id: 'name', header: '名前', accessorFn: x => x.item.item.name, setValue: (x, v) => x.item.item.name = v, cellEditor: Input.Word },
+  { id: 'numValue', header: '数値', accessorFn: x => x.item.item.numValue, setValue: (x, v) => x.item.item.numValue = v, cellEditor: Input.Num },
 ]
 
 const REPOS_SETTING: Util.LocalRepositoryArgs<TestData> = {
@@ -118,10 +156,8 @@ const REPOS_SETTING: Util.LocalRepositoryArgs<TestData> = {
   deserialize: str => JSON.parse(str),
   getItemKey: data => data.key ?? '',
   getItemName: data => data.name ?? '',
-  getNewItem: () => ({ name: '新しいデータ' }),
 }
 
-const DATA_TYPE_KEY = 'TEST-DATA-20240204'
 function createDefaultData(): TestDataCollection {
   const items: TestData[] = [
     { key: '001', name: 'データ01', numValue: 1.00 },

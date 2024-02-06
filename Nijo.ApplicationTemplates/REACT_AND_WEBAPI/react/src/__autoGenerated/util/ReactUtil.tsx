@@ -29,7 +29,7 @@ type ReducerEx<S, M extends StateModifier<S>> = React.Reducer<S, DispatchArg<S, 
 type ContextEx<S, M extends StateModifier<S>> = React.Context<readonly [S, React.Dispatch<DispatchArg<S, M>>]>
 type ProviderComponentDefaultProp = { children?: React.ReactNode }
 type ProviderComponent<P extends ProviderComponentDefaultProp> = (props: P) => JSX.Element
-/** 廃止予定 */
+/** TODO: 有用性に疑問 */
 export const defineContext = <S, M extends StateModifier<S>, P extends ProviderComponentDefaultProp = ProviderComponentDefaultProp>(
   getInitialState: () => S,
   reducerDef: ReducerDef<S, M>,
@@ -57,6 +57,7 @@ export const defineContext = <S, M extends StateModifier<S>, P extends ProviderC
   return [ContextProvider, useContextEx] as const
 }
 
+/** TODO: 有用性に疑問 */
 export const defineContext2 = <S, M extends StateModifier<S>>(
   getInitialState: () => S,
   reducerDef: ReducerDef<S, M>,
