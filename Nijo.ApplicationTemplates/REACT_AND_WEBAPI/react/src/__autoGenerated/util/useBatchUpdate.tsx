@@ -57,29 +57,28 @@ const LocalRepositoryContext = React.createContext<LocalRepositoryContextValue>(
 export const LocalRepositoryContextProvider = ({ children }: {
   children?: React.ReactNode
 }) => {
-  const { ready, loadRecords, setRecord, deleteRecord } = useIndexedDbLocalRepositoryTable()
+  const { ready, reduce, request } = useIndexedDbLocalRepositoryTable()
   const [changes, setChanges] = useState<LocalRepositoryItemListItem[]>([])
 
   const reload = useCallback(async () => {
-    const records = await loadRecords()
-    const changes = records.map(r => ({
-      dataTypeKey: r.dataTypeKey,
-      state: r.state,
-      itemKey: r.itemKey,
-      itemName: r.itemName,
-    }))
+    const changes = await reduce<LocalRepositoryItemListItem[]>([], (arr, cursor) => [...arr, {
+      dataTypeKey: cursor.value.dataTypeKey,
+      state: cursor.value.state,
+      itemKey: cursor.value.itemKey,
+      itemName: cursor.value.itemName,
+    }])
     setChanges(changes)
-  }, [loadRecords, setChanges])
+  }, [reduce, setChanges])
 
   const setToLocalRepository = useCallback(async (data: LocalRepositoryStoredItem) => {
-    await setRecord(data)
+    await request(table => table.put(data))
     await reload()
-  }, [setRecord, reload])
+  }, [request, reload])
 
   const deleteFromLocalRepository = useCallback(async (key: IDBValidKey) => {
-    await deleteRecord(key)
+    await request(table => table.delete(key))
     await reload()
-  }, [deleteRecord, reload])
+  }, [request, reload])
 
   const contextValue: LocalRepositoryContextValue = useMemo(() => ({
     changes,
@@ -134,29 +133,31 @@ export const useLocalRepository = <T,>({
     deleteFromLocalRepository: delFromDb,
   } = useContext(LocalRepositoryContext)
   const {
-    loadRecords,
+    reduce,
+    request,
   } = useIndexedDbLocalRepositoryTable()
 
   const loadAll = useCallback(async (): Promise<LocalRepositoryStateAndKeyAndItem<T>[]> => {
-    const records = await loadRecords(x => x.dataTypeKey === dataTypeKey)
-    return records.map(x => ({
-      item: deserialize(x.serializedItem),
-      itemKey: x.itemKey,
-      state: x.state,
-    }))
-  }, [dataTypeKey, deserialize, loadRecords])
+    return await reduce<LocalRepositoryStateAndKeyAndItem<T>[]>([], (arr, cursor) => {
+      return cursor.value.dataTypeKey === dataTypeKey
+        ? [...arr, {
+          item: deserialize(cursor.value.serializedItem),
+          itemKey: cursor.value.itemKey,
+          state: cursor.value.state,
+        }]
+        : arr
+    })
+  }, [dataTypeKey, deserialize, reduce])
 
   const loadOne = useCallback(async (itemKey: string): Promise<LocalRepositoryStateAndKeyAndItem<T> | undefined> => {
-    const records = await loadRecords(x =>
-      x.dataTypeKey === dataTypeKey
-      && x.itemKey === itemKey)
-    if (records.length === 0) return undefined
-    return {
-      item: deserialize(records[0].serializedItem),
-      itemKey: records[0].itemKey,
-      state: records[0].state,
+    const key: IDBValidKey = [dataTypeKey, itemKey]
+    const found = await request(table => table.get(key) as IDBRequest<LocalRepositoryStoredItem>)
+    return found === undefined ? undefined : {
+      item: deserialize(found.serializedItem),
+      itemKey: found.itemKey,
+      state: found.state,
     }
-  }, [dataTypeKey, deserialize, loadRecords])
+  }, [dataTypeKey, deserialize, request])
 
   const getLocalRepositoryState = useCallback(async (itemKey: string): Promise<LocalRepositoryState> => {
     return (await loadOne(itemKey))?.state ?? ''
@@ -285,80 +286,42 @@ const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }: {
     }
   }, [dbName, dbVersion, tableName, dispatchMsg, ...keyPath])
 
-  /** データ追加更新 */
-  const setRecord = useCallback((data: T): Promise<void> => {
+  // 読み込み系処理全般
+  const reduce = useCallback(<T,>(initialState: T, fn: ((beforeState: T, cursor: IDBCursorWithValue) => T)): Promise<T> => {
     if (!db) throw Promise.reject('データベースが初期化されていません。')
-    return new Promise<void>((resolve, reject) => {
-      const transaction = db.transaction([tableName], 'readwrite')
-      const objectStore = transaction.objectStore(tableName)
-      const request = objectStore.put(data)
-      request.onerror = ev => reject('データの更新に失敗しました。')
-      request.onsuccess = ev => resolve()
-    })
-  }, [db, tableName, dispatchMsg])
-
-  /** データ削除 */
-  const deleteRecord = useCallback((key: IDBValidKey): Promise<void> => {
-    if (!db) throw Promise.reject('データベースが初期化されていません。')
-    return new Promise<void>((resolve, reject) => {
-      const transaction = db.transaction([tableName], 'readwrite')
-      const objectStore = transaction.objectStore(tableName)
-      const request = objectStore.delete(key)
-      request.onerror = ev => reject('データの削除に失敗しました。')
-      request.onsuccess = ev => resolve()
-    })
-  }, [db, tableName, dispatchMsg])
-
-  const loadRecords = useCallback((filter?: (data: T) => boolean): Promise<T[]> => {
-    if (!db) throw Promise.reject('データベースが初期化されていません。')
-    return new Promise((resolve, reject) => {
+    return new Promise<T>((resolve, reject) => {
       const transaction = db.transaction([tableName], 'readonly')
       const objectStore = transaction.objectStore(tableName)
       const request = objectStore.openCursor()
-      const queryResult: T[] = []
-      request.onerror = ev => reject('データの検索に失敗しました。')
+      let currentState = initialState
+      request.onerror = ev => reject(ev)
       request.onsuccess = ev => {
         const cursor = (ev.target as IDBRequest<IDBCursorWithValue>).result
         if (cursor) {
-          if (filter === undefined || filter(cursor.value)) {
-            queryResult.push(cursor.value)
-          }
+          currentState = fn(currentState, cursor)
           cursor.continue()
         } else {
-          resolve(queryResult)
+          resolve(currentState)
         }
       }
     })
   }, [db, tableName, dispatchMsg])
 
-  const count = useCallback(async (filter?: (data: T) => boolean): Promise<number> => {
+  // put, deleteなどのIDBObjectStoreのAPIを直接使うもの全般
+  const request = useCallback(<T,>(fn: ((store: IDBObjectStore) => IDBRequest<T>), mode: IDBTransactionMode = 'readwrite'): Promise<T> => {
     if (!db) throw Promise.reject('データベースが初期化されていません。')
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([tableName], 'readonly')
+    return new Promise<T>((resolve, reject) => {
+      const transaction = db.transaction([tableName], mode)
       const objectStore = transaction.objectStore(tableName)
-      const request = objectStore.openCursor()
-      let cnt = 0
-      request.onerror = ev => reject('データの検索に失敗しました。')
-      request.onsuccess = ev => {
-        const cursor = (ev.target as IDBRequest<IDBCursorWithValue>).result
-        if (cursor) {
-          if (filter === undefined || filter(cursor.value)) {
-            cnt++
-          }
-          cnt++
-          cursor.continue()
-        } else {
-          resolve(cnt)
-        }
-      }
+      const request = fn(objectStore)
+      request.onerror = ev => reject(ev)
+      request.onsuccess = ev => resolve((ev.target as IDBRequest<T>).result)
     })
   }, [db, tableName, dispatchMsg])
 
   return {
     ready,
-    setRecord,
-    deleteRecord,
-    loadRecords,
-    count,
+    reduce,
+    request,
   }
 }

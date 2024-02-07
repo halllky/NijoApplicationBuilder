@@ -45,15 +45,15 @@ const Page = () => {
 
   useEffect(() => {
     if (multiViewIsReady) {
-      (async () => {
-        const items = [...inmemoryRemoteRepos].map(([, item]) => ({ ...item }))
-        const state = await getLocalRepositoryState()
-        // TODO:
-        // - リモートとローカルのマージ
-        // - itemKeyの状態遷移をちゃんと考える。
-        //   特にstateが*や-になる瞬間
-      })()
-      loadAll().then(async local => {
+      // (async () => {
+      //   const items = [...inmemoryRemoteRepos].map(([, item]) => ({ ...item }))
+      //   const state = await getLocalRepositoryState()
+      //   // TODO:
+      //   // - リモートとローカルのマージ
+      //   // - itemKeyの状態遷移をちゃんと考える。
+      //   //   特にstateが*や-になる瞬間
+      // })()
+      loadAll().then(items => {
         reset({ items })
       })
     }
