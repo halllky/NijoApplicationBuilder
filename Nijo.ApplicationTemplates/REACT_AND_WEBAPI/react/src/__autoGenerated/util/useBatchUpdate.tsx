@@ -258,41 +258,6 @@ export const useLocalRepository = <T,>({
   }
 }
 
-// -----------------------------------------------
-// Paging
-
-type PagingState = {
-  itemCount: number | undefined
-  pageSize: number
-  currentPage: number
-}
-const pagingReducer = ReactUtil.defineReducer((state: PagingState) => ({
-  prevPage: () => ({ ...state, currentPage: Math.max(0, state.currentPage - 1) }),
-  nextPage: () => ({ ...state, currentPage: state.currentPage + 1 }),
-}))
-
-const usePaging = (pageSize: number = 20, itemCount?: number) => {
-  const [{ currentPage }, dispatch] = useReducer(pagingReducer, undefined, () => ({
-    itemCount,
-    pageSize,
-    currentPage: 0,
-  }))
-
-  const prevPage = useCallback(() => {
-    dispatch(state => state.prevPage())
-  }, [dispatch])
-
-  const nextPage = useCallback(() => {
-    dispatch(state => state.nextPage())
-  }, [dispatch])
-
-  return {
-    currentPage,
-    prevPage,
-    nextPage,
-  }
-}
-
 // ---------------------------------------
 // IndexedDB
 export const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }: {
