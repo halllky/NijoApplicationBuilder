@@ -198,9 +198,10 @@ const useInMemoryRemoteRepository = () => {
 
   const save = useCallback(async (
     localReposItems: Util.LocalRepositoryStateAndKeyAndItem<TestData>[],
-    commit: (itemKey: string) => Promise<void>
+    commit: (...itemKeys: string[]) => Promise<void>
   ) => {
     const remote = new Map(inmemoryRemoteRepos)
+    const commited: string[] = []
 
     for (const item of localReposItems) {
       if (!item.item.key) continue
@@ -210,7 +211,7 @@ const useInMemoryRemoteRepository = () => {
           continue
         }
         remote.set(item.item.key, item.item)
-        await commit(item.itemKey)
+        commited.push(item.itemKey)
 
       } else if (item.state === '*') {
         if (!remote.has(item.item.key)) {
@@ -218,7 +219,7 @@ const useInMemoryRemoteRepository = () => {
           continue
         }
         remote.set(item.item.key, item.item)
-        await commit(item.itemKey)
+        commited.push(item.itemKey)
 
       } else if (item.state === '-') {
         if (!remote.has(item.item.key)) {
@@ -226,10 +227,11 @@ const useInMemoryRemoteRepository = () => {
           continue
         }
         remote.delete(item.item.key)
-        await commit(item.itemKey)
+        commited.push(item.itemKey)
       }
     }
     setInmemoryRemoteRepos(remote)
+    await commit(...commited)
     dispatchMsg(msg => msg.info('保存しました。'))
   }, [dispatchMsg, inmemoryRemoteRepos])
 

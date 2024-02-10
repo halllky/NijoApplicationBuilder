@@ -122,7 +122,7 @@ export const useLocalRepository = <T,>({
 
   const { ready, reload: reloadContext } = useContext(LocalRepositoryContext)
   const { openCursor, openTable } = useIndexedDbLocalRepositoryTable()
-  const [localItems, setLocalItems] = useState<LocalRepositoryStateAndKeyAndItem<T>[]>(() => [])
+  const [localItems, dispatch] = useReducer<typeof arrayReducer<LocalRepositoryStateAndKeyAndItem<T>>>(arrayReducer, [])
 
   const recalculateItems = useCallback(async () => {
     const unhandled = new Map<string, LocalRepositoryStoredItem>()
@@ -133,17 +133,15 @@ export const useLocalRepository = <T,>({
       }
     })
     const itemsWithState: LocalRepositoryStateAndKeyAndItem<T>[] = []
-    if (remoteItems) {
-      for (const remote of remoteItems) {
-        const key = getItemKey(remote)
-        const localItem = unhandled.get(key)
-        if (localItem) {
-          const item = deserialize(localItem.serializedItem)
-          itemsWithState.push({ itemKey: localItem.itemKey, item, state: localItem.state })
-          unhandled.delete(key)
-        } else {
-          itemsWithState.push({ itemKey: key, item: remote, state: '' })
-        }
+    for (const remote of (remoteItems ?? [])) {
+      const key = getItemKey(remote)
+      const localItem = unhandled.get(key)
+      if (localItem) {
+        const item = deserialize(localItem.serializedItem)
+        itemsWithState.push({ itemKey: localItem.itemKey, item, state: localItem.state })
+        unhandled.delete(key)
+      } else {
+        itemsWithState.push({ itemKey: key, item: remote, state: '' })
       }
     }
     const arrUnhandled = Array.from(unhandled.values()).map<LocalRepositoryStateAndKeyAndItem<T>>(x => ({
@@ -152,9 +150,9 @@ export const useLocalRepository = <T,>({
       state: x.state,
     }))
     const recalculated = [...arrUnhandled, ...itemsWithState]
-    setLocalItems(recalculated)
+    dispatch(arr => arr.reset(recalculated))
     return recalculated
-  }, [remoteItems, openCursor, getItemKey, dataTypeKey, deserialize])
+  }, [remoteItems, openCursor, getItemKey, dataTypeKey, deserialize, dispatch])
 
   useEffect(() => {
     if (ready) recalculateItems()
@@ -165,11 +163,11 @@ export const useLocalRepository = <T,>({
     const itemName = getItemName?.(item) ?? ''
     const serializedItem = serialize(item)
     const state: LocalRepositoryState = '+'
-    setLocalItems([{ item, itemKey, state }, ...localItems])
+    dispatch(arr => arr.insert({ item, itemKey, state }))
     await openTable(table => table.put({ state, dataTypeKey, itemKey, itemName, serializedItem }))
     await reloadContext()
     return { itemKey, state, item }
-  }, [localItems, dataTypeKey, openTable, reloadContext, getItemName, serialize])
+  }, [dataTypeKey, openTable, reloadContext, getItemName, serialize, dispatch])
 
   const updateLocalRepositoryItem = useCallback(async (itemKey: string, item: T): Promise<LocalRepositoryStateAndKeyAndItem<T>> => {
     const serializedItem = serialize(item)
@@ -178,11 +176,11 @@ export const useLocalRepository = <T,>({
     const state: LocalRepositoryState = stateBeforeUpdate === '+' || stateBeforeUpdate === '-'
       ? stateBeforeUpdate
       : '*'
-    setLocalItems(replaceOrUnshift(localItems, x => getItemKey(x.item), { item, itemKey, state }))
+    dispatch(arr => arr.upsert(x => getItemKey(x.item), { item, itemKey, state }))
     await openTable(table => table.put({ dataTypeKey, itemKey, itemName, serializedItem, state }))
     await reloadContext()
     return { itemKey, state, item }
-  }, [localItems, dataTypeKey, getItemKey, openTable, reloadContext, serialize, getItemName])
+  }, [dataTypeKey, getItemKey, openTable, reloadContext, serialize, getItemName, dispatch])
 
   const deleteLocalRepositoryItem = useCallback(async (dbKey: string, item: T): Promise<{ remains: boolean }> => {
     const localState = (await openTable(table => table.get([dataTypeKey, dbKey])))?.state
@@ -195,7 +193,7 @@ export const useLocalRepository = <T,>({
 
     } else if (localState === '+') {
       // 新規作成後コミット前の場合: 物理削除
-      setLocalItems(localItems.filter(x => x.itemKey !== dbKey))
+      dispatch(arr => arr.delete(x => x.itemKey === dbKey))
       await openTable(table => table.delete([dataTypeKey, dbKey]))
       await reloadContext()
       return { remains: false }
@@ -205,7 +203,7 @@ export const useLocalRepository = <T,>({
       const serializedItem = serialize(item)
       const itemName = getItemName?.(item) ?? ''
       const state: LocalRepositoryState = '-'
-      setLocalItems(replaceOrUnshift(localItems, x => getItemKey(x.item), { item, itemKey: dbKey, state }))
+      dispatch(arr => arr.upsert(x => getItemKey(x.item), { item, itemKey: dbKey, state }))
       await openTable(table => table.put({ dataTypeKey, itemKey: dbKey, itemName, serializedItem, state }))
       await reloadContext()
       return { remains: true }
@@ -214,7 +212,7 @@ export const useLocalRepository = <T,>({
       // ローカルにもリモートにも無い場合: 何もしない
       return { remains: true }
     }
-  }, [localItems, dataTypeKey, openTable, reloadContext, serialize, getItemKey, getItemName])
+  }, [dataTypeKey, openTable, reloadContext, serialize, getItemKey, getItemName, dispatch])
 
   const commit = useCallback(async (...itemKeys: string[]): Promise<void> => {
     for (const itemKey of itemKeys) {
@@ -244,14 +242,23 @@ export const useLocalRepository = <T,>({
   }
 }
 
-const replaceOrUnshift = <TItem, TKey>(arr: TItem[], getKey: (t: TItem) => TKey, item: TItem): TItem[] => {
-  const key = getKey(item)
-  const index = arr.findIndex(x => getKey(x) === key)
-  if (index === -1) {
-    return [item, ...arr]
-  } else {
-    const arr2 = [...arr]
-    arr2.splice(index, 1, item)
+const arrayReducer = ReactUtil.defineReducer(<T,>(state: T[]) => ({
+  reset: (arr: T[]) => arr,
+  delete: (where: (t: T) => boolean) => state.filter(t => !where(t)),
+  insert: (t: T, index?: number) => {
+    const arr2 = [...state]
+    arr2.splice(index ?? 0, 0, t)
     return arr2
-  }
-}
+  },
+  upsert: <TKey,>(getKey: (item: T) => TKey, newItem: T) => {
+    const key = getKey(newItem)
+    const index = state.findIndex(x => getKey(x) === key)
+    if (index === -1) {
+      return [newItem, ...state]
+    } else {
+      const arr2 = [...state]
+      arr2.splice(index, 1, newItem)
+      return arr2
+    }
+  },
+}))
