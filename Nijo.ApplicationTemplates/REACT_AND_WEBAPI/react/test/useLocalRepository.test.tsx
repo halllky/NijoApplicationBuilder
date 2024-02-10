@@ -107,10 +107,10 @@ test('useLocalRepository 状態遷移テスト（排他に引っかかるパタ�
     expect(await current(Local)).toEqual<LocalState[]>([
     ])
 
-    let a = Remote.get('a')
-    let b = Remote.get('b')
-    let c = Remote.get('c')
-    let d = Remote.get('d')
+    let a = (await Local.loadOne('a'))!
+    let b = (await Local.loadOne('b'))!
+    let c = (await Local.loadOne('c'))!
+    let d = (await Local.loadOne('d'))!
     a = await edit(Local, a, 'お')
     a = await edit(Local, a, 'か')
     b = await edit(Local, b, 'ぱ')
@@ -124,14 +124,13 @@ test('useLocalRepository 状態遷移テスト（排他に引っかかるパタ�
       ['*', { key: 'b', name: 'ぴ', version: 0 }],
       ['-', { key: 'c', name: '', version: 0 }],
       ['-', { key: 'd', name: '', version: 0 }],
-      ['', { key: 'z', name: '', version: 0 }],
     ])
   })
 
   // 画面表示 4回目
   await scope(async Local => {
-    save(Remote, Local)
-    save(Remote, Local)
+    await save(Remote, Local)
+    await save(Remote, Local)
 
     expect(await current(Local)).toEqual<LocalState[]>([
     ])
@@ -270,7 +269,7 @@ async function save(remote: TestRemoteRepos, local: TestLocalRepos): Promise<voi
       } else if (localItem.state === '*') {
         if (!localItem.item.key) { console.error(`キーなし: ${localItem.item.name}`); continue }
         if (!remote.has(localItem.item.key)) { console.error(`更新対象なし: ${localItem.item.key}`); continue }
-        remote.set(localItem.item.key, localItem.item)
+        remote.set(localItem.item.key, { ...localItem.item, version: localItem.item.version + 1 })
         await local.commit(localItem.itemKey)
 
       } else if (localItem.state === '-') {
