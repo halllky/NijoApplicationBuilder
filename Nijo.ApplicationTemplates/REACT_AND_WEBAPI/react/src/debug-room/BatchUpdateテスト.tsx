@@ -214,7 +214,6 @@ const useInMemoryRemoteRepository = () => {
 
       } else if (item.state === '*') {
         if (!remote.has(item.item.key)) {
-          console.log(item.itemKey, item.state)
           dispatchMsg(msg => msg.error(`更新対象なし: ${item.item.key}`))
           continue
         }

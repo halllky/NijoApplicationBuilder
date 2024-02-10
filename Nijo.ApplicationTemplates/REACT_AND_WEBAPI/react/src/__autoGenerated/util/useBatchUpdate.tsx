@@ -184,47 +184,53 @@ export const useLocalRepository = <T,>({
     return { itemKey, state, item }
   }, [localItems, dataTypeKey, getItemKey, openTable, reloadContext, serialize, getItemName])
 
-  const deleteLocalRepositoryItem = useCallback(async (itemKey: string, item: T): Promise<{ remains: boolean }> => {
-    const stateBeforeUpdate = (await openTable(table => table.get([dataTypeKey, itemKey])))?.state
-    console.log(itemKey, stateBeforeUpdate)
-    if (stateBeforeUpdate === '-') {
+  const deleteLocalRepositoryItem = useCallback(async (dbKey: string, item: T): Promise<{ remains: boolean }> => {
+    const localState = (await openTable(table => table.get([dataTypeKey, dbKey])))?.state
+    const itemKey = getItemKey(item)
+    const existsRemote = remoteItems?.some(x => getItemKey(x) === itemKey)
+
+    if (localState === '-') {
       // 既に削除済みの場合: 何もしない
       return { remains: true }
 
-    } else if (stateBeforeUpdate === undefined) {
-      // ローカルにもリモートに無い場合: 何もしない
-      return { remains: true }
-
-    } else if (stateBeforeUpdate === '+') {
+    } else if (localState === '+') {
       // 新規作成後コミット前の場合: 物理削除
-      setLocalItems(localItems.filter(x => x.itemKey !== itemKey))
-      await openTable(table => table.delete([dataTypeKey, itemKey]))
+      setLocalItems(localItems.filter(x => x.itemKey !== dbKey))
+      await openTable(table => table.delete([dataTypeKey, dbKey]))
       await reloadContext()
       return { remains: false }
 
-    } else {
+    } else if (localState === '*' || localState === '' || existsRemote) {
       // リモートにある場合: 削除済みにマークする
       const serializedItem = serialize(item)
       const itemName = getItemName?.(item) ?? ''
       const state: LocalRepositoryState = '-'
-      setLocalItems(replaceOrUnshift(localItems, x => getItemKey(x.item), { item, itemKey, state }))
-      await openTable(table => table.put({ dataTypeKey, itemKey, itemName, serializedItem, state }))
+      setLocalItems(replaceOrUnshift(localItems, x => getItemKey(x.item), { item, itemKey: dbKey, state }))
+      await openTable(table => table.put({ dataTypeKey, itemKey: dbKey, itemName, serializedItem, state }))
       await reloadContext()
+      return { remains: true }
+
+    } else {
+      // ローカルにもリモートにも無い場合: 何もしない
       return { remains: true }
     }
   }, [localItems, dataTypeKey, openTable, reloadContext, serialize, getItemKey, getItemName])
 
-  const commit = useCallback(async (itemKey: string): Promise<void> => {
-    await openTable(table => table.delete([dataTypeKey, itemKey]))
+  const commit = useCallback(async (...itemKeys: string[]): Promise<void> => {
+    for (const itemKey of itemKeys) {
+      await openTable(table => table.delete([dataTypeKey, itemKey]))
+    }
+    await recalculateItems()
     await reloadContext()
-  }, [openTable, reloadContext, dataTypeKey])
+  }, [recalculateItems, openTable, reloadContext, dataTypeKey])
 
   const reset = useCallback(async (): Promise<void> => {
     await openCursor('readwrite', cursor => {
       if (cursor.value.dataTypeKey === dataTypeKey) cursor.delete()
     })
+    await recalculateItems()
     await reloadContext()
-  }, [openCursor, dataTypeKey, reloadContext])
+  }, [recalculateItems, openCursor, dataTypeKey, reloadContext])
 
   return {
     ready,
