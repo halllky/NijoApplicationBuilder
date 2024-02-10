@@ -103,6 +103,7 @@ export type LocalRepositoryArgs<T> = {
   getItemName?: (t: T) => string
   serialize: (t: T) => string
   deserialize: (str: string) => T
+  remoteItems?: T[]
 }
 export type LocalRepositoryStateAndKeyAndItem<T> = {
   itemKey: string
@@ -116,10 +117,46 @@ export const useLocalRepository = <T,>({
   getItemName,
   serialize,
   deserialize,
+  remoteItems,
 }: LocalRepositoryArgs<T>) => {
 
   const { ready, reload: reloadContext } = useContext(LocalRepositoryContext)
   const { openCursor, openTable } = useIndexedDbLocalRepositoryTable()
+  const [localItems, setLocalItems] = useState<LocalRepositoryStateAndKeyAndItem<T>[]>(() => [])
+
+  const recalculateItems = useCallback(async () => {
+    const unhandled = new Map<string, LocalRepositoryStoredItem>()
+    await openCursor('readonly', cursor => {
+      if (cursor.value.dataTypeKey === dataTypeKey) {
+        const key = getItemKey(deserialize(cursor.value.serializedItem))
+        unhandled.set(key, cursor.value)
+      }
+    })
+    const itemsWithState: LocalRepositoryStateAndKeyAndItem<T>[] = []
+    if (remoteItems) {
+      for (const remote of remoteItems) {
+        const key = getItemKey(remote)
+        const localItem = unhandled.get(key)
+        if (localItem) {
+          const item = deserialize(localItem.serializedItem)
+          itemsWithState.push({ itemKey: localItem.itemKey, item, state: localItem.state })
+          unhandled.delete(key)
+        } else {
+          itemsWithState.push({ itemKey: key, item: remote, state: '' })
+        }
+      }
+    }
+    const arrUnhandled = Array.from(unhandled.values()).map<LocalRepositoryStateAndKeyAndItem<T>>(x => ({
+      item: deserialize(x.serializedItem),
+      itemKey: x.itemKey,
+      state: x.state,
+    }))
+    setLocalItems([...arrUnhandled, ...itemsWithState])
+  }, [remoteItems, openCursor, getItemKey, dataTypeKey, deserialize])
+
+  useEffect(() => {
+    if (ready) recalculateItems()
+  }, [ready, recalculateItems])
 
   const loadAll = useCallback(async (): Promise<LocalRepositoryStateAndKeyAndItem<T>[]> => {
     const arr: LocalRepositoryStateAndKeyAndItem<T>[] = []
@@ -168,10 +205,11 @@ export const useLocalRepository = <T,>({
     const itemName = getItemName?.(item) ?? ''
     const serializedItem = serialize(item)
     const state: LocalRepositoryState = '+'
+    setLocalItems([{ item, itemKey, state }, ...localItems])
     await openTable(table => table.put({ state, dataTypeKey, itemKey, itemName, serializedItem }))
     await reloadContext()
     return { itemKey, state, item }
-  }, [dataTypeKey, openTable, reloadContext, getItemName, serialize])
+  }, [localItems, dataTypeKey, openTable, reloadContext, getItemName, serialize])
 
   const updateLocalRepositoryItem = useCallback(async (itemKey: string, item: T): Promise<LocalRepositoryStateAndKeyAndItem<T>> => {
     const serializedItem = serialize(item)
@@ -180,18 +218,19 @@ export const useLocalRepository = <T,>({
     const state: LocalRepositoryState = stateBeforeUpdate === '+' || stateBeforeUpdate === '-'
       ? stateBeforeUpdate
       : '*'
+    setLocalItems(replaceOrUnshift(localItems, x => getItemKey(x.item), { item, itemKey, state }))
     await openTable(table => table.put({ dataTypeKey, itemKey, itemName, serializedItem, state }))
     await reloadContext()
     return { itemKey, state, item }
-  }, [dataTypeKey, openTable, reloadContext, serialize, getItemName])
+  }, [localItems, dataTypeKey, getItemKey, openTable, reloadContext, serialize, getItemName])
 
   const deleteLocalRepositoryItem = useCallback(async (itemKey: string, item: T): Promise<{ remains: boolean }> => {
     const stateBeforeUpdate = (await openTable(table => table.get([dataTypeKey, itemKey])))?.state
-    console.log(itemKey, stateBeforeUpdate)
     if (stateBeforeUpdate === '-') {
       return { remains: true }
 
     } else if (stateBeforeUpdate === '+') {
+      setLocalItems(localItems.filter(x => x.itemKey !== itemKey))
       await openTable(table => table.delete([dataTypeKey, itemKey]))
       await reloadContext()
       return { remains: false }
@@ -200,11 +239,12 @@ export const useLocalRepository = <T,>({
       const serializedItem = serialize(item)
       const itemName = getItemName?.(item) ?? ''
       const state: LocalRepositoryState = '-'
+      setLocalItems(replaceOrUnshift(localItems, x => getItemKey(x.item), { item, itemKey, state }))
       await openTable(table => table.put({ dataTypeKey, itemKey, itemName, serializedItem, state }))
       await reloadContext()
       return { remains: true }
     }
-  }, [dataTypeKey, openTable, reloadContext, serialize, getItemKey, getItemName])
+  }, [localItems, dataTypeKey, openTable, reloadContext, serialize, getItemKey, getItemName])
 
   const commit = useCallback(async (itemKey: string): Promise<void> => {
     await openTable(table => table.delete([dataTypeKey, itemKey]))
@@ -220,6 +260,7 @@ export const useLocalRepository = <T,>({
 
   return {
     ready,
+    localItems,
     loadAll,
     withLocalReposState,
     addToLocalRepository,
@@ -227,5 +268,17 @@ export const useLocalRepository = <T,>({
     deleteLocalRepositoryItem,
     commit,
     reset,
+  }
+}
+
+const replaceOrUnshift = <TItem, TKey>(arr: TItem[], getKey: (t: TItem) => TKey, item: TItem): TItem[] => {
+  const key = getKey(item)
+  const index = arr.findIndex(x => getKey(x) === key)
+  if (index === -1) {
+    return [item, ...arr]
+  } else {
+    const arr2 = [...arr]
+    arr2.splice(index, 1, item)
+    return arr2
   }
 }
