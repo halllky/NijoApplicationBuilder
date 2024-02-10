@@ -125,31 +125,21 @@ export const useLocalRepository = <T,>({
   const [localItems, dispatch] = useReducer<typeof arrayReducer<LocalRepositoryStateAndKeyAndItem<T>>>(arrayReducer, [])
 
   const recalculateItems = useCallback(async () => {
-    const unhandled = new Map<string, LocalRepositoryStoredItem>()
+    const localItems: LocalRepositoryStateAndKeyAndItem<T>[] = []
     await openCursor('readonly', cursor => {
-      if (cursor.value.dataTypeKey === dataTypeKey) {
-        const key = getItemKey(deserialize(cursor.value.serializedItem))
-        unhandled.set(key, cursor.value)
-      }
+      if (cursor.value.dataTypeKey !== dataTypeKey) return
+      localItems.push({
+        state: cursor.value.state,
+        itemKey: cursor.value.itemKey,
+        item: deserialize(cursor.value.serializedItem),
+      })
     })
-    const itemsWithState: LocalRepositoryStateAndKeyAndItem<T>[] = []
-    for (const remote of (remoteItems ?? [])) {
-      const key = getItemKey(remote)
-      const localItem = unhandled.get(key)
-      if (localItem) {
-        const item = deserialize(localItem.serializedItem)
-        itemsWithState.push({ itemKey: localItem.itemKey, item, state: localItem.state })
-        unhandled.delete(key)
-      } else {
-        itemsWithState.push({ itemKey: key, item: remote, state: '' })
-      }
-    }
-    const arrUnhandled = Array.from(unhandled.values()).map<LocalRepositoryStateAndKeyAndItem<T>>(x => ({
-      item: deserialize(x.serializedItem),
-      itemKey: x.itemKey,
-      state: x.state,
-    }))
-    const recalculated = [...arrUnhandled, ...itemsWithState]
+    const recalculated = crossJoin(
+      localItems, local => local.itemKey,
+      (remoteItems ?? []), remote => getItemKey(remote),
+    ).map<LocalRepositoryStateAndKeyAndItem<T>>(pair => {
+      return pair.left ?? { state: '', itemKey: pair.key, item: pair.right }
+    })
     dispatch(arr => arr.reset(recalculated))
     return recalculated
   }, [remoteItems, openCursor, getItemKey, dataTypeKey, deserialize, dispatch])
@@ -215,9 +205,7 @@ export const useLocalRepository = <T,>({
   }, [dataTypeKey, openTable, reloadContext, serialize, getItemKey, getItemName, dispatch])
 
   const commit = useCallback(async (...itemKeys: string[]): Promise<void> => {
-    for (const itemKey of itemKeys) {
-      await openTable(table => table.delete([dataTypeKey, itemKey]))
-    }
+    for (const itemKey of itemKeys) await openTable(table => table.delete([dataTypeKey, itemKey]))
     await recalculateItems()
     await reloadContext()
   }, [recalculateItems, openTable, reloadContext, dataTypeKey])
@@ -242,6 +230,8 @@ export const useLocalRepository = <T,>({
   }
 }
 
+// ------------------------------------
+
 const arrayReducer = ReactUtil.defineReducer(<T,>(state: T[]) => ({
   reset: (arr: T[]) => arr,
   delete: (where: (t: T) => boolean) => state.filter(t => !where(t)),
@@ -262,3 +252,64 @@ const arrayReducer = ReactUtil.defineReducer(<T,>(state: T[]) => ({
     }
   },
 }))
+
+const crossJoin = <T1, T2, TKey>(
+  left: T1[], getKeyLeft: (t: T1) => TKey,
+  right: T2[], getKeyRight: (t: T2) => TKey
+): CrossJoinResult<T1, T2, TKey>[] => {
+
+  const sortedLeft = [...left]
+  sortedLeft.sort((a, b) => {
+    const keyA = getKeyLeft(a)
+    const keyB = getKeyLeft(b)
+    if (keyA < keyB) return -1
+    if (keyA > keyB) return 1
+    return 0
+  })
+  const sortedRight = [...right]
+  sortedRight.sort((a, b) => {
+    const keyA = getKeyRight(a)
+    const keyB = getKeyRight(b)
+    if (keyA < keyB) return -1
+    if (keyA > keyB) return 1
+    return 0
+  })
+  const result: CrossJoinResult<T1, T2, TKey>[] = []
+  let cursorLeft = 0
+  let cursorRight = 0
+  while (true) {
+    const left = sortedLeft[cursorLeft]
+    const right = sortedRight[cursorRight]
+    if (left === undefined && right === undefined) {
+      break
+    }
+    if (left === undefined && right !== undefined) {
+      result.push({ key: getKeyRight(right), right })
+      cursorRight++
+      continue
+    }
+    if (left !== undefined && right === undefined) {
+      result.push({ key: getKeyLeft(left), left })
+      cursorLeft++
+      continue
+    }
+    const keyLeft = getKeyLeft(left)
+    const keyRight = getKeyRight(right)
+    if (keyLeft === keyRight) {
+      result.push({ key: keyLeft, left, right })
+      cursorLeft++
+      cursorRight++
+    } else if (keyLeft < keyRight) {
+      result.push({ key: keyLeft, left })
+      cursorLeft++
+    } else if (keyLeft > keyRight) {
+      result.push({ key: keyRight, right })
+      cursorRight++
+    }
+  }
+  return result
+}
+type CrossJoinResult<T1, T2, TKey>
+  = { key: TKey, left: T1, right: T2 }
+  | { key: TKey, left: T1, right?: never }
+  | { key: TKey, left?: never, right: T2 }
