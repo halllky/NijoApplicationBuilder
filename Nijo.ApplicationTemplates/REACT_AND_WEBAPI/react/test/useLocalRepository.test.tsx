@@ -153,7 +153,7 @@ type TestData = {
   version: number
 }
 type LocalState = [LocalRepositoryState, TestData]
-type TestLocalRepos = ReturnType<typeof useLocalRepository<TestData>>
+type TestLocalRepos = { current: ReturnType<typeof useLocalRepository<TestData>> }
 type TestRemoteRepos = Map<string, TestData>
 const REPOS_SETTING: LocalRepositoryArgs<TestData> = {
   dataTypeKey: 'TEST-DATA-20240204',
@@ -184,7 +184,7 @@ const setupLocalRepositoryHook = () => {
     // 内部でuseEffectを使っているので初期化完了まで待つ
     await waitFor(() => expect(result.current.ready).toBe(true))
 
-    await fn(result.current)
+    await fn(result)
     unmount()
   }
 
@@ -206,15 +206,15 @@ const setupLocalRepositoryHook = () => {
 }
 
 const isLocal = (localOrRemote: TestLocalRepos | TestRemoteRepos): localOrRemote is TestLocalRepos => {
-  return typeof (localOrRemote as TestLocalRepos).addToLocalRepository === 'function'
+  return typeof (localOrRemote as TestLocalRepos).current?.addToLocalRepository === 'function'
 }
 async function current(local: TestLocalRepos): Promise<LocalState[]>
 async function current(remote: TestRemoteRepos): Promise<TestData[]>
 async function current(localOrRemote: TestLocalRepos | TestRemoteRepos): Promise<(LocalState[] | TestData[])> {
   if (isLocal(localOrRemote)) {
     return await act(async () => {
-      const data = await localOrRemote.loadAll()
-      const localState: LocalState[] = data
+      const localState: LocalState[] = localOrRemote.current
+        .localItems
         .sort((a, b) => {
           if ((a.item.key ?? '') < (b.item.key ?? '')) return -1
           if ((a.item.key ?? '') > (b.item.key ?? '')) return 1
@@ -239,7 +239,7 @@ async function add(localOrRemote: TestLocalRepos | TestRemoteRepos, key: string)
   const data: TestData = { key, name: '', version: 0 }
   if (isLocal(localOrRemote)) {
     return await act(async () => {
-      return await localOrRemote.addToLocalRepository(data)
+      return await localOrRemote.current.addToLocalRepository(data)
     })
   } else {
     if (localOrRemote.has(key)) throw new Error(`キー重複: ${key}`)
@@ -249,47 +249,37 @@ async function add(localOrRemote: TestLocalRepos | TestRemoteRepos, key: string)
 async function edit(local: TestLocalRepos, item: LocalRepositoryStateAndKeyAndItem<TestData>, name: string): Promise<LocalRepositoryStateAndKeyAndItem<TestData>> {
   return await act(async () => {
     if (!item.itemKey) throw new Error('Key is nothing.')
-    return await local.updateLocalRepositoryItem(item.itemKey, { ...item.item, name })
+    return await local.current.updateLocalRepositoryItem(item.itemKey, { ...item.item, name })
   })
 }
 async function remove(local: TestLocalRepos, item: LocalRepositoryStateAndKeyAndItem<TestData>): Promise<void> {
   await act(async () => {
-    await local.deleteLocalRepositoryItem(item.itemKey, item.item)
+    await local.current.deleteLocalRepositoryItem(item.itemKey, item.item)
   })
 }
 async function get(remote: TestRemoteRepos, local: TestLocalRepos, key: string): Promise<LocalRepositoryStateAndKeyAndItem<TestData> | undefined> {
-  return await act(async () => {
-    const inRemote = remote.get(key)
-    if (inRemote) {
-      const withState = (await local.withLocalReposState([inRemote], false))
-      return withState[0]
-    } else {
-      const withState = (await local.withLocalReposState([], true))
-      return withState.find(x => x.item.key === key)
-    }
-  })
+  return local.current.localItems.find(x => x.item.key === key)
 }
 async function save(remote: TestRemoteRepos, local: TestLocalRepos): Promise<void> {
   await act(async () => {
-    const allLocalItems = await local.loadAll()
-    for (const localItem of allLocalItems) {
+    for (const localItem of local.current.localItems) {
       if (localItem.state === '+') {
         if (!localItem.item.key) { console.error(`キーなし: ${localItem.item.name}`); continue }
         if (remote.has(localItem.item.key)) { console.error(`キー重複: ${localItem.item.key}`); continue }
         remote.set(localItem.item.key, localItem.item)
-        await local.commit(localItem.itemKey)
+        await local.current.commit(localItem.itemKey)
 
       } else if (localItem.state === '*') {
         if (!localItem.item.key) { console.error(`キーなし: ${localItem.item.name}`); continue }
         if (!remote.has(localItem.item.key)) { console.error(`更新対象なし: ${localItem.item.key}`); continue }
         remote.set(localItem.item.key, { ...localItem.item, version: localItem.item.version + 1 })
-        await local.commit(localItem.itemKey)
+        await local.current.commit(localItem.itemKey)
 
       } else if (localItem.state === '-') {
         if (!localItem.item.key) { console.error(`キーなし: ${localItem.item.name}`); continue }
         if (!remote.has(localItem.item.key)) { console.error(`更新対象なし: ${localItem.item.key}`); continue }
         remote.delete(localItem.item.key)
-        await local.commit(localItem.itemKey)
+        await local.current.commit(localItem.itemKey)
       }
     }
   })

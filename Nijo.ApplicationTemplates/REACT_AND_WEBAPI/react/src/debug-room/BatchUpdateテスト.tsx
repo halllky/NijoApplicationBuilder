@@ -36,17 +36,17 @@ const Page = () => {
     deserialize: str => JSON.parse(str),
     getItemKey: data => data.key ?? '',
     getItemName: data => data.name ?? '',
-  }), [])
+    remoteItems: arrRemoteRepos,
+  }), [arrRemoteRepos])
 
   const {
-    ready: localReposIsReady,
-    loadAll,
-    withLocalReposState,
+    localItems,
     addToLocalRepository,
     updateLocalRepositoryItem,
     deleteLocalRepositoryItem,
     commit,
     reset: resetLocalRepos,
+    reload: reloadLocalRepos,
   } = Util.useLocalRepository(reposSetting)
 
   const handleAdd: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
@@ -72,10 +72,8 @@ const Page = () => {
   }, [remove, deleteLocalRepositoryItem])
 
   const handleReload = useCallback(async () => {
-    if (!localReposIsReady) return
-    const items = await withLocalReposState(arrRemoteRepos)
-    reset({ items })
-  }, [localReposIsReady, arrRemoteRepos, withLocalReposState, reset])
+    reset({ items: await reloadLocalRepos() })
+  }, [reset, reloadLocalRepos])
 
   const handleCreateDummy = useCallback(async () => {
     const initialDummyData = createDefaultData()
@@ -86,9 +84,8 @@ const Page = () => {
   }, [append, addToLocalRepository])
 
   const handleCommit = useCallback(async () => {
-    const local = await loadAll()
-    await save(local, commit)
-  }, [save, commit, loadAll])
+    await save(localItems, commit)
+  }, [save, localItems, commit])
 
   const handleReset = useCallback(async () => {
     await resetLocalRepos()

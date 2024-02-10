@@ -151,54 +151,14 @@ export const useLocalRepository = <T,>({
       itemKey: x.itemKey,
       state: x.state,
     }))
-    setLocalItems([...arrUnhandled, ...itemsWithState])
+    const recalculated = [...arrUnhandled, ...itemsWithState]
+    setLocalItems(recalculated)
+    return recalculated
   }, [remoteItems, openCursor, getItemKey, dataTypeKey, deserialize])
 
   useEffect(() => {
     if (ready) recalculateItems()
   }, [ready, recalculateItems])
-
-  const loadAll = useCallback(async (): Promise<LocalRepositoryStateAndKeyAndItem<T>[]> => {
-    const arr: LocalRepositoryStateAndKeyAndItem<T>[] = []
-    await openCursor('readonly', cursor => {
-      if (cursor.value.dataTypeKey === dataTypeKey) arr.push({
-        item: deserialize(cursor.value.serializedItem),
-        itemKey: cursor.value.itemKey,
-        state: cursor.value.state,
-      })
-    })
-    return arr
-  }, [dataTypeKey, deserialize, openCursor, getItemKey])
-
-  const withLocalReposState = useCallback(async (remoteItems: T[], includesLocalReposOnly: boolean = true): Promise<LocalRepositoryStateAndKeyAndItem<T>[]> => {
-    const decorated: LocalRepositoryStateAndKeyAndItem<T>[] = []
-    const unhandled = new Map<string, LocalRepositoryStoredItem>()
-    await openCursor('readonly', cursor => {
-      if (cursor.value.dataTypeKey === dataTypeKey) {
-        const key = getItemKey(deserialize(cursor.value.serializedItem))
-        unhandled.set(key, cursor.value)
-      }
-    })
-    for (const remote of remoteItems) {
-      const key = getItemKey(remote)
-      const localItem = unhandled.get(key)
-      if (localItem) {
-        const item = deserialize(localItem.serializedItem)
-        decorated.push({ itemKey: localItem.itemKey, item, state: localItem.state })
-        unhandled.delete(key)
-      } else {
-        decorated.push({ itemKey: key, item: remote, state: '' })
-      }
-    }
-    if (includesLocalReposOnly) {
-      decorated.unshift(...Array.from(unhandled.values()).map<LocalRepositoryStateAndKeyAndItem<T>>(x => ({
-        item: deserialize(x.serializedItem),
-        itemKey: x.itemKey,
-        state: x.state,
-      })))
-    }
-    return decorated
-  }, [openCursor, getItemKey, dataTypeKey, deserialize])
 
   const addToLocalRepository = useCallback(async (item: T): Promise<LocalRepositoryStateAndKeyAndItem<T>> => {
     const itemKey = UUID.generate()
@@ -226,16 +186,24 @@ export const useLocalRepository = <T,>({
 
   const deleteLocalRepositoryItem = useCallback(async (itemKey: string, item: T): Promise<{ remains: boolean }> => {
     const stateBeforeUpdate = (await openTable(table => table.get([dataTypeKey, itemKey])))?.state
+    console.log(itemKey, stateBeforeUpdate)
     if (stateBeforeUpdate === '-') {
+      // 既に削除済みの場合: 何もしない
+      return { remains: true }
+
+    } else if (stateBeforeUpdate === undefined) {
+      // ローカルにもリモートに無い場合: 何もしない
       return { remains: true }
 
     } else if (stateBeforeUpdate === '+') {
+      // 新規作成後コミット前の場合: 物理削除
       setLocalItems(localItems.filter(x => x.itemKey !== itemKey))
       await openTable(table => table.delete([dataTypeKey, itemKey]))
       await reloadContext()
       return { remains: false }
 
     } else {
+      // リモートにある場合: 削除済みにマークする
       const serializedItem = serialize(item)
       const itemName = getItemName?.(item) ?? ''
       const state: LocalRepositoryState = '-'
@@ -261,13 +229,12 @@ export const useLocalRepository = <T,>({
   return {
     ready,
     localItems,
-    loadAll,
-    withLocalReposState,
     addToLocalRepository,
     updateLocalRepositoryItem,
     deleteLocalRepositoryItem,
     commit,
     reset,
+    reload: recalculateItems,
   }
 }
 
