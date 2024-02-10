@@ -45,30 +45,35 @@ type LocalRepositoryContextValue = {
   changes: LocalRepositoryItemListItem[]
   setToLocalRepository: (value: LocalRepositoryStoredItem) => Promise<void>
   deleteFromLocalRepository: (key: IDBValidKey) => Promise<void>
+  reload: () => Promise<void>
   ready: boolean
 }
 const LocalRepositoryContext = React.createContext<LocalRepositoryContextValue>({
   changes: [],
   setToLocalRepository: () => Promise.resolve(),
   deleteFromLocalRepository: () => Promise.resolve(),
+  reload: () => Promise.resolve(),
   ready: false,
 })
 
 export const LocalRepositoryContextProvider = ({ children }: {
   children?: React.ReactNode
 }) => {
-  const { ready, reduce, request, dump } = useIndexedDbLocalRepositoryTable()
+  const { ready, openCursor, request, dump } = useIndexedDbLocalRepositoryTable()
   const [changes, setChanges] = useState<LocalRepositoryItemListItem[]>([])
 
   const reload = useCallback(async () => {
-    const changes = await reduce<LocalRepositoryItemListItem[]>([], (arr, cursor) => [...arr, {
-      dataTypeKey: cursor.value.dataTypeKey,
-      state: cursor.value.state,
-      itemKey: cursor.value.itemKey,
-      itemName: cursor.value.itemName,
-    }])
+    const changes: LocalRepositoryItemListItem[] = []
+    await openCursor('readonly', cursor => {
+      changes.push({
+        dataTypeKey: cursor.value.dataTypeKey,
+        state: cursor.value.state,
+        itemKey: cursor.value.itemKey,
+        itemName: cursor.value.itemName,
+      })
+    })
     setChanges(changes)
-  }, [reduce, setChanges])
+  }, [openCursor, setChanges])
 
   const setToLocalRepository = useCallback(async (data: LocalRepositoryStoredItem) => {
     await request(table => table.put(data))
@@ -84,8 +89,9 @@ export const LocalRepositoryContextProvider = ({ children }: {
     changes,
     setToLocalRepository,
     deleteFromLocalRepository,
+    reload,
     ready,
-  }), [changes, setToLocalRepository, deleteFromLocalRepository, ready])
+  }), [changes, setToLocalRepository, deleteFromLocalRepository, ready, reload])
 
   useEffect(() => {
     if (ready) reload()
@@ -136,21 +142,21 @@ export const useLocalRepository = <T,>({
     deleteFromLocalRepository: delFromDb,
   } = useContext(LocalRepositoryContext)
   const {
-    reduce,
+    openCursor,
     request,
   } = useIndexedDbLocalRepositoryTable()
 
   const loadAll = useCallback(async (): Promise<LocalRepositoryStateAndKeyAndItem<T>[]> => {
-    return await reduce<LocalRepositoryStateAndKeyAndItem<T>[]>([], (arr, cursor) => {
-      return cursor.value.dataTypeKey === dataTypeKey
-        ? [...arr, {
-          item: deserialize(cursor.value.serializedItem),
-          itemKey: cursor.value.itemKey,
-          state: cursor.value.state,
-        }]
-        : arr
+    const arr: LocalRepositoryStateAndKeyAndItem<T>[] = []
+    await openCursor('readonly', cursor => {
+      if (cursor.value.dataTypeKey === dataTypeKey) arr.push({
+        item: deserialize(cursor.value.serializedItem),
+        itemKey: cursor.value.itemKey,
+        state: cursor.value.state,
+      })
     })
-  }, [dataTypeKey, deserialize, reduce, getItemKey])
+    return arr
+  }, [dataTypeKey, deserialize, openCursor, getItemKey])
 
   const getLocalRepositoryState = useCallback(async (itemKey: string): Promise<LocalRepositoryStateAndKeyAndItem<T> | undefined> => {
     // ローカルリポジトリにある場合はその内容を優先
@@ -234,9 +240,9 @@ export const useLocalRepository = <T,>({
   }, [delFromDb, dataTypeKey])
 
   const reset = useCallback(async (): Promise<void> => {
-    for (const item of await loadAll()) {
-      await delFromDb([dataTypeKey, item.itemKey])
-    }
+    await openCursor('readwrite', cursor => {
+      if (cursor.value.dataTypeKey === dataTypeKey) cursor.delete()
+    })
   }, [loadAll, delFromDb, dataTypeKey])
 
   return {
@@ -297,6 +303,7 @@ export const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }:
 }) => {
 
   const [, dispatchMsg] = Notification.useMsgContext()
+  const { reload } = useContext(LocalRepositoryContext)
   const [db, setDb] = useState<IDBDatabase>()
   const [ready, setReady] = useState(false)
 
@@ -321,25 +328,28 @@ export const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }:
   }, [dbName, dbVersion, tableName, dispatchMsg, ...keyPath])
 
   // 読み込み系処理全般
-  const reduce = useCallback(<T,>(initialState: T, fn: ((beforeState: T, cursor: IDBCursorWithValue) => T)): Promise<T> => {
+  type IDBCursorWithValueEx<T> = Omit<IDBCursorWithValue, 'value'> & { value: T }
+  const openCursor = useCallback(async (mode: IDBTransactionMode, fn: ((cursor: IDBCursorWithValueEx<T>) => void)): Promise<void> => {
     if (!db) throw Promise.reject('データベースが初期化されていません。')
-    return new Promise<T>((resolve, reject) => {
-      const transaction = db.transaction([tableName], 'readonly')
+    await new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction([tableName], mode)
       const objectStore = transaction.objectStore(tableName)
       const request = objectStore.openCursor()
-      let currentState = initialState
       request.onerror = ev => reject(ev)
       request.onsuccess = ev => {
-        const cursor = (ev.target as IDBRequest<IDBCursorWithValue>).result
+        const cursor = (ev.target as IDBRequest<IDBCursorWithValueEx<T>>).result
         if (cursor) {
-          currentState = fn(currentState, cursor)
+          fn(cursor)
           cursor.continue()
         } else {
-          resolve(currentState)
+          resolve()
         }
       }
     })
-  }, [db, tableName])
+    if (mode === 'readwrite') {
+      await reload()
+    }
+  }, [db, tableName, reload])
 
   // put, deleteなどのIDBObjectStoreのAPIを直接使うもの全般
   const request = useCallback(<T,>(fn: ((store: IDBObjectStore) => IDBRequest<T>), mode: IDBTransactionMode = 'readwrite'): Promise<T> => {
@@ -355,15 +365,16 @@ export const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }:
 
   // テスト用
   const dump = useCallback(async () => {
-    return await reduce([] as T[], (state, cursor) => {
-      state.push(cursor.value)
-      return state
+    const arr: T[] = []
+    await openCursor('readonly', cursor => {
+      arr.push(cursor.value)
     })
-  }, [reduce])
+    return arr
+  }, [openCursor])
 
   return {
     ready,
-    reduce,
+    openCursor,
     request,
     dump,
   }
