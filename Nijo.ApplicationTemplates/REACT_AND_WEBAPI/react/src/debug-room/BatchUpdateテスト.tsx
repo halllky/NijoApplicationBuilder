@@ -102,11 +102,16 @@ const Page = () => {
       className="w-full h-full p-2"
       style={{ fontFamily: '"Arial", "BIZ UDゴシック"', fontSize: 14 }}
     >
-      <Panel defaultSize={20}>
+      <Panel defaultSize={21} className="flex flex-col">
+        <div className="flex gap-2 justify-start">
+          <Input.Button onClick={handleCommit}>コミット</Input.Button>
+          <Input.Button onClick={handleReset}>リセット</Input.Button>
+          <div className="flex-1"></div>
+        </div>
         <Collection.DataTable
           data={changes}
           columns={LIST_COLS}
-          className="h-full"
+          className="flex-1"
         />
       </Panel>
 
@@ -122,8 +127,6 @@ const Page = () => {
               <Input.Button onClick={handleCreateDummy}>ダミー</Input.Button>
               <div className="flex-1"></div>
               <Input.Button onClick={handleReload}>再読込</Input.Button>
-              <Input.Button onClick={handleCommit}>コミット</Input.Button>
-              <Input.Button onClick={handleReset}>リセット</Input.Button>
             </div>
             <Collection.DataTable
               ref={dtRef}
@@ -162,7 +165,7 @@ type TestData = {
 }
 
 const LIST_COLS: Collection.ColumnDefEx<Util.TreeNode<Util.LocalRepositoryItemListItem>>[] = [
-  { id: 'col0', header: '　', accessorFn: x => x.item.state },
+  { id: 'col0', header: '　', accessorFn: x => x.item.state, size: 12 },
   { id: 'col1', header: '　', accessorFn: x => x.item.itemName },
 ]
 const LOCAL_REPOS_COLS: Collection.ColumnDefEx<Util.TreeNode<Util.LocalRepositoryStateAndKeyAndItem<TestData>>>[] = [

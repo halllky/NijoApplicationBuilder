@@ -174,17 +174,18 @@ export const useLocalRepository = <T,>({
   const decorate = useCallback(async (remoteItems: T[]): Promise<LocalRepositoryStateAndKeyAndItem<T>[]> => {
     const decorated: LocalRepositoryStateAndKeyAndItem<T>[] = []
     const unhandled = new Map((await loadAll()).map(x => [x.itemKey, x]))
-    for (const item of remoteItems) {
-      const itemKey = getItemKey(item)
+    for (const remote of remoteItems) {
+      const itemKey = getItemKey(remote)
       const dbKey: IDBValidKey = [dataTypeKey, itemKey]
       const foundInLocal = await request(table => table.get(dbKey) as IDBRequest<LocalRepositoryStoredItem>)
+      const item = foundInLocal ? deserialize(foundInLocal.serializedItem) : remote
       const state = foundInLocal?.state ?? ''
       decorated.push({ item, itemKey, state })
       if (foundInLocal) unhandled.delete(itemKey)
     }
     decorated.unshift(...unhandled.values())
     return decorated
-  }, [getItemKey, loadAll, request, dataTypeKey])
+  }, [getItemKey, loadAll, request, dataTypeKey, deserialize])
 
   const addToLocalRepository = useCallback(async (item: T): Promise<LocalRepositoryStateAndKeyAndItem<T>> => {
     const itemKey = UUID.generate()
