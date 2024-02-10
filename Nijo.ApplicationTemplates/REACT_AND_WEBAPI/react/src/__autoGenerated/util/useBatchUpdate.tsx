@@ -57,7 +57,7 @@ const LocalRepositoryContext = React.createContext<LocalRepositoryContextValue>(
 export const LocalRepositoryContextProvider = ({ children }: {
   children?: React.ReactNode
 }) => {
-  const { ready, reduce, request } = useIndexedDbLocalRepositoryTable()
+  const { ready, reduce, request, dump } = useIndexedDbLocalRepositoryTable()
   const [changes, setChanges] = useState<LocalRepositoryItemListItem[]>([])
 
   const reload = useCallback(async () => {
@@ -112,7 +112,9 @@ export type LocalRepositoryArgs<T> = {
   getItemName?: (t: T) => string
   serialize: (t: T) => string
   deserialize: (str: string) => T
+  loadRemote?: RemoteRepositoryFetchFunction<T>
 }
+export type RemoteRepositoryFetchFunction<T> = () => Promise<T[]>
 export type LocalRepositoryStateAndKeyAndItem<T> = {
   itemKey: string
   state: LocalRepositoryState
@@ -255,7 +257,7 @@ const usePaging = (pageSize: number = 20, itemCount?: number) => {
 
 // ---------------------------------------
 // IndexedDB
-const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }: {
+export const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }: {
   dbName: string,
   dbVersion: number,
   tableName: string,
@@ -319,9 +321,18 @@ const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }: {
     })
   }, [db, tableName, dispatchMsg])
 
+  // テスト用
+  const dump = useCallback(async () => {
+    return await reduce([] as T[], (state, cursor) => {
+      state.push(cursor.value)
+      return state
+    })
+  }, [reduce])
+
   return {
     ready,
     reduce,
     request,
+    dump,
   }
 }
