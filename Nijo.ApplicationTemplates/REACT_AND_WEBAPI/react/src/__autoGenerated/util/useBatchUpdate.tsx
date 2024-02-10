@@ -9,7 +9,7 @@ import { useFieldArray } from 'react-hook-form'
 // 一覧/特定集約 共用
 
 export type LocalRepositoryState
-  = '' // No Change
+  = '' // No Change (Exists only remote repository)
   | '+' // Add
   | '*' // Modify
   | '-' // Delete
@@ -112,9 +112,9 @@ export type LocalRepositoryArgs<T> = {
   getItemName?: (t: T) => string
   serialize: (t: T) => string
   deserialize: (str: string) => T
-  loadRemote?: RemoteRepositoryFetchFunction<T>
+  findInRemote?: RemoteRepositoryFetchFunction<T>
 }
-export type RemoteRepositoryFetchFunction<T> = () => Promise<T[]>
+export type RemoteRepositoryFetchFunction<T> = (itemKey: string) => (T | undefined)
 export type LocalRepositoryStateAndKeyAndItem<T> = {
   itemKey: string
   state: LocalRepositoryState
@@ -127,7 +127,7 @@ export const useLocalRepository = <T,>({
   getItemName,
   serialize,
   deserialize,
-  loadRemote,
+  findInRemote,
 }: LocalRepositoryArgs<T>) => {
 
   const {
@@ -150,34 +150,26 @@ export const useLocalRepository = <T,>({
         }]
         : arr
     })
-  }, [dataTypeKey, deserialize, reduce, getItemKey, loadRemote])
+  }, [dataTypeKey, deserialize, reduce, getItemKey])
 
-  const loadOne = useCallback(async (itemKey: string): Promise<LocalRepositoryStateAndKeyAndItem<T> | undefined> => {
+  const getLocalRepositoryState = useCallback(async (itemKey: string): Promise<LocalRepositoryStateAndKeyAndItem<T> | undefined> => {
     // ローカルリポジトリにある場合はその内容を優先
     const key: IDBValidKey = [dataTypeKey, itemKey]
     const foundInLocal = await request(table => table.get(key) as IDBRequest<LocalRepositoryStoredItem>)
-    if (foundInLocal) {
-      return {
-        item: deserialize(foundInLocal.serializedItem),
-        itemKey: foundInLocal.itemKey,
-        state: foundInLocal.state,
-      }
+    if (foundInLocal) return {
+      item: deserialize(foundInLocal.serializedItem),
+      itemKey: foundInLocal.itemKey,
+      state: foundInLocal.state,
     }
     // ローカルリポジトリに無い場合はリモートから探す
-    if (loadRemote) {
-      const foundInRemote = (await loadRemote()).find(x => getItemKey(x) === itemKey)
-      if (foundInRemote) return {
-        item: foundInRemote,
-        itemKey: getItemKey(foundInRemote),
-        state: '',
-      }
+    const foundInRemote = findInRemote?.(itemKey)
+    if (foundInRemote) return {
+      item: foundInRemote,
+      itemKey: getItemKey(foundInRemote),
+      state: '',
     }
     return undefined
-  }, [dataTypeKey, deserialize, getItemKey, request, loadRemote])
-
-  const getLocalRepositoryState = useCallback(async (itemKey: string): Promise<LocalRepositoryState> => {
-    return (await loadOne(itemKey))?.state ?? ''
-  }, [loadOne])
+  }, [dataTypeKey, deserialize, getItemKey, request, findInRemote])
 
   const addToLocalRepository = useCallback(async (item: T): Promise<LocalRepositoryStateAndKeyAndItem<T>> => {
     const itemKey = UUID.generate()
@@ -191,7 +183,7 @@ export const useLocalRepository = <T,>({
   const updateLocalRepositoryItem = useCallback(async (itemKey: string, item: T): Promise<LocalRepositoryStateAndKeyAndItem<T>> => {
     const serializedItem = serialize(item)
     const itemName = getItemName?.(item) ?? ''
-    const stateBeforeUpdate = await getLocalRepositoryState(itemKey)
+    const stateBeforeUpdate = (await getLocalRepositoryState(itemKey))?.state
     const state: LocalRepositoryState = stateBeforeUpdate === '+' || stateBeforeUpdate === '-'
       ? stateBeforeUpdate
       : '*'
@@ -200,25 +192,26 @@ export const useLocalRepository = <T,>({
   }, [dataTypeKey, setToDb, serialize, getItemName, getLocalRepositoryState])
 
   const deleteLocalRepositoryItem = useCallback(async (itemKey: string, item: T): Promise<{ remains: boolean }> => {
-    const stateBeforeUpdate = await getLocalRepositoryState(itemKey)
+    const stateBeforeUpdate = (await getLocalRepositoryState(itemKey))?.state
     if (stateBeforeUpdate === '+') {
       await delFromDb([dataTypeKey, itemKey])
       return { remains: false }
-    }
 
-    if (loadRemote) {
-      const existsRemote = (await loadRemote()).some(x => getItemKey(x) === itemKey)
-      if (existsRemote) {
-        const serializedItem = serialize(item)
-        const itemName = getItemName?.(item) ?? ''
-        const state: LocalRepositoryState = '-'
-        await setToDb({ dataTypeKey, itemKey, itemName, serializedItem, state })
-        return { remains: true }
-      }
-    }
+    } else if (stateBeforeUpdate === '' || stateBeforeUpdate === '*') {
+      const serializedItem = serialize(item)
+      const itemName = getItemName?.(item) ?? ''
+      const state: LocalRepositoryState = '-'
+      await setToDb({ dataTypeKey, itemKey, itemName, serializedItem, state })
+      return { remains: true }
 
-    return { remains: false }
-  }, [dataTypeKey, delFromDb, setToDb, serialize, loadRemote, getItemKey, getItemName, getLocalRepositoryState])
+    } else if (stateBeforeUpdate === '-') {
+      return { remains: true }
+
+    } else {
+      // リモートにも存在しない場合
+      return { remains: false }
+    }
+  }, [dataTypeKey, delFromDb, setToDb, serialize, getItemKey, getItemName, getLocalRepositoryState])
 
   const commit = useCallback(async (itemKey: string): Promise<void> => {
     await delFromDb([dataTypeKey, itemKey])
@@ -231,7 +224,6 @@ export const useLocalRepository = <T,>({
   return {
     ready,
     loadAll,
-    loadOne,
     getLocalRepositoryState,
     addToLocalRepository,
     updateLocalRepositoryItem,

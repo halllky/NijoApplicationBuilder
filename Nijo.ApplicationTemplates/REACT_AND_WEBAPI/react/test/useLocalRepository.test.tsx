@@ -2,7 +2,6 @@ import React from 'react'
 import { expect, test } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import {
-  LocalRepositoryArgs,
   useLocalRepository,
   LocalRepositoryStateAndKeyAndItem,
   LocalRepositoryState,
@@ -107,10 +106,10 @@ test('useLocalRepository 状態遷移テスト（排他に引っかかるパタ�
     expect(await current(Local)).toEqual<LocalState[]>([
     ])
 
-    let a = (await Local.loadOne('a'))!
-    let b = (await Local.loadOne('b'))!
-    let c = (await Local.loadOne('c'))!
-    let d = (await Local.loadOne('d'))!
+    let a = (await Local.getLocalRepositoryState('a'))!
+    let b = (await Local.getLocalRepositoryState('b'))!
+    let c = (await Local.getLocalRepositoryState('c'))!
+    let d = (await Local.getLocalRepositoryState('d'))!
     a = await edit(Local, a, 'お')
     a = await edit(Local, a, 'か')
     b = await edit(Local, b, 'ぱ')
@@ -143,8 +142,18 @@ test('useLocalRepository 状態遷移テスト（排他に引っかかるパタ�
   ])
 })
 
+
 // ----------------------------------------
 // テストコードを読みやすくするためのヘルパー関数
+type TestData = {
+  key?: string
+  name?: string
+  numValue?: number
+  version: number
+}
+type LocalState = [LocalRepositoryState, TestData]
+type TestLocalRepos = ReturnType<typeof useLocalRepository<TestData>>
+type TestRemoteRepos = Map<string, TestData>
 
 const setupLocalRepositoryHook = () => {
   /** リモートリポジトリ */
@@ -159,20 +168,22 @@ const setupLocalRepositoryHook = () => {
         </LocalRepositoryContextProvider>
       )
     }
+
     const { result, unmount } = renderHook(() => {
-      return useLocalRepository({
-        ...REPOS_SETTING,
-        loadRemote: () => Promise.resolve(Array.from(Remote.values())),
+      return useLocalRepository<TestData>({
+        dataTypeKey: 'TEST-DATA-20240204',
+        serialize: data => JSON.stringify(data),
+        deserialize: str => JSON.parse(str),
+        getItemKey: data => data.key ?? '',
+        getItemName: data => data.name ?? '',
+        findInRemote: key => Remote.get(key),
       })
     }, { wrapper })
 
     // 内部でuseEffectを使っているので初期化完了まで待つ
     await waitFor(() => expect(result.current.ready).toBe(true))
-    // リモートからローカルへ読み込み
-    await load(Remote, result.current)
 
     await fn(result.current)
-
     unmount()
   }
 
@@ -253,9 +264,6 @@ async function get(local: TestLocalRepos, key: string): Promise<LocalRepositoryS
     return item
   })
 }
-async function load(remote: TestRemoteRepos, local: TestLocalRepos): Promise<void> {
-
-}
 async function save(remote: TestRemoteRepos, local: TestLocalRepos): Promise<void> {
   await act(async () => {
     const allLocalItems = await local.loadAll()
@@ -280,23 +288,4 @@ async function save(remote: TestRemoteRepos, local: TestLocalRepos): Promise<voi
       }
     }
   })
-}
-
-// ----------------------------------------
-type TestData = {
-  key?: string
-  name?: string
-  numValue?: number
-  version: number
-}
-type LocalState = [LocalRepositoryState, TestData]
-type TestLocalRepos = ReturnType<typeof useLocalRepository<TestData>>
-type TestRemoteRepos = Map<string, TestData>
-
-const REPOS_SETTING: LocalRepositoryArgs<TestData> = {
-  dataTypeKey: 'TEST-DATA-20240204',
-  serialize: data => JSON.stringify(data),
-  deserialize: str => JSON.parse(str),
-  getItemKey: data => data.key ?? '',
-  getItemName: data => data.name ?? '',
 }

@@ -26,22 +26,29 @@ const Page = () => {
     ready: changeListIsReady,
   } = Util.useLocalRepositoryChangeList()
 
+  const { control, reset } = Util.useFormEx<{ items: Util.LocalRepositoryStateAndKeyAndItem<TestData>[] }>({})
+  const { fields, append, update, remove } = useFieldArray({ name: 'items', control })
+  const [, dispatchMsg] = Util.useMsgContext()
+  const dtRef = useRef<Collection.DataTableRef<Util.LocalRepositoryStateAndKeyAndItem<TestData>>>(null)
+
   // MultiView
+  const reposSetting: Util.LocalRepositoryArgs<TestData> = useMemo(() => ({
+    dataTypeKey: 'TEST-DATA-20240204',
+    serialize: data => JSON.stringify(data),
+    deserialize: str => JSON.parse(str),
+    getItemKey: data => data.key ?? '',
+    getItemName: data => data.name ?? '',
+    findInRemote: key => fields.find(x => x.item.key === key)?.item,
+  }), [fields])
   const {
     ready: multiViewIsReady,
     loadAll,
-    loadOne,
     getLocalRepositoryState,
     addToLocalRepository,
     updateLocalRepositoryItem,
     deleteLocalRepositoryItem,
     commit,
-  } = Util.useLocalRepository(REPOS_SETTING)
-
-  const { control, reset } = Util.useFormEx<{ items: Util.LocalRepositoryStateAndKeyAndItem<TestData>[] }>({})
-  const { fields, append, update, remove } = useFieldArray({ name: 'items', control })
-  const [, dispatchMsg] = Util.useMsgContext()
-  const dtRef = useRef<Collection.DataTableRef<Util.LocalRepositoryStateAndKeyAndItem<TestData>>>(null)
+  } = Util.useLocalRepository(reposSetting)
 
   useEffect(() => {
     if (multiViewIsReady) {
@@ -202,14 +209,6 @@ const CONTENTS_COLS: Collection.ColumnDefEx<Util.TreeNode<Util.LocalRepositorySt
   { id: 'name', header: '名前', accessorFn: x => x.item.item.name, setValue: (x, v) => x.item.item.name = v, cellEditor: Input.Word },
   { id: 'numValue', header: '数値', accessorFn: x => x.item.item.numValue, setValue: (x, v) => x.item.item.numValue = v, cellEditor: Input.Num },
 ]
-
-const REPOS_SETTING: Util.LocalRepositoryArgs<TestData> = {
-  dataTypeKey: 'TEST-DATA-20240204',
-  serialize: data => JSON.stringify(data),
-  deserialize: str => JSON.parse(str),
-  getItemKey: data => data.key ?? '',
-  getItemName: data => data.name ?? '',
-}
 
 function createDefaultData(): TestDataCollection {
   const items: TestData[] = [
