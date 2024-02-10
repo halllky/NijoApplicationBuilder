@@ -171,6 +171,21 @@ export const useLocalRepository = <T,>({
     return undefined
   }, [dataTypeKey, deserialize, getItemKey, request, findInRemote])
 
+  const decorate = useCallback(async (remoteItems: T[]): Promise<LocalRepositoryStateAndKeyAndItem<T>[]> => {
+    const decorated: LocalRepositoryStateAndKeyAndItem<T>[] = []
+    const unhandled = new Map((await loadAll()).map(x => [x.itemKey, x]))
+    for (const item of remoteItems) {
+      const itemKey = getItemKey(item)
+      const dbKey: IDBValidKey = [dataTypeKey, itemKey]
+      const foundInLocal = await request(table => table.get(dbKey) as IDBRequest<LocalRepositoryStoredItem>)
+      const state = foundInLocal?.state ?? ''
+      decorated.push({ item, itemKey, state })
+      if (foundInLocal) unhandled.delete(itemKey)
+    }
+    decorated.unshift(...unhandled.values())
+    return decorated
+  }, [getItemKey, loadAll, request, dataTypeKey])
+
   const addToLocalRepository = useCallback(async (item: T): Promise<LocalRepositoryStateAndKeyAndItem<T>> => {
     const itemKey = UUID.generate()
     const itemName = getItemName?.(item) ?? ''
@@ -217,14 +232,17 @@ export const useLocalRepository = <T,>({
     await delFromDb([dataTypeKey, itemKey])
   }, [delFromDb, dataTypeKey])
 
-  const reset = useCallback(async (itemKey: string): Promise<void> => {
-    await delFromDb([dataTypeKey, itemKey])
-  }, [delFromDb, dataTypeKey])
+  const reset = useCallback(async (): Promise<void> => {
+    for (const item of await loadAll()) {
+      await delFromDb([dataTypeKey, item.itemKey])
+    }
+  }, [loadAll, delFromDb, dataTypeKey])
 
   return {
     ready,
     loadAll,
     getLocalRepositoryState,
+    decorate,
     addToLocalRepository,
     updateLocalRepositoryItem,
     deleteLocalRepositoryItem,

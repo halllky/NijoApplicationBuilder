@@ -118,9 +118,14 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   }, [api, editing, caretCell, getSelectedRows, handleSelectionKeyDown, startEditing, cancelEditing])
 
   useImperativeHandle(ref, () => ({
+    getSelectedRows: () => getSelectedRows().map(row => ({
+      row: row.original.item,
+      rowIndex: row.index,
+    })),
+    // TODO: ↓いらない
     getSelectedItems: () => getSelectedRows().map(row => row.original.item),
     getSelectedIndexes,
-  }))
+  }), [getSelectedRows])
 
   return (
     <div ref={containerRef}

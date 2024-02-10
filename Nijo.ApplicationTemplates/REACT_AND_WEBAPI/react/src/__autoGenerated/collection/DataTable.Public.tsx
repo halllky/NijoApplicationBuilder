@@ -20,6 +20,7 @@ export type ColumnDefEx<T> = RT.ColumnDef<T> & ({
 })
 
 export type DataTableRef<T> = {
+  getSelectedRows: () => { row: T, rowIndex: number }[]
   getSelectedItems: () => T[]
   getSelectedIndexes: () => number[]
 }

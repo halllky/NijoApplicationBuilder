@@ -117,8 +117,8 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
   const getSelectedRows = useCallback(() => {
     if (!caretCell || !selectionStart) return []
     const flatRows = api.getRowModel().flatRows
-    const ix1 = flatRows.indexOf(selectionStart.row)
-    const ix2 = flatRows.indexOf(caretCell.row)
+    const ix1 = flatRows.findIndex(row => row.id === selectionStart.row.id)
+    const ix2 = flatRows.findIndex(row => row.id === caretCell.row.id)
     const since = Math.min(ix1, ix2)
     const until = Math.max(ix1, ix2)
     return flatRows.slice(since, until + 1)

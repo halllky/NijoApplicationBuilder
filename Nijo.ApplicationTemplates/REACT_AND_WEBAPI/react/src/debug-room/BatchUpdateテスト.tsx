@@ -20,18 +20,16 @@ export default function () {
 
 const Page = () => {
 
-  // ローカルリポジトリのデータ一覧
-  const {
-    changes,
-    ready: changeListIsReady,
-  } = Util.useLocalRepositoryChangeList()
+  // ローカルリポジトリ（サイドメニュー）
+  const { changes } = Util.useLocalRepositoryChangeList()
 
+  // リモートリポジトリ ※デバッグ用インメモリ
+  const { arrRemoteRepos, save } = useInMemoryRemoteRepository()
+
+  // ローカルリポジトリ
   const { control, reset } = Util.useFormEx<{ items: Util.LocalRepositoryStateAndKeyAndItem<TestData>[] }>({})
   const { fields, append, update, remove } = useFieldArray({ name: 'items', control })
-  const [, dispatchMsg] = Util.useMsgContext()
   const dtRef = useRef<Collection.DataTableRef<Util.LocalRepositoryStateAndKeyAndItem<TestData>>>(null)
-
-  // MultiView
   const reposSetting: Util.LocalRepositoryArgs<TestData> = useMemo(() => ({
     dataTypeKey: 'TEST-DATA-20240204',
     serialize: data => JSON.stringify(data),
@@ -40,31 +38,17 @@ const Page = () => {
     getItemName: data => data.name ?? '',
     findInRemote: key => fields.find(x => x.item.key === key)?.item,
   }), [fields])
+
   const {
-    ready: multiViewIsReady,
+    ready: localReposIsReady,
     loadAll,
-    getLocalRepositoryState,
+    decorate,
     addToLocalRepository,
     updateLocalRepositoryItem,
     deleteLocalRepositoryItem,
     commit,
+    reset: resetLocalRepos,
   } = Util.useLocalRepository(reposSetting)
-
-  useEffect(() => {
-    if (multiViewIsReady) {
-      // (async () => {
-      //   const items = [...inmemoryRemoteRepos].map(([, item]) => ({ ...item }))
-      //   const state = await getLocalRepositoryState()
-      //   // TODO:
-      //   // - リモートとローカルのマージ
-      //   // - itemKeyの状態遷移をちゃんと考える。
-      //   //   特にstateが*や-になる瞬間
-      // })()
-      loadAll().then(items => {
-        reset({ items })
-      })
-    }
-  }, [getLocalRepositoryState, reset, multiViewIsReady])
 
   const handleAdd: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
     const newItem: TestData = { name: '新規データ' }
@@ -79,22 +63,20 @@ const Page = () => {
 
   const handleRemove: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
     if (!dtRef.current) return
-    // TODO: itemとindexまとめてほしい
-    const items = dtRef.current.getSelectedItems()
-    const indexes = dtRef.current.getSelectedIndexes()
+    const selected = dtRef.current.getSelectedRows()
     const deleted: number[] = []
-    for (let i = 0; i < indexes.length; i++) {
-      const { itemKey, item } = items[i]
-      const { remains } = await deleteLocalRepositoryItem(itemKey, item)
-      if (!remains) deleted.push(indexes[i])
+    for (const { row, rowIndex } of selected) {
+      const { remains } = await deleteLocalRepositoryItem(row.itemKey, row.item)
+      if (!remains) deleted.push(rowIndex)
     }
     remove(deleted)
   }, [remove, deleteLocalRepositoryItem])
 
   const handleReload = useCallback(async () => {
-    const items = await loadAll()
+    if (!localReposIsReady) return
+    const items = await decorate(arrRemoteRepos)
     reset({ items })
-  }, [loadAll, reset])
+  }, [localReposIsReady, arrRemoteRepos, decorate, reset])
 
   const handleCreateDummy = useCallback(async () => {
     const initialDummyData = createDefaultData()
@@ -104,14 +86,124 @@ const Page = () => {
     }
   }, [append, addToLocalRepository])
 
-  // デバッグ用リモートリポジトリ
-  const [inmemoryRemoteRepos, setInmemoryRemoteRepos] = useState<Map<string, TestData>>(() => new Map())
-  const handleSave = useCallback(async () => {
+  const handleCommit = useCallback(async () => {
     const local = await loadAll()
-    const remote = new Map(inmemoryRemoteRepos)
-    const removeFromDataTable = new Set<number>()
+    await save(local, commit)
+  }, [save, commit, loadAll])
 
-    for (const item of local) {
+  const handleReset = useCallback(async () => {
+    await resetLocalRepos()
+    await handleReload()
+  }, [resetLocalRepos, handleReload])
+
+  return (
+    <PanelGroup
+      direction="horizontal"
+      className="w-full h-full p-2"
+      style={{ fontFamily: '"Arial", "BIZ UDゴシック"', fontSize: 14 }}
+    >
+      <Panel defaultSize={20}>
+        <Collection.DataTable
+          data={changes}
+          columns={LIST_COLS}
+          className="h-full"
+        />
+      </Panel>
+
+      <PanelResizeHandle className="w-4" />
+
+      <Panel>
+        <PanelGroup direction="vertical">
+          <Panel className="flex flex-col">
+            <div className="flex gap-2 justify-start">
+              <span className="font-bold">LOCAL</span>
+              <Input.Button onClick={handleAdd}>追加</Input.Button>
+              <Input.Button onClick={handleRemove}>削除</Input.Button>
+              <Input.Button onClick={handleCreateDummy}>ダミー</Input.Button>
+              <div className="flex-1"></div>
+              <Input.Button onClick={handleReload}>再読込</Input.Button>
+              <Input.Button onClick={handleCommit}>コミット</Input.Button>
+              <Input.Button onClick={handleReset}>リセット</Input.Button>
+            </div>
+            <Collection.DataTable
+              ref={dtRef}
+              data={fields}
+              columns={LOCAL_REPOS_COLS}
+              onChangeRow={handleUpdateRow}
+              className="flex-1"
+            />
+          </Panel>
+
+          <PanelResizeHandle className="h-2" />
+
+          <Panel className="flex flex-col">
+            <span className="font-bold">REMOTE</span>
+            <Collection.DataTable
+              data={arrRemoteRepos}
+              columns={REMOTE_REPOS_COLS}
+              className="flex-1"
+            />
+          </Panel>
+        </PanelGroup>
+        <Util.InlineMessageList />
+        <Util.Toast />
+      </Panel>
+    </PanelGroup>
+  )
+}
+
+type TestDataCollection = {
+  items: TestData[]
+}
+type TestData = {
+  key?: string
+  name?: string
+  numValue?: number
+}
+
+const LIST_COLS: Collection.ColumnDefEx<Util.TreeNode<Util.LocalRepositoryItemListItem>>[] = [
+  { id: 'col0', header: '　', accessorFn: x => x.item.state },
+  { id: 'col1', header: '　', accessorFn: x => x.item.itemName },
+]
+const LOCAL_REPOS_COLS: Collection.ColumnDefEx<Util.TreeNode<Util.LocalRepositoryStateAndKeyAndItem<TestData>>>[] = [
+  { id: 'state', header: '', accessorFn: x => x.item.state, size: 12 },
+  { id: 'key', header: 'key', accessorFn: x => x.item.item.key, setValue: (x, v) => x.item.item.key = v, cellEditor: Input.Word },
+  { id: 'name', header: '名前', accessorFn: x => x.item.item.name, setValue: (x, v) => x.item.item.name = v, cellEditor: Input.Word },
+  { id: 'numValue', header: '数値', accessorFn: x => x.item.item.numValue, setValue: (x, v) => x.item.item.numValue = v, cellEditor: Input.Num },
+]
+const REMOTE_REPOS_COLS: Collection.ColumnDefEx<Util.TreeNode<TestData>>[] = [
+  { id: 'key', header: 'key', accessorFn: x => x.item.key },
+  { id: 'name', header: '名前', accessorFn: x => x.item.name },
+  { id: 'numValue', header: '数値', accessorFn: x => x.item.numValue },
+]
+
+
+function createDefaultData(): TestDataCollection {
+  const items: TestData[] = [
+    { key: '001', name: 'データ01', numValue: 1.00 },
+    { key: '002', name: 'データ02', numValue: 2.00 },
+    { key: '003', name: 'データ03', numValue: 3.00 },
+    { key: '004', name: 'データ04', numValue: 4.00 },
+  ]
+  return { items }
+}
+
+
+const useInMemoryRemoteRepository = () => {
+  const [, dispatchMsg] = Util.useMsgContext()
+  const [inmemoryRemoteRepos, setInmemoryRemoteRepos] = useState<Map<string, TestData>>(() => new Map())
+
+  const arrRemoteRepos = useMemo(() => {
+    return Array.from(inmemoryRemoteRepos.values())
+  }, [inmemoryRemoteRepos])
+
+  const save = useCallback(async (
+    localReposItems: Util.LocalRepositoryStateAndKeyAndItem<TestData>[],
+    commit: (itemKey: string) => Promise<void>
+  ) => {
+    const remote = new Map(inmemoryRemoteRepos)
+
+    for (const item of localReposItems) {
       if (!item.item.key) continue
       if (item.state === '+') {
         if (remote.has(item.item.key)) {
@@ -137,85 +229,14 @@ const Page = () => {
         }
         remote.delete(item.item.key)
         await commit(item.itemKey)
-        removeFromDataTable.add(fields.findIndex(x => x.item.key === item.item.key))
       }
     }
     setInmemoryRemoteRepos(remote)
-    remove([...removeFromDataTable])
     dispatchMsg(msg => msg.info('保存しました。'))
-  }, [loadAll, dispatchMsg, inmemoryRemoteRepos, fields, remove])
+  }, [dispatchMsg, inmemoryRemoteRepos])
 
-  const handleLogRemote = useCallback(() => {
-    console.table([...inmemoryRemoteRepos.values()])
-  }, [inmemoryRemoteRepos])
-
-  return (
-    <PanelGroup
-      direction="horizontal"
-      className="w-full h-full"
-      style={{ fontFamily: '"Arial", "BIZ UDゴシック"', fontSize: 14 }}
-    >
-      <Panel defaultSize={20}>
-        <Collection.DataTable
-          data={changes}
-          columns={LIST_COLS}
-          className="h-full"
-        />
-      </Panel>
-
-      <PanelResizeHandle className="w-4" />
-
-      <Panel className="flex flex-col">
-        <div className="flex gap-2 justify-start">
-          <Input.Button onClick={handleSave}>保存</Input.Button>
-          <Input.Button onClick={handleLogRemote}>(REMOTE)</Input.Button>
-          <div className="basis-4"></div>
-          <Input.Button onClick={handleAdd}>追加</Input.Button>
-          <Input.Button onClick={handleRemove}>削除</Input.Button>
-          <div className="flex-1"></div>
-          <Input.Button onClick={handleReload}>再読込</Input.Button>
-          <Input.Button onClick={handleCreateDummy}>ダミー</Input.Button>
-        </div>
-        <Collection.DataTable
-          ref={dtRef}
-          data={fields}
-          columns={CONTENTS_COLS}
-          onChangeRow={handleUpdateRow}
-          className="flex-1"
-        />
-        <Util.InlineMessageList />
-        <Util.Toast />
-      </Panel>
-    </PanelGroup>
-  )
-}
-
-type TestDataCollection = {
-  items: TestData[]
-}
-type TestData = {
-  key?: string
-  name?: string
-  numValue?: number
-}
-
-const LIST_COLS: Collection.ColumnDefEx<Util.TreeNode<Util.LocalRepositoryItemListItem>>[] = [
-  { id: 'col0', header: '　', accessorFn: x => x.item.state },
-  { id: 'col1', header: '　', accessorFn: x => x.item.itemName },
-]
-const CONTENTS_COLS: Collection.ColumnDefEx<Util.TreeNode<Util.LocalRepositoryStateAndKeyAndItem<TestData>>>[] = [
-  { id: 'state', header: '', accessorFn: x => x.item.state, size: 12 },
-  { id: 'key', header: 'key', accessorFn: x => x.item.item.key, setValue: (x, v) => x.item.item.key = v, cellEditor: Input.Word },
-  { id: 'name', header: '名前', accessorFn: x => x.item.item.name, setValue: (x, v) => x.item.item.name = v, cellEditor: Input.Word },
-  { id: 'numValue', header: '数値', accessorFn: x => x.item.item.numValue, setValue: (x, v) => x.item.item.numValue = v, cellEditor: Input.Num },
-]
-
-function createDefaultData(): TestDataCollection {
-  const items: TestData[] = [
-    { key: '001', name: 'データ01', numValue: 1.00 },
-    { key: '002', name: 'データ02', numValue: 2.00 },
-    { key: '003', name: 'データ03', numValue: 3.00 },
-    { key: '004', name: 'データ04', numValue: 4.00 },
-  ]
-  return { items }
+  return {
+    arrRemoteRepos,
+    save,
+  }
 }
