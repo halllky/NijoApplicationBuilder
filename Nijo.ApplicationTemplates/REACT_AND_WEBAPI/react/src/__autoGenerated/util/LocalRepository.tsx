@@ -121,7 +121,7 @@ export const useLocalRepository = <T,>({
 }: LocalRepositoryArgs<T>) => {
 
   const { ready, reload: reloadContext } = useContext(LocalRepositoryContext)
-  const { openCursor, openTable } = useIndexedDbLocalRepositoryTable()
+  const { openCursor, queryToTable, commandToTable } = useIndexedDbLocalRepositoryTable()
   const [localItems, dispatch] = useReducer<typeof arrayReducer<LocalRepositoryStateAndKeyAndItem<T>>>(arrayReducer, [])
 
   const recalculateItems = useCallback(async () => {
@@ -134,6 +134,8 @@ export const useLocalRepository = <T,>({
         item: deserialize(cursor.value.serializedItem),
       })
     })
+    console.log('recalculateItems()', [...(remoteItems ?? [])], [...localItems])
+    console.trace()
     const recalculated = crossJoin(
       localItems, local => local.itemKey,
       (remoteItems ?? []), remote => getItemKey(remote),
@@ -154,26 +156,26 @@ export const useLocalRepository = <T,>({
     const serializedItem = serialize(item)
     const state: LocalRepositoryState = '+'
     dispatch(arr => arr.insert({ item, itemKey, state }))
-    await openTable(table => table.put({ state, dataTypeKey, itemKey, itemName, serializedItem }))
+    await queryToTable(table => table.put({ state, dataTypeKey, itemKey, itemName, serializedItem }))
     await reloadContext()
     return { itemKey, state, item }
-  }, [dataTypeKey, openTable, reloadContext, getItemName, serialize, dispatch])
+  }, [dataTypeKey, queryToTable, reloadContext, getItemName, serialize, dispatch])
 
   const updateLocalRepositoryItem = useCallback(async (itemKey: string, item: T): Promise<LocalRepositoryStateAndKeyAndItem<T>> => {
     const serializedItem = serialize(item)
     const itemName = getItemName?.(item) ?? ''
-    const stateBeforeUpdate = (await openTable(table => table.get([dataTypeKey, itemKey])))?.state
+    const stateBeforeUpdate = (await queryToTable(table => table.get([dataTypeKey, itemKey])))?.state
     const state: LocalRepositoryState = stateBeforeUpdate === '+' || stateBeforeUpdate === '-'
       ? stateBeforeUpdate
       : '*'
     dispatch(arr => arr.upsert(x => getItemKey(x.item), { item, itemKey, state }))
-    await openTable(table => table.put({ dataTypeKey, itemKey, itemName, serializedItem, state }))
+    await queryToTable(table => table.put({ dataTypeKey, itemKey, itemName, serializedItem, state }))
     await reloadContext()
     return { itemKey, state, item }
-  }, [dataTypeKey, getItemKey, openTable, reloadContext, serialize, getItemName, dispatch])
+  }, [dataTypeKey, getItemKey, queryToTable, reloadContext, serialize, getItemName, dispatch])
 
   const deleteLocalRepositoryItem = useCallback(async (dbKey: string, item: T): Promise<{ remains: boolean }> => {
-    const localState = (await openTable(table => table.get([dataTypeKey, dbKey])))?.state
+    const localState = (await queryToTable(table => table.get([dataTypeKey, dbKey])))?.state
     const itemKey = getItemKey(item)
     const existsRemote = remoteItems?.some(x => getItemKey(x) === itemKey)
 
@@ -184,7 +186,7 @@ export const useLocalRepository = <T,>({
     } else if (localState === '+') {
       // 新規作成後コミット前の場合: 物理削除
       dispatch(arr => arr.delete(x => x.itemKey === dbKey))
-      await openTable(table => table.delete([dataTypeKey, dbKey]))
+      await queryToTable(table => table.delete([dataTypeKey, dbKey]))
       await reloadContext()
       return { remains: false }
 
@@ -194,7 +196,7 @@ export const useLocalRepository = <T,>({
       const itemName = getItemName?.(item) ?? ''
       const state: LocalRepositoryState = '-'
       dispatch(arr => arr.upsert(x => getItemKey(x.item), { item, itemKey: dbKey, state }))
-      await openTable(table => table.put({ dataTypeKey, itemKey: dbKey, itemName, serializedItem, state }))
+      await queryToTable(table => table.put({ dataTypeKey, itemKey: dbKey, itemName, serializedItem, state }))
       await reloadContext()
       return { remains: true }
 
@@ -202,13 +204,14 @@ export const useLocalRepository = <T,>({
       // ローカルにもリモートにも無い場合: 何もしない
       return { remains: true }
     }
-  }, [dataTypeKey, openTable, reloadContext, serialize, getItemKey, getItemName, dispatch])
+  }, [dataTypeKey, queryToTable, reloadContext, serialize, getItemKey, getItemName, dispatch])
 
   const commit = useCallback(async (...itemKeys: string[]): Promise<void> => {
-    for (const itemKey of itemKeys) await openTable(table => table.delete([dataTypeKey, itemKey]))
-    await recalculateItems()
+    await commandToTable(table => {
+      for (const itemKey of itemKeys) table.delete([dataTypeKey, itemKey])
+    })
     await reloadContext()
-  }, [recalculateItems, openTable, reloadContext, dataTypeKey])
+  }, [queryToTable, reloadContext, dataTypeKey])
 
   const reset = useCallback(async (): Promise<void> => {
     await openCursor('readwrite', cursor => {

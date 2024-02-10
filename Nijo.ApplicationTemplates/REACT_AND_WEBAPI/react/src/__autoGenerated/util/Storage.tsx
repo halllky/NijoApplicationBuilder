@@ -133,7 +133,7 @@ export const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }:
     put: (value: T) => IDBRequest<IDBValidKey>
     get: (query: IDBValidKey | IDBKeyRange) => IDBRequest<T>
   }
-  const openTable = useCallback(<TRequest,>(fn: ((store: IDBObjectStoreEx<T>) => IDBRequest<TRequest>), mode: IDBTransactionMode = 'readwrite'): Promise<TRequest> => {
+  const queryToTable = useCallback(<TRequest,>(fn: ((store: IDBObjectStoreEx<T>) => IDBRequest<TRequest>), mode: IDBTransactionMode = 'readwrite'): Promise<TRequest> => {
     if (!db) throw Promise.reject('データベースが初期化されていません。')
     return new Promise<TRequest>((resolve, reject) => {
       const transaction = db.transaction([tableName], mode)
@@ -141,6 +141,16 @@ export const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }:
       const request = fn(objectStore)
       request.onerror = ev => reject(ev)
       request.onsuccess = ev => resolve((ev.target as IDBRequest<TRequest>).result)
+    })
+  }, [db, tableName])
+  const commandToTable = useCallback((fn: ((store: IDBObjectStoreEx<T>) => void), mode: IDBTransactionMode = 'readwrite'): Promise<void> => {
+    if (!db) throw Promise.reject('データベースが初期化されていません。')
+    return new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction([tableName], mode)
+      const objectStore = transaction.objectStore(tableName)
+      fn(objectStore)
+      transaction.onerror = ev => reject(ev)
+      transaction.oncomplete = ev => resolve()
     })
   }, [db, tableName])
 
@@ -156,7 +166,8 @@ export const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }:
   return {
     ready,
     openCursor,
-    openTable,
+    queryToTable,
+    commandToTable,
     dump,
   }
 }
