@@ -4,6 +4,7 @@ import * as ReactUtil from './ReactUtil'
 import * as Validation from './Validation'
 import * as Notification from './Notification'
 import { useFieldArray } from 'react-hook-form'
+import { useIndexedDbTable } from './Storage'
 
 
 // 一覧/特定集約 共用
@@ -138,6 +139,7 @@ export const useLocalRepository = <T,>({
 
   const {
     ready,
+    reload: reloadContext,
     setToLocalRepository: setToDb,
     deleteFromLocalRepository: delFromDb,
   } = useContext(LocalRepositoryContext)
@@ -243,7 +245,8 @@ export const useLocalRepository = <T,>({
     await openCursor('readwrite', cursor => {
       if (cursor.value.dataTypeKey === dataTypeKey) cursor.delete()
     })
-  }, [loadAll, delFromDb, dataTypeKey])
+    await reloadContext()
+  }, [delFromDb, dataTypeKey, reloadContext])
 
   return {
     ready,
@@ -255,92 +258,5 @@ export const useLocalRepository = <T,>({
     deleteLocalRepositoryItem,
     commit,
     reset,
-  }
-}
-
-// ---------------------------------------
-// IndexedDB
-export const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }: {
-  dbName: string,
-  dbVersion: number,
-  tableName: string,
-  keyPath: (keyof T)[]
-}) => {
-
-  const [, dispatchMsg] = Notification.useMsgContext()
-  const { reload } = useContext(LocalRepositoryContext)
-  const [db, setDb] = useState<IDBDatabase>()
-  const [ready, setReady] = useState(false)
-
-  // データベースを開く
-  useEffect(() => {
-    const request = indexedDB.open(dbName, dbVersion)
-    request.onerror = ev => {
-      dispatchMsg(msg => msg.error('データベースを開けませんでした。'))
-    }
-    request.onsuccess = ev => {
-      setDb((ev.target as IDBOpenDBRequest).result)
-      setReady(true)
-    }
-    request.onupgradeneeded = ev => {
-      const db = (ev.target as IDBOpenDBRequest).result
-      db.createObjectStore(tableName, { keyPath: keyPath as string[] })
-    }
-
-    return () => {
-      db?.close()
-    }
-  }, [dbName, dbVersion, tableName, dispatchMsg, ...keyPath])
-
-  // 読み込み系処理全般
-  type IDBCursorWithValueEx<T> = Omit<IDBCursorWithValue, 'value'> & { value: T }
-  const openCursor = useCallback(async (mode: IDBTransactionMode, fn: ((cursor: IDBCursorWithValueEx<T>) => void)): Promise<void> => {
-    if (!db) throw Promise.reject('データベースが初期化されていません。')
-    await new Promise<void>((resolve, reject) => {
-      const transaction = db.transaction([tableName], mode)
-      const objectStore = transaction.objectStore(tableName)
-      const request = objectStore.openCursor()
-      request.onerror = ev => reject(ev)
-      request.onsuccess = ev => {
-        const cursor = (ev.target as IDBRequest<IDBCursorWithValueEx<T>>).result
-        if (cursor) {
-          fn(cursor)
-          cursor.continue()
-        } else {
-          resolve()
-        }
-      }
-    })
-    if (mode === 'readwrite') {
-      await reload()
-    }
-  }, [db, tableName, reload])
-
-  // put, deleteなどのIDBObjectStoreのAPIを直接使うもの全般
-  const request = useCallback(<T,>(fn: ((store: IDBObjectStore) => IDBRequest<T>), mode: IDBTransactionMode = 'readwrite'): Promise<T> => {
-    if (!db) throw Promise.reject('データベースが初期化されていません。')
-    return new Promise<T>((resolve, reject) => {
-      const transaction = db.transaction([tableName], mode)
-      const objectStore = transaction.objectStore(tableName)
-      const request = fn(objectStore)
-      request.onerror = ev => reject(ev)
-      request.onsuccess = ev => resolve((ev.target as IDBRequest<T>).result)
-    })
-  }, [db, tableName])
-
-  // テスト用
-  const dump = useCallback(async () => {
-    const arr: T[] = []
-    await openCursor('readonly', cursor => {
-      arr.push(cursor.value)
-    })
-    return arr
-  }, [openCursor])
-
-  return {
-    ready,
-    openCursor,
-    request,
-    dump,
   }
 }

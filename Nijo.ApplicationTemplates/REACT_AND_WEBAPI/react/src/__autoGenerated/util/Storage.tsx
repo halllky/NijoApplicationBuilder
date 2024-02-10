@@ -1,7 +1,9 @@
-import { useCallback, useReducer } from "react"
+import { useCallback, useEffect, useReducer, useState } from "react"
 import { defineContext } from "./ReactUtil"
 import { useMsgContext } from "./Notification"
 
+// ---------------------------------------
+// LocalStorage
 export type LocalStorageHandler<T> = {
   storageKey: string
   serialize: (obj: T) => string
@@ -69,4 +71,88 @@ export const defineStorageContext = <T,>(handler: LocalStorageHandler<T>) => {
   }
 
   return [CacheProvider, useLocalStorage] as const
+}
+
+
+// ---------------------------------------
+// IndexedDB
+export const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }: {
+  dbName: string,
+  dbVersion: number,
+  tableName: string,
+  keyPath: (keyof T)[]
+}) => {
+
+  const [, dispatchMsg] = useMsgContext()
+  const [db, setDb] = useState<IDBDatabase>()
+  const [ready, setReady] = useState(false)
+
+  // データベースを開く
+  useEffect(() => {
+    const request = indexedDB.open(dbName, dbVersion)
+    request.onerror = ev => {
+      dispatchMsg(msg => msg.error('データベースを開けませんでした。'))
+    }
+    request.onsuccess = ev => {
+      setDb((ev.target as IDBOpenDBRequest).result)
+      setReady(true)
+    }
+    request.onupgradeneeded = ev => {
+      const db = (ev.target as IDBOpenDBRequest).result
+      db.createObjectStore(tableName, { keyPath: keyPath as string[] })
+    }
+
+    return () => {
+      db?.close()
+    }
+  }, [dbName, dbVersion, tableName, dispatchMsg, ...keyPath])
+
+  // 読み込み系処理全般
+  type IDBCursorWithValueEx<T> = Omit<IDBCursorWithValue, 'value'> & { value: T }
+  const openCursor = useCallback(async (mode: IDBTransactionMode, fn: ((cursor: IDBCursorWithValueEx<T>) => void)): Promise<void> => {
+    if (!db) throw Promise.reject('データベースが初期化されていません。')
+    await new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction([tableName], mode)
+      const objectStore = transaction.objectStore(tableName)
+      const request = objectStore.openCursor()
+      request.onerror = ev => reject(ev)
+      request.onsuccess = ev => {
+        const cursor = (ev.target as IDBRequest<IDBCursorWithValueEx<T>>).result
+        if (cursor) {
+          fn(cursor)
+          cursor.continue()
+        } else {
+          resolve()
+        }
+      }
+    })
+  }, [db, tableName])
+
+  // put, deleteなどのIDBObjectStoreのAPIを直接使うもの全般
+  const request = useCallback(<T,>(fn: ((store: IDBObjectStore) => IDBRequest<T>), mode: IDBTransactionMode = 'readwrite'): Promise<T> => {
+    if (!db) throw Promise.reject('データベースが初期化されていません。')
+    return new Promise<T>((resolve, reject) => {
+      const transaction = db.transaction([tableName], mode)
+      const objectStore = transaction.objectStore(tableName)
+      const request = fn(objectStore)
+      request.onerror = ev => reject(ev)
+      request.onsuccess = ev => resolve((ev.target as IDBRequest<T>).result)
+    })
+  }, [db, tableName])
+
+  // テスト用
+  const dump = useCallback(async () => {
+    const arr: T[] = []
+    await openCursor('readonly', cursor => {
+      arr.push(cursor.value)
+    })
+    return arr
+  }, [openCursor])
+
+  return {
+    ready,
+    openCursor,
+    request,
+    dump,
+  }
 }
