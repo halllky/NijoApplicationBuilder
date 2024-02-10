@@ -129,14 +129,18 @@ export const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }:
   }, [db, tableName])
 
   // put, deleteなどのIDBObjectStoreのAPIを直接使うもの全般
-  const request = useCallback(<T,>(fn: ((store: IDBObjectStore) => IDBRequest<T>), mode: IDBTransactionMode = 'readwrite'): Promise<T> => {
+  type IDBObjectStoreEx<T> = Omit<IDBObjectStore, 'put' | 'get'> & {
+    put: (value: T) => IDBRequest<IDBValidKey>
+    get: (query: IDBValidKey | IDBKeyRange) => IDBRequest<T>
+  }
+  const openTable = useCallback(<TRequest,>(fn: ((store: IDBObjectStoreEx<T>) => IDBRequest<TRequest>), mode: IDBTransactionMode = 'readwrite'): Promise<TRequest> => {
     if (!db) throw Promise.reject('データベースが初期化されていません。')
-    return new Promise<T>((resolve, reject) => {
+    return new Promise<TRequest>((resolve, reject) => {
       const transaction = db.transaction([tableName], mode)
       const objectStore = transaction.objectStore(tableName)
       const request = fn(objectStore)
       request.onerror = ev => reject(ev)
-      request.onsuccess = ev => resolve((ev.target as IDBRequest<T>).result)
+      request.onsuccess = ev => resolve((ev.target as IDBRequest<TRequest>).result)
     })
   }, [db, tableName])
 
@@ -152,7 +156,7 @@ export const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }:
   return {
     ready,
     openCursor,
-    request,
+    openTable,
     dump,
   }
 }

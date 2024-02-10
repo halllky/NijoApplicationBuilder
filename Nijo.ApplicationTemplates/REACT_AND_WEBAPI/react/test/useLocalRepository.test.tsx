@@ -69,8 +69,8 @@ test('useLocalRepository 状態遷移テスト（排他に引っかかるパタ�
       ['+', { key: 'y', name: '', version: 0 }],
     ])
 
-    const a = await get(Local, 'a')
-    const y = await get(Local, 'y')
+    let a = (await get(Remote, Local, 'a'))!
+    let y = (await get(Remote, Local, 'y'))!
     await edit(Local, a, 'う')
     await edit(Local, a, 'え')
     await remove(Local, y)
@@ -106,10 +106,10 @@ test('useLocalRepository 状態遷移テスト（排他に引っかかるパタ�
     expect(await current(Local)).toEqual<LocalState[]>([
     ])
 
-    let a = (await Local.getLocalRepositoryState('a'))!
-    let b = (await Local.getLocalRepositoryState('b'))!
-    let c = (await Local.getLocalRepositoryState('c'))!
-    let d = (await Local.getLocalRepositoryState('d'))!
+    let a = (await get(Remote, Local, 'a'))!
+    let b = (await get(Remote, Local, 'b'))!
+    let c = (await get(Remote, Local, 'c'))!
+    let d = (await get(Remote, Local, 'd'))!
     a = await edit(Local, a, 'お')
     a = await edit(Local, a, 'か')
     b = await edit(Local, b, 'ぱ')
@@ -176,7 +176,6 @@ const setupLocalRepositoryHook = () => {
         deserialize: str => JSON.parse(str),
         getItemKey: data => data.key ?? '',
         getItemName: data => data.name ?? '',
-        findInRemote: key => Remote.get(key),
       })
     }, { wrapper })
 
@@ -256,12 +255,16 @@ async function remove(local: TestLocalRepos, item: LocalRepositoryStateAndKeyAnd
     await local.deleteLocalRepositoryItem(item.itemKey, item.item)
   })
 }
-async function get(local: TestLocalRepos, key: string): Promise<LocalRepositoryStateAndKeyAndItem<TestData>> {
+async function get(remote: TestRemoteRepos, local: TestLocalRepos, key: string): Promise<LocalRepositoryStateAndKeyAndItem<TestData> | undefined> {
   return await act(async () => {
-    const allItems = await local.loadAll()
-    const item = allItems.find(x => x.item.key === key)
-    if (!item) throw new Error(`'${key}' is not exist in local repository.`)
-    return item
+    const inRemote = remote.get(key)
+    if (inRemote) {
+      const withState = (await local.withLocalReposState([inRemote], false))
+      return withState[0]
+    } else {
+      const withState = (await local.withLocalReposState([], true))
+      return withState.find(x => x.item.key === key)
+    }
   })
 }
 async function save(remote: TestRemoteRepos, local: TestLocalRepos): Promise<void> {

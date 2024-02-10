@@ -36,13 +36,12 @@ const Page = () => {
     deserialize: str => JSON.parse(str),
     getItemKey: data => data.key ?? '',
     getItemName: data => data.name ?? '',
-    findInRemote: key => fields.find(x => x.item.key === key)?.item,
-  }), [fields])
+  }), [])
 
   const {
     ready: localReposIsReady,
     loadAll,
-    decorate,
+    withLocalReposState,
     addToLocalRepository,
     updateLocalRepositoryItem,
     deleteLocalRepositoryItem,
@@ -74,9 +73,9 @@ const Page = () => {
 
   const handleReload = useCallback(async () => {
     if (!localReposIsReady) return
-    const items = await decorate(arrRemoteRepos)
+    const items = await withLocalReposState(arrRemoteRepos)
     reset({ items })
-  }, [localReposIsReady, arrRemoteRepos, decorate, reset])
+  }, [localReposIsReady, arrRemoteRepos, withLocalReposState, reset])
 
   const handleCreateDummy = useCallback(async () => {
     const initialDummyData = createDefaultData()
