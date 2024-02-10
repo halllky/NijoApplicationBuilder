@@ -68,7 +68,6 @@ test('useLocalRepository 状態遷移テスト（排他に引っかかるパタ�
       ['+', { key: 'a', name: 'い', version: 0 }],
       ['+', { key: 'b', name: '', version: 0 }],
       ['+', { key: 'y', name: '', version: 0 }],
-      ['', { key: 'z', name: '', version: 0 }],
     ])
 
     const a = await get(Local, 'a')
@@ -84,7 +83,6 @@ test('useLocalRepository 状態遷移テスト（排他に引っかかるパタ�
       ['+', { key: 'b', name: '', version: 0 }],
       ['+', { key: 'c', name: '', version: 0 }],
       ['+', { key: 'd', name: '', version: 0 }],
-      ['', { key: 'z', name: '', version: 0 }],
     ])
 
     await save(Remote, Local)
@@ -107,17 +105,12 @@ test('useLocalRepository 状態遷移テスト（排他に引っかかるパタ�
   // 画面表示 3回目
   await scope(async Local => {
     expect(await current(Local)).toEqual<LocalState[]>([
-      ['', { key: 'a', name: 'え', version: 0 }],
-      ['', { key: 'b', name: '', version: 0 }],
-      ['', { key: 'c', name: '', version: 0 }],
-      ['', { key: 'd', name: '', version: 0 }],
-      ['', { key: 'z', name: '', version: 0 }],
     ])
 
-    let a = await get(Local, 'a')
-    let b = await get(Local, 'b')
-    let c = await get(Local, 'c')
-    let d = await get(Local, 'd')
+    let a = Remote.get('a')
+    let b = Remote.get('b')
+    let c = Remote.get('c')
+    let d = Remote.get('d')
     a = await edit(Local, a, 'お')
     a = await edit(Local, a, 'か')
     b = await edit(Local, b, 'ぱ')
@@ -220,7 +213,13 @@ async function current(localOrRemote: TestLocalRepos | TestRemoteRepos): Promise
       return localState
     })
   } else {
-    return Array.from(localOrRemote.values())
+    return Array
+      .from(localOrRemote.values())
+      .sort((a, b) => {
+        if ((a.key ?? '') < (b.key ?? '')) return -1
+        if ((a.key ?? '') > (b.key ?? '')) return 1
+        return 0
+      })
   }
 }
 async function add(local: TestLocalRepos, key: string): Promise<LocalRepositoryStateAndKeyAndItem<TestData>>
@@ -249,7 +248,8 @@ async function remove(local: TestLocalRepos, item: LocalRepositoryStateAndKeyAnd
 }
 async function get(local: TestLocalRepos, key: string): Promise<LocalRepositoryStateAndKeyAndItem<TestData>> {
   return await act(async () => {
-    const item = await local.loadOne(key)
+    const allItems = await local.loadAll()
+    const item = allItems.find(x => x.item.key === key)
     if (!item) throw new Error(`'${key}' is not exist in local repository.`)
     return item
   })
@@ -258,7 +258,29 @@ async function load(remote: TestRemoteRepos, local: TestLocalRepos): Promise<voi
 
 }
 async function save(remote: TestRemoteRepos, local: TestLocalRepos): Promise<void> {
+  await act(async () => {
+    const allLocalItems = await local.loadAll()
+    for (const localItem of allLocalItems) {
+      if (localItem.state === '+') {
+        if (!localItem.item.key) { console.error(`キーなし: ${localItem.item.name}`); continue }
+        if (remote.has(localItem.item.key)) { console.error(`キー重複: ${localItem.item.key}`); continue }
+        remote.set(localItem.item.key, localItem.item)
+        await local.commit(localItem.itemKey)
 
+      } else if (localItem.state === '*') {
+        if (!localItem.item.key) { console.error(`キーなし: ${localItem.item.name}`); continue }
+        if (!remote.has(localItem.item.key)) { console.error(`更新対象なし: ${localItem.item.key}`); continue }
+        remote.set(localItem.item.key, localItem.item)
+        await local.commit(localItem.itemKey)
+
+      } else if (localItem.state === '-') {
+        if (!localItem.item.key) { console.error(`キーなし: ${localItem.item.name}`); continue }
+        if (!remote.has(localItem.item.key)) { console.error(`更新対象なし: ${localItem.item.key}`); continue }
+        remote.delete(localItem.item.key)
+        await local.commit(localItem.itemKey)
+      }
+    }
+  })
 }
 
 // ----------------------------------------

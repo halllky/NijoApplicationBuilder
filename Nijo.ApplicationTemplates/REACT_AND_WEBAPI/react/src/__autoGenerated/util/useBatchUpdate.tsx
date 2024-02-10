@@ -108,7 +108,7 @@ export const useLocalRepositoryChangeList = () => {
 
 export type LocalRepositoryArgs<T> = {
   dataTypeKey: string
-  getItemKey: (t: T) => IDBValidKey
+  getItemKey: (t: T) => string
   getItemName?: (t: T) => string
   serialize: (t: T) => string
   deserialize: (str: string) => T
@@ -127,6 +127,7 @@ export const useLocalRepository = <T,>({
   getItemName,
   serialize,
   deserialize,
+  loadRemote,
 }: LocalRepositoryArgs<T>) => {
 
   const {
@@ -149,21 +150,34 @@ export const useLocalRepository = <T,>({
         }]
         : arr
     })
-  }, [dataTypeKey, deserialize, reduce])
+  }, [dataTypeKey, deserialize, reduce, getItemKey, loadRemote])
 
   const loadOne = useCallback(async (itemKey: string): Promise<LocalRepositoryStateAndKeyAndItem<T> | undefined> => {
+    // ローカルリポジトリにある場合はその内容を優先
     const key: IDBValidKey = [dataTypeKey, itemKey]
-    const found = await request(table => table.get(key) as IDBRequest<LocalRepositoryStoredItem>)
-    return found === undefined ? undefined : {
-      item: deserialize(found.serializedItem),
-      itemKey: found.itemKey,
-      state: found.state,
+    const foundInLocal = await request(table => table.get(key) as IDBRequest<LocalRepositoryStoredItem>)
+    if (foundInLocal) {
+      return {
+        item: deserialize(foundInLocal.serializedItem),
+        itemKey: foundInLocal.itemKey,
+        state: foundInLocal.state,
+      }
     }
-  }, [dataTypeKey, deserialize, request])
+    // ローカルリポジトリに無い場合はリモートから探す
+    if (loadRemote) {
+      const foundInRemote = (await loadRemote()).find(x => getItemKey(x) === itemKey)
+      if (foundInRemote) return {
+        item: foundInRemote,
+        itemKey: getItemKey(foundInRemote),
+        state: '',
+      }
+    }
+    return undefined
+  }, [dataTypeKey, deserialize, getItemKey, request, loadRemote])
 
   const getLocalRepositoryState = useCallback(async (itemKey: string): Promise<LocalRepositoryState> => {
     return (await loadOne(itemKey))?.state ?? ''
-  }, [loadOne, dataTypeKey])
+  }, [loadOne])
 
   const addToLocalRepository = useCallback(async (item: T): Promise<LocalRepositoryStateAndKeyAndItem<T>> => {
     const itemKey = UUID.generate()
@@ -190,14 +204,21 @@ export const useLocalRepository = <T,>({
     if (stateBeforeUpdate === '+') {
       await delFromDb([dataTypeKey, itemKey])
       return { remains: false }
-    } else {
-      const serializedItem = serialize(item)
-      const itemName = getItemName?.(item) ?? ''
-      const state: LocalRepositoryState = '-'
-      await setToDb({ dataTypeKey, itemKey, itemName, serializedItem, state })
-      return { remains: true }
     }
-  }, [dataTypeKey, delFromDb, setToDb, serialize, getItemName, getLocalRepositoryState])
+
+    if (loadRemote) {
+      const existsRemote = (await loadRemote()).some(x => getItemKey(x) === itemKey)
+      if (existsRemote) {
+        const serializedItem = serialize(item)
+        const itemName = getItemName?.(item) ?? ''
+        const state: LocalRepositoryState = '-'
+        await setToDb({ dataTypeKey, itemKey, itemName, serializedItem, state })
+        return { remains: true }
+      }
+    }
+
+    return { remains: false }
+  }, [dataTypeKey, delFromDb, setToDb, serialize, loadRemote, getItemKey, getItemName, getLocalRepositoryState])
 
   const commit = useCallback(async (itemKey: string): Promise<void> => {
     await delFromDb([dataTypeKey, itemKey])
@@ -307,7 +328,7 @@ export const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }:
         }
       }
     })
-  }, [db, tableName, dispatchMsg])
+  }, [db, tableName])
 
   // put, deleteなどのIDBObjectStoreのAPIを直接使うもの全般
   const request = useCallback(<T,>(fn: ((store: IDBObjectStore) => IDBRequest<T>), mode: IDBTransactionMode = 'readwrite'): Promise<T> => {
@@ -319,7 +340,7 @@ export const useIndexedDbTable = <T,>({ dbName, dbVersion, tableName, keyPath }:
       request.onerror = ev => reject(ev)
       request.onsuccess = ev => resolve((ev.target as IDBRequest<T>).result)
     })
-  }, [db, tableName, dispatchMsg])
+  }, [db, tableName])
 
   // テスト用
   const dump = useCallback(async () => {
