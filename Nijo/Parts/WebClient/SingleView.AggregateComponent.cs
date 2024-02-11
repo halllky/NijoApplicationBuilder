@@ -268,6 +268,7 @@ namespace Nijo.Parts.WebClient {
                             id: '{{def.field}}',
                             accessorFn: row => row.item.{{def.fieldWithPath}},
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
+                            setValue: (row, value) => row.item.{{def.fieldWithPath}} = value,
                             cellEditor: {{def.cellEditorName}},
                     """)}}
                             // editable: {{def.editable}},
