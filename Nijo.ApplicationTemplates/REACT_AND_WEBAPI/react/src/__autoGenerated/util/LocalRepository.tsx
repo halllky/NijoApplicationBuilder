@@ -94,7 +94,8 @@ export const LocalRepositoryContextProvider = ({ children }: {
         }
       }
     })
-  }, [commandToTable])
+    await reload()
+  }, [commandToTable, reload])
 
   const commit = useCallback(async (handler: SaveLocalItemHandler, ...keys: { dataTypeKey: string, itemKey: ItemKey }[]) => {
     // ローカルリポジトリ内のデータの読み込み
@@ -217,8 +218,13 @@ export const useLocalRepository = <T extends object>({
   remoteItems,
 }: LocalRepositoryArgs<T>) => {
 
-  const { ready, reload: reloadContext } = useContext(LocalRepositoryContext)
-  const { openCursor, queryToTable, commandToTable } = useIndexedDbLocalRepositoryTable()
+  const { ready: ready1, reload: reloadContext } = useContext(LocalRepositoryContext)
+  const { ready: ready2, openCursor, queryToTable } = useIndexedDbLocalRepositoryTable()
+
+  const findLocalItem = useCallback(async (itemKey: string) => {
+    const found = await queryToTable(table => table.get([dataTypeKey, itemKey]))
+    return found as LocalRepositoryStoredItem<T> | undefined
+  }, [dataTypeKey, queryToTable])
 
   const loadLocalItems = useCallback(async () => {
     const localItems: LocalRepositoryItem<T>[] = []
@@ -285,7 +291,8 @@ export const useLocalRepository = <T extends object>({
   }, [remoteItems, dataTypeKey, queryToTable, reloadContext, getItemKey, getItemName])
 
   return {
-    ready,
+    ready: ready1 && ready2,
+    findLocalItem,
     loadLocalItems,
     addToLocalRepository,
     updateLocalRepositoryItem,
