@@ -172,8 +172,6 @@ type TestLocalRepos = { current: ReturnType<typeof useLocalRepository<TestData>>
 type TestRemoteRepos = { current: { state: Map<string, TestData>, dispatch: (v: Map<string, TestData>) => void } }
 const REPOS_SETTING: LocalRepositoryArgs<TestData> = {
   dataTypeKey: 'TEST-DATA-20240204',
-  serialize: data => JSON.stringify(data),
-  deserialize: str => JSON.parse(str),
   getItemKey: data => data.key ?? '',
   getItemName: data => data.name ?? '',
 }

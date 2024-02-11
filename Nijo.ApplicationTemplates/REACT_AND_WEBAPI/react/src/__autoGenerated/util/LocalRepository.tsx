@@ -17,11 +17,13 @@ export type LocalRepositoryState
 
 type LocalRepositoryStoredItem = {
   dataTypeKey: string
-  itemKey: string
+  itemKey: ItemKey
   itemName: string
-  serializedItem: string
+  item: object
   state: LocalRepositoryState
 }
+const itemKeySymbol: unique symbol = Symbol()
+export type ItemKey = string & { [itemKeySymbol]: never }
 
 const useIndexedDbLocalRepositoryTable = () => {
   return useIndexedDbTable<LocalRepositoryStoredItem>({
@@ -37,7 +39,7 @@ const useIndexedDbLocalRepositoryTable = () => {
 
 export type LocalRepositoryItemListItem = {
   dataTypeKey: string
-  itemKey: string
+  itemKey: ItemKey
   itemName: string
   state: LocalRepositoryState
 }
@@ -101,22 +103,18 @@ export type LocalRepositoryArgs<T> = {
   dataTypeKey: string
   getItemKey: (t: T) => string
   getItemName?: (t: T) => string
-  serialize: (t: T) => string
-  deserialize: (str: string) => T
   remoteItems?: T[]
 }
 export type LocalRepositoryStateAndKeyAndItem<T> = {
-  itemKey: string
+  itemKey: ItemKey
   state: LocalRepositoryState
   item: T
 }
 
-export const useLocalRepository = <T,>({
+export const useLocalRepository = <T extends object>({
   dataTypeKey,
   getItemKey,
   getItemName,
-  serialize,
-  deserialize,
   remoteItems,
 }: LocalRepositoryArgs<T>) => {
 
@@ -130,63 +128,58 @@ export const useLocalRepository = <T,>({
       localItems.push({
         state: cursor.value.state,
         itemKey: cursor.value.itemKey,
-        item: deserialize(cursor.value.serializedItem),
+        item: cursor.value.item as T,
       })
     })
     const recalculated = crossJoin(
       localItems, local => local.itemKey,
-      (remoteItems ?? []), remote => getItemKey(remote),
+      (remoteItems ?? []), remote => getItemKey(remote) as ItemKey,
     ).map<LocalRepositoryStateAndKeyAndItem<T>>(pair => {
       return pair.left ?? { state: '', itemKey: pair.key, item: pair.right }
     })
     return recalculated
-  }, [remoteItems, openCursor, getItemKey, dataTypeKey, deserialize])
+  }, [remoteItems, openCursor, getItemKey, dataTypeKey])
 
   const addToLocalRepository = useCallback(async (item: T): Promise<LocalRepositoryStateAndKeyAndItem<T>> => {
-    const itemKey = UUID.generate()
+    const itemKey = UUID.generate() as ItemKey
     const itemName = getItemName?.(item) ?? ''
-    const serializedItem = serialize(item)
     const state: LocalRepositoryState = '+'
-    await queryToTable(table => table.put({ state, dataTypeKey, itemKey, itemName, serializedItem }))
+    await queryToTable(table => table.put({ state, dataTypeKey, itemKey, itemName, item }))
     await reloadContext()
     return { itemKey, state, item }
-  }, [dataTypeKey, queryToTable, reloadContext, getItemName, serialize])
+  }, [dataTypeKey, queryToTable, reloadContext, getItemName])
 
-  const updateLocalRepositoryItem = useCallback(async (itemKey: string, item: T): Promise<LocalRepositoryStateAndKeyAndItem<T>> => {
-    const serializedItem = serialize(item)
+  const updateLocalRepositoryItem = useCallback(async (itemKey: ItemKey, item: T): Promise<LocalRepositoryStateAndKeyAndItem<T>> => {
     const itemName = getItemName?.(item) ?? ''
     const stateBeforeUpdate = (await queryToTable(table => table.get([dataTypeKey, itemKey])))?.state
     const state: LocalRepositoryState = stateBeforeUpdate === '+' || stateBeforeUpdate === '-'
       ? stateBeforeUpdate
       : '*'
-    await queryToTable(table => table.put({ dataTypeKey, itemKey, itemName, serializedItem, state }))
+    await queryToTable(table => table.put({ dataTypeKey, itemKey, itemName, state, item }))
     await reloadContext()
     return { itemKey, state, item }
-  }, [dataTypeKey, queryToTable, reloadContext, serialize, getItemName])
+  }, [dataTypeKey, queryToTable, reloadContext, getItemName])
 
-  const deleteLocalRepositoryItem = useCallback(async (dbKey: string, item: T): Promise<LocalRepositoryStateAndKeyAndItem<T> | undefined> => {
-    const stored = (await queryToTable(table => table.get([dataTypeKey, dbKey])))
-    const itemKey = getItemKey(item)
+  const deleteLocalRepositoryItem = useCallback(async (itemKey: ItemKey, item: T): Promise<LocalRepositoryStateAndKeyAndItem<T> | undefined> => {
+    const stored = (await queryToTable(table => table.get([dataTypeKey, itemKey])))
     const existsRemote = remoteItems?.some(x => getItemKey(x) === itemKey)
 
     if (stored?.state === '-') {
       // 既に削除済みの場合: 何もしない
-      const { state, itemKey } = stored
-      const item = deserialize(stored.serializedItem)
-      return { state, itemKey, item }
+      const { state, itemKey, item } = stored
+      return { state, itemKey, item: item as T }
 
     } else if (stored?.state === '+') {
       // 新規作成後コミット前の場合: 物理削除
-      await queryToTable(table => table.delete([dataTypeKey, dbKey]))
+      await queryToTable(table => table.delete([dataTypeKey, itemKey]))
       await reloadContext()
       return undefined
 
     } else if (stored?.state === '*' || stored?.state === '' || existsRemote) {
       // リモートにある場合: 削除済みにマークする
-      const serializedItem = serialize(item)
       const itemName = getItemName?.(item) ?? ''
       const state: LocalRepositoryState = '-'
-      await queryToTable(table => table.put({ dataTypeKey, itemKey: dbKey, itemName, serializedItem, state }))
+      await queryToTable(table => table.put({ dataTypeKey, itemKey, itemName, state, item }))
       await reloadContext()
       return { state, itemKey, item }
 
@@ -194,7 +187,7 @@ export const useLocalRepository = <T,>({
       // ローカルにもリモートにも無い場合: 何もしない
       return undefined
     }
-  }, [dataTypeKey, queryToTable, reloadContext, serialize, getItemKey, getItemName])
+  }, [dataTypeKey, queryToTable, reloadContext, getItemKey, getItemName])
 
   const commit = useCallback(async (...itemKeys: string[]): Promise<void> => {
     await commandToTable(table => {
@@ -207,7 +200,6 @@ export const useLocalRepository = <T,>({
     await openCursor('readwrite', cursor => {
       if (cursor.value.dataTypeKey === dataTypeKey) cursor.delete()
     })
-    const items = await loadLocalItems()
     await reloadContext()
   }, [loadLocalItems, openCursor, dataTypeKey, reloadContext])
 

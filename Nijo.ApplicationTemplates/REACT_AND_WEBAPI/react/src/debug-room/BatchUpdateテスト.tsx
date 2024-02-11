@@ -31,8 +31,6 @@ const Page = () => {
   const { fields, append, update, remove } = useFieldArray({ name: 'items', control })
   const reposSetting: Util.LocalRepositoryArgs<TestData> = useMemo(() => ({
     dataTypeKey: 'TEST-DATA-20240204',
-    serialize: data => JSON.stringify(data),
-    deserialize: str => JSON.parse(str),
     getItemKey: data => data.key ?? '',
     getItemName: data => data.name ?? '',
     remoteItems: arrRemoteRepos,
