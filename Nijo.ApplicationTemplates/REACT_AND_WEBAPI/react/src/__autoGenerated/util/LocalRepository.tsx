@@ -162,7 +162,7 @@ export const useLocalRepository = <T,>({
     await queryToTable(table => table.put({ dataTypeKey, itemKey, itemName, serializedItem, state }))
     await reloadContext()
     return { itemKey, state, item }
-  }, [dataTypeKey, getItemKey, queryToTable, reloadContext, serialize, getItemName])
+  }, [dataTypeKey, queryToTable, reloadContext, serialize, getItemName])
 
   const deleteLocalRepositoryItem = useCallback(async (dbKey: string, item: T): Promise<LocalRepositoryStateAndKeyAndItem<T> | undefined> => {
     const stored = (await queryToTable(table => table.get([dataTypeKey, dbKey])))
@@ -223,27 +223,6 @@ export const useLocalRepository = <T,>({
 }
 
 // ------------------------------------
-
-const arrayReducer = ReactUtil.defineReducer(<T,>(state: T[]) => ({
-  reset: (arr: T[]) => arr,
-  delete: (where: (t: T) => boolean) => state.filter(t => !where(t)),
-  insert: (t: T, index?: number) => {
-    const arr2 = [...state]
-    arr2.splice(index ?? 0, 0, t)
-    return arr2
-  },
-  upsert: <TKey,>(getKey: (item: T) => TKey, newItem: T) => {
-    const key = getKey(newItem)
-    const index = state.findIndex(x => getKey(x) === key)
-    if (index === -1) {
-      return [newItem, ...state]
-    } else {
-      const arr2 = [...state]
-      arr2.splice(index, 1, newItem)
-      return arr2
-    }
-  },
-}))
 
 const crossJoin = <T1, T2, TKey>(
   left: T1[], getKeyLeft: (t: T1) => TKey,
