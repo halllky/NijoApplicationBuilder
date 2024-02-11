@@ -27,7 +27,8 @@ const Page = () => {
   const { arrRemoteRepos, save } = useInMemoryRemoteRepository()
 
   // ローカルリポジトリ
-  const { control, reset: resetForm } = Util.useFormEx<{ items: Util.LocalRepositoryStateAndKeyAndItem<TestData>[] }>({})
+  type GridRow = Util.LocalRepositoryStateAndKeyAndItem<TestData>
+  const { control, reset: resetForm } = Util.useFormEx<{ items: GridRow[] }>({})
   const { fields, append, update, remove } = useFieldArray({ name: 'items', control })
   const reposSetting: Util.LocalRepositoryArgs<TestData> = useMemo(() => ({
     dataTypeKey: 'TEST-DATA-20240204',
@@ -47,38 +48,28 @@ const Page = () => {
   } = Util.useLocalRepository(reposSetting)
 
   const handleAdd: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
-    const newItem: TestData = { name: '新規データ' }
-    const added = await addToLocalRepository(newItem)
-    append(added)
+    append(await addToLocalRepository({ name: '新規データ' }))
   }, [append, addToLocalRepository])
 
-  const handleUpdateRow = useCallback(async (index: number, row: Util.LocalRepositoryStateAndKeyAndItem<TestData>) => {
-    const updated = await updateLocalRepositoryItem(row.itemKey, row.item)
-    update(index, updated)
+  const handleUpdateRow = useCallback(async (index: number, row: GridRow) => {
+    update(index, await updateLocalRepositoryItem(row.itemKey, row.item))
   }, [update, updateLocalRepositoryItem])
 
-  const dtRef = useRef<Collection.DataTableRef<Util.LocalRepositoryStateAndKeyAndItem<TestData>>>(null)
+  const dtRef = useRef<Collection.DataTableRef<GridRow>>(null)
   const handleRemove: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
     if (!dtRef.current) return
-    const selected = dtRef.current.getSelectedRows()
     const deletedRowIndex: number[] = []
-    for (const { row, rowIndex } of selected) {
+    for (const { row, rowIndex } of dtRef.current.getSelectedRows()) {
       const deleted = await deleteLocalRepositoryItem(row.itemKey, row.item)
       if (deleted) update(rowIndex, deleted)
       else deletedRowIndex.push(rowIndex)
     }
     remove(deletedRowIndex)
-  }, [remove, deleteLocalRepositoryItem])
-
-  useEffect(() => {
-    if (ready) loadLocalItems().then(items => resetForm({ items }))
-  }, [ready, loadLocalItems, resetForm])
+  }, [update, remove, deleteLocalRepositoryItem])
 
   const handleCreateDummy = useCallback(async () => {
-    const initialDummyData = createDefaultData()
-    for (const item of initialDummyData.items) {
-      const created = await addToLocalRepository(item)
-      append(created)
+    for (const item of createDefaultData().items) {
+      append(await addToLocalRepository(item))
     }
   }, [append, addToLocalRepository])
 
@@ -91,6 +82,10 @@ const Page = () => {
     await resetLocalRepos()
     resetForm({ items: await loadLocalItems() })
   }, [resetLocalRepos, loadLocalItems, resetForm])
+
+  useEffect(() => {
+    if (ready) loadLocalItems().then(items => resetForm({ items }))
+  }, [ready, loadLocalItems, resetForm])
 
   return (
     <PanelGroup
