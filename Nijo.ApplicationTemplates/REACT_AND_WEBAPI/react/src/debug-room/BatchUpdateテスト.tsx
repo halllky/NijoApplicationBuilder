@@ -27,7 +27,7 @@ const Page = () => {
   const { arrRemoteRepos, save: saveHandler } = useInMemoryRemoteRepository()
 
   // ローカルリポジトリ
-  type GridRow = Util.LocalRepositoryStateAndKeyAndItem<TestData>
+  type GridRow = Util.LocalRepositoryItem<TestData>
   const { control, reset: resetForm } = Util.useFormEx<{ items: GridRow[] }>({})
   const { fields, append, update, remove } = useFieldArray({ name: 'items', control })
   const reposSetting: Util.LocalRepositoryArgs<TestData> = useMemo(() => ({
@@ -157,7 +157,7 @@ const LIST_COLS: Collection.ColumnDefEx<Util.TreeNode<Util.LocalRepositoryItemLi
   { id: 'col0', header: '　', accessorFn: x => x.item.state, size: 12 },
   { id: 'col1', header: '　', accessorFn: x => x.item.itemName },
 ]
-const LOCAL_REPOS_COLS: Collection.ColumnDefEx<Util.TreeNode<Util.LocalRepositoryStateAndKeyAndItem<TestData>>>[] = [
+const LOCAL_REPOS_COLS: Collection.ColumnDefEx<Util.TreeNode<Util.LocalRepositoryItem<TestData>>>[] = [
   { id: 'state', header: '', accessorFn: x => x.item.state, size: 12 },
   { id: 'key', header: 'key', accessorFn: x => x.item.item.key, setValue: (x, v) => x.item.item.key = v, cellEditor: Input.Word },
   { id: 'name', header: '名前', accessorFn: x => x.item.item.name, setValue: (x, v) => x.item.item.name = v, cellEditor: Input.Word },

@@ -106,10 +106,10 @@ export type LocalRepositoryArgs<T> = {
   remoteItems?: T[]
 }
 export type SaveLocalItems<T> = (handler: SaveFunctionHandler<T>, options?: SaveLocalItemsOptions) => Promise<boolean>
-export type SaveFunctionHandler<T> = (localItem: LocalRepositoryStateAndKeyAndItem<T>) => Promise<{ commit: boolean }>
+export type SaveFunctionHandler<T> = (localItem: LocalRepositoryItem<T>) => Promise<{ commit: boolean }>
 export type SaveLocalItemsOptions = { whenPartialSuccess?: 'commit' | 'rollback' }
 
-export type LocalRepositoryStateAndKeyAndItem<T> = {
+export type LocalRepositoryItem<T> = {
   itemKey: ItemKey
   state: LocalRepositoryState
   item: T
@@ -126,7 +126,7 @@ export const useLocalRepository = <T extends object>({
   const { openCursor, queryToTable, commandToTable } = useIndexedDbLocalRepositoryTable()
 
   const loadLocalItems = useCallback(async () => {
-    const localItems: LocalRepositoryStateAndKeyAndItem<T>[] = []
+    const localItems: LocalRepositoryItem<T>[] = []
     await openCursor('readonly', cursor => {
       if (cursor.value.dataTypeKey !== dataTypeKey) return
       localItems.push({
@@ -138,13 +138,13 @@ export const useLocalRepository = <T extends object>({
     const recalculated = crossJoin(
       localItems, local => local.itemKey,
       (remoteItems ?? []), remote => getItemKey(remote) as ItemKey,
-    ).map<LocalRepositoryStateAndKeyAndItem<T>>(pair => {
+    ).map<LocalRepositoryItem<T>>(pair => {
       return pair.left ?? { state: '', itemKey: pair.key, item: pair.right }
     })
     return recalculated
   }, [remoteItems, openCursor, getItemKey, dataTypeKey])
 
-  const addToLocalRepository = useCallback(async (item: T): Promise<LocalRepositoryStateAndKeyAndItem<T>> => {
+  const addToLocalRepository = useCallback(async (item: T): Promise<LocalRepositoryItem<T>> => {
     const itemKey = UUID.generate() as ItemKey
     const itemName = getItemName?.(item) ?? ''
     const state: LocalRepositoryState = '+'
@@ -153,7 +153,7 @@ export const useLocalRepository = <T extends object>({
     return { itemKey, state, item }
   }, [dataTypeKey, queryToTable, reloadContext, getItemName])
 
-  const updateLocalRepositoryItem = useCallback(async (itemKey: ItemKey, item: T): Promise<LocalRepositoryStateAndKeyAndItem<T>> => {
+  const updateLocalRepositoryItem = useCallback(async (itemKey: ItemKey, item: T): Promise<LocalRepositoryItem<T>> => {
     const itemName = getItemName?.(item) ?? ''
     const stateBeforeUpdate = (await queryToTable(table => table.get([dataTypeKey, itemKey])))?.state
     const state: LocalRepositoryState = stateBeforeUpdate === '+' || stateBeforeUpdate === '-'
@@ -164,7 +164,7 @@ export const useLocalRepository = <T extends object>({
     return { itemKey, state, item }
   }, [dataTypeKey, queryToTable, reloadContext, getItemName])
 
-  const deleteLocalRepositoryItem = useCallback(async (itemKey: ItemKey, item: T): Promise<LocalRepositoryStateAndKeyAndItem<T> | undefined> => {
+  const deleteLocalRepositoryItem = useCallback(async (itemKey: ItemKey, item: T): Promise<LocalRepositoryItem<T> | undefined> => {
     const stored = (await queryToTable(table => table.get([dataTypeKey, itemKey])))
     const existsRemote = remoteItems?.some(x => getItemKey(x) === itemKey)
 
