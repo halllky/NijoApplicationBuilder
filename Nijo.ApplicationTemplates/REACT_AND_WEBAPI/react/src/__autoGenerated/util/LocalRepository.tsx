@@ -64,12 +64,8 @@ export const LocalRepositoryContextProvider = ({ children }: {
   const reload = useCallback(async () => {
     const changes: LocalRepositoryItemListItem[] = []
     await openCursor('readonly', cursor => {
-      changes.push({
-        dataTypeKey: cursor.value.dataTypeKey,
-        state: cursor.value.state,
-        itemKey: cursor.value.itemKey,
-        itemName: cursor.value.itemName,
-      })
+      const { dataTypeKey, state, itemKey, itemName } = cursor.value
+      changes.push({ dataTypeKey, state, itemKey, itemName })
     })
     setChanges(changes)
   }, [openCursor, setChanges])
@@ -82,7 +78,7 @@ export const LocalRepositoryContextProvider = ({ children }: {
 
   useEffect(() => {
     if (ready) reload()
-  }, [reload, ready])
+  }, [ready, reload])
 
   return (
     <LocalRepositoryContext.Provider value={contextValue}>
@@ -105,15 +101,14 @@ export type LocalRepositoryArgs<T> = {
   getItemName?: (t: T) => string
   remoteItems?: T[]
 }
-export type SaveLocalItems<T> = (handler: SaveFunctionHandler<T>, options?: SaveLocalItemsOptions) => Promise<boolean>
-export type SaveFunctionHandler<T> = (localItem: LocalRepositoryItem<T>) => Promise<{ commit: boolean }>
-export type SaveLocalItemsOptions = { whenPartialSuccess?: 'commit' | 'rollback' }
-
 export type LocalRepositoryItem<T> = {
   itemKey: ItemKey
   state: LocalRepositoryState
   item: T
 }
+export type SaveLocalItems<T> = (handler: SaveFunctionHandler<T>, options?: SaveLocalItemsOptions) => Promise<boolean>
+export type SaveFunctionHandler<T> = (localItem: LocalRepositoryItem<T>) => Promise<{ commit: boolean }>
+export type SaveLocalItemsOptions = { whenPartialSuccess?: 'commit' | 'rollback' }
 
 export const useLocalRepository = <T extends object>({
   dataTypeKey,
@@ -129,19 +124,15 @@ export const useLocalRepository = <T extends object>({
     const localItems: LocalRepositoryItem<T>[] = []
     await openCursor('readonly', cursor => {
       if (cursor.value.dataTypeKey !== dataTypeKey) return
-      localItems.push({
-        state: cursor.value.state,
-        itemKey: cursor.value.itemKey,
-        item: cursor.value.item as T,
-      })
+      const { state, itemKey, item } = cursor.value
+      localItems.push({ state, itemKey, item: item as T })
     })
-    const recalculated = crossJoin(
+    return crossJoin(
       localItems, local => local.itemKey,
       (remoteItems ?? []), remote => getItemKey(remote) as ItemKey,
     ).map<LocalRepositoryItem<T>>(pair => {
       return pair.left ?? { state: '', itemKey: pair.key, item: pair.right }
     })
-    return recalculated
   }, [remoteItems, openCursor, getItemKey, dataTypeKey])
 
   const addToLocalRepository = useCallback(async (item: T): Promise<LocalRepositoryItem<T>> => {
@@ -191,14 +182,14 @@ export const useLocalRepository = <T extends object>({
       // ローカルにもリモートにも無い場合: 何もしない
       return undefined
     }
-  }, [dataTypeKey, queryToTable, reloadContext, getItemKey, getItemName])
+  }, [remoteItems, dataTypeKey, queryToTable, reloadContext, getItemKey, getItemName])
 
   const reset = useCallback(async (): Promise<void> => {
     await openCursor('readwrite', cursor => {
       if (cursor.value.dataTypeKey === dataTypeKey) cursor.delete()
     })
     await reloadContext()
-  }, [loadLocalItems, openCursor, dataTypeKey, reloadContext])
+  }, [openCursor, dataTypeKey, reloadContext])
 
   const saveLocalItems: SaveLocalItems<T> = useCallback(async (handle, options) => {
     const commitedKeys: ItemKey[] = []
