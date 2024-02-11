@@ -15,11 +15,11 @@ export type LocalRepositoryState
   | '*' // Modify
   | '-' // Delete
 
-type LocalRepositoryStoredItem = {
+export type LocalRepositoryStoredItem<T = object> = {
   dataTypeKey: string
   itemKey: ItemKey
   itemName: string
-  item: object
+  item: T
   state: LocalRepositoryState
 }
 const itemKeySymbol: unique symbol = Symbol()
@@ -44,21 +44,28 @@ export type LocalRepositoryItemListItem = {
   state: LocalRepositoryState
 }
 
-type LocalRepositoryContextValue = {
+export type LocalRepositoryContextValue = {
   changes: LocalRepositoryItemListItem[]
   reload: () => Promise<void>
+  commit: (handler: SaveLocalItemHandler, ...keys: { dataTypeKey: string, itemKey: ItemKey }[]) => Promise<boolean>
+  reset: (...keys: { dataTypeKey: string, itemKey: ItemKey }[]) => Promise<void>
   ready: boolean
 }
 const LocalRepositoryContext = React.createContext<LocalRepositoryContextValue>({
   changes: [],
   reload: () => Promise.resolve(),
+  commit: () => Promise.resolve(false),
+  reset: () => Promise.resolve(),
   ready: false,
 })
+
+export type SaveLocalItemHandler<T = object> = (localItem: LocalRepositoryStoredItem<T>) => Promise<{ commit: boolean }>
 
 export const LocalRepositoryContextProvider = ({ children }: {
   children?: React.ReactNode
 }) => {
-  const { ready, openCursor } = useIndexedDbLocalRepositoryTable()
+  const [, dispatchMsg] = Notification.useMsgContext()
+  const { ready, openCursor, commandToTable } = useIndexedDbLocalRepositoryTable()
   const [changes, setChanges] = useState<LocalRepositoryItemListItem[]>([])
 
   const reload = useCallback(async () => {
@@ -70,9 +77,50 @@ export const LocalRepositoryContextProvider = ({ children }: {
     setChanges(changes)
   }, [openCursor, setChanges])
 
+  const reset = useCallback(async (...keys: { dataTypeKey: string, itemKey: ItemKey }[]): Promise<void> => {
+    await commandToTable(table => {
+      if (keys.length === 0) {
+        table.clear()
+      } else {
+        for (const { dataTypeKey, itemKey } of keys) {
+          table.delete([dataTypeKey, itemKey])
+        }
+      }
+    })
+  }, [commandToTable])
+
+  const commit = useCallback(async (handler: SaveLocalItemHandler, ...keys: { dataTypeKey: string, itemKey: ItemKey }[]) => {
+    // ローカルリポジトリ内のデータの読み込み
+    const localItems: LocalRepositoryStoredItem[] = []
+    await openCursor('readonly', cursor => {
+      localItems.push({ ...cursor.value })
+    })
+    // 保存処理ハンドラの呼び出し
+    const commitedKeys: [string, ItemKey][] = []
+    let allCommited = true
+    for (const stored of localItems) {
+      const { commit } = await handler(stored)
+      if (commit) {
+        commitedKeys.push([stored.dataTypeKey, stored.itemKey])
+      } else {
+        allCommited = false
+      }
+    }
+    // 保存完了したデータをローカルリポジトリから削除する
+    await commandToTable(table => {
+      for (const [dataTypeKey, itemKey] of commitedKeys) {
+        table.delete([dataTypeKey, itemKey])
+      }
+    })
+    await reload()
+    return allCommited
+  }, [openCursor, reload, dispatchMsg])
+
   const contextValue: LocalRepositoryContextValue = useMemo(() => ({
     changes,
     reload,
+    reset,
+    commit,
     ready,
   }), [changes, ready, reload])
 
@@ -88,8 +136,7 @@ export const LocalRepositoryContextProvider = ({ children }: {
 }
 
 export const useLocalRepositoryChangeList = () => {
-  const { ready, changes } = useContext(LocalRepositoryContext)
-  return { ready, changes }
+  return useContext(LocalRepositoryContext)
 }
 
 // -------------------------------------------------
@@ -106,9 +153,6 @@ export type LocalRepositoryItem<T> = {
   state: LocalRepositoryState
   item: T
 }
-export type SaveLocalItems<T> = (handler: SaveFunctionHandler<T>, options?: SaveLocalItemsOptions) => Promise<boolean>
-export type SaveFunctionHandler<T> = (localItem: LocalRepositoryItem<T>) => Promise<{ commit: boolean }>
-export type SaveLocalItemsOptions = { whenPartialSuccess?: 'commit' | 'rollback' }
 
 export const useLocalRepository = <T extends object>({
   dataTypeKey,
@@ -184,38 +228,12 @@ export const useLocalRepository = <T extends object>({
     }
   }, [remoteItems, dataTypeKey, queryToTable, reloadContext, getItemKey, getItemName])
 
-  const reset = useCallback(async (): Promise<void> => {
-    await openCursor('readwrite', cursor => {
-      if (cursor.value.dataTypeKey === dataTypeKey) cursor.delete()
-    })
-    await reloadContext()
-  }, [openCursor, dataTypeKey, reloadContext])
-
-  const saveLocalItems: SaveLocalItems<T> = useCallback(async (handle, options) => {
-    const commitedKeys: ItemKey[] = []
-    let allCommited = true
-    for (const item of await loadLocalItems()) {
-      const { commit } = await handle(item)
-      if (commit) commitedKeys.push(item.itemKey)
-      else allCommited = false
-    }
-    if (allCommited || options?.whenPartialSuccess !== 'rollback') {
-      await commandToTable(table => {
-        for (const itemKey of commitedKeys) table.delete([dataTypeKey, itemKey])
-      })
-    }
-    await reloadContext()
-    return allCommited
-  }, [loadLocalItems, commandToTable, dataTypeKey, reloadContext])
-
   return {
     ready,
     loadLocalItems,
     addToLocalRepository,
     updateLocalRepositoryItem,
     deleteLocalRepositoryItem,
-    saveLocalItems,
-    reset,
   }
 }
 

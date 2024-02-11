@@ -21,10 +21,10 @@ export default function () {
 const Page = () => {
 
   // ローカルリポジトリ（サイドメニュー）
-  const { changes } = Util.useLocalRepositoryChangeList()
+  const { changes, reset: resetLocalRepos, commit } = Util.useLocalRepositoryChangeList()
 
   // リモートリポジトリ ※デバッグ用インメモリ
-  const { arrRemoteRepos, save: saveHandler } = useInMemoryRemoteRepository()
+  const { arrRemoteRepos, inmemoryRemoteRepos, setInmemoryRemoteRepos } = useInMemoryRemoteRepository()
 
   // ローカルリポジトリ
   type GridRow = Util.LocalRepositoryItem<TestData>
@@ -40,11 +40,9 @@ const Page = () => {
   const {
     ready,
     loadLocalItems,
-    saveLocalItems,
     addToLocalRepository,
     updateLocalRepositoryItem,
     deleteLocalRepositoryItem,
-    reset: resetLocalRepos,
   } = Util.useLocalRepository(reposSetting)
 
   const handleAdd: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
@@ -73,9 +71,46 @@ const Page = () => {
     }
   }, [append, addToLocalRepository])
 
+  const [, dispatchMsg] = Util.useMsgContext()
   const handleCommit = useCallback(async () => {
-    await saveHandler(saveLocalItems)
-  }, [saveHandler, saveLocalItems])
+    const remote = new Map(inmemoryRemoteRepos)
+    const success = await commit(async (item: Util.LocalRepositoryStoredItem<TestData>) => {
+      if (!item.item.key) {
+        return { commit: false }
+
+      } else if (item.state === '+') {
+        if (remote.has(item.item.key)) {
+          dispatchMsg(msg => msg.error(`キー重複: ${item.item.key}`))
+          return { commit: false }
+        }
+        remote.set(item.item.key, item.item)
+        return { commit: true }
+
+      } else if (item.state === '*') {
+        if (!remote.has(item.item.key)) {
+          dispatchMsg(msg => msg.error(`更新対象なし: ${item.item.key}`))
+          return { commit: false }
+        }
+        remote.set(item.item.key, item.item)
+        return { commit: true }
+
+      } else if (item.state === '-') {
+        if (!remote.has(item.item.key)) {
+          dispatchMsg(msg => msg.error(`削除対象なし: ${item.item.key}`))
+          return { commit: false }
+        }
+        remote.delete(item.item.key)
+        return { commit: true }
+
+      } else {
+        return { commit: false }
+      }
+    })
+    setInmemoryRemoteRepos(remote)
+    dispatchMsg(msg => success
+      ? msg.info('保存しました。')
+      : msg.info('エラーがあります。'))
+  }, [commit, inmemoryRemoteRepos, setInmemoryRemoteRepos, dispatchMsg])
 
   const handleReset = useCallback(async () => {
     await resetLocalRepos()
@@ -182,53 +217,14 @@ function createDefaultData(): TestDataCollection {
 
 
 const useInMemoryRemoteRepository = () => {
-  const [, dispatchMsg] = Util.useMsgContext()
   const [inmemoryRemoteRepos, setInmemoryRemoteRepos] = useState<Map<string, TestData>>(() => new Map())
-
   const arrRemoteRepos = useMemo(() => {
     return Array.from(inmemoryRemoteRepos.values())
   }, [inmemoryRemoteRepos])
 
-  const save = useCallback(async (saveLocalItems: Util.SaveLocalItems<TestData>) => {
-    const remote = new Map(inmemoryRemoteRepos)
-    const success = await saveLocalItems(async item => {
-      if (!item.item.key) {
-        return { commit: false }
-
-      } else if (item.state === '+') {
-        if (remote.has(item.item.key)) {
-          dispatchMsg(msg => msg.error(`キー重複: ${item.item.key}`))
-          return { commit: false }
-        }
-        remote.set(item.item.key, item.item)
-        return { commit: true }
-
-      } else if (item.state === '*') {
-        if (!remote.has(item.item.key)) {
-          dispatchMsg(msg => msg.error(`更新対象なし: ${item.item.key}`))
-          return { commit: false }
-        }
-        remote.set(item.item.key, item.item)
-        return { commit: true }
-
-      } else if (item.state === '-') {
-        if (!remote.has(item.item.key)) {
-          dispatchMsg(msg => msg.error(`削除対象なし: ${item.item.key}`))
-          return { commit: false }
-        }
-        remote.delete(item.item.key)
-        return { commit: true }
-
-      } else {
-        return { commit: false }
-      }
-    })
-    setInmemoryRemoteRepos(remote)
-    dispatchMsg(msg => success ? msg.info('保存しました。') : msg.info('エラーがあります。'))
-  }, [dispatchMsg, inmemoryRemoteRepos])
-
   return {
     arrRemoteRepos,
-    save,
+    inmemoryRemoteRepos,
+    setInmemoryRemoteRepos,
   }
 }
