@@ -284,32 +284,30 @@ async function get(local: TestLocalRepos, key: string): Promise<LocalRepositoryS
 }
 async function save(remote: TestRemoteRepos, local: TestLocalRepos): Promise<void> {
   await act(async () => {
-    const localItems = await local.current.loadLocalItems()
     const newRemote = new Map(remote.current.state)
-    const commited: string[] = []
-    for (const localItem of localItems) {
+    await local.current.saveLocalItems(async localItem => {
       if (localItem.state === '+') {
-        if (!localItem.item.key) { console.error(`キーなし: ${localItem.item.name}`); continue }
-        if (remote.current.state.has(localItem.item.key)) { console.error(`キー重複: ${localItem.item.key}`); continue }
-        commited.push(localItem.itemKey)
+        if (!localItem.item.key) { console.error(`キーなし: ${localItem.item.name}`); return { commit: false } }
+        if (remote.current.state.has(localItem.item.key)) { console.error(`キー重複: ${localItem.item.key}`); return { commit: false } }
         newRemote.set(localItem.item.key, localItem.item)
+        return { commit: true }
 
       } else if (localItem.state === '*') {
-        if (!localItem.item.key) { console.error(`キーなし: ${localItem.item.name}`); continue }
-        if (!remote.current.state.has(localItem.item.key)) { console.error(`更新対象なし: ${localItem.item.key}`); continue }
-        commited.push(localItem.itemKey)
+        if (!localItem.item.key) { console.error(`キーなし: ${localItem.item.name}`); return { commit: false } }
+        if (!remote.current.state.has(localItem.item.key)) { console.error(`更新対象なし: ${localItem.item.key}`); return { commit: false } }
         newRemote.set(localItem.item.key, { ...localItem.item, version: localItem.item.version + 1 })
-        remote.current.dispatch(newRemote)
+        return { commit: true }
 
       } else if (localItem.state === '-') {
-        if (!localItem.item.key) { console.error(`キーなし: ${localItem.item.name}`); continue }
-        if (!remote.current.state.has(localItem.item.key)) { console.error(`更新対象なし: ${localItem.item.key}`); continue }
-        commited.push(localItem.itemKey)
+        if (!localItem.item.key) { console.error(`キーなし: ${localItem.item.name}`); return { commit: false } }
+        if (!remote.current.state.has(localItem.item.key)) { console.error(`更新対象なし: ${localItem.item.key}`); return { commit: false } }
         newRemote.delete(localItem.item.key)
-        remote.current.dispatch(newRemote)
+        return { commit: true }
+
+      } else {
+        return { commit: false }
       }
-    }
+    })
     remote.current.dispatch(newRemote)
-    await local.current.commit(...commited)
   })
 }

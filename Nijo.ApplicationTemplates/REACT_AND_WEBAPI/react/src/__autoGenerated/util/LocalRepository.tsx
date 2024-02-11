@@ -105,6 +105,10 @@ export type LocalRepositoryArgs<T> = {
   getItemName?: (t: T) => string
   remoteItems?: T[]
 }
+export type SaveLocalItems<T> = (handler: SaveFunctionHandler<T>, options?: SaveLocalItemsOptions) => Promise<boolean>
+export type SaveFunctionHandler<T> = (localItem: LocalRepositoryStateAndKeyAndItem<T>) => Promise<{ commit: boolean }>
+export type SaveLocalItemsOptions = { whenPartialSuccess?: 'commit' | 'rollback' }
+
 export type LocalRepositoryStateAndKeyAndItem<T> = {
   itemKey: ItemKey
   state: LocalRepositoryState
@@ -189,13 +193,6 @@ export const useLocalRepository = <T extends object>({
     }
   }, [dataTypeKey, queryToTable, reloadContext, getItemKey, getItemName])
 
-  const commit = useCallback(async (...itemKeys: string[]): Promise<void> => {
-    await commandToTable(table => {
-      for (const itemKey of itemKeys) table.delete([dataTypeKey, itemKey])
-    })
-    await reloadContext()
-  }, [queryToTable, reloadContext, dataTypeKey])
-
   const reset = useCallback(async (): Promise<void> => {
     await openCursor('readwrite', cursor => {
       if (cursor.value.dataTypeKey === dataTypeKey) cursor.delete()
@@ -203,13 +200,30 @@ export const useLocalRepository = <T extends object>({
     await reloadContext()
   }, [loadLocalItems, openCursor, dataTypeKey, reloadContext])
 
+  const saveLocalItems: SaveLocalItems<T> = useCallback(async (handle, options) => {
+    const commitedKeys: ItemKey[] = []
+    let allCommited = true
+    for (const item of await loadLocalItems()) {
+      const { commit } = await handle(item)
+      if (commit) commitedKeys.push(item.itemKey)
+      else allCommited = false
+    }
+    if (allCommited || options?.whenPartialSuccess !== 'rollback') {
+      await commandToTable(table => {
+        for (const itemKey of commitedKeys) table.delete([dataTypeKey, itemKey])
+      })
+    }
+    await reloadContext()
+    return allCommited
+  }, [loadLocalItems, commandToTable, dataTypeKey, reloadContext])
+
   return {
     ready,
     loadLocalItems,
     addToLocalRepository,
     updateLocalRepositoryItem,
     deleteLocalRepositoryItem,
-    commit,
+    saveLocalItems,
     reset,
   }
 }

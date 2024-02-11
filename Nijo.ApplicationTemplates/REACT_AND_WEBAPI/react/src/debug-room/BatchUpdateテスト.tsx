@@ -24,7 +24,7 @@ const Page = () => {
   const { changes } = Util.useLocalRepositoryChangeList()
 
   // リモートリポジトリ ※デバッグ用インメモリ
-  const { arrRemoteRepos, save } = useInMemoryRemoteRepository()
+  const { arrRemoteRepos, save: saveHandler } = useInMemoryRemoteRepository()
 
   // ローカルリポジトリ
   type GridRow = Util.LocalRepositoryStateAndKeyAndItem<TestData>
@@ -40,10 +40,10 @@ const Page = () => {
   const {
     ready,
     loadLocalItems,
+    saveLocalItems,
     addToLocalRepository,
     updateLocalRepositoryItem,
     deleteLocalRepositoryItem,
-    commit,
     reset: resetLocalRepos,
   } = Util.useLocalRepository(reposSetting)
 
@@ -74,9 +74,8 @@ const Page = () => {
   }, [append, addToLocalRepository])
 
   const handleCommit = useCallback(async () => {
-    const localItems = await loadLocalItems()
-    await save(localItems, commit)
-  }, [save, loadLocalItems, commit])
+    await saveHandler(saveLocalItems)
+  }, [saveHandler, saveLocalItems])
 
   const handleReset = useCallback(async () => {
     await resetLocalRepos()
@@ -190,43 +189,42 @@ const useInMemoryRemoteRepository = () => {
     return Array.from(inmemoryRemoteRepos.values())
   }, [inmemoryRemoteRepos])
 
-  const save = useCallback(async (
-    localReposItems: Util.LocalRepositoryStateAndKeyAndItem<TestData>[],
-    commit: (...itemKeys: string[]) => Promise<void>
-  ) => {
+  const save = useCallback(async (saveLocalItems: Util.SaveLocalItems<TestData>) => {
     const remote = new Map(inmemoryRemoteRepos)
-    const commited: string[] = []
+    const success = await saveLocalItems(async item => {
+      if (!item.item.key) {
+        return { commit: false }
 
-    for (const item of localReposItems) {
-      if (!item.item.key) continue
-      if (item.state === '+') {
+      } else if (item.state === '+') {
         if (remote.has(item.item.key)) {
           dispatchMsg(msg => msg.error(`キー重複: ${item.item.key}`))
-          continue
+          return { commit: false }
         }
         remote.set(item.item.key, item.item)
-        commited.push(item.itemKey)
+        return { commit: true }
 
       } else if (item.state === '*') {
         if (!remote.has(item.item.key)) {
           dispatchMsg(msg => msg.error(`更新対象なし: ${item.item.key}`))
-          continue
+          return { commit: false }
         }
         remote.set(item.item.key, item.item)
-        commited.push(item.itemKey)
+        return { commit: true }
 
       } else if (item.state === '-') {
         if (!remote.has(item.item.key)) {
           dispatchMsg(msg => msg.error(`削除対象なし: ${item.item.key}`))
-          continue
+          return { commit: false }
         }
         remote.delete(item.item.key)
-        commited.push(item.itemKey)
+        return { commit: true }
+
+      } else {
+        return { commit: false }
       }
-    }
+    })
     setInmemoryRemoteRepos(remote)
-    await commit(...commited)
-    dispatchMsg(msg => msg.info('保存しました。'))
+    dispatchMsg(msg => success ? msg.info('保存しました。') : msg.info('エラーがあります。'))
   }, [dispatchMsg, inmemoryRemoteRepos])
 
   return {
