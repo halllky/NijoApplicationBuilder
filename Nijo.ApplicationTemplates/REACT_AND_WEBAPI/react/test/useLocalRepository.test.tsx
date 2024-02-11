@@ -234,8 +234,8 @@ async function current(remote: TestRemoteRepos): Promise<TestData[]>
 async function current(localOrRemote: TestLocalRepos | TestRemoteRepos): Promise<(LocalState[] | TestData[])> {
   if (isLocal(localOrRemote)) {
     return await act(async () => {
-      const localState: LocalState[] = localOrRemote.current
-        .localItems
+      const localItems = await localOrRemote.current.loadLocalItems()
+      const localState: LocalState[] = localItems
         .sort((a, b) => {
           if ((a.item.key ?? '') < (b.item.key ?? '')) return -1
           if ((a.item.key ?? '') > (b.item.key ?? '')) return 1
@@ -281,13 +281,15 @@ async function remove(local: TestLocalRepos, item: LocalRepositoryStateAndKeyAnd
   })
 }
 async function get(local: TestLocalRepos, key: string): Promise<LocalRepositoryStateAndKeyAndItem<TestData> | undefined> {
-  return local.current.localItems.find(x => x.item.key === key)
+  const localItems = await local.current.loadLocalItems()
+  return localItems.find(x => x.item.key === key)
 }
 async function save(remote: TestRemoteRepos, local: TestLocalRepos): Promise<void> {
   await act(async () => {
+    const localItems = await local.current.loadLocalItems()
     const newRemote = new Map(remote.current.state)
     const commited: string[] = []
-    for (const localItem of local.current.localItems) {
+    for (const localItem of localItems) {
       if (localItem.state === '+') {
         if (!localItem.item.key) { console.error(`キーなし: ${localItem.item.name}`); continue }
         if (remote.current.state.has(localItem.item.key)) { console.error(`キー重複: ${localItem.item.key}`); continue }

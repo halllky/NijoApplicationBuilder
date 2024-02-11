@@ -122,9 +122,8 @@ export const useLocalRepository = <T,>({
 
   const { ready, reload: reloadContext } = useContext(LocalRepositoryContext)
   const { openCursor, queryToTable, commandToTable } = useIndexedDbLocalRepositoryTable()
-  const [localItems, dispatch] = useReducer<typeof arrayReducer<LocalRepositoryStateAndKeyAndItem<T>>>(arrayReducer, [])
 
-  const recalculateItems = useCallback(async () => {
+  const loadLocalItems = useCallback(async () => {
     const localItems: LocalRepositoryStateAndKeyAndItem<T>[] = []
     await openCursor('readonly', cursor => {
       if (cursor.value.dataTypeKey !== dataTypeKey) return
@@ -134,32 +133,24 @@ export const useLocalRepository = <T,>({
         item: deserialize(cursor.value.serializedItem),
       })
     })
-    console.log('recalculateItems()', [...(remoteItems ?? [])], [...localItems])
-    console.trace()
     const recalculated = crossJoin(
       localItems, local => local.itemKey,
       (remoteItems ?? []), remote => getItemKey(remote),
     ).map<LocalRepositoryStateAndKeyAndItem<T>>(pair => {
       return pair.left ?? { state: '', itemKey: pair.key, item: pair.right }
     })
-    dispatch(arr => arr.reset(recalculated))
     return recalculated
-  }, [remoteItems, openCursor, getItemKey, dataTypeKey, deserialize, dispatch])
-
-  useEffect(() => {
-    if (ready) recalculateItems()
-  }, [ready, recalculateItems])
+  }, [remoteItems, openCursor, getItemKey, dataTypeKey, deserialize])
 
   const addToLocalRepository = useCallback(async (item: T): Promise<LocalRepositoryStateAndKeyAndItem<T>> => {
     const itemKey = UUID.generate()
     const itemName = getItemName?.(item) ?? ''
     const serializedItem = serialize(item)
     const state: LocalRepositoryState = '+'
-    dispatch(arr => arr.insert({ item, itemKey, state }))
     await queryToTable(table => table.put({ state, dataTypeKey, itemKey, itemName, serializedItem }))
     await reloadContext()
     return { itemKey, state, item }
-  }, [dataTypeKey, queryToTable, reloadContext, getItemName, serialize, dispatch])
+  }, [dataTypeKey, queryToTable, reloadContext, getItemName, serialize])
 
   const updateLocalRepositoryItem = useCallback(async (itemKey: string, item: T): Promise<LocalRepositoryStateAndKeyAndItem<T>> => {
     const serializedItem = serialize(item)
@@ -168,43 +159,42 @@ export const useLocalRepository = <T,>({
     const state: LocalRepositoryState = stateBeforeUpdate === '+' || stateBeforeUpdate === '-'
       ? stateBeforeUpdate
       : '*'
-    dispatch(arr => arr.upsert(x => getItemKey(x.item), { item, itemKey, state }))
     await queryToTable(table => table.put({ dataTypeKey, itemKey, itemName, serializedItem, state }))
     await reloadContext()
     return { itemKey, state, item }
-  }, [dataTypeKey, getItemKey, queryToTable, reloadContext, serialize, getItemName, dispatch])
+  }, [dataTypeKey, getItemKey, queryToTable, reloadContext, serialize, getItemName])
 
-  const deleteLocalRepositoryItem = useCallback(async (dbKey: string, item: T): Promise<{ remains: boolean }> => {
-    const localState = (await queryToTable(table => table.get([dataTypeKey, dbKey])))?.state
+  const deleteLocalRepositoryItem = useCallback(async (dbKey: string, item: T): Promise<LocalRepositoryStateAndKeyAndItem<T> | undefined> => {
+    const stored = (await queryToTable(table => table.get([dataTypeKey, dbKey])))
     const itemKey = getItemKey(item)
     const existsRemote = remoteItems?.some(x => getItemKey(x) === itemKey)
 
-    if (localState === '-') {
+    if (stored?.state === '-') {
       // 既に削除済みの場合: 何もしない
-      return { remains: true }
+      const { state, itemKey } = stored
+      const item = deserialize(stored.serializedItem)
+      return { state, itemKey, item }
 
-    } else if (localState === '+') {
+    } else if (stored?.state === '+') {
       // 新規作成後コミット前の場合: 物理削除
-      dispatch(arr => arr.delete(x => x.itemKey === dbKey))
       await queryToTable(table => table.delete([dataTypeKey, dbKey]))
       await reloadContext()
-      return { remains: false }
+      return undefined
 
-    } else if (localState === '*' || localState === '' || existsRemote) {
+    } else if (stored?.state === '*' || stored?.state === '' || existsRemote) {
       // リモートにある場合: 削除済みにマークする
       const serializedItem = serialize(item)
       const itemName = getItemName?.(item) ?? ''
       const state: LocalRepositoryState = '-'
-      dispatch(arr => arr.upsert(x => getItemKey(x.item), { item, itemKey: dbKey, state }))
       await queryToTable(table => table.put({ dataTypeKey, itemKey: dbKey, itemName, serializedItem, state }))
       await reloadContext()
-      return { remains: true }
+      return { state, itemKey, item }
 
     } else {
       // ローカルにもリモートにも無い場合: 何もしない
-      return { remains: true }
+      return undefined
     }
-  }, [dataTypeKey, queryToTable, reloadContext, serialize, getItemKey, getItemName, dispatch])
+  }, [dataTypeKey, queryToTable, reloadContext, serialize, getItemKey, getItemName])
 
   const commit = useCallback(async (...itemKeys: string[]): Promise<void> => {
     await commandToTable(table => {
@@ -217,19 +207,18 @@ export const useLocalRepository = <T,>({
     await openCursor('readwrite', cursor => {
       if (cursor.value.dataTypeKey === dataTypeKey) cursor.delete()
     })
-    await recalculateItems()
+    const items = await loadLocalItems()
     await reloadContext()
-  }, [recalculateItems, openCursor, dataTypeKey, reloadContext])
+  }, [loadLocalItems, openCursor, dataTypeKey, reloadContext])
 
   return {
     ready,
-    localItems,
+    loadLocalItems,
     addToLocalRepository,
     updateLocalRepositoryItem,
     deleteLocalRepositoryItem,
     commit,
     reset,
-    reload: recalculateItems,
   }
 }
 

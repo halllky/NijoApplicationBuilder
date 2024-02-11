@@ -27,9 +27,8 @@ const Page = () => {
   const { arrRemoteRepos, save } = useInMemoryRemoteRepository()
 
   // ローカルリポジトリ
-  const { control, reset } = Util.useFormEx<{ items: Util.LocalRepositoryStateAndKeyAndItem<TestData>[] }>({})
+  const { control, reset: resetForm } = Util.useFormEx<{ items: Util.LocalRepositoryStateAndKeyAndItem<TestData>[] }>({})
   const { fields, append, update, remove } = useFieldArray({ name: 'items', control })
-  const dtRef = useRef<Collection.DataTableRef<Util.LocalRepositoryStateAndKeyAndItem<TestData>>>(null)
   const reposSetting: Util.LocalRepositoryArgs<TestData> = useMemo(() => ({
     dataTypeKey: 'TEST-DATA-20240204',
     serialize: data => JSON.stringify(data),
@@ -40,13 +39,13 @@ const Page = () => {
   }), [arrRemoteRepos])
 
   const {
-    localItems,
+    ready,
+    loadLocalItems,
     addToLocalRepository,
     updateLocalRepositoryItem,
     deleteLocalRepositoryItem,
     commit,
     reset: resetLocalRepos,
-    reload: reloadLocalRepos,
   } = Util.useLocalRepository(reposSetting)
 
   const handleAdd: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
@@ -60,37 +59,40 @@ const Page = () => {
     update(index, updated)
   }, [update, updateLocalRepositoryItem])
 
+  const dtRef = useRef<Collection.DataTableRef<Util.LocalRepositoryStateAndKeyAndItem<TestData>>>(null)
   const handleRemove: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
     if (!dtRef.current) return
     const selected = dtRef.current.getSelectedRows()
-    const deleted: number[] = []
+    const deletedRowIndex: number[] = []
     for (const { row, rowIndex } of selected) {
-      const { remains } = await deleteLocalRepositoryItem(row.itemKey, row.item)
-      if (!remains) deleted.push(rowIndex)
+      const deleted = await deleteLocalRepositoryItem(row.itemKey, row.item)
+      if (deleted) update(rowIndex, deleted)
+      else deletedRowIndex.push(rowIndex)
     }
-    remove(deleted)
+    remove(deletedRowIndex)
   }, [remove, deleteLocalRepositoryItem])
 
-  const handleReload = useCallback(async () => {
-    reset({ items: await reloadLocalRepos() })
-  }, [reset, reloadLocalRepos])
+  useEffect(() => {
+    if (ready) loadLocalItems().then(items => resetForm({ items }))
+  }, [ready, loadLocalItems, resetForm])
 
   const handleCreateDummy = useCallback(async () => {
     const initialDummyData = createDefaultData()
     for (const item of initialDummyData.items) {
-      const { itemKey, state } = await addToLocalRepository(item)
-      append({ item, itemKey, state })
+      const created = await addToLocalRepository(item)
+      append(created)
     }
   }, [append, addToLocalRepository])
 
   const handleCommit = useCallback(async () => {
+    const localItems = await loadLocalItems()
     await save(localItems, commit)
-  }, [save, localItems, commit])
+  }, [save, loadLocalItems, commit])
 
   const handleReset = useCallback(async () => {
     await resetLocalRepos()
-    await handleReload()
-  }, [resetLocalRepos, handleReload])
+    resetForm({ items: await loadLocalItems() })
+  }, [resetLocalRepos, loadLocalItems, resetForm])
 
   return (
     <PanelGroup
@@ -122,7 +124,6 @@ const Page = () => {
               <Input.Button onClick={handleRemove}>削除</Input.Button>
               <Input.Button onClick={handleCreateDummy}>ダミー</Input.Button>
               <div className="flex-1"></div>
-              <Input.Button onClick={handleReload}>再読込</Input.Button>
             </div>
             <Collection.DataTable
               ref={dtRef}
