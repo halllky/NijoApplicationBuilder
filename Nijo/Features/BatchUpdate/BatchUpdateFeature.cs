@@ -33,9 +33,8 @@ namespace Nijo.Features.BatchUpdate {
             });
 
             context.EditReactDirectory(dir => {
-                dir.Generate(UseLocalRepositoryCommitHandling(context));
-
                 dir.Directory(App.REACT_UTIL_DIR, utilDir => {
+                    utilDir.Generate(UseLocalRepositoryCommitHandling(context));
                     utilDir.Generate(TsHelper(context));
                 });
             });
