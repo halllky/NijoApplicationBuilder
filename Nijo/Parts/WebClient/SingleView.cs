@@ -142,7 +142,7 @@ namespace Nijo.Parts.WebClient {
                 return $$"""
                     import React, { useState, useEffect, useCallback, useMemo, useReducer, useRef, useId } from 'react';
                     import { Link, useParams, useNavigate } from 'react-router-dom';
-                    import { FieldValues, SubmitHandler, useForm, FormProvider, useFormContext, useFieldArray } from 'react-hook-form';
+                    import { SubmitHandler, useForm, FormProvider, useFormContext, useFieldArray } from 'react-hook-form';
                     import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
                     import { UUID } from 'uuidjs';
                     import * as Input from '../../input';
@@ -155,48 +155,45 @@ namespace Nijo.Parts.WebClient {
 
                     export default function () {
 
-                      // コンテキスト等
                       const [, dispatchMsg] = useMsgContext()
+                      const navigate = useNavigate()
                       const { get, post } = useHttpRequest()
+                      const reactHookFormMethods = useForm<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>({})
+                      const { handleSubmit, reset } = reactHookFormMethods
 
+                    {{If(_type != E_Type.Create, () => $$"""
                       // 画面表示時
-                    {{If(_type == E_Type.Create, () => $$"""
-                      const defaultValues = useMemo(() => {
-                        return AggregateType.{{createEmptyObject}}()
-                      }, [])
-                    """).Else(() => $$"""
-                      const { {{keys.Select((m, i) => $"key{i}: urlKey{m.MemberName}").Join(", ")}} } = useParams()
-                      const [instanceName, setInstanceName] = useState<string | undefined>('')
-                      const [fetched, setFetched] = useState(false)
-                      const defaultValues = useCallback(async () => {
-                    {{keysFromUrl.SelectTextTemplate(key => $$"""
-                        if ({{key}} == null) return AggregateType.{{createEmptyObject}}()
+                      const { {{keysFromUrl.Select((urlkey, i) => $"key{i}: {urlkey}").Join(", ")}} } = useParams()
+                      const [fetched, setFetched] = useState<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>()
+                      const instanceName = useMemo(() => {
+                        return `{{names.Select(n => $"${{fetched?.{n}}}").Join(string.Empty)}}`
+                      }, [fetched])
+
+                      useEffect(() => {
+                    {{keysFromUrl.SelectTextTemplate(urlkey => $$"""
+                        if ({{urlkey}} == null) return
                     """)}}
-                        const response = await get({{find.GetUrlStringForReact(keysFromUrl)}})
-                        setFetched(true)
-                        if (response.ok) {
-                          const responseData = response.data as AggregateType.{{_aggregate.Item.TypeScriptTypeName}}
-                          setInstanceName({{names.Select(path => $"String(responseData.{path})").Join(" + ")}})
+                        get({{find.GetUrlStringForReact(keysFromUrl)}}).then(response => {
+                          if (response.ok) {
+                            const responseData = response.data as AggregateType.{{_aggregate.Item.TypeScriptTypeName}}
 
-                          visitObject(responseData, obj => {
-                            // 新規データのみ主キーを編集可能にするため、読込データと新規データを区別するためのフラグをつける
-                            (obj as { {{AggregateDetail.IS_LOADED}}?: boolean }).{{AggregateDetail.IS_LOADED}} = true;
-                            // 配列中のオブジェクト識別用
-                            (obj as { {{AggregateDetail.OBJECT_ID}}: string }).{{AggregateDetail.OBJECT_ID}} = UUID.generate()
-                          })
+                            visitObject(responseData, obj => {
+                              // 新規データのみ主キーを編集可能にするため、読込データと新規データを区別するためのフラグをつける
+                              (obj as { {{AggregateDetail.IS_LOADED}}?: boolean }).{{AggregateDetail.IS_LOADED}} = true;
+                              // 配列中のオブジェクト識別用
+                              (obj as { {{AggregateDetail.OBJECT_ID}}: string }).{{AggregateDetail.OBJECT_ID}} = UUID.generate()
+                            })
 
-                          return responseData
-                        } else {
-                          return AggregateType.{{createEmptyObject}}()
-                        }
-                      }, [{{keysFromUrl.Join(", ")}}])
+                            setFetched(responseData)
+                            reset({ ...responseData })
+                          }
+                        })
+                      }, [{{keysFromUrl.Join(", ")}}, get, setFetched, reset])
                     """)}}
-
-                      const reactHookFormMethods = useForm({ defaultValues })
 
                       // 編集時
-                      const formRef = useRef<HTMLFormElement | null>(null)
-                      const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLFormElement>) => {
+                      const formRef = useRef<HTMLFormElement>(null)
+                      const onKeyDown: React.KeyboardEventHandler<HTMLFormElement> = useCallback(e => {
                         if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                           // Ctrl + Enter で送信
                           formRef.current?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))
@@ -205,12 +202,10 @@ namespace Nijo.Parts.WebClient {
                           // フォーム中でEnterキーが押されたときに誤submitされるのを防ぐ。
                           // textareaでpreventDefaultすると改行できなくなるので除外
                           e.preventDefault()
-
                         }
                       }, [])
 
                       // 処理確定時
-                      const navigate = useNavigate()
                     {{If(_type == E_Type.View, () => $$"""
                       const navigateToEditView = useCallback((e: React.MouseEvent) => {
                         navigate(`{{GetUrlStringForReact(E_Type.Edit, keysFromUrl)}}`)
@@ -218,7 +213,7 @@ namespace Nijo.Parts.WebClient {
                       }, [navigate, {{keysFromUrl.Join(", ")}}])
                     """)}}
                     {{If(_type == E_Type.Create, () => $$"""
-                      const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
+                      const onSave: SubmitHandler<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}> = useCallback(async data => {
                         const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{controller.CreateCommandApi}}`, data)
                         if (response.ok) {
                           dispatchMsg(msg => msg.info(`${({{names.Select(path => $"String(response.data.{path})").Join(" + ")}})}を作成しました。`))
@@ -226,7 +221,7 @@ namespace Nijo.Parts.WebClient {
                         }
                       }, [post, navigate])
                     """).ElseIf(_type == E_Type.Edit, () => $$"""
-                      const onSave: SubmitHandler<FieldValues> = useCallback(async data => {
+                      const onSave: SubmitHandler<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}> = useCallback(async data => {
                         const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{controller.UpdateCommandApi}}`, data)
                         if (response.ok) {
                           dispatchMsg(msg => msg.info(`${({{names.Select(path => $"String(response.data.{path})").Join(" + ")}})}を更新しました。`))
@@ -242,7 +237,7 @@ namespace Nijo.Parts.WebClient {
                       return (
                         <FormProvider {...reactHookFormMethods}>
                     {{If(_type == E_Type.Create || _type == E_Type.Edit, () => $$"""
-                          <form className="page-content-root" ref={formRef} onSubmit={reactHookFormMethods.handleSubmit(onSave)} onKeyDown={onKeyDown}>
+                          <form className="page-content-root" ref={formRef} onSubmit={handleSubmit(onSave)} onKeyDown={onKeyDown}>
                     """).Else(() => $$"""
                           <form className="page-content-root">
                     """)}}
