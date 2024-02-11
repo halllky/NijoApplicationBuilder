@@ -164,18 +164,11 @@ namespace Nijo.Parts.WebClient {
                     const VForm = Layout.VerticalForm
 
                     export default function () {
-
-                      const navigate = useNavigate()
                       const [, dispatchMsg] = Util.useMsgContext()
-                      const { get, post } = Util.useHttpRequest()
-                      const reactHookFormMethods = useForm<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>({})
-                      const { handleSubmit, reset } = reactHookFormMethods
-
+                      const { get } = Util.useHttpRequest()
                       const { {{urlKeys.Select((urlkey, i) => $"key{i}: {urlkey}").Join(", ")}} } = useParams()
                       const [fetched, setFetched] = useState<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>()
-                      const instanceName = useMemo(() => {
-                        return `{{names.Select(n => $"${{fetched?.{n}}}").Join(string.Empty)}}`
-                      }, [fetched])
+                      const [localReposItemKey, setLocalReposItemKey] = useState<Util.ItemKey>()
                     {{If(_aggregate.Item.Options.DisableLocalRepository != true, () => $$"""
                       const localReposSettings: Util.LocalRepositoryArgs<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}> = useMemo(() => ({
                         dataTypeKey: '{{_aggregate.Item.ClassName}}',
@@ -183,19 +176,16 @@ namespace Nijo.Parts.WebClient {
                         getItemName: x => `{{names.Select(n => $"${{x.{n}}}").Join(string.Empty)}}`,
                         remoteItems: fetched ? [fetched] : undefined,
                       }), [fetched])
-                      const {
-                        ready: localReposIsReady,
-                        findLocalItem,
-                        addToLocalRepository,
-                        updateLocalRepositoryItem,
-                      } = Util.useLocalRepository(localReposSettings)
+                      const { ready: localReposIsReady, findLocalItem } = Util.useLocalRepository(localReposSettings)
                     """)}}
 
                     {{If(_type == E_Type.Create, () => $$"""
                       useEffect(() => {
-                        if (!localReposIsReady || {{urlKeys[0]}} == null) {
-                          reset(AggregateType.{{createEmptyObject}}())
-                        } else {
+                        if ({{urlKeys[0]}} == null) {
+                          setFetched(AggregateType.{{createEmptyObject}}())
+                          setLocalReposItemKey(undefined)
+
+                        } else if (localReposIsReady) {
                           findLocalItem({{urlKeys[0]}}).then(localReposItem => {
                             if (!localReposItem) return
                             const item = { ...localReposItem.item }
@@ -208,10 +198,10 @@ namespace Nijo.Parts.WebClient {
                             })
 
                             setFetched({ ...item })
-                            reset({ ...item })
+                            setLocalReposItemKey({{urlKeys[0]}} as Util.ItemKey)
                           })
                         }
-                      }, [localReposIsReady, {{urlKeys[0]}}, findLocalItem, setFetched, reset])
+                      }, [localReposIsReady, {{urlKeys[0]}}, findLocalItem, setFetched, setLocalReposItemKey])
 
                     """).Else(() => $$"""
                       useEffect(() => {
@@ -240,10 +230,52 @@ namespace Nijo.Parts.WebClient {
                           })
 
                           setFetched({ ...item })
-                          reset({ ...item })
+                          setLocalReposItemKey(itemKey)
                         })()
-                      }, [localReposIsReady, {{urlKeys.Join(", ")}}, get, setFetched, reset, dispatchMsg])
+                      }, [localReposIsReady, {{urlKeys.Join(", ")}}, get, setFetched, setLocalReposItemKey, dispatchMsg])
 
+                    """)}}
+
+                      return fetched ? (
+                        <AfterLoaded
+                          defaultValues={fetched}
+                          localReposItemKey={localReposItemKey}
+                    {{urlKeys.SelectTextTemplate(urlkey => $$"""
+                          {{urlkey}}={{{urlkey}}}
+                    """)}}
+                        ></AfterLoaded>
+                      ) : (
+                        <></>
+                      )
+                    }
+
+                    const AfterLoaded = ({ localReposItemKey, defaultValues{{string.Concat(urlKeys.Select(urlkey => $", {urlkey}"))}} }: {
+                      localReposItemKey?: Util.ItemKey
+                      defaultValues: AggregateType.{{_aggregate.Item.TypeScriptTypeName}}
+                    {{urlKeys.SelectTextTemplate((urlkey, i) => $$"""
+                      {{urlkey}}?: {{keys[i].TypeScriptTypename}}
+                    """)}}
+                    }) => {
+                      const navigate = useNavigate()
+                      const [, dispatchMsg] = Util.useMsgContext()
+                      const { get, post } = Util.useHttpRequest()
+                      const reactHookFormMethods = useForm({ defaultValues })
+                      const { handleSubmit } = reactHookFormMethods
+
+                      const instanceName = useMemo(() => {
+                        return `{{names.Select(n => $"${{defaultValues.{n}}}").Join(string.Empty)}}`
+                      }, [defaultValues])
+                    {{If(_aggregate.Item.Options.DisableLocalRepository != true, () => $$"""
+                      const localReposSettings: Util.LocalRepositoryArgs<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}> = useMemo(() => ({
+                        dataTypeKey: '{{_aggregate.Item.ClassName}}',
+                        getItemKey: x => JSON.stringify([{{keys.Select(k => $"x.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]),
+                        getItemName: x => `{{names.Select(n => $"${{x.{n}}}").Join(string.Empty)}}`,
+                        remoteItems: [defaultValues],
+                      }), [defaultValues])
+                      const {
+                        addToLocalRepository,
+                        updateLocalRepositoryItem,
+                      } = Util.useLocalRepository(localReposSettings)
                     """)}}
 
                       const formRef = useRef<HTMLFormElement>(null)
@@ -285,28 +317,24 @@ namespace Nijo.Parts.WebClient {
 
                     """).ElseIf(_type == E_Type.Create, () => $$"""
                       const onSave: SubmitHandler<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}> = useCallback(async data => {
-                        if ({{urlKeys[0]}} == null) {
+                        if (localReposItemKey === undefined) {
                           const { itemKey } = await addToLocalRepository(data)
                           navigate(`{{GetUrlStringForReact(E_Type.Create, new[] { "itemKey" })}}`)
                         } else {
-                          await updateLocalRepositoryItem({{urlKeys[0]}} as Util.ItemKey, data)
+                          await updateLocalRepositoryItem(localReposItemKey, data)
                         }
-                      }, [{{urlKeys[0]}}, addToLocalRepository, updateLocalRepositoryItem, navigate])
+                      }, [localReposItemKey, addToLocalRepository, updateLocalRepositoryItem, navigate])
 
                     """).ElseIf(_type == E_Type.Edit, () => $$"""
                       const onSave: SubmitHandler<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}> = useCallback(async data => {
+                        if (localReposItemKey === undefined) return
                     {{urlKeys.SelectTextTemplate(urlkey => $$"""
                         if ({{urlkey}} == null) return
                     """)}}
-                        const itemKey = JSON.stringify([{{urlKeys.Join(", ")}}]) as Util.ItemKey
-                        await updateLocalRepositoryItem(itemKey, data)
+                        await updateLocalRepositoryItem(localReposItemKey, data)
                         navigate(`{{GetUrlStringForReact(E_Type.View, urlKeys)}}`)
-                      }, [{{urlKeys.Join(", ")}}, updateLocalRepositoryItem, navigate])
+                      }, [localReposItemKey, {{urlKeys.Join(", ")}}, updateLocalRepositoryItem, navigate])
 
-                    """)}}
-
-                    {{If(_type == E_Type.View || _type == E_Type.Edit, () => $$"""
-                      if (!fetched) return <></>
                     """)}}
 
                       return (
