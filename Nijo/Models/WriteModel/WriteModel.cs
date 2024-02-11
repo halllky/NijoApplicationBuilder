@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Nijo.Parts;
 using Nijo.Parts.WebClient;
 using Nijo.Features;
+using Nijo.Features.BatchUpdate;
 
 namespace Nijo.Models.WriteModel {
     internal class WriteModel : IModel {
@@ -114,6 +115,10 @@ namespace Nijo.Models.WriteModel {
                     });
                 });
             });
+
+            // 一括アップデート
+            var batchUpdate = new BatchUpdateFeature();
+            batchUpdate.GenerateCode(context);
         }
     }
 }
