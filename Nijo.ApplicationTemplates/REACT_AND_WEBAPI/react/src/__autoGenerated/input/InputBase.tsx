@@ -1,5 +1,4 @@
 import { HTMLAttributes } from "react"
-import dayjs from "dayjs"
 import { forwardRefEx } from "../util"
 
 export type ValidationHandler = (value: string) => ({ ok: true, formatted: string } | { ok: false })
@@ -19,8 +18,11 @@ export const defineCustomComponent = <
   return forwardRefEx(fn)
 }
 
-export type CustomComponent<TValue = any, TAdditionalProp extends {} = {}, TElementAttrs extends HTMLAttributes<HTMLElement> = HTMLAttributes<HTMLElement>>
-  = ReturnType<typeof defineCustomComponent<TValue, TAdditionalProp, TElementAttrs>>
+export type CustomComponent<
+  TValue = any,
+  TAdditionalProp extends {} = {},
+  TElementAttrs extends HTMLAttributes<HTMLElement> = HTMLAttributes<HTMLElement>
+> = ReturnType<typeof defineCustomComponent<TValue, TAdditionalProp, TElementAttrs>>
 
 export interface CustomComponentRef<T = any> {
   /**
@@ -47,16 +49,7 @@ export type CustomComponentProps<
   }
 
 // ---------------------------------------------
+/** 日付や数値などの表記ゆれを補正する */
 export const normalize = (str: string) => str
   .replace(/(\s|　)/gm, '') // 空白を除去
   .normalize('NFKC') // 全角を半角に変換
-
-export const parseAsDate = (normalized: string, format: string): ReturnType<ValidationHandler> => {
-  let parsed = dayjs(normalized, { format, locale: 'ja' })
-  if (!parsed.isValid()) return { ok: false }
-  if (parsed.year() == 2001 && !normalized.includes('2001')) {
-    // 年が未指定の場合、2001年ではなくシステム時刻の年と解釈する
-    parsed = parsed.set('year', dayjs().year())
-  }
-  return { ok: true, formatted: parsed.format(format) }
-}

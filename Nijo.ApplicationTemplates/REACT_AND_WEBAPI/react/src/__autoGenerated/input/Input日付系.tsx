@@ -1,5 +1,6 @@
 import { useMemo, useRef, useImperativeHandle, useCallback } from "react"
-import { CustomComponentRef, ValidationHandler, defineCustomComponent, normalize, parseAsDate } from "./InputBase"
+import dayjs from "dayjs"
+import { CustomComponentRef, ValidationHandler, defineCustomComponent, normalize } from "./InputBase"
 import { TextInputBase } from "./TextInputBase"
 
 import "dayjs/locale/ja"
@@ -68,4 +69,16 @@ const yearMonthConversion = (value: string) => {
   if (!validated.ok || validated.formatted === '') return undefined
   const splitted = validated.formatted.split('-')
   return (Number(splitted[0]) * 100) + Number(splitted[1])
+}
+
+// -----------------------------
+
+const parseAsDate = (normalized: string, format: string): ReturnType<ValidationHandler> => {
+  let parsed = dayjs(normalized, { format, locale: 'ja' })
+  if (!parsed.isValid()) return { ok: false }
+  if (parsed.year() == 2001 && !normalized.includes('2001')) {
+    // 年が未指定の場合、2001年ではなくシステム時刻の年と解釈する
+    parsed = parsed.set('year', dayjs().year())
+  }
+  return { ok: true, formatted: parsed.format(format) }
 }
