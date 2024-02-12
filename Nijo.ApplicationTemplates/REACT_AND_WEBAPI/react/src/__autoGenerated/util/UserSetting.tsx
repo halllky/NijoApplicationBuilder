@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import * as Input from "../input";
 import { VerticalForm as VForm } from "../collection";
 import { useFormEx } from './Validation'
@@ -11,6 +11,8 @@ export type UserSettings = {
   apiDomain?: string
   darkMode?: boolean
   fontFamily?: string
+  environmentName?: string
+  environmentColor?: string
 }
 export const DEFAULT_FONT_FAMILY = [
   'Arial',
@@ -65,6 +67,12 @@ export const ServerSettingScreen = () => {
           <VForm.Row label="フォント(font-family)">
             <Input.Word {...registerEx('fontFamily')} className="flex-1" />
           </VForm.Row>
+          <VForm.Row label="画面右肩のリボンの文字">
+            <Input.Word {...registerEx('environmentName')} />
+          </VForm.Row>
+          <VForm.Row label="画面右肩のリボンの色">
+            <Input.Word {...registerEx('environmentColor')} />
+          </VForm.Row>
           <VForm.Row fullWidth>
             <Input.Button outlined submit>更新</Input.Button>
           </VForm.Row>
@@ -83,5 +91,35 @@ export const ServerSettingScreen = () => {
 
       </VForm.Root>
     </form>
+  )
+}
+
+// ---------------------------------
+/** 画面右肩のリボン */
+export const SholderRibbon = () => {
+  const { data: {
+    darkMode,
+    environmentName,
+    environmentColor,
+  } } = useUserSetting()
+
+  const style: React.CSSProperties = useMemo(() => ({
+    top: 24,
+    right: -96,
+    width: 320,
+    height: 72,
+    backgroundColor: environmentColor ? environmentColor : undefined,
+    color: darkMode ? 'black' : 'white',
+    zIndex: 100,
+  }), [darkMode, environmentColor])
+
+  if (!environmentName) return <></>
+
+  return (
+    <div className="
+    fixed flex justify-center items-center text-4xl
+    rotate-45 opacity-75 pointer-events-none select-none" style={style}>
+      {environmentName}
+    </div>
   )
 }
