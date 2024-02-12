@@ -1,6 +1,6 @@
 import * as RT from '@tanstack/react-table'
 import * as Tree from '../util'
-import * as Util from '../util'
+import * as Input from '../input'
 
 export type DataTableProps<T> = {
   data?: T[]
@@ -15,7 +15,7 @@ export type ColumnDefEx<T> = RT.ColumnDef<T> & ({
   cellEditor?: never
   setValue?: never
 } | {
-  cellEditor: Util.CustomComponent
+  cellEditor: Input.CustomComponent
   setValue: (data: T, value: any) => void
 })
 

@@ -61,7 +61,7 @@ function prepareCellEditor<T,>(
       return editingCell.column.accessorFn(editingCell.row.original, editingItemIndex)
     })
 
-    const cellEditor: Util.CustomComponent = useMemo(() => {
+    const cellEditor: Input.CustomComponent = useMemo(() => {
       const editor = (editingCell?.column.columnDef as ColumnDefEx<Tree.TreeNode<T>>)?.cellEditor
       return editor ?? Input.Description
     }, [editingCell?.column])
@@ -85,7 +85,7 @@ function prepareCellEditor<T,>(
       onEndEditing?.()
     }, [onEndEditing])
 
-    const editorRef = useRef<Util.CustomComponentRef<any>>(null)
+    const editorRef = useRef<Input.CustomComponentRef<any>>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     useEffect(() => {
       // エディタを編集対象セルの位置に移動させる

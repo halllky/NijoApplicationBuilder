@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
+import { useIMEOpened } from "../util"
 import { DropDownApi, TextInputBase } from "./TextInputBase"
-import { CustomComponentProps, CustomComponentRef, defineCustomComponent, normalize, useIMEOpened } from "../util"
+import { CustomComponentProps, CustomComponentRef, defineCustomComponent, normalize } from "./InputBase"
 
 export const ComboBoxBase = defineCustomComponent(<T extends {}>(
   props2: CustomComponentProps<T, {

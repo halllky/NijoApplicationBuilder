@@ -1,5 +1,5 @@
 import { useMemo, useRef, useImperativeHandle, useCallback } from "react"
-import { CustomComponentRef, ValidationHandler, defineCustomComponent, normalize, parseAsDate } from "../util"
+import { CustomComponentRef, ValidationHandler, defineCustomComponent, normalize, parseAsDate } from "./InputBase"
 import { TextInputBase } from "./TextInputBase"
 
 import "dayjs/locale/ja"

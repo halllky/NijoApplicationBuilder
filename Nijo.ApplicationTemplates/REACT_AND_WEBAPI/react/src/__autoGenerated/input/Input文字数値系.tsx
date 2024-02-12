@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useRef, useImperativeHandle } from "react"
-import { CustomComponentRef, ValidationHandler, defineCustomComponent, normalize } from "../util"
+import { CustomComponentRef, ValidationHandler, defineCustomComponent, normalize } from "./InputBase"
 import { TextInputBase } from "./TextInputBase"
 import { TextareaBase } from "./TextareaBase"
 

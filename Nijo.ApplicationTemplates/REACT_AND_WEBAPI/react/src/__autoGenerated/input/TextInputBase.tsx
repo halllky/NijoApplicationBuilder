@@ -1,6 +1,6 @@
 import { ChevronUpDownIcon } from "@heroicons/react/24/solid";
 import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { ValidationHandler, defineCustomComponent } from "../util";
+import { ValidationHandler, defineCustomComponent } from "./InputBase";
 
 export type TextInputBaseArgs = Parameters<typeof TextInputBase>['0']
 export type DropDownBody = (props: { focusRef: React.RefObject<never> }) => React.ReactNode

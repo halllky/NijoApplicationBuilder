@@ -1,6 +1,7 @@
 import { useMemo, useCallback, useRef, useImperativeHandle, useState } from "react"
 import { useQuery } from "react-query"
-import { CustomComponentProps, CustomComponentRef, defineCustomComponent, useMsgContext } from "../util"
+import { useMsgContext } from "../util"
+import { CustomComponentProps, CustomComponentRef, defineCustomComponent } from "./InputBase"
 import { ComboBoxBase } from "./ComboBoxBase"
 import { RadioGroupBase, ToggleBase } from "./ToggleBase"
 
