@@ -253,7 +253,7 @@ namespace Nijo.Parts.WebClient {
                       localReposItemKey?: Util.ItemKey
                       defaultValues: AggregateType.{{_aggregate.Item.TypeScriptTypeName}}
                     {{urlKeys.SelectTextTemplate((urlkey, i) => $$"""
-                      {{urlkey}}?: {{keys[i].TypeScriptTypename}}
+                      {{urlkey}}?: string
                     """)}}
                     }) => {
                       const navigate = useNavigate()
