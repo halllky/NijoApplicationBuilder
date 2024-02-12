@@ -63,7 +63,7 @@ export const useFormEx = <T extends FieldValues = FieldValues>(props: UseFormExP
   return {
     ...useFormReturns,
     registerEx: <TFieldName extends FieldPath<T>>(name: TFieldName) => ({
-      value: useFormReturns.getValues(name),
+      value: useFormReturns.watch(name),
       onChange: (value: PathValue<T, TFieldName>) => {
         useFormReturns.setValue(name, value)
       },
@@ -76,7 +76,7 @@ export const useFormContextEx = <T extends FieldValues = FieldValues>() => {
   return {
     ...useFormContextReturns,
     registerEx: <TFieldName extends FieldPath<T>>(name: TFieldName) => ({
-      value: useFormContextReturns.getValues(name),
+      value: useFormContextReturns.watch(name),
       onChange: (value: PathValue<T, TFieldName>) => {
         useFormContextReturns.setValue(name, value)
       },
