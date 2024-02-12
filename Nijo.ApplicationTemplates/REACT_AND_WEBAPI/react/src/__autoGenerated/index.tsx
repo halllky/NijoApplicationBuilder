@@ -109,7 +109,7 @@ export function DefaultNijoApp({ children }: {
               <ApplicationRootInContext>
                 {children}
               </ApplicationRootInContext>
-              <Util.SholderRibbon />
+              <Util.EnvNameRibbon />
               <Util.Toast />
             </Util.UserSettingContextProvider>
           </Util.LocalRepositoryContextProvider>

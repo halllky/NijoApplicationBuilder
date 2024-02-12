@@ -67,10 +67,10 @@ export const ServerSettingScreen = () => {
           <VForm.Row label="フォント(font-family)">
             <Input.Word {...registerEx('fontFamily')} className="flex-1" />
           </VForm.Row>
-          <VForm.Row label="画面右肩のリボンの文字">
+          <VForm.Row label="画面隅のリボンの文字">
             <Input.Word {...registerEx('environmentName')} />
           </VForm.Row>
-          <VForm.Row label="画面右肩のリボンの色">
+          <VForm.Row label="画面隅のリボンの色">
             <Input.Word {...registerEx('environmentColor')} />
           </VForm.Row>
           <VForm.Row fullWidth>
@@ -95,8 +95,8 @@ export const ServerSettingScreen = () => {
 }
 
 // ---------------------------------
-/** 画面右肩のリボン */
-export const SholderRibbon = () => {
+/** 画面隅のリボン */
+export const EnvNameRibbon = () => {
   const { data: {
     darkMode,
     environmentName,
@@ -104,7 +104,7 @@ export const SholderRibbon = () => {
   } } = useUserSetting()
 
   const style: React.CSSProperties = useMemo(() => ({
-    top: 24,
+    bottom: 24,
     right: -96,
     width: 320,
     height: 72,
@@ -118,7 +118,7 @@ export const SholderRibbon = () => {
   return (
     <div className="
     fixed flex justify-center items-center text-4xl
-    rotate-45 opacity-75 pointer-events-none select-none" style={style}>
+    rotate-[-45deg] opacity-75 pointer-events-none select-none" style={style}>
       {environmentName}
     </div>
   )
