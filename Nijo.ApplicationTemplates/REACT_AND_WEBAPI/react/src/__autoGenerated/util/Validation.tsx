@@ -48,8 +48,17 @@ export type CustomComponentProps<
   }
 
 // ---------------------------------------------
+// 値の自動保存のためにコンテキスト内の値の変化を拾いたい
+// TODO: 全カスタムコンポーネントにトリガーを仕込む
+// TODO: FormProviderがハンドラを受け取れるように拡張する
+type OnAnyValueChangeEvent = (name: string, value: unknown) => void
+
+// ---------------------------------------------
 // カスタムコンポーネント共通に対して使うuseForm
-export const useFormEx = <T extends FieldValues = FieldValues>(props: UseFormProps<T>) => {
+export type UseFormExProps<T extends FieldValues = FieldValues> = UseFormProps<T> & {
+  onAnyValueChange?: OnAnyValueChangeEvent
+}
+export const useFormEx = <T extends FieldValues = FieldValues>(props: UseFormExProps<T>) => {
   const useFormReturns = useForm(props)
   return {
     ...useFormReturns,
@@ -72,6 +81,7 @@ export const useFormContextEx = <T extends FieldValues = FieldValues>() => {
         useFormContextReturns.setValue(name, value)
       },
     }),
+    onAnyValueChange: (useFormContextReturns as { onAnyValueChange?: OnAnyValueChangeEvent }).onAnyValueChange,
   }
 }
 
