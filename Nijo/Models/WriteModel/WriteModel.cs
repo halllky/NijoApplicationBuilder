@@ -26,10 +26,6 @@ namespace Nijo.Models.WriteModel {
             createCommand.AppSrvMethod = createFeature.RenderAppSrvMethod();
             createCommand.GenerateCode(context, rootAggregate);
 
-            // Search
-            var searchFeature = new AggregateSearchFeature();
-            searchFeature.GenerateCode(context, rootAggregate);
-
             context.UseAggregateFile(rootAggregate, builder => {
 
                 // AggregateDetail (for Find, Update, Delete)
@@ -50,6 +46,11 @@ namespace Nijo.Models.WriteModel {
                     builder.TypeScriptDataTypes.Add(aggregateDetail.RenderTypeScript(context));
                     builder.TypeScriptDataTypes.Add(initializerFunc.Render());
                 }
+
+                // Load
+                var loadFeature = new FindManyFeature(rootAggregate);
+                builder.ControllerActions.Add(loadFeature.RenderController());
+                builder.AppServiceMethods.Add(loadFeature.RenderAppSrvMethod());
 
                 // KeywordSearching
                 foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
@@ -101,9 +102,11 @@ namespace Nijo.Models.WriteModel {
                 }
             });
 
+            var editableMultiView = new MultiViewEditable(rootAggregate);
             var detailView = new SingleView(rootAggregate, SingleView.E_Type.View);
             var editView = new SingleView(rootAggregate, SingleView.E_Type.Edit);
 
+            context.AddPage(editableMultiView);
             context.AddPage(detailView);
             context.AddPage(editView);
 

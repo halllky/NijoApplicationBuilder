@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
 using Nijo.Features;
 using Nijo.Parts.WebServer;
+using Nijo.Features.BatchUpdate;
 
 namespace Nijo.Parts.WebClient {
     public class SingleView : IReactPage {
@@ -171,7 +172,7 @@ namespace Nijo.Parts.WebClient {
                       const [localReposItemKey, setLocalReposItemKey] = useState<Util.ItemKey>()
                     {{If(_aggregate.Item.Options.DisableLocalRepository != true, () => $$"""
                       const localReposSettings: Util.LocalRepositoryArgs<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}> = useMemo(() => ({
-                        dataTypeKey: '{{_aggregate.Item.ClassName}}',
+                        dataTypeKey: '{{LocalRepository.GetDataTypeKey(_aggregate)}}',
                         getItemKey: x => JSON.stringify([{{keys.Select(k => $"x.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]),
                         getItemName: x => `{{names.Select(n => $"${{x.{n}}}").Join(string.Empty)}}`,
                         remoteItems: fetched ? [fetched] : undefined,

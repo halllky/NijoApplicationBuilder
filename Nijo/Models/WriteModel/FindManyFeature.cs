@@ -10,8 +10,13 @@ using System.Threading.Tasks;
 
 namespace Nijo.Models.WriteModel {
 
-    // TODO: ソート
-    // TODO: 検索条件
+    /// <summary>
+    /// グリッドでのデータ一括編集のため、集約を検索してその集約全体を返す。
+    /// <see cref="FindFeature"/> をコピーして作成。
+    /// コピー元の機能との違いは、キーを受け取って1件返すか、検索条件を受け取って複数件返すかだけ。
+    /// TODO: ソート
+    /// TODO: 検索条件
+    /// </summary>
     internal class FindManyFeature {
         internal FindManyFeature(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
@@ -86,7 +91,7 @@ namespace Nijo.Models.WriteModel {
                 /// </summary>
                 public virtual {{FindMethodReturnType}} {{FindMethodName}}(int? {{PARAM_SKIP}}, int? {{PARAM_TAKE}}) {
 
-                    var query = {{appSrv.DbContext}}.{{_aggregate.Item.DbSetName}}
+                    var query = (IQueryable<{{_aggregate.Item.EFCoreEntityClassName}}>){{appSrv.DbContext}}.{{_aggregate.Item.DbSetName}}
                         .AsNoTracking()
                 {{paths.SelectTextTemplate(path => path.source == _aggregate ? $$"""
                         .Include(x => x.{{path.prop}})
@@ -104,7 +109,7 @@ namespace Nijo.Models.WriteModel {
                         ;
 
                     // ページング
-                    if ({{PARAM_SKIP}} != null) query = query.Skip({{PARAM_SKIP}});
+                    if ({{PARAM_SKIP}} != null) query = query.Skip({{PARAM_SKIP}}.Value);
 
                     const int DEFAULT_PAGE_SIZE = 20;
                     var pageSize = {{PARAM_TAKE}} ?? DEFAULT_PAGE_SIZE;

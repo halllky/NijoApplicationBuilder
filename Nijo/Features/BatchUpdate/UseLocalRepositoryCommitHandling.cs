@@ -43,7 +43,7 @@ namespace Nijo.Features.BatchUpdate {
 
                       const saveHandlerMap = useMemo(() => new Map<string, SaveLocalItemHandler>([
                     {{aggregates.SelectTextTemplate(agg => $$"""
-                        ['{{agg.Item.ClassName}}', async (localReposItem: LocalRepositoryStoredItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>) => {
+                        ['{{LocalRepository.GetDataTypeKey(agg)}}', async (localReposItem: LocalRepositoryStoredItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>) => {
                           if (localReposItem.state === '+') {
                             const url = `{{new Controller(agg.Item).CreateCommandApi}}`
                             const response = await post<AggregateType.{{agg.Item.TypeScriptTypeName}}>(url, localReposItem.item)
