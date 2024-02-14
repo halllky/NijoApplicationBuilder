@@ -61,9 +61,16 @@ function prepareCellEditor<T,>(
       return editingCell.column.accessorFn(editingCell.row.original, editingItemIndex)
     })
 
-    const cellEditor: Input.CustomComponent = useMemo(() => {
+    const cellEditor = useMemo(() => {
       const editor = (editingCell?.column.columnDef as ColumnDefEx<Tree.TreeNode<T>>)?.cellEditor
-      return editor ?? Input.Description
+      if (editor) return Util.forwardRefEx(editor)
+
+      // セル編集コンポーネント未指定の場合
+      return Util.forwardRefEx<
+        Input.CustomComponentRef<any>,
+        Input.CustomComponentProps<any>
+      >((props, ref) => <Input.Description ref={ref} {...props} />)
+
     }, [editingCell?.column])
 
     const commitEditing = useCallback(() => {

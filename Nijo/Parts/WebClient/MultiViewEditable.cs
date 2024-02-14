@@ -202,7 +202,7 @@ namespace Nijo.Parts.WebClient {
                             data.item.item.{{vm.Declared.GetFullPath().Join(".")}} = value
                     """)}}
                         },
-                        cellEditor: {{vm.Options.MemberType.GetGridCellEditorName()}},
+                        cellEditor: (props, ref) => <{{vm.Options.MemberType.GetGridCellEditorName()}} ref={ref} {...props}{{vm.Options.MemberType.GetGridCellEditorParams().Select(kv => $" {kv.Key}={{{kv.Value}}}").Join(string.Empty)}} />,
                       },
                     """)}}
                     ]

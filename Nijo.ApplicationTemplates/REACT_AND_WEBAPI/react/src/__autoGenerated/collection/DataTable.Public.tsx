@@ -1,6 +1,7 @@
+import React from 'react'
 import * as RT from '@tanstack/react-table'
 import * as Tree from '../util'
-import * as Input from '../input'
+import { CustomComponentRef } from '../input'
 
 export type DataTableProps<T> = {
   data?: T[]
@@ -11,13 +12,25 @@ export type DataTableProps<T> = {
     rowHeader: (row: T) => React.ReactNode
   }
 }
-export type ColumnDefEx<T> = RT.ColumnDef<T> & ({
+export type ColumnDefEx<TRow, TValue = any> = RT.ColumnDef<TRow> & ({
   cellEditor?: never
   setValue?: never
 } | {
-  cellEditor: Input.CustomComponent
-  setValue: (data: T, value: any) => void
+  cellEditor: CellEditor<TValue>
+  setValue: (data: TRow, value: TValue) => void
 })
+
+export type CellEditor<TValue> = (
+  props: CellEditorPeops<TValue>,
+  ref: React.Ref<CustomComponentRef<TValue>>
+) => JSX.Element
+
+export type CellEditorPeops<TValue> = {
+  value: TValue | undefined
+  onChange: (value: TValue | undefined) => void
+  onKeyDown: React.KeyboardEventHandler<HTMLElement>
+  className: string
+}
 
 export type DataTableRef<T> = {
   getSelectedRows: () => { row: T, rowIndex: number }[]

@@ -194,9 +194,9 @@ const LIST_COLS: Collection.ColumnDefEx<Util.TreeNode<Util.LocalRepositoryItemLi
 ]
 const LOCAL_REPOS_COLS: Collection.ColumnDefEx<Util.TreeNode<Util.LocalRepositoryItem<TestData>>>[] = [
   { id: 'state', header: '', accessorFn: x => x.item.state, size: 12 },
-  { id: 'key', header: 'key', accessorFn: x => x.item.item.key, setValue: (x, v) => x.item.item.key = v, cellEditor: Input.Word },
-  { id: 'name', header: '名前', accessorFn: x => x.item.item.name, setValue: (x, v) => x.item.item.name = v, cellEditor: Input.Word },
-  { id: 'numValue', header: '数値', accessorFn: x => x.item.item.numValue, setValue: (x, v) => x.item.item.numValue = v, cellEditor: Input.Num },
+  { id: 'key', header: 'key', accessorFn: x => x.item.item.key, setValue: (x, v) => x.item.item.key = v, cellEditor: (props, ref) => <Input.Word ref={ref} {...props} /> },
+  { id: 'name', header: '名前', accessorFn: x => x.item.item.name, setValue: (x, v) => x.item.item.name = v, cellEditor: (props, ref) => <Input.Word ref={ref} {...props} />, },
+  { id: 'numValue', header: '数値', accessorFn: x => x.item.item.numValue, setValue: (x, v) => x.item.item.numValue = v, cellEditor: (props, ref) => <Input.Num ref={ref} {...props} /> },
 ]
 const REMOTE_REPOS_COLS: Collection.ColumnDefEx<Util.TreeNode<TestData>>[] = [
   { id: 'key', header: 'key', accessorFn: x => x.item.key },

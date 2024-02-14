@@ -186,7 +186,10 @@ namespace Nijo.Parts.WebClient {
                 var colDefs = Members.Select(m => {
                     if (m is AggregateMember.ValueMember vm) {
                         var cellEditor = vm.Options.MemberType.GetGridCellEditorName();
-                        var cellEditorParam = vm.Options.MemberType.GetGridCellEditorParams();
+                        var cellEditorParam = vm.Options.MemberType
+                            .GetGridCellEditorParams()
+                            .Select(kv => $" {kv.Key}={{{kv.Value}}}")
+                            .Join(string.Empty);
 
                         return new {
                             field = m.MemberName,
@@ -195,6 +198,7 @@ namespace Nijo.Parts.WebClient {
                             valueFormatter = vm.Options.MemberType.GetGridCellValueFormatter(),
                             hide = vm.Options.InvisibleInGui,
                             cellEditorName = vm.Options.MemberType.GetGridCellEditorName(),
+                            cellEditorParam,
                         };
                     } else if (m is AggregateMember.Ref rm) {
                         var keyName = new RefTargetKeyName(rm.MemberAggregate);
@@ -227,6 +231,7 @@ namespace Nijo.Parts.WebClient {
                             valueFormatter = $"({{ value }}) => ({keysForValueFormatter.Select(path => $"value?.{path}").Join(" + ")}) || ''",
                             hide = false,
                             cellEditorName = $"Input.{combobox.ComponentName}",
+                            cellEditorParam = "",
                         };
                     } else {
                         throw new NotImplementedException();
@@ -269,7 +274,7 @@ namespace Nijo.Parts.WebClient {
                             accessorFn: row => row.item.{{def.fieldWithPath}},
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
                             setValue: (row, value) => row.item.{{def.fieldWithPath}} = value,
-                            cellEditor: {{def.cellEditorName}},
+                            cellEditor: (props, ref) => <{{def.cellEditorName}} ref={ref} {...props}{{def.cellEditorParam}} />,
                     """)}}
                             // editable: {{def.editable}},
                             // hide: {{(def.hide ? "true" : "false")}},

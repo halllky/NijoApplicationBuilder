@@ -18,7 +18,7 @@ const setting: DataTableProps<ReturnType<typeof createData>[0]> = {
   }, {
     id: 'setterTest',
     accessorFn: row => (row.item as any).setterTest,
-    cellEditor: Input.Num,
+    cellEditor: (props, ref) => <Input.Num ref={ref} {...props} />,
     setValue: (row, value) => (row.item as any).setterTest = value,
   },
   { id: '000', accessorFn: row => row.item.data.parent },

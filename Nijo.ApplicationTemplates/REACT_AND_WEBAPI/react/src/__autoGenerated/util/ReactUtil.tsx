@@ -75,10 +75,9 @@ export const defineContext2 = <S, M extends StateModifier<S>>(
 export const forwardRefEx = <TRef, TProps>(
   fn: (props: TProps, ref: React.ForwardedRef<TRef>) => React.ReactNode
 ) => {
-  return React.forwardRef(fn) as (
-    (props: React.PropsWithoutRef<TProps> & { ref?: React.Ref<TRef> }) => React.ReactNode
-  )
+  return React.forwardRef(fn) as ForwardedRefEx<TRef, TProps>
 }
+export type ForwardedRefEx<TRef, TProps> = (props: React.PropsWithoutRef<TProps> & { ref?: React.Ref<TRef> }) => React.ReactNode
 
 // トグル
 const toggleReducer = defineReducer((state: boolean) => ({

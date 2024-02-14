@@ -313,7 +313,7 @@ namespace Nijo.Core {
                 VariationGroup = group;
                 Options = new MemberOptions {
                     MemberName = group.GroupName,
-                    MemberType = new AggregateMemberTypes.VariationSwitch(),
+                    MemberType = new AggregateMemberTypes.VariationSwitch(group),
                     IsKey = group.IsPrimary,
                     IsDisplayName = group.IsInstanceName,
                     IsRequired = group.RequiredAtDB,
