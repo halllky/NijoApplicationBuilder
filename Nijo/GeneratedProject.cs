@@ -167,12 +167,18 @@ namespace Nijo {
         /// <param name="path">プロジェクトルートディレクトリの絶対パス</param>
         /// <returns>作成されたプロジェクトを表すオブジェクト</returns>
         public static GeneratedProject Open(string? path, ILogger? log = null) {
+            string normalizedPath;
+
             if (string.IsNullOrWhiteSpace(path))
-                return new GeneratedProject(Directory.GetCurrentDirectory(), log);
+                normalizedPath = Directory.GetCurrentDirectory();
             else if (Path.IsPathRooted(path))
-                return new GeneratedProject(path, log);
+                normalizedPath = path;
             else
-                return new GeneratedProject(Path.Combine(Directory.GetCurrentDirectory(), path), log);
+                normalizedPath = Path.Combine(Directory.GetCurrentDirectory(), path);
+
+            if (!Directory.Exists(normalizedPath))
+                throw new InvalidOperationException($"Directory is not exist: {normalizedPath}");
+            return new GeneratedProject(normalizedPath, log);
         }
 
         private GeneratedProject(string projetctRoot, ILogger? log) {
