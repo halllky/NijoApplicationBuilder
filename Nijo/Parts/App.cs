@@ -19,7 +19,7 @@ namespace Nijo.Parts {
         internal const string REACT_PAGE_DIR = "pages";
         internal const string REACT_UTIL_DIR = "util";
 
-        internal const string TEMPLATE_LINKBASE = "Nijo.テンプレ";
+        internal const string TEMPLATE_LINKBASE = "ApplicationTemplates";
 
         internal List<Func<string, string>> ConfigureServices { get; } = new List<Func<string, string>>();
         internal List<Func<string, string>> ConfigureServicesWhenWebServer { get; } = new List<Func<string, string>>();

@@ -31,7 +31,7 @@ namespace Nijo.IntegrationTest.Perspectives {
             // nijo create コマンドを実行
             var terminal = new Terminal(TestContext.CurrentContext.WorkDirectory, logger);
             await terminal.Run(new[] {
-                "nijo", "create", PROJECT_NAME
+                ".\\nijo.exe", "create", PROJECT_NAME
             }, TestContext.CurrentContext.CancellationToken);
 
             var project = GeneratedProject.Open(projectDir, logger);
