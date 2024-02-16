@@ -136,33 +136,15 @@ namespace Nijo {
                     writer.WriteLine(reader.ReadLine());
                 }
             }
-            /// <summary>
-            /// アプリケーションテンプレートの特定のフォルダ下にあるファイルを
-            /// 自動生成先アプリケーションにコピーする。
-            /// </summary>
-            internal void CopyFromTemplateDir(string subDir) {
-                // EmbeddedResourceのマニフェスト名ではフォルダ階層のセパレータがピリオドになる
-                var matchPattern = subDir.Replace("/", ".").Replace("\\", ".");
 
-                foreach (var resourceName in _ctx.ExecutingAssembly.GetManifestResourceNames()) {
-                    if (!resourceName.StartsWith(matchPattern)) continue;
-
-                    var filename = resourceName.Substring(subDir.Length + 1);
-                    CopyFromTemplateFile(subDir, filename);
-                }
-            }
-            internal void CopyFromTemplateFile(string subDir, string filename) {
-                // EmbeddedResourceのマニフェスト名ではフォルダ階層のセパレータがピリオドになる
-                var resourceName = $"{subDir.Replace("/", ".").Replace("\\", ".")}.{filename}";
-                var destination = System.IO.Path.GetFullPath(System.IO.Path.Combine(Path, filename));
+            internal void CopyEmbeddedResource(Parts.EmbeddedResource resource) {
+                var destination = System.IO.Path.GetFullPath(System.IO.Path.Combine(Path, resource.FileName));
 
                 // 他の何かの機能で既に同名のファイルが生成されている場合はスキップ
                 if (_ctx.IsHandled(destination)) return;
                 _ctx.Handle(destination);
 
-                using var stream = _ctx.ExecutingAssembly.GetManifestResourceStream(resourceName)
-                    ?? throw new InvalidOperationException($"埋め込みリソースが見つかりません: {resourceName}");
-                using var reader = new StreamReader(stream);
+                using var reader = resource.GetStreamReader();
                 using var writer = new StreamWriter(destination, false, GetEncoding(destination));
                 while (!reader.EndOfStream) {
                     writer.WriteLine(reader.ReadLine());

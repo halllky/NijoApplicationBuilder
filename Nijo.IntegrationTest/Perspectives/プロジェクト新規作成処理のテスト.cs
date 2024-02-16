@@ -28,11 +28,19 @@ namespace Nijo.IntegrationTest.Perspectives {
             // 作成先フォルダがないことを確認
             if (Directory.Exists(projectDir)) Assert.Fail("新規作成しようとしている位置にディレクトリが既に存在します。");
 
-            // nijo create コマンドを実行
-            var terminal = new Terminal(TestContext.CurrentContext.WorkDirectory, logger);
-            await terminal.Run(new[] {
-                ".\\nijo.exe", "create", PROJECT_NAME
-            }, TestContext.CurrentContext.CancellationToken);
+            //// nijo create コマンドを実行
+            //var terminal = new Terminal(TestContext.CurrentContext.WorkDirectory, logger);
+            //await terminal.Run(new[] {
+            //    ".\\nijo.exe", "create", PROJECT_NAME
+            //}, TestContext.CurrentContext.CancellationToken);
+
+            // nijo create コマンドを実行（デバッグしたい場合）
+            GeneratedProject.Create(
+                projectDir,
+                PROJECT_NAME,
+                true,
+                TestContext.CurrentContext.CancellationToken,
+                logger);
 
             var project = GeneratedProject.Open(projectDir, logger);
 

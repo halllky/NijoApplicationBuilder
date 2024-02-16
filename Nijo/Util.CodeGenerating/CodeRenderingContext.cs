@@ -42,6 +42,9 @@ namespace Nijo.Util.CodeGenerating {
         public Assembly ExecutingAssembly => _executingAssembly ??= Assembly.GetExecutingAssembly();
         private Assembly? _executingAssembly;
 
+        internal EmbeddedResource.Collection EmbeddedResources => _embeddedResources ??= new EmbeddedResource.Collection(ExecutingAssembly);
+        private EmbeddedResource.Collection? _embeddedResources;
+
         #region 生成されなかったファイルの削除
         private readonly HashSet<string> _handled = new();
         internal void Handle(string fullpath) => _handled.Add(Path.GetFullPath(fullpath));
