@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.IntegrationTest.Perspectives {
-    partial class Perspective {
+    partial class 観点 {
         [UseDataPatterns]
         public async Task コンパイルエラーチェック(DataPattern pattern) {
             try {

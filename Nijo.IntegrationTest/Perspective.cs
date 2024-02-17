@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Nijo.IntegrationTest.Perspectives {
     [NonParallelizable]
-    public partial class Perspective {
+    public partial class 観点 {
 
         #region 期待結果が定義されていない場合にテストの事前準備をスキップするための仕組み
         private static DelayedExecuter If(DataPattern pattern) {

@@ -9,9 +9,9 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.IntegrationTest.Perspectives {
-    internal class プロジェクト新規作成処理のテスト {
+    partial class 観点 {
         [Test, CancelAfter(300000)]
-        public async Task 正常終了するか() {
+        public async Task プロジェクト新規作成処理のテスト() {
             var logger = new TestContextLogger();
 
             const string PROJECT_NAME = "プロジェクト新規作成処理のテスト";

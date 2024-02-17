@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.IntegrationTest.Perspectives {
-    partial class Perspective {
+    partial class 観点 {
 
         [UseDataPatterns]
         public async Task Webから追加更新削除(DataPattern pattern) {
