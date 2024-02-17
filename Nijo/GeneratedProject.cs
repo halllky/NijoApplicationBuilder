@@ -298,6 +298,10 @@ namespace Nijo {
             }
         }
 
+        public Runtime.GeneratedProjectLauncher CreateLauncher() {
+            return new Runtime.GeneratedProjectLauncher(this, _log);
+        }
+
         private Terminal? _projectRootTerminal;
         private Terminal? _webapiDirTerminal;
         private Terminal? _clientDirTerminal;

@@ -91,10 +91,10 @@ namespace Nijo {
                     logger.LogInformation("-----------------------------------------------");
                     logger.LogInformation("デバッグを開始します。キーボードのQで終了します。それ以外のキーでリビルドします。");
 
-                    using var debugProcess = new Runtime.GeneratedProjectLauncher(project, logger);
+                    using var launcher = project.CreateLauncher();
                     if (firstLaunch) {
                         // 初回ビルド時はブラウザ立ち上げ
-                        debugProcess.OnReady += (s, e) => {
+                        launcher.OnReady += (s, e) => {
                             try {
                                 var npmUrl = project.Debugger.GetDebuggingClientUrl();
                                 var launchBrowser = new Process();
@@ -108,7 +108,7 @@ namespace Nijo {
                             firstLaunch = false;
                         };
                     }
-                    debugProcess.Launch();
+                    launcher.Launch();
 
                     // キー入力待機
                     var input = Console.ReadKey(true);

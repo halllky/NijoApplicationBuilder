@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Nijo.Runtime {
     public class GeneratedProjectLauncher : IDisposable {
@@ -28,6 +29,7 @@ namespace Nijo.Runtime {
         private bool _npmReady;
 
         public event EventHandler? OnReady;
+        public event EventHandler<string>? OnError;
 
         public void Launch() {
             lock (_lock) {
@@ -82,7 +84,9 @@ namespace Nijo.Runtime {
             }
         }
         private void OnDotnetStdErr(object sender, DataReceivedEventArgs e) {
-            if (e.Data != null) _logger.LogError("dotnet run: {Data}", e.Data);
+            if (e.Data == null) return;
+            _logger.LogError("dotnet run: {Data}", e.Data);
+            OnError?.Invoke(this, e.Data);
         }
 
         private void OnNpmStdOut(object sender, DataReceivedEventArgs e) {
@@ -97,7 +101,9 @@ namespace Nijo.Runtime {
             }
         }
         private void OnNpmStdErr(object sender, DataReceivedEventArgs e) {
-            if (e.Data != null) _logger.LogError("npm run   : {Data}", e.Data);
+            if (e.Data == null) return;
+            _logger.LogError("npm run   : {Data}", e.Data);
+            OnError?.Invoke(this, e.Data);
         }
 
         private void OnReadyChanged() {
@@ -107,10 +113,15 @@ namespace Nijo.Runtime {
                 if ((int)_state >= (int)E_State.Ready) return;
 
                 _state = E_State.Ready;
-                OnReady?.Invoke(this, EventArgs.Empty);
             }
+            OnReady?.Invoke(this, EventArgs.Empty);
         }
 
+        public void WaitForTerminate() {
+            var task1 = Task.Run(() => _dotnetRun?.WaitForExit());
+            var task2 = Task.Run(() => _npmRun?.WaitForExit());
+            Task.WaitAll(task1, task2);
+        }
         public void Terminate() {
             lock (_lock) {
                 if (_state == E_State.Stopped) return;

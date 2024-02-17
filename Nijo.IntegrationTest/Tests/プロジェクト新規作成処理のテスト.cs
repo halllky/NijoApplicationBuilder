@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Nijo.IntegrationTest.Tests {
     partial class 観点 {
         [Test, CancelAfter(300000)]
-        public async Task プロジェクト新規作成処理のテスト() {
+        public void プロジェクト新規作成処理のテスト() {
 
             const string PROJECT_NAME = "プロジェクト新規作成処理のテスト";
             var projectDir = Path.Combine(TestContext.CurrentContext.WorkDirectory, PROJECT_NAME);
@@ -58,19 +58,42 @@ namespace Nijo.IntegrationTest.Tests {
             File.WriteAllText(project.SchemaXml.GetPath(), test1xml);
 
             // 何らかのDBアクセスする処理が正常終了するかを確認
-            using var ts = CancellationTokenSource.CreateLinkedTokenSource(
-                TestContext.CurrentContext.CancellationToken);
-            await project.Debugger.StartDebugging(ts.Token);
-            using var webDriver = TestProject.CreateWebDriver();
+            using var launcher = project.CreateLauncher();
+            var exceptions = new List<Exception>();
+            launcher.OnReady += (s, e) => {
+                try {
+                    using var webDriver = TestProject.CreateWebDriver();
 
-            // 設定画面にあるデバッグ用の「DB更新」というラベルのボタンを押してDB再作成。
-            // デフォルトでダミーデータ4個が一緒に作成されるオプションのためこのタイミングでデータも一緒に作られる
-            webDriver.FindElement(Util.ByInnerText("設定")).Click();
-            webDriver.FindElement(Util.ByInnerText("DB更新")).Click();
+                    // 設定画面にあるデバッグ用の「DB更新」というラベルのボタンを押してDB再作成。
+                    // デフォルトでダミーデータ4個が一緒に作成されるオプションのためこのタイミングでデータも一緒に作られる
+                    webDriver.FindElement(Util.ByInnerText("設定")).Click();
+                    webDriver.FindElement(Util.ByInnerText("DB更新")).Click();
 
-            // DB作成が正常終了していればダミーデータ4個分のリンクがあるはず
-            webDriver.FindElement(Util.ByInnerText("集約A")).Click();
-            Assert.That(webDriver.FindElements(Util.ByInnerText("詳細")).Count, Is.EqualTo(4));
+                    // DB作成が正常終了していればダミーデータ4個分のリンクがあるはず
+                    webDriver.FindElement(Util.ByInnerText("集約A")).Click();
+                    var count = webDriver.FindElements(Util.ByInnerText("詳細")).Count;
+                    if (count != 4) {
+                        exceptions.Add(new Exception($"画面中にある「詳細」の文字の数が4個でない: {count}個"));
+                    }
+
+                } catch (Exception ex) {
+                    exceptions.Add(ex);
+                } finally {
+                    launcher.Terminate();
+                }
+            };
+            launcher.OnError += (s, e) => {
+                exceptions.Add(new Exception(e.ToString()));
+                launcher.Terminate();
+            };
+
+            launcher.Launch();
+            launcher.WaitForTerminate();
+
+            if (exceptions.Count != 0) {
+                var messages = exceptions.Select(ex => ex.ToString());
+                Assert.Fail(string.Join(Environment.NewLine, messages));
+            }
         }
     }
 }
