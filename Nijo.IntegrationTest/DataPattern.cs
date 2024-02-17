@@ -29,6 +29,7 @@ namespace Nijo.IntegrationTest {
 
         private DataPattern(string xmlFilePath) {
             _xmlFilePath = xmlFilePath;
+            Name = Path.GetFileName(xmlFilePath);
         }
         public static DataPattern FromFileName(string pattern) {
             var xmlFilePath = Path.Combine(DataPatternsDir(), pattern);
@@ -37,9 +38,7 @@ namespace Nijo.IntegrationTest {
 
         private readonly string _xmlFilePath;
 
-        public string GetXmlFileName() {
-            return Path.GetFileName(_xmlFilePath);
-        }
+        public string Name { get; }
         public string LoadXmlString() {
             return File.ReadAllText(_xmlFilePath).Trim();
         }
@@ -47,7 +46,7 @@ namespace Nijo.IntegrationTest {
             return XDocument.Parse(LoadXmlString());
         }
         public override string ToString() {
-            return GetXmlFileName();
+            return Name;
         }
 
         private static string DataPatternsDir() {
@@ -67,12 +66,5 @@ namespace Nijo.IntegrationTest {
         public UseDataPatternsAttribute() : base(typeof(DataPattern), nameof(DataPattern.Collect)) {
 
         }
-    }
-    [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
-    public sealed class FileNameAttribute : TestCaseSourceAttribute {
-        public FileNameAttribute(string value) : base(typeof(DataPattern), nameof(DataPattern.Collect)) {
-            Value = value;
-        }
-        public string Value { get; }
     }
 }

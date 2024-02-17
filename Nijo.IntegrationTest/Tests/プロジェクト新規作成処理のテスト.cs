@@ -61,7 +61,7 @@ namespace Nijo.IntegrationTest.Tests {
             using var ts = CancellationTokenSource.CreateLinkedTokenSource(
                 TestContext.CurrentContext.CancellationToken);
             await project.Debugger.StartDebugging(ts.Token);
-            using var webDriver = project.CreateWebDriver();
+            using var webDriver = TestProject.CreateWebDriver();
 
             // 設定画面にあるデバッグ用の「DB更新」というラベルのボタンを押してDB再作成。
             // デフォルトでダミーデータ4個が一緒に作成されるオプションのためこのタイミングでデータも一緒に作られる

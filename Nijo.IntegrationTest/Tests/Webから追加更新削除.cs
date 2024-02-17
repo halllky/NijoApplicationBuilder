@@ -11,8 +11,17 @@ namespace Nijo.IntegrationTest.Tests {
         [UseDataPatterns]
         public async Task Webから追加更新削除(DataPattern pattern) {
 
-            await If(pattern).When(DataPattern.FILENAME_001, () => {
-                using var driver = TestProject.Current.CreateWebDriver();
+            if (pattern.Name != DataPattern.FILENAME_001) {
+                Assert.Warn($"期待結果が定義されていません: {pattern.Name}");
+                return;
+            }
+
+            using var ct = new CancellationTokenSource();
+            Task? debugTask = null;
+            try {
+                debugTask = await TestProject.LaunchWebApiAndClient(pattern, ct.Token);
+
+                using var driver = TestProject.CreateWebDriver();
 
                 // トップページ
                 driver.FindElement(Util.ByInnerText("参照先")).Click();
@@ -31,9 +40,10 @@ namespace Nijo.IntegrationTest.Tests {
                 // 参照元: CreateView
                 // 参照元: SingleView
 
-                return Task.CompletedTask;
-
-            }).LaunchWebApiAndClient();
+            } finally {
+                ct.Cancel();
+                debugTask?.Wait();
+            }
         }
     }
 }

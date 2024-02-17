@@ -1,16 +1,12 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using OpenQA.Selenium.Chrome;
-using OpenQA.Selenium;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
 namespace Nijo.IntegrationTest {
@@ -32,7 +28,6 @@ namespace Nijo.IntegrationTest {
 
             return services.BuildServiceProvider();
         }
-
 
         /// <summary>
         /// NUnitのテスト出力コンソールへのログ出力
@@ -66,7 +61,6 @@ namespace Nijo.IntegrationTest {
             private readonly Stack<string> _scope = new();
             #endregion スコープ
         }
-
 
         /// <summary>
         /// 新規作成処理のたびにnpn ci による大量のパッケージのインストールが発生して
@@ -151,6 +145,8 @@ namespace Nijo.IntegrationTest {
         }
         #endregion DI
 
+
+        #region NUnit
         internal static string ToJson(this object obj) {
             return JsonSerializer.Serialize(obj, new JsonSerializerOptions {
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All),
@@ -190,28 +186,10 @@ namespace Nijo.IntegrationTest {
                 throw;
             }
         }
+        #endregion NUnit
+
 
         #region Selenium, Web
-        /// <summary>
-        /// 実行中のテスト用プロジェクトをWebから操作する機構を作成します。
-        /// </summary>
-        public static IWebDriver CreateWebDriver(this GeneratedProject _) {
-            var exeDir = Assembly.GetExecutingAssembly().Location;
-            var driver = new ChromeDriver(exeDir);
-            try {
-
-                // トップページに移動する
-                var root = TestProject.Current.Debugger.GetDebuggingClientUrl();
-                driver.Navigate().GoToUrl(root);
-
-                return driver;
-
-            } catch {
-                driver.Dispose();
-                throw;
-            }
-        }
-
         /// <summary>
         /// テスト用プロジェクトにHTTPリクエストを送信し、結果を受け取ります。
         /// </summary>
@@ -279,5 +257,11 @@ namespace Nijo.IntegrationTest {
             return OpenQA.Selenium.By.XPath($"//*[contains(text(), '{escaped}')]");
         }
         #endregion Selenium, Web
+    }
+}
+
+namespace Nijo.IntegrationTest.Tests {
+    [NonParallelizable]
+    public partial class 観点 {
     }
 }
