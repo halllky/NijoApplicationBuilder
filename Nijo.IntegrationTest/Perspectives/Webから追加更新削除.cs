@@ -12,7 +12,7 @@ namespace Nijo.IntegrationTest.Perspectives {
         public async Task Webから追加更新削除(DataPattern pattern) {
 
             await If(pattern).When(E_DataPattern._001_Refのみxml, () => {
-                using var driver = SharedResource.Project.CreateWebDriver();
+                using var driver = TestProject.Current.CreateWebDriver();
 
                 // トップページ
                 driver.FindElement(Util.ByInnerText("参照先")).Click();
