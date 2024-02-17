@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.IntegrationTest.Perspectives {
+namespace Nijo.IntegrationTest.Tests {
     partial class 観点 {
         [Test, CancelAfter(300000)]
         public async Task プロジェクト新規作成処理のテスト() {

@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace Nijo.IntegrationTest.Perspectives {
+namespace Nijo.IntegrationTest.Tests {
     [NonParallelizable]
     public partial class 観点 {
 
