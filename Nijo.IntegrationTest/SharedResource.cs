@@ -1,15 +1,11 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.Build.Evaluation;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using System;
-using System.Net.Http;
 using System.Reflection;
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 
 namespace Nijo.IntegrationTest {
 
@@ -26,17 +22,14 @@ namespace Nijo.IntegrationTest {
         #region SETUP
         [OneTimeSetUp]
         public void SetUp() {
-
-            var services = new ServiceCollection();
-            GeneratedProject.ConfigureDefaultServices(services);
-            var serviceProvider = services.BuildServiceProvider();
+            var serviceProvider = Util.ConfigureServices();
+            var logger = serviceProvider.GetRequiredService<ILogger>();
 
             // 出力が文字化けするので
             Console.OutputEncoding = Encoding.UTF8;
 
             // 依存先パッケージのインストールにかかる時間とデータ量を削減するために全テストで1つのディレクトリを共有する
             const string DIR_NAME = "自動テストで作成されたプロジェクト";
-            var logger = new TestContextLogger();
             var dir = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..", DIR_NAME));
             Project = Directory.Exists(dir)
                 ? GeneratedProject.Open(dir, serviceProvider, logger)
