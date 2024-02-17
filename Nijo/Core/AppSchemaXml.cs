@@ -30,8 +30,7 @@ namespace Nijo.Core {
             }
         }
         public bool TryLoad(out XDocument xDocument, out string error) {
-            var xmlFullPath = GetPath();
-            using var stream = IO.OpenFileWithRetry(xmlFullPath);
+            using var stream = File.Open(GetPath(), FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             using var reader = new StreamReader(stream);
             var xmlContent = reader.ReadToEnd();
             try {
