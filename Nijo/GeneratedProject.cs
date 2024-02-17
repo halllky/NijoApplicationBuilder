@@ -176,10 +176,6 @@ namespace Nijo {
                     tempProject.Debugger.InstallDependencies();
                 }
 
-                using (var _ = log?.BeginScope("DB作成")) {
-                    tempProject.Migrator.EnsureCreateDatabase();
-                }
-
                 using (var _ = log?.BeginScope("git初期化")) {
                     tempProject.Terminal.Run(new[] { "git", "init" }, cancellationToken ?? CancellationToken.None).Wait();
                     tempProject.Terminal.Run(new[] { "git", "add", "." }, cancellationToken ?? CancellationToken.None).Wait();
@@ -243,7 +239,6 @@ namespace Nijo {
 
             CodeGenerator = new NijoCodeGenerator(this, log);
             Debugger = new GeneratedProjectDebugger(this, log);
-            Migrator = new GeneratedProjectMigrator(this, log);
             SchemaXml = new AppSchemaXml(ProjectRoot);
 
             ServiceProvider = serviceProvider;
@@ -259,7 +254,6 @@ namespace Nijo {
 
         public NijoCodeGenerator CodeGenerator { get; }
         public GeneratedProjectDebugger Debugger { get; }
-        public GeneratedProjectMigrator Migrator { get; }
         public AppSchemaXml SchemaXml { get; }
 
         public Config ReadConfig() {
