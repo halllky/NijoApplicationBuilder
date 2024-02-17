@@ -123,12 +123,18 @@ namespace Nijo.IntegrationTest {
         public static IWebDriver CreateWebDriver(this GeneratedProject project) {
             var exeDir = Assembly.GetExecutingAssembly().Location;
             var driver = new ChromeDriver(exeDir);
+            try {
 
-            // トップページに移動する
-            var root = SharedResource.Project.Debugger.GetDebuggingClientUrl();
-            driver.Navigate().GoToUrl(root);
+                // トップページに移動する
+                var root = SharedResource.Project.Debugger.GetDebuggingClientUrl();
+                driver.Navigate().GoToUrl(root);
 
-            return driver;
+                return driver;
+
+            } catch {
+                driver.Dispose();
+                throw;
+            }
         }
     }
 }
