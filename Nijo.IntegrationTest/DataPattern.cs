@@ -11,30 +11,34 @@ using System.Xml.Linq;
 
 namespace Nijo.IntegrationTest {
     public class DataPattern {
-        public DataPattern(string path) {
-            _xmlFilePath = path;
+
+        #region XMLファイル名
+        public const string FILENAME_000 = "000_単純な集約.xml";
+        public const string FILENAME_001 = "001_Refのみ.xml";
+        public const string FILENAME_002 = "002_Childrenのみ.xml";
+        public const string FILENAME_003 = "003_Childのみ.xml";
+        public const string FILENAME_004 = "004_Variationのみ.xml";
+        public const string FILENAME_010 = "010_ChildrenからChildrenへの参照.xml";
+        public const string FILENAME_011 = "011_ダブル.xml";
+        public const string FILENAME_012 = "012_スカラメンバー網羅.xml";
+        public const string FILENAME_013 = "013_主キーにRef.xml";
+        public const string FILENAME_100 = "100_RDRA.xml";
+        public const string FILENAME_101 = "101_売上管理.xml";
+        #endregion XMLファイル名
+
+
+        private DataPattern(string xmlFilePath) {
+            _xmlFilePath = xmlFilePath;
         }
-        public DataPattern(E_DataPattern pattern) {
-            var fieldInfo = typeof(E_DataPattern).GetField(pattern.ToString())
-                ?? throw new ArgumentException(nameof(pattern));
-            var attr = (FileNameAttribute?)Attribute.GetCustomAttribute(fieldInfo, typeof(FileNameAttribute))
-                ?? throw new ArgumentException(nameof(pattern));
-            _xmlFilePath = Path.Combine(DataPatternsDir(), attr.Value);
+        public static DataPattern FromFileName(string pattern) {
+            var xmlFilePath = Path.Combine(DataPatternsDir(), pattern);
+            return new DataPattern(xmlFilePath);
         }
 
         private readonly string _xmlFilePath;
 
         public string GetXmlFileName() {
             return Path.GetFileName(_xmlFilePath);
-        }
-        public E_DataPattern AsEnum() {
-            var basename = Path.GetFileName(_xmlFilePath);
-            foreach (var member in typeof(E_DataPattern).GetMembers()) {
-                if (member.GetCustomAttribute<FileNameAttribute>()?.Value == basename) {
-                    return Enum.Parse<E_DataPattern>(member.Name);
-                }
-            }
-            return (E_DataPattern)(-1);
         }
         public string LoadXmlString() {
             return File.ReadAllText(_xmlFilePath).Trim();

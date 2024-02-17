@@ -11,7 +11,7 @@ namespace Nijo.IntegrationTest.Perspectives {
         [UseDataPatterns]
         public async Task Webから追加更新削除(DataPattern pattern) {
 
-            await If(pattern).When(E_DataPattern._001_Refのみxml, () => {
+            await If(pattern).When(DataPattern.FILENAME_001, () => {
                 using var driver = TestProject.Current.CreateWebDriver();
 
                 // トップページ

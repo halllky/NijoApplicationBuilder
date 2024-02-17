@@ -18,13 +18,13 @@ namespace Nijo.IntegrationTest.Perspectives {
                 _pattern = pattern;
             }
             private readonly DataPattern _pattern;
-            private readonly Dictionary<E_DataPattern, Func<Task>> _describes = new();
-            public DelayedExecuter When(E_DataPattern pattern, Func<Task> then) {
+            private readonly Dictionary<string, Func<Task>> _describes = new();
+            public DelayedExecuter When(string pattern, Func<Task> then) {
                 _describes[pattern] = then;
                 return this;
             }
             public async Task LaunchWebApi() {
-                if (!_describes.TryGetValue(_pattern.AsEnum(), out var describe)) {
+                if (!_describes.TryGetValue(_pattern.GetXmlFileName(), out var describe)) {
                     Assert.Warn("期待結果が定義されていません。");
                     return;
                 }
@@ -50,7 +50,7 @@ namespace Nijo.IntegrationTest.Perspectives {
                 }
             }
             public async Task LaunchWebApiAndClient() {
-                if (!_describes.TryGetValue(_pattern.AsEnum(), out var describe)) {
+                if (!_describes.TryGetValue(_pattern.GetXmlFileName(), out var describe)) {
                     Assert.Warn("期待結果が定義されていません。");
                     return;
                 }
