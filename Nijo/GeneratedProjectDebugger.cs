@@ -11,6 +11,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Nijo {
     public sealed partial class GeneratedProjectDebugger {
@@ -250,11 +251,11 @@ namespace Nijo {
         /// 必要なnpmモジュールをインストールします。
         /// </summary>
         public GeneratedProjectDebugger InstallDependencies() {
-            _project.ClientDirTerminal
-                .Run(new[] { "npm", "ci" }, CancellationToken.None)
-                .Wait();
 
-            // dotnetはビルド時に自動的にインストールされるので何もしない
+            _project.ServiceProvider
+                .GetRequiredService<IPackageInstaller>()
+                .InstallDependencies(_project, CancellationToken.None)
+                .Wait();
 
             return this;
         }

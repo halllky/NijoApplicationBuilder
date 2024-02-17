@@ -16,9 +16,14 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.Build.Evaluation;
 using Nijo.Parts.WebServer;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Nijo {
     public sealed partial class GeneratedProject {
+
+        public static void ConfigureDefaultServices(IServiceCollection serviceDescriptors) {
+            serviceDescriptors.AddTransient<IPackageInstaller, PackageInstaller>();
+        }
 
         /// <summary>
         /// 新しいプロジェクトを作成します。
@@ -30,6 +35,7 @@ namespace Nijo {
             string projectRootDir,
             string? applicationName,
             bool keepTempIferror,
+            IServiceProvider serviceProvider,
             CancellationToken? cancellationToken = null,
             ILogger? log = null) {
 
@@ -50,7 +56,7 @@ namespace Nijo {
 
             var error = false;
             try {
-                var tempProject = new GeneratedProject(tempDir, log);
+                var tempProject = new GeneratedProject(tempDir, serviceProvider, log);
 
                 using (var _ = log?.BeginScope("プロジェクトディレクトリの作成")) {
                     log?.LogInformation("ProjectRoot: {0}", tempProject.ProjectRoot);
@@ -188,7 +194,7 @@ namespace Nijo {
 
                 log?.LogInformation("プロジェクト作成完了");
 
-                return new GeneratedProject(projectRootDir, log);
+                return new GeneratedProject(projectRootDir, serviceProvider, log);
 
             } catch {
                 error = true;
@@ -209,7 +215,11 @@ namespace Nijo {
         /// </summary>
         /// <param name="path">プロジェクトルートディレクトリの絶対パス</param>
         /// <returns>作成されたプロジェクトを表すオブジェクト</returns>
-        public static GeneratedProject Open(string? path, ILogger? log = null) {
+        public static GeneratedProject Open(
+            string? path,
+            IServiceProvider serviceProvider,
+            ILogger? log = null) {
+
             string normalizedPath;
 
             if (string.IsNullOrWhiteSpace(path))
@@ -221,10 +231,10 @@ namespace Nijo {
 
             if (!Directory.Exists(normalizedPath))
                 throw new InvalidOperationException($"Directory is not exist: {normalizedPath}");
-            return new GeneratedProject(normalizedPath, log);
+            return new GeneratedProject(normalizedPath, serviceProvider, log);
         }
 
-        private GeneratedProject(string projetctRoot, ILogger? log) {
+        private GeneratedProject(string projetctRoot, IServiceProvider serviceProvider, ILogger? log) {
             if (string.IsNullOrWhiteSpace(projetctRoot))
                 throw new ArgumentException($"'{nameof(projetctRoot)}' is required.");
 
@@ -235,6 +245,8 @@ namespace Nijo {
             Debugger = new GeneratedProjectDebugger(this, log);
             Migrator = new GeneratedProjectMigrator(this, log);
             SchemaXml = new AppSchemaXml(ProjectRoot);
+
+            ServiceProvider = serviceProvider;
         }
 
         private readonly ILogger _log;
@@ -242,6 +254,8 @@ namespace Nijo {
         public string ProjectRoot { get; }
         public string WebClientProjectRoot => Path.Combine(ProjectRoot, "react");
         public string WebApiProjectRoot => Path.Combine(ProjectRoot, "webapi");
+
+        internal IServiceProvider ServiceProvider { get; }
 
         public NijoCodeGenerator CodeGenerator { get; }
         public GeneratedProjectDebugger Debugger { get; }

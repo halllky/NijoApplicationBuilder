@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
@@ -28,6 +29,10 @@ namespace Nijo.IntegrationTest.Perspectives {
             // 作成先フォルダがないことを確認
             if (Directory.Exists(projectDir)) Assert.Fail("新規作成しようとしている位置にディレクトリが既に存在します。");
 
+            var services = new ServiceCollection();
+            GeneratedProject.ConfigureDefaultServices(services);
+            var serviceProvider = services.BuildServiceProvider();
+
             //// nijo create コマンドを実行
             //var terminal = new Terminal(TestContext.CurrentContext.WorkDirectory, logger);
             //await terminal.Run(new[] {
@@ -39,10 +44,14 @@ namespace Nijo.IntegrationTest.Perspectives {
                 projectDir,
                 PROJECT_NAME,
                 true,
+                serviceProvider,
                 TestContext.CurrentContext.CancellationToken,
                 logger);
 
-            var project = GeneratedProject.Open(projectDir, logger);
+            var project = GeneratedProject.Open(
+                projectDir,
+                serviceProvider,
+                logger);
 
             // とりあえずもっとも単純なパターンで書き換えてみる
             // (デフォルトでもバックグランドタスク用のテーブルが生成されているはずなので

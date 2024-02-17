@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Build.Evaluation;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.DependencyInjection;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using System;
@@ -25,6 +26,11 @@ namespace Nijo.IntegrationTest {
         #region SETUP
         [OneTimeSetUp]
         public void SetUp() {
+
+            var services = new ServiceCollection();
+            GeneratedProject.ConfigureDefaultServices(services);
+            var serviceProvider = services.BuildServiceProvider();
+
             // 出力が文字化けするので
             Console.OutputEncoding = Encoding.UTF8;
 
@@ -33,8 +39,8 @@ namespace Nijo.IntegrationTest {
             var logger = new TestContextLogger();
             var dir = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..", DIR_NAME));
             Project = Directory.Exists(dir)
-                ? GeneratedProject.Open(dir, logger)
-                : GeneratedProject.Create(dir, DIR_NAME, true, log: logger);
+                ? GeneratedProject.Open(dir, serviceProvider, logger)
+                : GeneratedProject.Create(dir, DIR_NAME, true, serviceProvider, log: logger);
         }
 
         [OneTimeTearDown]
