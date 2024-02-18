@@ -55,15 +55,28 @@ namespace Nijo {
         private static RootCommand DefineCommand(CancellationTokenSource cancellationTokenSource) {
             var rootCommand = new RootCommand("nijo");
 
+            // DI
             var services = new ServiceCollection();
             GeneratedProject.ConfigureDefaultServices(services);
             var serviceProvider = services.BuildServiceProvider();
 
             // 引数定義
-            var verbose = new Option<bool>("--verbose", description: "詳細なログを出力します。");
-            var path = new Argument<string?>(() => string.Empty);
-            var applicationName = new Argument<string?>();
-            var keepTempIferror = new Option<bool>("--keep-temp-if-error", description: "エラー発生時、原因調査ができるようにするため一時フォルダを削除せず残します。");
+            var verbose = new Option<bool>(
+                name: "--verbose",
+                description: "詳細なログを出力します。");
+
+            var path = new Argument<string?>(
+                name: "project path",
+                getDefaultValue: () => string.Empty,
+                description: "カレントディレクトリから操作対象のnijoプロジェクトへの相対パス");
+
+            var applicationName = new Argument<string?>(
+                name: "application name",
+                description: "新規作成されるアプリケーションの名前");
+
+            var keepTempIferror = new Option<bool>(
+                name: "--keep-temp-if-error",
+                description: "作成に失敗した場合、原因調査ができるようにするため一時フォルダを削除せず残します。");
 
             // コマンド定義
             var create = new Command(name: "create", description: "新しいプロジェクトを作成します。") { verbose, applicationName, keepTempIferror };

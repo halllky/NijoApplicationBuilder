@@ -1,42 +1,8 @@
 # HalApplicationBuilder 【開発中 under development】
-データモデルを指定すると以下のものを作成してくれるローコードアプリケーション作成ツール。
-- RDB定義（EntityFrameworkCore）
-- WebAPI（ASP.NET Core Web API）
-- GUI（React）
+論理データモデルから一般的なWebアプリケーションのひな形を自動生成するツール。
 
-## :cherry_blossom: 特徴
-### データ構造を定義するだけで、データベース定義や、それなりの画面を自動生成します。
-
-例えば、このようなデータ構造を定義すると…
-
-```xml
-<?xml version="1.0" encoding="UTF-8" ?>
-<MySampleApplication>
-  <商品>
-    <商品コード type="string" key="" />
-    <商品名 type="string" />
-    <単価 type="int" />
-  </商品>
-  <売上>
-    <ID type="string" key="" />
-    <売上日時 type="datetime" />
-    <明細 multiple="">
-      <商品 refTo="商品" key="" />
-      <数量 type="int" />
-    </明細>
-  </売上>
-</MySampleApplication>
-```
-
-↓ このようなReactのGUIやDB定義を自動生成します。
-
-自動生成された画面
-
-![](README_files/2023-05-03_222729.png)
-
-自動生成されたデータベース
-
-![](README_files/2023-05-03_223142.png)
+## 概要図 Overview
+![概要図 overview](./README_files/README.drawio.svg)
 
 ### 1対多の明細データや多様な型の子要素など、複雑なデータ構造を実現可能。
 
