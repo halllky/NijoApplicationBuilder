@@ -74,3 +74,6 @@ nijo create YourApplicationName
 ## :cherry_blossom: Documentation
 ### `nijo.xml` の記述ルール
 執筆中
+
+## License
+This software is released under the MIT License. see LICENSE.txt.
