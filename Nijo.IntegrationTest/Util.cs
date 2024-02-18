@@ -199,7 +199,7 @@ namespace Nijo.IntegrationTest {
             var query = parameters == null
                 ? string.Empty
                 : $"?{await new FormUrlEncodedContent(parameters).ReadAsStringAsync()}";
-            var uri = new Uri(project.Debugger.GetDebugUrl(), path + query);
+            var uri = new Uri(project.GetDebugUrl(), path + query);
 
             var message = new HttpRequestMessage(HttpMethod.Get, uri);
 
@@ -213,7 +213,7 @@ namespace Nijo.IntegrationTest {
         /// <param name="body">リクエストボディ</param>
         /// <returns>HTTPレスポンス</returns>
         public static async Task<HttpResponseMessage> Post(this GeneratedProject project, string path, object body) {
-            var uri = new Uri(project.Debugger.GetDebugUrl(), path);
+            var uri = new Uri(project.GetDebugUrl(), path);
             var message = new HttpRequestMessage(HttpMethod.Post, uri);
             message.Content = new StringContent(body.ToJson(), Encoding.UTF8, "application/json");
 
@@ -226,7 +226,7 @@ namespace Nijo.IntegrationTest {
         /// <param name="path">URLのうちドメインより後ろの部分</param>
         /// <returns>HTTPレスポンス</returns>
         public static async Task<HttpResponseMessage> Delete(this GeneratedProject project, string path) {
-            var uri = new Uri(project.Debugger.GetDebugUrl(), path);
+            var uri = new Uri(project.GetDebugUrl(), path);
             var message = new HttpRequestMessage(HttpMethod.Delete, uri);
 
             using var client = new HttpClient();

@@ -96,7 +96,7 @@ namespace Nijo {
                         // 初回ビルド時はブラウザ立ち上げ
                         launcher.OnReady += (s, e) => {
                             try {
-                                var npmUrl = project.Debugger.GetDebuggingClientUrl();
+                                var npmUrl = project.GetDebuggingClientUrl();
                                 var launchBrowser = new Process();
                                 launchBrowser.StartInfo.FileName = "cmd";
                                 launchBrowser.StartInfo.Arguments = $"/c \"start {npmUrl}\"";

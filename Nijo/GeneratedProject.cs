@@ -173,7 +173,10 @@ namespace Nijo {
                 }
 
                 using (var _ = log?.BeginScope("外部パッケージのインストール")) {
-                    tempProject.Debugger.InstallDependencies();
+                    tempProject.ServiceProvider
+                        .GetRequiredService<IPackageInstaller>()
+                        .InstallDependencies(tempProject, CancellationToken.None)
+                        .Wait();
                 }
 
                 using (var _ = log?.BeginScope("git初期化")) {
@@ -238,7 +241,6 @@ namespace Nijo {
             _log = log ?? ILoggerExtension.CreateConsoleLogger();
 
             CodeGenerator = new NijoCodeGenerator(this, log);
-            Debugger = new GeneratedProjectDebugger(this, log);
             SchemaXml = new AppSchemaXml(ProjectRoot);
 
             ServiceProvider = serviceProvider;
@@ -253,7 +255,6 @@ namespace Nijo {
         internal IServiceProvider ServiceProvider { get; }
 
         public NijoCodeGenerator CodeGenerator { get; }
-        public GeneratedProjectDebugger Debugger { get; }
         public AppSchemaXml SchemaXml { get; }
 
         public Config ReadConfig() {
@@ -298,8 +299,92 @@ namespace Nijo {
             }
         }
 
+        /// <summary>
+        /// プロジェクトをビルドします。
+        /// </summary>
+        /// <param name="npm">npmのビルドをどうするか</param>
+        public async Task BuildAsync(E_NpmBuild npm, CancellationToken cancellationToken) {
+            var dotnetBuild = WebapiDirTerminal.Run(new[] { "dotnet", "build" }, cancellationToken);
+            var npmBuild = npm switch {
+                E_NpmBuild.Build => ClientDirTerminal.Run(new[] { "npm", "run", "build" }, cancellationToken),
+                E_NpmBuild.OnlyCompilerCheck => ClientDirTerminal.Run(new[] { "npm", "run", "tsc" }, cancellationToken),
+                _ => Task.CompletedTask,
+            };
+
+            await Task.WhenAll(dotnetBuild, npmBuild);
+        }
+        public enum E_NpmBuild {
+            Build,
+            OnlyCompilerCheck,
+            None,
+        }
+
         public Runtime.GeneratedProjectLauncher CreateLauncher() {
             return new Runtime.GeneratedProjectLauncher(this, _log);
+        }
+
+        /// <summary>
+        /// デバッグ時に起動されるアプリケーションのURLを返します。
+        /// </summary>
+        public Uri GetDebugUrl() {
+            return new Uri(GetDebuggingServerUrl().Split(';')[0]);
+        }
+        /// <summary>
+        /// デバッグ時に起動されるSwagger UIのURLを返します。
+        /// </summary>
+        /// <returns></returns>
+        public Uri GetSwaggerUrl() {
+            return new Uri(new Uri(GetDebuggingServerUrl().Split(';')[0]), "swagger");
+        }
+        /// <summary>
+        /// launchSettings.jsonのhttpsプロファイルのapplicationUrlセクションの値を読み取ります。
+        /// </summary>
+        private string GetDebuggingServerUrl() {
+            var properties = Path.Combine(WebApiProjectRoot, "Properties");
+            if (!Directory.Exists(properties)) throw new DirectoryNotFoundException(properties);
+            var launchSettings = Path.Combine(properties, "launchSettings.json");
+            if (!File.Exists(launchSettings)) throw new FileNotFoundException(launchSettings);
+
+            var json = File.ReadAllText(launchSettings);
+            var obj = JsonSerializer.Deserialize<JsonObject>(json);
+            if (obj == null)
+                throw new InvalidOperationException($"Invalid json: {launchSettings}");
+            if (!obj.TryGetPropertyValue("profiles", out var profiles))
+                throw new InvalidOperationException($"Invalid json: {launchSettings}");
+            if (profiles == null)
+                throw new InvalidOperationException($"Invalid json: {launchSettings}");
+            if (!profiles.AsObject().TryGetPropertyValue("https", out var https))
+                throw new InvalidOperationException($"Invalid json: {launchSettings}");
+            if (https == null)
+                throw new InvalidOperationException($"Invalid json: {launchSettings}");
+            if (!https.AsObject().TryGetPropertyValue("applicationUrl", out var applicationUrl))
+                throw new InvalidOperationException($"Invalid json: {launchSettings}");
+            if (applicationUrl == null)
+                throw new InvalidOperationException($"Invalid json: {launchSettings}");
+
+            return applicationUrl.GetValue<string>();
+        }
+        /// <summary>
+        /// vite.config.ts からポートを参照してURLを生成して返します。
+        /// </summary>
+        /// <returns></returns>
+        public Uri GetDebuggingClientUrl() {
+            var viteConfigTs = Path.Combine(WebClientProjectRoot, "vite.config.ts");
+            if (!File.Exists(viteConfigTs))
+                throw new FileNotFoundException(viteConfigTs);
+
+            using var stream = new StreamReader(viteConfigTs, Encoding.UTF8);
+            var regex = new Regex(@"port:\s*([^,]*)");
+            while (!stream.EndOfStream) {
+                var line = stream.ReadLine();
+                if (line == null) continue;
+                var match = regex.Match(line);
+                if (!match.Success) continue;
+                var port = match.Groups[1].Value;
+                return new Uri($"http://localhost:{port}");
+            }
+
+            throw new InvalidOperationException("vite.config.ts からポート番号を読み取れません。'port: 9999'のようにポートを設定している行があるか確認してください。");
         }
 
         private Terminal? _projectRootTerminal;

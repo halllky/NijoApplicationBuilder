@@ -34,7 +34,7 @@ namespace Nijo.Runtime {
         public void Launch() {
             lock (_lock) {
                 if (_state != E_State.Initialized)
-                    throw new InvalidOperationException("デバッグは既に開始されています。");
+                    throw new InvalidOperationException("プロセスは既に開始されています。");
 
                 _npmRun = new Process();
                 _npmRun.StartInfo.WorkingDirectory = _project.WebClientProjectRoot;
@@ -110,7 +110,7 @@ namespace Nijo.Runtime {
             lock (_lock) {
                 if (!_dotnetReady) return;
                 if (!_npmReady) return;
-                if ((int)_state >= (int)E_State.Ready) return;
+                if (_state >= E_State.Ready) return;
 
                 _state = E_State.Ready;
             }
@@ -118,6 +118,9 @@ namespace Nijo.Runtime {
         }
 
         public void WaitForTerminate() {
+            if (_state == E_State.Initialized) throw new InvalidOperationException("プロセスが開始されていません。");
+            if (_state == E_State.Stopped) return;
+
             var task1 = Task.Run(() => _dotnetRun?.WaitForExit());
             var task2 = Task.Run(() => _npmRun?.WaitForExit());
             Task.WaitAll(task1, task2);
