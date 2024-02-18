@@ -1,20 +1,18 @@
 # Nijo framework 【開発中 under development】
-論理データモデルから一般的なWebアプリケーションのひな形を自動生成するツール。
+論理データモデルから一般的なエンタープライズ系業務アプリケーションのひな形を自動生成するツール。
 
 ## 概要図 Overview
 このツールを使用してアプリケーションを作成するための大まかな流れは以下です。
-The general flow for building an application using this tool is as follows.
 
 1. 論理データモデルを定義する。
-   Define data schema xml.
 2. コード自動生成を実行する。
-   Execute code generation.
 3. 自動生成で賄えない機能を自前で実装する。
-   Customize features that cannot be covered by code generation.
 
 ![概要図 overview](./README_files/README.drawio.svg)
 
-## 動機 Motivation
+## 使い方の詳細 Usage
+
+## このソフトウェアを作成した動機 Motivation
 - 画面からDBまでを一気通貫でカバーしてくれるちょうどよいライブラリ・フレームワークが欲しかった。
 - CRUD機能のうちCUDは自動生成する効果が大きいと感じていた。
   - データの形が違うだけで気を付けなければいけないポイントはだいたいいつも同じ（キー重複の考慮、同時編集や排他制御、更新データ中に配列がある場合の実装の大変さ、二重登録の考慮、トランザクションの切り方、など）
@@ -29,51 +27,6 @@ The general flow for building an application using this tool is as follows.
 - オンプレにしようと思えばオンプレにもできるアーキテクチャ
   - いわゆるエンタープライズ系システム・基幹寄りのシステムは、寿命が長いのでフルマネージドであっておきたい
   - クラウド型のSaaSは提供事業者の意思次第でいつでも使えなくなりうる
-
-### 1対多の明細データや多様な型の子要素など、複雑なデータ構造を実現可能。
-
-### スクラッチ開発に近い拡張性。C#やSQLやHTMLを直接編集できる開発者向き。
-
----
-
-## :cherry_blossom: Get Started
-以下を使えるようにしておく
-
-- dotnet
-  - 公式サイトからダウンロードしてください。
-- dotnet ef
-  - `dotnet tool install --global dotnet-ef` でダウンロードしてください。
-- npm
-  - 公式サイトからダウンロードしてください。
-
-このリポジトリをcloneし、ビルドして `nijo.exe` を作成する(開発中のためバイナリは提供できていません。ご了承ください)。
-以降の手順は、このコマンドラインツールを使用して進めていきます。
-
-新しいアプリケーションを作成する
-
-```bash
-nijo create YourApplicationName
-```
-
-ビルド
-- `build.bat` を実行する
-
-デバッグ
-- Reactテンプレートプロジェクトのデバッグ
-  - `Nijo.ApplicationTemplates` フォルダ内にあるReactテンプレートのルートで `npm run dev`
-- 自動生成されたプロジェクトのデバッグ
-  - `Nijo.IntegrationTest` プロジェクトのいずれかのデータパターンで自動生成
-  - `debug.bat` を実行する
-  - 以下の情報が表示されるはずなので、控えておく
-    - CLIENT: ブラウザからの閲覧用。 `npm start` が実行されているURL
-    - SERVER: WebAPIのURL。 `dotnet run` が実行されているURL
-  - ブラウザを開いて `CLIENT` のURLにアクセスする
-  - 画面のメインメニューから「設定」を開き、サーバーURL欄に上記で控えた `SERVER` のURLを入力して「更新」
-
----
-## :cherry_blossom: Documentation
-### `nijo.xml` の記述ルール
-執筆中
 
 ## License
 This software is released under the MIT License. see LICENSE.txt.
