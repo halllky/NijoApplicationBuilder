@@ -16,14 +16,14 @@ namespace Nijo.Util.CodeGenerating {
     public sealed class CodeRenderingContext {
         internal CodeRenderingContext() { }
 
-        internal NijoCodeGenerator.DirectorySetupper? _webapiDir;
-        internal NijoCodeGenerator.DirectorySetupper? _reactDir;
+        internal DirectorySetupper? _webapiDir;
+        internal DirectorySetupper? _reactDir;
 
         public required Config Config { get; init; }
         public required AppSchema Schema { get; init; }
 
-        public void EditWebApiDirectory(Action<NijoCodeGenerator.DirectorySetupper> webapiDirHandler) => webapiDirHandler.Invoke(_webapiDir!);
-        public void EditReactDirectory(Action<NijoCodeGenerator.DirectorySetupper> reactDirHandler) => reactDirHandler.Invoke(_reactDir!);
+        public void EditWebApiDirectory(Action<DirectorySetupper> webapiDirHandler) => webapiDirHandler.Invoke(_webapiDir!);
+        public void EditReactDirectory(Action<DirectorySetupper> reactDirHandler) => reactDirHandler.Invoke(_reactDir!);
 
         private readonly App _app = new();
         public void UseAggregateFile(GraphNode<Aggregate> aggregate, Action<AggregateFile> fn) => _app.Aggregate(aggregate, fn);
