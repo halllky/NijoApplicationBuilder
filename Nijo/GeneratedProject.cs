@@ -180,9 +180,37 @@ namespace Nijo {
                 }
 
                 using (var _ = log?.BeginScope("git初期化")) {
-                    tempProject.Terminal.Run(new[] { "git", "init" }, cancellationToken ?? CancellationToken.None).Wait();
-                    tempProject.Terminal.Run(new[] { "git", "add", "." }, cancellationToken ?? CancellationToken.None).Wait();
-                    tempProject.Terminal.Run(new[] { "git", "commit", "-m", "init" }, cancellationToken ?? CancellationToken.None).Wait();
+                    Process? git = null;
+                    try {
+                        log?.LogWarning("gitリポジトリを作成します。");
+
+                        git = new Process();
+                        git.StartInfo.WorkingDirectory = tempProject.ProjectRoot;
+                        git.StartInfo.FileName = "git";
+                        git.StartInfo.Arguments = "init";
+                        git.Start();
+                        git.WaitForExit();
+
+                        git = new Process();
+                        git.StartInfo.WorkingDirectory = tempProject.ProjectRoot;
+                        git.StartInfo.FileName = "git";
+                        git.StartInfo.Arguments = "add .";
+                        git.Start();
+                        git.WaitForExit();
+
+                        git = new Process();
+                        git.StartInfo.WorkingDirectory = tempProject.ProjectRoot;
+                        git.StartInfo.FileName = "git";
+                        git.StartInfo.Arguments = "commit -m \"init\"";
+                        git.Start();
+                        git.WaitForExit();
+
+                    } catch (Exception ex) {
+                        log?.LogWarning("gitリポジトリの作成に失敗しました: {msg}", ex.Message);
+
+                    } finally {
+                        git?.EnsureKill();
+                    }
                 }
 
                 // ここまでの処理がすべて成功したら一時ディレクトリを本来のディレクトリ名に変更
@@ -374,12 +402,5 @@ namespace Nijo {
 
             throw new InvalidOperationException("vite.config.ts からポート番号を読み取れません。'port: 9999'のようにポートを設定している行があるか確認してください。");
         }
-
-        private Terminal? _projectRootTerminal;
-        private Terminal? _webapiDirTerminal;
-        private Terminal? _clientDirTerminal;
-        internal Terminal Terminal => _projectRootTerminal ??= new Terminal(ProjectRoot, _log);
-        internal Terminal WebapiDirTerminal => _webapiDirTerminal ??= new Terminal(WebApiProjectRoot, _log);
-        internal Terminal ClientDirTerminal => _clientDirTerminal ??= new Terminal(WebClientProjectRoot, _log);
     }
 }

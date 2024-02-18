@@ -1,5 +1,7 @@
+using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -16,8 +18,17 @@ namespace Nijo {
     internal class PackageInstaller : IPackageInstaller {
         public async Task InstallDependencies(GeneratedProject project, CancellationToken cancellationToken) {
 
-            await project.ClientDirTerminal
-                .Run(new[] { "npm", "ci" }, cancellationToken);
+            var npmCi = new Process();
+            try {
+                npmCi.StartInfo.WorkingDirectory = project.WebClientProjectRoot;
+                npmCi.StartInfo.FileName = "powershell";
+                npmCi.StartInfo.Arguments = "/c \"npm ci\"";
+                npmCi.Start();
+                await npmCi.WaitForExitAsync(cancellationToken);
+
+            } finally {
+                npmCi.EnsureKill();
+            }
 
             // dotnetはビルド時に自動的にインストールされるので何もしない
         }

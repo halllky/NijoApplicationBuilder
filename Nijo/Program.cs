@@ -68,7 +68,6 @@ namespace Nijo {
             // コマンド定義
             var create = new Command(name: "create", description: "新しいプロジェクトを作成します。") { verbose, applicationName, keepTempIferror };
             create.SetHandler((verbose, applicationName, keepTempIferror) => {
-                if (!CheckIfToolIsAvailable(cancellationTokenSource.Token, "dotnet", "npm", "git")) return;
                 if (string.IsNullOrEmpty(applicationName)) throw new ArgumentException($"Application name is required.");
                 var logger = ILoggerExtension.CreateConsoleLogger(verbose);
                 var projectRootDir = Path.Combine(Directory.GetCurrentDirectory(), applicationName);
@@ -139,26 +138,6 @@ namespace Nijo {
             rootCommand.AddCommand(dump);
 
             return rootCommand;
-        }
-
-
-        /// <summary>
-        /// 外部ツールが使用可能かどうかを検査する（'--version' コマンドを実行することで確認）
-        /// </summary>
-        private static bool CheckIfToolIsAvailable(CancellationToken cancellationToken, params string[] names) {
-            var ok = true;
-            foreach (var name in names) {
-                try {
-                    var terminal = new Terminal(".", ILoggerExtension.CreateConsoleLogger());
-                    terminal.Run(new[] { name, "--version" }, cancellationToken).Wait();
-                } catch (OperationCanceledException) {
-                    throw;
-                } catch {
-                    Console.Error.WriteLine($"Command line tool '{name}' is not available. Please install it from the official website of '{name}'.");
-                    ok = false;
-                }
-            }
-            return ok;
         }
     }
 }
