@@ -300,23 +300,11 @@ namespace Nijo {
         }
 
         /// <summary>
-        /// プロジェクトをビルドします。
+        /// プロジェクトの検査を行います。結果は戻り値ではなくログに出力されます。
         /// </summary>
-        /// <param name="npm">npmのビルドをどうするか</param>
-        public async Task BuildAsync(E_NpmBuild npm, CancellationToken cancellationToken) {
-            var dotnetBuild = WebapiDirTerminal.Run(new[] { "dotnet", "build" }, cancellationToken);
-            var npmBuild = npm switch {
-                E_NpmBuild.Build => ClientDirTerminal.Run(new[] { "npm", "run", "build" }, cancellationToken),
-                E_NpmBuild.OnlyCompilerCheck => ClientDirTerminal.Run(new[] { "npm", "run", "tsc" }, cancellationToken),
-                _ => Task.CompletedTask,
-            };
-
-            await Task.WhenAll(dotnetBuild, npmBuild);
-        }
-        public enum E_NpmBuild {
-            Build,
-            OnlyCompilerCheck,
-            None,
+        public async Task CompilerCheck(CancellationToken cancellationToken) {
+            var builder = new Runtime.GeneratedProjectBuilder(this, _log);
+            await builder.StaticCheck(cancellationToken);
         }
 
         public Runtime.GeneratedProjectLauncher CreateLauncher() {
