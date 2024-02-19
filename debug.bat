@@ -7,7 +7,7 @@ set NIJO_ROOT=%~dp0
 set PROJECT_ROOT=%NIJO_ROOT%自動テストで作成されたプロジェクト
 
 @rem コード自動生成ツールを最新化
-dotnet publish %NIJO_ROOT%Nijo\Nijo.csproj -p:PublishProfile=PUBLISH
+dotnet build %NIJO_ROOT%Nijo\Nijo.csproj
 
 @rem デバッグ開始
-nijo debug %PROJECT_ROOT%
+%NIJO_ROOT%Nijo\bin\Debug\net8.0\nijo.exe debug %PROJECT_ROOT%
