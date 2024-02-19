@@ -1,4 +1,4 @@
-# Nijo framework 【開発中 under development】
+# Nijo Application Builder 【開発中 under development】
 論理データモデルから一般的なエンタープライズ系業務アプリケーションのひな形を自動生成するツール。
 
 ---
