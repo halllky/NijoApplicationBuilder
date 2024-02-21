@@ -1,9 +1,0 @@
-{
-  "type": "neo4j",
-  "connection": {
-    "host": "neo4j://localhost:7687",
-    "user": "neo4j",
-    "pass": "nijonijo"
-  },
-  "query": "// HalCodeAnalyzerで作成したメソッド呼び出し関係のグラフ化\nMATCH (c1:Class)-[r1:HAS_CHILD]->(m1:Method)-[calling:CALLS]->(m2:Method)<-[r2:HAS_CHILD]-(c2:Class)\nRETURN  c1,r1,c2,r2,m1,m2,calling"
-}

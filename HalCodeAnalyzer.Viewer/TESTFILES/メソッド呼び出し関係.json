@@ -1,9 +1,0 @@
-{
-  "type": "neo4j",
-  "connection": {
-    "host": "neo4j://localhost:7687",
-    "user": "neo4j",
-    "pass": "nijonijo"
-  },
-  "query": "// HalCodeAnalyzerで作成したメソッド呼び出し関係のグラフ化\nMATCH (c1:Class)-[:HAS_CHILD]->(:Method)-[:CALLS]->(:Method)<-[:HAS_CHILD]-(c2:Class)\nWITH DISTINCT c1, c2\nOPTIONAL match path1 = (c1)<-[r1:HAS_CHILD*]-()\nOPTIONAL match path2 = (c2)<-[r2:HAS_CHILD*]-()\nWHERE\tALL(n IN nodes(path2) WHERE n.name <> 'Util')\nAND\t\tALL(n IN nodes(path2) WHERE n.name <> 'AggregateMemberTypes')\nWITH DISTINCT c1, c2, r1, r2, nodes(path1) as cn1, nodes(path2) as cn2\n//CALL apoc.create.vRelationship(c1,'CALL',{},c2) YIELD depends\nWITH\n  //  depends,\n\tr1 + r2 as parentChild,\n\t[n in cn1 + cn2 WHERE n.name <> 'Nijo'] as classAndNamespaces\nRETURN parentChild, classAndNamespaces"
-}
