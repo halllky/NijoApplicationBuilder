@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,8 +22,13 @@ namespace Nijo {
             var npmCi = new Process();
             try {
                 npmCi.StartInfo.WorkingDirectory = project.WebClientProjectRoot;
-                npmCi.StartInfo.FileName = "powershell";
-                npmCi.StartInfo.Arguments = "/c \"npm ci\"";
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    npmCi.StartInfo.FileName = "powershell";
+                    npmCi.StartInfo.Arguments = "/c \"npm ci\"";
+                } else {
+                    npmCi.StartInfo.FileName = "npm";
+                    npmCi.StartInfo.Arguments = "ci";
+                }
                 npmCi.Start();
                 await npmCi.WaitForExitAsync(cancellationToken);
 

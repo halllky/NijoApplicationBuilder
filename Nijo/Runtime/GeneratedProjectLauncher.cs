@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -38,8 +39,13 @@ namespace Nijo.Runtime {
 
                 _npmRun = new Process();
                 _npmRun.StartInfo.WorkingDirectory = _project.WebClientProjectRoot;
-                _npmRun.StartInfo.FileName = "powershell";
-                _npmRun.StartInfo.Arguments = "/c \"npm run dev\"";
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    _npmRun.StartInfo.FileName = "powershell";
+                    _npmRun.StartInfo.Arguments = "/c \"npm run dev\"";
+                } else {
+                    _npmRun.StartInfo.FileName = "npm";
+                    _npmRun.StartInfo.Arguments = "run dev";
+                }
                 _npmRun.StartInfo.RedirectStandardOutput = true;
                 _npmRun.StartInfo.RedirectStandardError = true;
                 _npmRun.StartInfo.StandardOutputEncoding = Encoding.UTF8;

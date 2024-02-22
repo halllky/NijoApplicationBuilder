@@ -16,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Build.Evaluation;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 [assembly: InternalsVisibleTo("Nijo.IntegrationTest")]
 
@@ -120,8 +121,13 @@ namespace Nijo {
                             try {
                                 var npmUrl = project.GetDebuggingClientUrl();
                                 var launchBrowser = new Process();
-                                launchBrowser.StartInfo.FileName = "cmd";
-                                launchBrowser.StartInfo.Arguments = $"/c \"start {npmUrl}\"";
+                                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                                    launchBrowser.StartInfo.FileName = "cmd";
+                                    launchBrowser.StartInfo.Arguments = $"/c \"start {npmUrl}\"";
+                                } else {
+                                    launchBrowser.StartInfo.FileName = "open";
+                                    launchBrowser.StartInfo.Arguments = npmUrl.ToString();
+                                }
                                 launchBrowser.Start();
                                 launchBrowser.WaitForExit();
                             } catch (Exception ex) {

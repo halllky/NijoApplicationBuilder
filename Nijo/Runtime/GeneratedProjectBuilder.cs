@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,8 +27,13 @@ namespace Nijo.Runtime {
             var dotnetRun = new Process();
             try {
                 npmRun.StartInfo.WorkingDirectory = _project.WebClientProjectRoot;
-                npmRun.StartInfo.FileName = "powershell";
-                npmRun.StartInfo.Arguments = "/c \"npm run tsc\"";
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    npmRun.StartInfo.FileName = "powershell";
+                    npmRun.StartInfo.Arguments = "/c \"npm run tsc\"";
+                } else {
+                    npmRun.StartInfo.FileName = "npm";
+                    npmRun.StartInfo.Arguments = "run tsc";
+                }
                 npmRun.StartInfo.RedirectStandardOutput = true;
                 npmRun.StartInfo.RedirectStandardError = true;
                 npmRun.StartInfo.StandardOutputEncoding = Encoding.UTF8;
