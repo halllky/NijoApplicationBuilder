@@ -91,7 +91,7 @@ const Row = ((props: {
           {props.label}
         </IndentAndLabel>
       )}
-      <div className={`flex flex-row ${props.hidden && 'hidden'}`}>
+      <div className={`flex flex-row overflow-x-auto ${props.hidden && 'hidden'}`}>
         <Indent depth={depth} tableStartDepth={tableStartDepth} />
         <BodyCell table={tableStartDepth !== undefined} fullWidth>
           {props.children}

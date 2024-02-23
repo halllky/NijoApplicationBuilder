@@ -211,9 +211,15 @@ const getTdStickeyStyle = (cell: RT.Cell<any, unknown>): React.CSSProperties => 
 
 // -----------------------------------------------
 const DEFAULT_CELL: RT.ColumnDefTemplate<RT.CellContext<Util.TreeNode<unknown>, unknown>> = cellProps => {
+
+  const value = cellProps.getValue()
+  const formatted = typeof value === 'object'
+    ? JSON.stringify(value)
+    : (value as React.ReactNode)
+
   return (
     <span className="block w-full px-1 overflow-hidden whitespace-nowrap">
-      {cellProps.getValue() as React.ReactNode}
+      {formatted}
       &nbsp; {/* <= すべての値が空の行がつぶれるのを防ぐ */}
     </span>
   )
