@@ -37,7 +37,8 @@ namespace Nijo {
             bool keepTempIferror,
             IServiceProvider serviceProvider,
             CancellationToken? cancellationToken = null,
-            ILogger? log = null) {
+            ILogger? log = null,
+            bool initGitRepository = true) {
 
             if (string.IsNullOrWhiteSpace(applicationName))
                 throw new InvalidOperationException($"Please specify name of new application.");
@@ -179,37 +180,39 @@ namespace Nijo {
                         .Wait();
                 }
 
-                using (var _ = log?.BeginScope("git初期化")) {
-                    Process? git = null;
-                    try {
-                        log?.LogWarning("gitリポジトリを作成します。");
+                if (initGitRepository) {
+                    using (var _ = log?.BeginScope("git初期化")) {
+                        Process? git = null;
+                        try {
+                            log?.LogWarning("gitリポジトリを作成します。");
 
-                        git = new Process();
-                        git.StartInfo.WorkingDirectory = tempProject.ProjectRoot;
-                        git.StartInfo.FileName = "git";
-                        git.StartInfo.Arguments = "init";
-                        git.Start();
-                        git.WaitForExit();
+                            git = new Process();
+                            git.StartInfo.WorkingDirectory = tempProject.ProjectRoot;
+                            git.StartInfo.FileName = "git";
+                            git.StartInfo.Arguments = "init";
+                            git.Start();
+                            git.WaitForExit();
 
-                        git = new Process();
-                        git.StartInfo.WorkingDirectory = tempProject.ProjectRoot;
-                        git.StartInfo.FileName = "git";
-                        git.StartInfo.Arguments = "add .";
-                        git.Start();
-                        git.WaitForExit();
+                            git = new Process();
+                            git.StartInfo.WorkingDirectory = tempProject.ProjectRoot;
+                            git.StartInfo.FileName = "git";
+                            git.StartInfo.Arguments = "add .";
+                            git.Start();
+                            git.WaitForExit();
 
-                        git = new Process();
-                        git.StartInfo.WorkingDirectory = tempProject.ProjectRoot;
-                        git.StartInfo.FileName = "git";
-                        git.StartInfo.Arguments = "commit -m \"init\"";
-                        git.Start();
-                        git.WaitForExit();
+                            git = new Process();
+                            git.StartInfo.WorkingDirectory = tempProject.ProjectRoot;
+                            git.StartInfo.FileName = "git";
+                            git.StartInfo.Arguments = "commit -m \"init\"";
+                            git.Start();
+                            git.WaitForExit();
 
-                    } catch (Exception ex) {
-                        log?.LogWarning("gitリポジトリの作成に失敗しました: {msg}", ex.Message);
+                        } catch (Exception ex) {
+                            log?.LogWarning("gitリポジトリの作成に失敗しました: {msg}", ex.Message);
 
-                    } finally {
-                        git?.EnsureKill();
+                        } finally {
+                            git?.EnsureKill();
+                        }
                     }
                 }
 

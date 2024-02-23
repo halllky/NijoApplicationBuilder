@@ -4,6 +4,7 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using System;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Nijo.IntegrationTest {
@@ -29,9 +30,35 @@ namespace Nijo.IntegrationTest {
             // 依存先パッケージのインストールにかかる時間とデータ量を削減するために全テストで1つのディレクトリを共有する
             const string DIR_NAME = "自動テストで作成されたプロジェクト";
             var dir = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..", DIR_NAME));
-            Current = Directory.Exists(dir)
-                ? GeneratedProject.Open(dir, serviceProvider, logger)
-                : GeneratedProject.Create(dir, DIR_NAME, true, serviceProvider, log: logger);
+
+            var initialized = Directory.Exists(dir)
+                && (Directory.GetFiles(dir).Length >= 1
+                || Directory.GetDirectories(dir).Length >= 1);
+            logger.LogInformation("getfiles: {0}", Directory.GetFiles(dir).Length);
+            logger.LogInformation("getdirs : {0}", Directory.GetDirectories(dir).Length);
+
+            if (initialized) {
+                Current = GeneratedProject.Open(dir, serviceProvider, logger);
+
+            } else {
+                Current = GeneratedProject.Create(
+                    dir,
+                    DIR_NAME,
+                    keepTempIferror: true,
+                    serviceProvider: serviceProvider,
+                    log: logger,
+                    initGitRepository: false);
+
+                // デバッグ用スクリプトの生成（ダブルクリックで自動テストプロジェクト起動できるようにするもの）
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    var debugCommand = Path.Combine(dir, "DEBUG.command");
+                    File.WriteAllText(debugCommand, $$"""
+                        cd `dirname $0`
+                        dotnet build ../Nijo
+                        ../Nijo/bin/Debug/net8.0/nijo debug .
+                        """, Encoding.UTF8);
+                }
+            }
         }
 
         [OneTimeTearDown]
