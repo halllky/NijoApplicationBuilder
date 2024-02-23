@@ -37,6 +37,11 @@ namespace Nijo.Runtime {
                 if (_state != E_State.Initialized)
                     throw new InvalidOperationException("プロセスは既に開始されています。");
 
+                // dotnet run が実行されるポートを npm に連携する
+                var envFile = new EnvFile(_project, _logger);
+                envFile.Overwrite();
+
+                // npm run dev
                 _npmRun = new Process();
                 _npmRun.StartInfo.WorkingDirectory = _project.WebClientProjectRoot;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
@@ -58,6 +63,7 @@ namespace Nijo.Runtime {
                 _npmRun.BeginErrorReadLine();
                 _logger.LogInformation("npm run   : Started. PID {PID}", _npmRun.Id);
 
+                // dotnet run
                 _dotnetRun = new Process();
                 _dotnetRun.StartInfo.WorkingDirectory = _project.WebApiProjectRoot;
                 _dotnetRun.StartInfo.FileName = "dotnet";

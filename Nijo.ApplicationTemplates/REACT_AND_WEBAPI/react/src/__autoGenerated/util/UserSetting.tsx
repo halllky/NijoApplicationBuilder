@@ -59,7 +59,16 @@ export const ServerSettingScreen = () => {
       <VForm.Root>
         <VForm.Section label="基本設定" table>
           <VForm.Row label="APIサーバーURL">
-            <Input.Word {...registerEx('apiDomain')} />
+            <div className="flex flex-col w-full">
+              <Input.Word {...registerEx('apiDomain')} />
+              <span className="text-sm">
+                この値は基本的に未指定で問題ありませんが、
+                APIサーバーが動作しているにもかかわらず
+                接続できない場合は手入力してください。
+                <br />
+                未指定の場合の規定値は <span>{import.meta.env.VITE_BACKEND_API}</span> です。
+              </span>
+            </div>
           </VForm.Row>
           <VForm.Row label="ダークモード">
             <Input.CheckBox {...registerEx('darkMode')} />

@@ -1,4 +1,4 @@
-import { useCallback } from "react"
+import { useCallback, useMemo } from "react"
 import { useUserSetting } from "./UserSetting"
 import { useMsgContext } from "./Notification"
 
@@ -7,6 +7,15 @@ type HttpSendResult<T> = { ok: true, data: T } | { ok: false }
 export const useHttpRequest = () => {
   const { data: { apiDomain } } = useUserSetting()
   const [, dispatchMsg] = useMsgContext()
+
+  const dotnetWebApiDomain = useMemo(() => {
+    const domain = apiDomain
+      ? apiDomain
+      : (import.meta.env.VITE_BACKEND_API as string) // .envファイルで指定
+    return domain.endsWith('/')
+      ? domain.substring(0, domain.length - 1)
+      : domain
+  }, [apiDomain])
 
   const sendHttpRequest = useCallback(async <T>([url, option]: Parameters<typeof fetch>): Promise<HttpSendResult<T>> => {
     try {
@@ -54,10 +63,6 @@ export const useHttpRequest = () => {
   }, [dispatchMsg])
 
   const get = useCallback(async <T = object>(url: string, param: { [key: string]: unknown } = {}): Promise<HttpSendResult<T>> => {
-    if (!apiDomain) {
-      dispatchMsg(msg => msg.error('サーバーが設定されていません。'))
-      return { ok: false }
-    }
     const query = new URLSearchParams()
     for (const key of Object.keys(param)) {
       let value: string
@@ -69,20 +74,16 @@ export const useHttpRequest = () => {
       query.append(key, value)
     }
     const queryString = query.toString()
-    return await sendHttpRequest([queryString ? `${apiDomain}${url}?${queryString}` : `${apiDomain}${url}`])
-  }, [apiDomain, sendHttpRequest, dispatchMsg])
+    return await sendHttpRequest([queryString ? `${dotnetWebApiDomain}${url}?${queryString}` : `${dotnetWebApiDomain}${url}`])
+  }, [dotnetWebApiDomain, sendHttpRequest, dispatchMsg])
 
   const post = useCallback(async <T>(url: string, data: object = {}): Promise<HttpSendResult<T>> => {
-    if (!apiDomain) {
-      dispatchMsg(msg => msg.error('サーバーが設定されていません。'))
-      return { ok: false }
-    }
-    return await sendHttpRequest([`${apiDomain}${url}`, {
+    return await sendHttpRequest([`${dotnetWebApiDomain}${url}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     }])
-  }, [apiDomain, sendHttpRequest, dispatchMsg])
+  }, [dotnetWebApiDomain, sendHttpRequest, dispatchMsg])
 
   return { get, post }
 }
