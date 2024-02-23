@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
@@ -100,22 +101,34 @@ namespace Nijo.IntegrationTest {
                     _logger.LogInformation("npm ci のかわりに右記ディレクトリからのコピーを行います: {0}", reactTemplateDirNodeModules);
 
                     var process = new Process();
-                    process.StartInfo.FileName = "robocopy";
-                    process.StartInfo.ArgumentList.Add("/S");
-                    process.StartInfo.ArgumentList.Add("/NFL"); // No File List
-                    process.StartInfo.ArgumentList.Add("/NDL"); // No Directory List
-                    process.StartInfo.ArgumentList.Add("/NJH"); // No Job Header
-                    process.StartInfo.ArgumentList.Add("/NJS"); // No Job Summary
-                    process.StartInfo.ArgumentList.Add(reactTemplateDirNodeModules);
-                    process.StartInfo.ArgumentList.Add(nodeModules);
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                        process.StartInfo.FileName = "robocopy";
+                        process.StartInfo.ArgumentList.Add("/S");
+                        process.StartInfo.ArgumentList.Add("/NFL"); // No File List
+                        process.StartInfo.ArgumentList.Add("/NDL"); // No Directory List
+                        process.StartInfo.ArgumentList.Add("/NJH"); // No Job Header
+                        process.StartInfo.ArgumentList.Add("/NJS"); // No Job Summary
+                        process.StartInfo.ArgumentList.Add(reactTemplateDirNodeModules);
+                        process.StartInfo.ArgumentList.Add(nodeModules);
+                    } else {
+                        process.StartInfo.FileName = "rsync";
+                        process.StartInfo.ArgumentList.Add("-atu");
+                        process.StartInfo.ArgumentList.Add("--delete");
+                        process.StartInfo.ArgumentList.Add(reactTemplateDirNodeModules);
+                        process.StartInfo.ArgumentList.Add(Path.GetDirectoryName(nodeModules)!);
+                    }
 
                     process.Start();
 
                     await process.WaitForExitAsync(TestContext.CurrentContext.CancellationToken);
 
-                    // 戻り値1が正常終了
-                    if (process.ExitCode != 1) {
+                    // robocopyは戻り値1が正常終了
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && process.ExitCode != 1) {
                         throw new InvalidOperationException("robocopyが終了コード1以外で終了しました。");
+                    }
+
+                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && process.ExitCode != 0) {
+                        throw new InvalidOperationException("rsyncが終了コード0以外で終了しました。");
                     }
 
                     _logger.LogInformation("コピーを完了しました。");
