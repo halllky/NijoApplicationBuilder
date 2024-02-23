@@ -31,16 +31,15 @@ namespace Nijo.IntegrationTest {
             const string DIR_NAME = "自動テストで作成されたプロジェクト";
             var dir = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..", DIR_NAME));
 
-            var initialized = Directory.Exists(dir)
-                && (Directory.GetFiles(dir).Length >= 1
-                || Directory.GetDirectories(dir).Length >= 1);
+            // テストプロジェクトが初期化されているかどうかの判定
+            var initialized = File.Exists(Path.Combine(dir, "nijo.xml"));
 
             if (initialized) {
                 Current = GeneratedProject.Open(dir, serviceProvider, logger);
 
             } else {
                 // git clone した直後は「自動テストで作成されたプロジェクト」フォルダが空の状態で存在しているので
-                if (Directory.Exists(dir)) Directory.Delete(dir);
+                if (Directory.Exists(dir)) Directory.Delete(dir, true);
 
                 Current = GeneratedProject.Create(
                     dir,

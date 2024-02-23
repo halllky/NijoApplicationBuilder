@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Nijo.Util.DotnetEx;
 
 namespace Nijo.IntegrationTest {
     internal static class Util {
@@ -84,76 +85,92 @@ namespace Nijo.IntegrationTest {
                     "Nijo.ApplicationTemplates",
                     "REACT_AND_WEBAPI",
                     "react"));
-
-                var nodeModules = Path.GetFullPath(Path.Combine(
+                var reactTemplateDirNodeModules = Path.Combine(
+                    reactTemplateDir,
+                     "node_modules");
+                var testProjectNodeModules = Path.GetFullPath(Path.Combine(
                     project.WebClientProjectRoot,
                     "node_modules"));
 
-                if (Directory.Exists(nodeModules)) {
+                // 自動テストプロジェクトのnode_modulesがインストール済みの場合
+                if (Directory.Exists(testProjectNodeModules)) {
                     _logger.LogInformation("node_modulesフォルダが既に存在するためインストールをスキップします。");
-
-                } else if (NodeModulesIsInstalled(reactTemplateDir)) {
-
-                    // reactテンプレートのnode_modulesをコピーする
-                    var reactTemplateDirNodeModules = Path.GetFullPath(Path.Combine(
-                        reactTemplateDir,
-                        "node_modules"));
-                    _logger.LogInformation("npm ci のかわりに右記ディレクトリからのコピーを行います: {0}", reactTemplateDirNodeModules);
-
-                    var process = new Process();
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                        process.StartInfo.FileName = "robocopy";
-                        process.StartInfo.ArgumentList.Add("/S");
-                        process.StartInfo.ArgumentList.Add("/NFL"); // No File List
-                        process.StartInfo.ArgumentList.Add("/NDL"); // No Directory List
-                        process.StartInfo.ArgumentList.Add("/NJH"); // No Job Header
-                        process.StartInfo.ArgumentList.Add("/NJS"); // No Job Summary
-                        process.StartInfo.ArgumentList.Add(reactTemplateDirNodeModules);
-                        process.StartInfo.ArgumentList.Add(nodeModules);
-                    } else {
-                        process.StartInfo.FileName = "rsync";
-                        process.StartInfo.ArgumentList.Add("-atu");
-                        process.StartInfo.ArgumentList.Add("--delete");
-                        process.StartInfo.ArgumentList.Add(reactTemplateDirNodeModules);
-                        process.StartInfo.ArgumentList.Add(Path.GetDirectoryName(nodeModules)!);
-                    }
-
-                    process.Start();
-
-                    await process.WaitForExitAsync(TestContext.CurrentContext.CancellationToken);
-
-                    // robocopyは戻り値1が正常終了
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && process.ExitCode != 1) {
-                        throw new InvalidOperationException("robocopyが終了コード1以外で終了しました。");
-                    }
-
-                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && process.ExitCode != 0) {
-                        throw new InvalidOperationException("rsyncが終了コード0以外で終了しました。");
-                    }
-
-                    _logger.LogInformation("コピーを完了しました。");
-
-                } else {
-                    // インストール済みでない場合は通常通り npm ci する
-                    var defaultInstaller = new PackageInstaller();
-                    await defaultInstaller.InstallDependencies(project, cancellationToken);
+                    return;
                 }
-            }
 
-            private static bool NodeModulesIsInstalled(string dir) {
+                // raectテンプレートにnode_modulesがなければ npm ci
+                // （git clone 直後はこの状態がありうる）
+                if (!Directory.Exists(reactTemplateDirNodeModules)) {
 
-                // 念のため全く違うディレクトリのnode_modulesの有無を確認しようとしていないかを確認
-                var packageJson = Path.Combine(dir, "package.json");
-                if (!File.Exists(packageJson))
-                    throw new InvalidOperationException($"Reactテンプレートプロジェクトではない場所のnode_moduleの有無を確認しようとしています: {dir}");
+                    // 念のため全く違うディレクトリのnode_modulesの有無を確認しようとしていないかを確認
+                    var packageJson = Path.Combine(reactTemplateDir, "package.json");
+                    if (!File.Exists(packageJson))
+                        throw new InvalidOperationException($"Reactテンプレートプロジェクトではない場所のnode_moduleの有無を確認しようとしています: {reactTemplateDir}");
 
-                var nodeModules = new DirectoryInfo(Path.Combine(dir, "node_modules"));
-                if (!nodeModules.Exists) return false;
+                    var npmCi = new Process();
+                    try {
+                        npmCi.StartInfo.WorkingDirectory = reactTemplateDir;
+                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                            npmCi.StartInfo.FileName = "powershell";
+                            npmCi.StartInfo.Arguments = "/c \"npm ci\"";
+                        } else {
+                            npmCi.StartInfo.FileName = "npm";
+                            npmCi.StartInfo.Arguments = "ci";
+                        }
 
-                var anyPackage = nodeModules.GetDirectories("*", SearchOption.TopDirectoryOnly).Any();
-                if (!anyPackage) return false;
+                        _logger.LogInformation("reactテンプレートプロジェクトの依存パッケージをインストールします。");
+                        npmCi.Start();
+                        await npmCi.WaitForExitAsync(cancellationToken);
 
-                return true;
+                        if (npmCi.ExitCode != 0) {
+                            throw new InvalidOperationException("npm ci が終了コード0以外で終了しました。");
+                        }
+
+                    } finally {
+                        npmCi.EnsureKill();
+                    }
+                }
+
+                // reactテンプレートのnode_modulesをコピー
+                var process = new Process();
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    process.StartInfo.FileName = "robocopy";
+                    process.StartInfo.ArgumentList.Add("/S");
+                    process.StartInfo.ArgumentList.Add("/NFL"); // No File List
+                    process.StartInfo.ArgumentList.Add("/NDL"); // No Directory List
+                    process.StartInfo.ArgumentList.Add("/NJH"); // No Job Header
+                    process.StartInfo.ArgumentList.Add("/NJS"); // No Job Summary
+                    process.StartInfo.ArgumentList.Add(reactTemplateDirNodeModules);
+                    process.StartInfo.ArgumentList.Add(testProjectNodeModules);
+                } else {
+                    process.StartInfo.FileName = "rsync";
+                    process.StartInfo.ArgumentList.Add("-atu");
+                    process.StartInfo.ArgumentList.Add("--delete");
+                    process.StartInfo.ArgumentList.Add(reactTemplateDirNodeModules);
+                    process.StartInfo.ArgumentList.Add(Path.GetDirectoryName(testProjectNodeModules)!);
+                }
+
+                process.StartInfo.RedirectStandardError = true;
+                process.ErrorDataReceived += (s, e) => {
+                    TestContext.WriteLine($"ERROR!!: {e.Data}");
+                };
+
+                _logger.LogInformation("npm ci のかわりに右記ディレクトリからのコピーを行います: {0}", reactTemplateDirNodeModules);
+                process.Start();
+                process.BeginErrorReadLine();
+
+                await process.WaitForExitAsync(TestContext.CurrentContext.CancellationToken);
+
+                // robocopyは戻り値1が正常終了
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && process.ExitCode != 1) {
+                    throw new InvalidOperationException($"robocopyが終了コード1以外で終了しました: {process.ExitCode} ({reactTemplateDirNodeModules} => {testProjectNodeModules})");
+                }
+
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && process.ExitCode != 0) {
+                    throw new InvalidOperationException($"rsyncが終了コード0以外で終了しました: {process.ExitCode} ({reactTemplateDirNodeModules} => {Path.GetDirectoryName(testProjectNodeModules)})");
+                }
+
+                _logger.LogInformation("コピーを完了しました。");
             }
         }
         #endregion DI
