@@ -1,4 +1,4 @@
-﻿@echo off
+@echo off
 
 chcp 65001
 @rem ↑ dotnetコマンド実行時に強制的に書き換えられてしまいnpmの標準入出力が化けるので先に書き換えておく
