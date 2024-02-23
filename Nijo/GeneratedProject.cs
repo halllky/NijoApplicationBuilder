@@ -77,8 +77,16 @@ namespace Nijo {
                     var xmlPath = tempProject.SchemaXml.GetPath();
                     log?.LogInformation("XML Path: {0}", xmlPath);
 
-                    var xmlContent = new XDocument(config.ToXmlWithRoot());
+                    // TODO: PJ間の依存関係の向きがぐちゃぐちゃなので直す
+                    var defaultXml = Assembly
+                        .GetExecutingAssembly()
+                        .GetManifestResourceStream("Nijo.NewProjectDefaultXml.012_スカラメンバー網羅.xml");
+                    using var sr = new StreamReader(defaultXml!, new UTF8Encoding(false));
+                    var xmlContent = XDocument.Parse(sr.ReadToEnd());
+                    xmlContent.Root!.Name = applicationName;
+
                     using var sw = new StreamWriter(xmlPath, append: false, encoding: new UTF8Encoding(false));
+                    sw.NewLine = "\n";
                     sw.WriteLine(xmlContent.ToString());
                 }
 

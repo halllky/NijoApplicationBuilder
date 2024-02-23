@@ -102,6 +102,8 @@
     <EmbeddedResource Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\react\src\**\*.*" LinkBase="テンプレ\REACT_AND_WEBAPI\react\src\" />
     <EmbeddedResource Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\webapi\*.*" LinkBase="テンプレ\REACT_AND_WEBAPI\webapi\" />
     <EmbeddedResource Include="$(ProjectDir)..\Nijo.ApplicationTemplates\REACT_AND_WEBAPI\webapi\Properties\**\*.*" LinkBase="テンプレ\REACT_AND_WEBAPI\webapi\Properties\" />
+
+    <EmbeddedResource Include="$(ProjectDir)..\Nijo.IntegrationTest\DataPatterns\012_スカラメンバー網羅.xml" LinkBase="NewProjectDefaultXml" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
