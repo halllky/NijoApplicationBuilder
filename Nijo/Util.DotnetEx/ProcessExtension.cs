@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -20,11 +21,16 @@ namespace Nijo.Util.DotnetEx {
                 pid = process.Id;
 
                 var kill = new Process();
-                kill.StartInfo.FileName = "taskkill";
-                kill.StartInfo.ArgumentList.Add("/PID");
-                kill.StartInfo.ArgumentList.Add(pid.ToString()!);
-                kill.StartInfo.ArgumentList.Add("/T");
-                kill.StartInfo.ArgumentList.Add("/F");
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    kill.StartInfo.FileName = "taskkill";
+                    kill.StartInfo.ArgumentList.Add("/PID");
+                    kill.StartInfo.ArgumentList.Add(pid.ToString()!);
+                    kill.StartInfo.ArgumentList.Add("/T");
+                    kill.StartInfo.ArgumentList.Add("/F");
+                } else {
+                    kill.StartInfo.FileName = "kill";
+                    kill.StartInfo.ArgumentList.Add(pid.ToString()!);
+                }
                 kill.StartInfo.RedirectStandardOutput = true;
                 kill.StartInfo.RedirectStandardError = true;
 
