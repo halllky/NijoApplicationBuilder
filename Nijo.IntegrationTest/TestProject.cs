@@ -34,13 +34,14 @@ namespace Nijo.IntegrationTest {
             var initialized = Directory.Exists(dir)
                 && (Directory.GetFiles(dir).Length >= 1
                 || Directory.GetDirectories(dir).Length >= 1);
-            logger.LogInformation("getfiles: {0}", Directory.GetFiles(dir).Length);
-            logger.LogInformation("getdirs : {0}", Directory.GetDirectories(dir).Length);
 
             if (initialized) {
                 Current = GeneratedProject.Open(dir, serviceProvider, logger);
 
             } else {
+                // git clone した直後は「自動テストで作成されたプロジェクト」フォルダが空の状態で存在しているので
+                if (Directory.Exists(dir)) Directory.Delete(dir);
+
                 Current = GeneratedProject.Create(
                     dir,
                     DIR_NAME,
@@ -56,7 +57,7 @@ namespace Nijo.IntegrationTest {
                         cd `dirname $0`
                         dotnet build ../Nijo
                         ../Nijo/bin/Debug/net8.0/nijo debug .
-                        """, Encoding.UTF8);
+                        """.Replace("\r\n", "\n"), new UTF8Encoding(false, false));
                 }
             }
         }
