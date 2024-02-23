@@ -35,10 +35,12 @@ exit /b 1
 :EXISTS_VERSION_TAG
 
 echo ビルドを開始します。
-dotnet publish %NIJO_ROOT%Nijo\Nijo.csproj -p:PublishProfile=FOR_GITHUB_RELEASE
+dotnet publish %NIJO_ROOT%Nijo\Nijo.csproj -p:PublishProfile=FOR_GITHUB_RELEASE_WINDOWS
+dotnet publish %NIJO_ROOT%Nijo\Nijo.csproj -p:PublishProfile=FOR_GITHUB_RELEASE_OSX
 
 @rem 圧縮
-powershell /c "Compress-Archive -Path %NIJO_ROOT%Nijo\bin\Release\net8.0\publish\* -DestinationPath release-%RELEASE_VERSION%.zip"
+powershell /c "Compress-Archive -Path %NIJO_ROOT%Nijo\bin\Release\net8.0\publish-win\* -DestinationPath release-%RELEASE_VERSION%-win.zip"
+powershell /c "Compress-Archive -Path %NIJO_ROOT%Nijo\bin\Release\net8.0\publish-osx\* -DestinationPath release-%RELEASE_VERSION%-osx.zip"
 
 @rem 手作業でやらなければいけないことを表示
 echo リリース %RELEASE_VERSION% を作成しました。
