@@ -50,6 +50,17 @@ namespace Nijo.IntegrationTest {
                     initGitRepository: false);
 
                 // デバッグ用スクリプトの生成（ダブルクリックで自動テストプロジェクト起動できるようにするもの）
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    var debugCommand = Path.Combine(dir, "DEBUG.cmd");
+                    File.WriteAllText(debugCommand, $$"""
+                        @echo off
+                        chcp 65001
+                        cd %~dp0
+                        dotnet build ..\Nijo
+                        ..\Nijo\bin\Debug\net8.0\nijo.exe debug .
+                        pause
+                        """, new UTF8Encoding(false, false));
+                }
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                     var debugCommand = Path.Combine(dir, "DEBUG.command");
                     File.WriteAllText(debugCommand, $$"""
