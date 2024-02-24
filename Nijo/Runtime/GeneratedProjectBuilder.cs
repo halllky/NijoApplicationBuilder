@@ -22,7 +22,7 @@ namespace Nijo.Runtime {
         /// <summary>
         /// 静的検査。結果は戻り値ではなくログに出力される。
         /// </summary>
-        internal async Task StaticCheck(CancellationToken cancellationToken) {
+        internal async Task<bool> StaticCheck(CancellationToken cancellationToken) {
             var npmRun = new Process();
             var dotnetRun = new Process();
             try {
@@ -64,6 +64,8 @@ namespace Nijo.Runtime {
                 await Task.WhenAll(
                     dotnetRun.WaitForExitAsync(cancellationToken),
                     npmRun.WaitForExitAsync(cancellationToken));
+
+                return dotnetRun.ExitCode == 0 && npmRun.ExitCode == 0;
 
             } finally {
                 _logger.LogInformation("npm build   : {msg}", npmRun.EnsureKill());

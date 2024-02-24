@@ -17,7 +17,9 @@ namespace Nijo.IntegrationTest.Tests {
 
                 // dotnet build, npm tsc による確認
                 using var ct = new CancellationTokenSource();
-                await TestProject.Current.CompilerCheck(ct.Token);
+                var ok = await TestProject.Current.CompilerCheck(ct.Token);
+
+                Assert.That(ok, Is.True);
 
             } catch (Exception ex) {
                 TestContext.Out.WriteLine("--- SCHEMA ---");

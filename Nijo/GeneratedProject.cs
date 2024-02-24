@@ -341,9 +341,9 @@ namespace Nijo {
         /// <summary>
         /// プロジェクトの検査を行います。結果は戻り値ではなくログに出力されます。
         /// </summary>
-        public async Task CompilerCheck(CancellationToken cancellationToken) {
+        public async Task<bool> CompilerCheck(CancellationToken cancellationToken) {
             var builder = new Runtime.GeneratedProjectBuilder(this, _log);
-            await builder.StaticCheck(cancellationToken);
+            return await builder.StaticCheck(cancellationToken);
         }
 
         public Runtime.GeneratedProjectLauncher CreateLauncher() {
