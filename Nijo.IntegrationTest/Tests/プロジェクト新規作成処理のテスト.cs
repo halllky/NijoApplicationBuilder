@@ -51,30 +51,26 @@ namespace Nijo.IntegrationTest.Tests {
                 serviceProvider,
                 logger);
 
-            // とりあえずもっとも単純なパターンで書き換えてみる
-            // (デフォルトでもバックグランドタスク用のテーブルが生成されているはずなので
-            // 敢えて集約定義を書かなくても十分判定可能かもしれない)
-            var test1xml = DataPattern.FromFileName(DataPattern.FILENAME_000).LoadXmlString();
-            File.WriteAllText(project.SchemaXml.GetPath(), test1xml);
-
             // 何らかのDBアクセスする処理が正常終了するかを確認
             using var launcher = project.CreateLauncher();
             var exceptions = new List<Exception>();
-            launcher.OnReady += (s, e) => {
+            launcher.OnReady += async (s, e) => {
                 try {
                     using var webDriver = TestProject.CreateWebDriver();
 
-                    // 設定画面にあるデバッグ用の「DB更新」というラベルのボタンを押してDB再作成。
+                    // トップページにあるデバッグ用のボタンを押してDB再作成。
                     // デフォルトでダミーデータ4個が一緒に作成されるオプションのためこのタイミングでデータも一緒に作られる
-                    webDriver.FindElement(Util.ByInnerText("設定")).Click();
-                    webDriver.FindElement(Util.ByInnerText("DB更新")).Click();
+                    webDriver.FindElement(Util.ByInnerText("DBを再作成する")).Click();
+                    webDriver.SwitchTo().Alert().Accept(); // DBを再作成しますか？に対してOKする
+                    await Util.WaitUntil(
+                        TimeSpan.FromSeconds(10),
+                        () => webDriver.FindElements(Util.ByInnerText("DBを再作成しました。")).Count > 0);
 
                     // DB作成が正常終了していればダミーデータ4個分のリンクがあるはず
-                    webDriver.FindElement(Util.ByInnerText("集約A")).Click();
-                    var count = webDriver.FindElements(Util.ByInnerText("詳細")).Count;
-                    if (count != 4) {
-                        exceptions.Add(new Exception($"画面中にある「詳細」の文字の数が4個でない: {count}個"));
-                    }
+                    webDriver.FindElement(Util.ByInnerText("親集約")).Click();
+                    await Util.WaitUntil(
+                        TimeSpan.FromSeconds(10),
+                        () => webDriver.FindElements(Util.ByInnerText("詳細")).Count == 4);
 
                 } catch (Exception ex) {
                     exceptions.Add(ex);

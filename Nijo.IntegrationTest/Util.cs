@@ -216,6 +216,19 @@ namespace Nijo.IntegrationTest {
                 throw;
             }
         }
+
+        internal static async Task WaitUntil(TimeSpan timeout, Func<bool> checker) {
+            var current = TimeSpan.Zero;
+            var interval = TimeSpan.FromSeconds(1);
+            while (current <= timeout) {
+                var ok = checker();
+                if (ok) return;
+
+                await Task.Delay(interval, TestContext.CurrentContext.CancellationToken);
+                current += interval;
+            }
+            throw new TimeoutException();
+        }
         #endregion NUnit
 
 
