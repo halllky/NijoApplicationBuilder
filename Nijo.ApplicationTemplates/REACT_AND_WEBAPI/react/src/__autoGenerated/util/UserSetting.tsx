@@ -34,18 +34,6 @@ export const ServerSettingScreen = () => {
     <form className="page-content-root" onSubmit={handleSubmit(save)}>
       <VForm.Root>
         <VForm.Section label="基本設定" table>
-          <VForm.Row label="APIサーバーURL">
-            <div className="flex flex-col w-full">
-              <Input.Word {...registerEx('apiDomain')} />
-              <span className="text-sm">
-                この値は基本的に未指定で問題ありませんが、
-                APIサーバーが動作しているにもかかわらず
-                接続できない場合は手入力してください。
-                <br />
-                未指定の場合の規定値は <span>{import.meta.env.VITE_BACKEND_API}</span> です。
-              </span>
-            </div>
-          </VForm.Row>
           <VForm.Row label="ダークモード">
             <Input.CheckBox {...registerEx('darkMode')} />
           </VForm.Row>
@@ -57,6 +45,18 @@ export const ServerSettingScreen = () => {
           </VForm.Row>
           <VForm.Row label="画面隅のリボンの色">
             <Input.Word {...registerEx('environmentColor')} />
+          </VForm.Row>
+          <VForm.Row label="APIサーバーURL">
+            <div className="flex flex-col w-full">
+              <Input.Word {...registerEx('apiDomain')} />
+              <span className="text-sm">
+                この値は基本的に未指定で問題ありませんが、
+                APIサーバーが動作しているにもかかわらず
+                接続できない場合は手入力してください。
+                <br />
+                未指定の場合の規定値は <span>{import.meta.env.VITE_BACKEND_API}</span> です。
+              </span>
+            </div>
           </VForm.Row>
           <VForm.Row fullWidth>
             <Input.Button outlined submit>更新</Input.Button>
