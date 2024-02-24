@@ -55,7 +55,7 @@ namespace Nijo.Parts {
                     utilDir.Generate(Parts.Utility.UtilityClass.RenderJsonConversionMethods(context));
                 });
                 genDir.Directory("Web", controllerDir => {
-                    controllerDir.Generate(MultiView.RenderCSharpSearchConditionBaseClass(context));
+
                 });
                 genDir.Directory("EntityFramework", efDir => {
                     var onModelCreating = _itemsByAggregate

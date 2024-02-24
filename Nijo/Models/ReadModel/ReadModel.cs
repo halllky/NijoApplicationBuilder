@@ -31,9 +31,7 @@ namespace Nijo.Models.ReadModel {
             // WriteModelへのリンクを作成する
             // TOOD: ↑ is="ref-to:…" によって自動的に作成されるのでは？
 
-            // MultiView, 検索処理を作成する
-            var searchFeature = new AggregateSearchFeature();
-            searchFeature.GenerateCode(context, rootAggregate);
+            // TODO: MultiView, 検索処理を作成する
 
             context.UseAggregateFile(rootAggregate, builder => {
                 var appSrv = new ApplicationService();

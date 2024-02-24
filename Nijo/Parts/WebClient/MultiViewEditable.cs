@@ -12,10 +12,6 @@ using System.Threading.Tasks;
 namespace Nijo.Parts.WebClient {
     /// <summary>
     /// 編集可能なマルチビュー。LocalRepositoryの仕組みに大きく依存している。
-    /// <see cref="MultiView"/> をコピーして作成。
-    /// 
-    /// TODO: コピー元と物理名を合わせるように実装することで無理やり動かしている節があるので修正の必要あり
-    /// （<see cref="MultiView"/>を参照しているコードの参照先をこのクラスに向けるよう修正する）。
     /// 
     /// TODO: 検索条件
     /// TODO: ソート
@@ -28,7 +24,7 @@ namespace Nijo.Parts.WebClient {
 
         private readonly GraphNode<Aggregate> _aggregate;
 
-        string IReactPage.Url => $"/{_aggregate.Item.DisplayName.ToHashedString()}";
+        public string Url => $"/{_aggregate.Item.DisplayName.ToHashedString()}";
         string IReactPage.DirNameInPageDir => _aggregate.Item.DisplayName.ToFileNameSafe();
         string IReactPage.ComponentPhysicalName => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}MultiView";
         bool IReactPage.ShowMenu => true;

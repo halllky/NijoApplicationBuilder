@@ -24,10 +24,6 @@ namespace Nijo.Features.BackgroundService {
         public void GenerateCode(CodeRenderingContext context) {
             var aggregate = context.Schema.GetAggregate(GraphNodeId);
 
-            var searchFeature = new AggregateSearchFeature();
-            searchFeature.UseDefaultSearchLogic = true;
-            searchFeature.GenerateCode(context, aggregate);
-
             context.AddAppSrvMethod(RenderAppSrvMethod(context));
 
             context.EditWebApiDirectory(webDir => {

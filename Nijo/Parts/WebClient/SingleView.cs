@@ -91,7 +91,7 @@ namespace Nijo.Parts.WebClient {
             FileName = FileName,
             RenderContent = () => {
                 var controller = new Controller(_aggregate.Item);
-                var multiViewUrl = AggregateSearchFeature.GetMultiView(_aggregate).Url;
+                var multiViewUrl = new MultiViewEditable(_aggregate).Url;
                 var createEmptyObject = new TSInitializerFunction(_aggregate).FunctionName;
 
                 var find = new Models.WriteModel.FindFeature(_aggregate);
