@@ -1,16 +1,15 @@
-import React, { TextareaHTMLAttributes, useCallback, useImperativeHandle, useRef } from 'react'
+import React, { HTMLAttributes, useCallback, useImperativeHandle, useRef } from 'react'
 import SimpleMDE from 'react-simplemde-editor'
 import 'easymde/dist/easymde.min.css'
 import { defineCustomComponent } from './InputBase'
 
-export const TextareaBase = defineCustomComponent<string, {}, TextareaHTMLAttributes<HTMLDivElement>>((props, ref) => {
+export const TextareaBase = defineCustomComponent<string, {}, HTMLAttributes<HTMLDivElement>>((props, ref) => {
 
   const {
     onChange,
     value,
     readOnly,
     onFocus,
-    rows,
     className,
     ...rest
   } = props
