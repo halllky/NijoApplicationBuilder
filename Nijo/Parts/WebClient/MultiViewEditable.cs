@@ -169,12 +169,19 @@ namespace Nijo.Parts.WebClient {
                                 <VForm.Section table>
                     {{findMany.EnumerateSearchConditionMembers().SelectTextTemplate(vm => $$"""
                                   <VForm.Row label="{{vm.MemberName}}">
-                    {{If(vm.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
-                                    <{{vm.Options.MemberType.GetGridCellEditorName()}} {...registerExCondition(`{{vm.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}}`)} />
+                    {{If(vm is AggregateMember.Variation, () => $$"""
+                    {{FindManyFeature.VariationMemberProps((AggregateMember.Variation)vm).SelectTextTemplate(x => $$"""
+                                    <label className="inline-flex items-center">
+                                      <Input.CheckBox {...registerExCondition(`{{vm.Declared.GetFullPath().SkipLast(1).Concat(new[] { x.Value }).Join(".")}}`)} />
+                                      {{x.Key.MemberName}}
+                                    </label>
+                    """)}}
+                    """).ElseIf(vm.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
+                                    <{{vm.Options.MemberType.GetGridCellEditorName()}} {...registerExCondition(`{{vm.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}}`)}{{vm.Options.MemberType.GetGridCellEditorParams().Select(kv => $" {kv.Key}={{{kv.Value}}}").Join(string.Empty)}} />
                                     ～
-                                    <{{vm.Options.MemberType.GetGridCellEditorName()}} {...registerExCondition(`{{vm.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}}`)} />
+                                    <{{vm.Options.MemberType.GetGridCellEditorName()}} {...registerExCondition(`{{vm.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}}`)}{{vm.Options.MemberType.GetGridCellEditorParams().Select(kv => $" {kv.Key}={{{kv.Value}}}").Join(string.Empty)}} />
                     """).Else(() => $$"""
-                                    <{{vm.Options.MemberType.GetGridCellEditorName()}} {...registerExCondition(`{{vm.Declared.GetFullPath().Join(".")}}`)} />
+                                    <{{vm.Options.MemberType.GetGridCellEditorName()}} {...registerExCondition(`{{vm.Declared.GetFullPath().Join(".")}}`)}{{vm.Options.MemberType.GetGridCellEditorParams().Select(kv => $" {kv.Key}={{{kv.Value}}}").Join(string.Empty)}} />
                     """)}}
                                   </VForm.Row>
                     """)}}

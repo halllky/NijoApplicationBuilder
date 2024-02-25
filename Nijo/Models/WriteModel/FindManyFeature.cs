@@ -127,24 +127,48 @@ namespace Nijo.Models.WriteModel {
         }
 
 
-        #region 検索条件
+        #region 絞り込み
+        internal string TypeScriptConditionClass => GetConditionClassName(_aggregate);
+        internal string CsharpConditionClass => GetConditionClassName(_aggregate);
+
         private static string GetConditionClassName(GraphNode<Aggregate> agg) {
             return $"{agg.Item.ClassName}SearchCondition";
         }
         private static string GetCSharpType(AggregateMember.ValueMember vm) {
-            return vm.Options.MemberType.SearchBehavior == SearchBehavior.Range
-                ? $"{FromTo.CLASSNAME}<{vm.CSharpTypeName}?>"
-                : vm.CSharpTypeName;
+            if (vm is AggregateMember.Variation) {
+                throw new Exception("Renderメソッドの中で直で指定するのでこの分岐にはこない");
+
+            } else if (vm.Options.MemberType.SearchBehavior == SearchBehavior.Range) {
+                return $"{FromTo.CLASSNAME}<{vm.CSharpTypeName}?>";
+
+            } else {
+                return vm.CSharpTypeName;
+            }
         }
         private static string GetTypeScriptType(AggregateMember.ValueMember vm) {
-            return vm.Options.MemberType.SearchBehavior == SearchBehavior.Range
-                ? $"{{ {FromTo.FROM}?: {vm.TypeScriptTypename}, {FromTo.TO}?: {vm.TypeScriptTypename} }}"
-                : vm.TypeScriptTypename;
+            if (vm is AggregateMember.Variation) {
+                throw new Exception("Renderメソッドの中で直で指定するのでこの分岐にはこない");
+
+            } else if (vm.Options.MemberType.SearchBehavior == SearchBehavior.Range) {
+                return $"{{ {FromTo.FROM}?: {vm.TypeScriptTypename}, {FromTo.TO}?: {vm.TypeScriptTypename} }}";
+
+            } else {
+                return vm.TypeScriptTypename;
+            }
         }
 
-        internal string TypeScriptConditionClass => GetConditionClassName(_aggregate);
-        internal string CsharpConditionClass => GetConditionClassName(_aggregate);
+        /// <summary>
+        /// Variationはどの種別のデータを結果に含めるかをtrue/falseで選択する形のため種別ごとのプロパティ名を列挙する
+        /// </summary>
+        internal static IEnumerable<KeyValuePair<AggregateMember.VariationItem, string>> VariationMemberProps(AggregateMember.Variation variation) {
+            foreach (var item in variation.GetGroupItems()) {
+                yield return KeyValuePair.Create(item, $"{variation.MemberName}_{item.MemberName}");
+            }
+        }
 
+        /// <summary>
+        /// 検索条件のメンバーを列挙
+        /// </summary>
         internal IEnumerable<AggregateMember.ValueMember> EnumerateSearchConditionMembers() {
             static IEnumerable<AggregateMember.ValueMember> EnumerateRecursively(GraphNode<Aggregate> agg) {
                 var thisAndChild = agg
@@ -173,6 +197,33 @@ namespace Nijo.Models.WriteModel {
             var paramValueOrNull = $"{PARAM_FILTER}?.{vm.Declared.GetFullPath().Join("?.")}";
             var paramValue = $"{PARAM_FILTER}.{vm.Declared.GetFullPath().Join(".")}";
             var memberPath = vm.Declared.GetFullPath().Join(".");
+
+            if (vm is AggregateMember.Variation variation) {
+                var checkedArray = $"checked{variation.GetFullPath().Join("_")}";
+                var paramValues = VariationMemberProps(variation)
+                    .Select(x => new {
+                        key = x.Key.Key,
+                        fullPath = $"{PARAM_FILTER}?.{vm.Declared.GetFullPath().SkipLast(1).Concat(new[] { x.Value }).Join("?.")}",
+                    });
+
+                return $$"""
+                    var {{checkedArray}} = new[] {
+                    {{paramValues.SelectTextTemplate(x => $$"""
+                        {{x.fullPath}},
+                    """)}}
+                    };
+                    if (!{{checkedArray}}.All(check => check == true)
+                     && !{{checkedArray}}.All(check => check == false || check == null)) {
+
+                        var keyList = new List<string>();
+                    {{paramValues.SelectTextTemplate(x => $$"""
+                        if ({{x.fullPath}} == true) keyList.Add("{{x.key}}");
+                    """)}}
+
+                        query = query.Where(x => keyList.Contains(x.{{memberPath}}));
+                    }
+                    """;
+            }
 
             if (vm.Options.MemberType.SearchBehavior == SearchBehavior.Ambiguous) {
                 return $$"""
@@ -208,10 +259,21 @@ namespace Nijo.Models.WriteModel {
                     """;
         }
 
+        private static bool SearchConditionClassShouldRendered(GraphNode<Aggregate> agg) {
+
+            var ancestors = agg.EnumerateAncestorsAndThis();
+            if (ancestors.All(anc => anc.IsRoot() || anc.IsChildMember())) return true;
+
+            // ChildrenやVariationであっても他の集約から参照されている場合は検索条件クラスを用意する必要がある
+            if (agg.GetReferedEdges().Any()) return true;
+
+            return false;
+        }
+
         internal string RenderSearchConditionCSharpDeclaring() {
             var aggregates = _aggregate
                 .EnumerateThisAndDescendants()
-                .Where(agg => agg.EnumerateAncestors().All(anc => anc.Initial.IsChildMember()));
+                .Where(SearchConditionClassShouldRendered);
 
             return aggregates.SelectTextTemplate(agg => {
                 var members = agg
@@ -222,7 +284,11 @@ namespace Nijo.Models.WriteModel {
                 return $$"""
                     public class {{GetConditionClassName(agg)}} {
                     {{members.SelectTextTemplate(m =>
-                    If(m is AggregateMember.ValueMember, () => $$"""
+                    If(m is AggregateMember.Variation, () => $$"""
+                    {{VariationMemberProps((AggregateMember.Variation)m).SelectTextTemplate(x => $$"""
+                        public bool? {{x.Value}} { get; set; }
+                    """)}}
+                    """).ElseIf(m is AggregateMember.ValueMember, () => $$"""
                         public {{GetCSharpType((AggregateMember.ValueMember)m)}}? {{m.MemberName}} { get; set; }
                     """).ElseIf(m is AggregateMember.RelationMember, () => $$"""
                         public {{GetConditionClassName(((AggregateMember.RelationMember)m).MemberAggregate)}}? {{m.MemberName}} { get; set; } = new();
@@ -235,7 +301,7 @@ namespace Nijo.Models.WriteModel {
         internal string RenderSearchConditionTypeScriptDeclaring() {
             var aggregates = _aggregate
                 .EnumerateThisAndDescendants()
-                .Where(agg => agg.EnumerateAncestors().All(anc => anc.Initial.IsChildMember()));
+                .Where(SearchConditionClassShouldRendered);
 
             return aggregates.SelectTextTemplate(agg => {
                 var members = agg
@@ -246,7 +312,11 @@ namespace Nijo.Models.WriteModel {
                 return $$"""
                     export type {{GetConditionClassName(agg)}} = {
                     {{members.SelectTextTemplate(m =>
-                    If(m is AggregateMember.ValueMember, () => $$"""
+                    If(m is AggregateMember.Variation, () => $$"""
+                    {{VariationMemberProps((AggregateMember.Variation)m).SelectTextTemplate(x => $$"""
+                      {{x.Value}}?: boolean
+                    """)}}
+                    """).ElseIf(m is AggregateMember.ValueMember, () => $$"""
                       {{m.MemberName}}?: {{GetTypeScriptType((AggregateMember.ValueMember)m)}}
                     """).ElseIf(m is AggregateMember.RelationMember, () => $$"""
                       {{m.MemberName}}?: {{GetConditionClassName(((AggregateMember.RelationMember)m).MemberAggregate)}}
@@ -255,6 +325,6 @@ namespace Nijo.Models.WriteModel {
                     """;
             });
         }
-        #endregion 検索条件
+        #endregion 絞り込み
     }
 }
