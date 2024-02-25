@@ -51,6 +51,8 @@ namespace Nijo.Models.WriteModel {
                 var loadFeature = new FindManyFeature(rootAggregate);
                 builder.ControllerActions.Add(loadFeature.RenderController());
                 builder.AppServiceMethods.Add(loadFeature.RenderAppSrvMethod());
+                builder.DataClassDeclaring.Add(loadFeature.RenderSearchConditionCSharpDeclaring());
+                builder.TypeScriptDataTypes.Add(loadFeature.RenderSearchConditionTypeScriptDeclaring());
 
                 // KeywordSearching
                 foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {

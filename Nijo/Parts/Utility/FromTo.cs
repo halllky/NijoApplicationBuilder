@@ -22,12 +22,12 @@ namespace Nijo.Parts.Utility {
                         public virtual object? {{TO}} { get; set; }
                     }
                     public partial class {{CLASSNAME}}<T> : {{CLASSNAME}} {
-                        public new T? {{FROM}} {
-                            get => (T?)base.{{FROM}};
+                        public new T {{FROM}} {
+                            get => (T)base.{{FROM}}!;
                             set => base.{{FROM}} = value;
                         }
-                        public new T? {{TO}} {
-                            get => (T?)base.{{TO}};
+                        public new T {{TO}} {
+                            get => (T)base.{{TO}}!;
                             set => base.{{TO}} = value;
                         }
                     }

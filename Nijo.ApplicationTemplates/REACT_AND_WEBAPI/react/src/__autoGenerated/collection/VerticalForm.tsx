@@ -25,11 +25,12 @@ const Root = forwardRefEx<HTMLDivElement, HTMLAttributes<HTMLDivElement> & RootC
     <FormLayoutContext.Provider value={contextValue}>
       <NearestSectionContext.Provider value={nestedContextValue}>
         <div ref={ref} {...rest} className={`flex flex-col items-stretch ${rest.className}`}>
-          {label && (
+          {label && typeof label === 'string' && (
             <div className="font-bold mb-2">
               {label}
             </div>
           )}
+          {label && typeof label !== 'string' && label}
           {children}
         </div>
       </NearestSectionContext.Provider>
