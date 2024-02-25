@@ -1,5 +1,5 @@
 # Nijo Application Builder 【開発中 under development】
-論理データモデルから一般的なエンタープライズ系業務アプリケーションのひな形を自動生成するツール。
+概念データモデルから一般的なエンタープライズ系業務アプリケーションのひな形を自動生成するツール。
 
 ---
 目次 Table of contents
@@ -7,7 +7,7 @@
 - [Nijo Application Builder 【開発中 under development】](#nijo-application-builder-開発中-under-development)
   - [お試し Getting Started](#お試し-getting-started)
   - [概要図 Overview, Usage](#概要図-overview-usage)
-    - [1. 論理データモデルを定義する](#1-論理データモデルを定義する)
+    - [1. 概念データモデルを定義する](#1-概念データモデルを定義する)
       - [基本的な考え方](#基本的な考え方)
       - [単一の子要素（Child）](#単一の子要素child)
       - [複数の子要素（Children）](#複数の子要素children)
@@ -59,15 +59,15 @@ C:\your-installed-directory\nijo debug
 
 ---
 ## 概要図 Overview, Usage
-このツールで生成されるアプリケーションの全体概要およびそれらがどのタイミングで生成されるかを示します。
+このツールでアプリケーションを生成する手順と、どういったパーツが生成されるかを示します。
 
-1. [論理データモデルを定義する](#1-論理データモデルを定義する)
+1. [概念データモデルを定義する](#1-概念データモデルを定義する)
 2. [コード自動生成を実行する](#2-コード自動生成を実行する)
 3. [自動生成で賄えない機能を自前で実装する](#3-自動生成で賄えない機能を自前で実装する)
 
 ![概要図 overview](./README_files/README.drawio.svg)
 
-### 1. 論理データモデルを定義する
+### 1. 概念データモデルを定義する
 
 前述の Getting Started を参照し、 `nijo` コマンドラインツールを使用できるようにしてください。
 
