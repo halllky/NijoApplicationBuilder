@@ -18,12 +18,14 @@
     "@heroicons/react": "^2.0.18",
     "@tanstack/react-table": "^8.11.7",
     "dayjs": "^1.11.10",
+    "easymde": "^2.18.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.45.4",
     "react-query": "^3.39.3",
     "react-resizable-panels": "^0.0.54",
     "react-router-dom": "^6.15.0",
+    "react-simplemde-editor": "^5.2.0",
     "uuidjs": "^5.0.1"
   },
   "devDependencies": {

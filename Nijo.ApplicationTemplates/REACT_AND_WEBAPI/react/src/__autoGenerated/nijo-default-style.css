@@ -219,3 +219,13 @@ textarea:read-only {
 .bg-color-selected-svg {
   @apply fill-black dark:fill-white opacity-25;
 }
+
+/* react-simplemde-editor, easymde 用の設定 */
+.EasyMDEContainer .CodeMirror {
+  padding: 0;
+}
+
+/* react-simplemde-editor, easymde 用の設定: ダークモードに無理やり対応させる */
+.dark .EasyMDEContainer .CodeMirror {
+  filter: invert(1);
+}
