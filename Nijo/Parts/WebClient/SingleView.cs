@@ -333,8 +333,7 @@ namespace Nijo.Parts.WebClient {
                         if ({{urlkey}} == null) return
                     """)}}
                         await updateLocalRepositoryItem(localReposItemKey, data)
-                        navigate(`{{GetUrlStringForReact(E_Type.View, urlKeys)}}`)
-                      }, [localReposItemKey, {{urlKeys.Join(", ")}}, updateLocalRepositoryItem, navigate])
+                      }, [localReposItemKey, {{urlKeys.Join(", ")}}, updateLocalRepositoryItem])
 
                     """)}}
 
@@ -360,7 +359,9 @@ namespace Nijo.Parts.WebClient {
                               {{new AggregateComponent(_aggregate, _type).RenderCaller()}}
                             </VForm.Root>
 
-                    {{If(_type == E_Type.Create, () => $$"""
+                    {{If(_type != E_Type.View && _aggregate.Item.Options.DisableLocalRepository != true, () => $$"""
+                            <Input.IconButton fill className="self-start" icon={BookmarkSquareIcon}>一時保存</Input.IconButton>
+                    """).ElseIf(_type == E_Type.Create, () => $$"""
                             <Input.IconButton fill className="self-start" icon={BookmarkSquareIcon}>保存</Input.IconButton>
                     """).ElseIf(_type == E_Type.View, () => $$"""
                             <Input.IconButton fill className="self-start" icon={PencilIcon} onClick={navigateToEditView}>編集</Input.IconButton>
