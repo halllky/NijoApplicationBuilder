@@ -160,7 +160,7 @@ namespace Nijo.Parts.WebClient {
                                       {{_aggregate.Item.DisplayName}}
                                     </h1>
                                     <Input.Button onClick={reloadRemoteItems}>再読み込み</Input.Button>
-                                    <div className="flex-1"></div>
+                                    <div className="basis-4"></div>
                                     <Input.Button onClick={handleAdd}>追加</Input.Button>
                                     <Input.Button onClick={handleRemove}>削除</Input.Button>
                                   </div>
