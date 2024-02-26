@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Features;
 
-namespace Nijo.Models.ReadModel {
+namespace Nijo.Models {
     internal class ReadModel : IModel {
 
         private const string CONTROLLER_ACTION_NAME = "reload";
