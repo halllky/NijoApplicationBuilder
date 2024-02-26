@@ -9,7 +9,7 @@ using Nijo.Parts;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 
-namespace Nijo.Models.WriteModel {
+namespace Nijo.Features.Storing {
     internal class CreateFeature {
         internal CreateFeature(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
@@ -76,7 +76,7 @@ namespace Nijo.Models.WriteModel {
                         Created = new[] { afterUpdate },
                     };
                     {{_aggregate.GetDependents().SelectTextTemplate(readModel => $$"""
-                    {{WithIndent(ReadModel.ReadModel.RenderUpdateCalling(readModel, "updateEvent"), "    ")}}
+                    {{WithIndent(Models.ReadModel.ReadModel.RenderUpdateCalling(readModel, "updateEvent"), "    ")}}
                     """)}}
 
                     return true;

@@ -1,8 +1,6 @@
 using Nijo.Parts.WebServer;
-using Nijo.Parts.Utility;
 using Nijo.Core;
 using Nijo.Util.DotnetEx;
-using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,7 +8,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
-using Nijo.Models.WriteModel;
 
 namespace Nijo.Parts.WebClient {
     internal class ComboBox {
@@ -21,7 +18,7 @@ namespace Nijo.Parts.WebClient {
         private readonly GraphNode<Aggregate> _aggregate;
 
         internal string ComponentName => $"ComboBox{_aggregate.Item.DisplayName.ToCSharpSafe()}";
-        internal string Api => new KeywordSearchingFeature(_aggregate).GetUri();
+        internal string Api => new Features.Storing.KeywordSearchingFeature(_aggregate).GetUri();
         internal RefTargetKeyName KeyName => new RefTargetKeyName(_aggregate);
 
         internal static SourceFile RenderDeclaringFile(CodeRenderingContext ctx) => new SourceFile {

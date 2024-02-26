@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.Models.WriteModel {
+namespace Nijo.Features.Storing {
 
     /// <summary>
     /// グリッドでのデータ一括編集のため、集約を検索してその集約全体を返す。

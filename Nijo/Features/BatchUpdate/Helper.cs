@@ -119,8 +119,8 @@ namespace Nijo.Features.BatchUpdate {
         }
         private static string RenderParamBuilder(GraphNode<Aggregate> agg) {
             var className = $"{agg.Item.ClassName}BatchUpdateParameter";
-            var create = new Models.WriteModel.CreateFeature(agg);
-            var update = new Models.WriteModel.UpdateFeature(agg);
+            var create = new Features.Storing.CreateFeature(agg);
+            var update = new Features.Storing.UpdateFeature(agg);
             var delKeys = KeyArray.Create(agg);
 
             return $$"""

@@ -12,8 +12,9 @@ using Nijo.Parts;
 using Nijo.Parts.WebClient;
 using Nijo.Features;
 using Nijo.Features.BatchUpdate;
+using Nijo.Features.Storing;
 
-namespace Nijo.Models.WriteModel {
+namespace Nijo.Models {
     internal class WriteModel : IModel {
 
         void IModel.GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {

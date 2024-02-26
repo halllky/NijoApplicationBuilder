@@ -8,7 +8,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Core.AggregateMemberTypes;
 using Nijo.Util.CodeGenerating;
-using Nijo.Models.WriteModel;
 using Nijo.Parts.WebClient;
 
 namespace Nijo.Features.Debugging {
@@ -109,7 +108,7 @@ namespace Nijo.Features.Debugging {
                         : $"{data}.{path.Join(".")} = {dummyValue}";
 
                 } else if (member is AggregateMember.Ref @ref) {
-                    var api = new KeywordSearchingFeature(@ref.MemberAggregate).GetUri();
+                    var api = new Features.Storing.KeywordSearchingFeature(@ref.MemberAggregate).GetUri();
                     var res = $"response{random.Next(99999999):00000000}";
                     return $$"""
                         const {{res}} = await get<AggregateType.{{@ref.MemberAggregate.Item.TypeScriptTypeName}}[]>(`{{api}}`, {})

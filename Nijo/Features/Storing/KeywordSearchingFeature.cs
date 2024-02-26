@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
 using Nijo.Parts;
 
-namespace Nijo.Models.WriteModel {
+namespace Nijo.Features.Storing {
     internal class KeywordSearchingFeature {
         internal KeywordSearchingFeature(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;

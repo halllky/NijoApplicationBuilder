@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 
-namespace Nijo.Models.WriteModel {
+namespace Nijo.Features.Storing {
     internal class DeleteFeature {
         internal DeleteFeature(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
@@ -73,7 +73,7 @@ namespace Nijo.Models.WriteModel {
                         Deleted = new[] { deleted },
                     };
                     {{_aggregate.GetDependents().SelectTextTemplate(readModel => $$"""
-                    {{WithIndent(ReadModel.ReadModel.RenderUpdateCalling(readModel, "updateEvent"), "    ")}}
+                    {{WithIndent(Models.ReadModel.ReadModel.RenderUpdateCalling(readModel, "updateEvent"), "    ")}}
                     """)}}
 
                     errors = Array.Empty<string>();

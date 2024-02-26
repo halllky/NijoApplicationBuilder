@@ -73,9 +73,9 @@ namespace Nijo.Features.BatchUpdate {
 
         private static string RenderUpdateMethod(GraphNode<Aggregate> agg, CodeRenderingContext context) {
             var appSrv = new ApplicationService().ClassName;
-            var create = new Models.WriteModel.CreateFeature(agg);
-            var update = new Models.WriteModel.UpdateFeature(agg);
-            var delete = new Models.WriteModel.DeleteFeature(agg);
+            var create = new Features.Storing.CreateFeature(agg);
+            var update = new Features.Storing.UpdateFeature(agg);
+            var delete = new Features.Storing.DeleteFeature(agg);
             var delKeys = KeyArray.Create(agg, nullable: false);
 
             return $$"""

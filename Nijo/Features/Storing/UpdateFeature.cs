@@ -9,7 +9,7 @@ using Nijo.Util.CodeGenerating;
 using Nijo.Parts;
 using Nijo.Parts.WebServer;
 
-namespace Nijo.Models.WriteModel {
+namespace Nijo.Features.Storing {
     internal class UpdateFeature {
         internal UpdateFeature(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
@@ -92,7 +92,7 @@ namespace Nijo.Models.WriteModel {
                         Modified = new AggregateBeforeAfter<{{detail.ClassName}}>[] { new() { Before = beforeUpdate, After = afterUpdate } },
                     };
                     {{_aggregate.GetDependents().SelectTextTemplate(readModel => $$"""
-                    {{WithIndent(ReadModel.ReadModel.RenderUpdateCalling(readModel, "updateEvent"), "    ")}}
+                    {{WithIndent(Nijo.Models.ReadModel.ReadModel.RenderUpdateCalling(readModel, "updateEvent"), "    ")}}
                     """)}}
 
                     updated = afterUpdate;

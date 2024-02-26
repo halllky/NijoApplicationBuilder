@@ -94,7 +94,7 @@ namespace Nijo.Parts.WebClient {
                 var multiViewUrl = new MultiViewEditable(_aggregate).Url;
                 var createEmptyObject = new TSInitializerFunction(_aggregate).FunctionName;
 
-                var find = new Models.WriteModel.FindFeature(_aggregate);
+                var find = new Features.Storing.FindFeature(_aggregate);
 
                 var keyName = new RefTargetKeyName(_aggregate);
                 var keys = _aggregate

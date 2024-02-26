@@ -1,6 +1,6 @@
 using Nijo.Core;
 using Nijo.Features.BatchUpdate;
-using Nijo.Models.WriteModel;
+using Nijo.Features.Storing;
 using Nijo.Parts.Utility;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
