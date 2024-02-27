@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Core.AggregateMemberTypes;
 using Nijo.Util.CodeGenerating;
-using Nijo.Parts.WebClient;
+using Nijo.Features.Storing;
 
 namespace Nijo.Features.Debugging {
     internal class DummyDataGenerator {

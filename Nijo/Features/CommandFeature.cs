@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Nijo.Parts;
-using Nijo.Parts.WebClient;
+using Nijo.Features.Storing;
 
 namespace Nijo.Features {
     public class CommandFeature {

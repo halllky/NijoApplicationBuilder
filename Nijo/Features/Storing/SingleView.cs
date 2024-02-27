@@ -10,8 +10,9 @@ using Nijo.Util.CodeGenerating;
 using Nijo.Features;
 using Nijo.Parts.WebServer;
 using Nijo.Features.BatchUpdate;
+using Nijo.Parts.WebClient;
 
-namespace Nijo.Parts.WebClient {
+namespace Nijo.Features.Storing {
     public class SingleView : IReactPage {
         public enum E_Type {
             Create,
@@ -94,7 +95,7 @@ namespace Nijo.Parts.WebClient {
                 var multiViewUrl = new MultiViewEditable(_aggregate).Url;
                 var createEmptyObject = new TSInitializerFunction(_aggregate).FunctionName;
 
-                var find = new Features.Storing.FindFeature(_aggregate);
+                var find = new FindFeature(_aggregate);
 
                 var keyName = new RefTargetKeyName(_aggregate);
                 var keys = _aggregate
@@ -139,7 +140,7 @@ namespace Nijo.Parts.WebClient {
                         (a, m) => new {
                             m.MemberName,
                             IndentWidth = a.EnumerateAncestors().Count() * INDENT_WIDTH, // インデント1個の幅をだいたい1.5remとして計算
-                            NameWidthRem = (m.MemberName.CalculateCharacterWidth() / 2) * 1.2m, // tailwindの1.2remがだいたい全角文字1文字分
+                            NameWidthRem = m.MemberName.CalculateCharacterWidth() / 2 * 1.2m, // tailwindの1.2remがだいたい全角文字1文字分
                         });
                 // インデント込みで最も横幅が長いメンバーの横幅を計算
                 var longestHeaderWidthRem = headersWidthRem

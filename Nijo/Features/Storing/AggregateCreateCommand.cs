@@ -6,8 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
+using Nijo.Parts.WebServer;
 
-namespace Nijo.Parts.WebServer {
+namespace Nijo.Features.Storing {
     internal class AggregateCreateCommand : AggregateDetail {
         internal AggregateCreateCommand(GraphNode<Aggregate> aggregate) : base(aggregate) {
             if (!aggregate.IsRoot()) throw new ArgumentException();

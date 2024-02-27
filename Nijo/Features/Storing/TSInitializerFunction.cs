@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.Parts.WebClient {
+namespace Nijo.Features.Storing {
     internal class TSInitializerFunction {
         internal TSInitializerFunction(GraphNode<Aggregate> instance) {
             _instance = instance;

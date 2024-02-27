@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
 
-namespace Nijo.Parts.WebClient {
+namespace Nijo.Features.Storing {
     internal class ComboBox {
         internal ComboBox(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
@@ -18,7 +18,7 @@ namespace Nijo.Parts.WebClient {
         private readonly GraphNode<Aggregate> _aggregate;
 
         internal string ComponentName => $"ComboBox{_aggregate.Item.DisplayName.ToCSharpSafe()}";
-        internal string Api => new Features.Storing.KeywordSearchingFeature(_aggregate).GetUri();
+        internal string Api => new KeywordSearchingFeature(_aggregate).GetUri();
         internal RefTargetKeyName KeyName => new RefTargetKeyName(_aggregate);
 
         internal static SourceFile RenderDeclaringFile(CodeRenderingContext ctx) => new SourceFile {

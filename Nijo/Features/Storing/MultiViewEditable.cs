@@ -1,7 +1,7 @@
 using Nijo.Core;
 using Nijo.Features.BatchUpdate;
-using Nijo.Features.Storing;
 using Nijo.Parts.Utility;
+using Nijo.Parts.WebClient;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.Parts.WebClient {
+namespace Nijo.Features.Storing {
     /// <summary>
     /// 編集可能なマルチビュー。LocalRepositoryの仕組みに大きく依存している。
     /// 

@@ -9,8 +9,9 @@ using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
 using Nijo.Parts.WebServer;
 using System.ComponentModel;
+using Nijo.Parts.WebClient;
 
-namespace Nijo.Parts.WebClient {
+namespace Nijo.Features.Storing {
 
     internal class AggregateComponent {
         internal AggregateComponent(GraphNode<Aggregate> aggregate, SingleView.E_Type type) {
@@ -527,12 +528,12 @@ namespace Nijo.Parts.WebClient {
                       keySelector={item => item}
                       textSelector={item => item}
                       {{_mode switch {
-                        SingleView.E_Type.View => $"readOnly",
-                        SingleView.E_Type.Edit => _prop.Options.IsKey
-                            ? $"readOnly={{(item?.{AggregateDetail.IS_LOADED}}}"
-                            : string.Empty,
-                        _ => string.Empty,
-                      }}}
+                    SingleView.E_Type.View => $"readOnly",
+                    SingleView.E_Type.Edit => _prop.Options.IsKey
+                        ? $"readOnly={{(item?.{AggregateDetail.IS_LOADED}}}"
+                        : string.Empty,
+                    _ => string.Empty,
+                }}}
                     />
                     """;
             }

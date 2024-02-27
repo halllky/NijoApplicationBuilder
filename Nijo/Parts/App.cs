@@ -1,4 +1,5 @@
 using Nijo.Core;
+using Nijo.Features.Storing;
 using Nijo.Parts.WebClient;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
