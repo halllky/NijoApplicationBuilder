@@ -29,23 +29,46 @@ namespace Nijo.IntegrationTest.Tests {
                 launcher.OnReady += (s, e) => {
                     try {
                         using var driver = TestProject.CreateWebDriver();
+                        driver.InitializeData();
 
-                        // トップページ
+                        // 準備: 参照先を作る
                         driver.FindElement(Util.ByInnerText("参照先")).Click();
+                        driver.FindElement(Util.ByInnerText("追加")).Click();
+                        driver.FindElements(Util.ByInnerText("詳細"))[Util.DUMMY_DATA_COUNT].Click();
 
-                        // 参照先: MultiView
-                        driver.FindElement(Util.ByInnerText("新規作成")).Click();
+                        driver.FindElement(By.Name("参照先集約ID")).SendKeys("あああああ");
+                        driver.FindElement(By.Name("参照先集約名")).SendKeys("いいいいい");
+                        driver.FindElement(Util.ByInnerText("一時保存")).Click();
+                        driver.CommitLocalRepositoryChanges();
 
-                        // 参照先: CreateView
-                        driver.FindElement(By.Name("参照先集約ID")).SendKeys("あ");
-                        driver.FindElement(By.Name("参照先集約名")).SendKeys("い");
-                        driver.FindElement(Util.ByInnerText("保存")).Click();
+                        // 参照元を作成
+                        driver.FindElement(Util.ByInnerText("参照元")).Click();
+                        driver.FindElement(Util.ByInnerText("追加")).Click();
+                        driver.FindElements(Util.ByInnerText("詳細"))[Util.DUMMY_DATA_COUNT].Click();
 
-                        // 参照先: SingleView
+                        driver.FindElement(By.Name("参照元集約ID")).SendKeys("ううううう");
+                        driver.FindElement(By.Name("参照元集約名")).SendKeys("えええええ");
+                        driver.FindElement(By.Name("参照")).SendKeys("いいいいい");
+                        driver.FindElement(By.Name("参照")).SendKeys(Keys.Tab);
+                        driver.FindElement(Util.ByInnerText("一時保存")).Click();
+                        driver.CommitLocalRepositoryChanges();
 
-                        // 参照元: MultiView
-                        // 参照元: CreateView
-                        // 参照元: SingleView
+                        // 作成ができているか確認
+                        driver.FindElement(Util.ByInnerText("参照元")).Click();
+                        Assert.Multiple(() => {
+                            Assert.That(driver.FindElement(Util.ByInnerText("ううううう")), Is.Not.Null);
+                            Assert.That(driver.FindElement(Util.ByInnerText("えええええ")), Is.Not.Null);
+                        });
+
+                        driver.FindElements(Util.ByInnerText("詳細"))[Util.DUMMY_DATA_COUNT].Click();
+
+                        // 参照元を更新
+
+                        // 更新ができているか確認
+
+                        // 参照元を削除
+
+                        // 削除ができているか確認
 
                     } catch (Exception ex) {
                         exceptions.Add(ex);

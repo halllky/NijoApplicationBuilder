@@ -10,9 +10,14 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Nijo.Util.DotnetEx;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Nijo.IntegrationTest {
     internal static class Util {
+        /// <summary>
+        /// デバッグモードで作成される集約1個あたりのダミーデータの数
+        /// </summary>
+        internal static int DUMMY_DATA_COUNT = 4;
 
         #region DI
         internal static IServiceProvider ConfigureServices() {
@@ -295,9 +300,33 @@ namespace Nijo.IntegrationTest {
             }
         }
 
-        internal static OpenQA.Selenium.By ByInnerText(string innerText) {
+        internal static OpenQA.Selenium.By ByInnerText([StringSyntax(StringSyntaxAttribute.Regex)] string innerText) {
             var escaped = innerText.Replace("'", "\\'");
             return OpenQA.Selenium.By.XPath($"//*[contains(text(), '{escaped}')]");
+        }
+        /// <summary>
+        /// 画面から操作してデータを初期化
+        /// </summary>
+        internal static void InitializeData(this OpenQA.Selenium.IWebDriver driver) {
+            driver.FindElement(ByInnerText("DBを再作成する")).Click();
+            driver.SwitchTo().Alert().Accept();
+            driver.CancelLocalRepositoryChanges();
+        }
+        /// <summary>
+        /// ローカルリポジトリの変更をコミットする
+        /// </summary>
+        internal static void CommitLocalRepositoryChanges(this OpenQA.Selenium.IWebDriver driver) {
+            driver.FindElement(ByInnerText("変更(\\s?\\([0-9]+\\))")).Click();
+            driver.FindElement(ByInnerText("確定")).Click();
+            driver.SwitchTo().Alert().Accept();
+        }
+        /// <summary>
+        /// ローカルリポジトリの変更をキャンセルする
+        /// </summary>
+        internal static void CancelLocalRepositoryChanges(this OpenQA.Selenium.IWebDriver driver) {
+            driver.FindElement(ByInnerText("変更(\\s?\\([0-9]+\\))")).Click();
+            driver.FindElement(ByInnerText("取り消し")).Click();
+            driver.SwitchTo().Alert().Accept();
         }
         #endregion Selenium, Web
     }
