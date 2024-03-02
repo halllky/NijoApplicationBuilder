@@ -129,6 +129,16 @@ namespace Nijo.Runtime {
             OnReady?.Invoke(this, EventArgs.Empty);
         }
 
+        public void WaitForReady(TimeSpan? timeout = null) {
+            var to = timeout ?? TimeSpan.FromSeconds(20);
+            var current = TimeSpan.Zero;
+            var interval = TimeSpan.FromSeconds(1);
+            while (_state < E_State.Ready) {
+                Thread.Sleep(interval);
+                current += interval;
+                if (current > to) throw new TimeoutException();
+            }
+        }
         public void WaitForTerminate() {
             if (_state == E_State.Initialized) throw new InvalidOperationException("プロセスが開始されていません。");
             if (_state == E_State.Stopped) return;

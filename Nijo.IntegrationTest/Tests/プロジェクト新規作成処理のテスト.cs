@@ -62,15 +62,11 @@ namespace Nijo.IntegrationTest.Tests {
                     // デフォルトでダミーデータ4個が一緒に作成されるオプションのためこのタイミングでデータも一緒に作られる
                     webDriver.FindElement(Util.ByInnerText("DBを再作成する")).Click();
                     webDriver.SwitchTo().Alert().Accept(); // DBを再作成しますか？に対してOKする
-                    await Util.WaitUntil(
-                        TimeSpan.FromSeconds(10),
-                        () => webDriver.FindElements(Util.ByInnerText("DBを再作成しました。")).Count > 0);
+                    await Util.WaitUntil(() => webDriver.FindElements(Util.ByInnerText("DBを再作成しました。")).Count > 0);
 
                     // DB作成が正常終了していればダミーデータ4個分のリンクがあるはず
                     webDriver.FindElement(Util.ByInnerText("親集約")).Click();
-                    await Util.WaitUntil(
-                        TimeSpan.FromSeconds(10),
-                        () => webDriver.FindElements(Util.ByInnerText("詳細")).Count == 4);
+                    await Util.WaitUntil(() => webDriver.FindElements(Util.ByInnerText("詳細")).Count == 4);
 
                 } catch (Exception ex) {
                     exceptions.Add(ex);

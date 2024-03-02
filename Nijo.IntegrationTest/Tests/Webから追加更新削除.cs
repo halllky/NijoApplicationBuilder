@@ -9,7 +9,7 @@ namespace Nijo.IntegrationTest.Tests {
     partial class 観点 {
 
         [UseDataPatterns]
-        public void Webから追加更新削除(DataPattern pattern) {
+        public async Task Webから追加更新削除(DataPattern pattern) {
 
             if (pattern.Name != DataPattern.FILENAME_001) {
                 Assert.Warn($"期待結果が定義されていません: {pattern.Name}");
@@ -26,68 +26,63 @@ namespace Nijo.IntegrationTest.Tests {
                 // 開始
                 using var launcher = TestProject.Current.CreateLauncher();
                 var exceptions = new List<Exception>();
-                launcher.OnReady += (s, e) => {
-                    try {
-                        using var driver = TestProject.CreateWebDriver();
-                        driver.InitializeData();
-
-                        // 準備: 参照先を作る
-                        driver.FindElement(Util.ByInnerText("参照先")).Click();
-                        driver.FindElement(Util.ByInnerText("追加")).Click();
-                        driver.FindElements(Util.ByInnerText("詳細"))[Util.DUMMY_DATA_COUNT].Click();
-
-                        driver.FindElement(By.Name("参照先集約ID")).SendKeys("あああああ");
-                        driver.FindElement(By.Name("参照先集約名")).SendKeys("いいいいい");
-                        driver.FindElement(Util.ByInnerText("一時保存")).Click();
-                        driver.CommitLocalRepositoryChanges();
-
-                        // 参照元を作成
-                        driver.FindElement(Util.ByInnerText("参照元")).Click();
-                        driver.FindElement(Util.ByInnerText("追加")).Click();
-                        driver.FindElements(Util.ByInnerText("詳細"))[Util.DUMMY_DATA_COUNT].Click();
-
-                        driver.FindElement(By.Name("参照元集約ID")).SendKeys("ううううう");
-                        driver.FindElement(By.Name("参照元集約名")).SendKeys("えええええ");
-                        driver.FindElement(By.Name("参照")).SendKeys("いいいいい");
-                        driver.FindElement(By.Name("参照")).SendKeys(Keys.Tab);
-                        driver.FindElement(Util.ByInnerText("一時保存")).Click();
-                        driver.CommitLocalRepositoryChanges();
-
-                        // 作成ができているか確認
-                        driver.FindElement(Util.ByInnerText("参照元")).Click();
-                        Assert.Multiple(() => {
-                            Assert.That(driver.FindElement(Util.ByInnerText("ううううう")), Is.Not.Null);
-                            Assert.That(driver.FindElement(Util.ByInnerText("えええええ")), Is.Not.Null);
-                        });
-
-                        driver.FindElements(Util.ByInnerText("詳細"))[Util.DUMMY_DATA_COUNT].Click();
-
-                        // 参照元を更新
-
-                        // 更新ができているか確認
-
-                        // 参照元を削除
-
-                        // 削除ができているか確認
-
-                    } catch (Exception ex) {
-                        exceptions.Add(ex);
-                    } finally {
-                        launcher.Terminate();
-                    }
-                };
                 launcher.OnError += (s, e) => {
                     exceptions.Add(new Exception(e.ToString()));
                     launcher.Terminate();
                 };
 
                 launcher.Launch();
-                launcher.WaitForTerminate();
+                launcher.WaitForReady();
+
+                using var driver = TestProject.CreateWebDriver();
+                await driver.InitializeData();
+
+                // 準備: 参照先を作る
+                driver.FindElement(Util.ByInnerText("参照先")).Click();
+                driver.FindElement(Util.ByInnerText("追加")).Click();
+                await Util.WaitUntil(() => driver.FindElements(Util.ByInnerText("詳細")).Count > Util.DUMMY_DATA_COUNT);
+                driver.FindElements(Util.ByInnerText("詳細"))[Util.DUMMY_DATA_COUNT].Click();
+
+                driver.FindElement(By.Name("参照先集約ID")).SendKeys("あああああ");
+                driver.FindElement(By.Name("参照先集約名")).SendKeys("いいいいい");
+                driver.FindElement(Util.ByInnerText("一時保存")).Click();
+                driver.CommitLocalRepositoryChanges();
+
+                // 参照元を作成
+                driver.FindElement(Util.ByInnerText("参照元")).Click();
+                driver.FindElement(Util.ByInnerText("追加")).Click();
+                await Util.WaitUntil(() => driver.FindElements(Util.ByInnerText("詳細")).Count > Util.DUMMY_DATA_COUNT);
+                driver.FindElements(Util.ByInnerText("詳細"))[Util.DUMMY_DATA_COUNT].Click();
+
+                driver.FindElement(By.Name("参照元集約ID")).SendKeys("ううううう");
+                driver.FindElement(By.Name("参照元集約名")).SendKeys("えええええ");
+                driver.FindElement(By.Name("参照")).SendKeys("いいいいい");
+                driver.FindElement(By.Name("参照")).SendKeys(Keys.Tab);
+                driver.FindElement(Util.ByInnerText("一時保存")).Click();
+                driver.CommitLocalRepositoryChanges();
+
+                // 作成ができているか確認
+                driver.FindElement(Util.ByInnerText("参照元")).Click();
+                Assert.Multiple(() => {
+                    Assert.That(driver.FindElement(Util.ByInnerText("ううううう")), Is.Not.Null);
+                    Assert.That(driver.FindElement(Util.ByInnerText("えええええ")), Is.Not.Null);
+                });
+
+                driver.FindElements(Util.ByInnerText("詳細"))[Util.DUMMY_DATA_COUNT].Click();
+
+                // 参照元を更新
+
+                // 更新ができているか確認
+
+                // 参照元を削除
+
+                // 削除ができているか確認
 
                 if (exceptions.Count != 0) {
-                    var messages = exceptions.Select(ex => ex.ToString());
-                    Assert.Fail(string.Join(Environment.NewLine, messages));
+                    throw new AggregateException(exceptions.ToArray());
                 }
+
+                TestContext.WriteLine("正常終了");
 
             } finally {
                 ct.Cancel();

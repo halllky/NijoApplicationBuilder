@@ -222,10 +222,11 @@ namespace Nijo.IntegrationTest {
             }
         }
 
-        internal static async Task WaitUntil(TimeSpan timeout, Func<bool> checker) {
+        internal static async Task WaitUntil(Func<bool> checker, TimeSpan? timeout = null) {
+            var to = timeout ?? TimeSpan.FromSeconds(10);
             var current = TimeSpan.Zero;
             var interval = TimeSpan.FromSeconds(1);
-            while (current <= timeout) {
+            while (current <= to) {
                 var ok = checker();
                 if (ok) return;
 
@@ -307,16 +308,17 @@ namespace Nijo.IntegrationTest {
         /// <summary>
         /// 画面から操作してデータを初期化
         /// </summary>
-        internal static void InitializeData(this OpenQA.Selenium.IWebDriver driver) {
+        internal static async Task InitializeData(this OpenQA.Selenium.IWebDriver driver) {
             driver.FindElement(ByInnerText("DBを再作成する")).Click();
             driver.SwitchTo().Alert().Accept();
+            await WaitUntil(() => driver.FindElements(ByInnerText("DBを再作成しました。")).Count > 0);
             driver.CancelLocalRepositoryChanges();
         }
         /// <summary>
         /// ローカルリポジトリの変更をコミットする
         /// </summary>
         internal static void CommitLocalRepositoryChanges(this OpenQA.Selenium.IWebDriver driver) {
-            driver.FindElement(ByInnerText("変更(\\s?\\([0-9]+\\))")).Click();
+            driver.FindElement(ByInnerText("変更")).Click();
             driver.FindElement(ByInnerText("確定")).Click();
             driver.SwitchTo().Alert().Accept();
         }
@@ -324,7 +326,7 @@ namespace Nijo.IntegrationTest {
         /// ローカルリポジトリの変更をキャンセルする
         /// </summary>
         internal static void CancelLocalRepositoryChanges(this OpenQA.Selenium.IWebDriver driver) {
-            driver.FindElement(ByInnerText("変更(\\s?\\([0-9]+\\))")).Click();
+            driver.FindElement(ByInnerText("変更")).Click();
             driver.FindElement(ByInnerText("取り消し")).Click();
             driver.SwitchTo().Alert().Accept();
         }
