@@ -320,6 +320,29 @@ namespace Nijo.IntegrationTest {
             driver.CancelLocalRepositoryChanges();
         }
         /// <summary>
+        /// MultiViewで「追加」を押して、新しくできた行の「詳細」リンクを押す
+        /// </summary>
+        internal static async Task AddNewItemAndNavigateToCreateView(this OpenQA.Selenium.IWebDriver driver) {
+            // 「追加」前のhrefを記憶しておく
+            var hrefs = driver
+                .FindElements(ByInnerText("詳細"))
+                .Select(a => a.GetAttribute("href"))
+                .ToArray();
+
+            driver.FindElement(ByInnerText("追加")).Click();
+            await WaitUntil(() => driver.FindElements(ByInnerText("詳細")).Count > hrefs.Length);
+
+            // 行追加直後に位置がずれることがあるので一瞬待つ
+            await Task.Delay(TimeSpan.FromSeconds(1));
+
+            // 増えた行の「詳細」をクリック
+            foreach (var a in driver.FindElements(ByInnerText("詳細"))) {
+                var href = a.GetAttribute("href");
+                if (!hrefs.Contains(href)) a.Click();
+            }
+            throw new InvalidOperationException("追加された行を特定できません。");
+        }
+        /// <summary>
         /// ローカルリポジトリの変更をコミットする
         /// </summary>
         internal static void CommitLocalRepositoryChanges(this OpenQA.Selenium.IWebDriver driver) {
