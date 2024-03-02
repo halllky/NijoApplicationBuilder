@@ -21,6 +21,7 @@ export const ComboBoxBase = defineCustomComponent(<T extends {}>(
     onBlur,
     readOnly,
     onKeywordChanged,
+    name,
   } = props2
 
   const dropdownRef = useRef<DropDownApi>(null)
@@ -146,6 +147,7 @@ export const ComboBoxBase = defineCustomComponent(<T extends {}>(
     <TextInputBase
       ref={textBaseRef}
       readOnly={readOnly}
+      name={name}
       value={displayText}
       onBlur={handleBlur}
       onChange={onChangeKeyword}

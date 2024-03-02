@@ -301,10 +301,15 @@ namespace Nijo.IntegrationTest {
             }
         }
 
-        internal static OpenQA.Selenium.By ByInnerText([StringSyntax(StringSyntaxAttribute.Regex)] string innerText) {
+        internal static OpenQA.Selenium.By ByInnerText(string innerText) {
             var escaped = innerText.Replace("'", "\\'");
             return OpenQA.Selenium.By.XPath($"//*[contains(text(), '{escaped}')]");
         }
+        internal static OpenQA.Selenium.By ByValue(string value) {
+            var escaped = value.Replace("'", "\\'");
+            return OpenQA.Selenium.By.XPath($"//input[@value='{escaped}']");
+        }
+
         /// <summary>
         /// 画面から操作してデータを初期化
         /// </summary>

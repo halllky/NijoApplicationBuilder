@@ -63,9 +63,10 @@ namespace Nijo.IntegrationTest.Tests {
 
                 // 作成ができているか確認
                 driver.FindElement(Util.ByInnerText("参照元")).Click();
+                await Util.WaitUntil(() => driver.FindElements(Util.ByInnerText("ううううう")).Count > 0);
                 Assert.Multiple(() => {
-                    Assert.That(driver.FindElement(Util.ByInnerText("ううううう")), Is.Not.Null);
-                    Assert.That(driver.FindElement(Util.ByInnerText("えええええ")), Is.Not.Null);
+                    Assert.That(driver.FindElements(Util.ByInnerText("ううううう")).Count, Is.EqualTo(1));
+                    Assert.That(driver.FindElements(Util.ByInnerText("えええええ")).Count, Is.EqualTo(1));
                 });
 
                 driver.FindElements(Util.ByInnerText("詳細"))[Util.DUMMY_DATA_COUNT].Click();
