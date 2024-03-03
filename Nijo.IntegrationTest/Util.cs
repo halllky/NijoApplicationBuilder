@@ -323,6 +323,9 @@ namespace Nijo.IntegrationTest {
         /// MultiViewで「追加」を押して、新しくできた行の「詳細」リンクを押す
         /// </summary>
         internal static async Task AddNewItemAndNavigateToCreateView(this OpenQA.Selenium.IWebDriver driver) {
+            // 初期データ読み込みのため一瞬待つ
+            await Task.Delay(TimeSpan.FromSeconds(1));
+
             // 「追加」前のhrefを記憶しておく
             var hrefs = driver
                 .FindElements(ByInnerText("詳細"))
@@ -338,7 +341,10 @@ namespace Nijo.IntegrationTest {
             // 増えた行の「詳細」をクリック
             foreach (var a in driver.FindElements(ByInnerText("詳細"))) {
                 var href = a.GetAttribute("href");
-                if (!hrefs.Contains(href)) a.Click();
+                if (!hrefs.Contains(href)) {
+                    a.Click();
+                    return;
+                }
             }
             throw new InvalidOperationException("追加された行を特定できません。");
         }
