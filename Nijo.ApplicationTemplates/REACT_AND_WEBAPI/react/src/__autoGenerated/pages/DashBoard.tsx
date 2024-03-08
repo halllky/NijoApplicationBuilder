@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { useHttpRequest, useMsgContext, useDummyDataGenerator } from '../util'
+import { useHttpRequest, useMsgContext, useDummyDataGenerator, useLocalRepositoryChangeList } from '../util'
 import * as Input from '../input'
 import { VerticalForm as VForm } from '../collection'
 
@@ -13,8 +13,15 @@ export default function ({ applicationName }: {
   const { post } = useHttpRequest()
   const [withDummyData, setWithDummyData] = useState<boolean | undefined>(true)
   const genereateDummyData = useDummyDataGenerator()
+  const {reset: resetLocalRepository} = useLocalRepositoryChangeList()
   const recreateDatabase = useCallback(async () => {
     if (window.confirm('DBを再作成します。データは全て削除されます。よろしいですか？')) {
+      try {
+        await resetLocalRepository()
+      } catch (error) {
+        dispatchMsg(msg => msg.error(`ローカルリポジトリの初期化に失敗しました: ${error}`))
+      }
+
       const response = await post('/WebDebugger/recreate-database')
       if (!response.ok) { return }
       if (withDummyData) {
@@ -26,7 +33,7 @@ export default function ({ applicationName }: {
       }
       dispatchMsg(msg => msg.info('DBを再作成しました。'))
     }
-  }, [post, withDummyData, genereateDummyData, dispatchMsg])
+  }, [post, withDummyData, genereateDummyData, resetLocalRepository, dispatchMsg])
 
   return (
     <div className="page-content-root">
