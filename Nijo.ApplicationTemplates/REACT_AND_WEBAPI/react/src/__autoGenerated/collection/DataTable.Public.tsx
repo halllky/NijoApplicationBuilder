@@ -21,14 +21,15 @@ export type ColumnDefEx<TRow, TValue = any> = RT.ColumnDef<TRow> & ({
 })
 
 export type CellEditor<TValue> = (
-  props: CellEditorPeops<TValue>,
+  props: CellEditorProps<TValue>,
   ref: React.Ref<CustomComponentRef<TValue>>
 ) => JSX.Element
 
-export type CellEditorPeops<TValue> = {
+export type CellEditorProps<TValue> = {
   value: TValue | undefined
   onChange: (value: TValue | undefined) => void
   onKeyDown: React.KeyboardEventHandler<HTMLElement>
+  onBlur: React.FocusEventHandler<HTMLElement>
   className: string
 }
 

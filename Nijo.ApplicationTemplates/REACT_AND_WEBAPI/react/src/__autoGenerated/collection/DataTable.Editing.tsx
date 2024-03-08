@@ -130,6 +130,7 @@ function prepareCellEditor<T,>(
           value: uncomittedValue,
           onChange: setUnComittedValue,
           onKeyDown: handleKeyDown,
+          onBlur: commitEditing,
           className: 'block resize',
         })}
         {/* <div className="flex justify-start gap-1">
