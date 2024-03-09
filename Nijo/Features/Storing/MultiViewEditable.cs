@@ -177,11 +177,11 @@ namespace Nijo.Features.Storing {
                                     </label>
                     """)}}
                     """).ElseIf(vm.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
-                                    <{{vm.Options.MemberType.GetGridCellEditorName()}} {...registerExCondition(`{{vm.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}}`)}{{vm.Options.MemberType.GetGridCellEditorParams().Select(kv => $" {kv.Key}={{{kv.Value}}}").Join(string.Empty)}} />
+                                    <{{vm.Options.MemberType.GetReactComponent(new() { Type = GetReactComponentArgs.E_Type.InDetailView }).Name}} {...registerExCondition(`{{vm.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}}`)}{{string.Concat(vm.Options.MemberType.GetReactComponent(new() { Type = GetReactComponentArgs.E_Type.InDetailView }).GetPropsStatement())}} />
                                     ～
-                                    <{{vm.Options.MemberType.GetGridCellEditorName()}} {...registerExCondition(`{{vm.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}}`)}{{vm.Options.MemberType.GetGridCellEditorParams().Select(kv => $" {kv.Key}={{{kv.Value}}}").Join(string.Empty)}} />
+                                    <{{vm.Options.MemberType.GetReactComponent(new() { Type = GetReactComponentArgs.E_Type.InDetailView }).Name}} {...registerExCondition(`{{vm.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}}`)}{{string.Concat(vm.Options.MemberType.GetReactComponent(new() { Type = GetReactComponentArgs.E_Type.InDetailView }).GetPropsStatement())}} />
                     """).Else(() => $$"""
-                                    <{{vm.Options.MemberType.GetGridCellEditorName()}} {...registerExCondition(`{{vm.Declared.GetFullPath().Join(".")}}`)}{{vm.Options.MemberType.GetGridCellEditorParams().Select(kv => $" {kv.Key}={{{kv.Value}}}").Join(string.Empty)}} />
+                                    <{{vm.Options.MemberType.GetReactComponent(new() { Type = GetReactComponentArgs.E_Type.InDetailView }).Name}} {...registerExCondition(`{{vm.Declared.GetFullPath().Join(".")}}`)}{{string.Concat(vm.Options.MemberType.GetReactComponent(new() { Type = GetReactComponentArgs.E_Type.InDetailView }).GetPropsStatement())}} />
                     """)}}
                                   </VForm.Row>
                     """)}}
@@ -239,7 +239,7 @@ namespace Nijo.Features.Storing {
                             data.item.item.{{vm.Declared.GetFullPath().Join(".")}} = value
                     """)}}
                         },
-                        cellEditor: (props, ref) => <{{vm.Options.MemberType.GetGridCellEditorName()}} ref={ref} {...props}{{vm.Options.MemberType.GetGridCellEditorParams().Select(kv => $" {kv.Key}={{{kv.Value}}}").Join(string.Empty)}} />,
+                        cellEditor: (props, ref) => <{{vm.Options.MemberType.GetReactComponent(new() { Type = GetReactComponentArgs.E_Type.InDataGrid }).Name}} ref={ref} {...props}{{string.Concat(vm.Options.MemberType.GetReactComponent(new() { Type = GetReactComponentArgs.E_Type.InDataGrid }).GetPropsStatement())}} />,
                       },
                     """)}}
                     ]

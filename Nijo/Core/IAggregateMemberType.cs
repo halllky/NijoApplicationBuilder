@@ -36,7 +36,21 @@ namespace Nijo.Core {
     }
     public sealed class ReactInputComponent {
         public required string Name { get; init; }
-        public IReadOnlyDictionary<string, string> Props { get; init; } = new Dictionary<string, string>();
+        public Dictionary<string, string> Props { get; init; } = [];
+
+        /// <summary>
+        /// <see cref="Props"/> をReactのコンポーネントのレンダリングの呼び出し時用の記述にして返す
+        /// </summary>
+        internal IEnumerable<string> GetPropsStatement() {
+            foreach (var p in Props) {
+                if (p.Value == string.Empty)
+                    yield return $" {p.Key}";
+                else if (p.Value.StartsWith("\"") && p.Value.EndsWith("\""))
+                    yield return $" {p.Key}={p.Value}";
+                else
+                    yield return $" {p.Key}={{{p.Value}}}";
+            }
+        }
     }
 
     public sealed class GetReactComponentArgs {

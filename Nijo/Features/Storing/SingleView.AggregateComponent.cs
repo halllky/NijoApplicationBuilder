@@ -186,11 +186,9 @@ namespace Nijo.Features.Storing {
                 var editable = _mode == SingleView.E_Type.View ? "false" : "true";
                 var colDefs = Members.Select(m => {
                     if (m is AggregateMember.ValueMember vm) {
-                        var cellEditor = vm.Options.MemberType.GetGridCellEditorName();
-                        var cellEditorParam = vm.Options.MemberType
-                            .GetGridCellEditorParams()
-                            .Select(kv => $" {kv.Key}={{{kv.Value}}}")
-                            .Join(string.Empty);
+                        var inputComponent = vm.Options.MemberType.GetReactComponent(new GetReactComponentArgs {
+                            Type = GetReactComponentArgs.E_Type.InDataGrid,
+                        });
 
                         return new {
                             field = m.MemberName,
@@ -198,8 +196,8 @@ namespace Nijo.Features.Storing {
                             editable,
                             valueFormatter = vm.Options.MemberType.GetGridCellValueFormatter(),
                             hide = vm.Options.InvisibleInGui,
-                            cellEditorName = vm.Options.MemberType.GetGridCellEditorName(),
-                            cellEditorParam,
+                            cellEditorName = inputComponent.Name,
+                            cellEditorParam = string.Concat(inputComponent.GetPropsStatement()),
                         };
                     } else if (m is AggregateMember.Ref rm) {
                         var keyName = new RefTargetKeyName(rm.MemberAggregate);
@@ -450,27 +448,17 @@ namespace Nijo.Features.Storing {
                 });
 
                 // read only
-                var props = new Dictionary<string, string>(reactComponent.Props);
                 if (_mode == SingleView.E_Type.View) {
-                    props.Add("readOnly", string.Empty);
+                    reactComponent.Props.Add("readOnly", string.Empty);
 
                 } else if (_mode == SingleView.E_Type.Edit
                            && schalar is AggregateMember.ValueMember vm && vm.IsKey) {
-                    props.Add("readOnly", $"item?.{AggregateDetail.IS_LOADED}");
+                    reactComponent.Props.Add("readOnly", $"item?.{AggregateDetail.IS_LOADED}");
                 }
-
-                var propsStatements = props.Select(p => {
-                    if (p.Value == string.Empty)
-                        return $" {p.Key}";
-                    else if (p.Value.StartsWith("\"") && p.Value.EndsWith("\""))
-                        return $" {p.Key}={p.Value}";
-                    else
-                        return $" {p.Key}={{{p.Value}}}";
-                });
 
                 return $$"""
                     <VForm.Row label="{{schalar.MemberName}}">
-                      <{{reactComponent.Name}} {...registerEx({{GetRegisterName(schalar)}})}{{string.Concat(propsStatements)}} />
+                      <{{reactComponent.Name}} {...registerEx({{GetRegisterName(schalar)}})}{{string.Concat(reactComponent.GetPropsStatement())}} />
                     </VForm.Row>
                     """;
             }
