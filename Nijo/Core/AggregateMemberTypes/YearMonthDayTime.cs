@@ -10,7 +10,10 @@ namespace Nijo.Core.AggregateMemberTypes {
         public override string GetTypeScriptTypeName() => "string";
 
         public override ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
-            return new ReactInputComponent { Name = "Input.Date" };
+            return new ReactInputComponent {
+                Name = "Input.Date",
+                GridCellValueFormatter = value => $"{value} == undefined ? '' : dayjs({value}).format('YYYY-MM-DD HH:mm:ss')",
+            };
         }
     }
 }

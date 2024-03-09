@@ -1,5 +1,6 @@
 using Nijo.Core;
 using Nijo.Features.Storing;
+using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
@@ -17,19 +18,43 @@ namespace Nijo.Parts.WebClient {
             string colId,
             bool readOnly) {
 
-            var memberPath = member is AggregateMember.ValueMember vm
-                ? vm.Declared.GetFullPath(since: dataTableOwner)
-                : member.GetFullPath(since: dataTableOwner);
+            var vm = member as AggregateMember.ValueMember;
+            var refMember = member as AggregateMember.Ref;
+            var memberPath =
+                vm?.Declared.GetFullPath(since: dataTableOwner) ??
+                member.GetFullPath(since: dataTableOwner);
+
+            // 非編集時のセル表示文字列
+            string? formatted = null;
+            if (vm != null) {
+                var component = vm.Options.MemberType.GetReactComponent(new() {
+                    Type = GetReactComponentArgs.E_Type.InDataGrid,
+                });
+                if (component.GridCellValueFormatter != null) {
+                    formatted = $$"""
+                        const formatted = {{component.GridCellValueFormatter("value")}}
+                        """;
+                }
+            } else if (refMember != null) {
+                var names = refMember.MemberAggregate
+                    .GetNames()
+                    .OfType<AggregateMember.ValueMember>()
+                    .Select(name => name.Declared.GetFullPath(since: refMember.MemberAggregate));
+                formatted = $$"""
+                    let formatted = ''
+                    {{names.SelectTextTemplate(name => $$"""
+                    if (value?.{{name.Join("?.")}} != null) formatted += String(value.{{name.Join(".")}})
+                    """)}}
+                    """;
+            }
 
             var cell = $$"""
                 cellProps => {
                   const value = cellProps.row.original.{{rowAccessor}}.{{memberPath.Join("?.")}}
-                  const formatted = typeof value === 'object'
-                    ? JSON.stringify(value)
-                    : (value as React.ReactNode)
+                  {{If(formatted != null, () => WithIndent(formatted!, "  "))}}
                   return (
                     <span className="block w-full px-1 overflow-hidden whitespace-nowrap">
-                      {formatted}
+                      {{{(formatted == null ? "value" : "formatted")}}}
                       &nbsp; {/* <= すべての値が空の行がつぶれるのを防ぐ */}
                     </span>
                   )

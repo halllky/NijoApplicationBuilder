@@ -9,13 +9,13 @@ namespace Nijo.Core.AggregateMemberTypes {
         public override string GetCSharpTypeName() => "bool";
         public override string GetTypeScriptTypeName() => "boolean";
         public override SearchBehavior SearchBehavior => SearchBehavior.Strict;
-        public override string GetGridCellValueFormatter() => "({ value }) => (value === undefined ? '' : (value ? '○' : '-'))";
 
         public override ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
             return new ReactInputComponent {
                 Name = e.Type == GetReactComponentArgs.E_Type.InDataGrid
                     ? "Input.BooleanComboBox"
                     : "Input.CheckBox",
+                GridCellValueFormatter = value => $"({value} === undefined ? '' : ({value} ? '○' : '-'))",
             };
         }
     }

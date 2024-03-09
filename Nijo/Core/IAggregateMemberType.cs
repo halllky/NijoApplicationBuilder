@@ -10,7 +10,6 @@ namespace Nijo.Core {
 
         string GetCSharpTypeName();
         string GetTypeScriptTypeName();
-        string GetGridCellValueFormatter();
         ReactInputComponent GetReactComponent(GetReactComponentArgs e);
     }
     /// <summary>
@@ -34,6 +33,7 @@ namespace Nijo.Core {
     public sealed class ReactInputComponent {
         public required string Name { get; init; }
         public Dictionary<string, string> Props { get; init; } = [];
+        public Func<string, string>? GridCellValueFormatter { get; init; }
 
         /// <summary>
         /// <see cref="Props"/> をReactのコンポーネントのレンダリングの呼び出し時用の記述にして返す
@@ -66,7 +66,6 @@ namespace Nijo.Core {
         public abstract SearchBehavior SearchBehavior { get; }
         public abstract string GetCSharpTypeName();
         public abstract string GetTypeScriptTypeName();
-        public virtual string GetGridCellValueFormatter() => string.Empty;
         public abstract ReactInputComponent GetReactComponent(GetReactComponentArgs e);
     }
 
@@ -78,7 +77,6 @@ namespace Nijo.Core {
         public SearchBehavior SearchBehavior => SearchBehavior.Range;
         public abstract string GetCSharpTypeName();
         public abstract string GetTypeScriptTypeName();
-        public virtual string GetGridCellValueFormatter() => string.Empty;
         public abstract ReactInputComponent GetReactComponent(GetReactComponentArgs e);
         //object? Min { get; }
         //object? Max { get; }

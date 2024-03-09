@@ -9,7 +9,6 @@ namespace Nijo.Core.AggregateMemberTypes {
         public SearchBehavior SearchBehavior => SearchBehavior.Ambiguous;
         public string GetCSharpTypeName() => "string";
         public string GetTypeScriptTypeName() => "string";
-        public virtual string GetGridCellValueFormatter() => string.Empty;
 
         public ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
             return new ReactInputComponent { Name = "Input.Description" };

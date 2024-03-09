@@ -10,7 +10,14 @@ namespace Nijo.Core.AggregateMemberTypes {
         public override string GetTypeScriptTypeName() => "number";
 
         public override ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
-            return new ReactInputComponent { Name = "Input.YearMonth" };
+            return new ReactInputComponent {
+                Name = "Input.YearMonth",
+                GridCellValueFormatter = value => $$"""
+                    {{value}} == undefined
+                      ? ''
+                      : `${(Math.floor(value / 100)).toString().padStart(4, '0')}-${(value % 100).toString().padStart(2, '0')}`
+                    """,
+            };
         }
     }
 }

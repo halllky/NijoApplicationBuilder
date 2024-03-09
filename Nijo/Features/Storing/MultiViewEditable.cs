@@ -80,6 +80,7 @@ namespace Nijo.Features.Storing {
                     import React, { useCallback, useEffect, useMemo, useRef, useState, useReducer } from 'react'
                     import { Link } from 'react-router-dom'
                     import { useFieldArray, FormProvider } from 'react-hook-form'
+                    import dayjs from 'dayjs'
                     import * as Util from '../../util'
                     import * as Input from '../../input'
                     import * as Layout from '../../collection'
