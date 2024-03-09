@@ -433,7 +433,6 @@ namespace Nijo.Features.Storing {
             }
         }
 
-        #region SCHALAR PROPERTY
         private string RenderProperty(AggregateMember.Schalar schalar) {
             if (schalar.Options.InvisibleInGui) {
                 return $$"""
@@ -463,120 +462,6 @@ namespace Nijo.Features.Storing {
                     """;
             }
         }
-
-        [Obsolete]
-        private class ReactForm : IGuiFormRenderer {
-            internal ReactForm(AggregateComponent component, AggregateMember.Schalar prop, SingleView.E_Type mode) {
-                _component = component;
-                _prop = prop;
-                _mode = mode;
-            }
-            private readonly AggregateComponent _component;
-            private readonly AggregateMember.Schalar _prop;
-            private readonly SingleView.E_Type _mode;
-
-            /// <summary>
-            /// Createビュー兼シングルビュー: テキストボックス
-            /// </summary>
-            public string TextBox(bool multiline = false) {
-                var name = _component.GetRegisterName(_prop);
-                var readOnly = _component.IfReadOnly("readOnly", _prop);
-
-                if (multiline) {
-                    return $$"""
-                        <Input.Description {...registerEx({{name}})} className="{{INPUT_WIDTH}}" {{readOnly}} />
-                        """;
-                } else {
-                    return $$"""
-                        <Input.Word {...registerEx({{name}})} className="{{INPUT_WIDTH}}" {{readOnly}} />
-                        """;
-                }
-            }
-            public string Number() {
-                var name = _component.GetRegisterName(_prop);
-                var readOnly = _component.IfReadOnly("readOnly", _prop);
-                return $$"""
-                    <Input.Num {...registerEx({{name}})} className="{{INPUT_WIDTH}}" {{readOnly}} />
-                    """;
-            }
-            public string DateTime(IGuiFormRenderer.E_DateType dateType) {
-                var name = _component.GetRegisterName(_prop);
-                var readOnly = _component.IfReadOnly("readOnly", _prop);
-                var componentName = dateType switch {
-                    IGuiFormRenderer.E_DateType.Year => "Input.Num",
-                    IGuiFormRenderer.E_DateType.YearMonth => "Input.YearMonth",
-                    _ => "Input.Date",
-                };
-                return $$"""
-                    <{{componentName}} {...registerEx({{name}})} className="{{INPUT_WIDTH}}" {{readOnly}} />
-                    """;
-            }
-
-            /// <summary>
-            /// Createビュー兼シングルビュー: トグル
-            /// </summary>
-            public string Toggle() {
-                // checked属性はregisterに含まれないので自力で渡す必要がある
-                var registerName = _component.GetRegisterName(_prop);
-                var readOnly = _component.IfReadOnly("readOnly", _prop);
-                return $$"""
-                    <Input.CheckBox {...registerEx({{registerName}})} {{readOnly}} />
-                    """;
-            }
-
-            /// <summary>
-            /// Createビュー兼シングルビュー: 選択肢（コード自動生成時に要素が確定しているもの）
-            /// </summary>
-            public string Selection(IEnumerable<KeyValuePair<string, string>> options) {
-                var name = _component.GetRegisterName(_prop);
-                return $$"""
-                    <Input.SelectionEmitsKey
-                      {...registerEx({{name}})}
-                      options={[
-                    {{options.SelectTextTemplate(option => $$"""
-                        '{{option.Value}}' as const,
-                    """)}}
-                      ]}
-                      keySelector={item => item}
-                      textSelector={item => item}
-                      {{_mode switch {
-                    SingleView.E_Type.View => $"readOnly",
-                    SingleView.E_Type.Edit => _prop.Options.IsKey
-                        ? $"readOnly={{(item?.{AggregateDetail.IS_LOADED}}}"
-                        : string.Empty,
-                    _ => string.Empty,
-                }}}
-                    />
-                    """;
-            }
-
-            public string HiddenField() {
-                var registerName = _component.GetRegisterName(_prop);
-                return $$"""
-                    <input type="hidden" {...registerEx({{registerName}})} />
-                    """;
-            }
-        }
-        #endregion SCHALAR PROPERTY
-
-
-        private int TableIndent => _aggregate.EnumerateAncestors().Count();
-
-        #region ラベル列の横幅
-        internal const string INPUT_WIDTH = "w-80";
-        internal static string GetPropNameFlexBasis(IEnumerable<string> propNames) {
-            var maxCharWidth = propNames
-                .Select(prop => prop.CalculateCharacterWidth())
-                .DefaultIfEmpty()
-                .Max();
-
-            var a = (maxCharWidth + 1) / 2; // tailwindのbasisはrem基準（全角文字n文字）のため偶数にそろえる
-            var b = a + 2; // ちょっと横幅に余裕をもたせるための +2
-            var c = Math.Min(96, b * 4); // tailwindでは basis-96 が最大なので
-
-            return $"basis-{c}";
-        }
-        #endregion ラベル列の横幅
 
         private string GetRegisterName(AggregateMember.AggregateMemberBase? prop = null) {
             return GetRegisterName(_aggregate, prop);

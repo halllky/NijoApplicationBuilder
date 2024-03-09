@@ -10,9 +10,6 @@ namespace Nijo.Core {
 
         string GetCSharpTypeName();
         string GetTypeScriptTypeName();
-        string RenderUI(IGuiFormRenderer ui);
-        string GetGridCellEditorName();
-        IReadOnlyDictionary<string, string> GetGridCellEditorParams();
         string GetGridCellValueFormatter();
         ReactInputComponent GetReactComponent(GetReactComponentArgs e);
     }
@@ -69,9 +66,6 @@ namespace Nijo.Core {
         public abstract SearchBehavior SearchBehavior { get; }
         public abstract string GetCSharpTypeName();
         public abstract string GetTypeScriptTypeName();
-        public abstract string RenderUI(IGuiFormRenderer ui);
-        public abstract string GetGridCellEditorName();
-        public abstract IReadOnlyDictionary<string, string> GetGridCellEditorParams();
         public virtual string GetGridCellValueFormatter() => string.Empty;
         public abstract ReactInputComponent GetReactComponent(GetReactComponentArgs e);
     }
@@ -84,9 +78,6 @@ namespace Nijo.Core {
         public SearchBehavior SearchBehavior => SearchBehavior.Range;
         public abstract string GetCSharpTypeName();
         public abstract string GetTypeScriptTypeName();
-        public abstract string RenderUI(IGuiFormRenderer ui);
-        public abstract string GetGridCellEditorName();
-        public abstract IReadOnlyDictionary<string, string> GetGridCellEditorParams();
         public virtual string GetGridCellValueFormatter() => string.Empty;
         public abstract ReactInputComponent GetReactComponent(GetReactComponentArgs e);
         //object? Min { get; }

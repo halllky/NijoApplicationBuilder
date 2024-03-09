@@ -17,18 +17,6 @@ namespace Nijo.Core.AggregateMemberTypes {
         public override string GetTypeScriptTypeName() {
             return Definition.Items.Select(x => $"'{x.PhysicalName}'").Join(" | ");
         }
-        public override string RenderUI(IGuiFormRenderer ui) {
-            var options = Definition.Items.ToDictionary(
-                x => x.PhysicalName,
-                x => x.DisplayName ?? x.PhysicalName);
-            return ui.Selection(options);
-        }
-        public override string GetGridCellEditorName() => "Input.ComboBox";
-        public override IReadOnlyDictionary<string, string> GetGridCellEditorParams() => new Dictionary<string, string> {
-            { "options", $"[{Definition.Items.Select(x => $"'{x.PhysicalName}' as const").Join(", ")}]" },
-            { "keySelector", "(item: string) => item" },
-            { "textSelector", "(item: string) => item" },
-        };
 
         public override ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
             return new ReactInputComponent {
