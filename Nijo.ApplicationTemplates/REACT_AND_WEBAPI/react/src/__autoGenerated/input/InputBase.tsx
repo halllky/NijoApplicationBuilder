@@ -2,6 +2,7 @@ import { HTMLAttributes } from "react"
 import { forwardRefEx } from "../util"
 
 export type ValidationHandler = (value: string) => ({ ok: true, formatted: string } | { ok: false })
+export type ValidationResult = ReturnType<ValidationHandler>
 
 // ---------------------------------------------
 // カスタムコンポーネント共通定義

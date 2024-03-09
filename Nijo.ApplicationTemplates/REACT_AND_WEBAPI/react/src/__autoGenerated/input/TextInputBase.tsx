@@ -1,6 +1,7 @@
 import { ChevronUpDownIcon } from "@heroicons/react/24/solid";
 import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { ValidationHandler, defineCustomComponent } from "./InputBase";
+import { ValidationHandler, ValidationResult, defineCustomComponent } from "./InputBase";
+import { useUserSetting } from "..";
 
 export type TextInputBaseArgs = Parameters<typeof TextInputBase>['0']
 export type DropDownBody = (props: { focusRef: React.RefObject<never> }) => React.ReactNode
@@ -31,15 +32,21 @@ export const TextInputBase = defineCustomComponent<string, {
 
   // フォーマット、バリデーション
   const [unFormatText, setUnFormatText] = useState(value ?? '')
+  const [formatError, setFormatError] = useState(false)
+  const { data: { darkMode } } = useUserSetting()
+  const bgColor = formatError
+    ? (darkMode ? 'bg-rose-900' : 'bg-rose-200')
+    : 'bg-color-base'
+
   useEffect(() => {
+    if (formatError && value === '') return // 不正なテキストが入力されたことによる値変更の場合
     setUnFormatText(value ?? '')
   }, [value])
 
-  const getFormatted = useCallback((rawText: string | undefined) => {
-    if (!rawText) return ''
-    if (!onValidate) return rawText
-    var result = onValidate(rawText)
-    return result.ok ? result.formatted : ''
+  const getValidationResult = useCallback((rawText: string | undefined): ValidationResult => {
+    if (!rawText) return { ok: true, formatted: '' }
+    if (!onValidate) return { ok: true, formatted: rawText }
+    return onValidate(rawText)
   }, [onValidate])
 
   // ドロップダウン開閉
@@ -71,9 +78,17 @@ export const TextInputBase = defineCustomComponent<string, {
   const divRef = useRef<HTMLDivElement>(null)
   const handleBlur: React.FocusEventHandler<HTMLInputElement> = useCallback(e => {
     // フォーマットされた値を表示に反映
-    const formatted = getFormatted(unFormatText)
-    setUnFormatText(formatted)
-    if (onValidate) onChangeFormattedText?.(formatted)
+    if (onValidate) {
+      const result = getValidationResult(unFormatText)
+      if (result.ok) {
+        setUnFormatText(result.formatted)
+        onChangeFormattedText?.(result.formatted)
+        setFormatError(false)
+      } else {
+        onChangeFormattedText?.('')
+        setFormatError(true)
+      }
+    }
 
     // コンボボックスではテキストにフォーカスが当たったままドロップダウンが展開されることがあるため
     // blur先がdivの外に移った時に強制的にドロップダウンを閉じる
@@ -81,7 +96,7 @@ export const TextInputBase = defineCustomComponent<string, {
       setOpen(false)
     }
     onBlur?.(e)
-  }, [onChangeFormattedText, onBlur, getFormatted, unFormatText, onValidate])
+  }, [onChangeFormattedText, onBlur, getValidationResult, unFormatText, onValidate])
 
   const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useCallback(e => {
     if (!open && e.altKey && e.key === 'ArrowDown') {
@@ -99,16 +114,19 @@ export const TextInputBase = defineCustomComponent<string, {
   }, [onKeyDown, open])
 
   useImperativeHandle(ref, () => ({
-    getValue: () => getFormatted(unFormatText),
+    getValue: () => {
+      const result = getValidationResult(unFormatText)
+      return result.ok ? result.formatted : ''
+    },
     focus: () => inputRef.current?.select(),
-  }), [getFormatted, unFormatText])
+  }), [getValidationResult, unFormatText])
 
   return (
     <div
       ref={divRef}
       className={readOnly
         ? `inline-flex relative ${className} border border-transparent`
-        : `inline-flex relative ${className} border border-color-5 bg-color-base text-color-12`}
+        : `inline-flex relative ${className} border border-color-5 text-color-12 ${bgColor}`}
     >
       <input
         {...rest}
