@@ -87,7 +87,9 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   // セル編集完了時にフォーカスが外れてキー操作ができなくなるのを防ぐ
   const containerRef = useRef<HTMLDivElement>(null)
   const onEndEditing = useCallback(() => {
-    containerRef.current?.focus()
+    setTimeout(() => {
+      containerRef.current?.focus()
+    }, 10)
   }, [])
 
   const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = useCallback(e => {
