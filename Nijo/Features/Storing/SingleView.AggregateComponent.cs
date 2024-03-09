@@ -445,14 +445,39 @@ namespace Nijo.Features.Storing {
                     """;
 
             } else {
-                var renderer = new ReactForm(this, schalar, _mode);
+                var reactComponent = schalar.Options.MemberType.GetGridCellEditorName();
+                var name = GetRegisterName(schalar);
+                var props = new Dictionary<string, string>(schalar.Options.MemberType.GetGridCellEditorParams()) {
+                    { "className", $"\"{INPUT_WIDTH}\"" },
+                };
+
+                // read only
+                if (_mode == SingleView.E_Type.View) {
+                    props.Add("readOnly", string.Empty);
+
+                } else if (_mode == SingleView.E_Type.Edit
+                           && schalar is AggregateMember.ValueMember vm && vm.IsKey) {
+                    props.Add("readOnly", $"item?.{AggregateDetail.IS_LOADED}");
+                }
+
+                var propsStatements = props.Select(p => {
+                    if (p.Value == string.Empty)
+                        return $" {p.Key}";
+                    else if (p.Value.StartsWith("\"") && p.Value.EndsWith("\""))
+                        return $" {p.Key}={p.Value}";
+                    else
+                        return $" {p.Key}={{{p.Value}}}";
+                });
+
                 return $$"""
                     <VForm.Row label="{{schalar.MemberName}}">
-                      {{WithIndent(schalar.Options.MemberType.RenderUI(renderer), "  ")}}
+                      <{{reactComponent}} {...registerEx({{name}})}{{string.Concat(propsStatements)}} />
                     </VForm.Row>
                     """;
             }
         }
+
+        [Obsolete]
         private class ReactForm : IGuiFormRenderer {
             internal ReactForm(AggregateComponent component, AggregateMember.Schalar prop, SingleView.E_Type mode) {
                 _component = component;
