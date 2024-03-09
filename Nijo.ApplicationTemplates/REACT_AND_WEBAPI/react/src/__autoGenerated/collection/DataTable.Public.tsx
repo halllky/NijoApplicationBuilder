@@ -12,7 +12,9 @@ export type DataTableProps<T> = {
     rowHeader: (row: T) => React.ReactNode
   }
 }
-export type ColumnDefEx<TRow, TValue = any> = RT.ColumnDef<TRow> & ({
+export type ColumnDefEx<TRow, TValue = any> = RT.ColumnDef<TRow> & {
+  hidden?: boolean
+} & ({
   cellEditor?: never
   setValue?: never
 } | {

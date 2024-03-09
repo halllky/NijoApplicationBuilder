@@ -96,6 +96,10 @@ namespace Nijo.Parts.WebClient {
                     """;
             }
 
+            var hidden = vm?.Options.InvisibleInGui == true
+                ? true
+                : (bool?)null;
+
             return new DataTableColumn {
                 Id = colId,
                 Header = member.MemberName,
@@ -103,6 +107,7 @@ namespace Nijo.Parts.WebClient {
                 CellEditor = cellEditor,
                 GetValue = getValue,
                 SetValue = setValue,
+                Hidden = hidden,
             };
         }
 
@@ -118,6 +123,7 @@ namespace Nijo.Parts.WebClient {
         // 独自定義
         internal string? CellEditor { get; init; }
         internal string? SetValue { get; init; }
+        internal bool? Hidden { get; init; }
 
         internal string Render() {
             return $$"""
@@ -139,6 +145,9 @@ namespace Nijo.Parts.WebClient {
                 """)}}
                 {{If(CellEditor != null, () => $$"""
                   cellEditor: {{WithIndent(CellEditor!, "  ")}},
+                """)}}
+                {{If(Hidden != null, () => $$"""
+                  hidden: {{(Hidden!.Value ? "true" : "false")}},
                 """)}}
                 },
                 """;

@@ -2,7 +2,7 @@ import React, { useCallback, useImperativeHandle, useMemo, useRef, useState } fr
 import * as RT from '@tanstack/react-table'
 import * as Util from '../util'
 import * as Tree from '../util'
-import { DataTableProps, DataTableRef } from './DataTable.Public'
+import { ColumnDefEx, DataTableProps, DataTableRef } from './DataTable.Public'
 import { getRowHeader, ROW_HEADER_ID, TABLE_ZINDEX } from './DataTable.Parts'
 import { useCellEditing } from './DataTable.Editing'
 import { useSelection } from './DataTable.Selecting'
@@ -142,7 +142,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
           {api.getHeaderGroups().map(headerGroup => (
             <tr key={headerGroup.id}>
 
-              {headerGroup.headers.map(header => (
+              {headerGroup.headers.filter(h => !(h.column.columnDef as ColumnDefEx<T>).hidden).map(header => (
                 <th key={header.id}
                   className="relative overflow-hidden px-1 py-0 text-start bg-color-3"
                   style={{ width: getColWidth(header), ...getThStickeyStyle(header) }}>
@@ -164,7 +164,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
               key={row.id}
               className="leading-tight"
             >
-              {row.getVisibleCells().map(cell => (
+              {row.getVisibleCells().filter(c => !(c.column.columnDef as ColumnDefEx<T>).hidden).map(cell => (
                 <td key={cell.id}
                   ref={td => tdRefCallback(td, cell)}
                   className="relative overflow-hidden p-0 border-r border-1 border-color-4"
