@@ -29,5 +29,18 @@ namespace Nijo.Core.AggregateMemberTypes {
             { "keySelector", "(item: string) => item" },
             { "textSelector", "(item: string) => item" },
         };
+
+        public override ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
+            return new ReactInputComponent {
+                Name = e.Type == GetReactComponentArgs.E_Type.InDetailView
+                    ? "Input.SelectionEmitsKey"
+                    : "Input.ComboBox",
+                Props = new Dictionary<string, string> {
+                    { "options", $"[{Definition.Items.Select(x => $"'{x.PhysicalName}' as const").Join(", ")}]" },
+                    { "keySelector", "item => item" },
+                    { "textSelector", "item => item" },
+                },
+            };
+        }
     }
 }

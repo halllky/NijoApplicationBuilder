@@ -14,7 +14,6 @@ export const Date = defineCustomComponent<string>((props, ref) => {
   const overrideProps = {
     ...props,
     value,
-    className: `w-24 ${props.className}`,
     placeholder: props.placeholder ?? '0000-00-00',
     onValidate: dateValidation,
   }
@@ -51,7 +50,6 @@ export const YearMonth = defineCustomComponent<number>((props, ref) => {
     ...rest,
     value: strValue,
     onChange: handleChange,
-    className: `w-20 ${props.className}`,
     placeholder: props.placeholder ?? '0000-00',
     onValidate: yearMonthValidation,
   }

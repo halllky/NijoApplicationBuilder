@@ -14,6 +14,7 @@ namespace Nijo.Core {
         string GetGridCellEditorName();
         IReadOnlyDictionary<string, string> GetGridCellEditorParams();
         string GetGridCellValueFormatter();
+        ReactInputComponent GetReactComponent(GetReactComponentArgs e);
     }
     /// <summary>
     /// 検索処理の挙動
@@ -33,7 +34,19 @@ namespace Nijo.Core {
         /// </summary>
         Range,
     }
+    public sealed class ReactInputComponent {
+        public required string Name { get; init; }
+        public IReadOnlyDictionary<string, string> Props { get; init; } = new Dictionary<string, string>();
+    }
 
+    public sealed class GetReactComponentArgs {
+        public required E_Type Type { get; init; }
+
+        public enum E_Type {
+            InDetailView,
+            InDataGrid,
+        }
+    }
 
     /// <summary>
     /// 現実のものや出来事を分類する値。ID、名前、列挙体など。
@@ -46,6 +59,7 @@ namespace Nijo.Core {
         public abstract string GetGridCellEditorName();
         public abstract IReadOnlyDictionary<string, string> GetGridCellEditorParams();
         public virtual string GetGridCellValueFormatter() => string.Empty;
+        public abstract ReactInputComponent GetReactComponent(GetReactComponentArgs e);
     }
 
 
@@ -60,6 +74,7 @@ namespace Nijo.Core {
         public abstract string GetGridCellEditorName();
         public abstract IReadOnlyDictionary<string, string> GetGridCellEditorParams();
         public virtual string GetGridCellValueFormatter() => string.Empty;
+        public abstract ReactInputComponent GetReactComponent(GetReactComponentArgs e);
         //object? Min { get; }
         //object? Max { get; }
     }

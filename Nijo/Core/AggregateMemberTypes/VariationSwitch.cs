@@ -28,5 +28,19 @@ namespace Nijo.Core.AggregateMemberTypes {
                 { "textSelector", "x => x.text" },
             };
         }
+
+        public override ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
+            var options = _variationGroup
+                .VariationAggregates
+                .Select(kv => $"{{ key: '{kv.Key}', text: '{kv.Value.RelationName}' }}");
+            return new ReactInputComponent {
+                Name = "Input.SelectionEmitsKey",
+                Props = new Dictionary<string, string> {
+                    { "options", $"[{options.Join(", ")}]" },
+                    { "keySelector", "x => x.key" },
+                    { "textSelector", "x => x.text" },
+                },
+            };
+        }
     }
 }

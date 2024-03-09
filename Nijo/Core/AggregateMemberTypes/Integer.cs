@@ -11,5 +11,9 @@ namespace Nijo.Core.AggregateMemberTypes {
         public override string RenderUI(IGuiFormRenderer ui) => ui.Number();
         public override string GetGridCellEditorName() => "Input.Num";
         public override IReadOnlyDictionary<string, string> GetGridCellEditorParams() => new Dictionary<string, string>();
+
+        public override ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
+            return new ReactInputComponent { Name = "Input.Num" };
+        }
     }
 }

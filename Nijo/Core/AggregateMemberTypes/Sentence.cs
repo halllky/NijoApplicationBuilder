@@ -13,5 +13,9 @@ namespace Nijo.Core.AggregateMemberTypes {
         public string GetGridCellEditorName() => "Input.Description";
         public IReadOnlyDictionary<string, string> GetGridCellEditorParams() => new Dictionary<string, string>();
         public virtual string GetGridCellValueFormatter() => string.Empty;
+
+        public ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
+            return new ReactInputComponent { Name = "Input.Description" };
+        }
     }
 }

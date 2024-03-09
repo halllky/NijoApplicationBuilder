@@ -13,5 +13,13 @@ namespace Nijo.Core.AggregateMemberTypes {
         public override string GetGridCellEditorName() => "Input.BooleanComboBox";
         public override IReadOnlyDictionary<string, string> GetGridCellEditorParams() => new Dictionary<string, string>();
         public override string GetGridCellValueFormatter() => "({ value }) => (value === undefined ? '' : (value ? '○' : '-'))";
+
+        public override ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
+            return new ReactInputComponent {
+                Name = e.Type == GetReactComponentArgs.E_Type.InDataGrid
+                    ? "Input.BooleanComboBox"
+                    : "Input.CheckBox",
+            };
+        }
     }
 }

@@ -445,13 +445,12 @@ namespace Nijo.Features.Storing {
                     """;
 
             } else {
-                var reactComponent = schalar.Options.MemberType.GetGridCellEditorName();
-                var name = GetRegisterName(schalar);
-                var props = new Dictionary<string, string>(schalar.Options.MemberType.GetGridCellEditorParams()) {
-                    { "className", $"\"{INPUT_WIDTH}\"" },
-                };
+                var reactComponent = schalar.Options.MemberType.GetReactComponent(new GetReactComponentArgs {
+                    Type = GetReactComponentArgs.E_Type.InDetailView,
+                });
 
                 // read only
+                var props = new Dictionary<string, string>(reactComponent.Props);
                 if (_mode == SingleView.E_Type.View) {
                     props.Add("readOnly", string.Empty);
 
@@ -471,7 +470,7 @@ namespace Nijo.Features.Storing {
 
                 return $$"""
                     <VForm.Row label="{{schalar.MemberName}}">
-                      <{{reactComponent}} {...registerEx({{name}})}{{string.Concat(propsStatements)}} />
+                      <{{reactComponent.Name}} {...registerEx({{GetRegisterName(schalar)}})}{{string.Concat(propsStatements)}} />
                     </VForm.Row>
                     """;
             }
