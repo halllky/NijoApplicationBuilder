@@ -311,6 +311,20 @@ namespace Nijo.IntegrationTest {
         }
 
         /// <summary>
+        /// DOM構造が特殊なDescriptionのtextareaを選択する
+        /// </summary>
+        internal static OpenQA.Selenium.IWebElement ActivateTextarea(this OpenQA.Selenium.IWebDriver driver, string name) {
+            driver.FindElement(OpenQA.Selenium.By.Name(name)).Click();
+            return driver.SwitchTo().ActiveElement();
+        }
+        /// <summary>
+        /// 画面のスクリーンショットをとる
+        /// </summary>
+        internal static OpenQA.Selenium.Screenshot CaptureScreenShot(this OpenQA.Selenium.IWebDriver driver) {
+            driver.Manage().Window.FullScreen(); // 画面サイズによる表示差異が出ないようにする
+            return (driver as OpenQA.Selenium.ITakesScreenshot)!.GetScreenshot();
+        }
+        /// <summary>
         /// 画面から操作してデータを初期化
         /// </summary>
         internal static async Task InitializeData(this OpenQA.Selenium.IWebDriver driver) {
@@ -347,6 +361,21 @@ namespace Nijo.IntegrationTest {
                 }
             }
             throw new InvalidOperationException("追加された行を特定できません。");
+        }
+        /// <summary>
+        /// MultiViewからEditViewに画面遷移させる。
+        /// 検索結果が1件だけになるような検索条件が入力済みの前提
+        /// </summary>
+        internal static async Task SearchSingleAndNavigateToEditView(this OpenQA.Selenium.IWebDriver driver) {
+            // 再検索
+            driver.FindElement(ByInnerText("再読み込み")).Click();
+            await Task.Delay(TimeSpan.FromSeconds(1)); // 再建策前の「詳細」がヒットしてしまうのを防ぐ
+            await WaitUntil(() => driver.FindElements(ByInnerText("詳細")).Count > 0);
+
+            // 画面遷移
+            var elements = driver.FindElements(ByInnerText("詳細"));
+            if (elements.Count >= 2) throw new InvalidOperationException("検索結果は1件のみになる想定のところ、2件以上あります。");
+            elements.Single().Click();
         }
         /// <summary>
         /// ローカルリポジトリの変更をコミットする
