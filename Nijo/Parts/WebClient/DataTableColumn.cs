@@ -80,7 +80,7 @@ namespace Nijo.Parts.WebClient {
                 throw new InvalidProgramException();
             }
 
-            var getValue = $"data => data.{rowAccessor}.{memberPath.Join(".")}";
+            var getValue = $"data => data.{rowAccessor}.{memberPath.Join("?.")}";
 
             string? setValue;
             if (readOnly) {
@@ -90,8 +90,8 @@ namespace Nijo.Parts.WebClient {
             } else {
                 setValue = $$"""
                     (row, value) => {
-                      if (data.{{rowAccessor}}.{{memberPath.SkipLast(1).Join("?.")}})
-                        data.{{rowAccessor}}.{{memberPath.Join(".")}} = value
+                      if (row.{{rowAccessor}}.{{memberPath.SkipLast(1).Join("?.")}})
+                        row.{{rowAccessor}}.{{memberPath.Join(".")}} = value
                     }
                     """;
             }
