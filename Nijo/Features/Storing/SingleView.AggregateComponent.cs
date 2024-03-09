@@ -184,58 +184,12 @@ namespace Nijo.Features.Storing {
                 var loopVar = $"index_{Arguments.Count}";
                 var createNewChildrenItem = new TSInitializerFunction(_aggregate).FunctionName;
                 var editable = _mode == SingleView.E_Type.View ? "false" : "true";
-                var colDefs = Members.Select(m => {
-                    if (m is AggregateMember.ValueMember vm) {
-                        var inputComponent = vm.Options.MemberType.GetReactComponent(new GetReactComponentArgs {
-                            Type = GetReactComponentArgs.E_Type.InDataGrid,
-                        });
-
-                        return new {
-                            field = m.MemberName,
-                            fieldWithPath = m.GetFullPath(since: _aggregate).Join("."),
-                            editable,
-                            valueFormatter = vm.Options.MemberType.GetGridCellValueFormatter(),
-                            hide = vm.Options.InvisibleInGui,
-                            cellEditorName = inputComponent.Name,
-                            cellEditorParam = string.Concat(inputComponent.GetPropsStatement()),
-                        };
-                    } else if (m is AggregateMember.Ref rm) {
-                        var keyName = new RefTargetKeyName(rm.MemberAggregate);
-                        var combobox = new ComboBox(rm.MemberAggregate);
-                        var keys = rm.MemberAggregate
-                            .GetKeys()
-                            .OfType<AggregateMember.ValueMember>()
-                            .Select(m => m.Declared.GetFullPath(since: _aggregate).Join("?."));
-                        var keysForValueFormatter = rm.MemberAggregate
-                            .GetKeys()
-                            .OfType<AggregateMember.ValueMember>()
-                            .Select(m => m.Declared.GetFullPath(since: _aggregate).Skip(1).Join("?."));
-                        var names = rm.MemberAggregate
-                            .GetNames()
-                            .OfType<AggregateMember.ValueMember>()
-                            .Select(m => m.Declared.GetFullPath(since: _aggregate).Join("?."));
-
-                        // 参照先SingleViewへのリンク
-                        var singleView = new SingleView(rm.MemberAggregate.GetRoot(), SingleView.E_Type.View);
-                        var keysOfRoot = rm.MemberAggregate
-                            .GetRoot()
-                            .GetKeys()
-                            .OfType<AggregateMember.ValueMember>()
-                            .Select(m => m.Declared.GetFullPath(since: _aggregate).Join("?."));
-
-                        return new {
-                            field = m.MemberName,
-                            fieldWithPath = m.GetFullPath(since: _aggregate).Join("."),
-                            editable,
-                            valueFormatter = $"({{ value }}) => ({keysForValueFormatter.Select(path => $"value?.{path}").Join(" + ")}) || ''",
-                            hide = false,
-                            cellEditorName = $"Input.{combobox.ComponentName}",
-                            cellEditorParam = "",
-                        };
-                    } else {
-                        throw new NotImplementedException();
-                    }
-                });
+                var colDefs = Members.Select((member, ix) => DataTableColumn.FromMember(
+                    member,
+                    "item",
+                    _aggregate,
+                    $"col{ix}",
+                    _mode == SingleView.E_Type.View));
 
                 return $$"""
                     const {{ComponentName}} = ({ {{Arguments.Join(", ")}} }: {
@@ -267,21 +221,7 @@ namespace Nijo.Features.Storing {
                         onChangeRow: update,
                     """)}}
                         columns: [
-                    {{colDefs.SelectTextTemplate(def => $$"""
-                          {
-                            id: '{{def.field}}',
-                            accessorFn: row => row.item.{{def.fieldWithPath}},
-                    {{If(_mode != SingleView.E_Type.View, () => $$"""
-                            setValue: (row, value) => row.item.{{def.fieldWithPath}} = value,
-                            cellEditor: (props, ref) => <{{def.cellEditorName}} ref={ref} {...props}{{def.cellEditorParam}} />,
-                    """)}}
-                            // editable: {{def.editable}},
-                            // hide: {{(def.hide ? "true" : "false")}},
-                    {{If(def.valueFormatter != string.Empty, () => $$"""
-                            // valueFormatter: {{def.valueFormatter}},
-                    """)}}
-                          },
-                    """)}}
+                          {{WithIndent(colDefs.SelectTextTemplate(def => def.Render()), "      ")}}
                         ],
                       }), [])
 

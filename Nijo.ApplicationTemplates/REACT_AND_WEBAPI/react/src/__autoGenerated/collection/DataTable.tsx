@@ -27,13 +27,9 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   // 列
   const columnHelper = useMemo(() => RT.createColumnHelper<Tree.TreeNode<T>>(), [])
   const columns = useMemo(() => {
-    const colDefs = treeView
+    return treeView
       ? ([getRowHeader(columnHelper, treeView), ...(propsColumns ?? [])])
       : (propsColumns ?? [])
-    return colDefs.map(col => ({
-      ...col,
-      cell: col.cell ?? (DEFAULT_CELL as RT.ColumnDefTemplate<RT.CellContext<Util.TreeNode<T>, unknown>>),
-    }))
   }, [propsColumns, columnHelper, treeView])
 
   // 表
@@ -208,19 +204,3 @@ const getTdStickeyStyle = (cell: RT.Cell<any, unknown>): React.CSSProperties => 
   left: cell.column.id === ROW_HEADER_ID ? 0 : undefined,
   zIndex: cell.column.id === ROW_HEADER_ID ? TABLE_ZINDEX.ROWHEADER : undefined,
 })
-
-// -----------------------------------------------
-const DEFAULT_CELL: RT.ColumnDefTemplate<RT.CellContext<Util.TreeNode<unknown>, unknown>> = cellProps => {
-
-  const value = cellProps.getValue()
-  const formatted = typeof value === 'object'
-    ? JSON.stringify(value)
-    : (value as React.ReactNode)
-
-  return (
-    <span className="block w-full px-1 overflow-hidden whitespace-nowrap">
-      {formatted}
-      &nbsp; {/* <= すべての値が空の行がつぶれるのを防ぐ */}
-    </span>
-  )
-}

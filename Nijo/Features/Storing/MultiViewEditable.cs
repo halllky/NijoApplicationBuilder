@@ -45,13 +45,34 @@ namespace Nijo.Features.Storing {
                 .OfType<AggregateMember.ValueMember>()
                 .ToArray();
 
-            var gridColumns = _aggregate
+            var rowHeader = new DataTableColumn {
+                Id = "col0",
+                Header = string.Empty,
+                Size = 64,
+                EnableResizing = false,
+                Cell = $$"""
+                    cellProps => {
+                      const row = cellProps.row.original.item
+                      const singleViewUrl = row.state === '+'
+                        ? `{{createView.GetUrlStringForReact(new[] { "row.itemKey" })}}`
+                        : `{{editView.GetUrlStringForReact(keys.Select(k => $"row.item.{k.Declared.GetFullPath().Join("?.")}"))}}`
+                      return (
+                        <div className="flex items-center gap-1 pl-1">
+                          <Link to={singleViewUrl} className="text-link">詳細</Link>
+                          <span className="inline-block w-4 text-center">{row.state}</span>
+                        </div>
+                      )
+                    }
+                    """,
+            };
+            var gridColumns = new[] { rowHeader }.Concat(_aggregate
                 .EnumerateThisAndDescendants()
                 // ChildrenやVariationのメンバーはグリッド上で表現できないため表示しない
                 .Where(agg => agg.EnumerateAncestorsAndThis().All(agg2 => agg2.IsRoot() || agg2.IsChildMember()))
                 .SelectMany(agg => agg.GetMembers())
                 .OfType<AggregateMember.ValueMember>()
-                .Where(vm => !vm.Options.InvisibleInGui);
+                .Where(vm => !vm.Options.InvisibleInGui)
+                .Select((vm, ix) => DataTableColumn.FromMember(vm, "item.item", _aggregate, $"col{ix + 1}", false)));
 
             return new SourceFile {
                 FileName = "list.tsx",
@@ -208,40 +229,7 @@ namespace Nijo.Features.Storing {
                     type GridRow = Util.LocalRepositoryItem<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>
 
                     const COLUMN_DEFS: Layout.ColumnDefEx<Util.TreeNode<GridRow>>[] = [
-                      {
-                        id: 'col0',
-                        header: '',
-                        size: 64,
-                        enableResizing: false,
-                        cell: cellProps => {
-                          const row = cellProps.row.original.item
-                          const singleViewUrl = row.state === '+'
-                            ? `{{createView.GetUrlStringForReact(new[] { "row.itemKey" })}}`
-                            : `{{editView.GetUrlStringForReact(keys.Select(k => $"row.item.{k.Declared.GetFullPath().Join("?.")}"))}}`
-                          return (
-                            <div className="flex items-center gap-1 pl-1">
-                              <Link to={singleViewUrl} className="text-link">詳細</Link>
-                              <span className="inline-block w-4 text-center">{row.state}</span>
-                            </div>
-                          )
-                        },
-                      },
-                    {{gridColumns.SelectTextTemplate((vm, index) => $$"""
-                      {
-                        id: 'col{{index + 1}}',
-                        header: '{{vm.MemberName}}',
-                        accessorFn: data => data.item.item.{{vm.Declared.GetFullPath().Join("?.")}},
-                        setValue: (data, value) => {
-                    {{If(vm.Declared.Owner == _aggregate, () => $$"""
-                          data.item.item.{{vm.Declared.GetFullPath().Join(".")}} = value
-                    """).Else(() => $$"""
-                          if (data.item.item.{{vm.Declared.GetFullPath().SkipLast(1).Join("?.")}})
-                            data.item.item.{{vm.Declared.GetFullPath().Join(".")}} = value
-                    """)}}
-                        },
-                        cellEditor: (props, ref) => <{{vm.Options.MemberType.GetReactComponent(new() { Type = GetReactComponentArgs.E_Type.InDataGrid }).Name}} ref={ref} {...props}{{string.Concat(vm.Options.MemberType.GetReactComponent(new() { Type = GetReactComponentArgs.E_Type.InDataGrid }).GetPropsStatement())}} />,
-                      },
-                    """)}}
+                      {{WithIndent(gridColumns.SelectTextTemplate(col => col.Render()), "  ")}}
                     ]
 
                     // TODO: utilに持っていく
