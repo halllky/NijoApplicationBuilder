@@ -63,12 +63,6 @@ namespace Nijo.Util.CodeGenerating {
         internal static string SelectTextTemplate<T>(this IEnumerable<T> values, Func<T, int, string> selector) {
             return values.Select(selector).Join(Environment.NewLine);
         }
-        internal static string SelectTextTemplate<T>(this IEnumerable<T> values, Func<T, TemplateTextHelper> selector) {
-            return values
-                .Select(selector)
-                .Select(helper => helper.ToString())
-                .Join(Environment.NewLine);
-        }
     }
 }
 

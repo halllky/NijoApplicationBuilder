@@ -283,8 +283,8 @@ namespace Nijo.Features.Storing {
                              && m is not AggregateMember.VariationItem);
                 return $$"""
                     public class {{GetConditionClassName(agg)}} {
-                    {{members.SelectTextTemplate(m =>
-                    If(m is AggregateMember.Variation, () => $$"""
+                    {{members.SelectTextTemplate(m => $$"""
+                    {{If(m is AggregateMember.Variation, () => $$"""
                     {{VariationMemberProps((AggregateMember.Variation)m).SelectTextTemplate(x => $$"""
                         public bool? {{x.Value}} { get; set; }
                     """)}}
@@ -292,7 +292,8 @@ namespace Nijo.Features.Storing {
                         public {{GetCSharpType((AggregateMember.ValueMember)m)}}? {{m.MemberName}} { get; set; }
                     """).ElseIf(m is AggregateMember.RelationMember, () => $$"""
                         public {{GetConditionClassName(((AggregateMember.RelationMember)m).MemberAggregate)}}? {{m.MemberName}} { get; set; } = new();
-                    """))}}
+                    """)}}
+                    """)}}
                     }
                     """;
             });
@@ -311,8 +312,8 @@ namespace Nijo.Features.Storing {
                              && m is not AggregateMember.VariationItem);
                 return $$"""
                     export type {{GetConditionClassName(agg)}} = {
-                    {{members.SelectTextTemplate(m =>
-                    If(m is AggregateMember.Variation, () => $$"""
+                    {{members.SelectTextTemplate(m => $$"""
+                    {{If(m is AggregateMember.Variation, () => $$"""
                     {{VariationMemberProps((AggregateMember.Variation)m).SelectTextTemplate(x => $$"""
                       {{x.Value}}?: boolean
                     """)}}
@@ -320,7 +321,8 @@ namespace Nijo.Features.Storing {
                       {{m.MemberName}}?: {{GetTypeScriptType((AggregateMember.ValueMember)m)}}
                     """).ElseIf(m is AggregateMember.RelationMember, () => $$"""
                       {{m.MemberName}}?: {{GetConditionClassName(((AggregateMember.RelationMember)m).MemberAggregate)}}
-                    """))}}
+                    """)}}
+                    """)}}
                     }
                     """;
             });
