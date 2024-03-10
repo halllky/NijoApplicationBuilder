@@ -75,7 +75,7 @@ export const TabGroup = <T,>({
       {/* タブのコンテンツ（選択中以外はhidden） */}
       {
         items.map((item, index) => (
-          <div key={index} className={`flex-1 p-1 border ${BORDER_COLOR} bg-color-base ${item !== selectedItem && 'hidden'}`}>
+          <div key={index} className={`relative flex-1 p-1 border ${BORDER_COLOR} bg-color-base ${item !== selectedItem && 'hidden'}`}>
             {children?.({ item, index })}
           </div>
         ))

@@ -164,7 +164,7 @@ namespace Nijo.Features.Storing {
                                         underline
                                         icon={XMarkIcon}
                                         onClick={onRemove({{loopVar}})}
-                                        className="absolute top-full right-0">
+                                        className="absolute top-0 right-0">
                                         削除
                                       </Input.IconButton>
                                     </VForm.Row>
