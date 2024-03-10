@@ -312,7 +312,7 @@ namespace Nijo.Features.Storing {
                   table
                   label={<>
                     {{variationSwitch.MemberName}}
-                    <Input.SelectionEmitsKey
+                    <Input.Selection
                       {...registerEx({{switchProp}})}
                       options={[
                 {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""

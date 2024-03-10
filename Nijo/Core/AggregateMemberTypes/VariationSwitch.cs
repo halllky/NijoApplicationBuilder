@@ -21,13 +21,19 @@ namespace Nijo.Core.AggregateMemberTypes {
             var options = _variationGroup
                 .VariationAggregates
                 .Select(kv => $"{{ key: '{kv.Key}', text: '{kv.Value.RelationName}' }}");
+            var props = new Dictionary<string, string> {
+                { "options", $"[{options.Join(", ")}]" },
+                { "keySelector", "x => x.key" },
+                { "textSelector", "x => x.text" },
+            };
+
+            // DataTable内ならばラジオボタンではなくコンボボックス
+            if (e.Type == GetReactComponentArgs.E_Type.InDataGrid)
+                props.Add("combo", string.Empty);
+
             return new ReactInputComponent {
-                Name = "Input.SelectionEmitsKey",
-                Props = new Dictionary<string, string> {
-                    { "options", $"[{options.Join(", ")}]" },
-                    { "keySelector", "x => x.key" },
-                    { "textSelector", "x => x.text" },
-                },
+                Name = "Input.Selection",
+                Props = props,
                 GridCellFormatStatement = (value, formatted) => {
                     var keyValues = _variationGroup
                         .VariationAggregates

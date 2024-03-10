@@ -5,30 +5,18 @@ import { CustomComponentProps, CustomComponentRef, defineCustomComponent } from 
 import { ComboBoxBase } from "./ComboBoxBase"
 import { RadioGroupBase, ToggleBase } from "./ToggleBase"
 
-/** ラジオボタン or コンボボックス */
-export const Selection = defineCustomComponent(<T extends {}>(
-  props: CustomComponentProps<T, {
-    options: T[]
-    keySelector: (item: T) => string
-    textSelector: (item: T) => string
-  }>,
-  ref: React.ForwardedRef<CustomComponentRef<T>>
-) => {
-  return props.options.length > 5
-    ? <ComboBoxBase ref={ref} {...props} />
-    : <RadioGroupBase ref={ref} {...props} />
-})
-
-/** ラジオボタン（選択された要素ではなく選択された要素のキーを登録するためのもの） */
-export const SelectionEmitsKey = defineCustomComponent(<TItem extends {}, TKey extends string = string>(
+/** ラジオボタン or コンボボックス。選択された要素ではなく選択された要素のキーをvalue,onChangeにとる */
+export const Selection = defineCustomComponent(<TItem extends {}, TKey extends string = string>(
   props: CustomComponentProps<TKey, {
     options: TItem[]
     keySelector: (item: TItem) => TKey
     textSelector: (item: TItem) => string
+    radio?: boolean
+    combo?: boolean
   }>,
   ref: React.ForwardedRef<CustomComponentRef<TKey>>
 ) => {
-  const { options, keySelector, value, onChange, ...rest } = props
+  const { options, keySelector, value, onChange, radio, combo, ...rest } = props
 
   // value
   const objValue = useMemo(() => {
@@ -48,7 +36,15 @@ export const SelectionEmitsKey = defineCustomComponent(<TItem extends {}, TKey e
     focus: () => radioRef.current?.focus(),
   }))
 
-  return options.length > 5
+  const type = useMemo(() => {
+    if (radio) return 'radio' as const
+    if (combo) return 'combo' as const
+    return options.length > 5
+      ? 'combo' as const
+      : 'radio' as const
+  }, [radio, combo, options])
+
+  return type === 'combo'
     ? (
       <ComboBoxBase
         ref={radioRef}
