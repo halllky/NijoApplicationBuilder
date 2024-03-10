@@ -39,7 +39,7 @@ namespace Nijo.Features.BatchUpdate {
 
                     export const useLocalRepositoryCommitHandling = () => {
                       const [, dispatchMsg] = useMsgContext()
-                      const { post } = useHttpRequest()
+                      const { post, httpDelete } = useHttpRequest()
 
                       const saveHandlerMap = useMemo(() => new Map<string, SaveLocalItemHandler>([
                     {{aggregates.SelectTextTemplate(agg => $$"""
@@ -56,7 +56,7 @@ namespace Nijo.Features.BatchUpdate {
                     
                           } else if (localReposItem.state === '-') {
                             const url = `{{new Controller(agg.Item).DeleteCommandApi}}/{{DeleteKeyUrlParam(agg)}}`
-                            const response = await post<AggregateType.{{agg.Item.TypeScriptTypeName}}>(url)
+                            const response = await httpDelete(url)
                             return { commit: response.ok }
                     
                           } else {
@@ -65,7 +65,7 @@ namespace Nijo.Features.BatchUpdate {
                           }
                         }],
                     """)}}
-                      ]), [post, dispatchMsg])
+                      ]), [post, httpDelete, dispatchMsg])
 
                       return useCallback(async (
                         commit: LocalRepositoryContextValue['commit'],

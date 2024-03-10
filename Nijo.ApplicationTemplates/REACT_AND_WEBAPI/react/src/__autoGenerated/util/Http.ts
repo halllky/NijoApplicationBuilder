@@ -23,7 +23,9 @@ export const useHttpRequest = () => {
       if (response.ok) {
         const text = await response.text()
         try {
-          const data = JSON.parse(text) as T
+          const data = text === ''
+            ? '' as T
+            : JSON.parse(text) as T
           return { ok: true, data }
         } catch {
           dispatchMsg(msg => msg.warn(`処理は成功しましたがサーバーからのレスポンスを解釈できませんでした: ${text}`))
@@ -85,5 +87,11 @@ export const useHttpRequest = () => {
     }])
   }, [dotnetWebApiDomain, sendHttpRequest, dispatchMsg])
 
-  return { get, post }
+  const httpDelete = useCallback(async (url: string) => {
+    return await sendHttpRequest([`${dotnetWebApiDomain}${url}`, {
+      method: 'delete',
+    }])
+  }, [dotnetWebApiDomain, sendHttpRequest])
+
+  return { get, post, httpDelete }
 }
