@@ -5,11 +5,12 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Core.AggregateMemberTypes {
-    internal class YearMonthDay : SchalarType<DateTime> {
-        public override string GetCSharpTypeName() => "DateTime";
-        public override string GetTypeScriptTypeName() => "string";
+    internal class YearMonthDay : IAggregateMemberType {
+        public SearchBehavior SearchBehavior => SearchBehavior.Range;
+        public string GetCSharpTypeName() => "DateTime";
+        public string GetTypeScriptTypeName() => "string";
 
-        public override ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
+        public ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
             return new ReactInputComponent {
                 Name = "Input.Date",
                 GridCellFormatStatement = (value, formatted) => $$"""

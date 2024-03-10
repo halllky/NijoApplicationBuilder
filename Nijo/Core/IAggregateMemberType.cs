@@ -58,32 +58,4 @@ namespace Nijo.Core {
             InDataGrid,
         }
     }
-
-    /// <summary>
-    /// 現実のものや出来事を分類する値。ID、名前、列挙体など。
-    /// </summary>
-    public abstract class CategorizeType : IAggregateMemberType {
-        public abstract SearchBehavior SearchBehavior { get; }
-        public abstract string GetCSharpTypeName();
-        public abstract string GetTypeScriptTypeName();
-        public abstract ReactInputComponent GetReactComponent(GetReactComponentArgs e);
-    }
-
-
-    /// <summary>
-    /// 連続した量をもつ値。数値、日付時刻など。
-    /// </summary>
-    public abstract class SchalarType : IAggregateMemberType {
-        public SearchBehavior SearchBehavior => SearchBehavior.Range;
-        public abstract string GetCSharpTypeName();
-        public abstract string GetTypeScriptTypeName();
-        public abstract ReactInputComponent GetReactComponent(GetReactComponentArgs e);
-        //object? Min { get; }
-        //object? Max { get; }
-    }
-    /// <inheritdoc/>
-    public abstract class SchalarType<T> : SchalarType {
-        //new T? Min { get; }
-        //new T? Max { get; }
-    }
 }

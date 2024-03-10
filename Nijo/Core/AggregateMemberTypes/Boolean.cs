@@ -5,12 +5,12 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Core.AggregateMemberTypes {
-    internal class Boolean : CategorizeType {
-        public override string GetCSharpTypeName() => "bool";
-        public override string GetTypeScriptTypeName() => "boolean";
-        public override SearchBehavior SearchBehavior => SearchBehavior.Strict;
+    internal class Boolean : IAggregateMemberType {
+        public string GetCSharpTypeName() => "bool";
+        public string GetTypeScriptTypeName() => "boolean";
+        public SearchBehavior SearchBehavior => SearchBehavior.Strict;
 
-        public override ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
+        public ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
             return new ReactInputComponent {
                 Name = e.Type == GetReactComponentArgs.E_Type.InDataGrid
                     ? "Input.BooleanComboBox"

@@ -6,19 +6,19 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Core.AggregateMemberTypes {
-    public class EnumList : CategorizeType {
+    public class EnumList : IAggregateMemberType {
         public EnumList(EnumDefinition definition) {
             Definition = definition;
         }
         public EnumDefinition Definition { get; }
 
-        public override SearchBehavior SearchBehavior => SearchBehavior.Strict;
-        public override string GetCSharpTypeName() => Definition.Name;
-        public override string GetTypeScriptTypeName() {
+        public SearchBehavior SearchBehavior => SearchBehavior.Strict;
+        public string GetCSharpTypeName() => Definition.Name;
+        public string GetTypeScriptTypeName() {
             return Definition.Items.Select(x => $"'{x.PhysicalName}'").Join(" | ");
         }
 
-        public override ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
+        public ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
             return new ReactInputComponent {
                 Name = e.Type == GetReactComponentArgs.E_Type.InDetailView
                     ? "Input.Selection"
