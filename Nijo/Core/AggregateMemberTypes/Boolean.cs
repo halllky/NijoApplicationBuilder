@@ -15,7 +15,9 @@ namespace Nijo.Core.AggregateMemberTypes {
                 Name = e.Type == GetReactComponentArgs.E_Type.InDataGrid
                     ? "Input.BooleanComboBox"
                     : "Input.CheckBox",
-                GridCellValueFormatter = value => $"({value} === undefined ? '' : ({value} ? '○' : '-'))",
+                GridCellFormatStatement = (value, formatted) => $$"""
+                    const {{formatted}} = ({{value}} === undefined ? '' : ({{value}} ? '○' : '-'))
+                    """,
             };
         }
     }

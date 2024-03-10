@@ -30,10 +30,8 @@ namespace Nijo.Parts.WebClient {
                 var component = vm.Options.MemberType.GetReactComponent(new() {
                     Type = GetReactComponentArgs.E_Type.InDataGrid,
                 });
-                if (component.GridCellValueFormatter != null) {
-                    formatted = $$"""
-                        const formatted = {{component.GridCellValueFormatter("value")}}
-                        """;
+                if (component.GridCellFormatStatement != null) {
+                    formatted = component.GridCellFormatStatement("value", "formatted");
                 }
             } else if (refMember != null) {
                 var names = refMember.MemberAggregate

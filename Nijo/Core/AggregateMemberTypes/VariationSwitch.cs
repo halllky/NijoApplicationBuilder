@@ -1,3 +1,4 @@
+using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
@@ -26,6 +27,17 @@ namespace Nijo.Core.AggregateMemberTypes {
                     { "options", $"[{options.Join(", ")}]" },
                     { "keySelector", "x => x.key" },
                     { "textSelector", "x => x.text" },
+                },
+                GridCellFormatStatement = (value, formatted) => {
+                    var keyValues = _variationGroup
+                        .VariationAggregates
+                        .Select(kv => new { kv.Key, kv.Value.RelationName });
+                    return $$"""
+                        let {{formatted}} = ''
+                        {{keyValues.SelectTextTemplate(kv => $$"""
+                        if ({{value}} === '{{kv.Key}}') {{formatted}} = '{{kv.RelationName}}'
+                        """)}}
+                        """;
                 },
             };
         }

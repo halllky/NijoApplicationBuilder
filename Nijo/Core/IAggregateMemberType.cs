@@ -33,7 +33,7 @@ namespace Nijo.Core {
     public sealed class ReactInputComponent {
         public required string Name { get; init; }
         public Dictionary<string, string> Props { get; init; } = [];
-        public Func<string, string>? GridCellValueFormatter { get; init; }
+        public Func<string, string, string>? GridCellFormatStatement { get; init; }
 
         /// <summary>
         /// <see cref="Props"/> をReactのコンポーネントのレンダリングの呼び出し時用の記述にして返す
