@@ -72,9 +72,7 @@ namespace Nijo.Parts.WebClient {
 
             } else if (member is AggregateMember.Ref rm2) {
                 var combobox = new ComboBox(rm2.MemberAggregate);
-                cellEditor = readOnly
-                    ? null
-                    : $"(props, ref) => <Input.{combobox.ComponentName} ref={{ref}} {{...props}} />";
+                cellEditor = $"(props, ref) => <Input.{combobox.ComponentName} ref={{ref}} {{...props}} />";
 
             } else {
                 throw new InvalidProgramException();
