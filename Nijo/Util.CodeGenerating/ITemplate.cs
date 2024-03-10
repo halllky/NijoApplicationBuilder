@@ -12,37 +12,42 @@ namespace Nijo.Util.CodeGenerating {
     /// <summary>
     /// テンプレート文字列簡略化用
     /// </summary>
-    internal class TemplateTextHelper {
+    internal partial class TemplateTextHelper {
         private TemplateTextHelper(StringBuilder stringBuilder) {
             _stringBuilder = stringBuilder;
-            _eval = true;
+            _evaluated = false;
         }
 
         private readonly StringBuilder _stringBuilder;
-        private bool _eval;
+        private bool _evaluated;
 
         internal static TemplateTextHelper If(bool condition, Func<string> text) {
             var helper = new TemplateTextHelper(new StringBuilder());
             if (condition) {
                 helper._stringBuilder.AppendLine(text());
-                helper._eval = false;
+                helper._evaluated = true;
             }
             return helper;
         }
         internal TemplateTextHelper ElseIf(bool condition, Func<string> text) {
-            if (_eval && condition) {
+            if (!_evaluated && condition) {
                 _stringBuilder.AppendLine(text());
-                _eval = false;
+                _evaluated = true;
             }
             return this;
         }
-        internal string Else(Func<string> text) {
-            if (_eval) _stringBuilder.AppendLine(text());
-            return ToString();
+        internal TemplateTextHelper Else(Func<string> text) {
+            if (!_evaluated) {
+                _stringBuilder.AppendLine(text());
+                _evaluated = true;
+            }
+            return this;
         }
 
         public override string ToString() {
-            return _stringBuilder.ToString().TrimEnd();
+            return _evaluated
+                ? _stringBuilder.ToString().TrimEnd()
+                : SKIP_MARKER;
         }
 
         internal static string WithIndent(IEnumerable<string> content, string indent) {
@@ -55,13 +60,28 @@ namespace Nijo.Util.CodeGenerating {
                 .Split(Environment.NewLine)
                 .Join(Environment.NewLine + indent);
         }
+
+        /// <summary>
+        /// この文字列が存在する行はファイルにレンダリングされない。
+        /// 
+        /// <see cref="If(bool, Func{string})"/> や
+        /// <see cref="TemplateTextHelperExtensions.SelectTextTemplate{T}(IEnumerable{T}, Func{T, string})"/>
+        /// によって条件に合致しなかったり要素の数が0だったりして空行が生成されてしまうのを防ぐためのもの。
+        /// </summary>
+        internal static string SKIP_MARKER = "\0\0\0\0\0\0\0\0\0\0\0"; // 通常のソースコード上に現れなさそうな文字列であれば何でもよい
     }
     internal static class TemplateTextHelperExtensions {
         internal static string SelectTextTemplate<T>(this IEnumerable<T> values, Func<T, string> selector) {
-            return values.Select(selector).Join(Environment.NewLine);
+            var sourceCode = values.Select(selector).Join(Environment.NewLine);
+            return sourceCode == string.Empty
+                ? SKIP_MARKER
+                : sourceCode;
         }
         internal static string SelectTextTemplate<T>(this IEnumerable<T> values, Func<T, int, string> selector) {
-            return values.Select(selector).Join(Environment.NewLine);
+            var sourceCode = values.Select(selector).Join(Environment.NewLine);
+            return sourceCode == string.Empty
+                ? SKIP_MARKER
+                : sourceCode;
         }
     }
 }

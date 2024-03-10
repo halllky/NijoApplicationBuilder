@@ -42,10 +42,11 @@ namespace Nijo.Util.CodeGenerating {
             using var sw = new StreamWriter(file, append: false, encoding: GetEncoding(file));
             var ext = System.IO.Path.GetExtension(file).ToLower();
             sw.NewLine = ext == ".cs" ? "\r\n" : "\n";
-            var content = sourceFile
-                .RenderContent()
-                .Replace(Environment.NewLine, sw.NewLine);
-            sw.WriteLine(content);
+
+            foreach (var line in sourceFile.RenderContent().Split(Environment.NewLine)) {
+                if (line.Contains(SKIP_MARKER)) continue;
+                sw.WriteLine(line);
+            }
         }
 
         public void CopyFrom(string copySourceFile) {
