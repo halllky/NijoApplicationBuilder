@@ -63,8 +63,8 @@ function ApplicationRootInContext({ children }: {
             <nav className="flex-1 overflow-y-auto leading-none">
               <SideMenuLink url="/changes" icon={Icon.ArrowsUpDownIcon}>
                 {changesCount === 0
-                  ? <span>変更</span>
-                  : <span className="font-bold">変更&nbsp;({changesCount})</span>}
+                  ? <span>一時保存</span>
+                  : <span className="font-bold">一時保存&nbsp;({changesCount})</span>}
               </SideMenuLink>
               <SideMenuLink url="/settings" icon={Icon.Cog8ToothIcon}>設定</SideMenuLink>
             </nav>

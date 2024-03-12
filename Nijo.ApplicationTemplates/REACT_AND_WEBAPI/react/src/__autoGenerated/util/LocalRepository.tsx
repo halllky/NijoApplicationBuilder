@@ -178,7 +178,7 @@ export const LocalReposChangeListPage = () => {
   return (
     <div className="page-content-root">
       <div className="flex gap-2 justify-start">
-        <span className="font-bold">変更</span>
+        <span className="font-bold">一時保存</span>
         <div className="flex-1"></div>
         <Input.Button onClick={handleCommit}>確定</Input.Button>
         <Input.Button onClick={handleReset}>取り消し</Input.Button>
