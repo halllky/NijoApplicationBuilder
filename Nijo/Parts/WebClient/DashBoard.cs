@@ -62,8 +62,7 @@ namespace Nijo.Parts.WebClient {
                             )}
 
                     {{app.DashBoardContents.SelectTextTemplate(source => $$"""
-                            <VForm.Spacer />
-                            <VForm.Spacer />
+                            <VForm.Spacer large />
 
                             {{WithIndent(source, "        ")}}
 

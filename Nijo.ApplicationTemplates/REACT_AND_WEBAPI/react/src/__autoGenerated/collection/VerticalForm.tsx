@@ -168,8 +168,11 @@ const Indent = ({ depth, tableStartDepth }: {
   </>
 }
 
-const Spacer = () => {
-  return <div className="m-3"></div>
+const Spacer = ({ large }: {
+  large?: boolean
+}) => {
+  const className = large ? 'm-6' : 'm-3'
+  return <div className={className}></div>
 }
 // ----------------------------------------
 const BG_COLOR_HEADER = 'bg-color-3'
