@@ -25,7 +25,9 @@ namespace Nijo.Util.CodeGenerating {
         public void EditWebApiDirectory(Action<DirectorySetupper> webapiDirHandler) => webapiDirHandler.Invoke(_webapiDir!);
         public void EditReactDirectory(Action<DirectorySetupper> reactDirHandler) => reactDirHandler.Invoke(_reactDir!);
 
-        private readonly App _app = new();
+        internal readonly App _app = new();
+
+        // TODO: このへんのラッパーメソッドが冗長
         public void UseAggregateFile(GraphNode<Aggregate> aggregate, Action<AggregateFile> fn) => _app.Aggregate(aggregate, fn);
         public void ConfigureServices(Func<string, string> fn) => _app.ConfigureServices.Add(fn);
         public void ConfigureServicesWhenWebServer(Func<string, string> fn) => _app.ConfigureServicesWhenWebServer.Add(fn);

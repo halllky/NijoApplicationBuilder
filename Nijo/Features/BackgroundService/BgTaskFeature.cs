@@ -11,7 +11,9 @@ using Nijo.Parts.WebClient;
 namespace Nijo.Features.BackgroundService {
     internal partial class BgTaskFeature : IFeature {
 
-        public static string GetApiURL(CodeRenderingContext ctx) {
+        private const string REACT_BG_DIR = "background-task";
+
+        public static string GetScheduleApiURL(CodeRenderingContext ctx) {
             var bgTaskAggregate = ctx.Schema.GetAggregate(GraphNodeId);
             var controller = new Controller(bgTaskAggregate.Item);
             return $"{controller.SubDomain}/{SCHEDULE}";
@@ -34,8 +36,19 @@ namespace Nijo.Features.BackgroundService {
                 });
             });
 
+            context._app.DashBoardImports.Add($$"""
+                import { BackgroundTaskList } from '../{{REACT_BG_DIR}}/BackgroundTaskList'
+                """);
+            context._app.DashBoardContents.Add($$"""
+                <BackgroundTaskList />
+                """);
+            context.EditReactDirectory(reactDir => {
+                reactDir.Directory(REACT_BG_DIR, bgDir => {
+                    bgDir.Generate(RenderBgTaskListComponent(context));
+                });
+            });
+
             context.ConfigureServicesWhenWebServer(services => $$"""
-                //// バッチ処理
                 {{services}}.AddHostedService<BackgroundTaskLauncher>();
                 """);
 
@@ -44,7 +57,8 @@ namespace Nijo.Features.BackgroundService {
                     {{ENTITY_CLASSNAME}}.OnModelCreating({{modelBuilder}});
                     """);
 
-                builder.ControllerActions.Add(RenderAspControllerAction(context));
+                builder.ControllerActions.Add(RenderAspControllerScheduleAction(context));
+                builder.ControllerActions.Add(RenderAspControllerListAction(context));
             });
         }
     }

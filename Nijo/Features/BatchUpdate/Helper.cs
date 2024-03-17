@@ -51,7 +51,7 @@ namespace Nijo.Features.BatchUpdate {
                       const executeBatchUpdate = useCallback(async () => {
                         const groups = groupBy(useFormExReturnValues.getValues('items'), x => x.type)
                         for (const group of groups) {
-                          const url = `/{{BackgroundService.BgTaskFeature.GetApiURL(context)}}/{{JOBKEY}}`
+                          const url = `/{{BackgroundService.BgTaskFeature.GetScheduleApiURL(context)}}/{{JOBKEY}}`
                           const param = {
                             DataType: group[0],
                             Items: group[1].map(({ act, item }) => ({

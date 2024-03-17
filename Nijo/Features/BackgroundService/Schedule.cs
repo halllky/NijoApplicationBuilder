@@ -11,7 +11,7 @@ namespace Nijo.Features.BackgroundService {
 
         private const string SCHEDULE = "schedule";
 
-        private string RenderAspControllerAction(CodeRenderingContext ctx) {
+        private string RenderAspControllerScheduleAction(CodeRenderingContext ctx) {
             return $$"""
                 [HttpPost("{{SCHEDULE}}/{jobType}")]
                 public virtual IActionResult Schedule(string? jobType, [FromBody] object? param) {
