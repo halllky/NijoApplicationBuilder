@@ -79,6 +79,10 @@ namespace Nijo {
                 name: "--keep-temp-if-error",
                 description: "作成に失敗した場合、原因調査ができるようにするため一時フォルダを削除せず残します。");
 
+            var mermaid = new Option<bool>(
+                name: "--mermaid",
+                description: "スキーマ定義をMermaid形式で表示します。");
+
             // コマンド定義
             var create = new Command(name: "create", description: "新しいプロジェクトを作成します。") { verbose, applicationName, keepTempIferror };
             create.SetHandler((verbose, applicationName, keepTempIferror) => {
@@ -151,15 +155,21 @@ namespace Nijo {
             }, verbose, path);
             rootCommand.AddCommand(debug);
 
-            var dump = new Command(name: "dump", description: "スキーマ定義から構築したスキーマ詳細をTSV形式で出力します。") { verbose, path };
-            dump.SetHandler((verbose, path) => {
+            var dump = new Command(
+                name: "dump",
+                description: "スキーマ定義から構築したスキーマ詳細を出力します。")
+                { verbose, path, mermaid };
+            dump.SetHandler((verbose, path, mermaid) => {
                 var logger = ILoggerExtension.CreateConsoleLogger(verbose);
-                var tsv = GeneratedProject
+                var schema = GeneratedProject
                     .Open(path, serviceProvider, logger)
-                    .BuildSchema()
-                    .DumpTsv();
-                Console.WriteLine(tsv);
-            }, verbose, path);
+                    .BuildSchema();
+                if (mermaid) {
+                    Console.WriteLine(schema.Graph.ToMermaidText());
+                } else {
+                    Console.WriteLine(schema.DumpTsv());
+                }
+            }, verbose, path, mermaid);
             rootCommand.AddCommand(dump);
 
             return rootCommand;
