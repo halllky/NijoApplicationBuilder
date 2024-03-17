@@ -54,7 +54,7 @@ namespace Nijo.Parts.WebClient {
 
                             {import.meta.env.DEV && (
                               <VForm.Section label="デバッグ用コマンド ※この欄は開発環境でのみ表示されます" table>
-                                <VForm.Row fullWidth>
+                                <VForm.Row label="データベース">
                                   <Input.Button outlined onClick={recreateDatabase}>DBを再作成する</Input.Button>
                                   <Input.CheckBox value={withDummyData} onChange={setWithDummyData}>ダミーデータも併せて作成する</Input.CheckBox>
                                 </VForm.Row>
