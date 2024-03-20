@@ -145,7 +145,7 @@ namespace Nijo {
                             firstLaunch = false;
                         }
                     } catch (Exception ex) {
-                        logger.LogError("{msg}", ex.Message);
+                        logger.LogError("{msg}", ex.ToString());
                     }
 
                     // キー入力待機
