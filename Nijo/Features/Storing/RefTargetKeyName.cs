@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
 
-namespace Nijo.Parts.WebServer {
+namespace Nijo.Features.Storing {
     internal class RefTargetKeyName {
         internal RefTargetKeyName(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;

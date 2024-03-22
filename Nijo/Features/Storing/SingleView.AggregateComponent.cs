@@ -7,7 +7,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
-using Nijo.Parts.WebServer;
 using System.ComponentModel;
 using Nijo.Parts.WebClient;
 

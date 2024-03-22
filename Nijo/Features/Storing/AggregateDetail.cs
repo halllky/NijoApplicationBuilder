@@ -9,7 +9,7 @@ using Nijo.Parts.Utility;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Nijo.Util.CodeGenerating;
 
-namespace Nijo.Parts.WebServer {
+namespace Nijo.Features.Storing {
     internal class AggregateDetail {
         internal AggregateDetail(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
