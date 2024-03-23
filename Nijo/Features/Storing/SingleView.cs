@@ -235,7 +235,7 @@ namespace Nijo.Features.Storing {
                           setFetched({ ...item })
                           setLocalReposItemKey(itemKey)
                         })()
-                      }, [localReposIsReady, {{urlKeys.Join(", ")}}, get, setFetched, setLocalReposItemKey, dispatchMsg])
+                      }, [localReposIsReady, findLocalItem, {{urlKeys.Join(", ")}}, get, setFetched, setLocalReposItemKey, dispatchMsg])
 
                     """)}}
 
