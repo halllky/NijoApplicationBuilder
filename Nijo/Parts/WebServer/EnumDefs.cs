@@ -10,7 +10,7 @@ namespace Nijo.Parts.WebServer {
 
         internal static SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
             FileName = "Enum.cs",
-            RenderContent = () => $$"""
+            RenderContent = context => $$"""
                 namespace {{ctx.Config.RootNamespace}} {
                     using System.ComponentModel.DataAnnotations;
 

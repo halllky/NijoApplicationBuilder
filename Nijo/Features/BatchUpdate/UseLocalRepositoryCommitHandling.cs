@@ -27,7 +27,7 @@ namespace Nijo.Features.BatchUpdate {
 
             return new SourceFile {
                 FileName = "LocalRepository.Commit.ts",
-                RenderContent = () => $$"""
+                RenderContent = context => $$"""
                     /**
                      * このファイルはソース自動生成によって上書きされます。
                      */

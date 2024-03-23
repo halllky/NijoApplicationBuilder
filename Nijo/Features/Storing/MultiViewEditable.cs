@@ -76,7 +76,7 @@ namespace Nijo.Features.Storing {
 
             return new SourceFile {
                 FileName = "list.tsx",
-                RenderContent = () => $$"""
+                RenderContent = context => $$"""
                     import React, { useCallback, useEffect, useMemo, useRef, useState, useReducer } from 'react'
                     import { Link } from 'react-router-dom'
                     import { useFieldArray, FormProvider } from 'react-hook-form'

@@ -32,7 +32,7 @@ namespace Nijo.Parts.WebServer {
 
             return new SourceFile {
                 FileName = $"{_aggregate.Item.DisplayName.ToFileNameSafe()}.cs",
-                RenderContent = () => $$"""
+                RenderContent = context => $$"""
                     namespace {{context.Config.RootNamespace}} {
                         using System;
                         using System.Collections;

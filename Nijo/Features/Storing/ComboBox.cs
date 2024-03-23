@@ -22,7 +22,7 @@ namespace Nijo.Features.Storing {
 
         internal static SourceFile RenderDeclaringFile(CodeRenderingContext ctx) => new SourceFile {
             FileName = "AggregateComboBox.tsx",
-            RenderContent = () => $$"""
+            RenderContent = context => $$"""
                 import React, { useState, useCallback } from "react"
                 import { useHttpRequest } from "../util"
                 import { defineCustomComponent, AsyncComboBox } from "../input"

@@ -14,7 +14,7 @@ namespace Nijo.Parts.Utility {
 
         internal static SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
             FileName = $"FromTo.cs",
-            RenderContent = () => $$"""
+            RenderContent = context => $$"""
                 using System;
                 namespace {{ctx.Config.RootNamespace}} {
                     public partial class {{CLASSNAME}} {

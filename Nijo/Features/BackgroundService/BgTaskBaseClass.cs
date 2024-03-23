@@ -11,7 +11,7 @@ namespace Nijo.Features.BackgroundService {
 
         private static SourceFile BgTaskBaseClass(CodeRenderingContext ctx) => new SourceFile {
             FileName = "BackgroundTask.cs",
-            RenderContent = () => $$"""
+            RenderContent = context => $$"""
                 using System.Reflection;
                 using System.Text.Json;
 

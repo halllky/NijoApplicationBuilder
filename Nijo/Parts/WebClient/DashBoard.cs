@@ -11,7 +11,7 @@ namespace Nijo.Parts.WebClient {
 
             return new SourceFile {
                 FileName = "DashBoard.tsx",
-                RenderContent = () => $$"""
+                RenderContent = context => $$"""
                     import { useCallback, useState } from 'react'
                     import { useHttpRequest, useMsgContext, useDummyDataGenerator, useLocalRepositoryChangeList } from '../util'
                     import * as Input from '../input'

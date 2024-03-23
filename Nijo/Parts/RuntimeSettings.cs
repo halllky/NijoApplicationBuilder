@@ -19,7 +19,7 @@ namespace Nijo.Parts {
 
         internal static SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
             FileName = $"RuntimeSettings.cs",
-            RenderContent = () => $$"""
+            RenderContent = context => $$"""
                 namespace {{ctx.Config.RootNamespace}} {
                     using System.Text.Json;
                     using System.Text.Json.Serialization;

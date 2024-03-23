@@ -60,7 +60,7 @@ namespace Nijo.Features.BackgroundService {
 
             return new SourceFile {
                 FileName = "BackgroundTaskList.tsx",
-                RenderContent = () => $$"""
+                RenderContent = context => $$"""
                     import { useEffect, useState } from 'react'
                     import dayjs from 'dayjs'
                     import * as Collection from '../collection'

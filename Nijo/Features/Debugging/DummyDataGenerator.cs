@@ -16,7 +16,7 @@ namespace Nijo.Features.Debugging {
 
         internal static SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
             FileName = "useDummyDataGenerator.ts",
-            RenderContent = () => {
+            RenderContent = context => {
                 var random = new Random(0);
                 var ordered = ctx.Schema
                     .RootAggregatesOrderByDataFlow()

@@ -9,7 +9,7 @@ namespace Nijo.Parts.Utility {
     internal class AggregateUpdateEvent {
         internal static SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
             FileName = "AggregateUpdateEvent.cs",
-            RenderContent = () => $$"""
+            RenderContent = context => $$"""
                 using System;
                 using System.Collections;
                 using System.Collections.Generic;

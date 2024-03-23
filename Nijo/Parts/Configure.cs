@@ -26,7 +26,7 @@ namespace Nijo.Parts {
 
             return new SourceFile {
                 FileName = "DefaultConfigurer.cs",
-                RenderContent = () => {
+                RenderContent = context => {
                     var appSrv = new WebServer.ApplicationService();
                     var runtimeServerSettings = RuntimeSettings.ServerSetiingTypeFullName;
 

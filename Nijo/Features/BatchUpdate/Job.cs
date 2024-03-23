@@ -19,7 +19,7 @@ namespace Nijo.Features.BatchUpdate {
 
             return new SourceFile {
                 FileName = "BatchUpdateTask.cs",
-                RenderContent = () => $$"""
+                RenderContent = context => $$"""
                     namespace {{context.Config.RootNamespace}} {
                         using System.Text.Json;
 

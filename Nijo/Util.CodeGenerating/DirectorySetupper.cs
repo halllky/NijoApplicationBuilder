@@ -43,7 +43,7 @@ namespace Nijo.Util.CodeGenerating {
             var ext = System.IO.Path.GetExtension(file).ToLower();
             sw.NewLine = ext == ".cs" ? "\r\n" : "\n";
 
-            foreach (var line in sourceFile.RenderContent().Split(Environment.NewLine)) {
+            foreach (var line in sourceFile.RenderContent(_ctx).Split(Environment.NewLine)) {
                 if (line.Contains(SKIP_MARKER)) continue;
                 sw.WriteLine(line);
             }

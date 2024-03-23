@@ -11,7 +11,7 @@ namespace Nijo.Parts.Utility {
 
         internal static SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
             FileName = $"DotnetExtensions.cs",
-            RenderContent = () => $$"""
+            RenderContent = context => $$"""
                 namespace {{ctx.Config.RootNamespace}} {
                     using System;
                     using System.Collections;

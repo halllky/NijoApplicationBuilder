@@ -12,7 +12,7 @@ namespace Nijo.Features.Debugging {
 
         internal static SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
             FileName = $"WebDebugger.cs",
-            RenderContent = () => $$"""
+            RenderContent = context => $$"""
                 using Microsoft.AspNetCore.Mvc;
                 using System.Text.Json;
                 using Microsoft.EntityFrameworkCore;

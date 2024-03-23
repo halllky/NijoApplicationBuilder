@@ -17,7 +17,7 @@ namespace Nijo.Parts.WebServer {
 
         internal SourceFile RenderDeclaring(CodeRenderingContext ctx, IEnumerable<string> onModelCreating) => new SourceFile {
             FileName = $"{_config.DbContextName.ToFileNameSafe()}.cs",
-            RenderContent = () => {
+            RenderContent = context => {
 
                 return $$"""
                     using Microsoft.EntityFrameworkCore;

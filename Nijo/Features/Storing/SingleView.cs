@@ -90,7 +90,7 @@ namespace Nijo.Features.Storing {
 
         internal SourceFile Render() => new SourceFile {
             FileName = FileName,
-            RenderContent = () => {
+            RenderContent = context => {
                 var controller = new Controller(_aggregate.Item);
                 var multiViewUrl = new MultiViewEditable(_aggregate).Url;
                 var createEmptyObject = new TSInitializerFunction(_aggregate).FunctionName;

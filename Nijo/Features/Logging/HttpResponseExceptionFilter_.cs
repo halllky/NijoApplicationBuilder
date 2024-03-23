@@ -12,7 +12,7 @@ namespace Nijo.Features.Logging {
 
         internal static SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
             FileName = "HttpResponseExceptionFilter.cs",
-            RenderContent = () => $$"""
+            RenderContent = context => $$"""
                 namespace {{ctx.Config.RootNamespace}} {
                     using Microsoft.AspNetCore.Mvc.Filters;
                     using Microsoft.AspNetCore.Mvc;

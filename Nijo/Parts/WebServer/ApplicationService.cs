@@ -20,7 +20,7 @@ namespace Nijo.Parts.WebServer {
 
         internal SourceFile Render(CodeRenderingContext ctx, IEnumerable<string> methods) => new SourceFile {
             FileName = FileName,
-            RenderContent = () => $$"""
+            RenderContent = context => $$"""
                 namespace {{ctx.Config.RootNamespace}} {
                     using {{ctx.Config.DbContextNamespace}};
 

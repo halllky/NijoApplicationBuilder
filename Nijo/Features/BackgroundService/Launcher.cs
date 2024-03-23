@@ -13,7 +13,7 @@ namespace Nijo.Features.BackgroundService {
 
         private static SourceFile Launcher(CodeRenderingContext ctx) => new SourceFile {
             FileName = "BackgroundTaskLauncher.cs",
-            RenderContent = () => {
+            RenderContent = context => {
                 var appSrv = new ApplicationService();
                 var dbContextFullName = $"{ctx.Config.DbContextNamespace}.{ctx.Config.DbContextName}";
                 var dbSetName = ctx.Schema.GetAggregate(GraphNodeId).Item.DbSetName;

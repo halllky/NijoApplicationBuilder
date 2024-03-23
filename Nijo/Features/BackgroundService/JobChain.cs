@@ -10,7 +10,7 @@ namespace Nijo.Features.BackgroundService {
 
         private static SourceFile JobChainClass(CodeRenderingContext ctx) => new SourceFile {
             FileName = "JobChain.cs",
-            RenderContent = () => $$"""
+            RenderContent = context => $$"""
                 using System.Reflection;
                 using System.Text.Json;
 
