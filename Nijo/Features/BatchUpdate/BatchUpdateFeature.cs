@@ -1,4 +1,5 @@
 using Nijo.Core;
+using Nijo.Features.Storing;
 using Nijo.Parts;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
@@ -34,7 +35,7 @@ namespace Nijo.Features.BatchUpdate {
 
             context.EditReactDirectory(dir => {
                 dir.Directory(App.REACT_UTIL_DIR, utilDir => {
-                    utilDir.Generate(UseLocalRepositoryCommitHandling(context));
+                    utilDir.Generate(LocalRepository.UseLocalRepositoryCommitHandling(context));
                     utilDir.Generate(TsHelper(context));
                 });
             });

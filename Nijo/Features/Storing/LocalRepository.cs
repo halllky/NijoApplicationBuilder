@@ -1,5 +1,4 @@
 using Nijo.Core;
-using Nijo.Parts.WebClient;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -8,8 +7,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.Features.BatchUpdate {
-    partial class BatchUpdateFeature {
+namespace Nijo.Features.Storing {
+    internal class LocalRepository {
+        internal static string GetDataTypeKey(GraphNode<Aggregate> agg) {
+            return agg.Item.ClassName;
+        }
+
 
         internal static SourceFile UseLocalRepositoryCommitHandling(CodeRenderingContext context) {
 
@@ -43,19 +46,19 @@ namespace Nijo.Features.BatchUpdate {
 
                       const saveHandlerMap = useMemo(() => new Map<string, SaveLocalItemHandler>([
                     {{aggregates.SelectTextTemplate(agg => $$"""
-                        ['{{LocalRepository.GetDataTypeKey(agg)}}', async (localReposItem: LocalRepositoryStoredItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>) => {
+                        ['{{GetDataTypeKey(agg)}}', async (localReposItem: LocalRepositoryStoredItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>) => {
                           if (localReposItem.state === '+') {
-                            const url = `{{new Controller(agg.Item).CreateCommandApi}}`
+                            const url = `{{new Parts.WebClient.Controller(agg.Item).CreateCommandApi}}`
                             const response = await post<AggregateType.{{agg.Item.TypeScriptTypeName}}>(url, localReposItem.item)
                             return { commit: response.ok }
 
                           } else if (localReposItem.state === '*') {
-                            const url = `{{new Controller(agg.Item).UpdateCommandApi}}`
+                            const url = `{{new Parts.WebClient.Controller(agg.Item).UpdateCommandApi}}`
                             const response = await post<AggregateType.{{agg.Item.TypeScriptTypeName}}>(url, localReposItem.item)
                             return { commit: response.ok }
                     
                           } else if (localReposItem.state === '-') {
-                            const url = `{{new Controller(agg.Item).DeleteCommandApi}}/{{DeleteKeyUrlParam(agg)}}`
+                            const url = `{{new Parts.WebClient.Controller(agg.Item).DeleteCommandApi}}/{{DeleteKeyUrlParam(agg)}}`
                             const response = await httpDelete(url)
                             return { commit: response.ok }
                     
@@ -89,6 +92,5 @@ namespace Nijo.Features.BatchUpdate {
                     """,
             };
         }
-
     }
 }
