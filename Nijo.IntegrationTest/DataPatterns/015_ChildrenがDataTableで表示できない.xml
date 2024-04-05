@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<自動テストで作成されたプロジェクト>
+  <ユースケース is="write-model">
+    <ID is="uuid" />
+    <ステップ is="array">
+      <正常系 is="sentence" />
+      <異常系 is="array">
+        <ケース is="sentence" />
+        <対応 is="sentence" />
+      </異常系>
+    </ステップ>
+  </ユースケース>
+</自動テストで作成されたプロジェクト>

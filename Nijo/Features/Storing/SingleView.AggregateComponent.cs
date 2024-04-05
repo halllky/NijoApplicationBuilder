@@ -143,36 +143,33 @@ namespace Nijo.Features.Storing {
                     """)}}
 
                       return (
-                        <VForm.Section table label="{{_aggregate.GetParent()?.RelationName}}">
-                          <VForm.Row fullWidth>
-                            <Layout.TabGroup
-                              items={fields}
-                              keySelector={item => item.{{AggregateDetail.OBJECT_ID}} ?? ''}
+                        <VForm.Section table label={(
+                          <div className="flex gap-2 justify-start">
+                            <h1 className="text-base font-semibold select-none py-1">
+                              {{_aggregate.GetParent()?.RelationName}}
+                            </h1>
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
-                              onCreate={onCreate}
+                            <Input.Button onClick={onCreate}>追加</Input.Button>
                     """)}}
-                            >
-                              {({ item, index: {{loopVar}} }) => (
-                                <VForm.Root>
-                                  <VForm.Section table>
-                                    {{WithIndent(RenderMembers(), "                ")}}
-
-                    {{If(_mode != SingleView.E_Type.View, () => $$"""
-                                    <VForm.Row fullWidth>
-                                      <Input.IconButton
-                                        underline
-                                        icon={XMarkIcon}
-                                        onClick={onRemove({{loopVar}})}
-                                        className="absolute top-0 right-0">
-                                        削除
-                                      </Input.IconButton>
-                                    </VForm.Row>
+                            <div className="flex-1"></div>
+                          </div>
+                        )}>
+                          {fields.map((item, {{loopVar}}) => (
+                    {{If(_mode == SingleView.E_Type.View, () => $$"""
+                            <VForm.Section table>
+                    """).Else(() => $$"""
+                            <VForm.Section table label={(
+                              <Input.IconButton
+                                underline
+                                icon={XMarkIcon}
+                                onClick={onRemove({{loopVar}})}>
+                                削除
+                              </Input.IconButton>
+                            )}>
                     """)}}
-                                  </VForm.Section>
-                                </VForm.Root>
-                              )}
-                            </Layout.TabGroup>
-                          </VForm.Row>
+                              {{WithIndent(RenderMembers(), "          ")}}
+                            </VForm.Section>
+                          ))}
                         </VForm.Section>
                       )
                     }
