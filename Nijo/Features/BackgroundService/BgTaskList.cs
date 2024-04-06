@@ -80,13 +80,15 @@ namespace Nijo.Features.BackgroundService {
                       }, [])
 
                       return (
-                        <VForm.Section label="バックグラウンドプロセス">
-                          <Collection.DataTable
-                            data={rows}
-                            columns={COLUMN_DEFS}
-                            className="h-64"
-                          />
-                        </VForm.Section>
+                        <VForm.Container label="バックグラウンドプロセス">
+                          <VForm.Item wide>
+                            <Collection.DataTable
+                              data={rows}
+                              columns={COLUMN_DEFS}
+                              className="h-64"
+                            />
+                          </VForm.Item>
+                        </VForm.Container>
                       )
                     }
 

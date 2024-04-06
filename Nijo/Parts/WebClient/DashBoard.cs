@@ -49,25 +49,21 @@ namespace Nijo.Parts.WebClient {
                       }, [post, withDummyData, genereateDummyData, resetLocalRepository, dispatchMsg])
 
                       return (
-                        <div className="page-content-root">
-                          <VForm.Root className="p-4">
+                        <div className="page-content-root gap-4">
 
-                            {import.meta.env.DEV && (
-                              <VForm.Section label="デバッグ用コマンド ※この欄は開発環境でのみ表示されます" table>
-                                <VForm.Row label="データベース">
-                                  <Input.Button outlined onClick={recreateDatabase}>DBを再作成する</Input.Button>
-                                  <Input.CheckBox value={withDummyData} onChange={setWithDummyData}>ダミーデータも併せて作成する</Input.CheckBox>
-                                </VForm.Row>
-                              </VForm.Section>
-                            )}
+                          {import.meta.env.DEV && (
+                            <VForm.Container label="デバッグ用コマンド ※この欄は開発環境でのみ表示されます">
+                              <VForm.Item label="データベース">
+                                <Input.Button outlined onClick={recreateDatabase}>DBを再作成する</Input.Button>
+                                <Input.CheckBox value={withDummyData} onChange={setWithDummyData}>ダミーデータも併せて作成する</Input.CheckBox>
+                              </VForm.Item>
+                            </VForm.Container>
+                          )}
 
                     {{app.DashBoardContents.SelectTextTemplate(source => $$"""
-                            <VForm.Spacer large />
-
-                            {{WithIndent(source, "        ")}}
+                          {{WithIndent(source, "      ")}}
 
                     """)}}
-                          </VForm.Root>
                         </div>
                       )
                     }

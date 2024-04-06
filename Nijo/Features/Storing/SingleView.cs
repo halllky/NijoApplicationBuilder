@@ -148,9 +148,9 @@ namespace Nijo.Features.Storing {
                     .DefaultIfEmpty()
                     .Max();
                 // - longestHeaderWidthRemにはインデントの横幅も含まれているのでインデントの横幅を引く
-                // - ヘッダ列の横幅にちょっと余裕をもたせるために+1
+                // - ヘッダ列の横幅にちょっと余裕をもたせるために+8
                 var indentWidth = maxIndent * INDENT_WIDTH;
-                var headerWidth = Math.Max(indentWidth, longestHeaderWidthRem - indentWidth) + 1m;
+                var headerWidth = Math.Max(indentWidth, longestHeaderWidthRem - indentWidth) + 8m;
 
                 return $$"""
                     import React, { useState, useEffect, useCallback, useMemo, useReducer, useRef, useId } from 'react';
@@ -357,9 +357,9 @@ namespace Nijo.Features.Storing {
                               <div className="flex-1"></div>
                             </h1>
 
-                            <VForm.Root leftColumnWidth="{{headerWidth}}rem">
+                            <VForm.Container leftColumnWidth="{{headerWidth}}rem">
                               {{new AggregateComponent(_aggregate, _type).RenderCaller()}}
-                            </VForm.Root>
+                            </VForm.Container>
 
                     {{If(_type != E_Type.View && _aggregate.Item.Options.DisableLocalRepository != true, () => $$"""
                             <Input.IconButton fill className="self-start" icon={BookmarkSquareIcon}>一時保存</Input.IconButton>

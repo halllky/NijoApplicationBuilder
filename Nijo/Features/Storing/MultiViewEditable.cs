@@ -176,36 +176,30 @@ namespace Nijo.Features.Storing {
                       }, [update, remove, deleteLocalRepositoryItem])
 
                       return (
-                        <div className="page-content-root">
+                        <div className="page-content-root gap-4 pb-[50vh]">
 
                           <FormProvider {...rhfSearchMethods}>
-                            <form>
-                              <VForm.Root
-                                className="h-full"
-                                label={(
-                                  <div className="flex gap-2 justify-start">
-                                    <h1 className="text-base font-semibold select-none py-1">
-                                      {{_aggregate.Item.DisplayName}}
-                                    </h1>
-                                    <Input.Button onClick={reloadRemoteItems}>再読み込み</Input.Button>
-                                    <div className="basis-4"></div>
-                                    <Input.Button onClick={handleAdd}>追加</Input.Button>
-                                    <Input.Button onClick={handleRemove}>削除</Input.Button>
-                                  </div>
-                                )}
-                              >
-                                <VForm.Section table>
+                            <form className="flex flex-col">
+                              <div className="flex gap-2 justify-start">
+                                <h1 className="text-base font-semibold select-none py-1">
+                                  {{_aggregate.Item.DisplayName}}
+                                </h1>
+                                <Input.Button onClick={reloadRemoteItems}>再読み込み</Input.Button>
+                                <div className="basis-4"></div>
+                                <Input.Button onClick={handleAdd}>追加</Input.Button>
+                                <Input.Button onClick={handleRemove}>削除</Input.Button>
+                              </div>
+                              <VForm.Container leftColumnWidth="10rem">
                     {{groupedSearchConditions.SelectTextTemplate(group => $$"""
                     {{If(group.Key == _aggregate, () => $$"""
-                                  {{WithIndent(group.SelectTextTemplate(RenderSearchConditionValueMember), "              ")}}
+                                {{WithIndent(group.SelectTextTemplate(RenderSearchConditionValueMember), "            ")}}
                     """).Else(() => $$"""
-                                  <VForm.Section label="{{group.Key.Item.DisplayName}}">
-                                    {{WithIndent(group.SelectTextTemplate(RenderSearchConditionValueMember), "                ")}}
-                                  </VForm.Section>
+                                <VForm.Container label="{{group.Key.Item.DisplayName}}">
+                                  {{WithIndent(group.SelectTextTemplate(RenderSearchConditionValueMember), "              ")}}
+                                </VForm.Container>
                     """)}}
                     """)}}
-                                </VForm.Section>
-                              </VForm.Root>
+                              </VForm.Container>
                             </form>
                           </FormProvider>
 
@@ -248,7 +242,7 @@ namespace Nijo.Features.Storing {
             });
 
             return $$"""
-                <VForm.Row label="{{vm.MemberName}}">
+                <VForm.Item label="{{vm.MemberName}}">
                 {{If(vm is AggregateMember.Variation, () => FindManyFeature.VariationMemberProps((AggregateMember.Variation)vm).SelectTextTemplate(x => $$"""
                   <label className="inline-flex items-center">
                     <Input.CheckBox {...registerExCondition(`{{vm.Declared.GetFullPath().SkipLast(1).Concat(new[] { x.Value }).Join(".")}}`)} />
@@ -261,7 +255,7 @@ namespace Nijo.Features.Storing {
                 """).Else(() => $$"""
                   <{{component.Name}} {...registerExCondition(`{{vm.Declared.GetFullPath().Join(".")}}`)}{{string.Concat(component.GetPropsStatement())}} />
                 """)}}
-                </VForm.Row>
+                </VForm.Item>
                 """;
         }
     }

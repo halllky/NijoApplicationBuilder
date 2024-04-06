@@ -32,21 +32,21 @@ export const ServerSettingScreen = () => {
 
   return (
     <form className="page-content-root" onSubmit={handleSubmit(save)}>
-      <VForm.Root>
-        <VForm.Section label="基本設定" table>
-          <VForm.Row label="ダークモード">
+      <VForm.Container>
+        <VForm.Container label="基本設定">
+          <VForm.Item label="ダークモード">
             <Input.CheckBox {...registerEx('darkMode')} />
-          </VForm.Row>
-          <VForm.Row label="フォント(font-family)">
+          </VForm.Item>
+          <VForm.Item label="フォント(font-family)">
             <Input.Word {...registerEx('fontFamily')} className="flex-1" />
-          </VForm.Row>
-          <VForm.Row label="画面隅のリボンの文字">
+          </VForm.Item>
+          <VForm.Item label="画面隅のリボンの文字">
             <Input.Word {...registerEx('environmentName')} />
-          </VForm.Row>
-          <VForm.Row label="画面隅のリボンの色">
+          </VForm.Item>
+          <VForm.Item label="画面隅のリボンの色">
             <Input.Word {...registerEx('environmentColor')} />
-          </VForm.Row>
-          <VForm.Row label="APIサーバーURL">
+          </VForm.Item>
+          <VForm.Item label="APIサーバーURL">
             <div className="flex flex-col w-full">
               <Input.Word {...registerEx('apiDomain')} />
               <span className="text-sm">
@@ -57,12 +57,12 @@ export const ServerSettingScreen = () => {
                 未指定の場合の規定値は <span>{import.meta.env.VITE_BACKEND_API}</span> です。
               </span>
             </div>
-          </VForm.Row>
-          <VForm.Row fullWidth>
+          </VForm.Item>
+          <VForm.Item wide>
             <Input.Button outlined submit>更新</Input.Button>
-          </VForm.Row>
-        </VForm.Section>
-      </VForm.Root>
+          </VForm.Item>
+        </VForm.Container>
+      </VForm.Container>
     </form>
   )
 }

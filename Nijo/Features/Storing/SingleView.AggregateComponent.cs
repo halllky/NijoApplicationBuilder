@@ -143,7 +143,7 @@ namespace Nijo.Features.Storing {
                     """)}}
 
                       return (
-                        <VForm.Section table label={(
+                        <VForm.Container labelSide={(
                           <div className="flex gap-2 justify-start">
                             <h1 className="text-base font-semibold select-none py-1">
                               {{_aggregate.GetParent()?.RelationName}}
@@ -156,9 +156,9 @@ namespace Nijo.Features.Storing {
                         )}>
                           {fields.map((item, {{loopVar}}) => (
                     {{If(_mode == SingleView.E_Type.View, () => $$"""
-                            <VForm.Section table>
+                            <VForm.Container key={{{loopVar}}}>
                     """).Else(() => $$"""
-                            <VForm.Section table label={(
+                            <VForm.Container key={{{loopVar}}} labelSide={(
                               <Input.IconButton
                                 underline
                                 icon={XMarkIcon}
@@ -168,9 +168,9 @@ namespace Nijo.Features.Storing {
                             )}>
                     """)}}
                               {{WithIndent(RenderMembers(), "          ")}}
-                            </VForm.Section>
+                            </VForm.Container>
                           ))}
-                        </VForm.Section>
+                        </VForm.Container>
                       )
                     }
                     """;
@@ -222,10 +222,10 @@ namespace Nijo.Features.Storing {
                       }), [])
 
                       return (
-                        <VForm.Section>
-                          <VForm.Row fullWidth>
-                            {{_aggregate.GetParent()?.RelationName}}
+                        <VForm.Item wide
+                          label="{{_aggregate.GetParent()?.RelationName}}"
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
+                          labelSide={<>
                             <Input.Button
                               icon={PlusIcon}
                               onClick={onAdd}>
@@ -236,17 +236,16 @@ namespace Nijo.Features.Storing {
                               onClick={onRemove}>
                               削除
                             </Input.Button>
+                          </>}
                     """)}}
-                          </VForm.Row>
-                          <VForm.Row fullWidth>
-                            <Layout.DataTable
-                              ref={dtRef}
-                              data={fields}
-                              {...options}
-                              className="h-64 w-full"
-                            />
-                          </VForm.Row>
-                        </VForm.Section>
+                          >
+                          <Layout.DataTable
+                            ref={dtRef}
+                            data={fields}
+                            {...options}
+                            className="h-64 w-full"
+                          />
+                        </VForm.Item>
                       )
                     }
                     """;
@@ -269,9 +268,6 @@ namespace Nijo.Features.Storing {
             var childrenComponent = new AggregateComponent(children, _mode);
 
             return $$"""
-                {{If(children.Owner.IsRoot(), () => $$"""
-                <VForm.Spacer />
-                """)}}
                 {{childrenComponent.RenderCaller()}}
                 """;
         }
@@ -280,12 +276,9 @@ namespace Nijo.Features.Storing {
             var childComponent = new AggregateComponent(child, _mode);
 
             return $$"""
-                {{If(child.Owner.IsRoot(), () => $$"""
-                <VForm.Spacer />
-                """)}}
-                <VForm.Section label="{{child.MemberName}}" table>
+                <VForm.Container label="{{child.MemberName}}">
                   {{childComponent.RenderCaller()}}
-                </VForm.Section>
+                </VForm.Container>
                 """;
         }
 
@@ -301,12 +294,8 @@ namespace Nijo.Features.Storing {
             var disabled = IfReadOnly("disabled", variationSwitch);
 
             return $$"""
-                {{If(variationSwitch.Owner.IsRoot(), () => $$"""
-                <VForm.Spacer />
-                """)}}
-                <VForm.Section
-                  table
-                  label={<>
+                <VForm.Container
+                  labelSide={<>
                     {{variationSwitch.MemberName}}
                     <Input.Selection
                       {...registerEx({{switchProp}})}
@@ -323,7 +312,7 @@ namespace Nijo.Features.Storing {
                 {{variationSwitch.GetGroupItems().SelectTextTemplate(item => $$"""
                   {{WithIndent(RenderProperty(item), "  ")}}
                 """)}}
-                </VForm.Section>
+                </VForm.Container>
                 """;
         }
 
@@ -343,13 +332,13 @@ namespace Nijo.Features.Storing {
                     .Select(m => m.Declared.GetFullPath().Join("."));
 
                 return $$"""
-                    <VForm.Row label="{{refProperty.MemberName}}">
+                    <VForm.Item label="{{refProperty.MemberName}}">
                       <Link className="text-link" to={`{{singleView.GetUrlStringForReact(linkKeys.Select(k => $"getValues('{k}')"))}}`}>
                     {{names.SelectTextTemplate(k => $$"""
                         {getValues('{{k}}')}
                     """)}}
                       </Link>
-                    </VForm.Row>
+                    </VForm.Item>
                     """;
 
             } else {
@@ -362,9 +351,9 @@ namespace Nijo.Features.Storing {
                     _ => throw new NotImplementedException(),
                 };
                 return $$"""
-                    <VForm.Row label="{{refProperty.MemberName}}">
+                    <VForm.Item label="{{refProperty.MemberName}}">
                       {{WithIndent(component, "  ")}}
-                    </VForm.Row>
+                    </VForm.Item>
                     """;
             }
         }
@@ -372,9 +361,7 @@ namespace Nijo.Features.Storing {
         private string RenderProperty(AggregateMember.Schalar schalar) {
             if (schalar.Options.InvisibleInGui) {
                 return $$"""
-                    <VForm.Row hidden>
-                      <input type="hidden" {...register({{GetRegisterName(schalar)}})} />
-                    </VForm.Row>
+                    <input type="hidden" {...register({{GetRegisterName(schalar)}})} />
                     """;
 
             } else {
@@ -392,9 +379,9 @@ namespace Nijo.Features.Storing {
                 }
 
                 return $$"""
-                    <VForm.Row label="{{schalar.MemberName}}">
+                    <VForm.Item label="{{schalar.MemberName}}">
                       <{{reactComponent.Name}} {...registerEx({{GetRegisterName(schalar)}})}{{string.Concat(reactComponent.GetPropsStatement())}} />
-                    </VForm.Row>
+                    </VForm.Item>
                     """;
             }
         }
