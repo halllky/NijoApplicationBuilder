@@ -34,7 +34,8 @@ namespace Nijo.Features.Storing {
             var childMembers = MainAggregate
                 .GetMembers()
                 .OfType<AggregateMember.RelationMember>()
-                .Where(m => m is not AggregateMember.Ref)
+                .Where(m => m is not AggregateMember.Ref
+                         && m is not AggregateMember.Parent)
                 .Select(m => new Prop(MainAggregate, m.MemberAggregate));
             foreach (var item in childMembers) {
                 yield return item;
