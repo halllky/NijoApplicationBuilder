@@ -128,13 +128,13 @@ namespace Nijo.Features.Debugging {
             var response = $"response{random.Next(99999999):00000000}";
             return $$"""
                 const {{data}} = AggregateType.{{new TSInitializerFunction(rootAggregate).FunctionName}}()
-                {{new AggregateDetail(rootAggregate).GetOwnMembers().SelectTextTemplate(member => $$"""
+                {{new TransactionScopeDataClass(rootAggregate).GetOwnMembers().SelectTextTemplate(member => $$"""
                 {{WithIndent(SetDummyValue(member), "")}}
                 """)}}
 
                 {{descendants.SelectTextTemplate(agg => $$"""
                 {{data}}.{{ObjectPath(agg).Join(".")}} = {{NewObject(agg)}}
-                {{new AggregateDetail(agg).GetOwnMembers().SelectTextTemplate(member => $$"""
+                {{new TransactionScopeDataClass(agg).GetOwnMembers().SelectTextTemplate(member => $$"""
                 {{WithIndent(SetDummyValue(member), "")}}
                 """)}}
                 """)}}

@@ -25,6 +25,7 @@ namespace Nijo.Util.CodeGenerating {
                 var ix = sameNameGroups[key.MemberName].IndexOf(key);
                 return new KeyArray {
                     CsType = key.CSharpTypeName + (nullable ? "?" : string.Empty),
+                    TsType = key.TypeScriptTypename,
                     VarName = key.MemberName + (ix >= 1 ? (ix + 1).ToString() : string.Empty)
                 };
             }).ToArray();
@@ -34,6 +35,7 @@ namespace Nijo.Util.CodeGenerating {
         private KeyArray() { }
 
         internal required string CsType { get; init; }
+        internal required string TsType { get; init; }
         internal required string VarName { get; init; }
     }
 }

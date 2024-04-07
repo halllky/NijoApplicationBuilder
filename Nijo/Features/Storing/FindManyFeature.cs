@@ -115,7 +115,7 @@ namespace Nijo.Features.Storing {
 
                     return query
                         .AsEnumerable()
-                        .Select(entity => {{_aggregate.Item.ClassName}}.{{AggregateDetail.FROM_DBENTITY}}(entity));
+                        .Select(entity => {{_aggregate.Item.ClassName}}.{{TransactionScopeDataClass.FROM_DBENTITY}}(entity));
                 }
                 """;
         }
@@ -123,6 +123,7 @@ namespace Nijo.Features.Storing {
 
         #region 絞り込み
         internal string TypeScriptConditionClass => GetConditionClassName(_aggregate);
+        internal string TypeScriptConditionInitializerFn => GetConditionClassInitializerName(_aggregate);
         internal string CsharpConditionClass => GetConditionClassName(_aggregate);
 
         private string GetConditionClassName(GraphNode<Aggregate> agg) {
@@ -140,6 +141,10 @@ namespace Nijo.Features.Storing {
                 return $"{paths.Join("_")}SearchCondition";
             }
         }
+        private string GetConditionClassInitializerName(GraphNode<Aggregate> agg) {
+            return $"create{GetConditionClassName(agg)}";
+        }
+
         private static string GetCSharpType(AggregateMember.ValueMember vm) {
             if (vm is AggregateMember.Variation) {
                 throw new Exception("Renderメソッドの中で直で指定するのでこの分岐にはこない");
@@ -209,6 +214,25 @@ namespace Nijo.Features.Storing {
                 yield return vm;
             }
         }
+        /// <summary>
+        /// 自身のメンバーを列挙
+        /// </summary>
+        private IEnumerable<AggregateMember.AggregateMemberBase> EnumerateSearchConditionOwnMembers(GraphNode<Aggregate> aggregate) {
+            return aggregate.GetMembers().Where(m => {
+                if (m is AggregateMember.ValueMember
+                    && m.DeclaringAggregate == aggregate)
+                    return true;
+
+                if (m is AggregateMember.Ref)
+                    return true;
+
+                if (m is AggregateMember.Parent parent
+                    && !parent.MemberAggregate.IsInTreeOf(_aggregate))
+                    return true;
+
+                return false;
+            });
+        }
 
         private static string RenderFilterSentence(AggregateMember.ValueMember vm) {
             var paramValueOrNull = $"{PARAM_FILTER}?.{vm.Declared.GetFullPath().Join("?.")}";
@@ -277,35 +301,12 @@ namespace Nijo.Features.Storing {
         }
 
         internal string RenderSearchConditionTypeDeclaring(bool csharp) {
-            var aggregates = _aggregate
-                .EnumerateThisAndDescendants()
-                .ToList();
-            var foreignAggregates = aggregates
-                .SelectMany(agg => agg.GetRefsAndTheirAncestorsRecursively())
-                .ToArray();
-            aggregates.AddRange(foreignAggregates);
-
-            return aggregates.SelectTextTemplate(agg => {
-                var members = agg.GetMembers().Where(m => {
-                    if (m is AggregateMember.ValueMember
-                        && m.DeclaringAggregate == agg)
-                        return true;
-
-                    if (m is AggregateMember.Ref)
-                        return true;
-
-                    if (m is AggregateMember.Parent parent
-                        && !parent.MemberAggregate.IsInTreeOf(_aggregate))
-                        return true;
-
-                    return false;
-                });
-
+            return EnumerateSearchConditionAggregates().SelectTextTemplate(agg => {
                 if (csharp) {
                     // C#
                     return $$"""
                         public class {{GetConditionClassName(agg)}} {
-                        {{members.SelectTextTemplate(m => $$"""
+                        {{EnumerateSearchConditionOwnMembers(agg).SelectTextTemplate(m => $$"""
                         {{If(m is AggregateMember.Variation, () => $$"""
                         {{VariationMemberProps((AggregateMember.Variation)m).SelectTextTemplate(x => $$"""
                             public bool? {{x.Value}} { get; set; }
@@ -322,7 +323,7 @@ namespace Nijo.Features.Storing {
                     // TypeScript
                     return $$"""
                         export type {{GetConditionClassName(agg)}} = {
-                        {{members.SelectTextTemplate(m => $$"""
+                        {{EnumerateSearchConditionOwnMembers(agg).SelectTextTemplate(m => $$"""
                         {{If(m is AggregateMember.Variation, () => $$"""
                         {{VariationMemberProps((AggregateMember.Variation)m).SelectTextTemplate(x => $$"""
                           {{x.Value}}?: boolean
@@ -337,6 +338,32 @@ namespace Nijo.Features.Storing {
                         """;
                 }
             });
+        }
+
+        internal string RenderTypeScriptConditionInitializerFn() {
+            return EnumerateSearchConditionAggregates().SelectTextTemplate(agg => $$"""
+                export const {{GetConditionClassInitializerName(agg)}} = (): {{GetConditionClassName(agg)}} => ({
+                {{EnumerateSearchConditionOwnMembers(agg).SelectTextTemplate(m => $$"""
+                {{If(m is AggregateMember.ValueMember vm && vm.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
+                    {{m.MemberName}}: {},
+                """).ElseIf(m is AggregateMember.RelationMember, () => $$"""
+                    {{m.MemberName}}: create{{GetConditionClassName(((AggregateMember.RelationMember)m).MemberAggregate)}}(),
+                """)}}
+                """)}}
+                })
+                """);
+        }
+
+        private IEnumerable<GraphNode<Aggregate>> EnumerateSearchConditionAggregates() {
+            var aggregates = _aggregate
+                .EnumerateThisAndDescendants()
+                .ToList();
+            var foreignAggregates = aggregates
+                .SelectMany(agg => agg.GetRefsAndTheirAncestorsRecursively())
+                .ToArray();
+            aggregates.AddRange(foreignAggregates);
+
+            return aggregates;
         }
         #endregion 絞り込み
     }

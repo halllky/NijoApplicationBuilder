@@ -100,6 +100,10 @@ namespace Nijo.Parts.WebClient {
                 ? true
                 : (bool?)null;
 
+            var headerGroupName = member.Owner == dataTableOwner
+                ? null
+                : member.Owner.Item.DisplayName;
+
             return new DataTableColumn {
                 Id = colId,
                 Header = member.MemberName,
@@ -108,6 +112,7 @@ namespace Nijo.Parts.WebClient {
                 GetValue = getValue,
                 SetValue = setValue,
                 Hidden = hidden,
+                HeaderGroupName = headerGroupName,
             };
         }
 
@@ -124,6 +129,7 @@ namespace Nijo.Parts.WebClient {
         internal string? CellEditor { get; init; }
         internal string? SetValue { get; init; }
         internal bool? Hidden { get; init; }
+        internal string? HeaderGroupName { get; init; }
 
         internal string Render() {
             return $$"""
@@ -148,6 +154,9 @@ namespace Nijo.Parts.WebClient {
                 """)}}
                 {{If(Hidden != null, () => $$"""
                   hidden: {{(Hidden!.Value ? "true" : "false")}},
+                """)}}
+                {{If(HeaderGroupName != null, () => $$"""
+                  headerGroupName: '{{HeaderGroupName}}',
                 """)}}
                 },
                 """;

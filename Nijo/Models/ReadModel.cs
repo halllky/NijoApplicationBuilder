@@ -106,7 +106,7 @@ namespace Nijo.Models {
                     /// {{rootAggregate.Item.DisplayName}}のデータの更新処理。
                     /// {{writeModel.Item.DisplayName}}が追加・削除・更新された後、コミットされる前に実行されます。
                     /// </summary>
-                    public virtual void {{reload}}(AggregateUpdateEvent<{{new Features.Storing.AggregateDetail(writeModel).ClassName}}> ev) {
+                    public virtual void {{reload}}(AggregateUpdateEvent<{{new Features.Storing.TransactionScopeDataClass(writeModel).ClassName}}> ev) {
                         /// <see cref="{{appSrv.ConcreteClass}}"/>クラスでこのメソッドをオーバーライドして、
                         /// DbContextを操作し、対象データを追加、更新または削除する処理を実装してください。
                     }
@@ -115,7 +115,7 @@ namespace Nijo.Models {
 
                 // AggregateDetailクラス定義を作成する
                 foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
-                    var aggregateDetail = new Features.Storing.AggregateDetail(aggregate);
+                    var aggregateDetail = new Features.Storing.TransactionScopeDataClass(aggregate);
                     builder.DataClassDeclaring.Add(aggregateDetail.RenderCSharp(context));
                     builder.TypeScriptDataTypes.Add(aggregateDetail.RenderTypeScript(context));
                 }

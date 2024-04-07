@@ -41,7 +41,7 @@ namespace Nijo.Models {
                 builder.AppServiceMethods.Add(deleteFeature.RenderAppSrvMethod());
 
                 foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
-                    var aggregateDetail = new AggregateDetail(aggregate);
+                    var aggregateDetail = new TransactionScopeDataClass(aggregate);
                     var initializerFunc = new TSInitializerFunction(aggregate);
                     builder.DataClassDeclaring.Add(aggregateDetail.RenderCSharp(context));
                     builder.TypeScriptDataTypes.Add(aggregateDetail.RenderTypeScript(context));
@@ -54,6 +54,7 @@ namespace Nijo.Models {
                 builder.AppServiceMethods.Add(loadFeature.RenderAppSrvMethod());
                 builder.DataClassDeclaring.Add(loadFeature.RenderSearchConditionTypeDeclaring(csharp: true));
                 builder.TypeScriptDataTypes.Add(loadFeature.RenderSearchConditionTypeDeclaring(csharp: false));
+                builder.TypeScriptDataTypes.Add(loadFeature.RenderTypeScriptConditionInitializerFn());
 
                 // KeywordSearching
                 foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
@@ -103,6 +104,10 @@ namespace Nijo.Models {
                         }
                         """);
                 }
+
+                // SingleView
+                var singleViewDataClass = new SingleViewDataClass(rootAggregate);
+                builder.TypeScriptDataTypes.Add(singleViewDataClass.RenderTypeScriptDataClassDeclaration());
             });
 
             var editableMultiView = new MultiViewEditable(rootAggregate);
@@ -114,11 +119,15 @@ namespace Nijo.Models {
             context.AddPage(editView);
 
             context.EditReactDirectory(reactDir => {
-                reactDir.Directory("pages", pageDir => {
+                reactDir.Directory(App.REACT_PAGE_DIR, pageDir => {
                     pageDir.Directory(rootAggregate.Item.DisplayName.ToFileNameSafe(), aggregateDir => {
                         aggregateDir.Generate(detailView.Render());
                         aggregateDir.Generate(editView.Render());
                     });
+                });
+                reactDir.Directory(App.REACT_UTIL_DIR, utilDir => {
+                    utilDir.Generate(LocalRepository.UseLocalRepositoryCommitHandling(context));
+                    utilDir.Generate(LocalRepository.RenderUseAggregateLocalRepository());
                 });
             });
 

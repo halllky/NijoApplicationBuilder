@@ -227,7 +227,7 @@ export const useLocalRepository = <T extends object>({
     return found as LocalRepositoryStoredItem<T> | undefined
   }, [dataTypeKey, queryToTable])
 
-  const loadLocalItems = useCallback(async () => {
+  const loadLocalItems = useCallback(async (loadedRemoteItems?: typeof remoteItems) => {
     const localItems: LocalRepositoryItem<T>[] = []
     await openCursor('readonly', cursor => {
       if (cursor.value.dataTypeKey !== dataTypeKey) return
@@ -236,7 +236,7 @@ export const useLocalRepository = <T extends object>({
     })
     return crossJoin(
       localItems, local => local.itemKey,
-      (remoteItems ?? []), remote => getItemKey(remote) as ItemKey,
+      (loadedRemoteItems ?? remoteItems ?? []), remote => getItemKey(remote) as ItemKey,
     ).map<LocalRepositoryItem<T>>(pair => {
       return pair.left ?? { state: '', itemKey: pair.key, item: pair.right }
     })

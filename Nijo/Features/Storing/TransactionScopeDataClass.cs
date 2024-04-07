@@ -1,34 +1,24 @@
 using Nijo.Core;
+using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Nijo.Parts.Utility;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Nijo.Util.CodeGenerating;
 
 namespace Nijo.Features.Storing {
-    internal class AggregateDetail {
-        internal AggregateDetail(GraphNode<Aggregate> aggregate) {
+    /// <summary>
+    /// 登録・更新・削除される範囲を1つの塊とするデータクラス。
+    /// 具体的には、ルート集約とその Child, Children, Variaton 達から成る一塊。Refの参照先はこの範囲の外。
+    /// </summary>
+    internal class TransactionScopeDataClass {
+        internal TransactionScopeDataClass(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
         }
         protected readonly GraphNode<Aggregate> _aggregate;
 
         internal virtual string ClassName => _aggregate.Item.ClassName;
-
-        /// <summary>
-        /// 編集画面でDBから読み込んだデータとその画面中で新たに作成されたデータで
-        /// 挙動を分けるためのフラグ
-        /// </summary>
-        internal const string IS_LOADED = "__loaded";
-        /// <summary>
-        /// - useFieldArrayの中で配列インデックスをキーに使うと新規追加されたコンボボックスが
-        ///   その1個上の要素の更新と紐づいてしまうのでクライアント側で要素1個ずつにIDを振る
-        /// - TabGroupでどのタブがアクティブになっているかの判定にも使う
-        /// </summary>
-        internal const string OBJECT_ID = "__object_id";
 
         internal const string FROM_DBENTITY = "FromDbEntity";
         internal const string TO_DBENTITY = "ToDbEntity";
@@ -63,8 +53,8 @@ namespace Nijo.Features.Storing {
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
                   {{m.MemberName}}?: {{m.TypeScriptTypename}}
                 """)}}
-                  {{IS_LOADED}}?: boolean
-                  {{OBJECT_ID}}?: string
+                  {{SingleViewDataClass.IS_LOADED}}?: boolean
+                  {{SingleViewDataClass.OBJECT_ID}}?: string
                 }
                 """;
         }
@@ -112,7 +102,23 @@ namespace Nijo.Features.Storing {
                 }
                 """;
         }
-        private IEnumerable<string> RenderBodyOfFromDbEntity(GraphNode<Aggregate> instance, GraphNode<Aggregate> rootInstance, string rootInstanceName, int depth) {
+
+        /// <summary>
+        /// TODO: この操作は随所に出てくるので DbManipulation.cs などそれ用のクラスを設けてそちらに移したほうがよいかもしれない
+        /// </summary>
+        internal static IEnumerable<string> RenderBodyOfFromDbEntity(
+            GraphNode<Aggregate> instance,
+            GraphNode<Aggregate> rootInstance,
+            string rootInstanceName,
+            int depth,
+            Func<GraphNode<Aggregate>, string>? newInstance = null) {
+
+            string NewInstance(GraphNode<Aggregate> agg) {
+                return newInstance != null
+                    ? newInstance(agg)
+                    : $"new {agg.Item.ClassName}()";
+            }
+
             foreach (var prop in instance.GetMembers()) {
                 if (prop.Owner != prop.DeclaringAggregate) {
                     continue; // 不要
@@ -145,23 +151,21 @@ namespace Nijo.Features.Storing {
 
                 } else if (prop is AggregateMember.Children children) {
                     var item = depth == 0 ? "item" : $"item{depth}";
-                    var childClass = children.MemberAggregate.Item.ClassName;
                     var childInstance = children.MemberAggregate;
                     var childFullPath = children.GetFullPath(rootInstance).Join("?.");
 
                     yield return $$"""
-                        {{children.MemberName}} = {{rootInstanceName}}.{{childFullPath}}?.Select({{item}} => new {{childClass}} {
-                            {{WithIndent(RenderBodyOfFromDbEntity(childInstance, childInstance, item, depth + 1), "    ")}}
+                        {{children.MemberName}} = {{rootInstanceName}}.{{childFullPath}}?.Select({{item}} => {{NewInstance(children.MemberAggregate)}} {
+                            {{WithIndent(RenderBodyOfFromDbEntity(childInstance, childInstance, item, depth + 1, newInstance), "    ")}}
                         }).ToList(),
                         """;
 
                 } else if (prop is AggregateMember.RelationMember child) {
-                    var childClass = child.MemberAggregate.Item.ClassName;
                     var childInstance = child.MemberAggregate;
 
                     yield return $$"""
-                        {{child.MemberName}} = new {{childClass}} {
-                            {{WithIndent(RenderBodyOfFromDbEntity(childInstance, rootInstance, rootInstanceName, depth + 1), "    ")}}
+                        {{child.MemberName}} = {{NewInstance(child.MemberAggregate)}} {
+                            {{WithIndent(RenderBodyOfFromDbEntity(childInstance, rootInstance, rootInstanceName, depth + 1, newInstance), "    ")}}
                         },
                         """;
 

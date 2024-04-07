@@ -46,7 +46,7 @@ namespace Nijo.Features.Storing {
                     Key = member.MemberName,
                     Value = $"'{member.GetGroupItems().First().Key}'",
                 });
-            var uuid = new AggregateDetail(_instance)
+            var uuid = new TransactionScopeDataClass(_instance)
                 .GetOwnMembers()
                 .OfType<AggregateMember.ValueMember>()
                 .Where(member => member.Options.MemberType is Uuid)
@@ -66,7 +66,7 @@ namespace Nijo.Features.Storing {
                     {{initializers.SelectTextTemplate(item => $$"""
                       {{item.Key}}: {{item.Value}},
                     """)}}
-                      {{AggregateDetail.OBJECT_ID}}: UUID.generate(),
+                      {{SingleViewDataClass.OBJECT_ID}}: UUID.generate(),
                     })
                     """;
         }

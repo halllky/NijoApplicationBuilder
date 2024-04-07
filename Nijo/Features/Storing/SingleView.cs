@@ -1,4 +1,7 @@
 using Nijo.Core;
+using Nijo.Features.BatchUpdate;
+using Nijo.Parts.WebClient;
+using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
@@ -6,11 +9,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Nijo.Util.CodeGenerating;
-using Nijo.Features;
-using Nijo.Parts.WebServer;
-using Nijo.Features.BatchUpdate;
-using Nijo.Parts.WebClient;
 
 namespace Nijo.Features.Storing {
     public class SingleView : IReactPage {
@@ -94,10 +92,15 @@ namespace Nijo.Features.Storing {
                 var controller = new Controller(_aggregate.Item);
                 var multiViewUrl = new MultiViewEditable(_aggregate).Url;
                 var createEmptyObject = new TSInitializerFunction(_aggregate).FunctionName;
+                var dataClass = new SingleViewDataClass(_aggregate);
+                var repositories = dataClass.GetRefFromProps().Select(p => new {
+                    Repos = new LocalRepository(p.Aggregate),
+                    FindMany = new FindManyFeature(p.Aggregate),
+                    p.Aggregate,
+                    DataClassProp = p,
+                }).ToArray();
 
-                var find = new FindFeature(_aggregate);
-
-                var keyName = new RefTargetKeyName(_aggregate);
+                var keyArray = KeyArray.Create(_aggregate);
                 var keys = _aggregate
                     .GetKeys()
                     .OfType<AggregateMember.ValueMember>()
@@ -105,6 +108,8 @@ namespace Nijo.Features.Storing {
                 var urlKeys = _type == E_Type.Create
                     ? new[] { KEY0 }
                     : keys.Select(m => $"urlKey{m.MemberName}").ToArray();
+                var urlKeysWithMember = keys
+                    .ToDictionary(vm => vm, vm => $"urlKey{vm.MemberName}");
 
                 var names = _aggregate
                     .GetNames()
@@ -118,12 +123,13 @@ namespace Nijo.Features.Storing {
                     .DefaultIfEmpty()
                     .Max();
 
+                // -----------------------------------------
                 // 左列の横幅の計算
                 const decimal INDENT_WIDTH = 1.5m;
                 var headersWidthRem = _aggregate
                     .EnumerateThisAndDescendants()
                     .SelectMany(
-                        a => new AggregateDetail(a)
+                        a => new TransactionScopeDataClass(a)
                             .GetOwnMembers()
                             .Where(m => {
                                 // 同じ行に値を表示せず、名前が長くても行の横幅いっぱい占有できるため、除外
@@ -152,6 +158,26 @@ namespace Nijo.Features.Storing {
                 var indentWidth = maxIndent * INDENT_WIDTH;
                 var headerWidth = Math.Max(indentWidth, longestHeaderWidthRem - indentWidth) + 8m;
 
+                // -----------------------------------------
+                // 集約コンポーネントの宣言
+                var rootAggregateList = new List<GraphNode<Aggregate>> { _aggregate };
+                rootAggregateList.AddRange(_aggregate
+                    .GetReferedEdgesAsSingleKeyRecursively()
+                    .Select(edge => edge.Initial));
+
+                var aggregateComponents = new List<AggregateComponent>();
+                aggregateComponents.AddRange(rootAggregateList
+                    .Select(agg => new AggregateComponent(agg, _type)));
+                aggregateComponents.AddRange(rootAggregateList
+                    .SelectMany(agg => agg.EnumerateThisAndDescendants())
+                    .SelectMany(desc => desc.GetMembers())
+                    .OfType<AggregateMember.RelationMember>()
+                    // RefやParentを除外する
+                    .Where(member => member is AggregateMember.Child
+                                  || member is AggregateMember.Children
+                                  || member is AggregateMember.VariationItem)
+                    .Select(member => new AggregateComponent(member, _type)));
+
                 return $$"""
                     import React, { useState, useEffect, useCallback, useMemo, useReducer, useRef, useId } from 'react';
                     import { Link, useParams, useNavigate } from 'react-router-dom';
@@ -167,84 +193,56 @@ namespace Nijo.Features.Storing {
                     const VForm = Layout.VerticalForm
 
                     export default function () {
-                      const [, dispatchMsg] = Util.useMsgContext()
-                      const { get } = Util.useHttpRequest()
                       const { {{urlKeys.Select((urlkey, i) => $"key{i}: {urlkey}").Join(", ")}} } = useParams()
-                      const [fetched, setFetched] = useState<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>()
-                      const [localReposItemKey, setLocalReposItemKey] = useState<Util.ItemKey>()
-                    {{If(_aggregate.Item.Options.DisableLocalRepository != true, () => $$"""
-                      const localReposSettings: Util.LocalRepositoryArgs<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}> = useMemo(() => ({
-                        dataTypeKey: '{{LocalRepository.GetDataTypeKey(_aggregate)}}',
-                        getItemKey: x => JSON.stringify([{{keys.Select(k => $"x.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]),
-                        getItemName: x => `{{names.Select(n => $"${{x.{n}}}").Join(string.Empty)}}`,
-                        remoteItems: fetched ? [fetched] : undefined,
-                      }), [fetched])
-                      const { ready: localReposIsReady, findLocalItem } = Util.useLocalRepository(localReposSettings)
+                      const pkArray: [{{keyArray.Select(k => $"{k.TsType} | undefined").Join(", ")}}] = useMemo(() => {
+                        return [{{urlKeys.Join(", ")}}]
+                      }, [{{urlKeys.Join(", ")}}])
+
+                    {{repositories.SelectTextTemplate(x => x.DataClassProp.IsArray ? $$"""
+                      const {{x.Aggregate.Item.ClassName}}filter: { filter: AggregateType.{{x.FindMany.TypeScriptConditionClass}} } = useMemo(() => {
+                        const filter = AggregateType.{{x.FindMany.TypeScriptConditionInitializerFn}}()
+                    {{x.Aggregate.AsEntry().GetKeys().OfType<AggregateMember.ValueMember>().Where(vm => urlKeysWithMember.ContainsKey(vm.Declared)).SelectTextTemplate((vm, i) => $$"""
+                        if (filter.{{vm.Declared.GetFullPath().SkipLast(1).Join("?.")}} !== undefined)
+                          filter.{{vm.Declared.GetFullPath().Join(".")}} = {{urlKeysWithMember[vm.Declared]}}
                     """)}}
+                        return { filter }
+                      }, [{{urlKeys.Join(", ")}}])
+                      const {{x.Aggregate.Item.ClassName}}Repository = Util.{{x.Repos.HookName}}({{x.Aggregate.Item.ClassName}}filter)
+                      const {{x.Aggregate.Item.ClassName}}IsLoaded = {{x.Aggregate.Item.ClassName}}Repository.ready
+                      const items{{x.Aggregate.Item.ClassName}} = {{x.Aggregate.Item.ClassName}}Repository.items
 
-                    {{If(_type == E_Type.Create, () => $$"""
-                      useEffect(() => {
-                        if ({{urlKeys[0]}} == null) {
-                          setFetched(AggregateType.{{createEmptyObject}}())
-                          setLocalReposItemKey(undefined)
+                    """ : $$"""
+                      const {{x.Aggregate.Item.ClassName}}Repository = Util.{{x.Repos.HookName}}(pkArray)
+                      const {{x.Aggregate.Item.ClassName}}IsLoaded = {{x.Aggregate.Item.ClassName}}Repository.ready
+                      const items{{x.Aggregate.Item.ClassName}} = {{x.Aggregate.Item.ClassName}}Repository.items
 
-                        } else if (localReposIsReady) {
-                          findLocalItem({{urlKeys[0]}}).then(localReposItem => {
-                            if (!localReposItem) return
-                            const item = { ...localReposItem.item }
+                    """)}}
+                      const allDataLoaded = {{repositories.Select(x => $"{x.Aggregate.Item.ClassName}IsLoaded").Join(" && ")}}
 
-                            Util.visitObject(item, obj => {
-                              // 新規データのみ主キーを編集可能にするため、読込データと新規データを区別するためのフラグをつける
-                              (obj as { {{AggregateDetail.IS_LOADED}}?: boolean }).{{AggregateDetail.IS_LOADED}} = true;
-                              // 配列中のオブジェクト識別用
-                              (obj as { {{AggregateDetail.OBJECT_ID}}: string }).{{AggregateDetail.OBJECT_ID}} = UUID.generate()
-                            })
+                      // 読み込んだデータを画面に表示する形に変換する
+                      const defaultValues: AggregateType.{{dataClass.TsTypeName}} = useMemo(() => {
+                        if (!allDataLoaded) return {}
 
-                            setFetched({ ...item })
-                            setLocalReposItemKey({{urlKeys[0]}} as Util.ItemKey)
-                          })
+                        return {
+                    {{repositories.SelectTextTemplate(x => $$"""
+                          {{x.DataClassProp.PropName}}: {{(x.DataClassProp.IsArray ? $"items{x.Aggregate.Item.ClassName}.map(x => x.item)" : $"items{x.Aggregate.Item.ClassName}[0]?.item")}},
+                    """)}}
                         }
-                      }, [localReposIsReady, {{urlKeys[0]}}, findLocalItem, setFetched, setLocalReposItemKey])
+                      }, [allDataLoaded, {{repositories.Select(x => $"items{x.Aggregate.Item.ClassName}").Join(", ")}}])
 
-                    """).Else(() => $$"""
-                      useEffect(() => {
-                        if (!localReposIsReady) return;
-                    {{urlKeys.SelectTextTemplate(urlkey => $$"""
-                        if ({{urlkey}} == null) return;
-                    """)}}
-                        (async () => {
-                          const response = await get({{find.GetUrlStringForReact(urlKeys)}})
-                          if (!response.ok) {
-                            dispatchMsg(msg => msg.warn('データの読み込みに失敗しました。'))
-                            return
-                          }
-                          const remoteReposItem = response.data as AggregateType.{{_aggregate.Item.TypeScriptTypeName}}
+                      const localReposItemKey = useMemo(() => {
+                        if (!{{_aggregate.Item.ClassName}}IsLoaded) return undefined
+                        const item = items{{_aggregate.Item.ClassName}}[0]?.item
+                        if (!item) return undefined
+                        return JSON.stringify([{{keys.Select(k => $"item.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]) as Util.ItemKey
+                      }, [{{_aggregate.Item.ClassName}}IsLoaded, items{{_aggregate.Item.ClassName}}])
 
-                          // 編集中のデータがある場合はそちらを表示
-                          const itemKey = JSON.stringify([{{keys.Select(k => $"remoteReposItem.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]) as Util.ItemKey
-                          const localReposItem = await findLocalItem(itemKey)
-                          const item = localReposItem ? { ...localReposItem.item } : { ...remoteReposItem }
-
-                          Util.visitObject(item, obj => {
-                            // 新規データのみ主キーを編集可能にするため、読込データと新規データを区別するためのフラグをつける
-                            (obj as { {{AggregateDetail.IS_LOADED}}?: boolean }).{{AggregateDetail.IS_LOADED}} = true;
-                            // 配列中のオブジェクト識別用
-                            (obj as { {{AggregateDetail.OBJECT_ID}}: string }).{{AggregateDetail.OBJECT_ID}} = UUID.generate()
-                          })
-
-                          setFetched({ ...item })
-                          setLocalReposItemKey(itemKey)
-                        })()
-                      }, [localReposIsReady, findLocalItem, {{urlKeys.Join(", ")}}, get, setFetched, setLocalReposItemKey, dispatchMsg])
-
-                    """)}}
-
-                      return fetched ? (
+                      return allDataLoaded ? (
                         <AfterLoaded
-                          defaultValues={fetched}
+                          defaultValues={defaultValues}
                           localReposItemKey={localReposItemKey}
-                    {{urlKeys.SelectTextTemplate(urlkey => $$"""
-                          {{urlkey}}={{{urlkey}}}
+                    {{repositories.SelectTextTemplate(x => $$"""
+                          {{x.Aggregate.Item.ClassName}}RepositoryModifier={{{x.Aggregate.Item.ClassName}}Repository}
                     """)}}
                         ></AfterLoaded>
                       ) : (
@@ -252,33 +250,28 @@ namespace Nijo.Features.Storing {
                       )
                     }
 
-                    const AfterLoaded = ({ localReposItemKey, defaultValues{{string.Concat(urlKeys.Select(urlkey => $", {urlkey}"))}} }: {
-                      localReposItemKey?: Util.ItemKey
-                      defaultValues: AggregateType.{{_aggregate.Item.TypeScriptTypeName}}
-                    {{urlKeys.SelectTextTemplate((urlkey, i) => $$"""
-                      {{urlkey}}?: string
+                    const AfterLoaded = ({ localReposItemKey, defaultValues, {{repositories.Select(x => $"{x.Aggregate.Item.ClassName}RepositoryModifier").Join(", ")}} }: {
+                      localReposItemKey: Util.ItemKey | undefined
+                      defaultValues: AggregateType.{{dataClass.TsTypeName}}
+                    {{repositories.SelectTextTemplate(x => $$"""
+                      {{x.Aggregate.Item.ClassName}}RepositoryModifier: ReturnType<typeof Util.{{x.Repos.HookName}}>
                     """)}}
                     }) => {
-                      const navigate = useNavigate()
-                      const [, dispatchMsg] = Util.useMsgContext()
-                      const { get, post } = Util.useHttpRequest()
+                    {{repositories.SelectTextTemplate(x => $$"""
+                      const {
+                        add: addTo{{x.Aggregate.Item.ClassName}}Repository,
+                        update: update{{x.Aggregate.Item.ClassName}}RepositoryItem,
+                        remove: remove{{x.Aggregate.Item.ClassName}}RepositoryItem,
+                      } = {{x.Aggregate.Item.ClassName}}RepositoryModifier
+                    """)}}
+
                       const reactHookFormMethods = useForm({ defaultValues })
                       const { handleSubmit } = reactHookFormMethods
 
+                    {{If(_type != E_Type.Create, () => $$"""
                       const instanceName = useMemo(() => {
-                        return `{{names.Select(n => $"${{defaultValues.{n}}}").Join(string.Empty)}}`
-                      }, [defaultValues])
-                    {{If(_aggregate.Item.Options.DisableLocalRepository != true, () => $$"""
-                      const localReposSettings: Util.LocalRepositoryArgs<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}> = useMemo(() => ({
-                        dataTypeKey: '{{_aggregate.Item.ClassName}}',
-                        getItemKey: x => JSON.stringify([{{keys.Select(k => $"x.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]),
-                        getItemName: x => `{{names.Select(n => $"${{x.{n}}}").Join(string.Empty)}}`,
-                        remoteItems: [defaultValues],
-                      }), [defaultValues])
-                      const {
-                        addToLocalRepository,
-                        updateLocalRepositoryItem,
-                      } = Util.useLocalRepository(localReposSettings)
+                        return `{{names.Select(n => $"${{defaultValues.{SingleViewDataClass.OWN_MEMBERS}.{n}}}").Join(string.Empty)}}`
+                      }, [defaultValues.{{SingleViewDataClass.OWN_MEMBERS}}])
                     """)}}
 
                       const formRef = useRef<HTMLFormElement>(null)
@@ -301,17 +294,17 @@ namespace Nijo.Features.Storing {
                       }, [navigate, {{urlKeys.Join(", ")}}])
 
                     """).ElseIf(_type == E_Type.Create && _aggregate.Item.Options.DisableLocalRepository == true, () => $$"""
-                      const onSave: SubmitHandler<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}> = useCallback(async data => {
-                        const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{controller.CreateCommandApi}}`, data)
+                      const onSave: SubmitHandler<AggregateType.{{dataClass.TsTypeName}}> = useCallback(async data => {
+                        const response = await post<AggregateType.{{dataClass.TsTypeName}}>(`{{controller.CreateCommandApi}}`, data)
                         if (response.ok) {
                           dispatchMsg(msg => msg.info(`${({{names.Select(path => $"String(response.data.{path})").Join(" + ")}})}を作成しました。`))
-                          navigate(`{{GetUrlStringForReact(E_Type.View, keys.Select(m => AggregateDetail.GetPathOf("response.data", _aggregate, m).Join("?.")))}}`)
+                          navigate(`{{GetUrlStringForReact(E_Type.View, keys.Select(m => TransactionScopeDataClass.GetPathOf("response.data", _aggregate, m).Join("?.")))}}`)
                         }
                       }, [post, navigate])
 
                     """).ElseIf(_type == E_Type.Edit && _aggregate.Item.Options.DisableLocalRepository == true, () => $$"""
-                      const onSave: SubmitHandler<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}> = useCallback(async data => {
-                        const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>(`{{controller.UpdateCommandApi}}`, data)
+                      const onSave: SubmitHandler<AggregateType.{{dataClass.TsTypeName}}> = useCallback(async data => {
+                        const response = await post<AggregateType.{{dataClass.TsTypeName}}>(`{{controller.UpdateCommandApi}}`, data)
                         if (response.ok) {
                           dispatchMsg(msg => msg.info(`${({{names.Select(path => $"String(response.data.{path})").Join(" + ")}})}を更新しました。`))
                           navigate(`{{GetUrlStringForReact(E_Type.View, urlKeys)}}`)
@@ -319,7 +312,7 @@ namespace Nijo.Features.Storing {
                       }, [post, navigate, {{urlKeys.Join(", ")}}])
 
                     """).ElseIf(_type == E_Type.Create, () => $$"""
-                      const onSave: SubmitHandler<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}> = useCallback(async data => {
+                      const onSave: SubmitHandler<AggregateType.{{dataClass.TsTypeName}}> = useCallback(async data => {
                         if (localReposItemKey === undefined) {
                           const { itemKey } = await addToLocalRepository(data)
                           navigate(`{{GetUrlStringForReact(E_Type.Create, new[] { "itemKey" })}}`)
@@ -329,7 +322,7 @@ namespace Nijo.Features.Storing {
                       }, [localReposItemKey, addToLocalRepository, updateLocalRepositoryItem, navigate])
 
                     """).ElseIf(_type == E_Type.Edit, () => $$"""
-                      const onSave: SubmitHandler<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}> = useCallback(async data => {
+                      const onSave: SubmitHandler<AggregateType.{{dataClass.TsTypeName}}> = useCallback(async data => {
                         if (localReposItemKey === undefined) return
                     {{urlKeys.SelectTextTemplate(urlkey => $$"""
                         if ({{urlkey}} == null) return
@@ -375,14 +368,7 @@ namespace Nijo.Features.Storing {
                       )
                     }
 
-                    {{new AggregateComponent(_aggregate, _type).Render()}}
-                    {{_aggregate
-                            .EnumerateThisAndDescendants()
-                            .SelectMany(desc => desc.GetMembers())
-                            .OfType<AggregateMember.RelationMember>()
-                            .Where(member => member is not AggregateMember.Ref
-                                          && member is not AggregateMember.Parent)
-                            .SelectTextTemplate(member => new AggregateComponent(member, _type).Render())}}
+                    {{aggregateComponents.SelectTextTemplate(component => component.RenderDeclaration())}}
                     """;
             },
         };

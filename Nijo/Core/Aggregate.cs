@@ -187,5 +187,56 @@ namespace Nijo.Core {
                             && edge.Initial.Item is Aggregate)
                 .Select(edge => edge.As<Aggregate>());
         }
+
+        /// <summary>
+        /// targetがsourceの唯一のキーであるか否か
+        /// </summary>
+        /// <param name="refTo">参照先</param>
+        /// <param name="refFrom">参照元</param>
+        internal static bool IsSingleRefKeyOf(this GraphNode<Aggregate> refTo, GraphNode<Aggregate> refFrom) {
+            var keys = refFrom
+                .GetKeys()
+                .Where(key => key.DeclaringAggregate == refFrom)
+                .ToArray();
+
+            if (refFrom.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key
+                && keys.Length == 1
+                && keys[0] is AggregateMember.Ref rm
+                && rm.MemberAggregate == refTo) {
+                return true;
+            }
+            return false;
+        }
+        /// <summary>
+        /// この集約を参照し、かつそれが参照元集約の唯一のキーであるものを列挙する。
+        /// </summary>
+        internal static IEnumerable<GraphEdge<Aggregate>> GetReferedEdgesAsSingleKey(this GraphNode<Aggregate> target) {
+            return target
+                .GetReferedEdges()
+                .Where(edge => target.IsSingleRefKeyOf(edge.Initial));
+        }
+        /// <summary>
+        /// この集約を参照し、かつそれが参照元集約の唯一のキーであるものを列挙する。
+        /// 参照が2連鎖以上続く場合のために再帰処理。
+        /// </summary>
+        internal static IEnumerable<GraphEdge<Aggregate>> GetReferedEdgesAsSingleKeyRecursively(this GraphNode<Aggregate> target) {
+            foreach (var ref1 in target.GetReferedEdgesAsSingleKey()) {
+                yield return ref1;
+
+                foreach (var ref2 in ref1.Initial.GetReferedEdgesAsSingleKeyRecursively()) {
+                    yield return ref2;
+                }
+            }
+        }
+
+        /// <summary>
+        /// この集約のすべてのメンバーが2次元の表で表現できるかどうかを返します。
+        /// </summary>
+        internal static bool CanDisplayAllMembersAs2DGrid(this GraphNode<Aggregate> aggregate) {
+            return aggregate
+                .EnumerateDescendants()
+                .All(agg => !agg.IsChildrenMember()
+                         && !agg.IsVariationMember());
+        }
     }
 }

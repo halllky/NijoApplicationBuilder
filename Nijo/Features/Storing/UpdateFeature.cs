@@ -41,18 +41,19 @@ namespace Nijo.Features.Storing {
             var controller = new Parts.WebClient.Controller(_aggregate.Item);
             var find = new FindFeature(_aggregate);
 
-            var detail = new AggregateDetail(_aggregate);
+            var detail = new TransactionScopeDataClass(_aggregate);
             var searchKeys = _aggregate
                 .GetKeys()
                 .OfType<AggregateMember.ValueMember>()
-                .Select(vm => AggregateDetail.GetPathOf("after", _aggregate, vm).Join("."))
+                .Select(vm => TransactionScopeDataClass.GetPathOf("after", _aggregate, vm).Join("."))
                 .ToArray();
 
             return $$"""
                 public virtual bool {{MethodName}}({{detail.ClassName}} after, out {{detail.ClassName}} updated, out ICollection<string> errors) {
                     errors = new List<string>();
 
-                    {{WithIndent(find.RenderDbEntityLoading(
+                    {{WithIndent(FindFeature.RenderDbEntityLoading(
+                        _aggregate,
                         appSrv.DbContext,
                         "beforeDbEntity",
                         searchKeys,
@@ -65,8 +66,8 @@ namespace Nijo.Features.Storing {
                         return false;
                     }
 
-                    var beforeUpdate = {{detail.ClassName}}.{{AggregateDetail.FROM_DBENTITY}}(beforeDbEntity);
-                    var afterDbEntity = after.{{AggregateDetail.TO_DBENTITY}}();
+                    var beforeUpdate = {{detail.ClassName}}.{{TransactionScopeDataClass.FROM_DBENTITY}}(beforeDbEntity);
+                    var afterDbEntity = after.{{TransactionScopeDataClass.TO_DBENTITY}}();
 
                     // Attach
                     {{appSrv.DbContext}}.Entry(afterDbEntity).State = EntityState.Modified;
