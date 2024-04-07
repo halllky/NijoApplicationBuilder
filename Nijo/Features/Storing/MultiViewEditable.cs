@@ -188,7 +188,7 @@ namespace Nijo.Features.Storing {
                       )
                     }
 
-                    type GridRow = Util.LocalRepositoryItem<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>
+                    type GridRow = Util.LocalRepositoryItem<AggregateType.{{new SingleViewDataClass(_aggregate).TsTypeName}}>
 
                     const COLUMN_DEFS: Layout.ColumnDefEx<Util.TreeNode<GridRow>>[] = [
                       {{WithIndent(gridColumns.SelectTextTemplate(col => col.Render()), "  ")}}

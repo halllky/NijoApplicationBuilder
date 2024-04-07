@@ -20,9 +20,14 @@ namespace Nijo.Parts.WebClient {
 
             var vm = member as AggregateMember.ValueMember;
             var refMember = member as AggregateMember.Ref;
-            var memberPath =
-                vm?.Declared.GetFullPath(since: dataTableOwner) ??
-                member.GetFullPath(since: dataTableOwner);
+
+            //var memberPath = AggregateComponent.GetRegisterNameBeforeJoin(member.Owner, member);
+            var fullpath
+                = vm?.Declared.GetFullPath(since: dataTableOwner)
+                ?? member.GetFullPath(since: dataTableOwner);
+            var memberPath = fullpath.ToList();
+            // 行にバインドされるのはSingleViewDataClassなのでその型のデータの持ち方に合わせる
+            memberPath.Insert(memberPath.Count - 1, SingleViewDataClass.OWN_MEMBERS);
 
             // 非編集時のセル表示文字列
             string? formatted = null;
@@ -41,7 +46,7 @@ namespace Nijo.Parts.WebClient {
                                // （有向グラフの経路で言うと参照先→参照元→参照先のようにぐるっと回って戻ってくるパターン）
                     .GetNames()
                     .OfType<AggregateMember.ValueMember>()
-                    .Select(name => name.Declared.GetFullPath());
+                    .Select(name => name.Declared.GetFullPath().ToList());
                 formatted = $$"""
                     let formatted = ''
                     {{names.SelectTextTemplate(name => $$"""

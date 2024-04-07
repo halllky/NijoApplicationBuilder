@@ -108,6 +108,7 @@ namespace Nijo.Models {
                 // SingleView
                 var singleViewDataClass = new SingleViewDataClass(rootAggregate);
                 builder.TypeScriptDataTypes.Add(singleViewDataClass.RenderTypeScriptDataClassDeclaration());
+                builder.TypeScriptDataTypes.Add(singleViewDataClass.RenderTsInitializerFunction());
             });
 
             var editableMultiView = new MultiViewEditable(rootAggregate);

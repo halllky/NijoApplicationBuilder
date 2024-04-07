@@ -39,11 +39,13 @@ namespace Nijo.Features.Storing {
         }
 
         internal string RenderDeclaration() {
+            var dataClass = new SingleViewDataClass(_aggregate);
             var componentName = GetComponentName();
             var args = GetArguments().ToArray();
 
             // useFormの型。Refの参照元のコンポーネントのレンダリングの可能性があるためGetRootではなくGetEntry
-            var useFormType = $"AggregateType.{_aggregate.GetEntry().As<Aggregate>().Item.TypeScriptTypeName}";
+            var entryDataClass = new SingleViewDataClass(_aggregate.GetEntry().As<Aggregate>());
+            var useFormType = $"AggregateType.{entryDataClass.TsTypeName}";
             var registerName = GetRegisterName();
 
             // この集約を参照する隣接集約 ※DataTableの列定義は当該箇所で定義している
@@ -131,7 +133,6 @@ namespace Nijo.Features.Storing {
             } else if (!_aggregate.CanDisplayAllMembersAs2DGrid()) {
                 // Childrenのレンダリング（子集約をもつなど表であらわせない場合）
                 var loopVar = $"index_{args.Length}";
-                var createNewChildrenItem = new TSInitializerFunction(_aggregate).FunctionName;
 
                 return $$"""
                     const {{componentName}} = ({{{args.Join(", ")}} }: {
@@ -146,11 +147,11 @@ namespace Nijo.Features.Storing {
                       })
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
                       const onAdd = useCallback((e: React.MouseEvent) => {
-                        append(AggregateType.{{createNewChildrenItem}}())
+                        append(AggregateType.{{dataClass.TsInitFunctionName}}())
                         e.preventDefault()
                       }, [append])
                       const onCreate = useCallback(() => {
-                        append(AggregateType.{{createNewChildrenItem}}())
+                        append(AggregateType.{{dataClass.TsInitFunctionName}}())
                       }, [append])
                       const onRemove = useCallback((index: number) => {
                         return (e: React.MouseEvent) => {
@@ -197,7 +198,6 @@ namespace Nijo.Features.Storing {
             } else {
                 // Childrenのレンダリング（子集約をもたない場合）
                 var loopVar = $"index_{args.Length}";
-                var createNewChildrenItem = new TSInitializerFunction(_aggregate).FunctionName;
                 var editable = _mode == SingleView.E_Type.View ? "false" : "true";
 
                 var colMembers = new List<AggregateMember.AggregateMemberBase>();
@@ -228,11 +228,11 @@ namespace Nijo.Features.Storing {
                         control,
                         name: {{registerName}},
                       })
-                      const dtRef = useRef<Layout.DataTableRef<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>>(null)
+                      const dtRef = useRef<Layout.DataTableRef<AggregateType.{{dataClass.TsTypeName}}>>(null)
 
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
                       const onAdd = useCallback((e: React.MouseEvent) => {
-                        append(AggregateType.{{createNewChildrenItem}}())
+                        append(AggregateType.{{dataClass.TsInitFunctionName}}())
                         e.preventDefault()
                       }, [append])
                       const onRemove = useCallback((e: React.MouseEvent) => {
@@ -242,7 +242,7 @@ namespace Nijo.Features.Storing {
                       }, [remove])
                     """)}}
 
-                      const options = useMemo<Layout.DataTableProps<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>>(() => ({
+                      const options = useMemo<Layout.DataTableProps<AggregateType.{{dataClass.TsTypeName}}>>(() => ({
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
                         onChangeRow: update,
                     """)}}
@@ -456,30 +456,67 @@ namespace Nijo.Features.Storing {
         private string GetRegisterName(AggregateMember.AggregateMemberBase? prop = null) {
             return GetRegisterName(_aggregate, prop);
         }
-        private static string GetRegisterName(GraphNode<Aggregate> aggregate, AggregateMember.AggregateMemberBase? prop = null) {
-            var path = new List<string>();
-            var i = 0;
-            foreach (var edge in aggregate.PathFromEntry()) {
-                path.Add(edge.RelationName);
 
-                if (edge.Terminal.As<Aggregate>().IsChildrenMember()) {
+        /// <summary>
+        /// TODO: <see cref="SingleViewDataClass"/> の役割なのでそちらに移す
+        /// </summary>
+        internal static IEnumerable<string> GetRegisterNameBeforeJoin(
+            GraphNode<Aggregate> aggregate,
+            AggregateMember.AggregateMemberBase? prop = null) {
+
+            var i = 0;
+            foreach (var e in aggregate.PathFromEntry()) {
+                var edge = e.As<Aggregate>();
+
+                if (edge.IsRef()) {
+                    var dataClass = new SingleViewDataClass(edge.Terminal);
+                    yield return dataClass
+                        .GetRefFromProps()
+                        .Single(p => p.Aggregate == edge.Initial)
+                        .PropName;
+                    //if (edge.Source.As<Aggregate>() == edge.Initial) {
+                    //    // aggregateが参照する側ではなく参照される側の場合
+                    //    var dataClass = new SingleViewDataClass(edge.Terminal);
+                    //    yield return dataClass
+                    //        .GetRefFromProps()
+                    //        .Single(p => p.Aggregate == edge.Initial)
+                    //        .PropName;
+                    //} else {
+                    //    // aggregateが参照される側ではなく参照する側の場合
+                    //    yield return edge.RelationName;
+                    //}
+                } else {
+                    var dataClass = new SingleViewDataClass(edge.Initial);
+                    yield return dataClass
+                        .GetChildProps()
+                        .Single(p => p.Aggregate == edge.Terminal)
+                        .PropName;
+                }
+
+                if (edge.Terminal.IsChildrenMember()) {
                     if (edge.Terminal != aggregate) {
                         // 祖先の中にChildrenがあるので配列番号を加える
-                        path.Add("${index_" + i.ToString() + "}");
+                        yield return "${index_" + i.ToString() + "}";
                         i++;
                     } else if (edge.Terminal == aggregate && prop != null) {
                         // このコンポーネント自身がChildrenのとき
                         // - propがnull: useArrayFieldの登録名の作成なので配列番号を加えない
                         // - propがnullでない: mapの中のプロパティのレンダリングなので配列番号を加える
-                        path.Add("${index_" + i.ToString() + "}");
+                        yield return "${index_" + i.ToString() + "}";
                         i++;
                     }
                 }
             }
             if (prop != null) {
-                path.Add(prop.MemberName);
+                yield return SingleViewDataClass.OWN_MEMBERS;
+                yield return prop.MemberName;
             }
-            var name = path.Join(".");
+        }
+        /// <summary>
+        /// TODO: リファクタリング
+        /// </summary>
+        private static string GetRegisterName(GraphNode<Aggregate> aggregate, AggregateMember.AggregateMemberBase? prop = null) {
+            var name = GetRegisterNameBeforeJoin(aggregate, prop).Join(".");
             return string.IsNullOrEmpty(name) ? string.Empty : $"`{name}`";
         }
 
