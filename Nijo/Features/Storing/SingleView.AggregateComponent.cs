@@ -50,12 +50,9 @@ namespace Nijo.Features.Storing {
             var relevantAggregatesCalling = _aggregate
                 .GetReferedEdgesAsSingleKey()
                 .SelectTextTemplate(edge =>  $$"""
-                    <VForm.Spacer />
-                    <VForm.Root>
-                      <VForm.Section label="{{edge.Initial.Item.DisplayName}}" table>
-                        {{WithIndent(new AggregateComponent(edge.Initial, _mode).RenderCaller(), "    ")}}
-                      </VForm.Section>
-                    </VForm.Root>
+                    <VForm.Container label="{{edge.Initial.Item.DisplayName}}">
+                      {{WithIndent(new AggregateComponent(edge.Initial, _mode).RenderCaller(), "  ")}}
+                    </VForm.Container>
                     """);
 
             if (_relationToParent == null) {
@@ -354,9 +351,7 @@ namespace Nijo.Features.Storing {
                 // このコンポーネントが参照先集約のSingleViewの一部としてレンダリングされている場合、
                 // キーがどの参照先データかは自明のため、非表示にする。
                 return $$"""
-                    <VForm.Row hidden>
-                      <input type="hidden" {...register({{GetRegisterName(refProperty)}})} />
-                    </VForm.Row>
+                    <input type="hidden" {...register({{GetRegisterName(refProperty)}})} />
                     """;
 
             } else if (_mode == SingleView.E_Type.View) {
