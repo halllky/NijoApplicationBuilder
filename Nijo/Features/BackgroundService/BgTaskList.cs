@@ -56,7 +56,7 @@ namespace Nijo.Features.BackgroundService {
             var agg = context.Schema.GetAggregate(GraphNodeId);
             var controller = new Controller(agg.Item);
             var members = agg.GetMembers().ToArray();
-            var columns = members.Select((m, i) => DataTableColumn.FromMember(m, "item", agg, $"col{i}", true));
+            var columns = DataTableColumn.FromMembers("item", agg, true);
 
             return new SourceFile {
                 FileName = "BackgroundTaskList.tsx",

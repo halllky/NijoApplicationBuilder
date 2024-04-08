@@ -45,7 +45,7 @@ namespace Nijo.Features.Storing {
                 .OrderBy(group => group.Key == _aggregate ? 1 : 2);
 
             var rowHeader = new DataTableColumn {
-                Id = "col0",
+                Id = "col-header",
                 Header = string.Empty,
                 Size = 64,
                 EnableResizing = false,
@@ -54,7 +54,7 @@ namespace Nijo.Features.Storing {
                       const row = cellProps.row.original.item
                       const singleViewUrl = row.state === '+'
                         ? `{{createView.GetUrlStringForReact(new[] { "row.itemKey" })}}`
-                        : `{{editView.GetUrlStringForReact(keys.Select(k => $"row.item.{k.Declared.GetFullPath().Join("?.")}"))}}`
+                        : `{{editView.GetUrlStringForReact(keys.Select(k => $"row.item.{k.Declared.GetFullPathAsSingleViewDataClass().Join("?.")}"))}}`
                       return (
                         <div className="flex items-center gap-1 pl-1">
                           <Link to={singleViewUrl} className="text-link">詳細</Link>
@@ -64,14 +64,7 @@ namespace Nijo.Features.Storing {
                     }
                     """,
             };
-            var gridColumns = new[] { rowHeader }.Concat(_aggregate
-                .EnumerateThisAndDescendants()
-                // ChildrenやVariationのメンバーはグリッド上で表現できないため表示しない
-                .Where(agg => agg.EnumerateAncestorsAndThis().All(agg2 => agg2.IsRoot() || agg2.IsChildMember()))
-                .SelectMany(agg => agg.GetMembers())
-                .OfType<AggregateMember.ValueMember>()
-                .Where(vm => !vm.Options.InvisibleInGui)
-                .Select((vm, ix) => DataTableColumn.FromMember(vm, "item.item", _aggregate, $"col{ix + 1}", false)));
+            var gridColumns = new[] { rowHeader }.Concat(DataTableColumn.FromMembers("item.item", _aggregate, false));
 
             return new SourceFile {
                 FileName = "list.tsx",

@@ -200,22 +200,10 @@ namespace Nijo.Features.Storing {
                 var loopVar = $"index_{args.Length}";
                 var editable = _mode == SingleView.E_Type.View ? "false" : "true";
 
-                var colMembers = new List<AggregateMember.AggregateMemberBase>();
-                colMembers.AddRange(GetMembers());
-                colMembers.AddRange(_aggregate
-                    .GetReferedEdgesAsSingleKeyRecursively()
-                    .SelectMany(edge => new TransactionScopeDataClass(edge.Initial).GetOwnMembers())
-                    .Where(member => member is not AggregateMember.Ref rm
-                                  || !rm.Relation.IsPrimary()));
-                var colDefs = colMembers
-                    .Where(member => member is AggregateMember.ValueMember
-                                  || member is AggregateMember.Ref)
-                    .Select((member, ix) => DataTableColumn.FromMember(
-                        member,
+                var colDefs = DataTableColumn.FromMembers(
                         "item",
                         _aggregate,
-                        $"col{ix}",
-                        _mode == SingleView.E_Type.View));
+                        _mode == SingleView.E_Type.View);
 
                 return $$"""
                     const {{componentName}} = ({{{args.Join(", ")}} }: {
@@ -361,12 +349,12 @@ namespace Nijo.Features.Storing {
                     .GetRoot()
                     .GetKeys()
                     .OfType<AggregateMember.ValueMember>()
-                    .Select(m => m.Declared.GetFullPath().Join("."));
+                    .Select(m => m.Declared.GetFullPathAsSingleViewDataClass().Join("."));
 
                 var names = refProperty.MemberAggregate
                     .GetNames()
                     .OfType<AggregateMember.ValueMember>()
-                    .Select(m => m.Declared.GetFullPath().Join("."));
+                    .Select(m => m.Declared.GetFullPathAsSingleViewDataClass().Join("."));
 
                 return $$"""
                     <VForm.Item label="{{refProperty.MemberName}}">
@@ -472,7 +460,8 @@ namespace Nijo.Features.Storing {
                     var dataClass = new SingleViewDataClass(edge.Terminal);
                     yield return dataClass
                         .GetRefFromProps()
-                        .Single(p => p.Aggregate == edge.Initial)
+                        .Single(p => p.Aggregate == edge.Initial
+                                  && p.Aggregate.Source == edge)
                         .PropName;
                     //if (edge.Source.As<Aggregate>() == edge.Initial) {
                     //    // aggregateが参照する側ではなく参照される側の場合
