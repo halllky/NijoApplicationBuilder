@@ -207,6 +207,9 @@ C:\your-installed-directory\nijo.exe update
 
 ## 開発者向け情報 for Contributors
 - デバッグ手順
+  - ローカル環境でHTTPSを使ったデバッグができるようにする
+    - コマンドラインで `dotnet dev-certs https` を実行する。
+      - Windows: 信頼されたルート証明書にならないケースがあるので注意（条件不明）
   - 執筆中
 - リリース手順
   - 執筆中
