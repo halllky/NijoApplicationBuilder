@@ -21,33 +21,70 @@ export default function () {
 
   return (
     <div
-      className="flex flex-col gap-4 my-4 mx-auto max-w-[720px]
+      className="flex flex-col gap-4 m-4
         border border-1 border-amber-500 p-1"
       style={{ fontFamily: 'BIZ UDGothic' }}>
 
-      <VForm.Container label="メイン" indentSizePx={32} rightColumnWidth="28rem">
+      <VForm.Container label="メイン" indentSizePx={32} leftColumnMinWidth="10rem">
+
+        <VForm.Item label="入フ">
+          <input type="text" className="border border-color-4" />
+        </VForm.Item>
+        <VForm.Item label="入力フォ">
+          <input type="text" className="border border-color-4" />
+        </VForm.Item>
+        <VForm.Item label="入力フォーム">
+          <input type="text" className="border border-color-4" />
+        </VForm.Item>
         <VForm.Item label="入力フォーム">
           <input type="text" className="border border-color-4" />
         </VForm.Item>
         <VForm.Item label="入力フォーム">
           <input type="text" className="border border-color-4" />
         </VForm.Item>
+        <VForm.Item label="入力フォーム">
+          <input type="text" className="border border-color-4" />
+        </VForm.Item>
+        <VForm.Item label="入力フォーム">
+          <input type="text" className="border border-color-4" />
+        </VForm.Item>
+        <VForm.Item label="入力フォーム＋＋＋＋＋＋＋＋＋＋＋＋＋＋">
+          <input type="text" className="border border-color-4" />
+        </VForm.Item>
+
         <VForm.Container label="コンテナ2-1個目">
+
           <VForm.Item label="入力フォーム">
             <input type="text" className="border border-color-4" />
           </VForm.Item>
+          <VForm.Item label="入力フォーム">
+            <input type="text" className="border border-color-4" />
+          </VForm.Item>
+          <VForm.Item label="入力フォーム">
+            <input type="text" className="border border-color-4" />
+          </VForm.Item>
+          <VForm.Item label="入力フォーム">
+            <input type="text" className="border border-color-4" />
+          </VForm.Item>
+          <VForm.Item label="入力フォーム">
+            <input type="text" className="border border-color-4" />
+          </VForm.Item>
+          <VForm.Item label="入力フォーム＋＋＋＋＋＋＋＋＋＋＋＋＋＋">
+            <input type="text" className="border border-color-4" />
+          </VForm.Item>
+
           <VForm.Container label="コンテナ2-1-1個目">
             <VForm.Item label="入力フォーム">
               <input type="text" className="border border-color-4" />
             </VForm.Item>
-            <VForm.Item label="入力フォーム">
+            <VForm.Item label="内包する要素ゼロ個(Item)">
               {/* <input type="text" className="border border-color-4" /> */}
             </VForm.Item>
-            <VForm.Container label="内包する要素ゼロ個">
+            <VForm.Container label="内包する要素ゼロ個(Container)">
             </VForm.Container>
           </VForm.Container>
           <VForm.Item>
-            <input type="text" className="border border-color-4" />
+            <input type="text" className="border border-color-4" placeholder="ラベルなし" />
           </VForm.Item>
           <VForm.Item label="入力フォーム">
             <input type="text" className="border border-color-4" />
@@ -97,9 +134,33 @@ export default function () {
         <VForm.Item label="Itemのみ">
           <input type="text" className="border border-color-4" />
         </VForm.Item>
+        <VForm.Item label="Itemのみ">
+          <input type="text" className="border border-color-4" />
+        </VForm.Item>
+        <VForm.Item label="Itemのみ">
+          <input type="text" className="border border-color-4" />
+        </VForm.Item>
+        <VForm.Item label="Itemのみ">
+          <input type="text" className="border border-color-4" />
+        </VForm.Item>
+        <VForm.Item label="Itemのみ">
+          <input type="text" className="border border-color-4" />
+        </VForm.Item>
+        <VForm.Item label="Itemのみ">
+          <input type="text" className="border border-color-4" />
+        </VForm.Item>
+        <VForm.Item label="Itemのみ">
+          <input type="text" className="border border-color-4" />
+        </VForm.Item>
+        <VForm.Item label="Itemのみ">
+          <input type="text" className="border border-color-4" />
+        </VForm.Item>
+        <VForm.Item label="Itemのみ＋＋＋＋＋＋＋＋＋＋＋＋">
+          <input type="text" className="border border-color-4" />
+        </VForm.Item>
       </VForm.Container>
 
-      <VForm.Container label="Containerのみ" rightColumnWidth="24rem">
+      <VForm.Container label="Containerのみ" leftColumnMinWidth="14rem">
         <VForm.Container label="inner1">
           <VForm.Container label="inner2">
             <VForm.Container label="inner3">
@@ -107,6 +168,21 @@ export default function () {
                 <input type="text" className="border border-color-4" />
               </VForm.Item>
               <VForm.Item label="入力フォーム">
+                <input type="text" className="border border-color-4" />
+              </VForm.Item>
+              <VForm.Item label="入力フォーム">
+                <input type="text" className="border border-color-4" />
+              </VForm.Item>
+              <VForm.Item label="入力フォーム">
+                <input type="text" className="border border-color-4" />
+              </VForm.Item>
+              <VForm.Item label="入力フォーム">
+                <input type="text" className="border border-color-4" />
+              </VForm.Item>
+              <VForm.Item label="入力フォーム">
+                <input type="text" className="border border-color-4" />
+              </VForm.Item>
+              <VForm.Item label="入力フォーム＋＋＋＋＋＋＋＋＋＋＋＋＋＋">
                 <input type="text" className="border border-color-4" />
               </VForm.Item>
             </VForm.Container>

@@ -357,7 +357,7 @@ namespace Nijo.Features.Storing {
                               <div className="flex-1"></div>
                             </h1>
 
-                            <VForm.Container leftColumnWidth="{{headerWidth}}rem">
+                            <VForm.Container leftColumnMinWidth="{{headerWidth}}rem">
                               {{new AggregateComponent(_aggregate, _type).RenderCaller()}}
                             </VForm.Container>
 

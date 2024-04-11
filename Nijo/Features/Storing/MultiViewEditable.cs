@@ -189,7 +189,7 @@ namespace Nijo.Features.Storing {
                                 <Input.Button onClick={handleAdd}>追加</Input.Button>
                                 <Input.Button onClick={handleRemove}>削除</Input.Button>
                               </div>
-                              <VForm.Container leftColumnWidth="10rem">
+                              <VForm.Container leftColumnMinWidth="10rem">
                     {{groupedSearchConditions.SelectTextTemplate(group => $$"""
                     {{If(group.Key == _aggregate, () => $$"""
                                 {{WithIndent(group.SelectTextTemplate(RenderSearchConditionValueMember), "            ")}}
