@@ -95,9 +95,9 @@ namespace Nijo.Features.Storing {
                 var dataClass = new SingleViewDataClass(_aggregate);
 
                 var refRepositories = dataClass.GetRefFromProps().Select(p => new {
-                    Repos = new LocalRepository(p.Aggregate),
-                    FindMany = new FindManyFeature(p.Aggregate),
-                    p.Aggregate,
+                    Repos = new LocalRepository(p.MainAggregate),
+                    FindMany = new FindManyFeature(p.MainAggregate),
+                    Aggregate = p.MainAggregate,
                     DataClassProp = p,
                 }).ToArray();
 

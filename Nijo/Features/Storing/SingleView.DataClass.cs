@@ -23,15 +23,18 @@ namespace Nijo.Features.Storing {
         internal string TsInitFunctionName => $"create{TsTypeName}";
 
         internal const string OWN_MEMBERS = "own_members";
+        internal const string LOCAL_REPOS_ITEMKEY = "localRepositoryItemKey";
+        internal const string LOCAL_REPOS_STATE = "localRepositoryState";
         /// <summary>
         /// 編集画面でDBから読み込んだデータとその画面中で新たに作成されたデータで
         /// 挙動を分けるためのフラグ
         /// </summary>
         internal const string IS_LOADED = "loaded";
         /// <summary>
-        /// - useFieldArrayの中で配列インデックスをキーに使うと新規追加されたコンボボックスが
-        ///   その1個上の要素の更新と紐づいてしまうのでクライアント側で要素1個ずつにIDを振る
-        /// - TabGroupでどのタブがアクティブになっているかの判定にも使う
+        /// useFieldArrayの中で配列インデックスをキーに使うと新規追加されたコンボボックスが
+        /// その1個上の要素の更新と紐づいてしまうのでクライアント側で要素1個ずつにIDを振る
+        ///
+        /// TODO: これがなくてもなんとかなる可能性がある
         /// </summary>
         internal const string OBJECT_ID = "object_id";
 
@@ -39,7 +42,8 @@ namespace Nijo.Features.Storing {
         internal IEnumerable<OwnProp> GetOwnProps() {
             return MainAggregate
                 .GetMembers()
-                .Where(m => m.DeclaringAggregate == MainAggregate)
+                .Where(m => m.DeclaringAggregate == MainAggregate
+                         && (m is AggregateMember.ValueMember || m is AggregateMember.Ref))
                 .Select(m => new OwnProp(MainAggregate, m));
         }
         internal IEnumerable<RelationProp> GetChildProps() {
@@ -48,18 +52,18 @@ namespace Nijo.Features.Storing {
                 .OfType<AggregateMember.RelationMember>()
                 .Where(m => m is not AggregateMember.Ref
                          && m is not AggregateMember.Parent)
-                .Select(m => new RelationProp(MainAggregate, m.MemberAggregate));
+                .Select(m => new RelationProp(MainAggregate, m.Relation));
             foreach (var item in childMembers) {
                 yield return item;
             }
         }
         internal IEnumerable<RelationProp> GetRefFromProps() {
             var refs = MainAggregate
-                .EnumerateThisAndDescendants()
-                .SelectMany(agg => agg.GetReferedEdgesAsSingleKeyRecursively())
+                .GetReferedEdges()
+                .Where(edge => edge.Initial.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key)
                 // TODO: 本当はDistinctを使いたいがAggregateの同一性判断にSourceが入っていない
                 .GroupBy(relation => new { agg = relation.Initial.GetRoot(), relation })
-                .Select(group => new RelationProp(MainAggregate, group.Key.agg));
+                .Select(group => new RelationProp(MainAggregate, group.Key.relation));
             foreach (var item in refs) {
                 yield return item;
             }
@@ -74,46 +78,23 @@ namespace Nijo.Features.Storing {
                 return $$"""
                     export type {{dataClass.TsTypeName}} = {
                       {{OBJECT_ID}}?: string
+                    {{If(agg.IsRoot(), () => $$"""
+                      {{LOCAL_REPOS_ITEMKEY}}: Util.ItemKey
+                      {{LOCAL_REPOS_STATE}}: Util.LocalRepositoryState
+                    """)}}
                       {{OWN_MEMBERS}}: {
                     {{dataClass.GetOwnProps().SelectTextTemplate(p => $$"""
                         {{p.PropName}}?: {{p.Member.TypeScriptTypename}}
                     """)}}
                       }
                     {{dataClass.GetChildProps().SelectTextTemplate(p => $$"""
-                      {{p.PropName}}?: {{(p.IsArray ? $"{new SingleViewDataClass(p.Aggregate).TsTypeName}[]" : new SingleViewDataClass(p.Aggregate).TsTypeName)}}
+                      {{p.PropName}}?: {{(p.IsArray ? $"{new SingleViewDataClass(p.MainAggregate).TsTypeName}[]" : new SingleViewDataClass(p.MainAggregate).TsTypeName)}}
                     """)}}
                     {{dataClass.GetRefFromProps().SelectTextTemplate(p => $$"""
-                      {{p.PropName}}?: {{(p.IsArray ? $"{new SingleViewDataClass(p.Aggregate).TsTypeName}[]" : new SingleViewDataClass(p.Aggregate).TsTypeName)}}
+                      {{p.PropName}}?: {{(p.IsArray ? $"{new SingleViewDataClass(p.MainAggregate).TsTypeName}[]" : new SingleViewDataClass(p.MainAggregate).TsTypeName)}}
                     """)}}
                       {{IS_LOADED}}?: boolean
                     }
-                    """;
-            });
-        }
-        /// <summary>
-        /// <see cref="TSInitializerFunction.Render"/> のロジックと合わせる
-        /// </summary>
-        internal string RenderTsInitializerFunction() {
-            if (!MainAggregate.IsRoot()) throw new InvalidOperationException();
-
-            return MainAggregate.EnumerateThisAndDescendants().SelectTextTemplate(agg => {
-                var dataClass = new SingleViewDataClass(agg);
-
-                return $$"""
-                    export const {{dataClass.TsInitFunctionName}} = (): {{dataClass.TsTypeName}} => ({
-                      {{OWN_MEMBERS}}: {
-                    {{dataClass.GetOwnProps().SelectTextTemplate(p => $$"""
-                    {{If(p.Member is AggregateMember.ValueMember vm && vm.Options.MemberType is Uuid, () => $$"""
-                        {{p.PropName}}: UUID.generate(),
-                    """).ElseIf(p.Member is AggregateMember.Variation, () => $$"""
-                        {{p.PropName}}: '{{((AggregateMember.Variation)p.Member).GetGroupItems().First().Key}}',
-                    """)}}
-                    """)}}
-                      },
-                    {{dataClass.GetChildProps().SelectTextTemplate(p => $$"""
-                      {{p.PropName}}: {{(p.IsArray ? "[]" : $"{new SingleViewDataClass(p.Aggregate).TsInitFunctionName}()")}},
-                    """)}}
-                    })
                     """;
             });
         }
@@ -143,27 +124,26 @@ namespace Nijo.Features.Storing {
             }
         }
 
-        internal class RelationProp {
-            internal RelationProp(GraphNode<Aggregate> dataClassMainAggregate, GraphNode<Aggregate> propAggregate) {
-                _mainAggregate = dataClassMainAggregate;
-                Aggregate = propAggregate;
+        internal class RelationProp : SingleViewDataClass {
+            internal RelationProp(GraphNode<Aggregate> entry, GraphEdge<Aggregate> relation)
+                : base(relation.IsRef() ? relation.Initial : relation.Terminal) {
+                _entryAggregate = entry;
             }
-            private readonly GraphNode<Aggregate> _mainAggregate;
-            internal GraphNode<Aggregate> Aggregate { get; }
+            private readonly GraphNode<Aggregate> _entryAggregate;
 
             /// <summary>
             /// 従属集約が保管されるプロパティの名前を返します
             /// </summary>
             internal string PropName {
                 get {
-                    if (Aggregate.Source == null) {
+                    if (MainAggregate.Source == null) {
                         throw new InvalidOperationException("ルート集約のPropは考慮していない");
 
-                    } else if (Aggregate.Source.IsParentChild()) {
-                        return $"child_{Aggregate.Item.ClassName}";
+                    } else if (MainAggregate.Source.IsParentChild()) {
+                        return $"child_{MainAggregate.Item.ClassName}";
 
                     } else {
-                        return $"ref_from_{Aggregate.Source.RelationName.ToCSharpSafe()}_{Aggregate.Item.ClassName}";
+                        return $"ref_from_{MainAggregate.Source.RelationName.ToCSharpSafe()}_{MainAggregate.Item.ClassName}";
                     }
                 }
             }
@@ -174,13 +154,13 @@ namespace Nijo.Features.Storing {
                 get {
                     var start = false;
 
-                    foreach (var edge in Aggregate.PathFromEntry()) {
+                    foreach (var edge in MainAggregate.PathFromEntry()) {
                         var initial = edge.Initial.As<Aggregate>();
                         var terminal = edge.Terminal.As<Aggregate>();
 
                         // Childrenの型ならばPathFromEntryの途中から数えなければいけないので
                         if (!start) {
-                            if (initial == _mainAggregate) {
+                            if (initial == _entryAggregate) {
                                 start = true;
                             } else {
                                 continue;
@@ -226,7 +206,7 @@ namespace Nijo.Features.Storing {
                         var dataClass = new SingleViewDataClass(edge.Terminal.As<Aggregate>());
                         yield return dataClass
                             .GetRefFromProps()
-                            .Single(p => p.Aggregate.Source == edge)
+                            .Single(p => p.MainAggregate.Source == edge)
                             .PropName;
 
                         enumeratingRefTargetKeyName = false;
@@ -242,7 +222,7 @@ namespace Nijo.Features.Storing {
                         var dataClass = new SingleViewDataClass(edge.Initial.As<Aggregate>());
                         yield return dataClass
                             .GetChildProps()
-                            .Single(p => p.Aggregate == edge.Terminal.As<Aggregate>())
+                            .Single(p => p.MainAggregate == edge.Terminal.As<Aggregate>())
                             .PropName;
 
                         enumeratingRefTargetKeyName = false;

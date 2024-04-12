@@ -460,8 +460,8 @@ namespace Nijo.Features.Storing {
                     var dataClass = new SingleViewDataClass(edge.Terminal);
                     yield return dataClass
                         .GetRefFromProps()
-                        .Single(p => p.Aggregate == edge.Initial
-                                  && p.Aggregate.Source == edge)
+                        .Single(p => p.MainAggregate == edge.Initial
+                                  && p.MainAggregate.Source == edge)
                         .PropName;
                     //if (edge.Source.As<Aggregate>() == edge.Initial) {
                     //    // aggregateが参照する側ではなく参照される側の場合
@@ -478,7 +478,7 @@ namespace Nijo.Features.Storing {
                     var dataClass = new SingleViewDataClass(edge.Initial);
                     yield return dataClass
                         .GetChildProps()
-                        .Single(p => p.Aggregate == edge.Terminal)
+                        .Single(p => p.MainAggregate == edge.Terminal)
                         .PropName;
                 }
 
