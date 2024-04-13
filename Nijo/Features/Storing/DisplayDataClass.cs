@@ -99,44 +99,61 @@ namespace Nijo.Features.Storing {
             return refFromPros;
         }
 
-        internal string RenderDecomposingToLocalRepositoryType(string thisInstanceName) {
+        internal string ConvertFnNameToLocalRepositoryType => $"convert{MainAggregate.Item.ClassName}ToLocalRepositoryItem";
+        /// <summary>
+        /// データ型変換関数 (<see cref="DisplayDataClass"/> => <see cref="TransactionScopeDataClass"/>)
+        /// </summary>
+        internal string RenderConvertFnToLocalRepositoryType(string? thisInstanceName = null) {
+
+            // TODO: リファクタリング
+            // ルート要素のレンダリングとメンバーのレンダリングを分ければこのメソッドがオプショナル引数をとる必要はない
+
             if (MainAggregate.IsRoot()) {
                 return $$"""
-                    const item0: Util.LocalRepositoryItem<AggregateType.{{MainAggregate.Item.TypeScriptTypeName}}> = {
-                      itemKey: {{thisInstanceName}}.{{LOCAL_REPOS_ITEMKEY}},
-                      state: {{thisInstanceName}}.{{LOCAL_REPOS_STATE}},
-                      item: {
-                        ...{{thisInstanceName}}.{{OWN_MEMBERS}},
-                    {{GetChildProps().SelectTextTemplate(p => $$"""
-                        {{WithIndent(p.RenderDecomposingToLocalRepositoryType($"{thisInstanceName}.{p.PropName}"), "    ")}},
-                    """)}}
-                      },
-                    }
-                    {{GetRefFromPropsRecursively().SelectTextTemplate((x, i) => x.IsArray ? $$"""
-                    const item{{i + 1}}: Util.LocalRepositoryItem<AggregateType.{{x.Item1.MainAggregate.Item.TypeScriptTypeName}}>[] = {{thisInstanceName}}{{string.Concat(x.Path.Select(p => $"{Environment.NewLine}  ?.{p}"))}}
-                      .filter((y): y is Exclude<typeof y, undefined> => y !== undefined)
-                      .map(y => ({
-                        itemKey: y.{{LOCAL_REPOS_ITEMKEY}},
-                        state: y.{{LOCAL_REPOS_STATE}},
+                    /** 画面に表示されるデータ型を登録更新される粒度の型に変換します。 */
+                    export const {{ConvertFnNameToLocalRepositoryType}} = (displayData: {{TsTypeName}}) => {
+                      const item0: Util.LocalRepositoryItem<{{MainAggregate.Item.TypeScriptTypeName}}> = {
+                        itemKey: displayData.{{LOCAL_REPOS_ITEMKEY}},
+                        state: displayData.{{LOCAL_REPOS_STATE}},
                         item: {
-                          ...y.{{OWN_MEMBERS}},
-                    {{new DisplayDataClass(x.Item1.MainAggregate.AsEntry()).GetChildProps().SelectTextTemplate(p => $$"""
-                          {{WithIndent(p.RenderDecomposingToLocalRepositoryType($"y.{p.PropName}"), "      ")}},
+                          ...displayData.{{OWN_MEMBERS}},
+                    {{GetChildProps().SelectTextTemplate(p => $$"""
+                          {{WithIndent(p.RenderConvertFnToLocalRepositoryType($"{thisInstanceName ?? "displayData"}.{p.PropName}"), "      ")}},
                     """)}}
                         },
-                      })) ?? []
+                      }
+                    {{GetRefFromPropsRecursively().SelectTextTemplate((x, i) => x.IsArray ? $$"""
+                      const item{{i + 1}}: Util.LocalRepositoryItem<{{x.Item1.MainAggregate.Item.TypeScriptTypeName}}>[] = displayData{{string.Concat(x.Path.Select(p => $"{Environment.NewLine}    ?.{p}"))}}
+                        .filter((y): y is Exclude<typeof y, undefined> => y !== undefined)
+                        .map(y => ({
+                          itemKey: y.{{LOCAL_REPOS_ITEMKEY}},
+                          state: y.{{LOCAL_REPOS_STATE}},
+                          item: {
+                            ...y.{{OWN_MEMBERS}},
+                    {{new DisplayDataClass(x.Item1.MainAggregate.AsEntry()).GetChildProps().SelectTextTemplate(p => $$"""
+                            {{WithIndent(p.RenderConvertFnToLocalRepositoryType($"y.{p.PropName}"), "        ")}},
+                    """)}}
+                          },
+                        })) ?? []
                     """ : $$"""
-                    const item{{i + 1}}: Util.LocalRepositoryItem<AggregateType.{{x.Item1.MainAggregate.Item.TypeScriptTypeName}}> | undefined = {{thisInstanceName}}{{string.Concat(x.Path.Select(p => $"?.{p}"))}} === undefined ? undefined : {
-                      itemKey: {{thisInstanceName}}{{string.Concat(x.Path.Select(p => $".{p}"))}}.{{LOCAL_REPOS_ITEMKEY}},
-                      state: {{thisInstanceName}}{{string.Concat(x.Path.Select(p => $".{p}"))}}.{{LOCAL_REPOS_STATE}},
-                      item: {
-                        ...{{thisInstanceName}}{{string.Concat(x.Path.Select(p => $".{p}"))}}.{{OWN_MEMBERS}},
+                      const item{{i + 1}}: Util.LocalRepositoryItem<{{x.Item1.MainAggregate.Item.TypeScriptTypeName}}> | undefined = displayData{{string.Concat(x.Path.Select(p => $"?.{p}"))}} === undefined ? undefined : {
+                        itemKey: displayData{{string.Concat(x.Path.Select(p => $".{p}"))}}.{{LOCAL_REPOS_ITEMKEY}},
+                        state: displayData{{string.Concat(x.Path.Select(p => $".{p}"))}}.{{LOCAL_REPOS_STATE}},
+                        item: {
+                          ...displayData{{string.Concat(x.Path.Select(p => $".{p}"))}}.{{OWN_MEMBERS}},
                     {{x.Item1.GetChildProps().SelectTextTemplate(p => $$"""
-                        {{WithIndent(p.RenderDecomposingToLocalRepositoryType($"{thisInstanceName}{string.Concat(x.Path.Select(p => $".{p}"))}.{p.PropName}"), "    ")}},
+                          {{WithIndent(p.RenderConvertFnToLocalRepositoryType($"{thisInstanceName ?? "displayData"}{string.Concat(x.Path.Select(p => $".{p}"))}.{p.PropName}"), "      ")}},
                     """)}}
-                      },
+                        },
+                      }
+                    """)}}
+                      return [
+                        item0,
+                    {{GetRefFromPropsRecursively().SelectTextTemplate((_, i) => $$"""
+                        item{{i + 1}},
+                    """)}}
+                      ] as const
                     }
-                    """)}}
                     """;
 
             } else {
@@ -145,10 +162,10 @@ namespace Nijo.Features.Storing {
 
                 if (member is AggregateMember.Children children) {
                     return $$"""
-                        {{member.MemberName}}: {{thisInstanceName}}?.map(x => ({
+                        {{member.MemberName}}: {{thisInstanceName ?? "displayData"}}?.map(x => ({
                           ...x.{{OWN_MEMBERS}},
                         {{GetChildProps().SelectTextTemplate(p => $$"""
-                          {{WithIndent(p.RenderDecomposingToLocalRepositoryType("x"), "  ")}},
+                          {{WithIndent(p.RenderConvertFnToLocalRepositoryType("x"), "  ")}},
                         """)}}
                         }))
                         """;
@@ -156,9 +173,9 @@ namespace Nijo.Features.Storing {
                 } else {
                     return $$"""
                         {{member.MemberName}}: {
-                          ...{{thisInstanceName}}.{{OWN_MEMBERS}},
+                          ...{{thisInstanceName ?? "displayData"}}.{{OWN_MEMBERS}},
                         {{GetChildProps().SelectTextTemplate(p => $$"""
-                          {{WithIndent(p.RenderDecomposingToLocalRepositoryType($"{thisInstanceName}.{p.PropName}"), "  ")}},
+                          {{WithIndent(p.RenderConvertFnToLocalRepositoryType($"{thisInstanceName ?? "displayData"}.{p.PropName}"), "  ")}},
                         """)}}
                         }
                         """;

@@ -36,6 +36,10 @@ namespace Nijo.Features.Storing {
             var findMany = new FindManyFeature(_aggregate);
             var createEmptyObject = new TSInitializerFunction(_aggregate).FunctionName;
             var rootLocalRepository = new LocalRepository(_aggregate);
+            var refLocalRepos = dataClass
+                .GetRefFromPropsRecursively()
+                .Select(x => new LocalRepository(x.Item1.MainAggregate))
+                .ToArray();
             var keys = _aggregate.GetKeys().OfType<AggregateMember.ValueMember>().ToArray();
 
             var groupedSearchConditions = findMany
@@ -53,19 +57,19 @@ namespace Nijo.Features.Storing {
                 Cell = $$"""
                     cellProps => {
                       const row = cellProps.row.original.item
-                      const singleViewUrl = row.state === '+'
-                        ? `{{createView.GetUrlStringForReact(new[] { "row.itemKey" })}}`
-                        : `{{editView.GetUrlStringForReact(keys.Select(k => $"row.item.{k.Declared.GetFullPathAsSingleViewDataClass().Join("?.")}"))}}`
+                      const singleViewUrl = row.{{DisplayDataClass.LOCAL_REPOS_STATE}} === '+'
+                        ? `{{createView.GetUrlStringForReact(new[] { $"row.{DisplayDataClass.LOCAL_REPOS_ITEMKEY}" })}}`
+                        : `{{editView.GetUrlStringForReact(keys.Select(k => $"row.{k.Declared.GetFullPathAsSingleViewDataClass().Join("?.")}"))}}`
                       return (
                         <div className="flex items-center gap-1 pl-1">
                           <Link to={singleViewUrl} className="text-link">詳細</Link>
-                          <span className="inline-block w-4 text-center">{row.state}</span>
+                          <span className="inline-block w-4 text-center">{row.{{DisplayDataClass.LOCAL_REPOS_STATE}}}</span>
                         </div>
                       )
                     }
                     """,
             };
-            var gridColumns = new[] { rowHeader }.Concat(DataTableColumn.FromMembers("item.item", _aggregate, false));
+            var gridColumns = new[] { rowHeader }.Concat(DataTableColumn.FromMembers("item", _aggregate, false));
 
             return new SourceFile {
                 FileName = "list.tsx",
@@ -105,6 +109,16 @@ namespace Nijo.Features.Storing {
                         update: updateLocalRepositoryItem,
                         remove: deleteLocalRepositoryItem,
                       } = Util.{{rootLocalRepository.HookName}}(editRange)
+                    {{refLocalRepos.SelectTextTemplate(repos => $$"""
+                      const {
+                        ready: {{repos.Aggregate.Item.ClassName}}IsReady,
+                        items: {{repos.Aggregate.Item.ClassName}}Items,
+                        add: addTo{{repos.Aggregate.Item.ClassName}}LocalRepository,
+                        update: update{{repos.Aggregate.Item.ClassName}}LocalRepositoryItem,
+                        remove: delete{{repos.Aggregate.Item.ClassName}}LocalRepositoryItem,
+                      } = Util.{{rootLocalRepository.HookName}}(editRange)
+                    """)}}
+
                       const reactHookFormMethods = Util.useFormEx<{ currentPageItems: GridRow[] }>({})
                       const { control, registerEx, handleSubmit, reset } = reactHookFormMethods
                       const { fields, append, update, remove } = useFieldArray({ name: 'currentPageItems', control })
@@ -124,9 +138,22 @@ namespace Nijo.Features.Storing {
                       }, [append, addToLocalRepository])
 
                       const handleUpdateRow = useCallback(async (index: number, row: GridRow) => {
-                        {{WithIndent(dataClass.RenderDecomposingToLocalRepositoryType("row"), "    ")}}
-                        update(index, await updateLocalRepositoryItem(row.itemKey, row.item))
-                      }, [update, updateLocalRepositoryItem])
+                        const [
+                          item{{_aggregate.Item.ClassName}}{{string.Concat(dataClass.GetRefFromPropsRecursively().Select(x => $", item{x.Item1.MainAggregate.Item.ClassName}"))}}
+                        ] = AggregateType.{{dataClass.ConvertFnNameToLocalRepositoryType}}(row)
+
+                        await updateLocalRepositoryItem(item{{_aggregate.Item.ClassName}}.itemKey, item{{_aggregate.Item.ClassName}}.item)
+
+                    {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate(x => x.IsArray ? $$"""
+                        for (let { itemKey, item } of item{{x.Item1.MainAggregate.Item.ClassName}}) {
+                          await update{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(itemKey, item)
+                        }
+                    """ : $$"""
+                        await update{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(item{{x.Item1.MainAggregate.Item.ClassName}}.itemKey, item{{x.Item1.MainAggregate.Item.ClassName}}.item)
+                    """)}}
+
+                        update(index, row)
+                      }, [update, updateLocalRepositoryItem{{string.Concat(refLocalRepos.Select(r => $", update{r.Aggregate.Item.ClassName}LocalRepositoryItem"))}}])
 
                       const dtRef = useRef<Layout.DataTableRef<GridRow>>(null)
                       const handleRemove: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {

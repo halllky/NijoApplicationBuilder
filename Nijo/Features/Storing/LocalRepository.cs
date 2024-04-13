@@ -11,15 +11,15 @@ namespace Nijo.Features.Storing {
     internal class LocalRepository {
 
         internal LocalRepository(GraphNode<Aggregate> aggregate) {
-            _aggregate = aggregate;
+            Aggregate = aggregate;
         }
-        private readonly GraphNode<Aggregate> _aggregate;
+        internal GraphNode<Aggregate> Aggregate { get; }
 
         /// <summary>
         /// ローカルリポジトリ内にあるデータそれぞれに割り当てられる、そのデータの種類が何かを識別する文字列
         /// </summary>
-        internal string DataTypeKey => _aggregate.Item.ClassName;
-        internal string HookName => $"use{_aggregate.Item.ClassName}Repository";
+        internal string DataTypeKey => Aggregate.Item.ClassName;
+        internal string HookName => $"use{Aggregate.Item.ClassName}Repository";
 
         /// <summary>
         /// ローカルリポジトリ内のデータとDB上のデータの両方を参照し
