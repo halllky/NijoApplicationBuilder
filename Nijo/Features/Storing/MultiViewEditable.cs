@@ -34,7 +34,6 @@ namespace Nijo.Features.Storing {
             var editView = new SingleView(_aggregate, SingleView.E_Type.Edit);
             var createView = new SingleView(_aggregate, SingleView.E_Type.Create);
             var findMany = new FindManyFeature(_aggregate);
-            var createEmptyObject = new TSInitializerFunction(_aggregate).FunctionName;
             var rootLocalRepository = new LocalRepository(_aggregate);
             var refLocalRepos = dataClass
                 .GetRefFromPropsRecursively()
@@ -78,6 +77,7 @@ namespace Nijo.Features.Storing {
                     import { Link } from 'react-router-dom'
                     import { useFieldArray, FormProvider } from 'react-hook-form'
                     import dayjs from 'dayjs'
+                    import { UUID } from 'uuidjs'
                     import * as Util from '../../util'
                     import * as Input from '../../input'
                     import * as Layout from '../../collection'
@@ -133,8 +133,10 @@ namespace Nijo.Features.Storing {
 
                       // データ編集
                       const handleAdd: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
-                        const newItem = AggregateType.{{createEmptyObject}}()
-                        append(await addToLocalRepository(newItem))
+                        const newItem = AggregateType.{{new TSInitializerFunction(_aggregate).FunctionName}}()
+                        const { itemKey } = await addToLocalRepository(newItem)
+                        const newRow: AggregateType.{{dataClass.TsTypeName}} = {{WithIndent(dataClass.RenderNewObjectCreating("itemKey"), "    ")}}
+                        append(newRow)
                       }, [append, addToLocalRepository])
 
                       const handleUpdateRow = useCallback(async (index: number, row: GridRow) => {

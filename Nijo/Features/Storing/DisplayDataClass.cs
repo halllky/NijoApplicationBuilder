@@ -99,6 +99,23 @@ namespace Nijo.Features.Storing {
             return refFromPros;
         }
 
+        internal string RenderNewObjectCreating(string itemKey) {
+            return $$"""
+                {
+                  {{LOCAL_REPOS_ITEMKEY}}: {{itemKey}},
+                  {{LOCAL_REPOS_STATE}}: '+',
+                  {{OWN_MEMBERS}}: {
+                {{MainAggregate.GetMembers().OfType<AggregateMember.Schalar>().Where(m => m.DeclaringAggregate == MainAggregate && m.Options.MemberType is Uuid).SelectTextTemplate(m => $$"""
+                    {{m.MemberName}}: UUID.generate(),
+                """)}}
+                {{MainAggregate.GetMembers().OfType<AggregateMember.Variation>().Where(m => m.DeclaringAggregate == MainAggregate).SelectTextTemplate(m => $$"""
+                    {{m.MemberName}}: '{{m.GetGroupItems().First().Key}}',
+                """)}}
+                  },
+                }
+                """;
+        }
+
         internal string ConvertFnNameToLocalRepositoryType => $"convert{MainAggregate.Item.ClassName}ToLocalRepositoryItem";
         /// <summary>
         /// データ型変換関数 (<see cref="DisplayDataClass"/> => <see cref="TransactionScopeDataClass"/>)

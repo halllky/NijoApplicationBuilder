@@ -17,8 +17,15 @@ export type LocalRepositoryState
   | '-' // Delete
 
 export type LocalRepositoryStoredItem<T = object> = {
+  /** データの種類を一意に識別する文字列。基本的には集約の名前 */
   dataTypeKey: string
+  /**
+   * データを一意に識別する文字列。
+   * - 新規作成された未保存のデータの場合は、主キーの値と関係しない自動採番されたUUID。なおこのUUIDは登録確定後に消える。
+   * - 保存されたデータの場合は主キーの配列のJSON。
+   */
   itemKey: ItemKey
+  /** 画面に表示される名前 */
   itemName: string
   item: T
   state: LocalRepositoryState
