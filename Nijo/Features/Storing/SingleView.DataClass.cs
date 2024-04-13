@@ -34,7 +34,7 @@ namespace Nijo.Features.Storing {
         /// useFieldArrayの中で配列インデックスをキーに使うと新規追加されたコンボボックスが
         /// その1個上の要素の更新と紐づいてしまうのでクライアント側で要素1個ずつにIDを振る
         ///
-        /// TODO: これがなくてもなんとかなる可能性がある
+        /// TODO: ItemKeyと役割が似ているのでこれがなくてもなんとかなる可能性がある
         /// </summary>
         internal const string OBJECT_ID = "object_id";
 
@@ -52,20 +52,112 @@ namespace Nijo.Features.Storing {
                 .OfType<AggregateMember.RelationMember>()
                 .Where(m => m is not AggregateMember.Ref
                          && m is not AggregateMember.Parent)
-                .Select(m => new RelationProp(MainAggregate, m.Relation));
+                .Select(m => new RelationProp(MainAggregate, m.Relation, m));
             foreach (var item in childMembers) {
                 yield return item;
             }
         }
         internal IEnumerable<RelationProp> GetRefFromProps() {
             var refs = MainAggregate
-                .GetReferedEdges()
+                .GetReferedEdgesAsSingleKey()
                 .Where(edge => edge.Initial.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key)
                 // TODO: 本当はDistinctを使いたいがAggregateの同一性判断にSourceが入っていない
                 .GroupBy(relation => new { agg = relation.Initial.GetRoot(), relation })
-                .Select(group => new RelationProp(MainAggregate, group.Key.relation));
+                .Select(group => new RelationProp(MainAggregate, group.Key.relation, null));
             foreach (var item in refs) {
                 yield return item;
+            }
+        }
+
+        internal string RenderDecomposingToLocalRepositoryType(string thisInstanceName) {
+            if (MainAggregate.IsRoot()) {
+                // 変換対象となるルート集約を集める
+                var refFromPros = new List<(RelationProp, string[] Path, bool IsArray)>();
+                void Collect(SingleViewDataClass dc, string[] beforePath, bool beforeIsMany) {
+                    foreach (var rel in dc.GetRefFromProps().Concat(dc.GetChildProps())) {
+
+                        // thisInstanceName.child_子要素.map(x => x.ref_from_参照元)
+                        // 上記のように参照元のルート要素を全部収集する式を作っている
+                        string thisPath;
+                        if (beforeIsMany) {
+                            thisPath = rel.IsArray
+                                ? $"flatMap(x => x?.{rel.PropName})"
+                                : $"map(x => x?.{rel.PropName})";
+                        } else {
+                            thisPath = $"{rel.PropName}";
+                        }
+
+                        var path = beforePath.Concat(new[] { thisPath }).ToArray();
+                        if (rel.Type == RelationProp.E_Type.RefFrom) {
+                            refFromPros.Add((rel, path, beforeIsMany || rel.IsArray));
+                        }
+                        Collect(rel, path, beforeIsMany || rel.IsArray);
+                    }
+                }
+                Collect(this, [], false);
+
+                return $$"""
+                    const item0: Util.LocalRepositoryItem<AggregateType.{{MainAggregate.Item.TypeScriptTypeName}}> = {
+                      itemKey: {{thisInstanceName}}.{{LOCAL_REPOS_ITEMKEY}},
+                      state: {{thisInstanceName}}.{{LOCAL_REPOS_STATE}},
+                      item: {
+                        ...{{thisInstanceName}}.{{OWN_MEMBERS}},
+                    {{GetChildProps().SelectTextTemplate(p => $$"""
+                        {{WithIndent(p.RenderDecomposingToLocalRepositoryType($"{thisInstanceName}.{p.PropName}"), "    ")}},
+                    """)}}
+                      },
+                    }
+                    {{refFromPros.SelectTextTemplate((x, i) => x.IsArray ? $$"""
+                    const item{{i + 1}}: Util.LocalRepositoryItem<AggregateType.{{x.Item1.MainAggregate.Item.TypeScriptTypeName}}>[] = {{thisInstanceName}}{{string.Concat(x.Path.Select(p => $"{Environment.NewLine}  ?.{p}"))}}
+                      .filter((y): y is Exclude<typeof y, undefined> => y !== undefined)
+                      .map(y => ({
+                        itemKey: y.{{LOCAL_REPOS_ITEMKEY}},
+                        state: y.{{LOCAL_REPOS_STATE}},
+                        item: {
+                          ...y.{{OWN_MEMBERS}},
+                    {{new SingleViewDataClass(x.Item1.MainAggregate.AsEntry()).GetChildProps().SelectTextTemplate(p => $$"""
+                          {{WithIndent(p.RenderDecomposingToLocalRepositoryType($"y.{p.PropName}"), "      ")}},
+                    """)}}
+                        },
+                      })) ?? []
+                    """ : $$"""
+                    const item{{i + 1}}: Util.LocalRepositoryItem<AggregateType.{{x.Item1.MainAggregate.Item.TypeScriptTypeName}}> | undefined = {{thisInstanceName}}{{string.Concat(x.Path.Select(p => $"?.{p}"))}} === undefined ? undefined : {
+                      itemKey: {{thisInstanceName}}{{string.Concat(x.Path.Select(p => $".{p}"))}}.{{LOCAL_REPOS_ITEMKEY}},
+                      state: {{thisInstanceName}}{{string.Concat(x.Path.Select(p => $".{p}"))}}.{{LOCAL_REPOS_STATE}},
+                      item: {
+                        ...{{thisInstanceName}}{{string.Concat(x.Path.Select(p => $".{p}"))}}.{{OWN_MEMBERS}},
+                    {{x.Item1.GetChildProps().SelectTextTemplate(p => $$"""
+                        {{WithIndent(p.RenderDecomposingToLocalRepositoryType($"{thisInstanceName}{string.Concat(x.Path.Select(p => $".{p}"))}.{p.PropName}"), "    ")}},
+                    """)}}
+                      },
+                    }
+                    """)}}
+                    """;
+
+            } else {
+                var asDescendant = (RelationProp)this;
+                var member = asDescendant.MemberInfo!;
+
+                if (member is AggregateMember.Children children) {
+                    return $$"""
+                        {{member.MemberName}}: {{thisInstanceName}}?.map(x => ({
+                          ...x.{{OWN_MEMBERS}},
+                        {{GetChildProps().SelectTextTemplate(p => $$"""
+                          {{WithIndent(p.RenderDecomposingToLocalRepositoryType("x"), "  ")}},
+                        """)}}
+                        }))
+                        """;
+
+                } else {
+                    return $$"""
+                        {{member.MemberName}}: {
+                          ...{{thisInstanceName}}.{{OWN_MEMBERS}},
+                        {{GetChildProps().SelectTextTemplate(p => $$"""
+                          {{WithIndent(p.RenderDecomposingToLocalRepositoryType($"{thisInstanceName}.{p.PropName}"), "  ")}},
+                        """)}}
+                        }
+                        """;
+                }
             }
         }
 
@@ -125,11 +217,24 @@ namespace Nijo.Features.Storing {
         }
 
         internal class RelationProp : SingleViewDataClass {
-            internal RelationProp(GraphNode<Aggregate> entry, GraphEdge<Aggregate> relation)
+            internal RelationProp(
+                GraphNode<Aggregate> entry,
+                GraphEdge<Aggregate> relation,
+                AggregateMember.RelationMember? memberInfo)
                 : base(relation.IsRef() ? relation.Initial : relation.Terminal) {
                 _entryAggregate = entry;
+                MemberInfo = memberInfo;
             }
             private readonly GraphNode<Aggregate> _entryAggregate;
+            internal AggregateMember.RelationMember? MemberInfo { get; }
+
+            internal enum E_Type {
+                Descendant,
+                RefFrom,
+            }
+            internal E_Type Type => MainAggregate.Source?.IsParentChild() == true
+                ? E_Type.Descendant
+                : E_Type.RefFrom;
 
             /// <summary>
             /// 従属集約が保管されるプロパティの名前を返します

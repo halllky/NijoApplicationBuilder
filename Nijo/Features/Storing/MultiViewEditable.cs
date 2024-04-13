@@ -30,6 +30,7 @@ namespace Nijo.Features.Storing {
         string? IReactPage.LabelInMenu => _aggregate.Item.DisplayName;
 
         SourceFile IReactPage.GetSourceFile() {
+            var dataClass = new SingleViewDataClass(_aggregate);
             var editView = new SingleView(_aggregate, SingleView.E_Type.Edit);
             var createView = new SingleView(_aggregate, SingleView.E_Type.Create);
             var findMany = new FindManyFeature(_aggregate);
@@ -123,6 +124,7 @@ namespace Nijo.Features.Storing {
                       }, [append, addToLocalRepository])
 
                       const handleUpdateRow = useCallback(async (index: number, row: GridRow) => {
+                        {{WithIndent(dataClass.RenderDecomposingToLocalRepositoryType("row"), "    ")}}
                         update(index, await updateLocalRepositoryItem(row.itemKey, row.item))
                       }, [update, updateLocalRepositoryItem])
 
@@ -181,7 +183,7 @@ namespace Nijo.Features.Storing {
                       )
                     }
 
-                    type GridRow = Util.LocalRepositoryItem<AggregateType.{{new SingleViewDataClass(_aggregate).TsTypeName}}>
+                    type GridRow = AggregateType.{{dataClass.TsTypeName}}
 
                     const COLUMN_DEFS: Layout.ColumnDefEx<Util.TreeNode<GridRow>>[] = [
                       {{WithIndent(gridColumns.SelectTextTemplate(col => col.Render()), "  ")}}
