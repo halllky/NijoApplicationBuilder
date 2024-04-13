@@ -53,7 +53,7 @@ namespace Nijo.Features.Storing {
                 .OfType<AggregateMember.RelationMember>()
                 .Where(m => m is not AggregateMember.Ref
                          && m is not AggregateMember.Parent)
-                .Select(m => new RelationProp(MainAggregate, m.Relation, m));
+                .Select(m => new RelationProp(m.Relation, m));
             foreach (var item in childMembers) {
                 yield return item;
             }
@@ -64,39 +64,43 @@ namespace Nijo.Features.Storing {
                 .Where(edge => edge.Initial.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key)
                 // TODO: 本当はDistinctを使いたいがAggregateの同一性判断にSourceが入っていない
                 .GroupBy(relation => new { agg = relation.Initial.GetRoot(), relation })
-                .Select(group => new RelationProp(MainAggregate, group.Key.relation, null));
+                .Select(group => new RelationProp(group.Key.relation, null));
             foreach (var item in refs) {
                 yield return item;
             }
         }
+        /// <summary>
+        /// この集約またはこの集約の子孫を唯一のキーとする集約を再帰的に列挙する
+        /// </summary>
+        internal IEnumerable<(RelationProp, string[] Path, bool IsArray)> GetRefFromPropsRecursively() {
+            var refFromPros = new List<(RelationProp, string[] Path, bool IsArray)>();
+            void Collect(DisplayDataClass dc, string[] beforePath, bool beforeIsMany) {
+                foreach (var rel in dc.GetRefFromProps().Concat(dc.GetChildProps())) {
+
+                    // thisInstanceName.child_子要素.map(x => x.ref_from_参照元)
+                    // 上記のように参照元のルート要素を全部収集する式を作っている
+                    string thisPath;
+                    if (beforeIsMany) {
+                        thisPath = rel.IsArray
+                            ? $"flatMap(x => x?.{rel.PropName})"
+                            : $"map(x => x?.{rel.PropName})";
+                    } else {
+                        thisPath = $"{rel.PropName}";
+                    }
+
+                    var path = beforePath.Concat(new[] { thisPath }).ToArray();
+                    if (rel.Type == RelationProp.E_Type.RefFrom) {
+                        refFromPros.Add((rel, path, beforeIsMany || rel.IsArray));
+                    }
+                    Collect(rel, path, beforeIsMany || rel.IsArray);
+                }
+            }
+            Collect(this, [], false);
+            return refFromPros;
+        }
 
         internal string RenderDecomposingToLocalRepositoryType(string thisInstanceName) {
             if (MainAggregate.IsRoot()) {
-                // 変換対象となるルート集約を集める
-                var refFromPros = new List<(RelationProp, string[] Path, bool IsArray)>();
-                void Collect(DisplayDataClass dc, string[] beforePath, bool beforeIsMany) {
-                    foreach (var rel in dc.GetRefFromProps().Concat(dc.GetChildProps())) {
-
-                        // thisInstanceName.child_子要素.map(x => x.ref_from_参照元)
-                        // 上記のように参照元のルート要素を全部収集する式を作っている
-                        string thisPath;
-                        if (beforeIsMany) {
-                            thisPath = rel.IsArray
-                                ? $"flatMap(x => x?.{rel.PropName})"
-                                : $"map(x => x?.{rel.PropName})";
-                        } else {
-                            thisPath = $"{rel.PropName}";
-                        }
-
-                        var path = beforePath.Concat(new[] { thisPath }).ToArray();
-                        if (rel.Type == RelationProp.E_Type.RefFrom) {
-                            refFromPros.Add((rel, path, beforeIsMany || rel.IsArray));
-                        }
-                        Collect(rel, path, beforeIsMany || rel.IsArray);
-                    }
-                }
-                Collect(this, [], false);
-
                 return $$"""
                     const item0: Util.LocalRepositoryItem<AggregateType.{{MainAggregate.Item.TypeScriptTypeName}}> = {
                       itemKey: {{thisInstanceName}}.{{LOCAL_REPOS_ITEMKEY}},
@@ -108,7 +112,7 @@ namespace Nijo.Features.Storing {
                     """)}}
                       },
                     }
-                    {{refFromPros.SelectTextTemplate((x, i) => x.IsArray ? $$"""
+                    {{GetRefFromPropsRecursively().SelectTextTemplate((x, i) => x.IsArray ? $$"""
                     const item{{i + 1}}: Util.LocalRepositoryItem<AggregateType.{{x.Item1.MainAggregate.Item.TypeScriptTypeName}}>[] = {{thisInstanceName}}{{string.Concat(x.Path.Select(p => $"{Environment.NewLine}  ?.{p}"))}}
                       .filter((y): y is Exclude<typeof y, undefined> => y !== undefined)
                       .map(y => ({
@@ -218,15 +222,10 @@ namespace Nijo.Features.Storing {
         }
 
         internal class RelationProp : DisplayDataClass {
-            internal RelationProp(
-                GraphNode<Aggregate> entry,
-                GraphEdge<Aggregate> relation,
-                AggregateMember.RelationMember? memberInfo)
+            internal RelationProp(GraphEdge<Aggregate> relation, AggregateMember.RelationMember? memberInfo)
                 : base(relation.IsRef() ? relation.Initial : relation.Terminal) {
-                _entryAggregate = entry;
                 MemberInfo = memberInfo;
             }
-            private readonly GraphNode<Aggregate> _entryAggregate;
             internal AggregateMember.RelationMember? MemberInfo { get; }
 
             internal enum E_Type {
@@ -256,39 +255,7 @@ namespace Nijo.Features.Storing {
             /// <summary>
             /// 主たる集約またはそれと1対1の多重度にある集約であればfalse
             /// </summary>
-            internal bool IsArray {
-                get {
-                    var start = false;
-
-                    foreach (var edge in MainAggregate.PathFromEntry()) {
-                        var initial = edge.Initial.As<Aggregate>();
-                        var terminal = edge.Terminal.As<Aggregate>();
-
-                        // Childrenの型ならばPathFromEntryの途中から数えなければいけないので
-                        if (!start) {
-                            if (initial == _entryAggregate) {
-                                start = true;
-                            } else {
-                                continue;
-                            }
-                        }
-
-                        // 経路の途中にChildrenが含まれるならば多重度:多
-                        if (terminal.IsChildrenMember()
-                            && terminal.GetParent() == edge.As<Aggregate>()) {
-                            return true;
-                        }
-
-                        // 経路の途中に主キーでないRefが含まれるならば多重度:多
-                        if (edge.IsRef()
-                            && !terminal.IsSingleRefKeyOf(initial)) {
-                            return true;
-                        }
-                    }
-
-                    return false;
-                }
-            }
+            internal bool IsArray => MemberInfo is AggregateMember.Children;
         }
     }
 
