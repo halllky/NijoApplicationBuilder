@@ -149,7 +149,9 @@ namespace Nijo.Features.Storing {
                           await update{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(itemKey, item)
                         }
                     """ : $$"""
-                        await update{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(item{{x.Item1.MainAggregate.Item.ClassName}}.itemKey, item{{x.Item1.MainAggregate.Item.ClassName}}.item)
+                        if (item{{x.Item1.MainAggregate.Item.ClassName}}) {
+                          await update{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(item{{x.Item1.MainAggregate.Item.ClassName}}.itemKey, item{{x.Item1.MainAggregate.Item.ClassName}}.item)
+                        }
                     """)}}
 
                         update(index, row)
@@ -160,9 +162,26 @@ namespace Nijo.Features.Storing {
                         if (!dtRef.current) return
                         const deletedRowIndex: number[] = []
                         for (const { row, rowIndex } of dtRef.current.getSelectedRows()) {
-                          const deleted = await deleteLocalRepositoryItem(row.itemKey, row.item)
-                          if (deleted) update(rowIndex, deleted)
-                          else deletedRowIndex.push(rowIndex)
+                          const [
+                            item{{_aggregate.Item.ClassName}}{{string.Concat(dataClass.GetRefFromPropsRecursively().Select(x => $", item{x.Item1.MainAggregate.Item.ClassName}"))}}
+                          ] = AggregateType.{{dataClass.ConvertFnNameToLocalRepositoryType}}(row)
+
+                          const deleted = await deleteLocalRepositoryItem(item{{_aggregate.Item.ClassName}}.itemKey, item{{_aggregate.Item.ClassName}}.item)
+                          if (deleted) {
+                            update(rowIndex, { ...row, {{DisplayDataClass.LOCAL_REPOS_STATE}}: '-' }) // 画面上では削除済みマークをつけたうえで表示する
+                          } else {
+                            deletedRowIndex.push(rowIndex) // 画面上からも消す
+                          }
+
+                    {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate(x => x.IsArray ? $$"""
+                          for (let { itemKey, item } of item{{x.Item1.MainAggregate.Item.ClassName}}) {
+                            await delete{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(itemKey, item)
+                          }
+                    """ : $$"""
+                          if (item{{x.Item1.MainAggregate.Item.ClassName}}) {
+                            await delete{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(item{{x.Item1.MainAggregate.Item.ClassName}}.itemKey, item{{x.Item1.MainAggregate.Item.ClassName}}.item)
+                          }
+                    """)}}
                         }
                         remove(deletedRowIndex)
                       }, [update, remove, deleteLocalRepositoryItem])
