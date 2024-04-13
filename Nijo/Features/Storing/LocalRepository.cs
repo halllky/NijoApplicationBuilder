@@ -97,9 +97,9 @@ namespace Nijo.Features.Storing {
                                 for (let item of remoteAndLocal.map(x => x.item)) {
                                   Util.visitObject(item, obj => {
                                     // 新規データのみ主キーを編集可能にするため、読込データと新規データを区別するためのフラグをつける
-                                    (obj as { {{SingleViewDataClass.IS_LOADED}}?: boolean }).{{SingleViewDataClass.IS_LOADED}} = true;
+                                    (obj as { {{DisplayDataClass.IS_LOADED}}?: boolean }).{{DisplayDataClass.IS_LOADED}} = true;
                                     // 配列中のオブジェクト識別用
-                                    (obj as { {{SingleViewDataClass.OBJECT_ID}}: string }).{{SingleViewDataClass.OBJECT_ID}} = UUID.generate()
+                                    (obj as { {{DisplayDataClass.OBJECT_ID}}: string }).{{DisplayDataClass.OBJECT_ID}} = UUID.generate()
                                   })
                                 }
 

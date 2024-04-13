@@ -39,12 +39,12 @@ namespace Nijo.Features.Storing {
         }
 
         internal string RenderDeclaration() {
-            var dataClass = new SingleViewDataClass(_aggregate);
+            var dataClass = new DisplayDataClass(_aggregate);
             var componentName = GetComponentName();
             var args = GetArguments().ToArray();
 
             // useFormの型。Refの参照元のコンポーネントのレンダリングの可能性があるためGetRootではなくGetEntry
-            var entryDataClass = new SingleViewDataClass(_aggregate.GetEntry().As<Aggregate>());
+            var entryDataClass = new DisplayDataClass(_aggregate.GetEntry().As<Aggregate>());
             var useFormType = $"AggregateType.{entryDataClass.TsTypeName}";
             var registerName = GetRegisterName();
 
@@ -400,7 +400,7 @@ namespace Nijo.Features.Storing {
 
                 } else if (_mode == SingleView.E_Type.Edit
                            && schalar is AggregateMember.ValueMember vm && vm.IsKey) {
-                    reactComponent.Props.Add("readOnly", $"item?.{SingleViewDataClass.IS_LOADED}");
+                    reactComponent.Props.Add("readOnly", $"item?.{DisplayDataClass.IS_LOADED}");
                 }
 
                 return $$"""
@@ -446,7 +446,7 @@ namespace Nijo.Features.Storing {
         }
 
         /// <summary>
-        /// TODO: <see cref="SingleViewDataClass"/> の役割なのでそちらに移す
+        /// TODO: <see cref="DisplayDataClass"/> の役割なのでそちらに移す
         /// </summary>
         internal static IEnumerable<string> GetRegisterNameBeforeJoin(
             GraphNode<Aggregate> aggregate,
@@ -457,7 +457,7 @@ namespace Nijo.Features.Storing {
                 var edge = e.As<Aggregate>();
 
                 if (edge.IsRef()) {
-                    var dataClass = new SingleViewDataClass(edge.Terminal);
+                    var dataClass = new DisplayDataClass(edge.Terminal);
                     yield return dataClass
                         .GetRefFromProps()
                         .Single(p => p.MainAggregate == edge.Initial
@@ -475,7 +475,7 @@ namespace Nijo.Features.Storing {
                     //    yield return edge.RelationName;
                     //}
                 } else {
-                    var dataClass = new SingleViewDataClass(edge.Initial);
+                    var dataClass = new DisplayDataClass(edge.Initial);
                     yield return dataClass
                         .GetChildProps()
                         .Single(p => p.MainAggregate == edge.Terminal)
@@ -497,7 +497,7 @@ namespace Nijo.Features.Storing {
                 }
             }
             if (prop != null) {
-                yield return SingleViewDataClass.OWN_MEMBERS;
+                yield return DisplayDataClass.OWN_MEMBERS;
                 yield return prop.MemberName;
             }
         }
@@ -516,7 +516,7 @@ namespace Nijo.Features.Storing {
                 SingleView.E_Type.Edit
                     => prop is AggregateMember.ValueMember vm && vm.IsKey
                     || prop is AggregateMember.Ref @ref && @ref.Relation.IsPrimary()
-                        ? $"{readOnly}={{item?.{SingleViewDataClass.IS_LOADED}}}"
+                        ? $"{readOnly}={{item?.{DisplayDataClass.IS_LOADED}}}"
                         : $"",
                 _ => throw new NotImplementedException(),
             };

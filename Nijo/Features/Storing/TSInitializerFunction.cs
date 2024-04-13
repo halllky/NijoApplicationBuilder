@@ -18,7 +18,7 @@ namespace Nijo.Features.Storing {
         internal string FunctionName => $"create{_instance.Item.TypeScriptTypeName}";
 
         /// <summary>
-        /// <see cref="SingleViewDataClass.RenderTsInitializerFunction"/> のロジックと合わせる
+        /// <see cref="DisplayDataClass.RenderTsInitializerFunction"/> のロジックと合わせる
         /// </summary>
         internal string Render() {
             var children = _instance
@@ -69,7 +69,7 @@ namespace Nijo.Features.Storing {
                     {{initializers.SelectTextTemplate(item => $$"""
                       {{item.Key}}: {{item.Value}},
                     """)}}
-                      {{SingleViewDataClass.OBJECT_ID}}: UUID.generate(),
+                      {{DisplayDataClass.OBJECT_ID}}: UUID.generate(),
                     })
                     """;
         }

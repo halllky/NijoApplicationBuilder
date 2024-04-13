@@ -10,16 +10,17 @@ using System.Threading.Tasks;
 
 namespace Nijo.Features.Storing {
     /// <summary>
-    /// SingleViewに表示されるデータの形。
-    /// <see cref="TransactionScopeDataClass"/> のデータに加え、その集約に関連する隣の集約もこの範囲に含まれる。
+    /// 画面に表示されるデータの形。
+    /// データ自身が持っている情報に加え、それがDBに存在するデータか否か、
+    /// DBから読み込んだあと変更が加わっているか、などの画面に表示するために必要な情報も保持している。
     /// </summary>
-    internal class SingleViewDataClass {
-        internal SingleViewDataClass(GraphNode<Aggregate> aggregate) {
+    internal class DisplayDataClass {
+        internal DisplayDataClass(GraphNode<Aggregate> aggregate) {
             MainAggregate = aggregate;
         }
         internal GraphNode<Aggregate> MainAggregate { get; }
 
-        internal string TsTypeName => $"{MainAggregate.Item.TypeScriptTypeName}SingleViewData";
+        internal string TsTypeName => $"{MainAggregate.Item.TypeScriptTypeName}DisplayData";
         internal string TsInitFunctionName => $"create{TsTypeName}";
 
         internal const string OWN_MEMBERS = "own_members";
@@ -73,7 +74,7 @@ namespace Nijo.Features.Storing {
             if (MainAggregate.IsRoot()) {
                 // 変換対象となるルート集約を集める
                 var refFromPros = new List<(RelationProp, string[] Path, bool IsArray)>();
-                void Collect(SingleViewDataClass dc, string[] beforePath, bool beforeIsMany) {
+                void Collect(DisplayDataClass dc, string[] beforePath, bool beforeIsMany) {
                     foreach (var rel in dc.GetRefFromProps().Concat(dc.GetChildProps())) {
 
                         // thisInstanceName.child_子要素.map(x => x.ref_from_参照元)
@@ -115,7 +116,7 @@ namespace Nijo.Features.Storing {
                         state: y.{{LOCAL_REPOS_STATE}},
                         item: {
                           ...y.{{OWN_MEMBERS}},
-                    {{new SingleViewDataClass(x.Item1.MainAggregate.AsEntry()).GetChildProps().SelectTextTemplate(p => $$"""
+                    {{new DisplayDataClass(x.Item1.MainAggregate.AsEntry()).GetChildProps().SelectTextTemplate(p => $$"""
                           {{WithIndent(p.RenderDecomposingToLocalRepositoryType($"y.{p.PropName}"), "      ")}},
                     """)}}
                         },
@@ -165,7 +166,7 @@ namespace Nijo.Features.Storing {
             if (!MainAggregate.IsRoot()) throw new InvalidOperationException();
 
             return MainAggregate.EnumerateThisAndDescendants().SelectTextTemplate(agg => {
-                var dataClass = new SingleViewDataClass(agg);
+                var dataClass = new DisplayDataClass(agg);
 
                 return $$"""
                     export type {{dataClass.TsTypeName}} = {
@@ -180,10 +181,10 @@ namespace Nijo.Features.Storing {
                     """)}}
                       }
                     {{dataClass.GetChildProps().SelectTextTemplate(p => $$"""
-                      {{p.PropName}}?: {{(p.IsArray ? $"{new SingleViewDataClass(p.MainAggregate).TsTypeName}[]" : new SingleViewDataClass(p.MainAggregate).TsTypeName)}}
+                      {{p.PropName}}?: {{(p.IsArray ? $"{new DisplayDataClass(p.MainAggregate).TsTypeName}[]" : new DisplayDataClass(p.MainAggregate).TsTypeName)}}
                     """)}}
                     {{dataClass.GetRefFromProps().SelectTextTemplate(p => $$"""
-                      {{p.PropName}}?: {{(p.IsArray ? $"{new SingleViewDataClass(p.MainAggregate).TsTypeName}[]" : new SingleViewDataClass(p.MainAggregate).TsTypeName)}}
+                      {{p.PropName}}?: {{(p.IsArray ? $"{new DisplayDataClass(p.MainAggregate).TsTypeName}[]" : new DisplayDataClass(p.MainAggregate).TsTypeName)}}
                     """)}}
                       {{IS_LOADED}}?: boolean
                     }
@@ -216,7 +217,7 @@ namespace Nijo.Features.Storing {
             }
         }
 
-        internal class RelationProp : SingleViewDataClass {
+        internal class RelationProp : DisplayDataClass {
             internal RelationProp(
                 GraphNode<Aggregate> entry,
                 GraphEdge<Aggregate> relation,
@@ -293,8 +294,8 @@ namespace Nijo.Features.Storing {
 
     internal static class StoringExtensions {
         /// <summary>
-        /// エントリーからのパスを <see cref="SingleViewDataClass"/> のデータ構造にあわせて返す。
-        /// たとえば自身のメンバーならその前に <see cref="SingleViewDataClass.OWN_MEMBERS"/> を挟むなど
+        /// エントリーからのパスを <see cref="DisplayDataClass"/> のデータ構造にあわせて返す。
+        /// たとえば自身のメンバーならその前に <see cref="DisplayDataClass.OWN_MEMBERS"/> を挟むなど
         /// </summary>
         internal static IEnumerable<string> GetFullPathAsSingleViewDataClass(this AggregateMember.AggregateMemberBase member) {
 
@@ -308,7 +309,7 @@ namespace Nijo.Features.Storing {
                         yield return AggregateMember.PARENT_PROPNAME; // 子から親に向かって辿る場合
 
                     } else if (edge.IsRef()) {
-                        var dataClass = new SingleViewDataClass(edge.Terminal.As<Aggregate>());
+                        var dataClass = new DisplayDataClass(edge.Terminal.As<Aggregate>());
                         yield return dataClass
                             .GetRefFromProps()
                             .Single(p => p.MainAggregate.Source == edge)
@@ -324,7 +325,7 @@ namespace Nijo.Features.Storing {
                     // 有向グラフの矢印の元から先に辿るパターン
 
                     if (edge.IsParentChild()) {
-                        var dataClass = new SingleViewDataClass(edge.Initial.As<Aggregate>());
+                        var dataClass = new DisplayDataClass(edge.Initial.As<Aggregate>());
                         yield return dataClass
                             .GetChildProps()
                             .Single(p => p.MainAggregate == edge.Terminal.As<Aggregate>())
@@ -334,7 +335,7 @@ namespace Nijo.Features.Storing {
 
                     } else if (edge.IsRef()) {
                         if (!enumeratingRefTargetKeyName) {
-                            yield return SingleViewDataClass.OWN_MEMBERS;
+                            yield return DisplayDataClass.OWN_MEMBERS;
                         }
 
                         /// <see cref="RefTargetKeyName"/> の仕様に合わせる
@@ -349,7 +350,7 @@ namespace Nijo.Features.Storing {
             }
 
             if (!enumeratingRefTargetKeyName) {
-                yield return SingleViewDataClass.OWN_MEMBERS;
+                yield return DisplayDataClass.OWN_MEMBERS;
             }
 
             yield return member.MemberName;

@@ -30,7 +30,7 @@ namespace Nijo.Features.Storing {
         string? IReactPage.LabelInMenu => _aggregate.Item.DisplayName;
 
         SourceFile IReactPage.GetSourceFile() {
-            var dataClass = new SingleViewDataClass(_aggregate);
+            var dataClass = new DisplayDataClass(_aggregate);
             var editView = new SingleView(_aggregate, SingleView.E_Type.Edit);
             var createView = new SingleView(_aggregate, SingleView.E_Type.Create);
             var findMany = new FindManyFeature(_aggregate);

@@ -92,7 +92,7 @@ namespace Nijo.Features.Storing {
                 var controller = new Controller(_aggregate.Item);
                 var multiViewUrl = new MultiViewEditable(_aggregate).Url;
                 var createEmptyObject = new TSInitializerFunction(_aggregate).FunctionName;
-                var dataClass = new SingleViewDataClass(_aggregate);
+                var dataClass = new DisplayDataClass(_aggregate);
 
                 var refRepositories = dataClass.GetRefFromProps().Select(p => new {
                     Repos = new LocalRepository(p.MainAggregate),
@@ -236,10 +236,10 @@ namespace Nijo.Features.Storing {
 
                       // 読み込んだデータを画面に表示する形に変換する
                       const defaultValues: AggregateType.{{dataClass.TsTypeName}} = useMemo(() => {
-                        if (!allDataLoaded) return { {{SingleViewDataClass.OWN_MEMBERS}}: {} }
+                        if (!allDataLoaded) return { {{DisplayDataClass.OWN_MEMBERS}}: {} }
 
                         return {
-                          {{SingleViewDataClass.OWN_MEMBERS}}: items{{_aggregate.Item.ClassName}}[0]?.item ?? {},
+                          {{DisplayDataClass.OWN_MEMBERS}}: items{{_aggregate.Item.ClassName}}[0]?.item ?? {},
                     {{refRepositories.SelectTextTemplate(x => $$"""
                           {{x.DataClassProp.PropName}}: {{(x.DataClassProp.IsArray ? $"items{x.Aggregate.Item.ClassName}.map(x => x.item)" : $"items{x.Aggregate.Item.ClassName}[0]?.item")}},
                     """)}}
@@ -287,8 +287,8 @@ namespace Nijo.Features.Storing {
 
                     {{If(_type != E_Type.Create, () => $$"""
                       const instanceName = useMemo(() => {
-                        return `{{names.Select(n => $"${{defaultValues.{SingleViewDataClass.OWN_MEMBERS}.{n}}}").Join(string.Empty)}}`
-                      }, [defaultValues.{{SingleViewDataClass.OWN_MEMBERS}}])
+                        return `{{names.Select(n => $"${{defaultValues.{DisplayDataClass.OWN_MEMBERS}.{n}}}").Join(string.Empty)}}`
+                      }, [defaultValues.{{DisplayDataClass.OWN_MEMBERS}}])
                     """)}}
 
                       const formRef = useRef<HTMLFormElement>(null)

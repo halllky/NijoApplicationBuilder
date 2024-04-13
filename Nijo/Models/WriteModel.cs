@@ -106,7 +106,7 @@ namespace Nijo.Models {
                 }
 
                 // SingleView
-                var singleViewDataClass = new SingleViewDataClass(rootAggregate);
+                var singleViewDataClass = new DisplayDataClass(rootAggregate);
                 builder.TypeScriptDataTypes.Add(singleViewDataClass.RenderTypeScriptDataClassDeclaration());
             });
 
