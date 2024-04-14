@@ -241,15 +241,15 @@ namespace Nijo.Features.Storing {
                     """)}}
                       },
                     {{dc.GetChildProps().SelectTextTemplate(p => p.IsArray ? $$"""
-                      {{p.PropName}}: {{item}}.{{p.MemberInfo?.MemberName}}?.map(x => ({{WithIndent(Render(p, "x", true), "  ")}})),
+                      {{p.PropName}}: {{item}}?.{{p.MemberInfo?.MemberName}}?.map(x => ({{WithIndent(Render(p, "x", true), "  ")}})),
                     """ : $$"""
-                      {{p.PropName}}: {{WithIndent(Render(p, $"{item}.{p.MemberInfo?.MemberName}", false), "  ")}},
+                      {{p.PropName}}: {{WithIndent(Render(p, $"{item}?.{p.MemberInfo?.MemberName}", false), "  ")}},
                     """)}}
                     {{refProps.SelectTextTemplate(x => $$"""
                       {{x.RefProp.PropName}}: ({{x.Args.TempVar}} = {{x.Args.ArgName}}.find(y =>
                         {{x.Keys.Select(k => $"y.item.{k.TheirKey} === {k.ThisKey}").Join($"{Environment.NewLine}    && ")}})) !== undefined
                         ? {{x.Args.RelProp.ConvertFnNameToDisplayDataType}}({{x.Args.TempVar}}{{x.RefProp.GetRefFromPropsRecursively().Select(p => $", reposItemList{p.Item1.MainAggregate.Item.ClassName}").Join("")}})
-                        : undefined
+                        : undefined,
                     """)}}
                     }
                     """;
