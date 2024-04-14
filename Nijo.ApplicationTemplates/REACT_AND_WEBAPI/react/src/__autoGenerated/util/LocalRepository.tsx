@@ -211,7 +211,7 @@ export type LocalRepositoryArgs<T> = {
   dataTypeKey: string
   getItemKey: (t: T) => string
   getItemName?: (t: T) => string
-  remoteItems?: T[]
+  loadRemoteItems?: () => Promise<T[]>
 }
 export type LocalRepositoryItem<T> = {
   itemKey: ItemKey
@@ -223,31 +223,49 @@ export const useLocalRepository = <T extends object>({
   dataTypeKey,
   getItemKey,
   getItemName,
-  remoteItems,
+  loadRemoteItems,
 }: LocalRepositoryArgs<T>) => {
 
   const { ready: ready1, reload: reloadContext } = useContext(LocalRepositoryContext)
   const { ready: ready2, openCursor, queryToTable } = useIndexedDbLocalRepositoryTable()
+  const [ready3, setReady3] = useState(false)
 
-  const findLocalItem = useCallback(async (itemKey: string) => {
-    const found = await queryToTable(table => table.get([dataTypeKey, itemKey]))
-    return found as LocalRepositoryStoredItem<T> | undefined
-  }, [dataTypeKey, queryToTable])
+  const [remoteItemsCache, setRemoteItemsCache] = useState<T[] | undefined>()
+  const [remoteAndLocalItems, setRemoteAndLocalItems] = useState<LocalRepositoryItem<T>[]>(() => [])
 
-  const loadLocalItems = useCallback(async (loadedRemoteItems?: typeof remoteItems) => {
-    const localItems: LocalRepositoryItem<T>[] = []
-    await openCursor('readonly', cursor => {
-      if (cursor.value.dataTypeKey !== dataTypeKey) return
-      const { state, itemKey, item } = cursor.value
-      localItems.push({ state, itemKey, item: item as T })
-    })
-    return crossJoin(
-      localItems, local => local.itemKey,
-      (loadedRemoteItems ?? remoteItems ?? []), remote => getItemKey(remote) as ItemKey,
-    ).map<LocalRepositoryItem<T>>(pair => {
-      return pair.left ?? { state: '', itemKey: pair.key, item: pair.right }
-    })
-  }, [remoteItems, openCursor, getItemKey, dataTypeKey])
+  const reload = useCallback(async () => {
+    if (!ready1 || !ready2) return
+    setReady3(false)
+    try {
+      // リモート読み込み
+      const remoteItems = (await loadRemoteItems?.()) ?? []
+      setRemoteItemsCache(remoteItems)
+
+      // ローカル読み込み
+      const localItems: LocalRepositoryItem<T>[] = []
+      await openCursor('readonly', cursor => {
+        if (cursor.value.dataTypeKey !== dataTypeKey) return
+        const { state, itemKey, item } = cursor.value
+        localItems.push({ state, itemKey, item: item as T })
+      })
+
+      // 合成
+      const remoteAndLocal = crossJoin(
+        localItems, local => local.itemKey,
+        remoteItems, remote => getItemKey(remote) as ItemKey,
+      ).map<LocalRepositoryItem<T>>(pair => {
+        return pair.left ?? { state: '', itemKey: pair.key, item: pair.right }
+      })
+      setRemoteAndLocalItems(remoteAndLocal)
+
+    } finally {
+      setReady3(true)
+    }
+  }, [ready1, ready2, loadRemoteItems, openCursor, getItemKey, dataTypeKey])
+
+  useEffect(() => {
+    reload()
+  }, [reload])
 
   const addToLocalRepository = useCallback(async (item: T): Promise<LocalRepositoryItem<T>> => {
     const itemKey = UUID.generate() as ItemKey
@@ -271,7 +289,14 @@ export const useLocalRepository = <T extends object>({
 
   const deleteLocalRepositoryItem = useCallback(async (itemKey: ItemKey, item: T): Promise<LocalRepositoryItem<T> | undefined> => {
     const stored = (await queryToTable(table => table.get([dataTypeKey, itemKey])))
-    const existsRemote = remoteItems?.some(x => getItemKey(x) === itemKey)
+
+    // リモートに存在するデータを読み込み
+    let remoteItems = remoteItemsCache
+    if (!remoteItems) {
+      remoteItems = (await loadRemoteItems?.()) ?? []
+      setRemoteItemsCache(remoteItems)
+    }
+    const existsRemote = remoteItems.some(x => getItemKey(x) === itemKey)
 
     if (stored?.state === '-') {
       // 既に削除済みの場合: 何もしない
@@ -296,15 +321,15 @@ export const useLocalRepository = <T extends object>({
       // ローカルにもリモートにも無い場合: 何もしない
       return undefined
     }
-  }, [remoteItems, dataTypeKey, queryToTable, reloadContext, getItemKey, getItemName])
+  }, [loadRemoteItems, remoteItemsCache, dataTypeKey, queryToTable, reloadContext, getItemKey, getItemName])
 
   return {
-    ready: ready1 && ready2,
-    findLocalItem,
-    loadLocalItems,
-    addToLocalRepository,
-    updateLocalRepositoryItem,
-    deleteLocalRepositoryItem,
+    ready: ready1 && ready2 && ready3,
+    items: remoteAndLocalItems,
+    reload,
+    add: addToLocalRepository,
+    update: updateLocalRepositoryItem,
+    remove: deleteLocalRepositoryItem,
   }
 }
 

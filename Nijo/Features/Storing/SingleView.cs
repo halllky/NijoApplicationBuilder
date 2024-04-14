@@ -358,10 +358,38 @@ namespace Nijo.Features.Storing {
                       // 新規作成データの一時保存
                       const onSave: SubmitHandler<AggregateType.{{dataClass.TsTypeName}}> = useCallback(async data => {
                         if (localReposItemKey === undefined) {
-                          const { itemKey } = await addTo{{_aggregate.Item.ClassName}}Repository(data)
-                          navigate(`{{GetUrlStringForReact(E_Type.Create, new[] { "itemKey" })}}`)
+                          const [
+                            item{{_aggregate.Item.ClassName}}{{dataClass.GetRefFromPropsRecursively().Select((x, i) => $", item{i}_{x.Item1.MainAggregate.Item.ClassName}").Join("")}}
+                          ] = AggregateType.{{dataClass.ConvertFnNameToLocalRepositoryType}}(data)
+
+                          const { itemKey: mainObjectItemKey } = await addTo{{_aggregate.Item.ClassName}}Repository(item{{_aggregate.Item.ClassName}}.item)
+                    {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate((x, i) => x.IsArray ? $$"""
+                          for (let { itemKey, item } of item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
+                            await update{{x.Item1.MainAggregate.Item.ClassName}}RepositoryItem(itemKey, item)
+                          }
+                    """ : $$"""
+                          if (item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
+                            await update{{x.Item1.MainAggregate.Item.ClassName}}RepositoryItem(item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.itemKey, item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.item)
+                          }
+                    """)}}
+
+                          navigate(`{{GetUrlStringForReact(E_Type.Create, new[] { "mainObjectItemKey" })}}`)
                         } else {
-                          await update{{_aggregate.Item.ClassName}}RepositoryItem(localReposItemKey, data)
+                          const [
+                            item{{_aggregate.Item.ClassName}}{{dataClass.GetRefFromPropsRecursively().Select((x, i) => $", item{i}_{x.Item1.MainAggregate.Item.ClassName}").Join("")}}
+                          ] = AggregateType.{{dataClass.ConvertFnNameToLocalRepositoryType}}(data)
+
+                          await update{{_aggregate.Item.ClassName}}RepositoryItem(localReposItemKey, item{{_aggregate.Item.ClassName}}.item)
+
+                    {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate((x, i) => x.IsArray ? $$"""
+                          for (let { itemKey, item } of item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
+                            await update{{x.Item1.MainAggregate.Item.ClassName}}RepositoryItem(itemKey, item)
+                          }
+                    """ : $$"""
+                          if (item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
+                            await update{{x.Item1.MainAggregate.Item.ClassName}}RepositoryItem(item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.itemKey, item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.item)
+                          }
+                    """)}}
                         }
                       }, [localReposItemKey, addTo{{_aggregate.Item.ClassName}}Repository, update{{_aggregate.Item.ClassName}}RepositoryItem, navigate])
 
@@ -369,7 +397,7 @@ namespace Nijo.Features.Storing {
                       // 更新データの一時保存
                       const onSave: SubmitHandler<AggregateType.{{dataClass.TsTypeName}}> = useCallback(async data => {
                         const [
-                            item{{_aggregate.Item.ClassName}}{{dataClass.GetRefFromPropsRecursively().Select((x, i) => $", item{i}_{x.Item1.MainAggregate.Item.ClassName}").Join("")}}
+                          item{{_aggregate.Item.ClassName}}{{dataClass.GetRefFromPropsRecursively().Select((x, i) => $", item{i}_{x.Item1.MainAggregate.Item.ClassName}").Join("")}}
                         ] = AggregateType.{{dataClass.ConvertFnNameToLocalRepositoryType}}(data)
                     
                         await update{{_aggregate.Item.ClassName}}RepositoryItem(item{{_aggregate.Item.ClassName}}.itemKey, item{{_aggregate.Item.ClassName}}.item)

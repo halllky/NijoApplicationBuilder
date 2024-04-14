@@ -400,7 +400,7 @@ namespace Nijo.Features.Storing {
 
                 } else if (_mode == SingleView.E_Type.Edit
                            && schalar is AggregateMember.ValueMember vm && vm.IsKey) {
-                    reactComponent.Props.Add("readOnly", $"item?.{DisplayDataClass.IS_LOADED}");
+                    reactComponent.Props.Add("readOnly", $"item?.{DisplayDataClass.LOCAL_REPOS_STATE} !== '+'");
                 }
 
                 return $$"""
@@ -516,7 +516,7 @@ namespace Nijo.Features.Storing {
                 SingleView.E_Type.Edit
                     => prop is AggregateMember.ValueMember vm && vm.IsKey
                     || prop is AggregateMember.Ref @ref && @ref.Relation.IsPrimary()
-                        ? $"{readOnly}={{item?.{DisplayDataClass.IS_LOADED}}}"
+                        ? $"{readOnly}={{item?.{DisplayDataClass.LOCAL_REPOS_STATE} !== '+'}}"
                         : $"",
                 _ => throw new NotImplementedException(),
             };

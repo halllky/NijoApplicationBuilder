@@ -26,18 +26,6 @@ namespace Nijo.Features.Storing {
         internal const string OWN_MEMBERS = "own_members";
         internal const string LOCAL_REPOS_ITEMKEY = "localRepositoryItemKey";
         internal const string LOCAL_REPOS_STATE = "localRepositoryState";
-        /// <summary>
-        /// 編集画面でDBから読み込んだデータとその画面中で新たに作成されたデータで
-        /// 挙動を分けるためのフラグ
-        /// </summary>
-        internal const string IS_LOADED = "loaded";
-        /// <summary>
-        /// useFieldArrayの中で配列インデックスをキーに使うと新規追加されたコンボボックスが
-        /// その1個上の要素の更新と紐づいてしまうのでクライアント側で要素1個ずつにIDを振る
-        ///
-        /// TODO: ItemKeyと役割が似ているのでこれがなくてもなんとかなる可能性がある
-        /// </summary>
-        internal const string OBJECT_ID = "object_id";
 
 
         internal IEnumerable<OwnProp> GetOwnProps() {
@@ -281,7 +269,6 @@ namespace Nijo.Features.Storing {
 
                 return $$"""
                     export type {{dataClass.TsTypeName}} = {
-                      {{OBJECT_ID}}?: string
                     {{If(agg.IsRoot(), () => $$"""
                       {{LOCAL_REPOS_ITEMKEY}}: Util.ItemKey
                       {{LOCAL_REPOS_STATE}}: Util.LocalRepositoryState
@@ -297,7 +284,6 @@ namespace Nijo.Features.Storing {
                     {{dataClass.GetRefFromProps().SelectTextTemplate(p => $$"""
                       {{p.PropName}}?: {{(p.IsArray ? $"{new DisplayDataClass(p.MainAggregate).TsTypeName}[]" : new DisplayDataClass(p.MainAggregate).TsTypeName)}}
                     """)}}
-                      {{IS_LOADED}}?: boolean
                     }
                     """;
             });

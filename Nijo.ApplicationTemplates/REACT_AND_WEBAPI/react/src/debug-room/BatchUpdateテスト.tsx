@@ -34,15 +34,15 @@ const Page = () => {
     dataTypeKey: 'TEST-DATA-20240204',
     getItemKey: data => data.key ?? '',
     getItemName: data => data.name ?? '',
-    remoteItems: arrRemoteRepos,
+    loadRemoteItems: () => Promise.resolve(arrRemoteRepos),
   }), [arrRemoteRepos])
 
   const {
     ready,
-    loadLocalItems,
-    addToLocalRepository,
-    updateLocalRepositoryItem,
-    deleteLocalRepositoryItem,
+    items: localAndRemoteItems,
+    add: addToLocalRepository,
+    update: updateLocalRepositoryItem,
+    remove: deleteLocalRepositoryItem,
   } = Util.useLocalRepository(reposSetting)
 
   const handleAdd: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
@@ -114,12 +114,12 @@ const Page = () => {
 
   const handleReset = useCallback(async () => {
     await resetLocalRepos()
-    resetForm({ items: await loadLocalItems() })
-  }, [resetLocalRepos, loadLocalItems, resetForm])
+    resetForm({ items: localAndRemoteItems })
+  }, [resetLocalRepos, localAndRemoteItems, resetForm])
 
   useEffect(() => {
-    if (ready) loadLocalItems().then(items => resetForm({ items }))
-  }, [ready, loadLocalItems, resetForm])
+    if (ready) resetForm({ items: localAndRemoteItems })
+  }, [ready, localAndRemoteItems, resetForm])
 
   return (
     <PanelGroup

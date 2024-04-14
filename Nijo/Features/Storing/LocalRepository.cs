@@ -47,37 +47,14 @@ namespace Nijo.Features.Storing {
                               // 1件編集の場合
                               | [{{keyArray.Select(k => $"{k.VarName}: {k.TsType} | undefined").Join(", ")}}]
                             ) => {
-                              const [remoteItems, setRemoteItems] = useState<AggregateType.{{agg.Item.TypeScriptTypeName}}[]>(() => [])
-                              const [remoteAndLocalItems, setRemoteAndLocalItems] = useState<LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[]>(() => [])
                               const { get, post } = useHttpRequest()
-                              const [ready, setReady] = useState(false)
+                              const loadRemoteItems = useCallback(async () => {
+                                if (editRange === undefined) return [] // 画面表示直後の検索条件が決まっていない場合など
 
-                              // ローカルリポジトリ設定
-                              const localReposSetting: LocalRepositoryArgs<AggregateType.{{agg.Item.TypeScriptTypeName}}> = useMemo(() => ({
-                                dataTypeKey: '{{localRepositosy.DataTypeKey}}',
-                                getItemKey: x => JSON.stringify([{{keys.Select(k => $"x.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]),
-                                getItemName: x => `{{string.Concat(names.Select(n => $"${{x.{n.Declared.GetFullPath().Join("?.")}}}"))}}`,
-                                remoteItems,
-                              }), [remoteItems])
-                              const {
-                                ready: localRepositoryIsReady,
-                                loadLocalItems,
-                                addToLocalRepository: add,
-                                updateLocalRepositoryItem: update,
-                                deleteLocalRepositoryItem: remove,
-                              } = useLocalRepository(localReposSetting)
-
-                              // データ読み込み & 保持している状態の更新
-                              const reload = useCallback(async () => {
-                                setReady(false)
-                                if (!localRepositoryIsReady) return
-                                if (editRange === undefined) return // 画面表示直後の検索条件が決まっていない場合など
-
-                                // リモートから読み込む
                                 let remote: AggregateType.{{agg.Item.TypeScriptTypeName}}[]
                                 if (Array.isArray(editRange)) {
                             {{keyArray.SelectTextTemplate((_, i) => $$"""
-                                  if (editRange[{{i}}] === undefined) return
+                                  if (editRange[{{i}}] === undefined) return []
                             """)}}
                                   const res = await get({{find.GetUrlStringForReact(keyArray.Select((_, i) => $"editRange[{i}].toString()"))}})
                                   remote = res.ok ? [res.data as AggregateType.{{agg.Item.TypeScriptTypeName}}] : []
@@ -90,31 +67,18 @@ namespace Nijo.Features.Storing {
                                   remote = res.ok ? res.data : []
                                 }
 
-                                // ローカルから読み込んでリモートから読み込んだものと比較する
-                                const remoteAndLocal = await loadLocalItems(remote)
+                                return remote
+                              }, [editRange, get, post])
 
-                                // UIの都合による属性設定
-                                for (let item of remoteAndLocal.map(x => x.item)) {
-                                  visitObject(item, obj => {
-                                    // 新規データのみ主キーを編集可能にするため、読込データと新規データを区別するためのフラグをつける
-                                    (obj as { {{DisplayDataClass.IS_LOADED}}?: boolean }).{{DisplayDataClass.IS_LOADED}} = true;
-                                    // 配列中のオブジェクト識別用
-                                    (obj as { {{DisplayDataClass.OBJECT_ID}}: string }).{{DisplayDataClass.OBJECT_ID}} = UUID.generate()
-                                  })
-                                }
+                              // ローカルリポジトリ設定
+                              const localReposSetting: LocalRepositoryArgs<AggregateType.{{agg.Item.TypeScriptTypeName}}> = useMemo(() => ({
+                                dataTypeKey: '{{localRepositosy.DataTypeKey}}',
+                                getItemKey: x => JSON.stringify([{{keys.Select(k => $"x.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]),
+                                getItemName: x => `{{string.Concat(names.Select(n => $"${{x.{n.Declared.GetFullPath().Join("?.")}}}"))}}`,
+                                loadRemoteItems,
+                              }), [loadRemoteItems])
 
-                                // 状態更新
-                                setRemoteAndLocalItems(remoteAndLocal)
-                                setReady(true)
-                                setRemoteItems(remote) // addやremoveのタイミングでリモートにデータがあるかどうかの情報が必要になるので
-                                return remoteAndLocal
-                              }, [editRange, localRepositoryIsReady, loadLocalItems])
-
-                              useEffect(() => {
-                                reload()
-                              }, [reload])
-
-                              return { ready, items: remoteAndLocalItems, reload, add, update, remove }
+                              return useLocalRepository(localReposSetting)
                             }
                             """;
                     });

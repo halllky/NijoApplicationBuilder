@@ -53,8 +53,6 @@ namespace Nijo.Features.Storing {
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
                   {{m.MemberName}}?: {{m.TypeScriptTypename}}
                 """)}}
-                  {{DisplayDataClass.IS_LOADED}}?: boolean
-                  {{DisplayDataClass.OBJECT_ID}}?: string
                 }
                 """;
         }
