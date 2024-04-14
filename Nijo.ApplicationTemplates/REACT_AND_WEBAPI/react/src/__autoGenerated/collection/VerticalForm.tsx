@@ -35,7 +35,8 @@ const Container = ({
           </div>)}
         <div className="flex-1 flex bg-color-3">
           {!isRoot && <Indent className="bg-color-3" />}
-          <div className={`flex-1 flex flex-wrap overflow-x-hidden ${isRoot && 'border-r border-b'} border-color-5`}>
+          {/* なぜか width:0 （というよりwidthに明示的な値を）を指定しないとDataTableなど横長のコンテンツがページ外まで伸びてしまう */}
+          <div className={`w-0 flex-1 flex flex-wrap overflow-x-hidden ${isRoot && 'border-r border-b'} border-color-5`}>
             {children}
           </div>
         </div>
