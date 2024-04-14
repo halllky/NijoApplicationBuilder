@@ -399,7 +399,9 @@ namespace Nijo.Features.Storing {
                     reactComponent.Props.Add("readOnly", string.Empty);
 
                 } else if (_mode == SingleView.E_Type.Edit
-                           && schalar is AggregateMember.ValueMember vm && vm.IsKey) {
+                           && _aggregate.IsRoot()
+                           && schalar is AggregateMember.ValueMember vm
+                           && vm.IsKey) {
                     reactComponent.Props.Add("readOnly", $"item?.{DisplayDataClass.LOCAL_REPOS_STATE} !== '+'");
                 }
 
@@ -514,8 +516,9 @@ namespace Nijo.Features.Storing {
                 SingleView.E_Type.Create => "",
                 SingleView.E_Type.View => readOnly,
                 SingleView.E_Type.Edit
-                    => prop is AggregateMember.ValueMember vm && vm.IsKey
-                    || prop is AggregateMember.Ref @ref && @ref.Relation.IsPrimary()
+                    => _aggregate.IsRoot()
+                    && (prop is AggregateMember.ValueMember vm && vm.IsKey
+                    || prop is AggregateMember.Ref @ref && @ref.Relation.IsPrimary())
                         ? $"{readOnly}={{item?.{DisplayDataClass.LOCAL_REPOS_STATE} !== '+'}}"
                         : $"",
                 _ => throw new NotImplementedException(),
