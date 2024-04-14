@@ -62,7 +62,15 @@ namespace Nijo.Features.Storing {
                 .Concat(children)
                 .Concat(child)
                 .Concat(variation)
-                .Concat(variationSwitch);
+                .Concat(variationSwitch)
+                .ToList();
+
+            if (_instance.IsChildrenMember()) {
+                initializers.Add(new {
+                    Key = TransactionScopeDataClass.IS_STORED_DATA,
+                    Value = "false",
+                });
+            }
 
             return $$"""
                     export const {{FunctionName}} = (): {{_instance.Item.TypeScriptTypeName}} => ({

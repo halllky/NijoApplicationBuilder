@@ -20,6 +20,11 @@ namespace Nijo.Features.Storing {
 
         internal virtual string ClassName => _aggregate.Item.ClassName;
 
+        /// <summary>
+        /// UI上でChildrenの主キーが変更可能かどうかを制御するのに使用
+        /// </summary>
+        internal const string IS_STORED_DATA = "__is_stored_data";
+
         internal const string FROM_DBENTITY = "FromDbEntity";
         internal const string TO_DBENTITY = "ToDbEntity";
 
@@ -52,6 +57,9 @@ namespace Nijo.Features.Storing {
                 export type {{_aggregate.Item.TypeScriptTypeName}} = {
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
                   {{m.MemberName}}?: {{m.TypeScriptTypename}}
+                """)}}
+                {{If(_aggregate.IsChildrenMember(), () => $$"""
+                  {{IS_STORED_DATA}}: boolean
                 """)}}
                 }
                 """;

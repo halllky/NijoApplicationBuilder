@@ -27,7 +27,6 @@ namespace Nijo.Features.Storing {
         internal const string LOCAL_REPOS_ITEMKEY = "localRepositoryItemKey";
         internal const string LOCAL_REPOS_STATE = "localRepositoryState";
 
-
         internal IEnumerable<OwnProp> GetOwnProps() {
             return MainAggregate
                 .GetMembers()
@@ -104,6 +103,9 @@ namespace Nijo.Features.Storing {
                 """)}}
                 {{MainAggregate.GetMembers().OfType<AggregateMember.Variation>().Where(m => m.DeclaringAggregate == MainAggregate).SelectTextTemplate(m => $$"""
                     {{m.MemberName}}: '{{m.GetGroupItems().First().Key}}',
+                """)}}
+                {{If(MainAggregate.IsChildrenMember(), () => $$"""
+                    {{TransactionScopeDataClass.IS_STORED_DATA}}: false,
                 """)}}
                   },
                 }
@@ -228,6 +230,9 @@ namespace Nijo.Features.Storing {
                     {{ownMembers.SelectTextTemplate(m => $$"""
                         {{m.MemberName}}: {{item}}?.{{m.MemberName}},
                     """)}}
+                    {{If(dc.MainAggregate.IsChildrenMember(), () => $$"""
+                        {{TransactionScopeDataClass.IS_STORED_DATA}}: {{item}}?.{{TransactionScopeDataClass.IS_STORED_DATA}} ?? false,
+                    """)}}
                       },
                     {{dc.GetChildProps().SelectTextTemplate(p => p.IsArray ? $$"""
                       {{p.PropName}}: {{item}}?.{{p.MemberInfo?.MemberName}}?.map(x => ({{WithIndent(Render(p, "x", true), "  ")}})),
@@ -276,6 +281,9 @@ namespace Nijo.Features.Storing {
                       {{OWN_MEMBERS}}: {
                     {{dataClass.GetOwnProps().SelectTextTemplate(p => $$"""
                         {{p.PropName}}?: {{p.Member.TypeScriptTypename}}
+                    """)}}
+                    {{If(agg.IsChildrenMember(), () => $$"""
+                        {{TransactionScopeDataClass.IS_STORED_DATA}}: boolean,
                     """)}}
                       }
                     {{dataClass.GetChildProps().SelectTextTemplate(p => $$"""

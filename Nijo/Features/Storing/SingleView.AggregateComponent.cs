@@ -399,10 +399,14 @@ namespace Nijo.Features.Storing {
                     reactComponent.Props.Add("readOnly", string.Empty);
 
                 } else if (_mode == SingleView.E_Type.Edit
-                           && _aggregate.IsRoot()
                            && schalar is AggregateMember.ValueMember vm
                            && vm.IsKey) {
-                    reactComponent.Props.Add("readOnly", $"item?.{DisplayDataClass.LOCAL_REPOS_STATE} !== '+'");
+                    if (_aggregate.IsRoot()) {
+                        reactComponent.Props.Add("readOnly", $"item?.{DisplayDataClass.LOCAL_REPOS_STATE} !== '+'");
+
+                    } else if (_aggregate.IsChildrenMember()) {
+                        reactComponent.Props.Add("readOnly", $"item?.{DisplayDataClass.OWN_MEMBERS}.{TransactionScopeDataClass.IS_STORED_DATA}");
+                    }
                 }
 
                 return $$"""
@@ -512,17 +516,24 @@ namespace Nijo.Features.Storing {
         }
 
         private string IfReadOnly(string readOnly, AggregateMember.AggregateMemberBase prop) {
-            return _mode switch {
-                SingleView.E_Type.Create => "",
-                SingleView.E_Type.View => readOnly,
-                SingleView.E_Type.Edit
-                    => _aggregate.IsRoot()
-                    && (prop is AggregateMember.ValueMember vm && vm.IsKey
-                    || prop is AggregateMember.Ref @ref && @ref.Relation.IsPrimary())
-                        ? $"{readOnly}={{item?.{DisplayDataClass.LOCAL_REPOS_STATE} !== '+'}}"
-                        : $"",
-                _ => throw new NotImplementedException(),
-            };
+            if (_mode == SingleView.E_Type.View) {
+                return readOnly;
+            }
+
+            if (_mode == SingleView.E_Type.Edit) {
+                if (prop is AggregateMember.ValueMember vm && vm.IsKey
+                    || prop is AggregateMember.Ref @ref && @ref.Relation.IsPrimary()) {
+
+                    if (_aggregate.IsRoot()) {
+                        return $"{readOnly}={{item?.{DisplayDataClass.LOCAL_REPOS_STATE} !== '+'}}";
+
+                    } else if (_aggregate.IsChildrenMember()) {
+                        return $"{readOnly}={{item?.{DisplayDataClass.OWN_MEMBERS}.{TransactionScopeDataClass.IS_STORED_DATA}}}";
+                    }
+                }
+            }
+
+            return "";
         }
         #endregion 部品
     }
