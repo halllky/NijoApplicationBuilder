@@ -37,6 +37,7 @@ namespace Nijo.Features.Storing {
             var rootLocalRepository = new LocalRepository(_aggregate);
             var refLocalRepos = dataClass
                 .GetRefFromPropsRecursively()
+                .DistinctBy(x => x.Item1.MainAggregate)
                 .Select(x => new LocalRepository(x.Item1.MainAggregate))
                 .ToArray();
             var keys = _aggregate.GetKeys().OfType<AggregateMember.ValueMember>().ToArray();
@@ -146,18 +147,18 @@ namespace Nijo.Features.Storing {
 
                       const handleUpdateRow = useCallback(async (index: number, row: GridRow) => {
                         const [
-                          item{{_aggregate.Item.ClassName}}{{string.Concat(dataClass.GetRefFromPropsRecursively().Select(x => $", item{x.Item1.MainAggregate.Item.ClassName}"))}}
+                          item{{_aggregate.Item.ClassName}}{{string.Concat(dataClass.GetRefFromPropsRecursively().Select((x, i) => $", item{i}_{x.Item1.MainAggregate.Item.ClassName}"))}}
                         ] = AggregateType.{{dataClass.ConvertFnNameToLocalRepositoryType}}(row)
 
                         await updateLocalRepositoryItem(item{{_aggregate.Item.ClassName}}.itemKey, item{{_aggregate.Item.ClassName}}.item)
 
-                    {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate(x => x.IsArray ? $$"""
-                        for (let { itemKey, item } of item{{x.Item1.MainAggregate.Item.ClassName}}) {
+                    {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate((x, i) => x.IsArray ? $$"""
+                        for (let { itemKey, item } of item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
                           await update{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(itemKey, item)
                         }
                     """ : $$"""
-                        if (item{{x.Item1.MainAggregate.Item.ClassName}}) {
-                          await update{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(item{{x.Item1.MainAggregate.Item.ClassName}}.itemKey, item{{x.Item1.MainAggregate.Item.ClassName}}.item)
+                        if (item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
+                          await update{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.itemKey, item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.item)
                         }
                     """)}}
 
@@ -170,7 +171,7 @@ namespace Nijo.Features.Storing {
                         const deletedRowIndex: number[] = []
                         for (const { row, rowIndex } of dtRef.current.getSelectedRows()) {
                           const [
-                            item{{_aggregate.Item.ClassName}}{{string.Concat(dataClass.GetRefFromPropsRecursively().Select(x => $", item{x.Item1.MainAggregate.Item.ClassName}"))}}
+                            item{{_aggregate.Item.ClassName}}{{string.Concat(dataClass.GetRefFromPropsRecursively().Select((x, i) => $", item{i}_{x.Item1.MainAggregate.Item.ClassName}"))}}
                           ] = AggregateType.{{dataClass.ConvertFnNameToLocalRepositoryType}}(row)
 
                           const deleted = await deleteLocalRepositoryItem(item{{_aggregate.Item.ClassName}}.itemKey, item{{_aggregate.Item.ClassName}}.item)
@@ -180,13 +181,13 @@ namespace Nijo.Features.Storing {
                             deletedRowIndex.push(rowIndex) // 画面上からも消す
                           }
 
-                    {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate(x => x.IsArray ? $$"""
-                          for (let { itemKey, item } of item{{x.Item1.MainAggregate.Item.ClassName}}) {
+                    {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate((x, i) => x.IsArray ? $$"""
+                          for (let { itemKey, item } of item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
                             await delete{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(itemKey, item)
                           }
                     """ : $$"""
-                          if (item{{x.Item1.MainAggregate.Item.ClassName}}) {
-                            await delete{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(item{{x.Item1.MainAggregate.Item.ClassName}}.itemKey, item{{x.Item1.MainAggregate.Item.ClassName}}.item)
+                          if (item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
+                            await delete{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.itemKey, item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.item)
                           }
                     """)}}
                         }

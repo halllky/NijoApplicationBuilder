@@ -188,12 +188,14 @@ namespace Nijo.Features.Storing {
             var mainArgName = $"reposItem{MainAggregate.Item.ClassName}";
             var mainArgType = $"Util.LocalRepositoryItem<{MainAggregate.Item.TypeScriptTypeName}>";
 
-            var refArgs = GetRefFromPropsRecursively().Select(x => new {
-                RelProp = x.Item1,
-                ArgName = $"reposItemList{x.Item1.MainAggregate.Item.ClassName}",
-                ItemType = $"Util.LocalRepositoryItem<{x.Item1.MainAggregate.Item.TypeScriptTypeName}>",
-                TempVar = $"temp{x.Item1.MainAggregate.Item.ClassName}",
-            }).ToArray();
+            var refArgs = GetRefFromPropsRecursively()
+                .DistinctBy(p => p.Item1.MainAggregate)
+                .Select(p => new {
+                    RelProp = p,
+                    ArgName = $"reposItemList{p.Item1.MainAggregate.Item.ClassName}",
+                    ItemType = $"Util.LocalRepositoryItem<{p.Item1.MainAggregate.Item.TypeScriptTypeName}>",
+                    TempVar = $"temp{p.Item1.MainAggregate.Item.ClassName}",
+                }).ToArray();
 
             // 子孫要素を参照するデータを引数の配列中から探すためにはキーで引き当てる必要があるが、
             // 子孫要素のラムダ式の中ではその外にある変数を参照するしかない
@@ -220,8 +222,7 @@ namespace Nijo.Features.Storing {
                              && (m is AggregateMember.ValueMember || m is AggregateMember.Ref));
                 var refProps = dc.GetRefFromProps().Select(p => new {
                     RefProp = p,
-                    Args = refArgs.Single(x => x.RelProp.MainAggregate == p.MainAggregate
-                                            && x.RelProp.MainAggregate.Source == p.MainAggregate.Source),
+                    Args = refArgs.Single(x => x.RelProp.Item1.MainAggregate == p.MainAggregate),
                     Keys = p.MainAggregate.AsEntry().GetKeys().OfType<AggregateMember.ValueMember>().Select(k => new {
                         ThisKey = pkVarNames[k.Declared],
                         TheirKey = k.Declared.GetFullPath().Join("?."),
@@ -248,7 +249,7 @@ namespace Nijo.Features.Storing {
                     {{refProps.SelectTextTemplate(x => $$"""
                       {{x.RefProp.PropName}}: ({{x.Args.TempVar}} = {{x.Args.ArgName}}.find(y =>
                         {{x.Keys.Select(k => $"y.item.{k.TheirKey} === {k.ThisKey}").Join($"{Environment.NewLine}    && ")}})) !== undefined
-                        ? {{x.Args.RelProp.ConvertFnNameToDisplayDataType}}({{x.Args.TempVar}}{{x.RefProp.GetRefFromPropsRecursively().Select(p => $", reposItemList{p.Item1.MainAggregate.Item.ClassName}").Join("")}})
+                        ? {{x.Args.RelProp.Item1.ConvertFnNameToDisplayDataType}}({{x.Args.TempVar}}{{x.RefProp.GetRefFromPropsRecursively().DistinctBy(p => p.Item1.MainAggregate).Select(p => $", reposItemList{p.Item1.MainAggregate.Item.ClassName}").Join("")}})
                         : undefined,
                     """)}}
                     }

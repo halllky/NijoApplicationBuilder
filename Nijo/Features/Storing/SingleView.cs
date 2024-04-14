@@ -97,12 +97,16 @@ namespace Nijo.Features.Storing {
                 var dataClass = new DisplayDataClass(_aggregate);
                 var localRepos = new LocalRepository(_aggregate);
 
-                var refRepositories = dataClass.GetRefFromPropsRecursively().Select(p => new {
-                    Repos = new LocalRepository(p.Item1.MainAggregate),
-                    FindMany = new FindManyFeature(p.Item1.MainAggregate),
-                    Aggregate = p.Item1.MainAggregate,
-                    DataClassProp = p,
-                }).ToArray();
+                var refRepositories = dataClass
+                    .GetRefFromPropsRecursively()
+                    .DistinctBy(p => p.Item1.MainAggregate)
+                    .Select(p => new {
+                        Repos = new LocalRepository(p.Item1.MainAggregate),
+                        FindMany = new FindManyFeature(p.Item1.MainAggregate),
+                        Aggregate = p.Item1.MainAggregate,
+                        DataClassProp = p,
+                    })
+                    .ToArray();
 
                 var keyArray = KeyArray.Create(_aggregate);
                 var keys = _aggregate
@@ -365,18 +369,18 @@ namespace Nijo.Features.Storing {
                       // 更新データの一時保存
                       const onSave: SubmitHandler<AggregateType.{{dataClass.TsTypeName}}> = useCallback(async data => {
                         const [
-                            item{{_aggregate.Item.ClassName}}{{dataClass.GetRefFromPropsRecursively().Select(x => $", item{x.Item1.MainAggregate.Item.ClassName}").Join("")}}
+                            item{{_aggregate.Item.ClassName}}{{dataClass.GetRefFromPropsRecursively().Select((x, i) => $", item{i}_{x.Item1.MainAggregate.Item.ClassName}").Join("")}}
                         ] = AggregateType.{{dataClass.ConvertFnNameToLocalRepositoryType}}(data)
                     
                         await update{{_aggregate.Item.ClassName}}RepositoryItem(item{{_aggregate.Item.ClassName}}.itemKey, item{{_aggregate.Item.ClassName}}.item)
 
-                    {{refRepositories.SelectTextTemplate(x => x.DataClassProp.IsArray ? $$"""
-                        for (let { itemKey, item } of item{{x.Aggregate.Item.ClassName}}) {
-                          await update{{x.Aggregate.Item.ClassName}}RepositoryItem(itemKey, item)
+                    {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate((x, i) => x.IsArray ? $$"""
+                        for (let { itemKey, item } of item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
+                          await update{{x.Item1.MainAggregate.Item.ClassName}}RepositoryItem(itemKey, item)
                         }
                     """ : $$"""
-                        if (item{{x.Aggregate.Item.ClassName}}) {
-                          await update{{x.Aggregate.Item.ClassName}}RepositoryItem(item{{x.Aggregate.Item.ClassName}}.itemKey, item{{x.Aggregate.Item.ClassName}}.item)
+                        if (item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
+                          await update{{x.Item1.MainAggregate.Item.ClassName}}RepositoryItem(item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.itemKey, item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.item)
                         }
                     """)}}
                       }, [update{{_aggregate.Item.ClassName}}RepositoryItem{{refRepositories.Select(x => $", update{x.Aggregate.Item.ClassName}RepositoryItem").Join("")}}])
