@@ -102,7 +102,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
   const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = useCallback(e => {
     // console.log(e.key)
-    if (e.key === ' ') {
+    if (e.key === ' ' && !editing) {
       for (const row of getSelectedRows()) row.toggleExpanded()
       e.preventDefault()
       return
