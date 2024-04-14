@@ -19,22 +19,32 @@ namespace Nijo.Parts.WebClient {
             // ソース中にラムダ式が登場するのでエントリー化
             var asEntry = dataTableOwner.AsEntry();
 
-            var aggregates = new List<GraphNode<Aggregate>> { asEntry };
-            aggregates.AddRange(asEntry
-                .GetReferedEdgesAsSingleKeyRecursively()
-                .Select(edge => edge.Initial));
+            // グリッドに表示するメンバーを列挙
+            var columnMembers = new List<AggregateMember.AggregateMemberBase>();
+            void Collect(GraphNode<Aggregate> agg) {
+                foreach (var member in agg.GetMembers()) {
+                    if (member is AggregateMember.ValueMember vm) {
+                        if (vm.DeclaringAggregate != agg) continue;
+                        if (vm.Options.InvisibleInGui) continue;
+                        columnMembers.Add(member);
 
-            var columnMembers = aggregates
-                .SelectMany(agg => agg.EnumerateThisAndDescendants())
-                // ChildrenやVariationのメンバーはグリッド上で表現できないため表示しない
-                .Where(agg => agg.EnumerateAncestorsAndThis().All(agg2 => agg2.IsRoot() || agg2.IsChildMember()))
-                .SelectMany(agg => agg.GetMembers())
-                .Where(m => m.Owner == m.DeclaringAggregate)
-                .Where(member => member is AggregateMember.Ref rm && !rm.Relation.IsPrimary()
-                              || member is AggregateMember.ValueMember vm && !vm.Options.InvisibleInGui)
-                .ToArray();
+                    } else if (member is AggregateMember.Ref @ref) {
+                        if (@ref.MemberAggregate.IsSingleRefKeyOf(@ref.Owner)) continue;
+                        columnMembers.Add(member);
+                    }
+                }
 
-            for (int i = 0; i < columnMembers.Length; i++) {
+                // ChildrenやVariationのメンバーを列挙していないのはグリッド上で表現できないため
+                foreach (var child in agg.GetMembers().OfType<AggregateMember.Child>()) {
+                    Collect(child.MemberAggregate);
+                }
+                foreach (var refFrom in agg.GetReferedEdgesAsSingleKey()) {
+                    Collect(refFrom.Initial);
+                }
+            }
+            Collect(asEntry);
+
+            for (int i = 0; i < columnMembers.Count; i++) {
                 var member = columnMembers[i];
 
                 var vm = member as AggregateMember.ValueMember;
