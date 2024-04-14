@@ -147,11 +147,11 @@ namespace Nijo.Features.Storing {
                       })
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
                       const onAdd = useCallback((e: React.MouseEvent) => {
-                        append(AggregateType.{{dataClass.TsInitFunctionName}}())
+                        append({{WithIndent(dataClass.RenderNewObjectLiteral(), "    ")}})
                         e.preventDefault()
                       }, [append])
                       const onCreate = useCallback(() => {
-                        append(AggregateType.{{dataClass.TsInitFunctionName}}())
+                        append({{WithIndent(dataClass.RenderNewObjectLiteral(), "    ")}})
                       }, [append])
                       const onRemove = useCallback((index: number) => {
                         return (e: React.MouseEvent) => {
@@ -220,7 +220,7 @@ namespace Nijo.Features.Storing {
 
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
                       const onAdd = useCallback((e: React.MouseEvent) => {
-                        append(AggregateType.{{dataClass.TsInitFunctionName}}())
+                        append({{WithIndent(dataClass.RenderNewObjectLiteral(), "    ")}})
                         e.preventDefault()
                       }, [append])
                       const onRemove = useCallback((e: React.MouseEvent) => {

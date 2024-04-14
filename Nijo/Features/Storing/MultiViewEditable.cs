@@ -104,7 +104,7 @@ namespace Nijo.Features.Storing {
                       }), [filter, currentPage])
                       const {
                         ready,
-                        items: currentPageItems,
+                        items: {{_aggregate.Item.ClassName}}Items,
                         add: addToLocalRepository,
                         update: updateLocalRepositoryItem,
                         remove: deleteLocalRepositoryItem,
@@ -124,8 +124,13 @@ namespace Nijo.Features.Storing {
                       const { fields, append, update, remove } = useFieldArray({ name: 'currentPageItems', control })
 
                       useEffect(() => {
-                        if (ready) reset({ currentPageItems })
-                      }, [ready, currentPageItems])
+                        if (ready{{refLocalRepos.Select(r => $" && {r.Aggregate.Item.ClassName}IsReady").Join("")}}) {
+                          const currentPageItems: AggregateType.{{dataClass.TsTypeName}}[] = {{_aggregate.Item.ClassName}}Items.map(item => {
+                            return AggregateType.{{dataClass.ConvertFnNameToDisplayDataType}}(item{{refLocalRepos.Select(r => $", {r.Aggregate.Item.ClassName}Items").Join("")}})
+                          })
+                          reset({ currentPageItems })
+                        }
+                      }, [ready, {{_aggregate.Item.ClassName}}Items{{refLocalRepos.Select(r => $", {r.Aggregate.Item.ClassName}IsReady, {r.Aggregate.Item.ClassName}Items").Join("")}}])
 
                       const handleReload = useCallback(() => {
                         setFilter(getConditionValues())
@@ -135,7 +140,7 @@ namespace Nijo.Features.Storing {
                       const handleAdd: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
                         const newItem = AggregateType.{{new TSInitializerFunction(_aggregate).FunctionName}}()
                         const { itemKey } = await addToLocalRepository(newItem)
-                        const newRow: AggregateType.{{dataClass.TsTypeName}} = {{WithIndent(dataClass.RenderNewObjectCreating("itemKey"), "    ")}}
+                        const newRow: AggregateType.{{dataClass.TsTypeName}} = {{WithIndent(dataClass.RenderNewObjectLiteral("itemKey"), "    ")}}
                         append(newRow)
                       }, [append, addToLocalRepository])
 

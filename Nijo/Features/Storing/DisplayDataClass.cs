@@ -99,11 +99,17 @@ namespace Nijo.Features.Storing {
             return refFromPros;
         }
 
-        internal string RenderNewObjectCreating(string itemKey) {
+        /// <summary>
+        /// 新規オブジェクト作成のリテラルをレンダリングします。
+        /// </summary>
+        /// <param name="itemKey">ルート集約なら必須。子孫集約なら不要</param>
+        internal string RenderNewObjectLiteral(string? itemKey = null) {
             return $$"""
                 {
+                {{If(MainAggregate.IsRoot(), () => $$"""
                   {{LOCAL_REPOS_ITEMKEY}}: {{itemKey}},
                   {{LOCAL_REPOS_STATE}}: '+',
+                """)}}
                   {{OWN_MEMBERS}}: {
                 {{MainAggregate.GetMembers().OfType<AggregateMember.Schalar>().Where(m => m.DeclaringAggregate == MainAggregate && m.Options.MemberType is Uuid).SelectTextTemplate(m => $$"""
                     {{m.MemberName}}: UUID.generate(),
