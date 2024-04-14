@@ -117,6 +117,8 @@ namespace Nijo.Features.Storing {
         }
 
         internal string ConvertFnNameToLocalRepositoryType => $"convert{MainAggregate.Item.ClassName}ToLocalRepositoryItem";
+        internal string ConvertFnNameToDisplayDataType => $"convert{MainAggregate.Item.ClassName}ToDisplayData";
+
         /// <summary>
         /// データ型変換関数 (<see cref="DisplayDataClass"/> => <see cref="TransactionScopeDataClass"/>)
         /// </summary>
@@ -198,6 +200,96 @@ namespace Nijo.Features.Storing {
                         """;
                 }
             }
+        }
+
+        /// <summary>
+        /// データ型変換関数 (<see cref="TransactionScopeDataClass"/> => <see cref="DisplayDataClass"/>)
+        /// </summary>
+        internal string RenderConvertFnToDisplayDataClass() {
+            var mainArgName = $"reposItem{MainAggregate.Item.ClassName}";
+            var mainArgType = $"Util.LocalRepositoryItem<{MainAggregate.Item.TypeScriptTypeName}>";
+
+            var refArgs = GetRefFromPropsRecursively().Select(x => new {
+                RelProp = x.Item1,
+                ArgName = $"reposItemList{x.Item1.MainAggregate.Item.ClassName}",
+                ItemType = $"Util.LocalRepositoryItem<{x.Item1.MainAggregate.Item.TypeScriptTypeName}>",
+                TempVar = $"temp{x.Item1.MainAggregate.Item.ClassName}",
+            }).ToArray();
+
+            // 子孫要素を参照するデータを引数の配列中から探すためにはキーで引き当てる必要があるが、
+            // 子孫要素のラムダ式の中ではその外にある変数を参照するしかない
+            var pkVarNames = new Dictionary<AggregateMember.ValueMember, string>();
+            foreach (var key in MainAggregate.GetKeys().OfType<AggregateMember.ValueMember>()) {
+                pkVarNames.Add(key.Declared, $"{mainArgName}.item.{key.Declared.GetFullPath().Join("?.")}");
+            }
+
+            string Render(DisplayDataClass dc, string instance, bool inLambda) {
+                var keys = inLambda
+                    ? dc.MainAggregate.AsEntry().GetKeys().OfType<AggregateMember.ValueMember>()
+                    : dc.MainAggregate.GetKeys().OfType<AggregateMember.ValueMember>();
+
+                foreach (var key in keys) {
+                    // 実際にはここでcontinueされるのは親のキーだけのはず。Render関数はルートから順番に呼び出されるので
+                    if (pkVarNames.ContainsKey(key.Declared)) continue;
+
+                    pkVarNames.Add(key.Declared, $"{instance}.{key.Declared.GetFullPath().Join("?.")}");
+                }
+
+                var ownMembers = dc.MainAggregate
+                    .GetMembers()
+                    .Where(m => m.DeclaringAggregate == dc.MainAggregate
+                             && (m is AggregateMember.ValueMember || m is AggregateMember.Ref));
+                var refProps = dc.GetRefFromProps().Select(p => new {
+                    RefProp = p,
+                    Args = refArgs.Single(x => x.RelProp.MainAggregate == p.MainAggregate),
+                    Keys = p.MainAggregate.AsEntry().GetKeys().OfType<AggregateMember.ValueMember>().Select(k => new {
+                        ThisKey = pkVarNames[k.Declared],
+                        TheirKey = k.Declared.GetFullPath().Join("?."),
+                    }),
+                });
+                var item = dc.MainAggregate.IsRoot() ? $"{instance}.item" : instance;
+
+                return $$"""
+                    {
+                    {{If(dc.MainAggregate.IsRoot(), () => $$"""
+                      {{LOCAL_REPOS_ITEMKEY}}: {{instance}}.itemKey,
+                      {{LOCAL_REPOS_STATE}}: {{instance}}.state,
+                    """)}}
+                      {{OWN_MEMBERS}}: {
+                    {{ownMembers.SelectTextTemplate(m => $$"""
+                        {{m.MemberName}}: {{item}}.{{m.MemberName}},
+                    """)}}
+                      },
+                    {{dc.GetChildProps().SelectTextTemplate(p => p.IsArray ? $$"""
+                      {{p.PropName}}: {{item}}.{{p.MemberInfo?.GetFullPath().Join("?.")}}?.map(x => ({{WithIndent(Render(p, "x", true), "  ")}})),
+                    """ : $$"""
+                      {{p.PropName}}: {{WithIndent(Render(p, $"{item}{string.Concat(p.MemberInfo?.GetFullPath().Select(path => $"?.{path}") ?? [])}", false), "  ")}},
+                    """)}}
+                    {{refProps.SelectTextTemplate(x => $$"""
+                      {{x.RefProp.PropName}}: ({{x.Args.TempVar}} = {{x.Args.ArgName}}.find(y =>
+                        {{x.Keys.Select(k => $"y.item.{k.TheirKey} === {k.ThisKey}").Join($"{Environment.NewLine}    && ")}})) !== undefined
+                        ? {{x.Args.RelProp.ConvertFnNameToDisplayDataType}}({{x.Args.TempVar}}{{x.RefProp.GetRefFromPropsRecursively().Select(p => $", reposItemList{p.Item1.MainAggregate.Item.ClassName}").Join("")}})
+                        : undefined
+                    """)}}
+                    }
+                    """;
+            }
+
+            return $$"""
+                /** 登録更新される型を画面に表示されるデータ型に変換します。 */
+                export const {{ConvertFnNameToDisplayDataType}} = (
+                  {{mainArgName}}: {{mainArgType}},
+                {{refArgs.SelectTextTemplate(a => $$"""
+                  {{a.ArgName}}: {{a.ItemType}}[],
+                """)}}
+                ): {{TsTypeName}} => {
+                {{refArgs.SelectTextTemplate(x => $$"""
+                  let {{x.TempVar}}: {{x.ItemType}} | undefined
+                """)}}
+
+                  return {{WithIndent(Render(this, mainArgName, false), "  ")}}
+                }
+                """;
         }
 
         internal string RenderTypeScriptDataClassDeclaration() {
