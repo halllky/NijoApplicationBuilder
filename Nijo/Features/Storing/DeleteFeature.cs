@@ -69,13 +69,10 @@ namespace Nijo.Features.Storing {
                         return false;
                     }
 
-                    // {{_aggregate.Item.DisplayName}}の更新をトリガーとする処理を実行します。
-                    var updateEvent = new AggregateUpdateEvent<{{instanceClass}}> {
-                        Deleted = new[] { deleted },
-                    };
-                    {{_aggregate.GetDependsOnMarkedReadModels().SelectTextTemplate(readModel => $$"""
-                    {{WithIndent(ReadModel.RenderUpdateCalling(readModel, "updateEvent"), "    ")}}
-                    """)}}
+                    // // {{_aggregate.Item.DisplayName}}の更新をトリガーとする処理を実行します。
+                    // var updateEvent = new AggregateUpdateEvent<{{instanceClass}}> {
+                    //     Deleted = new[] { deleted },
+                    // };
 
                     errors = Array.Empty<string>();
                     return true;

@@ -7,111 +7,95 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Nijo.Features;
+using Nijo.Features.Storing;
 
 namespace Nijo.Models {
     internal class ReadModel : IModel {
 
         private const string CONTROLLER_ACTION_NAME = "reload";
 
-        internal static string AppSrvMethodName(GraphNode<Aggregate> rootAggregate) {
-            if (rootAggregate.Item.Options.Handler != NijoCodeGenerator.Models.ReadModel.Key)
-                throw new InvalidOperationException($"{rootAggregate.Item} is not a read model.");
-            return $"Reload{rootAggregate.Item.ClassName}";
-        }
-        internal static string RenderUpdateCalling(GraphNode<Aggregate> readModel, string aggregateChangedEvent) {
-            var reload = AppSrvMethodName(readModel);
-            return $$"""
-                this.{{reload}}({{aggregateChangedEvent}});
-                """;
-        }
-
         void IModel.GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
 
-            // WriteModelへのリンクを作成する
-            // TOOD: ↑ is="ref-to:…" によって自動的に作成されるのでは？
-
-            // TODO: MultiView, 検索処理を作成する
-
             context.UseAggregateFile(rootAggregate, builder => {
+
+                // 洗い替え処理
+                // ※以下の理由からほぼなにも自動生成しない。オーバーライドして処理を自前実装する前提とする
+                // - 一度の更新でどのエンティティまでIncludeすればよいかの自動判別が難しい
+                // - ReadModelの主キーが必ずしもWriteModelの集約1種類へのRefのみで構成されるとは限らない
+                // - どういったタイミングで削除されるかの判断が難しい
                 var appSrv = new ApplicationService();
-                var dbContext = appSrv.DbContext;
-                var dbSet = rootAggregate.Item.DbSetName;
-                var reload = AppSrvMethodName(rootAggregate);
-                var controllerArgs = KeyArray.Create(rootAggregate, nullable: true);
-                var appServiceArgs = KeyArray.Create(rootAggregate, nullable: false);
-
-                // データ更新処理を作成する: Controller
                 builder.ControllerActions.Add($$"""
-                    [HttpGet("{{CONTROLLER_ACTION_NAME}}/{{controllerArgs.Select(m => "{" + m.VarName + "}").Join("/")}}")]
-                    public virtual IActionResult Reload({{controllerArgs.Select(m => $"{m.CsType} {m.VarName}").Join(", ")}}) {
-                    {{controllerArgs.SelectTextTemplate(m => $$"""
-                        if ({{m.VarName}} == null) return BadRequest();
-                    """)}}
-
-                        using (var tran = _applicationService.{{dbContext}}.Database.BeginTransaction()) {
-                            try {
-                                _applicationService.{{reload}}({{appServiceArgs.Select(m => m.VarName).Join(", ")}});
-                                tran.Commit();
-                            } catch {
-                                tran.Rollback();
-                            }
-                        }
-
+                    [HttpPost("{{CONTROLLER_ACTION_NAME}}")]
+                    public virtual IActionResult ReloadAll() {
+                        _applicationService.ReloadAll{{rootAggregate.Item.ClassName}}();
                         return Ok();
                     }
                     """);
-
-                // データ更新処理を作成する: ApplicationService
-                // ※以下の理由からほぼなにも自動生成しない
-                // - 一度の更新でどのエンティティまでIncludeすればよいかの自動判別が難しい
-                // - ReadModelの主キーが必ずしもWriteModelの集約1種類へのRefのみで構成されるとは限らない
-                var entity = $"{rootAggregate.Item.EFCoreEntityClassName}?";
-                var dependencies = rootAggregate
-                    .GetDependsOnMarkedWriteModels()
-                    .Select(writeModel => writeModel.GetRoot())
-                    .Distinct();
-
                 builder.AppServiceMethods.Add($$"""
                     /// <summary>
-                    /// {{rootAggregate.Item.DisplayName}}のデータ1件の更新処理。
-                    /// 画面などからID指定でデータの洗い替えが指示されたときに実行されます。
+                    /// {{rootAggregate.Item.DisplayName}}のデータの洗い替え処理。
                     /// </summary>
-                    public virtual void {{reload}}({{appServiceArgs.Select(k => $"{k.CsType} {k.VarName}").Join(", ")}}) {
-                        /// <see cref="{{appSrv.ConcreteClass}}"/>クラスでこのメソッドをオーバーライドして、
-                        /// DbContextを操作し、対象データを追加、更新または削除する処理を実装してください。
-
-                        // 実装例:
-                        // var source = {{dbContext}}.<算出元データ>
-                        //     .AsNoTracking()
-                        //     .Include(<更新に必要な各種関連データ>)
-                        //     .SingleOrDefault(e => {{appServiceArgs.Select(k => $"e.{k.VarName}").Join(" && ")}});
-                        // var readModel = {{dbContext}}.{{dbSet}}
-                        //     .Include(<一緒に更新する子孫データ>)
-                        //     .SingleOrDefault(e => {{appServiceArgs.Select(k => $"e.{k.VarName}").Join(" && ")}});
-                        // if (source == null) {
-                        //     if (readModel != null) {{dbContext}}.{{dbSet}}.Remove(readModel);
-                        //     return;
-                        // }
-                        // var insert = readModel == null;
-                        // if (insert) readModel = new {{rootAggregate.Item.EFCoreEntityClassName}} { };
-                        //
-                        // // ここでsourceの値をもとにreadModelの値を算出する
-                        //
-                        // if (insert) {{dbContext}}.{{dbSet}}.Add(readModel);
-                        // _applicationService.{{dbContext}}.SaveChanges();
+                    public virtual void ReloadAll{{rootAggregate.Item.ClassName}}() {
+                        using (var tran = {{appSrv.DbContext}}.Database.BeginTransaction()) {
+                            try {
+                                {{appSrv.DbContext}}.{{rootAggregate.Item.DbSetName}}
+                                    .ExecuteDelete();
+                                {{appSrv.DbContext}}.{{rootAggregate.Item.DbSetName}}
+                                    .AddRange(Recalculate{{rootAggregate.Item.ClassName}}());
+                                {{appSrv.DbContext}}
+                                    .SaveChanges();
+                                tran.Commit();
+                            } catch {
+                                tran.Rollback();
+                                throw;
+                            }
+                        }
                     }
-                    {{dependencies.SelectTextTemplate(writeModel => $$"""
                     /// <summary>
-                    /// {{rootAggregate.Item.DisplayName}}のデータの更新処理。
-                    /// {{writeModel.Item.DisplayName}}が追加・削除・更新された後、コミットされる前に実行されます。
+                    /// {{rootAggregate.Item.DisplayName}}のデータの計算処理。
                     /// </summary>
-                    public virtual void {{reload}}(AggregateUpdateEvent<{{new Features.Storing.AggregateDetail(writeModel).ClassName}}> ev) {
+                    public virtual IEnumerable<{{rootAggregate.Item.EFCoreEntityClassName}}> Recalculate{{rootAggregate.Item.ClassName}}() {
                         /// <see cref="{{appSrv.ConcreteClass}}"/>クラスでこのメソッドをオーバーライドして、
-                        /// DbContextを操作し、対象データを追加、更新または削除する処理を実装してください。
+                        /// すべての{{rootAggregate.Item.DisplayName}}を算出する処理を実装してください。
+
+                        return Enumerable.Empty<{{rootAggregate.Item.EFCoreEntityClassName}}>();
                     }
-                    """)}}
                     """);
+
+                // Load & MultiView
+                var loadFeature = new FindManyFeature(rootAggregate);
+                builder.ControllerActions.Add(loadFeature.RenderController());
+                builder.AppServiceMethods.Add(loadFeature.RenderAppSrvMethod());
+                builder.DataClassDeclaring.Add(loadFeature.RenderSearchConditionTypeDeclaring(csharp: true));
+                builder.TypeScriptDataTypes.Add(loadFeature.RenderSearchConditionTypeDeclaring(csharp: false));
+
+                var controller = new Parts.WebClient.Controller(rootAggregate.Item);
+                var editableMultiView = new MultiViewEditable(rootAggregate, new MultiViewEditable.Options {
+                    ReadOnly = true,
+                    Hooks = $$"""
+                        const handleRecalculateClick = useCallback(async () => {
+                          const res = await post(`/{{controller.SubDomain}}/{{CONTROLLER_ACTION_NAME}}`)
+                          if (res.ok) {
+                            await reloadRemoteItems()
+                            dispatchMsg(msg => msg.info('洗い替え処理が完了しました。'))
+                          } else {
+                            dispatchMsg(msg => msg.error('洗い替え処理でエラーが発生しました。'))
+                          }
+                        }, [post, reloadRemoteItems])
+                        """,
+                    PageTitleSide = $$"""
+                        <Input.Button onClick={handleRecalculateClick}>全件洗い替え(デバッグ用)</Input.Button>
+                        """,
+                });
+                context.AddPage(editableMultiView);
+
+                // Find & SingleView
+                var findFeature = new FindFeature(rootAggregate);
+                builder.ControllerActions.Add(findFeature.RenderController());
+                builder.AppServiceMethods.Add(findFeature.RenderAppSrvMethod());
+
+                var singleView = new SingleView(rootAggregate, SingleView.E_Type.View);
+                context.AddPage(singleView);
 
                 // AggregateDetailクラス定義を作成する
                 foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
