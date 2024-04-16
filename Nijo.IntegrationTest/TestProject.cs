@@ -51,8 +51,16 @@ namespace Nijo.IntegrationTest {
 
                 // デバッグ用スクリプトの生成（ダブルクリックで自動テストプロジェクト起動できるようにするもの）
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                    var debugCommand = Path.Combine(dir, "DEBUG.cmd");
-                    File.WriteAllText(debugCommand, $$"""
+                    File.WriteAllText(Path.Combine(dir, "BUILD.cmd"), $$"""
+                        @echo off
+                        chcp 65001
+                        cd %~dp0
+                        dotnet build ..\Nijo
+                        ..\Nijo\bin\Debug\net8.0\nijo.exe update . --overwrite-overrided-application-service-file
+                        pause
+                        """, new UTF8Encoding(false, false));
+
+                    File.WriteAllText(Path.Combine(dir, "DEBUG.cmd"), $$"""
                         @echo off
                         chcp 65001
                         cd %~dp0
@@ -61,9 +69,15 @@ namespace Nijo.IntegrationTest {
                         pause
                         """, new UTF8Encoding(false, false));
                 }
+
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                    var debugCommand = Path.Combine(dir, "DEBUG.command");
-                    File.WriteAllText(debugCommand, $$"""
+                    File.WriteAllText(Path.Combine(dir, "BUILD.command"), $$"""
+                        cd `dirname $0`
+                        dotnet build ../Nijo
+                        ../Nijo/bin/Debug/net8.0/nijo update . --overwrite-overrided-application-service-file
+                        """.Replace("\r\n", "\n"), new UTF8Encoding(false, false));
+
+                    File.WriteAllText(Path.Combine(dir, "DEBUG.command"), $$"""
                         cd `dirname $0`
                         dotnet build ../Nijo
                         ../Nijo/bin/Debug/net8.0/nijo debug . --overwrite-overrided-application-service-file
