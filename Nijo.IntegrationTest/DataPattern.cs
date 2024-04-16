@@ -25,6 +25,7 @@ namespace Nijo.IntegrationTest {
         public const string FILENAME_015 = "015_ChildrenがDataTableで表示できない.xml";
         public const string FILENAME_100 = "100_RDRA.xml";
         public const string FILENAME_101 = "101_売上管理.xml";
+        public const string FILENAME_102 = "102_社内備品管理.xml";
         #endregion XMLファイル名
 
 

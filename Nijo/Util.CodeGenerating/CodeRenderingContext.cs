@@ -21,6 +21,7 @@ namespace Nijo.Util.CodeGenerating {
 
         public required Config Config { get; init; }
         public required AppSchema Schema { get; init; }
+        public required NijoCodeGenerator.CodeGenerateOptions Options { get; init; }
 
         public void EditWebApiDirectory(Action<DirectorySetupper> webapiDirHandler) => webapiDirHandler.Invoke(_webapiDir!);
         public void EditReactDirectory(Action<DirectorySetupper> reactDirHandler) => reactDirHandler.Invoke(_reactDir!);

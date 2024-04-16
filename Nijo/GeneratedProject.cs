@@ -161,20 +161,9 @@ namespace Nijo {
                 }
 
                 using (var _ = log?.BeginScope("自動生成されないコードの初期化")) {
-                    var appSrv = new ApplicationService();
-                    var overrideAppSrv = Path.Combine(tempProject.WebApiProjectRoot, appSrv.ConcreteClassFileName);
-                    File.WriteAllText(overrideAppSrv, $$"""
-                        namespace {{config.RootNamespace}} {
-                            /// <summary>
-                            /// 自動生成された検索機能や登録機能を上書きする場合はこのクラス内でそのメソッドやプロパティをoverrideしてください。
-                            /// </summary>
-                            public partial class {{appSrv.ConcreteClass}} : {{appSrv.ClassName}} {
-                                public {{appSrv.ConcreteClass}}(IServiceProvider serviceProvider) : base(serviceProvider) { }
-
-
-                            }
-                        }
-                        """);
+                    var overridedAppSrv = new ApplicationService();
+                    var overrideAppSrv = Path.Combine(tempProject.WebApiProjectRoot, overridedAppSrv.ConcreteClassFileName);
+                    File.WriteAllText(overrideAppSrv, overridedAppSrv.RenderConcreteClass(config));
                 }
 
                 using (var _ = log?.BeginScope("自動生成されるコードの初期化")) {

@@ -70,6 +70,13 @@ namespace Nijo.Parts {
                 foreach (var aggFile in _itemsByAggregate.Values) {
                     genDir.Generate(aggFile.Render(context));
                 }
+
+                // ユニットテスト用コード
+                if (context.Options.OverwriteConcreteAppSrvFile) {
+                    genDir.Directory("..", outOfGenDir => {
+                        outOfGenDir.Generate(new ApplicationService().RenderConcreteClass());
+                    });
+                }
             });
 
             context.EditReactDirectory(reactDir => {

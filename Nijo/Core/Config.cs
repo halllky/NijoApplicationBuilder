@@ -1,6 +1,8 @@
 using Nijo.Util.DotnetEx;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -14,6 +16,7 @@ namespace Nijo.Core {
         public string DbContextNamespace => RootNamespace;
         public required string DbContextName { get; init; }
 
+        public IEnumerable<string> OverridedApplicationServiceCodeForUnitTest { get; init; } = Enumerable.Empty<string>();
 
         internal const string XML_CONFIG_SECTION_NAME = "_Config";
 
@@ -24,6 +27,8 @@ namespace Nijo.Core {
         private const string NAMESPACE_DBCONTEXT = "DbContextNamespace";
 
         private const string DBCONTEXT_NAME = "DbContextName";
+
+        internal const string REPLACE_OVERRIDED_APPLICATION_SERVICE_CODE_FOR_UNIT_TEST = "ReplaceOverridedApplicationServiceCodeForUnitTest";
 
         public XElement ToXmlWithRoot() {
             var root = new XElement(ApplicationName);
@@ -58,9 +63,14 @@ namespace Nijo.Core {
             var configSection = xDocument.Root.Element(XML_CONFIG_SECTION_NAME);
             var ns = configSection?.Element(SECTION_NAMESPACES);
 
+            var overrridedCode = xDocument.Root
+                .Elements(REPLACE_OVERRIDED_APPLICATION_SERVICE_CODE_FOR_UNIT_TEST)
+                .Select(el => el.Value.Replace("\n", "\r\n"));
+
             return new Config {
                 ApplicationName = xDocument.Root.Name.LocalName,
                 DbContextName = configSection?.Element(DBCONTEXT_NAME)?.Value ?? "MyDbContext",
+                OverridedApplicationServiceCodeForUnitTest = overrridedCode,
             };
         }
     }
