@@ -72,13 +72,10 @@ namespace Nijo.Features.Storing {
                     created = afterUpdate;
                     errors = new List<string>();
 
-                    // {{_aggregate.Item.DisplayName}}の更新をトリガーとする処理を実行します。
-                    var updateEvent = new AggregateUpdateEvent<{{instanceClass}}> {
-                        Created = new[] { afterUpdate },
-                    };
-                    {{_aggregate.GetDependsOnMarkedReadModels().SelectTextTemplate(readModel => $$"""
-                    {{WithIndent(ReadModel.RenderUpdateCalling(readModel, "updateEvent"), "    ")}}
-                    """)}}
+                    // // {{_aggregate.Item.DisplayName}}の更新をトリガーとする処理を実行します。
+                    // var updateEvent = new AggregateUpdateEvent<{{instanceClass}}> {
+                    //     Created = new[] { afterUpdate },
+                    // };
 
                     return true;
                 }

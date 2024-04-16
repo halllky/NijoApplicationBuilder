@@ -16,12 +16,21 @@ namespace Nijo.Features.Storing {
     /// TODO: ソート
     /// </summary>
     internal class MultiViewEditable : IReactPage {
-        internal MultiViewEditable(GraphNode<Aggregate> aggregate) {
+
+        internal class Options {
+            internal bool ReadOnly { get; init; } = false;
+            internal string? Hooks { get; init; } = null;
+            internal string? PageTitleSide { get; init; } = null;
+        }
+
+        internal MultiViewEditable(GraphNode<Aggregate> aggregate, Options? options = null) {
             if (!aggregate.IsRoot()) throw new ArgumentException("Editable multi view requires root aggregate.");
             _aggregate = aggregate;
+            _options = options ?? new();
         }
 
         private readonly GraphNode<Aggregate> _aggregate;
+        private readonly Options _options;
 
         public string Url => $"/{_aggregate.Item.DisplayName.ToHashedString()}";
         string IReactPage.DirNameInPageDir => _aggregate.Item.DisplayName.ToFileNameSafe();
@@ -30,6 +39,7 @@ namespace Nijo.Features.Storing {
         string? IReactPage.LabelInMenu => _aggregate.Item.DisplayName;
 
         SourceFile IReactPage.GetSourceFile() {
+            var singleView = new SingleView(_aggregate, SingleView.E_Type.View);
             var editView = new SingleView(_aggregate, SingleView.E_Type.Edit);
             var createView = new SingleView(_aggregate, SingleView.E_Type.Create);
             var findMany = new FindManyFeature(_aggregate);
@@ -59,9 +69,13 @@ namespace Nijo.Features.Storing {
                 Cell = $$"""
                     cellProps => {
                       const row = cellProps.row.original.item
+                    {{If(_options.ReadOnly, () => $$"""
+                      const singleViewUrl = `{{singleView.GetUrlStringForReact(keys.Select(k => $"row.item.{k.Declared.GetFullPath().Join("?.")}"))}}`
+                    """).Else(() => $$"""
                       const singleViewUrl = row.state === '+'
                         ? `{{createView.GetUrlStringForReact(new[] { "row.itemKey" })}}`
                         : `{{editView.GetUrlStringForReact(keys.Select(k => $"row.item.{k.Declared.GetFullPath().Join("?.")}"))}}`
+                    """)}}
                       return (
                         <div className="flex items-center gap-1 pl-1">
                           <Link to={singleViewUrl} className="text-link">詳細</Link>
@@ -78,7 +92,7 @@ namespace Nijo.Features.Storing {
                 .SelectMany(agg => agg.GetMembers())
                 .OfType<AggregateMember.ValueMember>()
                 .Where(vm => !vm.Options.InvisibleInGui)
-                .Select((vm, ix) => DataTableColumn.FromMember(vm, "item.item", _aggregate, $"col{ix + 1}", false)));
+                .Select((vm, ix) => DataTableColumn.FromMember(vm, "item.item", _aggregate, $"col{ix + 1}", _options.ReadOnly)));
 
             return new SourceFile {
                 FileName = "list.tsx",
@@ -153,6 +167,9 @@ namespace Nijo.Features.Storing {
                         loadLocalItems().then(currentPageItems => reset({ currentPageItems }))
                       }, [ready, currentPage, loadLocalItems, reset])
 
+                      const dtRef = useRef<Layout.DataTableRef<GridRow>>(null)
+                    {{If(!_options.ReadOnly, () => $$"""
+
                       // データ編集
                       const handleAdd: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
                         const newItem = AggregateType.{{createEmptyObject}}()
@@ -163,7 +180,6 @@ namespace Nijo.Features.Storing {
                         update(index, await updateLocalRepositoryItem(row.itemKey, row.item))
                       }, [update, updateLocalRepositoryItem])
 
-                      const dtRef = useRef<Layout.DataTableRef<GridRow>>(null)
                       const handleRemove: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
                         if (!dtRef.current) return
                         const deletedRowIndex: number[] = []
@@ -174,7 +190,12 @@ namespace Nijo.Features.Storing {
                         }
                         remove(deletedRowIndex)
                       }, [update, remove, deleteLocalRepositoryItem])
+                    """)}}
 
+                    {{If(_options.Hooks != null, () => $$"""
+                      {{WithIndent(_options.Hooks!, "  ")}}
+
+                    """)}}
                       return (
                         <div className="page-content-root gap-4 pb-[50vh]">
 
@@ -186,8 +207,13 @@ namespace Nijo.Features.Storing {
                                 </h1>
                                 <Input.Button onClick={reloadRemoteItems}>再読み込み</Input.Button>
                                 <div className="basis-4"></div>
+                    {{If(!_options.ReadOnly, () => $$"""
                                 <Input.Button onClick={handleAdd}>追加</Input.Button>
                                 <Input.Button onClick={handleRemove}>削除</Input.Button>
+                    """)}}
+                    {{If(_options.PageTitleSide != null, () => $$"""
+                                {{WithIndent(_options.PageTitleSide!, "            ")}}
+                    """)}}
                               </div>
                               <VForm.Container leftColumnMinWidth="10rem">
                     {{groupedSearchConditions.SelectTextTemplate(group => $$"""
@@ -209,7 +235,9 @@ namespace Nijo.Features.Storing {
                                 ref={dtRef}
                                 data={fields}
                                 columns={COLUMN_DEFS}
+                    {{If(!_options.ReadOnly, () => $$"""
                                 onChangeRow={handleUpdateRow}
+                    """)}}
                                 className="h-full"
                               ></Layout.DataTable>
                             </form>

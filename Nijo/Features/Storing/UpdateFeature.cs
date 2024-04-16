@@ -88,13 +88,10 @@ namespace Nijo.Features.Storing {
                         return false;
                     }
 
-                    // {{_aggregate.Item.DisplayName}}の更新をトリガーとする処理を実行します。
-                    var updateEvent = new AggregateUpdateEvent<{{detail.ClassName}}> {
-                        Modified = new AggregateBeforeAfter<{{detail.ClassName}}>[] { new() { Before = beforeUpdate, After = afterUpdate } },
-                    };
-                    {{_aggregate.GetDependsOnMarkedReadModels().SelectTextTemplate(readModel => $$"""
-                    {{WithIndent(ReadModel.RenderUpdateCalling(readModel, "updateEvent"), "    ")}}
-                    """)}}
+                    // // {{_aggregate.Item.DisplayName}}の更新をトリガーとする処理を実行します。
+                    // var updateEvent = new AggregateUpdateEvent<{{detail.ClassName}}> {
+                    //     Modified = new AggregateBeforeAfter<{{detail.ClassName}}>[] { new() { Before = beforeUpdate, After = afterUpdate } },
+                    // };
 
                     updated = afterUpdate;
                     return true;
