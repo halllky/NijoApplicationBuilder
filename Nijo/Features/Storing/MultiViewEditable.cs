@@ -35,10 +35,16 @@ namespace Nijo.Features.Storing {
             var createView = new SingleView(_aggregate, SingleView.E_Type.Create);
             var findMany = new FindManyFeature(_aggregate);
             var rootLocalRepository = new LocalRepository(_aggregate);
-            var refLocalRepos = dataClass
+            var refRepositories = dataClass
                 .GetRefFromPropsRecursively()
                 .DistinctBy(x => x.Item1.MainAggregate)
-                .Select(x => new LocalRepository(x.Item1.MainAggregate))
+                .Select(p => new {
+                    Repos = new LocalRepository(p.Item1.MainAggregate),
+                    FindMany = new FindManyFeature(p.Item1.MainAggregate),
+                    Aggregate = p.Item1.MainAggregate,
+                    DataClassProp = p,
+                    ReversedEntry = p.Item1.MainAggregate.GetEntryReversing().As<Aggregate>(),
+                })
                 .ToArray();
             var keys = _aggregate.GetKeys().OfType<AggregateMember.ValueMember>().ToArray();
 
@@ -110,14 +116,30 @@ namespace Nijo.Features.Storing {
                         update: updateLocalRepositoryItem,
                         remove: deleteLocalRepositoryItem,
                       } = Util.{{rootLocalRepository.HookName}}(editRange)
-                    {{refLocalRepos.SelectTextTemplate(repos => $$"""
+                    {{refRepositories.SelectTextTemplate(x => $$"""
+                      const {{x.Aggregate.Item.ClassName}}filter: { filter: AggregateType.{{x.FindMany.TypeScriptConditionClass}} } = useMemo(() => {
+                        const f = AggregateType.{{x.FindMany.TypeScriptConditionInitializerFn}}()
+                    {{x.ReversedEntry.GetMembers().OfType<AggregateMember.ValueMember>().SelectTextTemplate((kv, i) => $$"""
+                    {{If(kv.TypeScriptTypename == "number"/* TODO: ここ多分 kv.Options.MemberType.SearchBehavior で分岐させるのが正解 */, () => $$"""
+                        if (f.{{kv.Declared.GetFullPath().Join("?.")}} !== undefined) {
+                          f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}} = filter.{{findMany.EnumerateSearchConditionMembers().Single(kv2 => kv2.Declared == kv.Declared).GetFullPath().Join("?.")}}?.{{FromTo.FROM}}
+                          f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}} = filter.{{findMany.EnumerateSearchConditionMembers().Single(kv2 => kv2.Declared == kv.Declared).GetFullPath().Join("?.")}}?.{{FromTo.FROM}}
+                        }
+                    """).Else(() => $$"""
+                        if (f.{{kv.Declared.GetFullPath().SkipLast(1).Join("?.")}} !== undefined)
+                          f.{{kv.Declared.GetFullPath().Join(".")}} = filter.{{findMany.EnumerateSearchConditionMembers().Single(kv2 => kv2.Declared == kv.Declared).GetFullPath().Join("?.")}}
+                    """)}}
+                    """)}}
+                        return { filter: f }
+                      }, [filter])
                       const {
-                        ready: {{repos.Aggregate.Item.ClassName}}IsReady,
-                        items: {{repos.Aggregate.Item.ClassName}}Items,
-                        add: addTo{{repos.Aggregate.Item.ClassName}}LocalRepository,
-                        update: update{{repos.Aggregate.Item.ClassName}}LocalRepositoryItem,
-                        remove: delete{{repos.Aggregate.Item.ClassName}}LocalRepositoryItem,
-                      } = Util.{{rootLocalRepository.HookName}}(editRange)
+                        ready: {{x.Aggregate.Item.ClassName}}IsReady,
+                        items: {{x.Aggregate.Item.ClassName}}Items,
+                        add: addTo{{x.Aggregate.Item.ClassName}}LocalRepository,
+                        update: update{{x.Aggregate.Item.ClassName}}LocalRepositoryItem,
+                        remove: delete{{x.Aggregate.Item.ClassName}}LocalRepositoryItem,
+                      } = Util.{{x.Repos.HookName}}({{x.Aggregate.Item.ClassName}}filter)
+
                     """)}}
 
                       const reactHookFormMethods = Util.useFormEx<{ currentPageItems: GridRow[] }>({})
@@ -125,13 +147,13 @@ namespace Nijo.Features.Storing {
                       const { fields, append, update, remove } = useFieldArray({ name: 'currentPageItems', control })
 
                       useEffect(() => {
-                        if (ready{{refLocalRepos.Select(r => $" && {r.Aggregate.Item.ClassName}IsReady").Join("")}}) {
+                        if (ready{{refRepositories.Select(r => $" && {r.Aggregate.Item.ClassName}IsReady").Join("")}}) {
                           const currentPageItems: AggregateType.{{dataClass.TsTypeName}}[] = {{_aggregate.Item.ClassName}}Items.map(item => {
-                            return AggregateType.{{dataClass.ConvertFnNameToDisplayDataType}}(item{{refLocalRepos.Select(r => $", {r.Aggregate.Item.ClassName}Items").Join("")}})
+                            return AggregateType.{{dataClass.ConvertFnNameToDisplayDataType}}(item{{refRepositories.Select(r => $", {r.Aggregate.Item.ClassName}Items").Join("")}})
                           })
                           reset({ currentPageItems })
                         }
-                      }, [ready, {{_aggregate.Item.ClassName}}Items{{refLocalRepos.Select(r => $", {r.Aggregate.Item.ClassName}IsReady, {r.Aggregate.Item.ClassName}Items").Join("")}}])
+                      }, [ready, {{_aggregate.Item.ClassName}}Items{{refRepositories.Select(r => $", {r.Aggregate.Item.ClassName}IsReady, {r.Aggregate.Item.ClassName}Items").Join("")}}])
 
                       const handleReload = useCallback(() => {
                         setFilter(getConditionValues())
@@ -163,7 +185,7 @@ namespace Nijo.Features.Storing {
                     """)}}
 
                         update(index, row)
-                      }, [update, updateLocalRepositoryItem{{string.Concat(refLocalRepos.Select(r => $", update{r.Aggregate.Item.ClassName}LocalRepositoryItem"))}}])
+                      }, [update, updateLocalRepositoryItem{{string.Concat(refRepositories.Select(r => $", update{r.Aggregate.Item.ClassName}LocalRepositoryItem"))}}])
 
                       const dtRef = useRef<Layout.DataTableRef<GridRow>>(null)
                       const handleRemove: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {

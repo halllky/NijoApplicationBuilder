@@ -1,3 +1,4 @@
+using Nijo.Core;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -151,6 +152,11 @@ namespace Nijo.Util.DotnetEx {
         private ICollection<GraphEdge>? _in;
 
         /// <summary>
+        /// この頂点に接続する辺の一覧
+        /// </summary>
+        public IEnumerable<GraphEdge> Edges => Out.Concat(In);
+
+        /// <summary>
         /// この頂点から出て行く辺の一覧
         /// </summary>
         public IEnumerable<GraphEdge> Out {
@@ -203,6 +209,21 @@ namespace Nijo.Util.DotnetEx {
 
         public GraphNode GetEntry() {
             return PathFromEntry().FirstOrDefault()?.Source ?? this;
+        }
+
+        /// <summary>
+        /// 辿ってきた経路を逆順で保持した状態のEntryを返します。
+        /// </summary>
+        internal GraphNode GetEntryReversing() {
+            var node = AsEntry();
+            foreach (var edgeBeforeReverse in PathFromEntry().Reverse()) {
+                var edgeAfterReverse = node.Edges.Single(e => e == edgeBeforeReverse);
+
+                node = edgeAfterReverse.Initial == node
+                    ? edgeAfterReverse.Terminal
+                    : edgeAfterReverse.Initial;
+            }
+            return node;
         }
 
         public GraphNode AsEntry() {
