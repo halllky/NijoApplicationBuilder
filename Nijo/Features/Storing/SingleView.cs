@@ -129,47 +129,6 @@ namespace Nijo.Features.Storing {
                     .Select(vm => vm.Declared.GetFullPath().Join("?."))
                     .ToArray();
 
-                var maxIndent = _aggregate
-                    .EnumerateDescendants()
-                    .Select(a => a.EnumerateAncestors().Count())
-                    .DefaultIfEmpty()
-                    .Max();
-
-                // -----------------------------------------
-                // 左列の横幅の計算
-                const decimal INDENT_WIDTH = 1.5m;
-                var headersWidthRem = _aggregate
-                    .EnumerateThisAndDescendants()
-                    .SelectMany(
-                        a => new TransactionScopeDataClass(a)
-                            .GetOwnMembers()
-                            .Where(m => {
-                                // 同じ行に値を表示せず、名前が長くても行の横幅いっぱい占有できるため、除外
-                                if (m is AggregateMember.Child) return false;
-                                if (m is AggregateMember.Children) return false;
-                                if (m is AggregateMember.Variation) return false;
-
-                                // 画面上にメンバー名が表示されないため除外
-                                if (m is AggregateMember.VariationItem) return false;
-                                if (m is AggregateMember.ValueMember vm && vm.Options.InvisibleInGui) return false;
-
-                                return true;
-                            }),
-                        (a, m) => new {
-                            m.MemberName,
-                            IndentWidth = a.EnumerateAncestors().Count() * INDENT_WIDTH, // インデント1個の幅をだいたい1.5remとして計算
-                            NameWidthRem = m.MemberName.CalculateCharacterWidth() / 2 * 1.2m, // tailwindの1.2remがだいたい全角文字1文字分
-                        });
-                // インデント込みで最も横幅が長いメンバーの横幅を計算
-                var longestHeaderWidthRem = headersWidthRem
-                    .Select(x => Math.Ceiling((x.IndentWidth + x.NameWidthRem) * 10m) / 10m)
-                    .DefaultIfEmpty()
-                    .Max();
-                // - longestHeaderWidthRemにはインデントの横幅も含まれているのでインデントの横幅を引く
-                // - ヘッダ列の横幅にちょっと余裕をもたせるために+8
-                var indentWidth = maxIndent * INDENT_WIDTH;
-                var headerWidth = Math.Max(indentWidth, longestHeaderWidthRem - indentWidth) + 8m;
-
                 // -----------------------------------------
                 // 集約コンポーネントの宣言
                 var rootAggregateList = new List<GraphNode<Aggregate>> { _aggregate };
@@ -179,7 +138,7 @@ namespace Nijo.Features.Storing {
 
                 var aggregateComponents = new List<AggregateComponent>();
                 aggregateComponents.AddRange(rootAggregateList
-                    .Select(agg => new AggregateComponent(agg, _type)));
+                    .Select(agg => new AggregateComponent(agg, _type, agg != _aggregate)));
                 aggregateComponents.AddRange(rootAggregateList
                     .SelectMany(agg => agg.EnumerateThisAndDescendants())
                     .SelectMany(desc => desc.GetMembers())
@@ -437,9 +396,7 @@ namespace Nijo.Features.Storing {
                               <div className="flex-1"></div>
                             </h1>
 
-                            <VForm.Container leftColumnMinWidth="{{headerWidth}}rem">
-                              {{new AggregateComponent(_aggregate, _type).RenderCaller()}}
-                            </VForm.Container>
+                            {{new AggregateComponent(_aggregate, _type, false).RenderCaller()}}
 
                     {{If(_type != E_Type.View && _aggregate.Item.Options.DisableLocalRepository != true, () => $$"""
                             <Input.IconButton fill className="self-start" icon={BookmarkSquareIcon}>一時保存</Input.IconButton>

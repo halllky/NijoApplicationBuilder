@@ -12,22 +12,26 @@ using Nijo.Parts.WebClient;
 namespace Nijo.Features.Storing {
 
     internal class AggregateComponent {
-        internal AggregateComponent(GraphNode<Aggregate> aggregate, SingleView.E_Type type) {
+        internal AggregateComponent(GraphNode<Aggregate> aggregate, SingleView.E_Type type, bool asSingleRefKeyAggregate) {
             if (!aggregate.IsRoot()) throw new ArgumentException("ルート集約でない場合はもう片方のコンストラクタを使用");
 
             _aggregate = aggregate;
             _relationToParent = null;
             _mode = type;
+            _asSingleRefKeyAggregate = asSingleRefKeyAggregate;
         }
         internal AggregateComponent(AggregateMember.RelationMember relationMember, SingleView.E_Type type) {
             _aggregate = relationMember.MemberAggregate;
             _relationToParent = relationMember;
             _mode = type;
+            _asSingleRefKeyAggregate = false;
         }
 
         private readonly GraphNode<Aggregate> _aggregate;
         private readonly AggregateMember.RelationMember? _relationToParent;
         private readonly SingleView.E_Type _mode;
+        /// <summary>参照先の集約のSingleViewの下部に表示される集約かどうか</summary>
+        private readonly bool _asSingleRefKeyAggregate;
 
         internal string RenderCaller() {
             var componentName = GetComponentName();
@@ -51,11 +55,14 @@ namespace Nijo.Features.Storing {
             // この集約を参照する隣接集約 ※DataTableの列定義は当該箇所で定義している
             var relevantAggregatesCalling = _aggregate
                 .GetReferedEdgesAsSingleKey()
-                .SelectTextTemplate(edge =>  $$"""
-                    <VForm.Container label="{{edge.Initial.Item.DisplayName}}">
-                      {{WithIndent(new AggregateComponent(edge.Initial, _mode).RenderCaller(), "  ")}}
-                    </VForm.Container>
-                    """);
+                .SelectTextTemplate(edge => new AggregateComponent(edge.Initial, _mode, true).RenderCaller());
+
+            var label = _asSingleRefKeyAggregate
+                ? $" label=\"{_aggregate.Item.DisplayName}\""
+                : string.Empty;
+            var paddingTop = _asSingleRefKeyAggregate
+                ? $" className=\"pt-4\""
+                : string.Empty;
 
             if (_relationToParent == null) {
                 // ルート集約のレンダリング
@@ -70,7 +77,9 @@ namespace Nijo.Features.Storing {
 
                       return (
                         <>
-                          {{WithIndent(RenderMembers(), "      ")}}
+                          <VForm.Container leftColumnMinWidth="{{GetLeftColumnWidth()}}"{{label}}{{paddingTop}}>
+                            {{WithIndent(RenderMembers(), "        ")}}
+                          </VForm.Container>
                           {{WithIndent(relevantAggregatesCalling, "      ")}}
                         </>
                       )
@@ -534,6 +543,53 @@ namespace Nijo.Features.Storing {
             }
 
             return "";
+        }
+
+        /// <summary>
+        /// 左列の横幅
+        /// </summary>
+        private string GetLeftColumnWidth() {
+            const decimal INDENT_WIDTH = 1.5m;
+
+            var maxIndent = _aggregate
+                .EnumerateDescendants()
+                .Select(a => a.EnumerateAncestors().Count())
+                .DefaultIfEmpty()
+                .Max();
+
+            var headersWidthRem = _aggregate
+                .EnumerateThisAndDescendants()
+                .SelectMany(
+                    a => new TransactionScopeDataClass(a)
+                        .GetOwnMembers()
+                        .Where(m => {
+                            // 同じ行に値を表示せず、名前が長くても行の横幅いっぱい占有できるため、除外
+                            if (m is AggregateMember.Child) return false;
+                            if (m is AggregateMember.Children) return false;
+                            if (m is AggregateMember.Variation) return false;
+
+                            // 画面上にメンバー名が表示されないため除外
+                            if (m is AggregateMember.VariationItem) return false;
+                            if (m is AggregateMember.ValueMember vm && vm.Options.InvisibleInGui) return false;
+
+                            return true;
+                        }),
+                    (a, m) => new {
+                        m.MemberName,
+                        IndentWidth = a.EnumerateAncestors().Count() * INDENT_WIDTH, // インデント1個の幅をだいたい1.5remとして計算
+                        NameWidthRem = m.MemberName.CalculateCharacterWidth() / 2 * 1.2m, // tailwindの1.2remがだいたい全角文字1文字分
+                    });
+            // インデント込みで最も横幅が長いメンバーの横幅を計算
+            var longestHeaderWidthRem = headersWidthRem
+                .Select(x => Math.Ceiling((x.IndentWidth + x.NameWidthRem) * 10m) / 10m)
+                .DefaultIfEmpty()
+                .Max();
+            // - longestHeaderWidthRemにはインデントの横幅も含まれているのでインデントの横幅を引く
+            // - ヘッダ列の横幅にちょっと余裕をもたせるために+8
+            var indentWidth = maxIndent * INDENT_WIDTH;
+            var headerWidth = Math.Max(indentWidth, longestHeaderWidthRem - indentWidth) + 8m;
+
+            return $"{headerWidth}rem";
         }
         #endregion 部品
     }
