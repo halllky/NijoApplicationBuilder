@@ -219,6 +219,7 @@ namespace Nijo.Features.Storing {
                     }),
                 });
                 var item = dc.MainAggregate.IsRoot() ? $"{instance}.item" : instance;
+                var depth = dc.MainAggregate.EnumerateAncestors().Count();
 
                 return $$"""
                     {
@@ -235,7 +236,7 @@ namespace Nijo.Features.Storing {
                     """)}}
                       },
                     {{dc.GetChildProps().SelectTextTemplate(p => p.IsArray ? $$"""
-                      {{p.PropName}}: {{item}}?.{{p.MemberInfo?.MemberName}}?.map(x => ({{WithIndent(Render(p, "x", true), "  ")}})),
+                      {{p.PropName}}: {{item}}?.{{p.MemberInfo?.MemberName}}?.map(x{{depth}} => ({{WithIndent(Render(p, $"x{depth}", true), "  ")}})),
                     """ : $$"""
                       {{p.PropName}}: {{WithIndent(Render(p, $"{item}?.{p.MemberInfo?.MemberName}", false), "  ")}},
                     """)}}
