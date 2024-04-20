@@ -203,7 +203,7 @@ namespace Nijo.Features.Storing {
                     export default function () {
                       const { {{urlKeysWithMember.Select((_, i) => $"key{i}").Join(", ")}} } = useParams()
                       const pkArray: [{{keyArray.Select(k => $"{k.TsType} | undefined").Join(", ")}}] = useMemo(() => {
-                    {{urlKeysWithMember.SelectTextTemplate((x, i) => x.Key.TypeScriptTypename == "number" ? $$"""
+                    {{urlKeysWithMember.SelectTextTemplate((x, i) => x.Key.Options.MemberType.SearchBehavior == SearchBehavior.Range ? $$"""
                         const numKey{{i}} = Number(key{{i}})
                         const {{x.Value}} = isNaN(numKey{{i}}) ? undefined : numKey{{i}}
                     """ : $$"""
@@ -222,7 +222,7 @@ namespace Nijo.Features.Storing {
                       const {{x.Aggregate.Item.ClassName}}filter: { filter: AggregateType.{{x.FindMany.TypeScriptConditionClass}} } = useMemo(() => {
                         const filter = AggregateType.{{x.FindMany.TypeScriptConditionInitializerFn}}()
                     {{x.Aggregate.AsEntry().GetKeys().OfType<AggregateMember.ValueMember>().Where(vm => urlKeysWithMember.ContainsKey(vm.Declared)).SelectTextTemplate((kv, i) => $$"""
-                    {{If(kv.TypeScriptTypename == "number", () => $$"""
+                    {{If(kv.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
                         if (filter.{{kv.Declared.GetFullPath().Join("?.")}} !== undefined)
                           filter.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}} = filter.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}} = pkArray[{{i}}]
                     """).Else(() => $$"""

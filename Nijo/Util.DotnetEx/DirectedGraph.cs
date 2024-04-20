@@ -284,7 +284,11 @@ namespace Nijo.Util.DotnetEx {
             return new GraphEdge<T>(_info, _graph, Source);
         }
 
-        public override string ToString() => $"{_info.Initial} == {_info.RelationName} ==> {_info.Terminal}";
+        public override string ToString() {
+            return Source == Initial
+                ? $"{_info.Initial} == {_info.RelationName} ==> {_info.Terminal}"
+                : $"{_info.Terminal} <== {_info.RelationName} == {_info.Initial}";
+        }
 
         protected override IEnumerable<object?> ValueObjectIdentifiers() {
             yield return _info;
@@ -318,6 +322,32 @@ namespace Nijo.Util.DotnetEx {
             _edges = edges;
         }
         private readonly IReadOnlyList<GraphEdge> _edges;
+
+        /// <summary>
+        /// このパスの先頭が引数のパスから始まるかどうかを返します。
+        /// </summary>
+        public bool StartsWith(IEnumerable<GraphEdge> path) {
+            var arr = path.ToArray();
+            for (int i = 0; i < arr.Length; i++) {
+                var argEdge = arr[i];
+                var thisEdge = this.ElementAtOrDefault(i);
+                if (argEdge != thisEdge) return false;
+            }
+            return true;
+        }
+        /// <summary>
+        /// このパスの末尾が引数のパスで終わるかどうかを返します。
+        /// </summary>
+        public bool EndsWith(IEnumerable<GraphEdge> path) {
+            var arr = path.Reverse().ToArray();
+            var thisArr = this.Reverse().ToArray();
+            for (int i = 0; i < arr.Length; i++) {
+                var argEdge = arr[i];
+                var thisEdge = thisArr.ElementAtOrDefault(i);
+                if (argEdge != thisEdge) return false;
+            }
+            return true;
+        }
 
         /// <summary>
         /// 指定のノード以降の区間のみを切り出す

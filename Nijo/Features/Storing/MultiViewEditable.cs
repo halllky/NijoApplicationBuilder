@@ -43,7 +43,19 @@ namespace Nijo.Features.Storing {
                     FindMany = new FindManyFeature(p.Item1.MainAggregate),
                     Aggregate = p.Item1.MainAggregate,
                     DataClassProp = p,
-                    ReversedEntry = p.Item1.MainAggregate.GetEntryReversing().As<Aggregate>(),
+
+                    // この画面のメイン集約を参照する関連集約をまとめて読み込むため、
+                    // 画面上部の検索条件の値で関連集約のAPIへの検索をかけたい。
+                    // そのために使用される画面上部の検索条件のうち関連集約の検索に関係するメンバーの一覧
+                    RootAggregateMembersForLoad = p.Item1.MainAggregate
+                        .GetEntryReversing()
+                        .As<Aggregate>()
+                        .GetMembers()
+                        .OfType<AggregateMember.ValueMember>()
+                        // TODO: 検索条件クラスではVariationはbool型で生成されるが
+                        // FindManyFeatureでそれも考慮してメンバーを列挙してくれるメソッドがないので
+                        // 暫定的に除外する（修正後は 011_ダブル.xml で確認可能）
+                        .Where(vm => vm is not AggregateMember.Variation),
                 })
                 .ToArray();
             var keys = _aggregate.GetKeys().OfType<AggregateMember.ValueMember>().ToArray();
@@ -76,6 +88,17 @@ namespace Nijo.Features.Storing {
                     """,
             };
             var gridColumns = new[] { rowHeader }.Concat(DataTableColumn.FromMembers("item", _aggregate, false));
+
+            // この画面のメイン集約を参照する関連集約をまとめて読み込むため、画面上部の検索条件の値で関連集約のAPIへの検索をかけたい。
+            // そのために画面上部の検索条件の項目が関連集約のどの項目と対応するかを調べて返すための関数
+            AggregateMember.ValueMember FindRootAggregateSearchConditionMember(AggregateMember.ValueMember refSearchConditionMember) {
+                var refPath = refSearchConditionMember.DeclaringAggregate.PathFromEntry();
+                return findMany
+                    .EnumerateSearchConditionMembers()
+                    .Single(kv2 => kv2.Declared == refSearchConditionMember.Declared
+                                // ある集約から別の集約へ複数経路の参照がある場合は対応するメンバーが複数とれてしまうのでパスの後方一致でも絞り込む
+                                && refPath.EndsWith(kv2.Owner.PathFromEntry()));
+            }
 
             return new SourceFile {
                 FileName = "list.tsx",
@@ -119,15 +142,15 @@ namespace Nijo.Features.Storing {
                     {{refRepositories.SelectTextTemplate(x => $$"""
                       const {{x.Aggregate.Item.ClassName}}filter: { filter: AggregateType.{{x.FindMany.TypeScriptConditionClass}} } = useMemo(() => {
                         const f = AggregateType.{{x.FindMany.TypeScriptConditionInitializerFn}}()
-                    {{x.ReversedEntry.GetMembers().OfType<AggregateMember.ValueMember>().SelectTextTemplate((kv, i) => $$"""
-                    {{If(kv.TypeScriptTypename == "number"/* TODO: ここ多分 kv.Options.MemberType.SearchBehavior で分岐させるのが正解 */, () => $$"""
+                    {{x.RootAggregateMembersForLoad.SelectTextTemplate((kv, i) => $$"""
+                    {{If(kv.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
                         if (f.{{kv.Declared.GetFullPath().Join("?.")}} !== undefined) {
-                          f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}} = filter.{{findMany.EnumerateSearchConditionMembers().Single(kv2 => kv2.Declared == kv.Declared).GetFullPath().Join("?.")}}?.{{FromTo.FROM}}
-                          f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}} = filter.{{findMany.EnumerateSearchConditionMembers().Single(kv2 => kv2.Declared == kv.Declared).GetFullPath().Join("?.")}}?.{{FromTo.FROM}}
+                          f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}} = filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}?.{{FromTo.FROM}}
+                          f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}} = filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}?.{{FromTo.TO}}
                         }
                     """).Else(() => $$"""
                         if (f.{{kv.Declared.GetFullPath().SkipLast(1).Join("?.")}} !== undefined)
-                          f.{{kv.Declared.GetFullPath().Join(".")}} = filter.{{findMany.EnumerateSearchConditionMembers().Single(kv2 => kv2.Declared == kv.Declared).GetFullPath().Join("?.")}}
+                          f.{{kv.Declared.GetFullPath().Join(".")}} = filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}
                     """)}}
                     """)}}
                         return { filter: f }
