@@ -130,6 +130,9 @@ namespace Nijo.Features.Storing {
                     .ToArray();
 
                 // -----------------------------------------
+                // AggregateComponentへバケツリレーする変数のためのコンテキスト
+
+                // -----------------------------------------
                 // 集約コンポーネントの宣言
                 var rootAggregateList = new List<GraphNode<Aggregate>> { _aggregate };
                 rootAggregateList.AddRange(_aggregate

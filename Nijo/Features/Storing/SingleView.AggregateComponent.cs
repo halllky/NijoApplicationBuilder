@@ -44,6 +44,7 @@ namespace Nijo.Features.Storing {
 
         internal string RenderDeclaration() {
             var dataClass = new DisplayDataClass(_aggregate);
+            var localRepos = new LocalRepository(_aggregate);
             var componentName = GetComponentName();
             var args = GetArguments().ToArray();
 
@@ -57,15 +58,8 @@ namespace Nijo.Features.Storing {
                 .GetReferedEdgesAsSingleKey()
                 .SelectTextTemplate(edge => new AggregateComponent(edge.Initial, _mode, true).RenderCaller());
 
-            var label = _asSingleRefKeyAggregate
-                ? $" label=\"{_aggregate.Item.DisplayName}\""
-                : string.Empty;
-            var paddingTop = _asSingleRefKeyAggregate
-                ? $" className=\"pt-4\""
-                : string.Empty;
-
-            if (_relationToParent == null) {
-                // ルート集約のレンダリング
+            if (_relationToParent == null && !_asSingleRefKeyAggregate) {
+                // ルート集約のレンダリング（画面の中の主集約）
                 return $$"""
                     const {{componentName}} = ({{{args.Join(", ")}} }: {
                     {{args.SelectTextTemplate(arg => $$"""
@@ -77,8 +71,52 @@ namespace Nijo.Features.Storing {
 
                       return (
                         <>
-                          <VForm.Container leftColumnMinWidth="{{GetLeftColumnWidth()}}"{{label}}{{paddingTop}}>
+                          <VForm.Container leftColumnMinWidth="{{GetLeftColumnWidth()}}">
                             {{WithIndent(RenderMembers(), "        ")}}
+                          </VForm.Container>
+                          {{WithIndent(relevantAggregatesCalling, "      ")}}
+                        </>
+                      )
+                    }
+                    """;
+
+            } else if (_relationToParent == null && _asSingleRefKeyAggregate) {
+                // ルート集約のレンダリング（画面の中の主集約を参照する別のルート集約）
+                return $$"""
+                    const {{componentName}} = ({{{args.Join(", ")}} }: {
+                    {{args.SelectTextTemplate(arg => $$"""
+                      {{arg}}: number
+                    """)}}
+                    }) => {
+                      const { register, registerEx, watch, getValues, setValue } = Util.useFormContextEx<{{useFormType}}>()
+                      const item = getValues({{registerName}})
+
+                      const handleCreate = useCallback(() => {
+                        const added = addTo{{_aggregate.Item.ClassName}}Repository({{dataClass.RenderNewObjectLiteral("UUID.generate() as Util.ItemKey")}})
+                        setValue({{registerName}}, added)
+                      }, [setValue])
+                      const handleDelete = useCallback(() => {
+                        const deleted = remove{{_aggregate.Item.ClassName}}RepositoryItem(getValues())
+                        setValue({{registerName}}, deleted)
+                      }, [setValue, getValues])
+
+                      return (
+                        <>
+                          <VForm.Container
+                            leftColumnMinWidth="{{GetLeftColumnWidth()}}"
+                            label="{{_aggregate.Item.DisplayName}}"
+                            labelSide={<Input.Button icon={XMarkIcon} onClick={handleDelete}>削除</Input.Button>}
+                            className="pt-4"
+                          >
+                            {watch({{registerName}})?.{{DisplayDataClass.EXISTS}} ? (
+                              <>
+                                {{WithIndent(RenderMembers(), "            ")}}
+                              </>
+                            ) : (
+                              <VForm.Item wide>
+                                <Input.Button icon={PlusIcon} onClick={handleCreate}>作成</Input.Button>
+                              </VForm.Item>
+                            )}
                           </VForm.Container>
                           {{WithIndent(relevantAggregatesCalling, "      ")}}
                         </>

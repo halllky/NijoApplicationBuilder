@@ -21,9 +21,13 @@ namespace Nijo.Features.Storing {
         internal GraphNode<Aggregate> MainAggregate { get; }
 
         internal string TsTypeName => $"{MainAggregate.Item.TypeScriptTypeName}DisplayData";
-        internal string TsInitFunctionName => $"create{TsTypeName}";
 
         internal const string OWN_MEMBERS = "own_members";
+        /// <summary>
+        /// 存在しないインスタンス（react-hook-formが作成したインスタンス）ならfalse or undefined,
+        /// 存在するインスタンス（ユーザーが作成したインスタンス）ならtrue
+        /// </summary>
+        internal const string EXISTS = "__exists";
         internal const string LOCAL_REPOS_ITEMKEY = "localRepositoryItemKey";
         internal const string LOCAL_REPOS_STATE = "localRepositoryState";
 
@@ -96,6 +100,7 @@ namespace Nijo.Features.Storing {
                 {{If(MainAggregate.IsRoot(), () => $$"""
                   {{LOCAL_REPOS_ITEMKEY}}: {{itemKey}},
                   {{LOCAL_REPOS_STATE}}: '+',
+                  {{EXISTS}}: true,
                 """)}}
                   {{OWN_MEMBERS}}: {
                 {{MainAggregate.GetMembers().OfType<AggregateMember.Schalar>().Where(m => m.DeclaringAggregate == MainAggregate && m.Options.MemberType is Uuid).SelectTextTemplate(m => $$"""
@@ -226,6 +231,7 @@ namespace Nijo.Features.Storing {
                     {{If(dc.MainAggregate.IsRoot(), () => $$"""
                       {{LOCAL_REPOS_ITEMKEY}}: {{instance}}.itemKey,
                       {{LOCAL_REPOS_STATE}}: {{instance}}.state,
+                      {{EXISTS}}: true,
                     """)}}
                       {{OWN_MEMBERS}}: {
                     {{ownMembers.SelectTextTemplate(m => $$"""
@@ -278,6 +284,7 @@ namespace Nijo.Features.Storing {
                     {{If(agg.IsRoot(), () => $$"""
                       {{LOCAL_REPOS_ITEMKEY}}: Util.ItemKey
                       {{LOCAL_REPOS_STATE}}: Util.LocalRepositoryState
+                      {{EXISTS}}?: true
                     """)}}
                       {{OWN_MEMBERS}}: {
                     {{dataClass.GetOwnProps().SelectTextTemplate(p => $$"""
