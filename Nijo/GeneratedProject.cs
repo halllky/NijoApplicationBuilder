@@ -17,6 +17,7 @@ using System.Xml.Linq;
 using Microsoft.Build.Evaluation;
 using Nijo.Parts.WebServer;
 using Microsoft.Extensions.DependencyInjection;
+using Nijo.Util.CodeGenerating;
 
 namespace Nijo {
     public sealed partial class GeneratedProject {
@@ -163,7 +164,10 @@ namespace Nijo {
                 using (var _ = log?.BeginScope("自動生成されないコードの初期化")) {
                     var overridedAppSrv = new ApplicationService();
                     var overrideAppSrv = Path.Combine(tempProject.WebApiProjectRoot, overridedAppSrv.ConcreteClassFileName);
-                    File.WriteAllText(overrideAppSrv, overridedAppSrv.RenderConcreteClass(config));
+                    File.WriteAllText(overrideAppSrv, overridedAppSrv
+                        .RenderConcreteClass(config)
+                        /// TODO: <see cref="Util.CodeGenerating.DirectorySetupper.Generate(SourceFile)"/> を使用していないのでわざわざ置換する必要がある
+                        .Replace(SKIP_MARKER, string.Empty));
                 }
 
                 using (var _ = log?.BeginScope("自動生成されるコードの初期化")) {
