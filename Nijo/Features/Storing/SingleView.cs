@@ -70,6 +70,8 @@ namespace Nijo.Features.Storing {
             _ => throw new NotImplementedException(),
         };
 
+        internal const string PAGE_CONTEXT = "SingleViewPageContext";
+
         internal string GetUrlStringForReact(IEnumerable<string>? keyVariables = null) {
             return GetUrlStringForReact(_type, keyVariables);
         }
@@ -153,7 +155,7 @@ namespace Nijo.Features.Storing {
                     .Select(member => new AggregateComponent(member, _type)));
 
                 return $$"""
-                    import React, { useState, useEffect, useCallback, useMemo, useReducer, useRef, useId } from 'react';
+                    import React, { useState, useEffect, useCallback, useMemo, useReducer, useRef, useId, useContext, createContext } from 'react';
                     import { Link, useParams, useNavigate } from 'react-router-dom';
                     import { SubmitHandler, useForm, FormProvider, useFormContext, useFieldArray } from 'react-hook-form';
                     import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
@@ -416,6 +418,21 @@ namespace Nijo.Features.Storing {
                     }
 
                     {{aggregateComponents.SelectTextTemplate(component => component.RenderDeclaration())}}
+
+                    type SingleViewPageContextValue = {
+                    {{refRepositories.SelectTextTemplate(x => $$"""
+                      addTo{{x.Aggregate.Item.ClassName}}Repository: ReturnType<typeof Util.{{x.Repos.HookName}}>['add']
+                      update{{x.Aggregate.Item.ClassName}}RepositoryItem: ReturnType<typeof Util.{{x.Repos.HookName}}>['update']
+                      remove{{x.Aggregate.Item.ClassName}}RepositoryItem: ReturnType<typeof Util.{{x.Repos.HookName}}>['remove']
+                    """)}}
+                    }
+                    const {{PAGE_CONTEXT}} = createContext<SingleViewPageContextValue>({
+                    {{refRepositories.SelectTextTemplate(x => $$"""
+                      addTo{{x.Aggregate.Item.ClassName}}Repository: () => { throw new Error('ページ初期化前に更新を実行できません。') },
+                      update{{x.Aggregate.Item.ClassName}}RepositoryItem: () => { throw new Error('ページ初期化前に更新を実行できません。') },
+                      remove{{x.Aggregate.Item.ClassName}}RepositoryItem: () => { throw new Error('ページ初期化前に更新を実行できません。') },
+                    """)}}
+                    })
                     """;
             },
         };

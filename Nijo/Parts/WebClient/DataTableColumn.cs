@@ -16,37 +16,10 @@ namespace Nijo.Parts.WebClient {
             GraphNode<Aggregate> dataTableOwner,
             bool readOnly) {
 
-            // ソース中にラムダ式が登場するのでエントリー化
-            var asEntry = dataTableOwner.AsEntry();
+            var colIndex = 0;
 
-            // グリッドに表示するメンバーを列挙
-            var columnMembers = new List<AggregateMember.AggregateMemberBase>();
-            void Collect(GraphNode<Aggregate> agg) {
-                foreach (var member in agg.GetMembers()) {
-                    if (member is AggregateMember.ValueMember vm) {
-                        if (vm.DeclaringAggregate != agg) continue;
-                        if (vm.Options.InvisibleInGui) continue;
-                        columnMembers.Add(member);
-
-                    } else if (member is AggregateMember.Ref @ref) {
-                        if (@ref.MemberAggregate.IsSingleRefKeyOf(@ref.Owner)) continue;
-                        columnMembers.Add(member);
-                    }
-                }
-
-                // ChildrenやVariationのメンバーを列挙していないのはグリッド上で表現できないため
-                foreach (var child in agg.GetMembers().OfType<AggregateMember.Child>()) {
-                    Collect(child.MemberAggregate);
-                }
-                foreach (var refFrom in agg.GetReferedEdgesAsSingleKey()) {
-                    Collect(refFrom.Initial);
-                }
-            }
-            Collect(asEntry);
-
-            for (int i = 0; i < columnMembers.Count; i++) {
-                var member = columnMembers[i];
-
+            // AggregateMemberを列定義に変換する関数
+            DataTableColumn ToDataTableColumn(AggregateMember.AggregateMemberBase member) {
                 var vm = member as AggregateMember.ValueMember;
                 var refMember = member as AggregateMember.Ref;
 
@@ -71,25 +44,25 @@ namespace Nijo.Parts.WebClient {
                         .OfType<AggregateMember.ValueMember>()
                         .Select(name => name.Declared.GetFullPath().ToList());
                     formatted = $$"""
-                    let formatted = ''
-                    {{names.SelectTextTemplate(name => $$"""
-                    if (value?.{{name.Join("?.")}} != null) formatted += String(value.{{name.Join(".")}})
-                    """)}}
-                    """;
+                        let formatted = ''
+                        {{names.SelectTextTemplate(name => $$"""
+                        if (value?.{{name.Join("?.")}} != null) formatted += String(value.{{name.Join(".")}})
+                        """)}}
+                        """;
                 }
 
                 var cell = $$"""
-                cellProps => {
-                  const value = cellProps.row.original.{{rowAccessor}}.{{memberPath.Join("?.")}}
-                  {{If(formatted != null, () => WithIndent(formatted!, "  "))}}
-                  return (
-                    <span className="block w-full px-1 overflow-hidden whitespace-nowrap">
-                      {{{(formatted == null ? "value" : "formatted")}}}
-                      &nbsp; {/* <= すべての値が空の行がつぶれるのを防ぐ */}
-                    </span>
-                  )
-                }
-                """;
+                    cellProps => {
+                      const value = cellProps.row.original.{{rowAccessor}}.{{memberPath.Join("?.")}}
+                      {{If(formatted != null, () => WithIndent(formatted!, "  "))}}
+                      return (
+                        <span className="block w-full px-1 overflow-hidden whitespace-nowrap">
+                          {{{(formatted == null ? "value" : "formatted")}}}
+                          &nbsp; {/* <= すべての値が空の行がつぶれるのを防ぐ */}
+                        </span>
+                      )
+                    }
+                    """;
 
                 string? cellEditor;
                 if (readOnly) {
@@ -117,11 +90,11 @@ namespace Nijo.Parts.WebClient {
                     setValue = $"(row, value) => row.{rowAccessor}.{memberPath.Join(".")} = value";
                 } else {
                     setValue = $$"""
-                    (row, value) => {
-                      if (row.{{rowAccessor}}.{{memberPath.SkipLast(1).Join("?.")}})
-                        row.{{rowAccessor}}.{{memberPath.Join(".")}} = value
-                    }
-                    """;
+                        (row, value) => {
+                          if (row.{{rowAccessor}}.{{memberPath.SkipLast(1).Join("?.")}})
+                            row.{{rowAccessor}}.{{memberPath.Join(".")}} = value
+                        }
+                        """;
                 }
 
                 var hidden = vm?.Options.InvisibleInGui == true
@@ -132,8 +105,10 @@ namespace Nijo.Parts.WebClient {
                     ? null
                     : member.Owner.Item.DisplayName;
 
-                yield return new DataTableColumn {
-                    Id = $"col{i}",
+                colIndex++;
+
+                return new DataTableColumn {
+                    Id = $"col{colIndex}",
                     Header = member.MemberName,
                     Cell = cell,
                     CellEditor = cellEditor,
@@ -142,6 +117,36 @@ namespace Nijo.Parts.WebClient {
                     Hidden = hidden,
                     HeaderGroupName = headerGroupName,
                 };
+            }
+            // ----------------------------------------------------
+
+            // ソース中にラムダ式が登場するのでエントリー化
+            var asEntry = dataTableOwner.AsEntry();
+
+            // グリッドに表示するメンバーを列挙
+            IEnumerable<DataTableColumn> Collect(GraphNode<Aggregate> agg) {
+                foreach (var member in agg.GetMembers()) {
+                    if (member is AggregateMember.ValueMember vm) {
+                        if (vm.DeclaringAggregate != agg) continue;
+                        if (vm.Options.InvisibleInGui) continue;
+                        yield return ToDataTableColumn(member);
+
+                    } else if (member is AggregateMember.Ref @ref) {
+                        if (@ref.MemberAggregate.IsSingleRefKeyOf(@ref.Owner)) continue;
+                        yield return ToDataTableColumn(member);
+                    }
+                }
+
+                // ChildrenやVariationのメンバーを列挙していないのはグリッド上で表現できないため
+                foreach (var child in agg.GetMembers().OfType<AggregateMember.Child>()) {
+                    Collect(child.MemberAggregate);
+                }
+                foreach (var refFrom in agg.GetReferedEdgesAsSingleKey()) {
+                    Collect(refFrom.Initial);
+                }
+            }
+            foreach (var column in Collect(asEntry)) {
+                yield return column;
             }
         }
 
