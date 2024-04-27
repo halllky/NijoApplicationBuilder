@@ -120,9 +120,6 @@ namespace Nijo.Parts.WebClient {
             }
             // ----------------------------------------------------
 
-            // ソース中にラムダ式が登場するのでエントリー化
-            var asEntry = new DisplayDataClass(dataTableOwner.AsEntry());
-
             // グリッドに表示するメンバーを列挙
             IEnumerable<DataTableColumn> Collect(DisplayDataClass dataClass) {
                 foreach (var prop in dataClass.GetOwnProps()) {
@@ -143,13 +140,21 @@ namespace Nijo.Parts.WebClient {
                     if (prop.MemberInfo is AggregateMember.Children) continue;
                     if (prop.MemberInfo is AggregateMember.VariationItem) continue;
 
-                    Collect(new DisplayDataClass(prop.MainAggregate));
+                    foreach (var reucusive in Collect(new DisplayDataClass(prop.MainAggregate))) {
+                        yield return reucusive;
+                    }
                 }
                 foreach (var prop in dataClass.GetRefFromProps()) {
-                    Collect(new DisplayDataClass(prop.MainAggregate));
+                    foreach (var recursive in Collect(new DisplayDataClass(prop.MainAggregate))) {
+                        yield return recursive;
+                    }
                 }
             }
-            foreach (var column in Collect(asEntry)) {
+
+            // ソース中にラムダ式が登場するのでエントリー化
+            var root = new DisplayDataClass(dataTableOwner.AsEntry());
+
+            foreach (var column in Collect(root)) {
                 yield return column;
             }
         }
