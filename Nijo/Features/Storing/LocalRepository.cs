@@ -1,4 +1,5 @@
 using Nijo.Core;
+using Nijo.Parts.Utility;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -19,7 +20,14 @@ namespace Nijo.Features.Storing {
         /// ローカルリポジトリ内にあるデータそれぞれに割り当てられる、そのデータの種類が何かを識別する文字列
         /// </summary>
         internal string DataTypeKey => Aggregate.Item.ClassName;
+        /// <summary>
+        /// <see cref="TransactionScopeDataClass"/> と <see cref="DisplayDataClass"/> の変換を行うフック
+        /// </summary>
         internal string HookName => $"use{Aggregate.Item.ClassName}Repository";
+        /// <summary>
+        /// useLocalRepository フックのラッパー
+        /// </summary>
+        private string LocalLoaderHookName => $"use{Aggregate.Item.ClassName}LocalRepository";
 
         /// <summary>
         /// ローカルリポジトリ内のデータとDB上のデータの両方を参照し
@@ -32,7 +40,171 @@ namespace Nijo.Features.Storing {
                     var aggregates = ctx.Schema
                         .RootAggregatesOrderByDataFlow()
                         .Where(agg => agg.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key);
-                    var hooks = aggregates.SelectTextTemplate(agg => {
+
+                    var convesionBetweenDisplayDataAndTranScopeDataHooks = aggregates.SelectTextTemplate(agg => {
+                        var dataClass = new DisplayDataClass(agg);
+                        var localRepositosy = new LocalRepository(agg);
+                        var keys = agg.GetKeys().OfType<AggregateMember.ValueMember>();
+                        var names = agg.GetNames().OfType<AggregateMember.ValueMember>();
+                        var keyArray = KeyArray.Create(agg);
+                        var find = new FindFeature(agg);
+                        var findMany = new FindManyFeature(agg);
+                        var refRepositories = dataClass
+                            .GetRefFromPropsRecursively()
+                            .DistinctBy(x => x.Item1.MainAggregate)
+                            .Select(p => new {
+                                Repos = new LocalRepository(p.Item1.MainAggregate),
+                                FindMany = new FindManyFeature(p.Item1.MainAggregate),
+                                Aggregate = p.Item1.MainAggregate,
+                                DataClassProp = p,
+
+                                // この画面のメイン集約を参照する関連集約をまとめて読み込むため、
+                                // SingleViewのURLのキーで関連集約のAPIへの検索をかけたい。
+                                // そのために当該検索条件のうち関連集約の検索に関係するメンバーの一覧
+                                RootAggregateMembersForSingleViewLoading = p.Item1.MainAggregate
+                                    .GetEntryReversing()
+                                    .As<Aggregate>()
+                                    .GetMembers()
+                                    .OfType<AggregateMember.ValueMember>()
+                                    .Where(vm => keyArray.Any(k => k.Member.Declared == vm.Declared)),
+
+                                // この画面のメイン集約を参照する関連集約をまとめて読み込むため、
+                                // MultiViewの画面上部の検索条件の値で関連集約のAPIへの検索をかけたい。
+                                // そのために当該検索条件のうち関連集約の検索に関係するメンバーの一覧
+                                RootAggregateMembersForLoad = p.Item1.MainAggregate
+                                    .GetEntryReversing()
+                                    .As<Aggregate>()
+                                    .GetMembers()
+                                    .OfType<AggregateMember.ValueMember>()
+                                    // TODO: 検索条件クラスではVariationはbool型で生成されるが
+                                    // FindManyFeatureでそれも考慮してメンバーを列挙してくれるメソッドがないので
+                                    // 暫定的に除外する（修正後は 011_ダブル.xml で確認可能）
+                                    .Where(vm => vm is not AggregateMember.Variation),
+                            })
+                            .ToArray();
+
+                        // メイン集約を参照する関連集約をまとめて読み込むため、検索条件の値で関連集約のAPIへの検索をかけたい。
+                        // そのために検索条件の各項目が関連集約のどの項目と対応するかを調べて返すための関数
+                        AggregateMember.ValueMember FindRootAggregateSearchConditionMember(AggregateMember.ValueMember refSearchConditionMember) {
+                            var refPath = refSearchConditionMember.DeclaringAggregate.PathFromEntry();
+                            return findMany
+                                .EnumerateSearchConditionMembers()
+                                .Single(kv2 => kv2.Declared == refSearchConditionMember.Declared
+                                            // ある集約から別の集約へ複数経路の参照がある場合は対応するメンバーが複数とれてしまうのでパスの後方一致でも絞り込む
+                                            && refPath.EndsWith(kv2.Owner.PathFromEntry()));
+                        }
+
+                        return $$"""
+                            /** {{agg.Item.DisplayName}}の画面に表示するデータ型と登録更新するデータ型の変換を行うフック */
+                            export const {{localRepositosy.HookName}} = (editRange?
+                              // 複数件編集の場合
+                              : { filter: AggregateType.{{findMany.TypeScriptConditionClass}}, skip?: number, take?: number }
+                              // 1件編集の場合
+                              | [{{keyArray.Select(k => $"{k.VarName}: {k.TsType} | undefined").Join(", ")}}]
+                            ) => {
+
+                              // {{agg.Item.DisplayName}}のローカルリポジトリとリモートリポジトリへのデータ読み書き処理
+                              const {
+                                ready,
+                                items: {{agg.Item.ClassName}}Items,
+                                add: addToLocalRepository,
+                                update: updateLocalRepositoryItem,
+                                remove: deleteLocalRepositoryItem,
+                              } = {{localRepositosy.LocalLoaderHookName}}(editRange)
+                            {{refRepositories.SelectTextTemplate(x => $$"""
+
+                              // {{x.Aggregate.Item.DisplayName}}のローカルリポジトリとリモートリポジトリへのデータ読み書き処理
+                              const {{x.Aggregate.Item.ClassName}}filter: { filter: AggregateType.{{x.FindMany.TypeScriptConditionClass}} } = useMemo(() => {
+                                const f = AggregateType.{{x.FindMany.TypeScriptConditionInitializerFn}}()
+                                if (Array.isArray(editRange)) {
+                                  const [{{keyArray.Select(k => k.VarName).Join(", ")}}] = editRange
+                            {{x.RootAggregateMembersForSingleViewLoading.SelectTextTemplate((kv, i) => $$"""
+                            {{If(kv.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
+                                  if (f.{{kv.Declared.GetFullPath().Join("?.")}} !== undefined) {
+                                    f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}} = {{keyArray.SingleOrDefault(k => k.Member.Declared == kv.Declared)?.VarName ?? ""}}
+                                    f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}} = {{keyArray.SingleOrDefault(k => k.Member.Declared == kv.Declared)?.VarName ?? ""}}
+                                  }
+                            """).Else(() => $$"""
+                                  if (f.{{kv.Declared.GetFullPath().SkipLast(1).Join("?.")}} !== undefined)
+                                    f.{{kv.Declared.GetFullPath().Join(".")}} = {{keyArray.SingleOrDefault(k => k.Member.Declared == kv.Declared)?.VarName ?? ""}}
+                            """)}}
+                            """)}}
+                                } else if (editRange) {
+                            {{x.RootAggregateMembersForLoad.SelectTextTemplate((kv, i) => $$"""
+                            {{If(kv.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
+                                  if (f.{{kv.Declared.GetFullPath().Join("?.")}} !== undefined) {
+                                    f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}} = editRange.filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}?.{{FromTo.FROM}}
+                                    f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}} = editRange.filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}?.{{FromTo.TO}}
+                                  }
+                            """).Else(() => $$"""
+                                  if (f.{{kv.Declared.GetFullPath().SkipLast(1).Join("?.")}} !== undefined)
+                                    f.{{kv.Declared.GetFullPath().Join(".")}} = editRange.filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}
+                            """)}}
+                            """)}}
+                                }
+                                return { filter: f }
+                              }, [editRange])
+                              const {
+                                ready: {{x.Aggregate.Item.ClassName}}IsReady,
+                                items: {{x.Aggregate.Item.ClassName}}Items,
+                                add: addTo{{x.Aggregate.Item.ClassName}}LocalRepository,
+                                update: update{{x.Aggregate.Item.ClassName}}LocalRepositoryItem,
+                                remove: delete{{x.Aggregate.Item.ClassName}}LocalRepositoryItem,
+                              } = {{x.Repos.LocalLoaderHookName}}({{x.Aggregate.Item.ClassName}}filter)
+                            """)}}
+
+                              // 登録更新のデータ型を画面表示用のデータ型に変換する
+                              const [items, setItems] = useState<AggregateType.{{dataClass.TsTypeName}}[]>(() => [])
+                              const allReady = ready{{refRepositories.Select(r => $" && {r.Aggregate.Item.ClassName}IsReady").Join("")}}
+                              useEffect(() => {
+                                if (allReady) {
+                                  const currentPageItems: AggregateType.{{dataClass.TsTypeName}}[] = {{agg.Item.ClassName}}Items.map(item => {
+                                    return AggregateType.{{dataClass.ConvertFnNameToDisplayDataType}}(item{{refRepositories.Select(r => $", {r.Aggregate.Item.ClassName}Items").Join("")}})
+                                  })
+                                  setItems(currentPageItems)
+                                }
+                              }, [allReady, {{agg.Item.ClassName}}Items{{refRepositories.Select(r => $", {r.Aggregate.Item.ClassName}Items").Join("")}}])
+
+                              // 保存
+                              const commit = useCallback(async (...commitItems: AggregateType.{{dataClass.TsTypeName}}[]) => {
+                                for (const item of commitItems) {
+
+                                  // 画面表示用のデータ型を登録更新のデータ型に変換する
+                                  const [
+                                    item{{agg.Item.ClassName}}{{dataClass.GetRefFromPropsRecursively().Select((x, i) => $", item{i}_{x.Item1.MainAggregate.Item.ClassName}").Join("")}}
+                                  ] = AggregateType.{{dataClass.ConvertFnNameToLocalRepositoryType}}(item)
+
+                                  // リポジトリへ反映する
+                                  const { itemKey: mainObjectItemKey } = await addToLocalRepository(item{{agg.Item.ClassName}}.item)
+                            {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate((x, i) => x.IsArray ? $$"""
+
+                                  for (const { itemKey, item } of item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
+                                    await update{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(itemKey, item)
+                                  }
+                            """ : $$"""
+
+                                  if (item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
+                                    await update{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.itemKey, item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.item)
+                                  }
+                            """)}}
+                                }
+                              }, [
+                                addToLocalRepository,
+                                updateLocalRepositoryItem,
+                                deleteLocalRepositoryItem,
+                            {{refRepositories.SelectTextTemplate(x => $$"""
+                                addTo{{x.Aggregate.Item.ClassName}}LocalRepository,
+                                update{{x.Aggregate.Item.ClassName}}LocalRepositoryItem,
+                                delete{{x.Aggregate.Item.ClassName}}LocalRepositoryItem,
+                            """)}}
+                              ])
+
+                              return { ready: allReady, items, commit }
+                            }
+                            """;
+                    });
+
+                    var localReposWrapperHooks = aggregates.SelectTextTemplate(agg => {
                         var localRepositosy = new LocalRepository(agg);
                         var keys = agg.GetKeys().OfType<AggregateMember.ValueMember>();
                         var names = agg.GetNames().OfType<AggregateMember.ValueMember>();
@@ -41,7 +213,8 @@ namespace Nijo.Features.Storing {
                         var findMany = new FindManyFeature(agg);
 
                         return $$"""
-                            export const {{localRepositosy.HookName}} = (editRange?
+                            /** {{agg.Item.DisplayName}}専用のuseLocalRepositoryのラッパー */
+                            const {{localRepositosy.LocalLoaderHookName}} = (editRange?
                               // 複数件編集の場合
                               : { filter: AggregateType.{{findMany.TypeScriptConditionClass}}, skip?: number, take?: number }
                               // 1件編集の場合
@@ -91,7 +264,11 @@ namespace Nijo.Features.Storing {
                         import { visitObject } from './Tree'
                         import * as AggregateType from '../autogenerated-types'
 
-                        {{hooks}}
+                        {{convesionBetweenDisplayDataAndTranScopeDataHooks}}
+
+                        // -----------------------------------------------------------
+
+                        {{localReposWrapperHooks}}
                         """;
                 },
             };
