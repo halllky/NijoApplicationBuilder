@@ -335,6 +335,9 @@ namespace Nijo.Features.Storing {
                 : base(relation.IsRef() ? relation.Initial : relation.Terminal) {
                 MemberInfo = memberInfo;
             }
+            /// <summary>
+            /// Ref From プロパティの場合はnull
+            /// </summary>
             internal AggregateMember.RelationMember? MemberInfo { get; }
 
             internal enum E_Type {
@@ -369,6 +372,61 @@ namespace Nijo.Features.Storing {
     }
 
     internal static class StoringExtensions {
+        /// <summary>
+        /// エントリーからのパスを <see cref="DisplayDataClass"/> のデータ構造にあわせて返す。
+        /// たとえば自身のメンバーならその前に <see cref="DisplayDataClass.OWN_MEMBERS"/> を挟むなど
+        /// </summary>
+        internal static IEnumerable<string> GetFullPathAsSingleViewDataClass(this DisplayDataClass dataClass) {
+            var enumeratingRefTargetKeyName = false;
+
+            foreach (var edge in dataClass.MainAggregate.PathFromEntry()) {
+                if (edge.Source == edge.Terminal) {
+                    // 有向グラフの矢印の先から元に辿るパターン
+
+                    if (edge.IsParentChild()) {
+                        yield return AggregateMember.PARENT_PROPNAME; // 子から親に向かって辿る場合
+
+                    } else if (edge.IsRef()) {
+                        var dc = new DisplayDataClass(edge.Terminal.As<Aggregate>());
+                        yield return dc
+                            .GetRefFromProps()
+                            .Single(p => p.MainAggregate.Source == edge)
+                            .PropName;
+
+                        enumeratingRefTargetKeyName = false;
+
+                    } else {
+                        throw new InvalidOperationException($"有向グラフの矢印の先から元に向かうパターンは親子か参照だけなのでこの分岐にくることはあり得ないはず");
+                    }
+
+                } else {
+                    // 有向グラフの矢印の元から先に辿るパターン
+
+                    if (edge.IsParentChild()) {
+                        var dc = new DisplayDataClass(edge.Initial.As<Aggregate>());
+                        yield return dc
+                            .GetChildProps()
+                            .Single(p => p.MainAggregate == edge.Terminal.As<Aggregate>())
+                            .PropName;
+
+                        enumeratingRefTargetKeyName = false;
+
+                    } else if (edge.IsRef()) {
+                        if (!enumeratingRefTargetKeyName) {
+                            yield return DisplayDataClass.OWN_MEMBERS;
+                        }
+
+                        /// <see cref="RefTargetKeyName"/> の仕様に合わせる
+                        yield return edge.RelationName;
+
+                        enumeratingRefTargetKeyName = true;
+
+                    } else {
+                        throw new InvalidOperationException($"有向グラフの矢印の先から元に向かうパターンは親子か参照だけなのでこの分岐にくることはあり得ないはず");
+                    }
+                }
+            }
+        }
         /// <summary>
         /// エントリーからのパスを <see cref="DisplayDataClass"/> のデータ構造にあわせて返す。
         /// たとえば自身のメンバーならその前に <see cref="DisplayDataClass.OWN_MEMBERS"/> を挟むなど
