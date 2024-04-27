@@ -121,28 +121,32 @@ namespace Nijo.Parts.WebClient {
             // ----------------------------------------------------
 
             // ソース中にラムダ式が登場するのでエントリー化
-            var asEntry = dataTableOwner.AsEntry();
+            var asEntry = new DisplayDataClass(dataTableOwner.AsEntry());
 
             // グリッドに表示するメンバーを列挙
-            IEnumerable<DataTableColumn> Collect(GraphNode<Aggregate> agg) {
-                foreach (var member in agg.GetMembers()) {
-                    if (member is AggregateMember.ValueMember vm) {
-                        if (vm.DeclaringAggregate != agg) continue;
+            IEnumerable<DataTableColumn> Collect(DisplayDataClass dataClass) {
+                foreach (var prop in dataClass.GetOwnProps()) {
+                    if (prop.Member is AggregateMember.ValueMember vm) {
+                        if (vm.DeclaringAggregate != dataClass.MainAggregate) continue;
                         if (vm.Options.InvisibleInGui) continue;
-                        yield return ToDataTableColumn(member);
+                        yield return ToDataTableColumn(prop.Member);
 
-                    } else if (member is AggregateMember.Ref @ref) {
+                    } else if (prop.Member is AggregateMember.Ref @ref) {
                         if (@ref.MemberAggregate.IsSingleRefKeyOf(@ref.Owner)) continue;
-                        yield return ToDataTableColumn(member);
+                        yield return ToDataTableColumn(prop.Member);
                     }
                 }
 
-                // ChildrenやVariationのメンバーを列挙していないのはグリッド上で表現できないため
-                foreach (var child in agg.GetMembers().OfType<AggregateMember.Child>()) {
-                    Collect(child.MemberAggregate);
+                foreach (var prop in dataClass.GetChildProps()) {
+
+                    // ChildrenやVariationのメンバーを列挙していないのはグリッド上で表現できないため
+                    if (prop.MemberInfo is AggregateMember.Children) continue;
+                    if (prop.MemberInfo is AggregateMember.VariationItem) continue;
+
+                    Collect(new DisplayDataClass(prop.MainAggregate));
                 }
-                foreach (var refFrom in agg.GetReferedEdgesAsSingleKey()) {
-                    Collect(refFrom.Initial);
+                foreach (var prop in dataClass.GetRefFromProps()) {
+                    Collect(new DisplayDataClass(prop.MainAggregate));
                 }
             }
             foreach (var column in Collect(asEntry)) {
