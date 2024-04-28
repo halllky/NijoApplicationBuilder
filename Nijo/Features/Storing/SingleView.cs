@@ -94,8 +94,6 @@ namespace Nijo.Features.Storing {
             RenderContent = context => {
                 var controller = new Controller(_aggregate.Item);
                 var multiViewUrl = new MultiViewEditable(_aggregate).Url;
-                var createEmptyObject = new TSInitializerFunction(_aggregate).FunctionName;
-                var findMany = new FindManyFeature(_aggregate);
                 var dataClass = new DisplayDataClass(_aggregate);
                 var localRepos = new LocalRepository(_aggregate);
 
@@ -104,26 +102,8 @@ namespace Nijo.Features.Storing {
                     .GetKeys()
                     .OfType<AggregateMember.ValueMember>()
                     .ToArray();
-                var urlKeys = _type == E_Type.Create
-                    ? new[] { KEY0 }
-                    : keys.Select(m => $"urlKey{m.MemberName}").ToArray();
                 var urlKeysWithMember = keys
                     .ToDictionary(vm => vm.Declared, vm => $"urlKey{vm.MemberName}");
-
-                var refRepositories = dataClass
-                    .GetRefFromPropsRecursively()
-                    .DistinctBy(p => p.Item1.MainAggregate)
-                    .Select(p => new {
-                        Repos = new LocalRepository(p.Item1.MainAggregate),
-                        FindMany = new FindManyFeature(p.Item1.MainAggregate),
-                        Aggregate = p.Item1.MainAggregate,
-                        DataClassProp = p,
-                        RootAggregateMembersForLoad = p.Item1.MainAggregate
-                            .AsEntry()
-                            .GetKeys()
-                            .OfType<AggregateMember.ValueMember>(),
-                    })
-                    .ToArray();
 
                 var names = _aggregate
                     .GetNames()
@@ -181,62 +161,21 @@ namespace Nijo.Features.Storing {
                       }, [{{urlKeysWithMember.Select((_, i) => $"key{i}").Join(", ")}}])
 
                       // {{_aggregate.Item.DisplayName}}データの読み込み
-                      const {{_aggregate.Item.ClassName}}Repository = Util.{{localRepos.HookName}}(pkArray)
-                      const {{_aggregate.Item.ClassName}}IsLoaded = {{_aggregate.Item.ClassName}}Repository.ready
-                      const items{{_aggregate.Item.ClassName}} = {{_aggregate.Item.ClassName}}Repository.items
-
-                      // {{_aggregate.Item.DisplayName}}を参照するデータの読み込み
-                    {{refRepositories.SelectTextTemplate(x => x.DataClassProp.IsArray ? $$"""
-                      const {{x.Aggregate.Item.ClassName}}filter: { filter: AggregateType.{{x.FindMany.TypeScriptConditionClass}} } = useMemo(() => {
-                        const filter = AggregateType.{{x.FindMany.TypeScriptConditionInitializerFn}}()
-                    {{x.RootAggregateMembersForLoad.Where(vm => urlKeysWithMember.ContainsKey(vm.Declared)).SelectTextTemplate((kv, i) => $$"""
-                    {{If(kv.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
-                        if (filter.{{kv.Declared.GetFullPath().Join("?.")}} !== undefined)
-                          filter.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}} = filter.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}} = pkArray[{{i}}]
-                    """).Else(() => $$"""
-                        if (filter.{{kv.Declared.GetFullPath().SkipLast(1).Join("?.")}} !== undefined)
-                          filter.{{kv.Declared.GetFullPath().Join(".")}} = pkArray[{{i}}]
-                    """)}}
-                    """)}}
-                        return { filter }
-                      }, [pkArray])
-                      const {{x.Aggregate.Item.ClassName}}Repository = Util.{{x.Repos.HookName}}({{x.Aggregate.Item.ClassName}}filter)
-                      const {{x.Aggregate.Item.ClassName}}IsLoaded = {{x.Aggregate.Item.ClassName}}Repository.ready
-                      const items{{x.Aggregate.Item.ClassName}} = {{x.Aggregate.Item.ClassName}}Repository.items
-
-                    """ : $$"""
-                      const {{x.Aggregate.Item.ClassName}}Repository = Util.{{x.Repos.HookName}}(pkArray)
-                      const {{x.Aggregate.Item.ClassName}}IsLoaded = {{x.Aggregate.Item.ClassName}}Repository.ready
-                      const items{{x.Aggregate.Item.ClassName}} = {{x.Aggregate.Item.ClassName}}Repository.items
-
-                    """)}}
-                      const allDataLoaded = {{_aggregate.Item.ClassName}}IsLoaded{{string.Concat(refRepositories.Select(x => $" && {x.Aggregate.Item.ClassName}IsLoaded"))}}
-
-                      // 読み込んだデータを画面に表示する形に変換する
-                      const defaultValues: AggregateType.{{dataClass.TsTypeName}} | undefined = useMemo(() => {
-                        if (allDataLoaded && items{{_aggregate.Item.ClassName}}.length > 0) {
-                          return AggregateType.{{dataClass.ConvertFnNameToDisplayDataType}}(items{{_aggregate.Item.ClassName}}[0]{{refRepositories.Select(x => $", items{x.Aggregate.Item.ClassName}").Join("")}})
-                        } else {
-                          return undefined
-                        }
-                      }, [allDataLoaded, items{{_aggregate.Item.ClassName}}{{refRepositories.Select(x => $", items{x.Aggregate.Item.ClassName}").Join("")}}])
+                      const { ready, items, commit } = Util.{{localRepos.HookName}}(pkArray)
 
                       const localReposItemKey = useMemo(() => {
-                        if (!{{_aggregate.Item.ClassName}}IsLoaded) return undefined
-                        const item = items{{_aggregate.Item.ClassName}}[0]?.item
+                        if (!ready || items.length === 0) return undefined
+                        const item = items[0]
                         if (!item) return undefined
-                        return JSON.stringify([{{keys.Select(k => $"item.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]) as Util.ItemKey
-                      }, [{{_aggregate.Item.ClassName}}IsLoaded, items{{_aggregate.Item.ClassName}}])
+                        return JSON.stringify([{{keys.Select(k => $"item.{DisplayDataClass.OWN_MEMBERS}.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]) as Util.ItemKey
+                      }, [ready, items])
 
-                      return defaultValues ? (
+                      return items.length > 0 ? (
                         <AfterLoaded
                           pkArray={pkArray}
-                          defaultValues={defaultValues}
                           localReposItemKey={localReposItemKey}
-                          {{_aggregate.Item.ClassName}}RepositoryModifier={{{_aggregate.Item.ClassName}}Repository}
-                    {{refRepositories.SelectTextTemplate(x => $$"""
-                          {{x.Aggregate.Item.ClassName}}RepositoryModifier={{{x.Aggregate.Item.ClassName}}Repository}
-                    """)}}
+                          defaultValues={items[0]}
+                          commit={commit}
                         ></AfterLoaded>
                       ) : (
                         <></>
@@ -247,31 +186,13 @@ namespace Nijo.Features.Storing {
                       pkArray,
                       localReposItemKey,
                       defaultValues,
-                      {{_aggregate.Item.ClassName}}RepositoryModifier,
-                    {{refRepositories.SelectTextTemplate(x => $$"""
-                      {{x.Aggregate.Item.ClassName}}RepositoryModifier,
-                    """)}}
+                      commit,
                     }: {
                       pkArray: [{{keyArray.Select(k => $"{k.TsType} | undefined").Join(", ")}}]
                       localReposItemKey: Util.ItemKey | undefined
                       defaultValues: AggregateType.{{dataClass.TsTypeName}}
-                      {{_aggregate.Item.ClassName}}RepositoryModifier: ReturnType<typeof Util.{{localRepos.HookName}}>
-                    {{refRepositories.SelectTextTemplate(x => $$"""
-                      {{x.Aggregate.Item.ClassName}}RepositoryModifier: ReturnType<typeof Util.{{x.Repos.HookName}}>
-                    """)}}
+                      commit: ReturnType<typeof Util.{{localRepos.HookName}}>['commit']
                     }) => {
-                      const {
-                        add: addTo{{_aggregate.Item.ClassName}}Repository,
-                        update: update{{_aggregate.Item.ClassName}}RepositoryItem,
-                        remove: remove{{_aggregate.Item.ClassName}}RepositoryItem,
-                      } = {{_aggregate.Item.ClassName}}RepositoryModifier
-                    {{refRepositories.SelectTextTemplate(x => $$"""
-                      const {
-                        add: addTo{{x.Aggregate.Item.ClassName}}Repository,
-                        update: update{{x.Aggregate.Item.ClassName}}RepositoryItem,
-                        remove: remove{{x.Aggregate.Item.ClassName}}RepositoryItem,
-                      } = {{x.Aggregate.Item.ClassName}}RepositoryModifier
-                    """)}}
 
                       const navigate = useNavigate()
                       const reactHookFormMethods = useForm({ defaultValues })
@@ -322,64 +243,11 @@ namespace Nijo.Features.Storing {
                         }
                       }, [post, navigate, pkArray])
 
-                    """).ElseIf(_type == E_Type.Create, () => $$"""
-                      // 新規作成データの一時保存
+                    """).ElseIf(_type != E_Type.View, () => $$"""
+                      // データの一時保存
                       const onSave: SubmitHandler<AggregateType.{{dataClass.TsTypeName}}> = useCallback(async data => {
-                        if (localReposItemKey === undefined) {
-                          const [
-                            item{{_aggregate.Item.ClassName}}{{dataClass.GetRefFromPropsRecursively().Select((x, i) => $", item{i}_{x.Item1.MainAggregate.Item.ClassName}").Join("")}}
-                          ] = AggregateType.{{dataClass.ConvertFnNameToLocalRepositoryType}}(data)
-
-                          const { itemKey: mainObjectItemKey } = await addTo{{_aggregate.Item.ClassName}}Repository(item{{_aggregate.Item.ClassName}}.item)
-                    {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate((x, i) => x.IsArray ? $$"""
-                          for (let { itemKey, item } of item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
-                            await update{{x.Item1.MainAggregate.Item.ClassName}}RepositoryItem(itemKey, item)
-                          }
-                    """ : $$"""
-                          if (item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
-                            await update{{x.Item1.MainAggregate.Item.ClassName}}RepositoryItem(item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.itemKey, item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.item)
-                          }
-                    """)}}
-
-                          navigate(`{{GetUrlStringForReact(E_Type.Create, new[] { "mainObjectItemKey" })}}`)
-                        } else {
-                          const [
-                            item{{_aggregate.Item.ClassName}}{{dataClass.GetRefFromPropsRecursively().Select((x, i) => $", item{i}_{x.Item1.MainAggregate.Item.ClassName}").Join("")}}
-                          ] = AggregateType.{{dataClass.ConvertFnNameToLocalRepositoryType}}(data)
-
-                          await update{{_aggregate.Item.ClassName}}RepositoryItem(localReposItemKey, item{{_aggregate.Item.ClassName}}.item)
-
-                    {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate((x, i) => x.IsArray ? $$"""
-                          for (let { itemKey, item } of item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
-                            await update{{x.Item1.MainAggregate.Item.ClassName}}RepositoryItem(itemKey, item)
-                          }
-                    """ : $$"""
-                          if (item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
-                            await update{{x.Item1.MainAggregate.Item.ClassName}}RepositoryItem(item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.itemKey, item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.item)
-                          }
-                    """)}}
-                        }
-                      }, [localReposItemKey, addTo{{_aggregate.Item.ClassName}}Repository, update{{_aggregate.Item.ClassName}}RepositoryItem, navigate])
-
-                    """).ElseIf(_type == E_Type.Edit, () => $$"""
-                      // 更新データの一時保存
-                      const onSave: SubmitHandler<AggregateType.{{dataClass.TsTypeName}}> = useCallback(async data => {
-                        const [
-                          item{{_aggregate.Item.ClassName}}{{dataClass.GetRefFromPropsRecursively().Select((x, i) => $", item{i}_{x.Item1.MainAggregate.Item.ClassName}").Join("")}}
-                        ] = AggregateType.{{dataClass.ConvertFnNameToLocalRepositoryType}}(data)
-                    
-                        await update{{_aggregate.Item.ClassName}}RepositoryItem(item{{_aggregate.Item.ClassName}}.itemKey, item{{_aggregate.Item.ClassName}}.item)
-
-                    {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate((x, i) => x.IsArray ? $$"""
-                        for (let { itemKey, item } of item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
-                          await update{{x.Item1.MainAggregate.Item.ClassName}}RepositoryItem(itemKey, item)
-                        }
-                    """ : $$"""
-                        if (item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
-                          await update{{x.Item1.MainAggregate.Item.ClassName}}RepositoryItem(item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.itemKey, item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.item)
-                        }
-                    """)}}
-                      }, [update{{_aggregate.Item.ClassName}}RepositoryItem{{refRepositories.Select(x => $", update{x.Aggregate.Item.ClassName}RepositoryItem").Join("")}}])
+                        await commit(data)
+                      }, [commit])
 
                     """)}}
 
@@ -418,21 +286,6 @@ namespace Nijo.Features.Storing {
                     }
 
                     {{aggregateComponents.SelectTextTemplate(component => component.RenderDeclaration())}}
-
-                    type SingleViewPageContextValue = {
-                    {{refRepositories.SelectTextTemplate(x => $$"""
-                      addTo{{x.Aggregate.Item.ClassName}}Repository: ReturnType<typeof Util.{{x.Repos.HookName}}>['add']
-                      update{{x.Aggregate.Item.ClassName}}RepositoryItem: ReturnType<typeof Util.{{x.Repos.HookName}}>['update']
-                      remove{{x.Aggregate.Item.ClassName}}RepositoryItem: ReturnType<typeof Util.{{x.Repos.HookName}}>['remove']
-                    """)}}
-                    }
-                    const {{PAGE_CONTEXT}} = createContext<SingleViewPageContextValue>({
-                    {{refRepositories.SelectTextTemplate(x => $$"""
-                      addTo{{x.Aggregate.Item.ClassName}}Repository: () => { throw new Error('ページ初期化前に更新を実行できません。') },
-                      update{{x.Aggregate.Item.ClassName}}RepositoryItem: () => { throw new Error('ページ初期化前に更新を実行できません。') },
-                      remove{{x.Aggregate.Item.ClassName}}RepositoryItem: () => { throw new Error('ページ初期化前に更新を実行できません。') },
-                    """)}}
-                    })
                     """;
             },
         };

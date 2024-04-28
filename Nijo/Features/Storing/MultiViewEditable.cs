@@ -132,51 +132,15 @@ namespace Nijo.Features.Storing {
                         skip: currentPage.pageIndex * 20,
                         take: 20,
                       }), [filter, currentPage])
-                      const {
-                        ready,
-                        items: {{_aggregate.Item.ClassName}}Items,
-                        add: addToLocalRepository,
-                        update: updateLocalRepositoryItem,
-                        remove: deleteLocalRepositoryItem,
-                      } = Util.{{rootLocalRepository.HookName}}(editRange)
-                    {{refRepositories.SelectTextTemplate(x => $$"""
-                      const {{x.Aggregate.Item.ClassName}}filter: { filter: AggregateType.{{x.FindMany.TypeScriptConditionClass}} } = useMemo(() => {
-                        const f = AggregateType.{{x.FindMany.TypeScriptConditionInitializerFn}}()
-                    {{x.RootAggregateMembersForLoad.SelectTextTemplate((kv, i) => $$"""
-                    {{If(kv.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
-                        if (f.{{kv.Declared.GetFullPath().Join("?.")}} !== undefined) {
-                          f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}} = filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}?.{{FromTo.FROM}}
-                          f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}} = filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}?.{{FromTo.TO}}
-                        }
-                    """).Else(() => $$"""
-                        if (f.{{kv.Declared.GetFullPath().SkipLast(1).Join("?.")}} !== undefined)
-                          f.{{kv.Declared.GetFullPath().Join(".")}} = filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}
-                    """)}}
-                    """)}}
-                        return { filter: f }
-                      }, [filter])
-                      const {
-                        ready: {{x.Aggregate.Item.ClassName}}IsReady,
-                        items: {{x.Aggregate.Item.ClassName}}Items,
-                        add: addTo{{x.Aggregate.Item.ClassName}}LocalRepository,
-                        update: update{{x.Aggregate.Item.ClassName}}LocalRepositoryItem,
-                        remove: delete{{x.Aggregate.Item.ClassName}}LocalRepositoryItem,
-                      } = Util.{{x.Repos.HookName}}({{x.Aggregate.Item.ClassName}}filter)
-
-                    """)}}
+                      const { ready, items, commit } = Util.{{rootLocalRepository.HookName}}(editRange)
 
                       const reactHookFormMethods = Util.useFormEx<{ currentPageItems: GridRow[] }>({})
                       const { control, registerEx, handleSubmit, reset } = reactHookFormMethods
                       const { fields, append, update, remove } = useFieldArray({ name: 'currentPageItems', control })
 
                       useEffect(() => {
-                        if (ready{{refRepositories.Select(r => $" && {r.Aggregate.Item.ClassName}IsReady").Join("")}}) {
-                          const currentPageItems: AggregateType.{{dataClass.TsTypeName}}[] = {{_aggregate.Item.ClassName}}Items.map(item => {
-                            return AggregateType.{{dataClass.ConvertFnNameToDisplayDataType}}(item{{refRepositories.Select(r => $", {r.Aggregate.Item.ClassName}Items").Join("")}})
-                          })
-                          reset({ currentPageItems })
-                        }
-                      }, [ready, {{_aggregate.Item.ClassName}}Items{{refRepositories.Select(r => $", {r.Aggregate.Item.ClassName}IsReady, {r.Aggregate.Item.ClassName}Items").Join("")}}])
+                        if (ready) reset({ currentPageItems: items })
+                      }, [ready, items])
 
                       const handleReload = useCallback(() => {
                         setFilter(getConditionValues())
@@ -184,60 +148,29 @@ namespace Nijo.Features.Storing {
 
                       // データ編集
                       const handleAdd: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
-                        const newItem = AggregateType.{{new TSInitializerFunction(_aggregate).FunctionName}}()
-                        const { itemKey } = await addToLocalRepository(newItem)
-                        const newRow: AggregateType.{{dataClass.TsTypeName}} = {{WithIndent(dataClass.RenderNewObjectLiteral("itemKey"), "    ")}}
+                        const newRow: AggregateType.{{dataClass.TsTypeName}} = {{WithIndent(dataClass.RenderNewObjectLiteral("UUID.generate() as Util.ItemKey"), "    ")}}
                         append(newRow)
-                      }, [append, addToLocalRepository])
+                      }, [append])
 
                       const handleUpdateRow = useCallback(async (index: number, row: GridRow) => {
-                        const [
-                          item{{_aggregate.Item.ClassName}}{{string.Concat(dataClass.GetRefFromPropsRecursively().Select((x, i) => $", item{i}_{x.Item1.MainAggregate.Item.ClassName}"))}}
-                        ] = AggregateType.{{dataClass.ConvertFnNameToLocalRepositoryType}}(row)
-
-                        await updateLocalRepositoryItem(item{{_aggregate.Item.ClassName}}.itemKey, item{{_aggregate.Item.ClassName}}.item)
-
-                    {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate((x, i) => x.IsArray ? $$"""
-                        for (let { itemKey, item } of item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
-                          await update{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(itemKey, item)
-                        }
-                    """ : $$"""
-                        if (item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
-                          await update{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.itemKey, item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.item)
-                        }
-                    """)}}
-
                         update(index, row)
-                      }, [update, updateLocalRepositoryItem{{string.Concat(refRepositories.Select(r => $", update{r.Aggregate.Item.ClassName}LocalRepositoryItem"))}}])
+                      }, [update])
 
                       const dtRef = useRef<Layout.DataTableRef<GridRow>>(null)
                       const handleRemove: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
                         if (!dtRef.current) return
                         const deletedRowIndex: number[] = []
                         for (const { row, rowIndex } of dtRef.current.getSelectedRows()) {
-                          const [
-                            item{{_aggregate.Item.ClassName}}{{string.Concat(dataClass.GetRefFromPropsRecursively().Select((x, i) => $", item{i}_{x.Item1.MainAggregate.Item.ClassName}"))}}
-                          ] = AggregateType.{{dataClass.ConvertFnNameToLocalRepositoryType}}(row)
-
-                          const deleted = await deleteLocalRepositoryItem(item{{_aggregate.Item.ClassName}}.itemKey, item{{_aggregate.Item.ClassName}}.item)
-                          if (deleted) {
-                            update(rowIndex, { ...row, {{DisplayDataClass.LOCAL_REPOS_STATE}}: '-' }) // 画面上では削除済みマークをつけたうえで表示する
+                          if (row.{{DisplayDataClass.EXISTS_IN_REMOTE_REPOS}}) {
+                            // 画面上では削除済みマークをつけたうえで表示する
+                            update(rowIndex, { ...row, {{DisplayDataClass.LOCAL_REPOS_STATE}}: '-' })
                           } else {
-                            deletedRowIndex.push(rowIndex) // 画面上からも消す
+                            // 画面上からも消す
+                            deletedRowIndex.push(rowIndex)
                           }
-
-                    {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate((x, i) => x.IsArray ? $$"""
-                          for (let { itemKey, item } of item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
-                            await delete{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(itemKey, item)
-                          }
-                    """ : $$"""
-                          if (item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
-                            await delete{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.itemKey, item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.item)
-                          }
-                    """)}}
                         }
                         remove(deletedRowIndex)
-                      }, [update, remove, deleteLocalRepositoryItem])
+                      }, [update, remove])
 
                       return (
                         <div className="page-content-root gap-4 pb-[50vh]">

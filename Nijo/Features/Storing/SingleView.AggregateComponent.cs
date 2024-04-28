@@ -108,7 +108,7 @@ namespace Nijo.Features.Storing {
                             labelSide={<Input.Button icon={XMarkIcon} onClick={handleDelete}>削除</Input.Button>}
                             className="pt-4"
                           >
-                            {watch({{registerName}})?.{{DisplayDataClass.EXISTS}} ? (
+                            {watch({{registerName}})?.{{DisplayDataClass.EXISTS_IN_REMOTE_REPOS}} ? (
                               <>
                                 {{WithIndent(RenderMembers(), "            ")}}
                               </>
