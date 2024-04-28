@@ -243,10 +243,16 @@ namespace Nijo.Features.Storing {
                         }
                       }, [post, navigate, pkArray])
 
-                    """).ElseIf(_type != E_Type.View, () => $$"""
+                    """).ElseIf(_type == E_Type.Create, () => $$"""
                       // データの一時保存
                       const onSave: SubmitHandler<AggregateType.{{dataClass.TsTypeName}}> = useCallback(async data => {
-                        await commit(data)
+                        await commit({ ...data, {{DisplayDataClass.LOCAL_REPOS_STATE}}: '+' })
+                      }, [commit])
+
+                    """).ElseIf(_type == E_Type.Edit, () => $$"""
+                      // データの一時保存
+                      const onSave: SubmitHandler<AggregateType.{{dataClass.TsTypeName}}> = useCallback(async data => {
+                        await commit({ ...data, {{DisplayDataClass.LOCAL_REPOS_STATE}}: '*' })
                       }, [commit])
 
                     """)}}
@@ -272,13 +278,13 @@ namespace Nijo.Features.Storing {
                             {{new AggregateComponent(_aggregate, _type, false).RenderCaller()}}
 
                     {{If(_type != E_Type.View && _aggregate.Item.Options.DisableLocalRepository != true, () => $$"""
-                            <Input.IconButton fill className="self-start" icon={BookmarkSquareIcon}>一時保存</Input.IconButton>
+                            <Input.IconButton submit fill className="self-start" icon={BookmarkSquareIcon}>一時保存</Input.IconButton>
                     """).ElseIf(_type == E_Type.Create, () => $$"""
-                            <Input.IconButton fill className="self-start" icon={BookmarkSquareIcon}>保存</Input.IconButton>
+                            <Input.IconButton submit fill className="self-start" icon={BookmarkSquareIcon}>保存</Input.IconButton>
                     """).ElseIf(_type == E_Type.View, () => $$"""
-                            <Input.IconButton fill className="self-start" icon={PencilIcon} onClick={navigateToEditView}>編集</Input.IconButton>
+                            <Input.IconButton submit fill className="self-start" icon={PencilIcon} onClick={navigateToEditView}>編集</Input.IconButton>
                     """).ElseIf(_type == E_Type.Edit, () => $$"""
-                            <Input.IconButton fill className="self-start" icon={BookmarkSquareIcon}>更新</Input.IconButton>
+                            <Input.IconButton submit fill className="self-start" icon={BookmarkSquareIcon}>更新</Input.IconButton>
                     """)}}
                           </form>
                         </FormProvider>

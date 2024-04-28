@@ -323,6 +323,80 @@ export const useLocalRepository = <T extends object>({
     }
   }, [loadRemoteItems, remoteItemsCache, dataTypeKey, queryToTable, reloadContext, getItemKey, getItemName])
 
+  const [, dispatchMsg] = Notification.useMsgContext()
+  /** 引数に渡されたデータの値を見てstateを適切に変更し然るべき場所への保存を判断し実行する。
+   * TODO: add, update, deleteを全部これに一本化したい */
+  const commit = useCallback(async (...items: LocalRepositoryItem<T>[]): Promise<LocalRepositoryItem<T>[]> => {
+    // リモート読み込み
+    const remoteItems = (await loadRemoteItems?.()) ?? []
+    setRemoteItemsCache(remoteItems)
+    // ローカル読み込み
+    const localItems: LocalRepositoryItem<T>[] = []
+    await openCursor('readonly', cursor => {
+      if (cursor.value.dataTypeKey !== dataTypeKey) return
+      const { state, itemKey, item } = cursor.value
+      localItems.push({ state, itemKey, item: item as T })
+    })
+    // 合成
+    const remoteAndLocalTemp = crossJoin(
+      localItems, local => local.itemKey,
+      remoteItems, remote => getItemKey(remote) as ItemKey,
+    ).map<readonly [ItemKey, LocalRepositoryItem<T>]>(pair => {
+      return [pair.key, pair.left ?? { state: '', itemKey: pair.key, item: pair.right }] as const
+    })
+    const remoteAndLocal = new Map(remoteAndLocalTemp)
+
+    // -------------------------
+    // 状態更新。UIで不具合が起きる可能性を考慮し、とにかくエラーチェックを厳格に作る
+    const result: LocalRepositoryItem<T>[] = []
+    for (const { item, state, itemKey } of items) {
+      // TODO: 楽観排他制御の考慮が無い
+      const stored = remoteAndLocal.get(itemKey)
+      if (state === '*') {
+        if (!stored) {
+          result.push({ ...(await updateLocalRepositoryItem(itemKey, item)), state: '+' })
+          dispatchMsg(msg => msg.warn(`更新対象データがリモートにもローカルにもありません: ${itemKey}`))
+        } else if (stored.state === '+') {
+          result.push({ ...(await updateLocalRepositoryItem(itemKey, item)), state: '+' })
+          dispatchMsg(msg => msg.warn(`新規作成データをデータ修正の区分で変更しようとしました: ${itemKey}`))
+        } else if (stored.state === '-') {
+          result.push({ ...(await updateLocalRepositoryItem(itemKey, item)), state: '-' })
+        } else {
+          result.push({ ...(await updateLocalRepositoryItem(itemKey, item)), state: '*' })
+        }
+
+      } else if (state === '+') {
+        if (!stored) {
+          result.push({ ...(await updateLocalRepositoryItem(itemKey, item)), state: '+' })
+        } else if (stored.state === '+') {
+          result.push({ ...(await updateLocalRepositoryItem(itemKey, item)), state: '+' })
+        } else if (stored) {
+          result.push({ ...(await updateLocalRepositoryItem(itemKey, item)), state: stored.state })
+          dispatchMsg(msg => msg.warn(`既に存在するデータと同じキーで新規追加しようとしました: ${itemKey}`))
+        }
+
+      } else if (state === '-') {
+        if (!stored) {
+          result.push({ itemKey, state, item })
+          dispatchMsg(msg => msg.warn(`削除しようとしているデータが存在しません: ${itemKey}`))
+        } else if (stored.state === '+') {
+          await deleteLocalRepositoryItem(itemKey, item)
+        } else {
+          result.push({ ...(await updateLocalRepositoryItem(itemKey, item)), state: '-' })
+        }
+
+      } else {
+        if (stored) {
+          result.push(stored)
+        } else {
+          result.push({ itemKey, state, item })
+          dispatchMsg(msg => msg.warn(`リモートにもローカルにも存在しないデータがあります: ${itemKey}`))
+        }
+      }
+    }
+    return result
+  }, [loadRemoteItems, openCursor, updateLocalRepositoryItem, deleteLocalRepositoryItem, dispatchMsg])
+
   return {
     ready: ready1 && ready2 && ready3,
     items: remoteAndLocalItems,
@@ -330,6 +404,7 @@ export const useLocalRepository = <T extends object>({
     add: addToLocalRepository,
     update: updateLocalRepositoryItem,
     remove: deleteLocalRepositoryItem,
+    commit,
   }
 }
 

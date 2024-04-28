@@ -204,7 +204,11 @@ textarea:read-only {
   @apply bg-neutral-200 dark:bg-neutral-950;
 }
 
-.bg-color-button {
+/* 単にクラス名で指定していないのは、index.cssで指定されているTailwind既定のスタイルリセットの優先度に負けてしまうから。 */
+.bg-color-button,
+button[type="button"].bg-color-button,
+button[type="submit"].bg-color-button,
+button[type="reset"].bg-color-button {
   @apply bg-neutral-700 dark:bg-neutral-300;
 }
 

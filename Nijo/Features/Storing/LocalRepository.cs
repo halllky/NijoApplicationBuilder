@@ -107,9 +107,7 @@ namespace Nijo.Features.Storing {
                               const {
                                 ready,
                                 items: {{agg.Item.ClassName}}Items,
-                                add: addToLocalRepository,
-                                update: updateLocalRepositoryItem,
-                                remove: deleteLocalRepositoryItem,
+                                commit: commit{{agg.Item.ClassName}},
                               } = {{localRepositosy.LocalLoaderHookName}}(editRange)
                             {{refRepositories.SelectTextTemplate(x => $$"""
 
@@ -147,9 +145,7 @@ namespace Nijo.Features.Storing {
                               const {
                                 ready: {{x.Aggregate.Item.ClassName}}IsReady,
                                 items: {{x.Aggregate.Item.ClassName}}Items,
-                                add: addTo{{x.Aggregate.Item.ClassName}}LocalRepository,
-                                update: update{{x.Aggregate.Item.ClassName}}LocalRepositoryItem,
-                                remove: delete{{x.Aggregate.Item.ClassName}}LocalRepositoryItem,
+                                commit: commit{{x.Aggregate.Item.ClassName}},
                               } = {{x.Repos.LocalLoaderHookName}}({{x.Aggregate.Item.ClassName}}filter)
                             """)}}
 
@@ -167,37 +163,31 @@ namespace Nijo.Features.Storing {
 
                               // 保存
                               const commit = useCallback(async (...commitItems: AggregateType.{{dataClass.TsTypeName}}[]) => {
-                                for (const item of commitItems) {
 
-                                  // 画面表示用のデータ型を登録更新のデータ型に変換する
+                                // 画面表示用のデータ型を登録更新のデータ型に変換する
+                                const arr{{agg.Item.ClassName}}: LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[] = []
+                            {{refRepositories.SelectTextTemplate(x => $$"""
+                                const arr{{x.Aggregate.Item.ClassName}}: LocalRepositoryItem<AggregateType.{{x.Aggregate.Item.TypeScriptTypeName}}>[] = []
+                            """)}}
+                                for (const item of commitItems) {
                                   const [
                                     item{{agg.Item.ClassName}}{{dataClass.GetRefFromPropsRecursively().Select((x, i) => $", item{i}_{x.Item1.MainAggregate.Item.ClassName}").Join("")}}
                                   ] = AggregateType.{{dataClass.ConvertFnNameToLocalRepositoryType}}(item)
 
-                                  // リポジトリへ反映する
-                                  const { itemKey: mainObjectItemKey } = await addToLocalRepository(item{{agg.Item.ClassName}}.item)
+                                  arr{{agg.Item.ClassName}}.push(item{{agg.Item.ClassName}})
                             {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate((x, i) => x.IsArray ? $$"""
-
-                                  for (const { itemKey, item } of item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
-                                    await update{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(itemKey, item)
-                                  }
+                                  arr{{x.Item1.MainAggregate.Item.ClassName}}.push(...item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}})
                             """ : $$"""
-
-                                  if (item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) {
-                                    await update{{x.Item1.MainAggregate.Item.ClassName}}LocalRepositoryItem(item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.itemKey, item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}.item)
-                                  }
+                                  if (item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) arr{{x.Item1.MainAggregate.Item.ClassName}}.push(item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}})
                             """)}}
                                 }
-                              }, [
-                                addToLocalRepository,
-                                updateLocalRepositoryItem,
-                                deleteLocalRepositoryItem,
-                            {{refRepositories.SelectTextTemplate(x => $$"""
-                                addTo{{x.Aggregate.Item.ClassName}}LocalRepository,
-                                update{{x.Aggregate.Item.ClassName}}LocalRepositoryItem,
-                                delete{{x.Aggregate.Item.ClassName}}LocalRepositoryItem,
+
+                                // リポジトリへ反映する
+                                await commit{{agg.Item.ClassName}}(...arr{{agg.Item.ClassName}})
+                            {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate((x, i) => $$"""
+                                await commit{{x.Item1.MainAggregate.Item.ClassName}}(...arr{{x.Item1.MainAggregate.Item.ClassName}})
                             """)}}
-                              ])
+                              }, [commit{{agg.Item.ClassName}}{{refRepositories.Select(x => $", commit{x.Aggregate.Item.ClassName}").Join("")}}])
 
                               return { ready: allReady, items, commit }
                             }

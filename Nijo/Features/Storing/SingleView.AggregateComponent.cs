@@ -92,12 +92,11 @@ namespace Nijo.Features.Storing {
                       const item = getValues({{registerName}})
 
                       const handleCreate = useCallback(() => {
-                        const added = addTo{{_aggregate.Item.ClassName}}Repository({{dataClass.RenderNewObjectLiteral("UUID.generate() as Util.ItemKey")}})
-                        setValue({{registerName}}, added)
+                        setValue({{registerName}}, {{WithIndent(dataClass.RenderNewObjectLiteral("UUID.generate() as Util.ItemKey"), "    ")}})
                       }, [setValue])
                       const handleDelete = useCallback(() => {
-                        const deleted = remove{{_aggregate.Item.ClassName}}RepositoryItem(getValues())
-                        setValue({{registerName}}, deleted)
+                        const current = getValues()
+                        if (current) setValue({{registerName}}, { ...current, {{DisplayDataClass.LOCAL_REPOS_STATE}}: '-' })
                       }, [setValue, getValues])
 
                       return (
@@ -279,12 +278,19 @@ namespace Nijo.Features.Storing {
 
                       const options = useMemo<Layout.DataTableProps<AggregateType.{{dataClass.TsTypeName}}>>(() => ({
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
-                        onChangeRow: update,
+                        onChangeRow: (rowIndex, row) => {
+                          const updated = { ...row }
+                    {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate(x => $$"""
+                          if (row.{{x.Path.Join("?.")}})
+                            updated.{{x.Path.Join("!.")}} = { ...row.{{x.Path.Join(".")}}, {{DisplayDataClass.LOCAL_REPOS_STATE}}: '*' }
+                    """)}}
+                          update(rowIndex, updated)
+                        },
                     """)}}
                         columns: [
                           {{WithIndent(colDefs.SelectTextTemplate(def => def.Render()), "      ")}}
                         ],
-                      }), [])
+                      }), [update])
 
                       return (
                         <VForm.Item wide

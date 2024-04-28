@@ -106,6 +106,7 @@ namespace Nijo.Features.Storing {
                     import React, { useCallback, useEffect, useMemo, useRef, useState, useReducer } from 'react'
                     import { Link } from 'react-router-dom'
                     import { useFieldArray, FormProvider } from 'react-hook-form'
+                    import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline'
                     import dayjs from 'dayjs'
                     import { UUID } from 'uuidjs'
                     import * as Util from '../../util'
@@ -153,7 +154,15 @@ namespace Nijo.Features.Storing {
                       }, [append])
 
                       const handleUpdateRow = useCallback(async (index: number, row: GridRow) => {
-                        update(index, row)
+                        const updated = {
+                          ...row,
+                          {{DisplayDataClass.LOCAL_REPOS_STATE}}: row.{{DisplayDataClass.LOCAL_REPOS_STATE}} === '' ? '*' : row.{{DisplayDataClass.LOCAL_REPOS_STATE}},
+                        }
+                    {{dataClass.GetRefFromPropsRecursively().Where(x => !x.IsArray).SelectTextTemplate(x => $$"""
+                        if (row.{{x.Path.Join("?.")}})
+                          updated.{{x.Path.Join("!.")}} = { ...row.{{x.Path.Join(".")}}, {{DisplayDataClass.LOCAL_REPOS_STATE}}: '*' }
+                    """)}}
+                        update(index, updated)
                       }, [update])
 
                       const dtRef = useRef<Layout.DataTableRef<GridRow>>(null)
@@ -172,6 +181,11 @@ namespace Nijo.Features.Storing {
                         remove(deletedRowIndex)
                       }, [update, remove])
 
+                      // データの一時保存
+                      const onSave = useCallback(async () => {
+                        await commit(...fields)
+                      }, [commit, fields])
+
                       return (
                         <div className="page-content-root gap-4 pb-[50vh]">
 
@@ -185,6 +199,7 @@ namespace Nijo.Features.Storing {
                                 <div className="basis-4"></div>
                                 <Input.Button onClick={handleAdd}>追加</Input.Button>
                                 <Input.Button onClick={handleRemove}>削除</Input.Button>
+                                <Input.IconButton fill icon={BookmarkSquareIcon} onClick={onSave}>一時保存</Input.IconButton>
                               </div>
                               <VForm.Container leftColumnMinWidth="10rem">
                     {{groupedSearchConditions.SelectTextTemplate(group => $$"""
