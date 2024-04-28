@@ -95,7 +95,7 @@ namespace Nijo.Features.Storing {
                         setValue({{registerName}}, {{WithIndent(dataClass.RenderNewObjectLiteral("UUID.generate() as Util.ItemKey"), "    ")}})
                       }, [setValue])
                       const handleDelete = useCallback(() => {
-                        const current = getValues()
+                        const current = getValues({{registerName}})
                         if (current) setValue({{registerName}}, { ...current, {{DisplayDataClass.LOCAL_REPOS_STATE}}: '-' })
                       }, [setValue, getValues])
 

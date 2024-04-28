@@ -1,5 +1,4 @@
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { UUID } from 'uuidjs'
 import * as Collection from '../collection'
 import * as Input from '../input'
 import * as Tree from './Tree'
@@ -267,15 +266,6 @@ export const useLocalRepository = <T extends object>({
     reload()
   }, [reload])
 
-  const addToLocalRepository = useCallback(async (item: T): Promise<LocalRepositoryItem<T>> => {
-    const itemKey = UUID.generate() as ItemKey
-    const itemName = getItemName?.(item) ?? ''
-    const state: LocalRepositoryState = '+'
-    await queryToTable(table => table.put({ state, dataTypeKey, itemKey, itemName, item }))
-    await reloadContext()
-    return { itemKey, state, item }
-  }, [dataTypeKey, queryToTable, reloadContext, getItemName])
-
   const updateLocalRepositoryItem = useCallback(async (itemKey: ItemKey, item: T): Promise<LocalRepositoryItem<T>> => {
     const itemName = getItemName?.(item) ?? ''
     const stateBeforeUpdate = (await queryToTable(table => table.get([dataTypeKey, itemKey])))?.state
@@ -401,9 +391,6 @@ export const useLocalRepository = <T extends object>({
     ready: ready1 && ready2 && ready3,
     items: remoteAndLocalItems,
     reload,
-    add: addToLocalRepository,
-    update: updateLocalRepositoryItem,
-    remove: deleteLocalRepositoryItem,
     commit,
   }
 }
