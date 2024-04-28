@@ -145,29 +145,6 @@ namespace Nijo.Features.Storing {
             return $"create{GetConditionClassName(agg)}";
         }
 
-        private static string GetCSharpType(AggregateMember.ValueMember vm) {
-            if (vm is AggregateMember.Variation) {
-                throw new Exception("Renderメソッドの中で直で指定するのでこの分岐にはこない");
-
-            } else if (vm.Options.MemberType.SearchBehavior == SearchBehavior.Range) {
-                return $"{FromTo.CLASSNAME}<{vm.CSharpTypeName}?>";
-
-            } else {
-                return vm.CSharpTypeName;
-            }
-        }
-        private static string GetTypeScriptType(AggregateMember.ValueMember vm) {
-            if (vm is AggregateMember.Variation) {
-                throw new Exception("Renderメソッドの中で直で指定するのでこの分岐にはこない");
-
-            } else if (vm.Options.MemberType.SearchBehavior == SearchBehavior.Range) {
-                return $"{{ {FromTo.FROM}?: {vm.TypeScriptTypename}, {FromTo.TO}?: {vm.TypeScriptTypename} }}";
-
-            } else {
-                return vm.TypeScriptTypename;
-            }
-        }
-
         /// <summary>
         /// Variationはどの種別のデータを結果に含めるかをtrue/falseで選択する形のため種別ごとのプロパティ名を列挙する
         /// </summary>
@@ -224,6 +201,14 @@ namespace Nijo.Features.Storing {
                     return true;
 
                 if (m is AggregateMember.Ref)
+                    return true;
+
+                if (m is AggregateMember.Child child
+                    && child.MemberAggregate.IsInTreeOf(_aggregate))
+                    return true;
+
+                if (m is AggregateMember.VariationItem vi
+                    && vi.MemberAggregate.IsInTreeOf(_aggregate))
                     return true;
 
                 if (m is AggregateMember.Parent parent
@@ -300,39 +285,72 @@ namespace Nijo.Features.Storing {
                     """;
         }
 
+        private static string GetCSharpType(AggregateMember.ValueMember vm) {
+            if (vm is AggregateMember.Variation) {
+                throw new Exception("Renderメソッドの中で直で指定するのでこの分岐にはこない");
+
+            } else if (vm.Options.MemberType.SearchBehavior == SearchBehavior.Range) {
+                return $"{FromTo.CLASSNAME}<{vm.CSharpTypeName}?>";
+
+            } else {
+                return vm.CSharpTypeName;
+            }
+        }
         internal string RenderSearchConditionTypeDeclaring(bool csharp) {
             return EnumerateSearchConditionAggregates().SelectTextTemplate(agg => {
                 if (csharp) {
                     // C#
+                    string RenderMember(AggregateMember.AggregateMemberBase member) {
+                        if (member is AggregateMember.Variation variation) {
+                            return VariationMemberProps(variation).SelectTextTemplate(x => $$"""
+                                public bool? {{x.Value}} { get; set; }
+                                """);
+
+                        } else if (member is AggregateMember.ValueMember vm) {
+                            return vm.Options.MemberType.SearchBehavior == SearchBehavior.Range
+                                ? $"public {FromTo.CLASSNAME}<{vm.CSharpTypeName}?> {vm.MemberName} {{ get; set; }} = new();"
+                                : $"public {vm.CSharpTypeName}? {vm.MemberName} {{ get; set; }}";
+
+                        } else if (member is AggregateMember.RelationMember rel) {
+                            return $"public {GetConditionClassName(rel.MemberAggregate)} {rel.MemberName} {{ get; set; }} = new();";
+
+                        } else {
+                            throw new InvalidOperationException();
+                        }
+                    }
+
                     return $$"""
                         public class {{GetConditionClassName(agg)}} {
                         {{EnumerateSearchConditionOwnMembers(agg).SelectTextTemplate(m => $$"""
-                        {{If(m is AggregateMember.Variation, () => $$"""
-                        {{VariationMemberProps((AggregateMember.Variation)m).SelectTextTemplate(x => $$"""
-                            public bool? {{x.Value}} { get; set; }
-                        """)}}
-                        """).ElseIf(m is AggregateMember.ValueMember, () => $$"""
-                            public {{GetCSharpType((AggregateMember.ValueMember)m)}}? {{m.MemberName}} { get; set; }
-                        """).ElseIf(m is AggregateMember.RelationMember, () => $$"""
-                            public {{GetConditionClassName(((AggregateMember.RelationMember)m).MemberAggregate)}}? {{m.MemberName}} { get; set; } = new();
-                        """)}}
+                            {{WithIndent(RenderMember(m), "    ")}}
                         """)}}
                         }
                         """;
                 } else {
                     // TypeScript
+                    string RenderMember(AggregateMember.AggregateMemberBase member) {
+                        if (member is AggregateMember.Variation variation) {
+                            return VariationMemberProps(variation).SelectTextTemplate(x => $$"""
+                                {{x.Value}}?: boolean
+                                """);
+
+                        } else if (member is AggregateMember.ValueMember vm) {
+                            return vm.Options.MemberType.SearchBehavior == SearchBehavior.Range
+                                ? $"{vm.MemberName}: {{ {FromTo.FROM}?: {vm.TypeScriptTypename}, {FromTo.TO}?: {vm.TypeScriptTypename} }}"
+                                : $"{vm.MemberName}?: {vm.TypeScriptTypename}";
+
+                        } else if (member is AggregateMember.RelationMember rel) {
+                            return $"{rel.MemberName}: {GetConditionClassName(rel.MemberAggregate)}";
+                             
+                        } else {
+                            throw new InvalidOperationException();
+                        }
+                    }
+
                     return $$"""
                         export type {{GetConditionClassName(agg)}} = {
                         {{EnumerateSearchConditionOwnMembers(agg).SelectTextTemplate(m => $$"""
-                        {{If(m is AggregateMember.Variation, () => $$"""
-                        {{VariationMemberProps((AggregateMember.Variation)m).SelectTextTemplate(x => $$"""
-                          {{x.Value}}?: boolean
-                        """)}}
-                        """).ElseIf(m is AggregateMember.ValueMember, () => $$"""
-                          {{m.MemberName}}?: {{GetTypeScriptType((AggregateMember.ValueMember)m)}}
-                        """).ElseIf(m is AggregateMember.RelationMember, () => $$"""
-                          {{m.MemberName}}?: {{GetConditionClassName(((AggregateMember.RelationMember)m).MemberAggregate)}}
-                        """)}}
+                          {{WithIndent(RenderMember(m), "  ")}}
                         """)}}
                         }
                         """;

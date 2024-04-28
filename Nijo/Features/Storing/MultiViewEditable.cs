@@ -86,7 +86,7 @@ namespace Nijo.Features.Storing {
                       const [, dispatchMsg] = Util.useMsgContext()
 
                       // 検索条件
-                      const [filter, setFilter] = useState<AggregateType.{{findMany.TypeScriptConditionClass}}>(() => ({}))
+                      const [filter, setFilter] = useState<AggregateType.{{findMany.TypeScriptConditionClass}}>(() => AggregateType.{{findMany.TypeScriptConditionInitializerFn}}())
                       const [currentPage, dispatchPaging] = useReducer(pagingReducer, { pageIndex: 0 })
 
                       const rhfSearchMethods = Util.useFormEx<AggregateType.{{findMany.TypeScriptConditionClass}}>({})

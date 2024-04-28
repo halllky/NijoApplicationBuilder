@@ -87,11 +87,13 @@ namespace Nijo.Features.Storing {
                         // そのために検索条件の各項目が関連集約のどの項目と対応するかを調べて返すための関数
                         AggregateMember.ValueMember FindRootAggregateSearchConditionMember(AggregateMember.ValueMember refSearchConditionMember) {
                             var refPath = refSearchConditionMember.DeclaringAggregate.PathFromEntry();
-                            return findMany
+                            var matched = findMany
                                 .EnumerateSearchConditionMembers()
-                                .Single(kv2 => kv2.Declared == refSearchConditionMember.Declared
+                                .Where(kv2 => kv2.Declared == refSearchConditionMember.Declared
                                             // ある集約から別の集約へ複数経路の参照がある場合は対応するメンバーが複数とれてしまうのでパスの後方一致でも絞り込む
-                                            && refPath.EndsWith(kv2.Owner.PathFromEntry()));
+                                            && refPath.EndsWith(kv2.Owner.PathFromEntry()))
+                                .ToArray();
+                            return matched.Single();
                         }
 
                         return $$"""
@@ -118,25 +120,19 @@ namespace Nijo.Features.Storing {
                                   const [{{keyArray.Select(k => k.VarName).Join(", ")}}] = editRange
                             {{x.RootAggregateMembersForSingleViewLoading.SelectTextTemplate((kv, i) => $$"""
                             {{If(kv.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
-                                  if (f.{{kv.Declared.GetFullPath().Join("?.")}} !== undefined) {
-                                    f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}} = {{keyArray.SingleOrDefault(k => k.Member.Declared == kv.Declared)?.VarName ?? ""}}
-                                    f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}} = {{keyArray.SingleOrDefault(k => k.Member.Declared == kv.Declared)?.VarName ?? ""}}
-                                  }
+                                  f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}} = {{keyArray.SingleOrDefault(k => k.Member.Declared == kv.Declared)?.VarName ?? ""}}
+                                  f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}} = {{keyArray.SingleOrDefault(k => k.Member.Declared == kv.Declared)?.VarName ?? ""}}
                             """).Else(() => $$"""
-                                  if (f.{{kv.Declared.GetFullPath().SkipLast(1).Join("?.")}} !== undefined)
-                                    f.{{kv.Declared.GetFullPath().Join(".")}} = {{keyArray.SingleOrDefault(k => k.Member.Declared == kv.Declared)?.VarName ?? ""}}
+                                  f.{{kv.Declared.GetFullPath().Join(".")}} = {{keyArray.SingleOrDefault(k => k.Member.Declared == kv.Declared)?.VarName ?? ""}}
                             """)}}
                             """)}}
                                 } else if (editRange) {
                             {{x.RootAggregateMembersForLoad.SelectTextTemplate((kv, i) => $$"""
                             {{If(kv.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
-                                  if (f.{{kv.Declared.GetFullPath().Join("?.")}} !== undefined) {
-                                    f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}} = editRange.filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}?.{{FromTo.FROM}}
-                                    f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}} = editRange.filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}?.{{FromTo.TO}}
-                                  }
+                                  f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}} = editRange.filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}?.{{FromTo.FROM}}
+                                  f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}} = editRange.filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}?.{{FromTo.TO}}
                             """).Else(() => $$"""
-                                  if (f.{{kv.Declared.GetFullPath().SkipLast(1).Join("?.")}} !== undefined)
-                                    f.{{kv.Declared.GetFullPath().Join(".")}} = editRange.filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}
+                                  f.{{kv.Declared.GetFullPath().Join(".")}} = editRange.filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}
                             """)}}
                             """)}}
                                 }
