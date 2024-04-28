@@ -159,22 +159,8 @@ namespace Nijo.Core {
             internal abstract string CSharpTypeName { get; }
             internal abstract string TypeScriptTypename { get; }
 
-            internal virtual IEnumerable<string> GetFullPath(GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
-                var path = Owner.PathFromEntry();
-                if (since != null) path = path.Since(since);
-                if (until != null) path = path.Until(until);
-
-                foreach (var edge in path) {
-                    if (edge.Source == edge.Terminal && edge.IsParentChild()) {
-                        yield return PARENT_PROPNAME; // 子から親に向かって辿る場合
-                    } else {
-                        yield return edge.RelationName;
-                    }
-                }
-                yield return MemberName;
-            }
             public override string ToString() {
-                return GetFullPath().Join(".");
+                return this.GetFullPath().Join(".");
             }
         }
         internal abstract class ValueMember : AggregateMemberBase {

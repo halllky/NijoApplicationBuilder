@@ -276,14 +276,7 @@ namespace Nijo.Features.Storing {
                                && rel is not AggregateMember.Parent);
 
                 if (agg2.IsChildrenMember()) {
-                    // TODO: GraphNode<Aggregate> を AggregateMember.Children に変換したい
-                    var thisPath = agg
-                        .GetMembers()
-                        .First()
-                        .GetFullPath()
-                        .SkipLast(1)
-                        .Select(p => $"?.{p}")
-                        .Join("");
+                    var thisPath = agg.GetFullPath().Select(p => $"?.{p}").Join("");
                     var arrA = $"{instanceA}{thisPath}";
                     var arrB = $"{instanceB}{thisPath}";
 
@@ -336,5 +329,35 @@ namespace Nijo.Features.Storing {
                 """;
         }
         #endregion 値の同一比較
+    }
+
+    internal static partial class StoringExtensions {
+
+        /// <summary>
+        /// エントリーからのパスを <see cref="TransactionScopeDataClass"/> のインスタンスの型のルールにあわせて返す。
+        /// </summary>
+        internal static IEnumerable<string> GetFullPath(this GraphNode<Aggregate> aggregate, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+            var path = aggregate.PathFromEntry();
+            if (since != null) path = path.Since(since);
+            if (until != null) path = path.Until(until);
+
+            foreach (var edge in path) {
+                if (edge.Source == edge.Terminal && edge.IsParentChild()) {
+                    yield return AggregateMember.PARENT_PROPNAME; // 子から親に向かって辿る場合
+                } else {
+                    yield return edge.RelationName;
+                }
+            }
+        }
+
+        /// <summary>
+        /// エントリーからのパスを <see cref="TransactionScopeDataClass"/> のインスタンスの型のルールにあわせて返す。
+        /// </summary>
+        internal static IEnumerable<string> GetFullPath(this AggregateMember.AggregateMemberBase member, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+            foreach (var path in member.Owner.GetFullPath(since, until)) {
+                yield return path;
+            }
+            yield return member.MemberName;
+        }
     }
 }

@@ -371,7 +371,7 @@ namespace Nijo.Features.Storing {
         }
     }
 
-    internal static class StoringExtensions {
+    internal static partial class StoringExtensions {
         /// <summary>
         /// エントリーからのパスを <see cref="DisplayDataClass"/> のデータ構造にあわせて返す。
         /// たとえば自身のメンバーならその前に <see cref="DisplayDataClass.OWN_MEMBERS"/> を挟むなど
@@ -432,6 +432,8 @@ namespace Nijo.Features.Storing {
         /// たとえば自身のメンバーならその前に <see cref="DisplayDataClass.OWN_MEMBERS"/> を挟むなど
         /// </summary>
         internal static IEnumerable<string> GetFullPathAsSingleViewDataClass(this AggregateMember.AggregateMemberBase member) {
+
+            /// TODO: <see cref="GetFullPathAsSingleViewDataClass(DisplayDataClass)"/> とほぼ同じロジックなのでリファクタリングできそう
 
             var enumeratingRefTargetKeyName = false;
 
