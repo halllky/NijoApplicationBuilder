@@ -3,6 +3,7 @@ using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
+using System.Formats.Tar;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -256,5 +257,84 @@ namespace Nijo.Features.Storing {
             return (instanceName, valueSourceAggregate);
         }
         #endregion ToDbEntity
+
+
+        #region 値の同一比較
+        internal string DeepEqualTsFnName => $"deepEquals{_aggregate.Item.ClassName}";
+        internal string RenderTsDeppEquals() {
+
+            static string Render(string instanceA, string instanceB, GraphNode<Aggregate> agg) {
+                var agg2 = agg.IsChildrenMember() ? agg.AsEntry() : agg;
+                var compareMembers = agg2
+                    .GetMembers()
+                    .OfType<AggregateMember.ValueMember>()
+                    .Where(vm => vm.Inherits?.Relation.IsParentChild() != true);
+                var childAggregates = agg2
+                    .GetMembers()
+                    .OfType<AggregateMember.RelationMember>()
+                    .Where(rel => rel is not AggregateMember.Ref
+                               && rel is not AggregateMember.Parent);
+
+                if (agg2.IsChildrenMember()) {
+                    // TODO: GraphNode<Aggregate> を AggregateMember.Children に変換したい
+                    var thisPath = agg
+                        .GetMembers()
+                        .First()
+                        .GetFullPath()
+                        .SkipLast(1)
+                        .Select(p => $"?.{p}")
+                        .Join("");
+                    var arrA = $"{instanceA}{thisPath}";
+                    var arrB = $"{instanceB}{thisPath}";
+
+                    var depth = agg2.EnumerateAncestors().Count();
+                    var i = $"i{depth}";
+                    var itemA = $"a{depth}";
+                    var itemB = $"b{depth}";
+
+                    // TODO: 要素の順番を考慮していない
+                    return $$"""
+
+                        // {{agg2.Item.DisplayName}}
+                        if ({{arrA}}?.length !== {{arrB}}?.length) return false
+                        if ({{arrA}} !== undefined && {{arrB}} !== undefined) {
+                          for (let {{i}} = 0; {{i}} < {{arrA}}.length; {{i}}++) {
+                            const {{itemA}} = {{arrA}}[{{i}}]
+                            const {{itemB}} = {{arrB}}[{{i}}]
+                        {{compareMembers.SelectTextTemplate(vm => $$"""
+                            if ({{itemA}}.{{vm.Declared.GetFullPath().Join("?.")}} !== {{itemB}}.{{vm.Declared.GetFullPath().Join("?.")}}) return false
+                        """)}}
+                        {{childAggregates.SelectTextTemplate(rel => $$"""
+                            {{WithIndent(Render(itemA, itemB, rel.MemberAggregate), "    ")}}
+                        """)}}
+                          }
+                        }
+                        """;
+
+                } else {
+                    return $$"""
+
+                        {{If(!agg2.IsRoot(), () => $$"""
+                        // {{agg2.Item.DisplayName}}
+                        """)}}
+                        {{compareMembers.SelectTextTemplate(vm => $$"""
+                        if ({{instanceA}}?.{{vm.Declared.GetFullPath().Join("?.")}} !== {{instanceB}}?.{{vm.Declared.GetFullPath().Join("?.")}}) return false
+                        """)}}
+                        {{childAggregates.SelectTextTemplate(rel => $$"""
+                        {{Render(instanceA, instanceB, rel.MemberAggregate)}}
+                        """)}}
+                        """;
+                }
+            }
+
+            return $$"""
+                export const {{DeepEqualTsFnName}} = (a: {{_aggregate.Item.TypeScriptTypeName}}, b: {{_aggregate.Item.TypeScriptTypeName}}): boolean => {
+                  {{WithIndent(Render("a", "b", _aggregate), "  ")}}
+
+                  return true
+                }
+                """;
+        }
+        #endregion 値の同一比較
     }
 }
