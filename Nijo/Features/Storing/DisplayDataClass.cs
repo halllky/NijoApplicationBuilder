@@ -24,12 +24,20 @@ namespace Nijo.Features.Storing {
 
         internal const string OWN_MEMBERS = "own_members";
         /// <summary>
-        /// 存在しないインスタンス（react-hook-formが作成したインスタンス）ならfalse or undefined,
-        /// 存在するインスタンス（ユーザーが作成したインスタンス）ならtrue
+        /// リモートリポジトリに存在しないインスタンス（react-hook-formが作成したインスタンス）ならfalse or undefined,
+        /// 存在するインスタンス（ユーザーが作成したインスタンス）ならtrue。
+        /// UI上でChildrenの主キーが変更可能かどうかの制御、削除のアクションが起きた時の挙動などに使用
         /// </summary>
         internal const string EXISTS_IN_REMOTE_REPOS = "existsInRemoteRepository";
+        /// <summary>
+        /// 画面上で何らかの変更が加えられてから、リモートリポジトリで削除されるまでの間、trueになる
+        /// </summary>
+        internal const string WILL_BE_CHANGED = "willBeChanged";
+        /// <summary>
+        /// 画面上で削除が指示されてから、リモートリポジトリで削除されるまでの間、trueになる
+        /// </summary>
+        internal const string WILL_BE_DELETED = "willBeDeleted";
         internal const string LOCAL_REPOS_ITEMKEY = "localRepositoryItemKey";
-        internal const string LOCAL_REPOS_STATE = "localRepositoryState";
 
         internal IEnumerable<OwnProp> GetOwnProps() {
             return MainAggregate
@@ -99,8 +107,9 @@ namespace Nijo.Features.Storing {
                 {
                 {{If(MainAggregate.IsRoot(), () => $$"""
                   {{LOCAL_REPOS_ITEMKEY}}: {{itemKey}},
-                  {{LOCAL_REPOS_STATE}}: '+',
-                  {{EXISTS_IN_REMOTE_REPOS}}: true,
+                  {{EXISTS_IN_REMOTE_REPOS}}: false,
+                  {{WILL_BE_CHANGED}}: true,
+                  {{WILL_BE_DELETED}}: false,
                 """)}}
                   {{OWN_MEMBERS}}: {
                 {{MainAggregate.GetMembers().OfType<AggregateMember.Schalar>().Where(m => m.DeclaringAggregate == MainAggregate && m.Options.MemberType is Uuid).SelectTextTemplate(m => $$"""
@@ -143,7 +152,9 @@ namespace Nijo.Features.Storing {
                 export const {{ConvertFnNameToLocalRepositoryType}} = (displayData: {{TsTypeName}}) => {
                   const item0: Util.LocalRepositoryItem<{{MainAggregate.Item.TypeScriptTypeName}}> = {
                     itemKey: displayData.{{LOCAL_REPOS_ITEMKEY}},
-                    state: displayData.{{LOCAL_REPOS_STATE}},
+                    existsInRemoteRepository: displayData.{{EXISTS_IN_REMOTE_REPOS}},
+                    willBeChanged: displayData.{{WILL_BE_CHANGED}},
+                    willBeDeleted: displayData.{{WILL_BE_DELETED}},
                     item: {{WithIndent(RenderItem(this, "displayData"), "    ")}},
                   }
                 {{GetRefFromPropsRecursively().SelectTextTemplate((x, i) => x.IsArray ? $$"""
@@ -152,7 +163,9 @@ namespace Nijo.Features.Storing {
                     .filter((y): y is Exclude<typeof y, undefined> => y !== undefined)
                     .map(y => ({
                       itemKey: y.{{LOCAL_REPOS_ITEMKEY}},
-                      state: y.{{LOCAL_REPOS_STATE}},
+                      existsInRemoteRepository: y.{{EXISTS_IN_REMOTE_REPOS}},
+                      willBeChanged: y.{{WILL_BE_CHANGED}},
+                      willBeDeleted: y.{{WILL_BE_DELETED}},
                       item: {{WithIndent(RenderItem(new DisplayDataClass(x.Item1.MainAggregate.AsEntry()), "y"), "    ")}},
                     })) ?? []
                 """ : $$"""
@@ -161,7 +174,9 @@ namespace Nijo.Features.Storing {
                     ? undefined
                     : {
                       itemKey: displayData{{x.Path.Select(p => $".{p}").Join("")}}.{{LOCAL_REPOS_ITEMKEY}},
-                      state: displayData{{x.Path.Select(p => $".{p}").Join("")}}.{{LOCAL_REPOS_STATE}},
+                      existsInRemoteRepository: displayData{{x.Path.Select(p => $".{p}").Join("")}}.{{EXISTS_IN_REMOTE_REPOS}},
+                      willBeChanged: displayData{{x.Path.Select(p => $".{p}").Join("")}}.{{WILL_BE_CHANGED}},
+                      willBeDeleted: displayData{{x.Path.Select(p => $".{p}").Join("")}}.{{WILL_BE_DELETED}},
                       item: {{WithIndent(RenderItem(x.Item1, $"displayData{x.Path.Select(p => $".{p}").Join("")}"), "    ")}},
                     }
                 """)}}
@@ -230,8 +245,9 @@ namespace Nijo.Features.Storing {
                     {
                     {{If(dc.MainAggregate.IsRoot(), () => $$"""
                       {{LOCAL_REPOS_ITEMKEY}}: {{instance}}.itemKey,
-                      {{LOCAL_REPOS_STATE}}: {{instance}}.state,
-                      {{EXISTS_IN_REMOTE_REPOS}}: true,
+                      {{EXISTS_IN_REMOTE_REPOS}}: {{instance}}.existsInRemoteRepository,
+                      {{WILL_BE_CHANGED}}: {{instance}}.willBeChanged,
+                      {{WILL_BE_DELETED}}: {{instance}}.willBeDeleted,
                     """)}}
                       {{OWN_MEMBERS}}: {
                     {{ownMembers.SelectTextTemplate(m => $$"""
@@ -283,8 +299,9 @@ namespace Nijo.Features.Storing {
                     export type {{dataClass.TsTypeName}} = {
                     {{If(agg.IsRoot(), () => $$"""
                       {{LOCAL_REPOS_ITEMKEY}}: Util.ItemKey
-                      {{LOCAL_REPOS_STATE}}: Util.LocalRepositoryState
-                      {{EXISTS_IN_REMOTE_REPOS}}?: true
+                      {{EXISTS_IN_REMOTE_REPOS}}: boolean
+                      {{WILL_BE_CHANGED}}: boolean
+                      {{WILL_BE_DELETED}}: boolean
                     """)}}
                       {{OWN_MEMBERS}}: {
                     {{dataClass.GetOwnProps().SelectTextTemplate(p => $$"""

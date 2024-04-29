@@ -89,19 +89,19 @@ namespace Nijo.Features.Storing {
                     """)}}
                     }) => {
                       const { register, registerEx, watch, getValues, setValue } = Util.useFormContextEx<{{useFormType}}>()
-                      const item = getValues({{registerName}})
-                      const state = watch({{registerName}})?.{{DisplayDataClass.LOCAL_REPOS_STATE}}
+                      const item = watch({{registerName}})
+                      const state = item ? Util.getLocalRepositoryState(item) : undefined
 
                       const handleCreate = useCallback(() => {
                         setValue({{registerName}}, {{WithIndent(dataClass.RenderNewObjectLiteral("UUID.generate() as Util.ItemKey"), "    ")}})
                       }, [setValue])
                       const handleDelete = useCallback(() => {
                         const current = getValues({{registerName}})
-                        if (current) setValue({{registerName}}, { ...current, {{DisplayDataClass.LOCAL_REPOS_STATE}}: '-' })
+                        if (current) setValue({{registerName}}, { ...current, {{DisplayDataClass.WILL_BE_DELETED}}: true })
                       }, [setValue, getValues])
                       const handleRedo = useCallback(() => {
                         const current = getValues({{registerName}})
-                        if (current) setValue({{registerName}}, { ...current, {{DisplayDataClass.LOCAL_REPOS_STATE}}: '*' })
+                        if (current) setValue({{registerName}}, { ...current, {{DisplayDataClass.WILL_BE_DELETED}}: false })
                       }, [setValue, getValues])
 
                       return (
@@ -461,7 +461,7 @@ namespace Nijo.Features.Storing {
                            && schalar is AggregateMember.ValueMember vm
                            && vm.IsKey) {
                     if (_aggregate.IsRoot()) {
-                        reactComponent.Props.Add("readOnly", $"item?.{DisplayDataClass.LOCAL_REPOS_STATE} !== '+'");
+                        reactComponent.Props.Add("readOnly", $"!item?.{DisplayDataClass.EXISTS_IN_REMOTE_REPOS}");
 
                     } else if (_aggregate.IsChildrenMember()) {
                         reactComponent.Props.Add("readOnly", $"item?.{DisplayDataClass.OWN_MEMBERS}.{TransactionScopeDataClass.IS_STORED_DATA}");
@@ -584,7 +584,7 @@ namespace Nijo.Features.Storing {
                     || prop is AggregateMember.Ref @ref && @ref.Relation.IsPrimary()) {
 
                     if (_aggregate.IsRoot()) {
-                        return $"{readOnly}={{item?.{DisplayDataClass.LOCAL_REPOS_STATE} !== '+'}}";
+                        return $"{readOnly}={{!item?.{DisplayDataClass.EXISTS_IN_REMOTE_REPOS}}}";
 
                     } else if (_aggregate.IsChildrenMember()) {
                         return $"{readOnly}={{item?.{DisplayDataClass.OWN_MEMBERS}.{TransactionScopeDataClass.IS_STORED_DATA}}}";

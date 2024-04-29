@@ -94,10 +94,7 @@ namespace Nijo.Parts.WebClient {
                         (row, value) => {
                           if (row.{{rowAccessor}}.{{ownerPath.Join("?.")}}) {
                             row.{{rowAccessor}}.{{memberPath.Join(".")}} = value
-
-                            if (row.{{rowAccessor}}.{{ownerPath.Join(".")}}.{{DisplayDataClass.LOCAL_REPOS_STATE}} === '') {
-                              row.{{rowAccessor}}.{{ownerPath.Join(".")}}.{{DisplayDataClass.LOCAL_REPOS_STATE}} = '*'
-                            }
+                            row.{{rowAccessor}}.{{ownerPath.Join(".")}}.{{DisplayDataClass.WILL_BE_CHANGED}} = true
                           }
                         }
                         """;

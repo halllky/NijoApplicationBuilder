@@ -240,16 +240,10 @@ namespace Nijo.Features.Storing {
                         }
                       }, [post, navigate, pkArray])
 
-                    """).ElseIf(_type == E_Type.Create, () => $$"""
+                    """).Else(() => $$"""
                       // データの一時保存
                       const onSave: SubmitHandler<AggregateType.{{dataClass.TsTypeName}}> = useCallback(async data => {
-                        await commit({ ...data, {{DisplayDataClass.LOCAL_REPOS_STATE}}: '+' })
-                      }, [commit])
-
-                    """).ElseIf(_type == E_Type.Edit, () => $$"""
-                      // データの一時保存
-                      const onSave: SubmitHandler<AggregateType.{{dataClass.TsTypeName}}> = useCallback(async data => {
-                        await commit({ ...data, {{DisplayDataClass.LOCAL_REPOS_STATE}}: '*' })
+                        await commit({ ...data, {{DisplayDataClass.WILL_BE_CHANGED}}: true })
                       }, [commit])
 
                     """)}}

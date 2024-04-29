@@ -52,13 +52,14 @@ namespace Nijo.Features.Storing {
                 Cell = $$"""
                     cellProps => {
                       const row = cellProps.row.original.item
-                      const singleViewUrl = row.{{DisplayDataClass.LOCAL_REPOS_STATE}} === '+'
+                      const state = Util.getLocalRepositoryState(row)
+                      const singleViewUrl = state === '+'
                         ? `{{createView.GetUrlStringForReact(new[] { $"row.{DisplayDataClass.LOCAL_REPOS_ITEMKEY}" })}}`
                         : `{{editView.GetUrlStringForReact(keys.Select(k => $"row.{k.Declared.GetFullPathAsSingleViewDataClass().Join("?.")}"))}}`
                       return (
                         <div className="flex items-center gap-1 pl-1">
                           <Link to={singleViewUrl} className="text-link">詳細</Link>
-                          <span className="inline-block w-4 text-center">{row.{{DisplayDataClass.LOCAL_REPOS_STATE}}}</span>
+                          <span className="inline-block w-4 text-center">{state}</span>
                         </div>
                       )
                     }
@@ -120,32 +121,16 @@ namespace Nijo.Features.Storing {
                       }, [append])
 
                       const handleUpdateRow = useCallback(async (index: number, row: GridRow) => {
-                        const updated = {
-                          ...row,
-                          {{DisplayDataClass.LOCAL_REPOS_STATE}}: row.{{DisplayDataClass.LOCAL_REPOS_STATE}} === '' ? '*' : row.{{DisplayDataClass.LOCAL_REPOS_STATE}},
-                        }
-                    {{dataClass.GetRefFromPropsRecursively().Where(x => !x.IsArray).SelectTextTemplate(x => $$"""
-                        if (row.{{x.Path.Join("?.")}})
-                          updated.{{x.Path.Join("!.")}} = { ...row.{{x.Path.Join(".")}}, {{DisplayDataClass.LOCAL_REPOS_STATE}}: '*' }
-                    """)}}
-                        update(index, updated)
+                        update(index, { ...row, {{DisplayDataClass.WILL_BE_CHANGED}}: true })
                       }, [update])
 
                       const dtRef = useRef<Layout.DataTableRef<GridRow>>(null)
                       const handleRemove: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
                         if (!dtRef.current) return
-                        const deletedRowIndex: number[] = []
                         for (const { row, rowIndex } of dtRef.current.getSelectedRows()) {
-                          if (row.{{DisplayDataClass.EXISTS_IN_REMOTE_REPOS}}) {
-                            // 画面上では削除済みマークをつけたうえで表示する
-                            update(rowIndex, { ...row, {{DisplayDataClass.LOCAL_REPOS_STATE}}: '-' })
-                          } else {
-                            // 画面上からも消す
-                            deletedRowIndex.push(rowIndex)
-                          }
+                          update(rowIndex, { ...row, {{DisplayDataClass.WILL_BE_DELETED}}: true })
                         }
-                        remove(deletedRowIndex)
-                      }, [update, remove])
+                      }, [update])
 
                       // データの一時保存
                       const onSave = useCallback(async () => {

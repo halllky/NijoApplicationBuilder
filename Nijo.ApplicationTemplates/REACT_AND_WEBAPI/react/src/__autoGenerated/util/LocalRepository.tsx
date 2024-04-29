@@ -14,22 +14,25 @@ export type LocalRepositoryState
   | '+' // Add
   | '*' // Modify
   | '-' // Delete
+export const getLocalRepositoryState = (item: Pick<LocalRepositoryItem<unknown>, 'existsInRemoteRepository' | 'willBeChanged' | 'willBeDeleted'>): LocalRepositoryState => {
+  if (item.willBeDeleted) return '-'
+  if (!item.existsInRemoteRepository) return '+'
+  if (item.willBeChanged) return '*'
+  return ''
+}
 
-export type LocalRepositoryStoredItem<T = object> = {
+export type LocalRepositoryStoredItem<T = object> = LocalRepositoryItem<T> & {
   /** データの種類を一意に識別する文字列。基本的には集約の名前 */
   dataTypeKey: string
-  /**
-   * データを一意に識別する文字列。
-   * - 新規作成された未保存のデータの場合は、主キーの値と関係しない自動採番されたUUID。なおこのUUIDは登録確定後に消える。
-   * - 保存されたデータの場合は主キーの配列のJSON。
-   */
-  itemKey: ItemKey
   /** 画面に表示される名前 */
   itemName: string
-  item: T
-  state: LocalRepositoryState
 }
 const itemKeySymbol: unique symbol = Symbol()
+/**
+ * データを一意に識別する文字列。
+ * - 新規作成された未保存のデータの場合は、主キーの値と関係しない自動採番されたUUID。なおこのUUIDは登録確定後に消える。
+ * - 保存されたデータの場合は主キーの配列のJSON。
+ */
 export type ItemKey = string & { [itemKeySymbol]: never }
 
 const useIndexedDbLocalRepositoryTable = () => {
@@ -84,8 +87,8 @@ export const LocalRepositoryContextProvider = ({ children }: {
   const reload = useCallback(async () => {
     const changes: LocalRepositoryItemListItem[] = []
     await openCursor('readonly', cursor => {
-      const { dataTypeKey, state, itemKey, itemName } = cursor.value
-      changes.push({ dataTypeKey, state, itemKey, itemName })
+      const { dataTypeKey, itemKey, itemName } = cursor.value
+      changes.push({ dataTypeKey, itemKey, itemName, state: getLocalRepositoryState(cursor.value) })
     })
     setChanges(changes)
   }, [openCursor, setChanges])
@@ -214,8 +217,10 @@ export type LocalRepositoryArgs<T> = {
 }
 export type LocalRepositoryItem<T> = {
   itemKey: ItemKey
-  state: LocalRepositoryState
   item: T
+  existsInRemoteRepository: boolean
+  willBeChanged: boolean
+  willBeDeleted: boolean
 }
 
 export const useLocalRepository = <T extends object>({
@@ -242,17 +247,20 @@ export const useLocalRepository = <T extends object>({
       const localItems: LocalRepositoryItem<T>[] = []
       await openCursor('readonly', cursor => {
         if (cursor.value.dataTypeKey !== dataTypeKey) return
-        const { state, itemKey, item } = cursor.value
-        localItems.push({ state, itemKey, item: item as T })
+        localItems.push({ ...cursor.value, item: cursor.value.item as T })
       })
 
       // 合成
       const remoteAndLocal = crossJoin(
         localItems, local => local.itemKey,
         remoteItems, remote => getItemKey(remote) as ItemKey,
-      ).map<LocalRepositoryItem<T>>(pair => {
-        return pair.left ?? { state: '', itemKey: pair.key, item: pair.right }
-      })
+      ).map<LocalRepositoryItem<T>>(pair => pair.left ?? ({
+        itemKey: pair.key,
+        item: pair.right,
+        existsInRemoteRepository: true,
+        willBeChanged: false,
+        willBeDeleted: false,
+      }))
       setRemoteAndLocalItems(remoteAndLocal)
 
     } finally {
@@ -264,12 +272,6 @@ export const useLocalRepository = <T extends object>({
     reload()
   }, [reload])
 
-  const updateLocalRepositoryItem = useCallback(async ({ item, itemKey, state }: LocalRepositoryItem<T>) => {
-    const itemName = getItemName?.(item) ?? ''
-    await queryToTable(table => table.put({ dataTypeKey, itemKey, itemName, state, item }))
-    return { item, itemKey, state }
-  }, [dataTypeKey, queryToTable, getItemName])
-
   const [, dispatchMsg] = Notification.useMsgContext()
   /** 引数に渡されたデータの値を見てstateを適切に変更し然るべき場所への保存を判断し実行する。
    * TODO: add, update, deleteを全部これに一本化したい */
@@ -280,69 +282,59 @@ export const useLocalRepository = <T extends object>({
     const localItems: LocalRepositoryItem<T>[] = []
     await openCursor('readonly', cursor => {
       if (cursor.value.dataTypeKey !== dataTypeKey) return
-      const { state, itemKey, item } = cursor.value
-      localItems.push({ state, itemKey, item: item as T })
+      localItems.push({ ...cursor.value, item: cursor.value.item as T })
     })
     // 合成
     const remoteAndLocalTemp = crossJoin(
       localItems, local => local.itemKey,
       remoteItems, remote => getItemKey(remote) as ItemKey,
-    ).map<readonly [ItemKey, LocalRepositoryItem<T>]>(pair => {
-      return [pair.key, pair.left ?? { state: '', itemKey: pair.key, item: pair.right }] as const
-    })
+    ).map<readonly [ItemKey, LocalRepositoryItem<T>]>(pair => [
+      pair.key,
+      pair.left ?? ({
+        itemKey: pair.key,
+        item: pair.right,
+        existsInRemoteRepository: true,
+        willBeChanged: false,
+        willBeDeleted: false,
+      })
+    ] as const)
     const remoteAndLocal = new Map(remoteAndLocalTemp)
 
     // -------------------------
     // 状態更新。UIで不具合が起きる可能性を考慮し、とにかくエラーチェックを厳格に作る
     const result: LocalRepositoryItem<T>[] = []
-    for (const { item, state, itemKey } of items) {
+    for (const newValue of items) {
+      const stored = remoteAndLocal.get(newValue.itemKey)
+
+      // バリデーション
       // TODO: 楽観排他制御の考慮が無い
-      const stored = remoteAndLocal.get(itemKey)
-      if (state === '*') {
-        if (!stored) {
-          result.push(await updateLocalRepositoryItem({ item, itemKey, state: '+' }))
-          dispatchMsg(msg => msg.warn(`更新対象データがリモートにもローカルにもありません: ${itemKey}`))
-        } else if (stored.state === '+') {
-          result.push(await updateLocalRepositoryItem({ item, itemKey, state: '+' }))
-          dispatchMsg(msg => msg.warn(`新規作成データをデータ修正の区分で変更しようとしました: ${itemKey}`))
-        } else if (stored.state === '-') {
-          result.push(await updateLocalRepositoryItem({ item, itemKey, state: '-' }))
-        } else {
-          result.push(await updateLocalRepositoryItem({ item, itemKey, state: '*' }))
-        }
+      if (!newValue.existsInRemoteRepository && stored?.existsInRemoteRepository) {
+        dispatchMsg(msg => msg.warn(`既に存在するデータと同じキーで新規追加しようとしました: ${newValue.itemKey}`))
+        result.push(newValue)
+        continue
+      }
+      if (newValue.existsInRemoteRepository && !stored?.existsInRemoteRepository) {
+        dispatchMsg(msg => msg.warn(`更新対象データがリモートにもローカルにもありません: ${newValue.itemKey}`))
+        result.push(newValue)
+        continue
+      }
 
-      } else if (state === '+') {
-        if (!stored) {
-          result.push(await updateLocalRepositoryItem({ item, itemKey, state: '+' }))
-        } else if (stored.state === '+') {
-          result.push(await updateLocalRepositoryItem({ item, itemKey, state: '+' }))
-        } else if (stored) {
-          result.push(await updateLocalRepositoryItem({ itemKey, item, state: stored.state }))
-          dispatchMsg(msg => msg.warn(`既に存在するデータと同じキーで新規追加しようとしました: ${itemKey}`))
-        }
+      // ローカルリポジトリの更新
+      if (newValue.willBeDeleted && !newValue.existsInRemoteRepository) {
+        await queryToTable(table => table.delete([dataTypeKey, newValue.itemKey]))
 
-      } else if (state === '-') {
-        if (!stored) {
-          result.push({ itemKey, state, item })
-          dispatchMsg(msg => msg.warn(`削除しようとしているデータが存在しません: ${itemKey}`))
-        } else if (stored.state === '+') {
-          await queryToTable(table => table.delete([dataTypeKey, itemKey]))
-        } else {
-          result.push(await updateLocalRepositoryItem({ item, itemKey, state: '-' }))
-        }
+      } else if (newValue.willBeChanged || newValue.willBeDeleted) {
+        const itemName = getItemName?.(newValue.item) ?? ''
+        await queryToTable(table => table.put({ dataTypeKey, itemName, ...newValue }))
+        result.push(newValue)
 
       } else {
-        if (stored) {
-          result.push(stored)
-        } else {
-          result.push({ itemKey, state, item })
-          dispatchMsg(msg => msg.warn(`リモートにもローカルにも存在しないデータがあります: ${itemKey}`))
-        }
+        result.push(newValue)
       }
     }
     await reloadContext()
     return result
-  }, [loadRemoteItems, openCursor, queryToTable, updateLocalRepositoryItem, reloadContext, dispatchMsg, dataTypeKey, getItemKey])
+  }, [loadRemoteItems, openCursor, queryToTable, reloadContext, dispatchMsg, dataTypeKey, getItemKey, getItemName])
 
   return {
     ready: ready1 && ready2 && ready3,
