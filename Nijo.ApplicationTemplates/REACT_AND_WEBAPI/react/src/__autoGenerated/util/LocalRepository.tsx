@@ -229,7 +229,6 @@ export const useLocalRepository = <T extends object>({
   const { ready: ready2, openCursor, queryToTable } = useIndexedDbLocalRepositoryTable()
   const [ready3, setReady3] = useState(false)
 
-  const [remoteItemsCache, setRemoteItemsCache] = useState<T[] | undefined>()
   const [remoteAndLocalItems, setRemoteAndLocalItems] = useState<LocalRepositoryItem<T>[]>(() => [])
 
   const reload = useCallback(async () => {
@@ -238,7 +237,6 @@ export const useLocalRepository = <T extends object>({
     try {
       // リモート読み込み
       const remoteItems = (await loadRemoteItems?.()) ?? []
-      setRemoteItemsCache(remoteItems)
 
       // ローカル読み込み
       const localItems: LocalRepositoryItem<T>[] = []
@@ -266,52 +264,11 @@ export const useLocalRepository = <T extends object>({
     reload()
   }, [reload])
 
-  const updateLocalRepositoryItem = useCallback(async (itemKey: ItemKey, item: T): Promise<LocalRepositoryItem<T>> => {
+  const updateLocalRepositoryItem = useCallback(async ({ item, itemKey, state }: LocalRepositoryItem<T>) => {
     const itemName = getItemName?.(item) ?? ''
-    const stateBeforeUpdate = (await queryToTable(table => table.get([dataTypeKey, itemKey])))?.state
-    const state: LocalRepositoryState = stateBeforeUpdate === '+' || stateBeforeUpdate === '-'
-      ? stateBeforeUpdate
-      : '*'
     await queryToTable(table => table.put({ dataTypeKey, itemKey, itemName, state, item }))
-    await reloadContext()
-    return { itemKey, state, item }
-  }, [dataTypeKey, queryToTable, reloadContext, getItemName])
-
-  const deleteLocalRepositoryItem = useCallback(async (itemKey: ItemKey, item: T): Promise<LocalRepositoryItem<T> | undefined> => {
-    const stored = (await queryToTable(table => table.get([dataTypeKey, itemKey])))
-
-    // リモートに存在するデータを読み込み
-    let remoteItems = remoteItemsCache
-    if (!remoteItems) {
-      remoteItems = (await loadRemoteItems?.()) ?? []
-      setRemoteItemsCache(remoteItems)
-    }
-    const existsRemote = remoteItems.some(x => getItemKey(x) === itemKey)
-
-    if (stored?.state === '-') {
-      // 既に削除済みの場合: 何もしない
-      const { state, itemKey, item } = stored
-      return { state, itemKey, item: item as T }
-
-    } else if (stored?.state === '+') {
-      // 新規作成後コミット前の場合: 物理削除
-      await queryToTable(table => table.delete([dataTypeKey, itemKey]))
-      await reloadContext()
-      return undefined
-
-    } else if (stored?.state === '*' || stored?.state === '' || existsRemote) {
-      // リモートにある場合: 削除済みにマークする
-      const itemName = getItemName?.(item) ?? ''
-      const state: LocalRepositoryState = '-'
-      await queryToTable(table => table.put({ dataTypeKey, itemKey, itemName, state, item }))
-      await reloadContext()
-      return { state, itemKey, item }
-
-    } else {
-      // ローカルにもリモートにも無い場合: 何もしない
-      return undefined
-    }
-  }, [loadRemoteItems, remoteItemsCache, dataTypeKey, queryToTable, reloadContext, getItemKey, getItemName])
+    return { item, itemKey, state }
+  }, [dataTypeKey, queryToTable, getItemName])
 
   const [, dispatchMsg] = Notification.useMsgContext()
   /** 引数に渡されたデータの値を見てstateを適切に変更し然るべき場所への保存を判断し実行する。
@@ -319,7 +276,6 @@ export const useLocalRepository = <T extends object>({
   const commit = useCallback(async (...items: LocalRepositoryItem<T>[]): Promise<LocalRepositoryItem<T>[]> => {
     // リモート読み込み
     const remoteItems = (await loadRemoteItems?.()) ?? []
-    setRemoteItemsCache(remoteItems)
     // ローカル読み込み
     const localItems: LocalRepositoryItem<T>[] = []
     await openCursor('readonly', cursor => {
@@ -344,24 +300,24 @@ export const useLocalRepository = <T extends object>({
       const stored = remoteAndLocal.get(itemKey)
       if (state === '*') {
         if (!stored) {
-          result.push({ ...(await updateLocalRepositoryItem(itemKey, item)), state: '+' })
+          result.push(await updateLocalRepositoryItem({ item, itemKey, state: '+' }))
           dispatchMsg(msg => msg.warn(`更新対象データがリモートにもローカルにもありません: ${itemKey}`))
         } else if (stored.state === '+') {
-          result.push({ ...(await updateLocalRepositoryItem(itemKey, item)), state: '+' })
+          result.push(await updateLocalRepositoryItem({ item, itemKey, state: '+' }))
           dispatchMsg(msg => msg.warn(`新規作成データをデータ修正の区分で変更しようとしました: ${itemKey}`))
         } else if (stored.state === '-') {
-          result.push({ ...(await updateLocalRepositoryItem(itemKey, item)), state: '-' })
+          result.push(await updateLocalRepositoryItem({ item, itemKey, state: '-' }))
         } else {
-          result.push({ ...(await updateLocalRepositoryItem(itemKey, item)), state: '*' })
+          result.push(await updateLocalRepositoryItem({ item, itemKey, state: '*' }))
         }
 
       } else if (state === '+') {
         if (!stored) {
-          result.push({ ...(await updateLocalRepositoryItem(itemKey, item)), state: '+' })
+          result.push(await updateLocalRepositoryItem({ item, itemKey, state: '+' }))
         } else if (stored.state === '+') {
-          result.push({ ...(await updateLocalRepositoryItem(itemKey, item)), state: '+' })
+          result.push(await updateLocalRepositoryItem({ item, itemKey, state: '+' }))
         } else if (stored) {
-          result.push({ ...(await updateLocalRepositoryItem(itemKey, item)), state: stored.state })
+          result.push(await updateLocalRepositoryItem({ itemKey, item, state: stored.state }))
           dispatchMsg(msg => msg.warn(`既に存在するデータと同じキーで新規追加しようとしました: ${itemKey}`))
         }
 
@@ -370,9 +326,9 @@ export const useLocalRepository = <T extends object>({
           result.push({ itemKey, state, item })
           dispatchMsg(msg => msg.warn(`削除しようとしているデータが存在しません: ${itemKey}`))
         } else if (stored.state === '+') {
-          await deleteLocalRepositoryItem(itemKey, item)
+          await queryToTable(table => table.delete([dataTypeKey, itemKey]))
         } else {
-          result.push({ ...(await updateLocalRepositoryItem(itemKey, item)), state: '-' })
+          result.push(await updateLocalRepositoryItem({ item, itemKey, state: '-' }))
         }
 
       } else {
@@ -384,8 +340,9 @@ export const useLocalRepository = <T extends object>({
         }
       }
     }
+    await reloadContext()
     return result
-  }, [loadRemoteItems, openCursor, updateLocalRepositoryItem, deleteLocalRepositoryItem, dispatchMsg])
+  }, [loadRemoteItems, openCursor, queryToTable, updateLocalRepositoryItem, reloadContext, dispatchMsg, dataTypeKey, getItemKey])
 
   return {
     ready: ready1 && ready2 && ready3,
