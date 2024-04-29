@@ -199,45 +199,153 @@ namespace Nijo.Features.Storing {
                         var findMany = new FindManyFeature(agg);
 
                         return $$"""
-                            /** {{agg.Item.DisplayName}}専用のuseLocalRepositoryのラッパー */
                             const {{localRepositosy.LocalLoaderHookName}} = (editRange?
                               // 複数件編集の場合
                               : { filter: AggregateType.{{findMany.TypeScriptConditionClass}}, skip?: number, take?: number }
                               // 1件編集の場合
                               | [{{keyArray.Select(k => $"{k.VarName}: {k.TsType} | undefined").Join(", ")}}]
                             ) => {
+                            
+                              const [, dispatchMsg] = useMsgContext()
                               const { get, post } = useHttpRequest()
-                              const loadRemoteItems = useCallback(async () => {
-                                if (editRange === undefined) return [] // 画面表示直後の検索条件が決まっていない場合など
+                              const { ready: ready1, reload: reloadContext } = useLocalRepositoryContext()
+                              const { ready: ready2, openCursor, queryToTable } = useIndexedDbLocalRepositoryTable()
+                              const [ready3, setReady3] = useState(false)
 
-                                let remote: AggregateType.{{agg.Item.TypeScriptTypeName}}[]
-                                if (Array.isArray(editRange)) {
-                            {{keyArray.SelectTextTemplate((_, i) => $$"""
-                                  if (editRange[{{i}}] === undefined) return []
-                            """)}}
-                                  const res = await get({{find.GetUrlStringForReact(keyArray.Select((_, i) => $"editRange[{i}].toString()"))}})
-                                  remote = res.ok ? [res.data as AggregateType.{{agg.Item.TypeScriptTypeName}}] : []
+                              const [remoteAndLocalItems, setRemoteAndLocalItems] = useState<LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[]>(() => [])
+
+                              const getItemKey = useCallback((x: AggregateType.{{agg.Item.TypeScriptTypeName}}) => {
+                                return JSON.stringify([{{keys.Select(k => $"x.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}])
+                              }, [])
+                              const getItemName = useCallback((x: AggregateType.{{agg.Item.TypeScriptTypeName}}) => {
+                                return `{{string.Concat(names.Select(n => $"${{x.{n.Declared.GetFullPath().Join("?.")}}}"))}}`
+                              }, [])
+
+                              const loadRemoteItems = useCallback(async (): Promise<AggregateType.{{agg.Item.TypeScriptTypeName}}[]> => {
+                                if (editRange === undefined) {
+                                  return [] // 画面表示直後の検索条件が決まっていない場合など
+
+                                } else if (Array.isArray(editRange)) {
+                                  if ({{keyArray.Select((_, i) => $"editRange[{i}] === undefined").Join(" || ")}}) {
+                                    return []
+                                  } else {
+                                    const res = await get({{find.GetUrlStringForReact(keyArray.Select((_, i) => $"editRange[{i}].toString()"))}})
+                                    return res.ok ? [res.data as AggregateType.{{agg.Item.TypeScriptTypeName}}] : []
+                                  }
                                 } else {
                                   const searchParam = new URLSearchParams()
                                   if (editRange.skip !== undefined) searchParam.append('{{FindManyFeature.PARAM_SKIP}}', editRange.skip.toString())
                                   if (editRange.take !== undefined) searchParam.append('{{FindManyFeature.PARAM_TAKE}}', editRange.take.toString())
                                   const url = `{{findMany.GetUrlStringForReact()}}?${searchParam}`
                                   const res = await post<AggregateType.{{agg.Item.TypeScriptTypeName}}[]>(url, editRange.filter)
-                                  remote = res.ok ? res.data : []
+                                  return res.ok ? res.data : []
                                 }
-
-                                return remote
                               }, [editRange, get, post])
 
-                              // ローカルリポジトリ設定
-                              const localReposSetting: LocalRepositoryArgs<AggregateType.{{agg.Item.TypeScriptTypeName}}> = useMemo(() => ({
-                                dataTypeKey: '{{localRepositosy.DataTypeKey}}',
-                                getItemKey: x => JSON.stringify([{{keys.Select(k => $"x.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]),
-                                getItemName: x => `{{string.Concat(names.Select(n => $"${{x.{n.Declared.GetFullPath().Join("?.")}}}"))}}`,
-                                loadRemoteItems,
-                              }), [loadRemoteItems])
+                              const reload = useCallback(async () => {
+                                if (!ready1 || !ready2) return
+                                setReady3(false)
+                                try {
+                                  // リモート読み込み
+                                  const remoteItems = await loadRemoteItems()
 
-                              return useLocalRepository(localReposSetting)
+                                  // ローカル読み込み
+                                  const localItems: LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[] = []
+                                  await openCursor('readonly', cursor => {
+                                    if (cursor.value.dataTypeKey !== '{{localRepositosy.DataTypeKey}}') return
+                                    localItems.push({ ...cursor.value, item: cursor.value.item as AggregateType.{{agg.Item.TypeScriptTypeName}} })
+                                  })
+
+                                  // 合成
+                                  const remoteAndLocal = crossJoin(
+                                    localItems, local => local.itemKey,
+                                    remoteItems, remote => getItemKey(remote) as ItemKey,
+                                  ).map<LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>>(pair => pair.left ?? ({
+                                    itemKey: pair.key,
+                                    item: pair.right,
+                                    existsInRemoteRepository: true,
+                                    willBeChanged: false,
+                                    willBeDeleted: false,
+                                  }))
+                                  setRemoteAndLocalItems(remoteAndLocal)
+
+                                } finally {
+                                  setReady3(true)
+                                }
+                              }, [ready1, ready2, loadRemoteItems, openCursor, getItemKey])
+
+                              useEffect(() => {
+                                reload()
+                              }, [reload])
+
+                              /** 引数に渡されたデータの値を見てstateを適切に変更し然るべき場所への保存を判断し実行する。 */
+                              const commit = useCallback(async (...items: LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[]): Promise<LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[]> => {
+                                // リモート読み込み
+                                const remoteItems = await loadRemoteItems()
+                                // ローカル読み込み
+                                const localItems: LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[] = []
+                                await openCursor('readonly', cursor => {
+                                  if (cursor.value.dataTypeKey !== '{{localRepositosy.DataTypeKey}}') return
+                                  localItems.push({ ...cursor.value, item: cursor.value.item as AggregateType.{{agg.Item.TypeScriptTypeName}} })
+                                })
+                                // 合成
+                                const remoteAndLocalTemp = crossJoin(
+                                  localItems, local => local.itemKey,
+                                  remoteItems, remote => getItemKey(remote) as ItemKey,
+                                ).map<readonly [ItemKey, LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>]>(pair => [
+                                  pair.key,
+                                  pair.left ?? ({
+                                    itemKey: pair.key,
+                                    item: pair.right,
+                                    existsInRemoteRepository: true,
+                                    willBeChanged: false,
+                                    willBeDeleted: false,
+                                  })
+                                ] as const)
+                                const remoteAndLocal = new Map(remoteAndLocalTemp)
+
+                                // -------------------------
+                                // 状態更新。UIで不具合が起きる可能性を考慮し、とにかくエラーチェックを厳格に作る
+                                const result: LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[] = []
+                                for (const newValue of items) {
+                                  const stored = remoteAndLocal.get(newValue.itemKey)
+
+                                  // バリデーション
+                                  // TODO: 楽観排他制御の考慮が無い
+                                  if (!newValue.existsInRemoteRepository && stored?.existsInRemoteRepository) {
+                                    dispatchMsg(msg => msg.warn(`既に存在するデータと同じキーで新規追加しようとしました: ${newValue.itemKey}`))
+                                    result.push(newValue)
+                                    continue
+                                  }
+                                  if (newValue.existsInRemoteRepository && !stored?.existsInRemoteRepository) {
+                                    dispatchMsg(msg => msg.warn(`更新対象データがリモートにもローカルにもありません: ${newValue.itemKey}`))
+                                    result.push(newValue)
+                                    continue
+                                  }
+
+                                  // ローカルリポジトリの更新
+                                  if (newValue.willBeDeleted && !newValue.existsInRemoteRepository) {
+                                    await queryToTable(table => table.delete(['{{localRepositosy.DataTypeKey}}', newValue.itemKey]))
+
+                                  } else if (newValue.willBeChanged || newValue.willBeDeleted) {
+                                    const itemName = getItemName?.(newValue.item) ?? ''
+                                    await queryToTable(table => table.put({ dataTypeKey: '{{localRepositosy.DataTypeKey}}', itemName, ...newValue }))
+                                    result.push(newValue)
+
+                                  } else {
+                                    result.push(newValue)
+                                  }
+                                }
+                                await reloadContext()
+                                return result
+                              }, [loadRemoteItems, openCursor, queryToTable, reloadContext, dispatchMsg, getItemKey, getItemName])
+
+                              return {
+                                ready: ready1 && ready2 && ready3,
+                                items: remoteAndLocalItems,
+                                reload,
+                                commit,
+                              }
                             }
                             """;
                     });
@@ -245,9 +353,15 @@ namespace Nijo.Features.Storing {
                     return $$"""
                         import { useState, useMemo, useCallback, useEffect } from 'react'
                         import { UUID } from 'uuidjs'
+                        import { useMsgContext } from './Notification'
                         import { useHttpRequest } from './Http'
-                        import { useLocalRepository, LocalRepositoryArgs, LocalRepositoryItem } from './LocalRepository'
-                        import { visitObject } from './Tree'
+                        import {
+                          ItemKey,
+                          LocalRepositoryItem,
+                          useLocalRepositoryContext,
+                          useIndexedDbLocalRepositoryTable,
+                        } from './LocalRepository'
+                        import { crossJoin } from './JsUtil'
                         import * as AggregateType from '../autogenerated-types'
 
                         {{convesionBetweenDisplayDataAndTranScopeDataHooks}}

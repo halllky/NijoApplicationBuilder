@@ -21,6 +21,13 @@ export const getLocalRepositoryState = (item: Pick<LocalRepositoryItem<unknown>,
   return ''
 }
 
+export type LocalRepositoryItem<T> = {
+  itemKey: ItemKey
+  item: T
+  existsInRemoteRepository: boolean
+  willBeChanged: boolean
+  willBeDeleted: boolean
+}
 export type LocalRepositoryStoredItem<T = object> = LocalRepositoryItem<T> & {
   /** データの種類を一意に識別する文字列。基本的には集約の名前 */
   dataTypeKey: string
@@ -35,7 +42,7 @@ const itemKeySymbol: unique symbol = Symbol()
  */
 export type ItemKey = string & { [itemKeySymbol]: never }
 
-const useIndexedDbLocalRepositoryTable = () => {
+export const useIndexedDbLocalRepositoryTable = () => {
   return useIndexedDbTable<LocalRepositoryStoredItem>({
     dbName: '::nijo::',
     dbVersion: 1,
@@ -70,6 +77,7 @@ const LocalRepositoryContext = React.createContext<LocalRepositoryContextValue>(
   reset: () => Promise.resolve(),
   ready: false,
 })
+export const useLocalRepositoryContext = () => useContext(LocalRepositoryContext)
 
 export type SaveLocalItemHandler<T = object> = (localItem: LocalRepositoryStoredItem<T>) => Promise<{ commit: boolean }>
 
@@ -206,203 +214,3 @@ const CHANGE_LIST_COLS: Collection.ColumnDefEx<Tree.TreeNode<LocalRepositoryItem
   { id: 'col1', header: '種類', accessorFn: x => x.item.dataTypeKey },
   { id: 'col2', header: '名前', accessorFn: x => x.item.itemName },
 ]
-// -------------------------------------------------
-// 特定の集約の変更
-
-export type LocalRepositoryArgs<T> = {
-  dataTypeKey: string
-  getItemKey: (t: T) => string
-  getItemName?: (t: T) => string
-  loadRemoteItems?: () => Promise<T[]>
-}
-export type LocalRepositoryItem<T> = {
-  itemKey: ItemKey
-  item: T
-  existsInRemoteRepository: boolean
-  willBeChanged: boolean
-  willBeDeleted: boolean
-}
-
-export const useLocalRepository = <T extends object>({
-  dataTypeKey,
-  getItemKey,
-  getItemName,
-  loadRemoteItems,
-}: LocalRepositoryArgs<T>) => {
-
-  const { ready: ready1, reload: reloadContext } = useContext(LocalRepositoryContext)
-  const { ready: ready2, openCursor, queryToTable } = useIndexedDbLocalRepositoryTable()
-  const [ready3, setReady3] = useState(false)
-
-  const [remoteAndLocalItems, setRemoteAndLocalItems] = useState<LocalRepositoryItem<T>[]>(() => [])
-
-  const reload = useCallback(async () => {
-    if (!ready1 || !ready2) return
-    setReady3(false)
-    try {
-      // リモート読み込み
-      const remoteItems = (await loadRemoteItems?.()) ?? []
-
-      // ローカル読み込み
-      const localItems: LocalRepositoryItem<T>[] = []
-      await openCursor('readonly', cursor => {
-        if (cursor.value.dataTypeKey !== dataTypeKey) return
-        localItems.push({ ...cursor.value, item: cursor.value.item as T })
-      })
-
-      // 合成
-      const remoteAndLocal = crossJoin(
-        localItems, local => local.itemKey,
-        remoteItems, remote => getItemKey(remote) as ItemKey,
-      ).map<LocalRepositoryItem<T>>(pair => pair.left ?? ({
-        itemKey: pair.key,
-        item: pair.right,
-        existsInRemoteRepository: true,
-        willBeChanged: false,
-        willBeDeleted: false,
-      }))
-      setRemoteAndLocalItems(remoteAndLocal)
-
-    } finally {
-      setReady3(true)
-    }
-  }, [ready1, ready2, loadRemoteItems, openCursor, getItemKey, dataTypeKey])
-
-  useEffect(() => {
-    reload()
-  }, [reload])
-
-  const [, dispatchMsg] = Notification.useMsgContext()
-  /** 引数に渡されたデータの値を見てstateを適切に変更し然るべき場所への保存を判断し実行する。
-   * TODO: add, update, deleteを全部これに一本化したい */
-  const commit = useCallback(async (...items: LocalRepositoryItem<T>[]): Promise<LocalRepositoryItem<T>[]> => {
-    // リモート読み込み
-    const remoteItems = (await loadRemoteItems?.()) ?? []
-    // ローカル読み込み
-    const localItems: LocalRepositoryItem<T>[] = []
-    await openCursor('readonly', cursor => {
-      if (cursor.value.dataTypeKey !== dataTypeKey) return
-      localItems.push({ ...cursor.value, item: cursor.value.item as T })
-    })
-    // 合成
-    const remoteAndLocalTemp = crossJoin(
-      localItems, local => local.itemKey,
-      remoteItems, remote => getItemKey(remote) as ItemKey,
-    ).map<readonly [ItemKey, LocalRepositoryItem<T>]>(pair => [
-      pair.key,
-      pair.left ?? ({
-        itemKey: pair.key,
-        item: pair.right,
-        existsInRemoteRepository: true,
-        willBeChanged: false,
-        willBeDeleted: false,
-      })
-    ] as const)
-    const remoteAndLocal = new Map(remoteAndLocalTemp)
-
-    // -------------------------
-    // 状態更新。UIで不具合が起きる可能性を考慮し、とにかくエラーチェックを厳格に作る
-    const result: LocalRepositoryItem<T>[] = []
-    for (const newValue of items) {
-      const stored = remoteAndLocal.get(newValue.itemKey)
-
-      // バリデーション
-      // TODO: 楽観排他制御の考慮が無い
-      if (!newValue.existsInRemoteRepository && stored?.existsInRemoteRepository) {
-        dispatchMsg(msg => msg.warn(`既に存在するデータと同じキーで新規追加しようとしました: ${newValue.itemKey}`))
-        result.push(newValue)
-        continue
-      }
-      if (newValue.existsInRemoteRepository && !stored?.existsInRemoteRepository) {
-        dispatchMsg(msg => msg.warn(`更新対象データがリモートにもローカルにもありません: ${newValue.itemKey}`))
-        result.push(newValue)
-        continue
-      }
-
-      // ローカルリポジトリの更新
-      if (newValue.willBeDeleted && !newValue.existsInRemoteRepository) {
-        await queryToTable(table => table.delete([dataTypeKey, newValue.itemKey]))
-
-      } else if (newValue.willBeChanged || newValue.willBeDeleted) {
-        const itemName = getItemName?.(newValue.item) ?? ''
-        await queryToTable(table => table.put({ dataTypeKey, itemName, ...newValue }))
-        result.push(newValue)
-
-      } else {
-        result.push(newValue)
-      }
-    }
-    await reloadContext()
-    return result
-  }, [loadRemoteItems, openCursor, queryToTable, reloadContext, dispatchMsg, dataTypeKey, getItemKey, getItemName])
-
-  return {
-    ready: ready1 && ready2 && ready3,
-    items: remoteAndLocalItems,
-    reload,
-    commit,
-  }
-}
-
-// ------------------------------------
-
-const crossJoin = <T1, T2, TKey>(
-  left: T1[], getKeyLeft: (t: T1) => TKey,
-  right: T2[], getKeyRight: (t: T2) => TKey
-): CrossJoinResult<T1, T2, TKey>[] => {
-
-  const sortedLeft = [...left]
-  sortedLeft.sort((a, b) => {
-    const keyA = getKeyLeft(a)
-    const keyB = getKeyLeft(b)
-    if (keyA < keyB) return -1
-    if (keyA > keyB) return 1
-    return 0
-  })
-  const sortedRight = [...right]
-  sortedRight.sort((a, b) => {
-    const keyA = getKeyRight(a)
-    const keyB = getKeyRight(b)
-    if (keyA < keyB) return -1
-    if (keyA > keyB) return 1
-    return 0
-  })
-  const result: CrossJoinResult<T1, T2, TKey>[] = []
-  let cursorLeft = 0
-  let cursorRight = 0
-  while (true) {
-    const left = sortedLeft[cursorLeft]
-    const right = sortedRight[cursorRight]
-    if (left === undefined && right === undefined) {
-      break
-    }
-    if (left === undefined && right !== undefined) {
-      result.push({ key: getKeyRight(right), right })
-      cursorRight++
-      continue
-    }
-    if (left !== undefined && right === undefined) {
-      result.push({ key: getKeyLeft(left), left })
-      cursorLeft++
-      continue
-    }
-    const keyLeft = getKeyLeft(left)
-    const keyRight = getKeyRight(right)
-    if (keyLeft === keyRight) {
-      result.push({ key: keyLeft, left, right })
-      cursorLeft++
-      cursorRight++
-    } else if (keyLeft < keyRight) {
-      result.push({ key: keyLeft, left })
-      cursorLeft++
-    } else if (keyLeft > keyRight) {
-      result.push({ key: keyRight, right })
-      cursorRight++
-    }
-  }
-  return result
-}
-type CrossJoinResult<T1, T2, TKey>
-  = { key: TKey, left: T1, right: T2 }
-  | { key: TKey, left: T1, right?: never }
-  | { key: TKey, left?: never, right: T2 }
