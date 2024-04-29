@@ -90,6 +90,7 @@ namespace Nijo.Features.Storing {
                     }) => {
                       const { register, registerEx, watch, getValues, setValue } = Util.useFormContextEx<{{useFormType}}>()
                       const item = getValues({{registerName}})
+                      const state = watch({{registerName}})?.{{DisplayDataClass.LOCAL_REPOS_STATE}}
 
                       const handleCreate = useCallback(() => {
                         setValue({{registerName}}, {{WithIndent(dataClass.RenderNewObjectLiteral("UUID.generate() as Util.ItemKey"), "    ")}})
@@ -98,23 +99,35 @@ namespace Nijo.Features.Storing {
                         const current = getValues({{registerName}})
                         if (current) setValue({{registerName}}, { ...current, {{DisplayDataClass.LOCAL_REPOS_STATE}}: '-' })
                       }, [setValue, getValues])
+                      const handleRedo = useCallback(() => {
+                        const current = getValues({{registerName}})
+                        if (current) setValue({{registerName}}, { ...current, {{DisplayDataClass.LOCAL_REPOS_STATE}}: '*' })
+                      }, [setValue, getValues])
 
                       return (
                         <>
                           <VForm.Container
                             leftColumnMinWidth="{{GetLeftColumnWidth()}}"
                             label="{{_aggregate.Item.DisplayName}}"
-                            labelSide={<Input.Button icon={XMarkIcon} onClick={handleDelete}>削除</Input.Button>}
+                            labelSide={(state === '' || state === '+' || state === '*') && (
+                              <Input.Button icon={XMarkIcon} onClick={handleDelete}>削除</Input.Button>
+                            )}
                             className="pt-4"
                           >
-                            {watch({{registerName}})?.{{DisplayDataClass.EXISTS_IN_REMOTE_REPOS}} ? (
-                              <>
-                                {{WithIndent(RenderMembers(), "            ")}}
-                              </>
-                            ) : (
+                            {state === undefined && (
                               <VForm.Item wide>
                                 <Input.Button icon={PlusIcon} onClick={handleCreate}>作成</Input.Button>
                               </VForm.Item>
+                            )}
+                            {state === '-' && (
+                              <VForm.Item wide>
+                                <Input.Button icon={ArrowUturnLeftIcon} onClick={handleRedo}>元に戻す</Input.Button>
+                              </VForm.Item>
+                            )}
+                            {(state === '' || state === '+' || state === '*') && (
+                              <>
+                                {{WithIndent(RenderMembers(), "            ")}}
+                              </>
                             )}
                           </VForm.Container>
                           {{WithIndent(relevantAggregatesCalling, "      ")}}

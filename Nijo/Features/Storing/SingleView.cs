@@ -135,7 +135,7 @@ namespace Nijo.Features.Storing {
                     import React, { useState, useEffect, useCallback, useMemo, useReducer, useRef, useId, useContext, createContext } from 'react';
                     import { Link, useParams, useNavigate } from 'react-router-dom';
                     import { SubmitHandler, useForm, FormProvider, useFormContext, useFieldArray } from 'react-hook-form';
-                    import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
+                    import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
                     import { UUID } from 'uuidjs';
                     import dayjs from 'dayjs';
                     import * as Input from '../../input';
