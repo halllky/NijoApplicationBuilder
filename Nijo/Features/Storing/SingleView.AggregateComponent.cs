@@ -278,14 +278,7 @@ namespace Nijo.Features.Storing {
 
                       const options = useMemo<Layout.DataTableProps<AggregateType.{{dataClass.TsTypeName}}>>(() => ({
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
-                        onChangeRow: (rowIndex, row) => {
-                          const updated = { ...row }
-                    {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate(x => $$"""
-                          if (row.{{x.Path.Join("?.")}})
-                            updated.{{x.Path.Join("!.")}} = { ...row.{{x.Path.Join(".")}}, {{DisplayDataClass.LOCAL_REPOS_STATE}}: '*' }
-                    """)}}
-                          update(rowIndex, updated)
-                        },
+                        onChangeRow: update,
                     """)}}
                         columns: [
                           {{WithIndent(colDefs.SelectTextTemplate(def => def.Render()), "      ")}}

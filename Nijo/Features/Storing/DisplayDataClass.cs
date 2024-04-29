@@ -376,10 +376,10 @@ namespace Nijo.Features.Storing {
         /// エントリーからのパスを <see cref="DisplayDataClass"/> のデータ構造にあわせて返す。
         /// たとえば自身のメンバーならその前に <see cref="DisplayDataClass.OWN_MEMBERS"/> を挟むなど
         /// </summary>
-        internal static IEnumerable<string> GetFullPathAsSingleViewDataClass(this DisplayDataClass dataClass) {
+        internal static IEnumerable<string> GetFullPathAsSingleViewDataClass(this GraphNode<Aggregate> aggregate) {
             var enumeratingRefTargetKeyName = false;
 
-            foreach (var edge in dataClass.MainAggregate.PathFromEntry()) {
+            foreach (var edge in aggregate.PathFromEntry()) {
                 if (edge.Source == edge.Terminal) {
                     // 有向グラフの矢印の先から元に辿るパターン
 

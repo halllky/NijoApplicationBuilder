@@ -24,6 +24,7 @@ namespace Nijo.Parts.WebClient {
                 var refMember = member as AggregateMember.Ref;
 
                 var memberPath = member.GetFullPathAsSingleViewDataClass();
+                var ownerPath = member.Owner.GetFullPathAsSingleViewDataClass();
 
                 // 非編集時のセル表示文字列
                 string? formatted = null;
@@ -91,8 +92,13 @@ namespace Nijo.Parts.WebClient {
                 } else {
                     setValue = $$"""
                         (row, value) => {
-                          if (row.{{rowAccessor}}.{{memberPath.SkipLast(1).Join("?.")}})
+                          if (row.{{rowAccessor}}.{{ownerPath.Join("?.")}}) {
                             row.{{rowAccessor}}.{{memberPath.Join(".")}} = value
+
+                            if (row.{{rowAccessor}}.{{ownerPath.Join(".")}}.{{DisplayDataClass.LOCAL_REPOS_STATE}} === '') {
+                              row.{{rowAccessor}}.{{ownerPath.Join(".")}}.{{DisplayDataClass.LOCAL_REPOS_STATE}} = '*'
+                            }
+                          }
                         }
                         """;
                 }
