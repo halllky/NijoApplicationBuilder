@@ -27,12 +27,12 @@ namespace Nijo.Features.Storing {
         private readonly GraphNode<Aggregate> _aggregate;
         private readonly E_Type _type;
 
-        private const string KEY0 = "key0"; // Createの場合、ローカルリポジトリのitemKeyをURLで受け取る
+        private const string URLKEY_TYPE_NEW = "key0"; // Createの場合、ローカルリポジトリのitemKeyをURLで受け取る
 
         string IReactPage.Url {
             get {
                 if (_type == E_Type.Create) {
-                    return $"/{_aggregate.Item.UniqueId}/new/:{KEY0}?";
+                    return $"/{_aggregate.Item.UniqueId}/new/:{URLKEY_TYPE_NEW}?";
 
                 } else {
                     // React Router は全角文字非対応なので key0, key1, ... をURLに使う
@@ -146,6 +146,7 @@ namespace Nijo.Features.Storing {
                     const VForm = Layout.VerticalForm
 
                     export default function () {
+                    {{If(_type == E_Type.Edit || _type == E_Type.View, () => $$"""
                       const { {{urlKeysWithMember.Select((_, i) => $"key{i}").Join(", ")}} } = useParams()
                       const pkArray: [{{keyArray.Select(k => $"{k.TsType} | undefined").Join(", ")}}] = useMemo(() => {
                     {{urlKeysWithMember.SelectTextTemplate((x, i) => x.Key.Options.MemberType.SearchBehavior == SearchBehavior.Range ? $$"""
@@ -157,8 +158,13 @@ namespace Nijo.Features.Storing {
                         return [{{urlKeysWithMember.Values.Join(", ")}}]
                       }, [{{urlKeysWithMember.Select((_, i) => $"key{i}").Join(", ")}}])
 
-                      // {{_aggregate.Item.DisplayName}}データの読み込み
                       const { ready, items, commit } = Util.{{localRepos.HookName}}(pkArray)
+
+                    """).Else(() => $$"""
+                      const { {{URLKEY_TYPE_NEW}}: keyOfNewItem } = useParams()
+                      const { ready, items, commit } = Util.{{localRepos.HookName}}(keyOfNewItem as Util.ItemKey | undefined)
+
+                    """)}}
 
                       const localReposItemKey = useMemo(() => {
                         if (!ready || items.length === 0) return undefined
@@ -169,7 +175,9 @@ namespace Nijo.Features.Storing {
 
                       return items.length > 0 ? (
                         <AfterLoaded
+                    {{If(_type == E_Type.Edit || _type == E_Type.View, () => $$"""
                           pkArray={pkArray}
+                    """)}}
                           localReposItemKey={localReposItemKey}
                           defaultValues={items[0]}
                           commit={commit}
@@ -180,12 +188,16 @@ namespace Nijo.Features.Storing {
                     }
 
                     const AfterLoaded = ({
+                    {{If(_type == E_Type.Edit || _type == E_Type.View, () => $$"""
                       pkArray,
+                    """)}}
                       localReposItemKey,
                       defaultValues,
                       commit,
                     }: {
+                    {{If(_type == E_Type.Edit || _type == E_Type.View, () => $$"""
                       pkArray: [{{keyArray.Select(k => $"{k.TsType} | undefined").Join(", ")}}]
+                    """)}}
                       localReposItemKey: Util.ItemKey | undefined
                       defaultValues: AggregateType.{{dataClass.TsTypeName}}
                       commit: ReturnType<typeof Util.{{localRepos.HookName}}>['commit']

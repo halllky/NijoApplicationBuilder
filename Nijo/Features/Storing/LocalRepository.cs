@@ -99,8 +99,10 @@ namespace Nijo.Features.Storing {
                         return $$"""
                             /** {{agg.Item.DisplayName}}の画面に表示するデータ型と登録更新するデータ型の変換を行うフック */
                             export const {{localRepositosy.HookName}} = (editRange?
+                              // データ新規作成の場合
+                              : ItemKey
                               // 複数件編集の場合
-                              : { filter: AggregateType.{{findMany.TypeScriptConditionClass}}, skip?: number, take?: number }
+                              | { filter: AggregateType.{{findMany.TypeScriptConditionClass}}, skip?: number, take?: number }
                               // 1件編集の場合
                               | [{{keyArray.Select(k => $"{k.VarName}: {k.TsType} | undefined").Join(", ")}}]
                             ) => {
@@ -116,7 +118,9 @@ namespace Nijo.Features.Storing {
                               // {{x.Aggregate.Item.DisplayName}}のローカルリポジトリとリモートリポジトリへのデータ読み書き処理
                               const {{x.Aggregate.Item.ClassName}}filter: { filter: AggregateType.{{x.FindMany.TypeScriptConditionClass}} } = useMemo(() => {
                                 const f = AggregateType.{{x.FindMany.TypeScriptConditionInitializerFn}}()
-                                if (Array.isArray(editRange)) {
+                                if (typeof editRange === 'string') {
+                                  // 新規作成データ(未コミット)の編集の場合
+                                } else if (Array.isArray(editRange)) {
                                   const [{{keyArray.Select(k => k.VarName).Join(", ")}}] = editRange
                             {{x.RootAggregateMembersForSingleViewLoading.SelectTextTemplate((kv, i) => $$"""
                             {{If(kv.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
@@ -200,8 +204,10 @@ namespace Nijo.Features.Storing {
 
                         return $$"""
                             const {{localRepositosy.LocalLoaderHookName}} = (editRange?
+                              // データ新規作成の場合
+                              : ItemKey
                               // 複数件編集の場合
-                              : { filter: AggregateType.{{findMany.TypeScriptConditionClass}}, skip?: number, take?: number }
+                              | { filter: AggregateType.{{findMany.TypeScriptConditionClass}}, skip?: number, take?: number }
                               // 1件編集の場合
                               | [{{keyArray.Select(k => $"{k.VarName}: {k.TsType} | undefined").Join(", ")}}]
                             ) => {
@@ -214,8 +220,8 @@ namespace Nijo.Features.Storing {
 
                               const [remoteAndLocalItems, setRemoteAndLocalItems] = useState<LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[]>(() => [])
 
-                              const getItemKey = useCallback((x: AggregateType.{{agg.Item.TypeScriptTypeName}}) => {
-                                return JSON.stringify([{{keys.Select(k => $"x.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}])
+                              const getItemKey = useCallback((x: AggregateType.{{agg.Item.TypeScriptTypeName}}): ItemKey => {
+                                return JSON.stringify([{{keys.Select(k => $"x.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]) as ItemKey
                               }, [])
                               const getItemName = useCallback((x: AggregateType.{{agg.Item.TypeScriptTypeName}}) => {
                                 return `{{string.Concat(names.Select(n => $"${{x.{n.Declared.GetFullPath().Join("?.")}}}"))}}`
@@ -224,6 +230,9 @@ namespace Nijo.Features.Storing {
                               const loadRemoteItems = useCallback(async (): Promise<AggregateType.{{agg.Item.TypeScriptTypeName}}[]> => {
                                 if (editRange === undefined) {
                                   return [] // 画面表示直後の検索条件が決まっていない場合など
+
+                                } else if (typeof editRange === 'string') {
+                                  return [] // 新規作成データの場合、まだリモートに存在しないため検索しない
 
                                 } else if (Array.isArray(editRange)) {
                                   if ({{keyArray.Select((_, i) => $"editRange[{i}] === undefined").Join(" || ")}}) {
@@ -242,21 +251,48 @@ namespace Nijo.Features.Storing {
                                 }
                               }, [editRange, get, post])
 
+                              const loadLocalItems = useCallback(async (): Promise<LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[]> => {
+                                if (editRange === undefined) {
+                                  return [] // 画面表示直後の検索条件が決まっていない場合など
+
+                                } else if (typeof editRange === 'string') {
+                                  // 新規作成データの検索
+                                  const found = await queryToTable(table => table.get(['{{localRepositosy.DataTypeKey}}', editRange]))
+                                  return found ? [found] : []
+
+                                } else if (Array.isArray(editRange)) {
+                                  // 既存データのキーによる検索
+                                  const itemKey = JSON.stringify(editRange)
+                                  const found = await queryToTable(table => table.get(['{{localRepositosy.DataTypeKey}}', itemKey]))
+                                  return found ? [found] : []
+
+                                } else {
+                                  // 既存データの検索条件による検索
+                                  const localItems: LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[] = []
+                                  await openCursor('readonly', cursor => {
+                                    if (cursor.value.dataTypeKey !== '{{localRepositosy.DataTypeKey}}') return
+                                    // TODO: ローカルリポジトリのデータは参照先のキーと名前しか持っていないのでfilterでそれらが検索条件に含まれていると正確な範囲がとれない
+                                    // const item = cursor.value.item as AggregateType.{{agg.Item.TypeScriptTypeName}}
+                            {{findMany.EnumerateSearchConditionMembers().SelectTextTemplate(vm => $$"""
+                            {{If(vm.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
+                                    //
+                            """).Else(() => $$"""
+                                    // if (editRange.filter.{{vm.Declared.GetFullPath().Join("?.")}} !== undefined
+                                    //   && item.{{vm.Declared.GetFullPath().Join("?.")}} !== editRange.filter.{{vm.Declared.GetFullPath().Join(".")}}) return
+                            """)}}
+                            """)}}
+                                    localItems.push({ ...cursor.value, item: cursor.value.item as AggregateType.{{agg.Item.TypeScriptTypeName}} })
+                                  })
+                                  return localItems
+                                }
+                              }, [editRange, queryToTable, openCursor])
+
                               const reload = useCallback(async () => {
                                 if (!ready1 || !ready2) return
                                 setReady3(false)
                                 try {
-                                  // リモート読み込み
                                   const remoteItems = await loadRemoteItems()
-
-                                  // ローカル読み込み
-                                  const localItems: LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[] = []
-                                  await openCursor('readonly', cursor => {
-                                    if (cursor.value.dataTypeKey !== '{{localRepositosy.DataTypeKey}}') return
-                                    localItems.push({ ...cursor.value, item: cursor.value.item as AggregateType.{{agg.Item.TypeScriptTypeName}} })
-                                  })
-
-                                  // 合成
+                                  const localItems = await loadLocalItems()
                                   const remoteAndLocal = crossJoin(
                                     localItems, local => local.itemKey,
                                     remoteItems, remote => getItemKey(remote) as ItemKey,
@@ -272,7 +308,7 @@ namespace Nijo.Features.Storing {
                                 } finally {
                                   setReady3(true)
                                 }
-                              }, [ready1, ready2, loadRemoteItems, openCursor, getItemKey])
+                              }, [ready1, ready2, loadRemoteItems, loadLocalItems, getItemKey])
 
                               useEffect(() => {
                                 reload()
@@ -280,15 +316,8 @@ namespace Nijo.Features.Storing {
 
                               /** 引数に渡されたデータの値を見てstateを適切に変更し然るべき場所への保存を判断し実行する。 */
                               const commit = useCallback(async (...items: LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[]): Promise<LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[]> => {
-                                // リモート読み込み
                                 const remoteItems = await loadRemoteItems()
-                                // ローカル読み込み
-                                const localItems: LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[] = []
-                                await openCursor('readonly', cursor => {
-                                  if (cursor.value.dataTypeKey !== '{{localRepositosy.DataTypeKey}}') return
-                                  localItems.push({ ...cursor.value, item: cursor.value.item as AggregateType.{{agg.Item.TypeScriptTypeName}} })
-                                })
-                                // 合成
+                                const localItems = await loadLocalItems()
                                 const remoteAndLocalTemp = crossJoin(
                                   localItems, local => local.itemKey,
                                   remoteItems, remote => getItemKey(remote) as ItemKey,
@@ -338,7 +367,7 @@ namespace Nijo.Features.Storing {
                                 }
                                 await reloadContext()
                                 return result
-                              }, [loadRemoteItems, openCursor, queryToTable, reloadContext, dispatchMsg, getItemKey, getItemName])
+                              }, [loadRemoteItems, loadLocalItems, reloadContext, dispatchMsg, getItemKey, getItemName, queryToTable])
 
                               return {
                                 ready: ready1 && ready2 && ready3,
