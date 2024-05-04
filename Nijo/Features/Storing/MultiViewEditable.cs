@@ -114,7 +114,7 @@ namespace Nijo.Features.Storing {
                         skip: currentPage.pageIndex * 20,
                         take: 20,
                       }), [filter, currentPage])
-                      const { ready, items, commit } = Util.{{rootLocalRepository.HookName}}(editRange)
+                      const { ready, items{{(_options.ReadOnly ? "" : ", commit")}}, reload } = Util.{{rootLocalRepository.HookName}}(editRange)
 
                       const reactHookFormMethods = Util.useFormEx<{ currentPageItems: GridRow[] }>({})
                       const { control, registerEx, handleSubmit, reset } = reactHookFormMethods
@@ -146,11 +146,13 @@ namespace Nijo.Features.Storing {
                         }
                       }, [update])
 
+                    {{If(!_options.ReadOnly, () => $$"""
                       // データの一時保存
                       const onSave = useCallback(async () => {
                         await commit(...fields)
                       }, [commit, fields])
 
+                    """)}}
                     {{If(_options.Hooks != null, () => $$"""
                       {{WithIndent(_options.Hooks!, "  ")}}
 

@@ -37,6 +37,7 @@
     <名前 is="word" />
     <種別 is="資産種別" />
     <履歴 is="array">
+      <連番 is="int key" />
       <期間FROM is="date" />
       <期間TO is="date" />
       <管理者 is="ref-to:従業員" />
@@ -49,16 +50,16 @@
         var buys = DbContext.資産取得DbSet
             .Include(x =&gt; x.RefferedBy_資産移動DbEntity_資産);
 
-        // 来歴を計算
+        // 履歴を計算
         foreach (var buy in buys) {
-            var history = new List&lt;来歴DbEntity&gt;();
-            history.Add(new 来歴DbEntity {
+            var history = new List&lt;履歴DbEntity&gt;();
+            history.Add(new 履歴DbEntity {
                 期間FROM = buy.購入日,
                 管理者_従業員コード = buy.管理者_従業員コード,
             });
 
             foreach (var move in buy.RefferedBy_資産移動DbEntity_資産) {
-                history.Add(new 来歴DbEntity {
+                history.Add(new 履歴DbEntity {
                     期間FROM = move.移動日,
                     管理者_従業員コード = move.移動後管理者_従業員コード,
                 });
@@ -78,7 +79,7 @@
                 資産ID = buy.資産ID,
                 名前 = buy.名前,
                 種別 = buy.種別,
-                来歴 = orderedHistory,
+                履歴 = orderedHistory,
             };
         }
     }

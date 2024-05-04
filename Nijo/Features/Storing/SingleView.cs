@@ -154,7 +154,7 @@ namespace Nijo.Features.Storing {
                         return [{{urlKeysWithMember.Values.Join(", ")}}]
                       }, [{{urlKeysWithMember.Select((_, i) => $"key{i}").Join(", ")}}])
 
-                      const { ready, items, commit } = Util.{{localRepos.HookName}}(pkArray)
+                      const { ready, items{{(_type == E_Type.View ? "" : ", commit")}} } = Util.{{localRepos.HookName}}(pkArray)
 
                     """).Else(() => $$"""
                       const { {{URLKEY_TYPE_NEW}}: keyOfNewItem } = useParams()
@@ -168,7 +168,9 @@ namespace Nijo.Features.Storing {
                           pkArray={pkArray}
                     """)}}
                           defaultValues={items[0]}
+                    {{If(_type != E_Type.View, () => $$"""
                           commit={commit}
+                    """)}}
                         ></AfterLoaded>
                       ) : (
                         <></>
@@ -180,13 +182,17 @@ namespace Nijo.Features.Storing {
                       pkArray,
                     """)}}
                       defaultValues,
+                    {{If(_type != E_Type.View, () => $$"""
                       commit,
+                    """)}}
                     }: {
                     {{If(_type == E_Type.Edit || _type == E_Type.View, () => $$"""
                       pkArray: [{{keyArray.Select(k => $"{k.TsType} | undefined").Join(", ")}}]
                     """)}}
                       defaultValues: AggregateType.{{dataClass.TsTypeName}}
+                    {{If(_type != E_Type.View, () => $$"""
                       commit: ReturnType<typeof Util.{{localRepos.HookName}}>['commit']
+                    """)}}
                     }) => {
 
                       const navigate = useNavigate()

@@ -39,7 +39,8 @@ namespace Nijo.Features.Storing {
                 RenderContent = ctx => {
                     var aggregates = ctx.Schema
                         .RootAggregatesOrderByDataFlow()
-                        .Where(agg => agg.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key);
+                        .Where(agg => agg.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key
+                                   || agg.Item.Options.Handler == NijoCodeGenerator.Models.ReadModel.Key);
 
                     var convesionBetweenDisplayDataAndTranScopeDataHooks = aggregates.SelectTextTemplate(agg => {
                         var dataClass = new DisplayDataClass(agg);
@@ -49,6 +50,8 @@ namespace Nijo.Features.Storing {
                         var keyArray = KeyArray.Create(agg);
                         var find = new FindFeature(agg);
                         var findMany = new FindManyFeature(agg);
+
+                        var commitable = agg.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key;
 
                         return $$"""
                             /** {{agg.Item.DisplayName}}の画面に表示するデータ型と登録更新するデータ型の変換を行うフック */
@@ -65,7 +68,10 @@ namespace Nijo.Features.Storing {
                               const {
                                 ready,
                                 items: {{agg.Item.ClassName}}Items,
+                            {{If(commitable, () => $$"""
                                 commit: commit{{agg.Item.ClassName}},
+                            """)}}
+                                reload,
                               } = {{localRepositosy.LocalLoaderHookName}}(editRange)
 
                               // 登録更新のデータ型を画面表示用のデータ型に変換する
@@ -80,6 +86,7 @@ namespace Nijo.Features.Storing {
                                 }
                               }, [allReady, {{agg.Item.ClassName}}Items])
 
+                            {{If(commitable, () => $$"""
                               // 保存
                               const commit = useCallback(async (...commitItems: AggregateType.{{dataClass.TsTypeName}}[]) => {
 
@@ -97,7 +104,8 @@ namespace Nijo.Features.Storing {
                                 await commit{{agg.Item.ClassName}}(...arr{{agg.Item.ClassName}})
                               }, [commit{{agg.Item.ClassName}}])
 
-                              return { ready: allReady, items, commit }
+                            """)}}
+                              return { ready: allReady, items{{(commitable ? ", commit" : "")}}, reload }
                             }
                             """;
                     });
@@ -109,6 +117,8 @@ namespace Nijo.Features.Storing {
                         var keyArray = KeyArray.Create(agg);
                         var find = new FindFeature(agg);
                         var findMany = new FindManyFeature(agg);
+
+                        var commitable = agg.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key;
 
                         return $$"""
                             const {{localRepositosy.LocalLoaderHookName}} = (editRange?
@@ -222,6 +232,7 @@ namespace Nijo.Features.Storing {
                                 reload()
                               }, [reload])
 
+                            {{If(commitable, () => $$"""
                               /** 引数に渡されたデータの値を見てstateを適切に変更し然るべき場所への保存を判断し実行する。 */
                               const commit = useCallback(async (...items: LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[]): Promise<LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[]> => {
                                 const remoteItems = await loadRemoteItems()
@@ -277,11 +288,14 @@ namespace Nijo.Features.Storing {
                                 return result
                               }, [loadRemoteItems, loadLocalItems, reloadContext, dispatchMsg, getItemKey, getItemName, queryToTable])
 
+                            """)}}
                               return {
                                 ready: ready1 && ready2 && ready3,
                                 items: remoteAndLocalItems,
                                 reload,
+                            {{If(commitable, () => $$"""
                                 commit,
+                            """)}}
                               }
                             }
                             """;

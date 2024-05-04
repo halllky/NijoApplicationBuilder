@@ -68,20 +68,22 @@ namespace Nijo.Models {
                 builder.AppServiceMethods.Add(loadFeature.RenderAppSrvMethod());
                 builder.DataClassDeclaring.Add(loadFeature.RenderSearchConditionTypeDeclaring(csharp: true));
                 builder.TypeScriptDataTypes.Add(loadFeature.RenderSearchConditionTypeDeclaring(csharp: false));
+                builder.TypeScriptDataTypes.Add(loadFeature.RenderTypeScriptConditionInitializerFn());
 
                 var controller = new Parts.WebClient.Controller(rootAggregate.Item);
                 var editableMultiView = new MultiViewEditable(rootAggregate, new MultiViewEditable.Options {
                     ReadOnly = true,
                     Hooks = $$"""
+                        const { post } = Util.useHttpRequest()
                         const handleRecalculateClick = useCallback(async () => {
                           const res = await post(`/{{controller.SubDomain}}/{{CONTROLLER_ACTION_NAME}}`)
                           if (res.ok) {
-                            await reloadRemoteItems()
+                            await reload()
                             dispatchMsg(msg => msg.info('洗い替え処理が完了しました。'))
                           } else {
                             dispatchMsg(msg => msg.error('洗い替え処理でエラーが発生しました。'))
                           }
-                        }, [post, reloadRemoteItems])
+                        }, [post, reload])
                         """,
                     PageTitleSide = $$"""
                         <Input.Button onClick={handleRecalculateClick}>全件洗い替え(デバッグ用)</Input.Button>
@@ -97,7 +99,11 @@ namespace Nijo.Models {
                 var singleView = new SingleView(rootAggregate, SingleView.E_Type.View);
                 context.AddPage(singleView);
 
-                // AggregateDetailクラス定義を作成する
+                // データクラス定義を作成する
+                var singleViewDataClass = new DisplayDataClass(rootAggregate);
+                builder.TypeScriptDataTypes.Add(singleViewDataClass.RenderTypeScriptDataClassDeclaration());
+                builder.TypeScriptDataTypes.Add(singleViewDataClass.RenderConvertFnToDisplayDataClass());
+
                 foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
                     var aggregateDetail = new Features.Storing.TransactionScopeDataClass(aggregate);
                     builder.DataClassDeclaring.Add(aggregateDetail.RenderCSharp(context));
