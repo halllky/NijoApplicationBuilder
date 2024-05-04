@@ -64,7 +64,7 @@ namespace Nijo.Features.Storing {
                       const row = cellProps.row.original.item
                       const state = Util.getLocalRepositoryState(row)
                     {{If(_options.ReadOnly, () => $$"""
-                      const singleViewUrl = `{{singleView.GetUrlStringForReact(keys.Select(k => $"row.item.{k.Declared.GetFullPath().Join("?.")}"))}}`
+                      const singleViewUrl = `{{singleView.GetUrlStringForReact(keys.Select(k => $"row.{k.Declared.GetFullPathAsSingleViewDataClass().Join("?.")}"))}}`
                     """).Else(() => $$"""
                       const singleViewUrl = state === '+'
                         ? `{{createView.GetUrlStringForReact(new[] { $"row.{DisplayDataClass.LOCAL_REPOS_ITEMKEY}" })}}`
@@ -151,6 +151,10 @@ namespace Nijo.Features.Storing {
                         await commit(...fields)
                       }, [commit, fields])
 
+                    {{If(_options.Hooks != null, () => $$"""
+                      {{WithIndent(_options.Hooks!, "  ")}}
+
+                    """)}}
                       return (
                         <div className="page-content-root gap-4 pb-[50vh]">
 
