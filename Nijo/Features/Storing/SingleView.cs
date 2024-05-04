@@ -166,19 +166,11 @@ namespace Nijo.Features.Storing {
 
                     """)}}
 
-                      const localReposItemKey = useMemo(() => {
-                        if (!ready || items.length === 0) return undefined
-                        const item = items[0]
-                        if (!item) return undefined
-                        return JSON.stringify([{{keys.Select(k => $"item.{DisplayDataClass.OWN_MEMBERS}.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]) as Util.ItemKey
-                      }, [ready, items])
-
                       return items.length > 0 ? (
                         <AfterLoaded
                     {{If(_type == E_Type.Edit || _type == E_Type.View, () => $$"""
                           pkArray={pkArray}
                     """)}}
-                          localReposItemKey={localReposItemKey}
                           defaultValues={items[0]}
                           commit={commit}
                         ></AfterLoaded>
@@ -191,14 +183,12 @@ namespace Nijo.Features.Storing {
                     {{If(_type == E_Type.Edit || _type == E_Type.View, () => $$"""
                       pkArray,
                     """)}}
-                      localReposItemKey,
                       defaultValues,
                       commit,
                     }: {
                     {{If(_type == E_Type.Edit || _type == E_Type.View, () => $$"""
                       pkArray: [{{keyArray.Select(k => $"{k.TsType} | undefined").Join(", ")}}]
                     """)}}
-                      localReposItemKey: Util.ItemKey | undefined
                       defaultValues: AggregateType.{{dataClass.TsTypeName}}
                       commit: ReturnType<typeof Util.{{localRepos.HookName}}>['commit']
                     }) => {
