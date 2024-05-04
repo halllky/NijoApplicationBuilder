@@ -17,6 +17,9 @@ namespace Nijo.Features.Storing {
 
         internal string FunctionName => $"create{_instance.Item.TypeScriptTypeName}";
 
+        /// <summary>
+        /// <see cref="DisplayDataClass.RenderTsInitializerFunction"/> のロジックと合わせる
+        /// </summary>
         internal string Render() {
             var children = _instance
                 .GetMembers()
@@ -46,7 +49,7 @@ namespace Nijo.Features.Storing {
                     Key = member.MemberName,
                     Value = $"'{member.GetGroupItems().First().Key}'",
                 });
-            var uuid = new AggregateDetail(_instance)
+            var uuid = new TransactionScopeDataClass(_instance)
                 .GetOwnMembers()
                 .OfType<AggregateMember.ValueMember>()
                 .Where(member => member.Options.MemberType is Uuid)
@@ -59,14 +62,21 @@ namespace Nijo.Features.Storing {
                 .Concat(children)
                 .Concat(child)
                 .Concat(variation)
-                .Concat(variationSwitch);
+                .Concat(variationSwitch)
+                .ToList();
+
+            if (_instance.IsChildrenMember()) {
+                initializers.Add(new {
+                    Key = TransactionScopeDataClass.IS_STORED_DATA,
+                    Value = "false",
+                });
+            }
 
             return $$"""
                     export const {{FunctionName}} = (): {{_instance.Item.TypeScriptTypeName}} => ({
                     {{initializers.SelectTextTemplate(item => $$"""
                       {{item.Key}}: {{item.Value}},
                     """)}}
-                      {{AggregateDetail.OBJECT_ID}}: UUID.generate(),
                     })
                     """;
         }

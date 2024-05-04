@@ -1,5 +1,5 @@
 import React, { HTMLAttributes, useCallback, useImperativeHandle, useRef } from 'react'
-import SimpleMDE from 'react-simplemde-editor'
+import SimpleMDE, { GetMdeInstance } from 'react-simplemde-editor'
 import 'easymde/dist/easymde.min.css'
 import { defineCustomComponent } from './InputBase'
 
@@ -14,12 +14,25 @@ export const TextareaBase = defineCustomComponent<string, {}, HTMLAttributes<HTM
     ...rest
   } = props
 
-  const divRef = useRef<HTMLDivElement>(null)
+  const mdeInstance = useRef<Parameters<GetMdeInstance>[0]>()
+  const getMdeInstanceCallback: GetMdeInstance = useCallback(mde => {
+    mdeInstance.current = mde
+  }, [])
 
   useImperativeHandle(ref, () => ({
     getValue: () => value,
-    focus: () => divRef.current?.focus(),
-  }), [value])
+    focus: () => {
+      // focusが呼ばれるタイミングの方が早いのでsetTimeoutで待つ
+      const waitForInstanceReady = () => setTimeout(() => {
+        if (mdeInstance.current) {
+          mdeInstance.current.codemirror.focus()
+        } else {
+          waitForInstanceReady()
+        }
+      }, 10)
+      waitForInstanceReady()
+    },
+  }), [mdeInstance, value])
 
   const handleFocus: React.FocusEventHandler<HTMLDivElement> = useCallback(e => {
     onFocus?.(e)
@@ -37,7 +50,7 @@ export const TextareaBase = defineCustomComponent<string, {}, HTMLAttributes<HTM
 
   return (
     <SimpleMDE
-      ref={divRef}
+      getMdeInstance={getMdeInstanceCallback}
       value={value ?? ''}
       onChange={onTextChange}
       className={`w-full ${className}`}

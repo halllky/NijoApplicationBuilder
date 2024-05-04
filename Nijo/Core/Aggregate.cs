@@ -187,5 +187,35 @@ namespace Nijo.Core {
                             && edge.Initial.Item is Aggregate)
                 .Select(edge => edge.As<Aggregate>());
         }
+
+        /// <summary>
+        /// targetがsourceの唯一のキーであるか否か
+        /// </summary>
+        /// <param name="refTo">参照先</param>
+        /// <param name="refFrom">参照元</param>
+        internal static bool IsSingleRefKeyOf(this GraphNode<Aggregate> refTo, GraphNode<Aggregate> refFrom) {
+            var keys = refFrom
+                .GetKeys()
+                .Where(key => key.DeclaringAggregate == refFrom)
+                .ToArray();
+
+            if (refFrom.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key
+                && keys.Length == 1
+                && keys[0] is AggregateMember.Ref rm
+                && rm.MemberAggregate == refTo) {
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// この集約のすべてのメンバーが2次元の表で表現できるかどうかを返します。
+        /// </summary>
+        internal static bool CanDisplayAllMembersAs2DGrid(this GraphNode<Aggregate> aggregate) {
+            return aggregate
+                .EnumerateDescendants()
+                .All(agg => !agg.IsChildrenMember()
+                         && !agg.IsVariationMember());
+        }
     }
 }

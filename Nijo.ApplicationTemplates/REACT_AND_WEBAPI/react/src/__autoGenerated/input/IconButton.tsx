@@ -1,6 +1,7 @@
 import React from "react"
 
 export const IconButton = (args: {
+  submit?: boolean
   onClick?: React.MouseEventHandler
   fill?: true
   outline?: true
@@ -26,6 +27,7 @@ export const IconButton = (args: {
 
   return (
     <button
+      type={args.submit ? undefined : 'button'}
       onClick={args.onClick}
       className={className}
       title={args.hideText && (args.children as string)}

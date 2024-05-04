@@ -99,7 +99,7 @@ namespace Nijo.Models {
 
                 // AggregateDetailクラス定義を作成する
                 foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
-                    var aggregateDetail = new Features.Storing.AggregateDetail(aggregate);
+                    var aggregateDetail = new Features.Storing.TransactionScopeDataClass(aggregate);
                     builder.DataClassDeclaring.Add(aggregateDetail.RenderCSharp(context));
                     builder.TypeScriptDataTypes.Add(aggregateDetail.RenderTypeScript(context));
                 }

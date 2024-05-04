@@ -1,17 +1,20 @@
 using Nijo.Core;
+using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
+using System.Formats.Tar;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Nijo.Parts.Utility;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Nijo.Util.CodeGenerating;
 
 namespace Nijo.Features.Storing {
-    internal class AggregateDetail {
-        internal AggregateDetail(GraphNode<Aggregate> aggregate) {
+    /// <summary>
+    /// 登録・更新・削除される範囲を1つの塊とするデータクラス。
+    /// 具体的には、ルート集約とその Child, Children, Variaton 達から成る一塊。Refの参照先はこの範囲の外。
+    /// </summary>
+    internal class TransactionScopeDataClass {
+        internal TransactionScopeDataClass(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
         }
         protected readonly GraphNode<Aggregate> _aggregate;
@@ -19,16 +22,9 @@ namespace Nijo.Features.Storing {
         internal virtual string ClassName => _aggregate.Item.ClassName;
 
         /// <summary>
-        /// 編集画面でDBから読み込んだデータとその画面中で新たに作成されたデータで
-        /// 挙動を分けるためのフラグ
+        /// UI上でChildrenの主キーが変更可能かどうかを制御するのに使用
         /// </summary>
-        internal const string IS_LOADED = "__loaded";
-        /// <summary>
-        /// - useFieldArrayの中で配列インデックスをキーに使うと新規追加されたコンボボックスが
-        ///   その1個上の要素の更新と紐づいてしまうのでクライアント側で要素1個ずつにIDを振る
-        /// - TabGroupでどのタブがアクティブになっているかの判定にも使う
-        /// </summary>
-        internal const string OBJECT_ID = "__object_id";
+        internal const string IS_STORED_DATA = "__is_stored_data";
 
         internal const string FROM_DBENTITY = "FromDbEntity";
         internal const string TO_DBENTITY = "ToDbEntity";
@@ -63,8 +59,9 @@ namespace Nijo.Features.Storing {
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
                   {{m.MemberName}}?: {{m.TypeScriptTypename}}
                 """)}}
-                  {{IS_LOADED}}?: boolean
-                  {{OBJECT_ID}}?: string
+                {{If(_aggregate.IsChildrenMember(), () => $$"""
+                  {{IS_STORED_DATA}}: boolean
+                """)}}
                 }
                 """;
         }
@@ -112,7 +109,23 @@ namespace Nijo.Features.Storing {
                 }
                 """;
         }
-        private IEnumerable<string> RenderBodyOfFromDbEntity(GraphNode<Aggregate> instance, GraphNode<Aggregate> rootInstance, string rootInstanceName, int depth) {
+
+        /// <summary>
+        /// TODO: この操作は随所に出てくるので DbManipulation.cs などそれ用のクラスを設けてそちらに移したほうがよいかもしれない
+        /// </summary>
+        internal static IEnumerable<string> RenderBodyOfFromDbEntity(
+            GraphNode<Aggregate> instance,
+            GraphNode<Aggregate> rootInstance,
+            string rootInstanceName,
+            int depth,
+            Func<GraphNode<Aggregate>, string>? newInstance = null) {
+
+            string NewInstance(GraphNode<Aggregate> agg) {
+                return newInstance != null
+                    ? newInstance(agg)
+                    : $"new {agg.Item.ClassName}()";
+            }
+
             foreach (var prop in instance.GetMembers()) {
                 if (prop.Owner != prop.DeclaringAggregate) {
                     continue; // 不要
@@ -145,23 +158,21 @@ namespace Nijo.Features.Storing {
 
                 } else if (prop is AggregateMember.Children children) {
                     var item = depth == 0 ? "item" : $"item{depth}";
-                    var childClass = children.MemberAggregate.Item.ClassName;
                     var childInstance = children.MemberAggregate;
                     var childFullPath = children.GetFullPath(rootInstance).Join("?.");
 
                     yield return $$"""
-                        {{children.MemberName}} = {{rootInstanceName}}.{{childFullPath}}?.Select({{item}} => new {{childClass}} {
-                            {{WithIndent(RenderBodyOfFromDbEntity(childInstance, childInstance, item, depth + 1), "    ")}}
+                        {{children.MemberName}} = {{rootInstanceName}}.{{childFullPath}}?.Select({{item}} => {{NewInstance(children.MemberAggregate)}} {
+                            {{WithIndent(RenderBodyOfFromDbEntity(childInstance, childInstance, item, depth + 1, newInstance), "    ")}}
                         }).ToList(),
                         """;
 
                 } else if (prop is AggregateMember.RelationMember child) {
-                    var childClass = child.MemberAggregate.Item.ClassName;
                     var childInstance = child.MemberAggregate;
 
                     yield return $$"""
-                        {{child.MemberName}} = new {{childClass}} {
-                            {{WithIndent(RenderBodyOfFromDbEntity(childInstance, rootInstance, rootInstanceName, depth + 1), "    ")}}
+                        {{child.MemberName}} = {{NewInstance(child.MemberAggregate)}} {
+                            {{WithIndent(RenderBodyOfFromDbEntity(childInstance, rootInstance, rootInstanceName, depth + 1, newInstance), "    ")}}
                         },
                         """;
 
@@ -246,5 +257,107 @@ namespace Nijo.Features.Storing {
             return (instanceName, valueSourceAggregate);
         }
         #endregion ToDbEntity
+
+
+        #region 値の同一比較
+        internal string DeepEqualTsFnName => $"deepEquals{_aggregate.Item.ClassName}";
+        internal string RenderTsDeppEquals() {
+
+            static string Render(string instanceA, string instanceB, GraphNode<Aggregate> agg) {
+                var agg2 = agg.IsChildrenMember() ? agg.AsEntry() : agg;
+                var compareMembers = agg2
+                    .GetMembers()
+                    .OfType<AggregateMember.ValueMember>()
+                    .Where(vm => vm.Inherits?.Relation.IsParentChild() != true);
+                var childAggregates = agg2
+                    .GetMembers()
+                    .OfType<AggregateMember.RelationMember>()
+                    .Where(rel => rel is not AggregateMember.Ref
+                               && rel is not AggregateMember.Parent);
+
+                if (agg2.IsChildrenMember()) {
+                    var thisPath = agg.GetFullPath().Select(p => $"?.{p}").Join("");
+                    var arrA = $"{instanceA}{thisPath}";
+                    var arrB = $"{instanceB}{thisPath}";
+
+                    var depth = agg2.EnumerateAncestors().Count();
+                    var i = $"i{depth}";
+                    var itemA = $"a{depth}";
+                    var itemB = $"b{depth}";
+
+                    // TODO: 要素の順番を考慮していない
+                    return $$"""
+
+                        // {{agg2.Item.DisplayName}}
+                        if ({{arrA}}?.length !== {{arrB}}?.length) return false
+                        if ({{arrA}} !== undefined && {{arrB}} !== undefined) {
+                          for (let {{i}} = 0; {{i}} < {{arrA}}.length; {{i}}++) {
+                            const {{itemA}} = {{arrA}}[{{i}}]
+                            const {{itemB}} = {{arrB}}[{{i}}]
+                        {{compareMembers.SelectTextTemplate(vm => $$"""
+                            if ({{itemA}}.{{vm.Declared.GetFullPath().Join("?.")}} !== {{itemB}}.{{vm.Declared.GetFullPath().Join("?.")}}) return false
+                        """)}}
+                        {{childAggregates.SelectTextTemplate(rel => $$"""
+                            {{WithIndent(Render(itemA, itemB, rel.MemberAggregate), "    ")}}
+                        """)}}
+                          }
+                        }
+                        """;
+
+                } else {
+                    return $$"""
+
+                        {{If(!agg2.IsRoot(), () => $$"""
+                        // {{agg2.Item.DisplayName}}
+                        """)}}
+                        {{compareMembers.SelectTextTemplate(vm => $$"""
+                        if ({{instanceA}}?.{{vm.Declared.GetFullPath().Join("?.")}} !== {{instanceB}}?.{{vm.Declared.GetFullPath().Join("?.")}}) return false
+                        """)}}
+                        {{childAggregates.SelectTextTemplate(rel => $$"""
+                        {{Render(instanceA, instanceB, rel.MemberAggregate)}}
+                        """)}}
+                        """;
+                }
+            }
+
+            return $$"""
+                export const {{DeepEqualTsFnName}} = (a: {{_aggregate.Item.TypeScriptTypeName}}, b: {{_aggregate.Item.TypeScriptTypeName}}): boolean => {
+                  {{WithIndent(Render("a", "b", _aggregate), "  ")}}
+
+                  return true
+                }
+                """;
+        }
+        #endregion 値の同一比較
+    }
+
+    internal static partial class StoringExtensions {
+
+        /// <summary>
+        /// エントリーからのパスを <see cref="TransactionScopeDataClass"/> のインスタンスの型のルールにあわせて返す。
+        /// </summary>
+        internal static IEnumerable<string> GetFullPath(this GraphNode<Aggregate> aggregate, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+            var path = aggregate.PathFromEntry();
+            if (since != null) path = path.Since(since);
+            if (until != null) path = path.Until(until);
+
+            foreach (var edge in path) {
+                if (edge.Source == edge.Terminal && edge.IsParentChild()) {
+                    yield return AggregateMember.PARENT_PROPNAME; // 子から親に向かって辿る場合
+                } else {
+                    yield return edge.RelationName;
+                }
+            }
+        }
+
+        /// <summary>
+        /// エントリーからのパスを <see cref="TransactionScopeDataClass"/> のインスタンスの型のルールにあわせて返す。
+        /// </summary>
+        internal static IEnumerable<string> GetFullPath(this AggregateMember.AggregateMemberBase member, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+            foreach (var path in member.Owner.GetFullPath(since, until)) {
+                yield return path;
+            }
+            yield return member.MemberName;
+        }
     }
 }

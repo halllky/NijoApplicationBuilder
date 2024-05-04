@@ -40,19 +40,12 @@ namespace Nijo.Features.Storing {
 
         SourceFile IReactPage.GetSourceFile() {
             var singleView = new SingleView(_aggregate, SingleView.E_Type.View);
+            var dataClass = new DisplayDataClass(_aggregate);
             var editView = new SingleView(_aggregate, SingleView.E_Type.Edit);
             var createView = new SingleView(_aggregate, SingleView.E_Type.Create);
             var findMany = new FindManyFeature(_aggregate);
-            var createEmptyObject = new TSInitializerFunction(_aggregate).FunctionName;
-
-            var keys = _aggregate
-               .GetKeys()
-               .OfType<AggregateMember.ValueMember>()
-               .ToArray();
-            var names = _aggregate
-                .GetNames()
-                .OfType<AggregateMember.ValueMember>()
-                .ToArray();
+            var rootLocalRepository = new LocalRepository(_aggregate);
+            var keys = _aggregate.GetKeys().OfType<AggregateMember.ValueMember>().ToArray();
 
             var groupedSearchConditions = findMany
                 .EnumerateSearchConditionMembers()
@@ -62,37 +55,31 @@ namespace Nijo.Features.Storing {
                 .OrderBy(group => group.Key == _aggregate ? 1 : 2);
 
             var rowHeader = new DataTableColumn {
-                Id = "col0",
+                Id = "col-header",
                 Header = string.Empty,
                 Size = 64,
                 EnableResizing = false,
                 Cell = $$"""
                     cellProps => {
                       const row = cellProps.row.original.item
+                      const state = Util.getLocalRepositoryState(row)
                     {{If(_options.ReadOnly, () => $$"""
                       const singleViewUrl = `{{singleView.GetUrlStringForReact(keys.Select(k => $"row.item.{k.Declared.GetFullPath().Join("?.")}"))}}`
                     """).Else(() => $$"""
-                      const singleViewUrl = row.state === '+'
-                        ? `{{createView.GetUrlStringForReact(new[] { "row.itemKey" })}}`
-                        : `{{editView.GetUrlStringForReact(keys.Select(k => $"row.item.{k.Declared.GetFullPath().Join("?.")}"))}}`
+                      const singleViewUrl = state === '+'
+                        ? `{{createView.GetUrlStringForReact(new[] { $"row.{DisplayDataClass.LOCAL_REPOS_ITEMKEY}" })}}`
+                        : `{{editView.GetUrlStringForReact(keys.Select(k => $"row.{k.Declared.GetFullPathAsSingleViewDataClass().Join("?.")}"))}}`
                     """)}}
                       return (
                         <div className="flex items-center gap-1 pl-1">
                           <Link to={singleViewUrl} className="text-link">詳細</Link>
-                          <span className="inline-block w-4 text-center">{row.state}</span>
+                          <span className="inline-block w-4 text-center">{state}</span>
                         </div>
                       )
                     }
                     """,
             };
-            var gridColumns = new[] { rowHeader }.Concat(_aggregate
-                .EnumerateThisAndDescendants()
-                // ChildrenやVariationのメンバーはグリッド上で表現できないため表示しない
-                .Where(agg => agg.EnumerateAncestorsAndThis().All(agg2 => agg2.IsRoot() || agg2.IsChildMember()))
-                .SelectMany(agg => agg.GetMembers())
-                .OfType<AggregateMember.ValueMember>()
-                .Where(vm => !vm.Options.InvisibleInGui)
-                .Select((vm, ix) => DataTableColumn.FromMember(vm, "item.item", _aggregate, $"col{ix + 1}", _options.ReadOnly)));
+            var gridColumns = new[] { rowHeader }.Concat(DataTableColumn.FromMembers("item", _aggregate, _options.ReadOnly));
 
             return new SourceFile {
                 FileName = "list.tsx",
@@ -100,7 +87,9 @@ namespace Nijo.Features.Storing {
                     import React, { useCallback, useEffect, useMemo, useRef, useState, useReducer } from 'react'
                     import { Link } from 'react-router-dom'
                     import { useFieldArray, FormProvider } from 'react-hook-form'
+                    import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline'
                     import dayjs from 'dayjs'
+                    import { UUID } from 'uuidjs'
                     import * as Util from '../../util'
                     import * as Input from '../../input'
                     import * as Layout from '../../collection'
@@ -111,91 +100,57 @@ namespace Nijo.Features.Storing {
                     export default function () {
                       const [, dispatchMsg] = Util.useMsgContext()
 
-                      // リモートリポジトリ（APサーバー）
-                      const [remoteItems, setRemoteItems] = useState<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}[]>(() => [])
-                      const { post } = Util.useHttpRequest()
-
-                      // ローカルリポジトリ（IndexedDB）
-                      const reposSetting: Util.LocalRepositoryArgs<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}> = useMemo(() => ({
-                        dataTypeKey: '{{LocalRepository.GetDataTypeKey(_aggregate)}}',
-                        getItemKey: x => JSON.stringify([{{keys.Select(k => $"x.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]),
-                        getItemName: x => `{{string.Concat(names.Select(n => $"${{x.{n.Declared.GetFullPath().Join("?.")}}}"))}}`,
-                        remoteItems: remoteItems,
-                      }), [remoteItems])
-                      const {
-                        ready,
-                        loadLocalItems,
-                        addToLocalRepository,
-                        updateLocalRepositoryItem,
-                        deleteLocalRepositoryItem,
-                      } = Util.useLocalRepository(reposSetting)
-
-                      // 編集対象（リモートリポジトリ + ローカルリポジトリ）
-                      const reactHookFormMethods = Util.useFormEx<{ currentPageItems: GridRow[] }>({})
-                      const { control, registerEx, handleSubmit, reset } = reactHookFormMethods
-                      const { fields, append, update, remove } = useFieldArray({ name: 'currentPageItems', control })
-
                       // 検索条件
+                      const [filter, setFilter] = useState<AggregateType.{{findMany.TypeScriptConditionClass}}>(() => AggregateType.{{findMany.TypeScriptConditionInitializerFn}}())
+                      const [currentPage, dispatchPaging] = useReducer(pagingReducer, { pageIndex: 0 })
+
                       const rhfSearchMethods = Util.useFormEx<AggregateType.{{findMany.TypeScriptConditionClass}}>({})
                       const getConditionValues = rhfSearchMethods.getValues
                       const registerExCondition = rhfSearchMethods.registerEx
 
-                      // ページングとデータ読み込み
-                      const [currentPage, dispatchPaging] = useReducer(pagingReducer, { pageIndex: 0 })
-                      const reloadRemoteItems = useCallback(async () => {
-                        if (!ready) return
+                      // 編集対象（リモートリポジトリ + ローカルリポジトリ）
+                      const editRange = useMemo(() => ({
+                        filter,
+                        skip: currentPage.pageIndex * 20,
+                        take: 20,
+                      }), [filter, currentPage])
+                      const { ready, items, commit } = Util.{{rootLocalRepository.HookName}}(editRange)
 
-                        const skip = currentPage.pageIndex * 20
-                        const take = 20
-                        const url = `{{findMany.GetUrlStringForReact()}}?{{FindManyFeature.PARAM_SKIP}}=${skip}&{{FindManyFeature.PARAM_TAKE}}=${take}`
-                        const filters = getConditionValues()
-                        const response = await post<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}[]>(url, filters)
-
-                        setRemoteItems(response.ok ? response.data : [])
-
-                        dispatchPaging(page => page.loadComplete())
-                      }, [ready, loadLocalItems, getConditionValues, currentPage, reset, dispatchPaging])
-
-                      // TODO: ↓ここのデータの流れがややこしい
-                      useEffect(() => {
-                        if (!currentPage.loaded) reloadRemoteItems()
-                      }, [currentPage, reloadRemoteItems])
+                      const reactHookFormMethods = Util.useFormEx<{ currentPageItems: GridRow[] }>({})
+                      const { control, registerEx, handleSubmit, reset } = reactHookFormMethods
+                      const { fields, append, update, remove } = useFieldArray({ name: 'currentPageItems', control })
 
                       useEffect(() => {
-                        if (!ready) return
-                        if (!currentPage.loaded) return
-                        loadLocalItems().then(currentPageItems => reset({ currentPageItems }))
-                      }, [ready, currentPage, loadLocalItems, reset])
+                        if (ready) reset({ currentPageItems: items })
+                      }, [ready, items])
 
-                      const dtRef = useRef<Layout.DataTableRef<GridRow>>(null)
-                    {{If(!_options.ReadOnly, () => $$"""
+                      const handleReload = useCallback(() => {
+                        setFilter(getConditionValues())
+                      }, [getConditionValues])
 
                       // データ編集
                       const handleAdd: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
-                        const newItem = AggregateType.{{createEmptyObject}}()
-                        append(await addToLocalRepository(newItem))
-                      }, [append, addToLocalRepository])
+                        const newRow: AggregateType.{{dataClass.TsTypeName}} = {{WithIndent(dataClass.RenderNewObjectLiteral("UUID.generate() as Util.ItemKey"), "    ")}}
+                        append(newRow)
+                      }, [append])
 
                       const handleUpdateRow = useCallback(async (index: number, row: GridRow) => {
-                        update(index, await updateLocalRepositoryItem(row.itemKey, row.item))
-                      }, [update, updateLocalRepositoryItem])
+                        update(index, { ...row, {{DisplayDataClass.WILL_BE_CHANGED}}: true })
+                      }, [update])
 
+                      const dtRef = useRef<Layout.DataTableRef<GridRow>>(null)
                       const handleRemove: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
                         if (!dtRef.current) return
-                        const deletedRowIndex: number[] = []
                         for (const { row, rowIndex } of dtRef.current.getSelectedRows()) {
-                          const deleted = await deleteLocalRepositoryItem(row.itemKey, row.item)
-                          if (deleted) update(rowIndex, deleted)
-                          else deletedRowIndex.push(rowIndex)
+                          update(rowIndex, { ...row, {{DisplayDataClass.WILL_BE_DELETED}}: true })
                         }
-                        remove(deletedRowIndex)
-                      }, [update, remove, deleteLocalRepositoryItem])
-                    """)}}
+                      }, [update])
 
-                    {{If(_options.Hooks != null, () => $$"""
-                      {{WithIndent(_options.Hooks!, "  ")}}
+                      // データの一時保存
+                      const onSave = useCallback(async () => {
+                        await commit(...fields)
+                      }, [commit, fields])
 
-                    """)}}
                       return (
                         <div className="page-content-root gap-4 pb-[50vh]">
 
@@ -205,11 +160,12 @@ namespace Nijo.Features.Storing {
                                 <h1 className="text-base font-semibold select-none py-1">
                                   {{_aggregate.Item.DisplayName}}
                                 </h1>
-                                <Input.Button onClick={reloadRemoteItems}>再読み込み</Input.Button>
+                                <Input.Button onClick={handleReload}>再読み込み</Input.Button>
                                 <div className="basis-4"></div>
                     {{If(!_options.ReadOnly, () => $$"""
                                 <Input.Button onClick={handleAdd}>追加</Input.Button>
                                 <Input.Button onClick={handleRemove}>削除</Input.Button>
+                                <Input.IconButton fill icon={BookmarkSquareIcon} onClick={onSave}>一時保存</Input.IconButton>
                     """)}}
                     {{If(_options.PageTitleSide != null, () => $$"""
                                 {{WithIndent(_options.PageTitleSide!, "            ")}}
@@ -246,7 +202,7 @@ namespace Nijo.Features.Storing {
                       )
                     }
 
-                    type GridRow = Util.LocalRepositoryItem<AggregateType.{{_aggregate.Item.TypeScriptTypeName}}>
+                    type GridRow = AggregateType.{{dataClass.TsTypeName}}
 
                     const COLUMN_DEFS: Layout.ColumnDefEx<Util.TreeNode<GridRow>>[] = [
                       {{WithIndent(gridColumns.SelectTextTemplate(col => col.Render()), "  ")}}

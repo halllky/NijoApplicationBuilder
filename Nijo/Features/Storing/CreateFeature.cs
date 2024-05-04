@@ -40,7 +40,7 @@ namespace Nijo.Features.Storing {
         internal string RenderAppSrvMethod() {
             var appSrv = new ApplicationService();
             var controller = new Parts.WebClient.Controller(_aggregate.Item);
-            var instanceClass = new AggregateDetail(_aggregate).ClassName;
+            var instanceClass = new TransactionScopeDataClass(_aggregate).ClassName;
             var param = new AggregateCreateCommand(_aggregate);
             var find = new FindFeature(_aggregate);
 
@@ -51,7 +51,7 @@ namespace Nijo.Features.Storing {
 
             return $$"""
                 public virtual bool {{MethodName}}({{param.ClassName}} command, out {{instanceClass}} created, out ICollection<string> errors) {
-                    var dbEntity = command.{{AggregateDetail.TO_DBENTITY}}();
+                    var dbEntity = command.{{TransactionScopeDataClass.TO_DBENTITY}}();
                     {{appSrv.DbContext}}.Add(dbEntity);
 
                     try {

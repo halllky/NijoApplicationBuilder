@@ -40,13 +40,13 @@ namespace Nijo.Features.Storing {
             var appSrv = new ApplicationService();
             var controller = new Parts.WebClient.Controller(_aggregate.Item);
             var args = GetEFCoreMethodArgs().ToArray();
-            var find = new FindFeature(_aggregate);
-            var instanceClass = new AggregateDetail(_aggregate).ClassName;
+            var instanceClass = new TransactionScopeDataClass(_aggregate).ClassName;
 
             return $$"""
                 public virtual bool {{MethodName}}({{args.Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}, out ICollection<string> errors) {
 
-                    {{WithIndent(find.RenderDbEntityLoading(
+                    {{WithIndent(FindFeature.RenderDbEntityLoading(
+                        _aggregate,
                         appSrv.DbContext,
                         "entity",
                         args.Select(a => a.MemberName).ToArray(),
@@ -58,7 +58,7 @@ namespace Nijo.Features.Storing {
                         return false;
                     }
 
-                    var deleted = {{instanceClass}}.{{AggregateDetail.FROM_DBENTITY}}(entity);
+                    var deleted = {{instanceClass}}.{{TransactionScopeDataClass.FROM_DBENTITY}}(entity);
 
                     {{appSrv.DbContext}}.Remove(entity);
 
