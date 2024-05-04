@@ -114,10 +114,6 @@ namespace Nijo.Features.Storing {
                 // -----------------------------------------
                 // 集約コンポーネントの宣言
                 var rootAggregateList = new List<GraphNode<Aggregate>> { _aggregate };
-                rootAggregateList.AddRange(_aggregate
-                    .GetReferedEdgesAsSingleKeyRecursively()
-                    .Select(edge => edge.Initial));
-
                 var aggregateComponents = new List<AggregateComponent>();
                 aggregateComponents.AddRange(rootAggregateList
                     .Select(agg => new AggregateComponent(agg, _type, agg != _aggregate)));

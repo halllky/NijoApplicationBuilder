@@ -53,11 +53,6 @@ namespace Nijo.Features.Storing {
             var useFormType = $"AggregateType.{entryDataClass.TsTypeName}";
             var registerName = GetRegisterName();
 
-            // この集約を参照する隣接集約 ※DataTableの列定義は当該箇所で定義している
-            var relevantAggregatesCalling = _aggregate
-                .GetReferedEdgesAsSingleKey()
-                .SelectTextTemplate(edge => new AggregateComponent(edge.Initial, _mode, true).RenderCaller());
-
             if (_relationToParent == null && !_asSingleRefKeyAggregate) {
                 // ルート集約のレンダリング（画面の中の主集約）
                 return $$"""
@@ -74,7 +69,6 @@ namespace Nijo.Features.Storing {
                           <VForm.Container leftColumnMinWidth="{{GetLeftColumnWidth()}}">
                             {{WithIndent(RenderMembers(), "        ")}}
                           </VForm.Container>
-                          {{WithIndent(relevantAggregatesCalling, "      ")}}
                         </>
                       )
                     }
@@ -130,7 +124,6 @@ namespace Nijo.Features.Storing {
                               </>
                             )}
                           </VForm.Container>
-                          {{WithIndent(relevantAggregatesCalling, "      ")}}
                         </>
                       )
                     }
@@ -150,7 +143,6 @@ namespace Nijo.Features.Storing {
                       return (
                         <>
                           {{WithIndent(RenderMembers(), "      ")}}
-                          {{WithIndent(relevantAggregatesCalling, "      ")}}
                         </>
                       )
                     }
@@ -172,7 +164,6 @@ namespace Nijo.Features.Storing {
                       const body = (
                         <>
                           {{WithIndent(RenderMembers(), "      ")}}
-                          {{WithIndent(relevantAggregatesCalling, "      ")}}
                         </>
                       )
 
@@ -248,7 +239,6 @@ namespace Nijo.Features.Storing {
                               {{WithIndent(RenderMembers(), "          ")}}
                             </VForm.Container>
                           ))}
-                                  {{WithIndent(relevantAggregatesCalling, "              ")}}
                         </VForm.Container>
                       )
                     }
@@ -521,25 +511,7 @@ namespace Nijo.Features.Storing {
             foreach (var e in aggregate.PathFromEntry()) {
                 var edge = e.As<Aggregate>();
 
-                if (edge.IsRef()) {
-                    var dataClass = new DisplayDataClass(edge.Terminal);
-                    yield return dataClass
-                        .GetRefFromProps()
-                        .Single(p => p.MainAggregate == edge.Initial
-                                  && p.MainAggregate.Source == edge)
-                        .PropName;
-                    //if (edge.Source.As<Aggregate>() == edge.Initial) {
-                    //    // aggregateが参照する側ではなく参照される側の場合
-                    //    var dataClass = new SingleViewDataClass(edge.Terminal);
-                    //    yield return dataClass
-                    //        .GetRefFromProps()
-                    //        .Single(p => p.Aggregate == edge.Initial)
-                    //        .PropName;
-                    //} else {
-                    //    // aggregateが参照される側ではなく参照する側の場合
-                    //    yield return edge.RelationName;
-                    //}
-                } else {
+                if (!edge.IsRef()) {
                     var dataClass = new DisplayDataClass(edge.Initial);
                     yield return dataClass
                         .GetChildProps()

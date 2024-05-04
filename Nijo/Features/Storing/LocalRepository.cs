@@ -49,52 +49,6 @@ namespace Nijo.Features.Storing {
                         var keyArray = KeyArray.Create(agg);
                         var find = new FindFeature(agg);
                         var findMany = new FindManyFeature(agg);
-                        var refRepositories = dataClass
-                            .GetRefFromPropsRecursively()
-                            .DistinctBy(x => x.Item1.MainAggregate)
-                            .Select(p => new {
-                                Repos = new LocalRepository(p.Item1.MainAggregate),
-                                FindMany = new FindManyFeature(p.Item1.MainAggregate),
-                                Aggregate = p.Item1.MainAggregate,
-                                DataClassProp = p,
-
-                                // この画面のメイン集約を参照する関連集約をまとめて読み込むため、
-                                // SingleViewのURLのキーで関連集約のAPIへの検索をかけたい。
-                                // そのために当該検索条件のうち関連集約の検索に関係するメンバーの一覧
-                                RootAggregateMembersForSingleViewLoading = p.Item1.MainAggregate
-                                    .GetEntryReversing()
-                                    .As<Aggregate>()
-                                    .GetMembers()
-                                    .OfType<AggregateMember.ValueMember>()
-                                    .Where(vm => keyArray.Any(k => k.Member.Declared == vm.Declared)),
-
-                                // この画面のメイン集約を参照する関連集約をまとめて読み込むため、
-                                // MultiViewの画面上部の検索条件の値で関連集約のAPIへの検索をかけたい。
-                                // そのために当該検索条件のうち関連集約の検索に関係するメンバーの一覧
-                                RootAggregateMembersForLoad = p.Item1.MainAggregate
-                                    .GetEntryReversing()
-                                    .As<Aggregate>()
-                                    .GetMembers()
-                                    .OfType<AggregateMember.ValueMember>()
-                                    // TODO: 検索条件クラスではVariationはbool型で生成されるが
-                                    // FindManyFeatureでそれも考慮してメンバーを列挙してくれるメソッドがないので
-                                    // 暫定的に除外する（修正後は 011_ダブル.xml で確認可能）
-                                    .Where(vm => vm is not AggregateMember.Variation),
-                            })
-                            .ToArray();
-
-                        // メイン集約を参照する関連集約をまとめて読み込むため、検索条件の値で関連集約のAPIへの検索をかけたい。
-                        // そのために検索条件の各項目が関連集約のどの項目と対応するかを調べて返すための関数
-                        AggregateMember.ValueMember FindRootAggregateSearchConditionMember(AggregateMember.ValueMember refSearchConditionMember) {
-                            var refPath = refSearchConditionMember.DeclaringAggregate.PathFromEntry();
-                            var matched = findMany
-                                .EnumerateSearchConditionMembers()
-                                .Where(kv2 => kv2.Declared == refSearchConditionMember.Declared
-                                            // ある集約から別の集約へ複数経路の参照がある場合は対応するメンバーが複数とれてしまうのでパスの後方一致でも絞り込む
-                                            && refPath.EndsWith(kv2.Owner.PathFromEntry()))
-                                .ToArray();
-                            return matched.Single();
-                        }
 
                         return $$"""
                             /** {{agg.Item.DisplayName}}の画面に表示するデータ型と登録更新するデータ型の変換を行うフック */
@@ -113,81 +67,35 @@ namespace Nijo.Features.Storing {
                                 items: {{agg.Item.ClassName}}Items,
                                 commit: commit{{agg.Item.ClassName}},
                               } = {{localRepositosy.LocalLoaderHookName}}(editRange)
-                            {{refRepositories.SelectTextTemplate(x => $$"""
-
-                              // {{x.Aggregate.Item.DisplayName}}のローカルリポジトリとリモートリポジトリへのデータ読み書き処理
-                              const {{x.Aggregate.Item.ClassName}}filter: { filter: AggregateType.{{x.FindMany.TypeScriptConditionClass}} } = useMemo(() => {
-                                const f = AggregateType.{{x.FindMany.TypeScriptConditionInitializerFn}}()
-                                if (typeof editRange === 'string') {
-                                  // 新規作成データ(未コミット)の編集の場合
-                                } else if (Array.isArray(editRange)) {
-                                  const [{{keyArray.Select(k => k.VarName).Join(", ")}}] = editRange
-                            {{x.RootAggregateMembersForSingleViewLoading.SelectTextTemplate((kv, i) => $$"""
-                            {{If(kv.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
-                                  f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}} = {{keyArray.SingleOrDefault(k => k.Member.Declared == kv.Declared)?.VarName ?? ""}}
-                                  f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}} = {{keyArray.SingleOrDefault(k => k.Member.Declared == kv.Declared)?.VarName ?? ""}}
-                            """).Else(() => $$"""
-                                  f.{{kv.Declared.GetFullPath().Join(".")}} = {{keyArray.SingleOrDefault(k => k.Member.Declared == kv.Declared)?.VarName ?? ""}}
-                            """)}}
-                            """)}}
-                                } else if (editRange) {
-                            {{x.RootAggregateMembersForLoad.SelectTextTemplate((kv, i) => $$"""
-                            {{If(kv.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
-                                  f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}} = editRange.filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}?.{{FromTo.FROM}}
-                                  f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}} = editRange.filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}?.{{FromTo.TO}}
-                            """).Else(() => $$"""
-                                  f.{{kv.Declared.GetFullPath().Join(".")}} = editRange.filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}
-                            """)}}
-                            """)}}
-                                }
-                                return { filter: f }
-                              }, [editRange])
-                              const {
-                                ready: {{x.Aggregate.Item.ClassName}}IsReady,
-                                items: {{x.Aggregate.Item.ClassName}}Items,
-                                commit: commit{{x.Aggregate.Item.ClassName}},
-                              } = {{x.Repos.LocalLoaderHookName}}({{x.Aggregate.Item.ClassName}}filter)
-                            """)}}
 
                               // 登録更新のデータ型を画面表示用のデータ型に変換する
                               const [items, setItems] = useState<AggregateType.{{dataClass.TsTypeName}}[]>(() => [])
-                              const allReady = ready{{refRepositories.Select(r => $" && {r.Aggregate.Item.ClassName}IsReady").Join("")}}
+                              const allReady = ready
                               useEffect(() => {
                                 if (allReady) {
                                   const currentPageItems: AggregateType.{{dataClass.TsTypeName}}[] = {{agg.Item.ClassName}}Items.map(item => {
-                                    return AggregateType.{{dataClass.ConvertFnNameToDisplayDataType}}(item{{refRepositories.Select(r => $", {r.Aggregate.Item.ClassName}Items").Join("")}})
+                                    return AggregateType.{{dataClass.ConvertFnNameToDisplayDataType}}(item)
                                   })
                                   setItems(currentPageItems)
                                 }
-                              }, [allReady, {{agg.Item.ClassName}}Items{{refRepositories.Select(r => $", {r.Aggregate.Item.ClassName}Items").Join("")}}])
+                              }, [allReady, {{agg.Item.ClassName}}Items])
 
                               // 保存
                               const commit = useCallback(async (...commitItems: AggregateType.{{dataClass.TsTypeName}}[]) => {
 
                                 // 画面表示用のデータ型を登録更新のデータ型に変換する
                                 const arr{{agg.Item.ClassName}}: LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[] = []
-                            {{refRepositories.SelectTextTemplate(x => $$"""
-                                const arr{{x.Aggregate.Item.ClassName}}: LocalRepositoryItem<AggregateType.{{x.Aggregate.Item.TypeScriptTypeName}}>[] = []
-                            """)}}
                                 for (const item of commitItems) {
                                   const [
-                                    item{{agg.Item.ClassName}}{{dataClass.GetRefFromPropsRecursively().Select((x, i) => $", item{i}_{x.Item1.MainAggregate.Item.ClassName}").Join("")}}
+                                    item{{agg.Item.ClassName}}
                                   ] = AggregateType.{{dataClass.ConvertFnNameToLocalRepositoryType}}(item)
 
                                   arr{{agg.Item.ClassName}}.push(item{{agg.Item.ClassName}})
-                            {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate((x, i) => x.IsArray ? $$"""
-                                  arr{{x.Item1.MainAggregate.Item.ClassName}}.push(...item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}})
-                            """ : $$"""
-                                  if (item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}}) arr{{x.Item1.MainAggregate.Item.ClassName}}.push(item{{i}}_{{x.Item1.MainAggregate.Item.ClassName}})
-                            """)}}
                                 }
 
                                 // リポジトリへ反映する
                                 await commit{{agg.Item.ClassName}}(...arr{{agg.Item.ClassName}})
-                            {{dataClass.GetRefFromPropsRecursively().SelectTextTemplate((x, i) => $$"""
-                                await commit{{x.Item1.MainAggregate.Item.ClassName}}(...arr{{x.Item1.MainAggregate.Item.ClassName}})
-                            """)}}
-                              }, [commit{{agg.Item.ClassName}}{{refRepositories.Select(x => $", commit{x.Aggregate.Item.ClassName}").Join("")}}])
+                              }, [commit{{agg.Item.ClassName}}])
 
                               return { ready: allReady, items, commit }
                             }
