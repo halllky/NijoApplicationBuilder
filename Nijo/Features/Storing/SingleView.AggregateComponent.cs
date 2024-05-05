@@ -196,10 +196,6 @@ namespace Nijo.Features.Storing {
                         name: {{registerName}},
                       })
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
-                      const onAdd = useCallback((e: React.MouseEvent) => {
-                        append({{WithIndent(dataClass.RenderNewObjectLiteral(), "    ")}})
-                        e.preventDefault()
-                      }, [append])
                       const onCreate = useCallback(() => {
                         append({{WithIndent(dataClass.RenderNewObjectLiteral(), "    ")}})
                       }, [append])
