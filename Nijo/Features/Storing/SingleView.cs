@@ -108,7 +108,8 @@ namespace Nijo.Features.Storing {
                 var names = _aggregate
                     .GetNames()
                     .OfType<AggregateMember.ValueMember>()
-                    .Select(vm => vm.Declared.GetFullPath().Join("?."))
+                    .Where(vm => vm.DeclaringAggregate == _aggregate)
+                    .Select(vm => vm.Declared.GetFullPathAsSingleViewDataClass().Join("?."))
                     .ToArray();
 
                 // -----------------------------------------
@@ -201,7 +202,7 @@ namespace Nijo.Features.Storing {
 
                     {{If(_type != E_Type.Create, () => $$"""
                       const instanceName = useMemo(() => {
-                        return `{{names.Select(n => $"${{defaultValues.{DisplayDataClass.OWN_MEMBERS}.{n}}}").Join(string.Empty)}}`
+                        return `{{names.Select(n => $"${{defaultValues.{n} ?? ''}}").Join(string.Empty)}}`
                       }, [defaultValues.{{DisplayDataClass.OWN_MEMBERS}}])
                     """)}}
 

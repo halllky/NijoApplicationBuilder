@@ -39,13 +39,10 @@ namespace Nijo.Features.Storing {
         string? IReactPage.LabelInMenu => _aggregate.Item.DisplayName;
 
         SourceFile IReactPage.GetSourceFile() {
-            var singleView = new SingleView(_aggregate, SingleView.E_Type.View);
             var dataClass = new DisplayDataClass(_aggregate);
-            var editView = new SingleView(_aggregate, SingleView.E_Type.Edit);
-            var createView = new SingleView(_aggregate, SingleView.E_Type.Create);
             var findMany = new FindManyFeature(_aggregate);
             var rootLocalRepository = new LocalRepository(_aggregate);
-            var keys = _aggregate.GetKeys().OfType<AggregateMember.ValueMember>().ToArray();
+            var navigation = new NavigationWrapper(_aggregate);
 
             var groupedSearchConditions = findMany
                 .EnumerateSearchConditionMembers()
@@ -64,11 +61,9 @@ namespace Nijo.Features.Storing {
                       const row = cellProps.row.original.item
                       const state = Util.getLocalRepositoryState(row)
                     {{If(_options.ReadOnly, () => $$"""
-                      const singleViewUrl = `{{singleView.GetUrlStringForReact(keys.Select(k => $"row.{k.Declared.GetFullPathAsSingleViewDataClass().Join("?.")}"))}}`
+                      const singleViewUrl = Util.{{navigation.GetSingleViewUrlHookName}}(row.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}}, 'view')
                     """).Else(() => $$"""
-                      const singleViewUrl = state === '+'
-                        ? `{{createView.GetUrlStringForReact(new[] { $"row.{DisplayDataClass.LOCAL_REPOS_ITEMKEY}" })}}`
-                        : `{{editView.GetUrlStringForReact(keys.Select(k => $"row.{k.Declared.GetFullPathAsSingleViewDataClass().Join("?.")}"))}}`
+                      const singleViewUrl = Util.{{navigation.GetSingleViewUrlHookName}}(row.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}}, state === '+' ? 'new' : 'edit')
                     """)}}
                       return (
                         <div className="flex items-center gap-1 pl-1">
