@@ -132,9 +132,9 @@ namespace Nijo.Features.Storing {
                       {{p.Member.MemberName}}: {{WithIndent(RenderOwnMemberValue(p.Member), "  ")}},
                     """)}}
                     {{dc.GetChildProps().SelectTextTemplate(p => p.MemberInfo is AggregateMember.Children ? $$"""
-                      {{p.MemberInfo?.MemberName}}: {{instance}}.{{p.PropName}}?.map(x{{p.MemberInfo?.MemberName}} => ({{WithIndent(RenderItem(new DisplayDataClass(p.MainAggregate.AsEntry()), $"x{p.MemberInfo?.MemberName}"), "  ")}})),
+                      {{p.MemberInfo?.MemberName}}: {{instance}}.{{p.MemberInfo?.MemberAggregate.GetFullPathAsSingleViewDataClass().Join("?.")}}?.map(x{{p.MemberInfo?.MemberName}} => ({{WithIndent(RenderItem(new DisplayDataClass(p.MainAggregate.AsEntry()), $"x{p.MemberInfo?.MemberName}"), "  ")}})),
                     """ : $$"""
-                      {{p.MemberInfo?.MemberName}}: {{WithIndent(RenderItem(p, $"{instance}?.{p.PropName}"), "  ")}},
+                      {{p.MemberInfo?.MemberName}}: {{WithIndent(RenderItem(p, instance), "  ")}},
                     """)}}
                     {{If(dc.MainAggregate.IsChildrenMember(), () => $$"""
                       {{TransactionScopeDataClass.IS_STORED_DATA}}: {{instance}}.{{OWN_MEMBERS}}.{{TransactionScopeDataClass.IS_STORED_DATA}},
@@ -188,6 +188,7 @@ namespace Nijo.Features.Storing {
                 }
 
                 var ownMembers = dc.MainAggregate
+                    .AsEntry()
                     .GetMembers()
                     .Where(m => m.DeclaringAggregate == dc.MainAggregate
                              && (m is AggregateMember.ValueMember || m is AggregateMember.Ref));
