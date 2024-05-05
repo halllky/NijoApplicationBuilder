@@ -207,6 +207,18 @@ namespace Nijo.Core {
             }
             return false;
         }
+        /// <summary>
+        /// この集約が他集約を唯一のキーとする集約の場合は当該参照先を、それ以外の場合はnullを返す
+        /// </summary>
+        internal static AggregateMember.Ref? GetSingleRefKeyAggregate(this GraphNode<Aggregate> refFrom) {
+            var refTo = refFrom
+                .GetKeys()
+                .OfType<AggregateMember.Ref>()
+                .FirstOrDefault();
+            if (refTo == null) return null;
+            if (!refTo.MemberAggregate.IsSingleRefKeyOf(refFrom)) return null;
+            return refTo;
+        }
 
         /// <summary>
         /// この集約を参照し、かつそれが参照元集約の唯一のキーであるものを列挙する。

@@ -124,11 +124,14 @@ namespace Nijo.Features.Storing {
                       }, [getConditionValues])
 
                       // データ編集
+                    {{If(!_options.ReadOnly && _aggregate.GetSingleRefKeyAggregate() == null, () => $$"""
                       const handleAdd: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
                         const newRow: AggregateType.{{dataClass.TsTypeName}} = {{WithIndent(dataClass.RenderNewObjectLiteral(), "    ")}}
                         append(newRow)
                       }, [append])
 
+                    """)}}
+                    {{If(!_options.ReadOnly, () => $$"""
                       const handleUpdateRow = useCallback(async (index: number, row: GridRow) => {
                         update(index, { ...row, {{DisplayDataClass.WILL_BE_CHANGED}}: true })
                       }, [update])
@@ -141,7 +144,6 @@ namespace Nijo.Features.Storing {
                         }
                       }, [update])
 
-                    {{If(!_options.ReadOnly, () => $$"""
                       // データの一時保存
                       const onSave = useCallback(async () => {
                         await commit(...fields)
@@ -163,8 +165,10 @@ namespace Nijo.Features.Storing {
                                 </h1>
                                 <Input.Button onClick={handleReload}>再読み込み</Input.Button>
                                 <div className="basis-4"></div>
-                    {{If(!_options.ReadOnly, () => $$"""
+                    {{If(!_options.ReadOnly && _aggregate.GetSingleRefKeyAggregate() == null, () => $$"""
                                 <Input.Button onClick={handleAdd}>追加</Input.Button>
+                    """)}}
+                    {{If(!_options.ReadOnly, () => $$"""
                                 <Input.Button onClick={handleRemove}>削除</Input.Button>
                                 <Input.IconButton fill icon={BookmarkSquareIcon} onClick={onSave}>一時保存</Input.IconButton>
                     """)}}
@@ -189,11 +193,11 @@ namespace Nijo.Features.Storing {
                           <FormProvider {...reactHookFormMethods}>
                             <form className="flex-1">
                               <Layout.DataTable
-                                ref={dtRef}
                                 data={fields}
                                 columns={COLUMN_DEFS}
                     {{If(!_options.ReadOnly, () => $$"""
                                 onChangeRow={handleUpdateRow}
+                                ref={dtRef}
                     """)}}
                                 className="h-full"
                               ></Layout.DataTable>
