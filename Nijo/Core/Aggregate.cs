@@ -209,6 +209,30 @@ namespace Nijo.Core {
         }
 
         /// <summary>
+        /// この集約を参照し、かつそれが参照元集約の唯一のキーであるものを列挙する。
+        /// </summary>
+        internal static IEnumerable<GraphEdge<Aggregate>> GetReferedEdgesAsSingleKey(this GraphNode<Aggregate> target) {
+            return target
+                .GetReferedEdges()
+                .Where(edge => edge.IsPrimary() // ある集約から別の集約へ複数の参照経路があり、
+                                                // そのうち片方がkeyの場合、両方ともとれてしまうので、この条件も加えている
+                            && target.IsSingleRefKeyOf(edge.Initial));
+        }
+        /// <summary>
+        /// この集約を参照し、かつそれが参照元集約の唯一のキーであるものを列挙する。
+        /// 参照が2連鎖以上続く場合のために再帰処理。
+        /// </summary>
+        internal static IEnumerable<GraphEdge<Aggregate>> GetReferedEdgesAsSingleKeyRecursively(this GraphNode<Aggregate> target) {
+            foreach (var ref1 in target.GetReferedEdgesAsSingleKey()) {
+                yield return ref1;
+
+                foreach (var ref2 in ref1.Initial.GetReferedEdgesAsSingleKeyRecursively()) {
+                    yield return ref2;
+                }
+            }
+        }
+
+        /// <summary>
         /// この集約のすべてのメンバーが2次元の表で表現できるかどうかを返します。
         /// </summary>
         internal static bool CanDisplayAllMembersAs2DGrid(this GraphNode<Aggregate> aggregate) {

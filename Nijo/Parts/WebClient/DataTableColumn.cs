@@ -135,6 +135,11 @@ namespace Nijo.Parts.WebClient {
                         yield return reucusive;
                     }
                 }
+                foreach (var prop in dataClass.GetRefFromProps()) {
+                    foreach (var recursive in Collect(new DisplayDataClass(prop.MainAggregate))) {
+                        yield return recursive;
+                    }
+                }
             }
 
             // ソース中にラムダ式が登場するのでエントリー化

@@ -54,6 +54,11 @@ namespace Nijo.Features.Storing {
             var registerNameArray = _aggregate.GetRHFRegisterName(args).ToArray();
             var registerName = registerNameArray.Length > 0 ? $"`{registerNameArray.Join(".")}`" : string.Empty;
 
+            // この集約を参照する隣接集約 ※DataTableの列定義は当該箇所で定義している
+            var relevantAggregatesCalling = _aggregate
+                .GetReferedEdgesAsSingleKey()
+                .SelectTextTemplate(edge => new AggregateComponent(edge.Initial, _mode, true).RenderCaller());
+
             if (_relationToParent == null && !_asSingleRefKeyAggregate) {
                 // ルート集約のレンダリング（画面の中の主集約）
                 return $$"""
@@ -70,6 +75,7 @@ namespace Nijo.Features.Storing {
                           <VForm.Container leftColumnMinWidth="{{GetLeftColumnWidth()}}">
                             {{WithIndent(RenderMembers(), "        ")}}
                           </VForm.Container>
+                          {{WithIndent(relevantAggregatesCalling, "      ")}}
                         </>
                       )
                     }
@@ -125,6 +131,7 @@ namespace Nijo.Features.Storing {
                               </>
                             )}
                           </VForm.Container>
+                          {{WithIndent(relevantAggregatesCalling, "      ")}}
                         </>
                       )
                     }
@@ -144,6 +151,7 @@ namespace Nijo.Features.Storing {
                       return (
                         <>
                           {{WithIndent(RenderMembers(), "      ")}}
+                          {{WithIndent(relevantAggregatesCalling, "      ")}}
                         </>
                       )
                     }
@@ -165,6 +173,7 @@ namespace Nijo.Features.Storing {
                       const body = (
                         <>
                           {{WithIndent(RenderMembers(), "      ")}}
+                          {{WithIndent(relevantAggregatesCalling, "      ")}}
                         </>
                       )
 
@@ -236,6 +245,7 @@ namespace Nijo.Features.Storing {
                               {{WithIndent(RenderMembers(), "          ")}}
                             </VForm.Container>
                           ))}
+                          {{WithIndent(relevantAggregatesCalling, "      ")}}
                         </VForm.Container>
                       )
                     }
