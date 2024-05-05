@@ -24,7 +24,6 @@ namespace Nijo.Parts.WebClient {
                 var refMember = member as AggregateMember.Ref;
 
                 var memberPath = member.GetFullPathAsSingleViewDataClass();
-                var ownerPath = member.Owner.GetFullPathAsSingleViewDataClass();
 
                 // 非編集時のセル表示文字列
                 string? formatted = null;
@@ -73,13 +72,17 @@ namespace Nijo.Parts.WebClient {
                 if (readOnly) {
                     setValue = null;
                 } else if (member.DeclaringAggregate == dataTableOwner) {
-                    setValue = $"(row, value) => row.{rowAccessor}.{memberPath.Join(".")} = value";
+                    setValue = $$"""
+                        (row, value) => row.{{rowAccessor}}.{{memberPath.Join(".")}} = value
+                        """;
                 } else {
+                    var ownerPath = member.Owner.GetFullPathAsSingleViewDataClass();
+                    var rootAggPath = member.Owner.GetRoot().GetFullPathAsSingleViewDataClass();
                     setValue = $$"""
                         (row, value) => {
                           if (row.{{rowAccessor}}.{{ownerPath.Join("?.")}}) {
                             row.{{rowAccessor}}.{{memberPath.Join(".")}} = value
-                            row.{{rowAccessor}}.{{DisplayDataClass.WILL_BE_CHANGED}} = true
+                            row.{{rowAccessor}}{{rootAggPath.Select(x => $".{x}").Join("")}}.{{DisplayDataClass.WILL_BE_CHANGED}} = true
                           }
                         }
                         """;
