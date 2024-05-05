@@ -21,13 +21,18 @@ namespace Nijo.Util.CodeGenerating {
             var sameNameGroups = keys
                 .GroupBy(key => key.MemberName)
                 .ToDictionary(g => g.Key, g => g.ToList());
-            var list = keys.Select(key => {
-                var ix = sameNameGroups[key.MemberName].IndexOf(key);
+
+            var list = keys.Select((key, index) => {
+
+                // 物理名が重複する場合に名前の最後に連番を振ることで区別するためのインデックス
+                var indexInSameNameGroup = sameNameGroups[key.MemberName].IndexOf(key);
+
                 return new KeyArray {
                     Member = key,
                     CsType = key.CSharpTypeName + (nullable ? "?" : string.Empty),
                     TsType = key.TypeScriptTypename,
-                    VarName = key.MemberName + (ix >= 1 ? (ix + 1).ToString() : string.Empty)
+                    VarName = key.MemberName + (indexInSameNameGroup >= 1 ? (indexInSameNameGroup + 1).ToString() : string.Empty),
+                    Index = index,
                 };
             }).ToArray();
             return list;
@@ -39,5 +44,6 @@ namespace Nijo.Util.CodeGenerating {
         internal required string CsType { get; init; }
         internal required string TsType { get; init; }
         internal required string VarName { get; init; }
+        internal required int Index { get; init; }
     }
 }

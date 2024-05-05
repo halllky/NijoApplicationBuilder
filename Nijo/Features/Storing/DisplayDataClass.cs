@@ -39,6 +39,9 @@ namespace Nijo.Features.Storing {
         internal const string WILL_BE_DELETED = "willBeDeleted";
         internal const string LOCAL_REPOS_ITEMKEY = "localRepositoryItemKey";
 
+        /// <summary>
+        /// <see cref="OWN_MEMBERS"/> 構造体の中に宣言されるプロパティを列挙します。
+        /// </summary>
         internal IEnumerable<OwnProp> GetOwnProps() {
             return MainAggregate
                 .GetMembers()
@@ -95,13 +98,46 @@ namespace Nijo.Features.Storing {
         internal string RenderConvertFnToLocalRepositoryType() {
 
             string RenderItem(DisplayDataClass dc, string instance) {
+
+                string RenderOwnMemberValue(AggregateMember.AggregateMemberBase member) {
+                    if (member is AggregateMember.RelationMember refTarget) {
+                        var keyArray = KeyArray.Create(refTarget.MemberAggregate);
+                        var keyArrayType = $"[{keyArray.Select(k => $"{k.TsType} | undefined").Join(", ")}]";
+
+                        string RenderRefTargetKeyNameValue(AggregateMember.RelationMember refOrParent) {
+                            var keyname = new RefTargetKeyName(refOrParent.MemberAggregate);
+                            return $$"""
+                                {
+                                {{keyname.GetOwnKeyMembers().SelectTextTemplate(m => m is AggregateMember.RelationMember refOrParent2 ? $$"""
+                                  {{m.MemberName}}: {{WithIndent(RenderRefTargetKeyNameValue(refOrParent2), "  ")}},
+                                """ : $$"""
+                                  {{m.MemberName}}: {{instance}}.{{refTarget.GetFullPathAsSingleViewDataClass().Join("?.")}}
+                                    ? (JSON.parse({{instance}}.{{refTarget.GetFullPathAsSingleViewDataClass().Join(".")}}) as {{keyArrayType}})[{{keyArray.Single(k => k.Member.Declared == ((AggregateMember.ValueMember)m).Declared).Index}}]
+                                    : undefined,
+                                """)}}
+                                }
+                                """;
+                        }
+                        return RenderRefTargetKeyNameValue(refTarget);
+
+                    } else {
+                        return $$"""
+                            {{instance}}?.{{member.GetFullPathAsSingleViewDataClass().Join("?.")}}
+                            """;
+                    }
+                }
                 return $$"""
                     {
-                      ...{{instance}}?.{{OWN_MEMBERS}},
+                    {{dc.GetOwnProps().SelectTextTemplate(p => $$"""
+                      {{p.Member.MemberName}}: {{WithIndent(RenderOwnMemberValue(p.Member), "  ")}},
+                    """)}}
                     {{dc.GetChildProps().SelectTextTemplate(p => p.MemberInfo is AggregateMember.Children ? $$"""
-                      {{p.MemberInfo?.MemberName}}: {{instance}}?.{{p.PropName}}?.map(x{{p.MemberInfo?.MemberName}} => ({{WithIndent(RenderItem(new DisplayDataClass(p.MainAggregate.AsEntry()), $"x{p.MemberInfo?.MemberName}"), "  ")}})),
+                      {{p.MemberInfo?.MemberName}}: {{instance}}.{{p.PropName}}?.map(x{{p.MemberInfo?.MemberName}} => ({{WithIndent(RenderItem(new DisplayDataClass(p.MainAggregate.AsEntry()), $"x{p.MemberInfo?.MemberName}"), "  ")}})),
                     """ : $$"""
                       {{p.MemberInfo?.MemberName}}: {{WithIndent(RenderItem(p, $"{instance}?.{p.PropName}"), "  ")}},
+                    """)}}
+                    {{If(dc.MainAggregate.IsChildrenMember(), () => $$"""
+                      {{TransactionScopeDataClass.IS_STORED_DATA}}: {{instance}}.{{OWN_MEMBERS}}.{{TransactionScopeDataClass.IS_STORED_DATA}},
                     """)}}
                     }
                     """;
@@ -158,6 +194,22 @@ namespace Nijo.Features.Storing {
                 var item = dc.MainAggregate.IsRoot() ? $"{instance}.item" : instance;
                 var depth = dc.MainAggregate.EnumerateAncestors().Count();
 
+                string MemberValue(AggregateMember.AggregateMemberBase m) {
+                    if (m is AggregateMember.Ref @ref) {
+                        var keys = @ref.MemberAggregate
+                            .GetKeys()
+                            .OfType<AggregateMember.ValueMember>();
+                        return $$"""
+                            {{item}}?.{{m.MemberName}}
+                              ? JSON.stringify([{{keys.Select(k => $"{item}.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]) as Util.ItemKey
+                              : undefined
+                            """;
+
+                    } else {
+                        return $"{item}?.{m.MemberName}";
+                    }
+                }
+
                 return $$"""
                     {
                     {{If(dc.MainAggregate.IsRoot(), () => $$"""
@@ -168,7 +220,7 @@ namespace Nijo.Features.Storing {
                     """)}}
                       {{OWN_MEMBERS}}: {
                     {{ownMembers.SelectTextTemplate(m => $$"""
-                        {{m.MemberName}}: {{item}}?.{{m.MemberName}},
+                        {{m.MemberName}}: {{WithIndent(MemberValue(m), "    ")}},
                     """)}}
                     {{If(dc.MainAggregate.IsChildrenMember(), () => $$"""
                         {{TransactionScopeDataClass.IS_STORED_DATA}}: {{item}}?.{{TransactionScopeDataClass.IS_STORED_DATA}} ?? false,
@@ -201,6 +253,7 @@ namespace Nijo.Features.Storing {
                 var dataClass = new DisplayDataClass(agg);
 
                 return $$"""
+                    /** {{agg.Item.DisplayName}}の画面表示用データ */
                     export type {{dataClass.TsTypeName}} = {
                     {{If(agg.IsRoot(), () => $$"""
                       {{LOCAL_REPOS_ITEMKEY}}: Util.ItemKey
@@ -210,7 +263,7 @@ namespace Nijo.Features.Storing {
                     """)}}
                       {{OWN_MEMBERS}}: {
                     {{dataClass.GetOwnProps().SelectTextTemplate(p => $$"""
-                        {{p.PropName}}?: {{p.Member.TypeScriptTypename}}
+                        {{p.PropName}}?: {{p.PropType}}
                     """)}}
                     {{If(agg.IsChildrenMember(), () => $$"""
                         {{TransactionScopeDataClass.IS_STORED_DATA}}: boolean,
@@ -233,20 +286,9 @@ namespace Nijo.Features.Storing {
             internal AggregateMember.AggregateMemberBase Member { get; }
 
             internal string PropName => Member.MemberName;
-
-            internal IEnumerable<string> GetPathSinceDataClassOwner() {
-                yield return OWN_MEMBERS;
-
-                if (Member is AggregateMember.ValueMember vm) {
-                    foreach (var path in vm.Declared.GetFullPath(since: _mainAggregate)) {
-                        yield return path;
-                    }
-                } else {
-                    foreach (var path in Member.GetFullPath(since: _mainAggregate)) {
-                        yield return path;
-                    }
-                }
-            }
+            internal string PropType => Member is AggregateMember.Ref
+                ? "Util.ItemKey"
+                : Member.TypeScriptTypename;
         }
 
         internal class RelationProp : DisplayDataClass {
