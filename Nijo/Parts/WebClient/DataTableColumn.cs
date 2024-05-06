@@ -16,14 +16,14 @@ namespace Nijo.Parts.WebClient {
             GraphNode<Aggregate> dataTableOwner,
             bool readOnly) {
 
+            // ----------------------------------------------------
+            // AggregateMember列
             var colIndex = 0;
-
-            // AggregateMemberを列定義に変換する関数
             DataTableColumn ToDataTableColumn(AggregateMember.AggregateMemberBase member) {
                 var vm = member as AggregateMember.ValueMember;
                 var refMember = member as AggregateMember.Ref;
 
-                var memberPath = member.GetFullPathAsSingleViewDataClass();
+                var memberPath = member.GetFullPathAsSingleViewDataClass(since: dataTableOwner);
 
                 // 非編集時のセル表示文字列
                 string? formatted = null;
@@ -76,8 +76,8 @@ namespace Nijo.Parts.WebClient {
                         (row, value) => row.{{rowAccessor}}.{{memberPath.Join(".")}} = value
                         """;
                 } else {
-                    var ownerPath = member.Owner.GetFullPathAsSingleViewDataClass();
-                    var rootAggPath = member.Owner.GetRoot().GetFullPathAsSingleViewDataClass();
+                    var ownerPath = member.Owner.GetFullPathAsSingleViewDataClass(since: dataTableOwner);
+                    var rootAggPath = member.Owner.GetRoot().GetFullPathAsSingleViewDataClass(since: dataTableOwner);
                     setValue = $$"""
                         (row, value) => {
                           if (row.{{rowAccessor}}.{{ownerPath.Join("?.")}}) {
@@ -109,6 +109,46 @@ namespace Nijo.Parts.WebClient {
                     HeaderGroupName = headerGroupName,
                 };
             }
+
+            // ----------------------------------------------------
+            // テーブル中の被参照集約の列のインスタンスを追加または削除するボタン
+            DataTableColumn RefFromButtonColumn(DisplayDataClass.RelationProp refFrom) {
+                var tableArrayRegisterName = dataTableOwner.GetRHFRegisterName();
+                var pageRoot = new DisplayDataClass(dataTableOwner.GetEntry().As<Aggregate>());
+                var refFromDisplayData = new DisplayDataClass(refFrom.MainAggregate);
+                var value = refFrom.MainAggregate.Item.ClassName;
+                var registerName = refFrom.MainAggregate.GetRHFRegisterName(["row.index"]);
+
+                return new DataTableColumn {
+                    Id = $"ref-from-{refFrom.PropName}",
+                    Header = string.Empty,
+                    HeaderGroupName = refFrom.MainAggregate.Item.ClassName,
+                    Cell = $$"""
+                        ({ row }) => {
+                          const {{value}} = row.original.{{rowAccessor}}.{{refFrom.MainAggregate.GetFullPathAsSingleViewDataClass(since: dataTableOwner).Join("?.")}}
+                          const { setValue } = Util.useFormContextEx<AggregateType.{{pageRoot.TsTypeName}}>()
+
+                          const create{{value}} = useCallback(() => {
+                            setValue({{refFrom.MainAggregate.GetRHFRegisterName(["row.index"])}}, {{WithIndent(refFromDisplayData.RenderNewObjectLiteral($"row.original.{rowAccessor}.{DisplayDataClass.LOCAL_REPOS_ITEMKEY}"), "    ")}})
+                          }, [setValue, row.index])
+
+                          const delete{{value}} = useCallback(() => {
+                            setValue({{refFrom.MainAggregate.GetRHFRegisterName(["row.index"])}}.{{DisplayDataClass.WILL_BE_DELETED}}, true)
+                          }, [setValue, row.index])
+
+                          return <>
+                            {({{value}} === undefined || {{value}}.{{DisplayDataClass.WILL_BE_DELETED}}) && (
+                              <Input.Button icon={PlusIcon} onClick={create{{value}}}>作成</Input.Button>
+                            )}
+                            {{{value}} !== undefined && (
+                              <Input.Button icon={XMarkIcon} onClick={delete{{value}}}>削除</Input.Button>
+                            )}
+                          </>
+                        }
+                        """,
+                };
+            }
+
             // ----------------------------------------------------
 
             // グリッドに表示するメンバーを列挙
@@ -135,15 +175,16 @@ namespace Nijo.Parts.WebClient {
                         yield return reucusive;
                     }
                 }
+
                 foreach (var prop in dataClass.GetRefFromProps()) {
+                    yield return RefFromButtonColumn(prop);
                     foreach (var recursive in Collect(new DisplayDataClass(prop.MainAggregate))) {
                         yield return recursive;
                     }
                 }
             }
 
-            // ソース中にラムダ式が登場するのでエントリー化
-            var root = new DisplayDataClass(dataTableOwner.AsEntry());
+            var root = new DisplayDataClass(dataTableOwner);
 
             foreach (var column in Collect(root)) {
                 yield return column;
