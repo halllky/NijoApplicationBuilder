@@ -21,13 +21,9 @@ namespace Nijo.Features.Storing {
         /// </summary>
         internal string DataTypeKey => Aggregate.Item.ClassName;
         /// <summary>
-        /// <see cref="TransactionScopeDataClass"/> と <see cref="DisplayDataClass"/> の変換を行うフック
+        /// 永続化層の抽象のフック。外部とのインターフェースの型は <see cref="DisplayDataClass"/>
         /// </summary>
         internal string HookName => $"use{Aggregate.Item.ClassName}Repository";
-        /// <summary>
-        /// useLocalRepository フックのラッパー
-        /// </summary>
-        private string LocalLoaderHookName => $"use{Aggregate.Item.ClassName}LocalRepository";
 
         /// <summary>
         /// ローカルリポジトリ内のデータとDB上のデータの両方を参照し
@@ -42,59 +38,6 @@ namespace Nijo.Features.Storing {
                         .Where(agg => agg.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key
                                    || agg.Item.Options.Handler == NijoCodeGenerator.Models.ReadModel.Key);
 
-                    var convesionBetweenDisplayDataAndTranScopeDataHooks = aggregates.SelectTextTemplate(agg => {
-                        var dataClass = new DisplayDataClass(agg);
-                        var localRepositosy = new LocalRepository(agg);
-                        var keys = agg.GetKeys().OfType<AggregateMember.ValueMember>();
-                        var names = agg.GetNames().OfType<AggregateMember.ValueMember>();
-                        var keyArray = KeyArray.Create(agg);
-                        var find = new FindFeature(agg);
-                        var findMany = new FindManyFeature(agg);
-
-                        var commitable = agg.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key;
-
-                        return $$"""
-                            /** {{agg.Item.DisplayName}}の画面に表示するデータ型と登録更新するデータ型の変換を行うフック */
-                            export const {{localRepositosy.HookName}} = (editRange?
-                              // データ新規作成の場合
-                              : ItemKey
-                              // 複数件編集の場合
-                              | { filter: AggregateType.{{findMany.TypeScriptConditionClass}}, skip?: number, take?: number }
-                              // 1件編集の場合
-                              | [{{keyArray.Select(k => $"{k.VarName}: {k.TsType} | undefined").Join(", ")}}]
-                            ) => {
-
-                              // {{agg.Item.DisplayName}}のローカルリポジトリとリモートリポジトリへのデータ読み書き処理
-                              const {
-                                ready,
-                                items: {{agg.Item.ClassName}}Items,
-                            {{If(commitable, () => $$"""
-                                commit: commit{{agg.Item.ClassName}},
-                            """)}}
-                                reload,
-                              } = {{localRepositosy.LocalLoaderHookName}}(editRange)
-
-                              // 登録更新のデータ型を画面表示用のデータ型に変換する
-                              const [items, setItems] = useState<AggregateType.{{dataClass.TsTypeName}}[]>(() => [])
-                              const allReady = ready
-                              useEffect(() => {
-                                if (allReady) {
-                                  setItems({{agg.Item.ClassName}}Items)
-                                }
-                              }, [allReady, {{agg.Item.ClassName}}Items])
-
-                            {{If(commitable, () => $$"""
-                              // 保存
-                              const commit = useCallback(async (...commitItems: AggregateType.{{dataClass.TsTypeName}}[]) => {
-                                await commit{{agg.Item.ClassName}}(...commitItems)
-                              }, [commit{{agg.Item.ClassName}}])
-
-                            """)}}
-                              return { ready: allReady, items{{(commitable ? ", commit" : "")}}, reload }
-                            }
-                            """;
-                    });
-
                     var localReposWrapperHooks = aggregates.SelectTextTemplate(agg => {
                         var localRepositosy = new LocalRepository(agg);
                         var displayData = new DisplayDataClass(agg);
@@ -108,7 +51,8 @@ namespace Nijo.Features.Storing {
                         var commitable = agg.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key;
 
                         return $$"""
-                            const {{localRepositosy.LocalLoaderHookName}} = (editRange?
+                            /** {{agg.Item.DisplayName}}データの読み込みと保存を行います。 */
+                            export const {{localRepositosy.HookName}} = (editRange?
                               // データ新規作成の場合
                               : ItemKey
                               // 複数件編集の場合
@@ -277,16 +221,11 @@ namespace Nijo.Features.Storing {
                         import { useHttpRequest } from './Http'
                         import {
                           ItemKey,
-                          LocalRepositoryItem,
                           useLocalRepositoryContext,
                           useIndexedDbLocalRepositoryTable,
                         } from './LocalRepository'
                         import { crossJoin } from './JsUtil'
                         import * as AggregateType from '../autogenerated-types'
-
-                        {{convesionBetweenDisplayDataAndTranScopeDataHooks}}
-
-                        // -----------------------------------------------------------
 
                         {{localReposWrapperHooks}}
                         """;
