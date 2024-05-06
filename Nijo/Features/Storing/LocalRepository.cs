@@ -79,29 +79,14 @@ namespace Nijo.Features.Storing {
                               const allReady = ready
                               useEffect(() => {
                                 if (allReady) {
-                                  const currentPageItems: AggregateType.{{dataClass.TsTypeName}}[] = {{agg.Item.ClassName}}Items.map(item => {
-                                    return AggregateType.{{dataClass.ConvertFnNameToDisplayDataType}}(item)
-                                  })
-                                  setItems(currentPageItems)
+                                  setItems({{agg.Item.ClassName}}Items)
                                 }
                               }, [allReady, {{agg.Item.ClassName}}Items])
 
                             {{If(commitable, () => $$"""
                               // 保存
                               const commit = useCallback(async (...commitItems: AggregateType.{{dataClass.TsTypeName}}[]) => {
-
-                                // 画面表示用のデータ型を登録更新のデータ型に変換する
-                                const arr{{agg.Item.ClassName}}: LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[] = []
-                                for (const item of commitItems) {
-                                  const [
-                                    item{{agg.Item.ClassName}}
-                                  ] = AggregateType.{{dataClass.ConvertFnNameToLocalRepositoryType}}(item)
-
-                                  arr{{agg.Item.ClassName}}.push(item{{agg.Item.ClassName}})
-                                }
-
-                                // リポジトリへ反映する
-                                await commit{{agg.Item.ClassName}}(...arr{{agg.Item.ClassName}})
+                                await commit{{agg.Item.ClassName}}(...commitItems)
                               }, [commit{{agg.Item.ClassName}}])
 
                             """)}}
@@ -112,8 +97,10 @@ namespace Nijo.Features.Storing {
 
                     var localReposWrapperHooks = aggregates.SelectTextTemplate(agg => {
                         var localRepositosy = new LocalRepository(agg);
+                        var displayData = new DisplayDataClass(agg);
                         var keys = agg.GetKeys().OfType<AggregateMember.ValueMember>();
-                        var names = agg.GetNames().OfType<AggregateMember.ValueMember>();
+                        // TODO 参照先の名前の表示処理をちゃんとする
+                        var names = agg.GetNames().OfType<AggregateMember.ValueMember>().Where(x => x.DeclaringAggregate == agg);
                         var keyArray = KeyArray.Create(agg);
                         var find = new FindFeature(agg);
                         var findMany = new FindManyFeature(agg);
@@ -136,16 +123,16 @@ namespace Nijo.Features.Storing {
                               const { ready: ready2, openCursor, queryToTable } = useIndexedDbLocalRepositoryTable()
                               const [ready3, setReady3] = useState(false)
 
-                              const [remoteAndLocalItems, setRemoteAndLocalItems] = useState<LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[]>(() => [])
+                              const [remoteAndLocalItems, setRemoteAndLocalItems] = useState<AggregateType.{{displayData.TsTypeName}}[]>(() => [])
 
                               const getItemKey = useCallback((x: AggregateType.{{agg.Item.TypeScriptTypeName}}): ItemKey => {
                                 return JSON.stringify([{{keys.Select(k => $"x.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]) as ItemKey
                               }, [])
-                              const getItemName = useCallback((x: AggregateType.{{agg.Item.TypeScriptTypeName}}) => {
-                                return `{{string.Concat(names.Select(n => $"${{x.{n.Declared.GetFullPath().Join("?.")}}}"))}}`
+                              const getItemName = useCallback((x: AggregateType.{{displayData.TsTypeName}}) => {
+                                return `{{string.Concat(names.Select(n => $"${{x.{n.Declared.GetFullPathAsSingleViewDataClass().Join("?.")}}}"))}}`
                               }, [])
 
-                              const loadRemoteItems = useCallback(async (): Promise<AggregateType.{{agg.Item.TypeScriptTypeName}}[]> => {
+                              const loadRemoteItems = useCallback(async (): Promise<AggregateType.{{displayData.TsTypeName}}[]> => {
                                 if (editRange === undefined) {
                                   return [] // 画面表示直後の検索条件が決まっていない場合など
 
@@ -157,7 +144,15 @@ namespace Nijo.Features.Storing {
                                     return []
                                   } else {
                                     const res = await get({{find.GetUrlStringForReact(keyArray.Select((_, i) => $"editRange[{i}].toString()"))}})
-                                    return res.ok ? [res.data as AggregateType.{{agg.Item.TypeScriptTypeName}}] : []
+                                    if (!res.ok) return []
+                                    const item = res.data as AggregateType.{{agg.Item.TypeScriptTypeName}}
+                                    return [AggregateType.{{displayData.ConvertFnNameToDisplayDataType}}({
+                                      item,
+                                      itemKey: getItemKey(item),
+                                      existsInRemoteRepository: true,
+                                      willBeChanged: false,
+                                      willBeDeleted: false,
+                                    })]
                                   }
                                 } else {
                                   const searchParam = new URLSearchParams()
@@ -165,32 +160,39 @@ namespace Nijo.Features.Storing {
                                   if (editRange.take !== undefined) searchParam.append('{{FindManyFeature.PARAM_TAKE}}', editRange.take.toString())
                                   const url = `{{findMany.GetUrlStringForReact()}}?${searchParam}`
                                   const res = await post<AggregateType.{{agg.Item.TypeScriptTypeName}}[]>(url, editRange.filter)
-                                  return res.ok ? res.data : []
+                                  if (!res.ok) return []
+                                  return res.data.map(item => AggregateType.{{displayData.ConvertFnNameToDisplayDataType}}({
+                                    item,
+                                    itemKey: getItemKey(item),
+                                    existsInRemoteRepository: true,
+                                    willBeChanged: false,
+                                    willBeDeleted: false,
+                                  }))
                                 }
-                              }, [editRange, get, post])
+                              }, [editRange, getItemKey, get, post])
 
-                              const loadLocalItems = useCallback(async (): Promise<LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[]> => {
+                              const loadLocalItems = useCallback(async (): Promise<AggregateType.{{displayData.TsTypeName}}[]> => {
                                 if (editRange === undefined) {
                                   return [] // 画面表示直後の検索条件が決まっていない場合など
 
                                 } else if (typeof editRange === 'string') {
                                   // 新規作成データの検索
                                   const found = await queryToTable(table => table.get(['{{localRepositosy.DataTypeKey}}', editRange]))
-                                  return found ? [found] : []
+                                  return found ? [found.item as AggregateType.{{displayData.TsTypeName}}] : []
 
                                 } else if (Array.isArray(editRange)) {
                                   // 既存データのキーによる検索
                                   const itemKey = JSON.stringify(editRange)
                                   const found = await queryToTable(table => table.get(['{{localRepositosy.DataTypeKey}}', itemKey]))
-                                  return found ? [found] : []
+                                  return found ? [found.item as AggregateType.{{displayData.TsTypeName}}] : []
 
                                 } else {
                                   // 既存データの検索条件による検索
-                                  const localItems: LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[] = []
+                                  const localItems: AggregateType.{{displayData.TsTypeName}}[] = []
                                   await openCursor('readonly', cursor => {
                                     if (cursor.value.dataTypeKey !== '{{localRepositosy.DataTypeKey}}') return
                                     // TODO: ローカルリポジトリのデータは参照先のキーと名前しか持っていないのでfilterでそれらが検索条件に含まれていると正確な範囲がとれない
-                                    // const item = cursor.value.item as AggregateType.{{agg.Item.TypeScriptTypeName}}
+                                    // const item = cursor.value.item as AggregateType.{{displayData.TsTypeName}}
                             {{findMany.EnumerateSearchConditionMembers().SelectTextTemplate(vm => $$"""
                             {{If(vm.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
                                     //
@@ -199,7 +201,7 @@ namespace Nijo.Features.Storing {
                                     //   && item.{{vm.Declared.GetFullPath().Join("?.")}} !== editRange.filter.{{vm.Declared.GetFullPath().Join(".")}}) return
                             """)}}
                             """)}}
-                                    localItems.push({ ...cursor.value, item: cursor.value.item as AggregateType.{{agg.Item.TypeScriptTypeName}} })
+                                    localItems.push(cursor.value.item as AggregateType.{{displayData.TsTypeName}})
                                   })
                                   return localItems
                                 }
@@ -212,15 +214,9 @@ namespace Nijo.Features.Storing {
                                   const remoteItems = await loadRemoteItems()
                                   const localItems = await loadLocalItems()
                                   const remoteAndLocal = crossJoin(
-                                    localItems, local => local.itemKey,
-                                    remoteItems, remote => getItemKey(remote) as ItemKey,
-                                  ).map<LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>>(pair => pair.left ?? ({
-                                    itemKey: pair.key,
-                                    item: pair.right,
-                                    existsInRemoteRepository: true,
-                                    willBeChanged: false,
-                                    willBeDeleted: false,
-                                  }))
+                                    localItems, local => local.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}},
+                                    remoteItems, remote => remote.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}},
+                                  ).map<AggregateType.{{displayData.TsTypeName}}>(pair => pair.left ?? pair.right)
                                   setRemoteAndLocalItems(remoteAndLocal)
 
                                 } finally {
@@ -233,51 +229,24 @@ namespace Nijo.Features.Storing {
                               }, [reload])
 
                             {{If(commitable, () => $$"""
-                              /** 引数に渡されたデータの値を見てstateを適切に変更し然るべき場所への保存を判断し実行する。 */
-                              const commit = useCallback(async (...items: LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[]): Promise<LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[]> => {
-                                const remoteItems = await loadRemoteItems()
-                                const localItems = await loadLocalItems()
-                                const remoteAndLocalTemp = crossJoin(
-                                  localItems, local => local.itemKey,
-                                  remoteItems, remote => getItemKey(remote) as ItemKey,
-                                ).map<readonly [ItemKey, LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>]>(pair => [
-                                  pair.key,
-                                  pair.left ?? ({
-                                    itemKey: pair.key,
-                                    item: pair.right,
-                                    existsInRemoteRepository: true,
-                                    willBeChanged: false,
-                                    willBeDeleted: false,
-                                  })
-                                ] as const)
-                                const remoteAndLocal = new Map(remoteAndLocalTemp)
+                              /** 引数に渡されたデータをローカルリポジトリに登録します。 */
+                              const commit = useCallback(async (...items: AggregateType.{{displayData.TsTypeName}}[]): Promise<AggregateType.{{displayData.TsTypeName}}[]> => {
+                                const result: AggregateType.{{displayData.TsTypeName}}[] = []
 
-                                // -------------------------
-                                // 状態更新。UIで不具合が起きる可能性を考慮し、とにかくエラーチェックを厳格に作る
-                                const result: LocalRepositoryItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>[] = []
                                 for (const newValue of items) {
-                                  const stored = remoteAndLocal.get(newValue.itemKey)
-
-                                  // バリデーション
-                                  // TODO: 楽観排他制御の考慮が無い
-                                  if (!newValue.existsInRemoteRepository && stored?.existsInRemoteRepository) {
-                                    dispatchMsg(msg => msg.warn(`既に存在するデータと同じキーで新規追加しようとしました: ${newValue.itemKey}`))
-                                    result.push(newValue)
-                                    continue
-                                  }
-                                  if (newValue.existsInRemoteRepository && !stored?.existsInRemoteRepository) {
-                                    dispatchMsg(msg => msg.warn(`更新対象データがリモートにもローカルにもありません: ${newValue.itemKey}`))
-                                    result.push(newValue)
-                                    continue
-                                  }
-
-                                  // ローカルリポジトリの更新
                                   if (newValue.willBeDeleted && !newValue.existsInRemoteRepository) {
-                                    await queryToTable(table => table.delete(['{{localRepositosy.DataTypeKey}}', newValue.itemKey]))
+                                    await queryToTable(table => table.delete(['{{localRepositosy.DataTypeKey}}', newValue.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}}]))
 
                                   } else if (newValue.willBeChanged || newValue.willBeDeleted) {
-                                    const itemName = getItemName?.(newValue.item) ?? ''
-                                    await queryToTable(table => table.put({ dataTypeKey: '{{localRepositosy.DataTypeKey}}', itemName, ...newValue }))
+                                    await queryToTable(table => table.put({
+                                      dataTypeKey: '{{localRepositosy.DataTypeKey}}',
+                                      itemName: getItemName?.(newValue) ?? '',
+                                      itemKey: newValue.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}},
+                                      item: newValue,
+                                      existsInRemoteRepository: newValue.{{DisplayDataClass.EXISTS_IN_REMOTE_REPOS}},
+                                      willBeChanged: newValue.{{DisplayDataClass.WILL_BE_CHANGED}},
+                                      willBeDeleted: newValue.{{DisplayDataClass.WILL_BE_DELETED}},
+                                    }))
                                     result.push(newValue)
 
                                   } else {
@@ -286,7 +255,7 @@ namespace Nijo.Features.Storing {
                                 }
                                 await reloadContext()
                                 return result
-                              }, [loadRemoteItems, loadLocalItems, reloadContext, dispatchMsg, getItemKey, getItemName, queryToTable])
+                              }, [reloadContext, getItemName, queryToTable])
 
                             """)}}
                               return {
@@ -332,12 +301,41 @@ namespace Nijo.Features.Storing {
                 .RootAggregatesOrderByDataFlow()
                 .Where(agg => agg.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key);
 
-            static string DeleteKeyUrlParam(GraphNode<Aggregate> agg) {
-                return agg
+            static string RenderCommitFunction(GraphNode<Aggregate> agg) {
+                var displayData = new DisplayDataClass(agg);
+                var localRepos = new LocalRepository(agg);
+                var controller = new Parts.WebClient.Controller(agg.Item);
+                var deleteKeyUrlParam = agg
                     .GetKeys()
                     .OfType<AggregateMember.ValueMember>()
-                    .Select(vm => $"${{localReposItem.item.{vm.Declared.GetFullPath().Join("?.")}}}")
+                    .Select(vm => $"${{saveItem.{vm.Declared.GetFullPath().Join("?.")}}}")
                     .Join("/");
+
+                return $$"""
+                    async (localReposItem: LocalRepositoryStoredItem<AggregateType.{{displayData.TsTypeName}}>) => {
+                      const [{ item: saveItem }] = AggregateType.{{displayData.ConvertFnNameToLocalRepositoryType}}(localReposItem.item)
+                      const state = getLocalRepositoryState(localReposItem)
+                      if (state === '+') {
+                        const url = `{{controller.CreateCommandApi}}`
+                        const response = await post<AggregateType.{{agg.Item.TypeScriptTypeName}}>(url, saveItem)
+                        return { commit: response.ok }
+
+                      } else if (state === '*') {
+                        const url = `{{controller.UpdateCommandApi}}`
+                        const response = await post<AggregateType.{{agg.Item.TypeScriptTypeName}}>(url, saveItem)
+                        return { commit: response.ok }
+                    
+                      } else if (state === '-') {
+                        const url = `{{controller.DeleteCommandApi}}/{{deleteKeyUrlParam}}`
+                        const response = await httpDelete(url)
+                        return { commit: response.ok }
+                    
+                      } else {
+                        dispatchMsg(msg => msg.error(`'${saveItem}' の状態 '${state}' が不正です。`))
+                        return { commit: false }
+                      }
+                    }
+                    """;
             }
 
             return new SourceFile {
@@ -356,30 +354,9 @@ namespace Nijo.Features.Storing {
                       const [, dispatchMsg] = useMsgContext()
                       const { post, httpDelete } = useHttpRequest()
 
-                      const saveHandlerMap = useMemo(() => new Map<string, SaveLocalItemHandler>([
+                      const saveHandlerMap = useMemo(() => new Map<string, SaveLocalItemHandler<any>>([
                     {{aggregates.SelectTextTemplate(agg => $$"""
-                        ['{{new LocalRepository(agg).DataTypeKey}}', async (localReposItem: LocalRepositoryStoredItem<AggregateType.{{agg.Item.TypeScriptTypeName}}>) => {
-                          const state = getLocalRepositoryState(localReposItem)
-                          if (state === '+') {
-                            const url = `{{new Parts.WebClient.Controller(agg.Item).CreateCommandApi}}`
-                            const response = await post<AggregateType.{{agg.Item.TypeScriptTypeName}}>(url, localReposItem.item)
-                            return { commit: response.ok }
-
-                          } else if (state === '*') {
-                            const url = `{{new Parts.WebClient.Controller(agg.Item).UpdateCommandApi}}`
-                            const response = await post<AggregateType.{{agg.Item.TypeScriptTypeName}}>(url, localReposItem.item)
-                            return { commit: response.ok }
-                    
-                          } else if (state === '-') {
-                            const url = `{{new Parts.WebClient.Controller(agg.Item).DeleteCommandApi}}/{{DeleteKeyUrlParam(agg)}}`
-                            const response = await httpDelete(url)
-                            return { commit: response.ok }
-                    
-                          } else {
-                            dispatchMsg(msg => msg.error(`'${localReposItem.itemKey}' の状態 '${state}' が不正です。`))
-                            return { commit: false }
-                          }
-                        }],
+                        ['{{new LocalRepository(agg).DataTypeKey}}', {{WithIndent(RenderCommitFunction(agg), "    ")}}],
                     """)}}
                       ]), [post, httpDelete, dispatchMsg])
 
