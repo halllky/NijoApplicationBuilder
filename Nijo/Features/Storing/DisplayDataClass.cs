@@ -231,8 +231,6 @@ namespace Nijo.Features.Storing {
                 .Select(p => new {
                     RelProp = p,
                     ArgName = $"reposItemList{p.Item1.MainAggregate.Item.ClassName}",
-                    ItemType = $"Util.LocalRepositoryItem<{p.Item1.MainAggregate.Item.TypeScriptTypeName}>",
-                    TempVar = $"temp{p.Item1.MainAggregate.Item.ClassName}",
                 }).ToArray();
 
             // 子孫要素を参照するデータを引数の配列中から探すためにはキーで引き当てる必要があるが、
@@ -305,10 +303,7 @@ namespace Nijo.Features.Storing {
                       {{p.PropName}}: {{WithIndent(Render(p, $"{instance}?.{p.MemberInfo?.MemberName}", false), "  ")}},
                     """)}}
                     {{refProps.SelectTextTemplate(x => $$"""
-                      {{x.RefProp.PropName}}: ({{x.Args.TempVar}} = {{x.Args.ArgName}}.find(y =>
-                        {{x.Keys.Select(k => $"y.item.{k.TheirKey} === {k.ThisKey}").Join($"{Environment.NewLine}    && ")}})) !== undefined
-                          ? {{x.Args.RelProp.Item1.ConvertFnNameToDisplayDataType}}({{x.Args.TempVar}}{{x.RefProp.GetRefFromPropsRecursively().DistinctBy(p => p.Item1.MainAggregate).Select(p => $", reposItemList{p.Item1.MainAggregate.Item.ClassName}").Join("")}})
-                          : undefined,
+                      {{x.RefProp.PropName}}: {{x.Args.ArgName}}.find(y => y.{{LOCAL_REPOS_ITEMKEY}} === {{instance}}.{{LOCAL_REPOS_ITEMKEY}}),
                     """)}}
                     }
                     """;

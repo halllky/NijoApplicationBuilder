@@ -50,6 +50,53 @@ namespace Nijo.Features.Storing {
 
                         var commitable = agg.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key;
 
+                        var refRepositories = displayData
+                            .GetRefFromPropsRecursively()
+                            .DistinctBy(x => x.Item1.MainAggregate)
+                            .Select(p => new {
+                                Repos = new LocalRepository(p.Item1.MainAggregate),
+                                FindMany = new FindManyFeature(p.Item1.MainAggregate),
+                                Aggregate = p.Item1.MainAggregate,
+                                DataClassProp = p,
+
+                                // この画面のメイン集約を参照する関連集約をまとめて読み込むため、
+                                // SingleViewのURLのキーで関連集約のAPIへの検索をかけたい。
+                                // そのために当該検索条件のうち関連集約の検索に関係するメンバーの一覧
+                                RootAggregateMembersForSingleViewLoading = p.Item1.MainAggregate
+                                    .GetEntryReversing()
+                                    .As<Aggregate>()
+                                    .GetMembers()
+                                    .OfType<AggregateMember.ValueMember>()
+                                    .Where(vm => keyArray.Any(k => k.Member.Declared == vm.Declared)),
+
+                                // この画面のメイン集約を参照する関連集約をまとめて読み込むため、
+                                // MultiViewの画面上部の検索条件の値で関連集約のAPIへの検索をかけたい。
+                                // そのために当該検索条件のうち関連集約の検索に関係するメンバーの一覧
+                                RootAggregateMembersForLoad = p.Item1.MainAggregate
+                                    .GetEntryReversing()
+                                    .As<Aggregate>()
+                                    .GetMembers()
+                                    .OfType<AggregateMember.ValueMember>()
+                                    // TODO: 検索条件クラスではVariationはbool型で生成されるが
+                                    // FindManyFeatureでそれも考慮してメンバーを列挙してくれるメソッドがないので
+                                    // 暫定的に除外する（修正後は 011_ダブル.xml で確認可能）
+                                    .Where(vm => vm is not AggregateMember.Variation),
+                            })
+                            .ToArray();
+
+                        // メイン集約を参照する関連集約をまとめて読み込むため、検索条件の値で関連集約のAPIへの検索をかけたい。
+                        // そのために検索条件の各項目が関連集約のどの項目と対応するかを調べて返すための関数
+                        AggregateMember.ValueMember FindRootAggregateSearchConditionMember(AggregateMember.ValueMember refSearchConditionMember) {
+                            var refPath = refSearchConditionMember.DeclaringAggregate.PathFromEntry();
+                            var matched = findMany
+                                .EnumerateSearchConditionMembers()
+                                .Where(kv2 => kv2.Declared == refSearchConditionMember.Declared
+                                            // ある集約から別の集約へ複数経路の参照がある場合は対応するメンバーが複数とれてしまうのでパスの後方一致でも絞り込む
+                                            && refPath.EndsWith(kv2.Owner.PathFromEntry()))
+                                .ToArray();
+                            return matched.Single();
+                        }
+
                         return $$"""
                             /** {{agg.Item.DisplayName}}データの読み込みと保存を行います。 */
                             export const {{localRepositosy.HookName}} = (editRange?
@@ -66,6 +113,43 @@ namespace Nijo.Features.Storing {
                               const { ready: ready1, reload: reloadContext } = useLocalRepositoryContext()
                               const { ready: ready2, openCursor, queryToTable } = useIndexedDbLocalRepositoryTable()
                               const [ready3, setReady3] = useState(false)
+                            {{refRepositories.SelectTextTemplate(x => $$"""
+
+                              // {{x.Aggregate.Item.DisplayName}}のローカルリポジトリとリモートリポジトリへのデータ読み書き処理
+                              const {{x.Aggregate.Item.ClassName}}filter: { filter: AggregateType.{{x.FindMany.TypeScriptConditionClass}} } = useMemo(() => {
+                                const f = AggregateType.{{x.FindMany.TypeScriptConditionInitializerFn}}()
+                                if (typeof editRange === 'string') {
+                                  // 新規作成データ(未コミット)の編集の場合
+                                } else if (Array.isArray(editRange)) {
+                                  const [{{keyArray.Select(k => k.VarName).Join(", ")}}] = editRange
+                            {{x.RootAggregateMembersForSingleViewLoading.SelectTextTemplate((kv, i) => $$"""
+                            {{If(kv.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
+                                  f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}} = {{keyArray.SingleOrDefault(k => k.Member.Declared == kv.Declared)?.VarName ?? ""}}
+                                  f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}} = {{keyArray.SingleOrDefault(k => k.Member.Declared == kv.Declared)?.VarName ?? ""}}
+                            """).Else(() => $$"""
+                                  f.{{kv.Declared.GetFullPath().Join(".")}} = {{keyArray.SingleOrDefault(k => k.Member.Declared == kv.Declared)?.VarName ?? ""}}
+                            """)}}
+                            """)}}
+                                } else if (editRange) {
+                            {{x.RootAggregateMembersForLoad.SelectTextTemplate((kv, i) => $$"""
+                            {{If(kv.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
+                                  f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}} = editRange.filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}?.{{FromTo.FROM}}
+                                  f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}} = editRange.filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}?.{{FromTo.TO}}
+                            """).Else(() => $$"""
+                                  f.{{kv.Declared.GetFullPath().Join(".")}} = editRange.filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}
+                            """)}}
+                            """)}}
+                                }
+                                return { filter: f }
+                              }, [editRange])
+                              const {
+                                ready: {{x.Aggregate.Item.ClassName}}IsReady,
+                                items: {{x.Aggregate.Item.ClassName}}Items,
+                            {{If(commitable, () => $$"""
+                                commit: commit{{x.Aggregate.Item.ClassName}},
+                            """)}}
+                              } = {{x.Repos.HookName}}({{x.Aggregate.Item.ClassName}}filter)
+                            """)}}
 
                               const [remoteAndLocalItems, setRemoteAndLocalItems] = useState<AggregateType.{{displayData.TsTypeName}}[]>(() => [])
 
@@ -101,7 +185,7 @@ namespace Nijo.Features.Storing {
                                   if (!res.ok) return []
                                   return res.data.map(item => ({{WithIndent(displayData.RenderConvertToDisplayDataClass("item"), "      ")}}))
                                 }
-                              }, [editRange, getItemKey, get, post])
+                              }, [editRange, getItemKey, get, post{{refRepositories.Select(x => $", {x.Aggregate.Item.ClassName}IsReady").Join("")}}])
 
                               const loadLocalItems = useCallback(async (): Promise<AggregateType.{{displayData.TsTypeName}}[]> => {
                                 if (editRange === undefined) {
