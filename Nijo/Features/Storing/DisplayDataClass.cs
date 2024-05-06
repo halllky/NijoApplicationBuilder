@@ -334,6 +334,8 @@ namespace Nijo.Features.Storing {
     }
 
     internal static partial class StoringExtensions {
+
+        #region DisplayDataClassのパス
         /// <summary>
         /// エントリーからのパスを <see cref="DisplayDataClass"/> のデータ構造にあわせて返す。
         /// たとえば自身のメンバーならその前に <see cref="DisplayDataClass.OWN_MEMBERS"/> を挟むなど
@@ -355,14 +357,12 @@ namespace Nijo.Features.Storing {
             }
             yield return member.MemberName;
         }
-
         private static IEnumerable<string> GetFullPathAsSingleViewDataClass(this GraphNode<Aggregate> aggregate, out bool enumeratingRefTargetKeyName) {
             var paths = new List<string>();
             enumeratingRefTargetKeyName = false;
 
             foreach (var edge in aggregate.PathFromEntry()) {
                 if (edge.Source == edge.Terminal) {
-                    // 有向グラフの矢印の先から元に辿るパターン
 
                     if (edge.IsParentChild()) {
                         paths.Add(AggregateMember.PARENT_PROPNAME); // 子から親に向かって辿る場合
@@ -375,7 +375,6 @@ namespace Nijo.Features.Storing {
                     }
 
                 } else {
-                    // 有向グラフの矢印の元から先に辿るパターン
 
                     if (edge.IsParentChild()) {
                         var dc = new DisplayDataClass(edge.Initial.As<Aggregate>());
@@ -397,13 +396,89 @@ namespace Nijo.Features.Storing {
                         enumeratingRefTargetKeyName = true;
 
                     } else {
-                        throw new InvalidOperationException($"有向グラフの矢印の先から元に向かうパターンは親子か参照だけなのでこの分岐にくることはあり得ないはず");
+                        throw new InvalidOperationException($"有向グラフの矢印の元から先に向かうパターンは親子か参照だけなのでこの分岐にくることはあり得ないはず");
                     }
                 }
             }
 
             return paths;
         }
+        #endregion DisplayDataClassのパス
 
+
+        #region useFormContextのパス
+        /// <summary>
+        /// React Hook Form の記法に従ったルートオブジェクトからの登録名を返します。
+        /// 文字列を囲むバッククォート `` も含めて返します。
+        /// </summary>
+        /// <param name="arrayIndexes">配列インデックスを指定する変数の名前</param>
+        internal static string GetRHFRegisterName(this GraphNode<Aggregate> aggregate, IEnumerable<string>? arrayIndexes = null) {
+            var paths = EnumerateRHFRegisterName(aggregate, false, arrayIndexes)
+                .ToArray();
+            return paths.Length == 0
+                ? string.Empty // React Hook Form の getValues() でルート要素を取得するときに引数なしを指定するため
+                : $"`{paths.Join(".")}`";
+        }
+        /// <summary>
+        /// React Hook Form の記法に従ったルートオブジェクトからの登録名を返します。
+        /// 文字列を囲むバッククォート `` も含めて返します。
+        /// </summary>
+        /// <param name="arrayIndexes">配列インデックスを指定する変数の名前</param>
+        internal static string GetRHFRegisterName(this AggregateMember.AggregateMemberBase member, IEnumerable<string>? arrayIndexes = null) {
+            var paths = EnumerateRHFRegisterName(member.Owner, true, arrayIndexes)
+                .Concat([DisplayDataClass.OWN_MEMBERS, member.MemberName])
+                .ToArray();
+            return paths.Length == 0
+                ? string.Empty // React Hook Form の getValues() でルート要素を取得するときに引数なしを指定するため
+                : $"`{paths.Join(".")}`";
+        }
+
+        private static IEnumerable<string> EnumerateRHFRegisterName(this GraphNode<Aggregate> aggregate, bool enumerateLastChildrenIndex, IEnumerable<string>? arrayIndexes) {
+            var currentArrayIndex = 0;
+
+            foreach (var edge in aggregate.PathFromEntry()) {
+                if (edge.Source == edge.Terminal) {
+
+                    if (edge.IsParentChild()) {
+                        yield return AggregateMember.PARENT_PROPNAME; // 子から親に向かって辿る場合
+
+                    } else if (edge.IsRef()) {
+
+                    } else {
+                        throw new InvalidOperationException($"有向グラフの矢印の先から元に向かうパターンは親子か参照だけなのでこの分岐にくることはあり得ないはず");
+                    }
+
+                } else {
+
+                    if (edge.IsParentChild()) {
+                        var dataClass = new DisplayDataClass(edge.Initial.As<Aggregate>());
+                        var terminal = edge.Terminal.As<Aggregate>();
+
+                        yield return dataClass
+                            .GetChildProps()
+                            .Single(p => p.MainAggregate == terminal)
+                            .PropName;
+
+                        // 子要素が配列の場合はその配列の何番目の要素かを指定する必要がある
+                        if (terminal.IsChildrenMember()
+                            // "….Children.${}" の最後の配列インデックスを列挙するか否か
+                            && (enumerateLastChildrenIndex || terminal != aggregate)) {
+
+                            var arrayIndex = arrayIndexes?.ElementAtOrDefault(currentArrayIndex);
+                            yield return $"${{{arrayIndex}}}";
+
+                            currentArrayIndex++;
+                        }
+
+                    } else if (edge.IsRef()) {
+                        yield return edge.RelationName;
+
+                    } else {
+                        throw new InvalidOperationException($"有向グラフの矢印の先から元に向かうパターンは親子か参照だけなのでこの分岐にくることはあり得ないはず");
+                    }
+                }
+            }
+        }
+        #endregion useFormContextのパス
     }
 }

@@ -51,7 +51,7 @@ namespace Nijo.Features.Storing {
             // useFormの型。Refの参照元のコンポーネントのレンダリングの可能性があるためGetRootではなくGetEntry
             var entryDataClass = new DisplayDataClass(_aggregate.GetEntry().As<Aggregate>());
             var useFormType = $"AggregateType.{entryDataClass.TsTypeName}";
-            var registerName = GetRegisterName();
+            var registerName = _aggregate.GetRHFRegisterName(args);
 
             if (_relationToParent == null && !_asSingleRefKeyAggregate) {
                 // ルート集約のレンダリング（画面の中の主集約）
@@ -150,7 +150,7 @@ namespace Nijo.Features.Storing {
 
             } else if (_relationToParent is AggregateMember.VariationItem variation) {
                 // Variationメンバーのレンダリング
-                var switchProp = GetRegisterName(_aggregate.GetParent()!.Initial, variation.Group);
+                var switchProp = variation.Group.GetRHFRegisterName(args);
 
                 return $$"""
                     const {{componentName}} = ({{{args.Join(", ")}} }: {
@@ -182,7 +182,7 @@ namespace Nijo.Features.Storing {
 
             } else if (!_aggregate.CanDisplayAllMembersAs2DGrid()) {
                 // Childrenのレンダリング（子集約をもつなど表であらわせない場合）
-                var loopVar = $"index_{args.Length}";
+                var loopVar = GetLoopVarName();
 
                 return $$"""
                     const {{componentName}} = ({{{args.Join(", ")}} }: {
@@ -242,7 +242,7 @@ namespace Nijo.Features.Storing {
 
             } else {
                 // Childrenのレンダリング（子集約をもたない場合）
-                var loopVar = $"index_{args.Length}";
+                var loopVar = GetLoopVarName();
                 var editable = _mode == SingleView.E_Type.View ? "false" : "true";
 
                 var colDefs = DataTableColumn.FromMembers(
@@ -353,7 +353,7 @@ namespace Nijo.Features.Storing {
         }
 
         private string RenderProperty(AggregateMember.Variation variationSwitch) {
-            var switchProp = GetRegisterName(variationSwitch);
+            var switchProp = variationSwitch.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()]));
             var disabled = IfReadOnly("disabled", variationSwitch);
 
             return $$"""
@@ -384,7 +384,7 @@ namespace Nijo.Features.Storing {
                 // このコンポーネントが参照先集約のSingleViewの一部としてレンダリングされている場合、
                 // キーがどの参照先データかは自明のため、非表示にする。
                 return $$"""
-                    <input type="hidden" {...register({{GetRegisterName(refProperty)}})} />
+                    <input type="hidden" {...register({{refProperty.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()]))}})} />
                     """;
 
             } else if (_mode == SingleView.E_Type.View) {
@@ -401,7 +401,7 @@ namespace Nijo.Features.Storing {
 
             } else {
                 // コンボボックス
-                var registerName = GetRegisterName(refProperty);
+                var registerName = refProperty.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()]));
                 var combobox = new ComboBox(refProperty.MemberAggregate);
                 var component = _mode switch {
                     SingleView.E_Type.Create => combobox.RenderCaller(registerName, "className='w-full'"),
@@ -419,7 +419,7 @@ namespace Nijo.Features.Storing {
         private string RenderProperty(AggregateMember.Schalar schalar) {
             if (schalar.Options.InvisibleInGui) {
                 return $$"""
-                    <input type="hidden" {...register({{GetRegisterName(schalar)}})} />
+                    <input type="hidden" {...register({{schalar.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()]))}})} />
                     """;
 
             } else {
@@ -444,7 +444,7 @@ namespace Nijo.Features.Storing {
 
                 return $$"""
                     <VForm.Item label="{{schalar.MemberName}}">
-                      <{{reactComponent.Name}} {...registerEx({{GetRegisterName(schalar)}})}{{string.Concat(reactComponent.GetPropsStatement())}} />
+                      <{{reactComponent.Name}} {...registerEx({{schalar.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()]))}})}{{string.Concat(reactComponent.GetPropsStatement())}} />
                     </VForm.Item>
                     """;
             }
@@ -475,59 +475,15 @@ namespace Nijo.Features.Storing {
                 .Select((_, i) => $"index_{i}")
                 .ToArray();
         }
+        /// <summary>
+        /// Childrenのレンダリングのために用いられるループ変数の名前
+        /// </summary>
+        private string GetLoopVarName() {
+            return $"index_{GetArguments().Count}";
+        }
 
         private IEnumerable<AggregateMember.AggregateMemberBase> GetMembers() {
             return new TransactionScopeDataClass(_aggregate).GetOwnMembers();
-        }
-
-        private string GetRegisterName(AggregateMember.AggregateMemberBase? prop = null) {
-            return GetRegisterName(_aggregate, prop);
-        }
-
-        /// <summary>
-        /// TODO: <see cref="DisplayDataClass"/> の役割なのでそちらに移す
-        /// </summary>
-        internal static IEnumerable<string> GetRegisterNameBeforeJoin(
-            GraphNode<Aggregate> aggregate,
-            AggregateMember.AggregateMemberBase? prop = null) {
-
-            var i = 0;
-            foreach (var e in aggregate.PathFromEntry()) {
-                var edge = e.As<Aggregate>();
-
-                if (!edge.IsRef()) {
-                    var dataClass = new DisplayDataClass(edge.Initial);
-                    yield return dataClass
-                        .GetChildProps()
-                        .Single(p => p.MainAggregate == edge.Terminal)
-                        .PropName;
-                }
-
-                if (edge.Terminal.IsChildrenMember()) {
-                    if (edge.Terminal != aggregate) {
-                        // 祖先の中にChildrenがあるので配列番号を加える
-                        yield return "${index_" + i.ToString() + "}";
-                        i++;
-                    } else if (edge.Terminal == aggregate && prop != null) {
-                        // このコンポーネント自身がChildrenのとき
-                        // - propがnull: useArrayFieldの登録名の作成なので配列番号を加えない
-                        // - propがnullでない: mapの中のプロパティのレンダリングなので配列番号を加える
-                        yield return "${index_" + i.ToString() + "}";
-                        i++;
-                    }
-                }
-            }
-            if (prop != null) {
-                yield return DisplayDataClass.OWN_MEMBERS;
-                yield return prop.MemberName;
-            }
-        }
-        /// <summary>
-        /// TODO: リファクタリング
-        /// </summary>
-        private static string GetRegisterName(GraphNode<Aggregate> aggregate, AggregateMember.AggregateMemberBase? prop = null) {
-            var name = GetRegisterNameBeforeJoin(aggregate, prop).Join(".");
-            return string.IsNullOrEmpty(name) ? string.Empty : $"`{name}`";
         }
 
         private string IfReadOnly(string readOnly, AggregateMember.AggregateMemberBase prop) {
