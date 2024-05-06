@@ -408,29 +408,24 @@ namespace Nijo.Features.Storing {
 
         #region useFormContextのパス
         /// <summary>
-        /// React Hook Form の記法に従ったルートオブジェクトからの登録名を返します。
-        /// 文字列を囲むバッククォート `` も含めて返します。
+        /// React Hook Form の記法に従ったルートオブジェクトからの登録名のパスを返します。
         /// </summary>
         /// <param name="arrayIndexes">配列インデックスを指定する変数の名前</param>
-        internal static string GetRHFRegisterName(this GraphNode<Aggregate> aggregate, IEnumerable<string>? arrayIndexes = null) {
-            var paths = EnumerateRHFRegisterName(aggregate, false, arrayIndexes)
-                .ToArray();
-            return paths.Length == 0
-                ? string.Empty // React Hook Form の getValues() でルート要素を取得するときに引数なしを指定するため
-                : $"`{paths.Join(".")}`";
+        internal static IEnumerable<string> GetRHFRegisterName(this GraphNode<Aggregate> aggregate, IEnumerable<string>? arrayIndexes = null) {
+            foreach (var path in EnumerateRHFRegisterName(aggregate, false, arrayIndexes)) {
+                yield return path;
+            }
         }
         /// <summary>
-        /// React Hook Form の記法に従ったルートオブジェクトからの登録名を返します。
-        /// 文字列を囲むバッククォート `` も含めて返します。
+        /// React Hook Form の記法に従ったルートオブジェクトからの登録名のパスを返します。
         /// </summary>
         /// <param name="arrayIndexes">配列インデックスを指定する変数の名前</param>
-        internal static string GetRHFRegisterName(this AggregateMember.AggregateMemberBase member, IEnumerable<string>? arrayIndexes = null) {
-            var paths = EnumerateRHFRegisterName(member.Owner, true, arrayIndexes)
-                .Concat([DisplayDataClass.OWN_MEMBERS, member.MemberName])
-                .ToArray();
-            return paths.Length == 0
-                ? string.Empty // React Hook Form の getValues() でルート要素を取得するときに引数なしを指定するため
-                : $"`{paths.Join(".")}`";
+        internal static IEnumerable<string> GetRHFRegisterName(this AggregateMember.AggregateMemberBase member, IEnumerable<string>? arrayIndexes = null) {
+            foreach (var path in EnumerateRHFRegisterName(member.Owner, true, arrayIndexes)) {
+                yield return path;
+            }
+            yield return DisplayDataClass.OWN_MEMBERS;
+            yield return member.MemberName;
         }
 
         private static IEnumerable<string> EnumerateRHFRegisterName(this GraphNode<Aggregate> aggregate, bool enumerateLastChildrenIndex, IEnumerable<string>? arrayIndexes) {

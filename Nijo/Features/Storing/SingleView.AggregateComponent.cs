@@ -51,7 +51,8 @@ namespace Nijo.Features.Storing {
             // useFormの型。Refの参照元のコンポーネントのレンダリングの可能性があるためGetRootではなくGetEntry
             var entryDataClass = new DisplayDataClass(_aggregate.GetEntry().As<Aggregate>());
             var useFormType = $"AggregateType.{entryDataClass.TsTypeName}";
-            var registerName = _aggregate.GetRHFRegisterName(args);
+            var registerNameArray = _aggregate.GetRHFRegisterName(args).ToArray();
+            var registerName = registerNameArray.Length > 0 ? $"`{registerNameArray.Join(".")}`" : string.Empty;
 
             if (_relationToParent == null && !_asSingleRefKeyAggregate) {
                 // ルート集約のレンダリング（画面の中の主集約）
@@ -150,7 +151,7 @@ namespace Nijo.Features.Storing {
 
             } else if (_relationToParent is AggregateMember.VariationItem variation) {
                 // Variationメンバーのレンダリング
-                var switchProp = variation.Group.GetRHFRegisterName(args);
+                var switchProp = $"`{variation.Group.GetRHFRegisterName(args).Join(".")}`";
 
                 return $$"""
                     const {{componentName}} = ({{{args.Join(", ")}} }: {
@@ -353,7 +354,7 @@ namespace Nijo.Features.Storing {
         }
 
         private string RenderProperty(AggregateMember.Variation variationSwitch) {
-            var switchProp = variationSwitch.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()]));
+            var switchProp = $"`{variationSwitch.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()])).Join(".")}`";
             var disabled = IfReadOnly("disabled", variationSwitch);
 
             return $$"""
@@ -384,7 +385,7 @@ namespace Nijo.Features.Storing {
                 // このコンポーネントが参照先集約のSingleViewの一部としてレンダリングされている場合、
                 // キーがどの参照先データかは自明のため、非表示にする。
                 return $$"""
-                    <input type="hidden" {...register({{refProperty.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()]))}})} />
+                    <input type="hidden" {...register(`{{refProperty.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()])).Join(".")}}`)} />
                     """;
 
             } else if (_mode == SingleView.E_Type.View) {
@@ -401,7 +402,7 @@ namespace Nijo.Features.Storing {
 
             } else {
                 // コンボボックス
-                var registerName = refProperty.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()]));
+                var registerName = $"`{refProperty.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()])).Join(".")}`";
                 var combobox = new ComboBox(refProperty.MemberAggregate);
                 var component = _mode switch {
                     SingleView.E_Type.Create => combobox.RenderCaller(registerName, "className='w-full'"),
@@ -419,7 +420,7 @@ namespace Nijo.Features.Storing {
         private string RenderProperty(AggregateMember.Schalar schalar) {
             if (schalar.Options.InvisibleInGui) {
                 return $$"""
-                    <input type="hidden" {...register({{schalar.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()]))}})} />
+                    <input type="hidden" {...register(`{{schalar.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()])).Join(".")}}`)} />
                     """;
 
             } else {
@@ -444,7 +445,7 @@ namespace Nijo.Features.Storing {
 
                 return $$"""
                     <VForm.Item label="{{schalar.MemberName}}">
-                      <{{reactComponent.Name}} {...registerEx({{schalar.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()]))}})}{{string.Concat(reactComponent.GetPropsStatement())}} />
+                      <{{reactComponent.Name}} {...registerEx(`{{schalar.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()])).Join(".")}}`)}{{string.Concat(reactComponent.GetPropsStatement())}} />
                     </VForm.Item>
                     """;
             }
