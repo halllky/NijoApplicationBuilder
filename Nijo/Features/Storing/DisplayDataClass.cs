@@ -64,12 +64,11 @@ namespace Nijo.Features.Storing {
         /// <summary>
         /// 新規オブジェクト作成のリテラルをレンダリングします。
         /// </summary>
-        /// <param name="itemKey">ルート集約なら必須。子孫集約なら不要</param>
-        internal string RenderNewObjectLiteral(string? itemKey = null) {
+        internal string RenderNewObjectLiteral() {
             return $$"""
                 {
-                {{If(MainAggregate.IsRoot(), () => $$"""
-                  {{LOCAL_REPOS_ITEMKEY}}: {{itemKey}},
+                {{If(MainAggregate.IsRoot() || MainAggregate.IsChildrenMember(), () => $$"""
+                  {{LOCAL_REPOS_ITEMKEY}}: JSON.stringify(UUID.generate()) as Util.ItemKey,
                   {{EXISTS_IN_REMOTE_REPOS}}: false,
                   {{WILL_BE_CHANGED}}: true,
                   {{WILL_BE_DELETED}}: false,
@@ -81,16 +80,12 @@ namespace Nijo.Features.Storing {
                 {{MainAggregate.GetMembers().OfType<AggregateMember.Variation>().Where(m => m.DeclaringAggregate == MainAggregate).SelectTextTemplate(m => $$"""
                     {{m.MemberName}}: '{{m.GetGroupItems().First().Key}}',
                 """)}}
-                {{If(MainAggregate.IsChildrenMember(), () => $$"""
-                    {{TransactionScopeDataClass.IS_STORED_DATA}}: false,
-                """)}}
                   },
                 }
                 """;
         }
 
         internal string ConvertFnNameToLocalRepositoryType => $"convert{MainAggregate.Item.ClassName}ToLocalRepositoryItem";
-        internal string ConvertFnNameToDisplayDataType => $"convert{MainAggregate.Item.ClassName}ToDisplayData";
 
         /// <summary>
         /// データ型変換関数 (<see cref="DisplayDataClass"/> => <see cref="TransactionScopeDataClass"/>)
@@ -136,9 +131,6 @@ namespace Nijo.Features.Storing {
                     """ : $$"""
                       {{p.MemberInfo?.MemberName}}: {{WithIndent(RenderItem(p, instance), "  ")}},
                     """)}}
-                    {{If(dc.MainAggregate.IsChildrenMember(), () => $$"""
-                      {{TransactionScopeDataClass.IS_STORED_DATA}}: {{instance}}.{{OWN_MEMBERS}}.{{TransactionScopeDataClass.IS_STORED_DATA}},
-                    """)}}
                     }
                     """;
             }
@@ -164,15 +156,13 @@ namespace Nijo.Features.Storing {
         /// <summary>
         /// データ型変換関数 (<see cref="TransactionScopeDataClass"/> => <see cref="DisplayDataClass"/>)
         /// </summary>
-        internal string RenderConvertFnToDisplayDataClass() {
-            var mainArgName = $"reposItem{MainAggregate.Item.ClassName}";
-            var mainArgType = $"Util.LocalRepositoryItem<{MainAggregate.Item.TypeScriptTypeName}>";
+        internal string RenderConvertToDisplayDataClass(string mainArgName) {
 
             // 子孫要素を参照するデータを引数の配列中から探すためにはキーで引き当てる必要があるが、
             // 子孫要素のラムダ式の中ではその外にある変数を参照するしかない
             var pkVarNames = new Dictionary<AggregateMember.ValueMember, string>();
             foreach (var key in MainAggregate.GetKeys().OfType<AggregateMember.ValueMember>()) {
-                pkVarNames.Add(key.Declared, $"{mainArgName}.item.{key.Declared.GetFullPath().Join("?.")}");
+                pkVarNames.Add(key.Declared, $"{mainArgName}.{key.Declared.GetFullPath().Join("?.")}");
             }
 
             string Render(DisplayDataClass dc, string instance, bool inLambda) {
@@ -192,7 +182,6 @@ namespace Nijo.Features.Storing {
                     .GetMembers()
                     .Where(m => m.DeclaringAggregate == dc.MainAggregate
                              && (m is AggregateMember.ValueMember || m is AggregateMember.Ref));
-                var item = dc.MainAggregate.IsRoot() ? $"{instance}.item" : instance;
                 var depth = dc.MainAggregate.EnumerateAncestors().Count();
 
                 string MemberValue(AggregateMember.AggregateMemberBase m) {
@@ -201,50 +190,39 @@ namespace Nijo.Features.Storing {
                             .GetKeys()
                             .OfType<AggregateMember.ValueMember>();
                         return $$"""
-                            {{item}}?.{{m.MemberName}}
-                              ? JSON.stringify([{{keys.Select(k => $"{item}.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]) as Util.ItemKey
+                            {{instance}}?.{{m.MemberName}}
+                              ? JSON.stringify([{{keys.Select(k => $"{instance}.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]) as ItemKey
                               : undefined
                             """;
 
                     } else {
-                        return $"{item}?.{m.MemberName}";
+                        return $"{instance}?.{m.MemberName}";
                     }
                 }
 
                 return $$"""
                     {
-                    {{If(dc.MainAggregate.IsRoot(), () => $$"""
-                      {{LOCAL_REPOS_ITEMKEY}}: {{instance}}.itemKey,
-                      {{EXISTS_IN_REMOTE_REPOS}}: {{instance}}.existsInRemoteRepository,
-                      {{WILL_BE_CHANGED}}: {{instance}}.willBeChanged,
-                      {{WILL_BE_DELETED}}: {{instance}}.willBeDeleted,
+                    {{If(dc.MainAggregate.IsRoot() || dc.MainAggregate.IsChildrenMember(), () => $$"""
+                      {{LOCAL_REPOS_ITEMKEY}}: JSON.stringify([{{keys.Select(k => pkVarNames[k.Declared]).Join(", ")}}]) as ItemKey,
+                      {{EXISTS_IN_REMOTE_REPOS}}: true,
+                      {{WILL_BE_CHANGED}}: false,
+                      {{WILL_BE_DELETED}}: false,
                     """)}}
                       {{OWN_MEMBERS}}: {
                     {{ownMembers.SelectTextTemplate(m => $$"""
                         {{m.MemberName}}: {{WithIndent(MemberValue(m), "    ")}},
                     """)}}
-                    {{If(dc.MainAggregate.IsChildrenMember(), () => $$"""
-                        {{TransactionScopeDataClass.IS_STORED_DATA}}: {{item}}?.{{TransactionScopeDataClass.IS_STORED_DATA}} ?? false,
-                    """)}}
                       },
                     {{dc.GetChildProps().SelectTextTemplate(p => p.IsArray ? $$"""
-                      {{p.PropName}}: {{item}}?.{{p.MemberInfo?.MemberName}}?.map(x{{depth}} => ({{WithIndent(Render(p, $"x{depth}", true), "  ")}})),
+                      {{p.PropName}}: {{instance}}?.{{p.MemberInfo?.MemberName}}?.map(x{{depth}} => ({{WithIndent(Render(p, $"x{depth}", true), "  ")}})),
                     """ : $$"""
-                      {{p.PropName}}: {{WithIndent(Render(p, $"{item}?.{p.MemberInfo?.MemberName}", false), "  ")}},
+                      {{p.PropName}}: {{WithIndent(Render(p, $"{instance}?.{p.MemberInfo?.MemberName}", false), "  ")}},
                     """)}}
                     }
                     """;
             }
 
-            return $$"""
-                /** 登録更新される型を画面に表示されるデータ型に変換します。 */
-                export const {{ConvertFnNameToDisplayDataType}} = (
-                  {{mainArgName}}: {{mainArgType}},
-                ): {{TsTypeName}} => {
-
-                  return {{WithIndent(Render(this, mainArgName, false), "  ")}}
-                }
-                """;
+            return Render(this, mainArgName, false);
         }
 
         internal string RenderTypeScriptDataClassDeclaration() {
@@ -256,7 +234,7 @@ namespace Nijo.Features.Storing {
                 return $$"""
                     /** {{agg.Item.DisplayName}}の画面表示用データ */
                     export type {{dataClass.TsTypeName}} = {
-                    {{If(agg.IsRoot(), () => $$"""
+                    {{If(agg.IsRoot() || agg.IsChildrenMember(), () => $$"""
                       {{LOCAL_REPOS_ITEMKEY}}: Util.ItemKey
                       {{EXISTS_IN_REMOTE_REPOS}}: boolean
                       {{WILL_BE_CHANGED}}: boolean
@@ -265,9 +243,6 @@ namespace Nijo.Features.Storing {
                       {{OWN_MEMBERS}}: {
                     {{dataClass.GetOwnProps().SelectTextTemplate(p => $$"""
                         {{p.PropName}}?: {{p.PropType}}
-                    """)}}
-                    {{If(agg.IsChildrenMember(), () => $$"""
-                        {{TransactionScopeDataClass.IS_STORED_DATA}}: boolean,
                     """)}}
                       }
                     {{dataClass.GetChildProps().SelectTextTemplate(p => $$"""

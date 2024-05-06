@@ -90,13 +90,7 @@ namespace Nijo.Features.Storing {
                                     const res = await get({{find.GetUrlStringForReact(keyArray.Select((_, i) => $"editRange[{i}].toString()"))}})
                                     if (!res.ok) return []
                                     const item = res.data as AggregateType.{{agg.Item.TypeScriptTypeName}}
-                                    return [AggregateType.{{displayData.ConvertFnNameToDisplayDataType}}({
-                                      item,
-                                      itemKey: getItemKey(item),
-                                      existsInRemoteRepository: true,
-                                      willBeChanged: false,
-                                      willBeDeleted: false,
-                                    })]
+                                    return [{{WithIndent(displayData.RenderConvertToDisplayDataClass("item"), "        ")}}]
                                   }
                                 } else {
                                   const searchParam = new URLSearchParams()
@@ -105,13 +99,7 @@ namespace Nijo.Features.Storing {
                                   const url = `{{findMany.GetUrlStringForReact()}}?${searchParam}`
                                   const res = await post<AggregateType.{{agg.Item.TypeScriptTypeName}}[]>(url, editRange.filter)
                                   if (!res.ok) return []
-                                  return res.data.map(item => AggregateType.{{displayData.ConvertFnNameToDisplayDataType}}({
-                                    item,
-                                    itemKey: getItemKey(item),
-                                    existsInRemoteRepository: true,
-                                    willBeChanged: false,
-                                    willBeDeleted: false,
-                                  }))
+                                  return res.data.map(item => ({{WithIndent(displayData.RenderConvertToDisplayDataClass("item"), "      ")}}))
                                 }
                               }, [editRange, getItemKey, get, post])
 

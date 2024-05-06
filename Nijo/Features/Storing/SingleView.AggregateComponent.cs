@@ -88,7 +88,7 @@ namespace Nijo.Features.Storing {
                       const state = item ? Util.getLocalRepositoryState(item) : undefined
 
                       const handleCreate = useCallback(() => {
-                        setValue({{registerName}}, {{WithIndent(dataClass.RenderNewObjectLiteral("UUID.generate() as Util.ItemKey"), "    ")}})
+                        setValue({{registerName}}, {{WithIndent(dataClass.RenderNewObjectLiteral(), "    ")}})
                       }, [setValue])
                       const handleDelete = useCallback(() => {
                         const current = getValues({{registerName}})
@@ -435,11 +435,8 @@ namespace Nijo.Features.Storing {
                 } else if (_mode == SingleView.E_Type.Edit
                            && schalar is AggregateMember.ValueMember vm
                            && vm.IsKey) {
-                    if (_aggregate.IsRoot()) {
-                        reactComponent.Props.Add("readOnly", $"!item?.{DisplayDataClass.EXISTS_IN_REMOTE_REPOS}");
-
-                    } else if (_aggregate.IsChildrenMember()) {
-                        reactComponent.Props.Add("readOnly", $"item?.{DisplayDataClass.OWN_MEMBERS}.{TransactionScopeDataClass.IS_STORED_DATA}");
+                    if (_aggregate.IsRoot() || _aggregate.IsChildrenMember()) {
+                        reactComponent.Props.Add("readOnly", $"item?.{DisplayDataClass.EXISTS_IN_REMOTE_REPOS}");
                     }
                 }
 
@@ -496,11 +493,8 @@ namespace Nijo.Features.Storing {
                 if (prop is AggregateMember.ValueMember vm && vm.IsKey
                     || prop is AggregateMember.Ref @ref && @ref.Relation.IsPrimary()) {
 
-                    if (_aggregate.IsRoot()) {
-                        return $"{readOnly}={{!item?.{DisplayDataClass.EXISTS_IN_REMOTE_REPOS}}}";
-
-                    } else if (_aggregate.IsChildrenMember()) {
-                        return $"{readOnly}={{item?.{DisplayDataClass.OWN_MEMBERS}.{TransactionScopeDataClass.IS_STORED_DATA}}}";
+                    if (_aggregate.IsRoot() || _aggregate.IsChildrenMember()) {
+                        return $"{readOnly}={{item?.{DisplayDataClass.EXISTS_IN_REMOTE_REPOS}}}";
                     }
                 }
             }

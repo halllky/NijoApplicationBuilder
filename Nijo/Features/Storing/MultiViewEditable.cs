@@ -125,7 +125,7 @@ namespace Nijo.Features.Storing {
 
                       // データ編集
                       const handleAdd: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
-                        const newRow: AggregateType.{{dataClass.TsTypeName}} = {{WithIndent(dataClass.RenderNewObjectLiteral("UUID.generate() as Util.ItemKey"), "    ")}}
+                        const newRow: AggregateType.{{dataClass.TsTypeName}} = {{WithIndent(dataClass.RenderNewObjectLiteral(), "    ")}}
                         append(newRow)
                       }, [append])
 
