@@ -224,13 +224,11 @@ namespace Nijo.Features.Storing {
         /// データ型変換関数 (<see cref="TransactionScopeDataClass"/> => <see cref="DisplayDataClass"/>)
         /// </summary>
         internal string RenderConvertToDisplayDataClass(string mainArgName) {
-            var mainArgName = $"reposItem{MainAggregate.Item.ClassName}";
-            var mainArgType = $"Util.LocalRepositoryItem<{MainAggregate.Item.TypeScriptTypeName}>";
             var refArgs = GetRefFromPropsRecursively()
                 .DistinctBy(p => p.Item1.MainAggregate)
                 .Select(p => new {
                     RelProp = p,
-                    ArgName = $"reposItemList{p.Item1.MainAggregate.Item.ClassName}",
+                    ArgName = $"{p.Item1.MainAggregate.Item.ClassName}Items",
                 }).ToArray();
 
             // 子孫要素を参照するデータを引数の配列中から探すためにはキーで引き当てる必要があるが、
@@ -303,7 +301,7 @@ namespace Nijo.Features.Storing {
                       {{p.PropName}}: {{WithIndent(Render(p, $"{instance}?.{p.MemberInfo?.MemberName}", false), "  ")}},
                     """)}}
                     {{refProps.SelectTextTemplate(x => $$"""
-                      {{x.RefProp.PropName}}: {{x.Args.ArgName}}.find(y => y.{{LOCAL_REPOS_ITEMKEY}} === {{instance}}.{{LOCAL_REPOS_ITEMKEY}}),
+                      {{x.RefProp.PropName}}: {{x.Args.ArgName}}.find(y => y.{{LOCAL_REPOS_ITEMKEY}} === JSON.stringify([{{keys.Select(k => pkVarNames[k.Declared]).Join(", ")}}])),
                     """)}}
                     }
                     """;

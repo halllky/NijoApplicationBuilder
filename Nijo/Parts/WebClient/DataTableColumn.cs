@@ -129,7 +129,7 @@ namespace Nijo.Parts.WebClient {
                           const { setValue } = Util.useFormContextEx<AggregateType.{{pageRoot.TsTypeName}}>()
 
                           const create{{value}} = useCallback(() => {
-                            setValue(`{{refFrom.MainAggregate.GetRHFRegisterName(["row.index"]).Join(".")}}`, {{WithIndent(refFromDisplayData.RenderNewObjectLiteral($"row.original.{rowAccessor}.{DisplayDataClass.LOCAL_REPOS_ITEMKEY}"), "    ")}})
+                            setValue(`{{refFrom.MainAggregate.GetRHFRegisterName(["row.index"]).Join(".")}}`, {{WithIndent(refFromDisplayData.RenderNewObjectLiteral(), "    ")}})
                           }, [setValue, row.index])
 
                           const delete{{value}} = useCallback(() => {
