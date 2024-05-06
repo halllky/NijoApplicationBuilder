@@ -340,16 +340,16 @@ namespace Nijo.Features.Storing {
         /// エントリーからのパスを <see cref="DisplayDataClass"/> のデータ構造にあわせて返す。
         /// たとえば自身のメンバーならその前に <see cref="DisplayDataClass.OWN_MEMBERS"/> を挟むなど
         /// </summary>
-        internal static IEnumerable<string> GetFullPathAsSingleViewDataClass(this GraphNode<Aggregate> aggregate) {
-            return GetFullPathAsSingleViewDataClass(aggregate, out var _);
+        internal static IEnumerable<string> GetFullPathAsSingleViewDataClass(this GraphNode<Aggregate> aggregate, GraphNode<Aggregate>? since = null) {
+            return GetFullPathAsSingleViewDataClass(aggregate, since, out var _);
         }
         /// <summary>
         /// エントリーからのパスを <see cref="DisplayDataClass"/> のデータ構造にあわせて返す。
         /// たとえば自身のメンバーならその前に <see cref="DisplayDataClass.OWN_MEMBERS"/> を挟むなど
         /// </summary>
-        internal static IEnumerable<string> GetFullPathAsSingleViewDataClass(this AggregateMember.AggregateMemberBase member) {
+        internal static IEnumerable<string> GetFullPathAsSingleViewDataClass(this AggregateMember.AggregateMemberBase member, GraphNode<Aggregate>? since = null) {
             bool enumeratingRefTargetKeyName;
-            foreach (var path in GetFullPathAsSingleViewDataClass(member.Owner, out enumeratingRefTargetKeyName)) {
+            foreach (var path in GetFullPathAsSingleViewDataClass(member.Owner, since, out enumeratingRefTargetKeyName)) {
                 yield return path;
             }
             if (!enumeratingRefTargetKeyName) {
@@ -357,11 +357,14 @@ namespace Nijo.Features.Storing {
             }
             yield return member.MemberName;
         }
-        private static IEnumerable<string> GetFullPathAsSingleViewDataClass(this GraphNode<Aggregate> aggregate, out bool enumeratingRefTargetKeyName) {
+        private static IEnumerable<string> GetFullPathAsSingleViewDataClass(this GraphNode<Aggregate> aggregate, GraphNode<Aggregate>? since, out bool enumeratingRefTargetKeyName) {
             var paths = new List<string>();
             enumeratingRefTargetKeyName = false;
 
-            foreach (var edge in aggregate.PathFromEntry()) {
+            var pathFromEntry = aggregate.PathFromEntry();
+            if (since != null) pathFromEntry = pathFromEntry.Since(since);
+
+            foreach (var edge in pathFromEntry) {
                 if (edge.Source == edge.Terminal) {
 
                     if (edge.IsParentChild()) {
