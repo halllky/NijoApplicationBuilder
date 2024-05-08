@@ -4,6 +4,7 @@ using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -50,19 +51,22 @@ namespace Nijo.Features.Storing {
 
                         var commitable = agg.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key;
 
-                        var refRepositories = displayData
-                            .GetRefFromPropsRecursively()
-                            .DistinctBy(x => x.Item1.MainAggregate)
-                            .Select(p => new {
-                                Repos = new LocalRepository(p.Item1.MainAggregate),
-                                FindMany = new FindManyFeature(p.Item1.MainAggregate),
-                                Aggregate = p.Item1.MainAggregate,
-                                DataClassProp = p,
+                        var refRepositories = agg
+                            .EnumerateThisAndDescendants()
+                            .Select(a => new DisplayDataClass(a))
+                            .SelectMany(
+                                a =>  a.GetRefFromProps(),
+                                (x, refFromProp) => new { DisplayData = x, RefFrom = refFromProp })
+                            .Select(x => new {
+                                RefTo = x.DisplayData,
+                                x.RefFrom,
+                                Repos = new LocalRepository(x.RefFrom.MainAggregate),
+                                FindMany = new FindManyFeature(x.RefFrom.MainAggregate),
 
                                 // この画面のメイン集約を参照する関連集約をまとめて読み込むため、
                                 // SingleViewのURLのキーで関連集約のAPIへの検索をかけたい。
                                 // そのために当該検索条件のうち関連集約の検索に関係するメンバーの一覧
-                                RootAggregateMembersForSingleViewLoading = p.Item1.MainAggregate
+                                RootAggregateMembersForSingleViewLoading = x.RefFrom.MainAggregate
                                     .GetEntryReversing()
                                     .As<Aggregate>()
                                     .GetMembers()
@@ -72,7 +76,7 @@ namespace Nijo.Features.Storing {
                                 // この画面のメイン集約を参照する関連集約をまとめて読み込むため、
                                 // MultiViewの画面上部の検索条件の値で関連集約のAPIへの検索をかけたい。
                                 // そのために当該検索条件のうち関連集約の検索に関係するメンバーの一覧
-                                RootAggregateMembersForLoad = p.Item1.MainAggregate
+                                RootAggregateMembersForLoad = x.RefFrom.MainAggregate
                                     .GetEntryReversing()
                                     .As<Aggregate>()
                                     .GetMembers()
@@ -97,6 +101,31 @@ namespace Nijo.Features.Storing {
                             return matched.Single();
                         }
 
+                        static string RenderSelectMany(GraphNode<Aggregate> agg) {
+                            var builder = new StringBuilder();
+                            var array = false;
+                            foreach (var e in agg.PathFromEntry()) {
+
+                                // 念のため
+                                if (!e.IsParentChild()) throw new InvalidOperationException("このメソッドには同一ツリー内の集約しか来ないはず");
+
+                                var edge = e.As<Aggregate>();
+                                var prop = new DisplayDataClass(edge.Initial)
+                                    .GetChildProps()
+                                    .Single(p => p.MainAggregate == edge.Terminal);
+
+                                if (array && edge.Terminal.IsChildrenMember()) {
+                                    builder.Append($"?.flatMap(x => x.{prop.PropName} ?? [])");
+                                } else if (array) {
+                                    builder.Append($"?.map(x => x.{prop.PropName})");
+                                } else {
+                                    builder.Append($"?.{prop.PropName}");
+                                    if (edge.Terminal.IsChildrenMember()) array = true;
+                                }
+                            }
+                            return builder.ToString();
+                        }
+
                         return $$"""
                             /** {{agg.Item.DisplayName}}データの読み込みと保存を行います。 */
                             export const {{localRepositosy.HookName}} = (editRange?
@@ -115,8 +144,8 @@ namespace Nijo.Features.Storing {
                               const [ready3, setReady3] = useState(false)
                             {{refRepositories.SelectTextTemplate(x => $$"""
 
-                              // {{x.Aggregate.Item.DisplayName}}のローカルリポジトリとリモートリポジトリへのデータ読み書き処理
-                              const {{x.Aggregate.Item.ClassName}}filter: { filter: AggregateType.{{x.FindMany.TypeScriptConditionClass}} } = useMemo(() => {
+                              // {{x.RefFrom.MainAggregate.Item.DisplayName}}のローカルリポジトリとリモートリポジトリへのデータ読み書き処理
+                              const {{x.RefFrom.MainAggregate.Item.ClassName}}filter: { filter: AggregateType.{{x.FindMany.TypeScriptConditionClass}} } = useMemo(() => {
                                 const f = AggregateType.{{x.FindMany.TypeScriptConditionInitializerFn}}()
                                 if (typeof editRange === 'string') {
                                   // 新規作成データ(未コミット)の編集の場合
@@ -143,12 +172,12 @@ namespace Nijo.Features.Storing {
                                 return { filter: f }
                               }, [editRange])
                               const {
-                                ready: {{x.Aggregate.Item.ClassName}}IsReady,
-                                items: {{x.Aggregate.Item.ClassName}}Items,
+                                ready: {{x.RefFrom.MainAggregate.Item.ClassName}}IsReady,
+                                items: {{x.RefFrom.MainAggregate.Item.ClassName}}Items,
                             {{If(commitable, () => $$"""
-                                commit: commit{{x.Aggregate.Item.ClassName}},
+                                commit: commit{{x.RefFrom.MainAggregate.Item.ClassName}},
                             """)}}
-                              } = {{x.Repos.HookName}}({{x.Aggregate.Item.ClassName}}filter)
+                              } = {{x.Repos.HookName}}({{x.RefFrom.MainAggregate.Item.ClassName}}filter)
                             """)}}
 
                               const [remoteAndLocalItems, setRemoteAndLocalItems] = useState<AggregateType.{{displayData.TsTypeName}}[]>(() => [])
@@ -161,6 +190,9 @@ namespace Nijo.Features.Storing {
                               }, [])
 
                               const loadRemoteItems = useCallback(async (): Promise<AggregateType.{{displayData.TsTypeName}}[]> => {
+                            {{refRepositories.SelectTextTemplate(x => $$"""
+                                if (!{{x.RefFrom.MainAggregate.Item.ClassName}}IsReady) return [] // {{x.RefFrom.MainAggregate.Item.DisplayName}}の読み込み完了まで待機
+                            """)}}
                                 if (editRange === undefined) {
                                   return [] // 画面表示直後の検索条件が決まっていない場合など
 
@@ -185,7 +217,7 @@ namespace Nijo.Features.Storing {
                                   if (!res.ok) return []
                                   return res.data.map(item => ({{WithIndent(displayData.RenderConvertToDisplayDataClass("item"), "      ")}}))
                                 }
-                              }, [editRange, getItemKey, get, post{{refRepositories.Select(x => $", {x.Aggregate.Item.ClassName}IsReady").Join("")}}])
+                              }, [editRange, getItemKey, get, post{{refRepositories.Select(x => $", {x.RefFrom.MainAggregate.Item.ClassName}IsReady, {x.RefFrom.MainAggregate.Item.ClassName}Items").Join("")}}])
 
                               const loadLocalItems = useCallback(async (): Promise<AggregateType.{{displayData.TsTypeName}}[]> => {
                                 if (editRange === undefined) {
@@ -243,14 +275,32 @@ namespace Nijo.Features.Storing {
                               useEffect(() => {
                                 reload()
                               }, [reload])
-
                             {{If(commitable, () => $$"""
+
                               /** 引数に渡されたデータをローカルリポジトリに登録します。 */
                               const commit = useCallback(async (...items: AggregateType.{{displayData.TsTypeName}}[]): Promise<AggregateType.{{displayData.TsTypeName}}[]> => {
                                 const result: AggregateType.{{displayData.TsTypeName}}[] = []
 
                                 for (const newValue of items) {
                                   if (newValue.willBeDeleted && !newValue.existsInRemoteRepository) {
+                            {{refRepositories.SelectTextTemplate(x => $$"""
+                            {{If(x.RefTo.MainAggregate.EnumerateAncestorsAndThis().Any(y => y.IsChildrenMember()), () => $$"""
+                                    const arr{{x.RefFrom.MainAggregate.Item.ClassName}}: AggregateType.{{x.RefFrom.TsTypeName}}[] = []
+                                    for (const x of newValue{{RenderSelectMany(x.RefTo.MainAggregate)}} ?? []) {
+                                      if (x.{{x.RefFrom.PropName}} === undefined) continue
+                                      arr{{x.RefFrom.MainAggregate.Item.ClassName}}.push(x.{{x.RefFrom.PropName}})
+                                      delete x.{{x.RefFrom.PropName}}
+                                    }
+                                    await commit{{x.RefFrom.MainAggregate.Item.ClassName}}(...arr{{x.RefFrom.MainAggregate.Item.ClassName}})
+
+                            """).Else(() => $$"""
+                                    if (newValue.{{x.RefFrom.PropName}}) {
+                                      await commit{{x.RefFrom.MainAggregate.Item.ClassName}}(newValue.{{x.RefFrom.PropName}})
+                                      delete newValue.{{x.RefFrom.PropName}}
+                                    }
+
+                            """)}}
+                            """)}}
                                     await queryToTable(table => table.delete(['{{localRepositosy.DataTypeKey}}', newValue.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}}]))
 
                                   } else if (newValue.willBeChanged || newValue.willBeDeleted) {
@@ -271,9 +321,9 @@ namespace Nijo.Features.Storing {
                                 }
                                 await reloadContext()
                                 return result
-                              }, [reloadContext, getItemName, queryToTable])
-
+                              }, [reloadContext, getItemName, queryToTable{{refRepositories.Select(x => $", commit{x.RefFrom.MainAggregate.Item.ClassName}").Join("")}}])
                             """)}}
+
                               return {
                                 ready: ready1 && ready2 && ready3,
                                 items: remoteAndLocalItems,

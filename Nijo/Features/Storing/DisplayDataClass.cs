@@ -273,7 +273,7 @@ namespace Nijo.Features.Storing {
                             .OfType<AggregateMember.ValueMember>();
                         return $$"""
                             {{instance}}?.{{m.MemberName}}
-                              ? JSON.stringify([{{keys.Select(k => $"{instance}.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]) as ItemKey
+                              ? JSON.stringify([{{keys.Select(k => $"{instance}?.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]) as ItemKey
                               : undefined
                             """;
 
