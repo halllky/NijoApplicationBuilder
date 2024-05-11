@@ -247,7 +247,8 @@ namespace Nijo.Features.Storing {
                     // 実際にはここでcontinueされるのは親のキーだけのはず。Render関数はルートから順番に呼び出されるので
                     if (pkVarNames.ContainsKey(key.Declared)) continue;
 
-                    pkVarNames.Add(key.Declared, $"{instance}.{key.Declared.GetFullPath().Join("?.")}");
+                    /// 変換元のデータ型が <see cref="TransactionScopeDataClass"/> のため、キーが <see cref="RefTargetKeyName"/> の可能性がある。そのためキーのオーナーからのフルパスにしている
+                    pkVarNames.Add(key.Declared, $"{instance}?.{key.Declared.GetFullPath(since: key.Owner).Join("?.")}");
                 }
 
                 var ownMembers = dc.MainAggregate

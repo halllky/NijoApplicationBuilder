@@ -259,7 +259,8 @@ namespace Nijo.Features.Storing {
                 var colDefs = DataTableColumn.FromMembers(
                         "item",
                         _aggregate,
-                        _mode == SingleView.E_Type.View);
+                        _mode == SingleView.E_Type.View,
+                        args);
 
                 return $$"""
                     const {{componentName}} = ({{{args.Join(", ")}} }: {
@@ -293,7 +294,7 @@ namespace Nijo.Features.Storing {
                         columns: [
                           {{WithIndent(colDefs.SelectTextTemplate(def => def.Render()), "      ")}}
                         ],
-                      }), [update])
+                      }), [{{args.Select(a => $"{a}, ").Join("")}}update])
 
                       return (
                         <VForm.Item wide

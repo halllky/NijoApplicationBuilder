@@ -11,10 +11,18 @@ using System.Threading.Tasks;
 namespace Nijo.Parts.WebClient {
     internal class DataTableColumn {
 
+        /// <summary>
+        /// 集約のメンバーを列挙して列定義を表すオブジェクトを返します。
+        /// </summary>
+        /// <param name="rowAccessor">DataTableの行を表すオブジェクトからその行オブジェクト内のデータオブジェクトのルートまでのパス。</param>
+        /// <param name="dataTableOwner">このDataTableにはこの集約のメンバーの列が表示されます。</param>
+        /// <param name="readOnly">このDataTableが読み取り専用か否か</param>
+        /// <param name="arrayIndexVarNamesFromFormRootToDataTableOwner">React Hook Forms の記法において、フォームのルートからdataTableOwnerまでのパスに含まれる配列インデックスを表す変数名</param>
         internal static IEnumerable<DataTableColumn> FromMembers(
             string rowAccessor,
             GraphNode<Aggregate> dataTableOwner,
-            bool readOnly) {
+            bool readOnly,
+            IReadOnlyList<string>? arrayIndexVarNamesFromFormRootToDataTableOwner = null) {
 
             // ----------------------------------------------------
             // AggregateMember列
@@ -117,7 +125,12 @@ namespace Nijo.Parts.WebClient {
                 var pageRoot = new DisplayDataClass(dataTableOwner.GetEntry().As<Aggregate>());
                 var refFromDisplayData = new DisplayDataClass(refFrom.MainAggregate);
                 var value = refFrom.MainAggregate.Item.ClassName;
-                var registerName = refFrom.MainAggregate.GetRHFRegisterName(["row.index"]);
+
+                // ページのルート集約から被参照集約までのパス
+                var arrayIndexes = new List<string>();
+                if (arrayIndexVarNamesFromFormRootToDataTableOwner != null) arrayIndexes.AddRange(arrayIndexVarNamesFromFormRootToDataTableOwner);
+                arrayIndexes.Add("row.index");
+                var registerName = refFrom.MainAggregate.GetRHFRegisterName(arrayIndexes);
 
                 return new DataTableColumn {
                     Id = $"ref-from-{refFrom.PropName}",
@@ -129,11 +142,11 @@ namespace Nijo.Parts.WebClient {
                           const { setValue } = Util.useFormContextEx<AggregateType.{{pageRoot.TsTypeName}}>()
 
                           const create{{value}} = useCallback(() => {
-                            setValue(`{{refFrom.MainAggregate.GetRHFRegisterName(["row.index"]).Join(".")}}`, {{WithIndent(refFromDisplayData.RenderNewObjectLiteral(), "    ")}})
+                            setValue(`{{registerName.Join(".")}}`, {{WithIndent(refFromDisplayData.RenderNewObjectLiteral(), "    ")}})
                           }, [setValue, row.index])
 
                           const delete{{value}} = useCallback(() => {
-                            setValue(`{{refFrom.MainAggregate.GetRHFRegisterName(["row.index"]).Join(".")}}.{{DisplayDataClass.WILL_BE_DELETED}}`, true)
+                            setValue(`{{registerName.Join(".")}}.{{DisplayDataClass.WILL_BE_DELETED}}`, true)
                           }, [setValue, row.index])
 
                           return <>
