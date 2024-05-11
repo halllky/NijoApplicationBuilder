@@ -283,25 +283,25 @@ namespace Nijo.Features.Storing {
                                 const result: AggregateType.{{displayData.TsTypeName}}[] = []
 
                                 for (const newValue of items) {
-                                  if (newValue.willBeDeleted && !newValue.existsInRemoteRepository) {
                             {{refRepositories.SelectTextTemplate(x => $$"""
                             {{If(x.RefTo.MainAggregate.EnumerateAncestorsAndThis().Any(y => y.IsChildrenMember()), () => $$"""
-                                    const arr{{x.RefFrom.MainAggregate.Item.ClassName}}: AggregateType.{{x.RefFrom.TsTypeName}}[] = []
-                                    for (const x of newValue{{RenderSelectMany(x.RefTo.MainAggregate)}} ?? []) {
-                                      if (x.{{x.RefFrom.PropName}} === undefined) continue
-                                      arr{{x.RefFrom.MainAggregate.Item.ClassName}}.push(x.{{x.RefFrom.PropName}})
-                                      delete x.{{x.RefFrom.PropName}}
-                                    }
-                                    await commit{{x.RefFrom.MainAggregate.Item.ClassName}}(...arr{{x.RefFrom.MainAggregate.Item.ClassName}})
+                                  const arr{{x.RefFrom.MainAggregate.Item.ClassName}}: AggregateType.{{x.RefFrom.TsTypeName}}[] = []
+                                  for (const x of newValue{{RenderSelectMany(x.RefTo.MainAggregate)}} ?? []) {
+                                    if (x.{{x.RefFrom.PropName}} === undefined) continue
+                                    arr{{x.RefFrom.MainAggregate.Item.ClassName}}.push(x.{{x.RefFrom.PropName}})
+                                    delete x.{{x.RefFrom.PropName}}
+                                  }
+                                  await commit{{x.RefFrom.MainAggregate.Item.ClassName}}(...arr{{x.RefFrom.MainAggregate.Item.ClassName}})
 
                             """).Else(() => $$"""
-                                    if (newValue.{{x.RefFrom.PropName}}) {
-                                      await commit{{x.RefFrom.MainAggregate.Item.ClassName}}(newValue.{{x.RefFrom.PropName}})
-                                      delete newValue.{{x.RefFrom.PropName}}
-                                    }
+                                  if (newValue.{{x.RefFrom.PropName}}) {
+                                    await commit{{x.RefFrom.MainAggregate.Item.ClassName}}(newValue.{{x.RefFrom.PropName}})
+                                    delete newValue.{{x.RefFrom.PropName}}
+                                  }
 
                             """)}}
                             """)}}
+                                  if (newValue.willBeDeleted && !newValue.existsInRemoteRepository) {
                                     await queryToTable(table => table.delete(['{{localRepositosy.DataTypeKey}}', newValue.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}}]))
 
                                   } else if (newValue.willBeChanged || newValue.willBeDeleted) {
