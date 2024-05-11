@@ -190,9 +190,6 @@ namespace Nijo.Features.Storing {
                               }, [])
 
                               const loadRemoteItems = useCallback(async (): Promise<AggregateType.{{displayData.TsTypeName}}[]> => {
-                            {{refRepositories.SelectTextTemplate(x => $$"""
-                                if (!{{x.RefFrom.MainAggregate.Item.ClassName}}IsReady) return [] // {{x.RefFrom.MainAggregate.Item.DisplayName}}の読み込み完了まで待機
-                            """)}}
                                 if (editRange === undefined) {
                                   return [] // 画面表示直後の検索条件が決まっていない場合など
 
@@ -217,7 +214,7 @@ namespace Nijo.Features.Storing {
                                   if (!res.ok) return []
                                   return res.data.map(item => ({{WithIndent(displayData.RenderConvertToDisplayDataClass("item"), "      ")}}))
                                 }
-                              }, [editRange, getItemKey, get, post{{refRepositories.Select(x => $", {x.RefFrom.MainAggregate.Item.ClassName}IsReady, {x.RefFrom.MainAggregate.Item.ClassName}Items").Join("")}}])
+                              }, [editRange, getItemKey, get, post{{refRepositories.Select(x => $", {x.RefFrom.MainAggregate.Item.ClassName}Items").Join("")}}])
 
                               const loadLocalItems = useCallback(async (): Promise<AggregateType.{{displayData.TsTypeName}}[]> => {
                                 if (editRange === undefined) {
@@ -257,6 +254,10 @@ namespace Nijo.Features.Storing {
 
                               const reload = useCallback(async () => {
                                 if (!ready1 || !ready2) return
+                                if (editRange === undefined) return // 画面表示直後の検索条件が決まっていない場合など
+                            {{refRepositories.SelectTextTemplate(x => $$"""
+                                if (!{{x.RefFrom.MainAggregate.Item.ClassName}}IsReady) return // {{x.RefFrom.MainAggregate.Item.DisplayName}}の読み込み完了まで待機
+                            """)}}
                                 setReady3(false)
                                 try {
                                   const remoteItems = await loadRemoteItems()
@@ -270,7 +271,7 @@ namespace Nijo.Features.Storing {
                                 } finally {
                                   setReady3(true)
                                 }
-                              }, [ready1, ready2, loadRemoteItems, loadLocalItems, getItemKey])
+                              }, [ready1, ready2{{refRepositories.Select(x => $", {x.RefFrom.MainAggregate.Item.ClassName}IsReady").Join("")}}, editRange, loadRemoteItems, loadLocalItems, getItemKey])
 
                               useEffect(() => {
                                 reload()
@@ -325,7 +326,7 @@ namespace Nijo.Features.Storing {
                             """)}}
 
                               return {
-                                ready: ready1 && ready2 && ready3,
+                                ready: ready1 && ready2 && ready3{{refRepositories.Select(x => $" && {x.RefFrom.MainAggregate.Item.ClassName}IsReady").Join("")}},
                                 items: remoteAndLocalItems,
                                 reload,
                             {{If(commitable, () => $$"""
