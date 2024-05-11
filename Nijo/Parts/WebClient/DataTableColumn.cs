@@ -17,11 +17,15 @@ namespace Nijo.Parts.WebClient {
         /// <param name="rowAccessor">DataTableの行を表すオブジェクトからその行オブジェクト内のデータオブジェクトのルートまでのパス。</param>
         /// <param name="dataTableOwner">このDataTableにはこの集約のメンバーの列が表示されます。</param>
         /// <param name="readOnly">このDataTableが読み取り専用か否か</param>
+        /// <param name="useFormContextType">useFormContextのジェネリック型</param>
+        /// <param name="registerPathModifier">ReactHookFormの登録パスの編集関数</param>
         /// <param name="arrayIndexVarNamesFromFormRootToDataTableOwner">React Hook Forms の記法において、フォームのルートからdataTableOwnerまでのパスに含まれる配列インデックスを表す変数名</param>
         internal static IEnumerable<DataTableColumn> FromMembers(
             string rowAccessor,
             GraphNode<Aggregate> dataTableOwner,
             bool readOnly,
+            string? useFormContextType = null,
+            Func<string, string>? registerPathModifier = null,
             IReadOnlyList<string>? arrayIndexVarNamesFromFormRootToDataTableOwner = null) {
 
             // ----------------------------------------------------
@@ -122,7 +126,6 @@ namespace Nijo.Parts.WebClient {
             // テーブル中の被参照集約の列のインスタンスを追加または削除するボタン
             DataTableColumn RefFromButtonColumn(DisplayDataClass.RelationProp refFrom) {
                 var tableArrayRegisterName = dataTableOwner.GetRHFRegisterName();
-                var pageRoot = new DisplayDataClass(dataTableOwner.GetEntry().As<Aggregate>());
                 var refFromDisplayData = new DisplayDataClass(refFrom.MainAggregate);
                 var value = refFrom.MainAggregate.Item.ClassName;
 
@@ -130,7 +133,8 @@ namespace Nijo.Parts.WebClient {
                 var arrayIndexes = new List<string>();
                 if (arrayIndexVarNamesFromFormRootToDataTableOwner != null) arrayIndexes.AddRange(arrayIndexVarNamesFromFormRootToDataTableOwner);
                 arrayIndexes.Add("row.index");
-                var registerName = refFrom.MainAggregate.GetRHFRegisterName(arrayIndexes);
+                var registerName = refFrom.MainAggregate.GetRHFRegisterName(arrayIndexes).Join(".");
+                if (registerPathModifier != null) registerName = registerPathModifier(registerName);
 
                 return new DataTableColumn {
                     Id = $"ref-from-{refFrom.PropName}",
@@ -138,15 +142,15 @@ namespace Nijo.Parts.WebClient {
                     HeaderGroupName = refFrom.MainAggregate.Item.ClassName,
                     Cell = $$"""
                         ({ row }) => {
-                          const { watch, setValue } = Util.useFormContextEx<AggregateType.{{pageRoot.TsTypeName}}>()
-                          const {{value}} = watch(`{{registerName.Join(".")}}`, {{WithIndent(refFromDisplayData.RenderNewObjectLiteral(), "    ")}})
+                          const { watch, setValue } = Util.useFormContextEx<{{useFormContextType}}>()
+                          const {{value}} = watch(`{{registerName}}`)
 
                           const create{{value}} = useCallback(() => {
-                            setValue(`{{registerName.Join(".")}}`, {{WithIndent(refFromDisplayData.RenderNewObjectLiteral(), "    ")}})
+                            setValue(`{{registerName}}`, {{WithIndent(refFromDisplayData.RenderNewObjectLiteral(), "    ")}})
                           }, [setValue, row.index])
 
                           const delete{{value}} = useCallback(() => {
-                            setValue(`{{registerName.Join(".")}}.{{DisplayDataClass.WILL_BE_DELETED}}`, true)
+                            setValue(`{{registerName}}.{{DisplayDataClass.WILL_BE_DELETED}}`, true)
                           }, [setValue, row.index])
 
                           return <>

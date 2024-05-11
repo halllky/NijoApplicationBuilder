@@ -139,9 +139,8 @@ namespace Nijo.Features.Storing {
                             
                               const [, dispatchMsg] = useMsgContext()
                               const { get, post } = useHttpRequest()
-                              const { ready: ready1, reload: reloadContext } = useLocalRepositoryContext()
+                              const { reload: reloadContext } = useLocalRepositoryContext()
                               const { ready: ready2, openCursor, queryToTable } = useIndexedDbLocalRepositoryTable()
-                              const [ready3, setReady3] = useState(false)
                             {{refRepositories.SelectTextTemplate(x => $$"""
 
                               // {{x.RefFrom.MainAggregate.Item.DisplayName}}のローカルリポジトリとリモートリポジトリへのデータ読み書き処理
@@ -173,67 +172,59 @@ namespace Nijo.Features.Storing {
                               }, [editRange])
                               const {
                                 ready: {{x.RefFrom.MainAggregate.Item.ClassName}}IsReady,
-                                items: {{x.RefFrom.MainAggregate.Item.ClassName}}Items,
+                                load: load{{x.RefFrom.MainAggregate.Item.ClassName}},
                             {{If(commitable, () => $$"""
                                 commit: commit{{x.RefFrom.MainAggregate.Item.ClassName}},
                             """)}}
                               } = {{x.Repos.HookName}}({{x.RefFrom.MainAggregate.Item.ClassName}}filter)
                             """)}}
 
-                              const [remoteAndLocalItems, setRemoteAndLocalItems] = useState<AggregateType.{{displayData.TsTypeName}}[]>(() => [])
+                              const load = useCallback(async (): Promise<AggregateType.{{displayData.TsTypeName}}[] | undefined> => {
+                                if (!ready2) return
+                                if (editRange === undefined) return // 画面表示直後の検索条件が決まっていない場合など
 
-                              const getItemKey = useCallback((x: AggregateType.{{agg.Item.TypeScriptTypeName}}): ItemKey => {
-                                return JSON.stringify([{{keys.Select(k => $"x.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]) as ItemKey
-                              }, [])
-                              const getItemName = useCallback((x: AggregateType.{{displayData.TsTypeName}}) => {
-                                return `{{string.Concat(names.Select(n => $"${{x.{n.Declared.GetFullPathAsSingleViewDataClass().Join("?.")}}}"))}}`
-                              }, [])
+                            {{refRepositories.SelectTextTemplate(x => $$"""
+                                const loaded{{x.RefFrom.MainAggregate.Item.ClassName}} = await load{{x.RefFrom.MainAggregate.Item.ClassName}}()
+                                if (!loaded{{x.RefFrom.MainAggregate.Item.ClassName}}) return // {{x.RefFrom.MainAggregate.Item.DisplayName}}の読み込み完了まで待機
+                            """)}}
 
-                              const loadRemoteItems = useCallback(async (): Promise<AggregateType.{{displayData.TsTypeName}}[]> => {
-                                if (editRange === undefined) {
-                                  return [] // 画面表示直後の検索条件が決まっていない場合など
+                                let remoteItems: AggregateType.{{agg.Item.ClassName}}[]
+                                let localItems: AggregateType.{{displayData.TsTypeName}}[]
 
-                                } else if (typeof editRange === 'string') {
-                                  return [] // 新規作成データの場合、まだリモートに存在しないため検索しない
+                                if (typeof editRange === 'string') {
+                                  // 新規作成データの検索。
+                                  // まだリモートに存在しないためローカルにのみ検索をかける
+                                  remoteItems = []
+                                  const found = await queryToTable(table => table.get(['{{localRepositosy.DataTypeKey}}', editRange]))
+                                  localItems = found ? [found.item as AggregateType.{{displayData.TsTypeName}}] : []
 
                                 } else if (Array.isArray(editRange)) {
+                                  // 既存データのキーによる検索（リモートリポジトリ）
                                   if ({{keyArray.Select((_, i) => $"editRange[{i}] === undefined").Join(" || ")}}) {
-                                    return []
+                                    remoteItems = []
                                   } else {
                                     const res = await get({{find.GetUrlStringForReact(keyArray.Select((_, i) => $"editRange[{i}].toString()"))}})
-                                    if (!res.ok) return []
-                                    const item = res.data as AggregateType.{{agg.Item.TypeScriptTypeName}}
-                                    return [{{WithIndent(displayData.RenderConvertToDisplayDataClass("item"), "        ")}}]
+                                    remoteItems = res.ok
+                                      ? [res.data as AggregateType.{{agg.Item.TypeScriptTypeName}}]
+                                      : []
                                   }
+
+                                  // 既存データのキーによる検索（ローカルリポジトリ）
+                                  const itemKey = JSON.stringify(editRange)
+                                  const found = await queryToTable(table => table.get(['{{localRepositosy.DataTypeKey}}', itemKey]))
+                                  localItems = found ? [found.item as AggregateType.{{displayData.TsTypeName}}] : []
+
                                 } else {
+                                  // 既存データの検索条件による検索（リモートリポジトリ）
                                   const searchParam = new URLSearchParams()
                                   if (editRange.skip !== undefined) searchParam.append('{{FindManyFeature.PARAM_SKIP}}', editRange.skip.toString())
                                   if (editRange.take !== undefined) searchParam.append('{{FindManyFeature.PARAM_TAKE}}', editRange.take.toString())
                                   const url = `{{findMany.GetUrlStringForReact()}}?${searchParam}`
                                   const res = await post<AggregateType.{{agg.Item.TypeScriptTypeName}}[]>(url, editRange.filter)
-                                  if (!res.ok) return []
-                                  return res.data.map(item => ({{WithIndent(displayData.RenderConvertToDisplayDataClass("item"), "      ")}}))
-                                }
-                              }, [editRange, getItemKey, get, post{{refRepositories.Select(x => $", {x.RefFrom.MainAggregate.Item.ClassName}Items").Join("")}}])
+                                  remoteItems = res.ok ? res.data : []
 
-                              const loadLocalItems = useCallback(async (): Promise<AggregateType.{{displayData.TsTypeName}}[]> => {
-                                if (editRange === undefined) {
-                                  return [] // 画面表示直後の検索条件が決まっていない場合など
-
-                                } else if (typeof editRange === 'string') {
-                                  // 新規作成データの検索
-                                  const found = await queryToTable(table => table.get(['{{localRepositosy.DataTypeKey}}', editRange]))
-                                  return found ? [found.item as AggregateType.{{displayData.TsTypeName}}] : []
-
-                                } else if (Array.isArray(editRange)) {
-                                  // 既存データのキーによる検索
-                                  const itemKey = JSON.stringify(editRange)
-                                  const found = await queryToTable(table => table.get(['{{localRepositosy.DataTypeKey}}', itemKey]))
-                                  return found ? [found.item as AggregateType.{{displayData.TsTypeName}}] : []
-
-                                } else {
-                                  // 既存データの検索条件による検索
-                                  const localItems: AggregateType.{{displayData.TsTypeName}}[] = []
+                                  // 既存データの検索条件による検索（ローカルリポジトリ）
+                                  localItems = []
                                   await openCursor('readonly', cursor => {
                                     if (cursor.value.dataTypeKey !== '{{localRepositosy.DataTypeKey}}') return
                                     // TODO: ローカルリポジトリのデータは参照先のキーと名前しか持っていないのでfilterでそれらが検索条件に含まれていると正確な範囲がとれない
@@ -248,54 +239,37 @@ namespace Nijo.Features.Storing {
                             """)}}
                                     localItems.push(cursor.value.item as AggregateType.{{displayData.TsTypeName}})
                                   })
-                                  return localItems
                                 }
-                              }, [editRange, queryToTable, openCursor])
 
-                              const reload = useCallback(async () => {
-                                if (!ready1 || !ready2) return
-                                if (editRange === undefined) return // 画面表示直後の検索条件が決まっていない場合など
-                            {{refRepositories.SelectTextTemplate(x => $$"""
-                                if (!{{x.RefFrom.MainAggregate.Item.ClassName}}IsReady) return // {{x.RefFrom.MainAggregate.Item.DisplayName}}の読み込み完了まで待機
-                            """)}}
-                                setReady3(false)
-                                try {
-                                  const remoteItems = await loadRemoteItems()
-                                  const localItems = await loadLocalItems()
-                                  const remoteAndLocal = crossJoin(
-                                    localItems, local => local.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}},
-                                    remoteItems, remote => remote.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}},
-                                  ).map<AggregateType.{{displayData.TsTypeName}}>(pair => pair.left ?? pair.right)
+                                // APIレスポンス型を画面表示用の型に変換する
+                                const displayDataRemoteItems = remoteItems.map(item => ({{WithIndent(displayData.RenderConvertToDisplayDataClass("item"), "    ")}}))
+
+                                // ローカルリポジトリにあるデータはそちらを優先的に表示する
+                                const remoteAndLocal =  crossJoin(
+                                  localItems, local => local.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}},
+                                  displayDataRemoteItems, remote => remote.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}},
+                                ).map<AggregateType.{{displayData.TsTypeName}}>(pair => pair.left ?? pair.right)
                             {{refRepositories.SelectTextTemplate(x => $$"""
 
-                                  // {{x.RefFrom.MainAggregate.Item.ClassName}}を{{agg.Item.ClassName}}に合成する
-                                  for (const item of remoteAndLocal) {
+                                // {{x.RefFrom.MainAggregate.Item.ClassName}}を{{agg.Item.ClassName}}に合成する
+                                for (const item of remoteAndLocal) {
                             {{If(x.RefTo.MainAggregate.EnumerateAncestorsAndThis().Any(y => y.IsChildrenMember()), () => $$"""
-                                    for (const x of item{{RenderSelectMany(x.RefTo.MainAggregate)}} ?? []) {
-                                      x.{{x.RefFrom.PropName}} = {{x.RefFrom.MainAggregate.Item.ClassName}}Items.find(y => y.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}} === x.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}})
-                                    }
-                            """).Else(() => $$"""
-                                    item.{{x.RefFrom.PropName}} = {{x.RefFrom.MainAggregate.Item.ClassName}}Items.find(y => y.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}} === item.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}})
-                            """)}}
+                                  for (const x of item{{RenderSelectMany(x.RefTo.MainAggregate)}} ?? []) {
+                                    x.{{x.RefFrom.PropName}} = loaded{{x.RefFrom.MainAggregate.Item.ClassName}}.find(y => y.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}} === x.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}})
                                   }
+                            """).Else(() => $$"""
+                                  item.{{x.RefFrom.PropName}} = loaded{{x.RefFrom.MainAggregate.Item.ClassName}}.find(y => y.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}} === item.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}})
+                            """)}}
+                                }
                             """)}}
 
-                                  setRemoteAndLocalItems(remoteAndLocal)
+                                return remoteAndLocal
 
-                                } finally {
-                                  setReady3(true)
-                                }
-                              }, [ready1, ready2{{refRepositories.Select(x => $", {x.RefFrom.MainAggregate.Item.ClassName}IsReady, {x.RefFrom.MainAggregate.Item.ClassName}Items").Join("")}}, editRange, loadRemoteItems, loadLocalItems, getItemKey])
+                              }, [editRange, get, post, queryToTable, openCursor{{refRepositories.Select(x => $", load{x.RefFrom.MainAggregate.Item.ClassName}").Join("")}}])
 
-                              useEffect(() => {
-                                reload()
-                              }, [reload])
                             {{If(commitable, () => $$"""
-
                               /** 引数に渡されたデータをローカルリポジトリに登録します。 */
-                              const commit = useCallback(async (...items: AggregateType.{{displayData.TsTypeName}}[]): Promise<AggregateType.{{displayData.TsTypeName}}[]> => {
-                                const result: AggregateType.{{displayData.TsTypeName}}[] = []
-
+                              const commit = useCallback(async (...items: AggregateType.{{displayData.TsTypeName}}[]) => {
                                 for (const newValue of items) {
                             {{refRepositories.SelectTextTemplate(x => $$"""
                             {{If(x.RefTo.MainAggregate.EnumerateAncestorsAndThis().Any(y => y.IsChildrenMember()), () => $$"""
@@ -321,28 +295,23 @@ namespace Nijo.Features.Storing {
                                   } else if (newValue.willBeChanged || newValue.willBeDeleted) {
                                     await queryToTable(table => table.put({
                                       dataTypeKey: '{{localRepositosy.DataTypeKey}}',
-                                      itemName: getItemName?.(newValue) ?? '',
                                       itemKey: newValue.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}},
+                                      itemName: `{{string.Concat(names.Select(n => $"${{newValue.{n.Declared.GetFullPathAsSingleViewDataClass().Join("?.")}}}"))}}`,
                                       item: newValue,
                                       existsInRemoteRepository: newValue.{{DisplayDataClass.EXISTS_IN_REMOTE_REPOS}},
                                       willBeChanged: newValue.{{DisplayDataClass.WILL_BE_CHANGED}},
                                       willBeDeleted: newValue.{{DisplayDataClass.WILL_BE_DELETED}},
                                     }))
-                                    result.push(newValue)
-
-                                  } else {
-                                    result.push(newValue)
                                   }
                                 }
-                                await reloadContext()
-                                return result
-                              }, [reloadContext, getItemName, queryToTable{{refRepositories.Select(x => $", commit{x.RefFrom.MainAggregate.Item.ClassName}").Join("")}}])
+
+                                await reloadContext() // 更新があったことをサイドメニューに知らせる
+                              }, [reloadContext, queryToTable{{refRepositories.Select(x => $", commit{x.RefFrom.MainAggregate.Item.ClassName}").Join("")}}])
                             """)}}
 
                               return {
-                                ready: ready1 && ready2 && ready3{{refRepositories.Select(x => $" && {x.RefFrom.MainAggregate.Item.ClassName}IsReady").Join("")}},
-                                items: remoteAndLocalItems,
-                                reload,
+                                ready: ready2{{refRepositories.Select(x => $" && {x.RefFrom.MainAggregate.Item.ClassName}IsReady").Join("")}},
+                                load,
                             {{If(commitable, () => $$"""
                                 commit,
                             """)}}

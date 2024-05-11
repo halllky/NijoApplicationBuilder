@@ -74,7 +74,12 @@ namespace Nijo.Features.Storing {
                     }
                     """,
             };
-            var gridColumns = new[] { rowHeader }.Concat(DataTableColumn.FromMembers("item", _aggregate, _options.ReadOnly));
+            var gridColumns = new[] { rowHeader }.Concat(DataTableColumn.FromMembers(
+                "item",
+                _aggregate,
+                _options.ReadOnly,
+                useFormContextType: "{ currentPageItems: GridRow[] }",
+                registerPathModifier: path => $"currentPageItems.${{row.index}}.{path}"));
 
             return new SourceFile {
                 FileName = "list.tsx",
@@ -109,15 +114,20 @@ namespace Nijo.Features.Storing {
                         skip: currentPage.pageIndex * 20,
                         take: 20,
                       }), [filter, currentPage])
-                      const { ready, items{{(_options.ReadOnly ? "" : ", commit")}}, reload } = Util.{{rootLocalRepository.HookName}}(editRange)
+                      const { load{{(_options.ReadOnly ? "" : ", commit")}} } = Util.{{rootLocalRepository.HookName}}(editRange)
 
                       const reactHookFormMethods = Util.useFormEx<{ currentPageItems: GridRow[] }>({})
                       const { control, registerEx, handleSubmit, reset } = reactHookFormMethods
                       const { fields, append, update, remove } = useFieldArray({ name: 'currentPageItems', control })
 
+                      // 画面表示時、再読み込み時
                       useEffect(() => {
-                        if (ready) reset({ currentPageItems: items })
-                      }, [ready, items])
+                        load().then(currentPageItems => {
+                          if (currentPageItems) {
+                            reset({ currentPageItems })
+                          }
+                        })
+                      }, [load])
 
                       const handleReload = useCallback(() => {
                         setFilter(getConditionValues())
@@ -147,7 +157,9 @@ namespace Nijo.Features.Storing {
                       // データの一時保存
                       const onSave = useCallback(async () => {
                         await commit(...fields)
-                      }, [commit, fields])
+                        const currentPageItems = await load()
+                        if (currentPageItems) reset({ currentPageItems })
+                      }, [commit, load, fields])
 
                     """)}}
                     {{If(_options.Hooks != null, () => $$"""

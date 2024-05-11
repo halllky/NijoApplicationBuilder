@@ -159,22 +159,35 @@ namespace Nijo.Features.Storing {
                         return [{{urlKeysWithMember.Values.Join(", ")}}]
                       }, [{{urlKeysWithMember.Select((_, i) => $"key{i}").Join(", ")}}])
 
-                      const { ready, items{{(_type == E_Type.View ? "" : ", commit")}} } = Util.{{localRepos.HookName}}(pkArray)
+                      const { load{{(_type == E_Type.View ? "" : ", commit")}} } = Util.{{localRepos.HookName}}(pkArray)
 
                     """).Else(() => $$"""
                       const { {{URLKEY_TYPE_NEW}}: keyOfNewItem } = useParams()
-                      const { ready, items, commit } = Util.{{localRepos.HookName}}(keyOfNewItem as Util.ItemKey | undefined)
+                      const { load, commit } = Util.{{localRepos.HookName}}(keyOfNewItem as Util.ItemKey | undefined)
 
                     """)}}
 
-                      return items.length > 0 ? (
+                      const [defaultValues, setDefaultValues] = useState<AggregateType.{{dataClass.TsTypeName}} | undefined>()
+                      useEffect(() => {
+                        load().then(items => {
+                          setDefaultValues(items?.[0])
+                        })
+                      }, [load])
+
+                      const handleCommit: ReturnType<typeof Util.{{localRepos.HookName}}>['commit'] = useCallback(async (...items) => {
+                        await commit(...items)
+                        const afterCommit = await load()
+                        setDefaultValues(afterCommit?.[0])
+                      }, [load, commit])
+
+                      return defaultValues ? (
                         <AfterLoaded
                     {{If(_type == E_Type.Edit || _type == E_Type.View, () => $$"""
                           pkArray={pkArray}
                     """)}}
-                          defaultValues={items[0]}
+                          defaultValues={defaultValues}
                     {{If(_type != E_Type.View, () => $$"""
-                          commit={commit}
+                          commit={handleCommit}
                     """)}}
                         ></AfterLoaded>
                       ) : (

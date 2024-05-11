@@ -260,7 +260,9 @@ namespace Nijo.Features.Storing {
                         "item",
                         _aggregate,
                         _mode == SingleView.E_Type.View,
-                        args);
+                        useFormContextType: $"AggregateType.{new DisplayDataClass(_aggregate.GetEntry().As<Aggregate>()).TsTypeName}",
+                        registerPathModifier: null,
+                        arrayIndexVarNamesFromFormRootToDataTableOwner: args);
 
                 return $$"""
                     const {{componentName}} = ({{{args.Join(", ")}} }: {
