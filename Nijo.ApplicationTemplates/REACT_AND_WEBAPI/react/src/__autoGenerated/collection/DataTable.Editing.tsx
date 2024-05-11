@@ -17,6 +17,7 @@ export const useCellEditing = <T,>(props: DataTableProps<T>) => {
 
   const startEditing = useCallback((cell: RT.Cell<Tree.TreeNode<T>, unknown>) => {
     if (!props.onChangeRow) return // 値が編集されてもコミットできないので編集開始しない
+    if (!(cell.column.columnDef as ColumnDefEx<Tree.TreeNode<T>>)?.cellEditor) return // 編集不可のセル
     setEditingCell(cell)
     setEditingItemIndex(props.data?.indexOf(cell.row.original.item))
   }, [props.data, props.onChangeRow])
