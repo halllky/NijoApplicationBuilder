@@ -256,14 +256,6 @@ namespace Nijo.Features.Storing {
                     .GetMembers()
                     .Where(m => m.DeclaringAggregate == dc.MainAggregate
                              && (m is AggregateMember.ValueMember || m is AggregateMember.Ref));
-                var refProps = dc.GetRefFromProps().Select(p => new {
-                    RefProp = p,
-                    Args = refArgs.Single(x => x.RelProp.Item1.MainAggregate == p.MainAggregate),
-                    Keys = p.MainAggregate.AsEntry().GetKeys().OfType<AggregateMember.ValueMember>().Select(k => new {
-                        ThisKey = pkVarNames[k.Declared],
-                        TheirKey = k.Declared.GetFullPath().Join("?."),
-                    }),
-                });
                 var item = dc.MainAggregate.IsRoot() ? $"{instance}.item" : instance;
                 var depth = dc.MainAggregate.EnumerateAncestors().Count();
 
@@ -300,9 +292,6 @@ namespace Nijo.Features.Storing {
                       {{p.PropName}}: {{instance}}?.{{p.MemberInfo?.MemberName}}?.map(x{{depth}} => ({{WithIndent(Render(p, $"x{depth}", true), "  ")}})),
                     """ : $$"""
                       {{p.PropName}}: {{WithIndent(Render(p, $"{instance}?.{p.MemberInfo?.MemberName}", false), "  ")}},
-                    """)}}
-                    {{refProps.SelectTextTemplate(x => $$"""
-                      {{x.RefProp.PropName}}: {{x.Args.ArgName}}.find(y => y.{{LOCAL_REPOS_ITEMKEY}} === JSON.stringify([{{keys.Select(k => pkVarNames[k.Declared]).Join(", ")}}])),
                     """)}}
                     }
                     """;

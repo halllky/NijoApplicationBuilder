@@ -266,12 +266,26 @@ namespace Nijo.Features.Storing {
                                     localItems, local => local.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}},
                                     remoteItems, remote => remote.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}},
                                   ).map<AggregateType.{{displayData.TsTypeName}}>(pair => pair.left ?? pair.right)
+                            {{refRepositories.SelectTextTemplate(x => $$"""
+
+                                  // {{x.RefFrom.MainAggregate.Item.ClassName}}を{{agg.Item.ClassName}}に合成する
+                                  for (const item of remoteAndLocal) {
+                            {{If(x.RefTo.MainAggregate.EnumerateAncestorsAndThis().Any(y => y.IsChildrenMember()), () => $$"""
+                                    for (const x of item{{RenderSelectMany(x.RefTo.MainAggregate)}} ?? []) {
+                                      x.{{x.RefFrom.PropName}} = {{x.RefFrom.MainAggregate.Item.ClassName}}Items.find(y => y.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}} === x.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}})
+                                    }
+                            """).Else(() => $$"""
+                                    item.{{x.RefFrom.PropName}} = {{x.RefFrom.MainAggregate.Item.ClassName}}Items.find(y => y.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}} === item.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}})
+                            """)}}
+                                  }
+                            """)}}
+
                                   setRemoteAndLocalItems(remoteAndLocal)
 
                                 } finally {
                                   setReady3(true)
                                 }
-                              }, [ready1, ready2{{refRepositories.Select(x => $", {x.RefFrom.MainAggregate.Item.ClassName}IsReady").Join("")}}, editRange, loadRemoteItems, loadLocalItems, getItemKey])
+                              }, [ready1, ready2{{refRepositories.Select(x => $", {x.RefFrom.MainAggregate.Item.ClassName}IsReady, {x.RefFrom.MainAggregate.Item.ClassName}Items").Join("")}}, editRange, loadRemoteItems, loadLocalItems, getItemKey])
 
                               useEffect(() => {
                                 reload()
