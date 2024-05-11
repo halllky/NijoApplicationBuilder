@@ -138,8 +138,8 @@ namespace Nijo.Parts.WebClient {
                     HeaderGroupName = refFrom.MainAggregate.Item.ClassName,
                     Cell = $$"""
                         ({ row }) => {
-                          const {{value}} = row.original.{{rowAccessor}}.{{refFrom.MainAggregate.GetFullPathAsSingleViewDataClass(since: dataTableOwner).Join("?.")}}
-                          const { setValue } = Util.useFormContextEx<AggregateType.{{pageRoot.TsTypeName}}>()
+                          const { watch, setValue } = Util.useFormContextEx<AggregateType.{{pageRoot.TsTypeName}}>()
+                          const {{value}} = watch(`{{registerName.Join(".")}}`, {{WithIndent(refFromDisplayData.RenderNewObjectLiteral(), "    ")}})
 
                           const create{{value}} = useCallback(() => {
                             setValue(`{{registerName.Join(".")}}`, {{WithIndent(refFromDisplayData.RenderNewObjectLiteral(), "    ")}})
@@ -153,7 +153,7 @@ namespace Nijo.Parts.WebClient {
                             {({{value}} === undefined || {{value}}.{{DisplayDataClass.WILL_BE_DELETED}}) && (
                               <Input.Button icon={PlusIcon} onClick={create{{value}}}>作成</Input.Button>
                             )}
-                            {{{value}} !== undefined && (
+                            {({{value}} !== undefined && !{{value}}.{{DisplayDataClass.WILL_BE_DELETED}}) && (
                               <Input.Button icon={XMarkIcon} onClick={delete{{value}}}>削除</Input.Button>
                             )}
                           </>
