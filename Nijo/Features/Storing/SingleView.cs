@@ -173,12 +173,14 @@ namespace Nijo.Features.Storing {
                           setDefaultValues(items?.[0])
                         })
                       }, [load])
+                    {{If(_type != E_Type.View, () => $$"""
 
                       const handleCommit: ReturnType<typeof Util.{{localRepos.HookName}}>['commit'] = useCallback(async (...items) => {
                         await commit(...items)
                         const afterCommit = await load()
                         setDefaultValues(afterCommit?.[0])
                       }, [load, commit])
+                    """)}}
 
                       return defaultValues ? (
                         <AfterLoaded
