@@ -9,10 +9,14 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Parts.WebClient {
+    /// <summary>
+    /// Reactテンプレート側で宣言されているコンポーネント DataTable の列定義
+    /// </summary>
     internal class DataTableColumn {
 
         /// <summary>
         /// 集約のメンバーを列挙して列定義を表すオブジェクトを返します。
+        /// useFieldArray の update 関数を使用しているので、その関数を参照できる場所にレンダリングされる必要があります。
         /// </summary>
         /// <param name="rowAccessor">DataTableの行を表すオブジェクトからその行オブジェクト内のデータオブジェクトのルートまでのパス。</param>
         /// <param name="dataTableOwner">このDataTableにはこの集約のメンバーの列が表示されます。</param>
@@ -130,6 +134,7 @@ namespace Nijo.Parts.WebClient {
                 var value = refFrom.MainAggregate.Item.ClassName;
 
                 // ページのルート集約から被参照集約までのパス
+                var ownerPath = refFrom.MainAggregate.GetFullPathAsSingleViewDataClass(since: dataTableOwner);
                 var arrayIndexes = new List<string>();
                 if (arrayIndexVarNamesFromFormRootToDataTableOwner != null) arrayIndexes.AddRange(arrayIndexVarNamesFromFormRootToDataTableOwner);
                 arrayIndexes.Add("row.index");
@@ -142,23 +147,29 @@ namespace Nijo.Parts.WebClient {
                     HeaderGroupName = refFrom.MainAggregate.Item.ClassName,
                     Cell = $$"""
                         ({ row }) => {
-                          const { watch, setValue } = Util.useFormContextEx<{{useFormContextType}}>()
-                          const {{value}} = watch(`{{registerName}}`)
 
-                          const create{{value}} = useCallback(() => {
-                            setValue(`{{registerName}}`, {{WithIndent(refFromDisplayData.RenderNewObjectLiteral(), "    ")}})
-                          }, [setValue, row.index])
+                          const create{{refFrom.MainAggregate.Item.ClassName}} = useCallback(() => {
+                            if (row.original.{{rowAccessor}}{{ownerPath.SkipLast(1).Select(x => $"?.{x}").Join("")}}) {
+                              row.original.{{rowAccessor}}.{{ownerPath.Join(".")}} = {{WithIndent(refFromDisplayData.RenderNewObjectLiteral(), "      ")}}
+                              update(row.index, { ...row.original.{{rowAccessor}} })
+                            }
+                          }, [row.index])
 
-                          const delete{{value}} = useCallback(() => {
-                            setValue(`{{registerName}}.{{DisplayDataClass.WILL_BE_DELETED}}`, true)
-                          }, [setValue, row.index])
+                          const delete{{refFrom.MainAggregate.Item.ClassName}} = useCallback(() => {
+                            if (row.original.{{rowAccessor}}.{{ownerPath.Join("?.")}}) {
+                              row.original.{{rowAccessor}}.{{ownerPath.Join(".")}}.{{DisplayDataClass.WILL_BE_DELETED}} = true
+                              update(row.index, { ...row.original.{{rowAccessor}} })
+                            }
+                          }, [row.index])
+
+                          const {{value}} = row.original.{{rowAccessor}}.{{ownerPath.Join("?.")}}
 
                           return <>
                             {({{value}} === undefined || {{value}}.{{DisplayDataClass.WILL_BE_DELETED}}) && (
-                              <Input.Button icon={PlusIcon} onClick={create{{value}}}>作成</Input.Button>
+                              <Input.Button icon={PlusIcon} onClick={create{{refFrom.MainAggregate.Item.ClassName}}}>作成</Input.Button>
                             )}
                             {({{value}} !== undefined && !{{value}}.{{DisplayDataClass.WILL_BE_DELETED}}) && (
-                              <Input.Button icon={XMarkIcon} onClick={delete{{value}}}>削除</Input.Button>
+                              <Input.Button icon={XMarkIcon} onClick={delete{{refFrom.MainAggregate.Item.ClassName}}}>削除</Input.Button>
                             )}
                           </>
                         }

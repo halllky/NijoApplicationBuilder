@@ -166,6 +166,12 @@ namespace Nijo.Features.Storing {
                       {{WithIndent(_options.Hooks!, "  ")}}
 
                     """)}}
+
+                      // 列定義
+                      const columnDefs: Layout.ColumnDefEx<Util.TreeNode<GridRow>>[] = useMemo(() => [
+                        {{WithIndent(gridColumns.SelectTextTemplate(col => col.Render()), "    ")}}
+                      ], [update])
+
                       return (
                         <div className="page-content-root gap-4 pb-[50vh]">
 
@@ -206,7 +212,7 @@ namespace Nijo.Features.Storing {
                             <form className="flex-1">
                               <Layout.DataTable
                                 data={fields}
-                                columns={COLUMN_DEFS}
+                                columns={columnDefs}
                     {{If(!_options.ReadOnly, () => $$"""
                                 onChangeRow={handleUpdateRow}
                                 ref={dtRef}
@@ -220,10 +226,6 @@ namespace Nijo.Features.Storing {
                     }
 
                     type GridRow = AggregateType.{{dataClass.TsTypeName}}
-
-                    const COLUMN_DEFS: Layout.ColumnDefEx<Util.TreeNode<GridRow>>[] = [
-                      {{WithIndent(gridColumns.SelectTextTemplate(col => col.Render()), "  ")}}
-                    ]
 
                     // TODO: utilに持っていく
                     type PageState = { pageIndex: number, loaded?: boolean }
