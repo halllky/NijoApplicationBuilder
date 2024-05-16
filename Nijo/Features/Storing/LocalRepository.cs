@@ -255,10 +255,10 @@ namespace Nijo.Features.Storing {
                                 for (const item of remoteAndLocal) {
                             {{If(x.RefTo.MainAggregate.EnumerateAncestorsAndThis().Any(y => y.IsChildrenMember()), () => $$"""
                                   for (const x of item{{RenderSelectMany(x.RefTo.MainAggregate)}} ?? []) {
-                                    x.{{x.RefFrom.PropName}} = loaded{{x.RefFrom.MainAggregate.Item.ClassName}}.find(y => y.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}} === x.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}})
+                                    x.{{x.RefFrom.PropName}} = loaded{{x.RefFrom.MainAggregate.Item.ClassName}}.find(y => y.{{x.RefFrom.MainAggregate.AsEntry().GetSingleRefKeyAggregate()?.GetFullPathAsSingleViewDataClass().Join(".")}} === x.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}})
                                   }
                             """).Else(() => $$"""
-                                  item.{{x.RefFrom.PropName}} = loaded{{x.RefFrom.MainAggregate.Item.ClassName}}.find(y => y.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}} === item.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}})
+                                  item.{{x.RefFrom.PropName}} = loaded{{x.RefFrom.MainAggregate.Item.ClassName}}.find(y => y.{{x.RefFrom.MainAggregate.AsEntry().GetSingleRefKeyAggregate()?.GetFullPathAsSingleViewDataClass().Join(".")}} === item.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}})
                             """)}}
                                 }
                             """)}}

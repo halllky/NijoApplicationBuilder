@@ -83,6 +83,21 @@ namespace Nijo.Features.Storing {
 
             } else if (_relationToParent == null && _asSingleRefKeyAggregate) {
                 // ルート集約のレンダリング（画面の中の主集約を参照する別のルート集約）
+
+                // 参照先のitemKeyと対応するプロパティを初期化する
+                var refTo = _aggregate.GetSingleRefKeyAggregate()!;
+                string? RefKeyInitializer(AggregateMember.AggregateMemberBase member) {
+                    if (member is AggregateMember.Ref r && r == refTo) {
+                        var refToRegisterNameArray = refTo.MemberAggregate.GetRHFRegisterName(args).ToArray();
+                        var refToRegisterName = refToRegisterNameArray.Length > 0 ? $"`{refToRegisterNameArray.Join(".")}`" : string.Empty;
+
+                        return $"getValues({refToRegisterName})?.{DisplayDataClass.LOCAL_REPOS_ITEMKEY}";
+
+                    } else {
+                        return null;
+                    }
+                };
+
                 return $$"""
                     const {{componentName}} = ({{{args.Join(", ")}} }: {
                     {{args.SelectTextTemplate(arg => $$"""
@@ -94,8 +109,8 @@ namespace Nijo.Features.Storing {
                       const state = item ? Util.getLocalRepositoryState(item) : undefined
 
                       const handleCreate = useCallback(() => {
-                        setValue({{registerName}}, {{WithIndent(dataClass.RenderNewObjectLiteral(), "    ")}})
-                      }, [setValue])
+                        setValue({{registerName}}, {{WithIndent(dataClass.RenderNewObjectLiteral(RefKeyInitializer), "    ")}})
+                      }, [getValues, setValue])
                       const handleDelete = useCallback(() => {
                         const current = getValues({{registerName}})
                         if (current) setValue({{registerName}}, { ...current, {{DisplayDataClass.WILL_BE_DELETED}}: true })

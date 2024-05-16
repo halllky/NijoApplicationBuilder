@@ -105,14 +105,15 @@ namespace Nijo.Features.Storing {
         /// <summary>
         /// 新規オブジェクト作成のリテラルをレンダリングします。
         /// </summary>
-        /// <param name="initValue">初期値を宣言するソースコード。 "{member.MemberName}: {0}," の{0}の形にすること。</param>
-        internal string RenderNewObjectLiteral(IReadOnlyDictionary<AggregateMember.AggregateMemberBase, Func<AggregateMember.AggregateMemberBase, string>>? initValue = null) {
+        /// <param name="initValue">初期値を宣言するソースコード。 "{member.MemberName}: {0}," の{0}の形にすること。nullを返した場合は既定の値で初期化される。</param>
+        internal string RenderNewObjectLiteral(Func<AggregateMember.AggregateMemberBase, string?>? initValue = null) {
 
             // 初期値をレンダリングする。nullを返した場合は明示的な初期値なしになる。
             string? RenderOwnMemberInitialize(AggregateMember.AggregateMemberBase member) {
                 // 引数で指定された初期値
-                if (initValue != null && initValue.TryGetValue(member, out var fn)) {
-                    return $"{member.MemberName}: {fn(member)},";
+                var argInitValue = initValue?.Invoke(member);
+                if (argInitValue != null) {
+                    return $"{member.MemberName}: {argInitValue},";
                 }
 
                 // UUID型

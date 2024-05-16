@@ -141,6 +141,16 @@ namespace Nijo.Parts.WebClient {
                 var registerName = refFrom.MainAggregate.GetRHFRegisterName(arrayIndexes).Join(".");
                 if (registerPathModifier != null) registerName = registerPathModifier(registerName);
 
+                // 参照先のitemKeyと対応するプロパティを初期化する
+                string? RefKeyInitializer(AggregateMember.AggregateMemberBase member) {
+                    if (member is AggregateMember.Ref r && r.MemberAggregate == dataTableOwner) {
+                        return $"row.original.{rowAccessor}.{DisplayDataClass.LOCAL_REPOS_ITEMKEY}";
+
+                    } else {
+                        return null;
+                    }
+                };
+
                 return new DataTableColumn {
                     Id = $"ref-from-{refFrom.PropName}",
                     Header = string.Empty,
@@ -150,7 +160,7 @@ namespace Nijo.Parts.WebClient {
 
                           const create{{refFrom.MainAggregate.Item.ClassName}} = useCallback(() => {
                             if (row.original.{{rowAccessor}}{{ownerPath.SkipLast(1).Select(x => $"?.{x}").Join("")}}) {
-                              row.original.{{rowAccessor}}.{{ownerPath.Join(".")}} = {{WithIndent(refFromDisplayData.RenderNewObjectLiteral(), "      ")}}
+                              row.original.{{rowAccessor}}.{{ownerPath.Join(".")}} = {{WithIndent(refFromDisplayData.RenderNewObjectLiteral(RefKeyInitializer), "      ")}}
                               update(row.index, { ...row.original.{{rowAccessor}} })
                             }
                           }, [row.index])
