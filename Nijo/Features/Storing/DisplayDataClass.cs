@@ -105,7 +105,35 @@ namespace Nijo.Features.Storing {
         /// <summary>
         /// 新規オブジェクト作成のリテラルをレンダリングします。
         /// </summary>
-        internal string RenderNewObjectLiteral() {
+        /// <param name="initValue">初期値を宣言するソースコード。 "{member.MemberName}: {0}," の{0}の形にすること。</param>
+        internal string RenderNewObjectLiteral(IReadOnlyDictionary<AggregateMember.AggregateMemberBase, Func<AggregateMember.AggregateMemberBase, string>>? initValue = null) {
+
+            // 初期値をレンダリングする。nullを返した場合は明示的な初期値なしになる。
+            string? RenderOwnMemberInitialize(AggregateMember.AggregateMemberBase member) {
+                // 引数で指定された初期値
+                if (initValue != null && initValue.TryGetValue(member, out var fn)) {
+                    return $"{member.MemberName}: {fn(member)},";
+                }
+
+                // UUID型
+                if (member is AggregateMember.Schalar schalar
+                    && schalar.DeclaringAggregate == MainAggregate
+                    && schalar.Options.MemberType is Uuid) {
+
+                    return $"{member.MemberName}: UUID.generate(),";
+                }
+
+                // バリエーション
+                if (member is AggregateMember.Variation variation
+                    && variation.DeclaringAggregate == MainAggregate) {
+
+                    return $"{member.MemberName}: '{variation.GetGroupItems().First().Key}',";
+                }
+
+                // 初期値なし
+                return null;
+            }
+
             return $$"""
                 {
                 {{If(MainAggregate.IsRoot() || MainAggregate.IsChildrenMember(), () => $$"""
@@ -115,11 +143,8 @@ namespace Nijo.Features.Storing {
                   {{WILL_BE_DELETED}}: false,
                 """)}}
                   {{OWN_MEMBERS}}: {
-                {{MainAggregate.GetMembers().OfType<AggregateMember.Schalar>().Where(m => m.DeclaringAggregate == MainAggregate && m.Options.MemberType is Uuid).SelectTextTemplate(m => $$"""
-                    {{m.MemberName}}: UUID.generate(),
-                """)}}
-                {{MainAggregate.GetMembers().OfType<AggregateMember.Variation>().Where(m => m.DeclaringAggregate == MainAggregate).SelectTextTemplate(m => $$"""
-                    {{m.MemberName}}: '{{m.GetGroupItems().First().Key}}',
+                {{MainAggregate.GetMembers().Select(RenderOwnMemberInitialize).OfType<string>().SelectTextTemplate(line => $$"""
+                    {{WithIndent(line, "    ")}}
                 """)}}
                   },
                 }
