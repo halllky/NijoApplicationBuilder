@@ -188,6 +188,7 @@ namespace Nijo.Core {
                 .Select(edge => edge.As<Aggregate>());
         }
 
+        #region 他の集約への参照を唯一のキーとする集約の仕組みを使っている箇所を網羅するにはここのメソッドを呼んでいる箇所を辿れば可能
         /// <summary>
         /// targetがsourceの唯一のキーであるか否か
         /// </summary>
@@ -243,6 +244,7 @@ namespace Nijo.Core {
                 }
             }
         }
+        #endregion 他の集約への参照を唯一のキーとする集約の仕組みを使っている箇所を網羅するにはここのメソッドを呼んでいる箇所を辿れば可能
 
         /// <summary>
         /// この集約のすべてのメンバーが2次元の表で表現できるかどうかを返します。
