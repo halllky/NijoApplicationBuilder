@@ -54,6 +54,11 @@ namespace Nijo.Features.Storing {
             var registerNameArray = _aggregate.GetRHFRegisterName(args).ToArray();
             var registerName = registerNameArray.Length > 0 ? $"`{registerNameArray.Join(".")}`" : string.Empty;
 
+            // この集約を参照する隣接集約 ※DataTableの列定義は当該箇所で定義している
+            var relevantAggregatesCalling = _aggregate
+                .GetReferedEdgesAsSingleKey()
+                .SelectTextTemplate(edge => new AggregateComponent(edge.Initial, _mode, true).RenderCaller());
+
             if (_relationToParent == null && !_asSingleRefKeyAggregate) {
                 // ルート集約のレンダリング（画面の中の主集約）
                 return $$"""
@@ -70,6 +75,7 @@ namespace Nijo.Features.Storing {
                           <VForm.Container leftColumnMinWidth="{{GetLeftColumnWidth()}}">
                             {{WithIndent(RenderMembers(), "        ")}}
                           </VForm.Container>
+                          {{WithIndent(relevantAggregatesCalling, "      ")}}
                         </>
                       )
                     }
@@ -77,6 +83,21 @@ namespace Nijo.Features.Storing {
 
             } else if (_relationToParent == null && _asSingleRefKeyAggregate) {
                 // ルート集約のレンダリング（画面の中の主集約を参照する別のルート集約）
+
+                // 参照先のitemKeyと対応するプロパティを初期化する
+                var refTo = _aggregate.GetSingleRefKeyAggregate()!;
+                string? RefKeyInitializer(AggregateMember.AggregateMemberBase member) {
+                    if (member is AggregateMember.Ref r && r == refTo) {
+                        var refToRegisterNameArray = refTo.MemberAggregate.GetRHFRegisterName(args).ToArray();
+                        var refToRegisterName = refToRegisterNameArray.Length > 0 ? $"`{refToRegisterNameArray.Join(".")}`" : string.Empty;
+
+                        return $"getValues({refToRegisterName})?.{DisplayDataClass.LOCAL_REPOS_ITEMKEY}";
+
+                    } else {
+                        return null;
+                    }
+                };
+
                 return $$"""
                     const {{componentName}} = ({{{args.Join(", ")}} }: {
                     {{args.SelectTextTemplate(arg => $$"""
@@ -88,8 +109,8 @@ namespace Nijo.Features.Storing {
                       const state = item ? Util.getLocalRepositoryState(item) : undefined
 
                       const handleCreate = useCallback(() => {
-                        setValue({{registerName}}, {{WithIndent(dataClass.RenderNewObjectLiteral(), "    ")}})
-                      }, [setValue])
+                        setValue({{registerName}}, {{WithIndent(dataClass.RenderNewObjectLiteral(RefKeyInitializer), "    ")}})
+                      }, [getValues, setValue])
                       const handleDelete = useCallback(() => {
                         const current = getValues({{registerName}})
                         if (current) setValue({{registerName}}, { ...current, {{DisplayDataClass.WILL_BE_DELETED}}: true })
@@ -125,6 +146,7 @@ namespace Nijo.Features.Storing {
                               </>
                             )}
                           </VForm.Container>
+                          {{WithIndent(relevantAggregatesCalling, "      ")}}
                         </>
                       )
                     }
@@ -144,6 +166,7 @@ namespace Nijo.Features.Storing {
                       return (
                         <>
                           {{WithIndent(RenderMembers(), "      ")}}
+                          {{WithIndent(relevantAggregatesCalling, "      ")}}
                         </>
                       )
                     }
@@ -165,6 +188,7 @@ namespace Nijo.Features.Storing {
                       const body = (
                         <>
                           {{WithIndent(RenderMembers(), "      ")}}
+                          {{WithIndent(relevantAggregatesCalling, "      ")}}
                         </>
                       )
 
@@ -236,6 +260,7 @@ namespace Nijo.Features.Storing {
                               {{WithIndent(RenderMembers(), "          ")}}
                             </VForm.Container>
                           ))}
+                          {{WithIndent(relevantAggregatesCalling, "      ")}}
                         </VForm.Container>
                       )
                     }
@@ -249,7 +274,10 @@ namespace Nijo.Features.Storing {
                 var colDefs = DataTableColumn.FromMembers(
                         "item",
                         _aggregate,
-                        _mode == SingleView.E_Type.View);
+                        _mode == SingleView.E_Type.View,
+                        useFormContextType: $"AggregateType.{new DisplayDataClass(_aggregate.GetEntry().As<Aggregate>()).TsTypeName}",
+                        registerPathModifier: null,
+                        arrayIndexVarNamesFromFormRootToDataTableOwner: args);
 
                 return $$"""
                     const {{componentName}} = ({{{args.Join(", ")}} }: {
@@ -283,7 +311,7 @@ namespace Nijo.Features.Storing {
                         columns: [
                           {{WithIndent(colDefs.SelectTextTemplate(def => def.Render()), "      ")}}
                         ],
-                      }), [update])
+                      }), [{{args.Select(a => $"{a}, ").Join("")}}update])
 
                       return (
                         <VForm.Item wide

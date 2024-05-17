@@ -74,7 +74,12 @@ namespace Nijo.Features.Storing {
                     }
                     """,
             };
-            var gridColumns = new[] { rowHeader }.Concat(DataTableColumn.FromMembers("item", _aggregate, _options.ReadOnly));
+            var gridColumns = new[] { rowHeader }.Concat(DataTableColumn.FromMembers(
+                "item",
+                _aggregate,
+                _options.ReadOnly,
+                useFormContextType: "{ currentPageItems: GridRow[] }",
+                registerPathModifier: path => $"currentPageItems.${{row.index}}.{path}"));
 
             return new SourceFile {
                 FileName = "list.tsx",
@@ -109,26 +114,34 @@ namespace Nijo.Features.Storing {
                         skip: currentPage.pageIndex * 20,
                         take: 20,
                       }), [filter, currentPage])
-                      const { ready, items{{(_options.ReadOnly ? "" : ", commit")}}, reload } = Util.{{rootLocalRepository.HookName}}(editRange)
+                      const { load{{(_options.ReadOnly ? "" : ", commit")}} } = Util.{{rootLocalRepository.HookName}}(editRange)
 
                       const reactHookFormMethods = Util.useFormEx<{ currentPageItems: GridRow[] }>({})
                       const { control, registerEx, handleSubmit, reset } = reactHookFormMethods
                       const { fields, append, update, remove } = useFieldArray({ name: 'currentPageItems', control })
 
+                      // 画面表示時、再読み込み時
                       useEffect(() => {
-                        if (ready) reset({ currentPageItems: items })
-                      }, [ready, items])
+                        load().then(currentPageItems => {
+                          if (currentPageItems) {
+                            reset({ currentPageItems })
+                          }
+                        })
+                      }, [load])
 
                       const handleReload = useCallback(() => {
                         setFilter(getConditionValues())
                       }, [getConditionValues])
 
                       // データ編集
+                    {{If(!_options.ReadOnly && _aggregate.GetSingleRefKeyAggregate() == null, () => $$"""
                       const handleAdd: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
                         const newRow: AggregateType.{{dataClass.TsTypeName}} = {{WithIndent(dataClass.RenderNewObjectLiteral(), "    ")}}
                         append(newRow)
                       }, [append])
 
+                    """)}}
+                    {{If(!_options.ReadOnly, () => $$"""
                       const handleUpdateRow = useCallback(async (index: number, row: GridRow) => {
                         update(index, { ...row, {{DisplayDataClass.WILL_BE_CHANGED}}: true })
                       }, [update])
@@ -141,17 +154,24 @@ namespace Nijo.Features.Storing {
                         }
                       }, [update])
 
-                    {{If(!_options.ReadOnly, () => $$"""
                       // データの一時保存
                       const onSave = useCallback(async () => {
                         await commit(...fields)
-                      }, [commit, fields])
+                        const currentPageItems = await load()
+                        if (currentPageItems) reset({ currentPageItems })
+                      }, [commit, load, fields])
 
                     """)}}
                     {{If(_options.Hooks != null, () => $$"""
                       {{WithIndent(_options.Hooks!, "  ")}}
 
                     """)}}
+
+                      // 列定義
+                      const columnDefs: Layout.ColumnDefEx<Util.TreeNode<GridRow>>[] = useMemo(() => [
+                        {{WithIndent(gridColumns.SelectTextTemplate(col => col.Render()), "    ")}}
+                      ], [update])
+
                       return (
                         <div className="page-content-root gap-4 pb-[50vh]">
 
@@ -163,8 +183,10 @@ namespace Nijo.Features.Storing {
                                 </h1>
                                 <Input.Button onClick={handleReload}>再読み込み</Input.Button>
                                 <div className="basis-4"></div>
-                    {{If(!_options.ReadOnly, () => $$"""
+                    {{If(!_options.ReadOnly && _aggregate.GetSingleRefKeyAggregate() == null, () => $$"""
                                 <Input.Button onClick={handleAdd}>追加</Input.Button>
+                    """)}}
+                    {{If(!_options.ReadOnly, () => $$"""
                                 <Input.Button onClick={handleRemove}>削除</Input.Button>
                                 <Input.IconButton fill icon={BookmarkSquareIcon} onClick={onSave}>一時保存</Input.IconButton>
                     """)}}
@@ -189,11 +211,11 @@ namespace Nijo.Features.Storing {
                           <FormProvider {...reactHookFormMethods}>
                             <form className="flex-1">
                               <Layout.DataTable
-                                ref={dtRef}
                                 data={fields}
-                                columns={COLUMN_DEFS}
+                                columns={columnDefs}
                     {{If(!_options.ReadOnly, () => $$"""
                                 onChangeRow={handleUpdateRow}
+                                ref={dtRef}
                     """)}}
                                 className="h-full"
                               ></Layout.DataTable>
@@ -204,10 +226,6 @@ namespace Nijo.Features.Storing {
                     }
 
                     type GridRow = AggregateType.{{dataClass.TsTypeName}}
-
-                    const COLUMN_DEFS: Layout.ColumnDefEx<Util.TreeNode<GridRow>>[] = [
-                      {{WithIndent(gridColumns.SelectTextTemplate(col => col.Render()), "  ")}}
-                    ]
 
                     // TODO: utilに持っていく
                     type PageState = { pageIndex: number, loaded?: boolean }

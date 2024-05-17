@@ -4,6 +4,7 @@ using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -50,6 +51,81 @@ namespace Nijo.Features.Storing {
 
                         var commitable = agg.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key;
 
+                        var refRepositories = agg
+                            .EnumerateThisAndDescendants()
+                            .Select(a => new DisplayDataClass(a))
+                            .SelectMany(
+                                a =>  a.GetRefFromProps(),
+                                (x, refFromProp) => new { DisplayData = x, RefFrom = refFromProp })
+                            .Select(x => new {
+                                RefTo = x.DisplayData,
+                                x.RefFrom,
+                                Repos = new LocalRepository(x.RefFrom.MainAggregate),
+                                FindMany = new FindManyFeature(x.RefFrom.MainAggregate),
+
+                                // この画面のメイン集約を参照する関連集約をまとめて読み込むため、
+                                // SingleViewのURLのキーで関連集約のAPIへの検索をかけたい。
+                                // そのために当該検索条件のうち関連集約の検索に関係するメンバーの一覧
+                                RootAggregateMembersForSingleViewLoading = x.RefFrom.MainAggregate
+                                    .GetEntryReversing()
+                                    .As<Aggregate>()
+                                    .GetMembers()
+                                    .OfType<AggregateMember.ValueMember>()
+                                    .Where(vm => keyArray.Any(k => k.Member.Declared == vm.Declared)),
+
+                                // この画面のメイン集約を参照する関連集約をまとめて読み込むため、
+                                // MultiViewの画面上部の検索条件の値で関連集約のAPIへの検索をかけたい。
+                                // そのために当該検索条件のうち関連集約の検索に関係するメンバーの一覧
+                                RootAggregateMembersForLoad = x.RefFrom.MainAggregate
+                                    .GetEntryReversing()
+                                    .As<Aggregate>()
+                                    .GetMembers()
+                                    .OfType<AggregateMember.ValueMember>()
+                                    // TODO: 検索条件クラスではVariationはbool型で生成されるが
+                                    // FindManyFeatureでそれも考慮してメンバーを列挙してくれるメソッドがないので
+                                    // 暫定的に除外する（修正後は 011_ダブル.xml で確認可能）
+                                    .Where(vm => vm is not AggregateMember.Variation),
+                            })
+                            .ToArray();
+
+                        // メイン集約を参照する関連集約をまとめて読み込むため、検索条件の値で関連集約のAPIへの検索をかけたい。
+                        // そのために検索条件の各項目が関連集約のどの項目と対応するかを調べて返すための関数
+                        AggregateMember.ValueMember FindRootAggregateSearchConditionMember(AggregateMember.ValueMember refSearchConditionMember) {
+                            var refPath = refSearchConditionMember.DeclaringAggregate.PathFromEntry();
+                            var matched = findMany
+                                .EnumerateSearchConditionMembers()
+                                .Where(kv2 => kv2.Declared == refSearchConditionMember.Declared
+                                            // ある集約から別の集約へ複数経路の参照がある場合は対応するメンバーが複数とれてしまうのでパスの後方一致でも絞り込む
+                                            && refPath.EndsWith(kv2.Owner.PathFromEntry()))
+                                .ToArray();
+                            return matched.Single();
+                        }
+
+                        static string RenderSelectMany(GraphNode<Aggregate> agg) {
+                            var builder = new StringBuilder();
+                            var array = false;
+                            foreach (var e in agg.PathFromEntry()) {
+
+                                // 念のため
+                                if (!e.IsParentChild()) throw new InvalidOperationException("このメソッドには同一ツリー内の集約しか来ないはず");
+
+                                var edge = e.As<Aggregate>();
+                                var prop = new DisplayDataClass(edge.Initial)
+                                    .GetChildProps()
+                                    .Single(p => p.MainAggregate == edge.Terminal);
+
+                                if (array && edge.Terminal.IsChildrenMember()) {
+                                    builder.Append($"?.flatMap(x => x.{prop.PropName} ?? [])");
+                                } else if (array) {
+                                    builder.Append($"?.map(x => x.{prop.PropName})");
+                                } else {
+                                    builder.Append($"?.{prop.PropName}");
+                                    if (edge.Terminal.IsChildrenMember()) array = true;
+                                }
+                            }
+                            return builder.ToString();
+                        }
+
                         return $$"""
                             /** {{agg.Item.DisplayName}}データの読み込みと保存を行います。 */
                             export const {{localRepositosy.HookName}} = (editRange?
@@ -63,64 +139,92 @@ namespace Nijo.Features.Storing {
                             
                               const [, dispatchMsg] = useMsgContext()
                               const { get, post } = useHttpRequest()
-                              const { ready: ready1, reload: reloadContext } = useLocalRepositoryContext()
+                              const { reload: reloadContext } = useLocalRepositoryContext()
                               const { ready: ready2, openCursor, queryToTable } = useIndexedDbLocalRepositoryTable()
-                              const [ready3, setReady3] = useState(false)
+                            {{refRepositories.SelectTextTemplate(x => $$"""
 
-                              const [remoteAndLocalItems, setRemoteAndLocalItems] = useState<AggregateType.{{displayData.TsTypeName}}[]>(() => [])
+                              // {{x.RefFrom.MainAggregate.Item.DisplayName}}のローカルリポジトリとリモートリポジトリへのデータ読み書き処理
+                              const {{x.RefFrom.MainAggregate.Item.ClassName}}filter: { filter: AggregateType.{{x.FindMany.TypeScriptConditionClass}} } = useMemo(() => {
+                                const f = AggregateType.{{x.FindMany.TypeScriptConditionInitializerFn}}()
+                                if (typeof editRange === 'string') {
+                                  // 新規作成データ(未コミット)の編集の場合
+                                } else if (Array.isArray(editRange)) {
+                                  const [{{keyArray.Select(k => k.VarName).Join(", ")}}] = editRange
+                            {{x.RootAggregateMembersForSingleViewLoading.SelectTextTemplate((kv, i) => $$"""
+                            {{If(kv.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
+                                  f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}} = {{keyArray.SingleOrDefault(k => k.Member.Declared == kv.Declared)?.VarName ?? ""}}
+                                  f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}} = {{keyArray.SingleOrDefault(k => k.Member.Declared == kv.Declared)?.VarName ?? ""}}
+                            """).Else(() => $$"""
+                                  f.{{kv.Declared.GetFullPath().Join(".")}} = {{keyArray.SingleOrDefault(k => k.Member.Declared == kv.Declared)?.VarName ?? ""}}
+                            """)}}
+                            """)}}
+                                } else if (editRange) {
+                            {{x.RootAggregateMembersForLoad.SelectTextTemplate((kv, i) => $$"""
+                            {{If(kv.Options.MemberType.SearchBehavior == SearchBehavior.Range, () => $$"""
+                                  f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.FROM}} = editRange.filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}?.{{FromTo.FROM}}
+                                  f.{{kv.Declared.GetFullPath().Join(".")}}.{{FromTo.TO}} = editRange.filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}?.{{FromTo.TO}}
+                            """).Else(() => $$"""
+                                  f.{{kv.Declared.GetFullPath().Join(".")}} = editRange.filter.{{FindRootAggregateSearchConditionMember(kv).GetFullPath().Join("?.")}}
+                            """)}}
+                            """)}}
+                                }
+                                return { filter: f }
+                              }, [editRange])
+                              const {
+                                ready: {{x.RefFrom.MainAggregate.Item.ClassName}}IsReady,
+                                load: load{{x.RefFrom.MainAggregate.Item.ClassName}},
+                            {{If(commitable, () => $$"""
+                                commit: commit{{x.RefFrom.MainAggregate.Item.ClassName}},
+                            """)}}
+                              } = {{x.Repos.HookName}}({{x.RefFrom.MainAggregate.Item.ClassName}}filter)
+                            """)}}
 
-                              const getItemKey = useCallback((x: AggregateType.{{agg.Item.TypeScriptTypeName}}): ItemKey => {
-                                return JSON.stringify([{{keys.Select(k => $"x.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]) as ItemKey
-                              }, [])
-                              const getItemName = useCallback((x: AggregateType.{{displayData.TsTypeName}}) => {
-                                return `{{string.Concat(names.Select(n => $"${{x.{n.Declared.GetFullPathAsSingleViewDataClass().Join("?.")}}}"))}}`
-                              }, [])
+                              const load = useCallback(async (): Promise<AggregateType.{{displayData.TsTypeName}}[] | undefined> => {
+                                if (!ready2) return
+                                if (editRange === undefined) return // 画面表示直後の検索条件が決まっていない場合など
 
-                              const loadRemoteItems = useCallback(async (): Promise<AggregateType.{{displayData.TsTypeName}}[]> => {
-                                if (editRange === undefined) {
-                                  return [] // 画面表示直後の検索条件が決まっていない場合など
+                            {{refRepositories.SelectTextTemplate(x => $$"""
+                                const loaded{{x.RefFrom.MainAggregate.Item.ClassName}} = await load{{x.RefFrom.MainAggregate.Item.ClassName}}()
+                                if (!loaded{{x.RefFrom.MainAggregate.Item.ClassName}}) return // {{x.RefFrom.MainAggregate.Item.DisplayName}}の読み込み完了まで待機
+                            """)}}
 
-                                } else if (typeof editRange === 'string') {
-                                  return [] // 新規作成データの場合、まだリモートに存在しないため検索しない
+                                let remoteItems: AggregateType.{{agg.Item.ClassName}}[]
+                                let localItems: AggregateType.{{displayData.TsTypeName}}[]
+
+                                if (typeof editRange === 'string') {
+                                  // 新規作成データの検索。
+                                  // まだリモートに存在しないためローカルにのみ検索をかける
+                                  remoteItems = []
+                                  const found = await queryToTable(table => table.get(['{{localRepositosy.DataTypeKey}}', editRange]))
+                                  localItems = found ? [found.item as AggregateType.{{displayData.TsTypeName}}] : []
 
                                 } else if (Array.isArray(editRange)) {
+                                  // 既存データのキーによる検索（リモートリポジトリ）
                                   if ({{keyArray.Select((_, i) => $"editRange[{i}] === undefined").Join(" || ")}}) {
-                                    return []
+                                    remoteItems = []
                                   } else {
                                     const res = await get({{find.GetUrlStringForReact(keyArray.Select((_, i) => $"editRange[{i}].toString()"))}})
-                                    if (!res.ok) return []
-                                    const item = res.data as AggregateType.{{agg.Item.TypeScriptTypeName}}
-                                    return [{{WithIndent(displayData.RenderConvertToDisplayDataClass("item"), "        ")}}]
+                                    remoteItems = res.ok
+                                      ? [res.data as AggregateType.{{agg.Item.TypeScriptTypeName}}]
+                                      : []
                                   }
+
+                                  // 既存データのキーによる検索（ローカルリポジトリ）
+                                  const itemKey = JSON.stringify(editRange)
+                                  const found = await queryToTable(table => table.get(['{{localRepositosy.DataTypeKey}}', itemKey]))
+                                  localItems = found ? [found.item as AggregateType.{{displayData.TsTypeName}}] : []
+
                                 } else {
+                                  // 既存データの検索条件による検索（リモートリポジトリ）
                                   const searchParam = new URLSearchParams()
                                   if (editRange.skip !== undefined) searchParam.append('{{FindManyFeature.PARAM_SKIP}}', editRange.skip.toString())
                                   if (editRange.take !== undefined) searchParam.append('{{FindManyFeature.PARAM_TAKE}}', editRange.take.toString())
                                   const url = `{{findMany.GetUrlStringForReact()}}?${searchParam}`
                                   const res = await post<AggregateType.{{agg.Item.TypeScriptTypeName}}[]>(url, editRange.filter)
-                                  if (!res.ok) return []
-                                  return res.data.map(item => ({{WithIndent(displayData.RenderConvertToDisplayDataClass("item"), "      ")}}))
-                                }
-                              }, [editRange, getItemKey, get, post])
+                                  remoteItems = res.ok ? res.data : []
 
-                              const loadLocalItems = useCallback(async (): Promise<AggregateType.{{displayData.TsTypeName}}[]> => {
-                                if (editRange === undefined) {
-                                  return [] // 画面表示直後の検索条件が決まっていない場合など
-
-                                } else if (typeof editRange === 'string') {
-                                  // 新規作成データの検索
-                                  const found = await queryToTable(table => table.get(['{{localRepositosy.DataTypeKey}}', editRange]))
-                                  return found ? [found.item as AggregateType.{{displayData.TsTypeName}}] : []
-
-                                } else if (Array.isArray(editRange)) {
-                                  // 既存データのキーによる検索
-                                  const itemKey = JSON.stringify(editRange)
-                                  const found = await queryToTable(table => table.get(['{{localRepositosy.DataTypeKey}}', itemKey]))
-                                  return found ? [found.item as AggregateType.{{displayData.TsTypeName}}] : []
-
-                                } else {
-                                  // 既存データの検索条件による検索
-                                  const localItems: AggregateType.{{displayData.TsTypeName}}[] = []
+                                  // 既存データの検索条件による検索（ローカルリポジトリ）
+                                  localItems = []
                                   await openCursor('readonly', cursor => {
                                     if (cursor.value.dataTypeKey !== '{{localRepositosy.DataTypeKey}}') return
                                     // TODO: ローカルリポジトリのデータは参照先のキーと名前しか持っていないのでfilterでそれらが検索条件に含まれていると正確な範囲がとれない
@@ -135,65 +239,79 @@ namespace Nijo.Features.Storing {
                             """)}}
                                     localItems.push(cursor.value.item as AggregateType.{{displayData.TsTypeName}})
                                   })
-                                  return localItems
                                 }
-                              }, [editRange, queryToTable, openCursor])
 
-                              const reload = useCallback(async () => {
-                                if (!ready1 || !ready2) return
-                                setReady3(false)
-                                try {
-                                  const remoteItems = await loadRemoteItems()
-                                  const localItems = await loadLocalItems()
-                                  const remoteAndLocal = crossJoin(
-                                    localItems, local => local.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}},
-                                    remoteItems, remote => remote.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}},
-                                  ).map<AggregateType.{{displayData.TsTypeName}}>(pair => pair.left ?? pair.right)
-                                  setRemoteAndLocalItems(remoteAndLocal)
+                                // APIレスポンス型を画面表示用の型に変換する
+                                const displayDataRemoteItems = remoteItems.map(item => ({{WithIndent(displayData.RenderConvertToDisplayDataClass("item"), "    ")}}))
 
-                                } finally {
-                                  setReady3(true)
+                                // ローカルリポジトリにあるデータはそちらを優先的に表示する
+                                const remoteAndLocal =  crossJoin(
+                                  localItems, local => local.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}},
+                                  displayDataRemoteItems, remote => remote.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}},
+                                ).map<AggregateType.{{displayData.TsTypeName}}>(pair => pair.left ?? pair.right)
+                            {{refRepositories.SelectTextTemplate(x => $$"""
+
+                                // {{x.RefFrom.MainAggregate.Item.ClassName}}を{{agg.Item.ClassName}}に合成する
+                                for (const item of remoteAndLocal) {
+                            {{If(x.RefTo.MainAggregate.EnumerateAncestorsAndThis().Any(y => y.IsChildrenMember()), () => $$"""
+                                  for (const x of item{{RenderSelectMany(x.RefTo.MainAggregate)}} ?? []) {
+                                    x.{{x.RefFrom.PropName}} = loaded{{x.RefFrom.MainAggregate.Item.ClassName}}.find(y => y.{{x.RefFrom.MainAggregate.AsEntry().GetSingleRefKeyAggregate()?.GetFullPathAsSingleViewDataClass().Join(".")}} === x.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}})
+                                  }
+                            """).Else(() => $$"""
+                                  item.{{x.RefFrom.PropName}} = loaded{{x.RefFrom.MainAggregate.Item.ClassName}}.find(y => y.{{x.RefFrom.MainAggregate.AsEntry().GetSingleRefKeyAggregate()?.GetFullPathAsSingleViewDataClass().Join(".")}} === item.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}})
+                            """)}}
                                 }
-                              }, [ready1, ready2, loadRemoteItems, loadLocalItems, getItemKey])
+                            """)}}
 
-                              useEffect(() => {
-                                reload()
-                              }, [reload])
+                                return remoteAndLocal
+
+                              }, [editRange, get, post, queryToTable, openCursor{{refRepositories.Select(x => $", load{x.RefFrom.MainAggregate.Item.ClassName}").Join("")}}])
 
                             {{If(commitable, () => $$"""
                               /** 引数に渡されたデータをローカルリポジトリに登録します。 */
-                              const commit = useCallback(async (...items: AggregateType.{{displayData.TsTypeName}}[]): Promise<AggregateType.{{displayData.TsTypeName}}[]> => {
-                                const result: AggregateType.{{displayData.TsTypeName}}[] = []
-
+                              const commit = useCallback(async (...items: AggregateType.{{displayData.TsTypeName}}[]) => {
                                 for (const newValue of items) {
+                            {{refRepositories.SelectTextTemplate(x => $$"""
+                            {{If(x.RefTo.MainAggregate.EnumerateAncestorsAndThis().Any(y => y.IsChildrenMember()), () => $$"""
+                                  const arr{{x.RefFrom.MainAggregate.Item.ClassName}}: AggregateType.{{x.RefFrom.TsTypeName}}[] = []
+                                  for (const x of newValue{{RenderSelectMany(x.RefTo.MainAggregate)}} ?? []) {
+                                    if (x.{{x.RefFrom.PropName}} === undefined) continue
+                                    arr{{x.RefFrom.MainAggregate.Item.ClassName}}.push(x.{{x.RefFrom.PropName}})
+                                    delete x.{{x.RefFrom.PropName}}
+                                  }
+                                  await commit{{x.RefFrom.MainAggregate.Item.ClassName}}(...arr{{x.RefFrom.MainAggregate.Item.ClassName}})
+
+                            """).Else(() => $$"""
+                                  if (newValue.{{x.RefFrom.PropName}}) {
+                                    await commit{{x.RefFrom.MainAggregate.Item.ClassName}}(newValue.{{x.RefFrom.PropName}})
+                                    delete newValue.{{x.RefFrom.PropName}}
+                                  }
+
+                            """)}}
+                            """)}}
                                   if (newValue.willBeDeleted && !newValue.existsInRemoteRepository) {
                                     await queryToTable(table => table.delete(['{{localRepositosy.DataTypeKey}}', newValue.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}}]))
 
                                   } else if (newValue.willBeChanged || newValue.willBeDeleted) {
                                     await queryToTable(table => table.put({
                                       dataTypeKey: '{{localRepositosy.DataTypeKey}}',
-                                      itemName: getItemName?.(newValue) ?? '',
                                       itemKey: newValue.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}},
+                                      itemName: `{{string.Concat(names.Select(n => $"${{newValue.{n.Declared.GetFullPathAsSingleViewDataClass().Join("?.")}}}"))}}`,
                                       item: newValue,
                                       existsInRemoteRepository: newValue.{{DisplayDataClass.EXISTS_IN_REMOTE_REPOS}},
                                       willBeChanged: newValue.{{DisplayDataClass.WILL_BE_CHANGED}},
                                       willBeDeleted: newValue.{{DisplayDataClass.WILL_BE_DELETED}},
                                     }))
-                                    result.push(newValue)
-
-                                  } else {
-                                    result.push(newValue)
                                   }
                                 }
-                                await reloadContext()
-                                return result
-                              }, [reloadContext, getItemName, queryToTable])
 
+                                await reloadContext() // 更新があったことをサイドメニューに知らせる
+                              }, [reloadContext, queryToTable{{refRepositories.Select(x => $", commit{x.RefFrom.MainAggregate.Item.ClassName}").Join("")}}])
                             """)}}
+
                               return {
-                                ready: ready1 && ready2 && ready3,
-                                items: remoteAndLocalItems,
-                                reload,
+                                ready: ready2{{refRepositories.Select(x => $" && {x.RefFrom.MainAggregate.Item.ClassName}IsReady").Join("")}},
+                                load,
                             {{If(commitable, () => $$"""
                                 commit,
                             """)}}

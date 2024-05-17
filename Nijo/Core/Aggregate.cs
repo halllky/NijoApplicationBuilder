@@ -188,6 +188,7 @@ namespace Nijo.Core {
                 .Select(edge => edge.As<Aggregate>());
         }
 
+        #region 他の集約への参照を唯一のキーとする集約の仕組みを使っている箇所を網羅するにはここのメソッドを呼んでいる箇所を辿れば可能
         /// <summary>
         /// targetがsourceの唯一のキーであるか否か
         /// </summary>
@@ -207,6 +208,43 @@ namespace Nijo.Core {
             }
             return false;
         }
+        /// <summary>
+        /// この集約が他集約を唯一のキーとする集約の場合は当該参照先を、それ以外の場合はnullを返す
+        /// </summary>
+        internal static AggregateMember.Ref? GetSingleRefKeyAggregate(this GraphNode<Aggregate> refFrom) {
+            var refTo = refFrom
+                .GetKeys()
+                .OfType<AggregateMember.Ref>()
+                .FirstOrDefault();
+            if (refTo == null) return null;
+            if (!refTo.MemberAggregate.IsSingleRefKeyOf(refFrom)) return null;
+            return refTo;
+        }
+
+        /// <summary>
+        /// この集約を参照し、かつそれが参照元集約の唯一のキーであるものを列挙する。
+        /// </summary>
+        internal static IEnumerable<GraphEdge<Aggregate>> GetReferedEdgesAsSingleKey(this GraphNode<Aggregate> target) {
+            return target
+                .GetReferedEdges()
+                .Where(edge => edge.IsPrimary() // ある集約から別の集約へ複数の参照経路があり、
+                                                // そのうち片方がkeyの場合、両方ともとれてしまうので、この条件も加えている
+                            && target.IsSingleRefKeyOf(edge.Initial));
+        }
+        /// <summary>
+        /// この集約を参照し、かつそれが参照元集約の唯一のキーであるものを列挙する。
+        /// 参照が2連鎖以上続く場合のために再帰処理。
+        /// </summary>
+        internal static IEnumerable<GraphEdge<Aggregate>> GetReferedEdgesAsSingleKeyRecursively(this GraphNode<Aggregate> target) {
+            foreach (var ref1 in target.GetReferedEdgesAsSingleKey()) {
+                yield return ref1;
+
+                foreach (var ref2 in ref1.Initial.GetReferedEdgesAsSingleKeyRecursively()) {
+                    yield return ref2;
+                }
+            }
+        }
+        #endregion 他の集約への参照を唯一のキーとする集約の仕組みを使っている箇所を網羅するにはここのメソッドを呼んでいる箇所を辿れば可能
 
         /// <summary>
         /// この集約のすべてのメンバーが2次元の表で表現できるかどうかを返します。

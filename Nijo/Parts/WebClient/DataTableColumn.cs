@@ -9,21 +9,37 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Parts.WebClient {
+    /// <summary>
+    /// Reactテンプレート側で宣言されているコンポーネント DataTable の列定義
+    /// </summary>
     internal class DataTableColumn {
 
+        /// <summary>
+        /// 集約のメンバーを列挙して列定義を表すオブジェクトを返します。
+        /// useFieldArray の update 関数を使用しているので、その関数を参照できる場所にレンダリングされる必要があります。
+        /// </summary>
+        /// <param name="rowAccessor">DataTableの行を表すオブジェクトからその行オブジェクト内のデータオブジェクトのルートまでのパス。</param>
+        /// <param name="dataTableOwner">このDataTableにはこの集約のメンバーの列が表示されます。</param>
+        /// <param name="readOnly">このDataTableが読み取り専用か否か</param>
+        /// <param name="useFormContextType">useFormContextのジェネリック型</param>
+        /// <param name="registerPathModifier">ReactHookFormの登録パスの編集関数</param>
+        /// <param name="arrayIndexVarNamesFromFormRootToDataTableOwner">React Hook Forms の記法において、フォームのルートからdataTableOwnerまでのパスに含まれる配列インデックスを表す変数名</param>
         internal static IEnumerable<DataTableColumn> FromMembers(
             string rowAccessor,
             GraphNode<Aggregate> dataTableOwner,
-            bool readOnly) {
+            bool readOnly,
+            string? useFormContextType = null,
+            Func<string, string>? registerPathModifier = null,
+            IReadOnlyList<string>? arrayIndexVarNamesFromFormRootToDataTableOwner = null) {
 
+            // ----------------------------------------------------
+            // AggregateMember列
             var colIndex = 0;
-
-            // AggregateMemberを列定義に変換する関数
             DataTableColumn ToDataTableColumn(AggregateMember.AggregateMemberBase member) {
                 var vm = member as AggregateMember.ValueMember;
                 var refMember = member as AggregateMember.Ref;
 
-                var memberPath = member.GetFullPathAsSingleViewDataClass();
+                var memberPath = member.GetFullPathAsSingleViewDataClass(since: dataTableOwner);
 
                 // 非編集時のセル表示文字列
                 string? formatted = null;
@@ -76,8 +92,8 @@ namespace Nijo.Parts.WebClient {
                         (row, value) => row.{{rowAccessor}}.{{memberPath.Join(".")}} = value
                         """;
                 } else {
-                    var ownerPath = member.Owner.GetFullPathAsSingleViewDataClass();
-                    var rootAggPath = member.Owner.GetRoot().GetFullPathAsSingleViewDataClass();
+                    var ownerPath = member.Owner.GetFullPathAsSingleViewDataClass(since: dataTableOwner);
+                    var rootAggPath = member.Owner.GetRoot().GetFullPathAsSingleViewDataClass(since: dataTableOwner);
                     setValue = $$"""
                         (row, value) => {
                           if (row.{{rowAccessor}}.{{ownerPath.Join("?.")}}) {
@@ -109,6 +125,68 @@ namespace Nijo.Parts.WebClient {
                     HeaderGroupName = headerGroupName,
                 };
             }
+
+            // ----------------------------------------------------
+            // テーブル中の被参照集約の列のインスタンスを追加または削除するボタン
+            DataTableColumn RefFromButtonColumn(DisplayDataClass.RelationProp refFrom) {
+                var tableArrayRegisterName = dataTableOwner.GetRHFRegisterName();
+                var refFromDisplayData = new DisplayDataClass(refFrom.MainAggregate);
+                var value = refFrom.MainAggregate.Item.ClassName;
+
+                // ページのルート集約から被参照集約までのパス
+                var ownerPath = refFrom.MainAggregate.GetFullPathAsSingleViewDataClass(since: dataTableOwner);
+                var arrayIndexes = new List<string>();
+                if (arrayIndexVarNamesFromFormRootToDataTableOwner != null) arrayIndexes.AddRange(arrayIndexVarNamesFromFormRootToDataTableOwner);
+                arrayIndexes.Add("row.index");
+                var registerName = refFrom.MainAggregate.GetRHFRegisterName(arrayIndexes).Join(".");
+                if (registerPathModifier != null) registerName = registerPathModifier(registerName);
+
+                // 参照先のitemKeyと対応するプロパティを初期化する
+                string? RefKeyInitializer(AggregateMember.AggregateMemberBase member) {
+                    if (member is AggregateMember.Ref r && r.MemberAggregate == dataTableOwner) {
+                        return $"row.original.{rowAccessor}.{DisplayDataClass.LOCAL_REPOS_ITEMKEY}";
+
+                    } else {
+                        return null;
+                    }
+                };
+
+                return new DataTableColumn {
+                    Id = $"ref-from-{refFrom.PropName}",
+                    Header = string.Empty,
+                    HeaderGroupName = refFrom.MainAggregate.Item.ClassName,
+                    Cell = $$"""
+                        ({ row }) => {
+
+                          const create{{refFrom.MainAggregate.Item.ClassName}} = useCallback(() => {
+                            if (row.original.{{rowAccessor}}{{ownerPath.SkipLast(1).Select(x => $"?.{x}").Join("")}}) {
+                              row.original.{{rowAccessor}}.{{ownerPath.Join(".")}} = {{WithIndent(refFromDisplayData.RenderNewObjectLiteral(RefKeyInitializer), "      ")}}
+                              update(row.index, { ...row.original.{{rowAccessor}} })
+                            }
+                          }, [row.index])
+
+                          const delete{{refFrom.MainAggregate.Item.ClassName}} = useCallback(() => {
+                            if (row.original.{{rowAccessor}}.{{ownerPath.Join("?.")}}) {
+                              row.original.{{rowAccessor}}.{{ownerPath.Join(".")}}.{{DisplayDataClass.WILL_BE_DELETED}} = true
+                              update(row.index, { ...row.original.{{rowAccessor}} })
+                            }
+                          }, [row.index])
+
+                          const {{value}} = row.original.{{rowAccessor}}.{{ownerPath.Join("?.")}}
+
+                          return <>
+                            {({{value}} === undefined || {{value}}.{{DisplayDataClass.WILL_BE_DELETED}}) && (
+                              <Input.Button icon={PlusIcon} onClick={create{{refFrom.MainAggregate.Item.ClassName}}}>作成</Input.Button>
+                            )}
+                            {({{value}} !== undefined && !{{value}}.{{DisplayDataClass.WILL_BE_DELETED}}) && (
+                              <Input.Button icon={XMarkIcon} onClick={delete{{refFrom.MainAggregate.Item.ClassName}}}>削除</Input.Button>
+                            )}
+                          </>
+                        }
+                        """,
+                };
+            }
+
             // ----------------------------------------------------
 
             // グリッドに表示するメンバーを列挙
@@ -135,10 +213,16 @@ namespace Nijo.Parts.WebClient {
                         yield return reucusive;
                     }
                 }
+
+                foreach (var prop in dataClass.GetRefFromProps()) {
+                    yield return RefFromButtonColumn(prop);
+                    foreach (var recursive in Collect(new DisplayDataClass(prop.MainAggregate))) {
+                        yield return recursive;
+                    }
+                }
             }
 
-            // ソース中にラムダ式が登場するのでエントリー化
-            var root = new DisplayDataClass(dataTableOwner.AsEntry());
+            var root = new DisplayDataClass(dataTableOwner);
 
             foreach (var column in Collect(root)) {
                 yield return column;

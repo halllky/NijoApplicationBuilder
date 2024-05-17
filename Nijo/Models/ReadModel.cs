@@ -78,12 +78,15 @@ namespace Nijo.Models {
                         const handleRecalculateClick = useCallback(async () => {
                           const res = await post(`/{{controller.SubDomain}}/{{CONTROLLER_ACTION_NAME}}`)
                           if (res.ok) {
-                            await reload()
+                            const currentPageItems = await load()
+                            if (currentPageItems) {
+                              reset({ currentPageItems })
+                            }
                             dispatchMsg(msg => msg.info('洗い替え処理が完了しました。'))
                           } else {
-                            dispatchMsg(msg => msg.error('洗い替え処理でエラーが発生しました。'))
+                            dispatchMsg(msg => msg.error('  洗い替え処理でエラーが発生しました。'))
                           }
-                        }, [post, reload])
+                        }, [post, load, reset])
                         """,
                     PageTitleSide = $$"""
                         <Input.Button onClick={handleRecalculateClick}>全件洗い替え(デバッグ用)</Input.Button>

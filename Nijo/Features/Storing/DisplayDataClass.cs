@@ -61,10 +61,80 @@ namespace Nijo.Features.Storing {
             }
         }
 
+        internal IEnumerable<RelationProp> GetRefFromProps() {
+            var refs = MainAggregate
+                .GetReferedEdgesAsSingleKey()
+                .Where(edge => edge.Initial.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key)
+                // TODO: 本当はDistinctを使いたいがAggregateの同一性判断にSourceが入っていない
+                .GroupBy(relation => new { agg = relation.Initial.GetRoot(), relation })
+                .Select(group => new RelationProp(group.Key.relation, null));
+            foreach (var item in refs) {
+                yield return item;
+            }
+        }
+        /// <summary>
+        /// この集約またはこの集約の子孫を唯一のキーとする集約を再帰的に列挙する
+        /// </summary>
+        internal IEnumerable<(RelationProp, string[] Path, bool IsArray)> GetRefFromPropsRecursively() {
+            var refFromPros = new List<(RelationProp, string[] Path, bool IsArray)>();
+            void Collect(DisplayDataClass dc, string[] beforePath, bool beforeIsMany) {
+                foreach (var rel in dc.GetRefFromProps().Concat(dc.GetChildProps())) {
+
+                    // thisInstanceName.child_子要素.map(x => x.ref_from_参照元)
+                    // 上記のように参照元のルート要素を全部収集する式を作っている
+                    string thisPath;
+                    if (beforeIsMany) {
+                        thisPath = rel.IsArray
+                            ? $"flatMap(x => x?.{rel.PropName})"
+                            : $"map(x => x?.{rel.PropName})";
+                    } else {
+                        thisPath = $"{rel.PropName}";
+                    }
+
+                    var path = beforePath.Concat(new[] { thisPath }).ToArray();
+                    if (rel.Type == RelationProp.E_Type.RefFrom) {
+                        refFromPros.Add((rel, path, beforeIsMany || rel.IsArray));
+                    }
+                    Collect(rel, path, beforeIsMany || rel.IsArray);
+                }
+            }
+            Collect(this, [], false);
+            return refFromPros;
+        }
+
         /// <summary>
         /// 新規オブジェクト作成のリテラルをレンダリングします。
         /// </summary>
-        internal string RenderNewObjectLiteral() {
+        /// <param name="initValue">初期値を宣言するソースコード。 "{member.MemberName}: {0}," の{0}の形にすること。nullを返した場合は既定の値で初期化される。</param>
+        internal string RenderNewObjectLiteral(Func<AggregateMember.AggregateMemberBase, string?>? initValue = null) {
+
+            // 初期値をレンダリングする。nullを返した場合は明示的な初期値なしになる。
+            string? RenderOwnMemberInitialize(AggregateMember.AggregateMemberBase member) {
+                // 引数で指定された初期値
+                var argInitValue = initValue?.Invoke(member);
+                if (argInitValue != null) {
+                    return $"{member.MemberName}: {argInitValue},";
+                }
+
+                // UUID型
+                if (member is AggregateMember.Schalar schalar
+                    && schalar.DeclaringAggregate == MainAggregate
+                    && schalar.Options.MemberType is Uuid) {
+
+                    return $"{member.MemberName}: UUID.generate(),";
+                }
+
+                // バリエーション
+                if (member is AggregateMember.Variation variation
+                    && variation.DeclaringAggregate == MainAggregate) {
+
+                    return $"{member.MemberName}: '{variation.GetGroupItems().First().Key}',";
+                }
+
+                // 初期値なし
+                return null;
+            }
+
             return $$"""
                 {
                 {{If(MainAggregate.IsRoot() || MainAggregate.IsChildrenMember(), () => $$"""
@@ -74,11 +144,8 @@ namespace Nijo.Features.Storing {
                   {{WILL_BE_DELETED}}: false,
                 """)}}
                   {{OWN_MEMBERS}}: {
-                {{MainAggregate.GetMembers().OfType<AggregateMember.Schalar>().Where(m => m.DeclaringAggregate == MainAggregate && m.Options.MemberType is Uuid).SelectTextTemplate(m => $$"""
-                    {{m.MemberName}}: UUID.generate(),
-                """)}}
-                {{MainAggregate.GetMembers().OfType<AggregateMember.Variation>().Where(m => m.DeclaringAggregate == MainAggregate).SelectTextTemplate(m => $$"""
-                    {{m.MemberName}}: '{{m.GetGroupItems().First().Key}}',
+                {{MainAggregate.GetMembers().Select(RenderOwnMemberInitialize).OfType<string>().SelectTextTemplate(line => $$"""
+                    {{WithIndent(line, "    ")}}
                 """)}}
                   },
                 }
@@ -145,9 +212,35 @@ namespace Nijo.Features.Storing {
                     willBeDeleted: displayData.{{WILL_BE_DELETED}},
                     item: {{WithIndent(RenderItem(this, "displayData"), "    ")}},
                   }
+                {{GetRefFromPropsRecursively().SelectTextTemplate((x, i) => x.IsArray ? $$"""
+
+                  const item{{i + 1}}: Util.LocalRepositoryItem<{{x.Item1.MainAggregate.Item.TypeScriptTypeName}}>[] = displayData{{string.Concat(x.Path.Select(p => $"{Environment.NewLine}    ?.{p}"))}}
+                    .filter((y): y is Exclude<typeof y, undefined> => y !== undefined)
+                    .map(y => ({
+                      itemKey: y.{{LOCAL_REPOS_ITEMKEY}},
+                      existsInRemoteRepository: y.{{EXISTS_IN_REMOTE_REPOS}},
+                      willBeChanged: y.{{WILL_BE_CHANGED}},
+                      willBeDeleted: y.{{WILL_BE_DELETED}},
+                      item: {{WithIndent(RenderItem(new DisplayDataClass(x.Item1.MainAggregate.AsEntry()), "y"), "      ")}},
+                    })) ?? []
+                """ : $$"""
+
+                  const item{{i + 1}}: Util.LocalRepositoryItem<{{x.Item1.MainAggregate.Item.TypeScriptTypeName}}> | undefined = displayData{{x.Path.Select(p => $"?.{p}").Join("")}} === undefined
+                    ? undefined
+                    : {
+                      itemKey: displayData{{x.Path.Select(p => $".{p}").Join("")}}.{{LOCAL_REPOS_ITEMKEY}},
+                      existsInRemoteRepository: displayData{{x.Path.Select(p => $".{p}").Join("")}}.{{EXISTS_IN_REMOTE_REPOS}},
+                      willBeChanged: displayData{{x.Path.Select(p => $".{p}").Join("")}}.{{WILL_BE_CHANGED}},
+                      willBeDeleted: displayData{{x.Path.Select(p => $".{p}").Join("")}}.{{WILL_BE_DELETED}},
+                      item: {{WithIndent(RenderItem(x.Item1, "displayData"), "      ")}},
+                    }
+                """)}}
 
                   return [
                     item0,
+                {{GetRefFromPropsRecursively().SelectTextTemplate((_, i) => $$"""
+                    item{{i + 1}},
+                """)}}
                   ] as const
                 }
                 """;
@@ -157,6 +250,12 @@ namespace Nijo.Features.Storing {
         /// データ型変換関数 (<see cref="TransactionScopeDataClass"/> => <see cref="DisplayDataClass"/>)
         /// </summary>
         internal string RenderConvertToDisplayDataClass(string mainArgName) {
+            var refArgs = GetRefFromPropsRecursively()
+                .DistinctBy(p => p.Item1.MainAggregate)
+                .Select(p => new {
+                    RelProp = p,
+                    ArgName = $"{p.Item1.MainAggregate.Item.ClassName}Items",
+                }).ToArray();
 
             // 子孫要素を参照するデータを引数の配列中から探すためにはキーで引き当てる必要があるが、
             // 子孫要素のラムダ式の中ではその外にある変数を参照するしかない
@@ -174,7 +273,8 @@ namespace Nijo.Features.Storing {
                     // 実際にはここでcontinueされるのは親のキーだけのはず。Render関数はルートから順番に呼び出されるので
                     if (pkVarNames.ContainsKey(key.Declared)) continue;
 
-                    pkVarNames.Add(key.Declared, $"{instance}.{key.Declared.GetFullPath().Join("?.")}");
+                    /// 変換元のデータ型が <see cref="TransactionScopeDataClass"/> のため、キーが <see cref="RefTargetKeyName"/> の可能性がある。そのためキーのオーナーからのフルパスにしている
+                    pkVarNames.Add(key.Declared, $"{instance}?.{key.Declared.GetFullPath(since: key.Owner).Join("?.")}");
                 }
 
                 var ownMembers = dc.MainAggregate
@@ -182,6 +282,7 @@ namespace Nijo.Features.Storing {
                     .GetMembers()
                     .Where(m => m.DeclaringAggregate == dc.MainAggregate
                              && (m is AggregateMember.ValueMember || m is AggregateMember.Ref));
+                var item = dc.MainAggregate.IsRoot() ? $"{instance}.item" : instance;
                 var depth = dc.MainAggregate.EnumerateAncestors().Count();
 
                 string MemberValue(AggregateMember.AggregateMemberBase m) {
@@ -191,7 +292,7 @@ namespace Nijo.Features.Storing {
                             .OfType<AggregateMember.ValueMember>();
                         return $$"""
                             {{instance}}?.{{m.MemberName}}
-                              ? JSON.stringify([{{keys.Select(k => $"{instance}.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]) as ItemKey
+                              ? JSON.stringify([{{keys.Select(k => $"{instance}?.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]) as ItemKey
                               : undefined
                             """;
 
@@ -246,6 +347,9 @@ namespace Nijo.Features.Storing {
                     """)}}
                       }
                     {{dataClass.GetChildProps().SelectTextTemplate(p => $$"""
+                      {{p.PropName}}?: {{(p.IsArray ? $"{new DisplayDataClass(p.MainAggregate).TsTypeName}[]" : new DisplayDataClass(p.MainAggregate).TsTypeName)}}
+                    """)}}
+                    {{dataClass.GetRefFromProps().SelectTextTemplate(p => $$"""
                       {{p.PropName}}?: {{(p.IsArray ? $"{new DisplayDataClass(p.MainAggregate).TsTypeName}[]" : new DisplayDataClass(p.MainAggregate).TsTypeName)}}
                     """)}}
                     }
@@ -346,6 +450,12 @@ namespace Nijo.Features.Storing {
                         paths.Add(AggregateMember.PARENT_PROPNAME); // 子から親に向かって辿る場合
 
                     } else if (edge.IsRef()) {
+                        var dataClass = new DisplayDataClass(edge.Terminal.As<Aggregate>());
+                        paths.Add(dataClass
+                            .GetRefFromProps()
+                            .Single(p => p.MainAggregate.Source == edge)
+                            .PropName);
+
                         enumeratingRefTargetKeyName = false;
 
                     } else {
@@ -416,6 +526,11 @@ namespace Nijo.Features.Storing {
                         yield return AggregateMember.PARENT_PROPNAME; // 子から親に向かって辿る場合
 
                     } else if (edge.IsRef()) {
+                        var dc = new DisplayDataClass(edge.Terminal.As<Aggregate>());
+                        yield return dc
+                            .GetRefFromProps()
+                            .Single(p => p.MainAggregate.Source == edge)
+                            .PropName;
 
                     } else {
                         throw new InvalidOperationException($"有向グラフの矢印の先から元に向かうパターンは親子か参照だけなのでこの分岐にくることはあり得ないはず");
