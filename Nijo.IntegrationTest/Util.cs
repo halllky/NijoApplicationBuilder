@@ -381,7 +381,7 @@ namespace Nijo.IntegrationTest {
         /// ローカルリポジトリの変更をコミットする
         /// </summary>
         internal static void CommitLocalRepositoryChanges(this OpenQA.Selenium.IWebDriver driver) {
-            driver.FindElement(ByInnerText("変更")).Click();
+            driver.FindElement(ByInnerText("一時保存")).Click();
             driver.FindElement(ByInnerText("確定")).Click();
             driver.SwitchTo().Alert().Accept();
         }
@@ -389,7 +389,7 @@ namespace Nijo.IntegrationTest {
         /// ローカルリポジトリの変更をキャンセルする
         /// </summary>
         internal static void CancelLocalRepositoryChanges(this OpenQA.Selenium.IWebDriver driver) {
-            driver.FindElement(ByInnerText("変更")).Click();
+            driver.FindElement(ByInnerText("一時保存")).Click();
             driver.FindElement(ByInnerText("取り消し")).Click();
             driver.SwitchTo().Alert().Accept();
         }
