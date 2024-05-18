@@ -10,7 +10,9 @@ using Nijo.Util.CodeGenerating;
 using Nijo.Parts.WebClient;
 
 namespace Nijo.Features.Storing {
-
+    /// <summary>
+    /// <see cref="SingleView"/> を構成する部分となる、集約1つごとに生成されるReactコンポーネント
+    /// </summary>
     internal class AggregateComponent {
         internal AggregateComponent(GraphNode<Aggregate> aggregate, SingleView.E_Type type, bool asSingleRefKeyAggregate) {
             if (!aggregate.IsRoot()) throw new ArgumentException("ルート集約でない場合はもう片方のコンストラクタを使用");
@@ -344,135 +346,113 @@ namespace Nijo.Features.Storing {
             }
         }
 
-        private string RenderMembers() {
-            return GetMembers().SelectTextTemplate(prop => prop switch {
-                AggregateMember.Schalar x => RenderProperty(x),
-                AggregateMember.Ref x => RenderProperty(x),
-                AggregateMember.Child x => RenderProperty(x),
-                AggregateMember.VariationItem x => string.Empty, // Variationの分岐の中でレンダリングされるので // RenderProperty(x),
-                AggregateMember.Variation x => RenderProperty(x),
-                AggregateMember.Children x => RenderProperty(x),
-                _ => throw new NotImplementedException(),
-            });
-        }
+        private IEnumerable<string> RenderMembers() {
+            foreach (var member in GetMembers()) {
 
-        private string RenderProperty(AggregateMember.Children children) {
-            var childrenComponent = new AggregateComponent(children, _mode);
+                if (member is AggregateMember.Schalar schalar) {
+                    if (schalar.Options.InvisibleInGui) {
+                        yield return $$"""
+                            <input type="hidden" {...register(`{{schalar.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()])).Join(".")}}`)} />
+                            """;
 
-            return $$"""
-                {{childrenComponent.RenderCaller()}}
-                """;
-        }
+                    } else {
+                        var reactComponent = schalar.Options.MemberType.GetReactComponent(new GetReactComponentArgs {
+                            Type = GetReactComponentArgs.E_Type.InDetailView,
+                        });
 
-        private string RenderProperty(AggregateMember.Child child) {
-            var childComponent = new AggregateComponent(child, _mode);
+                        // read only
+                        if (_mode == SingleView.E_Type.View) {
+                            reactComponent.Props.Add("readOnly", string.Empty);
 
-            return $$"""
-                <VForm.Container label="{{child.MemberName}}">
-                  {{childComponent.RenderCaller()}}
-                </VForm.Container>
-                """;
-        }
+                        } else if (_mode == SingleView.E_Type.Edit
+                                   && schalar is AggregateMember.ValueMember vm
+                                   && vm.IsKey) {
+                            if (_aggregate.IsRoot() || _aggregate.IsChildrenMember()) {
+                                reactComponent.Props.Add("readOnly", $"item?.{DisplayDataClass.EXISTS_IN_REMOTE_REPOS}");
+                            }
+                        }
 
-        private string RenderProperty(AggregateMember.VariationItem variation) {
-            var childComponent = new AggregateComponent(variation, _mode);
-            return $$"""
-                {{WithIndent(childComponent.RenderCaller(), "")}}
-                """;
-        }
-
-        private string RenderProperty(AggregateMember.Variation variationSwitch) {
-            var switchProp = $"`{variationSwitch.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()])).Join(".")}`";
-            var disabled = IfReadOnly("disabled", variationSwitch);
-
-            return $$"""
-                <VForm.Container
-                  labelSide={<>
-                    {{variationSwitch.MemberName}}
-                    <Input.Selection
-                      {...registerEx({{switchProp}})}
-                      options={[
-                {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
-                        { value: '{{variation.Key}}', text: '{{variation.MemberName}}' },
-                """)}}
-                      ]}
-                      keySelector={item => item.value}
-                      textSelector={item => item.text}
-                    />
-                  </>}
-                >
-                {{variationSwitch.GetGroupItems().SelectTextTemplate(item => $$"""
-                  {{WithIndent(RenderProperty(item), "  ")}}
-                """)}}
-                </VForm.Container>
-                """;
-        }
-
-        private string RenderProperty(AggregateMember.Ref refProperty) {
-            if (_aggregate != _aggregate.GetEntry().As<Aggregate>()) {
-                // このコンポーネントが参照先集約のSingleViewの一部としてレンダリングされている場合、
-                // キーがどの参照先データかは自明のため、非表示にする。
-                return $$"""
-                    <input type="hidden" {...register(`{{refProperty.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()])).Join(".")}}`)} />
-                    """;
-
-            } else if (_mode == SingleView.E_Type.View) {
-                // リンク
-                var navigation = new NavigationWrapper(refProperty.RefTo);
-
-                return $$"""
-                    <VForm.Item label="{{refProperty.MemberName}}">
-                      <Link className="text-link" to={Util.{{navigation.GetSingleViewUrlHookName}}(getValues('{{refProperty.RefTo.GetFullPathAsSingleViewDataClass().Join(".")}}'), 'view')}>
-                        {getValues('{{refProperty.RefTo.GetFullPathAsSingleViewDataClass().Join(".")}}')}
-                      </Link>
-                    </VForm.Item>
-                    """;
-
-            } else {
-                // コンボボックス
-                var registerName = $"`{refProperty.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()])).Join(".")}`";
-                var combobox = new ComboBox(refProperty.RefTo);
-                var component = _mode switch {
-                    SingleView.E_Type.Create => combobox.RenderCaller(registerName, "className='w-full'"),
-                    SingleView.E_Type.Edit => combobox.RenderCaller(registerName, "className='w-full'", IfReadOnly("readOnly", refProperty)),
-                    _ => throw new NotImplementedException(),
-                };
-                return $$"""
-                    <VForm.Item label="{{refProperty.MemberName}}">
-                      {{WithIndent(component, "  ")}}
-                    </VForm.Item>
-                    """;
-            }
-        }
-
-        private string RenderProperty(AggregateMember.Schalar schalar) {
-            if (schalar.Options.InvisibleInGui) {
-                return $$"""
-                    <input type="hidden" {...register(`{{schalar.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()])).Join(".")}}`)} />
-                    """;
-
-            } else {
-                var reactComponent = schalar.Options.MemberType.GetReactComponent(new GetReactComponentArgs {
-                    Type = GetReactComponentArgs.E_Type.InDetailView,
-                });
-
-                // read only
-                if (_mode == SingleView.E_Type.View) {
-                    reactComponent.Props.Add("readOnly", string.Empty);
-
-                } else if (_mode == SingleView.E_Type.Edit
-                           && schalar is AggregateMember.ValueMember vm
-                           && vm.IsKey) {
-                    if (_aggregate.IsRoot() || _aggregate.IsChildrenMember()) {
-                        reactComponent.Props.Add("readOnly", $"item?.{DisplayDataClass.EXISTS_IN_REMOTE_REPOS}");
+                        yield return $$"""
+                            <VForm.Item label="{{schalar.MemberName}}">
+                              <{{reactComponent.Name}} {...registerEx(`{{schalar.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()])).Join(".")}}`)}{{string.Concat(reactComponent.GetPropsStatement())}} />
+                            </VForm.Item>
+                            """;
                     }
-                }
 
-                return $$"""
-                    <VForm.Item label="{{schalar.MemberName}}">
-                      <{{reactComponent.Name}} {...registerEx(`{{schalar.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()])).Join(".")}}`)}{{string.Concat(reactComponent.GetPropsStatement())}} />
-                    </VForm.Item>
-                    """;
+                } else if (member is AggregateMember.Ref refProperty) {
+                    if (_aggregate != _aggregate.GetEntry().As<Aggregate>()) {
+                        // このコンポーネントが参照先集約のSingleViewの一部としてレンダリングされている場合、
+                        // キーがどの参照先データかは自明のため、非表示にする。
+                        yield return $$"""
+                            <input type="hidden" {...register(`{{refProperty.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()])).Join(".")}}`)} />
+                            """;
+
+                    } else if (_mode == SingleView.E_Type.View) {
+                        // リンク
+                        var navigation = new NavigationWrapper(refProperty.RefTo);
+
+                        yield return $$"""
+                             <VForm.Item label="{{refProperty.MemberName}}">
+                               <Link className="text-link" to={Util.{{navigation.GetSingleViewUrlHookName}}(getValues('{{refProperty.RefTo.GetFullPathAsSingleViewDataClass().Join(".")}}'), 'view')}>
+                                 {getValues('{{refProperty.RefTo.GetFullPathAsSingleViewDataClass().Join(".")}}')}
+                               </Link>
+                             </VForm.Item>
+                             """;
+
+                    } else {
+                        // コンボボックス
+                        var registerName = $"`{refProperty.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()])).Join(".")}`";
+                        var combobox = new ComboBox(refProperty.RefTo);
+                        var component = _mode switch {
+                            SingleView.E_Type.Create => combobox.RenderCaller(registerName, "className='w-full'"),
+                            SingleView.E_Type.Edit => combobox.RenderCaller(registerName, "className='w-full'", IfReadOnly("readOnly", refProperty)),
+                            _ => throw new NotImplementedException(),
+                        };
+                        yield return $$"""
+                            <VForm.Item label="{{refProperty.MemberName}}">
+                              {{WithIndent(component, "  ")}}
+                            </VForm.Item>
+                            """;
+                    }
+
+                } else if (member is AggregateMember.Children children) {
+                    yield return $$"""
+                        {{new AggregateComponent(children, _mode).RenderCaller()}}
+                        """;
+
+                } else if (member is AggregateMember.Child child) {
+                    yield return $$"""
+                        <VForm.Container label="{{child.MemberName}}">
+                          {{new AggregateComponent(child, _mode).RenderCaller()}}
+                        </VForm.Container>
+                        """;
+
+                } else if (member is AggregateMember.Variation variationSwitch) {
+                    var switchProp = $"`{variationSwitch.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()])).Join(".")}`";
+                    var disabled = IfReadOnly("disabled", variationSwitch);
+
+                    yield return $$"""
+                        <VForm.Container
+                          labelSide={<>
+                            {{variationSwitch.MemberName}}
+                            <Input.Selection
+                              {...registerEx({{switchProp}})}
+                              options={[
+                        {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
+                                { value: '{{variation.Key}}', text: '{{variation.MemberName}}' },
+                        """)}}
+                              ]}
+                              keySelector={item => item.value}
+                              textSelector={item => item.text}
+                            />
+                          </>}
+                        >
+                        {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
+                          {{WithIndent(new AggregateComponent(variation, _mode).RenderCaller(), "  ")}}
+                        """)}}
+                        </VForm.Container>
+                        """;
+                }
             }
         }
 
