@@ -250,7 +250,7 @@ namespace Nijo.Features.Storing {
                         const response = await post<AggregateType.{{dataClass.TsTypeName}}>(`{{controller.CreateCommandApi}}`, data)
                         if (response.ok) {
                           dispatchMsg(msg => msg.info(`${({{names.Select(path => $"String(response.data.{path})").Join(" + ")}})}を作成しました。`))
-                          navigate(`{{GetUrlStringForReact(E_Type.View, keys.Select(m => TransactionScopeDataClass.GetPathOf("response.data", _aggregate, m).Join("?.")))}}`)
+                          navigate(`{{GetUrlStringForReact(E_Type.View, keys.Select(vm => $"response.data.{vm.GetFullPath().Join("?.")}"))}}`)
                         }
                       }, [post, navigate])
 

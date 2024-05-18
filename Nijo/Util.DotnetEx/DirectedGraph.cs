@@ -373,7 +373,11 @@ namespace Nijo.Util.DotnetEx {
             return new GraphPath(list);
         }
 
-        protected override IEnumerable<object?> ValueObjectIdentifiers() => _edges;
+        protected override IEnumerable<object?> ValueObjectIdentifiers() {
+            foreach (var edge in _edges) {
+                yield return edge;
+            }
+        }
         public IEnumerator<GraphEdge> GetEnumerator() => _edges.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }

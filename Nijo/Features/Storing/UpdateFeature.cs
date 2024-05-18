@@ -45,7 +45,7 @@ namespace Nijo.Features.Storing {
             var searchKeys = _aggregate
                 .GetKeys()
                 .OfType<AggregateMember.ValueMember>()
-                .Select(vm => TransactionScopeDataClass.GetPathOf("after", _aggregate, vm).Join("."))
+                .Select(vm => $"after.{vm.Declared.GetFullPath().Join(".")}")
                 .ToArray();
 
             return $$"""

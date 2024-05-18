@@ -58,34 +58,6 @@ namespace Nijo.Features.Storing {
                 """;
         }
 
-        /// <summary>
-        /// 以下の事情を考慮したパスを返す。
-        /// - Childrenのメンバーはthis等ではなくSelectのラムダ式の変数のメンバーになる
-        /// - 参照先のメンバーは <see cref="RefTargetKeyName"/> に生成されるメンバーになる
-        ///   - <see cref="RefTargetKeyName"/> のメンバーのうち祖先のキーはそのKeyNameクラスの中で定義されている
-        ///   - <see cref="RefTargetKeyName"/> のメンバーのうちさらに参照先のキーがある場合はKeyNameクラスの入れ子になる
-        /// </summary>
-        internal static IEnumerable<string> GetPathOf(string instance, GraphNode<Aggregate> entry, AggregateMember.ValueMember vm) {
-            // 移送元インスタンスを特定する
-            GraphNode<Aggregate> source;
-            if (vm.DeclaringAggregate.IsInTreeOf(entry)) {
-                source = vm.DeclaringAggregate;
-            } else {
-                // ツリー外に出る直前の集約がSourceInstance
-                source = entry;
-                foreach (var edge in vm.DeclaringAggregate.PathFromEntry()) {
-                    var a = edge.Initial.As<Aggregate>();
-                    if (a.IsInTreeOf(entry)) source = a;
-                }
-            }
-            var (instanceName, valueSource) = GetSourceInstanceOf(instance, source);
-
-            yield return instanceName;
-            foreach (var path in vm.Declared.GetFullPath(valueSource)) {
-                yield return path;
-            }
-        }
-
 
         #region FromDbEntity
         internal string FromDbEntity(CodeRenderingContext ctx) {
@@ -164,47 +136,52 @@ namespace Nijo.Features.Storing {
         #region ToDbEntity
         internal string ToDbEntity(CodeRenderingContext ctx) {
 
-            static IEnumerable<string> RenderBodyOfToDbEntity(GraphNode<Aggregate> renderingAggregate, Config config) {
-                foreach (var prop in renderingAggregate.GetMembers()) {
-                    if (prop is AggregateMember.ValueMember vm) {
-                        var entry = renderingAggregate.GetEntry().As<Aggregate>();
-                        var path = GetPathOf("this", entry, vm);
+            // - 子孫要素を参照するデータを引数の配列中から探すためにはキーで引き当てる必要があるが、
+            //   子孫要素のラムダ式の中ではその外にある変数を参照するしかない
+            // - 複数経路の参照があるケースを想定してGraphPathもキーに加えている
+            var pkVarNames = new Dictionary<(AggregateMember.ValueMember, GraphPath), string>();
+
+            IEnumerable<string> RenderBodyOfToDbEntity(GraphNode<Aggregate> agg, GraphNode<Aggregate> instanceAgg, string instanceName, Config config) {
+
+                var keys = agg.GetKeys().OfType<AggregateMember.ValueMember>();
+                foreach (var key in keys) {
+                    var path = key.DeclaringAggregate.PathFromEntry();
+                    if (!pkVarNames.ContainsKey((key.Declared, path)))
+                        pkVarNames.Add((key.Declared, path), $"{instanceName}.{key.Declared.GetFullPath(since: instanceAgg).Join("?.")}");
+                }
+
+                foreach (var member in agg.GetMembers()) {
+                    if (member is AggregateMember.ValueMember vm) {
+                        var path = vm.DeclaringAggregate.PathFromEntry();
+                        var value = pkVarNames.TryGetValue((vm.Declared, path), out var ancestorInstanceValue)
+                            ? ancestorInstanceValue
+                            : $"{instanceName}.{vm.Declared.GetFullPath(since: instanceAgg).Join("?.")}";
 
                         yield return $$"""
-                            {{vm.MemberName}} = {{path.First()}}.{{path.Skip(1).Join("?.")}},
+                            {{vm.MemberName}} = {{value}},
                             """;
 
-                    } else if (prop is AggregateMember.Ref refProp) {
-                        continue;
-
-                    } else if (prop is AggregateMember.Parent) {
-                        continue;
-
-                    } else if (prop is AggregateMember.Children children) {
+                    } else if (member is AggregateMember.Children children) {
                         var nav = children.GetNavigationProperty();
                         var childDbEntityClass = $"{config.EntityNamespace}.{nav.Relevant.Owner.Item.EFCoreEntityClassName}";
-                        var (instanceName, valueSource) = GetSourceInstanceOf("this", children.DeclaringAggregate);
-                        var (item, _) = GetSourceInstanceOf("this", children.ChildrenAggregate);
+                        var loopVar = $"item{children.ChildrenAggregate.EnumerateAncestors().Count()}";
 
                         yield return $$"""
-                            {{children.MemberName}} = {{instanceName}}.{{prop.GetFullPath(valueSource).Join("?.")}}?.Select({{item}} => new {{childDbEntityClass}} {
-                                {{WithIndent(RenderBodyOfToDbEntity(children.ChildrenAggregate, config), "    ")}}
+                            {{children.MemberName}} = {{instanceName}}.{{member.GetFullPath(since: instanceAgg).Join("?.")}}?.Select({{loopVar}} => new {{childDbEntityClass}} {
+                                {{WithIndent(RenderBodyOfToDbEntity(children.ChildrenAggregate, children.ChildrenAggregate, loopVar, config), "    ")}}
                             }).ToHashSet() ?? new HashSet<{{childDbEntityClass}}>(),
                             """;
 
-                    } else if (prop is AggregateMember.RelationMember child) {
-                        var nav = child.GetNavigationProperty();
-                        var childProp = nav.Principal.PropertyName;
+                    } else if (member is AggregateMember.RelationMember childOrVariation
+                        && (member is AggregateMember.Child || member is AggregateMember.VariationItem)) {
+                        var nav = childOrVariation.GetNavigationProperty();
                         var childDbEntityClass = $"{config.EntityNamespace}.{nav.Relevant.Owner.Item.EFCoreEntityClassName}";
 
                         yield return $$"""
-                            {{child.MemberName}} = new {{childDbEntityClass}} {
-                                {{WithIndent(RenderBodyOfToDbEntity(child.MemberAggregate, config), "    ")}}
+                            {{childOrVariation.MemberName}} = new {{childDbEntityClass}} {
+                                {{WithIndent(RenderBodyOfToDbEntity(childOrVariation.MemberAggregate, instanceAgg, instanceName, config), "    ")}}
                             },
                             """;
-
-                    } else {
-                        throw new NotImplementedException();
                     }
                 }
             }
@@ -215,32 +192,17 @@ namespace Nijo.Features.Storing {
                 /// </summary>
                 public {{ctx.Config.EntityNamespace}}.{{_aggregate.Item.EFCoreEntityClassName}} {{TO_DBENTITY}}() {
                     return new {{ctx.Config.EntityNamespace}}.{{_aggregate.Item.EFCoreEntityClassName}} {
-                        {{WithIndent(RenderBodyOfToDbEntity(_aggregate, ctx.Config), "        ")}}
+                        {{WithIndent(RenderBodyOfToDbEntity(_aggregate, _aggregate, "this", ctx.Config), "        ")}}
                     };
                 }
                 """;
-        }
-
-        /// <summary>
-        /// 集約ツリーの途中でChildrenが挟まるたびに Select(x => ...) によって値取得元インスタンスが変わる問題を解決する
-        /// </summary>
-        private static (string instanceName, GraphNode<Aggregate>) GetSourceInstanceOf(string instance, GraphNode<Aggregate> aggregate) {
-            var valueSourceAggregate = aggregate
-                .EnumerateAncestorsAndThis()
-                .Reverse()
-                .First(a => a.IsRoot() || a.IsChildrenMember());
-            var instanceName = valueSourceAggregate.IsRoot()
-                ? instance
-                : $"item{valueSourceAggregate.EnumerateAncestors().Count()}";
-
-            return (instanceName, valueSourceAggregate);
         }
         #endregion ToDbEntity
 
 
         #region 値の同一比較
         internal string DeepEqualTsFnName => $"deepEquals{_aggregate.Item.ClassName}";
-        internal string RenderTsDeppEquals() {
+        internal string RenderTsDeepEquals() {
 
             static string Render(string instanceA, string instanceB, GraphNode<Aggregate> agg) {
                 var agg2 = agg.IsChildrenMember() ? agg.AsEntry() : agg;
