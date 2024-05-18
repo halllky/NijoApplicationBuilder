@@ -4,7 +4,7 @@ import * as Tree from '../util'
 
 export const COLUMN_RESIZE_OPTION: Partial<RT.TableOptions<Tree.TreeNode<any>>> = {
   defaultColumn: {
-    minSize: 60,
+    minSize: 8,
     maxSize: 800,
   },
   columnResizeMode: 'onChange',
