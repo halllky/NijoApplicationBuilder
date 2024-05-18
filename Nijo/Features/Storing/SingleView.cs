@@ -166,7 +166,6 @@ namespace Nijo.Features.Storing {
                       const { load, commit } = Util.{{localRepos.HookName}}(keyOfNewItem as Util.ItemKey | undefined)
 
                     """)}}
-
                       const [defaultValues, setDefaultValues] = useState<AggregateType.{{dataClass.TsTypeName}} | undefined>()
                       useEffect(() => {
                         load().then(items => {
@@ -271,7 +270,6 @@ namespace Nijo.Features.Storing {
                       }, [commit])
 
                     """)}}
-
                       return (
                         <FormProvider {...reactHookFormMethods}>
                     {{If(_type == E_Type.Create || _type == E_Type.Edit, () => $$"""

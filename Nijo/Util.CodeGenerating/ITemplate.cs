@@ -45,9 +45,13 @@ namespace Nijo.Util.CodeGenerating {
         }
 
         public override string ToString() {
-            return _evaluated
-                ? _stringBuilder.ToString().TrimEnd()
-                : SKIP_MARKER;
+            if (_evaluated) {
+                _stringBuilder.Append(SKIP_MARKER);
+                return _stringBuilder.ToString();
+
+            } else {
+                return SKIP_MARKER;
+            }
         }
 
         internal static string WithIndent(IEnumerable<string> content, string indent) {

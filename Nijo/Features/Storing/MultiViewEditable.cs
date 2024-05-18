@@ -166,7 +166,6 @@ namespace Nijo.Features.Storing {
                       {{WithIndent(_options.Hooks!, "  ")}}
 
                     """)}}
-
                       // 列定義
                       const columnDefs: Layout.ColumnDefEx<Util.TreeNode<GridRow>>[] = useMemo(() => [
                         {{WithIndent(gridColumns.SelectTextTemplate(col => col.Render()), "    ")}}
