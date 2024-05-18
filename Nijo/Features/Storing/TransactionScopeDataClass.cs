@@ -96,13 +96,13 @@ namespace Nijo.Features.Storing {
                     if (prop.Owner != prop.DeclaringAggregate) {
                         continue; // 不要
 
+                    } else if (prop is AggregateMember.Parent) {
+                        continue;
+
                     } else if (prop is AggregateMember.ValueMember valueMember) {
                         yield return $$"""
                             {{valueMember.MemberName}} = {{instanceName}}.{{valueMember.GetFullPath().Join("?.")}},
                             """;
-
-                    } else if (prop is AggregateMember.Parent) {
-                        continue;
 
                     } else if (prop is AggregateMember.Ref refProp) {
 
@@ -163,6 +163,52 @@ namespace Nijo.Features.Storing {
 
         #region ToDbEntity
         internal string ToDbEntity(CodeRenderingContext ctx) {
+
+            static IEnumerable<string> RenderBodyOfToDbEntity(GraphNode<Aggregate> renderingAggregate, Config config) {
+                foreach (var prop in renderingAggregate.GetMembers()) {
+                    if (prop is AggregateMember.ValueMember vm) {
+                        var entry = renderingAggregate.GetEntry().As<Aggregate>();
+                        var path = GetPathOf("this", entry, vm);
+
+                        yield return $$"""
+                            {{vm.MemberName}} = {{path.First()}}.{{path.Skip(1).Join("?.")}},
+                            """;
+
+                    } else if (prop is AggregateMember.Ref refProp) {
+                        continue;
+
+                    } else if (prop is AggregateMember.Parent) {
+                        continue;
+
+                    } else if (prop is AggregateMember.Children children) {
+                        var nav = children.GetNavigationProperty();
+                        var childDbEntityClass = $"{config.EntityNamespace}.{nav.Relevant.Owner.Item.EFCoreEntityClassName}";
+                        var (instanceName, valueSource) = GetSourceInstanceOf("this", children.DeclaringAggregate);
+                        var (item, _) = GetSourceInstanceOf("this", children.ChildrenAggregate);
+
+                        yield return $$"""
+                            {{children.MemberName}} = {{instanceName}}.{{prop.GetFullPath(valueSource).Join("?.")}}?.Select({{item}} => new {{childDbEntityClass}} {
+                                {{WithIndent(RenderBodyOfToDbEntity(children.ChildrenAggregate, config), "    ")}}
+                            }).ToHashSet() ?? new HashSet<{{childDbEntityClass}}>(),
+                            """;
+
+                    } else if (prop is AggregateMember.RelationMember child) {
+                        var nav = child.GetNavigationProperty();
+                        var childProp = nav.Principal.PropertyName;
+                        var childDbEntityClass = $"{config.EntityNamespace}.{nav.Relevant.Owner.Item.EFCoreEntityClassName}";
+
+                        yield return $$"""
+                            {{child.MemberName}} = new {{childDbEntityClass}} {
+                                {{WithIndent(RenderBodyOfToDbEntity(child.MemberAggregate, config), "    ")}}
+                            },
+                            """;
+
+                    } else {
+                        throw new NotImplementedException();
+                    }
+                }
+            }
+
             return $$"""
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}のオブジェクトをデータベースに保存する形に変換します。
@@ -173,50 +219,6 @@ namespace Nijo.Features.Storing {
                     };
                 }
                 """;
-        }
-        private static IEnumerable<string> RenderBodyOfToDbEntity(GraphNode<Aggregate> renderingAggregate, Config config) {
-            foreach (var prop in renderingAggregate.GetMembers()) {
-                if (prop is AggregateMember.ValueMember vm) {
-                    var entry = renderingAggregate.GetEntry().As<Aggregate>();
-                    var path = GetPathOf("this", entry, vm);
-
-                    yield return $$"""
-                        {{vm.MemberName}} = {{path.First()}}.{{path.Skip(1).Join("?.")}},
-                        """;
-
-                } else if (prop is AggregateMember.Ref refProp) {
-                    continue;
-
-                } else if (prop is AggregateMember.Parent) {
-                    continue;
-
-                } else if (prop is AggregateMember.Children children) {
-                    var nav = children.GetNavigationProperty();
-                    var childDbEntityClass = $"{config.EntityNamespace}.{nav.Relevant.Owner.Item.EFCoreEntityClassName}";
-                    var (instanceName, valueSource) = GetSourceInstanceOf("this", children.DeclaringAggregate);
-                    var (item, _) = GetSourceInstanceOf("this", children.ChildrenAggregate);
-
-                    yield return $$"""
-                        {{children.MemberName}} = {{instanceName}}.{{prop.GetFullPath(valueSource).Join("?.")}}?.Select({{item}} => new {{childDbEntityClass}} {
-                            {{WithIndent(RenderBodyOfToDbEntity(children.ChildrenAggregate, config), "    ")}}
-                        }).ToHashSet() ?? new HashSet<{{childDbEntityClass}}>(),
-                        """;
-
-                } else if (prop is AggregateMember.RelationMember child) {
-                    var nav = child.GetNavigationProperty();
-                    var childProp = nav.Principal.PropertyName;
-                    var childDbEntityClass = $"{config.EntityNamespace}.{nav.Relevant.Owner.Item.EFCoreEntityClassName}";
-
-                    yield return $$"""
-                        {{child.MemberName}} = new {{childDbEntityClass}} {
-                            {{WithIndent(RenderBodyOfToDbEntity(child.MemberAggregate, config), "    ")}}
-                        },
-                        """;
-
-                } else {
-                    throw new NotImplementedException();
-                }
-            }
         }
 
         /// <summary>
