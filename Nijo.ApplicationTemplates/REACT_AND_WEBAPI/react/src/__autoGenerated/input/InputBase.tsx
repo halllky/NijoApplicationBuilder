@@ -53,4 +53,5 @@ export type CustomComponentProps<
 /** 日付や数値などの表記ゆれを補正する */
 export const normalize = (str: string) => str
   .replace(/(\s|　)/gm, '') // 空白を除去
+  .replace('ー', '-') // NFKCで正規化されないので手動で正規化
   .normalize('NFKC') // 全角を半角に変換

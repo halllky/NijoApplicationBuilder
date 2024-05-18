@@ -352,15 +352,41 @@ namespace Nijo.IntegrationTest {
             // 行追加直後に位置がずれることがあるので一瞬待つ
             await Task.Delay(TimeSpan.FromSeconds(1));
 
+            await driver.SaveInMultiView();
+
             // 増えた行の「詳細」をクリック
             foreach (var a in driver.FindElements(ByInnerText("詳細"))) {
                 var href = a.GetAttribute("href");
                 if (!hrefs.Contains(href)) {
                     a.Click();
+                    await Task.Delay(TimeSpan.FromSeconds(1));
                     return;
                 }
             }
             throw new InvalidOperationException("追加された行を特定できません。");
+        }
+        /// <summary>
+        /// MultiViewで一時保存する
+        /// </summary>
+        internal static async Task SaveInMultiView(this OpenQA.Selenium.IWebDriver driver) {
+            // c0f3693a1f13a16762f2e9509ea8ccf3bf279890 時点では自動保存されない仕様なので明示的にクリック
+            driver
+                .FindElements(ByInnerText("一時保存"))
+                .Skip(1)
+                .Single()
+                .Click();
+            await Task.Delay(TimeSpan.FromSeconds(1));
+        }
+        /// <summary>
+        /// SingleViewで一時保存する
+        /// </summary>
+        internal static async Task SaveInSingleView(this OpenQA.Selenium.IWebDriver driver) {
+            driver
+                .FindElements(ByInnerText("一時保存"))
+                .Skip(1)
+                .Single()
+                .Click();
+            await Task.Delay(TimeSpan.FromSeconds(1));
         }
         /// <summary>
         /// MultiViewからEditViewに画面遷移させる。

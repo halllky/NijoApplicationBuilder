@@ -1,3 +1,4 @@
+using Nijo.Features.Storing;
 using OpenQA.Selenium;
 using System;
 using System.Collections.Generic;
@@ -39,32 +40,32 @@ namespace Nijo.IntegrationTest.Tests {
             driver.FindElement(Util.ByInnerText("参照先")).Click();
             await driver.AddNewItemAndNavigateToCreateView();
 
-            driver.FindElement(By.Name("Name")).SendKeys("テスト用の参照先");
-            driver.FindElement(Util.ByInnerText("一時保存")).Click();
+            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.Name")).SendKeys("テスト用の参照先");
+            await driver.SaveInSingleView();
             driver.CommitLocalRepositoryChanges();
 
             // 新規作成できるか: データ作成
             driver.FindElement(Util.ByInnerText("親集約")).Click();
             await driver.AddNewItemAndNavigateToCreateView();
 
-            driver.FindElement(By.Name("単語")).SendKeys("自動テストで作られたデータ");
-            driver.ActivateTextarea("文章").SendKeys("このデータは自動テストで作られました。\r\n");
-            driver.FindElement(By.Name("整数")).SendKeys("ー９９９９９９９９９９９９９９");
-            driver.FindElement(By.Name("実数")).SendKeys("-９.９９９９９９９９９９９９９９");
-            driver.FindElement(By.Name("日付時刻")).SendKeys("２０００－１－１　００：０１");
-            driver.FindElement(By.Name("日付")).SendKeys("１９９９－２－３");
-            driver.FindElement(By.Name("年月")).SendKeys("１９９８－１２");
-            driver.FindElement(By.Name("年")).SendKeys("１９９７");
-            driver.FindElement(By.Name("参照")).SendKeys("テスト用の参照先");
-            driver.FindElement(By.Name("参照")).SendKeys(Keys.Tab);
-            driver.FindElement(By.Name("真偽値")).SendKeys(Keys.Space);
+            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.単語")).SendKeys("自動テストで作られたデータ");
+            driver.ActivateTextarea($"{DisplayDataClass.OWN_MEMBERS}.文章").SendKeys("このデータは自動テストで作られました。\r\n");
+            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.整数")).SendKeys("ー２１４７４８３６４８");
+            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.実数")).SendKeys("-９.９９９９９９９９９９９９９９");
+            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.日付時刻")).SendKeys("２０００－１－１　００：０１");
+            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.日付")).SendKeys("１９９９－２－３");
+            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.年月")).SendKeys("１９９８－１２");
+            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.年")).SendKeys("１９９７");
+            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.参照")).SendKeys("テスト用の参照先");
+            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.参照")).SendKeys(Keys.Tab);
+            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.真偽値")).SendKeys(Keys.Space);
             driver.FindElement(Util.ByInnerText("選択肢2")).Click(); // 列挙体
 
             // TODO: Childrenの各項目を入力
 
             var beforeCreate = driver.CaptureScreenShot();
 
-            driver.FindElement(Util.ByInnerText("一時保存")).Click();
+            await driver.SaveInSingleView();
             driver.CommitLocalRepositoryChanges();
 
             // 新規作成できるか: 結果確認
@@ -108,7 +109,7 @@ namespace Nijo.IntegrationTest.Tests {
 
             driver.FindElement(By.Name("参照先集約ID")).SendKeys("あああああ");
             driver.FindElement(By.Name("参照先集約名")).SendKeys("いいいいい");
-            driver.FindElement(Util.ByInnerText("一時保存")).Click();
+            await driver.SaveInSingleView();
             driver.CommitLocalRepositoryChanges();
 
             // 参照元を作成
@@ -119,7 +120,7 @@ namespace Nijo.IntegrationTest.Tests {
             driver.FindElement(By.Name("参照元集約名")).SendKeys("えええええ");
             driver.FindElement(By.Name("参照")).SendKeys("いいいいい");
             driver.FindElement(By.Name("参照")).SendKeys(Keys.Tab);
-            driver.FindElement(Util.ByInnerText("一時保存")).Click();
+            await driver.SaveInSingleView();
             driver.CommitLocalRepositoryChanges();
 
             // 作成ができているか確認
