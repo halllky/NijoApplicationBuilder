@@ -130,7 +130,7 @@ namespace Nijo.Runtime {
         }
 
         public void WaitForReady(TimeSpan? timeout = null) {
-            var to = timeout ?? TimeSpan.FromSeconds(20);
+            var to = timeout ?? TimeSpan.FromSeconds(60);
             var current = TimeSpan.Zero;
             var interval = TimeSpan.FromSeconds(1);
             while (_state < E_State.Ready) {
