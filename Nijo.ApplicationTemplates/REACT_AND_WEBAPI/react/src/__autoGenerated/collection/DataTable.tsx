@@ -142,9 +142,16 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       tabIndex={0}
     >
       <table
-        className="table-fixed border-separate border-spacing-0 border-b border-1 border-color-4"
+        className="table-fixed mr-[50%] border-separate border-spacing-0 border-b border-1 border-color-4"
         style={{ ...columnSizeVars, width: api.getTotalSize() }}
       >
+        {/* 列幅 */}
+        <colgroup>
+          {getLast(api.getHeaderGroups()).headers.map(header => (
+            <col key={header.id} style={{ width: getColWidth(header) }} />
+          ))}
+        </colgroup>
+
         {/* ヘッダ */}
         <thead>
           {api.getHeaderGroups().map(headerGroup => (
@@ -153,8 +160,8 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
               {headerGroup.headers.filter(h => !(h.column.columnDef as ColumnDefEx<T>).hidden).map(header => (
                 <th key={header.id}
                   colSpan={header.colSpan}
-                  className="relative overflow-hidden px-1 py-0 text-start bg-color-3"
-                  style={{ width: getColWidth(header), ...getThStickeyStyle(header) }}>
+                  className="relative overflow-hidden whitespace-nowrap px-1 py-0 text-start bg-color-3"
+                  style={getThStickeyStyle(header)}>
                   {!header.isPlaceholder && RT.flexRender(
                     header.column.columnDef.header,
                     header.getContext())}
@@ -215,3 +222,9 @@ const getTdStickeyStyle = (cell: RT.Cell<any, unknown>): React.CSSProperties => 
   left: cell.column.id === ROW_HEADER_ID ? 0 : undefined,
   zIndex: cell.column.id === ROW_HEADER_ID ? TABLE_ZINDEX.ROWHEADER : undefined,
 })
+
+// -----------------------------------------------
+// 配列の最後の要素を返す。配列の要素数が0の場合は考慮していない。
+const getLast = <T,>(arr: T[]): T => {
+  return arr[arr.length - 1]
+}
