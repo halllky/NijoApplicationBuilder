@@ -89,89 +89,74 @@ namespace Nijo.Features.Storing {
 
         #region FromDbEntity
         internal string FromDbEntity(CodeRenderingContext ctx) {
+
+            static IEnumerable<string> RenderBodyOfFromDbEntity(GraphNode<Aggregate> instance, string instanceName) {
+
+                foreach (var prop in instance.GetMembers()) {
+                    if (prop.Owner != prop.DeclaringAggregate) {
+                        continue; // 不要
+
+                    } else if (prop is AggregateMember.ValueMember valueMember) {
+                        yield return $$"""
+                            {{valueMember.MemberName}} = {{instanceName}}.{{valueMember.GetFullPath().Join("?.")}},
+                            """;
+
+                    } else if (prop is AggregateMember.Parent) {
+                        continue;
+
+                    } else if (prop is AggregateMember.Ref refProp) {
+
+                        string RenderKeyNameConvertingRecursively(AggregateMember.RelationMember refOrParent) {
+                            var keyNameClass = new RefTargetKeyName(refOrParent.MemberAggregate);
+
+                            return $$"""
+                                {{refOrParent.MemberName}} = new {{keyNameClass.CSharpClassName}}() {
+                                {{keyNameClass.GetOwnMembers().SelectTextTemplate(m => m is AggregateMember.ValueMember vm ? $$"""
+                                    {{m.MemberName}} = {{instanceName}}.{{vm.GetFullPath().Join("?.")}},
+                                """ : $$"""
+                                    {{WithIndent(RenderKeyNameConvertingRecursively((AggregateMember.RelationMember)m), "    ")}}
+                                """)}}
+                                },
+                                """;
+                        }
+
+                        yield return RenderKeyNameConvertingRecursively(refProp);
+
+                    } else if (prop is AggregateMember.Children children) {
+                        var depth = children.Owner.EnumerateAncestors().Count();
+                        var loopVar = depth == 0 ? "item" : $"item{depth}";
+
+                        yield return $$"""
+                            {{children.MemberName}} = {{instanceName}}.{{children.GetFullPath().Join("?.")}}?.Select({{loopVar}} => new {{children.ChildrenAggregate.Item.ClassName}}() {
+                                {{WithIndent(RenderBodyOfFromDbEntity(children.ChildrenAggregate.AsEntry(), loopVar), "    ")}}
+                            }).ToList(),
+                            """;
+
+                    } else if (prop is AggregateMember.RelationMember child) {
+
+                        yield return $$"""
+                            {{child.MemberName}} = new {{child.MemberAggregate.Item.ClassName}}() {
+                                {{WithIndent(RenderBodyOfFromDbEntity(child.MemberAggregate, instanceName), "    ")}}
+                            },
+                            """;
+
+                    } else {
+                        throw new NotImplementedException();
+                    }
+                }
+            }
+
             return $$"""
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}のデータベースから取得した内容を画面に表示する形に変換します。
                 /// </summary>
                 public static {{_aggregate.Item.ClassName}} {{FROM_DBENTITY}}({{ctx.Config.EntityNamespace}}.{{_aggregate.Item.EFCoreEntityClassName}} entity) {
                     var instance = new {{_aggregate.Item.ClassName}} {
-                        {{WithIndent(RenderBodyOfFromDbEntity(_aggregate, _aggregate, "entity", 0), "        ")}}
+                        {{WithIndent(RenderBodyOfFromDbEntity(_aggregate, "entity"), "        ")}}
                     };
                     return instance;
                 }
                 """;
-        }
-
-        /// <summary>
-        /// TODO: この操作は随所に出てくるので DbManipulation.cs などそれ用のクラスを設けてそちらに移したほうがよいかもしれない
-        /// </summary>
-        internal static IEnumerable<string> RenderBodyOfFromDbEntity(
-            GraphNode<Aggregate> instance,
-            GraphNode<Aggregate> rootInstance,
-            string rootInstanceName,
-            int depth,
-            Func<GraphNode<Aggregate>, string>? newInstance = null) {
-
-            string NewInstance(GraphNode<Aggregate> agg) {
-                return newInstance != null
-                    ? newInstance(agg)
-                    : $"new {agg.Item.ClassName}()";
-            }
-
-            foreach (var prop in instance.GetMembers()) {
-                if (prop.Owner != prop.DeclaringAggregate) {
-                    continue; // 不要
-
-                } else if (prop is AggregateMember.ValueMember valueMember) {
-                    yield return $$"""
-                        {{valueMember.MemberName}} = {{rootInstanceName}}.{{valueMember.GetFullPath(rootInstance).Join("?.")}},
-                        """;
-
-                } else if (prop is AggregateMember.Parent) {
-                    continue;
-
-                } else if (prop is AggregateMember.Ref refProp) {
-
-                    string RenderKeyNameConvertingRecursively(AggregateMember.RelationMember refOrParent) {
-                        var keyNameClass = new RefTargetKeyName(refOrParent.MemberAggregate);
-
-                        return $$"""
-                            {{refOrParent.MemberName}} = new {{keyNameClass.CSharpClassName}}() {
-                            {{keyNameClass.GetOwnMembers().SelectTextTemplate(m => m is AggregateMember.ValueMember vm ? $$"""
-                                {{m.MemberName}} = {{rootInstanceName}}.{{vm.GetFullPath(rootInstance).Join("?.")}},
-                            """ : $$"""
-                                {{WithIndent(RenderKeyNameConvertingRecursively((AggregateMember.RelationMember)m), "    ")}}
-                            """)}}
-                            },
-                            """;
-                    }
-
-                    yield return RenderKeyNameConvertingRecursively(refProp);
-
-                } else if (prop is AggregateMember.Children children) {
-                    var item = depth == 0 ? "item" : $"item{depth}";
-                    var childInstance = children.ChildrenAggregate;
-                    var childFullPath = children.GetFullPath(rootInstance).Join("?.");
-
-                    yield return $$"""
-                        {{children.MemberName}} = {{rootInstanceName}}.{{childFullPath}}?.Select({{item}} => {{NewInstance(children.ChildrenAggregate)}} {
-                            {{WithIndent(RenderBodyOfFromDbEntity(childInstance, childInstance, item, depth + 1, newInstance), "    ")}}
-                        }).ToList(),
-                        """;
-
-                } else if (prop is AggregateMember.RelationMember child) {
-                    var childInstance = child.MemberAggregate;
-
-                    yield return $$"""
-                        {{child.MemberName}} = {{NewInstance(child.MemberAggregate)}} {
-                            {{WithIndent(RenderBodyOfFromDbEntity(childInstance, rootInstance, rootInstanceName, depth + 1, newInstance), "    ")}}
-                        },
-                        """;
-
-                } else {
-                    throw new NotImplementedException();
-                }
-            }
         }
         #endregion FromDbEntity
 
