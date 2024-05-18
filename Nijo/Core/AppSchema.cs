@@ -41,7 +41,7 @@ namespace Nijo.Core {
                         .EnumerateThisAndDescendants()
                         .SelectMany(agg => agg.GetMembers())
                         .OfType<AggregateMember.Ref>()
-                        .Select(@ref => @ref.MemberAggregate.GetRoot())
+                        .Select(@ref => @ref.RefTo.GetRoot())
                         .ToHashSet(),
                 })
                 .ToList();

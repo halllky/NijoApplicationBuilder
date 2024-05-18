@@ -88,7 +88,7 @@ namespace Nijo.Features.Storing {
                 var refTo = _aggregate.GetSingleRefKeyAggregate()!;
                 string? RefKeyInitializer(AggregateMember.AggregateMemberBase member) {
                     if (member is AggregateMember.Ref r && r == refTo) {
-                        var refToRegisterNameArray = refTo.MemberAggregate.GetRHFRegisterName(args).ToArray();
+                        var refToRegisterNameArray = refTo.RefTo.GetRHFRegisterName(args).ToArray();
                         var refToRegisterName = refToRegisterNameArray.Length > 0 ? $"`{refToRegisterNameArray.Join(".")}`" : string.Empty;
 
                         return $"getValues({refToRegisterName})?.{DisplayDataClass.LOCAL_REPOS_ITEMKEY}";
@@ -418,12 +418,12 @@ namespace Nijo.Features.Storing {
 
             } else if (_mode == SingleView.E_Type.View) {
                 // リンク
-                var navigation = new NavigationWrapper(refProperty.MemberAggregate);
+                var navigation = new NavigationWrapper(refProperty.RefTo);
 
                 return $$"""
                     <VForm.Item label="{{refProperty.MemberName}}">
-                      <Link className="text-link" to={Util.{{navigation.GetSingleViewUrlHookName}}(getValues('{{refProperty.MemberAggregate.GetFullPathAsSingleViewDataClass().Join(".")}}'), 'view')}>
-                        {getValues('{{refProperty.MemberAggregate.GetFullPathAsSingleViewDataClass().Join(".")}}')}
+                      <Link className="text-link" to={Util.{{navigation.GetSingleViewUrlHookName}}(getValues('{{refProperty.RefTo.GetFullPathAsSingleViewDataClass().Join(".")}}'), 'view')}>
+                        {getValues('{{refProperty.RefTo.GetFullPathAsSingleViewDataClass().Join(".")}}')}
                       </Link>
                     </VForm.Item>
                     """;
@@ -431,7 +431,7 @@ namespace Nijo.Features.Storing {
             } else {
                 // コンボボックス
                 var registerName = $"`{refProperty.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()])).Join(".")}`";
-                var combobox = new ComboBox(refProperty.MemberAggregate);
+                var combobox = new ComboBox(refProperty.RefTo);
                 var component = _mode switch {
                     SingleView.E_Type.Create => combobox.RenderCaller(registerName, "className='w-full'"),
                     SingleView.E_Type.Edit => combobox.RenderCaller(registerName, "className='w-full'", IfReadOnly("readOnly", refProperty)),

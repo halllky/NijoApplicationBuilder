@@ -108,10 +108,10 @@ namespace Nijo.Features.Debugging {
                         : $"{data}.{path.Join(".")} = {dummyValue}";
 
                 } else if (member is AggregateMember.Ref @ref) {
-                    var api = new Features.Storing.KeywordSearchingFeature(@ref.MemberAggregate).GetUri();
+                    var api = new Features.Storing.KeywordSearchingFeature(@ref.RefTo).GetUri();
                     var res = $"response{random.Next(99999999):00000000}";
                     return $$"""
-                        const {{res}} = await get<AggregateType.{{@ref.MemberAggregate.Item.TypeScriptTypeName}}[]>(`{{api}}`, {})
+                        const {{res}} = await get<AggregateType.{{@ref.RefTo.Item.TypeScriptTypeName}}[]>(`{{api}}`, {})
                         {{data}}.{{path.Join(".")}} = {{res}}.ok ? {{res}}.data[{{index}}] : undefined
                         """;
 

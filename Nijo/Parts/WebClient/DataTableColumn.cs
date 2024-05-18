@@ -75,7 +75,7 @@ namespace Nijo.Parts.WebClient {
                     cellEditor = $"(props, ref) => <{editor.Name} ref={{ref}} {{...props}}{string.Concat(editor.GetPropsStatement())} />";
 
                 } else if (member is AggregateMember.Ref rm2) {
-                    var combobox = new ComboBox(rm2.MemberAggregate);
+                    var combobox = new ComboBox(rm2.RefTo);
                     cellEditor = $"(props, ref) => <Input.{combobox.ComponentName} ref={{ref}} {{...props}} />";
 
                 } else {
@@ -143,7 +143,7 @@ namespace Nijo.Parts.WebClient {
 
                 // 参照先のitemKeyと対応するプロパティを初期化する
                 string? RefKeyInitializer(AggregateMember.AggregateMemberBase member) {
-                    if (member is AggregateMember.Ref r && r.MemberAggregate == dataTableOwner) {
+                    if (member is AggregateMember.Ref r && r.RefTo == dataTableOwner) {
                         return $"row.original.{rowAccessor}.{DisplayDataClass.LOCAL_REPOS_ITEMKEY}";
 
                     } else {
@@ -198,7 +198,7 @@ namespace Nijo.Parts.WebClient {
                         yield return ToDataTableColumn(prop.Member);
 
                     } else if (prop.Member is AggregateMember.Ref @ref) {
-                        if (@ref.MemberAggregate.IsSingleRefKeyOf(@ref.Owner)) continue;
+                        if (@ref.RefTo.IsSingleRefKeyOf(@ref.Owner)) continue;
                         yield return ToDataTableColumn(prop.Member);
                     }
                 }

@@ -279,6 +279,8 @@ namespace Nijo.Core {
                 Relation = edge;
             }
             internal override GraphEdge<Aggregate> Relation { get; }
+            internal GraphNode<Aggregate> ChildrenAggregate => MemberAggregate;
+            /// <summary><see cref="ChildrenAggregate"/>と全く同じもの。より名前がわかりやすい左記の利用を推奨。</summary>
             internal override GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
             internal override string CSharpTypeName => $"List<{Relation.Terminal.Item.ClassName}>";
             internal override string TypeScriptTypename => $"{Relation.Terminal.Item.TypeScriptTypeName}[]";
@@ -289,6 +291,8 @@ namespace Nijo.Core {
                 Relation = edge;
             }
             internal override GraphEdge<Aggregate> Relation { get; }
+            internal GraphNode<Aggregate> ChildAggregate => MemberAggregate;
+            /// <summary><see cref="ChildAggregate"/>と全く同じもの。より名前がわかりやすい左記の利用を推奨。</summary>
             internal override GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
             internal override string CSharpTypeName => Relation.Terminal.Item.ClassName;
             internal override string TypeScriptTypename => Relation.Terminal.Item.TypeScriptTypeName;
@@ -340,6 +344,8 @@ namespace Nijo.Core {
             }
 
             internal override GraphEdge<Aggregate> Relation { get; }
+            internal GraphNode<Aggregate> VariationAggregate => MemberAggregate;
+            /// <summary><see cref="VariationAggregate"/>と全く同じもの。より名前がわかりやすい左記の利用を推奨。</summary>
             internal override GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
             internal Variation Group { get; }
             internal string Key { get; }
@@ -355,6 +361,8 @@ namespace Nijo.Core {
             }
             internal override GraphNode<Aggregate> Owner { get; }
             internal override GraphEdge<Aggregate> Relation { get; }
+            internal GraphNode<Aggregate> RefTo => MemberAggregate;
+            /// <summary><see cref="RefTo"/>と全く同じもの。より名前がわかりやすい左記の利用を推奨。</summary>
             internal override GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
             internal override string CSharpTypeName => new RefTargetKeyName(Relation.Terminal).CSharpClassName;
             internal override string TypeScriptTypename => new RefTargetKeyName(Relation.Terminal).TypeScriptTypeName;
@@ -381,6 +389,8 @@ namespace Nijo.Core {
                 Owner = owner ?? base.Owner;
             }
             internal override GraphEdge<Aggregate> Relation { get; }
+            internal GraphNode<Aggregate> ParentAggregate => MemberAggregate;
+            /// <summary><see cref="ParentAggregate"/>と全く同じもの。より名前がわかりやすい左記の利用を推奨。</summary>
             internal override GraphNode<Aggregate> MemberAggregate => Relation.Initial;
             internal override GraphNode<Aggregate> Owner { get; }
             internal override string MemberName => PARENT_PROPNAME;

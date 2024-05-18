@@ -287,7 +287,7 @@ namespace Nijo.Features.Storing {
 
                 string MemberValue(AggregateMember.AggregateMemberBase m) {
                     if (m is AggregateMember.Ref @ref) {
-                        var keys = @ref.MemberAggregate
+                        var keys = @ref.RefTo
                             .GetKeys()
                             .OfType<AggregateMember.ValueMember>();
                         return $$"""

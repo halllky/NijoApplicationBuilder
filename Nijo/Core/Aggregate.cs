@@ -162,13 +162,13 @@ namespace Nijo.Core {
             IEnumerable<GraphNode<Aggregate>> Enumerate(GraphNode<Aggregate> agg) {
                 foreach (var member in agg.GetMembers()) {
                     if (member is AggregateMember.Ref refMember) {
-                        yield return refMember.MemberAggregate;
-                        foreach (var item in Enumerate(refMember.MemberAggregate)) {
+                        yield return refMember.RefTo;
+                        foreach (var item in Enumerate(refMember.RefTo)) {
                             yield return item;
                         }
                     } else if (member is AggregateMember.Parent parent && !agg.IsInTreeOf(aggregate)) {
-                        yield return parent.MemberAggregate;
-                        foreach (var item in Enumerate(parent.MemberAggregate)) {
+                        yield return parent.ParentAggregate;
+                        foreach (var item in Enumerate(parent.ParentAggregate)) {
                             yield return item;
                         }
                     }
@@ -203,7 +203,7 @@ namespace Nijo.Core {
             if (refFrom.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key
                 && keys.Length == 1
                 && keys[0] is AggregateMember.Ref rm
-                && rm.MemberAggregate == refTo) {
+                && rm.RefTo == refTo) {
                 return true;
             }
             return false;
@@ -217,7 +217,7 @@ namespace Nijo.Core {
                 .OfType<AggregateMember.Ref>()
                 .FirstOrDefault();
             if (refTo == null) return null;
-            if (!refTo.MemberAggregate.IsSingleRefKeyOf(refFrom)) return null;
+            if (!refTo.RefTo.IsSingleRefKeyOf(refFrom)) return null;
             return refTo;
         }
 

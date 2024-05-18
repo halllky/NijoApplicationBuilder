@@ -150,11 +150,11 @@ namespace Nijo.Features.Storing {
 
                 } else if (prop is AggregateMember.Children children) {
                     var item = depth == 0 ? "item" : $"item{depth}";
-                    var childInstance = children.MemberAggregate;
+                    var childInstance = children.ChildrenAggregate;
                     var childFullPath = children.GetFullPath(rootInstance).Join("?.");
 
                     yield return $$"""
-                        {{children.MemberName}} = {{rootInstanceName}}.{{childFullPath}}?.Select({{item}} => {{NewInstance(children.MemberAggregate)}} {
+                        {{children.MemberName}} = {{rootInstanceName}}.{{childFullPath}}?.Select({{item}} => {{NewInstance(children.ChildrenAggregate)}} {
                             {{WithIndent(RenderBodyOfFromDbEntity(childInstance, childInstance, item, depth + 1, newInstance), "    ")}}
                         }).ToList(),
                         """;
@@ -209,11 +209,11 @@ namespace Nijo.Features.Storing {
                     var nav = children.GetNavigationProperty();
                     var childDbEntityClass = $"{config.EntityNamespace}.{nav.Relevant.Owner.Item.EFCoreEntityClassName}";
                     var (instanceName, valueSource) = GetSourceInstanceOf("this", children.DeclaringAggregate);
-                    var (item, _) = GetSourceInstanceOf("this", children.MemberAggregate);
+                    var (item, _) = GetSourceInstanceOf("this", children.ChildrenAggregate);
 
                     yield return $$"""
                         {{children.MemberName}} = {{instanceName}}.{{prop.GetFullPath(valueSource).Join("?.")}}?.Select({{item}} => new {{childDbEntityClass}} {
-                            {{WithIndent(RenderBodyOfToDbEntity(children.MemberAggregate, config), "    ")}}
+                            {{WithIndent(RenderBodyOfToDbEntity(children.ChildrenAggregate, config), "    ")}}
                         }).ToHashSet() ?? new HashSet<{{childDbEntityClass}}>(),
                         """;
 

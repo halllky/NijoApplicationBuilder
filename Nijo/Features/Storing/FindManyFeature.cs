@@ -174,14 +174,14 @@ namespace Nijo.Features.Storing {
 
                     } else if (member is AggregateMember.Ref @ref) {
                         // 1:1で紐づく参照先の項目でも検索できるようにしたい
-                        foreach (var refVm in EnumerateRecursively(@ref.MemberAggregate)) {
+                        foreach (var refVm in EnumerateRecursively(@ref.RefTo)) {
                             yield return refVm;
                         }
 
                     } else if (member is AggregateMember.Parent parent
                              && !member.Owner.IsInTreeOf(_aggregate)) {
                         // 参照先が子孫集約の場合、親の属性でも検索できるようにしたい
-                        foreach (var parentVm in EnumerateRecursively(parent.MemberAggregate)) {
+                        foreach (var parentVm in EnumerateRecursively(parent.ParentAggregate)) {
                             yield return parentVm;
                         }
                     }
@@ -204,15 +204,15 @@ namespace Nijo.Features.Storing {
                     return true;
 
                 if (m is AggregateMember.Child child
-                    && child.MemberAggregate.IsInTreeOf(_aggregate))
+                    && child.ChildAggregate.IsInTreeOf(_aggregate))
                     return true;
 
                 if (m is AggregateMember.VariationItem vi
-                    && vi.MemberAggregate.IsInTreeOf(_aggregate))
+                    && vi.VariationAggregate.IsInTreeOf(_aggregate))
                     return true;
 
                 if (m is AggregateMember.Parent parent
-                    && !parent.MemberAggregate.IsInTreeOf(_aggregate))
+                    && !parent.ParentAggregate.IsInTreeOf(_aggregate))
                     return true;
 
                 return false;

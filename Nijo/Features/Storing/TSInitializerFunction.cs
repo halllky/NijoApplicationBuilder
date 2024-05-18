@@ -33,14 +33,14 @@ namespace Nijo.Features.Storing {
                 .OfType<AggregateMember.Child>()
                 .Select(member => new {
                     Key = member.MemberName,
-                    Value = $"{new TSInitializerFunction(member.MemberAggregate).FunctionName}()",
+                    Value = $"{new TSInitializerFunction(member.ChildAggregate).FunctionName}()",
                 });
             var variation = _instance
                 .GetMembers()
                 .OfType<AggregateMember.VariationItem>()
                 .Select(member => new {
                     Key = member.MemberName,
-                    Value = $"{new TSInitializerFunction(member.MemberAggregate).FunctionName}()",
+                    Value = $"{new TSInitializerFunction(member.VariationAggregate).FunctionName}()",
                 });
             var variationSwitch = _instance
                 .GetMembers()
