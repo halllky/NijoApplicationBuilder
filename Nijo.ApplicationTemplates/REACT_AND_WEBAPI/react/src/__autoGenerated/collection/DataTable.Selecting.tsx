@@ -1,6 +1,7 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo, useImperativeHandle } from 'react'
 import * as RT from '@tanstack/react-table'
 import * as Tree from '../util'
+import * as Util from '../util'
 import { ROW_HEADER_ID, TABLE_ZINDEX } from './DataTable.Parts'
 
 export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T>>) => {
@@ -82,6 +83,7 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
         const colIndex = caretCell.row.getAllCells().indexOf(caretCell)
         selectObject({ cell: row.getAllCells()[colIndex], shiftKey: e.shiftKey })
         e.preventDefault()
+        activeCellRef.current?.scrollToActiveCell()
         return
 
       }
@@ -100,6 +102,7 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
         if (neighborCell === undefined) return
         selectObject({ cell: neighborCell, shiftKey: e.shiftKey })
         e.preventDefault()
+        activeCellRef.current?.scrollToActiveCell()
         return
       }
     }
@@ -113,6 +116,9 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
   const ActiveCellBorder = useMemo(() => {
     return prepareActiveRangeSvg<T>(caretTdRef, selectionStartTdRef)
   }, [])
+
+  // 矢印キーでのセル移動時にアクティブセルを画面内に移るようにするためのもの
+  const activeCellRef = useRef<{ scrollToActiveCell: () => void }>(null)
 
   const getSelectedRows = useCallback(() => {
     if (!caretCell || !selectionStart) return []
@@ -144,6 +150,7 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
     activeCellBorderProps: {
       caretCell,
       containsRowHeader,
+      ref: activeCellRef,
     },
 
     getSelectedRows,
@@ -156,11 +163,13 @@ function prepareActiveRangeSvg<T>(
   caretTdRef: React.MutableRefObject<HTMLTableCellElement | undefined>,
   selectionStartTdRef: React.MutableRefObject<HTMLTableCellElement | undefined>,
 ) {
-  return ({ caretCell, containsRowHeader, api }: {
+  return Util.forwardRefEx<{
+    scrollToActiveCell: () => void,
+  }, {
     caretCell: RT.Cell<Tree.TreeNode<T>, unknown> | undefined
     containsRowHeader: boolean
     api: RT.Table<Tree.TreeNode<T>>
-  }) => {
+  }>(({ caretCell, containsRowHeader, api }, ref) => {
     const svgRef = useRef<SVGSVGElement>(null)
     const maskBlackRef = useRef<SVGRectElement>(null)
     useEffect(() => {
@@ -200,12 +209,6 @@ function prepareActiveRangeSvg<T>(
       svgRef.current.style.zIndex = containsRowHeader
         ? TABLE_ZINDEX.ROWHEADER_SELECTION.toString()
         : TABLE_ZINDEX.SELECTION.toString()
-
-      svgRef.current?.scrollIntoView({
-        behavior: 'instant',
-        block: 'nearest',
-        inline: 'nearest',
-      })
     }, [
       containsRowHeader,
       caretCell,
@@ -216,6 +219,18 @@ function prepareActiveRangeSvg<T>(
       // eslint-disable-next-line react-hooks/exhaustive-deps
       api.getState().expanded,
     ])
+
+    useImperativeHandle(ref, () => ({
+      scrollToActiveCell: () => {
+        setTimeout(() => {
+          svgRef.current?.scrollIntoView({
+            behavior: 'instant',
+            block: 'nearest',
+            inline: 'nearest',
+          })
+        }, 10)
+      }
+    }))
 
     return (
       <svg ref={svgRef}
@@ -237,5 +252,5 @@ function prepareActiveRangeSvg<T>(
         />
       </svg>
     )
-  }
+  })
 }
