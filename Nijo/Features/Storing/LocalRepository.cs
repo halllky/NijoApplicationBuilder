@@ -188,7 +188,7 @@ namespace Nijo.Features.Storing {
                                 if (!loaded{{x.RefFrom.MainAggregate.Item.PhysicalName}}) return // {{x.RefFrom.MainAggregate.Item.DisplayName}}の読み込み完了まで待機
                             """)}}
 
-                                let remoteItems: AggregateType.{{new DataClassForUpdate(agg).TsTypeName}}[]
+                                let remoteItems: AggregateType.{{new DataClassForSave(agg).TsTypeName}}[]
                                 let localItems: AggregateType.{{displayData.TsTypeName}}[]
 
                                 if (typeof editRange === 'string') {
@@ -205,7 +205,7 @@ namespace Nijo.Features.Storing {
                                   } else {
                                     const res = await get({{find.GetUrlStringForReact(keyArray.Select((_, i) => $"editRange[{i}].toString()"))}})
                                     remoteItems = res.ok
-                                      ? [res.data as AggregateType.{{new DataClassForUpdate(agg).TsTypeName}}]
+                                      ? [res.data as AggregateType.{{new DataClassForSave(agg).TsTypeName}}]
                                       : []
                                   }
 
@@ -220,7 +220,7 @@ namespace Nijo.Features.Storing {
                                   if (editRange.skip !== undefined) searchParam.append('{{FindManyFeature.PARAM_SKIP}}', editRange.skip.toString())
                                   if (editRange.take !== undefined) searchParam.append('{{FindManyFeature.PARAM_TAKE}}', editRange.take.toString())
                                   const url = `{{findMany.GetUrlStringForReact()}}?${searchParam}`
-                                  const res = await post<AggregateType.{{new DataClassForUpdate(agg).TsTypeName}}[]>(url, editRange.filter)
+                                  const res = await post<AggregateType.{{new DataClassForSave(agg).TsTypeName}}[]>(url, editRange.filter)
                                   remoteItems = res.ok ? res.data : []
 
                                   // 既存データの検索条件による検索（ローカルリポジトリ）
@@ -251,7 +251,7 @@ namespace Nijo.Features.Storing {
                                 ).map<AggregateType.{{displayData.TsTypeName}}>(pair => pair.left ?? pair.right)
                             {{refRepositories.SelectTextTemplate(x => $$"""
 
-                                // {{new DataClassForUpdate(x.RefFrom.MainAggregate).TsTypeName}}を{{new DataClassForUpdate(agg).TsTypeName}}に合成する
+                                // {{new DataClassForSave(x.RefFrom.MainAggregate).TsTypeName}}を{{new DataClassForSave(agg).TsTypeName}}に合成する
                                 for (const item of remoteAndLocal) {
                             {{If(x.RefTo.MainAggregate.EnumerateAncestorsAndThis().Any(y => y.IsChildrenMember()), () => $$"""
                                   for (const x of item{{RenderSelectMany(x.RefTo.MainAggregate)}} ?? []) {
@@ -348,7 +348,7 @@ namespace Nijo.Features.Storing {
 
             static string RenderCommitFunction(GraphNode<Aggregate> agg) {
                 var displayData = new DataClassForDisplay(agg);
-                var updateCommand = new DataClassForUpdate(agg);
+                var updateCommand = new DataClassForSave(agg);
                 var localRepos = new LocalRepository(agg);
                 var controller = new Parts.WebClient.Controller(agg.Item);
                 var deleteKeyUrlParam = agg

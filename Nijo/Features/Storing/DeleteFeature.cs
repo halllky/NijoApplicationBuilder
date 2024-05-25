@@ -39,7 +39,7 @@ namespace Nijo.Features.Storing {
             var appSrv = new ApplicationService();
             var controller = new Parts.WebClient.Controller(_aggregate.Item);
             var args = GetEFCoreMethodArgs().ToArray();
-            var instanceClass = new DataClassForUpdate(_aggregate).CsClassName;
+            var instanceClass = new DataClassForSave(_aggregate).CsClassName;
 
             return $$"""
                 public virtual bool {{MethodName}}({{args.Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}, out ICollection<string> errors) {
@@ -57,7 +57,7 @@ namespace Nijo.Features.Storing {
                         return false;
                     }
 
-                    var deleted = {{instanceClass}}.{{DataClassForUpdate.FROM_DBENTITY}}(entity);
+                    var deleted = {{instanceClass}}.{{DataClassForSave.FROM_DBENTITY}}(entity);
 
                     {{appSrv.DbContext}}.Remove(entity);
 

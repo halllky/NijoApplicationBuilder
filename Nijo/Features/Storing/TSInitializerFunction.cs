@@ -49,7 +49,7 @@ namespace Nijo.Features.Storing {
                     Key = member.MemberName,
                     Value = $"'{member.GetGroupItems().First().Key}'",
                 });
-            var uuid = new DataClassForUpdate(_instance)
+            var uuid = new DataClassForSave(_instance)
                 .GetOwnMembers()
                 .OfType<AggregateMember.ValueMember>()
                 .Where(member => member.Options.MemberType is Uuid)
@@ -66,7 +66,7 @@ namespace Nijo.Features.Storing {
                 .ToList();
 
             return $$"""
-                    export const {{FunctionName}} = (): {{new DataClassForUpdate(_instance).TsTypeName}} => ({
+                    export const {{FunctionName}} = (): {{new DataClassForSave(_instance).TsTypeName}} => ({
                     {{initializers.SelectTextTemplate(item => $$"""
                       {{item.Key}}: {{item.Value}},
                     """)}}

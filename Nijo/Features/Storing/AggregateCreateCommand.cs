@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
 
 namespace Nijo.Features.Storing {
-    internal class AggregateCreateCommand : DataClassForUpdate {
+    internal class AggregateCreateCommand : DataClassForSave {
         internal AggregateCreateCommand(GraphNode<Aggregate> aggregate) : base(aggregate) {
             if (!aggregate.IsRoot()) throw new ArgumentException();
         }

@@ -107,7 +107,7 @@ namespace Nijo.Models {
                 builder.TypeScriptDataTypes.Add(singleViewDataClass.RenderTypeScriptDataClassDeclaration());
 
                 foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
-                    var aggregateDetail = new Features.Storing.DataClassForUpdate(aggregate);
+                    var aggregateDetail = new Features.Storing.DataClassForSave(aggregate);
                     builder.DataClassDeclaring.Add(aggregateDetail.RenderCSharp(context));
                     builder.TypeScriptDataTypes.Add(aggregateDetail.RenderTypeScript(context));
                 }

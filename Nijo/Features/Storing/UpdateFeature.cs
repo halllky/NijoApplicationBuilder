@@ -18,11 +18,11 @@ namespace Nijo.Features.Storing {
 
         private readonly GraphNode<Aggregate> _aggregate;
 
-        internal string ArgType => new DataClassForUpdate(_aggregate).CsClassName;
+        internal string ArgType => new DataClassForSave(_aggregate).CsClassName;
         internal string MethodName => $"Update{_aggregate.Item.DisplayName.ToCSharpSafe()}";
 
         internal string RenderController() {
-            var updateCommand = new DataClassForUpdate(_aggregate);
+            var updateCommand = new DataClassForSave(_aggregate);
 
             return $$"""
                 [HttpPost("{{Parts.WebClient.Controller.UPDATE_ACTION_NAME}}")]
@@ -41,7 +41,7 @@ namespace Nijo.Features.Storing {
             var controller = new Parts.WebClient.Controller(_aggregate.Item);
             var find = new FindFeature(_aggregate);
 
-            var detail = new DataClassForUpdate(_aggregate);
+            var detail = new DataClassForSave(_aggregate);
             var searchKeys = _aggregate
                 .GetKeys()
                 .OfType<AggregateMember.ValueMember>()
@@ -66,8 +66,8 @@ namespace Nijo.Features.Storing {
                         return false;
                     }
 
-                    var beforeUpdate = {{detail.CsClassName}}.{{DataClassForUpdate.FROM_DBENTITY}}(beforeDbEntity);
-                    var afterDbEntity = after.{{DataClassForUpdate.TO_DBENTITY}}();
+                    var beforeUpdate = {{detail.CsClassName}}.{{DataClassForSave.FROM_DBENTITY}}(beforeDbEntity);
+                    var afterDbEntity = after.{{DataClassForSave.TO_DBENTITY}}();
 
                     // Attach
                     {{appSrv.DbContext}}.Entry(afterDbEntity).State = EntityState.Modified;

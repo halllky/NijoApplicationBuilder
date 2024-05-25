@@ -41,7 +41,7 @@ namespace Nijo.Models {
                 builder.AppServiceMethods.Add(deleteFeature.RenderAppSrvMethod());
 
                 foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
-                    var aggregateDetail = new DataClassForUpdate(aggregate);
+                    var aggregateDetail = new DataClassForSave(aggregate);
                     var initializerFunc = new TSInitializerFunction(aggregate);
                     builder.DataClassDeclaring.Add(aggregateDetail.RenderCSharp(context));
                     builder.TypeScriptDataTypes.Add(aggregateDetail.RenderTypeScript(context));
@@ -61,7 +61,7 @@ namespace Nijo.Models {
                 // KeywordSearching
                 foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
                     var keywordSearching = new KeywordSearchingFeature(aggregate);
-                    var refTargetKeyName = new DataClassForUpdateRefTarget(aggregate);
+                    var refTargetKeyName = new DataClassForSaveRefTarget(aggregate);
                     builder.DataClassDeclaring.Add(refTargetKeyName.RenderCSharpDeclaring());
                     builder.ControllerActions.Add(keywordSearching.RenderController());
                     builder.AppServiceMethods.Add(keywordSearching.RenderAppSrvMethod());

@@ -489,7 +489,7 @@ namespace Nijo.Features.Storing {
         }
 
         private IEnumerable<AggregateMember.AggregateMemberBase> GetMembers() {
-            return new DataClassForUpdate(_aggregate).GetOwnMembers();
+            return new DataClassForSave(_aggregate).GetOwnMembers();
         }
 
         private string IfReadOnly(string readOnly, AggregateMember.AggregateMemberBase prop) {
@@ -525,7 +525,7 @@ namespace Nijo.Features.Storing {
             var headersWidthRem = _aggregate
                 .EnumerateThisAndDescendants()
                 .SelectMany(
-                    a => new DataClassForUpdate(a)
+                    a => new DataClassForSave(a)
                         .GetOwnMembers()
                         .Where(m => {
                             // 同じ行に値を表示せず、名前が長くても行の横幅いっぱい占有できるため、除外

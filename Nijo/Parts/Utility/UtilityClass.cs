@@ -29,7 +29,7 @@ namespace Nijo.Parts.Utility {
                     .RootAggregates()
                     .Where(root => root.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key)
                     .SelectMany(root => root.EnumerateThisAndDescendants())
-                    .Select(agg => new DataClassForUpdateRefTarget(agg))
+                    .Select(agg => new DataClassForSaveRefTarget(agg))
                     .ToArray();
 
                 return $$"""

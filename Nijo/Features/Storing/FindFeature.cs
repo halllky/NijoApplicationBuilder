@@ -19,7 +19,7 @@ namespace Nijo.Features.Storing {
 
         private readonly GraphNode<Aggregate> _aggregate;
 
-        internal string FindMethodReturnType => new DataClassForUpdate(_aggregate).CsClassName;
+        internal string FindMethodReturnType => new DataClassForSave(_aggregate).CsClassName;
         internal string FindMethodName => $"Find{_aggregate.Item.DisplayName.ToCSharpSafe()}";
         private const string ACTION_NAME = "detail";
 
@@ -54,7 +54,7 @@ namespace Nijo.Features.Storing {
         internal string RenderAppSrvMethod() {
             var appSrv = new ApplicationService();
             var args = GetEFCoreMethodArgs().ToArray();
-            var dataClass = new DataClassForUpdate(_aggregate);
+            var dataClass = new DataClassForSave(_aggregate);
 
             return $$"""
                 /// <summary>
@@ -72,7 +72,7 @@ namespace Nijo.Features.Storing {
 
                     if (entity == null) return null;
 
-                    var aggregateInstance = {{dataClass.CsClassName}}.{{DataClassForUpdate.FROM_DBENTITY}}(entity);
+                    var aggregateInstance = {{dataClass.CsClassName}}.{{DataClassForSave.FROM_DBENTITY}}(entity);
                     return aggregateInstance;
                 }
                 """;

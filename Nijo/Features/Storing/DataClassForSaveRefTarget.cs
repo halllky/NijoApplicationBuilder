@@ -13,10 +13,10 @@ using Nijo.Parts.Utility;
 namespace Nijo.Features.Storing {
     /// <summary>
     /// DBに保存される、参照先の集約の情報。
-    /// <see cref="DataClassForUpdate"/> のうち主キーのみピックアップされたもの。
+    /// <see cref="DataClassForSave"/> のうち主キーのみピックアップされたもの。
     /// </summary>
-    internal class DataClassForUpdateRefTarget {
-        internal DataClassForUpdateRefTarget(GraphNode<Aggregate> aggregate) {
+    internal class DataClassForSaveRefTarget {
+        internal DataClassForSaveRefTarget(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
         }
         private readonly GraphNode<Aggregate> _aggregate;
@@ -70,7 +70,7 @@ namespace Nijo.Features.Storing {
             }).ToArray();
 
             IEnumerable<string> RenderBody(GraphNode<Aggregate> agg) {
-                foreach (var m in new DataClassForUpdateRefTarget(agg).GetOwnMembers()) {
+                foreach (var m in new DataClassForSaveRefTarget(agg).GetOwnMembers()) {
                     if (m is AggregateMember.ValueMember vm) {
                         yield return $$"""
                             {{vm.MemberName}} = ({{vm.CSharpTypeName}}?){{vmKeys.Single(x => x.Member.Declared == vm.Declared).VarName}},

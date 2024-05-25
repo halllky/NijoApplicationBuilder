@@ -129,18 +129,18 @@ namespace Nijo.Features.Debugging {
             var response = $"response{random.Next(99999999):00000000}";
             return $$"""
                 const {{data}} = AggregateType.{{new TSInitializerFunction(rootAggregate).FunctionName}}()
-                {{new DataClassForUpdate(rootAggregate).GetOwnMembers().SelectTextTemplate(member => $$"""
+                {{new DataClassForSave(rootAggregate).GetOwnMembers().SelectTextTemplate(member => $$"""
                 {{WithIndent(SetDummyValue(member), "")}}
                 """)}}
 
                 {{descendants.SelectTextTemplate(agg => $$"""
                 {{data}}.{{ObjectPath(agg).Join(".")}} = {{NewObject(agg)}}
-                {{new DataClassForUpdate(agg).GetOwnMembers().SelectTextTemplate(member => $$"""
+                {{new DataClassForSave(agg).GetOwnMembers().SelectTextTemplate(member => $$"""
                 {{WithIndent(SetDummyValue(member), "")}}
                 """)}}
                 """)}}
 
-                const {{response}} = await post<AggregateType.{{new DataClassForUpdate(rootAggregate).TsTypeName}}>(`{{controller.CreateCommandApi}}`, {{data}})
+                const {{response}} = await post<AggregateType.{{new DataClassForSave(rootAggregate).TsTypeName}}>(`{{controller.CreateCommandApi}}`, {{data}})
                 if (!{{response}}.ok) return false
 
                 """;

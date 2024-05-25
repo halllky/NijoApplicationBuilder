@@ -31,7 +31,7 @@ namespace Nijo.Features.BatchUpdate {
                     }
                     export type BatchUpdateItem
                     {{availableAggregates.SelectTextTemplate((agg, i) => $$"""
-                      {{(i == 0 ? "=" : "|")}} { type: '{{GetKey(agg)}}', act: ActionType, item: Types.{{new DataClassForUpdate(agg).TsTypeName}} }
+                      {{(i == 0 ? "=" : "|")}} { type: '{{GetKey(agg)}}', act: ActionType, item: Types.{{new DataClassForSave(agg).TsTypeName}} }
                     """)}}
                     export type ActionType = 'a' | 'm' | 'd' // add, modify, delete
 
