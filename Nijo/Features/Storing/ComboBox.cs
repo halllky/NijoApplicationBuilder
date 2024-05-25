@@ -37,7 +37,7 @@ namespace Nijo.Features.Storing {
         private string Render() {
             var combo = new ComboBox(_aggregate);
             var keyArray = KeyArray.Create(_aggregate.AsEntry());
-            var keyName = new RefTargetKeyName(_aggregate);
+            var keyName = new TransactionScopeRefTargetClass(_aggregate);
             var names = _aggregate
                 .AsEntry()
                 .GetNames()

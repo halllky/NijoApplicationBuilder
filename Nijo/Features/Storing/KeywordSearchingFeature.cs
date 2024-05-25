@@ -54,7 +54,7 @@ namespace Nijo.Features.Storing {
             // キーワード検索は子孫集約のDbEntityが基点になる
             var entry = _aggregate.AsEntry();
 
-            var keyName = new RefTargetKeyName(_aggregate);
+            var keyName = new TransactionScopeRefTargetClass(_aggregate);
             var filterColumns = entry
                 .GetKeys()
                 .Union(entry.GetNames())
@@ -67,14 +67,14 @@ namespace Nijo.Features.Storing {
                 .First();
 
             string RenderKeyNameConvertingRecursively(GraphNode<Aggregate> agg) {
-                var keyNameClass = new RefTargetKeyName(agg);
+                var keyNameClass = new TransactionScopeRefTargetClass(agg);
                 return keyNameClass
                     .GetOwnMembers()
                     .Where(m => m.Owner == agg)
                     .SelectTextTemplate(m => m is AggregateMember.ValueMember vm ? $$"""
                         {{m.MemberName}} = e.{{vm.GetFullPath().Join(".")}},
                         """ : $$"""
-                        {{m.MemberName}} = new {{new RefTargetKeyName(((AggregateMember.RelationMember)m).MemberAggregate).CSharpClassName}}() {
+                        {{m.MemberName}} = new {{new TransactionScopeRefTargetClass(((AggregateMember.RelationMember)m).MemberAggregate).CSharpClassName}}() {
                             {{WithIndent(RenderKeyNameConvertingRecursively(((AggregateMember.RelationMember)m).MemberAggregate), "    ")}}
                         },
                         """);

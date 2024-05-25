@@ -167,7 +167,7 @@ namespace Nijo.Features.Storing {
                         var keyArrayType = $"[{keyArray.Select(k => $"{k.TsType} | undefined").Join(", ")}]";
 
                         string RenderRefTargetKeyNameValue(AggregateMember.RelationMember refOrParent) {
-                            var keyname = new RefTargetKeyName(refOrParent.MemberAggregate);
+                            var keyname = new TransactionScopeRefTargetClass(refOrParent.MemberAggregate);
                             return $$"""
                                 {
                                 {{keyname.GetOwnKeyMembers().SelectTextTemplate(m => m is AggregateMember.RelationMember refOrParent2 ? $$"""
@@ -273,7 +273,7 @@ namespace Nijo.Features.Storing {
                     // 実際にはここでcontinueされるのは親のキーだけのはず。Render関数はルートから順番に呼び出されるので
                     if (pkVarNames.ContainsKey(key.Declared)) continue;
 
-                    /// 変換元のデータ型が <see cref="TransactionScopeDataClass"/> のため、キーが <see cref="RefTargetKeyName"/> の可能性がある。そのためキーのオーナーからのフルパスにしている
+                    /// 変換元のデータ型が <see cref="TransactionScopeDataClass"/> のため、キーが <see cref="TransactionScopeRefTargetClass"/> の可能性がある。そのためキーのオーナーからのフルパスにしている
                     pkVarNames.Add(key.Declared, $"{instance}?.{key.Declared.GetFullPath(since: key.Owner).Join("?.")}");
                 }
 
@@ -478,7 +478,7 @@ namespace Nijo.Features.Storing {
                             paths.Add(DisplayDataClass.OWN_MEMBERS);
                         }
 
-                        /// <see cref="RefTargetKeyName"/> の仕様に合わせる
+                        /// <see cref="TransactionScopeRefTargetClass"/> の仕様に合わせる
                         paths.Add(edge.RelationName);
 
                         enumeratingRefTargetKeyName = true;

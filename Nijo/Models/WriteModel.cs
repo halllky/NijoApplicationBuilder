@@ -60,7 +60,7 @@ namespace Nijo.Models {
                 // KeywordSearching
                 foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
                     var keywordSearching = new KeywordSearchingFeature(aggregate);
-                    var refTargetKeyName = new RefTargetKeyName(aggregate);
+                    var refTargetKeyName = new TransactionScopeRefTargetClass(aggregate);
                     builder.DataClassDeclaring.Add(refTargetKeyName.RenderCSharpDeclaring());
                     builder.TypeScriptDataTypes.Add(refTargetKeyName.RenderTypeScriptDeclaring());
                     builder.ControllerActions.Add(keywordSearching.RenderController());

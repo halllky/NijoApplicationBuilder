@@ -10,8 +10,12 @@ using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
 
 namespace Nijo.Features.Storing {
-    internal class RefTargetKeyName {
-        internal RefTargetKeyName(GraphNode<Aggregate> aggregate) {
+    /// <summary>
+    /// DBに保存される、参照先の集約の情報。
+    /// <see cref="TransactionScopeDataClass"/> のうち主キーのみピックアップされたもの。
+    /// </summary>
+    internal class TransactionScopeRefTargetClass {
+        internal TransactionScopeRefTargetClass(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
         }
         private readonly GraphNode<Aggregate> _aggregate;
