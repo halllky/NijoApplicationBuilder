@@ -19,8 +19,13 @@ namespace Nijo.Features.Storing {
         internal GraphNode<Aggregate> RefTo { get; }
         internal string TsTypeName => $"{RefTo.Item.ClassName}RefInfo";
 
-        internal IEnumerable<AggregateMember.AggregateMemberBase> GetDisplayMembers() {
-            static IEnumerable<AggregateMember.AggregateMemberBase> Enumerate(GraphNode<Aggregate> agg) {
+        /// <summary>
+        /// インスタンスの名前または名前に準ずるメンバーを列挙する
+        /// </summary>
+        private static IEnumerable<AggregateMember.AggregateMemberBase> EnumerateNameLikeMembers(GraphNode<Aggregate> aggregate) {
+            var visited = new HashSet<(GraphNode<Aggregate>, GraphPath)>();
+
+            IEnumerable<AggregateMember.AggregateMemberBase> Visit(GraphNode<Aggregate> agg) {
                 foreach (var member in agg.GetMembers()) {
                     if (member is AggregateMember.ValueMember vm
                         && vm.DeclaringAggregate == vm.Owner
@@ -29,37 +34,55 @@ namespace Nijo.Features.Storing {
                         yield return vm;
 
                     } else if (member is AggregateMember.RelationMember rm) {
-                        var recursively = Enumerate(rm.MemberAggregate).ToArray();
-                        if (recursively.Length > 0) {
+
+                        // 無限ループ回避
+                        var identifier = (rm.MemberAggregate, rm.MemberAggregate.PathFromEntry());
+                        if (visited.Contains(identifier)) continue;
+                        visited.Add(identifier);
+
+                        // Refの場合は明示的にnamelikeに指定されている場合のみ名前扱い
+                        if (rm is AggregateMember.Ref
+                            && !rm.Relation.IsPrimary()
+                            && !rm.Relation.IsInstanceName()
+                            && !rm.Relation.IsNameLike()) continue;
+
+                        var nameLikeMembers = Visit(rm.MemberAggregate).ToArray();
+                        if (nameLikeMembers.Length > 0) {
 
                             // その子要素等に表示するメンバーが1個以上ある場合だけその子要素等を列挙する
                             yield return rm;
 
-                            foreach (var m in recursively) {
+                            foreach (var m in nameLikeMembers) {
                                 yield return m;
                             }
                         }
                     }
                 }
             }
-            foreach (var vm in Enumerate(RefTo)) {
+
+            foreach (var nameLikeMember in Visit(aggregate)) {
+                yield return nameLikeMember;
+            }
+        }
+
+        internal IEnumerable<AggregateMember.AggregateMemberBase> GetDisplayMembers() {
+            foreach (var vm in EnumerateNameLikeMembers(RefTo)) {
                 yield return vm;
             }
         }
 
         internal string Render() {
-
             static IEnumerable<string> RenderBody(GraphNode<Aggregate> agg) {
-                foreach (var member in agg.GetMembers()) {
-                    if (member is AggregateMember.ValueMember vm
-                        && vm.DeclaringAggregate == vm.Owner
-                        && (vm.IsKey || vm.Options.IsNameLike)) {
+                foreach (var nameLikeMember in EnumerateNameLikeMembers(agg)) {
+                    if (nameLikeMember.DeclaringAggregate != agg) {
+                        continue;
 
+                    } else if (nameLikeMember is AggregateMember.ValueMember vm) {
                         yield return $$"""
                             {{vm.MemberName}}?: {{vm.TypeScriptTypename}},
                             """;
 
-                    } else if (member is AggregateMember.RelationMember rm) {
+                    } else if (nameLikeMember is AggregateMember.RelationMember rm) {
                         yield return $$"""
                             {{rm.MemberName}}?: {
                               {{WithIndent(RenderBody(rm.MemberAggregate), "  ")}}
@@ -68,7 +91,6 @@ namespace Nijo.Features.Storing {
                     }
                 }
             }
-
             return $$"""
                 export type {{TsTypeName}} = {
                   {{WithIndent(RenderBody(RefTo), "  ")}}
