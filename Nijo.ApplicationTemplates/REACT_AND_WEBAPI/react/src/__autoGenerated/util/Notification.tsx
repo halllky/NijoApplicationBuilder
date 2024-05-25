@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react"
 import * as Icon from "@heroicons/react/24/outline"
 import { UUID } from "uuidjs"
 import * as ReactHookUtil from "./ReactUtil"
+import { useUserSetting } from "./UserSetting"
 import * as Components from "../input"
 
 type Msg = {
@@ -25,11 +26,11 @@ const notificationReducer = (state: State) => {
       if (typeof asErrMsg.message === 'string') return { id, type, message: asErrMsg.message, name: asErrMsg.name }
       return { id, type, message: m?.toString() ?? '' }
     })
-    return { ...state, inline: [...state.messages, ...addedMessages] }
+    return { messages: [...state.messages, ...addedMessages] }
   }
   const clear = (nameOrItem?: string | Msg) => {
     if (!nameOrItem) {
-      return { ...state, inline: [], toast: [] }
+      return { messages: [] }
     }
     let filterFn: (msg: Msg) => boolean
     if (typeof nameOrItem === 'string') {
@@ -39,7 +40,7 @@ const notificationReducer = (state: State) => {
       const id = nameOrItem.id
       filterFn = m => m.id !== id
     }
-    return { ...state, messages: state.messages.filter(filterFn) }
+    return { messages: state.messages.filter(filterFn) }
   }
 
   return {
@@ -62,6 +63,8 @@ export const InlineMessageList = ({ type, name, className, darkMode }: {
   const getBorderColor = useCallback((msg?: Msg) => {
     if (msg?.type === 'warn') {
       return darkMode ? 'border-amber-900' : 'border-amber-200'
+    } else if (msg?.type === 'info') {
+      return darkMode ? 'border-sky-900' : 'border-sky-200'
     } else {
       return darkMode ? 'border-rose-900' : 'border-rose-200'
     }
@@ -69,6 +72,8 @@ export const InlineMessageList = ({ type, name, className, darkMode }: {
   const getBgColor = useCallback((msg?: Msg) => {
     if (msg?.type === 'warn') {
       return darkMode ? 'bg-amber-800' : 'bg-amber-100'
+    } else if (msg?.type === 'info') {
+      return darkMode ? 'bg-sky-800' : 'bg-sky-100'
     } else {
       return darkMode ? 'bg-rose-800' : 'bg-rose-100'
     }
@@ -76,6 +81,8 @@ export const InlineMessageList = ({ type, name, className, darkMode }: {
   const getTextColor = useCallback((msg?: Msg) => {
     if (msg?.type === 'warn') {
       return darkMode ? 'text-amber-200' : 'text-amber-700'
+    } else if (msg?.type === 'info') {
+      return darkMode ? 'text-sky-200' : 'text-sky-700'
     } else {
       return darkMode ? 'text-rose-200' : 'text-rose-600'
     }
@@ -118,12 +125,12 @@ export const InlineMessageList = ({ type, name, className, darkMode }: {
   )
 }
 
-export const Toast = ({ type, name, className }: {
+export const Toast = ({ type, name }: {
   type?: Msg['type']
   name?: string
-  className?: string
 }) => {
   const [{ messages },] = useToastContext()
+  const { data: { darkMode } } = useUserSetting()
   const filtered = useMemo(() => {
     let arr = [...messages]
     if (type) arr = arr.filter(m => m.type === type)
@@ -133,46 +140,63 @@ export const Toast = ({ type, name, className }: {
 
   return <>
     {filtered.map(msg => (
-      <ToastMessage key={msg.id} msg={msg} className={className} />
+      <ToastMessage key={msg.id} msg={msg} darkMode={darkMode} />
     ))}
   </>
 }
-const ToastMessage = ({ msg, className }: {
+const ToastMessage = ({ msg, darkMode }: {
   msg: Msg
-  className?: string
+  darkMode: boolean | undefined
 }) => {
   const [, dispatch] = useToastContext()
   const [visible, setVisible] = useState(true)
   useEffect(() => {
-    const timer1 = setTimeout(() => {
-      setVisible(false)
-    }, 3000)
-    const timer2 = setTimeout(() => {
-      dispatch(state => state.clear(msg))
-    }, 5000)
-    return () => {
-      clearTimeout(timer1)
-      clearTimeout(timer2)
+    // infoのトーストは勝手に消えてほしいのでタイマーをかけて消す
+    if (msg.type === 'info') {
+      const timer1 = setTimeout(() => {
+        setVisible(false)
+      }, 3000)
+      const timer2 = setTimeout(() => {
+        dispatch(state => state.clear(msg))
+      }, 5000)
+      return () => {
+        clearTimeout(timer1)
+        clearTimeout(timer2)
+      }
     }
   }, [dispatch, msg])
 
+  const colors = useMemo(() => {
+    if (msg.type === 'warn') {
+      return darkMode
+        ? 'border-amber-500 bg-amber-800 text-amber-50'
+        : 'border-amber-500 bg-amber-200 text-amber-900'
+    } else if (msg.type === 'info') {
+      return darkMode
+        ? 'border-sky-500 bg-sky-800 text-sky-50'
+        : 'border-sky-500 bg-sky-200 text-sky-900'
+    } else {
+      return darkMode
+        ? 'border-rose-500 bg-rose-800 text-rose-50'
+        : 'border-rose-500 bg-rose-200 text-rose-900'
+    }
+  }, [msg, darkMode])
+
+  const animate = visible
+    ? 'animate-slideIn'
+    : 'animate-slideOut translate-x-[calc(-100%-1rem)]'
+
   return (
-    <div
-      onClick={() => dispatch(state => state.clear(msg))}
-      className={`
-        z-[300] flex select-none cursor-pointer overflow-hidden
-        ${(visible ? 'animate-slideIn' : 'animate-slideOut translate-x-[calc(-100%-1rem)]')}
-        fixed left-4 bottom-4 p-2 w-64 h-24
-        bg-sky-950 text-sky-50 border border-1 boder-sky-500
-        ${className}`}>
-      <span className="flex-1">
-        {msg.message}
-      </span>
+    <div className={`z-[300] flex flex-col fixed left-4 bottom-12 w-64 h-24 overflow-hidden border border-1 ${colors} ${animate}`}>
       <Components.IconButton
         inline
         icon={Icon.XMarkIcon}
-        className="self-start"
+        onClick={() => dispatch(state => state.clear(msg))}
+        className="self-end"
       />
+      <span className="inline-block w-full h-full px-2 overflow-y-auto select-all break-words">
+        {msg.message}
+      </span>
     </div>
   )
 }
