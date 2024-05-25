@@ -167,7 +167,6 @@ namespace Nijo.Features.Storing {
                         var refTargetData = new DataClassForDisplayRefTarget(@ref.RefTo.AsEntry());
                         var refTargetMembers = refTargetData
                             .GetDisplayMembers()
-                            .OfType<AggregateMember.ValueMember>()
                             .ToArray();
 
                         var keyArray = KeyArray.Create(@ref.MemberAggregate);

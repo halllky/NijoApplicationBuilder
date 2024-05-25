@@ -23,74 +23,90 @@ namespace Nijo.Features.Storing {
         /// インスタンスの名前または名前に準ずるメンバーを列挙する
         /// </summary>
         private static IEnumerable<AggregateMember.AggregateMemberBase> EnumerateNameLikeMembers(GraphNode<Aggregate> aggregate) {
-            var visited = new HashSet<(GraphNode<Aggregate>, GraphPath)>();
+            foreach (var member in aggregate.GetMembers()) {
 
-            IEnumerable<AggregateMember.AggregateMemberBase> Visit(GraphNode<Aggregate> agg) {
-                foreach (var member in agg.GetMembers()) {
-                    if (member is AggregateMember.ValueMember vm
-                        && vm.DeclaringAggregate == vm.Owner
-                        && (vm.IsKey || vm.Options.IsNameLike)) {
+                if (member is AggregateMember.ValueMember vm) {
 
+                    if (member.DeclaringAggregate == aggregate
+                        && (vm.IsKey
+                        || vm.IsDisplayName
+                        || vm.Options.IsNameLike)) {
+
+                        yield return vm;
+                    }
+
+                } else if (member is AggregateMember.Parent parent) {
+
+                    // 無限ループ回避
+                    if (parent.MemberAggregate == aggregate.Source?.Source.As<Aggregate>()) continue;
+
+                    yield return parent;
+
+                } else if (member is AggregateMember.Ref @ref) {
+
+                    // Refの場合は明示的にnamelikeに指定されている場合のみ名前扱い
+                    if (@ref.Relation.IsPrimary()
+                        || @ref.Relation.IsInstanceName()
+                        || @ref.Relation.IsNameLike()) yield return @ref;
+
+                } else if (member is AggregateMember.RelationMember child) {
+
+                    // 判断に迷うが以下の理由からChildrenは列挙対象外
+                    // - 参照先のChildrenを見たい状況がほぼ無いのではと考えられること
+                    // - 参照先検索SQLのパフォーマンスの懸念
+                    // - Childrenは必ずキー項目を持っているため、この後の「その子要素等に表示するメンバーが1個以上ある場合だけその子要素等を列挙する」で意図せず引っかかってしまう
+                    if (child is AggregateMember.Children) continue;
+
+                    // 無限ループ回避
+                    if (child.MemberAggregate == aggregate.Source?.Source.As<Aggregate>()) continue;
+
+                    // その子要素等に表示するメンバーが1個以上ある場合だけその子要素等を列挙する
+                    var hasNameLikeMembers = EnumerateNameLikeMembers(child.MemberAggregate).Any();
+                    if (hasNameLikeMembers) {
+                        yield return child;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 再帰列挙
+        /// </summary>
+        internal IEnumerable<AggregateMember.ValueMember> GetDisplayMembers() {
+            static IEnumerable<AggregateMember.ValueMember> EnumerateRecursively(GraphNode<Aggregate> agg) {
+                foreach (var member in EnumerateNameLikeMembers(agg)) {
+                    if (member is AggregateMember.ValueMember vm) {
                         yield return vm;
 
                     } else if (member is AggregateMember.RelationMember rm) {
-
-                        // 無限ループ回避
-                        var identifier = (rm.MemberAggregate, rm.MemberAggregate.PathFromEntry());
-                        if (visited.Contains(identifier)) continue;
-                        visited.Add(identifier);
-
-                        // Refの場合は明示的にnamelikeに指定されている場合のみ名前扱い
-                        if (rm is AggregateMember.Ref
-                            && !rm.Relation.IsPrimary()
-                            && !rm.Relation.IsInstanceName()
-                            && !rm.Relation.IsNameLike()) continue;
-
-                        var nameLikeMembers = Visit(rm.MemberAggregate).ToArray();
-                        if (nameLikeMembers.Length > 0) {
-
-                            // その子要素等に表示するメンバーが1個以上ある場合だけその子要素等を列挙する
-                            yield return rm;
-
-                            foreach (var m in nameLikeMembers) {
-                                yield return m;
-                            }
+                        foreach (var vm2 in EnumerateRecursively(rm.MemberAggregate)) {
+                            yield return vm2;
                         }
                     }
                 }
             }
-
-            foreach (var nameLikeMember in Visit(aggregate)) {
-                yield return nameLikeMember;
-            }
-        }
-
-        internal IEnumerable<AggregateMember.AggregateMemberBase> GetDisplayMembers() {
-            foreach (var vm in EnumerateNameLikeMembers(RefTo)) {
+            foreach (var vm in EnumerateRecursively(RefTo)) {
                 yield return vm;
             }
         }
 
         internal string Render() {
-            var visited = new HashSet<(GraphNode<Aggregate>, GraphPath)>();
 
             IEnumerable<string> RenderBody(GraphNode<Aggregate> agg) {
                 foreach (var nameLikeMember in EnumerateNameLikeMembers(agg)) {
-                    if (nameLikeMember.DeclaringAggregate != agg) {
-                        continue;
-
-                    } else if (nameLikeMember is AggregateMember.ValueMember vm) {
+                    if (nameLikeMember is AggregateMember.ValueMember vm) {
                         yield return $$"""
                             {{vm.MemberName}}?: {{vm.TypeScriptTypename}},
                             """;
 
+                    } else if (nameLikeMember is AggregateMember.Children children) {
+                        yield return $$"""
+                            {{children.MemberName}}?: {
+                              {{WithIndent(RenderBody(children.ChildrenAggregate), "  ")}}
+                            }[],
+                            """;
+
                     } else if (nameLikeMember is AggregateMember.RelationMember rm) {
-
-                        // 無限ループ回避
-                        var identifier = (rm.MemberAggregate, rm.MemberAggregate.PathFromEntry());
-                        if (visited.Contains(identifier)) continue;
-                        visited.Add(identifier);
-
                         yield return $$"""
                             {{rm.MemberName}}?: {
                               {{WithIndent(RenderBody(rm.MemberAggregate), "  ")}}
@@ -101,7 +117,7 @@ namespace Nijo.Features.Storing {
             }
             return $$"""
                 export type {{TsTypeName}} = {
-                  {{WithIndent(RenderBody(RefTo), "  ")}}
+                  {{WithIndent(RenderBody(RefTo.AsEntry()), "  ")}}
                 }
                 """;
         }
