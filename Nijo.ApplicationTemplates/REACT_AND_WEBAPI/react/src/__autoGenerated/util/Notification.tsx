@@ -54,12 +54,12 @@ const notificationReducer = (state: State) => {
 export const [MsgContextProvider, useMsgContext] = ReactHookUtil.defineContext((): State => ({ messages: [] }), notificationReducer)
 export const [ToastContextProvider, useToastContext] = ReactHookUtil.defineContext((): State => ({ messages: [] }), notificationReducer)
 
-export const InlineMessageList = ({ type, name, className, darkMode }: {
+export const InlineMessageList = ({ type, name, className }: {
   type?: Msg['type']
   name?: string
   className?: string
-  darkMode: boolean | undefined
 }) => {
+  const { data: { darkMode } } = useUserSetting()
   const getBorderColor = useCallback((msg?: Msg) => {
     if (msg?.type === 'warn') {
       return darkMode ? 'border-amber-900' : 'border-amber-200'
@@ -96,6 +96,7 @@ export const InlineMessageList = ({ type, name, className, darkMode }: {
     return arr
   }, [messages, name, type])
 
+  if (filtered.length === 0) return <></>
 
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
@@ -114,7 +115,7 @@ export const InlineMessageList = ({ type, name, className, darkMode }: {
       </ul>
       {filtered.length > 1 && (
         <div className={`flex gap-8 text-sm select-none items-center ${getTextColor()}`}>
-          {filtered.length}件の警告とエラー
+          {filtered.length}件のメッセージ
           <Components.IconButton onClick={() => dispatch(msg => msg.clear(name))}>
             すべてクリアする
           </Components.IconButton>

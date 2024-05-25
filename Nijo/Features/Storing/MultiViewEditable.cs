@@ -98,6 +98,14 @@ namespace Nijo.Features.Storing {
                     const VForm = Layout.VerticalForm
 
                     export default function () {
+                      return (
+                        <Util.MsgContextProvider>
+                          <Page />
+                        </Util.MsgContextProvider>
+                      )
+                    }
+
+                    const Page = () => {
                       const [, dispatchMsg] = Util.useMsgContext()
                       const [, dispatchToast] = Util.useToastContext()
 
@@ -173,7 +181,7 @@ namespace Nijo.Features.Storing {
                       ], [update])
 
                       return (
-                        <div className="page-content-root gap-4 pb-[50vh]">
+                        <div className="page-content-root gap-4">
 
                           <FormProvider {...rhfSearchMethods}>
                             <form className="flex flex-col">
@@ -194,6 +202,9 @@ namespace Nijo.Features.Storing {
                                 {{WithIndent(_options.PageTitleSide!, "            ")}}
                     """)}}
                               </div>
+
+                              <Util.InlineMessageList />
+
                               <VForm.Container leftColumnMinWidth="10rem">
                     {{groupedSearchConditions.SelectTextTemplate(group => $$"""
                     {{If(group.Key == _aggregate, () => $$"""

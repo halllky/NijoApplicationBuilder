@@ -13,21 +13,29 @@ namespace Nijo.Parts.WebClient {
                 FileName = "DashBoard.tsx",
                 RenderContent = context => $$"""
                     import { useCallback, useState } from 'react'
-                    import { useHttpRequest, useMsgContext, useToastContext, useDummyDataGenerator, useLocalRepositoryChangeList } from '../util'
+                    import * as Util from '../util'
                     import * as Input from '../input'
                     import { VerticalForm as VForm } from '../collection'
                     {{app.DashBoardImports.SelectTextTemplate(import => import)}}
 
                     /** DashBoard */
                     export default function () {
+                      return (
+                        <Util.MsgContextProvider>
+                          <DashBoard />
+                        </Util.MsgContextProvider>
+                      )
+                    }
+
+                    const DashBoard = () => {
 
                       // デバッグ用DB再作成コマンド
-                      const [, dispatchMsg] = useMsgContext()
-                      const [, dispatchToast] = useToastContext()
-                      const { post } = useHttpRequest()
+                      const [, dispatchMsg] = Util.useMsgContext()
+                      const [, dispatchToast] = Util.useToastContext()
+                      const { post } = Util.useHttpRequest()
                       const [withDummyData, setWithDummyData] = useState<boolean | undefined>(true)
-                      const genereateDummyData = useDummyDataGenerator()
-                      const {reset: resetLocalRepository} = useLocalRepositoryChangeList()
+                      const genereateDummyData = Util.useDummyDataGenerator()
+                      const {reset: resetLocalRepository} = Util.useLocalRepositoryChangeList()
                       const recreateDatabase = useCallback(async () => {
                         if (window.confirm('DBを再作成します。データは全て削除されます。よろしいですか？')) {
                           try {
@@ -51,6 +59,8 @@ namespace Nijo.Parts.WebClient {
 
                       return (
                         <div className="page-content-root gap-4">
+
+                          <Util.InlineMessageList />
 
                           {import.meta.env.DEV && (
                             <VForm.Container label="デバッグ用コマンド ※この欄は開発環境でのみ表示されます">

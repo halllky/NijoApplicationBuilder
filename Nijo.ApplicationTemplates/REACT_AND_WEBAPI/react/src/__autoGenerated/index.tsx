@@ -78,7 +78,7 @@ function ApplicationRootInContext({ children }: {
       <PanelResizeHandle className='w-1 bg-color-base' />
 
       {/* コンテンツ */}
-      <Panel className={`flex flex-col [&>:first-child]:flex-1 pr-1 pt-1 pb-1 bg-color-base text-color-12`}>
+      <Panel className={`flex flex-col pr-1 pt-1 pb-1 bg-color-base text-color-12`}>
         <Routes>
           <Route path='/' element={<DashBoard />} />
           <Route path='/changes' element={<Util.LocalReposChangeListPage />} />
@@ -90,7 +90,7 @@ function ApplicationRootInContext({ children }: {
           <Route path='*' element={<p> Not found.</p>} />
         </Routes>
 
-        <Util.InlineMessageList darkMode={darkMode} />
+        <Util.InlineMessageList />
       </Panel>
     </PanelGroup>
   )

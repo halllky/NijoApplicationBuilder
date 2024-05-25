@@ -147,6 +147,14 @@ namespace Nijo.Features.Storing {
                     const VForm = Layout.VerticalForm
 
                     export default function () {
+                      return (
+                        <Util.MsgContextProvider>
+                          <Page />
+                        </Util.MsgContextProvider>
+                      )
+                    }
+
+                    const Page = () => {
                     {{If(_type == E_Type.Edit || _type == E_Type.View, () => $$"""
                       const { {{urlKeysWithMember.Select((_, i) => $"key{i}").Join(", ")}} } = useParams()
                       const pkArray: [{{keyArray.Select(k => $"{k.TsType} | undefined").Join(", ")}}] = useMemo(() => {
@@ -192,7 +200,9 @@ namespace Nijo.Features.Storing {
                     """)}}
                         ></AfterLoaded>
                       ) : (
-                        <></>
+                        <>
+                          <Util.InlineMessageList />
+                        </>
                       )
                     }
 
@@ -289,6 +299,8 @@ namespace Nijo.Features.Storing {
                     """)}}
                               <div className="flex-1"></div>
                             </h1>
+
+                            <Util.InlineMessageList />
 
                             {{new AggregateComponent(_aggregate, _type, false).RenderCaller()}}
 
