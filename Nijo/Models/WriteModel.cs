@@ -61,7 +61,7 @@ namespace Nijo.Models {
                 // KeywordSearching
                 foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
                     var keywordSearching = new KeywordSearchingFeature(aggregate);
-                    var refTargetKeyName = new TransactionScopeRefTargetClass(aggregate);
+                    var refTargetKeyName = new DataClassForUpdateRefTarget(aggregate);
                     builder.DataClassDeclaring.Add(refTargetKeyName.RenderCSharpDeclaring());
                     builder.TypeScriptDataTypes.Add(refTargetKeyName.RenderTypeScriptDeclaring());
                     builder.ControllerActions.Add(keywordSearching.RenderController());
@@ -108,11 +108,11 @@ namespace Nijo.Models {
                 }
 
                 // SingleView
-                var singleViewDataClass = new DisplayDataClass(rootAggregate);
+                var singleViewDataClass = new DataClassForDisplay(rootAggregate);
                 builder.TypeScriptDataTypes.Add(singleViewDataClass.RenderTypeScriptDataClassDeclaration());
                 builder.TypeScriptDataTypes.Add(singleViewDataClass.RenderConvertFnToLocalRepositoryType());
                 foreach (var agg in rootAggregate.EnumerateThisAndDescendants()) {
-                    var refTargetDataClass = new DisplayRefTargetClass(agg);
+                    var refTargetDataClass = new DataClassForDisplayRefTarget(agg);
                     builder.TypeScriptDataTypes.Add(refTargetDataClass.Render());
                 }
             });

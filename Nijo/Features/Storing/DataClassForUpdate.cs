@@ -79,7 +79,7 @@ namespace Nijo.Features.Storing {
                     } else if (prop is AggregateMember.Ref refProp) {
 
                         string RenderKeyNameConvertingRecursively(AggregateMember.RelationMember refOrParent) {
-                            var keyNameClass = new TransactionScopeRefTargetClass(refOrParent.MemberAggregate);
+                            var keyNameClass = new DataClassForUpdateRefTarget(refOrParent.MemberAggregate);
 
                             return $$"""
                                 {{refOrParent.MemberName}} = new {{keyNameClass.CSharpClassName}}() {

@@ -14,8 +14,8 @@ namespace Nijo.Features.Storing {
     /// データ自身が持っている情報に加え、それがDBに存在するデータか否か、
     /// DBから読み込んだあと変更が加わっているか、などの画面に表示するために必要な情報も保持している。
     /// </summary>
-    internal class DisplayDataClass {
-        internal DisplayDataClass(GraphNode<Aggregate> aggregate) {
+    internal class DataClassForDisplay {
+        internal DataClassForDisplay(GraphNode<Aggregate> aggregate) {
             MainAggregate = aggregate;
         }
         internal GraphNode<Aggregate> MainAggregate { get; }
@@ -77,7 +77,7 @@ namespace Nijo.Features.Storing {
         /// </summary>
         internal IEnumerable<(RelationProp, string[] Path, bool IsArray)> GetRefFromPropsRecursively() {
             var refFromPros = new List<(RelationProp, string[] Path, bool IsArray)>();
-            void Collect(DisplayDataClass dc, string[] beforePath, bool beforeIsMany) {
+            void Collect(DataClassForDisplay dc, string[] beforePath, bool beforeIsMany) {
                 foreach (var rel in dc.GetRefFromProps().Concat(dc.GetChildProps())) {
 
                     // thisInstanceName.child_子要素.map(x => x.ref_from_参照元)
@@ -155,16 +155,16 @@ namespace Nijo.Features.Storing {
         internal string ConvertFnNameToLocalRepositoryType => $"convert{MainAggregate.Item.ClassName}ToLocalRepositoryItem";
 
         /// <summary>
-        /// データ型変換関数 (<see cref="DisplayDataClass"/> => <see cref="TransactionScopeDataClass"/>)
+        /// データ型変換関数 (<see cref="DataClassForDisplay"/> => <see cref="TransactionScopeDataClass"/>)
         /// </summary>
         internal string RenderConvertFnToLocalRepositoryType() {
 
-            string RenderItem(DisplayDataClass dc, string instance) {
+            string RenderItem(DataClassForDisplay dc, string instance) {
 
                 string RenderOwnMemberValue(AggregateMember.AggregateMemberBase member) {
                     if (member is AggregateMember.Ref @ref) {
                         // @refまでの経路はDisplayDataClassのルールで, それ以降の経路はDisplayRefTargetClassのルールで計算するため、AsEntryしている
-                        var refTargetData = new DisplayRefTargetClass(@ref.RefTo.AsEntry());
+                        var refTargetData = new DataClassForDisplayRefTarget(@ref.RefTo.AsEntry());
                         var refTargetMembers = refTargetData
                             .GetDisplayMembers()
                             .OfType<AggregateMember.ValueMember>()
@@ -174,7 +174,7 @@ namespace Nijo.Features.Storing {
                         var keyArrayType = $"[{keyArray.Select(k => $"{k.TsType} | undefined").Join(", ")}]";
 
                         string RenderRefTargetKeyNameValue(AggregateMember.RelationMember refOrParent) {
-                            var keyname = new TransactionScopeRefTargetClass(refOrParent.MemberAggregate);
+                            var keyname = new DataClassForUpdateRefTarget(refOrParent.MemberAggregate);
                             return $$"""
                                 {
                                 {{keyname.GetOwnMembers().OfType<AggregateMember.ValueMember>().SelectTextTemplate(vm => $$"""
@@ -209,7 +209,7 @@ namespace Nijo.Features.Storing {
                       {{p.Member.MemberName}}: {{WithIndent(RenderOwnMemberValue(p.Member), "  ")}},
                     """)}}
                     {{dc.GetChildProps().SelectTextTemplate(p => p.MemberInfo is AggregateMember.Children ? $$"""
-                      {{p.MemberInfo?.MemberName}}: {{instance}}.{{p.MemberInfo?.MemberAggregate.GetFullPathAsSingleViewDataClass().Join("?.")}}?.map(x{{p.MemberInfo?.MemberName}} => ({{WithIndent(RenderItem(new DisplayDataClass(p.MainAggregate.AsEntry()), $"x{p.MemberInfo?.MemberName}"), "  ")}})),
+                      {{p.MemberInfo?.MemberName}}: {{instance}}.{{p.MemberInfo?.MemberAggregate.GetFullPathAsSingleViewDataClass().Join("?.")}}?.map(x{{p.MemberInfo?.MemberName}} => ({{WithIndent(RenderItem(new DataClassForDisplay(p.MainAggregate.AsEntry()), $"x{p.MemberInfo?.MemberName}"), "  ")}})),
                     """ : $$"""
                       {{p.MemberInfo?.MemberName}}: {{WithIndent(RenderItem(p, instance), "  ")}},
                     """)}}
@@ -236,7 +236,7 @@ namespace Nijo.Features.Storing {
                       existsInRemoteRepository: y.{{EXISTS_IN_REMOTE_REPOS}},
                       willBeChanged: y.{{WILL_BE_CHANGED}},
                       willBeDeleted: y.{{WILL_BE_DELETED}},
-                      item: {{WithIndent(RenderItem(new DisplayDataClass(x.Item1.MainAggregate.AsEntry()), "y"), "      ")}},
+                      item: {{WithIndent(RenderItem(new DataClassForDisplay(x.Item1.MainAggregate.AsEntry()), "y"), "      ")}},
                     })) ?? []
                 """ : $$"""
 
@@ -262,7 +262,7 @@ namespace Nijo.Features.Storing {
         }
 
         /// <summary>
-        /// データ型変換関数 (<see cref="TransactionScopeDataClass"/> => <see cref="DisplayDataClass"/>)
+        /// データ型変換関数 (<see cref="TransactionScopeDataClass"/> => <see cref="DataClassForDisplay"/>)
         /// </summary>
         internal string RenderConvertToDisplayDataClass(string mainArgName) {
 
@@ -273,7 +273,7 @@ namespace Nijo.Features.Storing {
                 pkVarNames.Add(key.Declared, $"{mainArgName}.{key.Declared.GetFullPath().Join("?.")}");
             }
 
-            string Render(DisplayDataClass dc, string instance, bool inLambda) {
+            string Render(DataClassForDisplay dc, string instance, bool inLambda) {
                 var keys = inLambda
                     ? dc.MainAggregate.AsEntry().GetKeys().OfType<AggregateMember.ValueMember>()
                     : dc.MainAggregate.GetKeys().OfType<AggregateMember.ValueMember>();
@@ -282,7 +282,7 @@ namespace Nijo.Features.Storing {
                     // 実際にはここでcontinueされるのは親のキーだけのはず。Render関数はルートから順番に呼び出されるので
                     if (pkVarNames.ContainsKey(key.Declared)) continue;
 
-                    /// 変換元のデータ型が <see cref="TransactionScopeDataClass"/> のため、キーが <see cref="TransactionScopeRefTargetClass"/> の可能性がある。そのためキーのオーナーからのフルパスにしている
+                    /// 変換元のデータ型が <see cref="TransactionScopeDataClass"/> のため、キーが <see cref="DataClassForUpdateRefTarget"/> の可能性がある。そのためキーのオーナーからのフルパスにしている
                     pkVarNames.Add(key.Declared, $"{instance}?.{key.Declared.GetFullPath(since: key.Owner).Join("?.")}");
                 }
 
@@ -322,7 +322,7 @@ namespace Nijo.Features.Storing {
             if (!MainAggregate.IsRoot()) throw new InvalidOperationException();
 
             return MainAggregate.EnumerateThisAndDescendants().SelectTextTemplate(agg => {
-                var dataClass = new DisplayDataClass(agg);
+                var dataClass = new DataClassForDisplay(agg);
 
                 return $$"""
                     /** {{agg.Item.DisplayName}}の画面表示用データ */
@@ -339,10 +339,10 @@ namespace Nijo.Features.Storing {
                     """)}}
                       }
                     {{dataClass.GetChildProps().SelectTextTemplate(p => $$"""
-                      {{p.PropName}}?: {{(p.IsArray ? $"{new DisplayDataClass(p.MainAggregate).TsTypeName}[]" : new DisplayDataClass(p.MainAggregate).TsTypeName)}}
+                      {{p.PropName}}?: {{(p.IsArray ? $"{new DataClassForDisplay(p.MainAggregate).TsTypeName}[]" : new DataClassForDisplay(p.MainAggregate).TsTypeName)}}
                     """)}}
                     {{dataClass.GetRefFromProps().SelectTextTemplate(p => $$"""
-                      {{p.PropName}}?: {{(p.IsArray ? $"{new DisplayDataClass(p.MainAggregate).TsTypeName}[]" : new DisplayDataClass(p.MainAggregate).TsTypeName)}}
+                      {{p.PropName}}?: {{(p.IsArray ? $"{new DataClassForDisplay(p.MainAggregate).TsTypeName}[]" : new DataClassForDisplay(p.MainAggregate).TsTypeName)}}
                     """)}}
                     }
                     """;
@@ -359,11 +359,11 @@ namespace Nijo.Features.Storing {
 
             internal string PropName => Member.MemberName;
             internal string PropType => Member is AggregateMember.Ref @ref
-                ? new DisplayRefTargetClass(@ref.RefTo).TsTypeName
+                ? new DataClassForDisplayRefTarget(@ref.RefTo).TsTypeName
                 : Member.TypeScriptTypename;
         }
 
-        internal class RelationProp : DisplayDataClass {
+        internal class RelationProp : DataClassForDisplay {
             internal RelationProp(GraphEdge<Aggregate> relation, AggregateMember.RelationMember? memberInfo)
                 : base(relation.IsRef() ? relation.Initial : relation.Terminal) {
                 MemberInfo = memberInfo;
@@ -408,15 +408,15 @@ namespace Nijo.Features.Storing {
 
         #region DisplayDataClassのパス
         /// <summary>
-        /// エントリーからのパスを <see cref="DisplayDataClass"/> のデータ構造にあわせて返す。
-        /// たとえば自身のメンバーならその前に <see cref="DisplayDataClass.OWN_MEMBERS"/> を挟むなど
+        /// エントリーからのパスを <see cref="DataClassForDisplay"/> のデータ構造にあわせて返す。
+        /// たとえば自身のメンバーならその前に <see cref="DataClassForDisplay.OWN_MEMBERS"/> を挟むなど
         /// </summary>
         internal static IEnumerable<string> GetFullPathAsSingleViewDataClass(this GraphNode<Aggregate> aggregate, GraphNode<Aggregate>? since = null) {
             return GetFullPathAsSingleViewDataClass(aggregate, since, out var _);
         }
         /// <summary>
-        /// エントリーからのパスを <see cref="DisplayDataClass"/> のデータ構造にあわせて返す。
-        /// たとえば自身のメンバーならその前に <see cref="DisplayDataClass.OWN_MEMBERS"/> を挟むなど
+        /// エントリーからのパスを <see cref="DataClassForDisplay"/> のデータ構造にあわせて返す。
+        /// たとえば自身のメンバーならその前に <see cref="DataClassForDisplay.OWN_MEMBERS"/> を挟むなど
         /// </summary>
         internal static IEnumerable<string> GetFullPathAsSingleViewDataClass(this AggregateMember.AggregateMemberBase member, GraphNode<Aggregate>? since = null) {
             bool enumeratingRefTargetKeyName;
@@ -424,7 +424,7 @@ namespace Nijo.Features.Storing {
                 yield return path;
             }
             if (!enumeratingRefTargetKeyName) {
-                yield return DisplayDataClass.OWN_MEMBERS;
+                yield return DataClassForDisplay.OWN_MEMBERS;
             }
             yield return member.MemberName;
         }
@@ -442,7 +442,7 @@ namespace Nijo.Features.Storing {
                         paths.Add(AggregateMember.PARENT_PROPNAME); // 子から親に向かって辿る場合
 
                     } else if (edge.IsRef()) {
-                        var dataClass = new DisplayDataClass(edge.Terminal.As<Aggregate>());
+                        var dataClass = new DataClassForDisplay(edge.Terminal.As<Aggregate>());
                         paths.Add(dataClass
                             .GetRefFromProps()
                             .Single(p => p.MainAggregate.Source == edge)
@@ -457,7 +457,7 @@ namespace Nijo.Features.Storing {
                 } else {
 
                     if (edge.IsParentChild()) {
-                        var dc = new DisplayDataClass(edge.Initial.As<Aggregate>());
+                        var dc = new DataClassForDisplay(edge.Initial.As<Aggregate>());
                         paths.Add(dc
                             .GetChildProps()
                             .Single(p => p.MainAggregate == edge.Terminal.As<Aggregate>())
@@ -467,10 +467,10 @@ namespace Nijo.Features.Storing {
 
                     } else if (edge.IsRef()) {
                         if (!enumeratingRefTargetKeyName) {
-                            paths.Add(DisplayDataClass.OWN_MEMBERS);
+                            paths.Add(DataClassForDisplay.OWN_MEMBERS);
                         }
 
-                        /// <see cref="TransactionScopeRefTargetClass"/> の仕様に合わせる
+                        /// <see cref="DataClassForUpdateRefTarget"/> の仕様に合わせる
                         paths.Add(edge.RelationName);
 
                         enumeratingRefTargetKeyName = true;
@@ -504,7 +504,7 @@ namespace Nijo.Features.Storing {
             foreach (var path in EnumerateRHFRegisterName(member.Owner, true, arrayIndexes)) {
                 yield return path;
             }
-            yield return DisplayDataClass.OWN_MEMBERS;
+            yield return DataClassForDisplay.OWN_MEMBERS;
             yield return member.MemberName;
         }
 
@@ -518,7 +518,7 @@ namespace Nijo.Features.Storing {
                         yield return AggregateMember.PARENT_PROPNAME; // 子から親に向かって辿る場合
 
                     } else if (edge.IsRef()) {
-                        var dc = new DisplayDataClass(edge.Terminal.As<Aggregate>());
+                        var dc = new DataClassForDisplay(edge.Terminal.As<Aggregate>());
                         yield return dc
                             .GetRefFromProps()
                             .Single(p => p.MainAggregate.Source == edge)
@@ -531,7 +531,7 @@ namespace Nijo.Features.Storing {
                 } else {
 
                     if (edge.IsParentChild()) {
-                        var dataClass = new DisplayDataClass(edge.Initial.As<Aggregate>());
+                        var dataClass = new DataClassForDisplay(edge.Initial.As<Aggregate>());
                         var terminal = edge.Terminal.As<Aggregate>();
 
                         yield return dataClass

@@ -366,8 +366,8 @@ namespace Nijo.Core {
             internal GraphNode<Aggregate> RefTo => MemberAggregate;
             /// <summary><see cref="RefTo"/>と全く同じもの。より名前がわかりやすい左記の利用を推奨。</summary>
             internal override GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
-            internal override string CSharpTypeName => new TransactionScopeRefTargetClass(Relation.Terminal).CSharpClassName;
-            internal override string TypeScriptTypename => new TransactionScopeRefTargetClass(Relation.Terminal).TypeScriptTypeName;
+            internal override string CSharpTypeName => new DataClassForUpdateRefTarget(Relation.Terminal).CSharpClassName;
+            internal override string TypeScriptTypename => new DataClassForUpdateRefTarget(Relation.Terminal).TypeScriptTypeName;
 
             internal IEnumerable<ValueMember> GetForeignKeys() {
                 foreach (var fk in Relation.Terminal.GetKeys()) {
@@ -397,8 +397,8 @@ namespace Nijo.Core {
             internal override GraphNode<Aggregate> Owner { get; }
             internal override string MemberName => PARENT_PROPNAME;
 
-            internal override string CSharpTypeName => new TransactionScopeRefTargetClass(Relation.Initial).CSharpClassName;
-            internal override string TypeScriptTypename => new TransactionScopeRefTargetClass(Relation.Initial).TypeScriptTypeName;
+            internal override string CSharpTypeName => new DataClassForUpdateRefTarget(Relation.Initial).CSharpClassName;
+            internal override string TypeScriptTypename => new DataClassForUpdateRefTarget(Relation.Initial).TypeScriptTypeName;
 
             internal IEnumerable<ValueMember> GetForeignKeys() {
                 foreach (var parentPk in Relation.Initial.GetKeys()) {

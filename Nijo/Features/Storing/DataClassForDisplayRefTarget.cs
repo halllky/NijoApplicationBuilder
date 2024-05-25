@@ -11,9 +11,9 @@ namespace Nijo.Features.Storing {
     /// 画面に表示される、参照先の集約の情報。
     /// 主キー、<see cref="MemberOptions.IsDisplayName"/>, <see cref="MemberOptions.IsNameLike"/>, が表示される。
     /// </summary>
-    internal class DisplayRefTargetClass {
+    internal class DataClassForDisplayRefTarget {
 
-        internal DisplayRefTargetClass(GraphNode<Aggregate> refTo) {
+        internal DataClassForDisplayRefTarget(GraphNode<Aggregate> refTo) {
             RefTo = refTo;
         }
         internal GraphNode<Aggregate> RefTo { get; }

@@ -98,7 +98,7 @@ namespace Nijo.Parts.WebClient {
                         (row, value) => {
                           if (row.{{rowAccessor}}.{{ownerPath.Join("?.")}}) {
                             row.{{rowAccessor}}.{{memberPath.Join(".")}} = value
-                            row.{{rowAccessor}}{{rootAggPath.Select(x => $".{x}").Join("")}}.{{DisplayDataClass.WILL_BE_CHANGED}} = true
+                            row.{{rowAccessor}}{{rootAggPath.Select(x => $".{x}").Join("")}}.{{DataClassForDisplay.WILL_BE_CHANGED}} = true
                           }
                         }
                         """;
@@ -128,9 +128,9 @@ namespace Nijo.Parts.WebClient {
 
             // ----------------------------------------------------
             // テーブル中の被参照集約の列のインスタンスを追加または削除するボタン
-            DataTableColumn RefFromButtonColumn(DisplayDataClass.RelationProp refFrom) {
+            DataTableColumn RefFromButtonColumn(DataClassForDisplay.RelationProp refFrom) {
                 var tableArrayRegisterName = dataTableOwner.GetRHFRegisterName();
-                var refFromDisplayData = new DisplayDataClass(refFrom.MainAggregate);
+                var refFromDisplayData = new DataClassForDisplay(refFrom.MainAggregate);
                 var value = refFrom.MainAggregate.Item.ClassName;
 
                 // ページのルート集約から被参照集約までのパス
@@ -144,7 +144,7 @@ namespace Nijo.Parts.WebClient {
                 // 参照先のitemKeyと対応するプロパティを初期化する
                 string? RefKeyInitializer(AggregateMember.AggregateMemberBase member) {
                     if (member is AggregateMember.Ref r && r.RefTo == dataTableOwner) {
-                        return $"row.original.{rowAccessor}.{DisplayDataClass.LOCAL_REPOS_ITEMKEY}";
+                        return $"row.original.{rowAccessor}.{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}";
 
                     } else {
                         return null;
@@ -167,7 +167,7 @@ namespace Nijo.Parts.WebClient {
 
                           const delete{{refFrom.MainAggregate.Item.ClassName}} = useCallback(() => {
                             if (row.original.{{rowAccessor}}.{{ownerPath.Join("?.")}}) {
-                              row.original.{{rowAccessor}}.{{ownerPath.Join(".")}}.{{DisplayDataClass.WILL_BE_DELETED}} = true
+                              row.original.{{rowAccessor}}.{{ownerPath.Join(".")}}.{{DataClassForDisplay.WILL_BE_DELETED}} = true
                               update(row.index, { ...row.original.{{rowAccessor}} })
                             }
                           }, [row.index])
@@ -175,10 +175,10 @@ namespace Nijo.Parts.WebClient {
                           const {{value}} = row.original.{{rowAccessor}}.{{ownerPath.Join("?.")}}
 
                           return <>
-                            {({{value}} === undefined || {{value}}.{{DisplayDataClass.WILL_BE_DELETED}}) && (
+                            {({{value}} === undefined || {{value}}.{{DataClassForDisplay.WILL_BE_DELETED}}) && (
                               <Input.Button icon={PlusIcon} onClick={create{{refFrom.MainAggregate.Item.ClassName}}}>作成</Input.Button>
                             )}
-                            {({{value}} !== undefined && !{{value}}.{{DisplayDataClass.WILL_BE_DELETED}}) && (
+                            {({{value}} !== undefined && !{{value}}.{{DataClassForDisplay.WILL_BE_DELETED}}) && (
                               <Input.Button icon={XMarkIcon} onClick={delete{{refFrom.MainAggregate.Item.ClassName}}}>削除</Input.Button>
                             )}
                           </>
@@ -190,7 +190,7 @@ namespace Nijo.Parts.WebClient {
             // ----------------------------------------------------
 
             // グリッドに表示するメンバーを列挙
-            IEnumerable<DataTableColumn> Collect(DisplayDataClass dataClass) {
+            IEnumerable<DataTableColumn> Collect(DataClassForDisplay dataClass) {
                 foreach (var prop in dataClass.GetOwnProps()) {
                     if (prop.Member is AggregateMember.ValueMember vm) {
                         if (vm.DeclaringAggregate != dataClass.MainAggregate) continue;
@@ -209,20 +209,20 @@ namespace Nijo.Parts.WebClient {
                     if (prop.MemberInfo is AggregateMember.Children) continue;
                     if (prop.MemberInfo is AggregateMember.VariationItem) continue;
 
-                    foreach (var reucusive in Collect(new DisplayDataClass(prop.MainAggregate))) {
+                    foreach (var reucusive in Collect(new DataClassForDisplay(prop.MainAggregate))) {
                         yield return reucusive;
                     }
                 }
 
                 foreach (var prop in dataClass.GetRefFromProps()) {
                     yield return RefFromButtonColumn(prop);
-                    foreach (var recursive in Collect(new DisplayDataClass(prop.MainAggregate))) {
+                    foreach (var recursive in Collect(new DataClassForDisplay(prop.MainAggregate))) {
                         yield return recursive;
                     }
                 }
             }
 
-            var root = new DisplayDataClass(dataTableOwner);
+            var root = new DataClassForDisplay(dataTableOwner);
 
             foreach (var column in Collect(root)) {
                 yield return column;

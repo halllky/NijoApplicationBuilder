@@ -18,7 +18,7 @@ namespace Nijo.Features.Storing {
         internal string FunctionName => $"create{_instance.Item.TypeScriptTypeName}";
 
         /// <summary>
-        /// <see cref="DisplayDataClass.RenderTsInitializerFunction"/> のロジックと合わせる
+        /// <see cref="DataClassForDisplay.RenderTsInitializerFunction"/> のロジックと合わせる
         /// </summary>
         internal string Render() {
             var children = _instance

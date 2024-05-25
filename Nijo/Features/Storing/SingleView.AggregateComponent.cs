@@ -45,13 +45,13 @@ namespace Nijo.Features.Storing {
         }
 
         internal string RenderDeclaration() {
-            var dataClass = new DisplayDataClass(_aggregate);
+            var dataClass = new DataClassForDisplay(_aggregate);
             var localRepos = new LocalRepository(_aggregate);
             var componentName = GetComponentName();
             var args = GetArguments().ToArray();
 
             // useFormの型。Refの参照元のコンポーネントのレンダリングの可能性があるためGetRootではなくGetEntry
-            var entryDataClass = new DisplayDataClass(_aggregate.GetEntry().As<Aggregate>());
+            var entryDataClass = new DataClassForDisplay(_aggregate.GetEntry().As<Aggregate>());
             var useFormType = $"AggregateType.{entryDataClass.TsTypeName}";
             var registerNameArray = _aggregate.GetRHFRegisterName(args).ToArray();
             var registerName = registerNameArray.Length > 0 ? $"`{registerNameArray.Join(".")}`" : string.Empty;
@@ -93,7 +93,7 @@ namespace Nijo.Features.Storing {
                         var refToRegisterNameArray = refTo.RefTo.GetRHFRegisterName(args).ToArray();
                         var refToRegisterName = refToRegisterNameArray.Length > 0 ? $"`{refToRegisterNameArray.Join(".")}`" : string.Empty;
 
-                        return $"getValues({refToRegisterName})?.{DisplayDataClass.LOCAL_REPOS_ITEMKEY}";
+                        return $"getValues({refToRegisterName})?.{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}";
 
                     } else {
                         return null;
@@ -115,11 +115,11 @@ namespace Nijo.Features.Storing {
                       }, [getValues, setValue])
                       const handleDelete = useCallback(() => {
                         const current = getValues({{registerName}})
-                        if (current) setValue({{registerName}}, { ...current, {{DisplayDataClass.WILL_BE_DELETED}}: true })
+                        if (current) setValue({{registerName}}, { ...current, {{DataClassForDisplay.WILL_BE_DELETED}}: true })
                       }, [setValue, getValues])
                       const handleRedo = useCallback(() => {
                         const current = getValues({{registerName}})
-                        if (current) setValue({{registerName}}, { ...current, {{DisplayDataClass.WILL_BE_DELETED}}: false })
+                        if (current) setValue({{registerName}}, { ...current, {{DataClassForDisplay.WILL_BE_DELETED}}: false })
                       }, [setValue, getValues])
 
                       return (
@@ -277,7 +277,7 @@ namespace Nijo.Features.Storing {
                         "item",
                         _aggregate,
                         _mode == SingleView.E_Type.View,
-                        useFormContextType: $"AggregateType.{new DisplayDataClass(_aggregate.GetEntry().As<Aggregate>()).TsTypeName}",
+                        useFormContextType: $"AggregateType.{new DataClassForDisplay(_aggregate.GetEntry().As<Aggregate>()).TsTypeName}",
                         registerPathModifier: null,
                         arrayIndexVarNamesFromFormRootToDataTableOwner: args);
 
@@ -368,7 +368,7 @@ namespace Nijo.Features.Storing {
                                    && schalar is AggregateMember.ValueMember vm
                                    && vm.IsKey) {
                             if (_aggregate.IsRoot() || _aggregate.IsChildrenMember()) {
-                                reactComponent.Props.Add("readOnly", $"item?.{DisplayDataClass.EXISTS_IN_REMOTE_REPOS}");
+                                reactComponent.Props.Add("readOnly", $"item?.{DataClassForDisplay.EXISTS_IN_REMOTE_REPOS}");
                             }
                         }
 
@@ -502,7 +502,7 @@ namespace Nijo.Features.Storing {
                     || prop is AggregateMember.Ref @ref && @ref.Relation.IsPrimary()) {
 
                     if (_aggregate.IsRoot() || _aggregate.IsChildrenMember()) {
-                        return $"{readOnly}={{item?.{DisplayDataClass.EXISTS_IN_REMOTE_REPOS}}}";
+                        return $"{readOnly}={{item?.{DataClassForDisplay.EXISTS_IN_REMOTE_REPOS}}}";
                     }
                 }
             }

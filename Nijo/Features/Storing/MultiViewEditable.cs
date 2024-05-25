@@ -39,7 +39,7 @@ namespace Nijo.Features.Storing {
         string? IReactPage.LabelInMenu => _aggregate.Item.DisplayName;
 
         SourceFile IReactPage.GetSourceFile() {
-            var dataClass = new DisplayDataClass(_aggregate);
+            var dataClass = new DataClassForDisplay(_aggregate);
             var findMany = new FindManyFeature(_aggregate);
             var rootLocalRepository = new LocalRepository(_aggregate);
             var navigation = new NavigationWrapper(_aggregate);
@@ -61,9 +61,9 @@ namespace Nijo.Features.Storing {
                       const row = cellProps.row.original.item
                       const state = Util.getLocalRepositoryState(row)
                     {{If(_options.ReadOnly, () => $$"""
-                      const singleViewUrl = Util.{{navigation.GetSingleViewUrlHookName}}(row.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}}, 'view')
+                      const singleViewUrl = Util.{{navigation.GetSingleViewUrlHookName}}(row.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}}, 'view')
                     """).Else(() => $$"""
-                      const singleViewUrl = Util.{{navigation.GetSingleViewUrlHookName}}(row.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}}, state === '+' ? 'new' : 'edit')
+                      const singleViewUrl = Util.{{navigation.GetSingleViewUrlHookName}}(row.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}}, state === '+' ? 'new' : 'edit')
                     """)}}
                       return (
                         <div className="flex items-center gap-1 pl-1">
@@ -152,14 +152,14 @@ namespace Nijo.Features.Storing {
                     """)}}
                     {{If(!_options.ReadOnly, () => $$"""
                       const handleUpdateRow = useCallback(async (index: number, row: GridRow) => {
-                        update(index, { ...row, {{DisplayDataClass.WILL_BE_CHANGED}}: true })
+                        update(index, { ...row, {{DataClassForDisplay.WILL_BE_CHANGED}}: true })
                       }, [update])
 
                       const dtRef = useRef<Layout.DataTableRef<GridRow>>(null)
                       const handleRemove: React.MouseEventHandler<HTMLButtonElement> = useCallback(async () => {
                         if (!dtRef.current) return
                         for (const { row, rowIndex } of dtRef.current.getSelectedRows()) {
-                          update(rowIndex, { ...row, {{DisplayDataClass.WILL_BE_DELETED}}: true })
+                          update(rowIndex, { ...row, {{DataClassForDisplay.WILL_BE_DELETED}}: true })
                         }
                       }, [update])
 

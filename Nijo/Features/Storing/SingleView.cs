@@ -94,7 +94,7 @@ namespace Nijo.Features.Storing {
             RenderContent = context => {
                 var controller = new Controller(_aggregate.Item);
                 var multiViewUrl = new MultiViewEditable(_aggregate).Url;
-                var dataClass = new DisplayDataClass(_aggregate);
+                var dataClass = new DataClassForDisplay(_aggregate);
                 var localRepos = new LocalRepository(_aggregate);
 
                 var keyArray = KeyArray.Create(_aggregate);
@@ -231,7 +231,7 @@ namespace Nijo.Features.Storing {
                     {{If(_type != E_Type.Create, () => $$"""
                       const instanceName = useMemo(() => {
                         return `{{names.Select(n => $"${{defaultValues.{n} ?? ''}}").Join(string.Empty)}}`
-                      }, [defaultValues.{{DisplayDataClass.OWN_MEMBERS}}])
+                      }, [defaultValues.{{DataClassForDisplay.OWN_MEMBERS}}])
                     """)}}
 
                       const formRef = useRef<HTMLFormElement>(null)
@@ -278,7 +278,7 @@ namespace Nijo.Features.Storing {
                     """).Else(() => $$"""
                       // データの一時保存
                       const onSave: SubmitHandler<AggregateType.{{dataClass.TsTypeName}}> = useCallback(async data => {
-                        await commit({ ...data, {{DisplayDataClass.WILL_BE_CHANGED}}: true })
+                        await commit({ ...data, {{DataClassForDisplay.WILL_BE_CHANGED}}: true })
                       }, [commit])
 
                     """)}}

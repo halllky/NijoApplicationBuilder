@@ -22,7 +22,7 @@ namespace Nijo.Features.Storing {
         /// </summary>
         internal string DataTypeKey => Aggregate.Item.ClassName;
         /// <summary>
-        /// 永続化層の抽象のフック。外部とのインターフェースの型は <see cref="DisplayDataClass"/>
+        /// 永続化層の抽象のフック。外部とのインターフェースの型は <see cref="DataClassForDisplay"/>
         /// </summary>
         internal string HookName => $"use{Aggregate.Item.ClassName}Repository";
 
@@ -41,7 +41,7 @@ namespace Nijo.Features.Storing {
 
                     var localReposWrapperHooks = aggregates.SelectTextTemplate(agg => {
                         var localRepositosy = new LocalRepository(agg);
-                        var displayData = new DisplayDataClass(agg);
+                        var displayData = new DataClassForDisplay(agg);
                         var keys = agg.GetKeys().OfType<AggregateMember.ValueMember>();
                         // TODO 参照先の名前の表示処理をちゃんとする
                         var names = agg.GetNames().OfType<AggregateMember.ValueMember>().Where(x => x.DeclaringAggregate == agg);
@@ -53,7 +53,7 @@ namespace Nijo.Features.Storing {
 
                         var refRepositories = agg
                             .EnumerateThisAndDescendants()
-                            .Select(a => new DisplayDataClass(a))
+                            .Select(a => new DataClassForDisplay(a))
                             .SelectMany(
                                 a =>  a.GetRefFromProps(),
                                 (x, refFromProp) => new { DisplayData = x, RefFrom = refFromProp })
@@ -110,7 +110,7 @@ namespace Nijo.Features.Storing {
                                 if (!e.IsParentChild()) throw new InvalidOperationException("このメソッドには同一ツリー内の集約しか来ないはず");
 
                                 var edge = e.As<Aggregate>();
-                                var prop = new DisplayDataClass(edge.Initial)
+                                var prop = new DataClassForDisplay(edge.Initial)
                                     .GetChildProps()
                                     .Single(p => p.MainAggregate == edge.Terminal);
 
@@ -246,8 +246,8 @@ namespace Nijo.Features.Storing {
 
                                 // ローカルリポジトリにあるデータはそちらを優先的に表示する
                                 const remoteAndLocal =  crossJoin(
-                                  localItems, local => local.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}},
-                                  displayDataRemoteItems, remote => remote.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}},
+                                  localItems, local => local.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}},
+                                  displayDataRemoteItems, remote => remote.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}},
                                 ).map<AggregateType.{{displayData.TsTypeName}}>(pair => pair.left ?? pair.right)
                             {{refRepositories.SelectTextTemplate(x => $$"""
 
@@ -255,10 +255,10 @@ namespace Nijo.Features.Storing {
                                 for (const item of remoteAndLocal) {
                             {{If(x.RefTo.MainAggregate.EnumerateAncestorsAndThis().Any(y => y.IsChildrenMember()), () => $$"""
                                   for (const x of item{{RenderSelectMany(x.RefTo.MainAggregate)}} ?? []) {
-                                    x.{{x.RefFrom.PropName}} = loaded{{x.RefFrom.MainAggregate.Item.ClassName}}.find(y => y.{{x.RefFrom.MainAggregate.AsEntry().GetSingleRefKeyAggregate()?.GetFullPathAsSingleViewDataClass().Join(".")}} === x.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}})
+                                    x.{{x.RefFrom.PropName}} = loaded{{x.RefFrom.MainAggregate.Item.ClassName}}.find(y => y.{{x.RefFrom.MainAggregate.AsEntry().GetSingleRefKeyAggregate()?.GetFullPathAsSingleViewDataClass().Join(".")}} === x.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}})
                                   }
                             """).Else(() => $$"""
-                                  item.{{x.RefFrom.PropName}} = loaded{{x.RefFrom.MainAggregate.Item.ClassName}}.find(y => y.{{x.RefFrom.MainAggregate.AsEntry().GetSingleRefKeyAggregate()?.GetFullPathAsSingleViewDataClass().Join(".")}} === item.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}})
+                                  item.{{x.RefFrom.PropName}} = loaded{{x.RefFrom.MainAggregate.Item.ClassName}}.find(y => y.{{x.RefFrom.MainAggregate.AsEntry().GetSingleRefKeyAggregate()?.GetFullPathAsSingleViewDataClass().Join(".")}} === item.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}})
                             """)}}
                                 }
                             """)}}
@@ -290,17 +290,17 @@ namespace Nijo.Features.Storing {
                             """)}}
                             """)}}
                                   if (newValue.willBeDeleted && !newValue.existsInRemoteRepository) {
-                                    await queryToTable(table => table.delete(['{{localRepositosy.DataTypeKey}}', newValue.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}}]))
+                                    await queryToTable(table => table.delete(['{{localRepositosy.DataTypeKey}}', newValue.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}}]))
 
                                   } else if (newValue.willBeChanged || newValue.willBeDeleted) {
                                     await queryToTable(table => table.put({
                                       dataTypeKey: '{{localRepositosy.DataTypeKey}}',
-                                      itemKey: newValue.{{DisplayDataClass.LOCAL_REPOS_ITEMKEY}},
+                                      itemKey: newValue.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}},
                                       itemName: `{{string.Concat(names.Select(n => $"${{newValue.{n.Declared.GetFullPathAsSingleViewDataClass().Join("?.")}}}"))}}`,
                                       item: newValue,
-                                      existsInRemoteRepository: newValue.{{DisplayDataClass.EXISTS_IN_REMOTE_REPOS}},
-                                      willBeChanged: newValue.{{DisplayDataClass.WILL_BE_CHANGED}},
-                                      willBeDeleted: newValue.{{DisplayDataClass.WILL_BE_DELETED}},
+                                      existsInRemoteRepository: newValue.{{DataClassForDisplay.EXISTS_IN_REMOTE_REPOS}},
+                                      willBeChanged: newValue.{{DataClassForDisplay.WILL_BE_CHANGED}},
+                                      willBeDeleted: newValue.{{DataClassForDisplay.WILL_BE_DELETED}},
                                     }))
                                   }
                                 }
@@ -347,7 +347,7 @@ namespace Nijo.Features.Storing {
                 .Where(agg => agg.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key);
 
             static string RenderCommitFunction(GraphNode<Aggregate> agg) {
-                var displayData = new DisplayDataClass(agg);
+                var displayData = new DataClassForDisplay(agg);
                 var localRepos = new LocalRepository(agg);
                 var controller = new Parts.WebClient.Controller(agg.Item);
                 var deleteKeyUrlParam = agg

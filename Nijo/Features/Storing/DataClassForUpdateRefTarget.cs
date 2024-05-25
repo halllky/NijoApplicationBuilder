@@ -15,8 +15,8 @@ namespace Nijo.Features.Storing {
     /// DBに保存される、参照先の集約の情報。
     /// <see cref="TransactionScopeDataClass"/> のうち主キーのみピックアップされたもの。
     /// </summary>
-    internal class TransactionScopeRefTargetClass {
-        internal TransactionScopeRefTargetClass(GraphNode<Aggregate> aggregate) {
+    internal class DataClassForUpdateRefTarget {
+        internal DataClassForUpdateRefTarget(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
         }
         private readonly GraphNode<Aggregate> _aggregate;
@@ -74,7 +74,7 @@ namespace Nijo.Features.Storing {
             }).ToArray();
 
             IEnumerable<string> RenderBody(GraphNode<Aggregate> agg) {
-                foreach (var m in new TransactionScopeRefTargetClass(agg).GetOwnMembers()) {
+                foreach (var m in new DataClassForUpdateRefTarget(agg).GetOwnMembers()) {
                     if (m is AggregateMember.ValueMember vm) {
                         yield return $$"""
                             {{vm.MemberName}} = ({{vm.CSharpTypeName}}?){{vmKeys.Single(x => x.Member.Declared == vm.Declared).VarName}},
