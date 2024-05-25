@@ -103,15 +103,17 @@ export function DefaultNijoApp({ children }: {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Util.MsgContextProvider>
-          <Util.LocalRepositoryContextProvider>
-            <Util.UserSettingContextProvider>
-              <ApplicationRootInContext>
-                {children}
-              </ApplicationRootInContext>
-              <Util.EnvNameRibbon />
-              <Util.Toast />
-            </Util.UserSettingContextProvider>
-          </Util.LocalRepositoryContextProvider>
+          <Util.ToastContextProvider>
+            <Util.LocalRepositoryContextProvider>
+              <Util.UserSettingContextProvider>
+                <ApplicationRootInContext>
+                  {children}
+                </ApplicationRootInContext>
+                <Util.EnvNameRibbon />
+                <Util.Toast />
+              </Util.UserSettingContextProvider>
+            </Util.LocalRepositoryContextProvider>
+          </Util.ToastContextProvider>
         </Util.MsgContextProvider>
       </BrowserRouter>
     </QueryClientProvider>

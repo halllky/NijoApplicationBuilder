@@ -2,11 +2,12 @@
  * このファイルはソース自動生成によって上書きされます。
  */
 import { useCallback } from 'react'
-import { useMsgContext } from './Notification'
+import { useMsgContext, useToastContext } from './Notification'
 import { ItemKey, LocalRepositoryContextValue } from './LocalRepository'
 
 export const useLocalRepositoryCommitHandling = () => {
   const [, dispatchMsg] = useMsgContext()
+  const [, dispatchToast] = useToastContext()
 
   return useCallback(async (
     commit: LocalRepositoryContextValue['commit'],
@@ -20,8 +21,8 @@ export const useLocalRepositoryCommitHandling = () => {
       return { commit: false }
     }, ...keys)
 
-    dispatchMsg(msg => success
+    dispatchToast(msg => success
       ? msg.info('保存しました。')
       : msg.info('一部のデータの保存に失敗しました。'))
-  }, [dispatchMsg])
+  }, [dispatchMsg, dispatchToast])
 }

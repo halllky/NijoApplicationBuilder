@@ -245,20 +245,22 @@ namespace Nijo.Features.Storing {
 
                     """).ElseIf(_type == E_Type.Create && _aggregate.Item.Options.DisableLocalRepository == true, () => $$"""
                       // データ新規作成の直接コミット
+                      const [, dispatchToast] = Util.useToastContext()
                       const onSave: SubmitHandler<AggregateType.{{dataClass.TsTypeName}}> = useCallback(async data => {
                         const response = await post<AggregateType.{{dataClass.TsTypeName}}>(`{{controller.CreateCommandApi}}`, data)
                         if (response.ok) {
-                          dispatchMsg(msg => msg.info(`${({{names.Select(path => $"String(response.data.{path})").Join(" + ")}})}を作成しました。`))
+                          dispatchToast(msg => msg.info(`${({{names.Select(path => $"String(response.data.{path})").Join(" + ")}})}を作成しました。`))
                           navigate(`{{GetUrlStringForReact(E_Type.View, keys.Select(vm => $"response.data.{vm.GetFullPath().Join("?.")}"))}}`)
                         }
                       }, [post, navigate])
 
                     """).ElseIf(_type == E_Type.Edit && _aggregate.Item.Options.DisableLocalRepository == true, () => $$"""
                       // データ更新の直接コミット
+                      const [, dispatchToast] = Util.useToastContext()
                       const onSave: SubmitHandler<AggregateType.{{dataClass.TsTypeName}}> = useCallback(async data => {
                         const response = await post<AggregateType.{{dataClass.TsTypeName}}>(`{{controller.UpdateCommandApi}}`, data)
                         if (response.ok) {
-                          dispatchMsg(msg => msg.info(`${({{names.Select(path => $"String(response.data.{path})").Join(" + ")}})}を更新しました。`))
+                          dispatchToast(msg => msg.info(`${({{names.Select(path => $"String(response.data.{path})").Join(" + ")}})}を更新しました。`))
                           navigate(`{{GetUrlStringForReact(E_Type.View, urlKeysWithMember.Select((_, i) => $"pkArray[{i}]"))}}`)
                         }
                       }, [post, navigate, pkArray])

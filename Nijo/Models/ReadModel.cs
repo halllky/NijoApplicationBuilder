@@ -82,7 +82,7 @@ namespace Nijo.Models {
                             if (currentPageItems) {
                               reset({ currentPageItems })
                             }
-                            dispatchMsg(msg => msg.info('洗い替え処理が完了しました。'))
+                            dispatchToast(msg => msg.info('洗い替え処理が完了しました。'))
                           } else {
                             dispatchMsg(msg => msg.error('  洗い替え処理でエラーが発生しました。'))
                           }

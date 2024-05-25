@@ -13,7 +13,7 @@ namespace Nijo.Parts.WebClient {
                 FileName = "DashBoard.tsx",
                 RenderContent = context => $$"""
                     import { useCallback, useState } from 'react'
-                    import { useHttpRequest, useMsgContext, useDummyDataGenerator, useLocalRepositoryChangeList } from '../util'
+                    import { useHttpRequest, useMsgContext, useToastContext, useDummyDataGenerator, useLocalRepositoryChangeList } from '../util'
                     import * as Input from '../input'
                     import { VerticalForm as VForm } from '../collection'
                     {{app.DashBoardImports.SelectTextTemplate(import => import)}}
@@ -23,6 +23,7 @@ namespace Nijo.Parts.WebClient {
 
                       // デバッグ用DB再作成コマンド
                       const [, dispatchMsg] = useMsgContext()
+                      const [, dispatchToast] = useToastContext()
                       const { post } = useHttpRequest()
                       const [withDummyData, setWithDummyData] = useState<boolean | undefined>(true)
                       const genereateDummyData = useDummyDataGenerator()
@@ -44,9 +45,9 @@ namespace Nijo.Parts.WebClient {
                               return
                             }
                           }
-                          dispatchMsg(msg => msg.info('DBを再作成しました。'))
+                          dispatchToast(msg => msg.info('DBを再作成しました。'))
                         }
-                      }, [post, withDummyData, genereateDummyData, resetLocalRepository, dispatchMsg])
+                      }, [post, withDummyData, genereateDummyData, resetLocalRepository, dispatchMsg, dispatchToast])
 
                       return (
                         <div className="page-content-root gap-4">

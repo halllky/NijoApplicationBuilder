@@ -99,6 +99,7 @@ namespace Nijo.Features.Storing {
 
                     export default function () {
                       const [, dispatchMsg] = Util.useMsgContext()
+                      const [, dispatchToast] = Util.useToastContext()
 
                       // 検索条件
                       const [filter, setFilter] = useState<AggregateType.{{findMany.TypeScriptConditionClass}}>(() => AggregateType.{{findMany.TypeScriptConditionInitializerFn}}())

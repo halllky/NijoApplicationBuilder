@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useState } from "react"
 import * as Icon from "@heroicons/react/24/outline"
 import { UUID } from "uuidjs"
 import * as ReactHookUtil from "./ReactUtil"
@@ -11,17 +11,9 @@ type Msg = {
   type: 'error' | 'warn' | 'info'
 }
 type State = {
-  inline: Msg[]
-  toast: Msg[]
+  messages: Msg[]
 }
-
-export const [
-  MsgContextProvider,
-  useMsgContext,
-] = ReactHookUtil.defineContext((): State => ({
-  inline: [] as Msg[],
-  toast: [] as Msg[],
-}), state => {
+const notificationReducer = (state: State) => {
   const push = (type: Msg['type'], ...messages: unknown[]) => {
     if (type === 'error') console.error(...messages)
 
@@ -33,11 +25,7 @@ export const [
       if (typeof asErrMsg.message === 'string') return { id, type, message: asErrMsg.message, name: asErrMsg.name }
       return { id, type, message: m?.toString() ?? '' }
     })
-    if (type === 'info') {
-      return { ...state, toast: [...state.toast, ...addedMessages] }
-    } else {
-      return { ...state, inline: [...state.inline, ...addedMessages] }
-    }
+    return { ...state, inline: [...state.messages, ...addedMessages] }
   }
   const clear = (nameOrItem?: string | Msg) => {
     if (!nameOrItem) {
@@ -51,11 +39,7 @@ export const [
       const id = nameOrItem.id
       filterFn = m => m.id !== id
     }
-    return {
-      ...state,
-      inline: state.inline.filter(filterFn),
-      toast: state.toast.filter(filterFn),
-    }
+    return { ...state, messages: state.messages.filter(filterFn) }
   }
 
   return {
@@ -64,7 +48,10 @@ export const [
     warn: (...messages: unknown[]) => push('warn', ...messages),
     info: (...messages: unknown[]) => push('info', ...messages),
   }
-})
+}
+
+export const [MsgContextProvider, useMsgContext] = ReactHookUtil.defineContext((): State => ({ messages: [] }), notificationReducer)
+export const [ToastContextProvider, useToastContext] = ReactHookUtil.defineContext((): State => ({ messages: [] }), notificationReducer)
 
 export const InlineMessageList = ({ type, name, className, darkMode }: {
   type?: Msg['type']
@@ -94,13 +81,14 @@ export const InlineMessageList = ({ type, name, className, darkMode }: {
     }
   }, [darkMode])
 
-  const [{ inline }, dispatch] = useMsgContext()
+  const [{ messages }, dispatch] = useMsgContext()
   const filtered = useMemo(() => {
-    let arr = [...inline]
+    let arr = [...messages]
     if (type) arr = arr.filter(m => m.type === type)
     if (name) arr = arr.filter(m => m.name?.startsWith(name))
     return arr
-  }, [inline, name, type])
+  }, [messages, name, type])
+
 
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
@@ -135,13 +123,13 @@ export const Toast = ({ type, name, className }: {
   name?: string
   className?: string
 }) => {
-  const [{ toast },] = useMsgContext()
+  const [{ messages },] = useToastContext()
   const filtered = useMemo(() => {
-    let arr = [...toast]
+    let arr = [...messages]
     if (type) arr = arr.filter(m => m.type === type)
     if (name) arr = arr.filter(m => m.name?.startsWith(name))
     return arr
-  }, [toast, name, type])
+  }, [messages, name, type])
 
   return <>
     {filtered.map(msg => (
@@ -153,7 +141,7 @@ const ToastMessage = ({ msg, className }: {
   msg: Msg
   className?: string
 }) => {
-  const [, dispatch] = useMsgContext()
+  const [, dispatch] = useToastContext()
   const [visible, setVisible] = useState(true)
   useEffect(() => {
     const timer1 = setTimeout(() => {
