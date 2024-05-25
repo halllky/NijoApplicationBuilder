@@ -24,7 +24,7 @@ body {
 
 /* tailwind */
 .page-content-root {
-  @apply flex flex-col justify-start space-y-1 overflow-auto;
+  @apply flex flex-col justify-start h-full space-y-1 overflow-auto;
 }
 
 .ellipsis-ex {

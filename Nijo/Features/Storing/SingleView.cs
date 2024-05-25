@@ -285,9 +285,9 @@ namespace Nijo.Features.Storing {
                       return (
                         <FormProvider {...reactHookFormMethods}>
                     {{If(_type == E_Type.Create || _type == E_Type.Edit, () => $$"""
-                          <form className="page-content-root" ref={formRef} onSubmit={handleSubmit(onSave)} onKeyDown={onKeyDown}>
+                          <form className="page-content-root gap-2" ref={formRef} onSubmit={handleSubmit(onSave)} onKeyDown={onKeyDown}>
                     """).Else(() => $$"""
-                          <form className="page-content-root">
+                          <form className="page-content-root gap-2">
                     """)}}
                             <h1 className="flex text-base font-semibold select-none py-1">
                               <Link to="{{multiViewUrl}}">{{_aggregate.Item.DisplayName}}</Link>

@@ -184,7 +184,7 @@ namespace Nijo.Features.Storing {
                         <div className="page-content-root gap-4">
 
                           <FormProvider {...rhfSearchMethods}>
-                            <form className="flex flex-col">
+                            <form className="flex flex-col gap-2">
                               <div className="flex gap-2 justify-start">
                                 <h1 className="text-base font-semibold select-none py-1">
                                   {{_aggregate.Item.DisplayName}}
