@@ -160,10 +160,53 @@ namespace Nijo.Features.Storing {
         internal string RenderConvertFnToLocalRepositoryType() {
 
             string RenderItem(DisplayDataClass dc, string instance) {
+
+                string RenderOwnMemberValue(AggregateMember.AggregateMemberBase member) {
+                    if (member is AggregateMember.Ref @ref) {
+                        // @refまでの経路はDisplayDataClassのルールで, それ以降の経路はDisplayRefTargetClassのルールで計算するため、AsEntryしている
+                        var refTargetData = new DisplayRefTargetClass(@ref.RefTo.AsEntry());
+                        var refTargetMembers = refTargetData
+                            .GetDisplayMembers()
+                            .OfType<AggregateMember.ValueMember>()
+                            .ToArray();
+
+                        var keyArray = KeyArray.Create(@ref.MemberAggregate);
+                        var keyArrayType = $"[{keyArray.Select(k => $"{k.TsType} | undefined").Join(", ")}]";
+
+                        string RenderRefTargetKeyNameValue(AggregateMember.RelationMember refOrParent) {
+                            var keyname = new RefTargetKeyName(refOrParent.MemberAggregate);
+                            return $$"""
+                                {
+                                {{keyname.GetOwnKeyMembers().OfType<AggregateMember.ValueMember>().SelectTextTemplate(vm => $$"""
+                                  {{vm.MemberName}}: {{instance}}.{{@ref.GetFullPathAsSingleViewDataClass().Join("?.")}}?.{{refTargetMembers.Single(r => r.Declared == vm.Declared).Declared.GetFullPath(since: @ref.RefTo).Join("?.")}},
+                                """)}}
+                                }
+                                """;
+                            // var keyname = new RefTargetKeyName(refOrParent.MemberAggregate);
+                            // return $$"""
+                            //     {
+                            //     {{keyname.GetOwnKeyMembers().SelectTextTemplate(m => m is AggregateMember.RelationMember refOrParent2 ? $$"""
+                            //       {{m.MemberName}}: {{WithIndent(RenderRefTargetKeyNameValue(refOrParent2), "  ")}},
+                            //     """ : $$"""
+                            //       {{m.MemberName}}: {{instance}}.{{@ref.GetFullPathAsSingleViewDataClass().Join("?.")}}
+                            //         ? (JSON.parse({{instance}}.{{@ref.GetFullPathAsSingleViewDataClass().Join(".")}}) as {{keyArrayType}})[{{keyArray.Single(k => k.Member.Declared == ((AggregateMember.ValueMember)m).Declared).Index}}]
+                            //         : undefined,
+                            //     """)}}
+                            //     }
+                            //     """;
+                        }
+                        return RenderRefTargetKeyNameValue(@ref);
+
+                    } else {
+                        return $$"""
+                            {{instance}}?.{{member.GetFullPathAsSingleViewDataClass().Join("?.")}}
+                            """;
+                    }
+                }
                 return $$"""
                     {
                     {{dc.GetOwnProps().SelectTextTemplate(p => $$"""
-                      {{p.Member.MemberName}}: {{instance}}?.{{p.Member.GetFullPathAsSingleViewDataClass().Join("?.")}},
+                      {{p.Member.MemberName}}: {{WithIndent(RenderOwnMemberValue(p.Member), "  ")}},
                     """)}}
                     {{dc.GetChildProps().SelectTextTemplate(p => p.MemberInfo is AggregateMember.Children ? $$"""
                       {{p.MemberInfo?.MemberName}}: {{instance}}.{{p.MemberInfo?.MemberAggregate.GetFullPathAsSingleViewDataClass().Join("?.")}}?.map(x{{p.MemberInfo?.MemberName}} => ({{WithIndent(RenderItem(new DisplayDataClass(p.MainAggregate.AsEntry()), $"x{p.MemberInfo?.MemberName}"), "  ")}})),
@@ -315,8 +358,8 @@ namespace Nijo.Features.Storing {
             internal AggregateMember.AggregateMemberBase Member { get; }
 
             internal string PropName => Member.MemberName;
-            internal string PropType => Member is AggregateMember.Ref
-                ? "Util.ItemKey"
+            internal string PropType => Member is AggregateMember.Ref @ref
+                ? new DisplayRefTargetClass(@ref.RefTo).TsTypeName
                 : Member.TypeScriptTypename;
         }
 

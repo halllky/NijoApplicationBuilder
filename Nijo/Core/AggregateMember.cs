@@ -15,6 +15,7 @@ namespace Nijo.Core {
         public required IAggregateMemberType MemberType { get; init; }
         public required bool IsKey { get; init; }
         public required bool IsDisplayName { get; init; }
+        public required bool IsNameLike { get; init; }
         public required bool IsRequired { get; init; }
         public required bool InvisibleInGui { get; init; }
 
@@ -306,6 +307,7 @@ namespace Nijo.Core {
                     MemberType = new AggregateMemberTypes.VariationSwitch(group),
                     IsKey = group.IsPrimary,
                     IsDisplayName = group.IsInstanceName,
+                    IsNameLike = group.IsNameLike,
                     IsRequired = group.RequiredAtDB,
                     InvisibleInGui = false,
                 };

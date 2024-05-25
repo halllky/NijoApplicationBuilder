@@ -12,6 +12,7 @@ namespace Nijo.Core {
         public required IAggregateMemberType MemberType { get; set; }
         public bool IsKey { get; set; }
         public bool IsDisplayName { get; set; }
+        public bool IsNameLike { get; set; }
         public bool IsRequired { get; set; }
         public bool InvisibleInGui { get; set; }
     }
@@ -21,6 +22,7 @@ namespace Nijo.Core {
         IAggregateMemberType MemberType { get; }
         bool IsKey { get; }
         bool IsDisplayName { get; }
+        bool IsNameLike { get; }
         bool IsRequired { get; }
         bool InvisibleInGui { get; }
     }

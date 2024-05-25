@@ -242,7 +242,7 @@ namespace Nijo.Features.Storing {
                                 }
 
                                 // APIレスポンス型を画面表示用の型に変換する
-                                const displayDataRemoteItems = remoteItems.map(item => ({{WithIndent(displayData.RenderConvertToDisplayDataClass("item"), "    ")}}))
+                                const displayDataRemoteItems = remoteItems.map<AggregateType.{{displayData.TsTypeName}}>(item => ({{WithIndent(displayData.RenderConvertToDisplayDataClass("item"), "    ")}}))
 
                                 // ローカルリポジトリにあるデータはそちらを優先的に表示する
                                 const remoteAndLocal =  crossJoin(
