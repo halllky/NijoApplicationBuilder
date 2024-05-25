@@ -202,6 +202,7 @@ namespace Nijo.Features.Storing {
 
         #region 値の同一比較
         internal string DeepEqualTsFnName => $"deepEquals{_aggregate.Item.ClassName}";
+        [Obsolete("Refの参照先をItemKeyで比較すべきところ参照先のオブジェクトの深くまで比較しに行っている")]
         internal string RenderTsDeepEquals() {
 
             static string Render(string instanceA, string instanceB, GraphNode<Aggregate> agg) {

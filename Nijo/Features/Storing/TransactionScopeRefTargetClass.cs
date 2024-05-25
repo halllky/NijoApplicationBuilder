@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Nijo.Util.CodeGenerating;
+using Nijo.Parts.Utility;
 
 namespace Nijo.Features.Storing {
     /// <summary>
@@ -53,14 +54,81 @@ namespace Nijo.Features.Storing {
                 }
                 """;
         }
+        /// <summary>
+        /// TODO: 冗長な定義
+        /// </summary>
         internal string RenderTypeScriptDeclaring() {
             return $$"""
-                export type {{TypeScriptTypeName}} = {
-                {{GetOwnMembers().SelectTextTemplate(member => $$"""
-                  {{member.MemberName}}?: {{member.TypeScriptTypename}}
+                export type {{TypeScriptTypeName}} = Util.ItemKey
+                """;
+        }
+
+        #region C#用のJSONコンバータ
+        internal string CsJsonConverterName => $"{CSharpClassName}JsonValueConverter";
+
+        internal string RenderServerSideJsonConverter() {
+            var vmKeys = _aggregate.AsEntry().GetKeys().OfType<AggregateMember.ValueMember>().Select((member, i) => new {
+                Member = member,
+                Index = i,
+                VarName = $"{member.MemberName.ToCSharpSafe()}Value",
+            }).ToArray();
+
+            IEnumerable<string> RenderBody(GraphNode<Aggregate> agg) {
+                foreach (var m in new TransactionScopeRefTargetClass(agg).GetOwnMembers()) {
+                    if (m is AggregateMember.ValueMember vm) {
+                        yield return $$"""
+                            {{vm.MemberName}} = ({{vm.CSharpTypeName}}?){{vmKeys.Single(x => x.Member.Declared == vm.Declared).VarName}},
+                            """;
+
+                    } else if (m is AggregateMember.RelationMember rm) {
+                        yield return $$"""
+                            {{rm.MemberName}} = new() {
+                                {{WithIndent(RenderBody(rm.MemberAggregate), "    ")}}
+                            },
+                            """;
+                    }
+                }
+            }
+
+            return $$"""
+                /// <summary>
+                /// <see cref="{{CSharpClassName}}"/> 型のプロパティの値が
+                /// C#とHTTPリクエスト・レスポンスの間で変換されるときの処理を定義します。
+                /// </summary>
+                public class {{CsJsonConverterName}} : JsonConverter<{{CSharpClassName}}?> {
+                    public override {{CSharpClassName}}? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
+                        var jsonArray = reader.GetString();
+                        if (jsonArray == null) return null;
+                        var objArray = Util.{{UtilityClass.PARSE_JSON_AS_OBJARR}}(jsonArray);
+
+                {{vmKeys.SelectTextTemplate(x => $$"""
+                        var {{x.VarName}} = objArray.ElementAtOrDefault({{x.Index}});
+                        if ({{x.VarName}} != null && {{x.VarName}} is not {{x.Member.CSharpTypeName}})
+                            throw new InvalidOperationException($"{{CSharpClassName}}の値の変換に失敗しました。{{x.Member.MemberName}}の位置の値が{{x.Member.CSharpTypeName}}型ではありません: {{{x.VarName}}}");
+
                 """)}}
+                        return new {{CSharpClassName}} {
+                            {{WithIndent(RenderBody(_aggregate), "            ")}}
+                        };
+                    }
+
+                    public override void Write(Utf8JsonWriter writer, {{CSharpClassName}}? value, JsonSerializerOptions options) {
+                        if (value == null) {
+                            writer.WriteNullValue();
+
+                        } else {
+                            object?[] objArray = [
+                {{vmKeys.SelectTextTemplate(x => $$"""
+                                value.{{x.Member.Declared.GetFullPath().Join("?.")}},
+                """)}}
+                            ];
+                            var jsonArray = objArray.{{UtilityClass.TO_JSON}}();
+                            writer.WriteStringValue(jsonArray);
+                        }
+                    }
                 }
                 """;
         }
+        #endregion C#用のJSONコンバータ
     }
 }

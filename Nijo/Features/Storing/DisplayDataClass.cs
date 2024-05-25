@@ -160,38 +160,10 @@ namespace Nijo.Features.Storing {
         internal string RenderConvertFnToLocalRepositoryType() {
 
             string RenderItem(DisplayDataClass dc, string instance) {
-
-                string RenderOwnMemberValue(AggregateMember.AggregateMemberBase member) {
-                    if (member is AggregateMember.RelationMember refTarget) {
-                        var keyArray = KeyArray.Create(refTarget.MemberAggregate);
-                        var keyArrayType = $"[{keyArray.Select(k => $"{k.TsType} | undefined").Join(", ")}]";
-
-                        string RenderRefTargetKeyNameValue(AggregateMember.RelationMember refOrParent) {
-                            var keyname = new TransactionScopeRefTargetClass(refOrParent.MemberAggregate);
-                            return $$"""
-                                {
-                                {{keyname.GetOwnMembers().SelectTextTemplate(m => m is AggregateMember.RelationMember refOrParent2 ? $$"""
-                                  {{m.MemberName}}: {{WithIndent(RenderRefTargetKeyNameValue(refOrParent2), "  ")}},
-                                """ : $$"""
-                                  {{m.MemberName}}: {{instance}}.{{refTarget.GetFullPathAsSingleViewDataClass().Join("?.")}}
-                                    ? (JSON.parse({{instance}}.{{refTarget.GetFullPathAsSingleViewDataClass().Join(".")}}) as {{keyArrayType}})[{{keyArray.Single(k => k.Member.Declared == ((AggregateMember.ValueMember)m).Declared).Index}}]
-                                    : undefined,
-                                """)}}
-                                }
-                                """;
-                        }
-                        return RenderRefTargetKeyNameValue(refTarget);
-
-                    } else {
-                        return $$"""
-                            {{instance}}?.{{member.GetFullPathAsSingleViewDataClass().Join("?.")}}
-                            """;
-                    }
-                }
                 return $$"""
                     {
                     {{dc.GetOwnProps().SelectTextTemplate(p => $$"""
-                      {{p.Member.MemberName}}: {{WithIndent(RenderOwnMemberValue(p.Member), "  ")}},
+                      {{p.Member.MemberName}}: {{instance}}?.{{p.Member.GetFullPathAsSingleViewDataClass().Join("?.")}},
                     """)}}
                     {{dc.GetChildProps().SelectTextTemplate(p => p.MemberInfo is AggregateMember.Children ? $$"""
                       {{p.MemberInfo?.MemberName}}: {{instance}}.{{p.MemberInfo?.MemberAggregate.GetFullPathAsSingleViewDataClass().Join("?.")}}?.map(x{{p.MemberInfo?.MemberName}} => ({{WithIndent(RenderItem(new DisplayDataClass(p.MainAggregate.AsEntry()), $"x{p.MemberInfo?.MemberName}"), "  ")}})),
@@ -250,12 +222,6 @@ namespace Nijo.Features.Storing {
         /// データ型変換関数 (<see cref="TransactionScopeDataClass"/> => <see cref="DisplayDataClass"/>)
         /// </summary>
         internal string RenderConvertToDisplayDataClass(string mainArgName) {
-            var refArgs = GetRefFromPropsRecursively()
-                .DistinctBy(p => p.Item1.MainAggregate)
-                .Select(p => new {
-                    RelProp = p,
-                    ArgName = $"{p.Item1.MainAggregate.Item.ClassName}Items",
-                }).ToArray();
 
             // 子孫要素を参照するデータを引数の配列中から探すためにはキーで引き当てる必要があるが、
             // 子孫要素のラムダ式の中ではその外にある変数を参照するしかない
@@ -282,24 +248,7 @@ namespace Nijo.Features.Storing {
                     .GetMembers()
                     .Where(m => m.DeclaringAggregate == dc.MainAggregate
                              && (m is AggregateMember.ValueMember || m is AggregateMember.Ref));
-                var item = dc.MainAggregate.IsRoot() ? $"{instance}.item" : instance;
                 var depth = dc.MainAggregate.EnumerateAncestors().Count();
-
-                string MemberValue(AggregateMember.AggregateMemberBase m) {
-                    if (m is AggregateMember.Ref @ref) {
-                        var keys = @ref.RefTo
-                            .GetKeys()
-                            .OfType<AggregateMember.ValueMember>();
-                        return $$"""
-                            {{instance}}?.{{m.MemberName}}
-                              ? JSON.stringify([{{keys.Select(k => $"{instance}?.{k.Declared.GetFullPath().Join("?.")}").Join(", ")}}]) as ItemKey
-                              : undefined
-                            """;
-
-                    } else {
-                        return $"{instance}?.{m.MemberName}";
-                    }
-                }
 
                 return $$"""
                     {
@@ -311,7 +260,7 @@ namespace Nijo.Features.Storing {
                     """)}}
                       {{OWN_MEMBERS}}: {
                     {{ownMembers.SelectTextTemplate(m => $$"""
-                        {{m.MemberName}}: {{WithIndent(MemberValue(m), "    ")}},
+                        {{m.MemberName}}: {{instance}}?.{{m.MemberName}},
                     """)}}
                       },
                     {{dc.GetChildProps().SelectTextTemplate(p => p.IsArray ? $$"""

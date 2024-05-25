@@ -46,7 +46,8 @@ namespace Nijo.Models {
                     builder.DataClassDeclaring.Add(aggregateDetail.RenderCSharp(context));
                     builder.TypeScriptDataTypes.Add(aggregateDetail.RenderTypeScript(context));
                     builder.TypeScriptDataTypes.Add(initializerFunc.Render());
-                    if (aggregate.IsRoot()) builder.TypeScriptDataTypes.Add(aggregateDetail.RenderTsDeepEquals());
+                    // TODO: ディープイコール不要かもしれない
+                    //if (aggregate.IsRoot()) builder.TypeScriptDataTypes.Add(aggregateDetail.RenderTsDeepEquals());
                 }
 
                 // Load
