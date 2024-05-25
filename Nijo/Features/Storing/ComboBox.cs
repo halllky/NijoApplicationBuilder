@@ -36,27 +36,18 @@ namespace Nijo.Features.Storing {
 
         private string Render() {
             var combo = new ComboBox(_aggregate);
-            var keyArray = KeyArray.Create(_aggregate.AsEntry());
-            var keyName = new TransactionScopeRefTargetClass(_aggregate);
-            var names = keyName
-                .GetOwnMembers()
-                .OfType<AggregateMember.ValueMember>()
-                .Select(vm => vm.Declared.GetFullPath().Join("?."));
 
             return $$"""
                 export const {{combo.ComponentName}} = defineCustomComponent<Util.ItemKey>((props, ref) => {
-                  type ComboItem = { key: Util.ItemKey, item?: Types.{{keyName.TypeScriptTypeName}} }
+                  type ComboItem = { key: Util.ItemKey, name?: string }
 
                   const [queryKey, setQueryKey] = useState<string>('combo-{{_aggregate.Item.UniqueId}}::')
                   const { get } = Util.useHttpRequest()
                   const query = useCallback(async (keyword: string | undefined): Promise<ComboItem[]> => {
                     setQueryKey(`combo-{{_aggregate.Item.UniqueId}}::${keyword ?? ''}`)
-                    const response = await get<Types.{{keyName.TypeScriptTypeName}}[]>(`{{combo.Api}}`, { keyword })
+                    const response = await get<{ Key: Util.ItemKey, Value: string }[]>(`{{combo.Api}}`, { keyword })
                     if (!response.ok) return []
-                    return response.data.map(item => ({
-                      key: JSON.stringify([{{keyArray.Select(k => $"item.{k.Member.Declared.GetFullPath().Join("?.")}").Join(", ")}}]) as Util.ItemKey,
-                      item,
-                    }))
+                    return response.data.map(item => ({ key: item.Key, name: item.Value }))
                   }, [get])
 
                   const { value, onChange, ...rest } = props
@@ -82,7 +73,7 @@ namespace Nijo.Features.Storing {
                       queryKey={queryKey}
                       query={query}
                       keySelector={({ key }) => key}
-                      textSelector={({ key, item }) => `{{names.Select(path => $"${{item?.{path} ?? ''}}").Join(string.Empty)}}` || key}
+                      textSelector={({ name }) => name ?? ''}
                     />
                   )
                 })

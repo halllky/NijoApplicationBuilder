@@ -139,9 +139,13 @@ export const ComboBoxBase = defineCustomComponent(<T extends {}>(
 
   const displayText = useMemo(() => {
     if (keyword !== undefined) return keyword
-    if (value !== undefined) return textSelector(value)
+    if (value !== undefined) {
+      const key = keySelector(value)
+      const valueFromOptions = options.find(x => keySelector(x) === key)
+      return textSelector(valueFromOptions ?? value)
+    }
     return ''
-  }, [keyword, value, textSelector])
+  }, [keyword, value, textSelector, keySelector, options])
 
   return (
     <TextInputBase

@@ -80,11 +80,16 @@ namespace Nijo.Features.Storing {
                         """);
             }
 
+            var names = entry
+                .GetNames()
+                .OfType<AggregateMember.ValueMember>()
+                .ToArray();
+
             return $$"""
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}をキーワードで検索します。
                 /// </summary>
-                public virtual IEnumerable<{{keyName.CSharpClassName}}> {{AppServiceMeghodName}}(string? keyword) {
+                public virtual IEnumerable<KeyValuePair<{{keyName.CSharpClassName}}, string>> {{AppServiceMeghodName}}(string? keyword) {
                     var query = (IQueryable<{{_aggregate.Item.EFCoreEntityClassName}}>){{appSrv.DbContext}}.{{_aggregate.Item.DbSetName}};
 
                     if (!string.IsNullOrWhiteSpace(keyword)) {
@@ -93,11 +98,18 @@ namespace Nijo.Features.Storing {
                     }
 
                     var results = query
-                        .Select(e => new {{keyName.CSharpClassName}} {
-                            {{WithIndent(RenderKeyNameConvertingRecursively(_aggregate.AsEntry()), "            ")}}
-                        })
                         .OrderBy(m => m.{{orderColumn}})
-                        .Take({{LIST_BY_KEYWORD_MAX + 1}});
+                        .Take({{LIST_BY_KEYWORD_MAX + 1}})
+                        .Select(e => new {
+                            Key = new {{keyName.CSharpClassName}} {
+                                {{WithIndent(RenderKeyNameConvertingRecursively(_aggregate.AsEntry()), "                ")}}
+                            },
+                {{names.SelectTextTemplate((name, i) => $$"""
+                            Name{{i}} = e.{{name.Declared.GetFullPath().Join(".")}},
+                """)}}
+                        })
+                        .AsEnumerable()
+                        .Select(x => KeyValuePair.Create(x.Key, $"{{names.Select((_, i) => $"{{x.Name{i}}}").Join("")}}"));
 
                     return results.AsEnumerable();
                 }
