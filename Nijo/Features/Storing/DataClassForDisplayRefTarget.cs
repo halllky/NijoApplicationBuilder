@@ -72,7 +72,9 @@ namespace Nijo.Features.Storing {
         }
 
         internal string Render() {
-            static IEnumerable<string> RenderBody(GraphNode<Aggregate> agg) {
+            var visited = new HashSet<(GraphNode<Aggregate>, GraphPath)>();
+
+            IEnumerable<string> RenderBody(GraphNode<Aggregate> agg) {
                 foreach (var nameLikeMember in EnumerateNameLikeMembers(agg)) {
                     if (nameLikeMember.DeclaringAggregate != agg) {
                         continue;
@@ -83,6 +85,12 @@ namespace Nijo.Features.Storing {
                             """;
 
                     } else if (nameLikeMember is AggregateMember.RelationMember rm) {
+
+                        // 無限ループ回避
+                        var identifier = (rm.MemberAggregate, rm.MemberAggregate.PathFromEntry());
+                        if (visited.Contains(identifier)) continue;
+                        visited.Add(identifier);
+
                         yield return $$"""
                             {{rm.MemberName}}?: {
                               {{WithIndent(RenderBody(rm.MemberAggregate), "  ")}}
