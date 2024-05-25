@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import * as Icon from "@heroicons/react/24/outline"
 import { UUID } from "uuidjs"
 import * as ReactHookUtil from "./ReactUtil"
@@ -66,11 +66,34 @@ export const [
   }
 })
 
-export const InlineMessageList = ({ type, name, className }: {
+export const InlineMessageList = ({ type, name, className, darkMode }: {
   type?: Msg['type']
   name?: string
   className?: string
+  darkMode: boolean | undefined
 }) => {
+  const getBorderColor = useCallback((msg?: Msg) => {
+    if (msg?.type === 'warn') {
+      return darkMode ? 'border-amber-900' : 'border-amber-200'
+    } else {
+      return darkMode ? 'border-rose-900' : 'border-rose-200'
+    }
+  }, [darkMode])
+  const getBgColor = useCallback((msg?: Msg) => {
+    if (msg?.type === 'warn') {
+      return darkMode ? 'bg-amber-800' : 'bg-amber-100'
+    } else {
+      return darkMode ? 'bg-rose-800' : 'bg-rose-100'
+    }
+  }, [darkMode])
+  const getTextColor = useCallback((msg?: Msg) => {
+    if (msg?.type === 'warn') {
+      return darkMode ? 'text-amber-200' : 'text-amber-700'
+    } else {
+      return darkMode ? 'text-rose-200' : 'text-rose-600'
+    }
+  }, [darkMode])
+
   const [{ inline }, dispatch] = useMsgContext()
   const filtered = useMemo(() => {
     let arr = [...inline]
@@ -80,19 +103,11 @@ export const InlineMessageList = ({ type, name, className }: {
   }, [inline, name, type])
 
   return (
-    <div className={`flex flex-col ${className}`}>
-      <ul className="flex-1 flex flex-col overflow-auto max-h-32">
+    <div className={`flex flex-col gap-1 ${className}`}>
+      <ul className="flex-1 flex flex-col overflow-y-scroll max-h-36">
         {filtered.map(msg => (
-          <li key={msg.id} className={`
-            flex gap-1 items-center
-            border border-1
-            ${msg.type === 'warn' ? 'border-amber-200' : 'border-rose-200'}
-            ${msg.type === 'warn' ? 'bg-amber-100' : 'bg-rose-100'}`}>
-            <span title={msg.message} className={`
-              flex-1
-              ${msg.type === 'warn' ? 'text-amber-700' : 'text-rose-600'}
-              overflow-hidden text-nowrap overflow-ellipsis whitespace-pre
-              select-all`}>
+          <li key={msg.id} className={`flex gap-1 items-center border border-1 ${getBorderColor(msg)} ${getBgColor(msg)}`}>
+            <span title={msg.message} className={`flex-1 ${getTextColor(msg)} overflow-hidden text-nowrap overflow-ellipsis whitespace-pre select-all`}>
               {msg.message}
             </span>
             <Components.IconButton
@@ -102,13 +117,13 @@ export const InlineMessageList = ({ type, name, className }: {
           </li>
         ))}
       </ul>
-      {filtered.length > 5 && (
-        <div className="flex text-sm select-none items-center">
+      {filtered.length > 1 && (
+        <div className={`flex gap-8 text-sm select-none items-center ${getTextColor()}`}>
           {filtered.length}件の警告とエラー
-          <div className="flex-1"></div>
           <Components.IconButton onClick={() => dispatch(msg => msg.clear(name))}>
-            すべてクリア
+            すべてクリアする
           </Components.IconButton>
+          <div className="flex-1"></div>
         </div>
       )}
     </div>

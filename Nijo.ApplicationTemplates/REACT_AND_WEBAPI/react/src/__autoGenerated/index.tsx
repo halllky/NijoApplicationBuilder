@@ -90,7 +90,7 @@ function ApplicationRootInContext({ children }: {
           <Route path='*' element={<p> Not found.</p>} />
         </Routes>
 
-        <Util.InlineMessageList />
+        <Util.InlineMessageList darkMode={darkMode} />
       </Panel>
     </PanelGroup>
   )
