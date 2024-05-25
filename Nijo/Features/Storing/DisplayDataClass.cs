@@ -174,10 +174,10 @@ namespace Nijo.Features.Storing {
                         var keyArrayType = $"[{keyArray.Select(k => $"{k.TsType} | undefined").Join(", ")}]";
 
                         string RenderRefTargetKeyNameValue(AggregateMember.RelationMember refOrParent) {
-                            var keyname = new RefTargetKeyName(refOrParent.MemberAggregate);
+                            var keyname = new TransactionScopeRefTargetClass(refOrParent.MemberAggregate);
                             return $$"""
                                 {
-                                {{keyname.GetOwnKeyMembers().OfType<AggregateMember.ValueMember>().SelectTextTemplate(vm => $$"""
+                                {{keyname.GetOwnMembers().OfType<AggregateMember.ValueMember>().SelectTextTemplate(vm => $$"""
                                   {{vm.MemberName}}: {{instance}}.{{@ref.GetFullPathAsSingleViewDataClass().Join("?.")}}?.{{refTargetMembers.Single(r => r.Declared == vm.Declared).Declared.GetFullPath(since: @ref.RefTo).Join("?.")}},
                                 """)}}
                                 }
