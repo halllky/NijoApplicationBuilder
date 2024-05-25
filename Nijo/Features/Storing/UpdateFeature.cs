@@ -18,15 +18,15 @@ namespace Nijo.Features.Storing {
 
         private readonly GraphNode<Aggregate> _aggregate;
 
-        internal string ArgType => _aggregate.Item.ClassName;
+        internal string ArgType => new DataClassForUpdate(_aggregate).CsClassName;
         internal string MethodName => $"Update{_aggregate.Item.DisplayName.ToCSharpSafe()}";
 
         internal string RenderController() {
-            var controller = new Parts.WebClient.Controller(_aggregate.Item);
+            var updateCommand = new DataClassForUpdate(_aggregate);
 
             return $$"""
                 [HttpPost("{{Parts.WebClient.Controller.UPDATE_ACTION_NAME}}")]
-                public virtual IActionResult Update({{_aggregate.Item.ClassName}} param) {
+                public virtual IActionResult Update({{updateCommand.CsClassName}} param) {
                     if (_applicationService.{{MethodName}}(param, out var updated, out var errors)) {
                         return this.JsonContent(updated);
                     } else {
@@ -41,7 +41,7 @@ namespace Nijo.Features.Storing {
             var controller = new Parts.WebClient.Controller(_aggregate.Item);
             var find = new FindFeature(_aggregate);
 
-            var detail = new TransactionScopeDataClass(_aggregate);
+            var detail = new DataClassForUpdate(_aggregate);
             var searchKeys = _aggregate
                 .GetKeys()
                 .OfType<AggregateMember.ValueMember>()
@@ -49,7 +49,7 @@ namespace Nijo.Features.Storing {
                 .ToArray();
 
             return $$"""
-                public virtual bool {{MethodName}}({{detail.ClassName}} after, out {{detail.ClassName}} updated, out ICollection<string> errors) {
+                public virtual bool {{MethodName}}({{detail.CsClassName}} after, out {{detail.CsClassName}} updated, out ICollection<string> errors) {
                     errors = new List<string>();
 
                     {{WithIndent(FindFeature.RenderDbEntityLoading(
@@ -61,13 +61,13 @@ namespace Nijo.Features.Storing {
                         includeRefs: true), "    ")}}
 
                     if (beforeDbEntity == null) {
-                        updated = new {{_aggregate.Item.ClassName}}();
+                        updated = new {{detail.CsClassName}}();
                         errors.Add("更新対象のデータが見つかりません。");
                         return false;
                     }
 
-                    var beforeUpdate = {{detail.ClassName}}.{{TransactionScopeDataClass.FROM_DBENTITY}}(beforeDbEntity);
-                    var afterDbEntity = after.{{TransactionScopeDataClass.TO_DBENTITY}}();
+                    var beforeUpdate = {{detail.CsClassName}}.{{DataClassForUpdate.FROM_DBENTITY}}(beforeDbEntity);
+                    var afterDbEntity = after.{{DataClassForUpdate.TO_DBENTITY}}();
 
                     // Attach
                     {{appSrv.DbContext}}.Entry(afterDbEntity).State = EntityState.Modified;
@@ -77,21 +77,21 @@ namespace Nijo.Features.Storing {
                     try {
                         {{appSrv.DbContext}}.SaveChanges();
                     } catch (DbUpdateException ex) {
-                        updated = new {{_aggregate.Item.ClassName}}();
+                        updated = new {{detail.CsClassName}}();
                         foreach (var msg in ex.GetMessagesRecursively()) errors.Add(msg);
                         return false;
                     }
 
                     var afterUpdate = this.{{find.FindMethodName}}({{searchKeys.Join(", ")}});
                     if (afterUpdate == null) {
-                        updated = new {{_aggregate.Item.ClassName}}();
+                        updated = new {{detail.CsClassName}}();
                         errors.Add("更新後のデータの再読み込みに失敗しました。");
                         return false;
                     }
 
                     // // {{_aggregate.Item.DisplayName}}の更新をトリガーとする処理を実行します。
-                    // var updateEvent = new AggregateUpdateEvent<{{detail.ClassName}}> {
-                    //     Modified = new AggregateBeforeAfter<{{detail.ClassName}}>[] { new() { Before = beforeUpdate, After = afterUpdate } },
+                    // var updateEvent = new AggregateUpdateEvent<{{detail.CsClassName}}> {
+                    //     Modified = new AggregateBeforeAfter<{{detail.CsClassName}}>[] { new() { Before = beforeUpdate, After = afterUpdate } },
                     // };
 
                     updated = afterUpdate;

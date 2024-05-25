@@ -79,7 +79,7 @@ namespace Nijo.Parts.WebServer {
                     """))}}
 
                     {{If(OnModelCreating.Any(), () => $$"""
-                            private void OnModelCreating_{{_aggregate.Item.ClassName}}(ModelBuilder modelBuilder) {
+                            private void OnModelCreating_{{_aggregate.Item.PhysicalName}}(ModelBuilder modelBuilder) {
                                 {{WithIndent(OnModelCreating.SelectTextTemplate(fn => fn.Invoke("modelBuilder")), "            ")}}
                             }
                     """)}}

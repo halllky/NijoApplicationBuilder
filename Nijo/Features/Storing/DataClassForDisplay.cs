@@ -20,7 +20,7 @@ namespace Nijo.Features.Storing {
         }
         internal GraphNode<Aggregate> MainAggregate { get; }
 
-        internal string TsTypeName => $"{MainAggregate.Item.TypeScriptTypeName}DisplayData";
+        internal string TsTypeName => $"{MainAggregate.Item.PhysicalName}DisplayData";
 
         internal const string OWN_MEMBERS = "own_members";
         /// <summary>
@@ -152,10 +152,10 @@ namespace Nijo.Features.Storing {
                 """;
         }
 
-        internal string ConvertFnNameToLocalRepositoryType => $"convert{MainAggregate.Item.ClassName}ToLocalRepositoryItem";
+        internal string ConvertFnNameToLocalRepositoryType => $"convert{MainAggregate.Item.PhysicalName}ToLocalRepositoryItem";
 
         /// <summary>
-        /// データ型変換関数 (<see cref="DataClassForDisplay"/> => <see cref="TransactionScopeDataClass"/>)
+        /// データ型変換関数 (<see cref="DataClassForDisplay"/> => <see cref="DataClassForUpdate"/>)
         /// </summary>
         internal string RenderConvertFnToLocalRepositoryType() {
 
@@ -219,7 +219,7 @@ namespace Nijo.Features.Storing {
             return $$"""
                 /** 画面に表示されるデータ型を登録更新される粒度の型に変換します。 */
                 export const {{ConvertFnNameToLocalRepositoryType}} = (displayData: {{TsTypeName}}) => {
-                  const item0: Util.LocalRepositoryItem<{{MainAggregate.Item.TypeScriptTypeName}}> = {
+                  const item0: Util.LocalRepositoryItem<{{new DataClassForUpdate(MainAggregate).TsTypeName}}> = {
                     itemKey: displayData.{{LOCAL_REPOS_ITEMKEY}},
                     existsInRemoteRepository: displayData.{{EXISTS_IN_REMOTE_REPOS}},
                     willBeChanged: displayData.{{WILL_BE_CHANGED}},
@@ -228,7 +228,7 @@ namespace Nijo.Features.Storing {
                   }
                 {{GetRefFromPropsRecursively().SelectTextTemplate((x, i) => x.IsArray ? $$"""
 
-                  const item{{i + 1}}: Util.LocalRepositoryItem<{{x.Item1.MainAggregate.Item.TypeScriptTypeName}}>[] = displayData{{string.Concat(x.Path.Select(p => $"{Environment.NewLine}    ?.{p}"))}}
+                  const item{{i + 1}}: Util.LocalRepositoryItem<{{new DataClassForUpdate(x.Item1.MainAggregate).TsTypeName}}>[] = displayData{{string.Concat(x.Path.Select(p => $"{Environment.NewLine}    ?.{p}"))}}
                     .filter((y): y is Exclude<typeof y, undefined> => y !== undefined)
                     .map(y => ({
                       itemKey: y.{{LOCAL_REPOS_ITEMKEY}},
@@ -239,7 +239,7 @@ namespace Nijo.Features.Storing {
                     })) ?? []
                 """ : $$"""
 
-                  const item{{i + 1}}: Util.LocalRepositoryItem<{{x.Item1.MainAggregate.Item.TypeScriptTypeName}}> | undefined = displayData{{x.Path.Select(p => $"?.{p}").Join("")}} === undefined
+                  const item{{i + 1}}: Util.LocalRepositoryItem<{{new DataClassForUpdate(x.Item1.MainAggregate).TsTypeName}}> | undefined = displayData{{x.Path.Select(p => $"?.{p}").Join("")}} === undefined
                     ? undefined
                     : {
                       itemKey: displayData{{x.Path.Select(p => $".{p}").Join("")}}.{{LOCAL_REPOS_ITEMKEY}},
@@ -261,7 +261,7 @@ namespace Nijo.Features.Storing {
         }
 
         /// <summary>
-        /// データ型変換関数 (<see cref="TransactionScopeDataClass"/> => <see cref="DataClassForDisplay"/>)
+        /// データ型変換関数 (<see cref="DataClassForUpdate"/> => <see cref="DataClassForDisplay"/>)
         /// </summary>
         internal string RenderConvertToDisplayDataClass(string mainArgName) {
 
@@ -281,7 +281,7 @@ namespace Nijo.Features.Storing {
                     // 実際にはここでcontinueされるのは親のキーだけのはず。Render関数はルートから順番に呼び出されるので
                     if (pkVarNames.ContainsKey(key.Declared)) continue;
 
-                    /// 変換元のデータ型が <see cref="TransactionScopeDataClass"/> のため、キーが <see cref="DataClassForUpdateRefTarget"/> の可能性がある。そのためキーのオーナーからのフルパスにしている
+                    /// 変換元のデータ型が <see cref="DataClassForUpdate"/> のため、キーが <see cref="DataClassForUpdateRefTarget"/> の可能性がある。そのためキーのオーナーからのフルパスにしている
                     pkVarNames.Add(key.Declared, $"{instance}?.{key.Declared.GetFullPath(since: key.Owner).Join("?.")}");
                 }
 
@@ -389,10 +389,10 @@ namespace Nijo.Features.Storing {
                         throw new InvalidOperationException("ルート集約のPropは考慮していない");
 
                     } else if (MainAggregate.Source.IsParentChild()) {
-                        return $"child_{MainAggregate.Item.ClassName}";
+                        return $"child_{MainAggregate.Item.PhysicalName}";
 
                     } else {
-                        return $"ref_from_{MainAggregate.Source.RelationName.ToCSharpSafe()}_{MainAggregate.Item.ClassName}";
+                        return $"ref_from_{MainAggregate.Source.RelationName.ToCSharpSafe()}_{MainAggregate.Item.PhysicalName}";
                     }
                 }
             }

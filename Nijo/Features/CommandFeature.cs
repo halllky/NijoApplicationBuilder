@@ -12,7 +12,7 @@ using Nijo.Features.Storing;
 
 namespace Nijo.Features {
     public class CommandFeature {
-        public Func<GraphNode<Aggregate>, string> CommandName { get; set; } = root => root.Item.ClassName;
+        public Func<GraphNode<Aggregate>, string> CommandName { get; set; } = root => root.Item.PhysicalName;
         public Func<GraphNode<Aggregate>, string> ActionName { get; set; } = root => "実行";
 
         public string? ControllerAction { get; set; }
@@ -42,7 +42,7 @@ namespace Nijo.Features {
 
                 builder.ControllerActions.Add(ControllerAction ?? $$"""
                     [HttpPost("{{actionName}}")]
-                    public virtual IActionResult {{actionName}}([FromBody] {{command.ClassName}}? param) {
+                    public virtual IActionResult {{actionName}}([FromBody] {{command.CsClassName}}? param) {
                         if (param == null) return BadRequest();
                         if (_applicationService.{{actionName}}(param, out var errors)) {
                             return Ok();
@@ -54,7 +54,7 @@ namespace Nijo.Features {
 
                 var appSrv = new ApplicationService();
                 builder.AppServiceMethods.Add(AppSrvMethod ?? $$"""
-                    public virtual bool {{actionName}}({{command.ClassName}} command, out ICollection<string> errors) {
+                    public virtual bool {{actionName}}({{command.CsClassName}} command, out ICollection<string> errors) {
                         // このメソッドは自動生成の対象外です。
                         // {{appSrv.ConcreteClass}}クラスでこのメソッドをオーバーライドして実装してください。
                         errors = Array.Empty<string>();

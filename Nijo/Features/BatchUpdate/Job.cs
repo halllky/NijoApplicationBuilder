@@ -128,7 +128,7 @@ namespace Nijo.Features.BatchUpdate {
         }
 
         private static string UpdateMethodName(GraphNode<Aggregate> aggregate) {
-            return "BatchUpdate" + aggregate.Item.ClassName;
+            return "BatchUpdate" + aggregate.Item.PhysicalName;
         }
     }
 }

@@ -17,8 +17,7 @@ namespace Nijo.Features.Storing {
 
         private readonly GraphNode<Aggregate> _aggregate;
 
-        internal string ArgType => _aggregate.Item.ClassName;
-        internal string MethodName => $"Delete{_aggregate.Item.DisplayName.ToCSharpSafe()}";
+        internal string MethodName => $"Delete{_aggregate.Item.PhysicalName}";
 
         internal string RenderController() {
             var controller = new Parts.WebClient.Controller(_aggregate.Item);
@@ -40,7 +39,7 @@ namespace Nijo.Features.Storing {
             var appSrv = new ApplicationService();
             var controller = new Parts.WebClient.Controller(_aggregate.Item);
             var args = GetEFCoreMethodArgs().ToArray();
-            var instanceClass = new TransactionScopeDataClass(_aggregate).ClassName;
+            var instanceClass = new DataClassForUpdate(_aggregate).CsClassName;
 
             return $$"""
                 public virtual bool {{MethodName}}({{args.Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}, out ICollection<string> errors) {
@@ -58,7 +57,7 @@ namespace Nijo.Features.Storing {
                         return false;
                     }
 
-                    var deleted = {{instanceClass}}.{{TransactionScopeDataClass.FROM_DBENTITY}}(entity);
+                    var deleted = {{instanceClass}}.{{DataClassForUpdate.FROM_DBENTITY}}(entity);
 
                     {{appSrv.DbContext}}.Remove(entity);
 

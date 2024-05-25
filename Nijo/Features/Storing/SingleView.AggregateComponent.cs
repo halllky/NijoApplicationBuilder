@@ -460,14 +460,14 @@ namespace Nijo.Features.Storing {
         private string GetComponentName() {
             var entry = _aggregate.GetEntry().As<Aggregate>();
             if (_aggregate.IsInTreeOf(entry)) {
-                return $"{_aggregate.Item.TypeScriptTypeName}View";
+                return $"{_aggregate.Item.PhysicalName}View";
 
             } else {
                 var path = _aggregate
                     .PathFromEntry()
                     .Select(edge => edge.RelationName.ToCSharpSafe())
                     .Join("_");
-                return $"{path}_{_aggregate.Item.TypeScriptTypeName}View";
+                return $"{path}_{_aggregate.Item.PhysicalName}View";
             }
         }
 
@@ -489,7 +489,7 @@ namespace Nijo.Features.Storing {
         }
 
         private IEnumerable<AggregateMember.AggregateMemberBase> GetMembers() {
-            return new TransactionScopeDataClass(_aggregate).GetOwnMembers();
+            return new DataClassForUpdate(_aggregate).GetOwnMembers();
         }
 
         private string IfReadOnly(string readOnly, AggregateMember.AggregateMemberBase prop) {
@@ -525,7 +525,7 @@ namespace Nijo.Features.Storing {
             var headersWidthRem = _aggregate
                 .EnumerateThisAndDescendants()
                 .SelectMany(
-                    a => new TransactionScopeDataClass(a)
+                    a => new DataClassForUpdate(a)
                         .GetOwnMembers()
                         .Where(m => {
                             // 同じ行に値を表示せず、名前が長くても行の横幅いっぱい占有できるため、除外

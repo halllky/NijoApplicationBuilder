@@ -24,8 +24,8 @@ namespace Nijo.Features.Storing {
         private readonly GraphNode<Aggregate> _aggregate;
 
         // ApplicationServiceのメソッドのシグネチャ
-        private string FindMethodReturnType => $"IEnumerable<{_aggregate.Item.ClassName}>";
-        private string FindMethodName => $"Load{_aggregate.Item.DisplayName.ToCSharpSafe()}";
+        private string FindMethodReturnType => $"IEnumerable<{new DataClassForUpdate(_aggregate).CsClassName}>";
+        private string FindMethodName => $"Load{_aggregate.Item.PhysicalName}";
 
         private const string ACTION_NAME = "load";
         internal const string PARAM_FILTER = "filter";
@@ -115,7 +115,7 @@ namespace Nijo.Features.Storing {
 
                     return query
                         .AsEnumerable()
-                        .Select(entity => {{_aggregate.Item.ClassName}}.{{TransactionScopeDataClass.FROM_DBENTITY}}(entity));
+                        .Select(entity => {{new DataClassForUpdate(_aggregate).CsClassName}}.{{DataClassForUpdate.FROM_DBENTITY}}(entity));
                 }
                 """;
         }
@@ -128,14 +128,14 @@ namespace Nijo.Features.Storing {
 
         private string GetConditionClassName(GraphNode<Aggregate> agg) {
             if (agg.IsInTreeOf(_aggregate)) {
-                return $"{agg.Item.ClassName}SearchCondition";
+                return $"{agg.Item.PhysicalName}SearchCondition";
             } else {
                 var paths = new List<string>();
                 foreach (var edge in agg.PathFromEntry()) {
                     var terminal = edge.Terminal.As<Aggregate>();
                     var initial = edge.Initial.As<Aggregate>();
                     if (terminal.IsInTreeOf(_aggregate)) continue;
-                    if (initial.IsInTreeOf(_aggregate)) paths.Add(initial.Item.ClassName);
+                    if (initial.IsInTreeOf(_aggregate)) paths.Add(initial.Item.PhysicalName);
                     paths.Add(edge.IsParentChild() ? "Parent" : edge.RelationName);
                 }
                 return $"{paths.Join("_")}SearchCondition";

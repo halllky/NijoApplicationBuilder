@@ -63,7 +63,7 @@ namespace Nijo.Parts {
                 genDir.Directory("EntityFramework", efDir => {
                     var onModelCreating = _itemsByAggregate
                         .Where(x => x.Value.OnModelCreating.Any())
-                        .Select(x => $"OnModelCreating_{x.Key.Item.ClassName}");
+                        .Select(x => $"OnModelCreating_{x.Key.Item.PhysicalName}");
                     efDir.Generate(new DbContextClass(context.Config).RenderDeclaring(context, onModelCreating));
                 });
 

@@ -13,7 +13,7 @@ using Nijo.Parts.Utility;
 namespace Nijo.Features.Storing {
     /// <summary>
     /// DBに保存される、参照先の集約の情報。
-    /// <see cref="TransactionScopeDataClass"/> のうち主キーのみピックアップされたもの。
+    /// <see cref="DataClassForUpdate"/> のうち主キーのみピックアップされたもの。
     /// </summary>
     internal class DataClassForUpdateRefTarget {
         internal DataClassForUpdateRefTarget(GraphNode<Aggregate> aggregate) {
@@ -21,8 +21,12 @@ namespace Nijo.Features.Storing {
         }
         private readonly GraphNode<Aggregate> _aggregate;
 
-        internal string CSharpClassName => $"{_aggregate.Item.ClassName}Keys";
-        internal string TypeScriptTypeName => $"{_aggregate.Item.ClassName}Keys";
+        internal string CSharpClassName => $"{_aggregate.Item.PhysicalName}Keys";
+        /// <summary>
+        /// クライアント側では参照先のインスタンス自体が未コミット（=主キーをいじれる）状態がありうるため、
+        /// 参照先インスタンスのUUIDで特定できるように文字列で参照する。
+        /// </summary>
+        internal string TypeScriptTypeName => $"Util.ItemKey";
 
         /// <summary>
         /// このクラスで宣言されるメンバーのみを列挙する。
@@ -52,14 +56,6 @@ namespace Nijo.Features.Storing {
                     public {{member.CSharpTypeName}}? {{member.MemberName}} { get; set; }
                 """)}}
                 }
-                """;
-        }
-        /// <summary>
-        /// TODO: 冗長な定義
-        /// </summary>
-        internal string RenderTypeScriptDeclaring() {
-            return $$"""
-                export type {{TypeScriptTypeName}} = Util.ItemKey
                 """;
         }
 

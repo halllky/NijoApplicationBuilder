@@ -283,8 +283,8 @@ namespace Nijo.Core {
             internal GraphNode<Aggregate> ChildrenAggregate => MemberAggregate;
             /// <summary><see cref="ChildrenAggregate"/>と全く同じもの。より名前がわかりやすい左記の利用を推奨。</summary>
             internal override GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
-            internal override string CSharpTypeName => $"List<{Relation.Terminal.Item.ClassName}>";
-            internal override string TypeScriptTypename => $"{Relation.Terminal.Item.TypeScriptTypeName}[]";
+            internal override string CSharpTypeName => $"List<{new DataClassForUpdate(Relation.Terminal).CsClassName}>";
+            internal override string TypeScriptTypename => $"{new DataClassForUpdate(Relation.Terminal).TsTypeName}[]";
         }
 
         internal class Child : RelationMember {
@@ -295,8 +295,8 @@ namespace Nijo.Core {
             internal GraphNode<Aggregate> ChildAggregate => MemberAggregate;
             /// <summary><see cref="ChildAggregate"/>と全く同じもの。より名前がわかりやすい左記の利用を推奨。</summary>
             internal override GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
-            internal override string CSharpTypeName => Relation.Terminal.Item.ClassName;
-            internal override string TypeScriptTypename => Relation.Terminal.Item.TypeScriptTypeName;
+            internal override string CSharpTypeName => new DataClassForUpdate(Relation.Terminal).CsClassName;
+            internal override string TypeScriptTypename => new  DataClassForUpdate(Relation.Terminal).TsTypeName;
         }
 
         internal class Variation : ValueMember {
@@ -352,8 +352,8 @@ namespace Nijo.Core {
             internal Variation Group { get; }
             internal string Key { get; }
 
-            internal override string CSharpTypeName => Relation.Terminal.Item.ClassName;
-            internal override string TypeScriptTypename => Relation.Terminal.Item.TypeScriptTypeName;
+            internal override string CSharpTypeName => new DataClassForUpdate(Relation.Terminal).CsClassName;
+            internal override string TypeScriptTypename => new DataClassForUpdate(Relation.Terminal).TsTypeName;
         }
 
         internal class Ref : RelationMember {

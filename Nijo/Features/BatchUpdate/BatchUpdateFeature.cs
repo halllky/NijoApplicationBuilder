@@ -12,7 +12,7 @@ namespace Nijo.Features.BatchUpdate {
     internal partial class BatchUpdateFeature : IFeature {
 
         private static string GetKey(GraphNode<Aggregate> aggregate) {
-            return aggregate.Item.ClassName;
+            return aggregate.Item.PhysicalName;
         }
         private static IEnumerable<GraphNode<Aggregate>> GetAvailableAggregates(CodeRenderingContext context) {
             return context.Schema

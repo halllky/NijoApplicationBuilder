@@ -131,7 +131,7 @@ namespace Nijo.Parts.WebClient {
             DataTableColumn RefFromButtonColumn(DataClassForDisplay.RelationProp refFrom) {
                 var tableArrayRegisterName = dataTableOwner.GetRHFRegisterName();
                 var refFromDisplayData = new DataClassForDisplay(refFrom.MainAggregate);
-                var value = refFrom.MainAggregate.Item.ClassName;
+                var value = refFrom.MainAggregate.Item.PhysicalName;
 
                 // ページのルート集約から被参照集約までのパス
                 var ownerPath = refFrom.MainAggregate.GetFullPathAsSingleViewDataClass(since: dataTableOwner);
@@ -154,18 +154,18 @@ namespace Nijo.Parts.WebClient {
                 return new DataTableColumn {
                     Id = $"ref-from-{refFrom.PropName}",
                     Header = string.Empty,
-                    HeaderGroupName = refFrom.MainAggregate.Item.ClassName,
+                    HeaderGroupName = refFrom.MainAggregate.Item.DisplayName,
                     Cell = $$"""
                         ({ row }) => {
 
-                          const create{{refFrom.MainAggregate.Item.ClassName}} = useCallback(() => {
+                          const create{{refFrom.MainAggregate.Item.PhysicalName}} = useCallback(() => {
                             if (row.original.{{rowAccessor}}{{ownerPath.SkipLast(1).Select(x => $"?.{x}").Join("")}}) {
                               row.original.{{rowAccessor}}.{{ownerPath.Join(".")}} = {{WithIndent(refFromDisplayData.RenderNewObjectLiteral(RefKeyInitializer), "      ")}}
                               update(row.index, { ...row.original.{{rowAccessor}} })
                             }
                           }, [row.index])
 
-                          const delete{{refFrom.MainAggregate.Item.ClassName}} = useCallback(() => {
+                          const delete{{refFrom.MainAggregate.Item.PhysicalName}} = useCallback(() => {
                             if (row.original.{{rowAccessor}}.{{ownerPath.Join("?.")}}) {
                               row.original.{{rowAccessor}}.{{ownerPath.Join(".")}}.{{DataClassForDisplay.WILL_BE_DELETED}} = true
                               update(row.index, { ...row.original.{{rowAccessor}} })
@@ -176,10 +176,10 @@ namespace Nijo.Parts.WebClient {
 
                           return <>
                             {({{value}} === undefined || {{value}}.{{DataClassForDisplay.WILL_BE_DELETED}}) && (
-                              <Input.Button icon={PlusIcon} onClick={create{{refFrom.MainAggregate.Item.ClassName}}}>作成</Input.Button>
+                              <Input.Button icon={PlusIcon} onClick={create{{refFrom.MainAggregate.Item.PhysicalName}}}>作成</Input.Button>
                             )}
                             {({{value}} !== undefined && !{{value}}.{{DataClassForDisplay.WILL_BE_DELETED}}) && (
-                              <Input.Button icon={XMarkIcon} onClick={delete{{refFrom.MainAggregate.Item.ClassName}}}>削除</Input.Button>
+                              <Input.Button icon={XMarkIcon} onClick={delete{{refFrom.MainAggregate.Item.PhysicalName}}}>削除</Input.Button>
                             )}
                           </>
                         }

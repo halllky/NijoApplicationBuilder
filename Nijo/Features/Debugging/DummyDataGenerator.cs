@@ -129,23 +129,21 @@ namespace Nijo.Features.Debugging {
             var response = $"response{random.Next(99999999):00000000}";
             return $$"""
                 const {{data}} = AggregateType.{{new TSInitializerFunction(rootAggregate).FunctionName}}()
-                {{new TransactionScopeDataClass(rootAggregate).GetOwnMembers().SelectTextTemplate(member => $$"""
+                {{new DataClassForUpdate(rootAggregate).GetOwnMembers().SelectTextTemplate(member => $$"""
                 {{WithIndent(SetDummyValue(member), "")}}
                 """)}}
 
                 {{descendants.SelectTextTemplate(agg => $$"""
                 {{data}}.{{ObjectPath(agg).Join(".")}} = {{NewObject(agg)}}
-                {{new TransactionScopeDataClass(agg).GetOwnMembers().SelectTextTemplate(member => $$"""
+                {{new DataClassForUpdate(agg).GetOwnMembers().SelectTextTemplate(member => $$"""
                 {{WithIndent(SetDummyValue(member), "")}}
                 """)}}
                 """)}}
 
-                const {{response}} = await post<AggregateType.{{rootAggregate.Item.TypeScriptTypeName}}>(`{{controller.CreateCommandApi}}`, {{data}})
+                const {{response}} = await post<AggregateType.{{new DataClassForUpdate(rootAggregate).TsTypeName}}>(`{{controller.CreateCommandApi}}`, {{data}})
                 if (!{{response}}.ok) return false
 
                 """;
         }
-
-        private static string Array(GraphNode<Aggregate> agg) => $"array{agg.Item.ClassName}";
     }
 }

@@ -17,7 +17,7 @@ namespace Nijo.Features.Storing {
             RefTo = refTo;
         }
         internal GraphNode<Aggregate> RefTo { get; }
-        internal string TsTypeName => $"{RefTo.Item.ClassName}RefInfo";
+        internal string TsTypeName => $"{RefTo.Item.PhysicalName}RefInfo";
 
         /// <summary>
         /// インスタンスの名前または名前に準ずるメンバーを列挙する

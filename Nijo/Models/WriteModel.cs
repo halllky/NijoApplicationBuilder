@@ -21,8 +21,8 @@ namespace Nijo.Models {
             // Create
             var createCommand = new CommandFeature();
             var createFeature = new CreateFeature(rootAggregate);
-            createCommand.CommandName = root => $"{root.Item.ClassName}新規作成";
-            createCommand.ActionName = root => $"{root.Item.ClassName}作成";
+            createCommand.CommandName = root => $"{root.Item.PhysicalName}新規作成";
+            createCommand.ActionName = root => $"{root.Item.PhysicalName}作成";
             createCommand.ControllerAction = createFeature.RenderController();
             createCommand.AppSrvMethod = createFeature.RenderAppSrvMethod();
             createCommand.GenerateCode(context, rootAggregate);
@@ -41,7 +41,7 @@ namespace Nijo.Models {
                 builder.AppServiceMethods.Add(deleteFeature.RenderAppSrvMethod());
 
                 foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
-                    var aggregateDetail = new TransactionScopeDataClass(aggregate);
+                    var aggregateDetail = new DataClassForUpdate(aggregate);
                     var initializerFunc = new TSInitializerFunction(aggregate);
                     builder.DataClassDeclaring.Add(aggregateDetail.RenderCSharp(context));
                     builder.TypeScriptDataTypes.Add(aggregateDetail.RenderTypeScript(context));
@@ -63,7 +63,6 @@ namespace Nijo.Models {
                     var keywordSearching = new KeywordSearchingFeature(aggregate);
                     var refTargetKeyName = new DataClassForUpdateRefTarget(aggregate);
                     builder.DataClassDeclaring.Add(refTargetKeyName.RenderCSharpDeclaring());
-                    builder.TypeScriptDataTypes.Add(refTargetKeyName.RenderTypeScriptDeclaring());
                     builder.ControllerActions.Add(keywordSearching.RenderController());
                     builder.AppServiceMethods.Add(keywordSearching.RenderAppSrvMethod());
                 }

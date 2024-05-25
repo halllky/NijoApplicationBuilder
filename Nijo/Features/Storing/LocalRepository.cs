@@ -20,11 +20,11 @@ namespace Nijo.Features.Storing {
         /// <summary>
         /// ローカルリポジトリ内にあるデータそれぞれに割り当てられる、そのデータの種類が何かを識別する文字列
         /// </summary>
-        internal string DataTypeKey => Aggregate.Item.ClassName;
+        internal string DataTypeKey => Aggregate.Item.PhysicalName;
         /// <summary>
         /// 永続化層の抽象のフック。外部とのインターフェースの型は <see cref="DataClassForDisplay"/>
         /// </summary>
-        internal string HookName => $"use{Aggregate.Item.ClassName}Repository";
+        internal string HookName => $"use{Aggregate.Item.PhysicalName}Repository";
 
         /// <summary>
         /// ローカルリポジトリ内のデータとDB上のデータの両方を参照し
@@ -144,7 +144,7 @@ namespace Nijo.Features.Storing {
                             {{refRepositories.SelectTextTemplate(x => $$"""
 
                               // {{x.RefFrom.MainAggregate.Item.DisplayName}}のローカルリポジトリとリモートリポジトリへのデータ読み書き処理
-                              const {{x.RefFrom.MainAggregate.Item.ClassName}}filter: { filter: AggregateType.{{x.FindMany.TypeScriptConditionClass}} } = useMemo(() => {
+                              const {{x.RefFrom.MainAggregate.Item.PhysicalName}}filter: { filter: AggregateType.{{x.FindMany.TypeScriptConditionClass}} } = useMemo(() => {
                                 const f = AggregateType.{{x.FindMany.TypeScriptConditionInitializerFn}}()
                                 if (typeof editRange === 'string') {
                                   // 新規作成データ(未コミット)の編集の場合
@@ -171,12 +171,12 @@ namespace Nijo.Features.Storing {
                                 return { filter: f }
                               }, [editRange])
                               const {
-                                ready: {{x.RefFrom.MainAggregate.Item.ClassName}}IsReady,
-                                load: load{{x.RefFrom.MainAggregate.Item.ClassName}},
+                                ready: {{x.RefFrom.MainAggregate.Item.PhysicalName}}IsReady,
+                                load: load{{x.RefFrom.MainAggregate.Item.PhysicalName}},
                             {{If(commitable, () => $$"""
-                                commit: commit{{x.RefFrom.MainAggregate.Item.ClassName}},
+                                commit: commit{{x.RefFrom.MainAggregate.Item.PhysicalName}},
                             """)}}
-                              } = {{x.Repos.HookName}}({{x.RefFrom.MainAggregate.Item.ClassName}}filter)
+                              } = {{x.Repos.HookName}}({{x.RefFrom.MainAggregate.Item.PhysicalName}}filter)
                             """)}}
 
                               const load = useCallback(async (): Promise<AggregateType.{{displayData.TsTypeName}}[] | undefined> => {
@@ -184,11 +184,11 @@ namespace Nijo.Features.Storing {
                                 if (editRange === undefined) return // 画面表示直後の検索条件が決まっていない場合など
 
                             {{refRepositories.SelectTextTemplate(x => $$"""
-                                const loaded{{x.RefFrom.MainAggregate.Item.ClassName}} = await load{{x.RefFrom.MainAggregate.Item.ClassName}}()
-                                if (!loaded{{x.RefFrom.MainAggregate.Item.ClassName}}) return // {{x.RefFrom.MainAggregate.Item.DisplayName}}の読み込み完了まで待機
+                                const loaded{{x.RefFrom.MainAggregate.Item.PhysicalName}} = await load{{x.RefFrom.MainAggregate.Item.PhysicalName}}()
+                                if (!loaded{{x.RefFrom.MainAggregate.Item.PhysicalName}}) return // {{x.RefFrom.MainAggregate.Item.DisplayName}}の読み込み完了まで待機
                             """)}}
 
-                                let remoteItems: AggregateType.{{agg.Item.ClassName}}[]
+                                let remoteItems: AggregateType.{{new DataClassForUpdate(agg).TsTypeName}}[]
                                 let localItems: AggregateType.{{displayData.TsTypeName}}[]
 
                                 if (typeof editRange === 'string') {
@@ -205,7 +205,7 @@ namespace Nijo.Features.Storing {
                                   } else {
                                     const res = await get({{find.GetUrlStringForReact(keyArray.Select((_, i) => $"editRange[{i}].toString()"))}})
                                     remoteItems = res.ok
-                                      ? [res.data as AggregateType.{{agg.Item.TypeScriptTypeName}}]
+                                      ? [res.data as AggregateType.{{new DataClassForUpdate(agg).TsTypeName}}]
                                       : []
                                   }
 
@@ -220,7 +220,7 @@ namespace Nijo.Features.Storing {
                                   if (editRange.skip !== undefined) searchParam.append('{{FindManyFeature.PARAM_SKIP}}', editRange.skip.toString())
                                   if (editRange.take !== undefined) searchParam.append('{{FindManyFeature.PARAM_TAKE}}', editRange.take.toString())
                                   const url = `{{findMany.GetUrlStringForReact()}}?${searchParam}`
-                                  const res = await post<AggregateType.{{agg.Item.TypeScriptTypeName}}[]>(url, editRange.filter)
+                                  const res = await post<AggregateType.{{new DataClassForUpdate(agg).TsTypeName}}[]>(url, editRange.filter)
                                   remoteItems = res.ok ? res.data : []
 
                                   // 既存データの検索条件による検索（ローカルリポジトリ）
@@ -251,21 +251,21 @@ namespace Nijo.Features.Storing {
                                 ).map<AggregateType.{{displayData.TsTypeName}}>(pair => pair.left ?? pair.right)
                             {{refRepositories.SelectTextTemplate(x => $$"""
 
-                                // {{x.RefFrom.MainAggregate.Item.ClassName}}を{{agg.Item.ClassName}}に合成する
+                                // {{new DataClassForUpdate(x.RefFrom.MainAggregate).TsTypeName}}を{{new DataClassForUpdate(agg).TsTypeName}}に合成する
                                 for (const item of remoteAndLocal) {
                             {{If(x.RefTo.MainAggregate.EnumerateAncestorsAndThis().Any(y => y.IsChildrenMember()), () => $$"""
                                   for (const x of item{{RenderSelectMany(x.RefTo.MainAggregate)}} ?? []) {
-                                    x.{{x.RefFrom.PropName}} = loaded{{x.RefFrom.MainAggregate.Item.ClassName}}.find(y => y.{{x.RefFrom.MainAggregate.AsEntry().GetSingleRefKeyAggregate()?.GetFullPathAsSingleViewDataClass().Join(".")}} === x.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}})
+                                    x.{{x.RefFrom.PropName}} = loaded{{x.RefFrom.MainAggregate.Item.PhysicalName}}.find(y => y.{{x.RefFrom.MainAggregate.AsEntry().GetSingleRefKeyAggregate()?.GetFullPathAsSingleViewDataClass().Join(".")}} === x.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}})
                                   }
                             """).Else(() => $$"""
-                                  item.{{x.RefFrom.PropName}} = loaded{{x.RefFrom.MainAggregate.Item.ClassName}}.find(y => y.{{x.RefFrom.MainAggregate.AsEntry().GetSingleRefKeyAggregate()?.GetFullPathAsSingleViewDataClass().Join(".")}} === item.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}})
+                                  item.{{x.RefFrom.PropName}} = loaded{{x.RefFrom.MainAggregate.Item.PhysicalName}}.find(y => y.{{x.RefFrom.MainAggregate.AsEntry().GetSingleRefKeyAggregate()?.GetFullPathAsSingleViewDataClass().Join(".")}} === item.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}})
                             """)}}
                                 }
                             """)}}
 
                                 return remoteAndLocal
 
-                              }, [editRange, get, post, queryToTable, openCursor{{refRepositories.Select(x => $", load{x.RefFrom.MainAggregate.Item.ClassName}").Join("")}}])
+                              }, [editRange, get, post, queryToTable, openCursor{{refRepositories.Select(x => $", load{x.RefFrom.MainAggregate.Item.PhysicalName}").Join("")}}])
 
                             {{If(commitable, () => $$"""
                               /** 引数に渡されたデータをローカルリポジトリに登録します。 */
@@ -273,17 +273,17 @@ namespace Nijo.Features.Storing {
                                 for (const newValue of items) {
                             {{refRepositories.SelectTextTemplate(x => $$"""
                             {{If(x.RefTo.MainAggregate.EnumerateAncestorsAndThis().Any(y => y.IsChildrenMember()), () => $$"""
-                                  const arr{{x.RefFrom.MainAggregate.Item.ClassName}}: AggregateType.{{x.RefFrom.TsTypeName}}[] = []
+                                  const arr{{x.RefFrom.MainAggregate.Item.PhysicalName}}: AggregateType.{{x.RefFrom.TsTypeName}}[] = []
                                   for (const x of newValue{{RenderSelectMany(x.RefTo.MainAggregate)}} ?? []) {
                                     if (x.{{x.RefFrom.PropName}} === undefined) continue
-                                    arr{{x.RefFrom.MainAggregate.Item.ClassName}}.push(x.{{x.RefFrom.PropName}})
+                                    arr{{x.RefFrom.MainAggregate.Item.PhysicalName}}.push(x.{{x.RefFrom.PropName}})
                                     delete x.{{x.RefFrom.PropName}}
                                   }
-                                  await commit{{x.RefFrom.MainAggregate.Item.ClassName}}(...arr{{x.RefFrom.MainAggregate.Item.ClassName}})
+                                  await commit{{x.RefFrom.MainAggregate.Item.PhysicalName}}(...arr{{x.RefFrom.MainAggregate.Item.PhysicalName}})
 
                             """).Else(() => $$"""
                                   if (newValue.{{x.RefFrom.PropName}}) {
-                                    await commit{{x.RefFrom.MainAggregate.Item.ClassName}}(newValue.{{x.RefFrom.PropName}})
+                                    await commit{{x.RefFrom.MainAggregate.Item.PhysicalName}}(newValue.{{x.RefFrom.PropName}})
                                     delete newValue.{{x.RefFrom.PropName}}
                                   }
 
@@ -306,11 +306,11 @@ namespace Nijo.Features.Storing {
                                 }
 
                                 await reloadContext() // 更新があったことをサイドメニューに知らせる
-                              }, [reloadContext, queryToTable{{refRepositories.Select(x => $", commit{x.RefFrom.MainAggregate.Item.ClassName}").Join("")}}])
+                              }, [reloadContext, queryToTable{{refRepositories.Select(x => $", commit{x.RefFrom.MainAggregate.Item.PhysicalName}").Join("")}}])
                             """)}}
 
                               return {
-                                ready: ready2{{refRepositories.Select(x => $" && {x.RefFrom.MainAggregate.Item.ClassName}IsReady").Join("")}},
+                                ready: ready2{{refRepositories.Select(x => $" && {x.RefFrom.MainAggregate.Item.PhysicalName}IsReady").Join("")}},
                                 load,
                             {{If(commitable, () => $$"""
                                 commit,
@@ -348,6 +348,7 @@ namespace Nijo.Features.Storing {
 
             static string RenderCommitFunction(GraphNode<Aggregate> agg) {
                 var displayData = new DataClassForDisplay(agg);
+                var updateCommand = new DataClassForUpdate(agg);
                 var localRepos = new LocalRepository(agg);
                 var controller = new Parts.WebClient.Controller(agg.Item);
                 var deleteKeyUrlParam = agg
@@ -362,12 +363,12 @@ namespace Nijo.Features.Storing {
                       const state = getLocalRepositoryState(localReposItem)
                       if (state === '+') {
                         const url = `{{controller.CreateCommandApi}}`
-                        const response = await post<AggregateType.{{agg.Item.TypeScriptTypeName}}>(url, saveItem)
+                        const response = await post<AggregateType.{{updateCommand.TsTypeName}}>(url, saveItem)
                         return { commit: response.ok }
 
                       } else if (state === '*') {
                         const url = `{{controller.UpdateCommandApi}}`
-                        const response = await post<AggregateType.{{agg.Item.TypeScriptTypeName}}>(url, saveItem)
+                        const response = await post<AggregateType.{{updateCommand.TsTypeName}}>(url, saveItem)
                         return { commit: response.ok }
                     
                       } else if (state === '-') {

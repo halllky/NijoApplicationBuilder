@@ -18,7 +18,7 @@ namespace Nijo.Parts.WebClient {
         }
         private readonly GraphNode<Aggregate> _aggregate;
 
-        internal string GetSingleViewUrlHookName => $"get{_aggregate.Item.ClassName}SingleViewUrl";
+        internal string GetSingleViewUrlHookName => $"get{_aggregate.Item.PhysicalName}SingleViewUrl";
 
         internal static SourceFile Render() => new SourceFile {
             FileName = "UrlUtil.ts",
