@@ -170,7 +170,7 @@ namespace Nijo.Features.Storing {
                             var keyname = new TransactionScopeRefTargetClass(refOrParent.MemberAggregate);
                             return $$"""
                                 {
-                                {{keyname.GetOwnKeyMembers().SelectTextTemplate(m => m is AggregateMember.RelationMember refOrParent2 ? $$"""
+                                {{keyname.GetOwnMembers().SelectTextTemplate(m => m is AggregateMember.RelationMember refOrParent2 ? $$"""
                                   {{m.MemberName}}: {{WithIndent(RenderRefTargetKeyNameValue(refOrParent2), "  ")}},
                                 """ : $$"""
                                   {{m.MemberName}}: {{instance}}.{{refTarget.GetFullPathAsSingleViewDataClass().Join("?.")}}

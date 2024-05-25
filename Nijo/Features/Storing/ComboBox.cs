@@ -38,9 +38,8 @@ namespace Nijo.Features.Storing {
             var combo = new ComboBox(_aggregate);
             var keyArray = KeyArray.Create(_aggregate.AsEntry());
             var keyName = new TransactionScopeRefTargetClass(_aggregate);
-            var names = _aggregate
-                .AsEntry()
-                .GetNames()
+            var names = keyName
+                .GetOwnMembers()
                 .OfType<AggregateMember.ValueMember>()
                 .Select(vm => vm.Declared.GetFullPath().Join("?."));
 

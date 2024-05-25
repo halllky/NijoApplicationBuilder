@@ -20,35 +20,16 @@ namespace Nijo.Features.Storing {
         }
         private readonly GraphNode<Aggregate> _aggregate;
 
-        internal string CSharpClassName => $"{_aggregate.Item.ClassName}KeysAndNames";
-        internal string TypeScriptTypeName => $"{_aggregate.Item.ClassName}KeysAndNames";
+        internal string CSharpClassName => $"{_aggregate.Item.ClassName}Keys";
+        internal string TypeScriptTypeName => $"{_aggregate.Item.ClassName}Keys";
 
         /// <summary>
         /// このクラスで宣言されるメンバーのみを列挙する。
         /// つまり、親や参照先は入れ子オブジェクトとして列挙されるに留まり、親や参照先のキー等は列挙されない。
         /// </summary>
         internal IEnumerable<AggregateMember.AggregateMemberBase> GetOwnMembers() {
-            return GetOwnKeyMembers().Union(GetOwnNameMembers());
-        }
-
-        /// <summary>
-        /// このクラスで宣言されるキーのみを列挙する。
-        /// つまり、親や参照先は入れ子オブジェクトとして列挙されるに留まり、親や参照先のキーは列挙されない。
-        /// </summary>
-        internal IEnumerable<AggregateMember.AggregateMemberBase> GetOwnKeyMembers() {
             return _aggregate
                 .GetKeys()
-                .Where(m => m is AggregateMember.Ref
-                         || m is AggregateMember.Parent
-                         || m is AggregateMember.ValueMember vm && vm.Declared.Owner == vm.Owner);
-        }
-        /// <summary>
-        /// このクラスで宣言される名前のみを列挙する。
-        /// つまり、親や参照先は入れ子オブジェクトとして列挙されるに留まり、親や参照先の名前は列挙されない。
-        /// </summary>
-        internal IEnumerable<AggregateMember.AggregateMemberBase> GetOwnNameMembers() {
-            return _aggregate
-                .GetNames()
                 .Where(m => m is AggregateMember.Ref
                          || m is AggregateMember.Parent
                          || m is AggregateMember.ValueMember vm && vm.Declared.Owner == vm.Owner);
