@@ -23,7 +23,7 @@ namespace Nijo.Features.Storing {
 
         internal string CSharpClassName => $"{_aggregate.Item.PhysicalName}Keys";
         /// <summary>
-        /// クライアント側では参照先のインスタンス自体が未コミット（=主キーをいじれる）状態がありうるため、
+        /// 登録更新リクエスト時に参照先のインスタンスがDB未登録で主キーが定まっていない可能性があるため、
         /// 参照先インスタンスのUUIDで特定できるように文字列で参照する。
         /// </summary>
         internal string TypeScriptTypeName => $"Util.ItemKey";

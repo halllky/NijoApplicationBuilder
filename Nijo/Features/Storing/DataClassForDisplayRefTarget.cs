@@ -21,6 +21,12 @@ namespace Nijo.Features.Storing {
         internal string TsTypeName => $"{RefTo.Item.PhysicalName}RefInfo";
 
         /// <summary>
+        /// 登録更新リクエスト時に参照先のインスタンスがDB未登録で主キーが定まっていない可能性があるため、
+        /// 参照先インスタンスのUUID等の文字列で参照できるようにするためのプロパティ。
+        /// </summary>
+        internal const string INSTANCE_KEY = "__instanceKey";
+
+        /// <summary>
         /// インスタンスの名前または名前に準ずるメンバーを列挙する
         /// </summary>
         private static IEnumerable<AggregateMember.AggregateMemberBase> EnumerateNameLikeMembers(GraphNode<Aggregate> aggregate) {
@@ -117,7 +123,12 @@ namespace Nijo.Features.Storing {
                 }
             }
             return $$"""
+                /** {{RefTo.Item.DisplayName}}を参照する他のデータの画面上に表示される{{RefTo.Item.DisplayName}}のデータ型。 */
                 export type {{TsTypeName}} = {
+                  /** {{RefTo.Item.DisplayName}}のキー。保存するときはこの値が使用される。
+                      新規作成されてからDBに登録されるまでの間の{{RefTo.Item.DisplayName}}をUUID等の不変の値で参照できるようにするために文字列になっている。 */
+                  {{INSTANCE_KEY}}: Util.ItemKey
+
                   {{WithIndent(RenderBody(RefTo.AsEntry()), "  ")}}
                 }
                 """;
@@ -148,7 +159,16 @@ namespace Nijo.Features.Storing {
             }
 
             return $$"""
+                /// <summary>
+                /// {{RefTo.Item.DisplayName}}を参照する他のデータの画面上に表示される{{RefTo.Item.DisplayName}}のデータ型。
+                /// </summary>
                 public partial class {{CsTypeName}} {
+                    /// <summary>
+                    /// {{RefTo.Item.DisplayName}}のキー。保存するときはこの値が使用される。
+                    /// 新規作成されてからDBに登録されるまでの間の{{RefTo.Item.DisplayName}}をUUID等の不変の値で参照できるようにするために文字列になっている。
+                    /// </summary>
+                    public required string {{INSTANCE_KEY}} { get; set; }
+
                     {{WithIndent(RenderBody(RefTo.AsEntry()), "    ")}}
                 }
                 """;
