@@ -127,7 +127,7 @@ namespace Nijo.Features.Storing {
                 export type {{TsTypeName}} = {
                   /** {{RefTo.Item.DisplayName}}のキー。保存するときはこの値が使用される。
                       新規作成されてからDBに登録されるまでの間の{{RefTo.Item.DisplayName}}をUUID等の不変の値で参照できるようにするために文字列になっている。 */
-                  {{INSTANCE_KEY}}: Util.ItemKey
+                  {{INSTANCE_KEY}}?: Util.ItemKey
 
                   {{WithIndent(RenderBody(RefTo.AsEntry()), "  ")}}
                 }
@@ -167,7 +167,7 @@ namespace Nijo.Features.Storing {
                     /// {{RefTo.Item.DisplayName}}のキー。保存するときはこの値が使用される。
                     /// 新規作成されてからDBに登録されるまでの間の{{RefTo.Item.DisplayName}}をUUID等の不変の値で参照できるようにするために文字列になっている。
                     /// </summary>
-                    public required string {{INSTANCE_KEY}} { get; set; }
+                    public string? {{INSTANCE_KEY}} { get; set; }
 
                     {{WithIndent(RenderBody(RefTo.AsEntry()), "    ")}}
                 }

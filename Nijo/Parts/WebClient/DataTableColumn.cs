@@ -144,7 +144,11 @@ namespace Nijo.Parts.WebClient {
                 // 参照先のitemKeyと対応するプロパティを初期化する
                 string? RefKeyInitializer(AggregateMember.AggregateMemberBase member) {
                     if (member is AggregateMember.Ref r && r.RefTo == dataTableOwner) {
-                        return $"row.original.{rowAccessor}.{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}";
+                        return $$"""
+                            {
+                              {{DataClassForDisplayRefTarget.INSTANCE_KEY}}: row.original.{{rowAccessor}}.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}},
+                            }
+                            """;
 
                     } else {
                         return null;

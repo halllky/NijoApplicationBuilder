@@ -93,7 +93,11 @@ namespace Nijo.Features.Storing {
                         var refToRegisterNameArray = refTo.RefTo.GetRHFRegisterName(args).ToArray();
                         var refToRegisterName = refToRegisterNameArray.Length > 0 ? $"`{refToRegisterNameArray.Join(".")}`" : string.Empty;
 
-                        return $"getValues({refToRegisterName})?.{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}";
+                        return $$"""
+                            {
+                              {{DataClassForDisplayRefTarget.INSTANCE_KEY}}: getValues({{refToRegisterName}})?.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}},
+                            }
+                            """;
 
                     } else {
                         return null;
