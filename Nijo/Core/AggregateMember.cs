@@ -154,6 +154,10 @@ namespace Nijo.Core {
 
         internal abstract class AggregateMemberBase : ValueObject {
             internal abstract GraphNode<Aggregate> Owner { get; }
+            /// <summary>
+            /// TODO: ParentだとDeclaringAggregateは子ではなく親になるのが違和感。
+            /// そもそもDeclaringAggregateはValueMemberにのみ存在する概念と考えるのが自然な気がする。
+            /// </summary>
             internal abstract GraphNode<Aggregate> DeclaringAggregate { get; }
             internal abstract string MemberName { get; }
             internal abstract decimal Order { get; }
