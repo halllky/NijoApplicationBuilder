@@ -49,7 +49,7 @@ namespace Nijo.Features.Storing {
 
         internal string RenderAppSrvMethod() {
             var appSrv = new ApplicationService();
-            var returnType = new DataClassForDisplay(_aggregate);
+            var returnType = new DataClassForDisplayRefTarget(_aggregate);
             const string LIKE = "like";
 
             // キーワード検索は子孫集約のDbEntityが基点になる
@@ -102,22 +102,9 @@ namespace Nijo.Features.Storing {
                         .OrderBy(m => m.{{orderColumn}})
                         .Take({{LIST_BY_KEYWORD_MAX + 1}})
                         .AsEnumerable()
-                        .Select(entity => {{returnType.CsClassName}}.{{DataClassForDisplay.FROM_DBENTITY}}(entity));
+                        .Select(entity => {{returnType.CsClassName}}.{{DataClassForDisplayRefTarget.FROM_DBENTITY}}(entity));
 
-
-
-
-                        //.Select(e => new {
-                        //    Key = new {{keyName.CSharpClassName}} {
-                        //        {{WithIndent(RenderKeyNameConvertingRecursively(_aggregate.AsEntry()), "         //       ")}}
-                        //    },
-                {{names.SelectTextTemplate((name, i) => $$"""
-                        //    Name{{i}} = e.{{name.Declared.GetFullPath().Join(".")}},
-                """)}}
-                        //})
-                        //.Select(x => KeyValuePair.Create(x.Key, $"{{names.Select((_, i) => $"{{x.Name{i}}}").Join("")}}"));
-
-                    return results.AsEnumerable();
+                    return results;
                 }
                 """;
         }

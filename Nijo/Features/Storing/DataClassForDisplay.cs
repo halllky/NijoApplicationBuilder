@@ -324,8 +324,6 @@ namespace Nijo.Features.Storing {
         }
 
         internal string RenderCSharpDataClassDeclaration() {
-            if (!MainAggregate.IsRoot()) throw new InvalidOperationException();
-
             return MainAggregate.EnumerateThisAndDescendants().SelectTextTemplate(agg => {
                 var dataClass = new DataClassForDisplay(agg);
 
@@ -414,7 +412,7 @@ namespace Nijo.Features.Storing {
                                 } else if (member2 is AggregateMember.Ref ref2) {
                                     var refTarget2 = new DataClassForDisplayRefTarget(ref2.RefTo);
                                     yield return $$"""
-                                        {{member2.MemberName}} = new {{refTarget2.CsClassName}} {
+                                        {{member2.MemberName}} = new() {
                                             {{WithIndent(RenderRefInfoBody(refTarget2), "    ")}}
                                         },
                                         """;
@@ -450,7 +448,7 @@ namespace Nijo.Features.Storing {
                     """)}}
                         },
                     {{dc.GetChildProps().SelectTextTemplate(p => p.IsArray ? $$"""
-                        {{p.PropName}} = {{instance}}?.{{p.MemberInfo?.MemberName}}?.Select(x{{depth}} => {{WithIndent(RenderNewLiteral(p, $"x{depth}", true), "    ")}}),
+                        {{p.PropName}} = {{instance}}?.{{p.MemberInfo?.MemberName}}?.Select(x{{depth}} => {{WithIndent(RenderNewLiteral(p, $"x{depth}", true), "    ")}}).ToList() ?? [],
                     """ : $$"""
                         {{p.PropName}} = {{WithIndent(RenderNewLiteral(p, $"{instance}?.{p.MemberInfo?.MemberName}", false), "    ")}},
                     """)}}
