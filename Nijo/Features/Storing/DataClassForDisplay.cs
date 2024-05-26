@@ -163,39 +163,10 @@ namespace Nijo.Features.Storing {
             string RenderItem(DataClassForDisplay dc, string instance) {
 
                 string RenderOwnMemberValue(AggregateMember.AggregateMemberBase member) {
-                    if (member is AggregateMember.Ref @ref) {
-                        // @refまでの経路はDisplayDataClassのルールで, それ以降の経路はDisplayRefTargetClassのルールで計算するため、AsEntryしている
-                        var refTargetData = new DataClassForDisplayRefTarget(@ref.RefTo.AsEntry());
-                        var refTargetMembers = refTargetData
-                            .GetDisplayMembers()
-                            .ToArray();
-
-                        var keyArray = KeyArray.Create(@ref.MemberAggregate);
-                        var keyArrayType = $"[{keyArray.Select(k => $"{k.TsType} | undefined").Join(", ")}]";
-
-                        string RenderRefTargetKeyNameValue(AggregateMember.RelationMember refOrParent) {
-                            var keyname = new DataClassForSaveRefTarget(refOrParent.MemberAggregate);
-                            return $$"""
-                                {
-                                {{keyname.GetOwnMembers().OfType<AggregateMember.ValueMember>().SelectTextTemplate(vm => $$"""
-                                  {{vm.MemberName}}: {{instance}}.{{@ref.GetFullPathAsSingleViewDataClass().Join("?.")}}?.{{refTargetMembers.Single(r => r.Declared == vm.Declared).Declared.GetFullPath(since: @ref.RefTo).Join("?.")}},
-                                """)}}
-                                }
-                                """;
-                            // var keyname = new RefTargetKeyName(refOrParent.MemberAggregate);
-                            // return $$"""
-                            //     {
-                            //     {{keyname.GetOwnKeyMembers().SelectTextTemplate(m => m is AggregateMember.RelationMember refOrParent2 ? $$"""
-                            //       {{m.MemberName}}: {{WithIndent(RenderRefTargetKeyNameValue(refOrParent2), "  ")}},
-                            //     """ : $$"""
-                            //       {{m.MemberName}}: {{instance}}.{{@ref.GetFullPathAsSingleViewDataClass().Join("?.")}}
-                            //         ? (JSON.parse({{instance}}.{{@ref.GetFullPathAsSingleViewDataClass().Join(".")}}) as {{keyArrayType}})[{{keyArray.Single(k => k.Member.Declared == ((AggregateMember.ValueMember)m).Declared).Index}}]
-                            //         : undefined,
-                            //     """)}}
-                            //     }
-                            //     """;
-                        }
-                        return RenderRefTargetKeyNameValue(@ref);
+                    if (member is AggregateMember.Ref) {
+                        return $$"""
+                            {{instance}}?.{{member.GetFullPathAsSingleViewDataClass().Join("?.")}}?.{{DataClassForDisplayRefTarget.INSTANCE_KEY}}
+                            """;
 
                     } else {
                         return $$"""
