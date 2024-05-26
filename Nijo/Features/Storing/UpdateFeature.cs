@@ -41,7 +41,8 @@ namespace Nijo.Features.Storing {
             var controller = new Parts.WebClient.Controller(_aggregate.Item);
             var find = new FindFeature(_aggregate);
 
-            var detail = new DataClassForSave(_aggregate);
+            var forSave = new DataClassForSave(_aggregate);
+            var forDisplay = new DataClassForDisplay(_aggregate);
             var searchKeys = _aggregate
                 .GetKeys()
                 .OfType<AggregateMember.ValueMember>()
@@ -49,7 +50,7 @@ namespace Nijo.Features.Storing {
                 .ToArray();
 
             return $$"""
-                public virtual bool {{MethodName}}({{detail.CsClassName}} after, out {{detail.CsClassName}} updated, out ICollection<string> errors) {
+                public virtual bool {{MethodName}}({{forSave.CsClassName}} after, out {{forDisplay.CsClassName}} updated, out ICollection<string> errors) {
                     errors = new List<string>();
 
                     {{WithIndent(FindFeature.RenderDbEntityLoading(
@@ -61,12 +62,12 @@ namespace Nijo.Features.Storing {
                         includeRefs: true), "    ")}}
 
                     if (beforeDbEntity == null) {
-                        updated = new {{detail.CsClassName}}();
+                        updated = new {{forDisplay.CsClassName}}();
                         errors.Add("更新対象のデータが見つかりません。");
                         return false;
                     }
 
-                    var beforeUpdate = {{detail.CsClassName}}.{{DataClassForSave.FROM_DBENTITY}}(beforeDbEntity);
+                    var beforeUpdate = {{forSave.CsClassName}}.{{DataClassForSave.FROM_DBENTITY}}(beforeDbEntity);
                     var afterDbEntity = after.{{DataClassForSave.TO_DBENTITY}}();
 
                     // Attach
@@ -77,21 +78,21 @@ namespace Nijo.Features.Storing {
                     try {
                         {{appSrv.DbContext}}.SaveChanges();
                     } catch (DbUpdateException ex) {
-                        updated = new {{detail.CsClassName}}();
+                        updated = new {{forDisplay.CsClassName}}();
                         foreach (var msg in ex.GetMessagesRecursively()) errors.Add(msg);
                         return false;
                     }
 
                     var afterUpdate = this.{{find.FindMethodName}}({{searchKeys.Join(", ")}});
                     if (afterUpdate == null) {
-                        updated = new {{detail.CsClassName}}();
+                        updated = new {{forDisplay.CsClassName}}();
                         errors.Add("更新後のデータの再読み込みに失敗しました。");
                         return false;
                     }
 
                     // // {{_aggregate.Item.DisplayName}}の更新をトリガーとする処理を実行します。
-                    // var updateEvent = new AggregateUpdateEvent<{{detail.CsClassName}}> {
-                    //     Modified = new AggregateBeforeAfter<{{detail.CsClassName}}>[] { new() { Before = beforeUpdate, After = afterUpdate } },
+                    // var updateEvent = new AggregateUpdateEvent<{{forSave.CsClassName}}> {
+                    //     Modified = new AggregateBeforeAfter<{{forSave.CsClassName}}>[] { new() { Before = beforeUpdate, After = afterUpdate } },
                     // };
 
                     updated = afterUpdate;

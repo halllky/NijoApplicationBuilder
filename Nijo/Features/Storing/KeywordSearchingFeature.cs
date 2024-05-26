@@ -49,6 +49,7 @@ namespace Nijo.Features.Storing {
 
         internal string RenderAppSrvMethod() {
             var appSrv = new ApplicationService();
+            var returnType = new DataClassForDisplay(_aggregate);
             const string LIKE = "like";
 
             // キーワード検索は子孫集約のDbEntityが基点になる
@@ -89,7 +90,7 @@ namespace Nijo.Features.Storing {
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}をキーワードで検索します。
                 /// </summary>
-                public virtual IEnumerable<KeyValuePair<{{keyName.CSharpClassName}}, string>> {{AppServiceMeghodName}}(string? keyword) {
+                public virtual IEnumerable<{{returnType.CsClassName}}> {{AppServiceMeghodName}}(string? keyword) {
                     var query = (IQueryable<{{_aggregate.Item.EFCoreEntityClassName}}>){{appSrv.DbContext}}.{{_aggregate.Item.DbSetName}};
 
                     if (!string.IsNullOrWhiteSpace(keyword)) {
@@ -100,16 +101,21 @@ namespace Nijo.Features.Storing {
                     var results = query
                         .OrderBy(m => m.{{orderColumn}})
                         .Take({{LIST_BY_KEYWORD_MAX + 1}})
-                        .Select(e => new {
-                            Key = new {{keyName.CSharpClassName}} {
-                                {{WithIndent(RenderKeyNameConvertingRecursively(_aggregate.AsEntry()), "                ")}}
-                            },
-                {{names.SelectTextTemplate((name, i) => $$"""
-                            Name{{i}} = e.{{name.Declared.GetFullPath().Join(".")}},
-                """)}}
-                        })
                         .AsEnumerable()
-                        .Select(x => KeyValuePair.Create(x.Key, $"{{names.Select((_, i) => $"{{x.Name{i}}}").Join("")}}"));
+                        .Select(entity => {{returnType.CsClassName}}.{{DataClassForDisplay.FROM_DBENTITY}}(entity));
+
+
+
+
+                        //.Select(e => new {
+                        //    Key = new {{keyName.CSharpClassName}} {
+                        //        {{WithIndent(RenderKeyNameConvertingRecursively(_aggregate.AsEntry()), "         //       ")}}
+                        //    },
+                {{names.SelectTextTemplate((name, i) => $$"""
+                        //    Name{{i}} = e.{{name.Declared.GetFullPath().Join(".")}},
+                """)}}
+                        //})
+                        //.Select(x => KeyValuePair.Create(x.Key, $"{{names.Select((_, i) => $"{{x.Name{i}}}").Join("")}}"));
 
                     return results.AsEnumerable();
                 }

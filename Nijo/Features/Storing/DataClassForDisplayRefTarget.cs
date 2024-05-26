@@ -17,7 +17,7 @@ namespace Nijo.Features.Storing {
             RefTo = refTo;
         }
         internal GraphNode<Aggregate> RefTo { get; }
-        internal string CsTypeName => $"{RefTo.Item.PhysicalName}RefInfo";
+        internal string CsClassName => $"{RefTo.Item.PhysicalName}RefInfo";
         internal string TsTypeName => $"{RefTo.Item.PhysicalName}RefInfo";
 
         /// <summary>
@@ -76,24 +76,9 @@ namespace Nijo.Features.Storing {
             }
         }
 
-        /// <summary>
-        /// 再帰列挙
-        /// </summary>
-        internal IEnumerable<AggregateMember.ValueMember> GetDisplayMembers() {
-            static IEnumerable<AggregateMember.ValueMember> EnumerateRecursively(GraphNode<Aggregate> agg) {
-                foreach (var member in EnumerateNameLikeMembers(agg)) {
-                    if (member is AggregateMember.ValueMember vm) {
-                        yield return vm;
-
-                    } else if (member is AggregateMember.RelationMember rm) {
-                        foreach (var vm2 in EnumerateRecursively(rm.MemberAggregate)) {
-                            yield return vm2;
-                        }
-                    }
-                }
-            }
-            foreach (var vm in EnumerateRecursively(RefTo)) {
-                yield return vm;
+        internal IEnumerable<AggregateMember.AggregateMemberBase> GetDisplayMembers() {
+            foreach (var member in EnumerateNameLikeMembers(RefTo)) {
+                yield return member;
             }
         }
 
@@ -146,13 +131,13 @@ namespace Nijo.Features.Storing {
                     } else if (nameLikeMember is AggregateMember.Children children) {
                         var refTarget = new DataClassForDisplayRefTarget(children.ChildrenAggregate);
                         yield return $$"""
-                            public List<{{refTarget.CsTypeName}}> {{children.MemberName}} { get; set; }
+                            public List<{{refTarget.CsClassName}}> {{children.MemberName}} { get; set; }
                             """;
 
                     } else if (nameLikeMember is AggregateMember.RelationMember rm) {
                         var refTarget = new DataClassForDisplayRefTarget(rm.MemberAggregate);
                         yield return $$"""
-                            public {{refTarget.CsTypeName}}? {{rm.MemberName}} { get; set; }
+                            public {{refTarget.CsClassName}}? {{rm.MemberName}} { get; set; }
                             """;
                     }
                 }
@@ -162,7 +147,7 @@ namespace Nijo.Features.Storing {
                 /// <summary>
                 /// {{RefTo.Item.DisplayName}}を参照する他のデータの画面上に表示される{{RefTo.Item.DisplayName}}のデータ型。
                 /// </summary>
-                public partial class {{CsTypeName}} {
+                public partial class {{CsClassName}} {
                     /// <summary>
                     /// {{RefTo.Item.DisplayName}}のキー。保存するときはこの値が使用される。
                     /// 新規作成されてからDBに登録されるまでの間の{{RefTo.Item.DisplayName}}をUUID等の不変の値で参照できるようにするために文字列になっている。

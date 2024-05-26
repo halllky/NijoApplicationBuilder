@@ -40,7 +40,8 @@ namespace Nijo.Features.Storing {
         internal string RenderAppSrvMethod() {
             var appSrv = new ApplicationService();
             var controller = new Parts.WebClient.Controller(_aggregate.Item);
-            var instanceClass = new DataClassForSave(_aggregate).CsClassName;
+            var forSave = new DataClassForSave(_aggregate);
+            var forDisplay = new DataClassForDisplay(_aggregate);
             var param = new AggregateCreateCommand(_aggregate);
             var find = new FindFeature(_aggregate);
 
@@ -50,21 +51,21 @@ namespace Nijo.Features.Storing {
                 .Select(m => $"dbEntity.{m.GetFullPath().Join(".")}");
 
             return $$"""
-                public virtual bool {{MethodName}}({{param.CsClassName}} command, out {{instanceClass}} created, out ICollection<string> errors) {
+                public virtual bool {{MethodName}}({{param.CsClassName}} command, out {{forDisplay.CsClassName}} created, out ICollection<string> errors) {
                     var dbEntity = command.{{DataClassForSave.TO_DBENTITY}}();
                     {{appSrv.DbContext}}.Add(dbEntity);
 
                     try {
                         {{appSrv.DbContext}}.SaveChanges();
                     } catch (DbUpdateException ex) {
-                        created = new {{instanceClass}}();
+                        created = new {{forDisplay.CsClassName}}();
                         errors = ex.GetMessagesRecursively("  ").ToList();
                         return false;
                     }
 
                     var afterUpdate = this.{{find.FindMethodName}}({{searchKeys.Join(", ")}});
                     if (afterUpdate == null) {
-                        created = new {{instanceClass}}();
+                        created = new {{forDisplay.CsClassName}}();
                         errors = new[] { "更新後のデータの再読み込みに失敗しました。" };
                         return false;
                     }
@@ -73,7 +74,7 @@ namespace Nijo.Features.Storing {
                     errors = new List<string>();
 
                     // // {{_aggregate.Item.DisplayName}}の更新をトリガーとする処理を実行します。
-                    // var updateEvent = new AggregateUpdateEvent<{{instanceClass}}> {
+                    // var updateEvent = new AggregateUpdateEvent<{{forSave.CsClassName}}> {
                     //     Created = new[] { afterUpdate },
                     // };
 

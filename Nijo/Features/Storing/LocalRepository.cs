@@ -188,7 +188,7 @@ namespace Nijo.Features.Storing {
                                 if (!loaded{{x.RefFrom.MainAggregate.Item.PhysicalName}}) return // {{x.RefFrom.MainAggregate.Item.DisplayName}}の読み込み完了まで待機
                             """)}}
 
-                                let remoteItems: AggregateType.{{new DataClassForSave(agg).TsTypeName}}[]
+                                let remoteItems: AggregateType.{{new DataClassForDisplay(agg).TsTypeName}}[]
                                 let localItems: AggregateType.{{displayData.TsTypeName}}[]
 
                                 if (typeof editRange === 'string') {
@@ -205,7 +205,7 @@ namespace Nijo.Features.Storing {
                                   } else {
                                     const res = await get({{find.GetUrlStringForReact(keyArray.Select((_, i) => $"editRange[{i}].toString()"))}})
                                     remoteItems = res.ok
-                                      ? [res.data as AggregateType.{{new DataClassForSave(agg).TsTypeName}}]
+                                      ? [res.data as AggregateType.{{new DataClassForDisplay(agg).TsTypeName}}]
                                       : []
                                   }
 
@@ -220,7 +220,7 @@ namespace Nijo.Features.Storing {
                                   if (editRange.skip !== undefined) searchParam.append('{{FindManyFeature.PARAM_SKIP}}', editRange.skip.toString())
                                   if (editRange.take !== undefined) searchParam.append('{{FindManyFeature.PARAM_TAKE}}', editRange.take.toString())
                                   const url = `{{findMany.GetUrlStringForReact()}}?${searchParam}`
-                                  const res = await post<AggregateType.{{new DataClassForSave(agg).TsTypeName}}[]>(url, editRange.filter)
+                                  const res = await post<AggregateType.{{new DataClassForDisplay(agg).TsTypeName}}[]>(url, editRange.filter)
                                   remoteItems = res.ok ? res.data : []
 
                                   // 既存データの検索条件による検索（ローカルリポジトリ）
@@ -241,13 +241,10 @@ namespace Nijo.Features.Storing {
                                   })
                                 }
 
-                                // APIレスポンス型を画面表示用の型に変換する
-                                const displayDataRemoteItems = remoteItems.map<AggregateType.{{displayData.TsTypeName}}>(item => ({{WithIndent(displayData.RenderConvertToDisplayDataClass("item"), "    ")}}))
-
                                 // ローカルリポジトリにあるデータはそちらを優先的に表示する
                                 const remoteAndLocal =  crossJoin(
                                   localItems, local => local.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}},
-                                  displayDataRemoteItems, remote => remote.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}},
+                                  remoteItems, remote => remote.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}},
                                 ).map<AggregateType.{{displayData.TsTypeName}}>(pair => pair.left ?? pair.right)
                             {{refRepositories.SelectTextTemplate(x => $$"""
 
@@ -348,7 +345,6 @@ namespace Nijo.Features.Storing {
 
             static string RenderCommitFunction(GraphNode<Aggregate> agg) {
                 var displayData = new DataClassForDisplay(agg);
-                var updateCommand = new DataClassForSave(agg);
                 var localRepos = new LocalRepository(agg);
                 var controller = new Parts.WebClient.Controller(agg.Item);
                 var deleteKeyUrlParam = agg
@@ -363,12 +359,12 @@ namespace Nijo.Features.Storing {
                       const state = getLocalRepositoryState(localReposItem)
                       if (state === '+') {
                         const url = `{{controller.CreateCommandApi}}`
-                        const response = await post<AggregateType.{{updateCommand.TsTypeName}}>(url, saveItem)
+                        const response = await post<AggregateType.{{displayData.TsTypeName}}>(url, saveItem)
                         return { commit: response.ok }
 
                       } else if (state === '*') {
                         const url = `{{controller.UpdateCommandApi}}`
-                        const response = await post<AggregateType.{{updateCommand.TsTypeName}}>(url, saveItem)
+                        const response = await post<AggregateType.{{displayData.TsTypeName}}>(url, saveItem)
                         return { commit: response.ok }
                     
                       } else if (state === '-') {

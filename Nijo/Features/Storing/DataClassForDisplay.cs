@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Nijo.Core;
 using Nijo.Core.AggregateMemberTypes;
 using Nijo.Util.CodeGenerating;
@@ -20,7 +21,7 @@ namespace Nijo.Features.Storing {
         }
         internal GraphNode<Aggregate> MainAggregate { get; }
 
-        internal string CsTypeName => $"{MainAggregate.Item.PhysicalName}DisplayData";
+        internal string CsClassName => $"{MainAggregate.Item.PhysicalName}DisplayData";
         internal string TsTypeName => $"{MainAggregate.Item.PhysicalName}DisplayData";
 
         internal const string OWN_MEMBERS = "own_members";
@@ -39,6 +40,8 @@ namespace Nijo.Features.Storing {
         /// </summary>
         internal const string WILL_BE_DELETED = "willBeDeleted";
         internal const string LOCAL_REPOS_ITEMKEY = "localRepositoryItemKey";
+
+        internal const string FROM_DBENTITY = "FromDbEntity";
 
         /// <summary>
         /// <see cref="OWN_MEMBERS"/> 構造体の中に宣言されるプロパティを列挙します。
@@ -330,28 +333,144 @@ namespace Nijo.Features.Storing {
                     /// <summary>
                     /// {{agg.Item.DisplayName}}の画面表示用データ
                     /// </summary>
-                    public partial class {{dataClass.CsTypeName}} {
+                    public partial class {{dataClass.CsClassName}} {
                     {{If(agg.IsRoot() || agg.IsChildrenMember(), () => $$"""
                         public string {{LOCAL_REPOS_ITEMKEY}} { get; set; }
                         public bool {{EXISTS_IN_REMOTE_REPOS}} { get; set; }
                         public bool {{WILL_BE_CHANGED}} { get; set; }
                         public bool {{WILL_BE_DELETED}} { get; set; }
                     """)}}
-                        public {{dataClass.CsTypeName}}OwnMembers {{OWN_MEMBERS}} { get; set; } = new();
+                        public {{dataClass.CsClassName}}OwnMembers {{OWN_MEMBERS}} { get; set; } = new();
                     {{dataClass.GetChildProps().SelectTextTemplate(p => $$"""
-                        public {{(p.IsArray ? $"List<{new DataClassForDisplay(p.MainAggregate).CsTypeName}>" : $"{new DataClassForDisplay(p.MainAggregate).CsTypeName}?")}} {{p.PropName}} { get; set; }
+                        public {{(p.IsArray ? $"List<{new DataClassForDisplay(p.MainAggregate).CsClassName}>" : $"{new DataClassForDisplay(p.MainAggregate).CsClassName}?")}} {{p.PropName}} { get; set; }
                     """)}}
                     {{dataClass.GetRefFromProps().SelectTextTemplate(p => $$"""
-                        public {{(p.IsArray ? $"List<{new DataClassForDisplay(p.MainAggregate).CsTypeName}>" : $"{new DataClassForDisplay(p.MainAggregate).CsTypeName}?")}} {{p.PropName}} { get; set; }
+                        public {{(p.IsArray ? $"List<{new DataClassForDisplay(p.MainAggregate).CsClassName}>" : $"{new DataClassForDisplay(p.MainAggregate).CsClassName}?")}} {{p.PropName}} { get; set; }
+                    """)}}
+                    {{If(agg.IsRoot(), () => $$"""
+
+                        {{WithIndent(dataClass.RenderFromDbEntity(), "    ")}}
                     """)}}
                     }
-                    public class {{dataClass.CsTypeName}}OwnMembers {
+                    public class {{dataClass.CsClassName}}OwnMembers {
                     {{dataClass.GetOwnProps().SelectTextTemplate(p => $$"""
                         public {{p.CsPropType}}? {{p.PropName}} { get; set; }
                     """)}}
                     }
                     """;
             });
+        }
+
+        private string RenderFromDbEntity() {
+
+            // 主キーのJSONの参照に親要素のメンバーを使うためのキャッシュ。
+            // 変換元がEFCoreのエンティティなので子孫要素のエンティティから親の主キーを参照することが可能であり
+            // 必ずしもこのキャッシュが必要なわけではない。
+            var pkVarNames = new Dictionary<AggregateMember.ValueMember, string>();
+            foreach (var key in MainAggregate.GetKeys().OfType<AggregateMember.ValueMember>()) {
+                pkVarNames.Add(key.Declared, $"dbEntity.{key.Declared.GetFullPath().Join("?.")}");
+            }
+
+            string RenderNewLiteral(DataClassForDisplay dc, string instance, bool inLambda) {
+                var agg = inLambda
+                    ? dc.MainAggregate.AsEntry()
+                    : dc.MainAggregate;
+                var keys = agg
+                    .GetKeys()
+                    .OfType<AggregateMember.ValueMember>();
+                foreach (var key in keys) {
+                    // 実際にはここでcontinueされるのは親のキーだけのはず。Render関数はルートから順番に呼び出されるので
+                    if (pkVarNames.ContainsKey(key.Declared)) continue;
+
+                    /// 変換元のデータ型が <see cref="DataClassForSave"/> のため、キーが <see cref="DataClassForSaveRefTarget"/> の可能性がある。そのためキーのオーナーからのフルパスにしている
+                    pkVarNames.Add(key.Declared, $"{instance}?.{key.Declared.GetFullPath(since: key.Owner).Join("?.")}");
+                }
+
+                var depth = dc.MainAggregate
+                    .EnumerateAncestors()
+                    .Count();
+
+                var ownMembers = agg
+                    .GetMembers()
+                    .Where(m => m.DeclaringAggregate == dc.MainAggregate
+                             && (m is AggregateMember.ValueMember || m is AggregateMember.Ref));
+                string RenderOwnMemberValue(AggregateMember.AggregateMemberBase member) {
+                    if (member is AggregateMember.ValueMember) {
+                        return $$"""
+                            {{instance}}?.{{member.GetFullPath(since: dc.MainAggregate).Join("?.")}}
+                            """;
+
+                    } else if (member is AggregateMember.Ref @ref) {
+                        var refTarget = new DataClassForDisplayRefTarget(@ref.RefTo);
+                        var refKeys = @ref.RefTo
+                            .GetKeys()
+                            .OfType<AggregateMember.ValueMember>();
+                        IEnumerable<string> RenderRefInfoBody(DataClassForDisplayRefTarget rt) {
+                            foreach (var member2 in rt.GetDisplayMembers()) {
+                                if (member2 is AggregateMember.ValueMember) {
+                                    yield return $$"""
+                                        {{member2.MemberName}} = {{instance}}?.{{member2.GetFullPath(since: dc.MainAggregate).Join("?.")}},
+                                        """;
+                                } else if (member2 is AggregateMember.Ref ref2) {
+                                    var refTarget2 = new DataClassForDisplayRefTarget(ref2.RefTo);
+                                    yield return $$"""
+                                        {{member2.MemberName}} = new {{refTarget2.CsClassName}} {
+                                            {{WithIndent(RenderRefInfoBody(refTarget2), "    ")}}
+                                        },
+                                        """;
+                                }
+                            }
+                        }
+                        return $$"""
+                            new {{refTarget.CsClassName}} {
+                                {{DataClassForDisplayRefTarget.INSTANCE_KEY}} = new object?[] {
+                            {{refKeys.SelectTextTemplate(key => $$"""
+                                    {{instance}}?.{{key.GetFullPath(since: dc.MainAggregate).Join("?.")}},
+                            """)}}
+                                }.ToJson(),
+                                {{WithIndent(RenderRefInfoBody(refTarget), "    ")}}
+                            }
+                            """;
+                    } else {
+                        throw new NotImplementedException();
+                    }
+                }
+
+                return $$"""
+                    new {{dc.CsClassName}} {
+                    {{If(dc.MainAggregate.IsRoot() || dc.MainAggregate.IsChildrenMember(), () => $$"""
+                        {{LOCAL_REPOS_ITEMKEY}} = new object?[] { {{keys.Select(k => pkVarNames[k.Declared]).Join(", ")}} }.ToJson(),
+                        {{EXISTS_IN_REMOTE_REPOS}} = true,
+                        {{WILL_BE_CHANGED}} = false,
+                        {{WILL_BE_DELETED}} = false,
+                    """)}}
+                        {{OWN_MEMBERS}} = new() {
+                    {{ownMembers.SelectTextTemplate(m => $$"""
+                            {{m.MemberName}} = {{WithIndent(RenderOwnMemberValue(m), "        ")}},
+                    """)}}
+                        },
+                    {{dc.GetChildProps().SelectTextTemplate(p => p.IsArray ? $$"""
+                        {{p.PropName}} = {{instance}}?.{{p.MemberInfo?.MemberName}}?.Select(x{{depth}} => {{WithIndent(RenderNewLiteral(p, $"x{depth}", true), "    ")}}),
+                    """ : $$"""
+                        {{p.PropName}} = {{WithIndent(RenderNewLiteral(p, $"{instance}?.{p.MemberInfo?.MemberName}", false), "    ")}},
+                    """)}}
+                    {{dc.GetRefFromProps().SelectTextTemplate(p => p.IsArray ? $$"""
+                        {{p.PropName}} = {{instance}}?.{{new NavigationProperty(p.Relation).Principal.PropertyName}}?.Select({{new DataClassForDisplay(p.MainAggregate).CsClassName}}.{{FROM_DBENTITY}}).ToList(),
+                    """ : $$"""
+                        {{p.PropName}} = {{instance}}?.{{new NavigationProperty(p.Relation).Principal.PropertyName}} == null
+                            ? null
+                            : {{new DataClassForDisplay(p.MainAggregate).CsClassName}}.{{FROM_DBENTITY}}({{instance}}.{{new NavigationProperty(p.Relation).Principal.PropertyName}}),
+                    """)}}
+                    }
+                    """;
+            }
+
+            return $$"""
+                public static {{CsClassName}} {{FROM_DBENTITY}}({{MainAggregate.Item.EFCoreEntityClassName}} dbEntity) {
+                    var displayData = {{WithIndent(RenderNewLiteral(this, "dbEntity", false), "    ")}};
+                    return displayData;
+                }
+                """;
         }
 
         internal class OwnProp {
@@ -367,15 +486,17 @@ namespace Nijo.Features.Storing {
                 ? new DataClassForDisplayRefTarget(@ref.RefTo).TsTypeName
                 : Member.TypeScriptTypename;
             internal string CsPropType => Member is AggregateMember.Ref @ref
-                ? new DataClassForDisplayRefTarget(@ref.RefTo).CsTypeName
+                ? new DataClassForDisplayRefTarget(@ref.RefTo).CsClassName
                 : Member.CSharpTypeName;
         }
 
         internal class RelationProp : DataClassForDisplay {
             internal RelationProp(GraphEdge<Aggregate> relation, AggregateMember.RelationMember? memberInfo)
                 : base(relation.IsRef() ? relation.Initial : relation.Terminal) {
+                Relation = relation;
                 MemberInfo = memberInfo;
             }
+            internal GraphEdge<Aggregate> Relation { get; }
             /// <summary>
             /// Ref From プロパティの場合はnull
             /// </summary>

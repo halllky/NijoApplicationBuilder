@@ -24,7 +24,7 @@ namespace Nijo.Features.Storing {
         private readonly GraphNode<Aggregate> _aggregate;
 
         // ApplicationServiceのメソッドのシグネチャ
-        private string FindMethodReturnType => $"IEnumerable<{new DataClassForSave(_aggregate).CsClassName}>";
+        private string FindMethodReturnType => $"IEnumerable<{new DataClassForDisplay(_aggregate).CsClassName}>";
         private string FindMethodName => $"Load{_aggregate.Item.PhysicalName}";
 
         private const string ACTION_NAME = "load";
@@ -115,7 +115,7 @@ namespace Nijo.Features.Storing {
 
                     return query
                         .AsEnumerable()
-                        .Select(entity => {{new DataClassForSave(_aggregate).CsClassName}}.{{DataClassForSave.FROM_DBENTITY}}(entity));
+                        .Select(entity => {{new DataClassForDisplay(_aggregate).CsClassName}}.{{DataClassForDisplay.FROM_DBENTITY}}(entity));
                 }
                 """;
         }
