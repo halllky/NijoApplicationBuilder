@@ -108,11 +108,13 @@ namespace Nijo.Models {
 
                 // SingleView
                 var singleViewDataClass = new DataClassForDisplay(rootAggregate);
+                builder.DataClassDeclaring.Add(singleViewDataClass.RenderCSharpDataClassDeclaration());
                 builder.TypeScriptDataTypes.Add(singleViewDataClass.RenderTypeScriptDataClassDeclaration());
                 builder.TypeScriptDataTypes.Add(singleViewDataClass.RenderConvertFnToLocalRepositoryType());
                 foreach (var agg in rootAggregate.EnumerateThisAndDescendants()) {
                     var refTargetDataClass = new DataClassForDisplayRefTarget(agg);
-                    builder.TypeScriptDataTypes.Add(refTargetDataClass.Render());
+                    builder.DataClassDeclaring.Add(refTargetDataClass.RenderCsDeclaring());
+                    builder.TypeScriptDataTypes.Add(refTargetDataClass.RenderTsDeclaring());
                 }
             });
 

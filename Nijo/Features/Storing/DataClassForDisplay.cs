@@ -20,6 +20,7 @@ namespace Nijo.Features.Storing {
         }
         internal GraphNode<Aggregate> MainAggregate { get; }
 
+        internal string CsTypeName => $"{MainAggregate.Item.PhysicalName}DisplayData";
         internal string TsTypeName => $"{MainAggregate.Item.PhysicalName}DisplayData";
 
         internal const string OWN_MEMBERS = "own_members";
@@ -348,6 +349,40 @@ namespace Nijo.Features.Storing {
             });
         }
 
+        internal string RenderCSharpDataClassDeclaration() {
+            if (!MainAggregate.IsRoot()) throw new InvalidOperationException();
+
+            return MainAggregate.EnumerateThisAndDescendants().SelectTextTemplate(agg => {
+                var dataClass = new DataClassForDisplay(agg);
+
+                return $$"""
+                    /// <summary>
+                    /// {{agg.Item.DisplayName}}の画面表示用データ
+                    /// </summary>
+                    public partial class {{dataClass.CsTypeName}} {
+                    {{If(agg.IsRoot() || agg.IsChildrenMember(), () => $$"""
+                        public string {{LOCAL_REPOS_ITEMKEY}} { get; set; }
+                        public bool {{EXISTS_IN_REMOTE_REPOS}} { get; set; }
+                        public bool {{WILL_BE_CHANGED}} { get; set; }
+                        public bool {{WILL_BE_DELETED}} { get; set; }
+                    """)}}
+                        public {{dataClass.CsTypeName}}OwnMembers {{OWN_MEMBERS}} { get; set; } = new();
+                    {{dataClass.GetChildProps().SelectTextTemplate(p => $$"""
+                        public {{(p.IsArray ? $"List<{new DataClassForDisplay(p.MainAggregate).CsTypeName}>" : $"{new DataClassForDisplay(p.MainAggregate).CsTypeName}?")}} {{p.PropName}} { get; set; }
+                    """)}}
+                    {{dataClass.GetRefFromProps().SelectTextTemplate(p => $$"""
+                        public {{(p.IsArray ? $"List<{new DataClassForDisplay(p.MainAggregate).CsTypeName}>" : $"{new DataClassForDisplay(p.MainAggregate).CsTypeName}?")}} {{p.PropName}} { get; set; }
+                    """)}}
+                    }
+                    public class {{dataClass.CsTypeName}}OwnMembers {
+                    {{dataClass.GetOwnProps().SelectTextTemplate(p => $$"""
+                        public {{p.CsPropType}}? {{p.PropName}} { get; set; }
+                    """)}}
+                    }
+                    """;
+            });
+        }
+
         internal class OwnProp {
             internal OwnProp(GraphNode<Aggregate> dataClassMainAggregate, AggregateMember.AggregateMemberBase member) {
                 _mainAggregate = dataClassMainAggregate;
@@ -360,6 +395,9 @@ namespace Nijo.Features.Storing {
             internal string PropType => Member is AggregateMember.Ref @ref
                 ? new DataClassForDisplayRefTarget(@ref.RefTo).TsTypeName
                 : Member.TypeScriptTypename;
+            internal string CsPropType => Member is AggregateMember.Ref @ref
+                ? new DataClassForDisplayRefTarget(@ref.RefTo).CsTypeName
+                : Member.CSharpTypeName;
         }
 
         internal class RelationProp : DataClassForDisplay {

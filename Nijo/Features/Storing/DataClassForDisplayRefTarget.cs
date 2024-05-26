@@ -17,6 +17,7 @@ namespace Nijo.Features.Storing {
             RefTo = refTo;
         }
         internal GraphNode<Aggregate> RefTo { get; }
+        internal string CsTypeName => $"{RefTo.Item.PhysicalName}RefInfo";
         internal string TsTypeName => $"{RefTo.Item.PhysicalName}RefInfo";
 
         /// <summary>
@@ -90,9 +91,9 @@ namespace Nijo.Features.Storing {
             }
         }
 
-        internal string Render() {
+        internal string RenderTsDeclaring() {
 
-            IEnumerable<string> RenderBody(GraphNode<Aggregate> agg) {
+            static IEnumerable<string> RenderBody(GraphNode<Aggregate> agg) {
                 foreach (var nameLikeMember in EnumerateNameLikeMembers(agg)) {
                     if (nameLikeMember is AggregateMember.ValueMember vm) {
                         yield return $$"""
@@ -118,6 +119,37 @@ namespace Nijo.Features.Storing {
             return $$"""
                 export type {{TsTypeName}} = {
                   {{WithIndent(RenderBody(RefTo.AsEntry()), "  ")}}
+                }
+                """;
+        }
+
+        internal string RenderCsDeclaring() {
+
+            static IEnumerable<string> RenderBody(GraphNode<Aggregate> agg) {
+                foreach (var nameLikeMember in EnumerateNameLikeMembers(agg)) {
+                    if (nameLikeMember is AggregateMember.ValueMember vm) {
+                        yield return $$"""
+                            public {{vm.CSharpTypeName}}? {{vm.MemberName}} { get; set; }
+                            """;
+
+                    } else if (nameLikeMember is AggregateMember.Children children) {
+                        var refTarget = new DataClassForDisplayRefTarget(children.ChildrenAggregate);
+                        yield return $$"""
+                            public List<{{refTarget.CsTypeName}}> {{children.MemberName}} { get; set; }
+                            """;
+
+                    } else if (nameLikeMember is AggregateMember.RelationMember rm) {
+                        var refTarget = new DataClassForDisplayRefTarget(rm.MemberAggregate);
+                        yield return $$"""
+                            public {{refTarget.CsTypeName}}? {{rm.MemberName}} { get; set; }
+                            """;
+                    }
+                }
+            }
+
+            return $$"""
+                public partial class {{CsTypeName}} {
+                    {{WithIndent(RenderBody(RefTo.AsEntry()), "    ")}}
                 }
                 """;
         }

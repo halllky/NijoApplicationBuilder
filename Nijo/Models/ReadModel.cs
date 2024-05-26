@@ -104,6 +104,7 @@ namespace Nijo.Models {
 
                 // データクラス定義を作成する
                 var singleViewDataClass = new DataClassForDisplay(rootAggregate);
+                builder.DataClassDeclaring.Add(singleViewDataClass.RenderCSharpDataClassDeclaration());
                 builder.TypeScriptDataTypes.Add(singleViewDataClass.RenderTypeScriptDataClassDeclaration());
 
                 foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
