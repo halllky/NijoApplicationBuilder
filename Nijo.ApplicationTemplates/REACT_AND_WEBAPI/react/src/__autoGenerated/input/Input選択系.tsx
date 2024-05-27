@@ -22,17 +22,14 @@ export const Selection = defineCustomComponent(<TItem extends {}, TKey extends s
   const objValue = useMemo(() => {
     return options.find(item => keySelector(item) === value)
   }, [options, keySelector, value])
-  const handleChange = useCallback((item: TItem | undefined) => {
-    onChange?.(item ? keySelector(item) : undefined)
-  }, [onChange, keySelector])
+  const handleChange = useCallback((key: TKey | undefined) => {
+    onChange?.(key)
+  }, [onChange])
 
   // ref
-  const radioRef = useRef<CustomComponentRef<TItem>>(null)
+  const radioRef = useRef<CustomComponentRef<TKey>>(null)
   useImperativeHandle(ref, () => ({
-    getValue: () => {
-      const selectedItem = radioRef.current?.getValue()
-      return selectedItem ? keySelector(selectedItem) : undefined
-    },
+    getValue: () => radioRef.current?.getValue(),
     focus: () => radioRef.current?.focus(),
   }))
 
@@ -51,7 +48,7 @@ export const Selection = defineCustomComponent(<TItem extends {}, TKey extends s
         {...rest}
         options={options}
         keySelector={keySelector}
-        value={objValue}
+        value={value}
         onChange={handleChange}
       />
     ) : (
@@ -60,7 +57,7 @@ export const Selection = defineCustomComponent(<TItem extends {}, TKey extends s
         {...rest}
         options={options}
         keySelector={keySelector}
-        value={objValue}
+        value={value}
         onChange={handleChange}
       />
     )
@@ -73,14 +70,14 @@ export const RadioGroup = RadioGroupBase
 export const ComboBox = ComboBoxBase
 
 /** コンボボックス（非同期） */
-export const AsyncComboBox = defineCustomComponent(<T extends {},>(
-  props: CustomComponentProps<T, {
+export const AsyncComboBox = defineCustomComponent(<T extends {}, TKey extends string = string>(
+  props: CustomComponentProps<TKey, {
     queryKey?: string
     query: ((keyword: string | undefined) => Promise<T[]>)
-    keySelector: (item: T) => string
+    keySelector: (item: T) => TKey
     textSelector: (item: T) => string
   }>,
-  ref: React.ForwardedRef<CustomComponentRef<T>>
+  ref: React.ForwardedRef<CustomComponentRef<TKey>>
 ) => {
   const [, dispatchMsg] = useMsgContext()
 
