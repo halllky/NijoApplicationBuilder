@@ -16,17 +16,8 @@ export const Selection = defineCustomComponent(<TItem extends {}, TKey extends s
   }>,
   ref: React.ForwardedRef<CustomComponentRef<TKey>>
 ) => {
-  const { options, keySelector, value, onChange, radio, combo, ...rest } = props
+  const { options, radio, combo, ...rest } = props
 
-  // value
-  const objValue = useMemo(() => {
-    return options.find(item => keySelector(item) === value)
-  }, [options, keySelector, value])
-  const handleChange = useCallback((key: TKey | undefined) => {
-    onChange?.(key)
-  }, [onChange])
-
-  // ref
   const radioRef = useRef<CustomComponentRef<TKey>>(null)
   useImperativeHandle(ref, () => ({
     getValue: () => radioRef.current?.getValue(),
@@ -44,21 +35,15 @@ export const Selection = defineCustomComponent(<TItem extends {}, TKey extends s
   return type === 'combo'
     ? (
       <ComboBoxBase
-        ref={radioRef}
         {...rest}
+        ref={radioRef}
         options={options}
-        keySelector={keySelector}
-        value={value}
-        onChange={handleChange}
       />
     ) : (
       <RadioGroupBase
-        ref={radioRef}
         {...rest}
+        ref={radioRef}
         options={options}
-        keySelector={keySelector}
-        value={value}
-        onChange={handleChange}
       />
     )
 })
@@ -74,7 +59,7 @@ export const AsyncComboBox = defineCustomComponent(<T extends {}, TKey extends s
   props: CustomComponentProps<TKey, {
     queryKey?: string
     query: ((keyword: string | undefined) => Promise<T[]>)
-    keySelector: (item: T) => TKey
+    keySelector: (item: T) => TKey | undefined
     textSelector: (item: T) => string
   }>,
   ref: React.ForwardedRef<CustomComponentRef<TKey>>

@@ -6,7 +6,7 @@ import { CustomComponentProps, CustomComponentRef, defineCustomComponent, normal
 export const ComboBoxBase = defineCustomComponent(<TOption extends {}, TValue extends string = string>(
   props2: CustomComponentProps<TValue, {
     options: TOption[]
-    keySelector: (item: TOption) => TValue
+    keySelector: (item: TOption) => TValue | undefined
     textSelector: (item: TOption) => string
     onKeywordChanged?: (keyword: string | undefined) => void
   }>,
