@@ -392,13 +392,19 @@ namespace Nijo.Features.Storing {
                             """;
 
                     } else if (_mode == SingleView.E_Type.View) {
-                        // リンク
                         var navigation = new NavigationWrapper(refProperty.RefTo);
+                        var pathToRef = refProperty.RefTo
+                            .GetFullPathAsSingleViewDataClass()
+                            .Join("?.");
+                        var names = refProperty.RefTo
+                            .AsEntry()
+                            .GetNames()
+                            .OfType<AggregateMember.ValueMember>();
 
                         yield return $$"""
                              <VForm.Item label="{{refProperty.MemberName}}">
-                               <Link className="text-link" to={Util.{{navigation.GetSingleViewUrlHookName}}(getValues('{{refProperty.RefTo.GetFullPathAsSingleViewDataClass().Join(".")}}'), 'view')}>
-                                 {getValues('{{refProperty.RefTo.GetFullPathAsSingleViewDataClass().Join(".")}}')}
+                               <Link className="text-link" to={Util.{{navigation.GetSingleViewUrlHookName}}(getValues('{{refProperty.RefTo.GetFullPathAsSingleViewDataClass().Join(".")}}.{{DataClassForDisplayRefTarget.INSTANCE_KEY}}'), 'view')}>
+                                 {`{{names.Select(n => $"${{item.{pathToRef}?.{n.Declared.GetFullPath().Join("?.")} ?? ''}}").Join("")}}`}
                                </Link>
                              </VForm.Item>
                              """;
