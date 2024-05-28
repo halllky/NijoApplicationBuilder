@@ -87,9 +87,11 @@ export const useHttpRequest = () => {
     }])
   }, [dotnetWebApiDomain, sendHttpRequest, dispatchMsg])
 
-  const httpDelete = useCallback(async (url: string) => {
+  const httpDelete = useCallback(async (url: string, data: object = {}) => {
     return await sendHttpRequest([`${dotnetWebApiDomain}${url}`, {
-      method: 'delete',
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
     }])
   }, [dotnetWebApiDomain, sendHttpRequest])
 

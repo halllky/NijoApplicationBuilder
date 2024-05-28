@@ -347,11 +347,6 @@ namespace Nijo.Features.Storing {
                 var displayData = new DataClassForDisplay(agg);
                 var localRepos = new LocalRepository(agg);
                 var controller = new Parts.WebClient.Controller(agg.Item);
-                var deleteKeyUrlParam = agg
-                    .GetKeys()
-                    .OfType<AggregateMember.ValueMember>()
-                    .Select(vm => $"${{saveItem.{vm.Declared.GetFullPath().Join("?.")}}}")
-                    .Join("/");
 
                 return $$"""
                     async (localReposItem: LocalRepositoryStoredItem<AggregateType.{{displayData.TsTypeName}}>) => {
@@ -368,8 +363,8 @@ namespace Nijo.Features.Storing {
                         return { commit: response.ok }
                     
                       } else if (state === '-') {
-                        const url = `{{controller.DeleteCommandApi}}/{{deleteKeyUrlParam}}`
-                        const response = await httpDelete(url)
+                        const url = `{{controller.DeleteCommandApi}}`
+                        const response = await httpDelete(url, saveItem)
                         return { commit: response.ok }
                     
                       } else {

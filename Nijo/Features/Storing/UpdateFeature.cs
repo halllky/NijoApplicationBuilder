@@ -19,14 +19,14 @@ namespace Nijo.Features.Storing {
         private readonly GraphNode<Aggregate> _aggregate;
 
         internal string ArgType => new DataClassForSave(_aggregate).CsClassName;
-        internal string MethodName => $"Update{_aggregate.Item.DisplayName.ToCSharpSafe()}";
+        internal string MethodName => $"Update{_aggregate.Item.PhysicalName}";
 
         internal string RenderController() {
-            var updateCommand = new DataClassForSave(_aggregate);
+            var dataClass = new DataClassForSave(_aggregate);
 
             return $$"""
                 [HttpPost("{{Parts.WebClient.Controller.UPDATE_ACTION_NAME}}")]
-                public virtual IActionResult Update({{updateCommand.CsClassName}} param) {
+                public virtual IActionResult Update({{dataClass.CsClassName}} param) {
                     if (_applicationService.{{MethodName}}(param, out var updated, out var errors)) {
                         return this.JsonContent(updated);
                     } else {
