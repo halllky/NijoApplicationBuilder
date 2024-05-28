@@ -44,12 +44,21 @@ namespace Nijo.Parts.WebClient {
                 // 非編集時のセル表示文字列
                 string? formatted = null;
                 if (vm != null) {
+                    // 数値型や日付型といった型ごとに表示文字列変換処理が異なるためそれぞれごとの型で指定されたフォーマット処理に任せる
                     var component = vm.Options.MemberType.GetReactComponent(new() {
                         Type = GetReactComponentArgs.E_Type.InDataGrid,
                     });
                     if (component.GridCellFormatStatement != null) {
                         formatted = component.GridCellFormatStatement("value", "formatted");
                     }
+                } else if (refMember != null) {
+                    var names = refMember.RefTo
+                        .AsEntry()
+                        .GetNames()
+                        .OfType<AggregateMember.ValueMember>();
+                    formatted = $$"""
+                        const formatted = `{{names.Select(n => $"${{value?.{n.Declared.GetFullPath().Join("?.")} ?? ''}}").Join("")}}`
+                        """;
                 }
 
                 var cell = $$"""
