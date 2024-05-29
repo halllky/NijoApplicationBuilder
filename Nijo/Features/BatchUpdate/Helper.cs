@@ -1,4 +1,5 @@
 using Nijo.Core;
+using Nijo.Features.Storing;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
@@ -30,7 +31,7 @@ namespace Nijo.Features.BatchUpdate {
                     }
                     export type BatchUpdateItem
                     {{availableAggregates.SelectTextTemplate((agg, i) => $$"""
-                      {{(i == 0 ? "=" : "|")}} { type: '{{GetKey(agg)}}', act: ActionType, item: Types.{{agg.Item.TypeScriptTypeName}} }
+                      {{(i == 0 ? "=" : "|")}} { type: '{{GetKey(agg)}}', act: ActionType, item: Types.{{new DataClassForSave(agg).TsTypeName}} }
                     """)}}
                     export type ActionType = 'a' | 'm' | 'd' // add, modify, delete
 
@@ -118,7 +119,7 @@ namespace Nijo.Features.BatchUpdate {
             };
         }
         private static string RenderParamBuilder(GraphNode<Aggregate> agg) {
-            var className = $"{agg.Item.ClassName}BatchUpdateParameter";
+            var className = $"{agg.Item.PhysicalName}BatchUpdateParameter";
             var create = new Features.Storing.CreateFeature(agg);
             var update = new Features.Storing.UpdateFeature(agg);
             var delKeys = KeyArray.Create(agg);

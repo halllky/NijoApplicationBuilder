@@ -76,7 +76,6 @@ namespace Nijo.Features.BatchUpdate {
             var create = new Features.Storing.CreateFeature(agg);
             var update = new Features.Storing.UpdateFeature(agg);
             var delete = new Features.Storing.DeleteFeature(agg);
-            var delKeys = KeyArray.Create(agg, nullable: false);
 
             return $$"""
                 private void {{UpdateMethodName(agg)}}(BackgroundTaskContext<BatchUpdateParameter> context) {
@@ -103,15 +102,15 @@ namespace Nijo.Features.BatchUpdate {
                                         throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
                                     break;
                                 case E_BatchUpdateAction.Modify:
-                                    var data = {{UtilityClass.CLASSNAME}}.{{UtilityClass.ENSURE_OBJECT_TYPE}}<{{update.ArgType}}>(item.Data)
+                                    var updateData = {{UtilityClass.CLASSNAME}}.{{UtilityClass.ENSURE_OBJECT_TYPE}}<{{update.ArgType}}>(item.Data)
                                         ?? throw new InvalidOperationException($"パラメータを{nameof({{update.ArgType}})}型に変換できません。");
-                                    if (!scopedAppSrv.{{update.MethodName}}(data, out var _, out errors))
+                                    if (!scopedAppSrv.{{update.MethodName}}(updateData, out var _, out errors))
                                         throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
                                     break;
                                 case E_BatchUpdateAction.Delete:
-                                    var serializedData = {{UtilityClass.CLASSNAME}}.{{UtilityClass.TO_JSON}}(item.Data);
-                                    var key = {{UtilityClass.CLASSNAME}}.{{UtilityClass.PARSE_JSON_AS_OBJARR}}(serializedData);
-                                    if (!scopedAppSrv.{{delete.MethodName}}({{delKeys.Select((k, i) => $"({k.CsType})key[{i}]!").Join(", ")}}, out errors))
+                                    var deleteData = {{UtilityClass.CLASSNAME}}.{{UtilityClass.ENSURE_OBJECT_TYPE}}<{{update.ArgType}}>(item.Data)
+                                        ?? throw new InvalidOperationException($"パラメータを{nameof({{update.ArgType}})}型に変換できません。");
+                                    if (!scopedAppSrv.{{delete.MethodName}}(deleteData, out errors))
                                         throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
                                     break;
                                 default:
@@ -128,7 +127,7 @@ namespace Nijo.Features.BatchUpdate {
         }
 
         private static string UpdateMethodName(GraphNode<Aggregate> aggregate) {
-            return "BatchUpdate" + aggregate.Item.ClassName;
+            return "BatchUpdate" + aggregate.Item.PhysicalName;
         }
     }
 }

@@ -1,5 +1,5 @@
 import { CheckIcon } from "@heroicons/react/24/outline"
-import { useRef, useImperativeHandle, useState, useCallback, createRef } from "react"
+import { useRef, useImperativeHandle, useState, useCallback, createRef, useMemo } from "react"
 import { CustomComponentProps, CustomComponentRef, defineCustomComponent } from "./InputBase"
 import { TextInputBase } from "./TextInputBase"
 
@@ -68,13 +68,13 @@ export const ToggleBase = defineCustomComponent<boolean>((props, ref) => {
 })
 
 
-export const RadioGroupBase = defineCustomComponent(<T extends {}>(
-  props: CustomComponentProps<T, {
+export const RadioGroupBase = defineCustomComponent(<T extends {}, TKey extends string = string>(
+  props: CustomComponentProps<TKey, {
     options: T[]
-    keySelector: (item: T) => string
+    keySelector: (item: T) => TKey
     textSelector: (item: T) => string
   }>,
-  ref: React.ForwardedRef<CustomComponentRef<T>>
+  ref: React.ForwardedRef<CustomComponentRef<TKey>>
 ) => {
   const {
     options,
@@ -87,10 +87,9 @@ export const RadioGroupBase = defineCustomComponent(<T extends {}>(
   } = props
 
   // 選択
-  const setItem = useCallback((value: string | undefined) => {
-    const found = options.find(item => keySelector(item) === value)
-    onChange?.(found)
-  }, [options, keySelector, onChange])
+  const setItem = useCallback((value: TKey | undefined) => {
+    onChange?.(value)
+  }, [onChange])
 
   // リスト選択
   const liRefs = useRef<React.RefObject<HTMLLIElement>[]>([])
@@ -100,11 +99,11 @@ export const RadioGroupBase = defineCustomComponent(<T extends {}>(
 
   // イベント
   const handleChange: React.ChangeEventHandler<HTMLInputElement> = useCallback(e => {
-    setItem(e.target.value)
+    setItem(e.target.value as TKey)
   }, [setItem])
   const onKeyDown = useCallback((e: React.KeyboardEvent, item: T, index: number) => {
     if (e.key === 'Enter' || e.key === ' ') {
-      onChange?.(item)
+      onChange?.(keySelector(item))
       e.preventDefault()
     } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
       if (index > 0) liRefs.current[index - 1].current?.focus()
@@ -113,7 +112,15 @@ export const RadioGroupBase = defineCustomComponent(<T extends {}>(
       if (index < options.length - 1) liRefs.current[index + 1].current?.focus()
       e.preventDefault()
     }
-  }, [options, onChange])
+  }, [options, onChange, keySelector])
+
+  const displayText = useMemo(() => {
+    if (value !== undefined) {
+      const valueFromOptions = options.find(x => keySelector(x) === value)
+      return valueFromOptions ? textSelector(valueFromOptions) : value
+    }
+    return ''
+  }, [value, textSelector, keySelector, options])
 
   useImperativeHandle(ref, () => ({
     getValue: () => value,
@@ -121,7 +128,7 @@ export const RadioGroupBase = defineCustomComponent(<T extends {}>(
   }), [value])
 
   if (readOnly) return (
-    <TextInputBase value={value ? textSelector(value) : ''} readOnly />
+    <TextInputBase value={displayText} readOnly />
   )
 
   return (
@@ -142,10 +149,10 @@ export const RadioGroupBase = defineCustomComponent(<T extends {}>(
             className="hidden"
             name={name}
             value={keySelector(item)}
-            checked={!!value && keySelector(item) === keySelector(value)}
+            checked={!!value && keySelector(item) === value}
             onChange={handleChange}
           />
-          <RadioButton checked={!!value && keySelector(item) === keySelector(value)} />
+          <RadioButton checked={!!value && keySelector(item) === value} />
           {textSelector(item)}
         </li>
       ))}

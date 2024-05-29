@@ -27,7 +27,7 @@ namespace Nijo.Models {
                 builder.ControllerActions.Add($$"""
                     [HttpPost("{{CONTROLLER_ACTION_NAME}}")]
                     public virtual IActionResult ReloadAll() {
-                        _applicationService.ReloadAll{{rootAggregate.Item.ClassName}}();
+                        _applicationService.ReloadAll{{rootAggregate.Item.PhysicalName}}();
                         return Ok();
                     }
                     """);
@@ -35,13 +35,13 @@ namespace Nijo.Models {
                     /// <summary>
                     /// {{rootAggregate.Item.DisplayName}}のデータの洗い替え処理。
                     /// </summary>
-                    public virtual void ReloadAll{{rootAggregate.Item.ClassName}}() {
+                    public virtual void ReloadAll{{rootAggregate.Item.PhysicalName}}() {
                         using (var tran = {{appSrv.DbContext}}.Database.BeginTransaction()) {
                             try {
                                 {{appSrv.DbContext}}.{{rootAggregate.Item.DbSetName}}
                                     .ExecuteDelete();
                                 {{appSrv.DbContext}}.{{rootAggregate.Item.DbSetName}}
-                                    .AddRange(Recalculate{{rootAggregate.Item.ClassName}}());
+                                    .AddRange(Recalculate{{rootAggregate.Item.PhysicalName}}());
                                 {{appSrv.DbContext}}
                                     .SaveChanges();
                                 tran.Commit();
@@ -54,7 +54,7 @@ namespace Nijo.Models {
                     /// <summary>
                     /// {{rootAggregate.Item.DisplayName}}のデータの計算処理。
                     /// </summary>
-                    public virtual IEnumerable<{{rootAggregate.Item.EFCoreEntityClassName}}> Recalculate{{rootAggregate.Item.ClassName}}() {
+                    public virtual IEnumerable<{{rootAggregate.Item.EFCoreEntityClassName}}> Recalculate{{rootAggregate.Item.PhysicalName}}() {
                         /// <see cref="{{appSrv.ConcreteClass}}"/>クラスでこのメソッドをオーバーライドして、
                         /// すべての{{rootAggregate.Item.DisplayName}}を算出する処理を実装してください。
 
@@ -103,11 +103,12 @@ namespace Nijo.Models {
                 context.AddPage(singleView);
 
                 // データクラス定義を作成する
-                var singleViewDataClass = new DisplayDataClass(rootAggregate);
+                var singleViewDataClass = new DataClassForDisplay(rootAggregate);
+                builder.DataClassDeclaring.Add(singleViewDataClass.RenderCSharpDataClassDeclaration());
                 builder.TypeScriptDataTypes.Add(singleViewDataClass.RenderTypeScriptDataClassDeclaration());
 
                 foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
-                    var aggregateDetail = new Features.Storing.TransactionScopeDataClass(aggregate);
+                    var aggregateDetail = new Features.Storing.DataClassForSave(aggregate);
                     builder.DataClassDeclaring.Add(aggregateDetail.RenderCSharp(context));
                     builder.TypeScriptDataTypes.Add(aggregateDetail.RenderTypeScript(context));
                 }

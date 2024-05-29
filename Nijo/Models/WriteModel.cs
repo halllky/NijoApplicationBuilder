@@ -21,8 +21,8 @@ namespace Nijo.Models {
             // Create
             var createCommand = new CommandFeature();
             var createFeature = new CreateFeature(rootAggregate);
-            createCommand.CommandName = root => $"{root.Item.ClassName}新規作成";
-            createCommand.ActionName = root => $"{root.Item.ClassName}作成";
+            createCommand.CommandName = root => $"{root.Item.PhysicalName}新規作成";
+            createCommand.ActionName = root => $"{root.Item.PhysicalName}作成";
             createCommand.ControllerAction = createFeature.RenderController();
             createCommand.AppSrvMethod = createFeature.RenderAppSrvMethod();
             createCommand.GenerateCode(context, rootAggregate);
@@ -41,12 +41,13 @@ namespace Nijo.Models {
                 builder.AppServiceMethods.Add(deleteFeature.RenderAppSrvMethod());
 
                 foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
-                    var aggregateDetail = new TransactionScopeDataClass(aggregate);
+                    var aggregateDetail = new DataClassForSave(aggregate);
                     var initializerFunc = new TSInitializerFunction(aggregate);
                     builder.DataClassDeclaring.Add(aggregateDetail.RenderCSharp(context));
                     builder.TypeScriptDataTypes.Add(aggregateDetail.RenderTypeScript(context));
                     builder.TypeScriptDataTypes.Add(initializerFunc.Render());
-                    if (aggregate.IsRoot()) builder.TypeScriptDataTypes.Add(aggregateDetail.RenderTsDeepEquals());
+                    // TODO: ディープイコール不要かもしれない
+                    //if (aggregate.IsRoot()) builder.TypeScriptDataTypes.Add(aggregateDetail.RenderTsDeepEquals());
                 }
 
                 // Load
@@ -60,9 +61,8 @@ namespace Nijo.Models {
                 // KeywordSearching
                 foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
                     var keywordSearching = new KeywordSearchingFeature(aggregate);
-                    var refTargetKeyName = new RefTargetKeyName(aggregate);
+                    var refTargetKeyName = new DataClassForSaveRefTarget(aggregate);
                     builder.DataClassDeclaring.Add(refTargetKeyName.RenderCSharpDeclaring());
-                    builder.TypeScriptDataTypes.Add(refTargetKeyName.RenderTypeScriptDeclaring());
                     builder.ControllerActions.Add(keywordSearching.RenderController());
                     builder.AppServiceMethods.Add(keywordSearching.RenderAppSrvMethod());
                 }
@@ -107,9 +107,15 @@ namespace Nijo.Models {
                 }
 
                 // SingleView
-                var singleViewDataClass = new DisplayDataClass(rootAggregate);
+                var singleViewDataClass = new DataClassForDisplay(rootAggregate);
+                builder.DataClassDeclaring.Add(singleViewDataClass.RenderCSharpDataClassDeclaration());
                 builder.TypeScriptDataTypes.Add(singleViewDataClass.RenderTypeScriptDataClassDeclaration());
                 builder.TypeScriptDataTypes.Add(singleViewDataClass.RenderConvertFnToLocalRepositoryType());
+                foreach (var agg in rootAggregate.EnumerateThisAndDescendants()) {
+                    var refTargetDataClass = new DataClassForDisplayRefTarget(agg);
+                    builder.DataClassDeclaring.Add(refTargetDataClass.RenderCsDeclaring());
+                    builder.TypeScriptDataTypes.Add(refTargetDataClass.RenderTsDeclaring());
+                }
             });
 
             var editableMultiView = new MultiViewEditable(rootAggregate);

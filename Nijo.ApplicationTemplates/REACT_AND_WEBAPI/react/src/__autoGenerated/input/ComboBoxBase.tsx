@@ -3,14 +3,14 @@ import { useIMEOpened } from "../util"
 import { DropDownApi, TextInputBase } from "./TextInputBase"
 import { CustomComponentProps, CustomComponentRef, defineCustomComponent, normalize } from "./InputBase"
 
-export const ComboBoxBase = defineCustomComponent(<T extends {}>(
-  props2: CustomComponentProps<T, {
-    options: T[]
-    keySelector: (item: T) => string
-    textSelector: (item: T) => string
+export const ComboBoxBase = defineCustomComponent(<TOption extends {}, TValue extends string = string>(
+  props2: CustomComponentProps<TValue, {
+    options: TOption[]
+    keySelector: (item: TOption) => TValue | undefined
+    textSelector: (item: TOption) => string
     onKeywordChanged?: (keyword: string | undefined) => void
   }>,
-  ref: React.ForwardedRef<CustomComponentRef<T>>
+  ref: React.ForwardedRef<CustomComponentRef<TValue>>
 ) => {
   const {
     options,
@@ -38,14 +38,14 @@ export const ComboBoxBase = defineCustomComponent(<T extends {}>(
   }, [options, keyword, textSelector])
 
   // リストのカーソル移動
-  const [highlighted, setHighlightItem] = useState('')
+  const [highlighted, setHighlightItem] = useState<TValue>()
   const highlightAnyItem = useCallback(() => {
     if (value) {
-      setHighlightItem(keySelector(value))
+      setHighlightItem(value)
     } else if (filtered.length > 0) {
       setHighlightItem(keySelector(filtered[0]))
     } else {
-      setHighlightItem('')
+      setHighlightItem(undefined)
     }
   }, [value, filtered, keySelector])
   const highlightUpItem = useCallback(() => {
@@ -68,21 +68,21 @@ export const ComboBoxBase = defineCustomComponent(<T extends {}>(
   // 選択
   const selectItemByValue = useCallback((value: string | undefined) => {
     const foundItem = options.find(item => keySelector(item) === value)
-    setHighlightItem(foundItem ? keySelector(foundItem) : '')
+    setHighlightItem(foundItem ? keySelector(foundItem) : undefined)
     setKeyword(undefined)
-    onChange?.(foundItem)
+    onChange?.(foundItem ? keySelector(foundItem) : undefined)
   }, [options, onChange, keySelector])
 
   // 入力中のテキストに近い最も適当な要素を取得する
-  const getHighlightedOrAnyItem = useCallback(() => {
+  const getHighlightedOrAnyItem = useCallback((): TValue | undefined => {
     if (highlighted && dropdownRef.current?.isOpened) {
       const found = filtered.find(item => keySelector(item) === highlighted)
-      if (found) return found
+      if (found) return keySelector(found)
     }
     if (keyword === undefined && value) return value
     if (dropdownRef.current?.isOpened === false) return undefined
     if (keyword && normalize(keyword) === '') return undefined
-    if (filtered.length > 0) return filtered[0]
+    if (filtered.length > 0) return keySelector(filtered[0])
     return undefined
   }, [value, keyword, filtered, highlighted, keySelector])
 
@@ -98,8 +98,8 @@ export const ComboBoxBase = defineCustomComponent(<T extends {}>(
     onChange?.(anyItem)
     onBlur?.(e)
     setKeyword(undefined)
-    setHighlightItem(anyItem ? keySelector(anyItem) : '')
-  }, [getHighlightedOrAnyItem, onChange, onBlur, keySelector])
+    setHighlightItem(anyItem)
+  }, [getHighlightedOrAnyItem, onChange, onBlur])
 
   const [{ isImeOpen }] = useIMEOpened()
   const onKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useCallback(e => {
@@ -119,7 +119,7 @@ export const ComboBoxBase = defineCustomComponent(<T extends {}>(
       const anyItem = getHighlightedOrAnyItem()
       onChange?.(anyItem)
       setKeyword(undefined)
-      setHighlightItem('')
+      setHighlightItem(undefined)
       dropdownRef.current?.close()
       e.preventDefault()
     }
@@ -127,7 +127,7 @@ export const ComboBoxBase = defineCustomComponent(<T extends {}>(
 
   const onClickItem: React.MouseEventHandler<HTMLLIElement> = useCallback(e => {
     selectItemByValue((e.target as HTMLLIElement).getAttribute('value') as string)
-    setHighlightItem('')
+    setHighlightItem(undefined)
     dropdownRef.current?.close()
   }, [selectItemByValue])
 
@@ -139,9 +139,12 @@ export const ComboBoxBase = defineCustomComponent(<T extends {}>(
 
   const displayText = useMemo(() => {
     if (keyword !== undefined) return keyword
-    if (value !== undefined) return textSelector(value)
+    if (value !== undefined) {
+      const valueFromOptions = options.find(x => keySelector(x) === value)
+      return valueFromOptions ? textSelector(valueFromOptions) : value
+    }
     return ''
-  }, [keyword, value, textSelector])
+  }, [keyword, value, textSelector, keySelector, options])
 
   return (
     <TextInputBase

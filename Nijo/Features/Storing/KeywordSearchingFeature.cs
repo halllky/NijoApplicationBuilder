@@ -49,12 +49,13 @@ namespace Nijo.Features.Storing {
 
         internal string RenderAppSrvMethod() {
             var appSrv = new ApplicationService();
+            var returnType = new DataClassForDisplayRefTarget(_aggregate);
             const string LIKE = "like";
 
             // キーワード検索は子孫集約のDbEntityが基点になる
             var entry = _aggregate.AsEntry();
 
-            var keyName = new RefTargetKeyName(_aggregate);
+            var keyName = new DataClassForSaveRefTarget(_aggregate);
             var filterColumns = entry
                 .GetKeys()
                 .Union(entry.GetNames())
@@ -67,24 +68,29 @@ namespace Nijo.Features.Storing {
                 .First();
 
             string RenderKeyNameConvertingRecursively(GraphNode<Aggregate> agg) {
-                var keyNameClass = new RefTargetKeyName(agg);
+                var keyNameClass = new DataClassForSaveRefTarget(agg);
                 return keyNameClass
                     .GetOwnMembers()
                     .Where(m => m.Owner == agg)
                     .SelectTextTemplate(m => m is AggregateMember.ValueMember vm ? $$"""
                         {{m.MemberName}} = e.{{vm.GetFullPath().Join(".")}},
                         """ : $$"""
-                        {{m.MemberName}} = new {{new RefTargetKeyName(((AggregateMember.RelationMember)m).MemberAggregate).CSharpClassName}}() {
+                        {{m.MemberName}} = new {{new DataClassForSaveRefTarget(((AggregateMember.RelationMember)m).MemberAggregate).CSharpClassName}}() {
                             {{WithIndent(RenderKeyNameConvertingRecursively(((AggregateMember.RelationMember)m).MemberAggregate), "    ")}}
                         },
                         """);
             }
 
+            var names = entry
+                .GetNames()
+                .OfType<AggregateMember.ValueMember>()
+                .ToArray();
+
             return $$"""
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}をキーワードで検索します。
                 /// </summary>
-                public virtual IEnumerable<{{keyName.CSharpClassName}}> {{AppServiceMeghodName}}(string? keyword) {
+                public virtual IEnumerable<{{returnType.CsClassName}}> {{AppServiceMeghodName}}(string? keyword) {
                     var query = (IQueryable<{{_aggregate.Item.EFCoreEntityClassName}}>){{appSrv.DbContext}}.{{_aggregate.Item.DbSetName}};
 
                     if (!string.IsNullOrWhiteSpace(keyword)) {
@@ -93,13 +99,12 @@ namespace Nijo.Features.Storing {
                     }
 
                     var results = query
-                        .Select(e => new {{keyName.CSharpClassName}} {
-                            {{WithIndent(RenderKeyNameConvertingRecursively(_aggregate.AsEntry()), "            ")}}
-                        })
                         .OrderBy(m => m.{{orderColumn}})
-                        .Take({{LIST_BY_KEYWORD_MAX + 1}});
+                        .Take({{LIST_BY_KEYWORD_MAX + 1}})
+                        .AsEnumerable()
+                        .Select(entity => {{returnType.CsClassName}}.{{DataClassForDisplayRefTarget.FROM_DBENTITY}}(entity));
 
-                    return results.AsEnumerable();
+                    return results;
                 }
                 """;
         }

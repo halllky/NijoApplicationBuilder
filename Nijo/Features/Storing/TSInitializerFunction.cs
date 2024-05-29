@@ -15,10 +15,10 @@ namespace Nijo.Features.Storing {
         }
         private readonly GraphNode<Aggregate> _instance;
 
-        internal string FunctionName => $"create{_instance.Item.TypeScriptTypeName}";
+        internal string FunctionName => $"create{_instance.Item.PhysicalName}";
 
         /// <summary>
-        /// <see cref="DisplayDataClass.RenderTsInitializerFunction"/> のロジックと合わせる
+        /// <see cref="DataClassForDisplay.RenderTsInitializerFunction"/> のロジックと合わせる
         /// </summary>
         internal string Render() {
             var children = _instance
@@ -49,7 +49,7 @@ namespace Nijo.Features.Storing {
                     Key = member.MemberName,
                     Value = $"'{member.GetGroupItems().First().Key}'",
                 });
-            var uuid = new TransactionScopeDataClass(_instance)
+            var uuid = new DataClassForSave(_instance)
                 .GetOwnMembers()
                 .OfType<AggregateMember.ValueMember>()
                 .Where(member => member.Options.MemberType is Uuid)
@@ -66,7 +66,7 @@ namespace Nijo.Features.Storing {
                 .ToList();
 
             return $$"""
-                    export const {{FunctionName}} = (): {{_instance.Item.TypeScriptTypeName}} => ({
+                    export const {{FunctionName}} = (): {{new DataClassForSave(_instance).TsTypeName}} => ({
                     {{initializers.SelectTextTemplate(item => $$"""
                       {{item.Key}}: {{item.Value}},
                     """)}}

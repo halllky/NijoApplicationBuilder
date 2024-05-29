@@ -44,12 +44,21 @@ namespace Nijo.Parts.WebClient {
                 // 非編集時のセル表示文字列
                 string? formatted = null;
                 if (vm != null) {
+                    // 数値型や日付型といった型ごとに表示文字列変換処理が異なるためそれぞれごとの型で指定されたフォーマット処理に任せる
                     var component = vm.Options.MemberType.GetReactComponent(new() {
                         Type = GetReactComponentArgs.E_Type.InDataGrid,
                     });
                     if (component.GridCellFormatStatement != null) {
                         formatted = component.GridCellFormatStatement("value", "formatted");
                     }
+                } else if (refMember != null) {
+                    var names = refMember.RefTo
+                        .AsEntry()
+                        .GetNames()
+                        .OfType<AggregateMember.ValueMember>();
+                    formatted = $$"""
+                        const formatted = `{{names.Select(n => $"${{value?.{n.Declared.GetFullPath().Join("?.")} ?? ''}}").Join("")}}`
+                        """;
                 }
 
                 var cell = $$"""
@@ -98,7 +107,7 @@ namespace Nijo.Parts.WebClient {
                         (row, value) => {
                           if (row.{{rowAccessor}}.{{ownerPath.Join("?.")}}) {
                             row.{{rowAccessor}}.{{memberPath.Join(".")}} = value
-                            row.{{rowAccessor}}{{rootAggPath.Select(x => $".{x}").Join("")}}.{{DisplayDataClass.WILL_BE_CHANGED}} = true
+                            row.{{rowAccessor}}{{rootAggPath.Select(x => $".{x}").Join("")}}.{{DataClassForDisplay.WILL_BE_CHANGED}} = true
                           }
                         }
                         """;
@@ -128,10 +137,10 @@ namespace Nijo.Parts.WebClient {
 
             // ----------------------------------------------------
             // テーブル中の被参照集約の列のインスタンスを追加または削除するボタン
-            DataTableColumn RefFromButtonColumn(DisplayDataClass.RelationProp refFrom) {
+            DataTableColumn RefFromButtonColumn(DataClassForDisplay.RelationProp refFrom) {
                 var tableArrayRegisterName = dataTableOwner.GetRHFRegisterName();
-                var refFromDisplayData = new DisplayDataClass(refFrom.MainAggregate);
-                var value = refFrom.MainAggregate.Item.ClassName;
+                var refFromDisplayData = new DataClassForDisplay(refFrom.MainAggregate);
+                var value = refFrom.MainAggregate.Item.PhysicalName;
 
                 // ページのルート集約から被参照集約までのパス
                 var ownerPath = refFrom.MainAggregate.GetFullPathAsSingleViewDataClass(since: dataTableOwner);
@@ -144,7 +153,11 @@ namespace Nijo.Parts.WebClient {
                 // 参照先のitemKeyと対応するプロパティを初期化する
                 string? RefKeyInitializer(AggregateMember.AggregateMemberBase member) {
                     if (member is AggregateMember.Ref r && r.RefTo == dataTableOwner) {
-                        return $"row.original.{rowAccessor}.{DisplayDataClass.LOCAL_REPOS_ITEMKEY}";
+                        return $$"""
+                            {
+                              {{DataClassForDisplayRefTarget.INSTANCE_KEY}}: row.original.{{rowAccessor}}.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}},
+                            }
+                            """;
 
                     } else {
                         return null;
@@ -154,20 +167,20 @@ namespace Nijo.Parts.WebClient {
                 return new DataTableColumn {
                     Id = $"ref-from-{refFrom.PropName}",
                     Header = string.Empty,
-                    HeaderGroupName = refFrom.MainAggregate.Item.ClassName,
+                    HeaderGroupName = refFrom.MainAggregate.Item.DisplayName,
                     Cell = $$"""
                         ({ row }) => {
 
-                          const create{{refFrom.MainAggregate.Item.ClassName}} = useCallback(() => {
+                          const create{{refFrom.MainAggregate.Item.PhysicalName}} = useCallback(() => {
                             if (row.original.{{rowAccessor}}{{ownerPath.SkipLast(1).Select(x => $"?.{x}").Join("")}}) {
                               row.original.{{rowAccessor}}.{{ownerPath.Join(".")}} = {{WithIndent(refFromDisplayData.RenderNewObjectLiteral(RefKeyInitializer), "      ")}}
                               update(row.index, { ...row.original.{{rowAccessor}} })
                             }
                           }, [row.index])
 
-                          const delete{{refFrom.MainAggregate.Item.ClassName}} = useCallback(() => {
+                          const delete{{refFrom.MainAggregate.Item.PhysicalName}} = useCallback(() => {
                             if (row.original.{{rowAccessor}}.{{ownerPath.Join("?.")}}) {
-                              row.original.{{rowAccessor}}.{{ownerPath.Join(".")}}.{{DisplayDataClass.WILL_BE_DELETED}} = true
+                              row.original.{{rowAccessor}}.{{ownerPath.Join(".")}}.{{DataClassForDisplay.WILL_BE_DELETED}} = true
                               update(row.index, { ...row.original.{{rowAccessor}} })
                             }
                           }, [row.index])
@@ -175,11 +188,11 @@ namespace Nijo.Parts.WebClient {
                           const {{value}} = row.original.{{rowAccessor}}.{{ownerPath.Join("?.")}}
 
                           return <>
-                            {({{value}} === undefined || {{value}}.{{DisplayDataClass.WILL_BE_DELETED}}) && (
-                              <Input.Button icon={PlusIcon} onClick={create{{refFrom.MainAggregate.Item.ClassName}}}>作成</Input.Button>
+                            {({{value}} === undefined || {{value}}.{{DataClassForDisplay.WILL_BE_DELETED}}) && (
+                              <Input.Button icon={PlusIcon} onClick={create{{refFrom.MainAggregate.Item.PhysicalName}}}>作成</Input.Button>
                             )}
-                            {({{value}} !== undefined && !{{value}}.{{DisplayDataClass.WILL_BE_DELETED}}) && (
-                              <Input.Button icon={XMarkIcon} onClick={delete{{refFrom.MainAggregate.Item.ClassName}}}>削除</Input.Button>
+                            {({{value}} !== undefined && !{{value}}.{{DataClassForDisplay.WILL_BE_DELETED}}) && (
+                              <Input.Button icon={XMarkIcon} onClick={delete{{refFrom.MainAggregate.Item.PhysicalName}}}>削除</Input.Button>
                             )}
                           </>
                         }
@@ -190,7 +203,7 @@ namespace Nijo.Parts.WebClient {
             // ----------------------------------------------------
 
             // グリッドに表示するメンバーを列挙
-            IEnumerable<DataTableColumn> Collect(DisplayDataClass dataClass) {
+            IEnumerable<DataTableColumn> Collect(DataClassForDisplay dataClass) {
                 foreach (var prop in dataClass.GetOwnProps()) {
                     if (prop.Member is AggregateMember.ValueMember vm) {
                         if (vm.DeclaringAggregate != dataClass.MainAggregate) continue;
@@ -209,20 +222,20 @@ namespace Nijo.Parts.WebClient {
                     if (prop.MemberInfo is AggregateMember.Children) continue;
                     if (prop.MemberInfo is AggregateMember.VariationItem) continue;
 
-                    foreach (var reucusive in Collect(new DisplayDataClass(prop.MainAggregate))) {
+                    foreach (var reucusive in Collect(new DataClassForDisplay(prop.MainAggregate))) {
                         yield return reucusive;
                     }
                 }
 
                 foreach (var prop in dataClass.GetRefFromProps()) {
                     yield return RefFromButtonColumn(prop);
-                    foreach (var recursive in Collect(new DisplayDataClass(prop.MainAggregate))) {
+                    foreach (var recursive in Collect(new DataClassForDisplay(prop.MainAggregate))) {
                         yield return recursive;
                     }
                 }
             }
 
-            var root = new DisplayDataClass(dataTableOwner);
+            var root = new DataClassForDisplay(dataTableOwner);
 
             foreach (var column in Collect(root)) {
                 yield return column;

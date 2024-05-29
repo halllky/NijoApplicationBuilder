@@ -18,7 +18,7 @@ namespace Nijo.Features.Storing {
 
         private readonly GraphNode<Aggregate> _aggregate;
 
-        internal string ArgType => new AggregateCreateCommand(_aggregate).ClassName;
+        internal string ArgType => new AggregateCreateCommand(_aggregate).CsClassName;
         internal string MethodName => $"Create{_aggregate.Item.DisplayName.ToCSharpSafe()}";
 
         internal string RenderController() {
@@ -27,7 +27,7 @@ namespace Nijo.Features.Storing {
 
             return $$"""
                 [HttpPost("{{Parts.WebClient.Controller.CREATE_ACTION_NAME}}")]
-                public virtual IActionResult Create([FromBody] {{param.ClassName}} param) {
+                public virtual IActionResult Create([FromBody] {{param.CsClassName}} param) {
                     if (_applicationService.{{MethodName}}(param, out var created, out var errors)) {
                         return this.JsonContent(created);
                     } else {
@@ -40,7 +40,8 @@ namespace Nijo.Features.Storing {
         internal string RenderAppSrvMethod() {
             var appSrv = new ApplicationService();
             var controller = new Parts.WebClient.Controller(_aggregate.Item);
-            var instanceClass = new TransactionScopeDataClass(_aggregate).ClassName;
+            var forSave = new DataClassForSave(_aggregate);
+            var forDisplay = new DataClassForDisplay(_aggregate);
             var param = new AggregateCreateCommand(_aggregate);
             var find = new FindFeature(_aggregate);
 
@@ -50,21 +51,21 @@ namespace Nijo.Features.Storing {
                 .Select(m => $"dbEntity.{m.GetFullPath().Join(".")}");
 
             return $$"""
-                public virtual bool {{MethodName}}({{param.ClassName}} command, out {{instanceClass}} created, out ICollection<string> errors) {
-                    var dbEntity = command.{{TransactionScopeDataClass.TO_DBENTITY}}();
+                public virtual bool {{MethodName}}({{param.CsClassName}} command, out {{forDisplay.CsClassName}} created, out ICollection<string> errors) {
+                    var dbEntity = command.{{DataClassForSave.TO_DBENTITY}}();
                     {{appSrv.DbContext}}.Add(dbEntity);
 
                     try {
                         {{appSrv.DbContext}}.SaveChanges();
                     } catch (DbUpdateException ex) {
-                        created = new {{instanceClass}}();
+                        created = new {{forDisplay.CsClassName}}();
                         errors = ex.GetMessagesRecursively("  ").ToList();
                         return false;
                     }
 
                     var afterUpdate = this.{{find.FindMethodName}}({{searchKeys.Join(", ")}});
                     if (afterUpdate == null) {
-                        created = new {{instanceClass}}();
+                        created = new {{forDisplay.CsClassName}}();
                         errors = new[] { "更新後のデータの再読み込みに失敗しました。" };
                         return false;
                     }
@@ -73,7 +74,7 @@ namespace Nijo.Features.Storing {
                     errors = new List<string>();
 
                     // // {{_aggregate.Item.DisplayName}}の更新をトリガーとする処理を実行します。
-                    // var updateEvent = new AggregateUpdateEvent<{{instanceClass}}> {
+                    // var updateEvent = new AggregateUpdateEvent<{{forSave.CsClassName}}> {
                     //     Created = new[] { afterUpdate },
                     // };
 

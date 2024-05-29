@@ -36,54 +36,31 @@ namespace Nijo.Features.Storing {
 
         private string Render() {
             var combo = new ComboBox(_aggregate);
-            var keyArray = KeyArray.Create(_aggregate.AsEntry());
-            var keyName = new RefTargetKeyName(_aggregate);
+            var refInfo = new DataClassForDisplayRefTarget(_aggregate);
             var names = _aggregate
                 .AsEntry()
                 .GetNames()
-                .OfType<AggregateMember.ValueMember>()
-                .Select(vm => vm.Declared.GetFullPath().Join("?."));
+                .OfType<AggregateMember.ValueMember>();
 
             return $$"""
                 export const {{combo.ComponentName}} = defineCustomComponent<Util.ItemKey>((props, ref) => {
-                  type ComboItem = { key: Util.ItemKey, item?: Types.{{keyName.TypeScriptTypeName}} }
-
                   const [queryKey, setQueryKey] = useState<string>('combo-{{_aggregate.Item.UniqueId}}::')
                   const { get } = Util.useHttpRequest()
-                  const query = useCallback(async (keyword: string | undefined): Promise<ComboItem[]> => {
+                  const query = useCallback(async (keyword: string | undefined): Promise<Types.{{refInfo.TsTypeName}}[]> => {
                     setQueryKey(`combo-{{_aggregate.Item.UniqueId}}::${keyword ?? ''}`)
-                    const response = await get<Types.{{keyName.TypeScriptTypeName}}[]>(`{{combo.Api}}`, { keyword })
+                    const response = await get<Types.{{refInfo.TsTypeName}} []>(`{{combo.Api}}`, { keyword })
                     if (!response.ok) return []
-                    return response.data.map(item => ({
-                      key: JSON.stringify([{{keyArray.Select(k => $"item.{k.Member.Declared.GetFullPath().Join("?.")}").Join(", ")}}]) as Util.ItemKey,
-                      item,
-                    }))
+                    return response.data
                   }, [get])
-
-                  const { value, onChange, ...rest } = props
-                  const value2 = useMemo<ComboItem | undefined>(() => {
-                    return value ? { key: value } : undefined
-                  }, [value])
-                  const onChange2 = useCallback((value: ComboItem | undefined) => {
-                    onChange?.(value?.key)
-                  }, [onChange])
-
-                  const ref2 = useRef<CustomComponentRef<ComboItem>>(null)
-                  useImperativeHandle(ref, () => ({
-                    focus: () => ref2.current?.focus(),
-                    getValue: () => ref2.current?.getValue()?.key,
-                  }))
 
                   return (
                     <AsyncComboBox
-                      {...rest}
-                      value={value2}
-                      onChange={onChange2}
-                      ref={ref2}
+                      {...props}
+                      ref={ref}
                       queryKey={queryKey}
                       query={query}
-                      keySelector={({ key }) => key}
-                      textSelector={({ key, item }) => `{{names.Select(path => $"${{item?.{path} ?? ''}}").Join(string.Empty)}}` || key}
+                      keySelector={({ {{DataClassForDisplayRefTarget.INSTANCE_KEY}} }) => {{DataClassForDisplayRefTarget.INSTANCE_KEY}}}
+                      textSelector={item => `{{names.Select(n => $"${{item.{n.Declared.GetFullPath().Join("?.")} ?? ''}}").Join("")}}`}
                     />
                   )
                 })

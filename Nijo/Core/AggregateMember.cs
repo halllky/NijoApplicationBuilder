@@ -15,6 +15,7 @@ namespace Nijo.Core {
         public required IAggregateMemberType MemberType { get; init; }
         public required bool IsKey { get; init; }
         public required bool IsDisplayName { get; init; }
+        public required bool IsNameLike { get; init; }
         public required bool IsRequired { get; init; }
         public required bool InvisibleInGui { get; init; }
 
@@ -153,6 +154,10 @@ namespace Nijo.Core {
 
         internal abstract class AggregateMemberBase : ValueObject {
             internal abstract GraphNode<Aggregate> Owner { get; }
+            /// <summary>
+            /// TODO: ParentだとDeclaringAggregateは子ではなく親になるのが違和感。
+            /// そもそもDeclaringAggregateはValueMemberにのみ存在する概念と考えるのが自然な気がする。
+            /// </summary>
             internal abstract GraphNode<Aggregate> DeclaringAggregate { get; }
             internal abstract string MemberName { get; }
             internal abstract decimal Order { get; }
@@ -282,8 +287,8 @@ namespace Nijo.Core {
             internal GraphNode<Aggregate> ChildrenAggregate => MemberAggregate;
             /// <summary><see cref="ChildrenAggregate"/>と全く同じもの。より名前がわかりやすい左記の利用を推奨。</summary>
             internal override GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
-            internal override string CSharpTypeName => $"List<{Relation.Terminal.Item.ClassName}>";
-            internal override string TypeScriptTypename => $"{Relation.Terminal.Item.TypeScriptTypeName}[]";
+            internal override string CSharpTypeName => $"List<{new DataClassForSave(Relation.Terminal).CsClassName}>";
+            internal override string TypeScriptTypename => $"{new DataClassForSave(Relation.Terminal).TsTypeName}[]";
         }
 
         internal class Child : RelationMember {
@@ -294,8 +299,8 @@ namespace Nijo.Core {
             internal GraphNode<Aggregate> ChildAggregate => MemberAggregate;
             /// <summary><see cref="ChildAggregate"/>と全く同じもの。より名前がわかりやすい左記の利用を推奨。</summary>
             internal override GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
-            internal override string CSharpTypeName => Relation.Terminal.Item.ClassName;
-            internal override string TypeScriptTypename => Relation.Terminal.Item.TypeScriptTypeName;
+            internal override string CSharpTypeName => new DataClassForSave(Relation.Terminal).CsClassName;
+            internal override string TypeScriptTypename => new  DataClassForSave(Relation.Terminal).TsTypeName;
         }
 
         internal class Variation : ValueMember {
@@ -306,6 +311,7 @@ namespace Nijo.Core {
                     MemberType = new AggregateMemberTypes.VariationSwitch(group),
                     IsKey = group.IsPrimary,
                     IsDisplayName = group.IsInstanceName,
+                    IsNameLike = group.IsNameLike,
                     IsRequired = group.RequiredAtDB,
                     InvisibleInGui = false,
                 };
@@ -350,8 +356,8 @@ namespace Nijo.Core {
             internal Variation Group { get; }
             internal string Key { get; }
 
-            internal override string CSharpTypeName => Relation.Terminal.Item.ClassName;
-            internal override string TypeScriptTypename => Relation.Terminal.Item.TypeScriptTypeName;
+            internal override string CSharpTypeName => new DataClassForSave(Relation.Terminal).CsClassName;
+            internal override string TypeScriptTypename => new DataClassForSave(Relation.Terminal).TsTypeName;
         }
 
         internal class Ref : RelationMember {
@@ -364,8 +370,8 @@ namespace Nijo.Core {
             internal GraphNode<Aggregate> RefTo => MemberAggregate;
             /// <summary><see cref="RefTo"/>と全く同じもの。より名前がわかりやすい左記の利用を推奨。</summary>
             internal override GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
-            internal override string CSharpTypeName => new RefTargetKeyName(Relation.Terminal).CSharpClassName;
-            internal override string TypeScriptTypename => new RefTargetKeyName(Relation.Terminal).TypeScriptTypeName;
+            internal override string CSharpTypeName => new DataClassForSaveRefTarget(Relation.Terminal).CSharpClassName;
+            internal override string TypeScriptTypename => new DataClassForSaveRefTarget(Relation.Terminal).TypeScriptTypeName;
 
             internal IEnumerable<ValueMember> GetForeignKeys() {
                 foreach (var fk in Relation.Terminal.GetKeys()) {
@@ -395,8 +401,8 @@ namespace Nijo.Core {
             internal override GraphNode<Aggregate> Owner { get; }
             internal override string MemberName => PARENT_PROPNAME;
 
-            internal override string CSharpTypeName => new RefTargetKeyName(Relation.Initial).CSharpClassName;
-            internal override string TypeScriptTypename => new RefTargetKeyName(Relation.Initial).TypeScriptTypeName;
+            internal override string CSharpTypeName => new DataClassForSaveRefTarget(Relation.Initial).CSharpClassName;
+            internal override string TypeScriptTypename => new DataClassForSaveRefTarget(Relation.Initial).TypeScriptTypeName;
 
             internal IEnumerable<ValueMember> GetForeignKeys() {
                 foreach (var parentPk in Relation.Initial.GetKeys()) {

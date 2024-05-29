@@ -93,7 +93,7 @@ namespace Nijo.Features.BackgroundService {
                     }
 
                     type GridRow = {
-                      {{Storing.DisplayDataClass.OWN_MEMBERS/* この名前のオブジェクトでラッピングする必要は無いが、DataTableColumnの処理がDisplayDataClassの型を前提にしている */}}: {
+                      {{Storing.DataClassForDisplay.OWN_MEMBERS/* この名前のオブジェクトでラッピングする必要は無いが、DataTableColumnの処理がDisplayDataClassの型を前提にしている */}}: {
                     {{members.SelectTextTemplate(m => $$"""
                         {{m.MemberName}}?: {{m.TypeScriptTypename}}
                     """)}}

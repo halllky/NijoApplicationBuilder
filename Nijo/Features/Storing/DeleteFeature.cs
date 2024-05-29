@@ -17,17 +17,16 @@ namespace Nijo.Features.Storing {
 
         private readonly GraphNode<Aggregate> _aggregate;
 
-        internal string ArgType => _aggregate.Item.ClassName;
-        internal string MethodName => $"Delete{_aggregate.Item.DisplayName.ToCSharpSafe()}";
+        internal string ArgType => new DataClassForSave(_aggregate).CsClassName;
+        internal string MethodName => $"Delete{_aggregate.Item.PhysicalName}";
 
         internal string RenderController() {
-            var controller = new Parts.WebClient.Controller(_aggregate.Item);
-            var args = GetEFCoreMethodArgs();
+            var dataClass = new DataClassForSave(_aggregate);
 
             return $$"""
-                [HttpDelete("{{Parts.WebClient.Controller.DELETE_ACTION_NAME}}/{{args.Select(a => "{" + a.MemberName + "}").Join("/")}}")]
-                public virtual IActionResult Delete({{args.Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}) {
-                    if (_applicationService.{{MethodName}}({{args.Select(a => a.MemberName).Join(", ")}}, out var errors)) {
+                [HttpDelete("{{Parts.WebClient.Controller.DELETE_ACTION_NAME}}")]
+                public virtual IActionResult Delete({{dataClass.CsClassName}} param) {
+                    if (_applicationService.{{MethodName}}(param, out var errors)) {
                         return Ok();
                     } else {
                         return BadRequest(this.JsonContent(errors));
@@ -39,17 +38,21 @@ namespace Nijo.Features.Storing {
         internal string RenderAppSrvMethod() {
             var appSrv = new ApplicationService();
             var controller = new Parts.WebClient.Controller(_aggregate.Item);
-            var args = GetEFCoreMethodArgs().ToArray();
-            var instanceClass = new TransactionScopeDataClass(_aggregate).ClassName;
+            var dataClass = new DataClassForSave(_aggregate);
+            var searchKeys = _aggregate
+                .GetKeys()
+                .OfType<AggregateMember.ValueMember>()
+                .Select(vm => $"data.{vm.Declared.GetFullPath().Join(".")}")
+                .ToArray();
 
             return $$"""
-                public virtual bool {{MethodName}}({{args.Select(m => $"{m.CSharpTypeName} {m.MemberName}").Join(", ")}}, out ICollection<string> errors) {
+                public virtual bool {{MethodName}}({{dataClass.CsClassName}} data, out ICollection<string> errors) {
 
                     {{WithIndent(FindFeature.RenderDbEntityLoading(
                         _aggregate,
                         appSrv.DbContext,
                         "entity",
-                        args.Select(a => a.MemberName).ToArray(),
+                        searchKeys,
                         tracks: true,
                         includeRefs: true), "    ")}}
 
@@ -58,7 +61,7 @@ namespace Nijo.Features.Storing {
                         return false;
                     }
 
-                    var deleted = {{instanceClass}}.{{TransactionScopeDataClass.FROM_DBENTITY}}(entity);
+                    var deleted = {{dataClass.CsClassName}}.{{DataClassForSave.FROM_DBENTITY}}(entity);
 
                     {{appSrv.DbContext}}.Remove(entity);
 
@@ -70,7 +73,7 @@ namespace Nijo.Features.Storing {
                     }
 
                     // // {{_aggregate.Item.DisplayName}}の更新をトリガーとする処理を実行します。
-                    // var updateEvent = new AggregateUpdateEvent<{{instanceClass}}> {
+                    // var updateEvent = new AggregateUpdateEvent<{{dataClass.CsClassName}}> {
                     //     Deleted = new[] { deleted },
                     // };
 
@@ -78,12 +81,6 @@ namespace Nijo.Features.Storing {
                     return true;
                 }
                 """;
-        }
-
-        private IEnumerable<AggregateMember.AggregateMemberBase> GetEFCoreMethodArgs() {
-            return _aggregate
-                .GetKeys()
-                .Where(m => m is AggregateMember.ValueMember);
         }
     }
 }

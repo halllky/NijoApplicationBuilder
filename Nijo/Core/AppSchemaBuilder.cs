@@ -96,6 +96,7 @@ namespace Nijo.Core {
                         { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_REFERENCE },
                         { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, x.member.Options.IsPrimary == true },
                         { DirectedEdgeExtensions.REL_ATTR_IS_INSTANCE_NAME, x.member.Options.IsDisplayName == true },
+                        { DirectedEdgeExtensions.REL_ATTR_IS_NAME_LIKE, x.member.Options.IsNameLike == true },
                         { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, x.member.Options.IsRequired == true },
                         { DirectedEdgeExtensions.REL_ATTR_INVISIBLE_IN_GUI, x.member.Options.InvisibleInGui == true },
                         { DirectedEdgeExtensions.REL_ATTR_MEMBER_ORDER, x.member.Order },
@@ -204,6 +205,7 @@ namespace Nijo.Core {
                         MemberType = memberType,
                         IsKey = member.Options.IsPrimary == true,
                         IsDisplayName = member.Options.IsDisplayName == true,
+                        IsNameLike = member.Options.IsNameLike == true,
                         IsRequired = member.Options.IsRequired == true,
                         InvisibleInGui = member.Options.InvisibleInGui == true,
                     });
@@ -292,6 +294,7 @@ namespace Nijo.Core {
         public string? MemberType { get; set; }
         public bool? IsPrimary { get; set; }
         public bool? IsDisplayName { get; set; }
+        public bool? IsNameLike { get; set; }
         public bool? IsRequired { get; set; }
         public string? IsReferenceTo { get; set; }
         public bool? InvisibleInGui { get; set; }
@@ -314,6 +317,7 @@ namespace Nijo.Core {
         internal const string REL_ATTR_VARIATIONSWITCH = "switch";
         internal const string REL_ATTR_IS_PRIMARY = "is-primary";
         internal const string REL_ATTR_IS_INSTANCE_NAME = "is-instance-name";
+        internal const string REL_ATTR_IS_NAME_LIKE = "is-name-like";
         internal const string REL_ATTR_IS_REQUIRED = "is-required";
         internal const string REL_ATTR_INVISIBLE_IN_GUI = "invisible-in-gui";
         internal const string REL_ATTR_MEMBER_ORDER = "relation-aggregate-order";
@@ -326,6 +330,9 @@ namespace Nijo.Core {
         }
         internal static bool IsInstanceName(this GraphEdge graphEdge) {
             return graphEdge.Attributes.TryGetValue(REL_ATTR_IS_INSTANCE_NAME, out var bln) && (bool)bln;
+        }
+        internal static bool IsNameLike(this GraphEdge graphEdge) {
+            return graphEdge.Attributes.TryGetValue(REL_ATTR_IS_NAME_LIKE, out var bln) && (bool)bln;
         }
         internal static bool IsRequired(this GraphEdge graphEdge) {
             return graphEdge.Attributes.TryGetValue(REL_ATTR_IS_REQUIRED, out var bln) && (bool)bln;
@@ -354,6 +361,7 @@ namespace Nijo.Core {
         internal required int MemberOrder { get; init; }
         internal bool IsPrimary => VariationAggregates.First().Value.IsPrimary();
         internal bool IsInstanceName => VariationAggregates.First().Value.IsInstanceName();
+        internal bool IsNameLike => VariationAggregates.First().Value.IsNameLike();
         internal bool RequiredAtDB => VariationAggregates.First().Value.IsRequired();
         internal bool InvisibleInGui => VariationAggregates.First().Value.InvisibleInGui();
     }

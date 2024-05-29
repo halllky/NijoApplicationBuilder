@@ -19,10 +19,9 @@ namespace Nijo.Core {
         internal string DisplayName { get; }
         internal string UniqueId => Id.Value.ToHashedString();
 
-        public string ClassName => DisplayName.ToCSharpSafe();
-        public string TypeScriptTypeName => DisplayName.ToCSharpSafe();
-        public string EFCoreEntityClassName => $"{DisplayName.ToCSharpSafe()}DbEntity";
-        public string DbSetName => $"{ClassName}DbSet";
+        public string PhysicalName => DisplayName.ToCSharpSafe();
+        public string EFCoreEntityClassName => $"{PhysicalName}DbEntity";
+        public string DbSetName => $"{PhysicalName}DbSet";
 
         internal bool UseKeyInsteadOfName { get; }
         internal AggregateBuildOption Options { get; }

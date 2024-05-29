@@ -45,13 +45,13 @@ namespace Nijo.Features.Storing {
         }
 
         internal string RenderDeclaration() {
-            var dataClass = new DisplayDataClass(_aggregate);
+            var dataClass = new DataClassForDisplay(_aggregate);
             var localRepos = new LocalRepository(_aggregate);
             var componentName = GetComponentName();
             var args = GetArguments().ToArray();
 
             // useFormの型。Refの参照元のコンポーネントのレンダリングの可能性があるためGetRootではなくGetEntry
-            var entryDataClass = new DisplayDataClass(_aggregate.GetEntry().As<Aggregate>());
+            var entryDataClass = new DataClassForDisplay(_aggregate.GetEntry().As<Aggregate>());
             var useFormType = $"AggregateType.{entryDataClass.TsTypeName}";
             var registerNameArray = _aggregate.GetRHFRegisterName(args).ToArray();
             var registerName = registerNameArray.Length > 0 ? $"`{registerNameArray.Join(".")}`" : string.Empty;
@@ -93,7 +93,11 @@ namespace Nijo.Features.Storing {
                         var refToRegisterNameArray = refTo.RefTo.GetRHFRegisterName(args).ToArray();
                         var refToRegisterName = refToRegisterNameArray.Length > 0 ? $"`{refToRegisterNameArray.Join(".")}`" : string.Empty;
 
-                        return $"getValues({refToRegisterName})?.{DisplayDataClass.LOCAL_REPOS_ITEMKEY}";
+                        return $$"""
+                            {
+                              {{DataClassForDisplayRefTarget.INSTANCE_KEY}}: getValues({{refToRegisterName}})?.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}},
+                            }
+                            """;
 
                     } else {
                         return null;
@@ -115,11 +119,11 @@ namespace Nijo.Features.Storing {
                       }, [getValues, setValue])
                       const handleDelete = useCallback(() => {
                         const current = getValues({{registerName}})
-                        if (current) setValue({{registerName}}, { ...current, {{DisplayDataClass.WILL_BE_DELETED}}: true })
+                        if (current) setValue({{registerName}}, { ...current, {{DataClassForDisplay.WILL_BE_DELETED}}: true })
                       }, [setValue, getValues])
                       const handleRedo = useCallback(() => {
                         const current = getValues({{registerName}})
-                        if (current) setValue({{registerName}}, { ...current, {{DisplayDataClass.WILL_BE_DELETED}}: false })
+                        if (current) setValue({{registerName}}, { ...current, {{DataClassForDisplay.WILL_BE_DELETED}}: false })
                       }, [setValue, getValues])
 
                       return (
@@ -277,7 +281,7 @@ namespace Nijo.Features.Storing {
                         "item",
                         _aggregate,
                         _mode == SingleView.E_Type.View,
-                        useFormContextType: $"AggregateType.{new DisplayDataClass(_aggregate.GetEntry().As<Aggregate>()).TsTypeName}",
+                        useFormContextType: $"AggregateType.{new DataClassForDisplay(_aggregate.GetEntry().As<Aggregate>()).TsTypeName}",
                         registerPathModifier: null,
                         arrayIndexVarNamesFromFormRootToDataTableOwner: args);
 
@@ -368,7 +372,7 @@ namespace Nijo.Features.Storing {
                                    && schalar is AggregateMember.ValueMember vm
                                    && vm.IsKey) {
                             if (_aggregate.IsRoot() || _aggregate.IsChildrenMember()) {
-                                reactComponent.Props.Add("readOnly", $"item?.{DisplayDataClass.EXISTS_IN_REMOTE_REPOS}");
+                                reactComponent.Props.Add("readOnly", $"item?.{DataClassForDisplay.EXISTS_IN_REMOTE_REPOS}");
                             }
                         }
 
@@ -388,13 +392,19 @@ namespace Nijo.Features.Storing {
                             """;
 
                     } else if (_mode == SingleView.E_Type.View) {
-                        // リンク
                         var navigation = new NavigationWrapper(refProperty.RefTo);
+                        var pathToRef = refProperty.RefTo
+                            .GetFullPathAsSingleViewDataClass()
+                            .Join("?.");
+                        var names = refProperty.RefTo
+                            .AsEntry()
+                            .GetNames()
+                            .OfType<AggregateMember.ValueMember>();
 
                         yield return $$"""
                              <VForm.Item label="{{refProperty.MemberName}}">
-                               <Link className="text-link" to={Util.{{navigation.GetSingleViewUrlHookName}}(getValues('{{refProperty.RefTo.GetFullPathAsSingleViewDataClass().Join(".")}}'), 'view')}>
-                                 {getValues('{{refProperty.RefTo.GetFullPathAsSingleViewDataClass().Join(".")}}')}
+                               <Link className="text-link" to={Util.{{navigation.GetSingleViewUrlHookName}}(getValues('{{refProperty.RefTo.GetFullPathAsSingleViewDataClass().Join(".")}}.{{DataClassForDisplayRefTarget.INSTANCE_KEY}}'), 'view')}>
+                                 {`{{names.Select(n => $"${{item.{pathToRef}?.{n.Declared.GetFullPath().Join("?.")} ?? ''}}").Join("")}}`}
                                </Link>
                              </VForm.Item>
                              """;
@@ -460,14 +470,14 @@ namespace Nijo.Features.Storing {
         private string GetComponentName() {
             var entry = _aggregate.GetEntry().As<Aggregate>();
             if (_aggregate.IsInTreeOf(entry)) {
-                return $"{_aggregate.Item.TypeScriptTypeName}View";
+                return $"{_aggregate.Item.PhysicalName}View";
 
             } else {
                 var path = _aggregate
                     .PathFromEntry()
                     .Select(edge => edge.RelationName.ToCSharpSafe())
                     .Join("_");
-                return $"{path}_{_aggregate.Item.TypeScriptTypeName}View";
+                return $"{path}_{_aggregate.Item.PhysicalName}View";
             }
         }
 
@@ -489,7 +499,7 @@ namespace Nijo.Features.Storing {
         }
 
         private IEnumerable<AggregateMember.AggregateMemberBase> GetMembers() {
-            return new TransactionScopeDataClass(_aggregate).GetOwnMembers();
+            return new DataClassForSave(_aggregate).GetOwnMembers();
         }
 
         private string IfReadOnly(string readOnly, AggregateMember.AggregateMemberBase prop) {
@@ -502,7 +512,7 @@ namespace Nijo.Features.Storing {
                     || prop is AggregateMember.Ref @ref && @ref.Relation.IsPrimary()) {
 
                     if (_aggregate.IsRoot() || _aggregate.IsChildrenMember()) {
-                        return $"{readOnly}={{item?.{DisplayDataClass.EXISTS_IN_REMOTE_REPOS}}}";
+                        return $"{readOnly}={{item?.{DataClassForDisplay.EXISTS_IN_REMOTE_REPOS}}}";
                     }
                 }
             }
@@ -525,7 +535,7 @@ namespace Nijo.Features.Storing {
             var headersWidthRem = _aggregate
                 .EnumerateThisAndDescendants()
                 .SelectMany(
-                    a => new TransactionScopeDataClass(a)
+                    a => new DataClassForSave(a)
                         .GetOwnMembers()
                         .Where(m => {
                             // 同じ行に値を表示せず、名前が長くても行の横幅いっぱい占有できるため、除外

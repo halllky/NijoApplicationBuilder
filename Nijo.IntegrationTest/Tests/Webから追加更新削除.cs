@@ -40,7 +40,7 @@ namespace Nijo.IntegrationTest.Tests {
             driver.FindElement(Util.ByInnerText("参照先")).Click();
             await driver.AddNewItemAndNavigateToCreateView();
 
-            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.Name")).SendKeys("テスト用の参照先");
+            driver.FindElement(By.Name($"{DataClassForDisplay.OWN_MEMBERS}.Name")).SendKeys("テスト用の参照先");
             await driver.SaveInSingleView();
             driver.CommitLocalRepositoryChanges();
 
@@ -48,17 +48,17 @@ namespace Nijo.IntegrationTest.Tests {
             driver.FindElement(Util.ByInnerText("親集約")).Click();
             await driver.AddNewItemAndNavigateToCreateView();
 
-            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.単語")).SendKeys("自動テストで作られたデータ");
-            driver.ActivateTextarea($"{DisplayDataClass.OWN_MEMBERS}.文章").SendKeys("このデータは自動テストで作られました。\r\n");
-            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.整数")).SendKeys("ー２１４７４８３６４８");
-            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.実数")).SendKeys("-９.９９９９９９９９９９９９９９");
-            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.日付時刻")).SendKeys("２０００－１－１　００：０１");
-            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.日付")).SendKeys("１９９９－２－３");
-            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.年月")).SendKeys("１９９８－１２");
-            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.年")).SendKeys("１９９７");
-            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.参照")).SendKeys("テスト用の参照先");
-            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.参照")).SendKeys(Keys.Tab);
-            driver.FindElement(By.Name($"{DisplayDataClass.OWN_MEMBERS}.真偽値")).SendKeys(Keys.Space);
+            driver.FindElement(By.Name($"{DataClassForDisplay.OWN_MEMBERS}.単語")).SendKeys("自動テストで作られたデータ");
+            driver.ActivateTextarea($"{DataClassForDisplay.OWN_MEMBERS}.文章").SendKeys("このデータは自動テストで作られました。\r\n");
+            driver.FindElement(By.Name($"{DataClassForDisplay.OWN_MEMBERS}.整数")).SendKeys("ー２１４７４８３６４８");
+            driver.FindElement(By.Name($"{DataClassForDisplay.OWN_MEMBERS}.実数")).SendKeys("-９.９９９９９９９９９９９９９９");
+            driver.FindElement(By.Name($"{DataClassForDisplay.OWN_MEMBERS}.日付時刻")).SendKeys("２０００－１－１　００：０１");
+            driver.FindElement(By.Name($"{DataClassForDisplay.OWN_MEMBERS}.日付")).SendKeys("１９９９－２－３");
+            driver.FindElement(By.Name($"{DataClassForDisplay.OWN_MEMBERS}.年月")).SendKeys("１９９８－１２");
+            driver.FindElement(By.Name($"{DataClassForDisplay.OWN_MEMBERS}.年")).SendKeys("１９９７");
+            driver.FindElement(By.Name($"{DataClassForDisplay.OWN_MEMBERS}.参照")).SendKeys("テスト用の参照先");
+            driver.FindElement(By.Name($"{DataClassForDisplay.OWN_MEMBERS}.参照")).SendKeys(Keys.Tab);
+            driver.FindElement(By.Name($"{DataClassForDisplay.OWN_MEMBERS}.真偽値")).SendKeys(Keys.Space);
             driver.FindElement(Util.ByInnerText("選択肢2")).Click(); // 列挙体
 
             // TODO: Childrenの各項目を入力

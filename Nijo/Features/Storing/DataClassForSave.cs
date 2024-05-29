@@ -13,13 +13,14 @@ namespace Nijo.Features.Storing {
     /// 登録・更新・削除される範囲を1つの塊とするデータクラス。
     /// 具体的には、ルート集約とその Child, Children, Variaton 達から成る一塊。Refの参照先はこの範囲の外。
     /// </summary>
-    internal class TransactionScopeDataClass {
-        internal TransactionScopeDataClass(GraphNode<Aggregate> aggregate) {
+    internal class DataClassForSave {
+        internal DataClassForSave(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
         }
         protected readonly GraphNode<Aggregate> _aggregate;
 
-        internal virtual string ClassName => _aggregate.Item.ClassName;
+        internal virtual string CsClassName => $"{_aggregate.Item.PhysicalName}SaveCommand";
+        internal virtual string TsTypeName => $"{_aggregate.Item.PhysicalName}SaveCommand";
 
         internal const string FROM_DBENTITY = "FromDbEntity";
         internal const string TO_DBENTITY = "ToDbEntity";
@@ -35,7 +36,7 @@ namespace Nijo.Features.Storing {
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}のデータ1件の詳細を表すクラスです。
                 /// </summary>
-                public partial class {{ClassName}} {
+                public partial class {{CsClassName}} {
                 {{GetOwnMembers().SelectTextTemplate(prop => $$"""
                     public {{prop.CSharpTypeName}}? {{prop.MemberName}} { get; set; }
                 """)}}
@@ -50,7 +51,7 @@ namespace Nijo.Features.Storing {
 
         internal virtual string RenderTypeScript(CodeRenderingContext ctx) {
             return $$"""
-                export type {{_aggregate.Item.TypeScriptTypeName}} = {
+                export type {{TsTypeName}} = {
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
                   {{m.MemberName}}?: {{m.TypeScriptTypename}}
                 """)}}
@@ -79,7 +80,7 @@ namespace Nijo.Features.Storing {
                     } else if (prop is AggregateMember.Ref refProp) {
 
                         string RenderKeyNameConvertingRecursively(AggregateMember.RelationMember refOrParent) {
-                            var keyNameClass = new RefTargetKeyName(refOrParent.MemberAggregate);
+                            var keyNameClass = new DataClassForSaveRefTarget(refOrParent.MemberAggregate);
 
                             return $$"""
                                 {{refOrParent.MemberName}} = new {{keyNameClass.CSharpClassName}}() {
@@ -99,7 +100,7 @@ namespace Nijo.Features.Storing {
                         var loopVar = depth == 0 ? "item" : $"item{depth}";
 
                         yield return $$"""
-                            {{children.MemberName}} = {{instanceName}}.{{children.GetFullPath().Join("?.")}}?.Select({{loopVar}} => new {{children.ChildrenAggregate.Item.ClassName}}() {
+                            {{children.MemberName}} = {{instanceName}}.{{children.GetFullPath().Join("?.")}}?.Select({{loopVar}} => new {{new DataClassForSave(children.ChildrenAggregate).CsClassName}}() {
                                 {{WithIndent(RenderBodyOfFromDbEntity(children.ChildrenAggregate.AsEntry(), loopVar), "    ")}}
                             }).ToList(),
                             """;
@@ -107,7 +108,7 @@ namespace Nijo.Features.Storing {
                     } else if (prop is AggregateMember.RelationMember child) {
 
                         yield return $$"""
-                            {{child.MemberName}} = new {{child.MemberAggregate.Item.ClassName}}() {
+                            {{child.MemberName}} = new {{new DataClassForSave(child.MemberAggregate).CsClassName}}() {
                                 {{WithIndent(RenderBodyOfFromDbEntity(child.MemberAggregate, instanceName), "    ")}}
                             },
                             """;
@@ -118,12 +119,14 @@ namespace Nijo.Features.Storing {
                 }
             }
 
+            var dataClass = new DataClassForSave(_aggregate);
+
             return $$"""
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}のデータベースから取得した内容を画面に表示する形に変換します。
                 /// </summary>
-                public static {{_aggregate.Item.ClassName}} {{FROM_DBENTITY}}({{ctx.Config.EntityNamespace}}.{{_aggregate.Item.EFCoreEntityClassName}} entity) {
-                    var instance = new {{_aggregate.Item.ClassName}} {
+                public static {{dataClass.CsClassName}} {{FROM_DBENTITY}}({{ctx.Config.EntityNamespace}}.{{_aggregate.Item.EFCoreEntityClassName}} entity) {
+                    var instance = new {{dataClass.CsClassName}} {
                         {{WithIndent(RenderBodyOfFromDbEntity(_aggregate, "entity"), "        ")}}
                     };
                     return instance;
@@ -201,7 +204,8 @@ namespace Nijo.Features.Storing {
 
 
         #region 値の同一比較
-        internal string DeepEqualTsFnName => $"deepEquals{_aggregate.Item.ClassName}";
+        internal string DeepEqualTsFnName => $"deepEquals{_aggregate.Item.PhysicalName}";
+        [Obsolete("Refの参照先をItemKeyで比較すべきところ参照先のオブジェクトの深くまで比較しに行っている")]
         internal string RenderTsDeepEquals() {
 
             static string Render(string instanceA, string instanceB, GraphNode<Aggregate> agg) {
@@ -261,8 +265,9 @@ namespace Nijo.Features.Storing {
                 }
             }
 
+            var updateCommand = new DataClassForSave(_aggregate);
             return $$"""
-                export const {{DeepEqualTsFnName}} = (a: {{_aggregate.Item.TypeScriptTypeName}}, b: {{_aggregate.Item.TypeScriptTypeName}}): boolean => {
+                export const {{DeepEqualTsFnName}} = (a: {{updateCommand.TsTypeName}}, b: {{updateCommand.TsTypeName}}): boolean => {
                   {{WithIndent(Render("a", "b", _aggregate), "  ")}}
 
                   return true
@@ -275,7 +280,7 @@ namespace Nijo.Features.Storing {
     internal static partial class StoringExtensions {
 
         /// <summary>
-        /// エントリーからのパスを <see cref="TransactionScopeDataClass"/> のインスタンスの型のルールにあわせて返す。
+        /// エントリーからのパスを <see cref="DataClassForSave"/> のインスタンスの型のルールにあわせて返す。
         /// </summary>
         internal static IEnumerable<string> GetFullPath(this GraphNode<Aggregate> aggregate, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
             var path = aggregate.PathFromEntry();
@@ -292,7 +297,7 @@ namespace Nijo.Features.Storing {
         }
 
         /// <summary>
-        /// エントリーからのパスを <see cref="TransactionScopeDataClass"/> のインスタンスの型のルールにあわせて返す。
+        /// エントリーからのパスを <see cref="DataClassForSave"/> のインスタンスの型のルールにあわせて返す。
         /// </summary>
         internal static IEnumerable<string> GetFullPath(this AggregateMember.AggregateMemberBase member, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
             foreach (var path in member.Owner.GetFullPath(since, until)) {
