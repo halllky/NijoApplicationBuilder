@@ -5,7 +5,7 @@ import { CustomComponentProps, CustomComponentRef, defineCustomComponent } from 
 import { ComboBoxBase } from "./ComboBoxBase"
 import { RadioGroupBase, ToggleBase } from "./ToggleBase"
 
-/** ラジオボタン or コンボボックス。選択された要素ではなく選択された要素のキーをvalue,onChangeにとる */
+/** ラジオボタン or コンボボックス */
 export const Selection = defineCustomComponent(<TItem extends string = string>(
   props: CustomComponentProps<TItem, {
     options: TItem[]
@@ -35,31 +35,24 @@ export const Selection = defineCustomComponent(<TItem extends string = string>(
     return value
   }, [])
 
-  return type === 'combo'
-    ? (
-      <ComboBoxBase
-        {...rest}
-        ref={radioRef}
-        options={options}
-        matchingKeySelectorFromOption={selector}
-        matchingKeySelectorFromEmitValue={selector}
-        emitValueSelector={selector}
-      />
-    ) : (
-      <RadioGroupBase
-        {...rest}
-        ref={radioRef}
-        options={options}
-        keySelector={selector}
-      />
-    )
+  return type === 'combo' ? (
+    <ComboBoxBase
+      {...rest}
+      ref={radioRef}
+      options={options}
+      matchingKeySelectorFromOption={selector}
+      matchingKeySelectorFromEmitValue={selector}
+      emitValueSelector={selector}
+    />
+  ) : (
+    <RadioGroupBase
+      {...rest}
+      ref={radioRef}
+      options={options}
+      keySelector={selector}
+    />
+  )
 })
-
-/** ラジオボタン */
-export const RadioGroup = RadioGroupBase
-
-/** コンボボックス（同期） */
-export const ComboBox = ComboBoxBase
 
 /** コンボボックス（非同期） */
 export const AsyncComboBox = defineCustomComponent(<TOption, TEmitValue, TMatchingKey extends string = string>(
@@ -137,7 +130,7 @@ export const BooleanComboBox = defineCustomComponent<boolean>((props, ref) => {
   }, [])
 
   return (
-    <ComboBox
+    <ComboBoxBase
       ref={comboRef}
       {...props}
       options={booleanComboBoxOptions}
