@@ -110,10 +110,11 @@ namespace Nijo.Features.Debugging {
 
                 } else if (member is AggregateMember.Ref @ref) {
                     var api = new Features.Storing.KeywordSearchingFeature(@ref.RefTo).GetUri();
+                    var apiReturnType = new DataClassForDisplayRefTarget(@ref.RefTo);
                     var res = $"response{random.Next(99999999):00000000}";
                     return $$"""
-                        const {{res}} = await get<{ Key: ItemKey, Value?: string }[]>(`{{api}}`, {})
-                        {{data}}.{{path.Join(".")}} = {{res}}.ok ? {{res}}.data[{{index}}].Key : undefined
+                        const {{res}} = await get<AggregateType.{{apiReturnType.TsTypeName}}[]>(`{{api}}`, {})
+                        {{data}}.{{path.Join(".")}} = {{res}}.ok ? {{res}}.data[{{index}}].{{DataClassForDisplayRefTarget.INSTANCE_KEY}} : undefined
                         """;
 
                 } else if (member is AggregateMember.Child
