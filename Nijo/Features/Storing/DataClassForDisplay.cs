@@ -633,11 +633,6 @@ namespace Nijo.Features.Storing {
             }
             yield return DataClassForDisplay.OWN_MEMBERS;
             yield return member.MemberName;
-
-            // RefInfoの場合はinstanceKeyがバインド対象なので
-            if (member is AggregateMember.Ref) {
-                yield return DataClassForDisplayRefTarget.INSTANCE_KEY;
-            }
         }
 
         private static IEnumerable<string> EnumerateRHFRegisterName(this GraphNode<Aggregate> aggregate, bool enumerateLastChildrenIndex, IEnumerable<string>? arrayIndexes) {

@@ -43,7 +43,7 @@ namespace Nijo.Features.Storing {
                 .OfType<AggregateMember.ValueMember>();
 
             return $$"""
-                export const {{combo.ComponentName}} = defineCustomComponent<Util.ItemKey>((props, ref) => {
+                export const {{combo.ComponentName}} = defineCustomComponent<Types.{{refInfo.TsTypeName}}>((props, ref) => {
                   const [queryKey, setQueryKey] = useState<string>('combo-{{_aggregate.Item.UniqueId}}::')
                   const { get } = Util.useHttpRequest()
                   const query = useCallback(async (keyword: string | undefined): Promise<Types.{{refInfo.TsTypeName}}[]> => {
@@ -59,7 +59,9 @@ namespace Nijo.Features.Storing {
                       ref={ref}
                       queryKey={queryKey}
                       query={query}
-                      keySelector={({ {{DataClassForDisplayRefTarget.INSTANCE_KEY}} }) => {{DataClassForDisplayRefTarget.INSTANCE_KEY}}}
+                      emitValueSelector={item => item}
+                      matchingKeySelectorFromEmitValue={item => item.{{DataClassForDisplayRefTarget.INSTANCE_KEY}}}
+                      matchingKeySelectorFromOption={item => item.{{DataClassForDisplayRefTarget.INSTANCE_KEY}}}
                       textSelector={item => `{{names.Select(n => $"${{item.{n.Declared.GetFullPath().Join("?.")} ?? ''}}").Join("")}}`}
                     />
                   )

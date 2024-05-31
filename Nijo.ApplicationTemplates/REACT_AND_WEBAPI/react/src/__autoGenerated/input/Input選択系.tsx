@@ -6,19 +6,18 @@ import { ComboBoxBase } from "./ComboBoxBase"
 import { RadioGroupBase, ToggleBase } from "./ToggleBase"
 
 /** ラジオボタン or コンボボックス。選択された要素ではなく選択された要素のキーをvalue,onChangeにとる */
-export const Selection = defineCustomComponent(<TItem extends {}, TKey extends string = string>(
-  props: CustomComponentProps<TKey, {
+export const Selection = defineCustomComponent(<TItem extends string = string>(
+  props: CustomComponentProps<TItem, {
     options: TItem[]
-    keySelector: (item: TItem) => TKey
     textSelector: (item: TItem) => string
     radio?: boolean
     combo?: boolean
   }>,
-  ref: React.ForwardedRef<CustomComponentRef<TKey>>
+  ref: React.ForwardedRef<CustomComponentRef<TItem>>
 ) => {
   const { options, radio, combo, ...rest } = props
 
-  const radioRef = useRef<CustomComponentRef<TKey>>(null)
+  const radioRef = useRef<CustomComponentRef<TItem>>(null)
   useImperativeHandle(ref, () => ({
     getValue: () => radioRef.current?.getValue(),
     focus: () => radioRef.current?.focus(),
@@ -32,18 +31,26 @@ export const Selection = defineCustomComponent(<TItem extends {}, TKey extends s
       : 'radio' as const
   }, [radio, combo, options])
 
+  const selector = useCallback((value: TItem) => {
+    return value
+  }, [])
+
   return type === 'combo'
     ? (
       <ComboBoxBase
         {...rest}
         ref={radioRef}
         options={options}
+        matchingKeySelectorFromOption={selector}
+        matchingKeySelectorFromEmitValue={selector}
+        emitValueSelector={selector}
       />
     ) : (
       <RadioGroupBase
         {...rest}
         ref={radioRef}
         options={options}
+        keySelector={selector}
       />
     )
 })
@@ -55,14 +62,16 @@ export const RadioGroup = RadioGroupBase
 export const ComboBox = ComboBoxBase
 
 /** コンボボックス（非同期） */
-export const AsyncComboBox = defineCustomComponent(<T extends {}, TKey extends string = string>(
-  props: CustomComponentProps<TKey, {
+export const AsyncComboBox = defineCustomComponent(<TOption, TEmitValue, TMatchingKey extends string = string>(
+  props: CustomComponentProps<TEmitValue, {
     queryKey?: string
-    query: ((keyword: string | undefined) => Promise<T[]>)
-    keySelector: (item: T) => TKey | undefined
-    textSelector: (item: T) => string
+    query: ((keyword: string | undefined) => Promise<TOption[]>)
+    matchingKeySelectorFromOption: (item: TOption) => TMatchingKey | undefined
+    matchingKeySelectorFromEmitValue: (value: TEmitValue) => TMatchingKey | undefined
+    emitValueSelector: (item: TOption) => TEmitValue | undefined
+    textSelector: (item: TOption) => string
   }>,
-  ref: React.ForwardedRef<CustomComponentRef<TKey>>
+  ref: React.ForwardedRef<CustomComponentRef<TEmitValue>>
 ) => {
   const [, dispatchMsg] = useMsgContext()
 
@@ -104,16 +113,6 @@ export const CheckBox = defineCustomComponent<boolean>((props, ref) => {
 
 /** チェックボックス（グリッド用） */
 export const BooleanComboBox = defineCustomComponent<boolean>((props, ref) => {
-  const { value, onChange, ...rest } = props
-
-  const objValue = useMemo(() => {
-    if (value === true) return booleanComboBoxOptions[0]
-    if (value === false) return booleanComboBoxOptions[1]
-    return undefined
-  }, [value])
-  const handleChange = useCallback((value: (typeof booleanComboBoxOptions[0]) | undefined) => {
-    onChange?.(value?.boolValue)
-  }, [onChange])
 
   const comboRef = useRef<CustomComponentRef>(null)
   useImperativeHandle(ref, () => ({
@@ -126,15 +125,26 @@ export const BooleanComboBox = defineCustomComponent<boolean>((props, ref) => {
     focus: () => comboRef.current?.focus(),
   }))
 
+  const getBoolValue = useCallback((item: typeof booleanComboBoxOptions[0]) => {
+    return item.boolValue
+  }, [])
+  const getText = useCallback((item: typeof booleanComboBoxOptions[0]) => {
+    return item.text
+  }, [])
+  const getTextFromBool = useCallback((boolValue: boolean) => {
+    if (boolValue) return booleanComboBoxOptions[0].text
+    else return booleanComboBoxOptions[1].text
+  }, [])
+
   return (
     <ComboBox
       ref={comboRef}
-      {...rest}
+      {...props}
       options={booleanComboBoxOptions}
-      keySelector={item => item.text}
-      textSelector={item => item.text}
-      value={objValue}
-      onChange={handleChange}
+      emitValueSelector={getBoolValue}
+      matchingKeySelectorFromEmitValue={getTextFromBool}
+      matchingKeySelectorFromOption={getText}
+      textSelector={getText}
     />
   )
 })
