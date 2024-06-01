@@ -14,6 +14,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   const {
     data,
     columns: propsColumns,
+    onKeyDown: propsKeyDown,
     treeView,
     className,
   } = props
@@ -104,6 +105,20 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     // セル編集中の場合のキーハンドリングはCellEditor側で行う
     if (editing) return
 
+    // 任意の操作
+    if (propsKeyDown && caretCell) {
+      const row = api.getRow(caretCell.rowId)
+      const col = row.getAllCells().find(c => c.id === caretCell.cellId)?.column
+      if (col) {
+        propsKeyDown(e, {
+          row: row.original,
+          rowIndex: row.index,
+          col,
+        })
+        if (e.defaultPrevented) return
+      }
+    }
+
     // 選択に関する操作
     handleSelectionKeyDown(e)
     if (e.defaultPrevented) return
@@ -112,7 +127,10 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       for (const row of getSelectedRows()) row.toggleExpanded()
       e.preventDefault()
       return
-    } else if (caretCell && (e.key === 'F2' || e.key.length === 1 /*文字や数字や記号の場合*/)) {
+    } else if (caretCell
+      && (e.key === 'F2'
+        || !e.ctrlKey && !e.metaKey && e.key.length === 1 /*文字や数字や記号の場合*/)
+    ) {
       // caretCellは更新前の古いセルなので最新の配列から検索しなおす
       const row = api.getRow(caretCell.rowId)
       const cell = row.getAllCells().find(cell => cell.id === caretCell.cellId)
@@ -120,7 +138,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       e.preventDefault()
       return
     }
-  }, [api, editing, caretCell, getSelectedRows, handleSelectionKeyDown, startEditing, cancelEditing])
+  }, [api, editing, caretCell, getSelectedRows, handleSelectionKeyDown, startEditing, cancelEditing, propsKeyDown])
 
   useImperativeHandle(ref, () => ({
     getSelectedRows: () => getSelectedRows().map(row => ({

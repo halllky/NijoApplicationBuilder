@@ -6,6 +6,7 @@ import { CustomComponentRef } from '../input'
 export type DataTableProps<T> = {
   data?: T[]
   onChangeRow?: (index: number, data: T) => void
+  onKeyDown?: DataTableKeyDownEvent<T>
   columns?: ColumnDefEx<Tree.TreeNode<T>>[]
   className?: string
   treeView?: Tree.ToTreeArgs<T> & {
@@ -22,6 +23,11 @@ export type ColumnDefEx<TRow, TValue = any> = RT.ColumnDef<TRow> & {
   cellEditor: CellEditor<TValue>
   setValue: (data: TRow, value: TValue) => void
 })
+export type DataTableKeyDownEvent<T> = (e: React.KeyboardEvent, { }: {
+  row: Tree.TreeNode<T>
+  rowIndex: number
+  col: ColumnDefEx<Tree.TreeNode<T>>
+}) => void
 
 export type CellEditor<TValue> = (
   props: CellEditorProps<TValue>,
