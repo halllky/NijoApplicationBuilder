@@ -38,6 +38,5 @@ export type CellEditorProps<TValue> = {
 
 export type DataTableRef<T> = {
   getSelectedRows: () => { row: T, rowIndex: number }[]
-  getSelectedItems: () => T[]
   getSelectedIndexes: () => number[]
 }

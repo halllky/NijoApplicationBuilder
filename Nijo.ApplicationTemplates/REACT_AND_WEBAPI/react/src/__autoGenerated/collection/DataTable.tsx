@@ -128,8 +128,6 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       row: row.original.item,
       rowIndex: row.index,
     })),
-    // TODO: ↓いらない
-    getSelectedItems: () => getSelectedRows().map(row => row.original.item),
     getSelectedIndexes,
   }), [getSelectedRows])
 
