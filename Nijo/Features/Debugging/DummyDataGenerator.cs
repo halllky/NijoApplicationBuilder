@@ -74,7 +74,7 @@ namespace Nijo.Features.Debugging {
 
                 if (member is AggregateMember.Variation variation) {
                     var key = random.Next(variation.VariationGroup.VariationAggregates.Count);
-                    return $"{data}.{path.Join(".")} = '{variation.VariationGroup.VariationAggregates.ElementAt(key).Key}'";
+                    return $"{data}.{path.Join(".")} = '{variation.GetGroupItems().ElementAt(key).TsValue}'";
 
                 } else if (member is AggregateMember.Schalar schalar) {
                     static string RandomAlphabet(Random random, int length) {

@@ -198,7 +198,7 @@ namespace Nijo.Features.Storing {
                         </>
                       )
 
-                      return watch({{switchProp}}) === '{{variation.Key}}'
+                      return watch({{switchProp}}) === '{{variation.TsValue}}'
                         ? (
                           <>
                             {body}
@@ -440,20 +440,19 @@ namespace Nijo.Features.Storing {
                 } else if (member is AggregateMember.Variation variationSwitch) {
                     var switchProp = $"`{variationSwitch.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()])).Join(".")}`";
                     var disabled = IfReadOnly("disabled", variationSwitch);
+                    var selectComponent = variationSwitch.Options.MemberType.GetReactComponent(new GetReactComponentArgs {
+                        Type = GetReactComponentArgs.E_Type.InDetailView,
+                    });
 
                     yield return $$"""
                         <VForm.Container
                           labelSide={<>
                             {{variationSwitch.MemberName}}
-                            <Input.Selection
+                            <{{selectComponent.Name}}
                               {...registerEx({{switchProp}})}
-                              options={[
-                        {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
-                                { value: '{{variation.Key}}', text: '{{variation.MemberName}}' },
+                        {{selectComponent.GetPropsStatement().SelectTextTemplate(keyValue => $$"""
+                             {{WithIndent(keyValue, "     ")}}
                         """)}}
-                              ]}
-                              keySelector={item => item.value}
-                              textSelector={item => item.text}
                             />
                           </>}
                         >

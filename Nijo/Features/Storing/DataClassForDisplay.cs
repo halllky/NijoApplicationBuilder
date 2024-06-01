@@ -132,7 +132,7 @@ namespace Nijo.Features.Storing {
                 if (member is AggregateMember.Variation variation
                     && variation.DeclaringAggregate == MainAggregate) {
 
-                    return $"{member.MemberName}: '{variation.GetGroupItems().First().Key}',";
+                    return $"{member.MemberName}: '{variation.GetGroupItems().First().TsValue}',";
                 }
 
                 // 初期値なし

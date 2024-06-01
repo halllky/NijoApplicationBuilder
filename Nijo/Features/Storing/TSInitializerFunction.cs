@@ -47,7 +47,7 @@ namespace Nijo.Features.Storing {
                 .OfType<AggregateMember.Variation>()
                 .Select(member => new {
                     Key = member.MemberName,
-                    Value = $"'{member.GetGroupItems().First().Key}'",
+                    Value = $"'{member.GetGroupItems().First().TsValue}'",
                 });
             var uuid = new DataClassForSave(_instance)
                 .GetOwnMembers()

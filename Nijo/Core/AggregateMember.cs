@@ -328,6 +328,8 @@ namespace Nijo.Core {
             internal override GraphNode<Aggregate> Owner { get; }
             internal override decimal Order => VariationGroup.MemberOrder;
 
+            internal string CsEnumType => $"E_{VariationGroup.GroupName}";
+
             internal IEnumerable<VariationItem> GetGroupItems() {
                 foreach (var kv in VariationGroup.VariationAggregates) {
                     yield return new VariationItem(this, kv.Key, kv.Value);
@@ -358,6 +360,9 @@ namespace Nijo.Core {
 
             internal override string CSharpTypeName => new DataClassForSave(Relation.Terminal).CsClassName;
             internal override string TypeScriptTypename => new DataClassForSave(Relation.Terminal).TsTypeName;
+
+            /// <summary>この集約のタイプを表すTypeScriptの区分値</summary>
+            internal string TsValue => Relation.RelationName;
         }
 
         internal class Ref : RelationMember {

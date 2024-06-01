@@ -228,7 +228,7 @@ namespace Nijo.Features.Storing {
                 var checkedArray = $"checked{variation.GetFullPath().Join("_")}";
                 var paramValues = VariationMemberProps(variation)
                     .Select(x => new {
-                        key = x.Key.Key,
+                        key = x.Key.Relation.RelationName,
                         fullPath = $"{PARAM_FILTER}?.{vm.Declared.GetFullPath().SkipLast(1).Concat(new[] { x.Value }).Join("?.")}",
                     });
 
@@ -241,12 +241,12 @@ namespace Nijo.Features.Storing {
                     if (!{{checkedArray}}.All(check => check == true)
                      && !{{checkedArray}}.All(check => check == false || check == null)) {
 
-                        var keyList = new List<string>();
+                        var keyList = new List<{{variation.VariationGroup.CsEnumType}}>();
                     {{paramValues.SelectTextTemplate(x => $$"""
-                        if ({{x.fullPath}} == true) keyList.Add("{{x.key}}");
+                        if ({{x.fullPath}} == true) keyList.Add({{variation.VariationGroup.CsEnumType}}.{{x.key}});
                     """)}}
 
-                        query = query.Where(x => keyList.Contains(x.{{memberPath}}));
+                        query = query.Where(x => x.{{memberPath}} != null && keyList.Contains(x.{{memberPath}}.Value));
                     }
                     """;
             }

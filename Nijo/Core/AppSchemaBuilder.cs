@@ -130,7 +130,7 @@ namespace Nijo.Core {
                 errors.Add($"アプリケーション名が指定されていません。");
             }
 
-            // enumの組み立て
+            // enumの組み立て（スキーマ定義で指定されているenum）
             var builtEnums = new List<EnumDefinition>();
             foreach (var @enum in _enums) {
                 var items = new List<EnumDefinition.Item>();
@@ -163,6 +163,33 @@ namespace Nijo.Core {
                 } else {
                     foreach (var err in enumCreateErrors) errors.Add(err);
                 }
+            }
+
+            // enumの組み立て（Variation）
+            var variationGroups = relationDefs
+                .GroupBy(relation => relation.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, out var groupName)
+                    ? (string)groupName
+                    : string.Empty)
+                .Where(group => group.Key != string.Empty);
+            foreach (var variationGroup in variationGroups) {
+                var enumValues = new List<EnumDefinition.Item>();
+                foreach (var relation in variationGroup) {
+                    var strValue = (string)relation.Attributes[DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH];
+                    if (!int.TryParse(strValue, out var intValue)) {
+                        errors.Add($"Variationのキー '{strValue}' が整数ではありません。");
+                        continue;
+                    }
+                    enumValues.Add(new EnumDefinition.Item {
+                        Value = intValue,
+                        PhysicalName = relation.RelationName,
+                        DisplayName = relation.RelationName,
+                    });
+                }
+
+                if (!EnumDefinition.TryCreate($"E_{variationGroup.Key}", enumValues, out var enumDef, out errors)) {
+                    continue;
+                }
+                builtEnums.Add(enumDef);
             }
 
             // GraphNodeの組み立て
@@ -364,5 +391,7 @@ namespace Nijo.Core {
         internal bool IsNameLike => VariationAggregates.First().Value.IsNameLike();
         internal bool RequiredAtDB => VariationAggregates.First().Value.IsRequired();
         internal bool InvisibleInGui => VariationAggregates.First().Value.InvisibleInGui();
+
+        internal string CsEnumType => $"E_{GroupName.ToCSharpSafe()}";
     }
 }

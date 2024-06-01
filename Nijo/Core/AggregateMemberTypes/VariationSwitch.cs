@@ -14,37 +14,29 @@ namespace Nijo.Core.AggregateMemberTypes {
         private readonly VariationGroup<Aggregate> _variationGroup;
 
         public SearchBehavior SearchBehavior => SearchBehavior.Strict;
-        public string GetCSharpTypeName() => "string";
-        public string GetTypeScriptTypeName() => "string";
+
+        private string CsEnumTypeName => _variationGroup.CsEnumType;
+        public string GetCSharpTypeName() => CsEnumTypeName;
+
+        public string GetTypeScriptTypeName() {
+            return _variationGroup
+                .VariationAggregates
+                .Select(kv => $"'{kv.Value.RelationName}'")
+                .Join(" | ");
+        }
 
         public ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
-            var options = _variationGroup
-                .VariationAggregates
-                .Select(kv => $"{{ key: '{kv.Key}', text: '{kv.Value.RelationName}' }}");
             var props = new Dictionary<string, string> {
-                { "options", $"[{options.Join(", ")}]" },
-                { "keySelector", "x => x.key" },
-                { "textSelector", "x => x.text" },
+                { "options", $"[{_variationGroup.VariationAggregates.Select(kv => $"'{kv.Value.RelationName}' as const").Join(", ")}]" },
+                { "textSelector", "item => item" },
             };
-
-            // DataTable内ならばラジオボタンではなくコンボボックス
-            if (e.Type == GetReactComponentArgs.E_Type.InDataGrid)
-                props.Add("combo", string.Empty);
+            if (e.Type == GetReactComponentArgs.E_Type.InDataGrid) {
+                props.Add("combo", "");
+            }
 
             return new ReactInputComponent {
                 Name = "Input.Selection",
                 Props = props,
-                GridCellFormatStatement = (value, formatted) => {
-                    var keyValues = _variationGroup
-                        .VariationAggregates
-                        .Select(kv => new { kv.Key, kv.Value.RelationName });
-                    return $$"""
-                        let {{formatted}} = ''
-                        {{keyValues.SelectTextTemplate(kv => $$"""
-                        if ({{value}} === '{{kv.Key}}') {{formatted}} = '{{kv.RelationName}}'
-                        """)}}
-                        """;
-                },
             };
         }
     }
