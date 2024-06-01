@@ -4,7 +4,7 @@ import * as Tree from '../util'
 import * as Util from '../util'
 import { ROW_HEADER_ID, TABLE_ZINDEX } from './DataTable.Parts'
 
-export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T>>) => {
+export const useSelection = <T,>(api: RT.Table<Tree.TreeNode<T>>) => {
   const [caretCell, setCaretCell] = useState<CellId | undefined>()
   const [selectionStart, setSelectionStart] = useState<RT.Cell<Tree.TreeNode<T>, unknown> | undefined>()
   const [containsRowHeader, setContainsRowHeader] = useState(false)
@@ -59,7 +59,6 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
   }, [])
 
   const handleSelectionKeyDown: React.KeyboardEventHandler<HTMLElement> = useCallback(e => {
-    if (editing) return
     if (e.ctrlKey && e.key === 'a') {
       selectObject({ all: api })
       e.preventDefault()
@@ -109,7 +108,7 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
         return
       }
     }
-  }, [editing, api, selectObject, caretCell])
+  }, [api, selectObject, caretCell])
 
   const caretTdRefCallback = useCallback((td: HTMLTableCellElement | null, cell: RT.Cell<Tree.TreeNode<T>, unknown>) => {
     if (td && cell.id === caretCell?.cellId) caretTdRef.current = td

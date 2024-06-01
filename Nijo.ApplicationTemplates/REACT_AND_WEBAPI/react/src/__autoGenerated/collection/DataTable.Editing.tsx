@@ -110,8 +110,9 @@ function prepareCellEditor<T,>(
       })
     }, [])
 
+    const [{ isImeOpen }] = Util.useIMEOpened()
     const handleKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = useCallback(e => {
-      if (e.ctrlKey && e.key === 'Enter') {
+      if (e.key === 'Enter' && !isImeOpen) {
         commitEditing()
         e.stopPropagation()
         e.preventDefault()
@@ -119,7 +120,7 @@ function prepareCellEditor<T,>(
         cancelEditing()
         e.preventDefault()
       }
-    }, [commitEditing, cancelEditing])
+    }, [isImeOpen, commitEditing, cancelEditing])
 
     return (
       <div ref={containerRef}
