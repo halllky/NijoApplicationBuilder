@@ -111,9 +111,9 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       e.preventDefault()
       return
     } else if (e.key === 'F2' && !editing && caretCell) {
-      // caretCellは更新前の古いセルなので最新の配列から検索しなおす TODO:caretCellのidだけをstateにもつようにする
-      const row = api.getRow(caretCell.row.id)
-      const cell = row.getAllCells().find(x => x.id === caretCell.id)
+      // caretCellは更新前の古いセルなので最新の配列から検索しなおす
+      const row = api.getRow(caretCell.rowId)
+      const cell = row.getAllCells().find(cell => cell.id === caretCell.cellId)
       if (cell) startEditing(cell)
       e.preventDefault()
       return

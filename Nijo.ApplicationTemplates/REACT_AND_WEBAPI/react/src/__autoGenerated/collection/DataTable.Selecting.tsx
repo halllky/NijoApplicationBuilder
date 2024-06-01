@@ -5,7 +5,7 @@ import * as Util from '../util'
 import { ROW_HEADER_ID, TABLE_ZINDEX } from './DataTable.Parts'
 
 export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T>>) => {
-  const [caretCell, setCaretCell] = useState<RT.Cell<Tree.TreeNode<T>, unknown> | undefined>()
+  const [caretCell, setCaretCell] = useState<CellId | undefined>()
   const [selectionStart, setSelectionStart] = useState<RT.Cell<Tree.TreeNode<T>, unknown> | undefined>()
   const [containsRowHeader, setContainsRowHeader] = useState(false)
   const caretTdRef = useRef<HTMLTableCellElement>()
@@ -22,13 +22,14 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
         // シングル選択（行ヘッダが選択された場合）
         const visibleCells = obj.cell.row.getVisibleCells()
         if (visibleCells.length === 0) return
-        setCaretCell(visibleCells[0])
+        const cell = visibleCells[0]
+        setCaretCell({ cellId: cell.id, rowId: cell.row.id, colId: cell.column.id })
         if (!obj.shiftKey) setSelectionStart(visibleCells[visibleCells.length - 1])
         setContainsRowHeader(true)
 
       } else {
         // シングル選択
-        setCaretCell(obj.cell)
+        setCaretCell({ cellId: obj.cell.id, rowId: obj.cell.row.id, colId: obj.cell.column.id })
         if (!obj.shiftKey) setSelectionStart(obj.cell)
         setContainsRowHeader(false)
       }
@@ -37,7 +38,7 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
       // 何か選択
       const cell = obj.any.getRowModel().flatRows[0]?.getAllCells()?.[0]
       if (cell) {
-        setCaretCell(cell)
+        setCaretCell({ cellId: cell.id, rowId: cell.row.id, colId: cell.column.id })
         setSelectionStart(cell)
         setContainsRowHeader(false)
       }
@@ -51,7 +52,7 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
       const lastRowVisibleCells = lastRow?.getVisibleCells()
       const topLeftCell = firstRowVisibleCells?.[0]
       const bottomRightCell = lastRowVisibleCells?.[lastRowVisibleCells.length - 1]
-      setCaretCell(topLeftCell)
+      setCaretCell({ cellId: topLeftCell.id, rowId: topLeftCell.row.id, colId: topLeftCell.column.id })
       setSelectionStart(bottomRightCell)
       setContainsRowHeader(true)
     }
@@ -71,7 +72,8 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
       }
       // 1つ上または下のセルを選択
       const flatRows = api.getRowModel().flatRows
-      let rowIndex = flatRows.indexOf(caretCell.row)
+      const currentRow = api.getRow(caretCell.rowId)
+      let rowIndex = currentRow.index
       if (e.key === 'ArrowUp') rowIndex--; else rowIndex++
       while (e.key === 'ArrowUp' ? (rowIndex > -1) : (rowIndex < flatRows.length)) {
         const row = flatRows[rowIndex]
@@ -80,8 +82,8 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
           if (e.key === 'ArrowUp') rowIndex--; else rowIndex++
           continue
         }
-        const colIndex = caretCell.row.getAllCells().indexOf(caretCell)
-        selectObject({ cell: row.getAllCells()[colIndex], shiftKey: e.shiftKey })
+        const cell = row.getAllCells().find(cell => cell.column.id === caretCell.colId)!
+        selectObject({ cell, shiftKey: e.shiftKey })
         e.preventDefault()
         activeCellRef.current?.scrollToActiveCell()
         return
@@ -94,8 +96,9 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
         return
       }
       // 1つ左または右のセルを選択
-      const allCells = caretCell.row.getAllCells()
-      let colIndex = allCells.indexOf(caretCell)
+      const currentRow = api.getRow(caretCell.rowId)
+      const allCells = currentRow.getAllCells()
+      let colIndex = allCells.findIndex(cell => cell.column.id === caretCell.colId)
       if (e.key === 'ArrowLeft') colIndex--; else colIndex++
       while (e.key === 'ArrowLeft' ? (colIndex > -1) : (colIndex < allCells.length)) {
         const neighborCell = allCells[colIndex]
@@ -109,7 +112,7 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
   }, [editing, api, selectObject, caretCell])
 
   const caretTdRefCallback = useCallback((td: HTMLTableCellElement | null, cell: RT.Cell<Tree.TreeNode<T>, unknown>) => {
-    if (td && cell.id === caretCell?.id) caretTdRef.current = td
+    if (td && cell.id === caretCell?.cellId) caretTdRef.current = td
     if (td && cell.id === selectionStart?.id) selectionStartTdRef.current = td
   }, [caretCell, selectionStart])
 
@@ -124,7 +127,7 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
     if (!caretCell || !selectionStart) return []
     const flatRows = api.getRowModel().flatRows
     const ix1 = flatRows.findIndex(row => row.id === selectionStart.row.id)
-    const ix2 = flatRows.findIndex(row => row.id === caretCell.row.id)
+    const ix2 = flatRows.findIndex(row => row.id === caretCell.rowId)
     const since = Math.min(ix1, ix2)
     const until = Math.max(ix1, ix2)
     return flatRows.slice(since, until + 1)
@@ -134,7 +137,7 @@ export const useSelection = <T,>(editing: boolean, api: RT.Table<Tree.TreeNode<T
     if (!caretCell || !selectionStart) return []
     const flatRows = api.getRowModel().flatRows
     const ix1 = flatRows.indexOf(selectionStart.row)
-    const ix2 = flatRows.indexOf(caretCell.row)
+    const ix2 = flatRows.findIndex(row => row.id === caretCell.rowId)
     const since = Math.min(ix1, ix2)
     const until = Math.max(ix1, ix2)
     return [...Array(until - since + 1)].map((_, i) => i + since)
@@ -166,7 +169,7 @@ function prepareActiveRangeSvg<T>(
   return Util.forwardRefEx<{
     scrollToActiveCell: () => void,
   }, {
-    caretCell: RT.Cell<Tree.TreeNode<T>, unknown> | undefined
+    caretCell: object | undefined
     containsRowHeader: boolean
     api: RT.Table<Tree.TreeNode<T>>
   }>(({ caretCell, containsRowHeader, api }, ref) => {
@@ -253,4 +256,10 @@ function prepareActiveRangeSvg<T>(
       </svg>
     )
   })
+}
+
+type CellId = {
+  cellId: string
+  rowId: string
+  colId: string
 }
