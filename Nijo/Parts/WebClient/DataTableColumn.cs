@@ -18,14 +18,12 @@ namespace Nijo.Parts.WebClient {
         /// 集約のメンバーを列挙して列定義を表すオブジェクトを返します。
         /// useFieldArray の update 関数を使用しているので、その関数を参照できる場所にレンダリングされる必要があります。
         /// </summary>
-        /// <param name="rowAccessor">DataTableの行を表すオブジェクトからその行オブジェクト内のデータオブジェクトのルートまでのパス。</param>
         /// <param name="dataTableOwner">このDataTableにはこの集約のメンバーの列が表示されます。</param>
         /// <param name="readOnly">このDataTableが読み取り専用か否か</param>
         /// <param name="useFormContextType">useFormContextのジェネリック型</param>
         /// <param name="registerPathModifier">ReactHookFormの登録パスの編集関数</param>
         /// <param name="arrayIndexVarNamesFromFormRootToDataTableOwner">React Hook Forms の記法において、フォームのルートからdataTableOwnerまでのパスに含まれる配列インデックスを表す変数名</param>
         internal static IEnumerable<DataTableColumn> FromMembers(
-            string rowAccessor,
             GraphNode<Aggregate> dataTableOwner,
             bool readOnly,
             string? useFormContextType = null,
@@ -63,7 +61,7 @@ namespace Nijo.Parts.WebClient {
 
                 var cell = $$"""
                     cellProps => {
-                      const value = cellProps.row.original.{{rowAccessor}}.{{memberPath.Join("?.")}}
+                      const value = cellProps.row.original.{{memberPath.Join("?.")}}
                       {{If(formatted != null, () => WithIndent(formatted!, "  "))}}
                       return (
                         <span className="block w-full px-1 overflow-hidden whitespace-nowrap">
@@ -91,23 +89,23 @@ namespace Nijo.Parts.WebClient {
                     throw new InvalidProgramException();
                 }
 
-                var getValue = $"data => data.{rowAccessor}.{memberPath.Join("?.")}";
+                var getValue = $"data => data.{memberPath.Join("?.")}";
 
                 string? setValue;
                 if (readOnly) {
                     setValue = null;
                 } else if (member.DeclaringAggregate == dataTableOwner) {
                     setValue = $$"""
-                        (row, value) => row.{{rowAccessor}}.{{memberPath.Join(".")}} = value
+                        (row, value) => row.{{memberPath.Join(".")}} = value
                         """;
                 } else {
                     var ownerPath = member.Owner.GetFullPathAsSingleViewDataClass(since: dataTableOwner);
                     var rootAggPath = member.Owner.GetRoot().GetFullPathAsSingleViewDataClass(since: dataTableOwner);
                     setValue = $$"""
                         (row, value) => {
-                          if (row.{{rowAccessor}}.{{ownerPath.Join("?.")}}) {
-                            row.{{rowAccessor}}.{{memberPath.Join(".")}} = value
-                            row.{{rowAccessor}}{{rootAggPath.Select(x => $".{x}").Join("")}}.{{DataClassForDisplay.WILL_BE_CHANGED}} = true
+                          if (row.{{ownerPath.Join("?.")}}) {
+                            row.{{memberPath.Join(".")}} = value
+                            row{{rootAggPath.Select(x => $".{x}").Join("")}}.{{DataClassForDisplay.WILL_BE_CHANGED}} = true
                           }
                         }
                         """;
@@ -155,7 +153,7 @@ namespace Nijo.Parts.WebClient {
                     if (member is AggregateMember.Ref r && r.RefTo == dataTableOwner) {
                         return $$"""
                             {
-                              {{DataClassForDisplayRefTarget.INSTANCE_KEY}}: row.original.{{rowAccessor}}.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}},
+                              {{DataClassForDisplayRefTarget.INSTANCE_KEY}}: row.original.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}},
                             }
                             """;
 
@@ -172,20 +170,20 @@ namespace Nijo.Parts.WebClient {
                         ({ row }) => {
 
                           const create{{refFrom.MainAggregate.Item.PhysicalName}} = useCallback(() => {
-                            if (row.original.{{rowAccessor}}{{ownerPath.SkipLast(1).Select(x => $"?.{x}").Join("")}}) {
-                              row.original.{{rowAccessor}}.{{ownerPath.Join(".")}} = {{WithIndent(refFromDisplayData.RenderNewObjectLiteral(RefKeyInitializer), "      ")}}
-                              update(row.index, { ...row.original.{{rowAccessor}} })
+                            if (row.original{{ownerPath.SkipLast(1).Select(x => $"?.{x}").Join("")}}) {
+                              row.original.{{ownerPath.Join(".")}} = {{WithIndent(refFromDisplayData.RenderNewObjectLiteral(RefKeyInitializer), "      ")}}
+                              update(row.index, { ...row.original })
                             }
                           }, [row.index])
 
                           const delete{{refFrom.MainAggregate.Item.PhysicalName}} = useCallback(() => {
-                            if (row.original.{{rowAccessor}}.{{ownerPath.Join("?.")}}) {
-                              row.original.{{rowAccessor}}.{{ownerPath.Join(".")}}.{{DataClassForDisplay.WILL_BE_DELETED}} = true
-                              update(row.index, { ...row.original.{{rowAccessor}} })
+                            if (row.original.{{ownerPath.Join("?.")}}) {
+                              row.original.{{ownerPath.Join(".")}}.{{DataClassForDisplay.WILL_BE_DELETED}} = true
+                              update(row.index, { ...row.original })
                             }
                           }, [row.index])
 
-                          const {{value}} = row.original.{{rowAccessor}}.{{ownerPath.Join("?.")}}
+                          const {{value}} = row.original.{{ownerPath.Join("?.")}}
 
                           return <>
                             {({{value}} === undefined || {{value}}.{{DataClassForDisplay.WILL_BE_DELETED}}) && (

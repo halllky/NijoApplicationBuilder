@@ -58,7 +58,7 @@ namespace Nijo.Features.Storing {
                 EnableResizing = false,
                 Cell = $$"""
                     cellProps => {
-                      const row = cellProps.row.original.item
+                      const row = cellProps.row.original
                       const state = Util.getLocalRepositoryState(row)
                     {{If(_options.ReadOnly, () => $$"""
                       const singleViewUrl = Util.{{navigation.GetSingleViewUrlHookName}}(row.{{DataClassForDisplay.LOCAL_REPOS_ITEMKEY}}, 'view')
@@ -75,7 +75,6 @@ namespace Nijo.Features.Storing {
                     """,
             };
             var gridColumns = new[] { rowHeader }.Concat(DataTableColumn.FromMembers(
-                "item",
                 _aggregate,
                 _options.ReadOnly,
                 useFormContextType: "{ currentPageItems: GridRow[] }",
@@ -176,7 +175,7 @@ namespace Nijo.Features.Storing {
 
                     """)}}
                       // 列定義
-                      const columnDefs: Layout.ColumnDefEx<Util.TreeNode<GridRow>>[] = useMemo(() => [
+                      const columnDefs: Layout.ColumnDefEx<GridRow>[] = useMemo(() => [
                         {{WithIndent(gridColumns.SelectTextTemplate(col => col.Render()), "    ")}}
                       ], [update])
 

@@ -1,41 +1,28 @@
 import { useState, useRef, useCallback, useEffect, useMemo, useImperativeHandle } from 'react'
 import * as RT from '@tanstack/react-table'
-import * as Tree from '../util'
 import * as Util from '../util'
-import { ROW_HEADER_ID, TABLE_ZINDEX } from './DataTable.Parts'
+import { TABLE_ZINDEX } from './DataTable.Parts'
 import { DataTableProps } from '..'
 
-export const useSelection = <T,>(api: RT.Table<Tree.TreeNode<T>>, onActiveRowChanged: DataTableProps<T>['onActiveRowChanged'] | undefined) => {
+export const useSelection = <T,>(api: RT.Table<T>, onActiveRowChanged: DataTableProps<T>['onActiveRowChanged'] | undefined) => {
   const [caretCell, setCaretCell] = useState<CellId | undefined>()
-  const [selectionStart, setSelectionStart] = useState<RT.Cell<Tree.TreeNode<T>, unknown> | undefined>()
+  const [selectionStart, setSelectionStart] = useState<RT.Cell<T, unknown> | undefined>()
   const [containsRowHeader, setContainsRowHeader] = useState(false)
   const caretTdRef = useRef<HTMLTableCellElement>()
   const selectionStartTdRef = useRef<HTMLTableCellElement>()
 
   type SelectTarget
-    = { cell: RT.Cell<Tree.TreeNode<T>, unknown>, shiftKey: boolean }
-    | { any: RT.Table<Tree.TreeNode<T>>, cell?: undefined }
-    | { all: RT.Table<Tree.TreeNode<T>>, cell?: undefined, any?: undefined }
+    = { cell: RT.Cell<T, unknown>, shiftKey: boolean }
+    | { any: RT.Table<T>, cell?: undefined }
+    | { all: RT.Table<T>, cell?: undefined, any?: undefined }
 
   const selectObject = useCallback((obj: SelectTarget) => {
     if (obj.cell) {
-      if (obj.cell.column.id === ROW_HEADER_ID) {
-        // シングル選択（行ヘッダが選択された場合）
-        const visibleCells = obj.cell.row.getVisibleCells()
-        if (visibleCells.length === 0) return
-        const cell = visibleCells[0]
-        setCaretCell({ cellId: cell.id, rowId: cell.row.id, colId: cell.column.id })
-        if (!obj.shiftKey) setSelectionStart(visibleCells[visibleCells.length - 1])
-        setContainsRowHeader(true)
-        onActiveRowChanged?.(undefined)
-
-      } else {
-        // シングル選択
-        setCaretCell({ cellId: obj.cell.id, rowId: obj.cell.row.id, colId: obj.cell.column.id })
-        if (!obj.shiftKey) setSelectionStart(obj.cell)
-        setContainsRowHeader(false)
-        onActiveRowChanged?.({ row: obj.cell.row.original.item, rowIndex: obj.cell.row.index })
-      }
+      // シングル選択
+      setCaretCell({ cellId: obj.cell.id, rowId: obj.cell.row.id, colId: obj.cell.column.id })
+      if (!obj.shiftKey) setSelectionStart(obj.cell)
+      setContainsRowHeader(false)
+      onActiveRowChanged?.({ row: obj.cell.row.original, rowIndex: obj.cell.row.index })
 
     } else if (obj.any) {
       // 何か選択
@@ -44,7 +31,7 @@ export const useSelection = <T,>(api: RT.Table<Tree.TreeNode<T>>, onActiveRowCha
         setCaretCell({ cellId: cell.id, rowId: cell.row.id, colId: cell.column.id })
         setSelectionStart(cell)
         setContainsRowHeader(false)
-        onActiveRowChanged?.({ row: cell.row.original.item, rowIndex: cell.row.index })
+        onActiveRowChanged?.({ row: cell.row.original, rowIndex: cell.row.index })
       }
 
     } else {
@@ -115,7 +102,7 @@ export const useSelection = <T,>(api: RT.Table<Tree.TreeNode<T>>, onActiveRowCha
     }
   }, [api, selectObject, caretCell])
 
-  const caretTdRefCallback = useCallback((td: HTMLTableCellElement | null, cell: RT.Cell<Tree.TreeNode<T>, unknown>) => {
+  const caretTdRefCallback = useCallback((td: HTMLTableCellElement | null, cell: RT.Cell<T, unknown>) => {
     if (td && cell.id === caretCell?.cellId) caretTdRef.current = td
     if (td && cell.id === selectionStart?.id) selectionStartTdRef.current = td
   }, [caretCell, selectionStart])
@@ -175,7 +162,7 @@ function prepareActiveRangeSvg<T>(
   }, {
     caretCell: object | undefined
     containsRowHeader: boolean
-    api: RT.Table<Tree.TreeNode<T>>
+    api: RT.Table<T>
   }>(({ caretCell, containsRowHeader, api }, ref) => {
     const svgRef = useRef<SVGSVGElement>(null)
     const maskBlackRef = useRef<SVGRectElement>(null)

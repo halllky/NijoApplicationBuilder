@@ -1,12 +1,11 @@
 import React, { useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import * as RT from '@tanstack/react-table'
 import * as Util from '../util'
-import * as Tree from '../util'
 import { ColumnDefEx, DataTableProps, DataTableRef } from './DataTable.Public'
-import { getRowHeader, ROW_HEADER_ID, TABLE_ZINDEX } from './DataTable.Parts'
+import { TABLE_ZINDEX } from './DataTable.Parts'
 import { useCellEditing } from './DataTable.Editing'
 import { useSelection } from './DataTable.Selecting'
-import { COLUMN_RESIZE_OPTION, useColumnResizing } from './DataTable.ColResize'
+import { getColumnResizeOption, useColumnResizing } from './DataTable.ColResize'
 
 export * from './DataTable.Public'
 
@@ -16,21 +15,13 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     columns: propsColumns,
     onKeyDown: propsKeyDown,
     onActiveRowChanged,
-    treeView,
     className,
   } = props
 
-  // 行
-  const dataAsTree = useMemo(() => {
-    if (!data) return []
-    return Tree.toTree(data, treeView)
-  }, [data, treeView])
-
   // 列
-  const columnHelper = useMemo(() => RT.createColumnHelper<Tree.TreeNode<T>>(), [])
-  const columns: RT.ColumnDef<Tree.TreeNode<T>>[] = useMemo(() => {
-    const result: RT.ColumnDef<Tree.TreeNode<T>>[] = []
-    if (treeView) result.unshift(getRowHeader(columnHelper, treeView))
+  const columnHelper = useMemo(() => RT.createColumnHelper<T>(), [])
+  const columns: RT.ColumnDef<T>[] = useMemo(() => {
+    const result: RT.ColumnDef<T>[] = []
     const colgroups = Util.groupBy(propsColumns ?? [], col => col.headerGroupName ?? '')
     for (const [header, columns] of colgroups) {
       if (header) {
@@ -40,16 +31,15 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       }
     }
     return result
-  }, [propsColumns, columnHelper, treeView])
+  }, [propsColumns, columnHelper])
 
   // 表
-  const optoins: RT.TableOptions<Tree.TreeNode<T>> = useMemo(() => ({
-    data: dataAsTree,
+  const optoins = useMemo((): RT.TableOptions<T> => ({
+    data: data ?? [],
     columns,
-    getSubRows: row => row.children,
     getCoreRowModel: RT.getCoreRowModel(),
-    ...COLUMN_RESIZE_OPTION,
-  }), [dataAsTree, columns])
+    ...getColumnResizeOption(),
+  }), [data, columns])
 
   const api = RT.useReactTable(optoins)
 
@@ -79,7 +69,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     ResizeHandler,
   } = useColumnResizing(api)
 
-  const tdRefCallback = (td: HTMLTableCellElement | null, cell: RT.Cell<Tree.TreeNode<T>, unknown>) => {
+  const tdRefCallback = (td: HTMLTableCellElement | null, cell: RT.Cell<T, unknown>) => {
     caretTdRefCallback(td, cell)
     editingTdRefCallback(td, cell)
   }
@@ -143,7 +133,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
   useImperativeHandle(ref, () => ({
     getSelectedRows: () => getSelectedRows().map(row => ({
-      row: row.original.item,
+      row: row.original,
       rowIndex: row.index,
     })),
     getSelectedIndexes,
@@ -177,7 +167,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
                 <th key={header.id}
                   colSpan={header.colSpan}
                   className="relative overflow-hidden whitespace-nowrap px-1 py-0 text-start bg-color-3"
-                  style={getThStickeyStyle(header)}>
+                  style={getThStickeyStyle(false)}>
                   {!header.isPlaceholder && RT.flexRender(
                     header.column.columnDef.header,
                     header.getContext())}
@@ -200,7 +190,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
                 <td key={cell.id}
                   ref={td => tdRefCallback(td, cell)}
                   className="relative overflow-hidden p-0 border-r border-1 border-color-4"
-                  style={getTdStickeyStyle(cell)}
+                  style={getTdStickeyStyle(false)}
                   onMouseDown={e => selectObject({ cell, shiftKey: e.shiftKey })}
                   onDoubleClick={() => startEditing(cell)}
                 >
@@ -227,16 +217,16 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
 // -----------------------------------------------
 // 行列ヘッダ固定
-const getThStickeyStyle = (header: RT.Header<any, unknown>): React.CSSProperties => ({
+const getThStickeyStyle = (isTopLeftCell: boolean): React.CSSProperties => ({
   position: 'sticky',
   top: 0,
-  left: header.column.id === ROW_HEADER_ID ? 0 : undefined,
-  zIndex: header.column.id === ROW_HEADER_ID ? TABLE_ZINDEX.ROWHEADER_THEAD : TABLE_ZINDEX.THEAD,
+  left: isTopLeftCell ? 0 : undefined,
+  zIndex: isTopLeftCell ? TABLE_ZINDEX.ROWHEADER_THEAD : TABLE_ZINDEX.THEAD,
 })
-const getTdStickeyStyle = (cell: RT.Cell<any, unknown>): React.CSSProperties => ({
-  position: cell.column.id === ROW_HEADER_ID ? 'sticky' : undefined,
-  left: cell.column.id === ROW_HEADER_ID ? 0 : undefined,
-  zIndex: cell.column.id === ROW_HEADER_ID ? TABLE_ZINDEX.ROWHEADER : undefined,
+const getTdStickeyStyle = (isRowHeader: boolean): React.CSSProperties => ({
+  position: isRowHeader ? 'sticky' : undefined,
+  left: isRowHeader ? 0 : undefined,
+  zIndex: isRowHeader ? TABLE_ZINDEX.ROWHEADER : undefined,
 })
 
 // -----------------------------------------------

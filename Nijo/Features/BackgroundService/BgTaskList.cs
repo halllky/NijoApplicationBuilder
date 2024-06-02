@@ -56,7 +56,7 @@ namespace Nijo.Features.BackgroundService {
             var agg = context.Schema.GetAggregate(GraphNodeId);
             var controller = new Controller(agg.Item);
             var members = agg.GetMembers().ToArray();
-            var columns = DataTableColumn.FromMembers("item", agg, true);
+            var columns = DataTableColumn.FromMembers(agg, true);
 
             return new SourceFile {
                 FileName = "BackgroundTaskList.tsx",
@@ -100,7 +100,7 @@ namespace Nijo.Features.BackgroundService {
                       }
                     }
 
-                    const COLUMN_DEFS: Collection.ColumnDefEx<Util.TreeNode<GridRow>>[] = [
+                    const COLUMN_DEFS: Collection.ColumnDefEx<GridRow>[] = [
                     {{WithIndent(columns.SelectTextTemplate(c => c.Render()), "  ")}}
                     ]
                     """,

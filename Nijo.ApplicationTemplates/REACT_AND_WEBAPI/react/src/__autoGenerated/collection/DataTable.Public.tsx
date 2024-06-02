@@ -1,6 +1,5 @@
 import React from 'react'
 import * as RT from '@tanstack/react-table'
-import * as Tree from '../util'
 import { CustomComponentRef } from '../input'
 
 export type DataTableProps<T> = {
@@ -8,11 +7,8 @@ export type DataTableProps<T> = {
   onChangeRow?: (index: number, data: T) => void
   onKeyDown?: DataTableKeyDownEvent<T>
   onActiveRowChanged?: (activeRow: { row: T, rowIndex: number } | undefined) => void
-  columns?: ColumnDefEx<Tree.TreeNode<T>>[]
+  columns?: ColumnDefEx<T>[]
   className?: string
-  treeView?: Tree.ToTreeArgs<T> & {
-    rowHeader: (row: T) => React.ReactNode
-  }
 }
 export type ColumnDefEx<TRow, TValue = any> = RT.ColumnDef<TRow> & {
   hidden?: boolean
@@ -25,9 +21,9 @@ export type ColumnDefEx<TRow, TValue = any> = RT.ColumnDef<TRow> & {
   setValue: (data: TRow, value: TValue) => void
 })
 export type DataTableKeyDownEvent<T> = (e: React.KeyboardEvent, { }: {
-  row: Tree.TreeNode<T>
+  row: T
   rowIndex: number
-  col: ColumnDefEx<Tree.TreeNode<T>>
+  col: ColumnDefEx<T>
 }) => void
 
 export type CellEditor<TValue> = (

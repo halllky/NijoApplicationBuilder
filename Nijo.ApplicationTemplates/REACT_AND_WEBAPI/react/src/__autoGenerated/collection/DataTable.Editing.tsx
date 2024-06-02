@@ -3,23 +3,22 @@ import * as RT from '@tanstack/react-table'
 import { DataTableProps, ColumnDefEx } from './DataTable.Public'
 import { TABLE_ZINDEX } from './DataTable.Parts'
 import * as Input from '../input'
-import * as Tree from '../util'
 import * as Util from '../util'
 
 export const useCellEditing = <T,>(props: DataTableProps<T>) => {
-  const [editingCell, setEditingCell] = useState<RT.Cell<Tree.TreeNode<T>, unknown> | undefined>(undefined)
+  const [editingCell, setEditingCell] = useState<RT.Cell<T, unknown> | undefined>(undefined)
   const [editingItemIndex, setEditingItemIndex] = useState<number | undefined>()
 
   const editingTdRef = useRef<HTMLTableCellElement>()
-  const editingTdRefCallback = useCallback((td: HTMLTableCellElement | null, cell: RT.Cell<Tree.TreeNode<T>, unknown>) => {
+  const editingTdRefCallback = useCallback((td: HTMLTableCellElement | null, cell: RT.Cell<T, unknown>) => {
     if (td && cell.id === editingCell?.id) editingTdRef.current = td
   }, [editingCell])
 
-  const startEditing = useCallback((cell: RT.Cell<Tree.TreeNode<T>, unknown>) => {
+  const startEditing = useCallback((cell: RT.Cell<T, unknown>) => {
     if (!props.onChangeRow) return // 値が編集されてもコミットできないので編集開始しない
-    if (!(cell.column.columnDef as ColumnDefEx<Tree.TreeNode<T>>)?.cellEditor) return // 編集不可のセル
+    if (!(cell.column.columnDef as ColumnDefEx<T>)?.cellEditor) return // 編集不可のセル
     setEditingCell(cell)
-    setEditingItemIndex(props.data?.indexOf(cell.row.original.item))
+    setEditingItemIndex(props.data?.indexOf(cell.row.original))
   }, [props.data, props.onChangeRow])
 
   const cancelEditing = useCallback(() => {
@@ -48,13 +47,13 @@ export const useCellEditing = <T,>(props: DataTableProps<T>) => {
 
 
 function prepareCellEditor<T,>(
-  setEditingCell: (v: RT.Cell<Tree.TreeNode<T>, unknown> | undefined) => void,
+  setEditingCell: (v: RT.Cell<T, unknown> | undefined) => void,
   editingTdRef: React.MutableRefObject<HTMLTableCellElement | undefined>,
 ) {
   return ({ editingItemIndex, onChangeRow, editingCell, onEndEditing }: {
     editingItemIndex: number | undefined,
     onChangeRow: DataTableProps<T>['onChangeRow']
-    editingCell: RT.Cell<Tree.TreeNode<T>, unknown> | undefined
+    editingCell: RT.Cell<T, unknown> | undefined
     onEndEditing?: () => void
   }) => {
     const [uncomittedValue, setUnComittedValue] = useState<unknown>(() => {
@@ -63,7 +62,7 @@ function prepareCellEditor<T,>(
     })
 
     const cellEditor = useMemo(() => {
-      const editor = (editingCell?.column.columnDef as ColumnDefEx<Tree.TreeNode<T>>)?.cellEditor
+      const editor = (editingCell?.column.columnDef as ColumnDefEx<T>)?.cellEditor
       if (editor) return Util.forwardRefEx(editor)
 
       // セル編集コンポーネント未指定の場合
@@ -76,13 +75,13 @@ function prepareCellEditor<T,>(
 
     const commitEditing = useCallback(() => {
       if (editingItemIndex !== undefined && onChangeRow && editingCell) {
-        const setValue = (editingCell?.column.columnDef as ColumnDefEx<Tree.TreeNode<T>>)?.setValue
+        const setValue = (editingCell?.column.columnDef as ColumnDefEx<T>)?.setValue
         if (!setValue) {
           // セッターがないのにこのコンポーネントが存在するのはあり得ないのでエラー
           throw new Error('value setter is not defined.')
         }
         setValue(editingCell.row.original, editorRef.current?.getValue())
-        onChangeRow(editingItemIndex, editingCell.row.original.item)
+        onChangeRow(editingItemIndex, editingCell.row.original)
       }
       setEditingCell(undefined)
       onEndEditing?.()

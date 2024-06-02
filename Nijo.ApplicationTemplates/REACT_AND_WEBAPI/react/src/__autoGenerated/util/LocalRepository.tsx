@@ -209,8 +209,8 @@ export const LocalReposChangeListPage = () => {
     </div>
   )
 }
-const CHANGE_LIST_COLS: Collection.ColumnDefEx<Tree.TreeNode<LocalRepositoryItemListItem>>[] = [
-  { id: 'col0', header: '状態', accessorFn: x => x.item.state, size: 12 },
-  { id: 'col1', header: '種類', accessorFn: x => x.item.dataTypeKey },
-  { id: 'col2', header: '名前', accessorFn: x => x.item.itemName },
+const CHANGE_LIST_COLS: Collection.ColumnDefEx<LocalRepositoryItemListItem>[] = [
+  { id: 'col0', header: '状態', accessorFn: x => x.state, size: 12 },
+  { id: 'col1', header: '種類', accessorFn: x => x.dataTypeKey },
+  { id: 'col2', header: '名前', accessorFn: x => x.itemName },
 ]

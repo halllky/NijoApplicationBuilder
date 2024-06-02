@@ -1,16 +1,15 @@
 import { useMemo, useCallback } from 'react'
 import * as RT from '@tanstack/react-table'
-import * as Tree from '../util'
 
-export const COLUMN_RESIZE_OPTION: Partial<RT.TableOptions<Tree.TreeNode<any>>> = {
+export const getColumnResizeOption = <T,>(): Partial<RT.TableOptions<T>> => ({
   defaultColumn: {
     minSize: 8,
     maxSize: 800,
   },
   columnResizeMode: 'onChange',
-}
+})
 
-export const useColumnResizing = <T,>(api: RT.Table<Tree.TreeNode<T>>) => {
+export const useColumnResizing = <T,>(api: RT.Table<T>) => {
 
   const columnSizeVars = useMemo(() => {
     const headers = api.getFlatHeaders()
@@ -27,12 +26,12 @@ export const useColumnResizing = <T,>(api: RT.Table<Tree.TreeNode<T>>) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api.getState().columnSizingInfo])
 
-  const getColWidth = useCallback((header: RT.Header<Tree.TreeNode<T>, unknown>) => {
+  const getColWidth = useCallback((header: RT.Header<T, unknown>) => {
     return `calc(var(--header-${header?.id}-size) * 1px)`
   }, [])
 
   const ResizeHandler = useCallback(({ header }: {
-    header: RT.Header<Tree.TreeNode<T>, unknown>
+    header: RT.Header<T, unknown>
   }) => {
     return (
       <div {...{

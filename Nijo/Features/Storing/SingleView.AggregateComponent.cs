@@ -278,7 +278,6 @@ namespace Nijo.Features.Storing {
                 var editable = _mode == SingleView.E_Type.View ? "false" : "true";
 
                 var colDefs = DataTableColumn.FromMembers(
-                        "item",
                         _aggregate,
                         _mode == SingleView.E_Type.View,
                         useFormContextType: $"AggregateType.{new DataClassForDisplay(_aggregate.GetEntry().As<Aggregate>()).TsTypeName}",
