@@ -15,6 +15,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     data,
     columns: propsColumns,
     onKeyDown: propsKeyDown,
+    onActiveRowChanged,
     treeView,
     className,
   } = props
@@ -70,7 +71,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     activeCellBorderProps,
     getSelectedRows,
     getSelectedIndexes,
-  } = useSelection<T>(api)
+  } = useSelection<T>(api, onActiveRowChanged)
 
   const {
     columnSizeVars,

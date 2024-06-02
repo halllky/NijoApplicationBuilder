@@ -3,8 +3,9 @@ import * as RT from '@tanstack/react-table'
 import * as Tree from '../util'
 import * as Util from '../util'
 import { ROW_HEADER_ID, TABLE_ZINDEX } from './DataTable.Parts'
+import { DataTableProps } from '..'
 
-export const useSelection = <T,>(api: RT.Table<Tree.TreeNode<T>>) => {
+export const useSelection = <T,>(api: RT.Table<Tree.TreeNode<T>>, onActiveRowChanged: DataTableProps<T>['onActiveRowChanged'] | undefined) => {
   const [caretCell, setCaretCell] = useState<CellId | undefined>()
   const [selectionStart, setSelectionStart] = useState<RT.Cell<Tree.TreeNode<T>, unknown> | undefined>()
   const [containsRowHeader, setContainsRowHeader] = useState(false)
@@ -26,12 +27,14 @@ export const useSelection = <T,>(api: RT.Table<Tree.TreeNode<T>>) => {
         setCaretCell({ cellId: cell.id, rowId: cell.row.id, colId: cell.column.id })
         if (!obj.shiftKey) setSelectionStart(visibleCells[visibleCells.length - 1])
         setContainsRowHeader(true)
+        onActiveRowChanged?.(undefined)
 
       } else {
         // シングル選択
         setCaretCell({ cellId: obj.cell.id, rowId: obj.cell.row.id, colId: obj.cell.column.id })
         if (!obj.shiftKey) setSelectionStart(obj.cell)
         setContainsRowHeader(false)
+        onActiveRowChanged?.(obj.cell.row.original.item)
       }
 
     } else if (obj.any) {
@@ -41,6 +44,7 @@ export const useSelection = <T,>(api: RT.Table<Tree.TreeNode<T>>) => {
         setCaretCell({ cellId: cell.id, rowId: cell.row.id, colId: cell.column.id })
         setSelectionStart(cell)
         setContainsRowHeader(false)
+        onActiveRowChanged?.(cell.row.original.item)
       }
 
     } else {
@@ -55,8 +59,9 @@ export const useSelection = <T,>(api: RT.Table<Tree.TreeNode<T>>) => {
       setCaretCell({ cellId: topLeftCell.id, rowId: topLeftCell.row.id, colId: topLeftCell.column.id })
       setSelectionStart(bottomRightCell)
       setContainsRowHeader(true)
+      onActiveRowChanged?.(undefined)
     }
-  }, [])
+  }, [onActiveRowChanged])
 
   const handleSelectionKeyDown: React.KeyboardEventHandler<HTMLElement> = useCallback(e => {
     if (e.ctrlKey && e.key === 'a') {
