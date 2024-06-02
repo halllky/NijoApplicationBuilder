@@ -183,7 +183,7 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TEmitValue, TMatchin
               active={matchingKeySelectorFromOption(item) === highlighted}
               onClick={onClickItem}
             >
-              {textSelector(item)}
+              {textSelector(item)}&nbsp;
             </ListItem>
           ))}
         </ul>
