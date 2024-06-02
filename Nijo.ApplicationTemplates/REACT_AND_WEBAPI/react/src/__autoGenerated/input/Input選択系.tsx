@@ -5,6 +5,9 @@ import { CustomComponentProps, CustomComponentRef, defineCustomComponent } from 
 import { ComboBoxBase } from "./ComboBoxBase"
 import { RadioGroupBase, ToggleBase } from "./ToggleBase"
 
+/** コンボボックス */
+export const ComboBox = ComboBoxBase // nijoが自動生成するコードでは使われないがカスタマイズされる際に使われる可能性がある
+
 /** ラジオボタン or コンボボックス */
 export const Selection = defineCustomComponent(<TItem extends string = string>(
   props: CustomComponentProps<TItem, {
