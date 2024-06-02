@@ -4,107 +4,114 @@ import * as Util from '../util'
 import { TABLE_ZINDEX } from './DataTable.Parts'
 import { DataTableProps } from '..'
 
-export const useSelection = <T,>(api: RT.Table<T>, onActiveRowChanged: DataTableProps<T>['onActiveRowChanged'] | undefined) => {
-  const [caretCell, setCaretCell] = useState<CellId | undefined>()
-  const [selectionStart, setSelectionStart] = useState<RT.Cell<T, unknown> | undefined>()
+export const useSelection = <T,>(
+  api: RT.Table<T>,
+  rowCount: number,
+  colCount: number,
+  onActiveRowChanged: DataTableProps<T>['onActiveRowChanged'] | undefined
+) => {
+  const [caretCell, setCaretCell] = useState<CellPosition | undefined>()
+  const [selectionStart, setSelectionStart] = useState<CellPosition | undefined>()
   const [containsRowHeader, setContainsRowHeader] = useState(false)
   const caretTdRef = useRef<HTMLTableCellElement>()
   const selectionStartTdRef = useRef<HTMLTableCellElement>()
 
   type SelectTarget
-    = { cell: RT.Cell<T, unknown>, shiftKey: boolean }
-    | { any: RT.Table<T>, cell?: undefined }
-    | { all: RT.Table<T>, cell?: undefined, any?: undefined }
+    = { target: 'cell', cell: CellPosition, shiftKey: boolean }
+    | { target: 'any' }
+    | { target: 'all' }
 
   const selectObject = useCallback((obj: SelectTarget) => {
-    if (obj.cell) {
-      // シングル選択
-      setCaretCell({ cellId: obj.cell.id, rowId: obj.cell.row.id, colId: obj.cell.column.id })
+    // シングル選択
+    if (obj.target === 'cell') {
+      setCaretCell({ ...obj.cell })
       if (!obj.shiftKey) setSelectionStart(obj.cell)
       setContainsRowHeader(false)
-      onActiveRowChanged?.({ row: obj.cell.row.original, rowIndex: obj.cell.row.index })
-
-    } else if (obj.any) {
-      // 何か選択
-      const cell = obj.any.getRowModel().flatRows[0]?.getAllCells()?.[0]
-      if (cell) {
-        setCaretCell({ cellId: cell.id, rowId: cell.row.id, colId: cell.column.id })
-        setSelectionStart(cell)
+      onActiveRowChanged?.({ rowIndex: obj.cell.rowIndex, getRow: () => api.getCoreRowModel().flatRows[obj.cell.rowIndex].original })
+    }
+    // 何か選択
+    else if (obj.target === 'any') {
+      if (rowCount > 0 && colCount >= 0) {
+        const selected: CellPosition = { rowIndex: 0, colId: api.getAllColumns()[0].id }
+        setCaretCell(selected)
+        setSelectionStart(selected)
         setContainsRowHeader(false)
-        onActiveRowChanged?.({ row: cell.row.original, rowIndex: cell.row.index })
+        onActiveRowChanged?.({ rowIndex: 0, getRow: () => api.getCoreRowModel().flatRows[0].original })
+
+      } else {
+        setCaretCell(undefined)
+        setSelectionStart(undefined)
+        setContainsRowHeader(false)
+        onActiveRowChanged?.(undefined)
       }
 
-    } else {
-      // 全選択
-      const flatRows = obj.all.getRowModel().flatRows
-      const firstRow = flatRows[0]
-      const lastRow = flatRows[flatRows.length - 1]
-      const firstRowVisibleCells = firstRow?.getVisibleCells()
-      const lastRowVisibleCells = lastRow?.getVisibleCells()
-      const topLeftCell = firstRowVisibleCells?.[0]
-      const bottomRightCell = lastRowVisibleCells?.[lastRowVisibleCells.length - 1]
-      setCaretCell({ cellId: topLeftCell.id, rowId: topLeftCell.row.id, colId: topLeftCell.column.id })
-      setSelectionStart(bottomRightCell)
-      setContainsRowHeader(true)
-      onActiveRowChanged?.(undefined)
     }
-  }, [onActiveRowChanged])
+    // 全選択
+    else {
+      if (rowCount > 0 && colCount >= 0) {
+        const columns = api.getAllColumns()
+        setCaretCell({ rowIndex: 0, colId: columns[0].id })
+        setSelectionStart({ rowIndex: rowCount - 1, colId: columns[columns.length - 1].id })
+        setContainsRowHeader(true)
+        onActiveRowChanged?.({ rowIndex: 0, getRow: () => api.getCoreRowModel().flatRows[rowCount - 1].original })
+
+      } else {
+        setCaretCell(undefined)
+        setSelectionStart(undefined)
+        setContainsRowHeader(false)
+        onActiveRowChanged?.(undefined)
+      }
+    }
+  }, [api, onActiveRowChanged, rowCount, colCount])
 
   const handleSelectionKeyDown: React.KeyboardEventHandler<HTMLElement> = useCallback(e => {
     if (e.ctrlKey && e.key === 'a') {
-      selectObject({ all: api })
+      selectObject({ target: 'all' })
       e.preventDefault()
 
     } else if (!e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
       if (!caretCell) {
-        selectObject({ any: api })
+        selectObject({ target: 'any' })
         e.preventDefault()
         return
       }
       // 1つ上または下のセルを選択
-      const flatRows = api.getRowModel().flatRows
-      const currentRow = api.getRow(caretCell.rowId)
-      let rowIndex = currentRow.index
-      if (e.key === 'ArrowUp') rowIndex--; else rowIndex++
-      while (e.key === 'ArrowUp' ? (rowIndex > -1) : (rowIndex < flatRows.length)) {
-        const row = flatRows[rowIndex]
-        if (row === undefined) return
-        if (!row.getIsAllParentsExpanded()) {
-          if (e.key === 'ArrowUp') rowIndex--; else rowIndex++
-          continue
-        }
-        const cell = row.getAllCells().find(cell => cell.column.id === caretCell.colId)!
-        selectObject({ cell, shiftKey: e.shiftKey })
-        e.preventDefault()
-        activeCellRef.current?.scrollToActiveCell()
-        return
+      const rowIndex = e.key === 'ArrowUp'
+        ? Math.max(0, caretCell.rowIndex - 1)
+        : Math.min(rowCount - 1, caretCell.rowIndex + 1)
+      selectObject({ target: 'cell', cell: { rowIndex, colId: caretCell.colId }, shiftKey: e.shiftKey })
+      e.preventDefault()
+      activeCellRef.current?.scrollToActiveCell()
+      return
 
-      }
     } else if (!e.ctrlKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
       if (!caretCell) {
-        selectObject({ any: api })
+        selectObject({ target: 'any' })
         e.preventDefault()
         return
       }
       // 1つ左または右のセルを選択
-      const currentRow = api.getRow(caretCell.rowId)
-      const allCells = currentRow.getAllCells()
-      let colIndex = allCells.findIndex(cell => cell.column.id === caretCell.colId)
-      if (e.key === 'ArrowLeft') colIndex--; else colIndex++
-      while (e.key === 'ArrowLeft' ? (colIndex > -1) : (colIndex < allCells.length)) {
-        const neighborCell = allCells[colIndex]
-        if (neighborCell === undefined) return
-        selectObject({ cell: neighborCell, shiftKey: e.shiftKey })
-        e.preventDefault()
-        activeCellRef.current?.scrollToActiveCell()
-        return
-      }
+      const columns = api.getAllColumns()
+      const currentColIndex = columns.findIndex(col => col.id === caretCell.colId)
+      const newColIndex = e.key === 'ArrowLeft'
+        ? Math.max(0, currentColIndex - 1)
+        : Math.min(columns.length - 1, currentColIndex + 1)
+      const newColumn = columns[newColIndex]
+      selectObject({ target: 'cell', cell: { rowIndex: caretCell.rowIndex, colId: newColumn.id }, shiftKey: e.shiftKey })
+      e.preventDefault()
+      activeCellRef.current?.scrollToActiveCell()
     }
-  }, [api, selectObject, caretCell])
+  }, [api, selectObject, caretCell, rowCount, colCount])
 
   const caretTdRefCallback = useCallback((td: HTMLTableCellElement | null, cell: RT.Cell<T, unknown>) => {
-    if (td && cell.id === caretCell?.cellId) caretTdRef.current = td
-    if (td && cell.id === selectionStart?.id) selectionStartTdRef.current = td
+    if (td !== null
+      && cell.row.index === caretCell?.rowIndex
+      && cell.column.id === caretCell.colId)
+      caretTdRef.current = td
+    if (td !== null
+      && cell.row.index === selectionStart?.rowIndex
+      && cell.column.id === selectionStart.colId)
+      selectionStartTdRef.current = td
   }, [caretCell, selectionStart])
 
   const ActiveCellBorder = useMemo(() => {
@@ -117,20 +124,15 @@ export const useSelection = <T,>(api: RT.Table<T>, onActiveRowChanged: DataTable
   const getSelectedRows = useCallback(() => {
     if (!caretCell || !selectionStart) return []
     const flatRows = api.getRowModel().flatRows
-    const ix1 = flatRows.findIndex(row => row.id === selectionStart.row.id)
-    const ix2 = flatRows.findIndex(row => row.id === caretCell.rowId)
-    const since = Math.min(ix1, ix2)
-    const until = Math.max(ix1, ix2)
+    const since = Math.min(caretCell.rowIndex, selectionStart.rowIndex)
+    const until = Math.max(caretCell.rowIndex, selectionStart.rowIndex)
     return flatRows.slice(since, until + 1)
   }, [api, caretCell, selectionStart])
 
   const getSelectedIndexes = useCallback(() => {
     if (!caretCell || !selectionStart) return []
-    const flatRows = api.getRowModel().flatRows
-    const ix1 = flatRows.indexOf(selectionStart.row)
-    const ix2 = flatRows.findIndex(row => row.id === caretCell.rowId)
-    const since = Math.min(ix1, ix2)
-    const until = Math.max(ix1, ix2)
+    const since = Math.min(caretCell.rowIndex, selectionStart.rowIndex)
+    const until = Math.max(caretCell.rowIndex, selectionStart.rowIndex)
     return [...Array(until - since + 1)].map((_, i) => i + since)
   }, [api, caretCell, selectionStart])
 
@@ -249,8 +251,7 @@ function prepareActiveRangeSvg<T>(
   })
 }
 
-type CellId = {
-  cellId: string
-  rowId: string
+type CellPosition = {
+  rowIndex: number
   colId: string
 }

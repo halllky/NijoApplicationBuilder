@@ -61,7 +61,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     activeCellBorderProps,
     getSelectedRows,
     getSelectedIndexes,
-  } = useSelection<T>(api, onActiveRowChanged)
+  } = useSelection<T>(api, data?.length ?? 0, columns.length, onActiveRowChanged)
 
   const {
     columnSizeVars,
@@ -77,7 +77,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   const [isActive, setIsActive] = useState(false)
   const handleFocus: React.FocusEventHandler<HTMLDivElement> = useCallback(() => {
     setIsActive(true)
-    if (!caretCell) selectObject({ any: api })
+    if (!caretCell) selectObject({ target: 'any' })
   }, [api, caretCell, selectObject])
   const handleBlur: React.FocusEventHandler<HTMLDivElement> = useCallback(e => {
     // フォーカスの移動先がこの要素の中にある場合はfalseにしない
@@ -97,17 +97,9 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     if (editing) return
 
     // 任意の操作
-    if (propsKeyDown && caretCell) {
-      const row = api.getRow(caretCell.rowId)
-      const col = row.getAllCells().find(c => c.id === caretCell.cellId)?.column
-      if (col) {
-        propsKeyDown(e, {
-          row: row.original,
-          rowIndex: row.index,
-          col,
-        })
-        if (e.defaultPrevented) return
-      }
+    if (propsKeyDown) {
+      propsKeyDown(e)
+      if (e.defaultPrevented) return
     }
 
     // 選択に関する操作
@@ -123,8 +115,8 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
         || !e.ctrlKey && !e.metaKey && e.key.length === 1 /*文字や数字や記号の場合*/)
     ) {
       // caretCellは更新前の古いセルなので最新の配列から検索しなおす
-      const row = api.getRow(caretCell.rowId)
-      const cell = row.getAllCells().find(cell => cell.id === caretCell.cellId)
+      const row = api.getCoreRowModel().flatRows[caretCell.rowIndex]
+      const cell = row.getAllCells().find(cell => cell.column.id === caretCell.colId)
       if (cell) startEditing(cell)
       e.preventDefault()
       return
@@ -191,7 +183,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
                   ref={td => tdRefCallback(td, cell)}
                   className="relative overflow-hidden p-0 border-r border-1 border-color-4"
                   style={getTdStickeyStyle(false)}
-                  onMouseDown={e => selectObject({ cell, shiftKey: e.shiftKey })}
+                  onMouseDown={e => selectObject({ target: 'cell', cell: { rowIndex: cell.row.index, colId: cell.column.id }, shiftKey: e.shiftKey })}
                   onDoubleClick={() => startEditing(cell)}
                 >
                   {RT.flexRender(

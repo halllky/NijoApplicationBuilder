@@ -5,8 +5,8 @@ import { CustomComponentRef } from '../input'
 export type DataTableProps<T> = {
   data?: T[]
   onChangeRow?: (index: number, data: T) => void
-  onKeyDown?: DataTableKeyDownEvent<T>
-  onActiveRowChanged?: (activeRow: { row: T, rowIndex: number } | undefined) => void
+  onKeyDown?: React.KeyboardEventHandler
+  onActiveRowChanged?: (activeRow: { getRow: () => T, rowIndex: number } | undefined) => void
   columns?: ColumnDefEx<T>[]
   className?: string
 }
@@ -20,11 +20,6 @@ export type ColumnDefEx<TRow, TValue = any> = RT.ColumnDef<TRow> & {
   cellEditor: CellEditor<TValue>
   setValue: (data: TRow, value: TValue) => void
 })
-export type DataTableKeyDownEvent<T> = (e: React.KeyboardEvent, { }: {
-  row: T
-  rowIndex: number
-  col: ColumnDefEx<T>
-}) => void
 
 export type CellEditor<TValue> = (
   props: CellEditorProps<TValue>,
