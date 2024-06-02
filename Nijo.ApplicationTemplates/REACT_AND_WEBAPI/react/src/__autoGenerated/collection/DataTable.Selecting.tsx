@@ -34,7 +34,7 @@ export const useSelection = <T,>(api: RT.Table<Tree.TreeNode<T>>, onActiveRowCha
         setCaretCell({ cellId: obj.cell.id, rowId: obj.cell.row.id, colId: obj.cell.column.id })
         if (!obj.shiftKey) setSelectionStart(obj.cell)
         setContainsRowHeader(false)
-        onActiveRowChanged?.(obj.cell.row.original.item)
+        onActiveRowChanged?.({ row: obj.cell.row.original.item, rowIndex: obj.cell.row.index })
       }
 
     } else if (obj.any) {
@@ -44,7 +44,7 @@ export const useSelection = <T,>(api: RT.Table<Tree.TreeNode<T>>, onActiveRowCha
         setCaretCell({ cellId: cell.id, rowId: cell.row.id, colId: cell.column.id })
         setSelectionStart(cell)
         setContainsRowHeader(false)
-        onActiveRowChanged?.(cell.row.original.item)
+        onActiveRowChanged?.({ row: cell.row.original.item, rowIndex: cell.row.index })
       }
 
     } else {

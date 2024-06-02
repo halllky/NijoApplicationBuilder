@@ -7,7 +7,7 @@ export type DataTableProps<T> = {
   data?: T[]
   onChangeRow?: (index: number, data: T) => void
   onKeyDown?: DataTableKeyDownEvent<T>
-  onActiveRowChanged?: (row: T | undefined) => void
+  onActiveRowChanged?: (activeRow: { row: T, rowIndex: number } | undefined) => void
   columns?: ColumnDefEx<Tree.TreeNode<T>>[]
   className?: string
   treeView?: Tree.ToTreeArgs<T> & {
