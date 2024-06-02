@@ -10,11 +10,13 @@ export type DropDownApi = { isOpened: boolean, open: () => void, close: () => vo
 export const TextInputBase = defineCustomComponent<string, {
   dropdownBody?: DropDownBody
   onValidate?: ValidationHandler
+  onDropdownOpened?: () => void
   dropdownRef?: React.RefObject<DropDownApi>
 }>((props, ref) => {
 
   const {
     dropdownBody,
+    onDropdownOpened,
     onValidate,
     dropdownRef,
     value,
@@ -58,7 +60,8 @@ export const TextInputBase = defineCustomComponent<string, {
   }
   const onSideButtonClick = useCallback(() => {
     setOpen(!open)
-  }, [open])
+    onDropdownOpened?.()
+  }, [open, onDropdownOpened])
   const onClose = useCallback(() => {
     setOpen(false)
     inputRef.current?.focus()

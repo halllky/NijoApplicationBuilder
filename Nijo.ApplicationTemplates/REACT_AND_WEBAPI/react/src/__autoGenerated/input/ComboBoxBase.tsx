@@ -141,6 +141,11 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TEmitValue, TMatchin
     dropdownRef.current?.close()
   }, [selectItemByValue])
 
+  const onDropdownOpened = useCallback(() => {
+    highlightAnyItem()
+    textBaseRef.current?.focus()
+  }, [highlightAnyItem])
+
   const textBaseRef = useRef<CustomComponentRef>(null)
   useImperativeHandle(ref, () => ({
     getValue: () => {
@@ -170,6 +175,7 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TEmitValue, TMatchin
       onBlur={handleBlur}
       onChange={onChangeKeyword}
       onKeyDown={onKeyDown}
+      onDropdownOpened={onDropdownOpened}
       dropdownRef={dropdownRef}
       dropdownBody={() => (
         <ul>
