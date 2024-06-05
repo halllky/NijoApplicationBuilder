@@ -109,6 +109,7 @@ function prepareCellEditor<T,>(
       if (editingTdRef.current && containerRef.current) {
         containerRef.current.style.left = `${editingTdRef.current.offsetLeft}px`
         containerRef.current.style.top = `${editingTdRef.current.offsetTop}px`
+        containerRef.current.style.minWidth = `${editingTdRef.current.clientWidth}px`
       }
       // エディタにスクロール
       containerRef.current?.scrollIntoView({
@@ -164,8 +165,7 @@ function prepareCellEditor<T,>(
           onChange={setUnComittedValue}
           onKeyDown={handleKeyDown}
           onBlur={commitEditing}
-          className={'block resize'}
-
+          className="block resize w-full"
         />
         {/* {React.createElement(cellEditor, {
           ref: editorRef,
