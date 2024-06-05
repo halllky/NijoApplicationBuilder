@@ -1,14 +1,15 @@
 import { useState, useRef, useCallback, useEffect, useMemo, useImperativeHandle } from 'react'
 import * as RT from '@tanstack/react-table'
 import * as Util from '../util'
-import { TABLE_ZINDEX } from './DataTable.Parts'
+import { CellEditorRef, TABLE_ZINDEX } from './DataTable.Parts'
 import { DataTableProps } from '..'
 
 export const useSelection = <T,>(
   api: RT.Table<T>,
   rowCount: number,
   colCount: number,
-  onActiveRowChanged: DataTableProps<T>['onActiveRowChanged'] | undefined
+  onActiveRowChanged: DataTableProps<T>['onActiveRowChanged'] | undefined,
+  cellEditorRef: React.RefObject<CellEditorRef>,
 ) => {
   const [caretCell, setCaretCell] = useState<CellPosition | undefined>()
   const [selectionStart, setSelectionStart] = useState<CellPosition | undefined>()
@@ -62,6 +63,8 @@ export const useSelection = <T,>(
         onActiveRowChanged?.(undefined)
       }
     }
+    // クイック編集のために常にCellEditorにフォーカスを当てる
+    cellEditorRef.current?.focus()
   }, [api, onActiveRowChanged, rowCount, colCount])
 
   const handleSelectionKeyDown: React.KeyboardEventHandler<HTMLElement> = useCallback(e => {

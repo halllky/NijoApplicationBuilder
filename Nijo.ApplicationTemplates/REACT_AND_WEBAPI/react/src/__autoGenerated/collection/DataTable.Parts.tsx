@@ -6,3 +6,7 @@ export const TABLE_ZINDEX = {
   ROWHEADER: 10 as const,
   SELECTION: 1 as const,
 }
+
+export type CellEditorRef = {
+  focus: () => void
+}

@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import * as RT from '@tanstack/react-table'
 import { DataTableProps, ColumnDefEx } from './DataTable.Public'
-import { TABLE_ZINDEX } from './DataTable.Parts'
+import { CellEditorRef, TABLE_ZINDEX } from './DataTable.Parts'
 import * as Input from '../input'
 import * as Util from '../util'
 
@@ -36,6 +36,7 @@ export const useCellEditing = <T,>(props: DataTableProps<T>) => {
 
     CellEditor,
     cellEditorProps: {
+      editing: editingCell !== undefined,
       editingCell,
       editingItemIndex,
       onChangeRow: props.onChangeRow,
@@ -45,22 +46,27 @@ export const useCellEditing = <T,>(props: DataTableProps<T>) => {
   }
 }
 
+export type CellEditorProps<T> = {
+  editing: boolean
+  editingItemIndex: number | undefined
+  onChangeRow: DataTableProps<T>['onChangeRow']
+  onKeyDown: React.KeyboardEventHandler
+  editingCell: RT.Cell<T, unknown> | undefined
+  onEndEditing?: () => void
+  requestStartEditing: () => void
+}
 
 function prepareCellEditor<T,>(
   setEditingCell: (v: RT.Cell<T, unknown> | undefined) => void,
   editingTdRef: React.MutableRefObject<HTMLTableCellElement | undefined>,
 ) {
-  return ({ editingItemIndex, onChangeRow, editingCell, onEndEditing }: {
-    editingItemIndex: number | undefined,
-    onChangeRow: DataTableProps<T>['onChangeRow']
-    editingCell: RT.Cell<T, unknown> | undefined
-    onEndEditing?: () => void
-  }) => {
+  return Util.forwardRefEx<CellEditorRef, CellEditorProps<T>>(({ editing, editingItemIndex, onChangeRow, onKeyDown, editingCell, onEndEditing, requestStartEditing }, ref) => {
     const [uncomittedValue, setUnComittedValue] = useState<unknown>(() => {
       if (!editingCell?.column.accessorFn || editingItemIndex === undefined) return undefined
       return editingCell.column.accessorFn(editingCell.row.original, editingItemIndex)
     })
 
+    // TODO: クイック編集を実現するために、任意のCellEditorを設定できる仕様を変更したい
     const cellEditor = useMemo(() => {
       const editor = (editingCell?.column.columnDef as ColumnDefEx<T>)?.cellEditor
       if (editor) return Util.forwardRefEx(editor)
@@ -69,7 +75,7 @@ function prepareCellEditor<T,>(
       return Util.forwardRefEx<
         Input.CustomComponentRef<any>,
         Input.CustomComponentProps<any>
-      >((props, ref) => <Input.Description ref={ref} {...props} />)
+      >((props, ref) => <Input.Word ref={ref} {...props} />)
 
     }, [editingCell?.column])
 
@@ -92,41 +98,76 @@ function prepareCellEditor<T,>(
       onEndEditing?.()
     }, [onEndEditing])
 
-    const editorRef = useRef<Input.CustomComponentRef<any>>(null)
+    const editorRef = useRef<Input.CustomComponentRef<string>>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     useEffect(() => {
+      // エディタの初期値設定
+      if (editing) {
+        setUnComittedValue(editingCell!.getValue())
+      }
       // エディタを編集対象セルの位置に移動させる
       if (editingTdRef.current && containerRef.current) {
         containerRef.current.style.left = `${editingTdRef.current.offsetLeft}px`
         containerRef.current.style.top = `${editingTdRef.current.offsetTop}px`
       }
-      // エディタにフォーカスを当ててスクロール
-      editorRef.current?.focus()
+      // エディタにスクロール
       containerRef.current?.scrollIntoView({
         behavior: 'instant',
         block: 'nearest',
         inline: 'nearest',
       })
-    }, [])
+    }, [editing])
 
     const [{ isImeOpen }] = Util.useIMEOpened()
     const handleKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = useCallback(e => {
-      if ((e.key === 'Enter' || e.key === 'Tab') && !isImeOpen) {
-        commitEditing()
-        e.stopPropagation()
-        e.preventDefault()
-      } else if (e.key === 'Escape') {
-        cancelEditing()
-        e.preventDefault()
+      if (editing) {
+        // 編集を終わらせる
+        if ((e.key === 'Enter' || e.key === 'Tab') && !isImeOpen) {
+          commitEditing()
+          e.stopPropagation()
+          e.preventDefault()
+        } else if (e.key === 'Escape') {
+          cancelEditing()
+          e.preventDefault()
+        }
+      } else {
+        // セル移動や選択
+        onKeyDown(e)
+        if (e.defaultPrevented) return
+
+        // 編集を始める
+        if (e.key === 'F2'
+          || isImeOpen
+          || e.key === 'Process' // IMEが開いている場合のkeyはこれになる
+          || !e.ctrlKey && !e.metaKey && e.key.length === 1 /*文字や数字や記号の場合*/) {
+          requestStartEditing()
+        }
       }
-    }, [isImeOpen, commitEditing, cancelEditing])
+    }, [isImeOpen, editing, commitEditing, cancelEditing, onKeyDown, requestStartEditing])
+
+    useImperativeHandle(ref, () => ({
+      focus: () => editorRef.current?.focus(),
+    }))
 
     return (
       <div ref={containerRef}
         className="absolute min-w-4 min-h-4"
-        style={{ zIndex: TABLE_ZINDEX.CELLEDITOR }}
+        style={{
+          zIndex: TABLE_ZINDEX.CELLEDITOR,
+          opacity: editing ? undefined : 0,
+          pointerEvents: editing ? undefined : 'none',
+        }}
       >
-        {React.createElement(cellEditor, {
+        <Input.Word
+          ref={editorRef}
+          value={uncomittedValue as string}
+          onChange={setUnComittedValue}
+          onKeyDown={handleKeyDown}
+          onBlur={commitEditing}
+          className={'block resize'}
+
+        />
+        {/* {React.createElement(cellEditor, {
           ref: editorRef,
           value: uncomittedValue,
           onChange: setUnComittedValue,
@@ -134,11 +175,8 @@ function prepareCellEditor<T,>(
           onBlur: commitEditing,
           className: 'block resize',
         })}
-        {/* <div className="flex justify-start gap-1">
-          <Input.IconButton fill className="text-xs" onClick={commitEditing}>確定(Ctrl+Enter)</Input.IconButton>
-          <Input.IconButton fill className="text-xs" onClick={cancelEditing2}>キャンセル(Esc)</Input.IconButton>
-        </div> */}
+         */}
       </div>
     )
-  }
+  })
 }
