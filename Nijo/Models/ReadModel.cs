@@ -65,7 +65,7 @@ namespace Nijo.Models {
                 // Load & MultiView
                 var loadFeature = new FindManyFeature(rootAggregate);
                 builder.ControllerActions.Add(loadFeature.RenderController());
-                builder.AppServiceMethods.Add(loadFeature.RenderAppSrvMethod());
+                builder.AppServiceMethods.Add(loadFeature.RenderAppSrvMethod(context));
                 builder.DataClassDeclaring.Add(loadFeature.RenderSearchConditionTypeDeclaring(csharp: true));
                 builder.TypeScriptDataTypes.Add(loadFeature.RenderSearchConditionTypeDeclaring(csharp: false));
                 builder.TypeScriptDataTypes.Add(loadFeature.RenderTypeScriptConditionInitializerFn());

@@ -72,6 +72,7 @@ namespace Nijo {
                 var config = new Config {
                     ApplicationName = applicationName,
                     DbContextName = "MyDbContext",
+                    DiscardSearchLimit = false,
                 };
 
                 using (var _ = log?.BeginScope("nijo.xmlの作成")) {

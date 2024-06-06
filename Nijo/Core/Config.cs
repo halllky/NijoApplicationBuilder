@@ -18,6 +18,11 @@ namespace Nijo.Core {
 
         public IEnumerable<string> OverridedApplicationServiceCodeForUnitTest { get; init; } = Enumerable.Empty<string>();
 
+        /// <summary>
+        /// <see cref="Features.Storing.FindManyFeature"/> で検索上限件数が指定されなかった場合に自動的に件数を絞る制限を外す
+        /// </summary>
+        public required bool DiscardSearchLimit { get; init; }
+
         internal const string XML_CONFIG_SECTION_NAME = "_Config";
 
         private const string SECTION_RELATIVE_PATHS = "OutDirRelativePath";
@@ -27,6 +32,8 @@ namespace Nijo.Core {
         private const string NAMESPACE_DBCONTEXT = "DbContextNamespace";
 
         private const string DBCONTEXT_NAME = "DbContextName";
+
+        private const string DISCARD_SEARCH_LIMIT = "DiscardSearchLimit";
 
         internal const string REPLACE_OVERRIDED_APPLICATION_SERVICE_CODE_FOR_UNIT_TEST = "ReplaceOverridedApplicationServiceCodeForUnitTest";
 
@@ -69,6 +76,7 @@ namespace Nijo.Core {
 
             return new Config {
                 ApplicationName = xDocument.Root.Name.LocalName,
+                DiscardSearchLimit = xDocument.Root.Attribute(DISCARD_SEARCH_LIMIT) != null,
                 DbContextName = configSection?.Element(DBCONTEXT_NAME)?.Value ?? "MyDbContext",
                 OverridedApplicationServiceCodeForUnitTest = overrridedCode,
             };

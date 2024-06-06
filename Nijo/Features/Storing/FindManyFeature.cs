@@ -47,7 +47,7 @@ namespace Nijo.Features.Storing {
                 """;
         }
 
-        internal string RenderAppSrvMethod() {
+        internal string RenderAppSrvMethod(CodeRenderingContext context) {
             var appSrv = new ApplicationService();
 
             // Include
@@ -108,11 +108,16 @@ namespace Nijo.Features.Storing {
 
                     // ページング
                     if ({{PARAM_SKIP}} != null) query = query.Skip({{PARAM_SKIP}}.Value);
+                {{If(context.Config.DiscardSearchLimit, () => $$"""
+                    if ({{PARAM_TAKE}} != null) query = query.Take({{PARAM_TAKE}}.Value);
+
+                """).Else(() => $$"""
 
                     const int DEFAULT_PAGE_SIZE = 20;
                     var pageSize = {{PARAM_TAKE}} ?? DEFAULT_PAGE_SIZE;
                     query = query.Take(pageSize);
 
+                """)}}
                     return query
                         .AsEnumerable()
                         .Select(entity => {{new DataClassForDisplay(_aggregate).CsClassName}}.{{DataClassForDisplay.FROM_DBENTITY}}(entity));
