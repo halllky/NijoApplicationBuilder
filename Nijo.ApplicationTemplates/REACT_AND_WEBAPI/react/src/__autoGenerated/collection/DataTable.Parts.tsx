@@ -1,3 +1,5 @@
+import * as RT from '@tanstack/react-table'
+
 export const TABLE_ZINDEX = {
   CELLEDITOR: 30 as const,
   ROWHEADER_THEAD: 21 as const,
@@ -7,6 +9,12 @@ export const TABLE_ZINDEX = {
   SELECTION: 1 as const,
 }
 
-export type CellEditorRef = {
+export type CellPosition = {
+  rowIndex: number
+  colId: string
+}
+
+export type CellEditorRef<T> = {
   focus: () => void
+  startEditing: (cell: RT.Cell<T, unknown>) => void
 }
