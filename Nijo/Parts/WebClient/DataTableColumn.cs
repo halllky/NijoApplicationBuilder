@@ -43,9 +43,7 @@ namespace Nijo.Parts.WebClient {
                 string? formatted = null;
                 if (vm != null) {
                     // 数値型や日付型といった型ごとに表示文字列変換処理が異なるためそれぞれごとの型で指定されたフォーマット処理に任せる
-                    var component = vm.Options.MemberType.GetReactComponent(new() {
-                        Type = GetReactComponentArgs.E_Type.InDataGrid,
-                    });
+                    var component = vm.Options.MemberType.GetReactComponent();
                     if (component.GridCellFormatStatement != null) {
                         formatted = component.GridCellFormatStatement("value", "formatted");
                     }
@@ -72,44 +70,7 @@ namespace Nijo.Parts.WebClient {
                     }
                     """;
 
-                string? cellEditor;
-                if (readOnly) {
-                    cellEditor = null;
-                } else if (member is AggregateMember.ValueMember vm2) {
-                    var editor = vm2.Options.MemberType.GetReactComponent(new() {
-                        Type = GetReactComponentArgs.E_Type.InDataGrid,
-                    });
-                    cellEditor = $"(props, ref) => <{editor.Name} ref={{ref}} {{...props}}{string.Concat(editor.GetPropsStatement())} />";
-
-                } else if (member is AggregateMember.Ref rm2) {
-                    var combobox = new ComboBox(rm2.RefTo);
-                    cellEditor = $"(props, ref) => <Input.{combobox.ComponentName} ref={{ref}} {{...props}} />";
-
-                } else {
-                    throw new InvalidProgramException();
-                }
-
                 var getValue = $"data => data.{memberPath.Join("?.")}";
-
-                string? setValue;
-                if (readOnly) {
-                    setValue = null;
-                } else if (member.DeclaringAggregate == dataTableOwner) {
-                    setValue = $$"""
-                        (row, value) => row.{{memberPath.Join(".")}} = value
-                        """;
-                } else {
-                    var ownerPath = member.Owner.GetFullPathAsSingleViewDataClass(since: dataTableOwner);
-                    var rootAggPath = member.Owner.GetRoot().GetFullPathAsSingleViewDataClass(since: dataTableOwner);
-                    setValue = $$"""
-                        (row, value) => {
-                          if (row.{{ownerPath.Join("?.")}}) {
-                            row.{{memberPath.Join(".")}} = value
-                            row{{rootAggPath.Select(x => $".{x}").Join("")}}.{{DataClassForDisplay.WILL_BE_CHANGED}} = true
-                          }
-                        }
-                        """;
-                }
 
                 var hidden = vm?.Options.InvisibleInGui == true
                     ? true
@@ -125,9 +86,7 @@ namespace Nijo.Parts.WebClient {
                     Id = $"col{colIndex}",
                     Header = member.MemberName,
                     Cell = cell,
-                    CellEditor = cellEditor,
                     GetValue = getValue,
-                    SetValue = setValue,
                     Hidden = hidden,
                     HeaderGroupName = headerGroupName,
                 };
@@ -250,8 +209,6 @@ namespace Nijo.Parts.WebClient {
         internal string? GetValue { get; init; }
 
         // 独自定義
-        internal string? CellEditor { get; init; }
-        internal string? SetValue { get; init; }
         internal bool? Hidden { get; init; }
         internal string? HeaderGroupName { get; init; }
 
@@ -269,12 +226,6 @@ namespace Nijo.Parts.WebClient {
                 """)}}
                 {{If(GetValue != null, () => $$"""
                   accessorFn: {{GetValue}},
-                """)}}
-                {{If(SetValue != null, () => $$"""
-                  setValue: {{WithIndent(SetValue!, "  ")}},
-                """)}}
-                {{If(CellEditor != null, () => $$"""
-                  cellEditor: {{WithIndent(CellEditor!, "  ")}},
                 """)}}
                 {{If(Hidden != null, () => $$"""
                   hidden: {{(Hidden!.Value ? "true" : "false")}},

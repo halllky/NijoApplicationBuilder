@@ -25,14 +25,11 @@ namespace Nijo.Core.AggregateMemberTypes {
                 .Join(" | ");
         }
 
-        public ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
+        public ReactInputComponent GetReactComponent() {
             var props = new Dictionary<string, string> {
                 { "options", $"[{_variationGroup.VariationAggregates.Select(kv => $"'{kv.Value.RelationName}' as const").Join(", ")}]" },
                 { "textSelector", "item => item" },
             };
-            if (e.Type == GetReactComponentArgs.E_Type.InDataGrid) {
-                props.Add("combo", "");
-            }
 
             return new ReactInputComponent {
                 Name = "Input.Selection",

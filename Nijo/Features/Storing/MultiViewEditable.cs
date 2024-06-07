@@ -250,9 +250,7 @@ namespace Nijo.Features.Storing {
         }
 
         private static string RenderSearchConditionValueMember(AggregateMember.ValueMember vm) {
-            var component = vm.Options.MemberType.GetReactComponent(new() {
-                Type = GetReactComponentArgs.E_Type.InDetailView,
-            });
+            var component = vm.Options.MemberType.GetReactComponent();
 
             return $$"""
                 <VForm.Item label="{{vm.MemberName}}">

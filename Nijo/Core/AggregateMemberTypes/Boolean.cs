@@ -10,11 +10,9 @@ namespace Nijo.Core.AggregateMemberTypes {
         public string GetTypeScriptTypeName() => "boolean";
         public SearchBehavior SearchBehavior => SearchBehavior.Strict;
 
-        public ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
+        public ReactInputComponent GetReactComponent() {
             return new ReactInputComponent {
-                Name = e.Type == GetReactComponentArgs.E_Type.InDataGrid
-                    ? "Input.BooleanComboBox"
-                    : "Input.CheckBox",
+                Name = "Input.CheckBox",
                 GridCellFormatStatement = (value, formatted) => $$"""
                     const {{formatted}} = ({{value}} === undefined ? '' : ({{value}} ? '○' : '-'))
                     """,

@@ -10,7 +10,7 @@ namespace Nijo.Core.AggregateMemberTypes {
         public string GetCSharpTypeName() => "DateTime";
         public string GetTypeScriptTypeName() => "string";
 
-        public ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
+        public ReactInputComponent GetReactComponent() {
             return new ReactInputComponent {
                 Name = "Input.Date",
                 GridCellFormatStatement = (value, formatted) => $$"""

@@ -10,7 +10,7 @@ namespace Nijo.Core {
 
         string GetCSharpTypeName();
         string GetTypeScriptTypeName();
-        ReactInputComponent GetReactComponent(GetReactComponentArgs e);
+        ReactInputComponent GetReactComponent();
     }
     /// <summary>
     /// 検索処理の挙動
@@ -47,15 +47,6 @@ namespace Nijo.Core {
                 else
                     yield return $" {p.Key}={{{p.Value}}}";
             }
-        }
-    }
-
-    public sealed class GetReactComponentArgs {
-        public required E_Type Type { get; init; }
-
-        public enum E_Type {
-            InDetailView,
-            InDataGrid,
         }
     }
 }

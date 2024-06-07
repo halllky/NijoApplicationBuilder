@@ -10,7 +10,7 @@ namespace Nijo.Core.AggregateMemberTypes {
         public string GetCSharpTypeName() => "int";
         public string GetTypeScriptTypeName() => "number";
 
-        public ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
+        public ReactInputComponent GetReactComponent() {
             return new ReactInputComponent { Name = "Input.Num" };
         }
     }

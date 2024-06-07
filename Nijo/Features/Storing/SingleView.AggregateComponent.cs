@@ -359,9 +359,7 @@ namespace Nijo.Features.Storing {
                             """;
 
                     } else {
-                        var reactComponent = schalar.Options.MemberType.GetReactComponent(new GetReactComponentArgs {
-                            Type = GetReactComponentArgs.E_Type.InDetailView,
-                        });
+                        var reactComponent = schalar.Options.MemberType.GetReactComponent();
 
                         // read only
                         if (_mode == SingleView.E_Type.View) {
@@ -439,9 +437,7 @@ namespace Nijo.Features.Storing {
                 } else if (member is AggregateMember.Variation variationSwitch) {
                     var switchProp = $"`{variationSwitch.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()])).Join(".")}`";
                     var disabled = IfReadOnly("disabled", variationSwitch);
-                    var selectComponent = variationSwitch.Options.MemberType.GetReactComponent(new GetReactComponentArgs {
-                        Type = GetReactComponentArgs.E_Type.InDetailView,
-                    });
+                    var selectComponent = variationSwitch.Options.MemberType.GetReactComponent();
 
                     yield return $$"""
                         <VForm.Container

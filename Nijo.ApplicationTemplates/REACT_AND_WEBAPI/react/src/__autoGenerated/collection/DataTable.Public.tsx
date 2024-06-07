@@ -1,6 +1,5 @@
 import React from 'react'
 import * as RT from '@tanstack/react-table'
-import { CustomComponentRef } from '../input'
 
 export type DataTableProps<T> = {
   data?: T[]
@@ -10,21 +9,10 @@ export type DataTableProps<T> = {
   columns?: ColumnDefEx<T>[]
   className?: string
 }
-export type ColumnDefEx<TRow, TValue = any> = RT.ColumnDef<TRow> & {
+export type ColumnDefEx<TRow> = RT.ColumnDef<TRow> & {
   hidden?: boolean
   headerGroupName?: string
-} & ({
-  cellEditor?: never
-  setValue?: never
-} | {
-  cellEditor: CellEditor<TValue>
-  setValue: (data: TRow, value: TValue) => void
-})
-
-export type CellEditor<TValue> = (
-  props: CellEditorProps<TValue>,
-  ref: React.Ref<CustomComponentRef<TValue>>
-) => JSX.Element
+}
 
 export type CellEditorProps<TValue> = {
   value: TValue | undefined

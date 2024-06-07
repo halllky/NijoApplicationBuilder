@@ -28,7 +28,6 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     row: T
     rowIndex: number
     cellId: string
-    setValue: ColumnDefEx<T>['setValue']
   } | undefined>(undefined)
 
   const [uncomittedValue, setUnComittedValue] = useState<string>()
@@ -38,15 +37,11 @@ export const CellEditor = Util.forwardRefEx(<T,>({
 
   const startEditing = useCallback((cell: RT.Cell<T, unknown>) => {
     const columnDef = cell.column.columnDef as ColumnDefEx<T>
-    const setValue = columnDef.setValue
 
     if (!onChangeRow) return // 値が編集されてもコミットできないので編集開始しない
-    if (columnDef.cellEditor === undefined) return // 編集不可のセル
-    if (setValue === undefined) return // 編集不可のセル
 
     setEditingCellInfo({
       cellId: cell.id,
-      setValue,
       rowIndex: cell.row.index,
       row: cell.row.original,
     })
@@ -56,7 +51,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
 
     // 現在のセルの値をエディタに渡す
     const cellValue = cell.getValue()
-    setUnComittedValue((cellValue as string) ?? '') // TODO: string決め打ちにしたい
+    setUnComittedValue((cellValue as string) ?? '')
 
     // エディタを編集対象セルの位置に移動させる
     if (caretTdRef.current && containerRef.current) {
@@ -87,7 +82,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
 
   const commitEditing = useCallback(() => {
     if (editingCellInfo !== undefined && onChangeRow) {
-      editingCellInfo.setValue?.(editingCellInfo.row, editorRef.current?.getValue())
+      // TODO set value
       onChangeRow(editingCellInfo.rowIndex, editingCellInfo.row)
     }
     setEditingCellInfo(undefined)
