@@ -1,5 +1,5 @@
 import { HTMLAttributes } from "react"
-import { forwardRefEx } from "../util"
+import { forwardRefEx } from "../util/ReactUtil"
 
 export type ValidationHandler = (value: string) => ({ ok: true, formatted: string } | { ok: false })
 export type ValidationResult = ReturnType<ValidationHandler>
