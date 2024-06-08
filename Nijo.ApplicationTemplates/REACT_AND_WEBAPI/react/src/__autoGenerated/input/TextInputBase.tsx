@@ -51,6 +51,22 @@ export const TextInputBase = defineCustomComponent<string, {
     return onValidate(rawText)
   }, [onValidate])
 
+  const executeFormat = useCallback(() => {
+    if (onValidate) {
+      const result = getValidationResult(unFormatText)
+      if (result.ok) {
+        setUnFormatText(result.formatted)
+        onChangeFormattedText?.(result.formatted)
+        setFormatError(false)
+      } else {
+        onChangeFormattedText?.('')
+        setFormatError(true)
+      }
+    } else {
+      setFormatError(false)
+    }
+  }, [onValidate, unFormatText, setUnFormatText, onChangeFormattedText])
+
   // ドロップダウン開閉
   const [open, setOpen] = useState(false)
   if (dropdownRef) (dropdownRef as React.MutableRefObject<DropDownApi>).current = {
@@ -81,25 +97,21 @@ export const TextInputBase = defineCustomComponent<string, {
   const divRef = useRef<HTMLDivElement>(null)
   const handleBlur: React.FocusEventHandler<HTMLInputElement> = useCallback(e => {
     // フォーマットされた値を表示に反映
-    if (onValidate) {
-      const result = getValidationResult(unFormatText)
-      if (result.ok) {
-        setUnFormatText(result.formatted)
-        onChangeFormattedText?.(result.formatted)
-        setFormatError(false)
-      } else {
-        onChangeFormattedText?.('')
-        setFormatError(true)
-      }
-    }
+    executeFormat()
 
     // コンボボックスではテキストにフォーカスが当たったままドロップダウンが展開されることがあるため
     // blur先がdivの外に移った時に強制的にドロップダウンを閉じる
     if (divRef.current && e.relatedTarget && !divRef.current.contains(e.relatedTarget)) {
       setOpen(false)
     }
+
     onBlur?.(e)
-  }, [onChangeFormattedText, onBlur, getValidationResult, unFormatText, onValidate])
+  }, [onBlur, executeFormat])
+
+  // バリデーションのルールが変わったときに再評価
+  useEffect(() => {
+    executeFormat()
+  }, [onValidate])
 
   const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useCallback(e => {
     if (!open && e.altKey && e.key === 'ArrowDown') {
