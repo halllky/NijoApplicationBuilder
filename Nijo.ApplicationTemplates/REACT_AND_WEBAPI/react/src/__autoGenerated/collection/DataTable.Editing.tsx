@@ -75,7 +75,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     } else if (columnDef.editSetting.type === 'async-combo') {
       const selectedValue = columnDef.editSetting.getValueFromRow(cell.row.original)
       const cellText = selectedValue
-        ? columnDef.editSetting.textSelector(selectedValue)
+        ? columnDef.editSetting.comboProps.textSelector(selectedValue)
         : undefined
       setUnComittedText(cellText)
     }
@@ -181,8 +181,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
           onChange={setComboSelectedItem}
           onKeyDown={handleKeyDown}
           onBlur={commitEditing}
-          {...caretCellEditingInfo}
-          readOnly={false}
+          {...caretCellEditingInfo.comboProps}
         />
       )}
     </div>

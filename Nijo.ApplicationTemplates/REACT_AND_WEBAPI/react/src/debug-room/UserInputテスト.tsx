@@ -103,18 +103,20 @@ const getColumnDef = (): Layout.ColumnDefEx<DisplayData>[] => [
 const getRefValueEditSetting = () => {
   const editSetting: Layout.ColumnEditSetting<DisplayData, RefInfo> = {
     type: 'async-combo',
-    queryKey: 'REFINFO',
-    query: async keyword => keyword
-      ? DROPDOWN_OPTIONS.filter(opt => opt.t.includes(keyword))
-      : [...DROPDOWN_OPTIONS],
-    emitValueSelector: opt => opt,
-    matchingKeySelectorFromEmitValue: opt => opt.k,
-    matchingKeySelectorFromOption: opt => opt.k,
     getValueFromRow: row => row.refValue,
     setValueToRow: (row, value) => {
       row.refValue = value
     },
-    textSelector: opt => opt?.t,
+    comboProps: {
+      queryKey: 'REFINFO',
+      query: async keyword => keyword
+        ? DROPDOWN_OPTIONS.filter(opt => opt.t.includes(keyword))
+        : [...DROPDOWN_OPTIONS],
+      emitValueSelector: opt => opt,
+      matchingKeySelectorFromEmitValue: opt => opt.k,
+      matchingKeySelectorFromOption: opt => opt.k,
+      textSelector: opt => opt?.t,
+    },
   }
   return editSetting as Layout.ColumnEditSetting<DisplayData, unknown>
 }

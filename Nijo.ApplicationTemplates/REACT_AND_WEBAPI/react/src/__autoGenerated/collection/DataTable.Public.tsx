@@ -30,7 +30,8 @@ type AsyncComboColumnEditSetting<TRow, TOption = unknown> = {
   type: 'async-combo'
   getValueFromRow: (row: TRow) => TOption | undefined
   setValueToRow: (row: TRow, value: TOption | undefined) => void
-} & AsyncComboProps<TOption, TOption>
+  comboProps: AsyncComboProps<TOption, TOption>
+}
 
 export type DataTableRef<T> = {
   getSelectedRows: () => { row: T, rowIndex: number }[]
