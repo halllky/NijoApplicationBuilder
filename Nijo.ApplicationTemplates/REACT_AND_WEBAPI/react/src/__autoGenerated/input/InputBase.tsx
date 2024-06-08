@@ -50,6 +50,25 @@ export type CustomComponentProps<
   }
 
 // ---------------------------------------------
+export type SyncComboProps<TOption, TEmitValue, TMatchingKey extends string = string> = {
+  options: TOption[]
+  matchingKeySelectorFromOption: (item: TOption) => TMatchingKey | undefined
+  matchingKeySelectorFromEmitValue: (value: TEmitValue) => TMatchingKey | undefined
+  emitValueSelector: (item: TOption) => TEmitValue | undefined
+  textSelector: (item: TOption) => string
+  onKeywordChanged?: (keyword: string | undefined) => void
+}
+
+export type AsyncComboProps<TOption, TEmitValue, TMatchingKey extends string = string> = {
+  queryKey?: string
+  query: ((keyword: string | undefined) => Promise<TOption[]>)
+  matchingKeySelectorFromOption: (item: TOption) => TMatchingKey | undefined
+  matchingKeySelectorFromEmitValue: (value: TEmitValue) => TMatchingKey | undefined
+  emitValueSelector: (item: TOption) => TEmitValue | undefined
+  textSelector: (item: TOption) => string
+}
+
+// ---------------------------------------------
 /** 日付や数値などの表記ゆれを補正する */
 export const normalize = (str: string) => str
   .replace(/(\s|　)/gm, '') // 空白を除去

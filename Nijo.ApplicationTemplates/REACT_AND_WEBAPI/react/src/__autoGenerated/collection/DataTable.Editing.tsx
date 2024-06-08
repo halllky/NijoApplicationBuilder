@@ -1,6 +1,6 @@
 import React, { useCallback, useImperativeHandle, useRef, useState } from 'react'
 import * as RT from '@tanstack/react-table'
-import { DataTableProps, ColumnDefEx } from './DataTable.Public'
+import { DataTableProps, ColumnDefEx, ColumnEditSetting } from './DataTable.Public'
 import { CellEditorRef, CellPosition, TABLE_ZINDEX } from './DataTable.Parts'
 import * as Input from '../input'
 import * as Util from '../util'
@@ -28,9 +28,11 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     row: T
     rowIndex: number
     cellId: string
+    editSetting: ColumnEditSetting<T>
   } | undefined>(undefined)
 
-  const [uncomittedValue, setUnComittedValue] = useState<string>()
+  const [uncomittedText, setUnComittedText] = useState<string>()
+  const [comboSelectedItem, setComboSelectedItem] = useState<unknown | undefined>()
 
   const editorRef = useRef<Input.CustomComponentRef<string>>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -39,19 +41,29 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     const columnDef = cell.column.columnDef as ColumnDefEx<T>
 
     if (!onChangeRow) return // 値が編集されてもコミットできないので編集開始しない
+    if (!columnDef.editSetting) return // 編集不可のセル
+    if (columnDef.editSetting.readOnly?.(cell.row.original)) return // 編集不可のセル
 
     setEditingCellInfo({
       cellId: cell.id,
       rowIndex: cell.row.index,
       row: cell.row.original,
+      editSetting: { ...columnDef.editSetting },
     })
     onChangeEditing(true)
 
-    // TODO: ColumnDefの定義に従って、このコンポーネントのInput.Wordの設定を変える（コンボボックスにする、単行複数行を変える、など）
-
     // 現在のセルの値をエディタに渡す
-    const cellValue = cell.getValue()
-    setUnComittedValue((cellValue as string) ?? '')
+    if (columnDef.editSetting.type === 'text') {
+      const cellValue = columnDef.editSetting.getTextValue(cell.row.original)
+      setUnComittedText(cellValue)
+
+    } else if (columnDef.editSetting.type === 'async-combo') {
+      const selectedValue = columnDef.editSetting.getValueFromRow(cell.row.original)
+      const cellText = selectedValue
+        ? columnDef.editSetting.textSelector(selectedValue)
+        : undefined
+      setUnComittedText(cellText)
+    }
 
     // エディタを編集対象セルの位置に移動させる
     if (caretTdRef.current && containerRef.current) {
@@ -67,27 +79,20 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     })
   }, [setEditingCellInfo, onChangeEditing, onChangeRow])
 
-  // TODO: クイック編集を実現するために、任意のCellEditorを設定できる仕様を変更したい
-  // const cellEditor = useMemo(() => {
-  //   const editor = (editingCell?.column.columnDef as ColumnDefEx<T>)?.cellEditor
-  //   if (editor) return Util.forwardRefEx(editor)
-
-  //   // セル編集コンポーネント未指定の場合
-  //   return Util.forwardRefEx<
-  //     Input.CustomComponentRef<any>,
-  //     Input.CustomComponentProps<any>
-  //   >((props, ref) => <Input.Word ref={ref} {...props} />)
-
-  // }, [editingCell?.column])
-
   const commitEditing = useCallback(() => {
     if (editingCellInfo !== undefined && onChangeRow) {
-      // TODO set value
+      // set value
+      if (editingCellInfo.editSetting.type === 'text') {
+        editingCellInfo.editSetting.setTextValue(editingCellInfo.row, uncomittedText)
+      } else if (editingCellInfo.editSetting.type === 'async-combo') {
+        editingCellInfo.editSetting.setValueToRow(editingCellInfo.row, comboSelectedItem)
+      }
+
       onChangeRow(editingCellInfo.rowIndex, editingCellInfo.row)
     }
     setEditingCellInfo(undefined)
     onChangeEditing(false)
-  }, [editingCellInfo, setEditingCellInfo, onChangeRow, onChangeEditing])
+  }, [uncomittedText, comboSelectedItem, editingCellInfo, setEditingCellInfo, onChangeRow, onChangeEditing])
 
   const cancelEditing = useCallback(() => {
     setEditingCellInfo(undefined)
@@ -141,14 +146,29 @@ export const CellEditor = Util.forwardRefEx(<T,>({
         pointerEvents: editingCellInfo === undefined ? 'none' : undefined,
       }}
     >
-      <Input.Word
-        ref={editorRef}
-        value={uncomittedValue as string}
-        onChange={setUnComittedValue}
-        onKeyDown={handleKeyDown}
-        onBlur={commitEditing}
-        className="block w-full"
-      />
+      {editingCellInfo?.editSetting.type !== 'async-combo' && (
+        <Input.Word
+          ref={editorRef}
+          value={uncomittedText}
+          onChange={setUnComittedText}
+          onKeyDown={handleKeyDown}
+          onBlur={commitEditing}
+          className="block w-full"
+        />
+      )}
+      {editingCellInfo?.editSetting.type === 'async-combo' && (
+        <Input.AsyncComboBox
+          ref={editorRef}
+          value={comboSelectedItem}
+          onChange={setComboSelectedItem}
+          onKeyDown={handleKeyDown}
+          onBlur={commitEditing}
+          className="block w-full"
+          {...editingCellInfo.editSetting}
+          readOnly={false}
+        />
+      )}
+
       {/* {React.createElement(cellEditor, {
           ref: editorRef,
           value: uncomittedValue,

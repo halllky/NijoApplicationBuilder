@@ -1,7 +1,7 @@
 import { useMemo, useCallback, useRef, useImperativeHandle, useState } from "react"
 import { useQuery } from "react-query"
 import { useMsgContext } from "../util"
-import { CustomComponentProps, CustomComponentRef, defineCustomComponent } from "./InputBase"
+import { AsyncComboProps, CustomComponentProps, CustomComponentRef, defineCustomComponent } from "./InputBase"
 import { ComboBoxBase } from "./ComboBoxBase"
 import { RadioGroupBase, ToggleBase } from "./ToggleBase"
 
@@ -59,14 +59,7 @@ export const Selection = defineCustomComponent(<TItem extends string = string>(
 
 /** コンボボックス（非同期） */
 export const AsyncComboBox = defineCustomComponent(<TOption, TEmitValue, TMatchingKey extends string = string>(
-  props: CustomComponentProps<TEmitValue, {
-    queryKey?: string
-    query: ((keyword: string | undefined) => Promise<TOption[]>)
-    matchingKeySelectorFromOption: (item: TOption) => TMatchingKey | undefined
-    matchingKeySelectorFromEmitValue: (value: TEmitValue) => TMatchingKey | undefined
-    emitValueSelector: (item: TOption) => TEmitValue | undefined
-    textSelector: (item: TOption) => string
-  }>,
+  props: CustomComponentProps<TEmitValue, AsyncComboProps<TOption, TEmitValue, TMatchingKey>>,
   ref: React.ForwardedRef<CustomComponentRef<TEmitValue>>
 ) => {
   const [, dispatchMsg] = useMsgContext()
