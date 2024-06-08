@@ -21,36 +21,39 @@ export const Num = defineCustomComponent<number>((props, ref) => {
     return value?.toString() ?? ''
   }, [value])
 
-  const onValidate: ValidationHandler = useCallback(value => {
-    const normalized = normalize(value).replace(',', '') // 桁区切りのカンマを無視
-    if (normalized === '') return { ok: true, formatted: '' }
-    const num = Number(normalized)
-    return isNaN(num) ? { ok: false } : { ok: true, formatted: num.toString() }
-  }, [])
   const handleChange = useCallback((value: string | undefined) => {
     // TODO: TextAreaBaseのonBlurでもバリデーションをかけているので冗長
-    const validated = onValidate(value ?? '')
-    onChange?.(validated.ok && validated.formatted !== ''
-      ? Number(validated.formatted)
-      : undefined)
-  }, [onChange, onValidate])
+    const { num } = tryParseAsNumberOrEmpty(value)
+    onChange?.(num)
+  }, [onChange])
 
   const textRef = useRef<CustomComponentRef<string>>(null)
   useImperativeHandle(ref, () => ({
     getValue: () => {
-      const validated = onValidate(textRef.current?.getValue() ?? '')
-      return validated.ok && validated.formatted !== ''
-        ? Number(validated.formatted)
-        : undefined
+      const { num } = tryParseAsNumberOrEmpty(textRef.current?.getValue() ?? '')
+      return num
     },
     focus: () => textRef.current?.focus(),
-  }), [onValidate])
+  }), [])
 
   return <TextInputBase
     ref={textRef}
     {...rest}
     value={strValue}
     onChange={handleChange}
-    onValidate={onValidate}
+    onValidate={tryParseAsNumberOrEmpty}
   />
 })
+
+/** 数値として入力された文字列をC#やDBで扱える形にパースします。 */
+export const tryParseAsNumberOrEmpty = (value: string | undefined): { ok: boolean, num: number | undefined, formatted: string } => {
+  if (value === undefined) return { ok: true, num: undefined, formatted: '' }
+
+  const normalized = normalize(value).replace(',', '') // 桁区切りのカンマを無視
+  if (normalized === '') return { ok: true, num: undefined, formatted: '' }
+
+  const num = Number(normalized)
+  if (isNaN(num)) return { ok: false, num: undefined, formatted: normalized }
+  if (num === Infinity) return { ok: false, num: undefined, formatted: normalized }
+  return { ok: true, num, formatted: num.toString() }
+}
