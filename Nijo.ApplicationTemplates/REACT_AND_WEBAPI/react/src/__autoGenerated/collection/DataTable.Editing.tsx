@@ -1,4 +1,4 @@
-import React, { useCallback, useImperativeHandle, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import * as RT from '@tanstack/react-table'
 import { DataTableProps, ColumnDefEx, ColumnEditSetting } from './DataTable.Public'
 import { CellEditorRef, CellPosition, TABLE_ZINDEX } from './DataTable.Parts'
@@ -24,19 +24,35 @@ export const CellEditor = Util.forwardRefEx(<T,>({
 }: CellEditorProps<T>,
   ref: React.ForwardedRef<CellEditorRef<T>>
 ) => {
+
+  // 編集中セルの情報。undefined以外の値が入っているときは編集モード。
   const [editingCellInfo, setEditingCellInfo] = useState<{
     row: T
     rowIndex: number
     cellId: string
-    editSetting: ColumnEditSetting<T>
   } | undefined>(undefined)
 
+  // エディタの値
   const [uncomittedText, setUnComittedText] = useState<string>()
   const [comboSelectedItem, setComboSelectedItem] = useState<unknown | undefined>()
 
-  const editorRef = useRef<Input.CustomComponentRef<string>>(null)
+  // エディタ設定。caretセルが移動するたびに更新される。
+  const [caretCellEditingInfo, setCaretCellEditingInfo] = useState<ColumnEditSetting<T>>()
   const containerRef = useRef<HTMLDivElement>(null)
+  const editorRef = useRef<Input.CustomComponentRef<string>>(null)
+  useEffect(() => {
+    if (caretCell) {
+      const columnDef = api.getColumn(caretCell.colId)?.columnDef as ColumnDefEx<T> | undefined
+      setCaretCellEditingInfo(columnDef?.editSetting)
+    } else {
+      setCaretCellEditingInfo(undefined)
+    }
+  }, [caretCell, api])
+  useEffect(() => {
+    editorRef.current?.focus()
+  }, [caretCellEditingInfo])
 
+  /** 編集開始 */
   const startEditing = useCallback((cell: RT.Cell<T, unknown>) => {
     const columnDef = cell.column.columnDef as ColumnDefEx<T>
 
@@ -48,7 +64,6 @@ export const CellEditor = Util.forwardRefEx(<T,>({
       cellId: cell.id,
       rowIndex: cell.row.index,
       row: cell.row.original,
-      editSetting: { ...columnDef.editSetting },
     })
     onChangeEditing(true)
 
@@ -70,6 +85,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
       containerRef.current.style.left = `${caretTdRef.current.offsetLeft}px`
       containerRef.current.style.top = `${caretTdRef.current.offsetTop}px`
       containerRef.current.style.minWidth = `${caretTdRef.current.clientWidth}px`
+      containerRef.current.style.minHeight = `${caretTdRef.current.clientHeight}px`
     }
     // エディタにスクロール
     containerRef.current?.scrollIntoView({
@@ -79,13 +95,14 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     })
   }, [setEditingCellInfo, onChangeEditing, onChangeRow])
 
+  /** 編集確定 */
   const commitEditing = useCallback(() => {
-    if (editingCellInfo !== undefined && onChangeRow) {
+    if (editingCellInfo !== undefined && caretCellEditingInfo !== undefined && onChangeRow) {
       // set value
-      if (editingCellInfo.editSetting.type === 'text') {
-        editingCellInfo.editSetting.setTextValue(editingCellInfo.row, uncomittedText)
-      } else if (editingCellInfo.editSetting.type === 'async-combo') {
-        editingCellInfo.editSetting.setValueToRow(editingCellInfo.row, comboSelectedItem)
+      if (caretCellEditingInfo.type === 'text') {
+        caretCellEditingInfo.setTextValue(editingCellInfo.row, uncomittedText)
+      } else if (caretCellEditingInfo.type === 'async-combo') {
+        caretCellEditingInfo.setValueToRow(editingCellInfo.row, comboSelectedItem)
       }
 
       onChangeRow(editingCellInfo.rowIndex, editingCellInfo.row)
@@ -94,11 +111,13 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     onChangeEditing(false)
   }, [uncomittedText, comboSelectedItem, editingCellInfo, setEditingCellInfo, onChangeRow, onChangeEditing])
 
+  /** 編集キャンセル */
   const cancelEditing = useCallback(() => {
     setEditingCellInfo(undefined)
     onChangeEditing(false)
   }, [setEditingCellInfo, onChangeEditing])
 
+  // キーハンドリング
   const [{ isImeOpen }] = Util.useIMEOpened()
   const handleKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = useCallback(e => {
     if (editingCellInfo) {
@@ -139,45 +158,33 @@ export const CellEditor = Util.forwardRefEx(<T,>({
 
   return (
     <div ref={containerRef}
-      className="absolute min-w-4 min-h-4"
+      className="absolute min-w-4 min-h-4 flex items-stretch"
       style={{
         zIndex: TABLE_ZINDEX.CELLEDITOR,
         opacity: editingCellInfo === undefined ? 0 : undefined,
         pointerEvents: editingCellInfo === undefined ? 'none' : undefined,
       }}
     >
-      {editingCellInfo?.editSetting.type !== 'async-combo' && (
+      {caretCellEditingInfo?.type !== 'async-combo' && (
         <Input.Word
           ref={editorRef}
           value={uncomittedText}
           onChange={setUnComittedText}
           onKeyDown={handleKeyDown}
           onBlur={commitEditing}
-          className="block w-full"
         />
       )}
-      {editingCellInfo?.editSetting.type === 'async-combo' && (
+      {caretCellEditingInfo?.type === 'async-combo' && (
         <Input.AsyncComboBox
           ref={editorRef}
           value={comboSelectedItem}
           onChange={setComboSelectedItem}
           onKeyDown={handleKeyDown}
           onBlur={commitEditing}
-          className="block w-full"
-          {...editingCellInfo.editSetting}
+          {...caretCellEditingInfo}
           readOnly={false}
         />
       )}
-
-      {/* {React.createElement(cellEditor, {
-          ref: editorRef,
-          value: uncomittedValue,
-          onChange: setUnComittedValue,
-          onKeyDown: handleKeyDown,
-          onBlur: commitEditing,
-          className: 'block resize',
-        })}
-         */}
     </div>
   )
 })
