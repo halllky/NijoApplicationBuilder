@@ -88,8 +88,8 @@ const getColumnDef = (): Layout.ColumnDefEx<DisplayData>[] => [
       type: 'text',
       getTextValue: row => row.numValue,
       setTextValue: (row, value) => {
-        // TODO: dirty value
-        row.numValue = value
+        const { formatted } = tryParseAsNumberOrEmpty(value)
+        row.numValue = formatted
       },
     },
   },

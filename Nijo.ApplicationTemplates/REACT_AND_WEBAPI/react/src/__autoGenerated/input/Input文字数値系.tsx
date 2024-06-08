@@ -53,7 +53,7 @@ export const tryParseAsNumberOrEmpty = (value: string | undefined): { ok: boolea
   if (normalized === '') return { ok: true, num: undefined, formatted: '' }
 
   const num = Number(normalized)
-  if (isNaN(num)) return { ok: false, num: undefined, formatted: normalized }
-  if (num === Infinity) return { ok: false, num: undefined, formatted: normalized }
+  if (isNaN(num)) return { ok: false, num: undefined, formatted: value }
+  if (num === Infinity) return { ok: false, num: undefined, formatted: value }
   return { ok: true, num, formatted: num.toString() }
 }
