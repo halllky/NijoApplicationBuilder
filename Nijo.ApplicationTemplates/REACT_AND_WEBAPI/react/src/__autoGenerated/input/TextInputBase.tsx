@@ -12,6 +12,7 @@ export const TextInputBase = defineCustomComponent<string, {
   onValidate?: ValidationHandler
   onDropdownOpened?: () => void
   dropdownRef?: React.RefObject<DropDownApi>
+  dropdownAutoOpen?: boolean
 }>((props, ref) => {
 
   const {
@@ -19,6 +20,7 @@ export const TextInputBase = defineCustomComponent<string, {
     onDropdownOpened,
     onValidate,
     dropdownRef,
+    dropdownAutoOpen,
     value,
     readOnly,
     placeholder,
@@ -70,7 +72,7 @@ export const TextInputBase = defineCustomComponent<string, {
   // ドロップダウン開閉
   const [open, setOpen] = useState(false)
   if (dropdownRef) (dropdownRef as React.MutableRefObject<DropDownApi>).current = {
-    isOpened: open,
+    isOpened: open || (dropdownAutoOpen ?? false),
     open: () => setOpen(true),
     close: () => setOpen(false),
   }
@@ -114,11 +116,7 @@ export const TextInputBase = defineCustomComponent<string, {
   }, [onValidate])
 
   const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useCallback(e => {
-    if (!open && e.altKey && e.key === 'ArrowDown') {
-      setOpen(true)
-      e.preventDefault()
-    }
-    if (open && e.key === 'Escape') {
+    if (!dropdownAutoOpen && open && e.key === 'Escape') {
       setOpen(false)
       e.preventDefault()
     }
@@ -126,7 +124,7 @@ export const TextInputBase = defineCustomComponent<string, {
       e.preventDefault() // Enterキーでsubmitされるのを防ぐ
     }
     onKeyDown?.(e)
-  }, [onKeyDown, open])
+  }, [onKeyDown, open, dropdownAutoOpen])
 
   useImperativeHandle(ref, () => ({
     getValue: () => {
@@ -164,7 +162,7 @@ export const TextInputBase = defineCustomComponent<string, {
           onClick={onSideButtonClick}
         />}
 
-      {open && !readOnly && dropdownBody &&
+      {(open || dropdownAutoOpen) && !readOnly && dropdownBody &&
         <Dropdown onClose={onClose}>
           {dropdownBody}
         </Dropdown>}

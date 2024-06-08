@@ -39,7 +39,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
   // エディタ設定。caretセルが移動するたびに更新される。
   const [caretCellEditingInfo, setCaretCellEditingInfo] = useState<ColumnEditSetting<T>>()
   const containerRef = useRef<HTMLDivElement>(null)
-  const editorRef = useRef<Input.CustomComponentRef<string>>(null)
+  const editorRef = useRef<Input.CustomComponentRef<string | unknown>>(null)
   useEffect(() => {
     if (caretCell) {
       const columnDef = api.getColumn(caretCell.colId)?.columnDef as ColumnDefEx<T> | undefined
@@ -74,10 +74,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
 
     } else if (columnDef.editSetting.type === 'async-combo') {
       const selectedValue = columnDef.editSetting.getValueFromRow(cell.row.original)
-      const cellText = selectedValue
-        ? columnDef.editSetting.comboProps.textSelector(selectedValue)
-        : undefined
-      setUnComittedText(cellText)
+      setComboSelectedItem(selectedValue)
     }
 
     // エディタを編集対象セルの位置に移動させる
@@ -100,16 +97,16 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     if (editingCellInfo !== undefined && caretCellEditingInfo !== undefined && onChangeRow) {
       // set value
       if (caretCellEditingInfo.type === 'text') {
-        caretCellEditingInfo.setTextValue(editingCellInfo.row, uncomittedText)
+        caretCellEditingInfo.setTextValue(editingCellInfo.row, editorRef.current?.getValue() as string | undefined)
       } else if (caretCellEditingInfo.type === 'async-combo') {
-        caretCellEditingInfo.setValueToRow(editingCellInfo.row, comboSelectedItem)
+        caretCellEditingInfo.setValueToRow(editingCellInfo.row, editorRef.current?.getValue() as unknown | undefined)
       }
 
       onChangeRow(editingCellInfo.rowIndex, editingCellInfo.row)
     }
     setEditingCellInfo(undefined)
     onChangeEditing(false)
-  }, [uncomittedText, comboSelectedItem, editingCellInfo, setEditingCellInfo, onChangeRow, onChangeEditing])
+  }, [comboSelectedItem, editingCellInfo, setEditingCellInfo, onChangeRow, onChangeEditing])
 
   /** 編集キャンセル */
   const cancelEditing = useCallback(() => {
@@ -132,24 +129,31 @@ export const CellEditor = Util.forwardRefEx(<T,>({
         e.preventDefault()
       }
     } else {
-      // セル移動や選択
-      onKeyDown(e)
-      if (e.defaultPrevented) return
-
       // 編集を始める
-      if (caretCell
-        && (e.key === 'F2'
-          // クイック編集（編集モードでない状態でいきなり文字入力して編集を開始する）
-          || isImeOpen
-          || e.key === 'Process' // IMEが開いている場合のkeyはこれになる
-          || !e.ctrlKey && !e.metaKey && e.key.length === 1 /*文字や数字や記号の場合*/)) {
+      if (caretCell && (
+        e.key === 'F2'
 
+        // クイック編集（編集モードでない状態でいきなり文字入力して編集を開始する）
+        || isImeOpen
+        || e.key === 'Process' // IMEが開いている場合のkeyはこれになる
+        || !e.ctrlKey && !e.metaKey && e.key.length === 1 /*文字や数字や記号の場合*/
+
+        // コンボボックスならば Alt + ArrowDown で編集開始
+        || caretCellEditingInfo?.type === 'async-combo'
+        && e.altKey
+        && e.key === 'ArrowDown'
+      )) {
         const row = api.getCoreRowModel().flatRows[caretCell.rowIndex]
         const cell = row.getAllCells().find(cell => cell.column.id === caretCell.colId)
         if (cell) startEditing(cell)
+        return
       }
+
+      // セル移動や選択
+      onKeyDown(e)
+      if (e.defaultPrevented) return
     }
-  }, [isImeOpen, editingCellInfo, startEditing, commitEditing, cancelEditing, onKeyDown, api, caretCell])
+  }, [isImeOpen, caretCellEditingInfo, editingCellInfo, startEditing, commitEditing, cancelEditing, onKeyDown, api, caretCell])
 
   useImperativeHandle(ref, () => ({
     focus: () => editorRef.current?.focus(),
@@ -167,7 +171,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     >
       {caretCellEditingInfo?.type !== 'async-combo' && (
         <Input.Word
-          ref={editorRef}
+          ref={editorRef as React.RefObject<Input.CustomComponentRef<string>>}
           value={uncomittedText}
           onChange={setUnComittedText}
           onKeyDown={handleKeyDown}
@@ -176,9 +180,10 @@ export const CellEditor = Util.forwardRefEx(<T,>({
       )}
       {caretCellEditingInfo?.type === 'async-combo' && (
         <Input.AsyncComboBox
+          dropdownAutoOpen={editingCellInfo !== undefined}
           ref={editorRef}
           value={comboSelectedItem}
-          onChange={setComboSelectedItem}
+          onChange={commitEditing}
           onKeyDown={handleKeyDown}
           onBlur={commitEditing}
           {...caretCellEditingInfo.comboProps}

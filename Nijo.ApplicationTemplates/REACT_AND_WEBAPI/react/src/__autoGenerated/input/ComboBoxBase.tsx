@@ -20,6 +20,7 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TEmitValue, TMatchin
     readOnly,
     onKeywordChanged,
     name,
+    dropdownAutoOpen,
   } = props2
 
   const dropdownRef = useRef<DropDownApi>(null)
@@ -74,7 +75,7 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TEmitValue, TMatchin
 
   // 入力中のテキストに近い最も適当な要素を取得する
   const getHighlightedOrAnyItem = useCallback((): TOption | undefined => {
-    if (highlighted && dropdownRef.current?.isOpened) {
+    if (highlighted && (dropdownAutoOpen || dropdownRef.current?.isOpened)) {
       const found = filtered.find(item => matchingKeySelectorFromOption(item) === highlighted)
       if (found) return found
     }
@@ -82,11 +83,11 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TEmitValue, TMatchin
       const keyOfValue = matchingKeySelectorFromEmitValue(value)
       return filtered.find(x => matchingKeySelectorFromOption(x) === keyOfValue)
     }
-    if (dropdownRef.current?.isOpened === false) return undefined
+    if (!dropdownAutoOpen && dropdownRef.current?.isOpened === false) return undefined
     if (keyword && normalize(keyword) === '') return undefined
     if (filtered.length > 0) return filtered[0]
     return undefined
-  }, [value, keyword, filtered, highlighted, matchingKeySelectorFromOption, matchingKeySelectorFromEmitValue])
+  }, [value, keyword, filtered, highlighted, matchingKeySelectorFromOption, matchingKeySelectorFromEmitValue, dropdownAutoOpen])
 
   // events
   const onChangeKeyword = useCallback((value: string | undefined) => {
@@ -106,11 +107,11 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TEmitValue, TMatchin
 
   const [{ isImeOpen }] = useIMEOpened()
   const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useCallback(e => {
-    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !isImeOpen) {
-      if (!dropdownRef.current?.isOpened) {
-        dropdownRef.current?.open()
-        highlightAnyItem()
-      } else if (e.key === 'ArrowUp') {
+    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown')
+      && !isImeOpen
+      && (dropdownAutoOpen || dropdownRef.current?.isOpened)
+    ) {
+      if (e.key === 'ArrowUp') {
         highlightUpItem()
       } else {
         highlightDownItem()
@@ -118,7 +119,10 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TEmitValue, TMatchin
       e.preventDefault()
     }
     // ドロップダウン中のハイライトが当たっている要素の選択を確定する
-    else if (e.key === 'Enter' && !isImeOpen && dropdownRef.current?.isOpened) {
+    else if (e.key === 'Enter'
+      && !isImeOpen
+      && (dropdownAutoOpen || dropdownRef.current?.isOpened)
+    ) {
       const anyItem = getHighlightedOrAnyItem()
       const valueOfAnyItem = anyItem ? emitValueSelector(anyItem) : undefined
       onChange?.(valueOfAnyItem)
@@ -131,7 +135,7 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TEmitValue, TMatchin
     else {
       onKeyDown?.(e)
     }
-  }, [isImeOpen, getHighlightedOrAnyItem, highlightAnyItem, highlightUpItem, highlightDownItem, onChange, onKeyDown, emitValueSelector])
+  }, [isImeOpen, getHighlightedOrAnyItem, highlightAnyItem, highlightUpItem, highlightDownItem, onChange, onKeyDown, emitValueSelector, dropdownAutoOpen])
 
   const onClickItem: React.MouseEventHandler<HTMLLIElement> = useCallback(e => {
     selectItemByValue((e.target as HTMLLIElement).getAttribute('value') as string)
@@ -175,6 +179,7 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TEmitValue, TMatchin
       onKeyDown={handleKeyDown}
       onDropdownOpened={onDropdownOpened}
       dropdownRef={dropdownRef}
+      dropdownAutoOpen={dropdownAutoOpen}
       dropdownBody={() => (
         <ul>
           {filtered.length === 0 && (

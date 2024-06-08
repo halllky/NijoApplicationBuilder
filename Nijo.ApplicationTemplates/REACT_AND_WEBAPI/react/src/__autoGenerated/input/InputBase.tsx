@@ -57,6 +57,7 @@ export type SyncComboProps<TOption, TEmitValue, TMatchingKey extends string = st
   emitValueSelector: (item: TOption) => TEmitValue | undefined
   textSelector: (item: TOption) => string
   onKeywordChanged?: (keyword: string | undefined) => void
+  dropdownAutoOpen?: boolean
 }
 
 export type AsyncComboProps<TOption, TEmitValue, TMatchingKey extends string = string> = {
@@ -66,6 +67,7 @@ export type AsyncComboProps<TOption, TEmitValue, TMatchingKey extends string = s
   matchingKeySelectorFromEmitValue: (value: TEmitValue) => TMatchingKey | undefined
   emitValueSelector: (item: TOption) => TEmitValue | undefined
   textSelector: (item: TOption) => string
+  dropdownAutoOpen?: boolean
 }
 
 // ---------------------------------------------
