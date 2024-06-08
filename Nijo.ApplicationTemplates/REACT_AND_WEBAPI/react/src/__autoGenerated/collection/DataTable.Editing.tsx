@@ -176,6 +176,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
           onChange={setUnComittedText}
           onKeyDown={handleKeyDown}
           onBlur={commitEditing}
+          className="flex-1"
         />
       )}
       {caretCellEditingInfo?.type === 'async-combo' && (
@@ -187,6 +188,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
           onKeyDown={handleKeyDown}
           onBlur={commitEditing}
           {...caretCellEditingInfo.comboProps}
+          className="flex-1"
         />
       )}
     </div>
