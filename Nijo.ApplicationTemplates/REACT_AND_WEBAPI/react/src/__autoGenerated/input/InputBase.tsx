@@ -73,8 +73,7 @@ export type AsyncComboProps<TOption, TEmitValue, TMatchingKey extends string = s
 // ---------------------------------------------
 /** 日付や数値などの表記ゆれを補正する */
 export const normalize = (str: string) => str
-  .replace(/(\s|　)/gm, '') // 空白を除去
+  .replace(/(\s|　|,|、|，)/gm, '') // 空白、カンマを除去
   .replace('。', '.') // 句点は日本語入力時にピリオドと同じ位置にあるキーなので
-  .replace('、', ',') // 読点は日本語入力時にカンマと同じ位置にあるキーなので
   .replace('ー', '-') // NFKCで正規化されないので手動で正規化
   .normalize('NFKC') // 全角を半角に変換
