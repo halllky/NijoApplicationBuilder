@@ -2,8 +2,8 @@ import React, { useCallback, useImperativeHandle, useMemo, useRef, useState } fr
 import * as RT from '@tanstack/react-table'
 import * as Util from '../util'
 import { ColumnDefEx, DataTableProps, DataTableRef } from './DataTable.Public'
-import { TABLE_ZINDEX } from './DataTable.Parts'
-import { useCellEditing } from './DataTable.Editing'
+import { TABLE_ZINDEX, CellEditorRef } from './DataTable.Parts'
+import { CellEditor } from './DataTable.Editing'
 import { useSelection } from './DataTable.Selecting'
 import { getColumnResizeOption, useColumnResizing } from './DataTable.ColResize'
 
@@ -15,6 +15,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     columns: propsColumns,
     onKeyDown: propsKeyDown,
     onActiveRowChanged,
+    onChangeRow,
     className,
   } = props
 
@@ -42,18 +43,12 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   }), [data, columns])
 
   const api = RT.useReactTable(optoins)
-
-  const {
-    editing,
-    startEditing,
-    cancelEditing,
-    CellEditor,
-    cellEditorProps,
-    editingTdRefCallback,
-  } = useCellEditing<T>(props)
+  const cellEditorRef = useRef<CellEditorRef<T>>(null)
+  const [editing, setEditing] = useState(false)
 
   const {
     caretCell,
+    caretTdRef,
     selectObject,
     handleSelectionKeyDown,
     caretTdRefCallback,
@@ -61,7 +56,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     activeCellBorderProps,
     getSelectedRows,
     getSelectedIndexes,
-  } = useSelection<T>(api, data?.length ?? 0, columns.length, onActiveRowChanged)
+  } = useSelection<T>(api, data?.length ?? 0, columns.length, onActiveRowChanged, cellEditorRef)
 
   const {
     columnSizeVars,
@@ -69,14 +64,10 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     ResizeHandler,
   } = useColumnResizing(api)
 
-  const tdRefCallback = (td: HTMLTableCellElement | null, cell: RT.Cell<T, unknown>) => {
-    caretTdRefCallback(td, cell)
-    editingTdRefCallback(td, cell)
-  }
-
   const [isActive, setIsActive] = useState(false)
   const handleFocus: React.FocusEventHandler<HTMLDivElement> = useCallback(() => {
     setIsActive(true)
+    cellEditorRef.current?.focus()
     if (!caretCell) selectObject({ target: 'any' })
   }, [api, caretCell, selectObject])
   const handleBlur: React.FocusEventHandler<HTMLDivElement> = useCallback(e => {
@@ -84,18 +75,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     if (!e.target.contains(e.relatedTarget)) setIsActive(false)
   }, [])
 
-  // セル編集完了時にフォーカスが外れてキー操作ができなくなるのを防ぐ
-  const containerRef = useRef<HTMLDivElement>(null)
-  const onEndEditing = useCallback(() => {
-    setTimeout(() => {
-      containerRef.current?.focus()
-    }, 10)
-  }, [])
-
   const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = useCallback(e => {
-    // セル編集中の場合のキーハンドリングはCellEditor側で行う
-    if (editing) return
-
     // 任意の操作
     if (propsKeyDown) {
       propsKeyDown(e)
@@ -110,18 +90,8 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       for (const row of getSelectedRows()) row.toggleExpanded()
       e.preventDefault()
       return
-    } else if (caretCell
-      && (e.key === 'F2'
-        || !e.ctrlKey && !e.metaKey && e.key.length === 1 /*文字や数字や記号の場合*/)
-    ) {
-      // caretCellは更新前の古いセルなので最新の配列から検索しなおす
-      const row = api.getCoreRowModel().flatRows[caretCell.rowIndex]
-      const cell = row.getAllCells().find(cell => cell.column.id === caretCell.colId)
-      if (cell) startEditing(cell)
-      e.preventDefault()
-      return
     }
-  }, [api, editing, caretCell, getSelectedRows, handleSelectionKeyDown, startEditing, cancelEditing, propsKeyDown])
+  }, [api, getSelectedRows, handleSelectionKeyDown, propsKeyDown])
 
   useImperativeHandle(ref, () => ({
     getSelectedRows: () => getSelectedRows().map(row => ({
@@ -132,11 +102,10 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   }), [getSelectedRows])
 
   return (
-    <div ref={containerRef}
+    <div
       className={`outline-none overflow-auto select-none relative bg-color-2 border border-1 border-color-4 ${className}`}
       onFocus={handleFocus}
       onBlur={handleBlur}
-      onKeyDown={handleKeyDown}
       tabIndex={0}
     >
       <table
@@ -180,11 +149,11 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
             >
               {row.getVisibleCells().filter(c => !(c.column.columnDef as ColumnDefEx<T>).hidden).map(cell => (
                 <td key={cell.id}
-                  ref={td => tdRefCallback(td, cell)}
+                  ref={td => caretTdRefCallback(td, cell)}
                   className="relative overflow-hidden p-0 border-r border-1 border-color-4"
                   style={getTdStickeyStyle(false)}
                   onMouseDown={e => selectObject({ target: 'cell', cell: { rowIndex: cell.row.index, colId: cell.column.id }, shiftKey: e.shiftKey })}
-                  onDoubleClick={() => startEditing(cell)}
+                  onDoubleClick={() => cellEditorRef.current?.startEditing(cell)}
                 >
                   {RT.flexRender(
                     cell.column.columnDef.cell,
@@ -200,9 +169,16 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       {isActive && !editing && (
         <ActiveCellBorder api={api} {...activeCellBorderProps} />
       )}
-      {editing && (
-        <CellEditor onEndEditing={onEndEditing} {...cellEditorProps} />
-      )}
+
+      <CellEditor
+        ref={cellEditorRef}
+        api={api}
+        caretCell={caretCell}
+        caretTdRef={caretTdRef}
+        onChangeEditing={setEditing}
+        onKeyDown={handleKeyDown}
+        onChangeRow={onChangeRow}
+      />
     </div>
   )
 })

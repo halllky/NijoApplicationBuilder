@@ -1,144 +1,221 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import * as RT from '@tanstack/react-table'
-import { DataTableProps, ColumnDefEx } from './DataTable.Public'
-import { TABLE_ZINDEX } from './DataTable.Parts'
+import { DataTableProps, ColumnDefEx, ColumnEditSetting } from './DataTable.Public'
+import { CellEditorRef, CellPosition, TABLE_ZINDEX } from './DataTable.Parts'
 import * as Input from '../input'
 import * as Util from '../util'
 
-export const useCellEditing = <T,>(props: DataTableProps<T>) => {
-  const [editingCell, setEditingCell] = useState<RT.Cell<T, unknown> | undefined>(undefined)
-  const [editingItemIndex, setEditingItemIndex] = useState<number | undefined>()
-
-  const editingTdRef = useRef<HTMLTableCellElement>()
-  const editingTdRefCallback = useCallback((td: HTMLTableCellElement | null, cell: RT.Cell<T, unknown>) => {
-    if (td && cell.id === editingCell?.id) editingTdRef.current = td
-  }, [editingCell])
-
-  const startEditing = useCallback((cell: RT.Cell<T, unknown>) => {
-    if (!props.onChangeRow) return // 値が編集されてもコミットできないので編集開始しない
-    if (!(cell.column.columnDef as ColumnDefEx<T>)?.cellEditor) return // 編集不可のセル
-    setEditingCell(cell)
-    setEditingItemIndex(props.data?.indexOf(cell.row.original))
-  }, [props.data, props.onChangeRow])
-
-  const cancelEditing = useCallback(() => {
-    setEditingCell(undefined)
-  }, [])
-
-  const CellEditor = useMemo(() => {
-    return prepareCellEditor(setEditingCell, editingTdRef)
-  }, [])
-
-  return {
-    editing: editingCell !== undefined,
-    startEditing,
-    cancelEditing,
-
-    CellEditor,
-    cellEditorProps: {
-      editingCell,
-      editingItemIndex,
-      onChangeRow: props.onChangeRow,
-      data: props.data,
-    },
-    editingTdRefCallback,
-  }
+export type CellEditorProps<T> = {
+  api: RT.Table<T>
+  caretCell: CellPosition | undefined
+  caretTdRef: React.RefObject<HTMLTableCellElement | undefined>
+  onChangeEditing: (editing: boolean) => void
+  onChangeRow: DataTableProps<T>['onChangeRow']
+  onKeyDown: React.KeyboardEventHandler
 }
 
+export const CellEditor = Util.forwardRefEx(<T,>({
+  api,
+  caretCell,
+  caretTdRef,
+  onChangeEditing,
+  onChangeRow,
+  onKeyDown,
+}: CellEditorProps<T>,
+  ref: React.ForwardedRef<CellEditorRef<T>>
+) => {
 
-function prepareCellEditor<T,>(
-  setEditingCell: (v: RT.Cell<T, unknown> | undefined) => void,
-  editingTdRef: React.MutableRefObject<HTMLTableCellElement | undefined>,
-) {
-  return ({ editingItemIndex, onChangeRow, editingCell, onEndEditing }: {
-    editingItemIndex: number | undefined,
-    onChangeRow: DataTableProps<T>['onChangeRow']
-    editingCell: RT.Cell<T, unknown> | undefined
-    onEndEditing?: () => void
-  }) => {
-    const [uncomittedValue, setUnComittedValue] = useState<unknown>(() => {
-      if (!editingCell?.column.accessorFn || editingItemIndex === undefined) return undefined
-      return editingCell.column.accessorFn(editingCell.row.original, editingItemIndex)
+  // 編集中セルの情報。undefined以外の値が入っているときは編集モード。
+  const [editingCellInfo, setEditingCellInfo] = useState<{
+    row: T
+    rowIndex: number
+    cellId: string
+  } | undefined>(undefined)
+
+  // エディタの値
+  const [uncomittedText, setUnComittedText] = useState<string>()
+  const [comboSelectedItem, setComboSelectedItem] = useState<unknown | undefined>()
+
+  // エディタ設定。caretセルが移動するたびに更新される。
+  const [caretCellEditingInfo, setCaretCellEditingInfo] = useState<ColumnEditSetting<T>>()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const editorRef = useRef<Input.CustomComponentRef<string | unknown>>(null)
+  useEffect(() => {
+    if (caretCell) {
+      const columnDef = api.getColumn(caretCell.colId)?.columnDef as ColumnDefEx<T> | undefined
+      setCaretCellEditingInfo(columnDef?.editSetting)
+    } else {
+      setCaretCellEditingInfo(undefined)
+    }
+  }, [caretCell, api])
+  useEffect(() => {
+    editorRef.current?.focus()
+  }, [caretCellEditingInfo])
+
+  /** 編集開始 */
+  const startEditing = useCallback((cell: RT.Cell<T, unknown>) => {
+    const columnDef = cell.column.columnDef as ColumnDefEx<T>
+
+    if (!onChangeRow) return // 値が編集されてもコミットできないので編集開始しない
+    if (!columnDef.editSetting) return // 編集不可のセル
+    if (columnDef.editSetting.readOnly?.(cell.row.original)) return // 編集不可のセル
+
+    setEditingCellInfo({
+      cellId: cell.id,
+      rowIndex: cell.row.index,
+      row: cell.row.original,
     })
+    onChangeEditing(true)
 
-    const cellEditor = useMemo(() => {
-      const editor = (editingCell?.column.columnDef as ColumnDefEx<T>)?.cellEditor
-      if (editor) return Util.forwardRefEx(editor)
+    // 現在のセルの値をエディタに渡す
+    if (columnDef.editSetting.type === 'text') {
+      const cellValue = columnDef.editSetting.getTextValue(cell.row.original)
+      setUnComittedText(cellValue)
+    } else if (columnDef.editSetting.type === 'combo') {
+      const selectedValue = columnDef.editSetting.getValueFromRow(cell.row.original)
+      setComboSelectedItem(selectedValue)
+    } else if (columnDef.editSetting.type === 'async-combo') {
+      const selectedValue = columnDef.editSetting.getValueFromRow(cell.row.original)
+      setComboSelectedItem(selectedValue)
+    }
 
-      // セル編集コンポーネント未指定の場合
-      return Util.forwardRefEx<
-        Input.CustomComponentRef<any>,
-        Input.CustomComponentProps<any>
-      >((props, ref) => <Input.Description ref={ref} {...props} />)
+    // エディタを編集対象セルの位置に移動させる
+    if (caretTdRef.current && containerRef.current) {
+      containerRef.current.style.left = `${caretTdRef.current.offsetLeft}px`
+      containerRef.current.style.top = `${caretTdRef.current.offsetTop}px`
+      containerRef.current.style.minWidth = `${caretTdRef.current.clientWidth}px`
+      containerRef.current.style.minHeight = `${caretTdRef.current.clientHeight}px`
+    }
+    // エディタにスクロール
+    containerRef.current?.scrollIntoView({
+      behavior: 'instant',
+      block: 'nearest',
+      inline: 'nearest',
+    })
+  }, [setEditingCellInfo, onChangeEditing, onChangeRow])
 
-    }, [editingCell?.column])
+  /** 編集確定 */
+  const commitEditing = useCallback((value?: string | unknown | undefined) => {
+    if (editingCellInfo === undefined) return
+    if (caretCellEditingInfo === undefined) return
 
-    const commitEditing = useCallback(() => {
-      if (editingItemIndex !== undefined && onChangeRow && editingCell) {
-        const setValue = (editingCell?.column.columnDef as ColumnDefEx<T>)?.setValue
-        if (!setValue) {
-          // セッターがないのにこのコンポーネントが存在するのはあり得ないのでエラー
-          throw new Error('value setter is not defined.')
-        }
-        setValue(editingCell.row.original, editorRef.current?.getValue())
-        onChangeRow(editingItemIndex, editingCell.row.original)
-      }
-      setEditingCell(undefined)
-      onEndEditing?.()
-    }, [editingItemIndex, onChangeRow, editingCell, onEndEditing])
+    // set value
+    if (caretCellEditingInfo.type === 'text') {
+      caretCellEditingInfo.setTextValue(editingCellInfo.row, (value ?? editorRef.current?.getValue()) as string | undefined)
+    } else if (caretCellEditingInfo.type === 'combo') {
+      caretCellEditingInfo.setValueToRow(editingCellInfo.row, (value ?? editorRef.current?.getValue()) as unknown | undefined)
+    } else if (caretCellEditingInfo.type === 'async-combo') {
+      caretCellEditingInfo.setValueToRow(editingCellInfo.row, (value ?? editorRef.current?.getValue()) as unknown | undefined)
+    }
 
-    const cancelEditing = useCallback(() => {
-      setEditingCell(undefined)
-      onEndEditing?.()
-    }, [onEndEditing])
+    onChangeRow?.(editingCellInfo.rowIndex, editingCellInfo.row)
+    setEditingCellInfo(undefined)
+    onChangeEditing(false)
+  }, [comboSelectedItem, editingCellInfo, setEditingCellInfo, onChangeRow, onChangeEditing])
 
-    const editorRef = useRef<Input.CustomComponentRef<any>>(null)
-    const containerRef = useRef<HTMLDivElement>(null)
-    useEffect(() => {
-      // エディタを編集対象セルの位置に移動させる
-      if (editingTdRef.current && containerRef.current) {
-        containerRef.current.style.left = `${editingTdRef.current.offsetLeft}px`
-        containerRef.current.style.top = `${editingTdRef.current.offsetTop}px`
-      }
-      // エディタにフォーカスを当ててスクロール
-      editorRef.current?.focus()
-      containerRef.current?.scrollIntoView({
-        behavior: 'instant',
-        block: 'nearest',
-        inline: 'nearest',
-      })
-    }, [])
+  /** 編集キャンセル */
+  const cancelEditing = useCallback(() => {
+    setEditingCellInfo(undefined)
+    onChangeEditing(false)
+  }, [setEditingCellInfo, onChangeEditing])
 
-    const [{ isImeOpen }] = Util.useIMEOpened()
-    const handleKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = useCallback(e => {
+  // ----------------------------------
+  // イベント
+  const handleChangeCombobox = useCallback((selectedItem: unknown | undefined) => {
+    setComboSelectedItem(selectedItem)
+    commitEditing(selectedItem)
+  }, [setComboSelectedItem, commitEditing])
+
+  const [{ isImeOpen }] = Util.useIMEOpened()
+  const handleKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = useCallback(e => {
+    if (editingCellInfo) {
+      // 編集を終わらせる
       if ((e.key === 'Enter' || e.key === 'Tab') && !isImeOpen) {
         commitEditing()
         e.stopPropagation()
         e.preventDefault()
+
       } else if (e.key === 'Escape') {
         cancelEditing()
         e.preventDefault()
       }
-    }, [isImeOpen, commitEditing, cancelEditing])
+    } else {
+      // 編集を始める
+      if (caretCell && (
+        e.key === 'F2'
 
-    return (
-      <div ref={containerRef}
-        className="absolute min-w-4 min-h-4"
-        style={{ zIndex: TABLE_ZINDEX.CELLEDITOR }}
-      >
-        {React.createElement(cellEditor, {
-          ref: editorRef,
-          value: uncomittedValue,
-          onChange: setUnComittedValue,
-          onKeyDown: handleKeyDown,
-          onBlur: commitEditing,
-          className: 'block resize',
-        })}
-        {/* <div className="flex justify-start gap-1">
-          <Input.IconButton fill className="text-xs" onClick={commitEditing}>確定(Ctrl+Enter)</Input.IconButton>
-          <Input.IconButton fill className="text-xs" onClick={cancelEditing2}>キャンセル(Esc)</Input.IconButton>
-        </div> */}
-      </div>
-    )
-  }
-}
+        // クイック編集（編集モードでない状態でいきなり文字入力して編集を開始する）
+        || isImeOpen
+        || e.key === 'Process' // IMEが開いている場合のkeyはこれになる
+        || !e.ctrlKey && !e.metaKey && e.key.length === 1 /*文字や数字や記号の場合*/
+
+        // コンボボックスならば Alt + ArrowDown で編集開始
+        || (caretCellEditingInfo?.type === 'combo' || caretCellEditingInfo?.type === 'async-combo')
+        && e.altKey
+        && e.key === 'ArrowDown'
+      )) {
+        const row = api.getCoreRowModel().flatRows[caretCell.rowIndex]
+        const cell = row.getAllCells().find(cell => cell.column.id === caretCell.colId)
+        if (cell) startEditing(cell)
+        return
+      }
+
+      // セル移動や選択
+      onKeyDown(e)
+      if (e.defaultPrevented) return
+    }
+  }, [isImeOpen, caretCellEditingInfo, editingCellInfo, startEditing, commitEditing, cancelEditing, onKeyDown, api, caretCell])
+
+  Util.useOutsideClick(containerRef, () => {
+    commitEditing()
+  }, [commitEditing])
+
+  useImperativeHandle(ref, () => ({
+    focus: () => editorRef.current?.focus(),
+    startEditing,
+  }), [startEditing])
+
+  return (
+    <div ref={containerRef}
+      className="absolute min-w-4 min-h-4 flex items-stretch"
+      style={{
+        zIndex: TABLE_ZINDEX.CELLEDITOR,
+        opacity: editingCellInfo === undefined ? 0 : undefined,
+        pointerEvents: editingCellInfo === undefined ? 'none' : undefined,
+      }}
+    >
+      {(caretCellEditingInfo === undefined || caretCellEditingInfo?.type === 'text') && (
+        <Input.Word
+          ref={editorRef as React.RefObject<Input.CustomComponentRef<string>>}
+          value={uncomittedText}
+          onChange={setUnComittedText}
+          onKeyDown={handleKeyDown}
+          className="flex-1"
+        />
+      )}
+      {caretCellEditingInfo?.type === 'combo' && (
+        <Input.ComboBox
+          dropdownAutoOpen={editingCellInfo !== undefined}
+          ref={editorRef}
+          value={comboSelectedItem}
+          onChange={handleChangeCombobox}
+          onKeyDown={handleKeyDown}
+          {...caretCellEditingInfo.comboProps}
+          className="flex-1"
+        />
+      )}
+      {caretCellEditingInfo?.type === 'async-combo' && (
+        <Input.AsyncComboBox
+          dropdownAutoOpen={editingCellInfo !== undefined}
+          ref={editorRef}
+          value={comboSelectedItem}
+          onChange={handleChangeCombobox}
+          onKeyDown={handleKeyDown}
+          {...caretCellEditingInfo.comboProps}
+          className="flex-1"
+        />
+      )}
+    </div>
+  )
+})
+

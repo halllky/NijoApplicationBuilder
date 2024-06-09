@@ -1,5 +1,5 @@
 import { HTMLAttributes } from "react"
-import { forwardRefEx } from "../util"
+import { forwardRefEx } from "../util/ReactUtil"
 
 export type ValidationHandler = (value: string) => ({ ok: true, formatted: string } | { ok: false })
 export type ValidationResult = ReturnType<ValidationHandler>
@@ -50,8 +50,22 @@ export type CustomComponentProps<
   }
 
 // ---------------------------------------------
-/** 日付や数値などの表記ゆれを補正する */
-export const normalize = (str: string) => str
-  .replace(/(\s|　)/gm, '') // 空白を除去
-  .replace('ー', '-') // NFKCで正規化されないので手動で正規化
-  .normalize('NFKC') // 全角を半角に変換
+export type SyncComboProps<TOption, TEmitValue, TMatchingKey extends string = string> = {
+  options: TOption[]
+  matchingKeySelectorFromOption: (item: TOption) => TMatchingKey | undefined
+  matchingKeySelectorFromEmitValue: (value: TEmitValue) => TMatchingKey | undefined
+  emitValueSelector: (item: TOption) => TEmitValue | undefined
+  textSelector: (item: TOption) => string
+  onKeywordChanged?: (keyword: string | undefined) => void
+  dropdownAutoOpen?: boolean
+}
+
+export type AsyncComboProps<TOption, TEmitValue, TMatchingKey extends string = string> = {
+  queryKey?: string
+  query: ((keyword: string | undefined) => Promise<TOption[]>)
+  matchingKeySelectorFromOption: (item: TOption) => TMatchingKey | undefined
+  matchingKeySelectorFromEmitValue: (value: TEmitValue) => TMatchingKey | undefined
+  emitValueSelector: (item: TOption) => TEmitValue | undefined
+  textSelector: (item: TOption) => string
+  dropdownAutoOpen?: boolean
+}

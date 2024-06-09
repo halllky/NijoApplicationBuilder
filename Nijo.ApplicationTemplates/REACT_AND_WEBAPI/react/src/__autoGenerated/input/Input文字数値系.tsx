@@ -1,7 +1,8 @@
 import { useMemo, useCallback, useRef, useImperativeHandle } from "react"
-import { CustomComponentRef, ValidationHandler, defineCustomComponent, normalize } from "./InputBase"
+import { CustomComponentRef, defineCustomComponent } from "./InputBase"
 import { TextInputBase } from "./TextInputBase"
 import { TextareaBase } from "./TextareaBase"
+import { tryParseAsNumberOrEmpty } from "../util/JsUtil"
 
 /** 単語 */
 export const Word = defineCustomComponent<string>((props, ref) => {
@@ -21,36 +22,26 @@ export const Num = defineCustomComponent<number>((props, ref) => {
     return value?.toString() ?? ''
   }, [value])
 
-  const onValidate: ValidationHandler = useCallback(value => {
-    const normalized = normalize(value).replace(',', '') // 桁区切りのカンマを無視
-    if (normalized === '') return { ok: true, formatted: '' }
-    const num = Number(normalized)
-    return isNaN(num) ? { ok: false } : { ok: true, formatted: num.toString() }
-  }, [])
   const handleChange = useCallback((value: string | undefined) => {
     // TODO: TextAreaBaseのonBlurでもバリデーションをかけているので冗長
-    const validated = onValidate(value ?? '')
-    onChange?.(validated.ok && validated.formatted !== ''
-      ? Number(validated.formatted)
-      : undefined)
-  }, [onChange, onValidate])
+    const { num } = tryParseAsNumberOrEmpty(value)
+    onChange?.(num)
+  }, [onChange])
 
   const textRef = useRef<CustomComponentRef<string>>(null)
   useImperativeHandle(ref, () => ({
     getValue: () => {
-      const validated = onValidate(textRef.current?.getValue() ?? '')
-      return validated.ok && validated.formatted !== ''
-        ? Number(validated.formatted)
-        : undefined
+      const { num } = tryParseAsNumberOrEmpty(textRef.current?.getValue() ?? '')
+      return num
     },
     focus: () => textRef.current?.focus(),
-  }), [onValidate])
+  }), [])
 
   return <TextInputBase
     ref={textRef}
     {...rest}
     value={strValue}
     onChange={handleChange}
-    onValidate={onValidate}
+    onValidate={tryParseAsNumberOrEmpty}
   />
 })

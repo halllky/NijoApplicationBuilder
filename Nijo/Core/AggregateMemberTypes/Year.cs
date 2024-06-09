@@ -10,8 +10,23 @@ namespace Nijo.Core.AggregateMemberTypes {
         public string GetCSharpTypeName() => "int";
         public string GetTypeScriptTypeName() => "number";
 
-        public ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
+        public ReactInputComponent GetReactComponent() {
             return new ReactInputComponent { Name = "Input.Num" };
+        }
+
+        public IGridColumnSetting GetGridColumnEditSetting() {
+            return new TextColumnSetting {
+                GetValueFromRow = (value, formatted) => {
+                    return $$"""
+                        const {{formatted}} = {{value}}?.toString()
+                        """;
+                },
+                SetValueToRow = (value, parsed) => {
+                    return $$"""
+                        const { year: {{parsed}} } = Util.tryParseAsYearOrEmpty({{value}})
+                        """;
+                },
+            };
         }
     }
 }

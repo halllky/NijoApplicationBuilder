@@ -18,12 +18,14 @@ namespace Nijo.Parts.WebClient {
         /// 集約のメンバーを列挙して列定義を表すオブジェクトを返します。
         /// useFieldArray の update 関数を使用しているので、その関数を参照できる場所にレンダリングされる必要があります。
         /// </summary>
+        /// <param name="dataTableRowTypeName">DataTableの行の型の名前</param>
         /// <param name="dataTableOwner">このDataTableにはこの集約のメンバーの列が表示されます。</param>
         /// <param name="readOnly">このDataTableが読み取り専用か否か</param>
         /// <param name="useFormContextType">useFormContextのジェネリック型</param>
         /// <param name="registerPathModifier">ReactHookFormの登録パスの編集関数</param>
         /// <param name="arrayIndexVarNamesFromFormRootToDataTableOwner">React Hook Forms の記法において、フォームのルートからdataTableOwnerまでのパスに含まれる配列インデックスを表す変数名</param>
         internal static IEnumerable<DataTableColumn> FromMembers(
+            string dataTableRowTypeName,
             GraphNode<Aggregate> dataTableOwner,
             bool readOnly,
             string? useFormContextType = null,
@@ -42,13 +44,11 @@ namespace Nijo.Parts.WebClient {
                 // 非編集時のセル表示文字列
                 string? formatted = null;
                 if (vm != null) {
-                    // 数値型や日付型といった型ごとに表示文字列変換処理が異なるためそれぞれごとの型で指定されたフォーマット処理に任せる
-                    var component = vm.Options.MemberType.GetReactComponent(new() {
-                        Type = GetReactComponentArgs.E_Type.InDataGrid,
-                    });
-                    if (component.GridCellFormatStatement != null) {
-                        formatted = component.GridCellFormatStatement("value", "formatted");
+                    var editSettings = vm.Options.MemberType.GetGridColumnEditSetting();
+                    if (editSettings is ComboboxColumnSetting ccs) {
+                        formatted = ccs.GetDisplayText?.Invoke("value", "formatted");
                     }
+
                 } else if (refMember != null) {
                     var names = refMember.RefTo
                         .AsEntry()
@@ -72,45 +72,6 @@ namespace Nijo.Parts.WebClient {
                     }
                     """;
 
-                string? cellEditor;
-                if (readOnly) {
-                    cellEditor = null;
-                } else if (member is AggregateMember.ValueMember vm2) {
-                    var editor = vm2.Options.MemberType.GetReactComponent(new() {
-                        Type = GetReactComponentArgs.E_Type.InDataGrid,
-                    });
-                    cellEditor = $"(props, ref) => <{editor.Name} ref={{ref}} {{...props}}{string.Concat(editor.GetPropsStatement())} />";
-
-                } else if (member is AggregateMember.Ref rm2) {
-                    var combobox = new ComboBox(rm2.RefTo);
-                    cellEditor = $"(props, ref) => <Input.{combobox.ComponentName} ref={{ref}} {{...props}} />";
-
-                } else {
-                    throw new InvalidProgramException();
-                }
-
-                var getValue = $"data => data.{memberPath.Join("?.")}";
-
-                string? setValue;
-                if (readOnly) {
-                    setValue = null;
-                } else if (member.DeclaringAggregate == dataTableOwner) {
-                    setValue = $$"""
-                        (row, value) => row.{{memberPath.Join(".")}} = value
-                        """;
-                } else {
-                    var ownerPath = member.Owner.GetFullPathAsSingleViewDataClass(since: dataTableOwner);
-                    var rootAggPath = member.Owner.GetRoot().GetFullPathAsSingleViewDataClass(since: dataTableOwner);
-                    setValue = $$"""
-                        (row, value) => {
-                          if (row.{{ownerPath.Join("?.")}}) {
-                            row.{{memberPath.Join(".")}} = value
-                            row{{rootAggPath.Select(x => $".{x}").Join("")}}.{{DataClassForDisplay.WILL_BE_CHANGED}} = true
-                          }
-                        }
-                        """;
-                }
-
                 var hidden = vm?.Options.InvisibleInGui == true
                     ? true
                     : (bool?)null;
@@ -119,17 +80,91 @@ namespace Nijo.Parts.WebClient {
                     ? null
                     : member.Owner.Item.DisplayName;
 
+                IGridColumnSetting? editSetting = null;
+                if (vm != null) {
+                    editSetting = vm.Options.MemberType.GetGridColumnEditSetting();
+
+                } else if (refMember != null) {
+                    var refInfo = new DataClassForDisplayRefTarget(refMember.RefTo);
+                    var api = new KeywordSearchingFeature(refMember.RefTo);
+                    var combo = new ComboBox(refMember.RefTo);
+                    var names = refMember.RefTo
+                        .AsEntry()
+                        .GetNames()
+                        .OfType<AggregateMember.ValueMember>();
+
+                    editSetting = new AsyncComboboxColumnSetting {
+                        OptionItemTypeName = $"AggregateType.{refInfo.TsTypeName}",
+                        QueryKey = combo.RenderReactQueryKeyString(),
+                        Query = $$"""
+                            async keyword => {
+                              const response = await get<AggregateType.{{refInfo.TsTypeName}} []>(`{{api.GetUri()}}`, { keyword })
+                              if (!response.ok) return []
+                              return response.data
+                            }
+                            """,
+                        EmitValueSelector = $"item => item",
+                        MatchingKeySelectorFromEmitValue = $"item => item.{DataClassForDisplayRefTarget.INSTANCE_KEY}",
+                        MatchingKeySelectorFromOption = $"item => item.{DataClassForDisplayRefTarget.INSTANCE_KEY}",
+                        TextSelector = $"item => `{names.Select(n => $"${{item.{n.Declared.GetFullPathAsDisplayRefTargetClass().Join("?.")} ?? ''}}").Join("")}`",
+                    };
+                }
+
+                // GET VALUE
+                var editSettingGetValueFromRow = editSetting?.GetValueFromRow == null ? $$"""
+                    row => row.{{memberPath.Join("?.")}}
+                    """ : $$"""
+                    row => {
+                      const value = row.{{memberPath.Join("?.")}}
+                      {{WithIndent(editSetting.GetValueFromRow("value", "formatted"), "  ")}}
+                      return formatted
+                    }
+                    """;
+
+                // SET VALUE
+                string editSettingSetValueToRow;
+                if (member.DeclaringAggregate == dataTableOwner) {
+                    editSettingSetValueToRow = $$"""
+                        (row, value) => {
+                        {{If(editSetting?.SetValueToRow == null, () => $$"""
+                          row.{{memberPath.Join(".")}} = value
+                        """).Else(() => $$"""
+                          {{WithIndent(editSetting!.SetValueToRow!("value", "formatted"), "  ")}}
+                          row.{{memberPath.Join(".")}} = formatted
+                        """)}}
+                        }
+                        """;
+                } else {
+                    var ownerPath = member.Owner.GetFullPathAsSingleViewDataClass(since: dataTableOwner);
+                    var rootAggPath = member.Owner.GetRoot().GetFullPathAsSingleViewDataClass(since: dataTableOwner);
+                    editSettingSetValueToRow = $$"""
+                        (row, value) => {
+                          if (row.{{ownerPath.Join("?.")}}) {
+                        {{If(editSetting?.SetValueToRow == null, () => $$"""
+                            row.{{memberPath.Join(".")}} = value
+                        """).Else(() => $$"""
+                            {{WithIndent(editSetting!.SetValueToRow!("value", "formatted"), "    ")}}
+                            row.{{memberPath.Join(".")}} = formatted
+                        """)}}
+                            row{{rootAggPath.Select(x => $".{x}").Join("")}}.{{DataClassForDisplay.WILL_BE_CHANGED}} = true
+                          }
+                        }
+                        """;
+                }
+
                 colIndex++;
 
                 return new DataTableColumn {
+                    DataTableRowTypeName = dataTableRowTypeName,
                     Id = $"col{colIndex}",
                     Header = member.MemberName,
                     Cell = cell,
-                    CellEditor = cellEditor,
-                    GetValue = getValue,
-                    SetValue = setValue,
+                    AccessorFn = editSettingGetValueFromRow,
                     Hidden = hidden,
                     HeaderGroupName = headerGroupName,
+                    EditSetting = editSetting,
+                    EditSettingGetValueFromRow = editSettingGetValueFromRow,
+                    EditSettingSetValueToRow = editSettingSetValueToRow,
                 };
             }
 
@@ -163,6 +198,7 @@ namespace Nijo.Parts.WebClient {
                 };
 
                 return new DataTableColumn {
+                    DataTableRowTypeName = dataTableRowTypeName,
                     Id = $"ref-from-{refFrom.PropName}",
                     Header = string.Empty,
                     HeaderGroupName = refFrom.MainAggregate.Item.DisplayName,
@@ -240,22 +276,28 @@ namespace Nijo.Parts.WebClient {
             }
         }
 
+        internal required string DataTableRowTypeName { get; init; }
+
         // react table のAPI
         internal required string Id { get; init; }
         internal required string Header { get; init; }
         internal required string Cell { get; init; }
         internal int? Size { get; init; }
         internal bool? EnableResizing { get; init; }
-        /// <summary>accessorFnにマッピングされる</summary>
-        internal string? GetValue { get; init; }
+        internal string? AccessorFn { get; init; }
 
         // 独自定義
-        internal string? CellEditor { get; init; }
-        internal string? SetValue { get; init; }
         internal bool? Hidden { get; init; }
         internal string? HeaderGroupName { get; init; }
+        internal IGridColumnSetting? EditSetting { get; init; }
+        internal string? EditSettingGetValueFromRow { get; init; }
+        internal string? EditSettingSetValueToRow { get; init; }
 
         internal string Render() {
+            var textboxEditSetting = EditSetting as TextColumnSetting;
+            var comboboxEditSetting = EditSetting as ComboboxColumnSetting;
+            var asyncComboEditSetting = EditSetting as AsyncComboboxColumnSetting;
+
             return $$"""
                 {
                   id: '{{Id}}',
@@ -267,20 +309,62 @@ namespace Nijo.Parts.WebClient {
                 {{If(EnableResizing != null, () => $$"""
                   enableResizing: {{(EnableResizing!.Value ? "true" : "false")}},
                 """)}}
-                {{If(GetValue != null, () => $$"""
-                  accessorFn: {{GetValue}},
-                """)}}
-                {{If(SetValue != null, () => $$"""
-                  setValue: {{WithIndent(SetValue!, "  ")}},
-                """)}}
-                {{If(CellEditor != null, () => $$"""
-                  cellEditor: {{WithIndent(CellEditor!, "  ")}},
+                {{If(AccessorFn != null, () => $$"""
+                  accessorFn: {{WithIndent(AccessorFn!, "  ")}},
                 """)}}
                 {{If(Hidden != null, () => $$"""
                   hidden: {{(Hidden!.Value ? "true" : "false")}},
                 """)}}
                 {{If(HeaderGroupName != null, () => $$"""
                   headerGroupName: '{{HeaderGroupName}}',
+                """)}}
+                {{If(textboxEditSetting != null, () => $$"""
+                  editSetting: {
+                    type: 'text',
+                {{If(EditSettingGetValueFromRow != null, () => $$"""
+                    getTextValue: {{WithIndent(EditSettingGetValueFromRow!, "    ")}},
+                """)}}
+                {{If(EditSettingSetValueToRow != null, () => $$"""
+                    setTextValue: {{WithIndent(EditSettingSetValueToRow!, "    ")}},
+                """)}}
+                  },
+                """)}}
+                {{If(comboboxEditSetting != null, () => $$"""
+                  editSetting: ({
+                    type: 'combo',
+                {{If(EditSettingGetValueFromRow != null, () => $$"""
+                    getValueFromRow: {{WithIndent(EditSettingGetValueFromRow!, "    ")}},
+                """)}}
+                {{If(EditSettingSetValueToRow != null, () => $$"""
+                    setValueToRow: {{WithIndent(EditSettingSetValueToRow!, "    ")}},
+                """)}}
+                    comboProps: {
+                      options: {{comboboxEditSetting!.Options}},
+                      emitValueSelector: {{comboboxEditSetting!.EmitValueSelector}},
+                      matchingKeySelectorFromEmitValue: {{comboboxEditSetting!.MatchingKeySelectorFromEmitValue}},
+                      matchingKeySelectorFromOption: {{comboboxEditSetting!.MatchingKeySelectorFromOption}},
+                      textSelector: {{comboboxEditSetting!.TextSelector}},
+                    },
+                  } as Layout.ColumnEditSetting<{{DataTableRowTypeName}}, {{comboboxEditSetting!.OptionItemTypeName}}>) as Layout.ColumnEditSetting<{{DataTableRowTypeName}}, unknown>,
+                """)}}
+                {{If(asyncComboEditSetting != null, () => $$"""
+                  editSetting: ({
+                    type: 'async-combo',
+                {{If(EditSettingGetValueFromRow != null, () => $$"""
+                    getValueFromRow: {{WithIndent(EditSettingGetValueFromRow!, "    ")}},
+                """)}}
+                {{If(EditSettingSetValueToRow != null, () => $$"""
+                    setValueToRow: {{WithIndent(EditSettingSetValueToRow!, "    ")}},
+                """)}}
+                    comboProps: {
+                      queryKey: {{asyncComboEditSetting!.QueryKey}},
+                      query: {{WithIndent(asyncComboEditSetting!.Query, "      ")}},
+                      emitValueSelector: {{asyncComboEditSetting!.EmitValueSelector}},
+                      matchingKeySelectorFromEmitValue: {{asyncComboEditSetting!.MatchingKeySelectorFromEmitValue}},
+                      matchingKeySelectorFromOption: {{asyncComboEditSetting!.MatchingKeySelectorFromOption}},
+                      textSelector: {{asyncComboEditSetting!.TextSelector}},
+                    },
+                  } as Layout.ColumnEditSetting<{{DataTableRowTypeName}}, {{asyncComboEditSetting!.OptionItemTypeName}}>) as Layout.ColumnEditSetting<{{DataTableRowTypeName}}, unknown>,
                 """)}}
                 },
                 """;

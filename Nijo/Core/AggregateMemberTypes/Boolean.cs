@@ -1,3 +1,4 @@
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,13 +11,26 @@ namespace Nijo.Core.AggregateMemberTypes {
         public string GetTypeScriptTypeName() => "boolean";
         public SearchBehavior SearchBehavior => SearchBehavior.Strict;
 
-        public ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
+        public ReactInputComponent GetReactComponent() {
             return new ReactInputComponent {
-                Name = e.Type == GetReactComponentArgs.E_Type.InDataGrid
-                    ? "Input.BooleanComboBox"
-                    : "Input.CheckBox",
-                GridCellFormatStatement = (value, formatted) => $$"""
-                    const {{formatted}} = ({{value}} === undefined ? '' : ({{value}} ? '○' : '-'))
+                Name = "Input.CheckBox",
+            };
+        }
+
+        public IGridColumnSetting GetGridColumnEditSetting() {
+            return new ComboboxColumnSetting {
+                OptionItemTypeName = $"{{ key: 'T' | 'F', text: string }}",
+                Options = $"[{{ key: 'T' as const, text: '✓' }}, {{ key: 'F' as const, text: '' }}]",
+                EmitValueSelector = $"opt => opt",
+                MatchingKeySelectorFromEmitValue = $"opt => opt.key",
+                MatchingKeySelectorFromOption = $"opt => opt.key",
+                TextSelector = $"opt => opt.text",
+
+                GetDisplayText = (value, formatted) => $$"""
+                    const {{formatted}} = {{value}} ? '✓' : ''
+                    """,
+                SetValueToRow = (value, formatted) => $$"""
+                    const {{formatted}} = {{value}}?.key === 'T'
                     """,
             };
         }

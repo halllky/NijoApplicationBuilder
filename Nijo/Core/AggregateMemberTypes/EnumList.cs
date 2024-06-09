@@ -18,18 +18,26 @@ namespace Nijo.Core.AggregateMemberTypes {
             return Definition.Items.Select(x => $"'{x.PhysicalName}'").Join(" | ");
         }
 
-        public ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
+        public ReactInputComponent GetReactComponent() {
             var props = new Dictionary<string, string> {
                 { "options", $"[{Definition.Items.Select(x => $"'{x.PhysicalName}' as const").Join(", ")}]" },
                 { "textSelector", "item => item" },
             };
-            if (e.Type == GetReactComponentArgs.E_Type.InDataGrid) {
-                props.Add("combo", "");
-            }
 
             return new ReactInputComponent {
                 Name = "Input.Selection",
                 Props = props,
+            };
+        }
+
+        public IGridColumnSetting GetGridColumnEditSetting() {
+            return new ComboboxColumnSetting {
+                OptionItemTypeName = GetTypeScriptTypeName(),
+                Options = $"[{Definition.Items.Select(x => $"'{x.PhysicalName}' as const").Join(", ")}]",
+                EmitValueSelector = $"opt => opt",
+                MatchingKeySelectorFromEmitValue = $"value => value",
+                MatchingKeySelectorFromOption = $"opt => opt",
+                TextSelector = $"opt => opt",
             };
         }
     }

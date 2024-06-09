@@ -1,14 +1,15 @@
 import { useState, useRef, useCallback, useEffect, useMemo, useImperativeHandle } from 'react'
 import * as RT from '@tanstack/react-table'
 import * as Util from '../util'
-import { TABLE_ZINDEX } from './DataTable.Parts'
+import { CellEditorRef, CellPosition, TABLE_ZINDEX } from './DataTable.Parts'
 import { DataTableProps } from '..'
 
 export const useSelection = <T,>(
   api: RT.Table<T>,
   rowCount: number,
   colCount: number,
-  onActiveRowChanged: DataTableProps<T>['onActiveRowChanged'] | undefined
+  onActiveRowChanged: DataTableProps<T>['onActiveRowChanged'] | undefined,
+  cellEditorRef: React.RefObject<CellEditorRef<T>>,
 ) => {
   const [caretCell, setCaretCell] = useState<CellPosition | undefined>()
   const [selectionStart, setSelectionStart] = useState<CellPosition | undefined>()
@@ -24,8 +25,8 @@ export const useSelection = <T,>(
   const selectObject = useCallback((obj: SelectTarget) => {
     // シングル選択
     if (obj.target === 'cell') {
-      setCaretCell({ ...obj.cell })
-      if (!obj.shiftKey) setSelectionStart(obj.cell)
+      setSelectionStart({ ...obj.cell })
+      if (!obj.shiftKey) setCaretCell(obj.cell)
       setContainsRowHeader(false)
       onActiveRowChanged?.({ rowIndex: obj.cell.rowIndex, getRow: () => api.getCoreRowModel().flatRows[obj.cell.rowIndex].original })
     }
@@ -62,6 +63,8 @@ export const useSelection = <T,>(
         onActiveRowChanged?.(undefined)
       }
     }
+    // クイック編集のために常にCellEditorにフォーカスを当てる
+    cellEditorRef.current?.focus()
   }, [api, onActiveRowChanged, rowCount, colCount])
 
   const handleSelectionKeyDown: React.KeyboardEventHandler<HTMLElement> = useCallback(e => {
@@ -70,38 +73,40 @@ export const useSelection = <T,>(
       e.preventDefault()
 
     } else if (!e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-      if (!caretCell) {
+      const movingCell = e.shiftKey ? selectionStart : caretCell
+      if (!movingCell) {
         selectObject({ target: 'any' })
         e.preventDefault()
         return
       }
       // 1つ上または下のセルを選択
       const rowIndex = e.key === 'ArrowUp'
-        ? Math.max(0, caretCell.rowIndex - 1)
-        : Math.min(rowCount - 1, caretCell.rowIndex + 1)
-      selectObject({ target: 'cell', cell: { rowIndex, colId: caretCell.colId }, shiftKey: e.shiftKey })
+        ? Math.max(0, movingCell.rowIndex - 1)
+        : Math.min(rowCount - 1, movingCell.rowIndex + 1)
+      selectObject({ target: 'cell', cell: { rowIndex, colId: movingCell.colId }, shiftKey: e.shiftKey })
       e.preventDefault()
       activeCellRef.current?.scrollToActiveCell()
       return
 
     } else if (!e.ctrlKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
-      if (!caretCell) {
+      const movingCell = e.shiftKey ? selectionStart : caretCell
+      if (!movingCell) {
         selectObject({ target: 'any' })
         e.preventDefault()
         return
       }
       // 1つ左または右のセルを選択
       const columns = api.getAllColumns()
-      const currentColIndex = columns.findIndex(col => col.id === caretCell.colId)
+      const currentColIndex = columns.findIndex(col => col.id === movingCell.colId)
       const newColIndex = e.key === 'ArrowLeft'
         ? Math.max(0, currentColIndex - 1)
         : Math.min(columns.length - 1, currentColIndex + 1)
       const newColumn = columns[newColIndex]
-      selectObject({ target: 'cell', cell: { rowIndex: caretCell.rowIndex, colId: newColumn.id }, shiftKey: e.shiftKey })
+      selectObject({ target: 'cell', cell: { rowIndex: movingCell.rowIndex, colId: newColumn.id }, shiftKey: e.shiftKey })
       e.preventDefault()
       activeCellRef.current?.scrollToActiveCell()
     }
-  }, [api, selectObject, caretCell, rowCount, colCount])
+  }, [api, selectObject, caretCell, selectionStart, rowCount, colCount])
 
   const caretTdRefCallback = useCallback((td: HTMLTableCellElement | null, cell: RT.Cell<T, unknown>) => {
     if (td !== null
@@ -138,6 +143,7 @@ export const useSelection = <T,>(
 
   return {
     caretCell,
+    caretTdRef,
     selectObject,
     handleSelectionKeyDown,
     caretTdRefCallback,
@@ -145,6 +151,7 @@ export const useSelection = <T,>(
     ActiveCellBorder,
     activeCellBorderProps: {
       caretCell,
+      selectionStart,
       containsRowHeader,
       ref: activeCellRef,
     },
@@ -163,9 +170,10 @@ function prepareActiveRangeSvg<T>(
     scrollToActiveCell: () => void,
   }, {
     caretCell: object | undefined
+    selectionStart: object | undefined
     containsRowHeader: boolean
     api: RT.Table<T>
-  }>(({ caretCell, containsRowHeader, api }, ref) => {
+  }>(({ caretCell, selectionStart, containsRowHeader, api }, ref) => {
     const svgRef = useRef<SVGSVGElement>(null)
     const maskBlackRef = useRef<SVGRectElement>(null)
     useEffect(() => {
@@ -197,10 +205,10 @@ function prepareActiveRangeSvg<T>(
       svgRef.current.style.width = `${right - left}px`
       svgRef.current.style.height = `${bottom - top}px`
 
-      maskBlackRef.current.setAttribute('x', `${root.offsetLeft - left - 3}px`) // 3はボーダーの分
-      maskBlackRef.current.setAttribute('y', `${root.offsetTop - top - 3}px`) // 3はボーダーの分
-      maskBlackRef.current.style.width = `${root.offsetWidth}px`
-      maskBlackRef.current.style.height = `${root.offsetHeight}px`
+      maskBlackRef.current.setAttribute('x', `${head.offsetLeft - left - 3}px`) // 3はボーダーの分
+      maskBlackRef.current.setAttribute('y', `${head.offsetTop - top - 3}px`) // 3はボーダーの分
+      maskBlackRef.current.style.width = `${head.offsetWidth}px`
+      maskBlackRef.current.style.height = `${head.offsetHeight}px`
 
       svgRef.current.style.zIndex = containsRowHeader
         ? TABLE_ZINDEX.ROWHEADER_SELECTION.toString()
@@ -208,6 +216,7 @@ function prepareActiveRangeSvg<T>(
     }, [
       containsRowHeader,
       caretCell,
+      selectionStart,
       // 列幅変更時に範囲を再計算するため必要な依存
       // eslint-disable-next-line react-hooks/exhaustive-deps
       api.getState().columnSizing,
@@ -249,9 +258,4 @@ function prepareActiveRangeSvg<T>(
       </svg>
     )
   })
-}
-
-type CellPosition = {
-  rowIndex: number
-  colId: string
 }

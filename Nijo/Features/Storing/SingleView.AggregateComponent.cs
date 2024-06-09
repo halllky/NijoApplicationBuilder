@@ -278,11 +278,12 @@ namespace Nijo.Features.Storing {
                 var editable = _mode == SingleView.E_Type.View ? "false" : "true";
 
                 var colDefs = DataTableColumn.FromMembers(
-                        _aggregate,
-                        _mode == SingleView.E_Type.View,
-                        useFormContextType: $"AggregateType.{new DataClassForDisplay(_aggregate.GetEntry().As<Aggregate>()).TsTypeName}",
-                        registerPathModifier: null,
-                        arrayIndexVarNamesFromFormRootToDataTableOwner: args);
+                    $"AggregateType.{dataClass.TsTypeName}",
+                    _aggregate,
+                    _mode == SingleView.E_Type.View,
+                    useFormContextType: $"AggregateType.{new DataClassForDisplay(_aggregate.GetEntry().As<Aggregate>()).TsTypeName}",
+                    registerPathModifier: null,
+                    arrayIndexVarNamesFromFormRootToDataTableOwner: args);
 
                 return $$"""
                     const {{componentName}} = ({{{args.Join(", ")}} }: {
@@ -290,6 +291,7 @@ namespace Nijo.Features.Storing {
                       {{arg}}: number
                     """)}}
                     }) => {
+                      const { get } = Util.useHttpRequest()
                       const { registerEx, watch, control } = Util.useFormContextEx<{{useFormType}}>()
                       const { fields, append, remove, update } = useFieldArray({
                         control,
@@ -316,7 +318,7 @@ namespace Nijo.Features.Storing {
                         columns: [
                           {{WithIndent(colDefs.SelectTextTemplate(def => def.Render()), "      ")}}
                         ],
-                      }), [{{args.Select(a => $"{a}, ").Join("")}}update])
+                      }), [get, {{args.Select(a => $"{a}, ").Join("")}}update])
 
                       return (
                         <VForm.Item wide
@@ -359,9 +361,7 @@ namespace Nijo.Features.Storing {
                             """;
 
                     } else {
-                        var reactComponent = schalar.Options.MemberType.GetReactComponent(new GetReactComponentArgs {
-                            Type = GetReactComponentArgs.E_Type.InDetailView,
-                        });
+                        var reactComponent = schalar.Options.MemberType.GetReactComponent();
 
                         // read only
                         if (_mode == SingleView.E_Type.View) {
@@ -439,9 +439,7 @@ namespace Nijo.Features.Storing {
                 } else if (member is AggregateMember.Variation variationSwitch) {
                     var switchProp = $"`{variationSwitch.GetRHFRegisterName(GetArguments().Concat([GetLoopVarName()])).Join(".")}`";
                     var disabled = IfReadOnly("disabled", variationSwitch);
-                    var selectComponent = variationSwitch.Options.MemberType.GetReactComponent(new GetReactComponentArgs {
-                        Type = GetReactComponentArgs.E_Type.InDetailView,
-                    });
+                    var selectComponent = variationSwitch.Options.MemberType.GetReactComponent();
 
                     yield return $$"""
                         <VForm.Container

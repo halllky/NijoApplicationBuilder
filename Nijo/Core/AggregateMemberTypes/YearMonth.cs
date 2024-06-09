@@ -10,17 +10,24 @@ namespace Nijo.Core.AggregateMemberTypes {
         public string GetCSharpTypeName() => "int";
         public string GetTypeScriptTypeName() => "number";
 
-        public ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
+        public ReactInputComponent GetReactComponent() {
             return new ReactInputComponent {
                 Name = "Input.YearMonth",
-                GridCellFormatStatement = (value, formatted) => $$"""
-                    let {{formatted}} = ''
-                    if ({{value}} != undefined) {
-                      const yyyy = (Math.floor({{value}} / 100)).toString().padStart(4, '0')
-                      const mm = ({{value}} % 100).toString().padStart(2, '0')
-                      {{formatted}} = `${yyyy}-${mm}`
-                    }
-                    """,
+            };
+        }
+
+        public IGridColumnSetting GetGridColumnEditSetting() {
+            return new TextColumnSetting {
+                GetValueFromRow = (value, formatted) => {
+                    return $$"""
+                        const {{formatted}} = {{value}}?.toString()
+                        """;
+                },
+                SetValueToRow = (value, parsed) => {
+                    return $$"""
+                        const { yyyymm: {{parsed}} } = Util.tryParseAsYearMonthOrEmpty({{value}})
+                        """;
+                },
             };
         }
     }

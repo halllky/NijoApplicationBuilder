@@ -25,18 +25,26 @@ namespace Nijo.Core.AggregateMemberTypes {
                 .Join(" | ");
         }
 
-        public ReactInputComponent GetReactComponent(GetReactComponentArgs e) {
+        public ReactInputComponent GetReactComponent() {
             var props = new Dictionary<string, string> {
                 { "options", $"[{_variationGroup.VariationAggregates.Select(kv => $"'{kv.Value.RelationName}' as const").Join(", ")}]" },
                 { "textSelector", "item => item" },
             };
-            if (e.Type == GetReactComponentArgs.E_Type.InDataGrid) {
-                props.Add("combo", "");
-            }
 
             return new ReactInputComponent {
                 Name = "Input.Selection",
                 Props = props,
+            };
+        }
+
+        public IGridColumnSetting GetGridColumnEditSetting() {
+            return new ComboboxColumnSetting {
+                OptionItemTypeName = _variationGroup.VariationAggregates.Select(kv => $"'{kv.Value.RelationName}'").Join(" | "),
+                Options = $"[{_variationGroup.VariationAggregates.Select(kv => $"'{kv.Value.RelationName}' as const").Join(", ")}]",
+                EmitValueSelector = $"opt => opt",
+                MatchingKeySelectorFromEmitValue = $"value => value",
+                MatchingKeySelectorFromOption = $"opt => opt",
+                TextSelector = $"opt => opt",
             };
         }
     }

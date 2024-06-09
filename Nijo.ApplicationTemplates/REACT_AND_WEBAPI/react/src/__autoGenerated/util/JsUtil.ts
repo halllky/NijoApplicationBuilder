@@ -1,3 +1,5 @@
+import dayjs from 'dayjs'
+
 export const groupBy = <TItem, TKey>(arr: TItem[], fn: (t: TItem) => TKey): Map<TKey, TItem[]> => {
   return arr.reduce((map, curr) => {
     const key = fn(curr)
@@ -71,3 +73,101 @@ type CrossJoinResult<T1, T2, TKey>
   = { key: TKey, left: T1, right: T2 }
   | { key: TKey, left: T1, right?: never }
   | { key: TKey, left?: never, right: T2 }
+
+/** 日付や数値などの表記ゆれを補正する */
+export const normalize = (str: string) => str
+  .replace(/(\s|　|,|、|，)/gm, '') // 空白、カンマを除去
+  .replace('。', '.') // 句点は日本語入力時にピリオドと同じ位置にあるキーなので
+  .replace('ー', '-') // NFKCで正規化されないので手動で正規化
+  .normalize('NFKC') // 全角を半角に変換
+
+/** 文字列をC#やDBで扱える実数として解釈します。 */
+export const tryParseAsNumberOrEmpty = (value: string | undefined)
+  : { ok: true, num: number | undefined, formatted: string }
+  | { ok: false, num: undefined, formatted: string } => {
+
+  if (value === undefined) return { ok: true, num: undefined, formatted: '' }
+
+  const normalized = normalize(value).replace(',', '') // 桁区切りのカンマを無視
+  if (normalized === '') return { ok: true, num: undefined, formatted: '' }
+
+  const num = Number(normalized)
+  if (isNaN(num)) return { ok: false, num: undefined, formatted: value }
+  if (num === Infinity) return { ok: false, num: undefined, formatted: value }
+  return { ok: true, num, formatted: num.toString() }
+}
+
+/** 文字列を整数として解釈します。 */
+export const tryParseAsIntegerOrEmpty = (value: string | undefined)
+  : { ok: true, num: number | undefined, formatted: string }
+  | { ok: false, num: undefined, formatted: string } => {
+
+  const { ok, num, formatted } = tryParseAsNumberOrEmpty(value)
+  if (!ok) return { ok: false, num, formatted }
+
+  if (!Number.isSafeInteger(num)) return { ok: false, num: undefined, formatted: value ?? '' }
+  return { ok: true, num, formatted }
+}
+
+/** 文字列を西暦として解釈します。 */
+export const tryParseAsYearOrEmpty = (value: string | undefined)
+  : { ok: true, year: number | undefined, formatted: string }
+  | { ok: false, year: undefined, formatted: string } => {
+
+  const { ok, num, formatted } = tryParseAsIntegerOrEmpty(value)
+  if (!ok) return { ok: false, year: num, formatted }
+  if (num === undefined) return { ok: true, year: undefined, formatted: '' }
+
+  if (num < 0 || num > 9999) return { ok: false, year: undefined, formatted: value ?? '' }
+  return { ok: true, year: num, formatted: num.toString().padStart(4, '0') }
+}
+
+/** 文字列を年月として解釈します。 */
+export const tryParseAsYearMonthOrEmpty = (value: string | undefined)
+  : { ok: true, yyyymm: number | undefined, formatted: string }
+  | { ok: false, yyyymm: undefined, formatted: string } => {
+
+  const { ok, num, formatted } = tryParseAsIntegerOrEmpty(value)
+  if (!ok) return { ok: false, yyyymm: undefined, formatted }
+  if (num === undefined) return { ok: true, yyyymm: undefined, formatted: '' }
+
+  const yyyy = Math.floor(num / 100)
+  const mm = num % 100
+  if (yyyy < 0 || yyyy > 9999) return { ok: false, yyyymm: undefined, formatted: value ?? '' }
+  if (mm < 0 || mm > 12) return { ok: false, yyyymm: undefined, formatted: value ?? '' }
+
+  return { ok: true, yyyymm: num, formatted: `${yyyy.toString().padStart(4, '0')}-${mm.toString().padStart(2, '0')}` }
+}
+
+/** 文字列を年月日として解釈します。 */
+export const tryParseAsDateOrEmpty = (value: string | undefined)
+  : { ok: true, result: string | undefined }
+  | { ok: false, result: string | undefined } => {
+
+  if (value === undefined) return { ok: true, result: undefined }
+  const normalized = normalize(value)
+  if (normalized === '') return { ok: true, result: undefined }
+
+  let parsed = dayjs(normalized, { format: 'YYYY-MM-DD', locale: 'ja' })
+  if (!parsed.isValid()) return { ok: false, result: value }
+
+  // 年が未指定の場合、2001年ではなくシステム時刻の年と解釈する
+  if (parsed.year() == 2001 && !normalized.includes('2001')) {
+    parsed = parsed.set('year', dayjs().year())
+  }
+  return { ok: true, result: parsed.format('YYYY-MM-DD') }
+}
+
+/** 文字列を日付時刻として解釈します。 */
+export const tryParseAsDateTimeOrEmpty = (value: string | undefined)
+  : { ok: true, result: string | undefined }
+  | { ok: false, result: string | undefined } => {
+
+  if (value === undefined) return { ok: true, result: undefined }
+  const normalized = normalize(value)
+  if (normalized === '') return { ok: true, result: undefined }
+
+  let parsed = dayjs(normalized, { format: 'YYYY-MM-DD HH:mm:ss', locale: 'ja' })
+  if (!parsed.isValid()) return { ok: false, result: value }
+  return { ok: true, result: parsed.format('YYYY-MM-DD HH:mm:ss') }
+}

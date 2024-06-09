@@ -1,6 +1,6 @@
 import React from 'react'
 import * as RT from '@tanstack/react-table'
-import { CustomComponentRef } from '../input'
+import { AsyncComboProps, CustomComponentProps, SyncComboProps } from '..'
 
 export type DataTableProps<T> = {
   data?: T[]
@@ -10,28 +10,34 @@ export type DataTableProps<T> = {
   columns?: ColumnDefEx<T>[]
   className?: string
 }
-export type ColumnDefEx<TRow, TValue = any> = RT.ColumnDef<TRow> & {
+export type ColumnDefEx<TRow> = RT.ColumnDef<TRow> & {
   hidden?: boolean
   headerGroupName?: string
-} & ({
-  cellEditor?: never
-  setValue?: never
-} | {
-  cellEditor: CellEditor<TValue>
-  setValue: (data: TRow, value: TValue) => void
-})
+  editSetting?: ColumnEditSetting<TRow>
+}
 
-export type CellEditor<TValue> = (
-  props: CellEditorProps<TValue>,
-  ref: React.Ref<CustomComponentRef<TValue>>
-) => JSX.Element
+export type ColumnEditSetting<TRow, TOption = unknown> = {
+  readOnly?: ((row: TRow) => boolean)
+} & (TextColumndEditSetting<TRow>
+  | SyncComboColumnEditSetting<TRow, TOption>
+  | AsyncComboColumnEditSetting<TRow, TOption>)
 
-export type CellEditorProps<TValue> = {
-  value: TValue | undefined
-  onChange: (value: TValue | undefined) => void
-  onKeyDown: React.KeyboardEventHandler<HTMLElement>
-  onBlur: React.FocusEventHandler<HTMLElement>
-  className: string
+type TextColumndEditSetting<TRow> = {
+  type: 'text'
+  getTextValue: (row: TRow) => string | undefined
+  setTextValue: (row: TRow, value: string | undefined) => void
+}
+type SyncComboColumnEditSetting<TRow, TOption = unknown> = {
+  type: 'combo'
+  getValueFromRow: (row: TRow) => TOption | undefined
+  setValueToRow: (row: TRow, value: TOption | undefined) => void
+  comboProps: SyncComboProps<TOption, TOption>
+}
+type AsyncComboColumnEditSetting<TRow, TOption = unknown> = {
+  type: 'async-combo'
+  getValueFromRow: (row: TRow) => TOption | undefined
+  setValueToRow: (row: TRow, value: TOption | undefined) => void
+  comboProps: AsyncComboProps<TOption, TOption>
 }
 
 export type DataTableRef<T> = {

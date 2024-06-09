@@ -1,4 +1,4 @@
-import React, { useCallback, useReducer } from "react"
+import React, { useCallback, useEffect, useReducer } from "react"
 
 // useReducerの簡略化
 type ReducerDef<S, M extends StateModifier<S>> = (state: S) => M
@@ -79,6 +79,7 @@ export const forwardRefEx = <TRef, TProps>(
 }
 export type ForwardedRefEx<TRef, TProps> = (props: React.PropsWithoutRef<TProps> & { ref?: React.Ref<TRef> }) => React.ReactNode
 
+// --------------------------------------------------
 // トグル
 const toggleReducer = defineReducer((state: boolean) => ({
   toggle: () => !state,
@@ -86,6 +87,24 @@ const toggleReducer = defineReducer((state: boolean) => ({
 }))
 export const useToggle = (initialState?: boolean) => {
   return React.useReducer(toggleReducer, initialState ?? false)
+}
+
+// --------------------------------------------------
+/** コンポーネントの外側のクリックの検知 */
+export const useOutsideClick = (ref: React.RefObject<HTMLElement | null>, onOutsideClick: () => void, deps: React.DependencyList) => {
+  const handleOutsideClick = useCallback(onOutsideClick, deps)
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!ref.current) return
+      if (ref.current.contains(e.target as HTMLElement)) return
+      handleOutsideClick()
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [ref, handleOutsideClick])
 }
 
 // --------------------------------------------------
