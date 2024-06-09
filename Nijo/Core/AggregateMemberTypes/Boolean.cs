@@ -1,3 +1,4 @@
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,6 +26,9 @@ namespace Nijo.Core.AggregateMemberTypes {
                 MatchingKeySelectorFromOption = $"opt => opt.key",
                 TextSelector = $"opt => opt.text",
 
+                GetDisplayText = (value, formatted) => $$"""
+                    const {{formatted}} = {{value}} ? '✓' : ''
+                    """,
                 SetValueToRow = (value, formatted) => $$"""
                     const {{formatted}} = {{value}}?.key === 'T'
                     """,

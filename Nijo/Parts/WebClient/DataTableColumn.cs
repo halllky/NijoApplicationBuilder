@@ -43,7 +43,13 @@ namespace Nijo.Parts.WebClient {
 
                 // 非編集時のセル表示文字列
                 string? formatted = null;
-                if (refMember != null) {
+                if (vm != null) {
+                    var editSettings = vm.Options.MemberType.GetGridColumnEditSetting();
+                    if (editSettings is ComboboxColumnSetting ccs) {
+                        formatted = ccs.GetDisplayText?.Invoke("value", "formatted");
+                    }
+
+                } else if (refMember != null) {
                     var names = refMember.RefTo
                         .AsEntry()
                         .GetNames()
