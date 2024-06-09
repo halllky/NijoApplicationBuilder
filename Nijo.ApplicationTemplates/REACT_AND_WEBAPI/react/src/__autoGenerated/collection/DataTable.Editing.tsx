@@ -71,7 +71,9 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     if (columnDef.editSetting.type === 'text') {
       const cellValue = columnDef.editSetting.getTextValue(cell.row.original)
       setUnComittedText(cellValue)
-
+    } else if (columnDef.editSetting.type === 'combo') {
+      const selectedValue = columnDef.editSetting.getValueFromRow(cell.row.original)
+      setComboSelectedItem(selectedValue)
     } else if (columnDef.editSetting.type === 'async-combo') {
       const selectedValue = columnDef.editSetting.getValueFromRow(cell.row.original)
       setComboSelectedItem(selectedValue)
@@ -98,6 +100,8 @@ export const CellEditor = Util.forwardRefEx(<T,>({
       // set value
       if (caretCellEditingInfo.type === 'text') {
         caretCellEditingInfo.setTextValue(editingCellInfo.row, editorRef.current?.getValue() as string | undefined)
+      } else if (caretCellEditingInfo.type === 'combo') {
+        caretCellEditingInfo.setValueToRow(editingCellInfo.row, editorRef.current?.getValue() as unknown | undefined)
       } else if (caretCellEditingInfo.type === 'async-combo') {
         caretCellEditingInfo.setValueToRow(editingCellInfo.row, editorRef.current?.getValue() as unknown | undefined)
       }
@@ -139,7 +143,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
         || !e.ctrlKey && !e.metaKey && e.key.length === 1 /*文字や数字や記号の場合*/
 
         // コンボボックスならば Alt + ArrowDown で編集開始
-        || caretCellEditingInfo?.type === 'async-combo'
+        || (caretCellEditingInfo?.type === 'combo' || caretCellEditingInfo?.type === 'async-combo')
         && e.altKey
         && e.key === 'ArrowDown'
       )) {
@@ -169,13 +173,25 @@ export const CellEditor = Util.forwardRefEx(<T,>({
         pointerEvents: editingCellInfo === undefined ? 'none' : undefined,
       }}
     >
-      {caretCellEditingInfo?.type !== 'async-combo' && (
+      {(caretCellEditingInfo === undefined || caretCellEditingInfo?.type === 'text') && (
         <Input.Word
           ref={editorRef as React.RefObject<Input.CustomComponentRef<string>>}
           value={uncomittedText}
           onChange={setUnComittedText}
           onKeyDown={handleKeyDown}
           onBlur={commitEditing}
+          className="flex-1"
+        />
+      )}
+      {caretCellEditingInfo?.type === 'combo' && (
+        <Input.ComboBox
+          dropdownAutoOpen={editingCellInfo !== undefined}
+          ref={editorRef}
+          value={comboSelectedItem}
+          onChange={commitEditing}
+          onKeyDown={handleKeyDown}
+          onBlur={commitEditing}
+          {...caretCellEditingInfo.comboProps}
           className="flex-1"
         />
       )}

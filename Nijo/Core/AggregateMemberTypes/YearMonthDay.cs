@@ -13,11 +13,16 @@ namespace Nijo.Core.AggregateMemberTypes {
         public ReactInputComponent GetReactComponent() {
             return new ReactInputComponent {
                 Name = "Input.Date",
-                GridCellFormatStatement = (value, formatted) => $$"""
-                    const {{formatted}} = {{value}} == undefined
-                      ? ''
-                      : dayjs({{value}}).format('YYYY-MM-DD')
-                    """,
+            };
+        }
+
+        public IGridColumnSetting GetGridColumnEditSetting() {
+            return new TextColumnSetting {
+                SetValueToRow = (value, parsed) => {
+                    return $$"""
+                        const { result: {{parsed}} } = Util.tryParseAsDateOrEmpty({{value}})
+                        """;
+                },
             };
         }
     }

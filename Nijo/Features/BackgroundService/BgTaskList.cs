@@ -56,17 +56,17 @@ namespace Nijo.Features.BackgroundService {
             var agg = context.Schema.GetAggregate(GraphNodeId);
             var controller = new Controller(agg.Item);
             var members = agg.GetMembers().ToArray();
-            var columns = DataTableColumn.FromMembers(agg, true);
+            var columns = DataTableColumn.FromMembers("GridRow", agg, true);
 
             return new SourceFile {
                 FileName = "BackgroundTaskList.tsx",
                 RenderContent = context => $$"""
                     import { useEffect, useState } from 'react'
                     import dayjs from 'dayjs'
-                    import * as Collection from '../collection'
+                    import * as Layout from '../collection'
                     import * as Util from '../util'
 
-                    const VForm = Collection.VerticalForm
+                    const VForm = Layout.VerticalForm
 
                     export const BackgroundTaskList = () => {
 
@@ -82,7 +82,7 @@ namespace Nijo.Features.BackgroundService {
                       return (
                         <VForm.Container label="バックグラウンドプロセス">
                           <VForm.Item wide>
-                            <Collection.DataTable
+                            <Layout.DataTable
                               data={rows}
                               columns={COLUMN_DEFS}
                               className="h-64"
@@ -100,7 +100,7 @@ namespace Nijo.Features.BackgroundService {
                       }
                     }
 
-                    const COLUMN_DEFS: Collection.ColumnDefEx<GridRow>[] = [
+                    const COLUMN_DEFS: Layout.ColumnDefEx<GridRow>[] = [
                     {{WithIndent(columns.SelectTextTemplate(c => c.Render()), "  ")}}
                     ]
                     """,

@@ -13,8 +13,20 @@ namespace Nijo.Core.AggregateMemberTypes {
         public ReactInputComponent GetReactComponent() {
             return new ReactInputComponent {
                 Name = "Input.CheckBox",
-                GridCellFormatStatement = (value, formatted) => $$"""
-                    const {{formatted}} = ({{value}} === undefined ? '' : ({{value}} ? '○' : '-'))
+            };
+        }
+
+        public IGridColumnSetting GetGridColumnEditSetting() {
+            return new ComboboxColumnSetting {
+                OptionItemTypeName = $"{{ key: 'T' | 'F', text: string }}",
+                Options = $"[{{ key: 'T' as const, text: '✓' }}, {{ key: 'F' as const, text: '' }}]",
+                EmitValueSelector = $"opt => opt",
+                MatchingKeySelectorFromEmitValue = $"opt => opt.key",
+                MatchingKeySelectorFromOption = $"opt => opt.key",
+                TextSelector = $"opt => opt.text",
+
+                SetValueToRow = (value, formatted) => $$"""
+                    const {{formatted}} = {{value}}?.key === 'T'
                     """,
             };
         }

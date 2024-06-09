@@ -1,7 +1,8 @@
 import { useMemo, useRef, useImperativeHandle, useCallback } from "react"
 import dayjs from "dayjs"
-import { CustomComponentRef, ValidationHandler, defineCustomComponent, normalize } from "./InputBase"
+import { CustomComponentRef, ValidationHandler, defineCustomComponent } from "./InputBase"
 import { TextInputBase } from "./TextInputBase"
+import { normalize } from "../util/JsUtil"
 
 import "dayjs/locale/ja"
 
@@ -56,12 +57,16 @@ export const YearMonth = defineCustomComponent<number>((props, ref) => {
 
   return <TextInputBase ref={textRef} {...overrideProps} />
 })
+
+// TODO: JsUtilと重複
 const yearMonthValidation: ValidationHandler = value => {
   const normalized = normalize(value)
   if (normalized === '') return { ok: true, formatted: '' }
   const parsed = parseAsDate(normalized, 'YYYY-MM')
   return parsed
 }
+
+// TODO: JsUtilと重複
 const yearMonthConversion = (value: string) => {
   const validated = yearMonthValidation(value)
   if (!validated.ok || validated.formatted === '') return undefined
@@ -71,6 +76,7 @@ const yearMonthConversion = (value: string) => {
 
 // -----------------------------
 
+// TODO: JsUtilと重複
 const parseAsDate = (normalized: string, format: string): ReturnType<ValidationHandler> => {
   let parsed = dayjs(normalized, { format, locale: 'ja' })
   if (!parsed.isValid()) return { ok: false }

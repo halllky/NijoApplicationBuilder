@@ -13,5 +13,10 @@ namespace Nijo.Core.AggregateMemberTypes {
         public ReactInputComponent GetReactComponent() {
             return new ReactInputComponent { Name = "Input.Word" };
         }
+
+        public IGridColumnSetting GetGridColumnEditSetting() {
+            return new TextColumnSetting {
+            };
+        }
     }
 }

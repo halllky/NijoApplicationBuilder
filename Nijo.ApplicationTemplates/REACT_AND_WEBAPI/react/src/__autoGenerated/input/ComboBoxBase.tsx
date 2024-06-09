@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
-import { useIMEOpened } from "../util"
+import { useIMEOpened, normalize } from "../util"
 import { DropDownApi, TextInputBase } from "./TextInputBase"
-import { CustomComponentProps, CustomComponentRef, SyncComboProps, defineCustomComponent, normalize } from "./InputBase"
+import { CustomComponentProps, CustomComponentRef, SyncComboProps, defineCustomComponent } from "./InputBase"
 
 export const ComboBoxBase = defineCustomComponent(<TOption, TEmitValue, TMatchingKey extends string = string>(
   props2: CustomComponentProps<TEmitValue, SyncComboProps<TOption, TEmitValue, TMatchingKey>>,

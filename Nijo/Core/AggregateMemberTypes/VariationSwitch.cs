@@ -36,5 +36,16 @@ namespace Nijo.Core.AggregateMemberTypes {
                 Props = props,
             };
         }
+
+        public IGridColumnSetting GetGridColumnEditSetting() {
+            return new ComboboxColumnSetting {
+                OptionItemTypeName = _variationGroup.VariationAggregates.Select(kv => $"'{kv.Value.RelationName}'").Join(" | "),
+                Options = $"[{_variationGroup.VariationAggregates.Select(kv => $"'{kv.Value.RelationName}' as const").Join(", ")}]",
+                EmitValueSelector = $"opt => opt",
+                MatchingKeySelectorFromEmitValue = $"value => value",
+                MatchingKeySelectorFromOption = $"opt => opt",
+                TextSelector = $"opt => opt",
+            };
+        }
     }
 }

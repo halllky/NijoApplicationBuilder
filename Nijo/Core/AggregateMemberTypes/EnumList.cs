@@ -29,5 +29,16 @@ namespace Nijo.Core.AggregateMemberTypes {
                 Props = props,
             };
         }
+
+        public IGridColumnSetting GetGridColumnEditSetting() {
+            return new ComboboxColumnSetting {
+                OptionItemTypeName = GetTypeScriptTypeName(),
+                Options = $"[{Definition.Items.Select(x => $"'{x.PhysicalName}' as const").Join(", ")}]",
+                EmitValueSelector = $"opt => opt",
+                MatchingKeySelectorFromEmitValue = $"value => value",
+                MatchingKeySelectorFromOption = $"opt => opt",
+                TextSelector = $"opt => opt",
+            };
+        }
     }
 }

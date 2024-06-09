@@ -13,5 +13,10 @@ namespace Nijo.Core.AggregateMemberTypes {
         public ReactInputComponent GetReactComponent() {
             return new ReactInputComponent { Name = "Input.Description" };
         }
+
+        public IGridColumnSetting GetGridColumnEditSetting() {
+            return new TextColumnSetting {
+            };
+        }
     }
 }

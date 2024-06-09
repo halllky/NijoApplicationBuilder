@@ -52,6 +52,7 @@ namespace Nijo.Features.Storing {
                 .OrderBy(group => group.Key == _aggregate ? 1 : 2);
 
             var rowHeader = new DataTableColumn {
+                DataTableRowTypeName = "GridRow",
                 Id = "col-header",
                 Header = string.Empty,
                 Size = 64,
@@ -75,6 +76,7 @@ namespace Nijo.Features.Storing {
                     """,
             };
             var gridColumns = new[] { rowHeader }.Concat(DataTableColumn.FromMembers(
+                "GridRow",
                 _aggregate,
                 _options.ReadOnly,
                 useFormContextType: "{ currentPageItems: GridRow[] }",
@@ -107,6 +109,7 @@ namespace Nijo.Features.Storing {
                     const Page = () => {
                       const [, dispatchMsg] = Util.useMsgContext()
                       const [, dispatchToast] = Util.useToastContext()
+                      const { get } = Util.useHttpRequest()
 
                       // 検索条件
                       const [filter, setFilter] = useState<AggregateType.{{findMany.TypeScriptConditionClass}}>(() => AggregateType.{{findMany.TypeScriptConditionInitializerFn}}())
@@ -177,7 +180,7 @@ namespace Nijo.Features.Storing {
                       // 列定義
                       const columnDefs: Layout.ColumnDefEx<GridRow>[] = useMemo(() => [
                         {{WithIndent(gridColumns.SelectTextTemplate(col => col.Render()), "    ")}}
-                      ], [update])
+                      ], [get, update])
 
                       return (
                         <div className="page-content-root gap-4">

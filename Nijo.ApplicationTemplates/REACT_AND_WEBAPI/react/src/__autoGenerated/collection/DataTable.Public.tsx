@@ -1,6 +1,6 @@
 import React from 'react'
 import * as RT from '@tanstack/react-table'
-import { AsyncComboProps, CustomComponentProps } from '..'
+import { AsyncComboProps, CustomComponentProps, SyncComboProps } from '..'
 
 export type DataTableProps<T> = {
   data?: T[]
@@ -19,12 +19,19 @@ export type ColumnDefEx<TRow> = RT.ColumnDef<TRow> & {
 export type ColumnEditSetting<TRow, TOption = unknown> = {
   readOnly?: ((row: TRow) => boolean)
 } & (TextColumndEditSetting<TRow>
+  | SyncComboColumnEditSetting<TRow, TOption>
   | AsyncComboColumnEditSetting<TRow, TOption>)
 
 type TextColumndEditSetting<TRow> = {
   type: 'text'
   getTextValue: (row: TRow) => string | undefined
   setTextValue: (row: TRow, value: string | undefined) => void
+}
+type SyncComboColumnEditSetting<TRow, TOption = unknown> = {
+  type: 'combo'
+  getValueFromRow: (row: TRow) => TOption | undefined
+  setValueToRow: (row: TRow, value: TOption | undefined) => void
+  comboProps: SyncComboProps<TOption, TOption>
 }
 type AsyncComboColumnEditSetting<TRow, TOption = unknown> = {
   type: 'async-combo'

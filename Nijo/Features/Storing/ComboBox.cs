@@ -44,10 +44,10 @@ namespace Nijo.Features.Storing {
 
             return $$"""
                 export const {{combo.ComponentName}} = defineCustomComponent<Types.{{refInfo.TsTypeName}}>((props, ref) => {
-                  const [queryKey, setQueryKey] = useState<string>('combo-{{_aggregate.Item.UniqueId}}::')
+                  const [queryKey, setQueryKey] = useState<string>({{RenderReactQueryKeyString()}})
                   const { get } = Util.useHttpRequest()
                   const query = useCallback(async (keyword: string | undefined): Promise<Types.{{refInfo.TsTypeName}}[]> => {
-                    setQueryKey(`combo-{{_aggregate.Item.UniqueId}}::${keyword ?? ''}`)
+                    setQueryKey({{RenderReactQueryKeyString("keyword")}})
                     const response = await get<Types.{{refInfo.TsTypeName}} []>(`{{combo.Api}}`, { keyword })
                     if (!response.ok) return []
                     return response.data
@@ -62,11 +62,20 @@ namespace Nijo.Features.Storing {
                       emitValueSelector={item => item}
                       matchingKeySelectorFromEmitValue={item => item.{{DataClassForDisplayRefTarget.INSTANCE_KEY}}}
                       matchingKeySelectorFromOption={item => item.{{DataClassForDisplayRefTarget.INSTANCE_KEY}}}
-                      textSelector={item => `{{names.Select(n => $"${{item.{n.Declared.GetFullPath().Join("?.")} ?? ''}}").Join("")}}`}
+                      textSelector={item => `{{names.Select(n => $"${{item.{n.Declared.GetFullPathAsDisplayRefTargetClass().Join("?.")} ?? ''}}").Join("")}}`}
                     />
                   )
                 })
                 """;
+        }
+
+        /// <summary>
+        /// React Query でキャッシュや最適化を行うために、同一のクエリごとに設定するキー
+        /// </summary>
+        internal string RenderReactQueryKeyString(string? keywordVarName = null) {
+            return keywordVarName == null
+                ? $"`combo-{_aggregate.Item.UniqueId}::`"
+                : $"`combo-{_aggregate.Item.UniqueId}::${{{keywordVarName} ?? ''}}`";
         }
 
         internal string RenderCaller(string raectHookFormId, params string[] attrs) {

@@ -1,7 +1,8 @@
 import { useMemo, useCallback, useRef, useImperativeHandle } from "react"
-import { CustomComponentRef, ValidationHandler, defineCustomComponent, normalize } from "./InputBase"
+import { CustomComponentRef, defineCustomComponent } from "./InputBase"
 import { TextInputBase } from "./TextInputBase"
 import { TextareaBase } from "./TextareaBase"
+import { tryParseAsNumberOrEmpty } from "../util/JsUtil"
 
 /** 単語 */
 export const Word = defineCustomComponent<string>((props, ref) => {
@@ -44,16 +45,3 @@ export const Num = defineCustomComponent<number>((props, ref) => {
     onValidate={tryParseAsNumberOrEmpty}
   />
 })
-
-/** 数値として入力された文字列をC#やDBで扱える形にパースします。 */
-export const tryParseAsNumberOrEmpty = (value: string | undefined): { ok: boolean, num: number | undefined, formatted: string } => {
-  if (value === undefined) return { ok: true, num: undefined, formatted: '' }
-
-  const normalized = normalize(value).replace(',', '') // 桁区切りのカンマを無視
-  if (normalized === '') return { ok: true, num: undefined, formatted: '' }
-
-  const num = Number(normalized)
-  if (isNaN(num)) return { ok: false, num: undefined, formatted: value }
-  if (num === Infinity) return { ok: false, num: undefined, formatted: value }
-  return { ok: true, num, formatted: num.toString() }
-}
