@@ -1,7 +1,7 @@
 import { ChevronUpDownIcon } from "@heroicons/react/24/solid";
 import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { ValidationHandler, ValidationResult, defineCustomComponent } from "./InputBase";
-import { useUserSetting } from "..";
+import { useOutsideClick, useUserSetting } from "..";
 
 export type TextInputBaseArgs = Parameters<typeof TextInputBase>['0']
 export type DropDownBody = (props: { focusRef: React.RefObject<never> }) => React.ReactNode
@@ -184,18 +184,11 @@ const Dropdown = ({ onClose, children }: {
     if (typeof htmlElement?.focus === 'function') {
       htmlElement.focus()
     }
+  }, [])
 
-    // 外部クリックでドロップダウンを閉じる処理を仕込む
-    const handleClickOutside = (e: MouseEvent) => {
-      if (!divRef.current) return
-      if (divRef.current.contains(e.target as HTMLElement)) return
-      onClose?.()
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [divRef, onClose])
+  useOutsideClick(divRef, () => {
+    onClose?.()
+  }, [onClose])
 
   const onBlur: React.FocusEventHandler = useCallback(e => {
     onClose?.()

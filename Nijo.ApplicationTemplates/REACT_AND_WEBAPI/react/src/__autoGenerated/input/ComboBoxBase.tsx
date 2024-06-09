@@ -96,15 +96,6 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TEmitValue, TMatchin
     onKeywordChanged?.(value)
   }, [onKeywordChanged])
 
-  const handleBlur: React.FocusEventHandler<HTMLInputElement> = useCallback(e => {
-    const anyItem = getHighlightedOrAnyItem()
-    const valueOfAnyItem = anyItem ? emitValueSelector(anyItem) : undefined
-    onChange?.(valueOfAnyItem)
-    onBlur?.(e)
-    setKeyword(undefined)
-    setHighlightItem(anyItem ? matchingKeySelectorFromOption(anyItem) : undefined)
-  }, [getHighlightedOrAnyItem, onChange, onBlur, matchingKeySelectorFromOption, emitValueSelector])
-
   const [{ isImeOpen }] = useIMEOpened()
   const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useCallback(e => {
     if ((e.key === 'ArrowUp' || e.key === 'ArrowDown')
@@ -174,7 +165,6 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TEmitValue, TMatchin
       readOnly={readOnly}
       name={name}
       value={displayText}
-      onBlur={handleBlur}
       onChange={onChangeKeyword}
       onKeyDown={handleKeyDown}
       onDropdownOpened={onDropdownOpened}

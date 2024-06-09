@@ -95,17 +95,17 @@ export const CellEditor = Util.forwardRefEx(<T,>({
   }, [setEditingCellInfo, onChangeEditing, onChangeRow])
 
   /** 編集確定 */
-  const commitEditing = useCallback(() => {
+  const commitEditing = useCallback((value?: string | unknown | undefined) => {
     if (editingCellInfo === undefined) return
     if (caretCellEditingInfo === undefined) return
 
     // set value
     if (caretCellEditingInfo.type === 'text') {
-      caretCellEditingInfo.setTextValue(editingCellInfo.row, editorRef.current?.getValue() as string | undefined)
+      caretCellEditingInfo.setTextValue(editingCellInfo.row, (value ?? editorRef.current?.getValue()) as string | undefined)
     } else if (caretCellEditingInfo.type === 'combo') {
-      caretCellEditingInfo.setValueToRow(editingCellInfo.row, editorRef.current?.getValue() as unknown | undefined)
+      caretCellEditingInfo.setValueToRow(editingCellInfo.row, (value ?? editorRef.current?.getValue()) as unknown | undefined)
     } else if (caretCellEditingInfo.type === 'async-combo') {
-      caretCellEditingInfo.setValueToRow(editingCellInfo.row, editorRef.current?.getValue() as unknown | undefined)
+      caretCellEditingInfo.setValueToRow(editingCellInfo.row, (value ?? editorRef.current?.getValue()) as unknown | undefined)
     }
 
     onChangeRow?.(editingCellInfo.rowIndex, editingCellInfo.row)
@@ -119,7 +119,13 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     onChangeEditing(false)
   }, [setEditingCellInfo, onChangeEditing])
 
-  // キーハンドリング
+  // ----------------------------------
+  // イベント
+  const handleChangeCombobox = useCallback((selectedItem: unknown | undefined) => {
+    setComboSelectedItem(selectedItem)
+    commitEditing(selectedItem)
+  }, [setComboSelectedItem, commitEditing])
+
   const [{ isImeOpen }] = Util.useIMEOpened()
   const handleKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = useCallback(e => {
     if (editingCellInfo) {
@@ -160,6 +166,10 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     }
   }, [isImeOpen, caretCellEditingInfo, editingCellInfo, startEditing, commitEditing, cancelEditing, onKeyDown, api, caretCell])
 
+  Util.useOutsideClick(containerRef, () => {
+    commitEditing()
+  }, [commitEditing])
+
   useImperativeHandle(ref, () => ({
     focus: () => editorRef.current?.focus(),
     startEditing,
@@ -180,7 +190,6 @@ export const CellEditor = Util.forwardRefEx(<T,>({
           value={uncomittedText}
           onChange={setUnComittedText}
           onKeyDown={handleKeyDown}
-          onBlur={commitEditing}
           className="flex-1"
         />
       )}
@@ -189,9 +198,8 @@ export const CellEditor = Util.forwardRefEx(<T,>({
           dropdownAutoOpen={editingCellInfo !== undefined}
           ref={editorRef}
           value={comboSelectedItem}
-          onChange={commitEditing}
+          onChange={handleChangeCombobox}
           onKeyDown={handleKeyDown}
-          onBlur={commitEditing}
           {...caretCellEditingInfo.comboProps}
           className="flex-1"
         />
@@ -201,9 +209,8 @@ export const CellEditor = Util.forwardRefEx(<T,>({
           dropdownAutoOpen={editingCellInfo !== undefined}
           ref={editorRef}
           value={comboSelectedItem}
-          onChange={commitEditing}
+          onChange={handleChangeCombobox}
           onKeyDown={handleKeyDown}
-          onBlur={commitEditing}
           {...caretCellEditingInfo.comboProps}
           className="flex-1"
         />
