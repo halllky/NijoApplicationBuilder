@@ -96,18 +96,19 @@ export const CellEditor = Util.forwardRefEx(<T,>({
 
   /** 編集確定 */
   const commitEditing = useCallback(() => {
-    if (editingCellInfo !== undefined && caretCellEditingInfo !== undefined && onChangeRow) {
-      // set value
-      if (caretCellEditingInfo.type === 'text') {
-        caretCellEditingInfo.setTextValue(editingCellInfo.row, editorRef.current?.getValue() as string | undefined)
-      } else if (caretCellEditingInfo.type === 'combo') {
-        caretCellEditingInfo.setValueToRow(editingCellInfo.row, editorRef.current?.getValue() as unknown | undefined)
-      } else if (caretCellEditingInfo.type === 'async-combo') {
-        caretCellEditingInfo.setValueToRow(editingCellInfo.row, editorRef.current?.getValue() as unknown | undefined)
-      }
+    if (editingCellInfo === undefined) return
+    if (caretCellEditingInfo === undefined) return
 
-      onChangeRow(editingCellInfo.rowIndex, editingCellInfo.row)
+    // set value
+    if (caretCellEditingInfo.type === 'text') {
+      caretCellEditingInfo.setTextValue(editingCellInfo.row, editorRef.current?.getValue() as string | undefined)
+    } else if (caretCellEditingInfo.type === 'combo') {
+      caretCellEditingInfo.setValueToRow(editingCellInfo.row, editorRef.current?.getValue() as unknown | undefined)
+    } else if (caretCellEditingInfo.type === 'async-combo') {
+      caretCellEditingInfo.setValueToRow(editingCellInfo.row, editorRef.current?.getValue() as unknown | undefined)
     }
+
+    onChangeRow?.(editingCellInfo.rowIndex, editingCellInfo.row)
     setEditingCellInfo(undefined)
     onChangeEditing(false)
   }, [comboSelectedItem, editingCellInfo, setEditingCellInfo, onChangeRow, onChangeEditing])
