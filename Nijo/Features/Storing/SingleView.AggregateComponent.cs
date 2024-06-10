@@ -166,7 +166,7 @@ namespace Nijo.Features.Storing {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const { register, registerEx, watch, getValues } = Util.useFormContextEx<{{useFormType}}>()
+                      const { register, registerEx, watch, getValues, setValue } = Util.useFormContextEx<{{useFormType}}>()
                       const item = getValues({{registerName}})
 
                       return (
@@ -188,7 +188,7 @@ namespace Nijo.Features.Storing {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const { registerEx, watch, getValues } = Util.useFormContextEx<{{useFormType}}>()
+                      const { register, registerEx, watch, getValues, setValue } = Util.useFormContextEx<{{useFormType}}>()
                       const item = getValues({{registerName}})
 
                       const body = (
@@ -221,7 +221,7 @@ namespace Nijo.Features.Storing {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const { registerEx, watch, control } = Util.useFormContextEx<{{useFormType}}>()
+                      const { register, registerEx, watch, control } = Util.useFormContextEx<{{useFormType}}>()
                       const { fields, append, remove } = useFieldArray({
                         control,
                         name: {{registerName}},
@@ -292,7 +292,7 @@ namespace Nijo.Features.Storing {
                     """)}}
                     }) => {
                       const { get } = Util.useHttpRequest()
-                      const { registerEx, watch, control } = Util.useFormContextEx<{{useFormType}}>()
+                      const { register, registerEx, watch, control } = Util.useFormContextEx<{{useFormType}}>()
                       const { fields, append, remove, update } = useFieldArray({
                         control,
                         name: {{registerName}},
