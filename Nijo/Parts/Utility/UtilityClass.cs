@@ -21,6 +21,7 @@ namespace Nijo.Parts.Utility {
 
         private const string CUSTOM_CONVERTER_NAMESPACE = "CustomJsonConverters";
         private const string INT_CONVERTER = "IntegerValueConverter";
+        private const string DATETIME_CONVERTER = "DateTimeValueConverter";
 
         internal static SourceFile RenderJsonConversionMethods(CodeRenderingContext ctx) => new SourceFile {
             FileName = "JsonConversion.cs",
@@ -48,6 +49,7 @@ namespace Nijo.Parts.Utility {
 
                                 // カスタムコンバータ
                                 option.Converters.Add(new {{CUSTOM_CONVERTER_NAMESPACE}}.{{INT_CONVERTER}}());
+                                option.Converters.Add(new {{CUSTOM_CONVERTER_NAMESPACE}}.{{DATETIME_CONVERTER}}());
 
                     {{refTargetJsonConverters.SelectTextTemplate(converter => $$"""
                                 option.Converters.Add(new {{CUSTOM_CONVERTER_NAMESPACE}}.{{converter.CsJsonConverterName}}());
@@ -109,6 +111,7 @@ namespace Nijo.Parts.Utility {
                         using System.Text.Json.Serialization;
 
                         {{WithIndent(RenderIntConverter(ctx), "    ")}}
+                        {{WithIndent(RenderDateTimeConverter(ctx), "    ")}}
 
                     {{refTargetJsonConverters.SelectTextTemplate(converter => $$"""
                         {{WithIndent(converter.RenderServerSideJsonConverter(), "    ")}}
@@ -158,6 +161,26 @@ namespace Nijo.Parts.Utility {
                             writer.WriteNumberValue((decimal)value);
                         }
                         // writer.WriteStringValue(value?.ToString());
+                    }
+                }
+                """;
+        }
+        private static string RenderDateTimeConverter(CodeRenderingContext ctx) {
+            return $$"""
+                class {{DATETIME_CONVERTER}} : JsonConverter<DateTime?> {
+                    public override DateTime? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
+                        var strDateTime = reader.GetString();
+                        return string.IsNullOrWhiteSpace(strDateTime)
+                            ? null
+                            : DateTime.Parse(strDateTime);
+                    }
+
+                    public override void Write(Utf8JsonWriter writer, DateTime? value, JsonSerializerOptions options) {
+                        if (value == null) {
+                            writer.WriteNullValue();
+                        } else {
+                            writer.WriteStringValue(value.Value.ToString("yyyy-MM-dd HH:mm:ss"));
+                        }
                     }
                 }
                 """;
