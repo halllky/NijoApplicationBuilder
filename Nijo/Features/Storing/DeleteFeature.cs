@@ -44,9 +44,24 @@ namespace Nijo.Features.Storing {
                 .OfType<AggregateMember.ValueMember>()
                 .Select(vm => $"data.{vm.Declared.GetFullPath().Join(".")}")
                 .ToArray();
+            var customize = new Customize(_aggregate);
 
             return $$"""
                 public virtual bool {{MethodName}}({{dataClass.CsClassName}} data, out ICollection<string> errors) {
+
+                    var beforeSaveEventArg = new BeforeDeleteEventArgs<{{dataClass.CsClassName}}> {
+                        Data = data,
+                        IgnoreConfirm = false, // TODO: ワーニングの仕組みを作る
+                    };
+                    {{customize.DeletingMethodName}}(beforeSaveEventArg);
+                    if (beforeSaveEventArg.Errors.Count > 0) {
+                        errors = beforeSaveEventArg.Errors.Select(err => err.Message).ToArray();
+                        return false;
+                    }
+                    if (beforeSaveEventArg.Confirms.Count > 0) {
+                        errors = beforeSaveEventArg.Errors.Select(err => err.Message).ToArray(); // TODO: ワーニングの仕組みを作る
+                        return false;
+                    }
 
                     {{WithIndent(FindFeature.RenderDbEntityLoading(
                         _aggregate,
@@ -72,14 +87,26 @@ namespace Nijo.Features.Storing {
                         return false;
                     }
 
-                    // // {{_aggregate.Item.DisplayName}}の更新をトリガーとする処理を実行します。
-                    // var updateEvent = new AggregateUpdateEvent<{{dataClass.CsClassName}}> {
-                    //     Deleted = new[] { deleted },
-                    // };
+                    var afterSaveEventArg = new AfterDeleteEventArgs<{{dataClass.CsClassName}}> {
+                        Deleted = deleted,
+                    };
+                    {{customize.DeletedMethodName}}(afterSaveEventArg);
 
                     errors = Array.Empty<string>();
                     return true;
                 }
+
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}}の削除前に実行されます。
+                /// エラーチェック、ワーニングなどを行います。
+                /// </summary>
+                protected virtual void {{customize.DeletingMethodName}}({{Customize.BEFORE_DELETE_EVENT_ARGS}}<{{dataClass.CsClassName}}> arg) { }
+                
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}}の削除SQL発効後、コミット前に実行されます。
+                /// </summary>
+                protected virtual void {{customize.DeletedMethodName}}({{Customize.AFTER_DELETE_EVENT_ARGS}}<{{dataClass.CsClassName}}> arg) { }
+
                 """;
         }
     }

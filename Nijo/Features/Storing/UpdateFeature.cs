@@ -48,6 +48,7 @@ namespace Nijo.Features.Storing {
                 .OfType<AggregateMember.ValueMember>()
                 .Select(vm => $"after.{vm.Declared.GetFullPath().Join(".")}")
                 .ToArray();
+            var customize = new Customize(_aggregate);
 
             return $$"""
                 public virtual bool {{MethodName}}({{forSave.CsClassName}} after, out {{forDisplay.CsClassName}} updated, out ICollection<string> errors) {
@@ -68,6 +69,24 @@ namespace Nijo.Features.Storing {
                     }
 
                     var beforeUpdate = {{forSave.CsClassName}}.{{DataClassForSave.FROM_DBENTITY}}(beforeDbEntity);
+
+                    var beforeSaveEventArg = new BeforeUpdateEventArgs<{{forSave.CsClassName}}> {
+                        Before = beforeUpdate,
+                        After = after,
+                        IgnoreConfirm = false, // TODO: ワーニングの仕組みを作る
+                    };
+                    {{customize.UpdatingMethodName}}(beforeSaveEventArg);
+                    if (beforeSaveEventArg.Errors.Count > 0) {
+                        updated = new();
+                        errors = beforeSaveEventArg.Errors.Select(err => err.Message).ToArray();
+                        return false;
+                    }
+                    if (beforeSaveEventArg.Confirms.Count > 0) {
+                        updated = new();
+                        errors = beforeSaveEventArg.Errors.Select(err => err.Message).ToArray(); // TODO: ワーニングの仕組みを作る
+                        return false;
+                    }
+
                     var afterDbEntity = after.{{DataClassForSave.TO_DBENTITY}}();
 
                     // Attach
@@ -90,14 +109,26 @@ namespace Nijo.Features.Storing {
                         return false;
                     }
 
-                    // // {{_aggregate.Item.DisplayName}}の更新をトリガーとする処理を実行します。
-                    // var updateEvent = new AggregateUpdateEvent<{{forSave.CsClassName}}> {
-                    //     Modified = new AggregateBeforeAfter<{{forSave.CsClassName}}>[] { new() { Before = beforeUpdate, After = afterUpdate } },
-                    // };
+                    var afterSaveEventArg = new AfterUpdateEventArgs<{{forSave.CsClassName}}> {
+                        BeforeUpdate = beforeUpdate,
+                        AfterUpdate = after,
+                    };
+                    {{customize.UpdatedMethodName}}(afterSaveEventArg);
 
                     updated = afterUpdate;
                     return true;
                 }
+
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}}の更新前に実行されます。
+                /// エラーチェック、ワーニング、自動算出項目の設定などを行います。
+                /// </summary>
+                protected virtual void {{customize.UpdatingMethodName}}({{Customize.BEFORE_UPDATE_EVENT_ARGS}}<{{forSave.CsClassName}}> arg) { }
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}}の更新SQL発効後、コミット前に実行されます。
+                /// </summary>
+                protected virtual void {{customize.UpdatedMethodName}}({{Customize.AFTER_UPDATE_EVENT_ARGS}}<{{forSave.CsClassName}}> arg) { }
+
                 """;
         }
 

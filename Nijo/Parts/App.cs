@@ -48,12 +48,14 @@ namespace Nijo.Parts {
                     ConfigureServicesWhenBatchProcess,
                     ConfigureServices));
                 genDir.Generate(EnumDefs.Render(context));
+
+                // アプリケーションサービス
+                Customize.RenderBaseClasses(context);
                 genDir.Generate(new ApplicationService().Render(context, AppSrvMethods));
 
                 genDir.Directory(ASP_UTIL_DIR, utilDir => {
                     utilDir.Generate(RuntimeSettings.Render(context));
                     utilDir.Generate(Parts.Utility.DotnetExtensions.Render(context));
-                    utilDir.Generate(Parts.Utility.AggregateUpdateEvent.Render(context));
                     utilDir.Generate(Parts.Utility.FromTo.Render(context));
                     utilDir.Generate(Parts.Utility.UtilityClass.RenderJsonConversionMethods(context));
                 });

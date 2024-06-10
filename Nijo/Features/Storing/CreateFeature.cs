@@ -50,8 +50,27 @@ namespace Nijo.Features.Storing {
                 .Where(m => m is AggregateMember.ValueMember)
                 .Select(m => $"dbEntity.{m.GetFullPath().Join(".")}");
 
+            var customize = new Customize(_aggregate);
+
             return $$"""
                 public virtual bool {{MethodName}}({{param.CsClassName}} command, out {{forDisplay.CsClassName}} created, out ICollection<string> errors) {
+
+                    var beforeSaveEventArg = new BeforeCreateEventArgs<{{param.CsClassName}}> {
+                        Data = command,
+                        IgnoreConfirm = false, // TODO: ワーニングの仕組みを作る
+                    };
+                    {{customize.CreatingMethodName}}(beforeSaveEventArg);
+                    if (beforeSaveEventArg.Errors.Count > 0) {
+                        created = new();
+                        errors = beforeSaveEventArg.Errors.Select(err => err.Message).ToArray();
+                        return false;
+                    }
+                    if (beforeSaveEventArg.Confirms.Count > 0) {
+                        created = new();
+                        errors = beforeSaveEventArg.Errors.Select(err => err.Message).ToArray(); // TODO: ワーニングの仕組みを作る
+                        return false;
+                    }
+
                     var dbEntity = command.{{DataClassForSave.TO_DBENTITY}}();
                     {{appSrv.DbContext}}.Add(dbEntity);
 
@@ -70,16 +89,27 @@ namespace Nijo.Features.Storing {
                         return false;
                     }
 
+                    var afterSaveEventArg = new AfterCreateEventArgs<{{param.CsClassName}}>  {
+                        Created = command,
+                    };
+                    {{customize.CreatedMethodName}}(afterSaveEventArg);
+
                     created = afterUpdate;
                     errors = new List<string>();
 
-                    // // {{_aggregate.Item.DisplayName}}の更新をトリガーとする処理を実行します。
-                    // var updateEvent = new AggregateUpdateEvent<{{forSave.CsClassName}}> {
-                    //     Created = new[] { afterUpdate },
-                    // };
-
                     return true;
                 }
+
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}}の新規登録前に実行されます。
+                /// エラーチェック、ワーニング、自動算出項目の設定などを行います。
+                /// </summary>
+                protected virtual void {{customize.CreatingMethodName}}({{Customize.BEFORE_CREATE_EVENT_ARGS}}<{{param.CsClassName}}> arg) { }
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}}の新規登録SQL発効後、コミット前に実行されます。
+                /// </summary>
+                protected virtual void {{customize.CreatedMethodName}}({{Customize.AFTER_CREATE_EVENT_ARGS}}<{{param.CsClassName}}> arg) { }
+
                 """;
         }
     }
