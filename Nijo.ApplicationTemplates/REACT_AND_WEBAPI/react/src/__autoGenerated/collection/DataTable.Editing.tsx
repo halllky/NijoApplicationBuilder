@@ -180,6 +180,8 @@ export const CellEditor = Util.forwardRefEx(<T,>({
       className="absolute min-w-4 min-h-4 flex items-stretch"
       style={{
         zIndex: TABLE_ZINDEX.CELLEDITOR,
+        // 開発者向け情報:
+        // CellEditorの挙動で不具合があったらここ↓の透明度を0.5ぐらいにして調査してみると色々見えてくるかもしれません
         opacity: editingCellInfo === undefined ? 0 : undefined,
         pointerEvents: editingCellInfo === undefined ? 'none' : undefined,
       }}
