@@ -92,7 +92,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
       block: 'nearest',
       inline: 'nearest',
     })
-  }, [setEditingCellInfo, onChangeEditing, onChangeRow])
+  }, [setEditingCellInfo, onChangeEditing, onChangeRow, caretTdRef])
 
   /** 編集確定 */
   const commitEditing = useCallback((value?: string | unknown | undefined) => {
