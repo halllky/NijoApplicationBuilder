@@ -65,5 +65,6 @@ export const TextareaBase = defineCustomComponent<string, {}, HTMLAttributes<HTM
 const OPTIONS: EasyMDE.Options = {
   spellChecker: false, // trueだと日本語の部分が全部チェックに引っかかってしまう
   toolbar: [], // ツールバー全部非表示
+  status: false, // フッター非表示
   minHeight: '3rem',
 }
