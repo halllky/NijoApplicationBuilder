@@ -98,10 +98,16 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TEmitValue, TMatchin
 
   const [{ isImeOpen }] = useIMEOpened()
   const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = useCallback(e => {
-    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown')
-      && !isImeOpen
-      && (dropdownAutoOpen || dropdownRef.current?.isOpened)
-    ) {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      // ドロップダウンを開く
+      if (!dropdownAutoOpen && !isImeOpen && !dropdownRef.current?.isOpened) {
+        dropdownRef.current?.open()
+        highlightAnyItem()
+        e.preventDefault()
+        return
+      }
+
+      // 上下移動
       if (e.key === 'ArrowUp') {
         highlightUpItem()
       } else {
