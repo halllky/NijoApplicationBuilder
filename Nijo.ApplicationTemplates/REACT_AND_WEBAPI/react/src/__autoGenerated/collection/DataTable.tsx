@@ -115,7 +115,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
         style={{
           ...columnSizeVars,
           marginRight: tableWidth !== 'fit' ? '50%' : undefined,
-          width: tableWidth !== 'fit' ? api.getTotalSize() : undefined,
+          width: tableWidth !== 'fit' ? api.getTotalSize() : '100%',
         }}
       >
         {/* 列幅 */}
