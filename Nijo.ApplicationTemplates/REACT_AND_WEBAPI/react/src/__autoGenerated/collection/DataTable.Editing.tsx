@@ -44,6 +44,20 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     if (caretCell) {
       const columnDef = api.getColumn(caretCell.colId)?.columnDef as ColumnDefEx<T> | undefined
       setCaretCellEditingInfo(columnDef?.editSetting)
+
+      // エディタを編集対象セルの位置に移動させる
+      if (caretTdRef.current && containerRef.current) {
+        containerRef.current.style.left = `${caretTdRef.current.offsetLeft}px`
+        containerRef.current.style.top = `${caretTdRef.current.offsetTop}px`
+        containerRef.current.style.minWidth = `${caretTdRef.current.clientWidth}px`
+        containerRef.current.style.minHeight = `${caretTdRef.current.clientHeight}px`
+      }
+      // エディタにスクロール
+      containerRef.current?.scrollIntoView({
+        behavior: 'instant',
+        block: 'nearest',
+        inline: 'nearest',
+      })
     } else {
       setCaretCellEditingInfo(undefined)
     }
@@ -81,20 +95,6 @@ export const CellEditor = Util.forwardRefEx(<T,>({
       const selectedValue = columnDef.editSetting.getValueFromRow(cell.row.original)
       setComboSelectedItem(selectedValue)
     }
-
-    // エディタを編集対象セルの位置に移動させる
-    if (caretTdRef.current && containerRef.current) {
-      containerRef.current.style.left = `${caretTdRef.current.offsetLeft}px`
-      containerRef.current.style.top = `${caretTdRef.current.offsetTop}px`
-      containerRef.current.style.minWidth = `${caretTdRef.current.clientWidth}px`
-      containerRef.current.style.minHeight = `${caretTdRef.current.clientHeight}px`
-    }
-    // エディタにスクロール
-    containerRef.current?.scrollIntoView({
-      behavior: 'instant',
-      block: 'nearest',
-      inline: 'nearest',
-    })
   }, [setEditingCellInfo, onChangeEditing, onChangeRow, caretTdRef])
 
   /** 編集確定 */
