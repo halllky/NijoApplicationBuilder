@@ -58,6 +58,8 @@ export const CellEditor = Util.forwardRefEx(<T,>({
         block: 'nearest',
         inline: 'nearest',
       })
+      // 前のセルで入力した値をクリアする
+      setUnComittedText('')
     } else {
       setCaretCellEditingInfo(undefined)
     }
