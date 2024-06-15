@@ -109,7 +109,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       tabIndex={0}
     >
       <table
-        className="table-fixed mr-[50%] border-separate border-spacing-0 border-b border-1 border-color-4"
+        className="mr-[50%] border-separate border-spacing-0 border-b border-1 border-color-4"
         style={{ ...columnSizeVars, width: api.getTotalSize() }}
       >
         {/* 列幅 */}
