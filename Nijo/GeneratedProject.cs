@@ -20,6 +20,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Nijo.Util.CodeGenerating;
 
 namespace Nijo {
+    /// <summary>
+    /// 自動生成されたプロジェクトに対する様々な操作を提供します。
+    /// </summary>
     public sealed partial class GeneratedProject {
 
         public static void ConfigureDefaultServices(IServiceCollection serviceDescriptors) {
@@ -281,8 +284,11 @@ namespace Nijo {
 
         private readonly ILogger _log;
 
+        /// <summary>自動生成されたプロジェクトのルートディレクトリ名</summary>
         public string ProjectRoot { get; }
+        /// <summary>自動生成されたプロジェクトのReactのディレクトリ名</summary>
         public string WebClientProjectRoot => Path.Combine(ProjectRoot, "react");
+        /// <summary>自動生成されたプロジェクトの.NET Coreのディレクトリ名</summary>
         public string WebApiProjectRoot => Path.Combine(ProjectRoot, "webapi");
 
         internal IServiceProvider ServiceProvider { get; }

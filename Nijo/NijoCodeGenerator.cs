@@ -15,8 +15,14 @@ using Nijo.Models;
 using Nijo.Features;
 
 namespace Nijo {
+    /// <summary>
+    /// コード自動生成機能
+    /// </summary>
     public sealed class NijoCodeGenerator {
 
+        /// <summary>
+        /// 生成後のプロジェクトに具備される機能を列挙します。
+        /// </summary>
         internal IEnumerable<IFeature> GetFeatures() {
             yield return new Features.Debugging.DebuggingFeature();
             yield return new Features.Logging.LoggingFeature();
