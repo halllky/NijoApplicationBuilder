@@ -105,7 +105,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
   return (
     <div
-      className={`outline-none overflow-x-auto overflow-y-scroll select-none relative bg-color-2 border border-1 border-color-4 ${className}`}
+      className={`outline-none overflow-x-auto overflow-y-scroll select-none relative bg-color-2 border border-1 border-color-4 z-0 ${className}`}
       onFocus={handleFocus}
       onBlur={handleBlur}
       tabIndex={0}
