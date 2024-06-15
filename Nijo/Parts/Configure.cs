@@ -11,7 +11,7 @@ namespace Nijo.Parts {
     internal class Configure {
         internal const string CLASSNAME = "DefaultConfigurer";
         internal const string INIT_WEB_HOST_BUILDER = "InitWebHostBuilder";
-        internal const string INIT_BATCH_PROCESS = "InitAsBatchProces";
+        internal const string INIT_BATCH_PROCESS = "InitAsBatchProcess";
         internal const string CONFIGURE_SERVICES = "ConfigureServices";
         internal const string INIT_WEBAPPLICATION = "InitWebApplication";
 
