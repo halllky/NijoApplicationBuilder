@@ -87,7 +87,7 @@ namespace Nijo {
                     var xmlContent = XDocument.Parse(sr.ReadToEnd());
                     xmlContent.Root!.Name = applicationName;
 
-                    using var sw = new StreamWriter(xmlPath, append: false, encoding: new UTF8Encoding(false));
+                    using var sw = SourceFile.GetStreamWriter(xmlPath);
                     sw.NewLine = "\n";
                     sw.WriteLine(xmlContent.ToString());
                 }
@@ -114,7 +114,7 @@ namespace Nijo {
                         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
 
                         using var reader = resource.GetStreamReader();
-                        using var writer = new StreamWriter(destination);
+                        using var writer = SourceFile.GetStreamWriter(destination);
                         while (!reader.EndOfStream) {
                             writer.WriteLine(reader.ReadLine());
                         }
@@ -128,7 +128,7 @@ namespace Nijo {
                         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
 
                         using var reader = resource.GetStreamReader();
-                        using var writer = new StreamWriter(destination);
+                        using var writer = SourceFile.GetStreamWriter(destination);
                         while (!reader.EndOfStream) {
                             writer.WriteLine(reader.ReadLine());
                         }

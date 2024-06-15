@@ -39,9 +39,7 @@ namespace Nijo.Util.CodeGenerating {
             var file = System.IO.Path.Combine(Path, sourceFile.FileName);
             _ctx.Handle(file);
 
-            using var sw = new StreamWriter(file, append: false, encoding: GetEncoding(file));
-            var ext = System.IO.Path.GetExtension(file).ToLower();
-            sw.NewLine = ext == ".cs" ? "\r\n" : "\n";
+            using var sw = SourceFile.GetStreamWriter(file);
 
             foreach (var line in sourceFile.RenderContent(_ctx).Split(Environment.NewLine)) {
                 if (line.Contains(SKIP_MARKER)) continue;
@@ -55,7 +53,7 @@ namespace Nijo.Util.CodeGenerating {
 
             var encoding = GetEncoding(copySourceFile);
             using var reader = new StreamReader(copySourceFile, encoding);
-            using var writer = new StreamWriter(copyTargetFile, append: false, encoding: encoding);
+            using var writer = SourceFile.GetStreamWriter(copyTargetFile);
             while (!reader.EndOfStream) {
                 writer.WriteLine(reader.ReadLine());
             }
@@ -69,14 +67,14 @@ namespace Nijo.Util.CodeGenerating {
             _ctx.Handle(destination);
 
             using var reader = resource.GetStreamReader();
-            using var writer = new StreamWriter(destination, false, GetEncoding(destination));
+            using var writer = SourceFile.GetStreamWriter(destination);
             while (!reader.EndOfStream) {
                 writer.WriteLine(reader.ReadLine());
             }
         }
 
         private static Encoding GetEncoding(string filepath) {
-            return System.IO.Path.GetExtension(filepath).ToLower() == "cs"
+            return System.IO.Path.GetExtension(filepath).ToLower() == ".cs"
                 ? Encoding.UTF8 // With BOM
                 : new UTF8Encoding(false);
         }
