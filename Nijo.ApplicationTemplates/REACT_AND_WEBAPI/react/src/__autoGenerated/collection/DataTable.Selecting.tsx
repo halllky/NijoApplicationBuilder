@@ -134,13 +134,6 @@ export const useSelection = <T,>(
     return flatRows.slice(since, until + 1)
   }, [api, caretCell, selectionStart])
 
-  const getSelectedIndexes = useCallback(() => {
-    if (!caretCell || !selectionStart) return []
-    const since = Math.min(caretCell.rowIndex, selectionStart.rowIndex)
-    const until = Math.max(caretCell.rowIndex, selectionStart.rowIndex)
-    return [...Array(until - since + 1)].map((_, i) => i + since)
-  }, [api, caretCell, selectionStart])
-
   return {
     caretCell,
     caretTdRef,
@@ -157,7 +150,6 @@ export const useSelection = <T,>(
     },
 
     getSelectedRows,
-    getSelectedIndexes,
   }
 }
 

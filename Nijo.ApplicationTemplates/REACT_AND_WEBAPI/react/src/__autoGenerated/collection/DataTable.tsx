@@ -57,7 +57,6 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     ActiveCellBorder,
     activeCellBorderProps,
     getSelectedRows,
-    getSelectedIndexes,
   } = useSelection<T>(api, data?.length ?? 0, columns.length, onActiveRowChanged, cellEditorRef)
 
   const {
@@ -93,7 +92,6 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       row: row.original,
       rowIndex: row.index,
     })),
-    getSelectedIndexes,
   }), [getSelectedRows])
 
   return (

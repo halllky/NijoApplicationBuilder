@@ -305,7 +305,7 @@ namespace Nijo.Features.Storing {
                         e.preventDefault()
                       }, [append])
                       const onRemove = useCallback((e: React.MouseEvent) => {
-                        const selectedRowIndexes = dtRef.current?.getSelectedIndexes() ?? []
+                        const selectedRowIndexes = dtRef.current?.getSelectedRows().map(({ rowIndex }) => rowIndex) ?? []
                         for (const index of selectedRowIndexes.sort((a, b) => b - a)) remove(index)
                         e.preventDefault()
                       }, [remove])
