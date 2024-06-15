@@ -86,7 +86,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     // 選択に関する操作
     handleSelectionKeyDown(e)
     if (e.defaultPrevented) return
-  }, [api, getSelectedRows, handleSelectionKeyDown, propsKeyDown])
+  }, [handleSelectionKeyDown, propsKeyDown])
 
   useImperativeHandle(ref, () => ({
     getSelectedRows: () => getSelectedRows().map(row => ({

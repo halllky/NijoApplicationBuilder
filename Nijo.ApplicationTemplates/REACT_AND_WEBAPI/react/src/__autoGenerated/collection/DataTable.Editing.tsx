@@ -61,7 +61,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     } else {
       setCaretCellEditingInfo(undefined)
     }
-  }, [caretCell, api])
+  }, [caretCell, api, caretTdRef, containerRef])
   useEffect(() => {
     editorRef.current?.focus()
   }, [caretCellEditingInfo])
@@ -95,7 +95,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
       const selectedValue = columnDef.editSetting.getValueFromRow(cell.row.original)
       setComboSelectedItem(selectedValue)
     }
-  }, [setEditingCellInfo, onChangeEditing, onChangeRow, caretTdRef])
+  }, [setEditingCellInfo, onChangeEditing, onChangeRow])
 
   /** 編集確定 */
   const commitEditing = useCallback((value?: string | unknown | undefined) => {
@@ -116,7 +116,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     onChangeRow?.(editingCellInfo.rowIndex, editingCellInfo.row)
     setEditingCellInfo(undefined)
     onChangeEditing(false)
-  }, [comboSelectedItem, editingCellInfo, setEditingCellInfo, onChangeRow, onChangeEditing])
+  }, [editingCellInfo, caretCellEditingInfo, onChangeRow, onChangeEditing])
 
   /** 編集キャンセル */
   const cancelEditing = useCallback(() => {
