@@ -21,11 +21,17 @@ export type ColumnDefEx<TRow> = RT.ColumnDef<TRow> & {
 export type ColumnEditSetting<TRow, TOption = unknown> = {
   readOnly?: ((row: TRow) => boolean)
 } & (TextColumndEditSetting<TRow>
+  | TextareaColumndEditSetting<TRow>
   | SyncComboColumnEditSetting<TRow, TOption>
   | AsyncComboColumnEditSetting<TRow, TOption>)
 
 type TextColumndEditSetting<TRow> = {
   type: 'text'
+  getTextValue: (row: TRow) => string | undefined
+  setTextValue: (row: TRow, value: string | undefined) => void
+}
+type TextareaColumndEditSetting<TRow> = {
+  type: 'multiline-text'
   getTextValue: (row: TRow) => string | undefined
   setTextValue: (row: TRow, value: string | undefined) => void
 }
