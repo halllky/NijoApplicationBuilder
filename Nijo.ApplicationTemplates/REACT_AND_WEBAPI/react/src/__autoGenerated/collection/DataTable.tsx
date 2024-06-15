@@ -70,7 +70,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     setIsActive(true)
     cellEditorRef.current?.focus()
     if (!caretCell) selectObject({ target: 'any' })
-  }, [api, caretCell, selectObject])
+  }, [api, caretCell, selectObject, cellEditorRef])
   const handleBlur: React.FocusEventHandler<HTMLDivElement> = useCallback(e => {
     // フォーカスの移動先がこの要素の中にある場合はfalseにしない
     if (!e.target.contains(e.relatedTarget)) setIsActive(false)

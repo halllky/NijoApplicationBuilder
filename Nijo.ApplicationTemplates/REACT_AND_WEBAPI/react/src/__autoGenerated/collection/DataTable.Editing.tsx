@@ -38,7 +38,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
 
   // エディタ設定。caretセルが移動するたびに更新される。
   const [caretCellEditingInfo, setCaretCellEditingInfo] = useState<ColumnEditSetting<T>>()
-  const containerRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLLabelElement>(null)
   const editorRef = useRef<Input.CustomComponentRef<string | unknown>>(null)
   useEffect(() => {
     if (caretCell) {
@@ -132,7 +132,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
   }, [setComboSelectedItem, commitEditing])
 
   const [{ isImeOpen }] = Util.useIMEOpened()
-  const handleKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = useCallback(e => {
+  const handleKeyDown: React.KeyboardEventHandler<HTMLLabelElement> = useCallback(e => {
     if (editingCellInfo) {
       // 編集を終わらせる
       if ((e.key === 'Enter' || e.key === 'Tab') && !isImeOpen) {
@@ -166,8 +166,10 @@ export const CellEditor = Util.forwardRefEx(<T,>({
       }
 
       // セル移動や選択
-      onKeyDown(e)
-      if (e.defaultPrevented) return
+      if (e.type === 'keydown') {
+        onKeyDown(e)
+        if (e.defaultPrevented) return
+      }
     }
   }, [isImeOpen, caretCellEditingInfo, editingCellInfo, startEditing, commitEditing, cancelEditing, onKeyDown, api, caretCell])
 
@@ -181,22 +183,23 @@ export const CellEditor = Util.forwardRefEx(<T,>({
   }), [startEditing])
 
   return (
-    <div ref={containerRef}
-      className="absolute min-w-4 min-h-4 flex items-stretch"
+    <label ref={containerRef}
+      className="absolute min-w-4 min-h-4 flex items-stretch outline-none"
       style={{
         zIndex: TABLE_ZINDEX.CELLEDITOR,
-        // 開発者向け情報:
-        // CellEditorの挙動で不具合があったらここ↓の透明度を0.5ぐらいにして調査してみると色々見えてくるかもしれません
+        // クイック編集のためCellEditor自体は常に存在し続けるが、セル編集モードでないときは見えないようにする
         opacity: editingCellInfo === undefined ? 0 : undefined,
         pointerEvents: editingCellInfo === undefined ? 'none' : undefined,
       }}
+      onKeyDown={handleKeyDown}
+      onKeyUp={handleKeyDown} // なぜかIMEオンの状態でキー入力したときたまにkeydownイベントが発火しなくなることがあるので念のためkeyupでも同様の制御をおこなう
+      tabIndex={0}
     >
       {(caretCellEditingInfo === undefined || caretCellEditingInfo?.type === 'text') && (
         <Input.Word
           ref={editorRef as React.RefObject<Input.CustomComponentRef<string>>}
           value={uncomittedText}
           onChange={setUnComittedText}
-          onKeyDown={handleKeyDown}
           className="flex-1"
         />
       )}
@@ -205,7 +208,6 @@ export const CellEditor = Util.forwardRefEx(<T,>({
           ref={editorRef as React.RefObject<Input.CustomComponentRef<string>>}
           value={uncomittedText}
           onChange={setUnComittedText}
-          onKeyDown={handleKeyDown}
           className="flex-1"
         />
       )}
@@ -215,7 +217,6 @@ export const CellEditor = Util.forwardRefEx(<T,>({
           ref={editorRef}
           value={comboSelectedItem}
           onChange={handleChangeCombobox}
-          onKeyDown={handleKeyDown}
           {...caretCellEditingInfo.comboProps}
           className="flex-1"
         />
@@ -226,12 +227,11 @@ export const CellEditor = Util.forwardRefEx(<T,>({
           ref={editorRef}
           value={comboSelectedItem}
           onChange={handleChangeCombobox}
-          onKeyDown={handleKeyDown}
           {...caretCellEditingInfo.comboProps}
           className="flex-1"
         />
       )}
-    </div>
+    </label>
   )
 })
 
