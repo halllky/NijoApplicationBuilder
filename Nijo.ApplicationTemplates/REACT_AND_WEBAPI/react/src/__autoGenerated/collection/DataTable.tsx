@@ -17,6 +17,8 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     onActiveRowChanged,
     onChangeRow,
     className,
+    hideHeader,
+    tableWidth,
   } = props
 
   // 列
@@ -39,7 +41,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     data: data ?? [],
     columns,
     getCoreRowModel: RT.getCoreRowModel(),
-    ...getColumnResizeOption(),
+    ...(tableWidth === 'fit' ? {} : getColumnResizeOption()),
   }), [data, columns])
 
   const api = RT.useReactTable(optoins)
@@ -103,42 +105,52 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
   return (
     <div
-      className={`outline-none overflow-auto select-none relative bg-color-2 border border-1 border-color-4 ${className}`}
+      className={`outline-none overflow-x-auto overflow-y-scroll select-none relative bg-color-2 border border-1 border-color-4 ${className}`}
       onFocus={handleFocus}
       onBlur={handleBlur}
       tabIndex={0}
     >
       <table
-        className="mr-[50%] border-separate border-spacing-0 border-b border-1 border-color-4"
-        style={{ ...columnSizeVars, width: api.getTotalSize() }}
+        className="border-separate border-spacing-0 border-b border-1 border-color-4"
+        style={{
+          ...columnSizeVars,
+          marginRight: tableWidth !== 'fit' ? '50%' : undefined,
+          width: tableWidth !== 'fit' ? api.getTotalSize() : undefined,
+        }}
       >
         {/* 列幅 */}
-        <colgroup>
-          {getLast(api.getHeaderGroups()).headers.map(header => (
-            <col key={header.id} style={{ width: getColWidth(header) }} />
-          ))}
-        </colgroup>
+        {tableWidth !== 'fit' && (
+          <colgroup>
+            {getLast(api.getHeaderGroups()).headers.map(header => (
+              <col key={header.id} style={{ width: getColWidth(header) }} />
+            ))}
+          </colgroup>
+        )}
 
         {/* ヘッダ */}
-        <thead>
-          {api.getHeaderGroups().map(headerGroup => (
-            <tr key={headerGroup.id}>
+        {!hideHeader && (
+          <thead>
+            {api.getHeaderGroups().map(headerGroup => (
+              <tr key={headerGroup.id}>
 
-              {headerGroup.headers.filter(h => !(h.column.columnDef as ColumnDefEx<T>).hidden).map(header => (
-                <th key={header.id}
-                  colSpan={header.colSpan}
-                  className="relative overflow-hidden whitespace-nowrap px-1 py-0 text-start bg-color-3"
-                  style={getThStickeyStyle(false)}>
-                  {!header.isPlaceholder && RT.flexRender(
-                    header.column.columnDef.header,
-                    header.getContext())}
-                  <ResizeHandler header={header} />
-                </th>
-              ))}
+                {headerGroup.headers.filter(h => !(h.column.columnDef as ColumnDefEx<T>).hidden).map(header => (
+                  <th key={header.id}
+                    colSpan={header.colSpan}
+                    className="relative overflow-hidden whitespace-nowrap px-1 py-0 text-start bg-color-3"
+                    style={getThStickeyStyle(false)}>
+                    {!header.isPlaceholder && RT.flexRender(
+                      header.column.columnDef.header,
+                      header.getContext())}
+                    {tableWidth !== 'fit' && (
+                      <ResizeHandler header={header} />
+                    )}
+                  </th>
+                ))}
 
-            </tr>
-          ))}
-        </thead>
+              </tr>
+            ))}
+          </thead>
+        )}
 
         {/* ボディ */}
         <tbody className="bg-color-0">
