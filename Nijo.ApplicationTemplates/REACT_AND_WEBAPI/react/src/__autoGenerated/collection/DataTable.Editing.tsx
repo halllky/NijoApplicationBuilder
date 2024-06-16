@@ -137,7 +137,9 @@ export const CellEditor = Util.forwardRefEx(<T,>({
   const handleKeyDown: React.KeyboardEventHandler<HTMLLabelElement> = useCallback(e => {
     if (editingCellInfo) {
       // 編集を終わらせる
-      if ((e.key === 'Enter' || e.key === 'Tab') && !isImeOpen) {
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        if (isImeOpen) return // IMEが開いているときのEnterやTabでは編集終了しないようにする
+        if (caretCellEditingInfo?.type === 'multiline-text' && !e.ctrlKey && !e.metaKey) return // セル内改行のため普通のEnterでは編集終了しないようにする
         commitEditing()
         e.stopPropagation()
         e.preventDefault()
