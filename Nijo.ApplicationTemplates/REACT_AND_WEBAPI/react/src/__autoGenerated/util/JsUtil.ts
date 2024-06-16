@@ -171,3 +171,93 @@ export const tryParseAsDateTimeOrEmpty = (value: string | undefined)
   if (!parsed.isValid()) return { ok: false, result: value }
   return { ok: true, result: parsed.format('YYYY-MM-DD HH:mm:ss') }
 }
+
+// ---------------------------------
+// TSV変換関数
+
+export function toTsvString(arr: string[][]): string {
+  const lines: string[] = []
+  for (const row of arr) {
+    const line: string[] = []
+    for (const cell of row) {
+      line.push(`"${cell.replace('"', '""')}"`)
+    }
+    lines.push(line.join('\t'))
+  }
+  // Excelへの貼り付けを想定しているので改行はCRLF
+  return lines.join('\r\n')
+}
+
+export function fromTsvString(tsv: string): string[][] {
+  // 改行コードのパターンを正規表現で定義
+  const newlinePattern = /\r\n|\n/
+
+  // TSVを行ごとに分割
+  const lines = tsv.split(newlinePattern)
+
+  // 各行を値ごとに分割し、ダブルクォーテーションで囲まれている値を取り除く
+  return lines.map(line => {
+    const values = []
+    let currentValue = ''
+    let inQuote = false
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+
+      if (char === '"') {
+        inQuote = !inQuote
+      } else if (char === '\t' && !inQuote) {
+        values.push(currentValue.replace(/""/g, '"'))
+        currentValue = ''
+      } else {
+        currentValue += char
+      }
+    }
+
+    if (currentValue) {
+      values.push(currentValue.replace(/""/g, '"'))
+    }
+
+    // 値の途中で改行が含まれている場合の処理
+    const mergedValues = []
+    let currentMergedValue = ''
+    let inQuoteForMerge = false
+
+    for (const value of values) {
+      if (value.startsWith('"') && value.endsWith('"')) {
+        if (inQuoteForMerge) {
+          currentMergedValue += value.slice(1, -1)
+        } else {
+          if (currentMergedValue) {
+            mergedValues.push(currentMergedValue)
+          }
+          currentMergedValue = value.slice(1, -1)
+          inQuoteForMerge = false
+        }
+      } else if (value.startsWith('"')) {
+        if (inQuoteForMerge) {
+          currentMergedValue += '\n' + value.slice(1)
+        } else {
+          if (currentMergedValue) {
+            mergedValues.push(currentMergedValue)
+          }
+          currentMergedValue = value.slice(1)
+          inQuoteForMerge = true
+        }
+      } else if (value.endsWith('"')) {
+        currentMergedValue += value.slice(0, -1)
+        mergedValues.push(currentMergedValue)
+        currentMergedValue = ''
+        inQuoteForMerge = false
+      } else {
+        mergedValues.push(value)
+      }
+    }
+
+    if (currentMergedValue) {
+      mergedValues.push(currentMergedValue)
+    }
+
+    return mergedValues
+  })
+}

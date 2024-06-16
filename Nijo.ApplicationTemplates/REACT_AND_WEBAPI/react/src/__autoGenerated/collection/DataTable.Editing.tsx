@@ -194,8 +194,11 @@ export const CellEditor = Util.forwardRefEx(<T,>({
         pointerEvents: editingCellInfo === undefined ? 'none' : undefined,
       }}
       onKeyDown={handleKeyDown}
-      onKeyUp={handleKeyDown} // なぜかIMEオンの状態でキー入力したときたまにkeydownイベントが発火しなくなることがあるので念のためkeyupでも同様の制御をおこなう
       tabIndex={0}
+
+    // なぜかIMEオンの状態でキー入力したときたまにkeydownイベントが発火しなくなることがあるので念のためkeyupでも同様の制御をおこなう、
+    // というのをやりたいが、セルの値をペーストしたときにCtrlキーを先に放しその後Vを放したときに編集開始が誤爆するのでオフにする
+    // onKeyUp={handleKeyDown}
     >
       {(caretCellEditingInfo === undefined || caretCellEditingInfo?.type === 'text') && (
         <Input.Word

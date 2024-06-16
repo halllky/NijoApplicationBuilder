@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo, useImperativeHandle 
 import * as RT from '@tanstack/react-table'
 import * as Util from '../util'
 import { CellEditorRef, CellPosition, TABLE_ZINDEX } from './DataTable.Parts'
-import { DataTableProps } from '..'
+import { ColumnDefEx, DataTableProps } from '..'
 
 export const useSelection = <T,>(
   api: RT.Table<T>,
@@ -134,6 +134,17 @@ export const useSelection = <T,>(
     return flatRows.slice(since, until + 1)
   }, [api, caretCell, selectionStart])
 
+  const getSelectedColumns = useCallback(() => {
+    if (!caretCell || !selectionStart) return []
+    const allColumns = api.getAllColumns()
+    const caretCellColIndex = allColumns.findIndex(c => c.id === caretCell.colId)
+    const selectionStartColIndex = allColumns.findIndex(c => c.id === selectionStart.colId)
+    if (caretCellColIndex === -1 || selectionStartColIndex === -1) return []
+    const since = Math.min(caretCellColIndex, selectionStartColIndex)
+    const until = Math.max(caretCellColIndex, selectionStartColIndex)
+    return allColumns.slice(since, until + 1).map(c => c.columnDef as ColumnDefEx<T>)
+  }, [api, caretCell, selectionStart])
+
   return {
     caretCell,
     caretTdRef,
@@ -150,6 +161,7 @@ export const useSelection = <T,>(
     },
 
     getSelectedRows,
+    getSelectedColumns,
   }
 }
 

@@ -6,6 +6,7 @@ import { TABLE_ZINDEX, CellEditorRef } from './DataTable.Parts'
 import { CellEditor } from './DataTable.Editing'
 import { useSelection } from './DataTable.Selecting'
 import { getColumnResizeOption, useColumnResizing } from './DataTable.ColResize'
+import { useCopyPaste } from './DataTable.CopyPaste'
 
 export * from './DataTable.Public'
 
@@ -57,6 +58,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     ActiveCellBorder,
     activeCellBorderProps,
     getSelectedRows,
+    getSelectedColumns,
   } = useSelection<T>(api, data?.length ?? 0, columns.length, onActiveRowChanged, cellEditorRef)
 
   const {
@@ -64,6 +66,11 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     getColWidth,
     ResizeHandler,
   } = useColumnResizing(api)
+
+  const {
+    onCopy,
+    onPaste,
+  } = useCopyPaste(api, getSelectedRows, getSelectedColumns, onChangeRow, editing)
 
   const [isActive, setIsActive] = useState(false)
   const handleFocus: React.FocusEventHandler<HTMLDivElement> = useCallback(() => {
@@ -99,6 +106,8 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       className={`outline-none overflow-x-auto overflow-y-scroll select-none relative bg-color-2 border border-1 border-color-4 z-0 ${className}`}
       onFocus={handleFocus}
       onBlur={handleBlur}
+      onCopy={onCopy}
+      onPaste={onPaste}
       tabIndex={0}
     >
       <table
