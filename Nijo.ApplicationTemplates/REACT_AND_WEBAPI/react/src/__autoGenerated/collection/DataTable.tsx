@@ -70,6 +70,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   const {
     onCopy,
     onPaste,
+    clearSelectedRange,
   } = useCopyPaste(api, getSelectedRows, getSelectedColumns, onChangeRow, editing)
 
   const [isActive, setIsActive] = useState(false)
@@ -92,7 +93,12 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     // 選択に関する操作
     handleSelectionKeyDown(e)
     if (e.defaultPrevented) return
-  }, [handleSelectionKeyDown, propsKeyDown])
+    // 選択範囲内クリア
+    if (!e.ctrlKey && !e.metaKey && e.key === 'Delete') {
+      clearSelectedRange()
+      e.preventDefault()
+    }
+  }, [handleSelectionKeyDown, propsKeyDown, clearSelectedRange])
 
   useImperativeHandle(ref, () => ({
     getSelectedRows: () => getSelectedRows().map(row => ({

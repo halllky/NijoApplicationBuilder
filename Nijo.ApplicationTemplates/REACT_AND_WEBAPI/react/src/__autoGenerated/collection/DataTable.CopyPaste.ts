@@ -43,15 +43,13 @@ export const useCopyPaste = <T>(
   }, [editing, getSelectedRows, getSelectedColumns])
 
 
-  /**
-   * クリップボードの値をグリッドに貼り付ける処理。
-   * セキュリティ上の問題からnavigator経由での値取得ができないのでonPasteイベントのハンドリングの形で行う。
-   */
-  const onPaste: React.ClipboardEventHandler = useCallback(e => {
+  const executePaste = useCallback((valueTable: string[][]) => {
     // セル編集中なら中断
     if (editing) return
     // 行変更イベントがない場合は貼り付けても意味がないので中断
     if (onChangeRow === undefined) return
+    // 貼り付け元の値がない場合は中断
+    if (valueTable.length === 0) return
     // 選択範囲がなければ中断
     const selectedRows = getSelectedRows()
     const selectedColumns = getSelectedColumns()
@@ -61,19 +59,6 @@ export const useCopyPaste = <T>(
     const allColumns = api.getAllColumns()
     const leftColumnIndex = allColumns.findIndex(c => c.id === leftColumn.id)
     if (topRowIndex === -1 || leftColumnIndex === -1) return
-
-    // クリップボードからTSVを読み取る
-    let tsv: string
-    try {
-      tsv = e.clipboardData.getData('Text')
-    } catch {
-      dispatchToast(msg => msg.warn('クリップボードからテキストを読み取れませんでした。'))
-      return
-    }
-
-    // stringの配列に変換
-    const valueTable = Util.fromTsvString(tsv)
-    if (valueTable.length === 0) return
 
     // 選択範囲の左上のセルから順番に値をセットしていく
     const allRows = api.getRowModel().flatRows
@@ -107,8 +92,37 @@ export const useCopyPaste = <T>(
       }
       onChangeRow(row.index, row.original)
     }
-  }, [editing, onChangeRow, api, getSelectedRows, getSelectedColumns, dispatchToast])
+  }, [editing, onChangeRow, api, getSelectedRows, getSelectedColumns])
 
 
-  return { onCopy, onPaste }
+  /**
+   * クリップボードの値をグリッドに貼り付ける処理。
+   * セキュリティ上の問題からnavigator経由での値取得ができないのでonPasteイベントのハンドリングの形で行う。
+   */
+  const onPaste: React.ClipboardEventHandler = useCallback(e => {
+    // クリップボードからTSVを読み取る
+    let tsv: string
+    try {
+      tsv = e.clipboardData.getData('Text')
+    } catch {
+      dispatchToast(msg => msg.warn('クリップボードからテキストを読み取れませんでした。'))
+      return
+    }
+
+    // 貼り付け実行
+    const valueTable = Util.fromTsvString(tsv)
+    executePaste(valueTable)
+  }, [executePaste, dispatchToast])
+
+
+  /**
+   * 選択範囲内の値をクリアする。
+   * 空文字をペーストするという形で実現しているのでコピペ処理の近くにある。
+   */
+  const clearSelectedRange = useCallback(() => {
+    executePaste([['']])
+  }, [executePaste])
+
+
+  return { onCopy, onPaste, clearSelectedRange }
 }
