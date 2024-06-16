@@ -330,41 +330,47 @@ namespace Nijo.Parts.WebClient {
                   },
                 """)}}
                 {{If(comboboxEditSetting != null, () => $$"""
-                  editSetting: ({
-                    type: 'combo',
+                  editSetting: (() => {
+                    const comboSetting: Layout.ColumnEditSetting<{{DataTableRowTypeName}}, {{comboboxEditSetting!.OptionItemTypeName}}> = {
+                      type: 'combo',
                 {{If(EditSettingGetValueFromRow != null, () => $$"""
-                    getValueFromRow: {{WithIndent(EditSettingGetValueFromRow!, "    ")}},
+                      getValueFromRow: {{WithIndent(EditSettingGetValueFromRow!, "      ")}},
                 """)}}
                 {{If(EditSettingSetValueToRow != null, () => $$"""
-                    setValueToRow: {{WithIndent(EditSettingSetValueToRow!, "    ")}},
+                      setValueToRow: {{WithIndent(EditSettingSetValueToRow!, "      ")}},
                 """)}}
-                    comboProps: {
-                      options: {{comboboxEditSetting!.Options}},
-                      emitValueSelector: {{comboboxEditSetting!.EmitValueSelector}},
-                      matchingKeySelectorFromEmitValue: {{comboboxEditSetting!.MatchingKeySelectorFromEmitValue}},
-                      matchingKeySelectorFromOption: {{comboboxEditSetting!.MatchingKeySelectorFromOption}},
-                      textSelector: {{comboboxEditSetting!.TextSelector}},
-                    },
-                  } as Layout.ColumnEditSetting<{{DataTableRowTypeName}}, {{comboboxEditSetting!.OptionItemTypeName}}>) as Layout.ColumnEditSetting<{{DataTableRowTypeName}}, unknown>,
+                      comboProps: {
+                        options: {{comboboxEditSetting!.Options}},
+                        emitValueSelector: {{comboboxEditSetting!.EmitValueSelector}},
+                        matchingKeySelectorFromEmitValue: {{comboboxEditSetting!.MatchingKeySelectorFromEmitValue}},
+                        matchingKeySelectorFromOption: {{comboboxEditSetting!.MatchingKeySelectorFromOption}},
+                        textSelector: {{comboboxEditSetting!.TextSelector}},
+                      },
+                    }
+                    return comboSetting as Layout.ColumnEditSetting<{{DataTableRowTypeName}}, unknown>
+                  })(),
                 """)}}
                 {{If(asyncComboEditSetting != null, () => $$"""
-                  editSetting: ({
-                    type: 'async-combo',
+                  editSetting: (() => {
+                    const asyncComboSetting: Layout.ColumnEditSetting<{{DataTableRowTypeName}}, {{asyncComboEditSetting!.OptionItemTypeName}}> = {
+                      type: 'async-combo',
                 {{If(EditSettingGetValueFromRow != null, () => $$"""
-                    getValueFromRow: {{WithIndent(EditSettingGetValueFromRow!, "    ")}},
+                      getValueFromRow: {{WithIndent(EditSettingGetValueFromRow!, "      ")}},
                 """)}}
                 {{If(EditSettingSetValueToRow != null, () => $$"""
-                    setValueToRow: {{WithIndent(EditSettingSetValueToRow!, "    ")}},
+                      setValueToRow: {{WithIndent(EditSettingSetValueToRow!, "      ")}},
                 """)}}
-                    comboProps: {
-                      queryKey: {{asyncComboEditSetting!.QueryKey}},
-                      query: {{WithIndent(asyncComboEditSetting!.Query, "      ")}},
-                      emitValueSelector: {{asyncComboEditSetting!.EmitValueSelector}},
-                      matchingKeySelectorFromEmitValue: {{asyncComboEditSetting!.MatchingKeySelectorFromEmitValue}},
-                      matchingKeySelectorFromOption: {{asyncComboEditSetting!.MatchingKeySelectorFromOption}},
-                      textSelector: {{asyncComboEditSetting!.TextSelector}},
-                    },
-                  } as Layout.ColumnEditSetting<{{DataTableRowTypeName}}, {{asyncComboEditSetting!.OptionItemTypeName}}>) as Layout.ColumnEditSetting<{{DataTableRowTypeName}}, unknown>,
+                      comboProps: {
+                        queryKey: {{asyncComboEditSetting!.QueryKey}},
+                        query: {{WithIndent(asyncComboEditSetting!.Query, "        ")}},
+                        emitValueSelector: {{asyncComboEditSetting!.EmitValueSelector}},
+                        matchingKeySelectorFromEmitValue: {{asyncComboEditSetting!.MatchingKeySelectorFromEmitValue}},
+                        matchingKeySelectorFromOption: {{asyncComboEditSetting!.MatchingKeySelectorFromOption}},
+                        textSelector: {{asyncComboEditSetting!.TextSelector}},
+                      },
+                    }
+                    return asyncComboSetting as Layout.ColumnEditSetting<{{DataTableRowTypeName}}, unknown>
+                  })(),
                 """)}}
                 },
                 """;
