@@ -90,6 +90,8 @@ namespace Nijo.Core {
         public required string MatchingKeySelectorFromEmitValue { get; set; }
         public required string MatchingKeySelectorFromOption { get; set; }
         public required string TextSelector { get; set; }
+        public required Func<string, string, string> OnClipboardCopy { get; set; }
+        public required Func<string, string, string> OnClipboardPaste { get; set; }
         public Func<string, string, string>? GetDisplayText { get; set; }
         public Func<string, string, string>? GetValueFromRow { get; set; }
         public Func<string, string, string>? SetValueToRow { get; set; }
@@ -105,6 +107,8 @@ namespace Nijo.Core {
         public required string MatchingKeySelectorFromEmitValue { get; set; }
         public required string MatchingKeySelectorFromOption { get; set; }
         public required string TextSelector { get; set; }
+        public required Func<string, string, string> OnClipboardCopy { get; set; }
+        public required Func<string, string, string> OnClipboardPaste { get; set; }
         public Func<string, string, string>? GetValueFromRow { get; set; }
         public Func<string, string, string>? SetValueToRow { get; set; }
     }

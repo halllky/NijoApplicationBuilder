@@ -180,7 +180,8 @@ export function toTsvString(arr: string[][]): string {
   for (const row of arr) {
     const line: string[] = []
     for (const cell of row) {
-      line.push(`"${cell.replace('"', '""')}"`)
+      const escaped = cell.replace(/"/g, '""')
+      line.push(`"${escaped}"`)
     }
     lines.push(line.join('\t'))
   }
@@ -189,75 +190,108 @@ export function toTsvString(arr: string[][]): string {
 }
 
 export function fromTsvString(tsv: string): string[][] {
-  // 改行コードのパターンを正規表現で定義
-  const newlinePattern = /\r\n|\n/
+  // 改行コードの混在への対策
+  const newLineReplaced = tsv.replace(/\r\n/g, '\n')
 
-  // TSVを行ごとに分割
-  const lines = tsv.split(newlinePattern)
+  const NEWLINE = '\n'
+  const SEPARATOR = '\t'
+  const QUOTE = '"'
 
-  // 各行を値ごとに分割し、ダブルクォーテーションで囲まれている値を取り除く
-  return lines.map(line => {
-    const values = []
-    let currentValue = ''
-    let inQuote = false
+  // 前から1文字ずつ処理して地道にパースする
+  const result: string[][] = []
+  let currentRow: string[] = []
+  let currentValue = ''
+  let mode: 'outOfValue' | 'quotedValue' | 'valueWithoutQuote' = 'outOfValue'
+  let i = 0
+  while (i < newLineReplaced.length) {
+    const char = newLineReplaced[i]
 
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
+    if (mode === 'quotedValue') {
+      if (char === QUOTE) {
+        // 2文字連続でクォートが出てくる場合はエスケープ
+        i++
+        const nextChar = newLineReplaced[i]
+        if (nextChar === QUOTE) {
+          currentValue += nextChar
+          i++
+          continue
+        }
 
-      if (char === '"') {
-        inQuote = !inQuote
-      } else if (char === '\t' && !inQuote) {
-        values.push(currentValue.replace(/""/g, '"'))
+        // クォートで囲まれた値の終わり
+        currentRow.push(currentValue)
         currentValue = ''
+        mode = 'outOfValue'
+        continue // 先読みしているので i++ はやらない
+
       } else {
+        // クォートで囲まれた値に1文字追加
         currentValue += char
+        i++
+        continue
       }
-    }
 
-    if (currentValue) {
-      values.push(currentValue.replace(/""/g, '"'))
-    }
+    } else if (mode === 'valueWithoutQuote') {
+      if (char === SEPARATOR) {
+        // クォートで囲まれていない値がセパレータの出現により終わる
+        currentRow.push(currentValue)
+        currentValue = ''
+        i++
+        continue
 
-    // 値の途中で改行が含まれている場合の処理
-    const mergedValues = []
-    let currentMergedValue = ''
-    let inQuoteForMerge = false
+      } else if (char === NEWLINE) {
+        // クォートで囲まれていない値が改行により終わる
+        currentRow.push(currentValue)
+        result.push(currentRow)
+        currentValue = ''
+        currentRow = []
+        i++
+        continue
 
-    for (const value of values) {
-      if (value.startsWith('"') && value.endsWith('"')) {
-        if (inQuoteForMerge) {
-          currentMergedValue += value.slice(1, -1)
-        } else {
-          if (currentMergedValue) {
-            mergedValues.push(currentMergedValue)
-          }
-          currentMergedValue = value.slice(1, -1)
-          inQuoteForMerge = false
-        }
-      } else if (value.startsWith('"')) {
-        if (inQuoteForMerge) {
-          currentMergedValue += '\n' + value.slice(1)
-        } else {
-          if (currentMergedValue) {
-            mergedValues.push(currentMergedValue)
-          }
-          currentMergedValue = value.slice(1)
-          inQuoteForMerge = true
-        }
-      } else if (value.endsWith('"')) {
-        currentMergedValue += value.slice(0, -1)
-        mergedValues.push(currentMergedValue)
-        currentMergedValue = ''
-        inQuoteForMerge = false
       } else {
-        mergedValues.push(value)
+        // クォートで囲まれていない値に1文字追加
+        currentValue += char
+        i++
+        continue
       }
-    }
 
-    if (currentMergedValue) {
-      mergedValues.push(currentMergedValue)
-    }
+    } else {
+      if (char === SEPARATOR) {
+        // 値と値の間
+        i++
+        continue
 
-    return mergedValues
-  })
+      } else if (char === NEWLINE) {
+        // 行の終わり
+        currentRow.push(currentValue)
+        result.push(currentRow)
+        currentValue = ''
+        currentRow = []
+        i++
+        continue
+
+      } else if (char === QUOTE) {
+        // クォートで囲まれた値の始まり
+        mode = 'quotedValue'
+        i++
+        continue
+
+      } else {
+        // クォートで囲まれていない値の始まり
+        mode = 'valueWithoutQuote'
+        i++
+        continue
+      }
+
+    }
+  }
+
+  // TSV文字列の末尾の値の処理
+  if (currentValue !== '') {
+    currentRow.push(currentValue)
+  }
+  if (currentRow.length > 0) {
+    result.push(currentRow)
+  }
+
+  return result
 }

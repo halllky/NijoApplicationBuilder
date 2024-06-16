@@ -45,6 +45,19 @@ namespace Nijo.Core.AggregateMemberTypes {
                 MatchingKeySelectorFromEmitValue = $"value => value",
                 MatchingKeySelectorFromOption = $"opt => opt",
                 TextSelector = $"opt => opt",
+                OnClipboardCopy = (value, formatted) => $$"""
+                    const {{formatted}} = {{value}} ?? ''
+                    """,
+                OnClipboardPaste = (value, formatted) => $$"""
+                    let {{formatted}}: {{_variationGroup.VariationAggregates.Select(kv => $"'{kv.Value.RelationName}'").Join(" | ")}} | undefined
+                    {{_variationGroup.VariationAggregates.SelectTextTemplate((kv, i) => $$"""
+                    {{(i == 0 ? "if" : "} else if")}} ({{value}} === '{{kv.Value.RelationName}}') {
+                      {{formatted}} = '{{kv.Value.RelationName}}'
+                    """)}}
+                    } else {
+                      {{formatted}} = undefined
+                    }
+                    """,
             };
         }
     }

@@ -88,6 +88,10 @@ namespace Nijo.Parts.WebClient {
                     var refInfo = new DataClassForDisplayRefTarget(refMember.RefTo);
                     var api = new KeywordSearchingFeature(refMember.RefTo);
                     var combo = new ComboBox(refMember.RefTo);
+                    var keys = refMember.RefTo
+                        .AsEntry()
+                        .GetKeys()
+                        .OfType<AggregateMember.ValueMember>();
                     var names = refMember.RefTo
                         .AsEntry()
                         .GetNames()
@@ -98,7 +102,7 @@ namespace Nijo.Parts.WebClient {
                         QueryKey = combo.RenderReactQueryKeyString(),
                         Query = $$"""
                             async keyword => {
-                              const response = await get<AggregateType.{{refInfo.TsTypeName}} []>(`{{api.GetUri()}}`, { keyword })
+                              const response = await get<AggregateType.{{refInfo.TsTypeName}}[]>(`{{api.GetUri()}}`, { keyword })
                               if (!response.ok) return []
                               return response.data
                             }
@@ -107,10 +111,33 @@ namespace Nijo.Parts.WebClient {
                         MatchingKeySelectorFromEmitValue = $"item => item.{DataClassForDisplayRefTarget.INSTANCE_KEY}",
                         MatchingKeySelectorFromOption = $"item => item.{DataClassForDisplayRefTarget.INSTANCE_KEY}",
                         TextSelector = $"item => `{names.Select(n => $"${{item.{n.Declared.GetFullPathAsDisplayRefTargetClass().Join("?.")} ?? ''}}").Join("")}`",
+                        OnClipboardCopy = (value, formatted) => $$"""
+                            const {{formatted}} = {{value}} ? JSON.stringify({{value}}) : ''
+                            """,
+                        OnClipboardPaste = (value, formatted) => $$"""
+                            let {{formatted}}: AggregateType.{{refInfo.TsTypeName}} | undefined
+                            if ({{value}}) {
+                              try {
+                                const obj: AggregateType.{{refInfo.TsTypeName}} = JSON.parse({{value}})
+                                // 登録にはインスタンスキーが使われるのでキーの型だけは細かくチェックする
+                                if (obj.{{DataClassForDisplayRefTarget.INSTANCE_KEY}} === undefined) throw new Error
+                                const arrInstanceKey: [{{keys.Select(k => k.Options.MemberType.GetTypeScriptTypeName()).Join(", ")}}] = JSON.parse(obj.{{DataClassForDisplayRefTarget.INSTANCE_KEY}})
+                                if (!Array.isArray(arrInstanceKey)) throw new Error
+                            {{keys.SelectTextTemplate((k, i) => $$"""
+                                if (typeof arrInstanceKey[{{i}}] !== '{{k.Options.MemberType.GetTypeScriptTypeName()}}') throw new Error
+                            """)}}
+                                {{formatted}} = obj
+                              } catch {
+                                {{formatted}} = undefined
+                              }
+                            } else {
+                              {{formatted}} = undefined
+                            }
+                            """,
                     };
                 }
 
-                // GET VALUE
+                // GET VALUE // TODO: 値取得関数がいろいろあるので整理する
                 var editSettingGetValueFromRow = editSetting?.GetValueFromRow == null ? $$"""
                     row => row.{{memberPath.Join("?.")}}
                     """ : $$"""
@@ -122,6 +149,7 @@ namespace Nijo.Parts.WebClient {
                     """;
 
                 // SET VALUE
+                /// TODO: <see cref="IGridColumnSetting.SetValueToRow"/> と役割重複しているので整理する
                 string editSettingSetValueToRow;
                 if (member.DeclaringAggregate == dataTableOwner) {
                     editSettingSetValueToRow = $$"""
@@ -165,6 +193,7 @@ namespace Nijo.Parts.WebClient {
                     EditSetting = editSetting,
                     EditSettingGetValueFromRow = editSettingGetValueFromRow,
                     EditSettingSetValueToRow = editSettingSetValueToRow,
+                    MemberPath = memberPath,
                 };
             }
 
@@ -293,6 +322,9 @@ namespace Nijo.Parts.WebClient {
         internal string? EditSettingGetValueFromRow { get; init; }
         internal string? EditSettingSetValueToRow { get; init; }
 
+        /// <summary>TODO: 要リファクタリング</summary>
+        internal IEnumerable<string>? MemberPath { get; init; }
+
         internal string Render() {
             var textboxEditSetting = EditSetting as TextColumnSetting;
             var comboboxEditSetting = EditSetting as ComboboxColumnSetting;
@@ -339,6 +371,21 @@ namespace Nijo.Parts.WebClient {
                 {{If(EditSettingSetValueToRow != null, () => $$"""
                       setValueToRow: {{WithIndent(EditSettingSetValueToRow!, "      ")}},
                 """)}}
+                {{If(comboboxEditSetting.OnClipboardCopy != null, () => $$"""
+                      onClipboardCopy: row => {
+                        {{WithIndent(comboboxEditSetting.OnClipboardCopy!($"row.{MemberPath?.Join("?.")}", "formatted"), "        ")}}
+                        return formatted
+                      },
+                """)}}
+                {{If(comboboxEditSetting.OnClipboardPaste != null, () => $$"""
+                      onClipboardPaste: (row, value) => {
+                {{If(MemberPath != null && MemberPath.Count() >= 2, () => $$"""
+                        if (row.{{MemberPath?.SkipLast(1).Join("?.")}} === undefined) return
+                """)}}
+                        {{WithIndent(comboboxEditSetting.OnClipboardPaste!("value", "formatted"), "        ")}}
+                        row.{{MemberPath?.Join(".")}} = formatted
+                      },
+                """)}}
                       comboProps: {
                         options: {{comboboxEditSetting!.Options}},
                         emitValueSelector: {{comboboxEditSetting!.EmitValueSelector}},
@@ -359,6 +406,21 @@ namespace Nijo.Parts.WebClient {
                 """)}}
                 {{If(EditSettingSetValueToRow != null, () => $$"""
                       setValueToRow: {{WithIndent(EditSettingSetValueToRow!, "      ")}},
+                """)}}
+                {{If(asyncComboEditSetting.OnClipboardCopy != null, () => $$"""
+                      onClipboardCopy: row => {
+                        {{WithIndent(asyncComboEditSetting.OnClipboardCopy!($"row.{MemberPath?.Join("?.")}", "formatted"), "        ")}}
+                        return formatted
+                      },
+                """)}}
+                {{If(asyncComboEditSetting.OnClipboardPaste != null, () => $$"""
+                      onClipboardPaste: (row, value) => {
+                {{If(MemberPath != null && MemberPath.Count() >= 2, () => $$"""
+                        if (row.{{MemberPath?.SkipLast(1).Join("?.")}} === undefined) return
+                """)}}
+                        {{WithIndent(asyncComboEditSetting.OnClipboardPaste!("value", "formatted"), "        ")}}
+                        row.{{MemberPath?.Join(".")}} = formatted
+                      },
                 """)}}
                       comboProps: {
                         queryKey: {{asyncComboEditSetting!.QueryKey}},

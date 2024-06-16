@@ -28,8 +28,7 @@ export const useCopyPaste = <T>(
         if (column.editSetting?.type === 'text' || column.editSetting?.type === 'multiline-text') {
           value = column.editSetting.getTextValue(row.original) ?? ''
         } else if (column.editSetting?.type === 'combo' || column.editSetting?.type === 'async-combo') {
-          const objValue = column.editSetting.getValueFromRow(row.original)
-          value = objValue != undefined ? JSON.stringify(objValue) : ''
+          value = column.editSetting.onClipboardCopy(row.original)
         } else {
           value = ''
         }
@@ -74,6 +73,7 @@ export const useCopyPaste = <T>(
 
     // stringの配列に変換
     const valueTable = Util.fromTsvString(tsv)
+    if (valueTable.length === 0) return
 
     // 選択範囲の左上のセルから順番に値をセットしていく
     const allRows = api.getRowModel().flatRows
@@ -84,6 +84,7 @@ export const useCopyPaste = <T>(
 
       // 剰余をとっているのは選択範囲の縦幅がTSVの行数より大きい場合にTSVの先頭からループさせるため
       const valueArray = valueTable[y % valueTable.length]
+      if (valueArray.length === 0) continue
 
       const loopSizeX = Math.max(valueArray.length, selectedColumns.length)
       for (let x = 0; x < loopSizeX; x++) {
@@ -101,7 +102,7 @@ export const useCopyPaste = <T>(
         if (columnDef.editSetting.type === 'text' || columnDef.editSetting.type === 'multiline-text') {
           columnDef.editSetting.setTextValue(row.original, strValue)
         } else if (columnDef.editSetting.type === 'combo' || columnDef.editSetting.type === 'async-combo') {
-          columnDef.editSetting.setValueToRow(row.original, strValue)
+          columnDef.editSetting.onClipboardPaste(row.original, strValue)
         }
       }
       onChangeRow(row.index, row.original)

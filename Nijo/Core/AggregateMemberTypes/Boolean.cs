@@ -26,11 +26,25 @@ namespace Nijo.Core.AggregateMemberTypes {
                 MatchingKeySelectorFromOption = $"opt => opt.key",
                 TextSelector = $"opt => opt.text",
 
+                GetValueFromRow = (value, formatted) => $$"""
+                    const {{formatted}} = {{value}} ? { key: 'T' as const, text: '✓' } : { key: 'F' as const, text: '' }
+                    """,
+
                 GetDisplayText = (value, formatted) => $$"""
                     const {{formatted}} = {{value}} ? '✓' : ''
                     """,
                 SetValueToRow = (value, formatted) => $$"""
                     const {{formatted}} = {{value}}?.key === 'T'
+                    """,
+
+                OnClipboardCopy = (value, formatted) => $$"""
+                    const {{formatted}} = {{value}} ? '✓' : ''
+                    """,
+                OnClipboardPaste = (value, formatted) => $$"""
+                    const normalized = {{value}}.trim().toUpperCase()
+                    const {{formatted}} = normalized !== ''
+                      && normalized !== 'FALSE'
+                      && normalized !== '0'
                     """,
             };
         }

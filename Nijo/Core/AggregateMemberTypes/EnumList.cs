@@ -1,3 +1,4 @@
+using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
@@ -38,6 +39,19 @@ namespace Nijo.Core.AggregateMemberTypes {
                 MatchingKeySelectorFromEmitValue = $"value => value",
                 MatchingKeySelectorFromOption = $"opt => opt",
                 TextSelector = $"opt => opt",
+                OnClipboardCopy = (value, formatted) => $$"""
+                    const {{formatted}} = {{value}} ?? ''
+                    """,
+                OnClipboardPaste = (value, formatted) => $$"""
+                    let {{formatted}}: {{Definition.Items.Select(x => $"'{x.PhysicalName}'").Join(" | ")}} | undefined
+                    {{Definition.Items.SelectTextTemplate((x, i) => $$"""
+                    {{(i == 0 ? "if" : "} else if")}} ({{value}} === '{{x.PhysicalName}}') {
+                      {{formatted}} = '{{x.PhysicalName}}'
+                    """)}}
+                    } else {
+                      {{formatted}} = undefined
+                    }
+                    """,
             };
         }
     }

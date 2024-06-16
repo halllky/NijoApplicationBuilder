@@ -39,12 +39,16 @@ type SyncComboColumnEditSetting<TRow, TOption = unknown> = {
   type: 'combo'
   getValueFromRow: (row: TRow) => TOption | undefined
   setValueToRow: (row: TRow, value: TOption | undefined) => void
+  onClipboardCopy: (row: TRow) => string
+  onClipboardPaste: (row: TRow, value: string) => void
   comboProps: SyncComboProps<TOption, TOption>
 }
 type AsyncComboColumnEditSetting<TRow, TOption = unknown> = {
   type: 'async-combo'
   getValueFromRow: (row: TRow) => TOption | undefined
   setValueToRow: (row: TRow, value: TOption | undefined) => void
+  onClipboardCopy: (row: TRow) => string
+  onClipboardPaste: (row: TRow, value: string) => void
   comboProps: AsyncComboProps<TOption, TOption>
 }
 
