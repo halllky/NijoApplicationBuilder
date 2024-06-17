@@ -30,7 +30,7 @@ export const ModalDialog = ({ title, open, onClose, children }: {
       ref={dialogRef}
       onClose={onClose}
       onClick={handleDialogClick}
-      className="absolute inset-12 w-auto h-auto border border-neutral-500"
+      className="absolute inset-12 w-auto h-auto border border-neutral-500 outline-none"
     >
       <div className="w-full h-full flex flex-col p-4">
 
