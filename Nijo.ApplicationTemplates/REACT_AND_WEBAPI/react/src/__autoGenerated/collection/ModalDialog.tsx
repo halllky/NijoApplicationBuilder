@@ -30,19 +30,19 @@ export const ModalDialog = ({ title, open, onClose, children }: {
       ref={dialogRef}
       onClose={onClose}
       onClick={handleDialogClick}
-      className="absolute inset-12 w-auto h-auto border border-neutral-500 outline-none"
+      className="absolute inset-12 w-auto h-auto border border-color-5 outline-none"
     >
-      <div className="w-full h-full flex flex-col p-4">
+      <div className="w-full h-full flex flex-col">
 
-        <div className="flex items-center" onClick={handleTitleClick}>
+        <div className="flex items-center p-1 border-b border-color-4" onClick={handleTitleClick}>
           {title && (
-            <span className="font-bold text-lg select-none">{title}</span>
+            <span className="font-medium select-none">{title}</span>
           )}
           <div className="flex-1"></div>
           <IconButton onClick={onClose}>閉じる</IconButton>
         </div>
 
-        <div className="flex-1">
+        <div className="flex-1 p-1 overflow-auto">
           {children}
         </div>
 
