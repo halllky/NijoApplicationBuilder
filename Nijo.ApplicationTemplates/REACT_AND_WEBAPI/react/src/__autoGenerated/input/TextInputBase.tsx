@@ -103,7 +103,9 @@ export const TextInputBase = defineCustomComponent<string, {
 
     // コンボボックスではテキストにフォーカスが当たったままドロップダウンが展開されることがあるため
     // blur先がdivの外に移った時に強制的にドロップダウンを閉じる
-    if (divRef.current && e.relatedTarget && !divRef.current.contains(e.relatedTarget)) {
+    if (e.target === divRef.current
+      && e.relatedTarget
+      && !divRef.current.contains(e.relatedTarget)) {
       setOpen(false)
     }
 
