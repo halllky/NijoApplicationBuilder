@@ -184,6 +184,10 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
         </tbody>
       </table>
 
+      {/* 末尾の行をスクロールエリア内の最上部までスクロールできるようにするための余白。 */}
+      {/* 4remは ヘッダ2行 + ボディ1行 + スクロールバー の縦幅のおおよその合計。 */}
+      <div className="h-[calc(100%-4rem)]"></div>
+
       {isActive && !editing && (
         <ActiveCellBorder api={api} {...activeCellBorderProps} />
       )}
