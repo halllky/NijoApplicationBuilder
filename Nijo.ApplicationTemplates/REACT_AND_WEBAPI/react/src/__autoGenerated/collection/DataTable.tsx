@@ -117,7 +117,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       tabIndex={0}
     >
       <table
-        className="border-separate border-spacing-0 border-b border-1 border-color-4"
+        className="border-separate border-spacing-0"
         style={{
           ...columnSizeVars,
           marginRight: tableWidth !== 'fit' ? '50%' : undefined,
@@ -168,7 +168,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
               {row.getVisibleCells().filter(c => !(c.column.columnDef as ColumnDefEx<T>).hidden).map(cell => (
                 <td key={cell.id}
                   ref={td => caretTdRefCallback(td, cell)}
-                  className="relative overflow-hidden p-0 border-r border-1 border-color-4"
+                  className="relative overflow-hidden align-top p-0 border-r border-b border-1 border-color-4"
                   style={getTdStickeyStyle(false)}
                   onMouseDown={e => selectObject({ target: 'cell', cell: { rowIndex: cell.row.index, colId: cell.column.id }, shiftKey: e.shiftKey })}
                   onDoubleClick={() => cellEditorRef.current?.startEditing(cell)}
