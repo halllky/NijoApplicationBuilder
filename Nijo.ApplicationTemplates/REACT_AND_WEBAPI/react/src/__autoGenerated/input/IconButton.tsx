@@ -36,7 +36,7 @@ export const IconButton = (args: {
       {args.icon && React.createElement(args.icon, { className: 'w-4' })}
 
       {!args.hideText && args.children && (
-        <span className="text-sx">
+        <span className="text-xs">
           {args.children}
         </span>
       )}
