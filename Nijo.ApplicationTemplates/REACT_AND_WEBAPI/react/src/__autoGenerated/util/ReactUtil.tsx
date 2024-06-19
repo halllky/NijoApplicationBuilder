@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useReducer } from "react"
+import { useBeforeUnload } from "react-router-dom"
 
 // useReducerの簡略化
 type ReducerDef<S, M extends StateModifier<S>> = (state: S) => M
@@ -181,3 +182,12 @@ const selectionReducer = defineReducer((state: SelectionState) => ({
     isSelected: () => true,
   }),
 }))
+
+// --------------------------------------------------
+/** ページ離脱時の確認メッセージ */
+export const usePageOutPrompt = (block: boolean = true) => {
+  const handleBeforeUnload = useCallback((e: BeforeUnloadEvent) => {
+    if (block) e.preventDefault()
+  }, [block])
+  useBeforeUnload(handleBeforeUnload)
+}
