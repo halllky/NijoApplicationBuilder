@@ -128,7 +128,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
         {tableWidth !== 'fit' && (
           <colgroup>
             {getLast(api.getHeaderGroups()).headers.map(header => (
-              <col key={header.id} style={{ width: getColWidth(header) }} />
+              <col key={header.id} style={{ width: getColWidth(header.column) }} />
             ))}
           </colgroup>
         )}
@@ -169,7 +169,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
                 <td key={cell.id}
                   ref={td => caretTdRefCallback(td, cell)}
                   className="relative overflow-hidden align-top p-0 border-r border-b border-1 border-color-4"
-                  style={getTdStickeyStyle(false)}
+                  style={{ ...getTdStickeyStyle(false), maxWidth: getColWidth(cell.column) }}
                   onMouseDown={e => selectObject({ target: 'cell', cell: { rowIndex: cell.row.index, colId: cell.column.id }, shiftKey: e.shiftKey })}
                   onDoubleClick={() => cellEditorRef.current?.startEditing(cell)}
                 >

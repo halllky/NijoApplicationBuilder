@@ -26,8 +26,8 @@ export const useColumnResizing = <T,>(api: RT.Table<T>) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api.getState().columnSizingInfo])
 
-  const getColWidth = useCallback((header: RT.Header<T, unknown>) => {
-    return `calc(var(--header-${header?.id}-size) * 1px)`
+  const getColWidth = useCallback((column: RT.Column<T, unknown>) => {
+    return `calc(var(--header-${column.id}-size) * 1px)`
   }, [])
 
   const ResizeHandler = useCallback(({ header }: {
