@@ -83,7 +83,6 @@ namespace Nijo.Features.BatchUpdate {
                       defaultValue: (): BatchUpdateState => ({ items: [] }),
                       serialize: obj => JSON.stringify(obj),
                       deserialize: str => JSON.parse(str),
-                      noMessageOnSave: true,
                     })
 
                     const groupBy = <TItem, TKey>(arr: TItem[], fn: (t: TItem) => TKey): Map<TKey, TItem[]> => {

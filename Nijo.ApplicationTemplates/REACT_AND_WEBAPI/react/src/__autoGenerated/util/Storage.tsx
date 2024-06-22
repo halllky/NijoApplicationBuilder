@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useReducer, useState } from "react"
 import { defineContext } from "./ReactUtil"
-import { useMsgContext, useToastContext } from "./Notification"
+import { useMsgContext } from "./Notification"
 
 // ---------------------------------------
 // LocalStorage
@@ -9,7 +9,6 @@ export type LocalStorageHandler<T> = {
   serialize: (obj: T) => string
   deserialize: (str: string) => DeserializeResult<T>
   defaultValue: () => T
-  noMessageOnSave?: boolean
 }
 export type DeserializeResult<T>
   = { ok: true, obj: T }
@@ -54,18 +53,14 @@ export const defineStorageContext = <T,>(handler: LocalStorageHandler<T>) => {
   )
 
   const useLocalStorage = () => {
-    const [, dispatchToast] = useToastContext()
     const [cache, dispatchCache] = useCache()
 
     const save = useCallback((value: T) => {
       localStorage.setItem(
         handler.storageKey,
         handler.serialize(value))
-      if (!handler.noMessageOnSave) {
-        dispatchToast(msg => msg.info('保存しました。'))
-      }
       dispatchCache(state => state.setValue(value))
-    }, [dispatchToast, dispatchCache])
+    }, [dispatchCache])
 
     return { data: cache, save }
   }

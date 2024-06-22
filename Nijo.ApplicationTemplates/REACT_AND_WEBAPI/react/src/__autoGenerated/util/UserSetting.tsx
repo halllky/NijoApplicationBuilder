@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import * as Input from "../input";
 import { VerticalForm as VForm } from "../collection";
 import { useFormEx } from "./ReactHookFormUtil";
 import { defineStorageContext } from './Storage'
+import { useToastContext } from './Notification'
 
 export type UserSettings = {
   apiDomain?: string
@@ -27,11 +28,16 @@ export const [UserSettingContextProvider, useUserSetting] = defineStorageContext
 
 export const ServerSettingScreen = () => {
 
+  const [, dispatchToast] = useToastContext()
   const { data: appState, save } = useUserSetting()
   const { registerEx, handleSubmit } = useFormEx<UserSettings>({ defaultValues: appState })
+  const handleSave = useCallback((value: UserSettings) => {
+    save(value)
+    dispatchToast(msg => msg.info('保存しました。'))
+  }, [save, dispatchToast])
 
   return (
-    <form className="page-content-root" onSubmit={handleSubmit(save)}>
+    <form className="page-content-root" onSubmit={handleSubmit(handleSave)}>
       <VForm.Container>
         <VForm.Container label="基本設定">
           <VForm.Item label="ダークモード">
