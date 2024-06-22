@@ -1,10 +1,11 @@
 import React, { useCallback, useLayoutEffect, useRef } from 'react'
 import { IconButton } from '../input/IconButton'
 
-export const ModalDialog = ({ title, open, onClose, children }: {
+export const ModalDialog = ({ title, open, onClose, onKeyDown, children }: {
   title?: string
   open: boolean
   onClose: () => void
+  onKeyDown?: React.KeyboardEventHandler
   children?: React.ReactNode
 }) => {
 
@@ -30,6 +31,7 @@ export const ModalDialog = ({ title, open, onClose, children }: {
       ref={dialogRef}
       onClose={onClose}
       onClick={handleDialogClick}
+      onKeyDown={onKeyDown}
       className="absolute inset-12 w-auto h-auto border border-color-5 outline-none"
     >
       <div className="w-full h-full flex flex-col">
