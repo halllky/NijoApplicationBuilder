@@ -53,5 +53,7 @@ type AsyncComboColumnEditSetting<TRow, TOption = unknown> = {
 }
 
 export type DataTableRef<T> = {
+  focus: () => void
+  startEditing: () => void
   getSelectedRows: () => { row: T, rowIndex: number }[]
 }

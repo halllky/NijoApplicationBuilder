@@ -100,15 +100,24 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     }
   }, [handleSelectionKeyDown, propsKeyDown, clearSelectedRange])
 
+  const divRef = useRef<HTMLDivElement>(null)
   useImperativeHandle(ref, () => ({
+    focus: () => divRef.current?.focus(),
     getSelectedRows: () => getSelectedRows().map(row => ({
       row: row.original,
       rowIndex: row.index,
     })),
-  }), [getSelectedRows])
+    startEditing: () => {
+      if (!caretCell || !cellEditorRef.current) return
+      const row = api.getCoreRowModel().flatRows[caretCell.rowIndex]
+      const cell = row.getAllCells().find(cell => cell.column.id === caretCell.colId)
+      if (cell) cellEditorRef.current.startEditing(cell)
+    },
+  }), [getSelectedRows, divRef, cellEditorRef, api, caretCell])
 
   return (
     <div
+      ref={divRef}
       className={`outline-none overflow-x-auto overflow-y-scroll select-none relative bg-color-2 border border-1 border-color-4 z-0 ${className}`}
       onFocus={handleFocus}
       onBlur={handleBlur}
