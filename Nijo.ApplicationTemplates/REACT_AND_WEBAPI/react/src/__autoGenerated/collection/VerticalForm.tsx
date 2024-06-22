@@ -6,6 +6,7 @@ const Container = ({
   labelSide,
   leftColumnMinWidth: propsLeftColMinWidth,
   indentSizePx: propsIndentSizePx,
+  nowrap: propsNowrap,
   children,
   className,
 }: {
@@ -13,17 +14,20 @@ const Container = ({
   labelSide?: React.ReactNode
   leftColumnMinWidth?: string
   indentSizePx?: number
+  nowrap?: boolean
   children?: React.ReactNode
   className?: string
 }) => {
-  const { depth, indentSizePx, leftColumnMinWidth } = React.useContext(VFormContext)
+  const { depth, indentSizePx, nowrap: contextNowrap, leftColumnMinWidth } = React.useContext(VFormContext)
   const innerContextValue = React.useMemo<VFormContextValue>(() => ({
     depth: depth + 1,
     leftColumnMinWidth: propsLeftColMinWidth ?? leftColumnMinWidth,
     indentSizePx: propsIndentSizePx ?? indentSizePx,
-  }), [depth, propsLeftColMinWidth, leftColumnMinWidth, propsIndentSizePx, indentSizePx])
+    nowrap: propsNowrap ?? contextNowrap,
+  }), [depth, propsLeftColMinWidth, leftColumnMinWidth, propsIndentSizePx, propsNowrap, indentSizePx, contextNowrap])
 
   const isRoot = depth === 0
+  const nowrap = propsNowrap ?? contextNowrap
 
   return (
     <VFormContext.Provider value={innerContextValue}>
@@ -36,7 +40,7 @@ const Container = ({
         <div className="flex-1 flex bg-color-3">
           {!isRoot && <Indent className="bg-color-3" />}
           {/* なぜか width:0 （というよりwidthに明示的な値を）を指定しないとDataTableなど横長のコンテンツがページ外まで伸びてしまう */}
-          <div className={`w-0 flex-1 flex flex-wrap overflow-x-hidden ${isRoot && 'border-r border-b'} border-color-5`}>
+          <div className={`w-0 flex-1 flex overflow-x-hidden ${nowrap ? 'flex-col' : 'flex-wrap'} ${isRoot && 'border-r border-b'} border-color-5`}>
             {children}
           </div>
         </div>
@@ -53,7 +57,7 @@ const Item = ({ label, labelSide, wide, children, className }: {
   children?: React.ReactNode
   className?: string
 }) => {
-  const { depth, leftColumnMinWidth, indentSizePx } = React.useContext(VFormContext)
+  const { depth, leftColumnMinWidth, indentSizePx, nowrap } = React.useContext(VFormContext)
   const leftColumnStyle: React.CSSProperties = {
     minWidth: leftColumnMinWidth ? `calc(${leftColumnMinWidth} - ${depth * (indentSizePx ?? 24)}px)` : undefined,
   }
@@ -65,7 +69,7 @@ const Item = ({ label, labelSide, wide, children, className }: {
         {labelSide}
       </div >
     )}
-    <div className={`flex-1 ${(wide ? 'basis-full' : 'min-w-fit')} flex align-center overflow-x-hidden border-t border-l border-color-5 ${className}`}>
+    <div className={`${nowrap ? '' : 'flex-1'} ${(wide ? 'basis-full' : 'min-w-fit')} flex align-center overflow-x-hidden border-t border-l border-color-5 ${className}`}>
       {!wide && (label || labelSide) && (
         <div className="flex flex-col items-start gap-2 p-1 bg-color-3 border-r border-color-5" style={leftColumnStyle}>
           <LabelText>{label}</LabelText>
@@ -104,6 +108,7 @@ const Indent = ({ className }: {
 type VFormContextValuePublic = {
   leftColumnMinWidth?: string
   indentSizePx?: number
+  nowrap?: boolean
 }
 type VFormContextValue = VFormContextValuePublic & {
   depth: number
