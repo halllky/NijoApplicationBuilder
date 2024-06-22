@@ -140,8 +140,10 @@ namespace Nijo.Models {
             });
 
             // 一括アップデート
-            var batchUpdate = new BatchUpdateFeature();
-            batchUpdate.GenerateCode(context);
+            if (!context.Config.DisableBatchUpdate) {
+                var batchUpdate = new BatchUpdateFeature();
+                batchUpdate.GenerateCode(context);
+            }
         }
     }
 }

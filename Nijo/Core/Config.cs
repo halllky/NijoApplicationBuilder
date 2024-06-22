@@ -19,6 +19,10 @@ namespace Nijo.Core {
         public IEnumerable<string> OverridedApplicationServiceCodeForUnitTest { get; init; } = Enumerable.Empty<string>();
 
         /// <summary>
+        /// 一括登録APIを使用しない
+        /// </summary>
+        public required bool DisableBatchUpdate {  get; init; }
+        /// <summary>
         /// <see cref="Features.Storing.FindManyFeature"/> で検索上限件数が指定されなかった場合に自動的に件数を絞る制限を外す
         /// </summary>
         public required bool DiscardSearchLimit { get; init; }
@@ -33,6 +37,7 @@ namespace Nijo.Core {
 
         private const string DBCONTEXT_NAME = "DbContextName";
 
+        private const string DISABLE_BATCH_UPDATE = "DisableBatchUpdate";
         private const string DISCARD_SEARCH_LIMIT = "DiscardSearchLimit";
 
         internal const string REPLACE_OVERRIDED_APPLICATION_SERVICE_CODE_FOR_UNIT_TEST = "ReplaceOverridedApplicationServiceCodeForUnitTest";
@@ -42,6 +47,10 @@ namespace Nijo.Core {
 
             var configElement = new XElement(XML_CONFIG_SECTION_NAME);
             root.Add(configElement);
+
+            // 各種機能の有効無効
+            if (DisableBatchUpdate) root.SetAttributeValue(DISABLE_BATCH_UPDATE, "True");
+            if (DiscardSearchLimit) root.SetAttributeValue(DISCARD_SEARCH_LIMIT, "True");
 
             // セクション: 相対パス
             var outDirRelativePathElement = new XElement(SECTION_RELATIVE_PATHS);
@@ -76,6 +85,7 @@ namespace Nijo.Core {
 
             return new Config {
                 ApplicationName = xDocument.Root.Name.LocalName,
+                DisableBatchUpdate = xDocument.Root.Attribute(DISABLE_BATCH_UPDATE) != null,
                 DiscardSearchLimit = xDocument.Root.Attribute(DISCARD_SEARCH_LIMIT) != null,
                 DbContextName = configSection?.Element(DBCONTEXT_NAME)?.Value ?? "MyDbContext",
                 OverridedApplicationServiceCodeForUnitTest = overrridedCode,
