@@ -14,14 +14,14 @@ namespace Nijo.Features.BatchUpdate {
     partial class BatchUpdateFeature {
 
         #region WebAPIでリアルタイムで実行
-        internal static Controller GetController() => new Controller("BatchUpdate");
+        internal static Controller GetBatchUpdateController() => new Controller("BatchUpdate");
 
         private static SourceFile RenderController() {
             return new SourceFile {
                 FileName = "BatchUpdateController.cs",
                 RenderContent = context => {
                     var appSrv = new ApplicationService();
-                    var controller = GetController();
+                    var controller = GetBatchUpdateController();
 
                     return $$"""
                         namespace {{context.Config.RootNamespace}} {

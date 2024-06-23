@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 namespace Nijo.Features.BatchUpdate {
     partial class BatchUpdateFeature {
         private static SourceFile RenderReactHook(CodeRenderingContext context) {
+            var controller = GetBatchUpdateController();
             var availableAggregates = GetAvailableAggregatesOrderByDataFlow(context);
 
             return new SourceFile {
@@ -31,12 +32,22 @@ namespace Nijo.Features.BatchUpdate {
                     export default () => {
                       const [, dispatchMsg] = useMsgContext()
                       const { post } = useHttpRequest()
-                      return useCallback(async (commands: BatchUpdateItem[]) => {
-                        const res = await post(`/{{BackgroundService.BgTaskFeature.GetScheduleApiURL(context)}}/{{JOBKEY}}`, commands)
+
+                      const scheduleBatchUpdate = useCallback(async ({{PARAM_ITEMS}}: BatchUpdateItem[]) => {
+                        const res = await post(`/{{BackgroundService.BgTaskFeature.GetScheduleApiURL(context)}}/{{JOBKEY}}`, { {{PARAM_ITEMS}} })
                         if (!res.ok) {
                           dispatchMsg(msg => msg.error('一括更新に失敗しました。'))
                         }
                       }, [post, dispatchMsg])
+
+                      const batchUpdateImmediately = useCallback(async (Items: BatchUpdateItem[]) => {
+                        const res = await post(`/{{controller.SubDomain}}`, { {{PARAM_ITEMS}} })
+                        if (!res.ok) {
+                          dispatchMsg(msg => msg.error('一括更新に失敗しました。'))
+                        }
+                      }, [post, dispatchMsg])
+
+                      return { scheduleBatchUpdate, batchUpdateImmediately }
                     }
                     """,
             };
