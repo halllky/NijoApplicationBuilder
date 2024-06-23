@@ -34,7 +34,7 @@ namespace Nijo.Features.Storing {
         internal virtual string RenderCSharp(CodeRenderingContext ctx) {
             return $$"""
                 /// <summary>
-                /// {{_aggregate.Item.DisplayName}}のデータ1件の詳細を表すクラスです。
+                /// {{_aggregate.Item.DisplayName}}の登録・更新・削除用のデータ型
                 /// </summary>
                 public partial class {{CsClassName}} {
                 {{GetOwnMembers().SelectTextTemplate(prop => $$"""
@@ -51,6 +51,7 @@ namespace Nijo.Features.Storing {
 
         internal virtual string RenderTypeScript(CodeRenderingContext ctx) {
             return $$"""
+                /** {{_aggregate.Item.DisplayName}}の登録・更新・削除用のデータ型 */
                 export type {{TsTypeName}} = {
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
                   {{m.MemberName}}?: {{m.TypeScriptTypename}}
@@ -267,6 +268,7 @@ namespace Nijo.Features.Storing {
 
             var updateCommand = new DataClassForSave(_aggregate);
             return $$"""
+                /** 2件の{{updateCommand.TsTypeName}}の値が同等かを参照比較ではなく値比較で判定します。 */
                 export const {{DeepEqualTsFnName}} = (a: {{updateCommand.TsTypeName}}, b: {{updateCommand.TsTypeName}}): boolean => {
                   {{WithIndent(Render("a", "b", _aggregate), "  ")}}
 

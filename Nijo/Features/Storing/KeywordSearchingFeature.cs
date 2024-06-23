@@ -39,6 +39,9 @@ namespace Nijo.Features.Storing {
         internal string RenderController() {
             var controller = GetController();
             return $$"""
+                /// <summary>
+                /// 既存の{{_aggregate.Item.DisplayName}}をキーワードで一覧検索する Web API
+                /// </summary>
                 [HttpGet("{{GetActionName()}}")]
                 public virtual IActionResult SearchByKeyword{{_aggregate.Item.UniqueId}}([FromQuery] string? keyword) {
                     var items = _applicationService.{{AppServiceMeghodName}}(keyword);

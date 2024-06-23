@@ -66,6 +66,7 @@ namespace Nijo.Features.Storing {
                 .ToList();
 
             return $$"""
+                    /** 画面上で{{_instance.Item.DisplayName}}のオブジェクトが新しく作成されるタイミングで呼ばれる新規作成関数 */
                     export const {{FunctionName}} = (): {{new DataClassForSave(_instance).TsTypeName}} => ({
                     {{initializers.SelectTextTemplate(item => $$"""
                       {{item.Key}}: {{item.Value}},

@@ -26,6 +26,9 @@ namespace Nijo.Features.Storing {
             var param = new AggregateCreateCommand(_aggregate);
 
             return $$"""
+                /// <summary>
+                /// 新しい{{_aggregate.Item.DisplayName}}を作成する情報を受け取って登録する Web API
+                /// </summary>
                 [HttpPost("{{Parts.WebClient.Controller.CREATE_ACTION_NAME}}")]
                 public virtual IActionResult Create([FromBody] {{param.CsClassName}} param) {
                     if (_applicationService.{{MethodName}}(param, out var created, out var errors)) {
@@ -53,6 +56,9 @@ namespace Nijo.Features.Storing {
             var customize = new Customize(_aggregate);
 
             return $$"""
+                /// <summary>
+                /// 新しい{{_aggregate.Item.DisplayName}}を作成する情報を受け取って登録します。
+                /// </summary>
                 public virtual bool {{MethodName}}({{param.CsClassName}} command, out {{forDisplay.CsClassName}} created, out ICollection<string> errors) {
 
                     var beforeSaveEventArg = new BeforeCreateEventArgs<{{param.CsClassName}}> {
@@ -106,7 +112,7 @@ namespace Nijo.Features.Storing {
                 /// </summary>
                 protected virtual void {{customize.CreatingMethodName}}({{Customize.BEFORE_CREATE_EVENT_ARGS}}<{{param.CsClassName}}> arg) { }
                 /// <summary>
-                /// {{_aggregate.Item.DisplayName}}の新規登録SQL発効後、コミット前に実行されます。
+                /// {{_aggregate.Item.DisplayName}}の新規登録SQL発行後、コミット前に実行されます。
                 /// </summary>
                 protected virtual void {{customize.CreatedMethodName}}({{Customize.AFTER_CREATE_EVENT_ARGS}}<{{param.CsClassName}}> arg) { }
 

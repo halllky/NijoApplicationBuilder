@@ -39,6 +39,9 @@ namespace Nijo.Features.Storing {
 
         internal string RenderController() {
             return $$"""
+                /// <summary>
+                /// 既存の{{_aggregate.Item.DisplayName}}を一覧検索する Web API
+                /// </summary>
                 [HttpPost("{{ACTION_NAME}}")]
                 public virtual IActionResult Load([FromBody]{{GetConditionClassName(_aggregate)}}? {{PARAM_FILTER}}, [FromQuery] int? {{PARAM_SKIP}}, [FromQuery] int? {{PARAM_TAKE}}) {
                     var instances = _applicationService.{{FindMethodName}}({{PARAM_FILTER}}, {{PARAM_SKIP}}, {{PARAM_TAKE}});
@@ -325,6 +328,9 @@ namespace Nijo.Features.Storing {
                     }
 
                     return $$"""
+                        /// <summary>
+                        /// {{agg.Item.DisplayName}}の一覧検索条件
+                        /// </summary>
                         public class {{GetConditionClassName(agg)}} {
                         {{EnumerateSearchConditionOwnMembers(agg).SelectTextTemplate(m => $$"""
                             {{WithIndent(RenderMember(m), "    ")}}
@@ -353,6 +359,7 @@ namespace Nijo.Features.Storing {
                     }
 
                     return $$"""
+                        /** {{agg.Item.DisplayName}}の一覧検索条件 */
                         export type {{GetConditionClassName(agg)}} = {
                         {{EnumerateSearchConditionOwnMembers(agg).SelectTextTemplate(m => $$"""
                           {{WithIndent(RenderMember(m), "  ")}}

@@ -25,6 +25,9 @@ namespace Nijo.Features.Storing {
             var dataClass = new DataClassForSave(_aggregate);
 
             return $$"""
+                /// <summary>
+                /// 既存の{{_aggregate.Item.DisplayName}}を更新する Web API
+                /// </summary>
                 [HttpPost("{{Parts.WebClient.Controller.UPDATE_ACTION_NAME}}")]
                 public virtual IActionResult Update({{dataClass.CsClassName}} param) {
                     if (_applicationService.{{MethodName}}(param, out var updated, out var errors)) {
@@ -51,6 +54,9 @@ namespace Nijo.Features.Storing {
             var customize = new Customize(_aggregate);
 
             return $$"""
+                /// <summary>
+                /// 既存の{{_aggregate.Item.DisplayName}}を更新します。
+                /// </summary>
                 public virtual bool {{MethodName}}({{forSave.CsClassName}} after, out {{forDisplay.CsClassName}} updated, out ICollection<string> errors) {
                     errors = new List<string>();
 
@@ -125,7 +131,7 @@ namespace Nijo.Features.Storing {
                 /// </summary>
                 protected virtual void {{customize.UpdatingMethodName}}({{Customize.BEFORE_UPDATE_EVENT_ARGS}}<{{forSave.CsClassName}}> arg) { }
                 /// <summary>
-                /// {{_aggregate.Item.DisplayName}}の更新SQL発効後、コミット前に実行されます。
+                /// {{_aggregate.Item.DisplayName}}の更新SQL発行後、コミット前に実行されます。
                 /// </summary>
                 protected virtual void {{customize.UpdatedMethodName}}({{Customize.AFTER_UPDATE_EVENT_ARGS}}<{{forSave.CsClassName}}> arg) { }
 

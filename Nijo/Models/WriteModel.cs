@@ -84,7 +84,7 @@ namespace Nijo.Models {
                     }
                     builder.DataClassDeclaring.Add($$"""
                         /// <summary>
-                        /// {{aggregate.Item.DisplayName}}のデータベースに保存されるデータの形を表すクラスです。
+                        /// Entity Framework Core のルールに則った{{aggregate.Item.DisplayName}}のデータ型
                         /// </summary>
                         public partial class {{aggregate.Item.EFCoreEntityClassName}} {
                         {{aggregate.GetMembers().OfType<AggregateMember.ValueMember>().SelectTextTemplate(col => $$"""

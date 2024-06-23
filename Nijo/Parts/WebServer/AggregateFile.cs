@@ -45,6 +45,9 @@ namespace Nijo.Parts.WebServer {
                         using Microsoft.EntityFrameworkCore.Infrastructure;
                         using {{context.Config.EntityNamespace}};
 
+                        /// <summary>
+                        /// {{_aggregate.Item.DisplayName}}に関する Web API 操作を提供する ASP.NET Core のコントローラー
+                        /// </summary>
                         [ApiController]
                         [Route("{{Parts.WebClient.Controller.SUBDOMAIN}}/[controller]")]
                         public partial class {{controller.ClassName}} : ControllerBase {

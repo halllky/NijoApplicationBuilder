@@ -50,6 +50,9 @@ namespace Nijo.Features.Storing {
             }
 
             return $$"""
+                /// <summary>
+                /// ほかの集約が{{_aggregate.Item.DisplayName}}を参照するときに必要になる、どの{{_aggregate.Item.DisplayName}}を指し示すかのキー情報。
+                /// </summary>
                 public class {{CSharpClassName}} {
                 {{GetOwnMembers().SelectTextTemplate(member => $$"""
                     {{GetAnnotations(member)}}

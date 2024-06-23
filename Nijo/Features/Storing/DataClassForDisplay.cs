@@ -350,6 +350,9 @@ namespace Nijo.Features.Storing {
                         {{WithIndent(dataClass.RenderFromDbEntity(), "    ")}}
                     """)}}
                     }
+                    /// <summary>
+                    /// {{agg.Item.DisplayName}}の画面表示用データのうち{{agg.Item.DisplayName}}自身の属性
+                    /// </summary>
                     public class {{dataClass.CsClassName}}OwnMembers {
                     {{dataClass.GetOwnProps().SelectTextTemplate(p => $$"""
                         public {{p.CsPropType}}? {{p.PropName}} { get; set; }

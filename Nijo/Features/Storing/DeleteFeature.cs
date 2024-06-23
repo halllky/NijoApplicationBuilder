@@ -24,6 +24,9 @@ namespace Nijo.Features.Storing {
             var dataClass = new DataClassForSave(_aggregate);
 
             return $$"""
+                /// <summary>
+                /// 既存の{{_aggregate.Item.DisplayName}}を削除する Web API
+                /// </summary>
                 [HttpDelete("{{Parts.WebClient.Controller.DELETE_ACTION_NAME}}")]
                 public virtual IActionResult Delete({{dataClass.CsClassName}} param) {
                     if (_applicationService.{{MethodName}}(param, out var errors)) {
@@ -47,6 +50,9 @@ namespace Nijo.Features.Storing {
             var customize = new Customize(_aggregate);
 
             return $$"""
+                /// <summary>
+                /// 既存の{{_aggregate.Item.DisplayName}}を削除します。
+                /// </summary>
                 public virtual bool {{MethodName}}({{dataClass.CsClassName}} data, out ICollection<string> errors) {
 
                     var beforeSaveEventArg = new BeforeDeleteEventArgs<{{dataClass.CsClassName}}> {
@@ -103,7 +109,7 @@ namespace Nijo.Features.Storing {
                 protected virtual void {{customize.DeletingMethodName}}({{Customize.BEFORE_DELETE_EVENT_ARGS}}<{{dataClass.CsClassName}}> arg) { }
                 
                 /// <summary>
-                /// {{_aggregate.Item.DisplayName}}の削除SQL発効後、コミット前に実行されます。
+                /// {{_aggregate.Item.DisplayName}}の削除SQL発行後、コミット前に実行されます。
                 /// </summary>
                 protected virtual void {{customize.DeletedMethodName}}({{Customize.AFTER_DELETE_EVENT_ARGS}}<{{dataClass.CsClassName}}> arg) { }
 

@@ -162,7 +162,7 @@ namespace Nijo.Features.Storing {
 
                 // ----------------------- {{CsClassName}} -----------------------
                 /// <summary>
-                /// {{RefTo.Item.DisplayName}}を参照する他のデータの画面上に表示される{{RefTo.Item.DisplayName}}のデータ型。
+                /// 他のデータが{{RefTo.Item.DisplayName}}を参照している場合に、その参照元のデータの画面上に表示される{{RefTo.Item.DisplayName}}のデータ型。
                 /// </summary>
                 public partial class {{CsClassName}} {
                     /// <summary>
@@ -176,6 +176,9 @@ namespace Nijo.Features.Storing {
                     {{WithIndent(RenderFromDbEntity(), "    ")}}
                 }
                 {{subAggregates.SelectTextTemplate(rm => $$"""
+                /// <summary>
+                /// <see cref="{{CsClassName}}"/> の一部分
+                /// </summary>
                 public partial class {{CsClassName}}_{{rm.GetFullPath().Join("_")}} {
                     {{WithIndent(RenderBody(rm.MemberAggregate), "    ")}}
                 }

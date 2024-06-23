@@ -37,6 +37,9 @@ namespace Nijo.Features.Storing {
             var controller = new Parts.WebClient.Controller(_aggregate.Item);
 
             return $$"""
+                /// <summary>
+                /// 既存の{{_aggregate.Item.DisplayName}}をキーで1件検索する Web API
+                /// </summary>
                 [HttpGet("{{ACTION_NAME}}/{{keys.Select(m => "{" + m.MemberName + "}").Join("/")}}")]
                 public virtual IActionResult Find({{keys.Select(m => $"{m.CSharpTypeName}? {m.MemberName}").Join(", ")}}) {
                 {{keys.SelectTextTemplate(m => $$"""
