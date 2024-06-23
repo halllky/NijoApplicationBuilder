@@ -17,6 +17,7 @@ namespace Nijo.Parts.Utility {
         internal const string TO_JSON = "ToJson";
         internal const string PARSE_JSON = "ParseJson";
         internal const string ENSURE_OBJECT_TYPE = "EnsureObjectType";
+        internal const string TRY_PARSE_AS_OBJECT_TYPE = "TryParseAsObjectType";
         internal const string PARSE_JSON_AS_OBJARR = "ParseJsonAsObjectArray";
 
         private const string CUSTOM_CONVERTER_NAMESPACE = "CustomJsonConverters";
@@ -101,6 +102,19 @@ namespace Nijo.Parts.Utility {
                                 if (obj == null) return Activator.CreateInstance(type) ?? throw new ArgumentException(nameof(type));
                                 var json = obj as string ?? {{TO_JSON}}(obj);
                                 return {{PARSE_JSON}}(json, type);
+                            }
+                            /// <summary>
+                            /// JSONから復元されたオブジェクトを事後的に特定の型として扱いたいときに用いる
+                            /// </summary>
+                            public static bool {{TRY_PARSE_AS_OBJECT_TYPE}}<T>(object? obj, out T parsed) where T : new() {
+                                try {
+                                    var json = obj as string ?? {{TO_JSON}}(obj);
+                                    parsed = {{PARSE_JSON}}<T>(json);
+                                    return true;
+                                } catch {
+                                    parsed = new();
+                                    return false;
+                                }
                             }
                         }
                     }

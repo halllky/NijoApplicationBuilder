@@ -13,9 +13,17 @@ namespace Nijo.Features.BatchUpdate {
     partial class BatchUpdateFeature {
         private const string JOBKEY = "NIJO-BATCH-UPDATE";
 
+        private const string PARAM_ITEMS = "Items";
+        private const string PARAM_DATATYPE = "DataType";
+        private const string PARAM_ACTION = "Action";
+        private const string PARAM_DATA = "Data";
+
+        private const string ACTION_ADD = "ADD";
+        private const string ACTION_MODIFY = "MOD";
+        private const string ACTION_DELETE = "DEL";
+
         private static SourceFile RenderTaskDefinition(CodeRenderingContext context) {
             var appSrv = new ApplicationService();
-            var availableAggregates = GetAvailableAggregates(context).ToArray();
 
             return new SourceFile {
                 FileName = "BatchUpdateTask.cs",
@@ -23,111 +31,43 @@ namespace Nijo.Features.BatchUpdate {
                     namespace {{context.Config.RootNamespace}} {
                         using System.Text.Json;
 
-                        public class BatchUpdateParameter {
-                            public string? DataType { get; set; }
-                            public List<BatchUpdateData>? Items { get; set; } = new();
-                        }
-                        public class BatchUpdateData {
-                            public E_BatchUpdateAction? Action { get; set; }
-                            public object? Data { get; set; }
-                        }
-                        public enum E_BatchUpdateAction {
-                            Add,
-                            Modify,
-                            Delete,
-                        }
-
-                        public class BatchUpdateTask : BackgroundTask<BatchUpdateParameter> {
+                        public class BatchUpdateTask : BackgroundTask<BatchUpdateFeature.Parameter> {
                             public override string BatchTypeId => "{{JOBKEY}}";
 
-                            public override string GetJobName(BatchUpdateParameter param) {
-                                return $"一括アップデート（{param.DataType}）";
+                            public override string GetJobName(BatchUpdateFeature.Parameter param) {
+                                return $"一括アップデート（全{param.Items.Count}件）";
                             }
 
-                            public override IEnumerable<string> ValidateParameter(BatchUpdateParameter parameter) {
-                    {{availableAggregates.Select(agg => GetKey(agg)).SelectTextTemplate(key => $$"""
-                                if (parameter.DataType == "{{key}}") yield break;
-                    """)}}
-                                yield return $"識別子 '{parameter.DataType}' と対応する一括更新処理はありません。";
+                            public override IEnumerable<string> ValidateParameter(BatchUpdateFeature.Parameter parameter) {
+                                BatchUpdateFeature.TryCreate(parameter, out var _, out var errors);
+                                foreach (var error in errors) {
+                                    yield return error;
+                                }
                             }
 
-                            public override void Execute(JobChainWithParameter<BatchUpdateParameter> job) {
+                            public override void Execute(JobChainWithParameter<BatchUpdateFeature.Parameter> job) {
                                 job.Section("更新処理実行", context => {
-                                    switch (context.Parameter.DataType) {
-                    {{availableAggregates.SelectTextTemplate(agg => $$"""
-                                        case "{{GetKey(agg)}}": {{UpdateMethodName(agg)}}(context); break;
-                    """)}}
-                                        default: throw new InvalidOperationException($"識別子 '{context.Parameter.DataType}' と対応する一括更新処理はありません。");
+                                    if (!BatchUpdateFeature.TryCreate(context.Parameter, out var command, out var errors)) {
+                                        throw new InvalidOperationException($"パラメータが不正です。{Environment.NewLine}{string.Join(Environment.NewLine, errors)}");
+                                    }
+
+                                    using var tran = context.DbContext.Database.BeginTransaction();
+                                    try {
+                                        if (!command.Execute(context.AppSrv, out var errors2)) {
+                                            throw new InvalidOperationException($"一括更新に失敗しました。{Environment.NewLine}{string.Join(Environment.NewLine, errors2)}");
+                                        }
+                                        tran.Commit();
+
+                                    } catch {
+                                        tran.Rollback();
+                                        throw;
                                     }
                                 });
                             }
-                    {{availableAggregates.SelectTextTemplate(agg => $$"""
-
-                            {{WithIndent(RenderUpdateMethod(agg, context), "        ")}}
-                    """)}}
                         }
                     }
                     """,
             };
-        }
-
-        private static string RenderUpdateMethod(GraphNode<Aggregate> agg, CodeRenderingContext context) {
-            var appSrv = new ApplicationService().ClassName;
-            var create = new Features.Storing.CreateFeature(agg);
-            var update = new Features.Storing.UpdateFeature(agg);
-            var delete = new Features.Storing.DeleteFeature(agg);
-
-            return $$"""
-                private void {{UpdateMethodName(agg)}}(BackgroundTaskContext<BatchUpdateParameter> context) {
-                    if (context.Parameter.Items == null || context.Parameter.Items.Count == 0) {
-                        context.Logger.LogWarning("パラメータが０件です。");
-                        return;
-                    }
-                    for (int i = 0; i < context.Parameter.Items.Count; i++) {
-                        using var logScope = context.Logger.BeginScope($"{i + 1}件目");
-                        try {
-                            var item = context.Parameter.Items[i];
-                            if (item.Action == null) throw new InvalidOperationException("登録・更新・削除のいずれかを指定してください。");
-                            if (item.Data == null) throw new InvalidOperationException("データが空です。");
-
-                            using var serviceScope = context.ServiceProvider.CreateScope();
-                            var scopedAppSrv = serviceScope.ServiceProvider.GetRequiredService<{{appSrv}}>();
-
-                            ICollection<string> errors;
-                            switch (item.Action) {
-                                case E_BatchUpdateAction.Add:
-                                    var cmd = {{UtilityClass.CLASSNAME}}.{{UtilityClass.ENSURE_OBJECT_TYPE}}<{{create.ArgType}}>(item.Data)
-                                        ?? throw new InvalidOperationException($"パラメータを{nameof({{create.ArgType}})}型に変換できません。");
-                                    if (!scopedAppSrv.{{create.MethodName}}(cmd, out var _, out errors))
-                                        throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
-                                    break;
-                                case E_BatchUpdateAction.Modify:
-                                    var updateData = {{UtilityClass.CLASSNAME}}.{{UtilityClass.ENSURE_OBJECT_TYPE}}<{{update.ArgType}}>(item.Data)
-                                        ?? throw new InvalidOperationException($"パラメータを{nameof({{update.ArgType}})}型に変換できません。");
-                                    if (!scopedAppSrv.{{update.MethodName}}(updateData, out var _, out errors))
-                                        throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
-                                    break;
-                                case E_BatchUpdateAction.Delete:
-                                    var deleteData = {{UtilityClass.CLASSNAME}}.{{UtilityClass.ENSURE_OBJECT_TYPE}}<{{update.ArgType}}>(item.Data)
-                                        ?? throw new InvalidOperationException($"パラメータを{nameof({{update.ArgType}})}型に変換できません。");
-                                    if (!scopedAppSrv.{{delete.MethodName}}(deleteData, out errors))
-                                        throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
-                                    break;
-                                default:
-                                    throw new InvalidOperationException($"認識できない更新処理種別です: {item.Action}");
-                            }
-                        } catch (Exception ex) {
-                            context.Logger.LogError(ex, "更新処理に失敗しました。");
-                            continue;
-                        }
-                        context.Logger.LogInformation("正常終了");
-                    }
-                }
-                """;
-        }
-
-        private static string UpdateMethodName(GraphNode<Aggregate> aggregate) {
-            return "BatchUpdate" + aggregate.Item.PhysicalName;
         }
     }
 }

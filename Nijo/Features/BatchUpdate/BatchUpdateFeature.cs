@@ -14,9 +14,9 @@ namespace Nijo.Features.BatchUpdate {
         private static string GetKey(GraphNode<Aggregate> aggregate) {
             return aggregate.Item.PhysicalName;
         }
-        private static IEnumerable<GraphNode<Aggregate>> GetAvailableAggregates(CodeRenderingContext context) {
+        private static IEnumerable<GraphNode<Aggregate>> GetAvailableAggregatesOrderByDataFlow(CodeRenderingContext context) {
             return context.Schema
-                .RootAggregates()
+                .RootAggregatesOrderByDataFlow()
                 .Where(a => a.Item.Options.Handler == NijoCodeGenerator.Models.WriteModel.Key);
         }
 
@@ -27,14 +27,14 @@ namespace Nijo.Features.BatchUpdate {
 
             context.EditWebApiDirectory(dir => {
                 dir.Directory(App.ASP_UTIL_DIR, utilDir => {
+                    utilDir.Generate(RenderAppSrvMethod());
                     utilDir.Generate(RenderTaskDefinition(context));
-                    utilDir.Generate(RenderParamBuilder(context));
                 });
             });
 
             context.EditReactDirectory(dir => {
                 dir.Directory(App.REACT_UTIL_DIR, utilDir => {
-                    utilDir.Generate(TsHelper(context));
+                    utilDir.Generate(RenderReactHook(context));
                 });
             });
         }
