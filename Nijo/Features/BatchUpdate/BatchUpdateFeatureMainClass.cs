@@ -13,14 +13,9 @@ using System.Threading.Tasks;
 namespace Nijo.Features.BatchUpdate {
     partial class BatchUpdateFeature {
 
-        private const string APPSRV_METHOD_NAME = "BatchUpdate";
-
-        /// <summary>
-        /// 一括更新サービスメソッドを作成します。
-        /// </summary>
-        private static SourceFile RenderAppSrvMethod() {
+        private static SourceFile RenderMainClass() {
             return new SourceFile {
-                FileName = "BatchUpdate.cs",
+                FileName = "BatchUpdateFeature.cs",
                 RenderContent = context => {
                     var appSrv = new ApplicationService();
                     var aggregates = GetAvailableAggregatesOrderByDataFlow(context)
@@ -35,7 +30,7 @@ namespace Nijo.Features.BatchUpdate {
 
                     return $$"""
                         namespace {{context.Config.RootNamespace}} {
-                        
+
                             /// <summary>
                             /// 一括更新処理
                             /// </summary>
@@ -104,27 +99,27 @@ namespace Nijo.Features.BatchUpdate {
                                                 if (Util.{{UtilityClass.TRY_PARSE_AS_OBJECT_TYPE}}<{{agg.CreateCommand}}>(item.Data, out var parsed))
                                                     insert{{agg.PhysicalName}}.Add(parsed);
                                                 else
-                                                    errors.Add($"{i}件目:\tパラメータを{{agg.DisplayName}}データとして解釈できません => '{item.Data?.{{UtilityClass.TO_JSON}}()}'");
+                                                    errors.Add($"{i + 1}件目:\tパラメータを{{agg.DisplayName}}データとして解釈できません => '{item.Data?.{{UtilityClass.TO_JSON}}()}'");
 
                                             } else if (item.Action == E_ActionType.MOD) {
                                                 if (Util.{{UtilityClass.TRY_PARSE_AS_OBJECT_TYPE}}<{{agg.DataClass}}>(item.Data, out var parsed))
                                                     update{{agg.PhysicalName}}.Add(parsed);
                                                 else
-                                                    errors.Add($"{i}件目:\tパラメータを{{agg.DisplayName}}データとして解釈できません => '{item.Data?.{{UtilityClass.TO_JSON}}()}'");
+                                                    errors.Add($"{i + 1}件目:\tパラメータを{{agg.DisplayName}}データとして解釈できません => '{item.Data?.{{UtilityClass.TO_JSON}}()}'");
 
                                             } else if (item.Action == E_ActionType.DEL) {
                                                 if (Util.{{UtilityClass.TRY_PARSE_AS_OBJECT_TYPE}}<{{agg.DataClass}}>(item.Data, out var parsed))
                                                     delete{{agg.PhysicalName}}.Add(parsed);
                                                 else
-                                                    errors.Add($"{i}件目:\tパラメータを{{agg.DisplayName}}データとして解釈できません => '{item.Data?.{{UtilityClass.TO_JSON}}()}'");
+                                                    errors.Add($"{i + 1}件目:\tパラメータを{{agg.DisplayName}}データとして解釈できません => '{item.Data?.{{UtilityClass.TO_JSON}}()}'");
 
                                             } else {
-                                                errors.Add($"{i}件目:\t更新種別が不正です。");
+                                                errors.Add($"{i + 1}件目:\t更新種別が不正です。");
                                             }
 
                         """)}}
                                         } else {
-                                            errors.Add($"{i}件目:\tデータ種別が不正です。");
+                                            errors.Add($"{i + 1}件目:\tデータ種別が不正です。");
                                         }
 
                                         i++;
@@ -137,7 +132,7 @@ namespace Nijo.Features.BatchUpdate {
                                         Delete{{agg.PhysicalName}} = delete{{agg.PhysicalName}},
                         """)}}
                                     };
-                                    return errors.Count > 0;
+                                    return errors.Count == 0;
                                 }
 
                                 /// <summary>

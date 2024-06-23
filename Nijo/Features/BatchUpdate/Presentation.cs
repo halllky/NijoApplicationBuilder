@@ -8,9 +8,64 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Nijo.Parts.Utility;
+using Nijo.Parts.WebClient;
 
 namespace Nijo.Features.BatchUpdate {
     partial class BatchUpdateFeature {
+
+        #region WebAPIでリアルタイムで実行
+        internal static Controller GetController() => new Controller("BatchUpdate");
+
+        private static SourceFile RenderController() {
+            return new SourceFile {
+                FileName = "BatchUpdateController.cs",
+                RenderContent = context => {
+                    var appSrv = new ApplicationService();
+                    var controller = GetController();
+
+                    return $$"""
+                        namespace {{context.Config.RootNamespace}} {
+                            using Microsoft.AspNetCore.Mvc;
+
+                            [ApiController]
+                            [Route("{{Controller.SUBDOMAIN}}/[controller]")]
+                            public partial class {{controller.ClassName}} : ControllerBase {
+                                public {{controller.ClassName}}({{appSrv.ClassName}} applicationService) {
+                                    _applicationService = applicationService;
+                                }
+
+                                private readonly {{appSrv.ClassName}} _applicationService;
+
+                                [HttpPost("")]
+                                public virtual IActionResult Index([FromBody] BatchUpdateFeature.Parameter parameter) {
+                                    if (!BatchUpdateFeature.TryCreate(parameter, out var command, out var errors)) {
+                                        return BadRequest($"パラメータが不正です。{Environment.NewLine}{string.Join(Environment.NewLine, errors)}");
+                                    }
+
+                                    using var tran = _applicationService.DbContext.Database.BeginTransaction();
+                                    try {
+                                        if (!command.Execute(_applicationService, out var errors2)) {
+                                            tran.Rollback();
+                                            return Problem($"一括更新に失敗しました。{Environment.NewLine}{string.Join(Environment.NewLine, errors2)}");
+                                        }
+                                        tran.Commit();
+                                        return Ok();
+
+                                    } catch (Exception ex) {
+                                        tran.Rollback();
+                                        return Problem(ex.ToString());
+                                    }
+                                }
+                            }
+                        }
+                        """;
+                },
+            };
+        }
+        #endregion WebAPIでリアルタイムで実行
+
+
+        #region スケジューリングして非同期で実行
         private const string JOBKEY = "NIJO-BATCH-UPDATE";
 
         private const string PARAM_ITEMS = "Items";
@@ -22,9 +77,7 @@ namespace Nijo.Features.BatchUpdate {
         private const string ACTION_MODIFY = "MOD";
         private const string ACTION_DELETE = "DEL";
 
-        private static SourceFile RenderTaskDefinition(CodeRenderingContext context) {
-            var appSrv = new ApplicationService();
-
+        private static SourceFile RenderTaskDefinition() {
             return new SourceFile {
                 FileName = "BatchUpdateTask.cs",
                 RenderContent = context => $$"""
@@ -69,5 +122,6 @@ namespace Nijo.Features.BatchUpdate {
                     """,
             };
         }
+        #endregion スケジューリングして非同期で実行
     }
 }

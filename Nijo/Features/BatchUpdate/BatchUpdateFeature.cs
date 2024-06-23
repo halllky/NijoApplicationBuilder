@@ -27,8 +27,9 @@ namespace Nijo.Features.BatchUpdate {
 
             context.EditWebApiDirectory(dir => {
                 dir.Directory(App.ASP_UTIL_DIR, utilDir => {
-                    utilDir.Generate(RenderAppSrvMethod());
-                    utilDir.Generate(RenderTaskDefinition(context));
+                    utilDir.Generate(RenderMainClass());
+                    utilDir.Generate(RenderTaskDefinition());
+                    utilDir.Generate(RenderController());
                 });
             });
 
