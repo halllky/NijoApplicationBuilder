@@ -74,6 +74,15 @@ namespace Nijo.Parts {
                                     // 前述AddCorsの設定をするならこちらも必要
                                     app.UseCors();
 
+                                    // 開発環境ではReactのサーバーとASP.NETのサーバーが別々に起動するので特別な設定は不要だが、
+                                    // 実働環境ではReactのソースは静的なhtml, js, css ファイルにバンドルされ、ASP.NETのサーバーのみが起動し、
+                                    // ASP.NET のプロセスが当該静的ファイルを返す必要がある
+                                    if (app.Environment.IsProduction()) {
+                                        app.UseStaticFiles();
+                                        app.UseDefaultFiles();
+                                        app.MapFallbackToFile("index.html");
+                                    }
+
                                     {{WithIndent(ConfigureWebApp.SelectTextTemplate(fn => fn.Invoke("app")), "           ")}}
                                 }
 
