@@ -420,6 +420,77 @@ namespace Nijo.IntegrationTest {
             driver.SwitchTo().Alert().Accept();
         }
         #endregion Selenium, Web
+
+
+        #region nijo
+        /// <summary>
+        /// プログラマが自動生成後のプロジェクトのソースコードに手を加えるのと同等の操作を行います（バックエンド側）
+        /// </summary>
+        public static void AddCustomizeCSharpSource(this GeneratedProject project, E_SoruceAddPosition position, string sourceCode) {
+            var appSrv = new Nijo.Parts.WebServer.ApplicationService();
+            var sourceFilePath = Path.Combine(project.WebApiProjectRoot, appSrv.ConcreteClassFileName);
+
+            var write = false;
+            using (var fs = File.OpenRead(sourceFilePath))
+            using (var sr = new StreamReader(fs))
+            using (var sw = new StreamWriter("temp.cs", false, Encoding.UTF8)) {
+
+                // 編集済みソースを一時ファイルに出力
+                while (!sr.EndOfStream) {
+                    var line = sr.ReadLine();
+                    if (line == null) continue;
+
+                    sw.WriteLine(line);
+
+                    // 名前空間の内側に追記
+                    if (position == E_SoruceAddPosition.InNamespace
+                        && line.Contains("namespace 自動テストで作成されたプロジェクト {")) {
+
+                        sw.WriteLine($$"""
+
+                                {{WithIndent(sourceCode, "    ")}}
+
+                            """);
+                        write = true;
+                    }
+
+                    // コンストラクタの次の行にソース追加
+                    if (position == E_SoruceAddPosition.InAppSrvClass
+                        && line.Contains("public OverridedApplicationService(IServiceProvider serviceProvider) : base(serviceProvider) { }")) {
+
+                        sw.WriteLine($$"""
+
+                                    {{WithIndent(sourceCode, "        ")}}
+
+                            """);
+                        write = true;
+                    }
+                }
+
+                // 名前空間の外側に追記
+                if (position == E_SoruceAddPosition.OutOfNamespace) {
+                    sw.WriteLine();
+                    sw.WriteLine(sourceCode);
+                    sw.WriteLine();
+                    write = true;
+                }
+            }
+
+            // コンストラクタの行の表記が変更されるなどしてソース追加できなかった場合
+            if (!write) throw new InvalidOperationException($"{nameof(AddCustomizeCSharpSource)} メソッドのロジックを修正する必要あり");
+
+            // 一時ファイルを本来あるべき場所に移動
+            File.Move("temp.cs", sourceFilePath, overwrite: true);
+        }
+        public enum E_SoruceAddPosition {
+            /// <summary>OverridedApplicationService.cs ファイル内の名前空間の外側に追記</summary>
+            OutOfNamespace,
+            /// <summary>OverridedApplicationService.cs ファイル内の名前空間の内側に追記</summary>
+            InNamespace,
+            /// <summary>OverridedApplicationService.cs ファイル内のアプリケーションサービスクラスのクラス内に追記</summary>
+            InAppSrvClass,
+        }
+        #endregion nijo
     }
 }
 
