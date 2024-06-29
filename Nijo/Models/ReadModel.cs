@@ -92,7 +92,7 @@ namespace Nijo.Models {
                         <Input.Button onClick={handleRecalculateClick}>全件洗い替え(デバッグ用)</Input.Button>
                         """,
                 });
-                context.AddPage(editableMultiView);
+                context.ReactProject.AddPage(editableMultiView);
 
                 // Find & SingleView
                 var findFeature = new FindFeature(rootAggregate);
@@ -100,7 +100,7 @@ namespace Nijo.Models {
                 builder.AppServiceMethods.Add(findFeature.RenderAppSrvMethod());
 
                 var singleView = new SingleView(rootAggregate, SingleView.E_Type.View);
-                context.AddPage(singleView);
+                context.ReactProject.AddPage(singleView);
 
                 // データクラス定義を作成する
                 var singleViewDataClass = new DataClassForDisplay(rootAggregate);

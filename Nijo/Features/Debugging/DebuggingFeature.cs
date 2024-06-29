@@ -18,10 +18,8 @@ namespace Nijo.Features.Debugging {
                 controllerDir.Generate(DebuggerController.Render(context));
             });
 
-            context.EditReactDirectory(dir => {
-                dir.Directory(App.REACT_UTIL_DIR, reactUtilDir => {
-                    reactUtilDir.Generate(DummyDataGenerator.Render(context));
-                });
+            context.ReactProject.UtilDir(reactUtilDir => {
+                reactUtilDir.Generate(DummyDataGenerator.Render(context));
             });
         }
 

@@ -31,10 +31,8 @@ namespace Nijo.Features.BatchUpdate {
                 utilDir.Generate(RenderController());
             });
 
-            context.EditReactDirectory(dir => {
-                dir.Directory(App.REACT_UTIL_DIR, utilDir => {
-                    utilDir.Generate(RenderReactHook(context));
-                });
+            context.ReactProject.UtilDir(utilDir => {
+                utilDir.Generate(RenderReactHook(context));
             });
         }
     }
