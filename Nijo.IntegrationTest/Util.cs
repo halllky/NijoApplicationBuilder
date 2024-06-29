@@ -87,12 +87,11 @@ namespace Nijo.IntegrationTest {
                     "..",
                     "..",
                     "..",
-                    "Nijo.ApplicationTemplates",
-                    "REACT_AND_WEBAPI",
+                    "Nijo.ApplicationTemplate",
                     "react"));
                 var reactTemplateDirNodeModules = Path.Combine(
                     reactTemplateDir,
-                     "node_modules");
+                    "node_modules");
                 var testProjectNodeModules = Path.GetFullPath(Path.Combine(
                     project.WebClientProjectRoot,
                     "node_modules"));

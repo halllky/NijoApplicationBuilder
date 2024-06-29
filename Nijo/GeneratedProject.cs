@@ -109,10 +109,10 @@ namespace Nijo {
                     var resources = new Parts.EmbeddedResource.Collection(
                         Assembly.GetExecutingAssembly());
 
-                    foreach (var resource in resources.Enumerate("REACT_AND_WEBAPI", "react")) {
+                    foreach (var resource in resources.Enumerate("react")) {
                         var destination = Path.Combine(
                             tempProject.WebClientProjectRoot,
-                            Path.GetRelativePath("REACT_AND_WEBAPI/react", resource.RelativePath));
+                            Path.GetRelativePath("react", resource.RelativePath));
                         log?.LogInformation("From template : {0}", resource.RelativePath);
 
                         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
@@ -123,10 +123,10 @@ namespace Nijo {
                             writer.WriteLine(reader.ReadLine());
                         }
                     }
-                    foreach (var resource in resources.Enumerate("REACT_AND_WEBAPI", "webapi")) {
+                    foreach (var resource in resources.Enumerate("webapi")) {
                         var destination = Path.Combine(
                             tempProject.WebApiProjectRoot,
-                            Path.GetRelativePath("REACT_AND_WEBAPI/webapi", resource.RelativePath));
+                            Path.GetRelativePath("webapi", resource.RelativePath));
                         log?.LogInformation("From template : {0}", resource.RelativePath);
 
                         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
@@ -158,11 +158,11 @@ namespace Nijo {
                 using (var _ = log?.BeginScope("テンプレート中に登場するプロジェクト名を作成されるプロジェクト名に置換")) {
                     var programCs = Path.Combine(tempProject.WebApiProjectRoot, "Program.cs");
                     var beforeReplace = File.ReadAllText(programCs);
-                    var afterReplace = beforeReplace.Replace("REACT_AND_WEBAPI", config.RootNamespace);
+                    var afterReplace = beforeReplace.Replace("NIJO_APPLICATION_TEMPLATE", config.RootNamespace);
                     File.WriteAllText(programCs, afterReplace);
 
-                    var beforeCsproj = Path.Combine(tempProject.WebApiProjectRoot, "REACT_AND_WEBAPI.csproj");
-                    var afterCsproj = Path.Combine(tempProject.WebApiProjectRoot, $"{config.ApplicationName}.csproj");
+                    var beforeCsproj = Path.Combine(tempProject.WebApiProjectRoot, "NIJO_APPLICATION_TEMPLATE_WebApi.csproj");
+                    var afterCsproj = Path.Combine(tempProject.WebApiProjectRoot, $"{config.ApplicationName}_WebApi.csproj");
                     File.Move(beforeCsproj, afterCsproj);
                 }
 
