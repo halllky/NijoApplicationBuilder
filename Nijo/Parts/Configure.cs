@@ -19,8 +19,6 @@ namespace Nijo.Parts {
 
         internal static SourceFile Render(
             CodeRenderingContext _ctx,
-            IEnumerable<Func<string, string>> ConfigureServicesWhenWebServer,
-            IEnumerable<Func<string, string>> ConfigureWebApp,
             IEnumerable<Func<string, string>> ConfigureServicesWhenBatchProcess,
             IEnumerable<Func<string, string>> ConfigureServices) {
 
@@ -64,7 +62,7 @@ namespace Nijo.Parts {
                                         {{Utility.UtilityClass.CLASSNAME}}.{{Utility.UtilityClass.MODIFY_JSONOPTION}}(option.JsonSerializerOptions);
                                     });
 
-                                    {{WithIndent(ConfigureServicesWhenWebServer.SelectTextTemplate(fn => fn.Invoke("builder.Services")), "           ")}}
+                                    {{WithIndent(_ctx.WebApiProject.ConfigureServices.SelectTextTemplate(fn => fn.Invoke("builder.Services")), "           ")}}
                                 }
 
                                 /// <summary>
@@ -74,7 +72,7 @@ namespace Nijo.Parts {
                                     // 前述AddCorsの設定をするならこちらも必要
                                     app.UseCors();
 
-                                    {{WithIndent(ConfigureWebApp.SelectTextTemplate(fn => fn.Invoke("app")), "           ")}}
+                                    {{WithIndent(_ctx.WebApiProject.ConfigureWebApp.SelectTextTemplate(fn => fn.Invoke("app")), "           ")}}
                                 }
 
                                 /// <summary>

@@ -23,6 +23,7 @@ namespace Nijo {
     /// <summary>
     /// 自動生成されたプロジェクトに対する様々な操作を提供します。
     /// </summary>
+    /// TODO: 最終的にはこの下に4つのプロジェクトがぶら下がる形になるので名前がややこしい。GeneratedApplicationとする。
     public sealed partial class GeneratedProject {
 
         public static void ConfigureDefaultServices(IServiceCollection serviceDescriptors) {

@@ -25,12 +25,10 @@ namespace Nijo.Features.BatchUpdate {
 
         public void GenerateCode(CodeRenderingContext context) {
 
-            context.EditWebApiDirectory(dir => {
-                dir.Directory(App.ASP_UTIL_DIR, utilDir => {
-                    utilDir.Generate(RenderMainClass());
-                    utilDir.Generate(RenderTaskDefinition());
-                    utilDir.Generate(RenderController());
-                });
+            context.WebApiProject.UtilDir(utilDir => {
+                utilDir.Generate(RenderMainClass());
+                utilDir.Generate(RenderTaskDefinition());
+                utilDir.Generate(RenderController());
             });
 
             context.EditReactDirectory(dir => {

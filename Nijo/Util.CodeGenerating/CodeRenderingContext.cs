@@ -14,7 +14,9 @@ using System.Reflection;
 
 namespace Nijo.Util.CodeGenerating {
     public sealed class CodeRenderingContext {
-        internal CodeRenderingContext() { }
+        internal CodeRenderingContext(GeneratedProject app) {
+            WebApiProject = new WebApiProject.DirectoryEditor(this, app.WebApiProject);
+        }
 
         internal DirectorySetupper? _webapiDir;
         internal DirectorySetupper? _reactDir;
@@ -23,7 +25,9 @@ namespace Nijo.Util.CodeGenerating {
         public required AppSchema Schema { get; init; }
         public required NijoCodeGenerator.CodeGenerateOptions Options { get; init; }
 
-        public void EditWebApiDirectory(Action<DirectorySetupper> webapiDirHandler) => webapiDirHandler.Invoke(_webapiDir!);
+        /// <summary>自動生成される ASP.NET Core API プロジェクト</summary>
+        public WebApiProject.DirectoryEditor WebApiProject { get; }
+
         public void EditReactDirectory(Action<DirectorySetupper> reactDirHandler) => reactDirHandler.Invoke(_reactDir!);
 
         internal readonly App _app = new();
@@ -31,9 +35,7 @@ namespace Nijo.Util.CodeGenerating {
         // TODO: このへんのラッパーメソッドが冗長
         public void UseAggregateFile(GraphNode<Aggregate> aggregate, Action<AggregateFile> fn) => _app.Aggregate(aggregate, fn);
         public void ConfigureServices(Func<string, string> fn) => _app.ConfigureServices.Add(fn);
-        public void ConfigureServicesWhenWebServer(Func<string, string> fn) => _app.ConfigureServicesWhenWebServer.Add(fn);
         public void ConfigureServicesWhenBatchProcess(Func<string, string> fn) => _app.ConfigureServicesWhenBatchProcess.Add(fn);
-        public void ConfigureWebApp(Func<string, string> fn) => _app.ConfigureWebApp.Add(fn);
         public void AddPage(IReactPage page) => _app.ReactPages.Add(page);
         public void AddAppSrvMethod(string source) => _app.AppSrvMethods.Add(source);
 

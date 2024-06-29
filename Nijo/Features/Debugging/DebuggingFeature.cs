@@ -14,10 +14,8 @@ namespace Nijo.Features.Debugging {
 
         public void GenerateCode(CodeRenderingContext context) {
 
-            context.EditWebApiDirectory(dir => {
-                dir.Directory(App.ASP_CONTROLLER_DIR, controllerDir => {
-                    controllerDir.Generate(DebuggerController.Render(context));
-                });
+            context.WebApiProject.ControllerDir(controllerDir => {
+                controllerDir.Generate(DebuggerController.Render(context));
             });
 
             context.EditReactDirectory(dir => {

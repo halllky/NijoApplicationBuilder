@@ -66,7 +66,7 @@ namespace Nijo {
             _log?.LogInformation($"コード自動生成開始: {_project.SolutionRoot}");
 
             // コンテキスト生成
-            var ctx = new CodeRenderingContext {
+            var ctx = new CodeRenderingContext(_project) {
                 Config = _project.ReadConfig(),
                 Schema = _project.BuildSchema(),
                 Options = options ?? new(),

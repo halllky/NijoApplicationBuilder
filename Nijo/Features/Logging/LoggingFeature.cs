@@ -15,11 +15,9 @@ namespace Nijo.Features.Logging {
 
         public void GenerateCode(CodeRenderingContext context) {
 
-            context.EditWebApiDirectory(dir => {
-                dir.Directory(App.ASP_UTIL_DIR, utilDir => {
-                    utilDir.Generate(HttpResponseExceptionFilter.Render(context));
-                    utilDir.Generate(DefaultLogger.Render(context));
-                });
+            context.WebApiProject.UtilDir(utilDir => {
+                utilDir.Generate(HttpResponseExceptionFilter.Render(context));
+                utilDir.Generate(DefaultLogger.Render(context));
             });
 
         }
