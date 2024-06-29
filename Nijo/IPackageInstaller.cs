@@ -19,22 +19,7 @@ namespace Nijo {
     internal class PackageInstaller : IPackageInstaller {
         public async Task InstallDependencies(GeneratedProject project, CancellationToken cancellationToken) {
 
-            var npmCi = new Process();
-            try {
-                npmCi.StartInfo.WorkingDirectory = project.WebClientProjectRoot;
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                    npmCi.StartInfo.FileName = "powershell";
-                    npmCi.StartInfo.Arguments = "/c \"npm ci\"";
-                } else {
-                    npmCi.StartInfo.FileName = "npm";
-                    npmCi.StartInfo.Arguments = "ci";
-                }
-                npmCi.Start();
-                await npmCi.WaitForExitAsync(cancellationToken);
-
-            } finally {
-                npmCi.EnsureKill();
-            }
+            await project.ReactProject.NpmInstall(cancellationToken);
 
             // dotnetはビルド時に自動的にインストールされるので何もしない
         }

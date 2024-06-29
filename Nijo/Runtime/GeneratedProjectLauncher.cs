@@ -43,7 +43,7 @@ namespace Nijo.Runtime {
 
                 // npm run dev
                 _npmRun = new Process();
-                _npmRun.StartInfo.WorkingDirectory = _project.WebClientProjectRoot;
+                _npmRun.StartInfo.WorkingDirectory = _project.ReactProject.ProjectRoot;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                     _npmRun.StartInfo.FileName = "powershell";
                     _npmRun.StartInfo.Arguments = "/c \"npm run dev\"";

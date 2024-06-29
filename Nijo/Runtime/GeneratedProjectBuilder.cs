@@ -26,7 +26,7 @@ namespace Nijo.Runtime {
             var npmRun = new Process();
             var dotnetRun = new Process();
             try {
-                npmRun.StartInfo.WorkingDirectory = _project.WebClientProjectRoot;
+                npmRun.StartInfo.WorkingDirectory = _project.ReactProject.ProjectRoot;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                     npmRun.StartInfo.FileName = "powershell";
                     npmRun.StartInfo.Arguments = "/c \"npm run tsc\"";

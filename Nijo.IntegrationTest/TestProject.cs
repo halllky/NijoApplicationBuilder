@@ -113,7 +113,7 @@ namespace Nijo.IntegrationTest {
             try {
 
                 // トップページに移動する
-                var root = Current.GetDebuggingClientUrl();
+                var root = Current.ReactProject.GetDebuggingClientUrl();
                 driver.Navigate().GoToUrl(root);
 
                 return driver;

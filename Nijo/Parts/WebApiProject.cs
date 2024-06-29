@@ -60,14 +60,6 @@ namespace Nijo.Parts {
                 var afterReplace = beforeReplace.Replace("NIJO_APPLICATION_TEMPLATE", config.RootNamespace);
                 File.WriteAllText(file, afterReplace);
             }
-
-            // オーバーライド用のアプリケーションサービス具象クラスのファイルを作成
-            var overridedAppSrv = new WebServer.ApplicationService();
-            var overrideAppSrv = Path.Combine(ProjectRoot, overridedAppSrv.ConcreteClassFileName);
-            File.WriteAllText(overrideAppSrv, overridedAppSrv
-                .RenderConcreteClass(config)
-                /// TODO: <see cref="DirectorySetupper.Generate(SourceFile)"/> を使用していないのでわざわざ置換する必要がある
-                .Replace(SKIP_MARKER, string.Empty));
         }
 
         /// <summary>

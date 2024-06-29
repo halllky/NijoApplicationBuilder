@@ -137,7 +137,7 @@ namespace Nijo {
                         // 初回ビルド時はブラウザ立ち上げ
                         if (firstLaunch) {
                             try {
-                                var npmUrl = project.GetDebuggingClientUrl();
+                                var npmUrl = project.ReactProject.GetDebuggingClientUrl();
                                 var launchBrowser = new Process();
                                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                                     launchBrowser.StartInfo.FileName = "cmd";
