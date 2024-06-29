@@ -35,7 +35,7 @@ namespace Nijo.Features {
             var commandName = CommandName(rootAggregate);
             var actionName = ActionName(rootAggregate);
 
-            context.UseAggregateFile(rootAggregate, builder => {
+            context.CoreLibrary.UseAggregateFile(rootAggregate, builder => {
                 builder.DataClassDeclaring.Add(command.RenderCSharp(context));
 
                 builder.ControllerActions.Add(ControllerAction ?? $$"""

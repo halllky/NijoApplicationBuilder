@@ -17,10 +17,7 @@ namespace Nijo.Parts {
 
         internal static string GetClassFullname(Config config) => $"{config.RootNamespace}.{CLASSNAME}";
 
-        internal static SourceFile Render(
-            CodeRenderingContext _ctx,
-            IEnumerable<Func<string, string>> ConfigureServicesWhenBatchProcess,
-            IEnumerable<Func<string, string>> ConfigureServices) {
+        internal static SourceFile Render(CodeRenderingContext _ctx) {
 
             return new SourceFile {
                 FileName = "DefaultConfigurer.cs",
@@ -81,7 +78,7 @@ namespace Nijo.Parts {
                                 internal static void {{INIT_BATCH_PROCESS}}(this IServiceCollection services) {
                                     {{CONFIGURE_SERVICES}}(services);
 
-                                    {{WithIndent(ConfigureServicesWhenBatchProcess.SelectTextTemplate(fn => fn.Invoke("services")), "           ")}}
+                                    {{WithIndent(context.CliProject.ConfigureServices.SelectTextTemplate(fn => fn.Invoke("services")), "           ")}}
                                 }
 
                                 internal static void {{CONFIGURE_SERVICES}}(IServiceCollection services) {
@@ -122,7 +119,7 @@ namespace Nijo.Parts {
                                         return new {{DefaultLogger.CLASSNAME}}(setting.LogDirectory);
                                     });
 
-                                    {{WithIndent(ConfigureServices.SelectTextTemplate(fn => fn.Invoke("services")), "           ")}}
+                                    {{WithIndent(context.CoreLibrary.ConfigureServices.SelectTextTemplate(fn => fn.Invoke("services")), "           ")}}
                                 }
                             }
 

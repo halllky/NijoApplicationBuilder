@@ -15,7 +15,7 @@ namespace Nijo.Parts.WebServer {
         public string DbContext = "DbContext";
         public string CurrentTime = "CurrentTime";
 
-        internal SourceFile Render(CodeRenderingContext ctx, IEnumerable<string> methods) => new SourceFile {
+        internal SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
             FileName = FileName,
             RenderContent = context => $$"""
                 namespace {{ctx.Config.RootNamespace}} {
@@ -34,7 +34,7 @@ namespace Nijo.Parts.WebServer {
                         private DateTime? _currentTime;
                         public virtual DateTime {{CurrentTime}} => _currentTime ??= DateTime.Now;
 
-                        {{WithIndent(methods, "        ")}}
+                        {{WithIndent(ctx.CoreLibrary.AppSrvMethods, "        ")}}
                     }
                 }
                 """,

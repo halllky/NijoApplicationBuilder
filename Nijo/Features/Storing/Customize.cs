@@ -101,7 +101,7 @@ namespace Nijo.Features.Storing {
             });
 
             // 将来の変更容易性の確保のため、具象クラスは簡単に参照できないようにprivate宣言で作る
-            ctx.AddAppSrvMethod($$"""
+            ctx.CoreLibrary.AppSrvMethods.Add($$"""
                 #region 更新イベント引数
                 private class BeforeSaveEventArg {
                     public required bool IgnoreConfirm { get; init; }

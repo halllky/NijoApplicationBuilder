@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Nijo.Parts.WebClient {
     internal class DashBoard {
-        internal static SourceFile Generate(CodeRenderingContext context, App app) {
+        internal static SourceFile Generate(CodeRenderingContext context) {
 
             return new SourceFile {
                 FileName = "DashBoard.tsx",
@@ -16,7 +16,7 @@ namespace Nijo.Parts.WebClient {
                     import * as Util from '../util'
                     import * as Input from '../input'
                     import { VerticalForm as VForm } from '../collection'
-                    {{app.DashBoardImports.SelectTextTemplate(import => import)}}
+                    {{context.ReactProject.DashBoardImports.SelectTextTemplate(import => import)}}
 
                     /** DashBoard */
                     export default function () {
@@ -71,7 +71,7 @@ namespace Nijo.Parts.WebClient {
                             </VForm.Container>
                           )}
 
-                    {{app.DashBoardContents.SelectTextTemplate(source => $$"""
+                    {{context.ReactProject.DashBoardContents.SelectTextTemplate(source => $$"""
                           {{WithIndent(source, "      ")}}
 
                     """)}}

@@ -27,7 +27,7 @@ namespace Nijo.Models {
             createCommand.AppSrvMethod = createFeature.RenderAppSrvMethod();
             createCommand.GenerateCode(context, rootAggregate);
 
-            context.UseAggregateFile(rootAggregate, builder => {
+            context.CoreLibrary.UseAggregateFile(rootAggregate, builder => {
 
                 // AggregateDetail (for Find, Update, Delete)
                 var findFeature = new FindFeature(rootAggregate);

@@ -16,7 +16,7 @@ namespace Nijo.Models {
 
         void IModel.GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
 
-            context.UseAggregateFile(rootAggregate, builder => {
+            context.CoreLibrary.UseAggregateFile(rootAggregate, builder => {
 
                 // 洗い替え処理
                 // ※以下の理由からほぼなにも自動生成しない。オーバーライドして処理を自前実装する前提とする
