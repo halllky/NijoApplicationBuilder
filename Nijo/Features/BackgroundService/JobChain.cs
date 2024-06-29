@@ -11,10 +11,11 @@ namespace Nijo.Features.BackgroundService {
         private static SourceFile JobChainClass(CodeRenderingContext ctx) => new SourceFile {
             FileName = "JobChain.cs",
             RenderContent = context => $$"""
-                using System.Reflection;
-                using System.Text.Json;
-
                 namespace {{ctx.Config.RootNamespace}} {
+                    using Microsoft.Extensions.Logging;
+                    using System.Reflection;
+                    using System.Text.Json;
+
                     public class JobChain {
                         public JobChain(string jobId, Stack<string> currentSections, BackgroundTaskContextFactory contextFactory, CancellationToken cancellationToken) {
                             _jobId = jobId;

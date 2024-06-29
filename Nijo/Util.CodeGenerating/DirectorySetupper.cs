@@ -39,6 +39,9 @@ namespace Nijo.Util.CodeGenerating {
             var file = System.IO.Path.Combine(Path, sourceFile.FileName);
             _ctx.Handle(file);
 
+            var dir = System.IO.Path.GetDirectoryName(file);
+            if (dir != null && !System.IO.Directory.Exists(dir)) System.IO.Directory.CreateDirectory(dir);
+
             using var sw = SourceFile.GetStreamWriter(file);
 
             foreach (var line in sourceFile.RenderContent(_ctx).Split(Environment.NewLine)) {

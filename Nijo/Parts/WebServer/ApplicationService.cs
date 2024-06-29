@@ -15,10 +15,11 @@ namespace Nijo.Parts.WebServer {
         public string DbContext = "DbContext";
         public string CurrentTime = "CurrentTime";
 
-        internal SourceFile Render(CodeRenderingContext ctx, IEnumerable<string> methods) => new SourceFile {
+        internal SourceFile RenderToCoreLibrary() => new SourceFile {
             FileName = FileName,
-            RenderContent = context => $$"""
+            RenderContent = ctx => $$"""
                 namespace {{ctx.Config.RootNamespace}} {
+                    using Microsoft.Extensions.DependencyInjection;
                     using {{ctx.Config.DbContextNamespace}};
 
                     public partial class {{ClassName}} {
@@ -34,12 +35,11 @@ namespace Nijo.Parts.WebServer {
                         private DateTime? _currentTime;
                         public virtual DateTime {{CurrentTime}} => _currentTime ??= DateTime.Now;
 
-                        {{WithIndent(methods, "        ")}}
+                        {{WithIndent(ctx.CoreLibrary.AppSrvMethods, "        ")}}
                     }
                 }
                 """,
         };
-
 
         public string ConcreteClass => $"OverridedApplicationService";
         internal string ConcreteClassFileName => $"{ConcreteClass}.cs";

@@ -14,7 +14,6 @@ namespace Nijo.Features.BackgroundService {
         private static SourceFile Launcher(CodeRenderingContext ctx) => new SourceFile {
             FileName = "BackgroundTaskLauncher.cs",
             RenderContent = context => {
-                var appSrv = new ApplicationService();
                 var dbContextFullName = $"{ctx.Config.DbContextNamespace}.{ctx.Config.DbContextName}";
                 var dbSetName = ctx.Schema.GetAggregate(GraphNodeId).Item.DbSetName;
 
@@ -34,7 +33,7 @@ namespace Nijo.Features.BackgroundService {
 
                             protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
                                 var serviceCollection = new ServiceCollection();
-                                {{Configure.GetClassFullname(ctx.Config)}}.{{Configure.INIT_BATCH_PROCESS}}(serviceCollection);
+                                {{Configure.GetClassFullname(ctx.Config)}}.{{Configure.CONFIGURE_SERVICES}}(serviceCollection);
                                 var services = serviceCollection.BuildServiceProvider();
 
                                 var logger = services.GetRequiredService<ILogger>();
@@ -191,95 +190,6 @@ namespace Nijo.Features.BackgroundService {
                             }
                         }
                     }
-
-                    namespace {{ctx.Config.RootNamespace}} {
-                        public sealed class BackgroundTaskContextFactory {
-                            public BackgroundTaskContextFactory(DateTime startTime, IServiceProvider serviceProvider, string directory) {
-                                _startTime = startTime;
-                                _serviceProvider = serviceProvider;
-                                _directory = directory;
-                            }
-                            private readonly DateTime _startTime;
-                            private readonly IServiceProvider _serviceProvider;
-                            private readonly string _directory;
-
-                            public BackgroundTaskContext CraeteScopedContext(string jobId) {
-                                var scope = _serviceProvider.CreateScope();
-                                var dirName = $"{_startTime:yyyyMMddHHmmss}_{jobId}";
-                                var workingDirectory = Path.Combine(_directory, dirName);
-                                return new BackgroundTaskContext(scope, _startTime, workingDirectory);
-                            }
-                            public BackgroundTaskContext<TParameter> CraeteScopedContext<TParameter>(string jobId, TParameter parameter) {
-                                var scope = _serviceProvider.CreateScope();
-                                var dirName = $"{_startTime:yyyyMMddHHmmss}_{jobId}";
-                                var workingDirectory = Path.Combine(_directory, dirName);
-                                return new BackgroundTaskContext<TParameter>(parameter, scope, _startTime, workingDirectory);
-                            }
-                        }
-
-                        public class BackgroundTaskContext : IDisposable {
-                            public BackgroundTaskContext(IServiceScope serviceScope, DateTime startTime, string workingDirectory) {
-                                StartTime = startTime;
-                                WorkingDirectory = workingDirectory;
-                                _serviceScope = serviceScope;
-                            }
-
-                            private readonly IServiceScope _serviceScope;
-
-                            public DateTime StartTime { get; }
-                            public string WorkingDirectory { get; }
-
-                            public IServiceProvider ServiceProvider => _serviceScope.ServiceProvider;
-                            public ILogger Logger => ServiceProvider.GetRequiredService<ILogger>();
-                            public {{appSrv.ClassName}} AppSrv => ServiceProvider.GetRequiredService<{{appSrv.ClassName}}>();
-                            public {{dbContextFullName}} DbContext => ServiceProvider.GetRequiredService<{{dbContextFullName}}>();
-
-                            void IDisposable.Dispose() {
-                                _serviceScope.Dispose();
-                            }
-                        }
-                        public class BackgroundTaskContext<TParameter> : BackgroundTaskContext {
-                            public BackgroundTaskContext(TParameter parameter, IServiceScope serviceScope, DateTime startTime, string workingDirectory)
-                                : base(serviceScope, startTime, workingDirectory) {
-                                Parameter = parameter;
-                            }
-                            public TParameter Parameter { get; }
-                        }
-                    }
-
-                    namespace {{ctx.Config.EntityNamespace}} {
-                        public class {{ENTITY_CLASSNAME}} {
-                            [JsonPropertyName("id")]
-                            public string {{COL_ID}} { get; set; } = string.Empty;
-                            [JsonPropertyName("name")]
-                            public string {{COL_NAME}} { get; set; } = string.Empty;
-                            [JsonPropertyName("batchType")]
-                            public string {{COL_BATCHTYPE}} { get; set; } = string.Empty;
-                            [JsonPropertyName("parameter")]
-                            public string {{COL_PARAMETERJSON}} { get; set; } = string.Empty;
-                            [JsonPropertyName("state")]
-                            public {{ENUM_BGTASKSTATE}} {{COL_STATE}} { get; set; }
-                            [JsonPropertyName("requestTime")]
-                            public DateTime {{COL_REQUESTTIME}} { get; set; }
-                            [JsonPropertyName("startTime")]
-                            public DateTime? {{COL_STARTTIME}} { get; set; }
-                            [JsonPropertyName("finishTime")]
-                            public DateTime? {{COL_FINISHTIME}} { get; set; }
-
-                            public static void OnModelCreating(ModelBuilder modelBuilder) {
-                                modelBuilder.Entity<{{ENTITY_CLASSNAME}}>(e => {
-                                    e.HasKey(e => e.{{COL_ID}});
-                                });
-                            }
-                        }
-                    }
-
-                    namespace {{ctx.Config.DbContextNamespace}} {
-                        partial class {{ctx.Config.DbContextName}} {
-                            public virtual DbSet<{{ctx.Config.EntityNamespace}}.{{ENTITY_CLASSNAME}}> {{dbSetName}} { get; set; }
-                        }
-                    }
-
                     """;
             }
         };

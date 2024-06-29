@@ -43,7 +43,7 @@ namespace Nijo.Runtime {
 
                 // npm run dev
                 _npmRun = new Process();
-                _npmRun.StartInfo.WorkingDirectory = _project.WebClientProjectRoot;
+                _npmRun.StartInfo.WorkingDirectory = _project.ReactProject.ProjectRoot;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                     _npmRun.StartInfo.FileName = "powershell";
                     _npmRun.StartInfo.Arguments = "/c \"npm run dev\"";
@@ -65,7 +65,7 @@ namespace Nijo.Runtime {
 
                 // dotnet run
                 _dotnetRun = new Process();
-                _dotnetRun.StartInfo.WorkingDirectory = _project.WebApiProjectRoot;
+                _dotnetRun.StartInfo.WorkingDirectory = _project.WebApiProject.ProjectRoot;
                 _dotnetRun.StartInfo.FileName = "dotnet";
                 _dotnetRun.StartInfo.Arguments = "run --launch-profile https";
                 _dotnetRun.StartInfo.RedirectStandardOutput = true;

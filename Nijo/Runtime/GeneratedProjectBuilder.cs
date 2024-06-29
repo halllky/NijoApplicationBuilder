@@ -26,7 +26,7 @@ namespace Nijo.Runtime {
             var npmRun = new Process();
             var dotnetRun = new Process();
             try {
-                npmRun.StartInfo.WorkingDirectory = _project.WebClientProjectRoot;
+                npmRun.StartInfo.WorkingDirectory = _project.ReactProject.ProjectRoot;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                     npmRun.StartInfo.FileName = "powershell";
                     npmRun.StartInfo.Arguments = "/c \"npm run tsc\"";
@@ -46,7 +46,7 @@ namespace Nijo.Runtime {
                 npmRun.BeginErrorReadLine();
                 _logger.LogInformation("npm build   : Started. PID {PID}", npmRun.Id);
 
-                dotnetRun.StartInfo.WorkingDirectory = _project.WebApiProjectRoot;
+                dotnetRun.StartInfo.WorkingDirectory = _project.WebApiProject.ProjectRoot;
                 dotnetRun.StartInfo.FileName = "dotnet";
                 dotnetRun.StartInfo.Arguments = "build";
                 dotnetRun.StartInfo.RedirectStandardOutput = true;

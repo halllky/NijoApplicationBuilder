@@ -16,7 +16,7 @@ namespace Nijo.Models {
 
         void IModel.GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
 
-            context.UseAggregateFile(rootAggregate, builder => {
+            context.CoreLibrary.UseAggregateFile(rootAggregate, builder => {
 
                 // 洗い替え処理
                 // ※以下の理由からほぼなにも自動生成しない。オーバーライドして処理を自前実装する前提とする
@@ -92,7 +92,7 @@ namespace Nijo.Models {
                         <Input.Button onClick={handleRecalculateClick}>全件洗い替え(デバッグ用)</Input.Button>
                         """,
                 });
-                context.AddPage(editableMultiView);
+                context.ReactProject.AddPage(editableMultiView);
 
                 // Find & SingleView
                 var findFeature = new FindFeature(rootAggregate);
@@ -100,7 +100,7 @@ namespace Nijo.Models {
                 builder.AppServiceMethods.Add(findFeature.RenderAppSrvMethod());
 
                 var singleView = new SingleView(rootAggregate, SingleView.E_Type.View);
-                context.AddPage(singleView);
+                context.ReactProject.AddPage(singleView);
 
                 // データクラス定義を作成する
                 var singleViewDataClass = new DataClassForDisplay(rootAggregate);

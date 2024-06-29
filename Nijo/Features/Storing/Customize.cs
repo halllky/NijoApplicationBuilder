@@ -33,77 +33,75 @@ namespace Nijo.Features.Storing {
         internal static string AFTER_DELETE_EVENT_ARGS = "IAfterDeleteEventArgs";
 
         internal static void RenderBaseClasses(CodeRenderingContext ctx) {
-            ctx.EditWebApiDirectory(webapiDir => {
-                webapiDir.Directory(App.ASP_UTIL_DIR, utilDir => {
-                    utilDir.Generate(new SourceFile {
-                        FileName = $"SaveEventArgs.cs",
-                        RenderContent = ctx => {
-                            return $$"""
-                                namespace {{ctx.Config.RootNamespace}} {
+            ctx.CoreLibrary.UtilDir(utilDir => {
+                utilDir.Generate(new SourceFile {
+                    FileName = $"SaveEventArgs.cs",
+                    RenderContent = ctx => {
+                        return $$"""
+                            namespace {{ctx.Config.RootNamespace}} {
 
-                                    #region 更新前イベント引数
-                                    public interface IBeforeSaveEventArg {
-                                        /// <summary>
-                                        /// 更新処理を実行してもよいかどうかをユーザーに問いかけるメッセージを追加します。
-                                        /// ボタンの意味を統一してユーザーが混乱しないようにするため、
-                                        /// 「はい(Yes)」を選択したときに処理が続行され、
-                                        /// 「いいえ(No)」を選択したときに処理が中断されるような文言にしてください。
-                                        /// </summary>
-                                        void AddConfirm(string message);
+                                #region 更新前イベント引数
+                                public interface IBeforeSaveEventArg {
+                                    /// <summary>
+                                    /// 更新処理を実行してもよいかどうかをユーザーに問いかけるメッセージを追加します。
+                                    /// ボタンの意味を統一してユーザーが混乱しないようにするため、
+                                    /// 「はい(Yes)」を選択したときに処理が続行され、
+                                    /// 「いいえ(No)」を選択したときに処理が中断されるような文言にしてください。
+                                    /// </summary>
+                                    void AddConfirm(string message);
 
-                                        /// <summary>
-                                        /// trueの場合、 <see cref="AddConfirm" /> による警告があっても更新処理が続行されます。
-                                        /// 画面側で警告に対して「はい(Yes)」が選択されたあとのリクエストではこの値がtrueになります。
-                                        /// </summary>
-                                        bool IgnoreConfirm { get; }
+                                    /// <summary>
+                                    /// trueの場合、 <see cref="AddConfirm" /> による警告があっても更新処理が続行されます。
+                                    /// 画面側で警告に対して「はい(Yes)」が選択されたあとのリクエストではこの値がtrueになります。
+                                    /// </summary>
+                                    bool IgnoreConfirm { get; }
 
-                                        /// <summary>
-                                        /// エラーを追加します。更新処理は実行されなくなります。
-                                        /// </summary>
-                                        /// <param name="key">UI上で強調表示されるメンバーへのパス。HTMLのformのnameのルールに従ってください。</param>
-                                        void AddError(string key, string message);
-                                    }
-                                    public interface {{BEFORE_CREATE_EVENT_ARGS}}<TSaveCommand> : IBeforeSaveEventArg {
-                                        /// <summary>作成されるデータ</summary>
-                                        TSaveCommand Data { get; }
-                                    }
-                                    public interface {{BEFORE_UPDATE_EVENT_ARGS}}<TSaveCommand> : IBeforeSaveEventArg {
-                                        /// <summary>更新前データ</summary>
-                                        TSaveCommand Before { get; }
-                                        /// <summary>更新後データ</summary>
-                                        TSaveCommand After { get; }
-                                    }
-                                    public interface {{BEFORE_DELETE_EVENT_ARGS}}<TSaveCommand> : IBeforeSaveEventArg {
-                                        /// <summary>削除されるデータ</summary>
-                                        TSaveCommand Data { get; }
-                                    }
-                                    #endregion 更新前イベント引数
-
-                                    #region 更新後イベント引数
-                                    public interface {{AFTER_CREATE_EVENT_ARGS}}<TSaveCommand> {
-                                        /// <summary>作成されたデータ</summary>
-                                        TSaveCommand Created { get; }
-                                    }
-                                    public interface {{AFTER_UPDATE_EVENT_ARGS}}<TSaveCommand> {
-                                        /// <summary>更新前データ</summary>
-                                        TSaveCommand BeforeUpdate { get; }
-                                        /// <summary>更新後データ</summary>
-                                        TSaveCommand AfterUpdate { get; }
-                                    }
-                                    public interface {{AFTER_DELETE_EVENT_ARGS}}<TSaveCommand> {
-                                        /// <summary>削除されたデータ</summary>
-                                        TSaveCommand Deleted { get; }
-                                    }
-                                    #endregion 更新後イベント引数
+                                    /// <summary>
+                                    /// エラーを追加します。更新処理は実行されなくなります。
+                                    /// </summary>
+                                    /// <param name="key">UI上で強調表示されるメンバーへのパス。HTMLのformのnameのルールに従ってください。</param>
+                                    void AddError(string key, string message);
                                 }
-                                """;
-                        },
-                    });
+                                public interface {{BEFORE_CREATE_EVENT_ARGS}}<TSaveCommand> : IBeforeSaveEventArg {
+                                    /// <summary>作成されるデータ</summary>
+                                    TSaveCommand Data { get; }
+                                }
+                                public interface {{BEFORE_UPDATE_EVENT_ARGS}}<TSaveCommand> : IBeforeSaveEventArg {
+                                    /// <summary>更新前データ</summary>
+                                    TSaveCommand Before { get; }
+                                    /// <summary>更新後データ</summary>
+                                    TSaveCommand After { get; }
+                                }
+                                public interface {{BEFORE_DELETE_EVENT_ARGS}}<TSaveCommand> : IBeforeSaveEventArg {
+                                    /// <summary>削除されるデータ</summary>
+                                    TSaveCommand Data { get; }
+                                }
+                                #endregion 更新前イベント引数
+
+                                #region 更新後イベント引数
+                                public interface {{AFTER_CREATE_EVENT_ARGS}}<TSaveCommand> {
+                                    /// <summary>作成されたデータ</summary>
+                                    TSaveCommand Created { get; }
+                                }
+                                public interface {{AFTER_UPDATE_EVENT_ARGS}}<TSaveCommand> {
+                                    /// <summary>更新前データ</summary>
+                                    TSaveCommand BeforeUpdate { get; }
+                                    /// <summary>更新後データ</summary>
+                                    TSaveCommand AfterUpdate { get; }
+                                }
+                                public interface {{AFTER_DELETE_EVENT_ARGS}}<TSaveCommand> {
+                                    /// <summary>削除されたデータ</summary>
+                                    TSaveCommand Deleted { get; }
+                                }
+                                #endregion 更新後イベント引数
+                            }
+                            """;
+                    },
                 });
             });
 
             // 将来の変更容易性の確保のため、具象クラスは簡単に参照できないようにprivate宣言で作る
-            ctx.AddAppSrvMethod($$"""
+            ctx.CoreLibrary.AppSrvMethods.Add($$"""
                 #region 更新イベント引数
                 private class BeforeSaveEventArg {
                     public required bool IgnoreConfirm { get; init; }

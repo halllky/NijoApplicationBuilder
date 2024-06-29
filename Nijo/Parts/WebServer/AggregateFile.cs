@@ -26,9 +26,49 @@ namespace Nijo.Parts.WebServer {
         // react
         public List<string> TypeScriptDataTypes { get; } = new List<string>();
 
-        internal SourceFile Render(CodeRenderingContext context) {
+        internal SourceFile RenderWebApi() {
+            return new SourceFile {
+                FileName = $"{_aggregate.Item.DisplayName.ToFileNameSafe()}.cs",
+                RenderContent = context => {
+                    var appSrv = new ApplicationService();
+                    var controller = new Parts.WebClient.Controller(_aggregate.Item);
+
+                    return $$"""
+                        namespace {{context.Config.RootNamespace}} {
+                            using System;
+                            using System.Collections;
+                            using System.Collections.Generic;
+                            using System.ComponentModel;
+                            using System.ComponentModel.DataAnnotations;
+                            using System.Linq;
+                            using Microsoft.AspNetCore.Mvc;
+                            using Microsoft.EntityFrameworkCore;
+                            using Microsoft.EntityFrameworkCore.Infrastructure;
+                            using {{context.Config.EntityNamespace}};
+
+                            /// <summary>
+                            /// {{_aggregate.Item.DisplayName}}に関する Web API 操作を提供する ASP.NET Core のコントローラー
+                            /// </summary>
+                            [ApiController]
+                            [Route("{{Parts.WebClient.Controller.SUBDOMAIN}}/[controller]")]
+                            public partial class {{controller.ClassName}} : ControllerBase {
+                                public {{controller.ClassName}}(ILogger<{{controller.ClassName}}> logger, {{appSrv.ClassName}} applicationService) {
+                                    _logger = logger;
+                                    _applicationService = applicationService;
+                                }
+                                protected readonly ILogger<{{controller.ClassName}}> _logger;
+                                protected readonly {{appSrv.ClassName}} _applicationService;
+                        
+                                {{WithIndent(ControllerActions, "        ")}}
+                            }
+                        }
+                        """;
+                },
+            };
+        }
+
+        internal SourceFile RenderCoreLibrary() {
             var appSrv = new ApplicationService();
-            var controller = new Parts.WebClient.Controller(_aggregate.Item);
 
             return new SourceFile {
                 FileName = $"{_aggregate.Item.DisplayName.ToFileNameSafe()}.cs",
@@ -40,27 +80,9 @@ namespace Nijo.Parts.WebServer {
                         using System.ComponentModel;
                         using System.ComponentModel.DataAnnotations;
                         using System.Linq;
-                        using Microsoft.AspNetCore.Mvc;
                         using Microsoft.EntityFrameworkCore;
                         using Microsoft.EntityFrameworkCore.Infrastructure;
                         using {{context.Config.EntityNamespace}};
-
-                        /// <summary>
-                        /// {{_aggregate.Item.DisplayName}}に関する Web API 操作を提供する ASP.NET Core のコントローラー
-                        /// </summary>
-                        [ApiController]
-                        [Route("{{Parts.WebClient.Controller.SUBDOMAIN}}/[controller]")]
-                        public partial class {{controller.ClassName}} : ControllerBase {
-                            public {{controller.ClassName}}(ILogger<{{controller.ClassName}}> logger, {{appSrv.ClassName}} applicationService) {
-                                _logger = logger;
-                                _applicationService = applicationService;
-                            }
-                            protected readonly ILogger<{{controller.ClassName}}> _logger;
-                            protected readonly {{appSrv.ClassName}} _applicationService;
-
-                            {{WithIndent(ControllerActions, "        ")}}
-                        }
-
 
                         partial class {{appSrv.ClassName}} {
                             {{WithIndent(AppServiceMethods, "        ")}}

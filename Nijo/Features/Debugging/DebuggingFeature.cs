@@ -14,16 +14,12 @@ namespace Nijo.Features.Debugging {
 
         public void GenerateCode(CodeRenderingContext context) {
 
-            context.EditWebApiDirectory(dir => {
-                dir.Directory(App.ASP_CONTROLLER_DIR, controllerDir => {
-                    controllerDir.Generate(DebuggerController.Render(context));
-                });
+            context.WebApiProject.ControllerDir(controllerDir => {
+                controllerDir.Generate(DebuggerController.Render(context));
             });
 
-            context.EditReactDirectory(dir => {
-                dir.Directory(App.REACT_UTIL_DIR, reactUtilDir => {
-                    reactUtilDir.Generate(DummyDataGenerator.Render(context));
-                });
+            context.ReactProject.UtilDir(reactUtilDir => {
+                reactUtilDir.Generate(DummyDataGenerator.Render(context));
             });
         }
 

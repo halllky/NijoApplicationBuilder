@@ -20,13 +20,11 @@ namespace Nijo.Features {
 
         public void GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
             var createView = new SingleView(rootAggregate, SingleView.E_Type.Create);
-            context.AddPage(createView);
+            context.ReactProject.AddPage(createView);
 
-            context.EditReactDirectory(reactDir => {
-                reactDir.Directory("pages", pages => {
-                    pages.Directory(rootAggregate.Item.DisplayName.ToFileNameSafe(), aggregateDir => {
-                        aggregateDir.Generate(createView.Render());
-                    });
+            context.ReactProject.PagesDir(pages => {
+                pages.Directory(rootAggregate.Item.DisplayName.ToFileNameSafe(), aggregateDir => {
+                    aggregateDir.Generate(createView.Render());
                 });
             });
 
@@ -37,7 +35,7 @@ namespace Nijo.Features {
             var commandName = CommandName(rootAggregate);
             var actionName = ActionName(rootAggregate);
 
-            context.UseAggregateFile(rootAggregate, builder => {
+            context.CoreLibrary.UseAggregateFile(rootAggregate, builder => {
                 builder.DataClassDeclaring.Add(command.RenderCSharp(context));
 
                 builder.ControllerActions.Add(ControllerAction ?? $$"""

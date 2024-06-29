@@ -26,11 +26,11 @@ namespace Nijo.Runtime {
                 // この名前の環境ファイルはdevelopmentモードでのみ読み込まれる。またgitには無視される
                 const string FILENAME = ".env.development.local";
 
-                var filepath = Path.Combine(_generatedProject.WebClientProjectRoot, FILENAME);
+                var filepath = Path.Combine(_generatedProject.ReactProject.ProjectRoot, FILENAME);
                 var fileEncoding = new UTF8Encoding(false, false);
                 const string NEWLINE = "\n";
 
-                var url = _generatedProject.GetDebugUrl();
+                var url = _generatedProject.WebApiProject.GetDebugUrl();
 
                 if (!File.Exists(filepath)) {
                     var value = $"VITE_BACKEND_API={url}{NEWLINE}";

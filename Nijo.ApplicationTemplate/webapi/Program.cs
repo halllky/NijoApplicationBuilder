@@ -6,7 +6,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-REACT_AND_WEBAPI.DefaultConfigurer.InitWebHostBuilder(builder);
+NIJO_APPLICATION_TEMPLATE.DefaultConfigurationInWebApi.InitWebHostBuilder(builder);
 
 var app = builder.Build();
 
@@ -23,6 +23,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-REACT_AND_WEBAPI.DefaultConfigurer.InitWebApplication(app);
+NIJO_APPLICATION_TEMPLATE.DefaultConfigurationInWebApi.InitWebApplication(app);
 
 app.Run();

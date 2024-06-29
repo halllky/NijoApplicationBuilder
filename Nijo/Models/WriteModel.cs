@@ -27,7 +27,7 @@ namespace Nijo.Models {
             createCommand.AppSrvMethod = createFeature.RenderAppSrvMethod();
             createCommand.GenerateCode(context, rootAggregate);
 
-            context.UseAggregateFile(rootAggregate, builder => {
+            context.CoreLibrary.UseAggregateFile(rootAggregate, builder => {
 
                 // AggregateDetail (for Find, Update, Delete)
                 var findFeature = new FindFeature(rootAggregate);
@@ -122,21 +122,19 @@ namespace Nijo.Models {
             var detailView = new SingleView(rootAggregate, SingleView.E_Type.View);
             var editView = new SingleView(rootAggregate, SingleView.E_Type.Edit);
 
-            context.AddPage(editableMultiView);
-            context.AddPage(detailView);
-            context.AddPage(editView);
+            context.ReactProject.AddPage(editableMultiView);
+            context.ReactProject.AddPage(detailView);
+            context.ReactProject.AddPage(editView);
 
-            context.EditReactDirectory(reactDir => {
-                reactDir.Directory(App.REACT_PAGE_DIR, pageDir => {
-                    pageDir.Directory(rootAggregate.Item.DisplayName.ToFileNameSafe(), aggregateDir => {
-                        aggregateDir.Generate(detailView.Render());
-                        aggregateDir.Generate(editView.Render());
-                    });
+            context.ReactProject.PagesDir(pageDir => {
+                pageDir.Directory(rootAggregate.Item.DisplayName.ToFileNameSafe(), aggregateDir => {
+                    aggregateDir.Generate(detailView.Render());
+                    aggregateDir.Generate(editView.Render());
                 });
-                reactDir.Directory(App.REACT_UTIL_DIR, utilDir => {
-                    utilDir.Generate(LocalRepository.UseLocalRepositoryCommitHandling(context));
-                    utilDir.Generate(LocalRepository.RenderUseAggregateLocalRepository());
-                });
+            });
+            context.ReactProject.UtilDir(utilDir => {
+                utilDir.Generate(LocalRepository.UseLocalRepositoryCommitHandling(context));
+                utilDir.Generate(LocalRepository.RenderUseAggregateLocalRepository());
             });
 
             // 一括アップデート

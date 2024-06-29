@@ -12,46 +12,6 @@ namespace Nijo.Features.BackgroundService {
 
         private const string LISTUP = "ls";
 
-        private static string RenderAspControllerListAction(CodeRenderingContext context) {
-            var appSrv = new Parts.WebServer.ApplicationService();
-            var agg = context.Schema.GetAggregate(GraphNodeId);
-            var controller = new Controller(agg.Item);
-
-            return $$"""
-                [HttpGet("{{LISTUP}}")]
-                public virtual IActionResult Listup(
-                    [FromQuery] DateTime? since,
-                    [FromQuery] DateTime? until,
-                    [FromQuery] int? skip,
-                    [FromQuery] int? take) {
-
-                    var query = (IQueryable<{{ENTITY_CLASSNAME}}>)_applicationService.{{appSrv.DbContext}}.{{agg.Item.DbSetName}}.AsNoTracking();
-
-                    // 絞り込み
-                    if (since != null) {
-                        var paramSince = since.Value.Date;
-                        query = query.Where(e => e.{{COL_REQUESTTIME}} >= paramSince);
-                    }
-                    if (until != null) {
-                        var paramUntil = until.Value.Date.AddDays(1);
-                        query = query.Where(e => e.{{COL_REQUESTTIME}} <= paramUntil);
-                    }
-
-                    // 順番
-                    query = query.OrderByDescending(e => e.{{COL_REQUESTTIME}});
-
-                    // ページング
-                    if (skip != null) query = query.Skip(skip.Value);
-
-                    const int DEFAULT_PAGE_SIZE = 20;
-                    var pageSize = take ?? DEFAULT_PAGE_SIZE;
-                    query = query.Take(pageSize);
-
-                    return this.JsonContent(query.ToArray());
-                }
-                """;
-        }
-
         private static SourceFile RenderBgTaskListComponent(CodeRenderingContext context) {
             var agg = context.Schema.GetAggregate(GraphNodeId);
             var controller = new Controller(agg.Item);

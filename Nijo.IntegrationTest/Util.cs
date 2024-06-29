@@ -87,14 +87,13 @@ namespace Nijo.IntegrationTest {
                     "..",
                     "..",
                     "..",
-                    "Nijo.ApplicationTemplates",
-                    "REACT_AND_WEBAPI",
+                    "Nijo.ApplicationTemplate",
                     "react"));
                 var reactTemplateDirNodeModules = Path.Combine(
                     reactTemplateDir,
-                     "node_modules");
+                    "node_modules");
                 var testProjectNodeModules = Path.GetFullPath(Path.Combine(
-                    project.WebClientProjectRoot,
+                    project.ReactProject.ProjectRoot,
                     "node_modules"));
 
                 // 自動テストプロジェクトのnode_modulesがインストール済みの場合
@@ -248,7 +247,7 @@ namespace Nijo.IntegrationTest {
             var query = parameters == null
                 ? string.Empty
                 : $"?{await new FormUrlEncodedContent(parameters).ReadAsStringAsync()}";
-            var uri = new Uri(project.GetDebugUrl(), path + query);
+            var uri = new Uri(project.WebApiProject.GetDebugUrl(), path + query);
 
             var message = new HttpRequestMessage(HttpMethod.Get, uri);
 
@@ -262,7 +261,7 @@ namespace Nijo.IntegrationTest {
         /// <param name="body">リクエストボディ</param>
         /// <returns>HTTPレスポンス</returns>
         public static async Task<HttpResponseMessage> Post(this GeneratedProject project, string path, object body) {
-            var uri = new Uri(project.GetDebugUrl(), path);
+            var uri = new Uri(project.WebApiProject.GetDebugUrl(), path);
             var message = new HttpRequestMessage(HttpMethod.Post, uri);
             message.Content = new StringContent(body.ToJson(), Encoding.UTF8, "application/json");
 
@@ -275,7 +274,7 @@ namespace Nijo.IntegrationTest {
         /// <param name="path">URLのうちドメインより後ろの部分</param>
         /// <returns>HTTPレスポンス</returns>
         public static async Task<HttpResponseMessage> Delete(this GeneratedProject project, string path) {
-            var uri = new Uri(project.GetDebugUrl(), path);
+            var uri = new Uri(project.WebApiProject.GetDebugUrl(), path);
             var message = new HttpRequestMessage(HttpMethod.Delete, uri);
 
             using var client = new HttpClient();
@@ -286,7 +285,7 @@ namespace Nijo.IntegrationTest {
         /// テスト用データベースにSELECT文を発行します。
         /// </summary>
         public static IEnumerable<SqliteDataReader> ExecSql(this GeneratedProject project, string sql) {
-            var dataSource = Path.GetFullPath(Path.Combine(project.ProjectRoot, $"DEBUG.sqlite3")).Replace("\\", "/");
+            var dataSource = Path.GetFullPath(Path.Combine(project.SolutionRoot, $"DEBUG.sqlite3")).Replace("\\", "/");
             var connStr = new SqliteConnectionStringBuilder();
             connStr.DataSource = dataSource;
             connStr.Pooling = false;
@@ -428,7 +427,7 @@ namespace Nijo.IntegrationTest {
         /// </summary>
         public static void AddCustomizeCSharpSource(this GeneratedProject project, E_SoruceAddPosition position, string sourceCode) {
             var appSrv = new Nijo.Parts.WebServer.ApplicationService();
-            var sourceFilePath = Path.Combine(project.WebApiProjectRoot, appSrv.ConcreteClassFileName);
+            var sourceFilePath = Path.Combine(project.CoreLibrary.ProjectRoot, appSrv.ConcreteClassFileName);
 
             var write = false;
             using (var fs = File.OpenRead(sourceFilePath))
