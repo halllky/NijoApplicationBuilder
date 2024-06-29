@@ -11,23 +11,6 @@ namespace Nijo.Features.BackgroundService {
 
         private const string SCHEDULE = "schedule";
 
-        private string RenderAspControllerScheduleAction(CodeRenderingContext ctx) {
-            return $$"""
-                [HttpPost("{{SCHEDULE}}/{jobType}")]
-                public virtual IActionResult Schedule(string? jobType, [FromBody] object? param) {
-                    if (string.IsNullOrWhiteSpace(jobType)) {
-                        return BadRequest("ジョブ種別を指定してください。");
-
-                    } else if (!_applicationService.TryScheduleJob(jobType, param, out var errors)) {
-                        return BadRequest(string.Join(Environment.NewLine, errors));
-
-                    } else {
-                        return Ok();
-                    }
-                }
-                """;
-        }
-
         private string RenderAppSrvMethod(CodeRenderingContext ctx) {
 
             return $$"""

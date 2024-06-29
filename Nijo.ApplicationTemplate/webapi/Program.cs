@@ -6,7 +6,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-NIJO_APPLICATION_TEMPLATE.DefaultConfigurer.InitWebHostBuilder(builder);
+NIJO_APPLICATION_TEMPLATE.DefaultConfigurationInWebApi.InitWebHostBuilder(builder);
 
 var app = builder.Build();
 
@@ -23,6 +23,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-NIJO_APPLICATION_TEMPLATE.DefaultConfigurer.InitWebApplication(app);
+NIJO_APPLICATION_TEMPLATE.DefaultConfigurationInWebApi.InitWebApplication(app);
 
 app.Run();

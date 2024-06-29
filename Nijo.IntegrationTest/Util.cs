@@ -427,7 +427,7 @@ namespace Nijo.IntegrationTest {
         /// </summary>
         public static void AddCustomizeCSharpSource(this GeneratedProject project, E_SoruceAddPosition position, string sourceCode) {
             var appSrv = new Nijo.Parts.WebServer.ApplicationService();
-            var sourceFilePath = Path.Combine(project.WebApiProject.ProjectRoot, appSrv.ConcreteClassFileName);
+            var sourceFilePath = Path.Combine(project.CoreLibrary.ProjectRoot, appSrv.ConcreteClassFileName);
 
             var write = false;
             using (var fs = File.OpenRead(sourceFilePath))

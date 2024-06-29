@@ -15,10 +15,11 @@ namespace Nijo.Parts.WebServer {
         public string DbContext = "DbContext";
         public string CurrentTime = "CurrentTime";
 
-        internal SourceFile Render(CodeRenderingContext ctx) => new SourceFile {
+        internal SourceFile RenderToCoreLibrary() => new SourceFile {
             FileName = FileName,
-            RenderContent = context => $$"""
+            RenderContent = ctx => $$"""
                 namespace {{ctx.Config.RootNamespace}} {
+                    using Microsoft.Extensions.DependencyInjection;
                     using {{ctx.Config.DbContextNamespace}};
 
                     public partial class {{ClassName}} {
@@ -39,7 +40,6 @@ namespace Nijo.Parts.WebServer {
                 }
                 """,
         };
-
 
         public string ConcreteClass => $"OverridedApplicationService";
         internal string ConcreteClassFileName => $"{ConcreteClass}.cs";

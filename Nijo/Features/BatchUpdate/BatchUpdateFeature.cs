@@ -28,7 +28,10 @@ namespace Nijo.Features.BatchUpdate {
             context.WebApiProject.UtilDir(utilDir => {
                 utilDir.Generate(RenderMainClass());
                 utilDir.Generate(RenderTaskDefinition());
-                utilDir.Generate(RenderController());
+            });
+
+            context.WebApiProject.ControllerDir(controllerDir => {
+                controllerDir.Generate(RenderController());
             });
 
             context.ReactProject.UtilDir(utilDir => {

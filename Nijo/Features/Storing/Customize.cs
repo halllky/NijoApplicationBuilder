@@ -33,7 +33,7 @@ namespace Nijo.Features.Storing {
         internal static string AFTER_DELETE_EVENT_ARGS = "IAfterDeleteEventArgs";
 
         internal static void RenderBaseClasses(CodeRenderingContext ctx) {
-            ctx.WebApiProject.UtilDir(utilDir => {
+            ctx.CoreLibrary.UtilDir(utilDir => {
                 utilDir.Generate(new SourceFile {
                     FileName = $"SaveEventArgs.cs",
                     RenderContent = ctx => {

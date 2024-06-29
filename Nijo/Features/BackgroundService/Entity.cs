@@ -100,5 +100,48 @@ namespace Nijo.Features.BackgroundService {
         private const string ENUM_BGTASKSTATE_RUNNING = "Running";
         private const string ENUM_BGTASKSTATE_SUCCESS = "Success";
         private const string ENUM_BGTASKSTATE_FAULT = "Fault";
+
+        private static SourceFile RenderEntityDeclaring() => new SourceFile {
+            FileName = "DbEntitiy.cs",
+            RenderContent = ctx => {
+                var dbSetName = ctx.Schema.GetAggregate(GraphNodeId).Item.DbSetName;
+
+                return $$"""
+                    namespace {{ctx.Config.EntityNamespace}} {
+                        using Microsoft.EntityFrameworkCore;
+                        using System.Text.Json.Serialization;
+
+                        public class {{ENTITY_CLASSNAME}} {
+                            [JsonPropertyName("id")]
+                            public string {{COL_ID}} { get; set; } = string.Empty;
+                            [JsonPropertyName("name")]
+                            public string {{COL_NAME}} { get; set; } = string.Empty;
+                            [JsonPropertyName("batchType")]
+                            public string {{COL_BATCHTYPE}} { get; set; } = string.Empty;
+                            [JsonPropertyName("parameter")]
+                            public string {{COL_PARAMETERJSON}} { get; set; } = string.Empty;
+                            [JsonPropertyName("state")]
+                            public {{ENUM_BGTASKSTATE}} {{COL_STATE}} { get; set; }
+                            [JsonPropertyName("requestTime")]
+                            public DateTime {{COL_REQUESTTIME}} { get; set; }
+                            [JsonPropertyName("startTime")]
+                            public DateTime? {{COL_STARTTIME}} { get; set; }
+                            [JsonPropertyName("finishTime")]
+                            public DateTime? {{COL_FINISHTIME}} { get; set; }
+
+                            public static void OnModelCreating(ModelBuilder modelBuilder) {
+                                modelBuilder.Entity<{{ENTITY_CLASSNAME}}>(e => {
+                                    e.HasKey(e => e.{{COL_ID}});
+                                });
+                            }
+                        }
+
+                        partial class {{ctx.Config.DbContextName}} {
+                            public virtual DbSet<{{ctx.Config.EntityNamespace}}.{{ENTITY_CLASSNAME}}> {{dbSetName}} { get; set; }
+                        }
+                    }
+                    """;
+            },
+        };
     }
 }

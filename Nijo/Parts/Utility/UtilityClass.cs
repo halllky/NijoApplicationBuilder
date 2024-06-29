@@ -39,7 +39,7 @@ namespace Nijo.Parts.Utility {
                         using System.Text.Json;
                         using System.Text.Json.Nodes;
 
-                        static partial class {{CLASSNAME}} {
+                        public static partial class {{CLASSNAME}} {
                             public static void {{MODIFY_JSONOPTION}}(JsonSerializerOptions option) {
                                 // 日本語文字がUnicode変換されるのを避ける
                                 option.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All);

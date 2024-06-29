@@ -9,79 +9,35 @@ using Nijo.Features.Logging;
 
 namespace Nijo.Parts {
     internal class Configure {
-        internal const string CLASSNAME = "DefaultConfigurer";
+        internal const string CLASSNAME_CORE = "DefaultConfiguration";
+        internal const string CLASSNAME_WEBAPI = "DefaultConfigurationInWebApi";
+        internal const string CLASSNAME_CLI = "DefaultConfigurationInCli";
+
         internal const string INIT_WEB_HOST_BUILDER = "InitWebHostBuilder";
         internal const string INIT_BATCH_PROCESS = "InitAsBatchProcess";
         internal const string CONFIGURE_SERVICES = "ConfigureServices";
         internal const string INIT_WEBAPPLICATION = "InitWebApplication";
 
-        internal static string GetClassFullname(Config config) => $"{config.RootNamespace}.{CLASSNAME}";
+        internal static string GetClassFullname(Config config) => $"{config.RootNamespace}.{CLASSNAME_CORE}";
 
-        internal static SourceFile Render(CodeRenderingContext _ctx) {
-
+        internal static SourceFile RenderConfigureServices() {
             return new SourceFile {
                 FileName = "DefaultConfigurer.cs",
-                RenderContent = context => {
+                RenderContent = _ctx => {
                     var appSrv = new WebServer.ApplicationService();
                     var runtimeServerSettings = RuntimeSettings.ServerSetiingTypeFullName;
 
                     return $$"""
                         namespace {{_ctx.Config.RootNamespace}} {
+                            using Microsoft.Extensions.DependencyInjection;
+                            using Microsoft.Extensions.Logging;
 
-                            internal static class {{CLASSNAME}} {
-
-                                /// <summary>
-                                /// Webサーバー起動時初期設定
-                                /// </summary>
-                                internal static void {{INIT_WEB_HOST_BUILDER}}(this WebApplicationBuilder builder) {
-                                    {{CONFIGURE_SERVICES}}(builder.Services);
-
-                                    // HTMLのエンコーディングをUTF-8にする(日本語のHTMLエンコード防止)
-                                    builder.Services.Configure<Microsoft.Extensions.WebEncoders.WebEncoderOptions>(options => {
-                                        options.TextEncoderSettings = new System.Text.Encodings.Web.TextEncoderSettings(System.Text.Unicode.UnicodeRanges.All);
-                                    });
-
-                                    // npm start で実行されるポートがASP.NETのそれと別なので
-                                    builder.Services.AddCors(options => {
-                                        options.AddDefaultPolicy(builder => {
-                                            builder.AllowAnyOrigin()
-                                                .AllowAnyMethod()
-                                                .AllowAnyHeader();
-                                        });
-                                    });
-
-                                    builder.Services.AddControllers(option => {
-                                        // エラーハンドリング
-                                        option.Filters.Add<{{_ctx.Config.RootNamespace}}.HttpResponseExceptionFilter>();
-
-                                    }).AddJsonOptions(option => {
-                                        // JSON日本語設定
-                                        {{Utility.UtilityClass.CLASSNAME}}.{{Utility.UtilityClass.MODIFY_JSONOPTION}}(option.JsonSerializerOptions);
-                                    });
-
-                                    {{WithIndent(_ctx.WebApiProject.ConfigureServices.SelectTextTemplate(fn => fn.Invoke("builder.Services")), "           ")}}
-                                }
+                            public static class {{CLASSNAME_CORE}} {
 
                                 /// <summary>
-                                /// Webサーバー起動時初期設定
+                                /// DI設定
                                 /// </summary>
-                                internal static void {{INIT_WEBAPPLICATION}}(this WebApplication app) {
-                                    // 前述AddCorsの設定をするならこちらも必要
-                                    app.UseCors();
-
-                                    {{WithIndent(_ctx.WebApiProject.ConfigureWebApp.SelectTextTemplate(fn => fn.Invoke("app")), "           ")}}
-                                }
-
-                                /// <summary>
-                                /// バッチプロセス起動時初期設定
-                                /// </summary>
-                                internal static void {{INIT_BATCH_PROCESS}}(this IServiceCollection services) {
-                                    {{CONFIGURE_SERVICES}}(services);
-
-                                    {{WithIndent(context.CliProject.ConfigureServices.SelectTextTemplate(fn => fn.Invoke("services")), "           ")}}
-                                }
-
-                                internal static void {{CONFIGURE_SERVICES}}(IServiceCollection services) {
+                                public static void {{CONFIGURE_SERVICES}}(IServiceCollection services) {
 
                                     // アプリケーションサービス
                                     services.AddScoped<{{appSrv.ClassName}}, {{appSrv.ConcreteClass}}>();
@@ -119,7 +75,93 @@ namespace Nijo.Parts {
                                         return new {{DefaultLogger.CLASSNAME}}(setting.LogDirectory);
                                     });
 
-                                    {{WithIndent(context.CoreLibrary.ConfigureServices.SelectTextTemplate(fn => fn.Invoke("services")), "           ")}}
+                                    {{WithIndent(_ctx.CoreLibrary.ConfigureServices.SelectTextTemplate(fn => fn.Invoke("services")), "           ")}}
+                                }
+
+                            }
+                        }
+                        """;
+                },
+            };
+        }
+
+        internal static SourceFile RenderWebapiConfigure() {
+            return new SourceFile {
+                FileName = "DefaultConfigurer.cs",
+                RenderContent = _ctx => {
+                    return $$"""
+                        namespace {{_ctx.Config.RootNamespace}} {
+                            using Microsoft.Extensions.DependencyInjection;
+                            using Microsoft.Extensions.Logging;
+
+                            internal static class {{CLASSNAME_WEBAPI}} {
+
+                                /// <summary>
+                                /// Webサーバー起動時初期設定
+                                /// </summary>
+                                internal static void {{INIT_WEB_HOST_BUILDER}}(this WebApplicationBuilder builder) {
+                                    {{CLASSNAME_CORE}}.{{CONFIGURE_SERVICES}}(builder.Services);
+
+                                    // HTMLのエンコーディングをUTF-8にする(日本語のHTMLエンコード防止)
+                                    builder.Services.Configure<Microsoft.Extensions.WebEncoders.WebEncoderOptions>(options => {
+                                        options.TextEncoderSettings = new System.Text.Encodings.Web.TextEncoderSettings(System.Text.Unicode.UnicodeRanges.All);
+                                    });
+
+                                    // npm start で実行されるポートがASP.NETのそれと別なので
+                                    builder.Services.AddCors(options => {
+                                        options.AddDefaultPolicy(builder => {
+                                            builder.AllowAnyOrigin()
+                                                .AllowAnyMethod()
+                                                .AllowAnyHeader();
+                                        });
+                                    });
+
+                                    builder.Services.AddControllers(option => {
+                                        // エラーハンドリング
+                                        option.Filters.Add<{{_ctx.Config.RootNamespace}}.HttpResponseExceptionFilter>();
+
+                                    }).AddJsonOptions(option => {
+                                        // JSON日本語設定
+                                        {{Utility.UtilityClass.CLASSNAME}}.{{Utility.UtilityClass.MODIFY_JSONOPTION}}(option.JsonSerializerOptions);
+                                    });
+
+                                    {{WithIndent(_ctx.WebApiProject.ConfigureServices.SelectTextTemplate(fn => fn.Invoke("builder.Services")), "           ")}}
+                                }
+
+                                /// <summary>
+                                /// Webサーバー起動時初期設定
+                                /// </summary>
+                                internal static void {{INIT_WEBAPPLICATION}}(this WebApplication app) {
+                                    // 前述AddCorsの設定をするならこちらも必要
+                                    app.UseCors();
+
+                                    {{WithIndent(_ctx.WebApiProject.ConfigureWebApp.SelectTextTemplate(fn => fn.Invoke("app")), "           ")}}
+                                }
+                            }
+
+                        }
+                        """;
+                },
+            };
+        }
+
+        internal static SourceFile RenderCliConfigure() {
+            return new SourceFile {
+                FileName = "DefaultConfigurer.cs",
+                RenderContent = _ctx => {
+                    return $$"""
+                        namespace {{_ctx.Config.RootNamespace}} {
+                            using Microsoft.Extensions.DependencyInjection;
+                            using Microsoft.Extensions.Logging;
+
+                            internal static class {{CLASSNAME_CLI}} {
+                                /// <summary>
+                                /// バッチプロセス起動時初期設定
+                                /// </summary>
+                                internal static void {{INIT_BATCH_PROCESS}}(this IServiceCollection services) {
+                                    {{CLASSNAME_CORE}}.{{CONFIGURE_SERVICES}}(services);
+
+                                    {{WithIndent(_ctx.CliProject.ConfigureServices.SelectTextTemplate(fn => fn.Invoke("services")), "           ")}}
                                 }
                             }
 
