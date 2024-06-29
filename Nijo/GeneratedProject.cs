@@ -105,14 +105,55 @@ namespace Nijo {
                         """);
                 }
 
-                using (var _ = log?.BeginScope("React & ASP.NET テンプレートのコピー")) {
+                using (var _ = log?.BeginScope("アプリケーションテンプレートのコピー")) {
                     var resources = new Parts.EmbeddedResource.Collection(
                         Assembly.GetExecutingAssembly());
+
+                    using (var reader = resources.FromResourceName("NIJO_APPLICATION_TEMPLATE.sln").GetStreamReader())
+                    using (var writer = SourceFile.GetStreamWriter(Path.Combine(tempProject.ProjectRoot, "NIJO_APPLICATION_TEMPLATE.sln"))) {
+                        while (!reader.EndOfStream) writer.WriteLine(reader.ReadLine());
+                    }
+                    using (var reader = resources.FromResourceName(".gitignore").GetStreamReader())
+                    using (var writer = SourceFile.GetStreamWriter(Path.Combine(tempProject.ProjectRoot, ".gitignore"))) {
+                        while (!reader.EndOfStream) writer.WriteLine(reader.ReadLine());
+                    }
+                    using (var reader = resources.FromResourceName(".editorconfig").GetStreamReader())
+                    using (var writer = SourceFile.GetStreamWriter(Path.Combine(tempProject.ProjectRoot, ".editorconfig"))) {
+                        while (!reader.EndOfStream) writer.WriteLine(reader.ReadLine());
+                    }
 
                     foreach (var resource in resources.Enumerate("react")) {
                         var destination = Path.Combine(
                             tempProject.WebClientProjectRoot,
                             Path.GetRelativePath("react", resource.RelativePath));
+                        log?.LogInformation("From template : {0}", resource.RelativePath);
+
+                        Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+
+                        using var reader = resource.GetStreamReader();
+                        using var writer = SourceFile.GetStreamWriter(destination);
+                        while (!reader.EndOfStream) {
+                            writer.WriteLine(reader.ReadLine());
+                        }
+                    }
+                    foreach (var resource in resources.Enumerate("core")) {
+                        var destination = Path.Combine(
+                            tempProject.CoreProjectRoot,
+                            Path.GetRelativePath("core", resource.RelativePath));
+                        log?.LogInformation("From template : {0}", resource.RelativePath);
+
+                        Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+
+                        using var reader = resource.GetStreamReader();
+                        using var writer = SourceFile.GetStreamWriter(destination);
+                        while (!reader.EndOfStream) {
+                            writer.WriteLine(reader.ReadLine());
+                        }
+                    }
+                    foreach (var resource in resources.Enumerate("cli")) {
+                        var destination = Path.Combine(
+                            tempProject.CliProjectRoot,
+                            Path.GetRelativePath("cli", resource.RelativePath));
                         log?.LogInformation("From template : {0}", resource.RelativePath);
 
                         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
@@ -156,14 +197,34 @@ namespace Nijo {
                 }
 
                 using (var _ = log?.BeginScope("テンプレート中に登場するプロジェクト名を作成されるプロジェクト名に置換")) {
-                    var programCs = Path.Combine(tempProject.WebApiProjectRoot, "Program.cs");
-                    var beforeReplace = File.ReadAllText(programCs);
-                    var afterReplace = beforeReplace.Replace("NIJO_APPLICATION_TEMPLATE", config.RootNamespace);
-                    File.WriteAllText(programCs, afterReplace);
+                    var beforeSln = Path.Combine(tempProject.ProjectRoot, "NIJO_APPLICATION_TEMPLATE.sln");
+                    var afterSln = Path.Combine(tempProject.ProjectRoot, $"{config.ApplicationName}.sln");
+                    File.Move(beforeSln, afterSln);
 
-                    var beforeCsproj = Path.Combine(tempProject.WebApiProjectRoot, "NIJO_APPLICATION_TEMPLATE_WebApi.csproj");
-                    var afterCsproj = Path.Combine(tempProject.WebApiProjectRoot, $"{config.ApplicationName}_WebApi.csproj");
-                    File.Move(beforeCsproj, afterCsproj);
+                    var beforeCsproj1 = Path.Combine(tempProject.CoreProjectRoot, "NIJO_APPLICATION_TEMPLATE.csproj");
+                    var afterCsproj1 = Path.Combine(tempProject.CoreProjectRoot, $"{config.ApplicationName}.csproj");
+                    File.Move(beforeCsproj1, afterCsproj1);
+
+                    var beforeCsproj2 = Path.Combine(tempProject.CliProjectRoot, "NIJO_APPLICATION_TEMPLATE_Cli.csproj");
+                    var afterCsproj2 = Path.Combine(tempProject.CliProjectRoot, $"{config.ApplicationName}_Cli.csproj");
+                    File.Move(beforeCsproj2, afterCsproj2);
+
+                    var beforeCsproj3 = Path.Combine(tempProject.WebApiProjectRoot, "NIJO_APPLICATION_TEMPLATE_WebApi.csproj");
+                    var afterCsproj3 = Path.Combine(tempProject.WebApiProjectRoot, $"{config.ApplicationName}_WebApi.csproj");
+                    File.Move(beforeCsproj3, afterCsproj3);
+
+                    // テンプレート中に名前がハードコードされているファイル
+                    var replacingFiles = new[] {
+                        afterSln,
+                        Path.Combine(tempProject.WebApiProjectRoot, "Program.cs"),
+                        afterCsproj2,
+                        afterCsproj3,
+                    };
+                    foreach (var file in replacingFiles) {
+                        var beforeReplace = File.ReadAllText(file);
+                        var afterReplace = beforeReplace.Replace("NIJO_APPLICATION_TEMPLATE", config.RootNamespace);
+                        File.WriteAllText(file, afterReplace);
+                    }
                 }
 
                 using (var _ = log?.BeginScope("自動生成されないコードの初期化")) {
@@ -289,6 +350,10 @@ namespace Nijo {
         public string ProjectRoot { get; }
         /// <summary>自動生成されたプロジェクトのReactのディレクトリ名</summary>
         public string WebClientProjectRoot => Path.Combine(ProjectRoot, "react");
+        /// <summary>自動生成されたプロジェクトのクラスライブラリのディレクトリ名</summary>
+        public string CoreProjectRoot => Path.Combine(ProjectRoot, "core");
+        /// <summary>自動生成されたプロジェクトのコンソールアプリケーションのディレクトリ名</summary>
+        public string CliProjectRoot => Path.Combine(ProjectRoot, "cli");
         /// <summary>自動生成されたプロジェクトの.NET Coreのディレクトリ名</summary>
         public string WebApiProjectRoot => Path.Combine(ProjectRoot, "webapi");
 

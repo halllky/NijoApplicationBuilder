@@ -1,8 +1,8 @@
 /// このファイルはコード自動生成により上書きされます。
 
-namespace REACT_AND_WEBAPI {
+namespace NIJO_APPLICATION_TEMPLATE {
 
-    internal static class HalappConfigurer {
+    internal static class DefaultConfigurer {
 
         internal static void InitWebHostBuilder(this WebApplicationBuilder builder) {
         }
