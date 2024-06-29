@@ -96,15 +96,6 @@ namespace Nijo {
                     sw.WriteLine(xmlContent.ToString());
                 }
 
-                using (var _ = log?.BeginScope(".gitignoreの作成")) {
-                    var gitignore = Path.Combine(tempProject.ProjectRoot, ".gitignore");
-                    log?.LogInformation(".gitignore path: {0}", gitignore);
-
-                    File.WriteAllText(gitignore, $$"""
-                        /*.sqlite3
-                        """);
-                }
-
                 using (var _ = log?.BeginScope("アプリケーションテンプレートのコピー")) {
                     var resources = new Parts.EmbeddedResource.Collection(
                         Assembly.GetExecutingAssembly());
