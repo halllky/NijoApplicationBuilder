@@ -285,7 +285,7 @@ namespace Nijo.IntegrationTest {
         /// テスト用データベースにSELECT文を発行します。
         /// </summary>
         public static IEnumerable<SqliteDataReader> ExecSql(this GeneratedProject project, string sql) {
-            var dataSource = Path.GetFullPath(Path.Combine(project.ProjectRoot, $"DEBUG.sqlite3")).Replace("\\", "/");
+            var dataSource = Path.GetFullPath(Path.Combine(project.SolutionRoot, $"DEBUG.sqlite3")).Replace("\\", "/");
             var connStr = new SqliteConnectionStringBuilder();
             connStr.DataSource = dataSource;
             connStr.Pooling = false;
@@ -427,7 +427,7 @@ namespace Nijo.IntegrationTest {
         /// </summary>
         public static void AddCustomizeCSharpSource(this GeneratedProject project, E_SoruceAddPosition position, string sourceCode) {
             var appSrv = new Nijo.Parts.WebServer.ApplicationService();
-            var sourceFilePath = Path.Combine(project.WebApiProjectRoot, appSrv.ConcreteClassFileName);
+            var sourceFilePath = Path.Combine(project.WebApiProject.ProjectRoot, appSrv.ConcreteClassFileName);
 
             var write = false;
             using (var fs = File.OpenRead(sourceFilePath))

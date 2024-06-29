@@ -64,12 +64,12 @@ namespace Nijo {
                 var tempProject = new GeneratedProject(tempDir, serviceProvider, log);
 
                 using (var _ = log?.BeginScope("プロジェクトディレクトリの作成")) {
-                    log?.LogInformation("ProjectRoot: {0}", tempProject.ProjectRoot);
+                    log?.LogInformation("ProjectRoot: {0}", tempProject.SolutionRoot);
 
-                    if (Directory.Exists(tempProject.ProjectRoot) || File.Exists(tempProject.ProjectRoot)) {
-                        throw new InvalidOperationException($"Directory is already exists: {tempProject.ProjectRoot}");
+                    if (Directory.Exists(tempProject.SolutionRoot) || File.Exists(tempProject.SolutionRoot)) {
+                        throw new InvalidOperationException($"Directory is already exists: {tempProject.SolutionRoot}");
                     }
-                    Directory.CreateDirectory(tempProject.ProjectRoot);
+                    Directory.CreateDirectory(tempProject.SolutionRoot);
                 }
 
                 var config = new Config {
@@ -101,15 +101,15 @@ namespace Nijo {
                         Assembly.GetExecutingAssembly());
 
                     using (var reader = resources.FromResourceName("NIJO_APPLICATION_TEMPLATE.sln").GetStreamReader())
-                    using (var writer = SourceFile.GetStreamWriter(Path.Combine(tempProject.ProjectRoot, "NIJO_APPLICATION_TEMPLATE.sln"))) {
+                    using (var writer = SourceFile.GetStreamWriter(Path.Combine(tempProject.SolutionRoot, "NIJO_APPLICATION_TEMPLATE.sln"))) {
                         while (!reader.EndOfStream) writer.WriteLine(reader.ReadLine());
                     }
                     using (var reader = resources.FromResourceName(".gitignore").GetStreamReader())
-                    using (var writer = SourceFile.GetStreamWriter(Path.Combine(tempProject.ProjectRoot, ".gitignore"))) {
+                    using (var writer = SourceFile.GetStreamWriter(Path.Combine(tempProject.SolutionRoot, ".gitignore"))) {
                         while (!reader.EndOfStream) writer.WriteLine(reader.ReadLine());
                     }
                     using (var reader = resources.FromResourceName(".editorconfig").GetStreamReader())
-                    using (var writer = SourceFile.GetStreamWriter(Path.Combine(tempProject.ProjectRoot, ".editorconfig"))) {
+                    using (var writer = SourceFile.GetStreamWriter(Path.Combine(tempProject.SolutionRoot, ".editorconfig"))) {
                         while (!reader.EndOfStream) writer.WriteLine(reader.ReadLine());
                     }
 
@@ -155,20 +155,6 @@ namespace Nijo {
                             writer.WriteLine(reader.ReadLine());
                         }
                     }
-                    foreach (var resource in resources.Enumerate("webapi")) {
-                        var destination = Path.Combine(
-                            tempProject.WebApiProjectRoot,
-                            Path.GetRelativePath("webapi", resource.RelativePath));
-                        log?.LogInformation("From template : {0}", resource.RelativePath);
-
-                        Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-
-                        using var reader = resource.GetStreamReader();
-                        using var writer = SourceFile.GetStreamWriter(destination);
-                        while (!reader.EndOfStream) {
-                            writer.WriteLine(reader.ReadLine());
-                        }
-                    }
                 }
 
                 using (var _ = log?.BeginScope("reactのデバッグ用コードを除去")) {
@@ -188,8 +174,8 @@ namespace Nijo {
                 }
 
                 using (var _ = log?.BeginScope("テンプレート中に登場するプロジェクト名を作成されるプロジェクト名に置換")) {
-                    var beforeSln = Path.Combine(tempProject.ProjectRoot, "NIJO_APPLICATION_TEMPLATE.sln");
-                    var afterSln = Path.Combine(tempProject.ProjectRoot, $"{config.ApplicationName}.sln");
+                    var beforeSln = Path.Combine(tempProject.SolutionRoot, "NIJO_APPLICATION_TEMPLATE.sln");
+                    var afterSln = Path.Combine(tempProject.SolutionRoot, $"{config.ApplicationName}.sln");
                     File.Move(beforeSln, afterSln);
 
                     var beforeCsproj1 = Path.Combine(tempProject.CoreProjectRoot, "NIJO_APPLICATION_TEMPLATE.csproj");
@@ -200,31 +186,16 @@ namespace Nijo {
                     var afterCsproj2 = Path.Combine(tempProject.CliProjectRoot, $"{config.ApplicationName}_Cli.csproj");
                     File.Move(beforeCsproj2, afterCsproj2);
 
-                    var beforeCsproj3 = Path.Combine(tempProject.WebApiProjectRoot, "NIJO_APPLICATION_TEMPLATE_WebApi.csproj");
-                    var afterCsproj3 = Path.Combine(tempProject.WebApiProjectRoot, $"{config.ApplicationName}_WebApi.csproj");
-                    File.Move(beforeCsproj3, afterCsproj3);
-
                     // テンプレート中に名前がハードコードされているファイル
                     var replacingFiles = new[] {
                         afterSln,
-                        Path.Combine(tempProject.WebApiProjectRoot, "Program.cs"),
                         afterCsproj2,
-                        afterCsproj3,
                     };
                     foreach (var file in replacingFiles) {
                         var beforeReplace = File.ReadAllText(file);
                         var afterReplace = beforeReplace.Replace("NIJO_APPLICATION_TEMPLATE", config.RootNamespace);
                         File.WriteAllText(file, afterReplace);
                     }
-                }
-
-                using (var _ = log?.BeginScope("自動生成されないコードの初期化")) {
-                    var overridedAppSrv = new ApplicationService();
-                    var overrideAppSrv = Path.Combine(tempProject.WebApiProjectRoot, overridedAppSrv.ConcreteClassFileName);
-                    File.WriteAllText(overrideAppSrv, overridedAppSrv
-                        .RenderConcreteClass(config)
-                        /// TODO: <see cref="Util.CodeGenerating.DirectorySetupper.Generate(SourceFile)"/> を使用していないのでわざわざ置換する必要がある
-                        .Replace(SKIP_MARKER, string.Empty));
                 }
 
                 using (var _ = log?.BeginScope("自動生成されるコードの初期化")) {
@@ -245,21 +216,21 @@ namespace Nijo {
                             log?.LogWarning("gitリポジトリを作成します。");
 
                             git = new Process();
-                            git.StartInfo.WorkingDirectory = tempProject.ProjectRoot;
+                            git.StartInfo.WorkingDirectory = tempProject.SolutionRoot;
                             git.StartInfo.FileName = "git";
                             git.StartInfo.Arguments = "init";
                             git.Start();
                             git.WaitForExit();
 
                             git = new Process();
-                            git.StartInfo.WorkingDirectory = tempProject.ProjectRoot;
+                            git.StartInfo.WorkingDirectory = tempProject.SolutionRoot;
                             git.StartInfo.FileName = "git";
                             git.StartInfo.Arguments = "add .";
                             git.Start();
                             git.WaitForExit();
 
                             git = new Process();
-                            git.StartInfo.WorkingDirectory = tempProject.ProjectRoot;
+                            git.StartInfo.WorkingDirectory = tempProject.SolutionRoot;
                             git.StartInfo.FileName = "git";
                             git.StartInfo.Arguments = "commit -m \"init\"";
                             git.Start();
@@ -322,33 +293,35 @@ namespace Nijo {
             return new GeneratedProject(normalizedPath, serviceProvider, log);
         }
 
-        private GeneratedProject(string projetctRoot, IServiceProvider serviceProvider, ILogger? log) {
-            if (string.IsNullOrWhiteSpace(projetctRoot))
-                throw new ArgumentException($"'{nameof(projetctRoot)}' is required.");
+        private GeneratedProject(string solutionRoot, IServiceProvider serviceProvider, ILogger? log) {
+            if (string.IsNullOrWhiteSpace(solutionRoot))
+                throw new ArgumentException($"'{nameof(solutionRoot)}' is required.");
 
-            ProjectRoot = Path.GetFullPath(projetctRoot);
+            SolutionRoot = Path.GetFullPath(solutionRoot);
             _log = log ?? ILoggerExtension.CreateConsoleLogger();
 
             CodeGenerator = new NijoCodeGenerator(this, log);
-            SchemaXml = new AppSchemaXml(ProjectRoot);
+            SchemaXml = new AppSchemaXml(SolutionRoot);
 
             ServiceProvider = serviceProvider;
+
+            WebApiProject = new Parts.WebApiProject(this);
         }
 
         private readonly ILogger _log;
 
         /// <summary>自動生成されたプロジェクトのルートディレクトリ名</summary>
-        public string ProjectRoot { get; }
+        public string SolutionRoot { get; }
         /// <summary>自動生成されたプロジェクトのReactのディレクトリ名</summary>
-        public string WebClientProjectRoot => Path.Combine(ProjectRoot, "react");
+        public string WebClientProjectRoot => Path.Combine(SolutionRoot, "react");
         /// <summary>自動生成されたプロジェクトのクラスライブラリのディレクトリ名</summary>
-        public string CoreProjectRoot => Path.Combine(ProjectRoot, "core");
+        public string CoreProjectRoot => Path.Combine(SolutionRoot, "core");
         /// <summary>自動生成されたプロジェクトのコンソールアプリケーションのディレクトリ名</summary>
-        public string CliProjectRoot => Path.Combine(ProjectRoot, "cli");
-        /// <summary>自動生成されたプロジェクトの.NET Coreのディレクトリ名</summary>
-        public string WebApiProjectRoot => Path.Combine(ProjectRoot, "webapi");
+        public string CliProjectRoot => Path.Combine(SolutionRoot, "cli");
 
         internal IServiceProvider ServiceProvider { get; }
+
+        internal Parts.WebApiProject WebApiProject { get; }
 
         public NijoCodeGenerator CodeGenerator { get; }
         public AppSchemaXml SchemaXml { get; }
@@ -410,43 +383,17 @@ namespace Nijo {
         /// <summary>
         /// デバッグ時に起動されるアプリケーションのURLを返します。
         /// </summary>
+        [Obsolete]
         public Uri GetDebugUrl() {
-            return new Uri(GetDebuggingServerUrl().Split(';')[0]);
+            return WebApiProject.GetDebugUrl();
         }
         /// <summary>
         /// デバッグ時に起動されるSwagger UIのURLを返します。
         /// </summary>
         /// <returns></returns>
+        [Obsolete]
         public Uri GetSwaggerUrl() {
-            return new Uri(new Uri(GetDebuggingServerUrl().Split(';')[0]), "swagger");
-        }
-        /// <summary>
-        /// launchSettings.jsonのhttpsプロファイルのapplicationUrlセクションの値を読み取ります。
-        /// </summary>
-        private string GetDebuggingServerUrl() {
-            var properties = Path.Combine(WebApiProjectRoot, "Properties");
-            if (!Directory.Exists(properties)) throw new DirectoryNotFoundException(properties);
-            var launchSettings = Path.Combine(properties, "launchSettings.json");
-            if (!File.Exists(launchSettings)) throw new FileNotFoundException(launchSettings);
-
-            var json = File.ReadAllText(launchSettings);
-            var obj = JsonSerializer.Deserialize<JsonObject>(json);
-            if (obj == null)
-                throw new InvalidOperationException($"Invalid json: {launchSettings}");
-            if (!obj.TryGetPropertyValue("profiles", out var profiles))
-                throw new InvalidOperationException($"Invalid json: {launchSettings}");
-            if (profiles == null)
-                throw new InvalidOperationException($"Invalid json: {launchSettings}");
-            if (!profiles.AsObject().TryGetPropertyValue("https", out var https))
-                throw new InvalidOperationException($"Invalid json: {launchSettings}");
-            if (https == null)
-                throw new InvalidOperationException($"Invalid json: {launchSettings}");
-            if (!https.AsObject().TryGetPropertyValue("applicationUrl", out var applicationUrl))
-                throw new InvalidOperationException($"Invalid json: {launchSettings}");
-            if (applicationUrl == null)
-                throw new InvalidOperationException($"Invalid json: {launchSettings}");
-
-            return applicationUrl.GetValue<string>();
+            return WebApiProject.GetSwaggerUrl();
         }
         /// <summary>
         /// vite.config.ts からポートを参照してURLを生成して返します。

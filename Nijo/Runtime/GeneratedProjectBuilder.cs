@@ -46,7 +46,7 @@ namespace Nijo.Runtime {
                 npmRun.BeginErrorReadLine();
                 _logger.LogInformation("npm build   : Started. PID {PID}", npmRun.Id);
 
-                dotnetRun.StartInfo.WorkingDirectory = _project.WebApiProjectRoot;
+                dotnetRun.StartInfo.WorkingDirectory = _project.WebApiProject.ProjectRoot;
                 dotnetRun.StartInfo.FileName = "dotnet";
                 dotnetRun.StartInfo.Arguments = "build";
                 dotnetRun.StartInfo.RedirectStandardOutput = true;

@@ -65,7 +65,7 @@ namespace Nijo.Runtime {
 
                 // dotnet run
                 _dotnetRun = new Process();
-                _dotnetRun.StartInfo.WorkingDirectory = _project.WebApiProjectRoot;
+                _dotnetRun.StartInfo.WorkingDirectory = _project.WebApiProject.ProjectRoot;
                 _dotnetRun.StartInfo.FileName = "dotnet";
                 _dotnetRun.StartInfo.Arguments = "run --launch-profile https";
                 _dotnetRun.StartInfo.RedirectStandardOutput = true;
