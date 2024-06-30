@@ -31,16 +31,16 @@ const Container = ({
 
   return (
     <VFormContext.Provider value={innerContextValue}>
-      <div className={`flex flex-col justify-start ${!isRoot && 'basis-full border-t border-l border-color-5'} ${className}`}>
+      <div className={`flex flex-col justify-start ${!isRoot && 'basis-full border-t border-l border-color-4'} ${className}`}>
         {(label || labelSide) && (
           <div className={`flex flex-wrap gap-2 items-center ${isRoot ? 'py-1' : 'p-1'}`}>
             <LabelText>{label}</LabelText>
             {labelSide}
           </div>)}
-        <div className="flex-1 flex bg-color-3">
-          {!isRoot && <Indent className="bg-color-3" />}
+        <div className="flex-1 flex bg-color-1">
+          {!isRoot && <Indent className="bg-color-1" />}
           {/* なぜか width:0 （というよりwidthに明示的な値を）を指定しないとDataTableなど横長のコンテンツがページ外まで伸びてしまう */}
-          <div className={`w-0 flex-1 flex overflow-x-hidden ${nowrap ? 'flex-col' : 'flex-wrap'} ${isRoot && 'border-r border-b'} border-color-5`}>
+          <div className={`w-0 flex-1 flex overflow-x-hidden ${nowrap ? 'flex-col' : 'flex-wrap'} ${isRoot && 'border-r border-b'} border-color-4`}>
             {children}
           </div>
         </div>
@@ -64,14 +64,14 @@ const Item = ({ label, labelSide, wide, children, className }: {
 
   return <>
     {wide && (label || labelSide) && (
-      <div className={`basis-full flex flex-wrap items-center gap-2 p-1 border-t border-l border-color-5 ${className}`}>
+      <div className={`basis-full flex flex-wrap items-center gap-2 p-1 border-t border-l border-color-4 ${className}`}>
         <LabelText>{label}</LabelText>
         {labelSide}
       </div >
     )}
-    <div className={`${nowrap ? '' : 'flex-1'} ${(wide ? 'basis-full' : 'min-w-fit')} flex align-center overflow-x-hidden border-t border-l border-color-5 ${className}`}>
+    <div className={`${nowrap ? '' : 'flex-1'} ${(wide ? 'basis-full' : 'min-w-fit')} flex align-center overflow-x-hidden border-t border-l border-color-4 ${className}`}>
       {!wide && (label || labelSide) && (
-        <div className="flex flex-col items-start gap-2 p-1 bg-color-3 border-r border-color-5" style={leftColumnStyle}>
+        <div className="flex flex-col items-start gap-2 p-1 bg-color-1 border-r border-color-4" style={leftColumnStyle}>
           <LabelText>{label}</LabelText>
           {labelSide}
         </div>
@@ -86,7 +86,7 @@ const LabelText = ({ children }: {
   children?: React.ReactNode
 }) => {
   return children && (
-    <span className="select-none text-color-7">
+    <span className="select-none text-color-6 text-sm">
       {children}
     </span>
   )
