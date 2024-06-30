@@ -124,6 +124,15 @@ const getRefValueEditSetting = () => {
     setValueToRow: (row, value) => {
       row.refValue = value
     },
+    onClipboardCopy: row => row.refValue ? JSON.stringify(row.refValue) : '',
+    onClipboardPaste: (row, value) => {
+      try {
+        const obj: RefInfo | undefined = JSON.parse(value)
+        if (typeof obj?.k === 'string') row.refValue = obj
+      } catch {
+        // 何もしない
+      }
+    },
     comboProps: {
       queryKey: 'REFINFO',
       query: async keyword => keyword
