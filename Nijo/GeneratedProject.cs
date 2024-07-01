@@ -123,7 +123,7 @@ namespace Nijo {
                     // テンプレート中に名前がハードコードされているファイル
                     var beforeReplace = File.ReadAllText(afterSln);
                     var afterReplace = beforeReplace.Replace("NIJO_APPLICATION_TEMPLATE", config.RootNamespace);
-                    File.WriteAllText(afterSln, afterReplace);
+                    File.WriteAllText(afterSln, afterReplace, Encoding.UTF8);
                 }
 
                 using (var _ = log?.BeginScope("自動生成されるコードの初期化")) {
