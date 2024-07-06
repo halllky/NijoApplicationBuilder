@@ -14,24 +14,32 @@ const Container = ({
   children?: React.ReactNode
   className?: string
 }) => {
-  const { depth, leftColumnMinWidth } = React.useContext(VFormContext)
+  const { depth, leftColumnMinWidth: contextLeftColumnMinWidth } = React.useContext(VFormContext)
+  const leftColumnMinWidth = propsLeftColMinWidth ?? contextLeftColumnMinWidth
+
   const innerContextValue = React.useMemo<VFormContextValue>(() => ({
     depth: depth + 1,
-    leftColumnMinWidth: propsLeftColMinWidth ?? leftColumnMinWidth,
-  }), [depth, propsLeftColMinWidth, leftColumnMinWidth])
+    leftColumnMinWidth,
+  }), [depth, leftColumnMinWidth])
+
+  const gridStyle: React.CSSProperties = {
+    gridTemplateColumns: leftColumnMinWidth
+      ? `repeat(auto-fit, minmax(calc(16rem + ${leftColumnMinWidth?.trim()}), 1fr))`
+      : `repeat(auto-fit, minmax(16rem, 1fr))`,
+  }
 
   return (
     <VFormContext.Provider value={innerContextValue}>
       {depth <= 1 ? (
 
-        <div className={`col-span-full flex flex-col ${depth > 0 && 'mt-4'} ${className ?? ''}`}>
+        <div className={`col-span-full flex flex-col ${depth === 1 ? 'mt-4' : 'mx-px'} ${className ?? ''}`}>
           {(label || labelSide) && (
             <div className="p-1 flex flex-wrap items-center gap-1">
               <LabelText>{label}</LabelText>
               {labelSide}
             </div>
           )}
-          <div className="flex-1 grid gap-[1px] grid-cols-[repeat(auto-fill,minmax(16rem,1fr))]">
+          <div className="grid gap-px flex-1" style={gridStyle}>
             {children}
           </div>
         </div>
@@ -43,7 +51,7 @@ const Container = ({
             <LabelText>{label}</LabelText>
             {labelSide}
           </div>
-          <div className="flex-1 ml-[2rem] grid gap-[1px] grid-cols-[repeat(auto-fill,minmax(16rem,1fr))]">
+          <div className="grid gap-px flex-1 ml-[2rem]" style={gridStyle}>
             {children}
           </div>
         </div>
@@ -71,7 +79,9 @@ const Item = ({ label, labelSide, wide, children, className }: {
           {labelSide}
         </Label>
       )}
-      <Value>{children}</Value>
+      <div className="flex-1 bg-color-0">
+        {children}
+      </div>
     </div>
   ) : (
     <div className={`flex ${className ?? ''}`} style={SHADOWBORDER}>
@@ -81,14 +91,16 @@ const Item = ({ label, labelSide, wide, children, className }: {
           {labelSide}
         </Label>
       )}
-      <Value>{children}</Value>
+      <div className="flex-1 bg-color-0 p-1">
+        {children}
+      </div>
     </div>
   )
 }
 
 const Label = ({ flexBasis, children }: { flexBasis?: string, children?: React.ReactNode }) => {
   return (
-    <div className="flex flex-wrap items-center gap-1 bg-color-2 p-1" style={{ flexBasis }}>
+    <div className="flex flex-wrap items-start gap-1 bg-color-2 p-1" style={{ flexBasis }}>
       {children}
     </div>
   )
@@ -100,14 +112,6 @@ const LabelText = ({ children }: {
     <span className="select-none text-color-7 text-sm font-semibold">
       {children}
     </span>
-  )
-}
-
-const Value = ({ children }: { children?: React.ReactNode }) => {
-  return (
-    <div className="flex-1 p-1 bg-color-0">
-      {children}
-    </div>
   )
 }
 

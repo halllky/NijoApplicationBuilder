@@ -118,7 +118,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   return (
     <div
       ref={divRef}
-      className={`outline-none overflow-x-auto overflow-y-scroll select-none relative bg-color-2 border border-1 border-color-4 z-0 ${className}`}
+      className={`outline-none overflow-x-auto overflow-y-scroll select-none relative bg-color-2 z-0 ${className}`}
       onFocus={handleFocus}
       onBlur={handleBlur}
       onCopy={onCopy}
@@ -145,14 +145,14 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
         {/* ヘッダ */}
         {!hideHeader && (
           <thead>
-            {api.getHeaderGroups().map(headerGroup => (
+            {api.getHeaderGroups().map((headerGroup, thY) => (
               <tr key={headerGroup.id}>
 
-                {headerGroup.headers.filter(h => !(h.column.columnDef as ColumnDefEx<T>).hidden).map(header => (
+                {headerGroup.headers.filter(h => !(h.column.columnDef as ColumnDefEx<T>).hidden).map((header, thX) => (
                   <th key={header.id}
                     colSpan={header.colSpan}
                     className="relative overflow-hidden whitespace-nowrap px-1 py-0 text-start bg-color-3"
-                    style={getThStickeyStyle(false)}>
+                    style={getThStyle(false, thX, thY)}>
                     {!header.isPlaceholder && RT.flexRender(
                       header.column.columnDef.header,
                       header.getContext())}
@@ -216,10 +216,11 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
 // -----------------------------------------------
 // 行列ヘッダ固定
-const getThStickeyStyle = (isTopLeftCell: boolean): React.CSSProperties => ({
+const getThStyle = (isTopLeftCell: boolean, x: number, y: number): React.CSSProperties => ({
   position: 'sticky',
-  top: 0,
+  top: `calc((1rem + 8px) * ${y})`,
   left: isTopLeftCell ? 0 : undefined,
+  height: x === 0 ? 'calc(1rem + 8px)' : undefined,
   zIndex: isTopLeftCell ? TABLE_ZINDEX.ROWHEADER_THEAD : TABLE_ZINDEX.THEAD,
 })
 const getTdStickeyStyle = (isRowHeader: boolean): React.CSSProperties => ({

@@ -207,7 +207,7 @@ namespace Nijo.Features.Storing {
 
                               <Util.InlineMessageList />
 
-                              <VForm.Container leftColumnMinWidth="10rem">
+                              <VForm.Container leftColumnMinWidth="10rem" className="border max-h-[40vh] overflow-y-auto">
                     {{groupedSearchConditions.SelectTextTemplate(group => $$"""
                     {{If(group.Key == _aggregate, () => $$"""
                                 {{WithIndent(group.SelectTextTemplate(RenderSearchConditionValueMember), "            ")}}
