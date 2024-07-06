@@ -10,6 +10,7 @@ export default function () {
   const [dark, setDark] = useState<boolean | undefined>(false)
   const [border, setBorder] = useState<boolean | undefined>(true)
   const [spacing, setSpacing] = useState<boolean | undefined>(true)
+  const [closable, setClosable] = useState<boolean | undefined>(true)
 
   const [tabCount, setTabCount] = useState(3)
   const handleTabCountChange = useCallback((value: number | undefined) => {
@@ -37,6 +38,10 @@ export default function () {
           <Input.CheckBox value={spacing} onChange={setSpacing} />
           <span className="text-color-8">スペース</span>
         </label>
+        <label className="flex items-center gap-2">
+          <Input.CheckBox value={closable} onChange={setClosable} />
+          <span className="text-color-8">閉じるボタン</span>
+        </label>
       </VForm.Item>
       <VForm.Item label="タブの数">
         <Input.Num value={tabCount} onChange={handleTabCountChange} />
@@ -46,17 +51,22 @@ export default function () {
         {/* 実装例 ここから */}
         <TabLayout.Container className={`${spacing ? 'm-2' : ''} ${border ? 'border border-color-4' : ''}`}>
 
-          <TabLayout.Bar atEnd={(
-            <>
-              <Input.IconButton icon={TvIcon}></Input.IconButton>
-              <Input.IconButton icon={CogIcon}></Input.IconButton>
-              <Input.IconButton icon={TagIcon}></Input.IconButton>
-            </>
-          )}>
+          <TabLayout.Bar
+            atStart={(
+              <h1 className="font-bold self-center m-1">タブ前挿入文字</h1>
+            )}
+            atEnd={(
+              <div className="flex gap-1 m-1">
+                <Input.IconButton icon={TvIcon} fill>TV</Input.IconButton>
+                <Input.IconButton icon={CogIcon} fill>Setting</Input.IconButton>
+                <Input.IconButton icon={TagIcon} fill>タグ</Input.IconButton>
+              </div>
+            )}
+          >
             {tabs.map((_, i) => (
               <TabLayout.Tab key={i} tabKey={i}
                 label={i % 4 === 0 ? `これは${i}番目のタブのラベルです。` : `${i}番目のタブ`}
-                onClose={handleTabClose}
+                onClose={closable ? handleTabClose : undefined}
               />
             ))}
           </TabLayout.Bar>

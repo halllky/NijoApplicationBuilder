@@ -48,7 +48,7 @@ const Container = ({ onActiveTabChanged, className, children }: {
   )
 }
 
-/** 複数のTabコンポーネントの親として設定してください。 */
+/** Containerの子要素として配置してください。 */
 const Bar = ({ atStart, atEnd, children }: {
   /** タブの前に挿入されるコンポーネント */
   atStart?: React.ReactNode
@@ -83,8 +83,8 @@ const Tab = ({ tabKey, onClose, label }: {
   }, [tabKey, setActiveTabKey])
 
   const className = tabKey === activeTabKey
-    ? `basis-32 min-w-0 flex items-center px-1 text-color-9 bg-color-0 border-t-2 select-none border-color-8`
-    : `basis-32 min-w-0 flex items-center px-1 text-color-9 bg-color-0 border-t-2 select-none border-color-0 opacity-40`
+    ? `basis-32 self-end min-w-0 flex items-center px-1 text-color-9 bg-color-0 border-t-2 select-none border-color-8`
+    : `basis-32 self-end min-w-0 flex items-center px-1 text-color-9 bg-color-0 border-t-2 select-none border-color-0 opacity-40`
   const buttonClassName = tabKey === activeTabKey
     ? `flex-1 text-start whitespace-nowrap overflow-hidden text-ellipsis font-bold`
     : `flex-1 text-start whitespace-nowrap overflow-hidden text-ellipsis`
@@ -101,7 +101,7 @@ const Tab = ({ tabKey, onClose, label }: {
   )
 }
 
-/** Barの外側に配置してください。 */
+/** コンテンツ。Containerの子要素として配置してください。 */
 const Panel = ({ tabKey, className, children }: {
   /** どのTabで開閉されるかを表す一意なキー */
   tabKey: TabKey
