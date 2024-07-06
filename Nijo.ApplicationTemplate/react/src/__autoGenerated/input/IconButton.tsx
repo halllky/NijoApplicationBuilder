@@ -10,6 +10,7 @@ export const IconButton = (args: {
   icon?: React.ElementType
   children?: React.ReactNode
   inline?: boolean
+  tabIndex?: number
   className?: string
 }) => {
 
@@ -31,6 +32,7 @@ export const IconButton = (args: {
       onClick={args.onClick}
       className={className}
       title={args.hideText && (args.children as string)}
+      tabIndex={args.tabIndex}
     >
 
       {args.icon && React.createElement(args.icon, { className: 'w-4' })}

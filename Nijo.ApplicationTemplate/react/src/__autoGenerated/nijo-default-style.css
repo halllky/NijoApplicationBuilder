@@ -201,7 +201,7 @@ textarea:read-only {
 }
 
 .bg-color-gutter {
-  @apply bg-neutral-200 dark:bg-neutral-950;
+  @apply bg-neutral-300 dark:bg-neutral-950;
 }
 
 /* 単にクラス名で指定していないのは、index.cssで指定されているTailwind既定のスタイルリセットの優先度に負けてしまうから。 */

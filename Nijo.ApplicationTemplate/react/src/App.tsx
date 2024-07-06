@@ -5,6 +5,7 @@ import UserInputテスト from './debug-room/UserInputテスト'
 // import BatchUpdateテスト from './debug-room/BatchUpdateテスト'
 import VFormテスト from './debug-room/VFromテスト'
 import CssGrid挙動調査 from './debug-room/CssGrid挙動調査'
+import TabLayoutテスト from './debug-room/TabLayoutテスト'
 
 function App() {
 
@@ -14,6 +15,7 @@ function App() {
     // { path: '/batch-update', label: 'BatchUpdateテスト', element: <BatchUpdateテスト /> },
     { path: '/vform', label: 'VFormテスト', element: <VFormテスト /> },
     { path: '/css-grid', label: 'CssGrid挙動調査', element: <CssGrid挙動調査 /> },
+    { path: '/tab-layout', label: 'TabLayoutテスト', element: <TabLayoutテスト /> },
   ], [])
 
   return (
