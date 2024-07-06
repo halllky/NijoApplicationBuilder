@@ -88,7 +88,7 @@ namespace Nijo.Features.Storing {
                     import React, { useCallback, useEffect, useMemo, useRef, useState, useReducer } from 'react'
                     import { Link } from 'react-router-dom'
                     import { useFieldArray, FormProvider } from 'react-hook-form'
-                    import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline'
+                    import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline'
                     import dayjs from 'dayjs'
                     import { UUID } from 'uuidjs'
                     import * as Util from '../../util'
@@ -112,12 +112,20 @@ namespace Nijo.Features.Storing {
                       const { get } = Util.useHttpRequest()
 
                       // 検索条件
+                      const [openSearchCondition, dispatchOpenSearchCondition] = Util.useToggle(true)
                       const [filter, setFilter] = useState<AggregateType.{{findMany.TypeScriptConditionClass}}>(() => AggregateType.{{findMany.TypeScriptConditionInitializerFn}}())
                       const [currentPage, dispatchPaging] = useReducer(pagingReducer, { pageIndex: 0 })
 
                       const rhfSearchMethods = Util.useFormEx<AggregateType.{{findMany.TypeScriptConditionClass}}>({})
-                      const getConditionValues = rhfSearchMethods.getValues
-                      const registerExCondition = rhfSearchMethods.registerEx
+                      const {
+                        getValues: getConditionValues,
+                        registerEx: registerExCondition,
+                        reset: resetSearchCondition,
+                      } = rhfSearchMethods
+                      const clearSearchCondition = useCallback(() => {
+                        resetSearchCondition()
+                        dispatchOpenSearchCondition(x => x.setValue(true))
+                      }, [resetSearchCondition, dispatchOpenSearchCondition])
 
                       // 編集対象（リモートリポジトリ + ローカルリポジトリ）
                       const editRange = useMemo(() => ({
@@ -142,7 +150,8 @@ namespace Nijo.Features.Storing {
 
                       const handleReload = useCallback(() => {
                         setFilter(getConditionValues())
-                      }, [getConditionValues])
+                        dispatchOpenSearchCondition(x => x.setValue(false))
+                      }, [getConditionValues, dispatchOpenSearchCondition])
 
                       // データ編集
                     {{If(!_options.ReadOnly && _aggregate.GetSingleRefKeyAggregate() == null, () => $$"""
@@ -186,28 +195,35 @@ namespace Nijo.Features.Storing {
                         <div className="page-content-root gap-4">
 
                           <FormProvider {...rhfSearchMethods}>
-                            <form className="flex flex-col gap-2">
-                              <div className="flex gap-2 justify-start">
-                                <h1 className="text-base font-semibold select-none py-1">
-                                  {{_aggregate.Item.DisplayName}}
-                                </h1>
-                                <Input.Button onClick={handleReload}>再読み込み</Input.Button>
-                                <div className="basis-4"></div>
+                            <form className="flex flex-col">
+                              <div className="flex gap-4 overflow-auto bg-color-gutter py-1 px-1 mx-px">
+                                <div className="flex gap-4 flex-wrap">
+                                  <h1 className="self-center text-base font-semibold whitespace-nowrap select-none">
+                                    {{_aggregate.Item.DisplayName}}
+                                  </h1>
                     {{If(!_options.ReadOnly && _aggregate.GetSingleRefKeyAggregate() == null, () => $$"""
-                                <Input.Button onClick={handleAdd}>追加</Input.Button>
+                                  <Input.IconButton className="self-center" onClick={handleAdd}>追加</Input.IconButton>
                     """)}}
                     {{If(!_options.ReadOnly, () => $$"""
-                                <Input.Button onClick={handleRemove}>削除</Input.Button>
-                                <Input.IconButton fill icon={BookmarkSquareIcon} onClick={onSave}>一時保存</Input.IconButton>
+                                  <Input.IconButton className="self-center" onClick={handleRemove}>削除</Input.IconButton>
+                                  <Input.IconButton className="self-center" onClick={onSave}>一時保存</Input.IconButton>
                     """)}}
                     {{If(_options.PageTitleSide != null, () => $$"""
                                 {{WithIndent(_options.PageTitleSide!, "            ")}}
                     """)}}
+                                </div>
+                                <div className="flex-1"></div>
+                                <div className="flex items-start bg-color-0 -mb-1">
+                                  <Input.IconButton className="px-1 my-1" iconRight
+                                    icon={openSearchCondition ? ChevronDownIcon : ChevronUpIcon}
+                                    onClick={() => dispatchOpenSearchCondition(x => x.toggle())}
+                                  >検索条件</Input.IconButton>
+                                </div>
+                                <Input.IconButton className="self-center" onClick={clearSearchCondition}>クリア</Input.IconButton>
+                                <Input.IconButton className="self-center" icon={MagnifyingGlassIcon} fill onClick={handleReload}>検索</Input.IconButton>
                               </div>
 
-                              <Util.InlineMessageList />
-
-                              <VForm.Container leftColumnMinWidth="10rem" className="border max-h-[40vh] overflow-y-auto">
+                              <VForm.Container leftColumnMinWidth="10rem" className={`border max-h-[40vh] overflow-y-auto ${openSearchCondition ? '' : 'hidden'}`}>
                     {{groupedSearchConditions.SelectTextTemplate(group => $$"""
                     {{If(group.Key == _aggregate, () => $$"""
                                 {{WithIndent(group.SelectTextTemplate(RenderSearchConditionValueMember), "            ")}}
@@ -218,6 +234,8 @@ namespace Nijo.Features.Storing {
                     """)}}
                     """)}}
                               </VForm.Container>
+
+                              <Util.InlineMessageList />
                             </form>
                           </FormProvider>
 
