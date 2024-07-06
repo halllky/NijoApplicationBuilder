@@ -46,7 +46,7 @@ const Container = ({
 
       ) : (
 
-        <div className={`col-span-full flex flex-col bg-color-2 ${className ?? ''}`} style={SHADOWBORDER}>
+        <div className={`col-span-full flex flex-col bg-color-2 border-vform ${className ?? ''}`}>
           <div className="p-1 flex flex-wrap items-center gap-1">
             <LabelText>{label}</LabelText>
             {labelSide}
@@ -72,7 +72,7 @@ const Item = ({ label, labelSide, wide, children, className }: {
   const { leftColumnMinWidth } = useContext(VFormContext)
 
   return wide ? (
-    <div className={`flex flex-col col-span-full ${className ?? ''}`} style={SHADOWBORDER}>
+    <div className={`flex flex-col col-span-full border-vform ${className ?? ''}`}>
       {(label || labelSide) && (
         <Label>
           <LabelText>{label}</LabelText>
@@ -84,7 +84,7 @@ const Item = ({ label, labelSide, wide, children, className }: {
       </div>
     </div>
   ) : (
-    <div className={`flex ${className ?? ''}`} style={SHADOWBORDER}>
+    <div className={`flex border-vform ${className ?? ''}`}>
       {(label || labelSide) && (
         <Label flexBasis={leftColumnMinWidth}>
           <LabelText>{label}</LabelText>
@@ -113,10 +113,6 @@ const LabelText = ({ children }: {
       {children}
     </span>
   )
-}
-
-const SHADOWBORDER: React.CSSProperties = {
-  boxShadow: '0 0 0 1px #ddd'
 }
 
 type VFormContextValuePublic = {

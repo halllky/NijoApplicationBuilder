@@ -224,6 +224,16 @@ button[type="reset"].bg-color-button {
   @apply fill-black dark:fill-white opacity-25;
 }
 
+.border-vform {
+  /* neutral-200 */
+  box-shadow: 0 0 0 1px #e5e5e5;
+}
+
+.dark .border-vform {
+  /* neutral-800 */
+  box-shadow: 0 0 0 1px #262626;
+}
+
 /* react-simplemde-editor, easymde 用の設定 */
 .EasyMDEContainer .CodeMirror {
   padding: 0;
