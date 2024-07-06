@@ -83,11 +83,11 @@ const Tab = ({ tabKey, onClose, label }: {
   }, [tabKey, setActiveTabKey])
 
   const className = tabKey === activeTabKey
-    ? `basis-32 min-w-0 flex items-center px-1 bg-color-0 border-t-2 select-none border-color-8`
-    : `basis-32 min-w-0 flex items-center px-1 bg-color-0 border-t-2 select-none border-color-0 opacity-40`
+    ? `basis-32 min-w-0 flex items-center px-1 text-color-9 bg-color-0 border-t-2 select-none border-color-8`
+    : `basis-32 min-w-0 flex items-center px-1 text-color-9 bg-color-0 border-t-2 select-none border-color-0 opacity-40`
   const buttonClassName = tabKey === activeTabKey
-    ? `flex-1 text-start text-color-9 whitespace-nowrap overflow-hidden text-ellipsis font-bold`
-    : `flex-1 text-start text-color-9 whitespace-nowrap overflow-hidden text-ellipsis`
+    ? `flex-1 text-start whitespace-nowrap overflow-hidden text-ellipsis font-bold`
+    : `flex-1 text-start whitespace-nowrap overflow-hidden text-ellipsis`
 
   return (
     <div title={label} className={className}>
