@@ -118,7 +118,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   return (
     <div
       ref={divRef}
-      className={`outline-none overflow-x-auto overflow-y-scroll select-none relative bg-color-2 z-0 ${className}`}
+      className={`outline-none overflow-x-auto overflow-y-scroll select-none relative bg-color-gutter z-0 ${className}`}
       onFocus={handleFocus}
       onBlur={handleBlur}
       onCopy={onCopy}
@@ -151,7 +151,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
                 {headerGroup.headers.filter(h => !(h.column.columnDef as ColumnDefEx<T>).hidden).map((header, thX) => (
                   <th key={header.id}
                     colSpan={header.colSpan}
-                    className="relative overflow-hidden whitespace-nowrap px-1 py-0 text-start bg-color-3"
+                    className="relative overflow-hidden whitespace-nowrap px-1 py-0 text-start bg-color-2 text-color-6"
                     style={getThStyle(false, thX, thY)}>
                     {!header.isPlaceholder && RT.flexRender(
                       header.column.columnDef.header,

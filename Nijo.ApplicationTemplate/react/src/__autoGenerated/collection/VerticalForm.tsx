@@ -32,7 +32,7 @@ const Container = ({
     <VFormContext.Provider value={innerContextValue}>
       {depth <= 1 ? (
 
-        <div className={`col-span-full flex flex-col ${depth === 1 ? 'mt-4' : 'mx-px'} ${className ?? ''}`}>
+        <div className={`col-span-full flex flex-col ${depth === 1 ? 'mt-4' : ''} ${className ?? ''}`}>
           {(label || labelSide) && (
             <div className="p-1 flex flex-wrap items-center gap-1">
               <LabelText>{label}</LabelText>

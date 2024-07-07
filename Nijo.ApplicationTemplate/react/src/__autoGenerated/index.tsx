@@ -57,7 +57,7 @@ function ApplicationRootInContext({ children }: {
             </nav>
           </Panel>
 
-          <PanelResizeHandle className="h-1 border-b border-color-5" />
+          <PanelResizeHandle className="h-1 bg-color-base" />
 
           <Panel className="flex flex-col">
             <nav className="flex-1 overflow-y-auto leading-none">
@@ -78,7 +78,7 @@ function ApplicationRootInContext({ children }: {
       <PanelResizeHandle className='w-1 bg-color-base' />
 
       {/* コンテンツ */}
-      <Panel className={`flex flex-col pr-1 pt-1 pb-1 bg-color-base text-color-12`}>
+      <Panel className={`flex flex-col bg-color-base text-color-12`}>
         <Routes>
           <Route path='/' element={<DashBoard />} />
           <Route path='/changes' element={<Util.LocalReposChangeListPage />} />

@@ -89,6 +89,7 @@ namespace Nijo.Features.Storing {
                     import { Link } from 'react-router-dom'
                     import { useFieldArray, FormProvider } from 'react-hook-form'
                     import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon, ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline'
+                    import { ImperativePanelHandle, Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
                     import dayjs from 'dayjs'
                     import { UUID } from 'uuidjs'
                     import * as Util from '../../util'
@@ -112,9 +113,10 @@ namespace Nijo.Features.Storing {
                       const { get } = Util.useHttpRequest()
 
                       // 検索条件
-                      const [openSearchCondition, dispatchOpenSearchCondition] = Util.useToggle(true)
                       const [filter, setFilter] = useState<AggregateType.{{findMany.TypeScriptConditionClass}}>(() => AggregateType.{{findMany.TypeScriptConditionInitializerFn}}())
                       const [currentPage, dispatchPaging] = useReducer(pagingReducer, { pageIndex: 0 })
+                      const searchConditionPanelRef = useRef<ImperativePanelHandle>(null)
+                      const [collapsed, setCollapsed] = useState(false)
 
                       const rhfSearchMethods = Util.useFormEx<AggregateType.{{findMany.TypeScriptConditionClass}}>({})
                       const {
@@ -124,8 +126,15 @@ namespace Nijo.Features.Storing {
                       } = rhfSearchMethods
                       const clearSearchCondition = useCallback(() => {
                         resetSearchCondition()
-                        dispatchOpenSearchCondition(x => x.setValue(true))
-                      }, [resetSearchCondition, dispatchOpenSearchCondition])
+                        searchConditionPanelRef.current?.expand()
+                      }, [resetSearchCondition, searchConditionPanelRef])
+                      const toggleSearchCondition = useCallback(() => {
+                        if (searchConditionPanelRef.current?.getCollapsed()) {
+                          searchConditionPanelRef.current.expand()
+                        } else {
+                          searchConditionPanelRef.current?.collapse()
+                        }
+                      }, [searchConditionPanelRef])
 
                       // 編集対象（リモートリポジトリ + ローカルリポジトリ）
                       const editRange = useMemo(() => ({
@@ -150,8 +159,8 @@ namespace Nijo.Features.Storing {
 
                       const handleReload = useCallback(() => {
                         setFilter(getConditionValues())
-                        dispatchOpenSearchCondition(x => x.setValue(false))
-                      }, [getConditionValues, dispatchOpenSearchCondition])
+                        searchConditionPanelRef.current?.collapse()
+                      }, [getConditionValues, searchConditionPanelRef])
 
                       // データ編集
                     {{If(!_options.ReadOnly && _aggregate.GetSingleRefKeyAggregate() == null, () => $$"""
@@ -192,66 +201,68 @@ namespace Nijo.Features.Storing {
                       ], [get, update])
 
                       return (
-                        <div className="page-content-root gap-4">
+                        <div className="page-content-root bg-color-gutter">
 
-                          <FormProvider {...rhfSearchMethods}>
-                            <form className="flex flex-col">
-                              <div className="flex gap-4 overflow-auto bg-color-gutter py-1 px-1 mx-px">
-                                <div className="flex gap-4 flex-wrap">
-                                  <h1 className="self-center text-base font-semibold whitespace-nowrap select-none">
-                                    {{_aggregate.Item.DisplayName}}
-                                  </h1>
+                          <div className="flex gap-4 px-2 py-1">
+                            <div className="flex gap-4 flex-wrap">
+                              <h1 className="self-center text-base font-semibold whitespace-nowrap select-none">
+                                {{_aggregate.Item.DisplayName}}
+                              </h1>
                     {{If(!_options.ReadOnly && _aggregate.GetSingleRefKeyAggregate() == null, () => $$"""
-                                  <Input.IconButton className="self-center" onClick={handleAdd}>追加</Input.IconButton>
+                              <Input.IconButton className="self-center" onClick={handleAdd}>追加</Input.IconButton>
                     """)}}
                     {{If(!_options.ReadOnly, () => $$"""
-                                  <Input.IconButton className="self-center" onClick={handleRemove}>削除</Input.IconButton>
-                                  <Input.IconButton className="self-center" onClick={onSave}>一時保存</Input.IconButton>
+                              <Input.IconButton className="self-center" onClick={handleRemove}>削除</Input.IconButton>
+                              <Input.IconButton className="self-center" onClick={onSave}>一時保存</Input.IconButton>
                     """)}}
                     {{If(_options.PageTitleSide != null, () => $$"""
-                                {{WithIndent(_options.PageTitleSide!, "            ")}}
+                            {{WithIndent(_options.PageTitleSide!, "        ")}}
                     """)}}
-                                </div>
-                                <div className="flex-1"></div>
-                                <div className="flex items-start bg-color-0 -mb-1">
-                                  <Input.IconButton className="px-1 my-1" iconRight
-                                    icon={openSearchCondition ? ChevronDownIcon : ChevronUpIcon}
-                                    onClick={() => dispatchOpenSearchCondition(x => x.toggle())}
-                                  >検索条件</Input.IconButton>
-                                </div>
-                                <Input.IconButton className="self-center" onClick={clearSearchCondition}>クリア</Input.IconButton>
-                                <Input.IconButton className="self-center" icon={MagnifyingGlassIcon} fill onClick={handleReload}>検索</Input.IconButton>
-                              </div>
+                            </div>
+                            <div className="flex-1"></div>
+                            <div className={`flex items-start bg-color-base z-0 ${collapsed ? '' : '-mb-1'}`}>
+                              <Input.IconButton className="px-1 my-1" iconRight onClick={toggleSearchCondition} icon={collapsed ? ChevronUpIcon : ChevronDownIcon}>検索条件</Input.IconButton>
+                            </div>
+                            <Input.IconButton className="self-center" onClick={clearSearchCondition}>クリア</Input.IconButton>
+                            <Input.IconButton className="self-center" icon={MagnifyingGlassIcon} fill onClick={handleReload}>検索</Input.IconButton>
+                          </div>
 
-                              <VForm.Container leftColumnMinWidth="10rem" className={`border max-h-[40vh] overflow-y-auto ${openSearchCondition ? '' : 'hidden'}`}>
+                          <PanelGroup direction="vertical">
+                            <Panel ref={searchConditionPanelRef} defaultSize={30} collapsible onCollapse={setCollapsed} className="mx-2 bg-color-base">
+                              <div className="h-full overflow-auto">
+                                <FormProvider {...rhfSearchMethods}>
+                                  <VForm.Container leftColumnMinWidth="10rem" className="p-1">
                     {{groupedSearchConditions.SelectTextTemplate(group => $$"""
                     {{If(group.Key == _aggregate, () => $$"""
-                                {{WithIndent(group.SelectTextTemplate(RenderSearchConditionValueMember), "            ")}}
+                                    {{WithIndent(group.SelectTextTemplate(RenderSearchConditionValueMember), "                ")}}
                     """).Else(() => $$"""
-                                <VForm.Container label="{{group.Key.Item.DisplayName}}">
-                                  {{WithIndent(group.SelectTextTemplate(RenderSearchConditionValueMember), "              ")}}
-                                </VForm.Container>
+                                    <VForm.Container label="{{group.Key.Item.DisplayName}}">
+                                      {{WithIndent(group.SelectTextTemplate(RenderSearchConditionValueMember), "                  ")}}
+                                    </VForm.Container>
                     """)}}
                     """)}}
-                              </VForm.Container>
+                                  </VForm.Container>
+                                </FormProvider>
+                              </div>
+                            </Panel>
 
+                            <PanelResizeHandle className="h-2" />
+
+                            <Panel>
                               <Util.InlineMessageList />
-                            </form>
-                          </FormProvider>
-
-                          <FormProvider {...reactHookFormMethods}>
-                            <form className="flex-1">
-                              <Layout.DataTable
-                                data={fields}
-                                columns={columnDefs}
+                              <FormProvider {...reactHookFormMethods}>
+                                <Layout.DataTable
+                                  data={fields}
+                                  columns={columnDefs}
                     {{If(!_options.ReadOnly, () => $$"""
-                                onChangeRow={handleUpdateRow}
-                                ref={dtRef}
+                                  onChangeRow={handleUpdateRow}
+                                  ref={dtRef}
                     """)}}
-                                className="h-full"
-                              ></Layout.DataTable>
-                            </form>
-                          </FormProvider>
+                                  className="h-full"
+                                ></Layout.DataTable>
+                              </FormProvider>
+                            </Panel>
+                          </PanelGroup>
                         </div>
                       )
                     }
