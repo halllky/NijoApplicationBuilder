@@ -201,9 +201,9 @@ namespace Nijo.Features.Storing {
                       ], [get, update])
 
                       return (
-                        <div className="page-content-root bg-color-gutter">
+                        <div className="page-content-root">
 
-                          <div className="flex gap-4 px-2 py-1">
+                          <div className="flex gap-4 p-1">
                             <div className="flex gap-4 flex-wrap">
                               <Util.SideMenuCollapseButton />
                               <h1 className="self-center text-base font-semibold whitespace-nowrap select-none">
@@ -221,15 +221,16 @@ namespace Nijo.Features.Storing {
                     """)}}
                             </div>
                             <div className="flex-1"></div>
-                            <div className={`flex items-start bg-color-base z-0 ${collapsed ? '' : '-mb-1'}`}>
-                              <Input.IconButton className="px-1 my-1" iconRight onClick={toggleSearchCondition} icon={collapsed ? ChevronUpIcon : ChevronDownIcon}>検索条件</Input.IconButton>
-                            </div>
                             <Input.IconButton className="self-center" onClick={clearSearchCondition}>クリア</Input.IconButton>
-                            <Input.IconButton className="self-center" icon={MagnifyingGlassIcon} fill onClick={handleReload}>検索</Input.IconButton>
+                            <div className="self-center flex">
+                              <Input.IconButton icon={MagnifyingGlassIcon} fill onClick={handleReload}>検索</Input.IconButton>
+                              <div className="self-stretch w-px bg-color-base"></div>
+                              <Input.IconButton icon={collapsed ? ChevronDownIcon : ChevronUpIcon} fill onClick={toggleSearchCondition} hideText>検索条件</Input.IconButton>
+                            </div>
                           </div>
 
                           <PanelGroup direction="vertical">
-                            <Panel ref={searchConditionPanelRef} defaultSize={30} collapsible onCollapse={setCollapsed} className="mx-2 bg-color-base">
+                            <Panel ref={searchConditionPanelRef} defaultSize={30} collapsible onCollapse={setCollapsed}>
                               <div className="h-full overflow-auto">
                                 <FormProvider {...rhfSearchMethods}>
                                   <VForm.Container leftColumnMinWidth="10rem" className="p-1">
@@ -247,7 +248,7 @@ namespace Nijo.Features.Storing {
                               </div>
                             </Panel>
 
-                            <PanelResizeHandle className="h-2" />
+                            <PanelResizeHandle className="h-2 bg-color-4" />
 
                             <Panel>
                               <Util.InlineMessageList />
