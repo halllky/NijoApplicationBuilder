@@ -342,7 +342,7 @@ namespace Nijo.Features.Storing {
                             ref={dtRef}
                             data={fields}
                             {...options}
-                            className="h-64 w-full"
+                            className="h-64 w-full border-t border-color-3"
                           />
                         </VForm.Item>
                       )

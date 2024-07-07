@@ -298,21 +298,23 @@ namespace Nijo.Features.Storing {
                               <span className="select-all">{instanceName}</span>
                     """)}}
                               <div className="flex-1"></div>
+
+                    {{If(_type != E_Type.View && _aggregate.Item.Options.DisableLocalRepository != true, () => $$"""
+                              <Input.IconButton submit fill className="self-start" icon={BookmarkSquareIcon}>一時保存</Input.IconButton>
+                    """).ElseIf(_type == E_Type.Create, () => $$"""
+                              <Input.IconButton submit fill className="self-start" icon={BookmarkSquareIcon}>保存</Input.IconButton>
+                    """).ElseIf(_type == E_Type.View, () => $$"""
+                              <Input.IconButton submit fill className="self-start" icon={PencilIcon} onClick={navigateToEditView}>編集</Input.IconButton>
+                    """).ElseIf(_type == E_Type.Edit, () => $$"""
+                              <Input.IconButton submit fill className="self-start" icon={BookmarkSquareIcon}>更新</Input.IconButton>
+                    """)}}
                             </h1>
 
                             <Util.InlineMessageList />
 
-                            {{new AggregateComponent(_aggregate, _type, false).RenderCaller()}}
-
-                    {{If(_type != E_Type.View && _aggregate.Item.Options.DisableLocalRepository != true, () => $$"""
-                            <Input.IconButton submit fill className="self-start" icon={BookmarkSquareIcon}>一時保存</Input.IconButton>
-                    """).ElseIf(_type == E_Type.Create, () => $$"""
-                            <Input.IconButton submit fill className="self-start" icon={BookmarkSquareIcon}>保存</Input.IconButton>
-                    """).ElseIf(_type == E_Type.View, () => $$"""
-                            <Input.IconButton submit fill className="self-start" icon={PencilIcon} onClick={navigateToEditView}>編集</Input.IconButton>
-                    """).ElseIf(_type == E_Type.Edit, () => $$"""
-                            <Input.IconButton submit fill className="self-start" icon={BookmarkSquareIcon}>更新</Input.IconButton>
-                    """)}}
+                            <div className="flex-1 p-1">
+                              {{new AggregateComponent(_aggregate, _type, false).RenderCaller()}}
+                            </div>
                           </form>
                         </FormProvider>
                       )
