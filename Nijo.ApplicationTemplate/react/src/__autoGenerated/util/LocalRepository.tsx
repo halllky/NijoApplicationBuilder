@@ -5,6 +5,7 @@ import * as Tree from './Tree'
 import * as Notification from './Notification'
 import { useIndexedDbTable } from './Storage'
 import { useLocalRepositoryCommitHandling } from './LocalRepository.Commit'
+import { SideMenuCollapseButton } from './SideMenuCollapseButton'
 
 
 // 一覧/特定集約 共用
@@ -194,7 +195,8 @@ export const LocalReposChangeListPage = () => {
 
   return (
     <div className="page-content-root">
-      <div className="flex gap-2 justify-start">
+      <div className="flex gap-1 p-1 justify-start">
+        <SideMenuCollapseButton />
         <span className="font-bold">一時保存</span>
         <div className="flex-1"></div>
         <Input.Button onClick={handleCommit}>確定</Input.Button>

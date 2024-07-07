@@ -205,6 +205,7 @@ namespace Nijo.Features.Storing {
 
                           <div className="flex gap-4 px-2 py-1">
                             <div className="flex gap-4 flex-wrap">
+                              <Util.SideMenuCollapseButton />
                               <h1 className="self-center text-base font-semibold whitespace-nowrap select-none">
                                 {{_aggregate.Item.DisplayName}}
                               </h1>

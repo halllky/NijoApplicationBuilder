@@ -4,6 +4,7 @@ import { VerticalForm as VForm } from "../collection";
 import { useFormEx } from "./ReactHookFormUtil";
 import { defineStorageContext } from './Storage'
 import { useToastContext } from './Notification'
+import { SideMenuCollapseButton } from './SideMenuCollapseButton';
 
 export type UserSettings = {
   apiDomain?: string
@@ -38,7 +39,11 @@ export const ServerSettingScreen = () => {
 
   return (
     <form className="page-content-root" onSubmit={handleSubmit(handleSave)}>
-      <VForm.Container>
+      <h1 className="flex gap-1 p-1 font-semibold select-none">
+        <SideMenuCollapseButton />
+        設定
+      </h1>
+      <VForm.Container className="p-1">
         <VForm.Container label="基本設定">
           <VForm.Item label="ダークモード">
             <Input.CheckBox {...registerEx('darkMode')} />

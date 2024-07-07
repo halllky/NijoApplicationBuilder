@@ -58,7 +58,11 @@ namespace Nijo.Parts.WebClient {
                       }, [post, withDummyData, genereateDummyData, resetLocalRepository, dispatchMsg, dispatchToast])
 
                       return (
-                        <div className="page-content-root gap-4">
+                        <div className="page-content-root gap-4 p-1">
+                          <div className="flex gap-1">
+                            <Util.SideMenuCollapseButton />
+                            <span className="font-bold">{{context.Config.ApplicationName}}</span>
+                          </div>
 
                           <Util.InlineMessageList />
 

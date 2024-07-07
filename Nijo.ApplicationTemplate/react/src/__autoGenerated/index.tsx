@@ -34,6 +34,9 @@ function ApplicationRootInContext({ children }: {
   // 変更（ローカルリポジトリ）
   const { changesCount } = Util.useLocalRepositoryChangeList()
 
+  // サイドメニュー開閉
+  const [{ collapsed }] = Util.useSideMenuContext()
+
   return (
     <PanelGroup
       direction='horizontal'
@@ -42,7 +45,7 @@ function ApplicationRootInContext({ children }: {
       style={{ fontFamily: fontFamily ? fontFamily : Util.DEFAULT_FONT_FAMILY }}>
 
       {/* サイドメニュー */}
-      <Panel defaultSize={20}>
+      <Panel defaultSize={20} className={collapsed ? 'hidden' : ''}>
         <PanelGroup direction="vertical"
           className="bg-color-gutter text-color-12"
           autoSaveId="LOCAL_STORAGE_KEY.SIDEBAR_SIZE_Y">
@@ -75,7 +78,7 @@ function ApplicationRootInContext({ children }: {
         </PanelGroup>
       </Panel>
 
-      <PanelResizeHandle className='w-1 bg-color-base' />
+      <PanelResizeHandle className={`w-1 bg-color-base ${collapsed ? 'hidden' : ''}`} />
 
       {/* コンテンツ */}
       <Panel className={`flex flex-col bg-color-base text-color-12`}>
@@ -106,11 +109,13 @@ export function DefaultNijoApp({ children }: {
           <Util.ToastContextProvider>
             <Util.LocalRepositoryContextProvider>
               <Util.UserSettingContextProvider>
-                <ApplicationRootInContext>
-                  {children}
-                </ApplicationRootInContext>
-                <Util.EnvNameRibbon />
-                <Util.Toast />
+                <Util.SideMenuContextProvider>
+                  <ApplicationRootInContext>
+                    {children}
+                  </ApplicationRootInContext>
+                  <Util.EnvNameRibbon />
+                  <Util.Toast />
+                </Util.SideMenuContextProvider>
               </Util.UserSettingContextProvider>
             </Util.LocalRepositoryContextProvider>
           </Util.ToastContextProvider>

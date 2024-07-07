@@ -289,7 +289,8 @@ namespace Nijo.Features.Storing {
                     """).Else(() => $$"""
                           <form className="page-content-root gap-2">
                     """)}}
-                            <h1 className="flex text-base font-semibold select-none py-1">
+                            <h1 className="flex items-center text-base font-semibold select-none py-1">
+                              <Util.SideMenuCollapseButton />
                               <Link to="{{multiViewUrl}}">{{_aggregate.Item.DisplayName}}</Link>
                               &nbsp;&#047;&nbsp;
                     {{If(_type == E_Type.Create, () => $$"""
