@@ -72,26 +72,26 @@ const Item = ({ label, labelSide, wide, children, className }: {
   const { leftColumnMinWidth } = useContext(VFormContext)
 
   return wide ? (
-    <div className={`flex flex-col col-span-full border-vform ${className ?? ''}`}>
+    <div className="flex flex-col col-span-full border-vform">
       {(label || labelSide) && (
         <Label>
           <LabelText>{label}</LabelText>
           {labelSide}
         </Label>
       )}
-      <div className="flex-1 bg-color-0">
+      <div className={`flex-1 bg-color-0 ${className ?? ''}`}>
         {children}
       </div>
     </div>
   ) : (
-    <div className={`flex border-vform ${className ?? ''}`}>
+    <div className="flex border-vform">
       {(label || labelSide) && (
         <Label flexBasis={leftColumnMinWidth}>
           <LabelText>{label}</LabelText>
           {labelSide}
         </Label>
       )}
-      <div className="flex-1 bg-color-0 p-1">
+      <div className={`flex-1 bg-color-0 p-1 ${className ?? ''}`}>
         {children}
       </div>
     </div>
