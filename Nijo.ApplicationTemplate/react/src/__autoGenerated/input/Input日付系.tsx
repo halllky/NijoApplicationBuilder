@@ -34,8 +34,8 @@ export const YearMonth = defineCustomComponent<number>((props, ref) => {
   const textRef = useRef<CustomComponentRef<string>>(null)
   useImperativeHandle(ref, () => ({
     getValue: () => yearMonthConversion(textRef.current?.getValue() ?? ''),
-    focus: () => textRef.current?.focus(),
-  }), [])
+    focus: opt => textRef.current?.focus(opt),
+  }), [textRef])
 
   const strValue = useMemo(() => {
     if (value == undefined) return ''

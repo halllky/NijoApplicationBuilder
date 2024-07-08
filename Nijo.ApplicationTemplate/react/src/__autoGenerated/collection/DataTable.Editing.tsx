@@ -182,7 +182,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
   }, [commitEditing])
 
   useImperativeHandle(ref, () => ({
-    focus: () => editorRef.current?.focus(),
+    focus: () => editorRef.current?.focus({ preventScroll: true }),
     startEditing,
   }), [startEditing])
 

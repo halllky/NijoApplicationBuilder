@@ -32,7 +32,7 @@ export interface CustomComponentRef<T = any> {
    */
   getValue: () => T | undefined
   /** DataTableのエディターとして表示されたときの初回フォーカスに使う */
-  focus: () => void
+  focus: (opt?: FocusOptions) => void
 }
 
 export type CustomComponentProps<

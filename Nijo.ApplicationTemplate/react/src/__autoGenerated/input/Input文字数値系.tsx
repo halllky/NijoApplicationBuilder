@@ -34,8 +34,8 @@ export const Num = defineCustomComponent<number>((props, ref) => {
       const { num } = tryParseAsNumberOrEmpty(textRef.current?.getValue() ?? '')
       return num
     },
-    focus: () => textRef.current?.focus(),
-  }), [])
+    focus: opt => textRef.current?.focus(opt),
+  }), [textRef])
 
   return <TextInputBase
     ref={textRef}

@@ -152,8 +152,8 @@ export const ComboBoxBase = defineCustomComponent(<TOption, TEmitValue, TMatchin
       const valueOfAnyItem = anyItem ? emitValueSelector(anyItem) : undefined
       return valueOfAnyItem
     },
-    focus: () => textBaseRef.current?.focus(),
-  }), [getHighlightedOrAnyItem, emitValueSelector])
+    focus: opt => textBaseRef.current?.focus(opt),
+  }), [getHighlightedOrAnyItem, emitValueSelector, textBaseRef])
 
   const displayText = useMemo(() => {
     if (keyword !== undefined) return keyword

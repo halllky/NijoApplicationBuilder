@@ -23,8 +23,8 @@ export const Selection = defineCustomComponent(<TItem extends string = string>(
   const radioRef = useRef<CustomComponentRef<TItem>>(null)
   useImperativeHandle(ref, () => ({
     getValue: () => radioRef.current?.getValue(),
-    focus: () => radioRef.current?.focus(),
-  }))
+    focus: opt => radioRef.current?.focus(opt),
+  }), [radioRef])
 
   const type = useMemo(() => {
     if (radio) return 'radio' as const
@@ -111,8 +111,8 @@ export const BooleanComboBox = defineCustomComponent<boolean>((props, ref) => {
       if (selectedItem === booleanComboBoxOptions[1]) return false
       return undefined
     },
-    focus: () => comboRef.current?.focus(),
-  }))
+    focus: opt => comboRef.current?.focus(opt),
+  }), [comboRef])
 
   const getBoolValue = useCallback((item: typeof booleanComboBoxOptions[0]) => {
     return item.boolValue

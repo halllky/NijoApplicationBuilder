@@ -15,8 +15,8 @@ export const ToggleBase = defineCustomComponent<boolean>((props, ref) => {
   const inputRef = useRef<HTMLInputElement>(null)
   useImperativeHandle(ref, () => ({
     getValue: () => inputRef.current?.checked ?? false,
-    focus: () => inputRef.current?.focus(),
-  }), [])
+    focus: opt => inputRef.current?.focus(opt),
+  }), [inputRef])
 
   const forceRendering = useForceRendering()
   const emitChange = useCallback((checked: boolean) => {
@@ -124,8 +124,8 @@ export const RadioGroupBase = defineCustomComponent(<T extends {}, TKey extends 
 
   useImperativeHandle(ref, () => ({
     getValue: () => value,
-    focus: () => liRefs.current[0]?.current?.focus(),
-  }), [value])
+    focus: opt => liRefs.current[0]?.current?.focus(opt),
+  }), [value, liRefs])
 
   if (readOnly) return (
     <TextInputBase value={displayText} readOnly />

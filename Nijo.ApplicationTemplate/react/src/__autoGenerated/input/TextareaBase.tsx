@@ -21,8 +21,8 @@ export const TextareaBase = defineCustomComponent<string, {}, TextareaHTMLAttrib
 
   useImperativeHandle(ref, () => ({
     getValue: () => textareaRef.current?.value,
-    focus: () => textareaRef.current?.focus(),
-  }), [])
+    focus: opt => textareaRef.current?.focus(opt),
+  }), [textareaRef])
 
   const handleFocus: React.FocusEventHandler<HTMLTextAreaElement> = useCallback(e => {
     if (readOnly) textareaRef.current?.select()
@@ -72,7 +72,7 @@ export const SimpleMdeTextareaBase = defineCustomComponent<string, {}, HTMLAttri
 
   useImperativeHandle(ref, () => ({
     getValue: () => value,
-    focus: () => {
+    focus: opt => {
       // focusが呼ばれるタイミングの方が早いのでsetTimeoutで待つ
       const waitForInstanceReady = () => setTimeout(() => {
         if (mdeInstance.current) {

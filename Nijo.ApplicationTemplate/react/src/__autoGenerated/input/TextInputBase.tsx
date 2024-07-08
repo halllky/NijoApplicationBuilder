@@ -133,8 +133,11 @@ export const TextInputBase = defineCustomComponent<string, {
       const result = getValidationResult(unFormatText)
       return result.ok ? result.formatted : ''
     },
-    focus: () => inputRef.current?.select(),
-  }), [getValidationResult, unFormatText])
+    focus: opt => {
+      inputRef.current?.focus(opt)
+      inputRef.current?.select()
+    },
+  }), [getValidationResult, unFormatText, inputRef])
 
   return (
     <div
