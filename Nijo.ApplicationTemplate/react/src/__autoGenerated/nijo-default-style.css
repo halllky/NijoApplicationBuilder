@@ -224,6 +224,7 @@ button[type="reset"].bg-color-button {
   @apply fill-black dark:fill-white opacity-25;
 }
 
+/*****************************************/
 .border-vform {
   /* neutral-200 */
   box-shadow: 0 0 0 1px #e5e5e5;
@@ -233,6 +234,28 @@ button[type="reset"].bg-color-button {
   /* neutral-800 */
   box-shadow: 0 0 0 1px #262626;
 }
+
+@media (max-width: 640px) {
+  :root {
+    --vform-column-count: 1;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 960px) {
+  :root {
+    --vform-column-count: 2;
+  }
+}
+
+@media (min-width: 961px) {
+  :root {
+    --vform-column-count: 3;
+  }
+}
+
+/* TODO: より大きい画面幅 */
+
+/*****************************************/
 
 /* react-simplemde-editor, easymde 用の設定 */
 .EasyMDEContainer .CodeMirror {

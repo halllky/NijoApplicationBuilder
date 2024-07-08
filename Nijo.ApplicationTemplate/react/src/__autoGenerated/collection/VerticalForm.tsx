@@ -22,10 +22,11 @@ const Container = ({
     leftColumnMinWidth,
   }), [depth, leftColumnMinWidth])
 
+  const childCount = React.Children.count(children)
   const gridStyle: React.CSSProperties = {
-    gridTemplateColumns: leftColumnMinWidth
-      ? `repeat(auto-fit, minmax(calc(16rem + ${leftColumnMinWidth?.trim()}), 1fr))`
-      : `repeat(auto-fit, minmax(16rem, 1fr))`,
+    gridAutoFlow: 'column',
+    gridTemplateRows: `repeat(auto-fit, minmax(2rem, 1fr))`,
+    maxHeight: `calc((3rem * ${childCount}) / var(--vform-column-count))`,
   }
 
   return (
