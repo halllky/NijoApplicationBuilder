@@ -19,6 +19,10 @@ namespace Nijo.Core {
         public IEnumerable<string> OverridedApplicationServiceCodeForUnitTest { get; init; } = Enumerable.Empty<string>();
 
         /// <summary>
+        /// 一時保存を使用しない
+        /// </summary>
+        public required bool DisableLocalRepository { get; init; }
+        /// <summary>
         /// 一括登録APIを使用しない
         /// </summary>
         public required bool DisableBatchUpdate {  get; init; }
@@ -37,6 +41,7 @@ namespace Nijo.Core {
 
         private const string DBCONTEXT_NAME = "DbContextName";
 
+        private const string DISABLE_LOCAL_REPOSITORY = "DisableLocalRepository";
         private const string DISABLE_BATCH_UPDATE = "DisableBatchUpdate";
         private const string DISCARD_SEARCH_LIMIT = "DiscardSearchLimit";
 
@@ -49,6 +54,7 @@ namespace Nijo.Core {
             root.Add(configElement);
 
             // 各種機能の有効無効
+            if (DisableLocalRepository) root.SetAttributeValue(DISABLE_LOCAL_REPOSITORY, "True");
             if (DisableBatchUpdate) root.SetAttributeValue(DISABLE_BATCH_UPDATE, "True");
             if (DiscardSearchLimit) root.SetAttributeValue(DISCARD_SEARCH_LIMIT, "True");
 
@@ -85,6 +91,7 @@ namespace Nijo.Core {
 
             return new Config {
                 ApplicationName = xDocument.Root.Name.LocalName,
+                DisableLocalRepository = xDocument.Root.Attribute(DISABLE_LOCAL_REPOSITORY) != null,
                 DisableBatchUpdate = xDocument.Root.Attribute(DISABLE_BATCH_UPDATE) != null,
                 DiscardSearchLimit = xDocument.Root.Attribute(DISCARD_SEARCH_LIMIT) != null,
                 DbContextName = configSection?.Element(DBCONTEXT_NAME)?.Value ?? "MyDbContext",

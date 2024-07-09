@@ -307,10 +307,6 @@ namespace Nijo.Core {
         public bool? InvisibleInGui { get; set; }
         public string? Handler { get; set; }
         public List<string> DependsOn { get; } = new();
-        /// <summary>
-        /// SingleViewでの更新時に即時更新するかLocalRepositoryに一時保存するか
-        /// </summary>
-        public bool? DisableLocalRepository { get; set; }
 
         public sealed class GroupOption {
             public required string GroupName { get; init; }

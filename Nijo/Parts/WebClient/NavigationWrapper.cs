@@ -31,14 +31,14 @@ namespace Nijo.Parts.WebClient {
                     import { ItemKey } from './LocalRepository'
 
                     {{navigationHooks.SelectTextTemplate(nav => $$"""
-                    {{nav.RenderHooks()}}
+                    {{nav.RenderHooks(ctx)}}
 
                     """)}}
                     """;
             },
         };
 
-        private string RenderHooks() {
+        private string RenderHooks(CodeRenderingContext context) {
             var create = new SingleView(_aggregate.GetRoot(), SingleView.E_Type.Create);
             var view = new SingleView(_aggregate.GetRoot(), SingleView.E_Type.View);
             var edit = new SingleView(_aggregate.GetRoot(), SingleView.E_Type.Edit);
@@ -46,12 +46,21 @@ namespace Nijo.Parts.WebClient {
 
             return $$"""
                 export const {{GetSingleViewUrlHookName}} = (key: ItemKey | undefined, mode: 'new' | 'view' | 'edit'): string => {
+                {{If(context.Config.DisableLocalRepository, () => $$"""
+                  if (mode === 'new') {
+                    return `{{create.GetUrlStringForReact()}}`
+                  }
+                  if (!key) {
+                    return ''
+                  }
+                """).Else(() => $$"""
                   if (!key) {
                     return ''
                   }
                   if (mode === 'new') {
                     return `{{create.GetUrlStringForReact(["key"])}}`
                   }
+                """)}}
                   const [{{keyArray.Select(k => k.VarName).Join(", ")}}] = JSON.parse(key) as [{{keyArray.Select(k => $"{k.TsType} | undefined").Join(", ")}}]
                   if (mode === 'view') {
                     return `{{view.GetUrlStringForReact(keyArray.Select(k => k.VarName))}}`

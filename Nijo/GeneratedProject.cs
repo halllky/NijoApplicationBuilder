@@ -77,6 +77,7 @@ namespace Nijo {
                     ApplicationName = applicationName,
                     DbContextName = "MyDbContext",
                     DiscardSearchLimit = false,
+                    DisableLocalRepository = false,
                     DisableBatchUpdate = false,
                 };
 

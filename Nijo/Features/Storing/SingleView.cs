@@ -169,33 +169,40 @@ namespace Nijo.Features.Storing {
 
                       const { load{{(_type == E_Type.View ? "" : ", commit")}} } = Util.{{localRepos.HookName}}(pkArray)
 
-                    """).Else(() => $$"""
+                    """).ElseIf(!context.Config.DisableLocalRepository, () => $$"""
                       const { {{URLKEY_TYPE_NEW}}: keyOfNewItem } = useParams()
                       const { load, commit } = Util.{{localRepos.HookName}}(keyOfNewItem as Util.ItemKey | undefined)
 
                     """)}}
                       const [defaultValues, setDefaultValues] = useState<AggregateType.{{dataClass.TsTypeName}} | undefined>()
+                    {{If(_type == E_Type.Edit || _type == E_Type.View || !context.Config.DisableLocalRepository, () => $$"""
                       useEffect(() => {
                         load().then(items => {
                           setDefaultValues(items?.[0])
                         })
                       }, [load])
-                    {{If(_type != E_Type.View, () => $$"""
 
+                    """).Else(() => $$"""
+                      useEffect(() => {
+                        setDefaultValues({{WithIndent(dataClass.RenderNewObjectLiteral(), "    ")}})
+                      }, [])
+
+                    """)}}
+                    {{If(_type == E_Type.Edit || (_type == E_Type.Create && !context.Config.DisableLocalRepository), () => $$"""
                       const handleCommit: ReturnType<typeof Util.{{localRepos.HookName}}>['commit'] = useCallback(async (...items) => {
                         await commit(...items)
                         const afterCommit = await load()
                         setDefaultValues(afterCommit?.[0])
                       }, [load, commit])
-                    """)}}
 
+                    """)}}
                       return defaultValues ? (
                         <AfterLoaded
                     {{If(_type == E_Type.Edit || _type == E_Type.View, () => $$"""
                           pkArray={pkArray}
                     """)}}
                           defaultValues={defaultValues}
-                    {{If(_type != E_Type.View, () => $$"""
+                    {{If(_type == E_Type.Edit || (_type == E_Type.Create && !context.Config.DisableLocalRepository), () => $$"""
                           commit={handleCommit}
                     """)}}
                         ></AfterLoaded>
@@ -211,7 +218,7 @@ namespace Nijo.Features.Storing {
                       pkArray,
                     """)}}
                       defaultValues,
-                    {{If(_type != E_Type.View, () => $$"""
+                    {{If(_type == E_Type.Edit || (_type == E_Type.Create && !context.Config.DisableLocalRepository), () => $$"""
                       commit,
                     """)}}
                     }: {
@@ -219,7 +226,7 @@ namespace Nijo.Features.Storing {
                       pkArray: [{{keyArray.Select(k => $"{k.TsType} | undefined").Join(", ")}}]
                     """)}}
                       defaultValues: AggregateType.{{dataClass.TsTypeName}}
-                    {{If(_type != E_Type.View, () => $$"""
+                    {{If(_type == E_Type.Edit || (_type == E_Type.Create && !context.Config.DisableLocalRepository), () => $$"""
                       commit: ReturnType<typeof Util.{{localRepos.HookName}}>['commit']
                     """)}}
                     }) => {
@@ -253,22 +260,26 @@ namespace Nijo.Features.Storing {
                         e.preventDefault()
                       }, [navigate, pkArray])
 
-                    """).ElseIf(_type == E_Type.Create && _aggregate.Item.Options.DisableLocalRepository == true, () => $$"""
+                    """).ElseIf(_type == E_Type.Create && context.Config.DisableLocalRepository, () => $$"""
                       // データ新規作成の直接コミット
+                      const { post } = Util.useHttpRequest()
                       const [, dispatchToast] = Util.useToastContext()
                       const onSave: SubmitHandler<AggregateType.{{dataClass.TsTypeName}}> = useCallback(async data => {
-                        const response = await post<AggregateType.{{dataClass.TsTypeName}}>(`{{controller.CreateCommandApi}}`, data)
+                        const [{ item: saveItem }] = AggregateType.{{dataClass.ConvertFnNameToLocalRepositoryType}}(data)
+                        const response = await post<AggregateType.{{dataClass.TsTypeName}}>(`{{controller.CreateCommandApi}}`, saveItem)
                         if (response.ok) {
                           dispatchToast(msg => msg.info(`${({{names.Select(path => $"String(response.data.{path})").Join(" + ")}})}を作成しました。`))
-                          navigate(`{{GetUrlStringForReact(E_Type.View, keys.Select(vm => $"response.data.{vm.GetFullPath().Join("?.")}"))}}`)
+                          navigate(`{{GetUrlStringForReact(E_Type.View, keys.Select(vm => $"response.data.{vm.GetFullPathAsSingleViewDataClass().Join("?.")}"))}}`)
                         }
                       }, [post, navigate])
 
-                    """).ElseIf(_type == E_Type.Edit && _aggregate.Item.Options.DisableLocalRepository == true, () => $$"""
+                    """).ElseIf(_type == E_Type.Edit && context.Config.DisableLocalRepository, () => $$"""
                       // データ更新の直接コミット
+                      const { post } = Util.useHttpRequest()
                       const [, dispatchToast] = Util.useToastContext()
                       const onSave: SubmitHandler<AggregateType.{{dataClass.TsTypeName}}> = useCallback(async data => {
-                        const response = await post<AggregateType.{{dataClass.TsTypeName}}>(`{{controller.UpdateCommandApi}}`, data)
+                        const [{ item: saveItem }] = AggregateType.{{dataClass.ConvertFnNameToLocalRepositoryType}}(data)
+                        const response = await post<AggregateType.{{dataClass.TsTypeName}}>(`{{controller.UpdateCommandApi}}`, saveItem)
                         if (response.ok) {
                           dispatchToast(msg => msg.info(`${({{names.Select(path => $"String(response.data.{path})").Join(" + ")}})}を更新しました。`))
                           navigate(`{{GetUrlStringForReact(E_Type.View, urlKeysWithMember.Select((_, i) => $"pkArray[{i}]"))}}`)
@@ -300,7 +311,7 @@ namespace Nijo.Features.Storing {
                     """)}}
                               <div className="flex-1"></div>
 
-                    {{If(_type != E_Type.View && _aggregate.Item.Options.DisableLocalRepository != true, () => $$"""
+                    {{If(_type != E_Type.View && !context.Config.DisableLocalRepository, () => $$"""
                               <Input.IconButton submit fill className="self-start" icon={BookmarkSquareIcon}>一時保存</Input.IconButton>
                     """).ElseIf(_type == E_Type.Create, () => $$"""
                               <Input.IconButton submit fill className="self-start" icon={BookmarkSquareIcon}>保存</Input.IconButton>

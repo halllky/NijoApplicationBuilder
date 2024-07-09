@@ -28,6 +28,8 @@ namespace Nijo.Parts.WebClient {
                   { url: '{{page.Url}}', text: '{{page.LabelInMenu}}' },
                 """)}}
                 ]
+
+                export const SHOW_LOCAL_REPOSITORY_MENU = {{(context.Config.DisableLocalRepository ? "false" : "true")}}
                 """,
         };
     }
