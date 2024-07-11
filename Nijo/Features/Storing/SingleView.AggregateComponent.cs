@@ -130,9 +130,13 @@ namespace Nijo.Features.Storing {
                         <>
                           <VForm.Container
                             estimatedLabelWidth="{{GetLeftColumnWidth()}}"
-                            label="{{_aggregate.Item.DisplayName}}"
-                            labelSide={(state === '' || state === '+' || state === '*') && (
-                              <Input.Button icon={XMarkIcon} onClick={handleDelete}>削除</Input.Button>
+                            label={(
+                              <div className="flex justify-start items-center gap-2">
+                                <VForm.LabelText>{{_aggregate.Item.DisplayName}}</VForm.LabelText>
+                                {(state === '' || state === '+' || state === '*') && (
+                                  <Input.Button icon={XMarkIcon} onClick={handleDelete}>削除</Input.Button>
+                                )}
+                              </div>
                             )}
                             className="pt-4"
                           >
@@ -239,28 +243,32 @@ namespace Nijo.Features.Storing {
                     """)}}
 
                       return (
-                        <VForm.Container labelSide={(
+                        <VForm.Container label={(
                           <div className="flex gap-2 justify-start">
-                            <h1 className="text-base font-semibold select-none py-1">
-                              {{_aggregate.GetParent()?.RelationName}}
-                            </h1>
+                            <VForm.LabelText>{{_aggregate.GetParent()?.RelationName}}</VForm.LabelText>
                     {{If(_mode != SingleView.E_Type.View, () => $$"""
                             <Input.Button onClick={onCreate}>追加</Input.Button>
                     """)}}
-                            <div className="flex-1"></div>
                           </div>
                         )}>
                           {fields.map((item, {{loopVar}}) => (
                     {{If(_mode == SingleView.E_Type.View, () => $$"""
-                            <VForm.Container key={{{loopVar}}}>
+                            <VForm.Container key={{{loopVar}}} labelPosition="left" label={(
+                              <div className="overflow-hidden w-[2rem] px-1">
+                                <VForm.LabelText>{{{loopVar}}}</VForm.LabelText>
+                              </div>
+                            )}>
                     """).Else(() => $$"""
-                            <VForm.Container key={{{loopVar}}} labelSide={(
-                              <Input.IconButton
-                                underline
-                                icon={XMarkIcon}
-                                onClick={onRemove({{loopVar}})}>
-                                削除
-                              </Input.IconButton>
+                            <VForm.Container key={{{loopVar}}} labelPosition="left" label={(
+                              <div className="flex flex-col gap-1">
+                                <VForm.LabelText>{{{loopVar}}}</VForm.LabelText>
+                                <Input.IconButton
+                                  underline
+                                  icon={XMarkIcon}
+                                  onClick={onRemove({{loopVar}})}>
+                                  削除
+                                </Input.IconButton>
+                              </div>
                             )}>
                     """)}}
                               {{WithIndent(RenderMembers(), "          ")}}
@@ -322,20 +330,24 @@ namespace Nijo.Features.Storing {
 
                       return (
                         <VForm.Item wide
+                    {{If(_mode == SingleView.E_Type.View, () => $$"""
                           label="{{_aggregate.GetParent()?.RelationName}}"
-                    {{If(_mode != SingleView.E_Type.View, () => $$"""
-                          labelSide={<>
-                            <Input.Button
-                              icon={PlusIcon}
-                              onClick={onAdd}>
-                              追加
-                            </Input.Button>
-                            <Input.Button
-                              icon={XMarkIcon}
-                              onClick={onRemove}>
-                              削除
-                            </Input.Button>
-                          </>}
+                    """).Else(() => $$"""
+                          label={(
+                            <div className="flex items-center gap-2">
+                              <VForm.LabelText>{{_aggregate.GetParent()?.RelationName}}</VForm.LabelText>
+                              <Input.Button
+                                icon={PlusIcon}
+                                onClick={onAdd}>
+                                追加
+                              </Input.Button>
+                              <Input.Button
+                                icon={XMarkIcon}
+                                onClick={onRemove}>
+                                削除
+                              </Input.Button>
+                            </div>
+                          )}
                     """)}}
                           >
                           <Layout.DataTable
@@ -443,15 +455,17 @@ namespace Nijo.Features.Storing {
 
                     yield return $$"""
                         <VForm.Container
-                          labelSide={<>
-                            {{variationSwitch.MemberName}}
-                            <{{selectComponent.Name}}
-                              {...registerEx({{switchProp}})}
+                          label={(
+                            <div className="flex flex-wrap items-center gap-2">
+                              <VForm.LabelText>{{variationSwitch.MemberName}}</VForm.LabelText>
+                              <{{selectComponent.Name}}
+                                {...registerEx({{switchProp}})}
                         {{selectComponent.GetPropsStatement().SelectTextTemplate(keyValue => $$"""
-                             {{WithIndent(keyValue, "     ")}}
+                                {{WithIndent(keyValue, "        ")}}
                         """)}}
-                            />
-                          </>}
+                              />
+                            </div>
+                          )}
                         >
                         {{variationSwitch.GetGroupItems().SelectTextTemplate(variation => $$"""
                           {{WithIndent(new AggregateComponent(variation, _mode).RenderCaller(), "  ")}}
