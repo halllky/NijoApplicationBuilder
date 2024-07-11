@@ -6,6 +6,7 @@ import UserInputテスト from './debug-room/UserInputテスト'
 import VFormテスト from './debug-room/VFromテスト'
 import CssGrid挙動調査 from './debug-room/CssGrid挙動調査'
 import TabLayoutテスト from './debug-room/TabLayoutテスト'
+import UnknownObjectViewerテスト from './debug-room/UnknownObjectViewerテスト'
 
 function App() {
 
@@ -16,6 +17,7 @@ function App() {
     { path: '/vform', label: 'VFormテスト', element: <VFormテスト /> },
     { path: '/css-grid', label: 'CssGrid挙動調査', element: <CssGrid挙動調査 /> },
     { path: '/tab-layout', label: 'TabLayoutテスト', element: <TabLayoutテスト /> },
+    { path: '/unknown-object-viewer', label: 'UnknownObjectViewerテスト', element: <UnknownObjectViewerテスト /> },
   ], [])
 
   return (

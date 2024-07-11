@@ -34,15 +34,14 @@ const Container = ({
   }), [depth, estimatedLabelWidth, estimatedValueWidth])
 
   // container
-  const indentTop = depth === 1 ? 'mt-4' : ''
-  const background = depth >= 2 ? 'bg-color-2 border-vform' : ''
+  const background = depth >= 1 ? 'bg-color-2 border-vform' : ''
   const flexDirection = labelPosition === 'left' ? '' : 'flex-col'
 
   // label
-  const labelPadding = (depth >= 2 && labelPosition !== 'left') ? 'px-1 py-px' : ''
+  const labelPadding = (depth >= 1 && labelPosition !== 'left') ? 'px-1 py-px' : ''
 
   // contents
-  const indentLeft = (depth >= 2 && labelPosition !== 'left') ? 'ml-[2rem]' : ''
+  const indentLeft = (depth >= 1 && labelPosition !== 'left') ? 'ml-[2rem]' : ''
   const gridStyle: React.CSSProperties = {
     gridTemplateColumns: `repeat(auto-fit, minmax(calc((${estimatedLabelWidth}) + (${estimatedValueWidth})), 1fr))`,
     // gridTemplateColumns: `repeat(1, minmax(0, 1fr))`, // 折り返しなし縦一直線
@@ -50,7 +49,7 @@ const Container = ({
 
   return (
     <VFormContext.Provider value={innerContextValue}>
-      <div className={`col-span-full flex ${flexDirection} ${indentTop} ${background} ${className ?? ''}`}>
+      <div className={`col-span-full flex ${flexDirection} ${background} ${className ?? ''}`}>
         {(label !== undefined) && (
           <div className={`flex justify-start items-start ${labelPadding}`}>
             {renderLabel(label)}

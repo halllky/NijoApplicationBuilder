@@ -99,17 +99,25 @@ export default function () {
           <VForm.Item label="入力フォーム">
             <Input.Word value={testWord} onChange={setTestWord} />
           </VForm.Item>
-          <VForm.Container label="コンテナ2-1-2個目" labelSide={<AlertButton count={12} />} estimatedLabelWidth="24rem">
+          <VForm.Container estimatedLabelWidth="24rem" label={<>
+            コンテナ2-1-2個目
+            <AlertButton count={12} />
+          </>}>
             <VForm.Item
-              label="入力フォーム"
-              labelSide={<>
+              label={<>
+                入力フォーム
                 <span className="text-sm">※この項目の説明文。<br />この項目の理由、目的、背景など</span>
                 <AlertButton count={2} />
               </>}
             >
               <Input.Word value={testWord} onChange={setTestWord} />
             </VForm.Item>
-            <VForm.Item label="入力フォームWIDE" labelSide={<AlertButton count={12} />} wide>
+            <VForm.Item label={(
+              <>
+                入力フォームWIDE
+                <AlertButton count={12} />
+              </>
+            )} wide>
               <Input.Word value={testWord} onChange={setTestWord} />
             </VForm.Item>
             <VForm.Item label="入力フォームWIDE" wide>
@@ -127,7 +135,7 @@ export default function () {
           </VForm.Item>
         </VForm.Container>
 
-        <VForm.Container labelSide={<AlertButton />}>
+        <VForm.Container label={<AlertButton />}>
           <VForm.Item label="入力フォーム">
             <Input.Word value={testWord} onChange={setTestWord} />
           </VForm.Item>
