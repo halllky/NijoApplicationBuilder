@@ -51,7 +51,7 @@ export const ServerSettingScreen = () => {
           <VForm.Item label="フォント(font-family)" wide className="p-1">
             <Input.Word {...registerEx('fontFamily')} className="w-full" />
           </VForm.Item>
-          <VForm.Container label="画面隅のリボン" leftColumnMinWidth="8rem">
+          <VForm.Container label="画面隅のリボン" estimatedLabelWidth="8rem">
             <VForm.Item label="文字">
               <Input.Word {...registerEx('environmentName')} />
             </VForm.Item>

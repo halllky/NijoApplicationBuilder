@@ -4,28 +4,35 @@ import React, { useContext } from "react"
 const Container = ({
   label,
   labelSide,
-  leftColumnMinWidth: propsLeftColMinWidth,
+  estimatedLabelWidth: propsEstimatedLabelWidth,
+  estimatedValueWidth: propsEstimatedValueWidth,
   children,
   className,
 }: {
   label?: string
   labelSide?: React.ReactNode
-  leftColumnMinWidth?: string
+  estimatedLabelWidth?: string
+  estimatedValueWidth?: string
   children?: React.ReactNode
   className?: string
 }) => {
-  const { depth, leftColumnMinWidth: contextLeftColumnMinWidth } = React.useContext(VFormContext)
-  const leftColumnMinWidth = propsLeftColMinWidth ?? contextLeftColumnMinWidth
+  const {
+    depth,
+    estimatedLabelWidth: contextEstimatedLabelWidth,
+    estimatedValueWidth: contextEstimatedValueWidth,
+  } = React.useContext(VFormContext)
+
+  const estimatedLabelWidth = propsEstimatedLabelWidth ?? contextEstimatedLabelWidth
+  const estimatedValueWidth = propsEstimatedValueWidth ?? contextEstimatedValueWidth
 
   const innerContextValue = React.useMemo<VFormContextValue>(() => ({
     depth: depth + 1,
-    leftColumnMinWidth,
-  }), [depth, leftColumnMinWidth])
+    estimatedLabelWidth,
+    estimatedValueWidth,
+  }), [depth, estimatedLabelWidth, estimatedValueWidth])
 
   const gridStyle: React.CSSProperties = {
-    gridTemplateColumns: leftColumnMinWidth
-      ? `repeat(auto-fit, minmax(calc(16rem + ${leftColumnMinWidth?.trim()}), 1fr))`
-      : `repeat(auto-fit, minmax(16rem, 1fr))`,
+    gridTemplateColumns: `repeat(auto-fit, minmax(calc((${estimatedLabelWidth}) + (${estimatedValueWidth})), 1fr))`,
   }
 
   return (
@@ -69,7 +76,7 @@ const Item = ({ label, labelSide, wide, children, className }: {
   children?: React.ReactNode
   className?: string
 }) => {
-  const { leftColumnMinWidth } = useContext(VFormContext)
+  const { estimatedLabelWidth } = useContext(VFormContext)
 
   return wide ? (
     <div className="flex flex-col col-span-full border-vform">
@@ -86,12 +93,12 @@ const Item = ({ label, labelSide, wide, children, className }: {
   ) : (
     <div className="flex border-vform">
       {(label || labelSide) && (
-        <Label flexBasis={leftColumnMinWidth}>
+        <Label flexBasis={estimatedLabelWidth}>
           <LabelText>{label}</LabelText>
           {labelSide}
         </Label>
       )}
-      <div className={`flex-1 min-w-0 bg-color-0 px-1 ${className ?? ''}`}>
+      <div className={`flex-1 min-w-0 bg-color-0 px-1 py-px ${className ?? ''}`}>
         {children}
       </div>
     </div>
@@ -100,7 +107,7 @@ const Item = ({ label, labelSide, wide, children, className }: {
 
 const Label = ({ flexBasis, children }: { flexBasis?: string, children?: React.ReactNode }) => {
   return (
-    <div className="flex flex-wrap items-start gap-1 bg-color-2 px-1" style={{ flexBasis }}>
+    <div className="flex flex-wrap items-start gap-1 bg-color-2 px-1 py-px" style={{ flexBasis }}>
       {children}
     </div>
   )
@@ -115,14 +122,18 @@ const LabelText = ({ children }: {
   )
 }
 
-type VFormContextValuePublic = {
-  leftColumnMinWidth?: string
-}
-type VFormContextValue = VFormContextValuePublic & {
+const DEFAULT_LABEL_WIDTH = '6rem'
+const DEFAULT_VALUE_WIDTH = '12rem'
+
+type VFormContextValue = {
   depth: number
+  estimatedLabelWidth: string
+  estimatedValueWidth: string
 }
 const VFormContext = React.createContext<VFormContextValue>({
   depth: 0,
+  estimatedLabelWidth: DEFAULT_LABEL_WIDTH,
+  estimatedValueWidth: DEFAULT_VALUE_WIDTH,
 })
 
 export const VerticalForm = {

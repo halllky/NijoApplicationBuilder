@@ -247,7 +247,7 @@ namespace Nijo.Features.Storing {
                                 <Panel ref={searchConditionPanelRef} defaultSize={30} collapsible onCollapse={setCollapsed}>
                                   <div className="h-full overflow-auto">
                                     <FormProvider {...rhfSearchMethods}>
-                                      <VForm.Container leftColumnMinWidth="10rem" className="p-1">
+                                      <VForm.Container estimatedLabelWidth="10rem" className="p-1">
                         {{groupedSearchConditions.SelectTextTemplate(group => $$"""
                         {{If(group.Key == _aggregate, () => $$"""
                                         {{WithIndent(group.SelectTextTemplate(RenderSearchConditionValueMember), "                ")}}

@@ -74,7 +74,7 @@ namespace Nijo.Features.Storing {
 
                       return (
                         <>
-                          <VForm.Container leftColumnMinWidth="{{GetLeftColumnWidth()}}">
+                          <VForm.Container estimatedLabelWidth="{{GetLeftColumnWidth()}}">
                             {{WithIndent(RenderMembers(), "        ")}}
                           </VForm.Container>
                           {{WithIndent(relevantAggregatesCalling, "      ")}}
@@ -129,7 +129,7 @@ namespace Nijo.Features.Storing {
                       return (
                         <>
                           <VForm.Container
-                            leftColumnMinWidth="{{GetLeftColumnWidth()}}"
+                            estimatedLabelWidth="{{GetLeftColumnWidth()}}"
                             label="{{_aggregate.Item.DisplayName}}"
                             labelSide={(state === '' || state === '+' || state === '*') && (
                               <Input.Button icon={XMarkIcon} onClick={handleDelete}>削除</Input.Button>
