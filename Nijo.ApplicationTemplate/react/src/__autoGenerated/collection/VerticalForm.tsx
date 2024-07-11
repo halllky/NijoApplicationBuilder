@@ -79,7 +79,7 @@ const Item = ({ label, labelSide, wide, children, className }: {
           {labelSide}
         </Label>
       )}
-      <div className={`flex-1 bg-color-0 ${className ?? ''}`}>
+      <div className={`flex-1 min-w-0 bg-color-0 ${className ?? ''}`}>
         {children}
       </div>
     </div>
@@ -91,7 +91,7 @@ const Item = ({ label, labelSide, wide, children, className }: {
           {labelSide}
         </Label>
       )}
-      <div className={`flex-1 bg-color-0 p-1 ${className ?? ''}`}>
+      <div className={`flex-1 min-w-0 bg-color-0 px-1 ${className ?? ''}`}>
         {children}
       </div>
     </div>
@@ -100,7 +100,7 @@ const Item = ({ label, labelSide, wide, children, className }: {
 
 const Label = ({ flexBasis, children }: { flexBasis?: string, children?: React.ReactNode }) => {
   return (
-    <div className="flex flex-wrap items-start gap-1 bg-color-2 p-1" style={{ flexBasis }}>
+    <div className="flex flex-wrap items-start gap-1 bg-color-2 px-1" style={{ flexBasis }}>
       {children}
     </div>
   )
