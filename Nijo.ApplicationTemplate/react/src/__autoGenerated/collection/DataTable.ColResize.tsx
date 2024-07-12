@@ -38,7 +38,7 @@ export const useColumnResizing = <T,>(api: RT.Table<T>) => {
         onDoubleClick: () => header.column.resetSize(),
         onMouseDown: header.getResizeHandler(),
         onTouchStart: header.getResizeHandler(),
-        className: `absolute top-0 bottom-0 right-0 w-3 cursor-ew-resize border-r border-color-4`,
+        className: `absolute top-0 bottom-0 right-0 w-3 cursor-ew-resize border-r border-color-3`,
       }}>
       </div>
     )
