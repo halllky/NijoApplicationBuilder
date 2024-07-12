@@ -278,6 +278,7 @@ export function fromTsvString(tsv: string): string[][] {
       } else {
         // クォートで囲まれていない値の始まり
         mode = 'valueWithoutQuote'
+        currentValue = char
         i++
         continue
       }
