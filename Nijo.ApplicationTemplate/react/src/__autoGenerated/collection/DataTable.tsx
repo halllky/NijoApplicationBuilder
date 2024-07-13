@@ -1,4 +1,4 @@
-import React, { useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import * as RT from '@tanstack/react-table'
 import * as Util from '../util'
 import { ColumnDefEx, DataTableProps, DataTableRef } from './DataTable.Public'
@@ -49,17 +49,24 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   const cellEditorRef = useRef<CellEditorRef<T>>(null)
   const [editing, setEditing] = useState(false)
 
+  // <td>のrefの二重配列
+  const tdRefs = useRef<React.RefObject<HTMLTableCellElement>[][]>([])
+  useLayoutEffect(() => {
+    tdRefs.current = data?.map(() =>
+      Array.from({ length: columns.length }).map(() => React.createRef())
+    ) ?? []
+  }, [data, columns.length, tdRefs])
+
   const {
     caretCell,
     caretTdRef,
     selectObject,
     handleSelectionKeyDown,
-    caretTdRefCallback,
     ActiveCellBorder,
     activeCellBorderProps,
     getSelectedRows,
     getSelectedColumns,
-  } = useSelection<T>(api, data?.length ?? 0, columns.length, onActiveRowChanged, cellEditorRef)
+  } = useSelection<T>(api, data?.length ?? 0, columns, tdRefs, onActiveRowChanged, cellEditorRef)
 
   const {
     columnSizeVars,
@@ -169,14 +176,14 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
 
         {/* ボディ */}
         <tbody className="bg-color-0">
-          {api.getRowModel().flatRows.map(row => (
+          {api.getRowModel().flatRows.map((row, rowIndex) => (
             <tr
               key={row.id}
               className="leading-tight"
             >
-              {row.getVisibleCells().filter(c => !(c.column.columnDef as ColumnDefEx<T>).hidden).map(cell => (
+              {row.getVisibleCells().filter(c => !(c.column.columnDef as ColumnDefEx<T>).hidden).map((cell, colIndex) => (
                 <td key={cell.id}
-                  ref={td => caretTdRefCallback(td, cell)}
+                  ref={tdRefs.current[rowIndex]?.[colIndex]}
                   className="relative overflow-hidden align-top p-0 border-r border-b border-1 border-color-3"
                   style={{ ...getTdStickeyStyle(false), maxWidth: getColWidth(cell.column) }}
                   onMouseDown={e => selectObject({ target: 'cell', cell: { rowIndex: cell.row.index, colId: cell.column.id }, shiftKey: e.shiftKey })}

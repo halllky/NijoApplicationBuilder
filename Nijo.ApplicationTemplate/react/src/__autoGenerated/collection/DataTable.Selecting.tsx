@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo, useImperativeHandle } from 'react'
+import React, { useState, useRef, useCallback, useEffect, useMemo, useImperativeHandle, useLayoutEffect } from 'react'
 import * as RT from '@tanstack/react-table'
 import * as Util from '../util'
 import { CellEditorRef, CellPosition, TABLE_ZINDEX } from './DataTable.Parts'
@@ -12,16 +12,39 @@ export type SelectTarget
 export const useSelection = <T,>(
   api: RT.Table<T>,
   rowCount: number,
-  colCount: number,
+  columns: RT.ColumnDef<T>[],
+  tdRefs: React.MutableRefObject<React.RefObject<HTMLTableCellElement>[][]>,
   onActiveRowChanged: DataTableProps<T>['onActiveRowChanged'] | undefined,
   cellEditorRef: React.RefObject<CellEditorRef<T>>,
 ) => {
+  const colCount = columns.length
+
   const caretCell = useRef<CellPosition | undefined>()
   const selectionStart = useRef<CellPosition | undefined>()
   const [containsRowHeader, setContainsRowHeader] = useState(false)
+
+  // <td>への参照
   const caretTdRef = useRef<HTMLTableCellElement>()
   const selectionStartTdRef = useRef<HTMLTableCellElement>()
+  useLayoutEffect(() => {
+    if (caretCell.current) {
+      const colIndex = columns.findIndex(col => col.id === caretCell.current?.colId)
+      caretTdRef.current = tdRefs.current[caretCell.current.rowIndex]?.[colIndex]?.current ?? undefined
+    } else {
+      caretTdRef.current = undefined
+    }
+  }, [caretCell.current, columns, tdRefs])
 
+  useLayoutEffect(() => {
+    if (selectionStart.current) {
+      const colIndex = columns.findIndex(col => col.id === selectionStart.current?.colId)
+      selectionStartTdRef.current = tdRefs.current[selectionStart.current.rowIndex]?.[colIndex]?.current ?? undefined
+    } else {
+      selectionStartTdRef.current = undefined
+    }
+  }, [selectionStart.current, columns, tdRefs])
+
+  /** 選択 */
   const selectObject = useCallback((obj: SelectTarget) => {
     // シングル選択
     if (obj.target === 'cell') {
@@ -108,17 +131,6 @@ export const useSelection = <T,>(
     }
   }, [api, selectObject, caretCell, selectionStart, rowCount, colCount])
 
-  const caretTdRefCallback = useCallback((td: HTMLTableCellElement | null, cell: RT.Cell<T, unknown>) => {
-    if (td !== null
-      && cell.row.index === caretCell.current?.rowIndex
-      && cell.column.id === caretCell.current.colId)
-      caretTdRef.current = td
-    if (td !== null
-      && cell.row.index === selectionStart.current?.rowIndex
-      && cell.column.id === selectionStart.current.colId)
-      selectionStartTdRef.current = td
-  }, [caretCell, selectionStart])
-
   const ActiveCellBorder = useMemo(() => {
     return prepareActiveRangeSvg<T>(caretTdRef, selectionStartTdRef)
   }, [])
@@ -150,7 +162,6 @@ export const useSelection = <T,>(
     caretTdRef,
     selectObject,
     handleSelectionKeyDown,
-    caretTdRefCallback,
 
     ActiveCellBorder,
     activeCellBorderProps: {
