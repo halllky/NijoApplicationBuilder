@@ -143,8 +143,8 @@ export const TextInputBase = defineCustomComponent<string, {
     <div
       ref={divRef}
       className={readOnly
-        ? `inline-flex relative min-w-0 ${className} border border-transparent`
-        : `inline-flex relative min-w-0 ${className} border border-color-5 text-color-12 ${bgColor}`}
+        ? `inline-flex relative min-w-0 max-w-full ${className} border border-transparent`
+        : `inline-flex relative min-w-0 max-w-full ${className} border border-color-5 text-color-12 ${bgColor}`}
     >
       <input
         {...rest}
