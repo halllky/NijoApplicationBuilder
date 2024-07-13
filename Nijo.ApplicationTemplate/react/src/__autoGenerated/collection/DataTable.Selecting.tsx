@@ -1,8 +1,13 @@
-import { useState, useRef, useCallback, useEffect, useMemo, useImperativeHandle } from 'react'
+import React, { useState, useRef, useCallback, useEffect, useMemo, useImperativeHandle } from 'react'
 import * as RT from '@tanstack/react-table'
 import * as Util from '../util'
 import { CellEditorRef, CellPosition, TABLE_ZINDEX } from './DataTable.Parts'
 import { ColumnDefEx, DataTableProps } from '..'
+
+export type SelectTarget
+  = { target: 'cell', cell: CellPosition, shiftKey: boolean }
+  | { target: 'any' }
+  | { target: 'all' }
 
 export const useSelection = <T,>(
   api: RT.Table<T>,
@@ -11,22 +16,17 @@ export const useSelection = <T,>(
   onActiveRowChanged: DataTableProps<T>['onActiveRowChanged'] | undefined,
   cellEditorRef: React.RefObject<CellEditorRef<T>>,
 ) => {
-  const [caretCell, setCaretCell] = useState<CellPosition | undefined>()
-  const [selectionStart, setSelectionStart] = useState<CellPosition | undefined>()
+  const caretCell = useRef<CellPosition | undefined>()
+  const selectionStart = useRef<CellPosition | undefined>()
   const [containsRowHeader, setContainsRowHeader] = useState(false)
   const caretTdRef = useRef<HTMLTableCellElement>()
   const selectionStartTdRef = useRef<HTMLTableCellElement>()
 
-  type SelectTarget
-    = { target: 'cell', cell: CellPosition, shiftKey: boolean }
-    | { target: 'any' }
-    | { target: 'all' }
-
   const selectObject = useCallback((obj: SelectTarget) => {
     // シングル選択
     if (obj.target === 'cell') {
-      setSelectionStart({ ...obj.cell })
-      if (!obj.shiftKey) setCaretCell(obj.cell)
+      selectionStart.current = { ...obj.cell }
+      if (!obj.shiftKey) caretCell.current = obj.cell
       setContainsRowHeader(false)
       onActiveRowChanged?.({ rowIndex: obj.cell.rowIndex, getRow: () => api.getCoreRowModel().flatRows[obj.cell.rowIndex].original })
     }
@@ -34,14 +34,14 @@ export const useSelection = <T,>(
     else if (obj.target === 'any') {
       if (rowCount > 0 && colCount >= 0) {
         const selected: CellPosition = { rowIndex: 0, colId: api.getAllColumns()[0].id }
-        setCaretCell(selected)
-        setSelectionStart(selected)
+        caretCell.current = selected
+        selectionStart.current = selected
         setContainsRowHeader(false)
         onActiveRowChanged?.({ rowIndex: 0, getRow: () => api.getCoreRowModel().flatRows[0].original })
 
       } else {
-        setCaretCell(undefined)
-        setSelectionStart(undefined)
+        caretCell.current = undefined
+        selectionStart.current = undefined
         setContainsRowHeader(false)
         onActiveRowChanged?.(undefined)
       }
@@ -51,21 +51,21 @@ export const useSelection = <T,>(
     else {
       if (rowCount > 0 && colCount >= 0) {
         const columns = api.getAllColumns()
-        setCaretCell({ rowIndex: 0, colId: columns[0].id })
-        setSelectionStart({ rowIndex: rowCount - 1, colId: columns[columns.length - 1].id })
+        caretCell.current = { rowIndex: 0, colId: columns[0].id }
+        selectionStart.current = { rowIndex: rowCount - 1, colId: columns[columns.length - 1].id }
         setContainsRowHeader(true)
         onActiveRowChanged?.({ rowIndex: 0, getRow: () => api.getCoreRowModel().flatRows[rowCount - 1].original })
 
       } else {
-        setCaretCell(undefined)
-        setSelectionStart(undefined)
+        caretCell.current = undefined
+        selectionStart.current = undefined
         setContainsRowHeader(false)
         onActiveRowChanged?.(undefined)
       }
     }
     // クイック編集のために常にCellEditorにフォーカスを当てる
     cellEditorRef.current?.focus()
-  }, [api, onActiveRowChanged, rowCount, colCount])
+  }, [caretCell, selectionStart, api, onActiveRowChanged, rowCount, colCount])
 
   const handleSelectionKeyDown: React.KeyboardEventHandler<HTMLElement> = useCallback(e => {
     if (e.ctrlKey && e.key === 'a') {
@@ -73,7 +73,7 @@ export const useSelection = <T,>(
       e.preventDefault()
 
     } else if (!e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-      const movingCell = e.shiftKey ? selectionStart : caretCell
+      const movingCell = e.shiftKey ? selectionStart.current : caretCell.current
       if (!movingCell) {
         selectObject({ target: 'any' })
         e.preventDefault()
@@ -89,7 +89,7 @@ export const useSelection = <T,>(
       return
 
     } else if (!e.ctrlKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
-      const movingCell = e.shiftKey ? selectionStart : caretCell
+      const movingCell = e.shiftKey ? selectionStart.current : caretCell.current
       if (!movingCell) {
         selectObject({ target: 'any' })
         e.preventDefault()
@@ -110,12 +110,12 @@ export const useSelection = <T,>(
 
   const caretTdRefCallback = useCallback((td: HTMLTableCellElement | null, cell: RT.Cell<T, unknown>) => {
     if (td !== null
-      && cell.row.index === caretCell?.rowIndex
-      && cell.column.id === caretCell.colId)
+      && cell.row.index === caretCell.current?.rowIndex
+      && cell.column.id === caretCell.current.colId)
       caretTdRef.current = td
     if (td !== null
-      && cell.row.index === selectionStart?.rowIndex
-      && cell.column.id === selectionStart.colId)
+      && cell.row.index === selectionStart.current?.rowIndex
+      && cell.column.id === selectionStart.current.colId)
       selectionStartTdRef.current = td
   }, [caretCell, selectionStart])
 
@@ -127,18 +127,18 @@ export const useSelection = <T,>(
   const activeCellRef = useRef<{ scrollToActiveCell: () => void }>(null)
 
   const getSelectedRows = useCallback(() => {
-    if (!caretCell || !selectionStart) return []
+    if (!caretCell.current || !selectionStart.current) return []
     const flatRows = api.getRowModel().flatRows
-    const since = Math.min(caretCell.rowIndex, selectionStart.rowIndex)
-    const until = Math.max(caretCell.rowIndex, selectionStart.rowIndex)
+    const since = Math.min(caretCell.current.rowIndex, selectionStart.current.rowIndex)
+    const until = Math.max(caretCell.current.rowIndex, selectionStart.current.rowIndex)
     return flatRows.slice(since, until + 1)
   }, [api, caretCell, selectionStart])
 
   const getSelectedColumns = useCallback(() => {
-    if (!caretCell || !selectionStart) return []
+    if (!caretCell.current || !selectionStart.current) return []
     const allColumns = api.getAllColumns()
-    const caretCellColIndex = allColumns.findIndex(c => c.id === caretCell.colId)
-    const selectionStartColIndex = allColumns.findIndex(c => c.id === selectionStart.colId)
+    const caretCellColIndex = allColumns.findIndex(c => c.id === caretCell.current!.colId)
+    const selectionStartColIndex = allColumns.findIndex(c => c.id === selectionStart.current!.colId)
     if (caretCellColIndex === -1 || selectionStartColIndex === -1) return []
     const since = Math.min(caretCellColIndex, selectionStartColIndex)
     const until = Math.max(caretCellColIndex, selectionStartColIndex)
@@ -173,8 +173,8 @@ function prepareActiveRangeSvg<T>(
   return Util.forwardRefEx<{
     scrollToActiveCell: () => void,
   }, {
-    caretCell: object | undefined
-    selectionStart: object | undefined
+    caretCell: React.RefObject<CellPosition | undefined>
+    selectionStart: React.RefObject<CellPosition | undefined>
     containsRowHeader: boolean
     api: RT.Table<T>
   }>(({ caretCell, selectionStart, containsRowHeader, api }, ref) => {
@@ -219,8 +219,8 @@ function prepareActiveRangeSvg<T>(
         : TABLE_ZINDEX.SELECTION.toString()
     }, [
       containsRowHeader,
-      caretCell,
-      selectionStart,
+      caretCell.current,
+      selectionStart.current,
       // 列幅変更時に範囲を再計算するため必要な依存
       // eslint-disable-next-line react-hooks/exhaustive-deps
       api.getState().columnSizing,

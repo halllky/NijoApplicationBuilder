@@ -77,7 +77,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   const handleFocus: React.FocusEventHandler<HTMLDivElement> = useCallback(() => {
     setIsActive(true)
     cellEditorRef.current?.focus()
-    if (!caretCell) selectObject({ target: 'any' })
+    if (!caretCell.current) selectObject({ target: 'any' })
   }, [api, caretCell, selectObject, cellEditorRef])
   const handleBlur: React.FocusEventHandler<HTMLDivElement> = useCallback(e => {
     // フォーカスの移動先がこの要素の中にある場合はfalseにしない
@@ -108,9 +108,9 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
       rowIndex: row.index,
     })),
     startEditing: () => {
-      if (!caretCell || !cellEditorRef.current) return
-      const row = api.getCoreRowModel().flatRows[caretCell.rowIndex]
-      const cell = row.getAllCells().find(cell => cell.column.id === caretCell.colId)
+      if (!caretCell.current || !cellEditorRef.current) return
+      const row = api.getCoreRowModel().flatRows[caretCell.current.rowIndex]
+      const cell = row.getAllCells().find(cell => cell.column.id === caretCell.current!.colId)
       if (cell) cellEditorRef.current.startEditing(cell)
     },
   }), [getSelectedRows, divRef, cellEditorRef, api, caretCell])
