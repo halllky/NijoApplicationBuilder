@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo, useImperativeHandle, useLayoutEffect } from 'react'
+import React, { useState, useRef, useCallback, useImperativeHandle, useMemo, useId } from 'react'
 import * as RT from '@tanstack/react-table'
 import * as Util from '../util'
 import { CellEditorRef, CellPosition, TABLE_ZINDEX } from './DataTable.Parts'
@@ -19,37 +19,40 @@ export const useSelection = <T,>(
 ) => {
   const colCount = columns.length
 
+  const activeCellRef = useRef<ActiveRangeRef>(null)
+
   const caretCell = useRef<CellPosition | undefined>()
   const selectionStart = useRef<CellPosition | undefined>()
   const [containsRowHeader, setContainsRowHeader] = useState(false)
 
+  // -----------------------------------------
   // <td>への参照
   const caretTdRef = useRef<HTMLTableCellElement>()
   const selectionStartTdRef = useRef<HTMLTableCellElement>()
-  useLayoutEffect(() => {
-    if (caretCell.current) {
-      const colIndex = columns.findIndex(col => col.id === caretCell.current?.colId)
-      caretTdRef.current = tdRefs.current[caretCell.current.rowIndex]?.[colIndex]?.current ?? undefined
+  const updateTdRef = useCallback((caretCellPos: CellPosition | undefined, selectionStartPos: CellPosition | undefined) => {
+    if (caretCellPos) {
+      const colIndex = columns.findIndex(col => col.id === caretCellPos.colId)
+      caretTdRef.current = tdRefs.current[caretCellPos.rowIndex]?.[colIndex]?.current ?? undefined
     } else {
       caretTdRef.current = undefined
     }
-  }, [caretCell.current, columns, tdRefs])
-
-  useLayoutEffect(() => {
-    if (selectionStart.current) {
-      const colIndex = columns.findIndex(col => col.id === selectionStart.current?.colId)
-      selectionStartTdRef.current = tdRefs.current[selectionStart.current.rowIndex]?.[colIndex]?.current ?? undefined
+    if (selectionStartPos) {
+      const colIndex = columns.findIndex(col => col.id === selectionStartPos.colId)
+      selectionStartTdRef.current = tdRefs.current[selectionStartPos.rowIndex]?.[colIndex]?.current ?? undefined
     } else {
       selectionStartTdRef.current = undefined
     }
-  }, [selectionStart.current, columns, tdRefs])
+    // 選択範囲の表示のアップデート
+    activeCellRef.current?.update(caretTdRef.current, selectionStartTdRef.current, containsRowHeader)
+  }, [containsRowHeader, columns, tdRefs, caretTdRef, selectionStartTdRef, activeCellRef])
 
-  /** 選択 */
+  // -----------------------------------------
+  // 選択
   const selectObject = useCallback((obj: SelectTarget) => {
     // シングル選択
     if (obj.target === 'cell') {
       selectionStart.current = { ...obj.cell }
-      if (!obj.shiftKey) caretCell.current = obj.cell
+      if (!obj.shiftKey) caretCell.current = { ...obj.cell }
       setContainsRowHeader(false)
       onActiveRowChanged?.({ rowIndex: obj.cell.rowIndex, getRow: () => api.getCoreRowModel().flatRows[obj.cell.rowIndex].original })
     }
@@ -86,9 +89,11 @@ export const useSelection = <T,>(
         onActiveRowChanged?.(undefined)
       }
     }
+    // tdへの参照を最新の値に更新
+    updateTdRef(caretCell.current, selectionStart.current)
     // クイック編集のために常にCellEditorにフォーカスを当てる
     cellEditorRef.current?.focus()
-  }, [caretCell, selectionStart, api, onActiveRowChanged, rowCount, colCount])
+  }, [caretCell, selectionStart, updateTdRef, api, onActiveRowChanged, rowCount, colCount])
 
   const handleSelectionKeyDown: React.KeyboardEventHandler<HTMLElement> = useCallback(e => {
     if (e.ctrlKey && e.key === 'a') {
@@ -129,14 +134,7 @@ export const useSelection = <T,>(
       e.preventDefault()
       activeCellRef.current?.scrollToActiveCell()
     }
-  }, [api, selectObject, caretCell, selectionStart, rowCount, colCount])
-
-  const ActiveCellBorder = useMemo(() => {
-    return prepareActiveRangeSvg<T>(caretTdRef, selectionStartTdRef)
-  }, [])
-
-  // 矢印キーでのセル移動時にアクティブセルを画面内に移るようにするためのもの
-  const activeCellRef = useRef<{ scrollToActiveCell: () => void }>(null)
+  }, [api, selectObject, caretCell, selectionStart, rowCount, colCount, activeCellRef])
 
   const getSelectedRows = useCallback(() => {
     if (!caretCell.current || !selectionStart.current) return []
@@ -163,11 +161,7 @@ export const useSelection = <T,>(
     selectObject,
     handleSelectionKeyDown,
 
-    ActiveCellBorder,
     activeCellBorderProps: {
-      caretCell,
-      selectionStart,
-      containsRowHeader,
       ref: activeCellRef,
     },
 
@@ -177,100 +171,96 @@ export const useSelection = <T,>(
 }
 
 
-function prepareActiveRangeSvg<T>(
-  caretTdRef: React.MutableRefObject<HTMLTableCellElement | undefined>,
-  selectionStartTdRef: React.MutableRefObject<HTMLTableCellElement | undefined>,
-) {
-  return Util.forwardRefEx<{
-    scrollToActiveCell: () => void,
-  }, {
-    caretCell: React.RefObject<CellPosition | undefined>
-    selectionStart: React.RefObject<CellPosition | undefined>
-    containsRowHeader: boolean
-    api: RT.Table<T>
-  }>(({ caretCell, selectionStart, containsRowHeader, api }, ref) => {
-    const svgRef = useRef<SVGSVGElement>(null)
-    const maskBlackRef = useRef<SVGRectElement>(null)
-    useEffect(() => {
-      if (!svgRef.current || !maskBlackRef.current) return
-
-      const head = caretTdRef.current
-      const root = selectionStartTdRef.current
-      if (!head || !root) {
-        svgRef.current.style.display = 'none'
-        return
-      }
-      svgRef.current.style.display = ''
-
-      const left = Math.min(
-        head.offsetLeft,
-        root.offsetLeft)
-      const right = Math.max(
-        head.offsetLeft + head.offsetWidth,
-        root.offsetLeft + root.offsetWidth)
-      const top = Math.min(
-        head.offsetTop,
-        root.offsetTop)
-      const bottom = Math.max(
-        head.offsetTop + head.offsetHeight,
-        root.offsetTop + root.offsetHeight)
-
-      svgRef.current.style.left = `${left}px`
-      svgRef.current.style.top = `${top}px`
-      svgRef.current.style.width = `${right - left}px`
-      svgRef.current.style.height = `${bottom - top}px`
-
-      maskBlackRef.current.setAttribute('x', `${head.offsetLeft - left - 3}px`) // 3はボーダーの分
-      maskBlackRef.current.setAttribute('y', `${head.offsetTop - top - 3}px`) // 3はボーダーの分
-      maskBlackRef.current.style.width = `${head.offsetWidth}px`
-      maskBlackRef.current.style.height = `${head.offsetHeight}px`
-
-      svgRef.current.style.zIndex = containsRowHeader
-        ? TABLE_ZINDEX.ROWHEADER_SELECTION.toString()
-        : TABLE_ZINDEX.SELECTION.toString()
-    }, [
-      containsRowHeader,
-      caretCell.current,
-      selectionStart.current,
-      // 列幅変更時に範囲を再計算するため必要な依存
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      api.getState().columnSizing,
-      // 行の折りたたみ変更時に範囲を再計算するため必要な依存
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      api.getState().expanded,
-    ])
-
-    useImperativeHandle(ref, () => ({
-      scrollToActiveCell: () => {
-        setTimeout(() => {
-          svgRef.current?.scrollIntoView({
-            behavior: 'instant',
-            block: 'nearest',
-            inline: 'nearest',
-          })
-        }, 10)
-      }
-    }))
-
-    return (
-      <svg ref={svgRef}
-        version="1.1"
-        xmlns="http://www.w3.org/2000/svg"
-        xmlnsXlink="http://www.w3.org/1999/xlink"
-        className="pointer-events-none absolute outline outline-2 outline-offset-[-2px] border-[3px] border border-color-0"
-      >
-        <defs>
-          <mask id="selection-start-mask">
-            <rect fill="white" x="0" y="0" width="calc(Infinity)" height="calc(Infinity)" />
-            <rect ref={maskBlackRef} fill="black" />
-          </mask>
-        </defs>
-        <rect
-          x="0" y="0" width="100%" height="100%"
-          className="bg-color-selected-svg"
-          mask="url(#selection-start-mask)"
-        />
-      </svg>
-    )
-  })
+type ActiveRangeRef = {
+  update: (caretCellTd: HTMLTableCellElement | undefined, selectionStartTd: HTMLTableCellElement | undefined, containsRowHeader: boolean) => void
+  scrollToActiveCell: () => void
 }
+type ActiveRangeProps = {
+  hidden: boolean
+}
+
+export const ActiveCellBorder = Util.forwardRefEx(({ hidden }: ActiveRangeProps, ref: React.ForwardedRef<ActiveRangeRef>) => {
+  const svgRef = useRef<SVGSVGElement>(null)
+  const [maskBlackProps, setMaskBlackProps] = useState<React.SVGProps<SVGRectElement>>({})
+  const [svgPosition, setSvgPosition] = useState<React.CSSProperties>({})
+  const [svgHidden, setSvgHidden] = useState(true)
+  const svgStyle = useMemo((): React.CSSProperties => ({
+    display: hidden || svgHidden ? 'none' : undefined,
+    ...svgPosition,
+  }), [hidden, svgHidden, svgPosition])
+
+  /** 選択範囲の四角形の表示を更新する */
+  const update: ActiveRangeRef['update'] = useCallback((caretCellTd, selectionStartTd, containsRowHeader) => {
+    const head = caretCellTd
+    const root = selectionStartTd
+    if (!head || !root) {
+      setSvgHidden(true)
+      return
+    }
+    const left = Math.min(
+      head.offsetLeft,
+      root.offsetLeft)
+    const right = Math.max(
+      head.offsetLeft + head.offsetWidth,
+      root.offsetLeft + root.offsetWidth)
+    const top = Math.min(
+      head.offsetTop,
+      root.offsetTop)
+    const bottom = Math.max(
+      head.offsetTop + head.offsetHeight,
+      root.offsetTop + root.offsetHeight)
+
+    setSvgHidden(false)
+    setSvgPosition({
+      left: `${left}px`,
+      top: `${top}px`,
+      width: `${right - left}px`,
+      height: `${bottom - top}px`,
+      zIndex: containsRowHeader
+        ? TABLE_ZINDEX.ROWHEADER_SELECTION.toString()
+        : TABLE_ZINDEX.SELECTION.toString(),
+    })
+    setMaskBlackProps({
+      x: `${head.offsetLeft - left - 3}px`, // 3はボーダーの分
+      y: `${head.offsetTop - top - 3}px`, // 3はボーダーの分
+      width: `${head.offsetWidth}px`,
+      height: `${head.offsetHeight}px`,
+    })
+  }, [setSvgHidden, setSvgPosition, setMaskBlackProps])
+
+  useImperativeHandle(ref, () => ({
+    update,
+    scrollToActiveCell: () => {
+      svgRef.current?.scrollIntoView({
+        behavior: 'instant',
+        block: 'nearest',
+        inline: 'nearest',
+      })
+    },
+  }), [update, svgRef])
+
+  // 1画面内にDataTableが複数あるとき、ほかのDataTableのmaskを参照してしまうのを避けるためのid
+  const uniqueId = useId()
+
+  return (
+    <svg ref={svgRef}
+      version="1.1"
+      xmlns="http://www.w3.org/2000/svg"
+      xmlnsXlink="http://www.w3.org/1999/xlink"
+      className="pointer-events-none absolute outline outline-2 outline-offset-[-2px] border-[3px] border border-color-0"
+      style={svgStyle}
+    >
+      <defs>
+        <mask id={`selection-start-mask-${uniqueId}`}>
+          <rect fill="white" x="0" y="0" width="calc(Infinity)" height="calc(Infinity)" />
+          <rect fill="black" {...maskBlackProps} />
+        </mask>
+      </defs>
+      <rect
+        x="0" y="0" width="100%" height="100%"
+        className="bg-color-selected-svg"
+        mask={`url(#selection-start-mask-${uniqueId})`}
+      />
+    </svg>
+  )
+})
