@@ -52,12 +52,6 @@ export const CellEditor = Util.forwardRefEx(<T,>({
         containerRef.current.style.minWidth = `${caretTdRef.current.clientWidth}px`
         containerRef.current.style.minHeight = `${caretTdRef.current.clientHeight}px`
       }
-      // エディタにスクロール
-      containerRef.current?.scrollIntoView({
-        behavior: 'instant',
-        block: 'nearest',
-        inline: 'nearest',
-      })
       // 前のセルで入力した値をクリアする
       setUnComittedText('')
     } else {
@@ -97,7 +91,13 @@ export const CellEditor = Util.forwardRefEx(<T,>({
       const selectedValue = columnDef.editSetting.getValueFromRow(cell.row.original)
       setComboSelectedItem(selectedValue)
     }
-  }, [setEditingCellInfo, onChangeEditing, onChangeRow])
+    // エディタにスクロール
+    containerRef.current?.scrollIntoView({
+      behavior: 'instant',
+      block: 'nearest',
+      inline: 'nearest',
+    })
+  }, [setEditingCellInfo, onChangeEditing, onChangeRow, containerRef])
 
   /** 編集確定 */
   const commitEditing = useCallback((value?: string | unknown | undefined) => {
