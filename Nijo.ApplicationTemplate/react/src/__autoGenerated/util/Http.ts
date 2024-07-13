@@ -95,5 +95,25 @@ export const useHttpRequest = () => {
     }])
   }, [dotnetWebApiDomain, sendHttpRequest])
 
-  return { get, post, httpDelete }
+  const download = useCallback(async (url: string, filename?: string) => {
+    const a = document.createElement('a')
+    let blobUrl: string | undefined = undefined
+    try {
+      const response = await fetch(`${dotnetWebApiDomain}${url}`)
+      const blob = await response.blob()
+      const blobUrl = window.URL.createObjectURL(blob)
+      a.href = blobUrl
+      a.download = filename ?? ''
+      document.body.appendChild(a)
+      a.click()
+
+    } catch (error) {
+      dispatchMsg(msg => msg.error(`ファイルダウンロードに失敗しました: ${error}`))
+    } finally {
+      if (blobUrl !== undefined) window.URL.revokeObjectURL(blobUrl)
+      document.body.removeChild(a)
+    }
+  }, [dotnetWebApiDomain, dispatchMsg])
+
+  return { get, post, httpDelete, download }
 }
