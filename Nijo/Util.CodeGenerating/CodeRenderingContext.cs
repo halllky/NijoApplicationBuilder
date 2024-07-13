@@ -56,7 +56,9 @@ namespace Nijo.Util.CodeGenerating {
 
                 // Entity Framework Core のソースを生成
                 genDir.Directory("EntityFramework", efDir => {
-                    efDir.Generate(new DbContextClass(Config).RenderDeclaring());
+                    var dbContext = new DbContextClass(Config);
+                    efDir.Generate(dbContext.RenderDeclaring());
+                    efDir.Generate(dbContext.RenderFactoryForMigration());
                 });
 
                 // ユニットテスト用コード

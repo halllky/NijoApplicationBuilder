@@ -114,5 +114,34 @@ namespace Nijo.Parts.WebServer {
                 yield return $"    .OnDelete({nameof(DeleteBehavior)}.{nav.OnPrincipalDeleted});";
             }
         }
+
+        internal SourceFile RenderFactoryForMigration() => new SourceFile {
+            FileName = $"{_config.DbContextName.ToFileNameSafe()}FactoryForMigration.cs",
+            RenderContent = ctx => {
+                return $$"""
+                    using Microsoft.EntityFrameworkCore.Design;
+                    using Microsoft.Extensions.DependencyInjection;
+                    using System;
+                    using System.Collections.Generic;
+                    using System.Linq;
+                    using System.Text;
+                    using System.Threading.Tasks;
+
+                    namespace {{ctx.Config.DbContextNamespace}} {
+                        /// <summary>
+                        /// DB定義更新スクリプト作成に関するコマンド `dotnet ef migrations add` の際に呼ばれるファクトリークラス
+                        /// </summary>
+                        internal class {{ctx.Config.DbContextName}}FactoryForMigration : IDesignTimeDbContextFactory<{{ctx.Config.DbContextName}}> {
+                            public {{ctx.Config.DbContextName}} CreateDbContext(string[] args) {
+                                var serviceCollection = new ServiceCollection();
+                                {{Configure.CLASSNAME_CORE}}.{{Configure.CONFIGURE_SERVICES}}(serviceCollection);
+                                var services = serviceCollection.BuildServiceProvider();
+                                return services.GetRequiredService<{{ctx.Config.DbContextName}}>();
+                            }
+                        }
+                    }
+                    """;
+            },
+        };
     }
 }
