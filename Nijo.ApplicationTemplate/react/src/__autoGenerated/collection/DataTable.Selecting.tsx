@@ -181,7 +181,9 @@ type ActiveRangeProps = {
 
 export const ActiveCellBorder = Util.forwardRefEx(({ hidden }: ActiveRangeProps, ref: React.ForwardedRef<ActiveRangeRef>) => {
   const svgRef = useRef<SVGSVGElement>(null)
+  const scrollTargetRef = useRef<SVGRectElement>(null)
   const [maskBlackProps, setMaskBlackProps] = useState<React.SVGProps<SVGRectElement>>({})
+  const [scrollTargetProps, setScrollTargetProps] = useState<React.SVGProps<SVGRectElement>>({})
   const [svgPosition, setSvgPosition] = useState<React.CSSProperties>({})
   const [svgHidden, setSvgHidden] = useState(true)
   const svgStyle = useMemo((): React.CSSProperties => ({
@@ -226,12 +228,18 @@ export const ActiveCellBorder = Util.forwardRefEx(({ hidden }: ActiveRangeProps,
       width: `${head.offsetWidth}px`,
       height: `${head.offsetHeight}px`,
     })
+    setScrollTargetProps({
+      x: `${root.offsetLeft - left - SCROLL_RECT_MARGIN.X - 3}px`, // 3はボーダーの分
+      y: `${root.offsetTop - top - SCROLL_RECT_MARGIN.Y - 3}px`, // 3はボーダーの分
+      width: `${root.offsetWidth + (SCROLL_RECT_MARGIN.X * 2)}px`,
+      height: `${root.offsetHeight + (SCROLL_RECT_MARGIN.Y * 2)}px`,
+    })
   }, [setSvgHidden, setSvgPosition, setMaskBlackProps])
 
   useImperativeHandle(ref, () => ({
     update,
     scrollToActiveCell: () => {
-      svgRef.current?.scrollIntoView({
+      scrollTargetRef.current?.scrollIntoView({
         behavior: 'instant',
         block: 'nearest',
         inline: 'nearest',
@@ -261,6 +269,17 @@ export const ActiveCellBorder = Util.forwardRefEx(({ hidden }: ActiveRangeProps,
         className="bg-color-selected-svg"
         mask={`url(#selection-start-mask-${uniqueId})`}
       />
+
+      {/* カーソルキー移動で移動したセルの位置にくるrect。svrollIntoViewにはこの要素が画面内に収まるようにスクロールさせる */}
+      <rect ref={scrollTargetRef} {...scrollTargetProps} fill="transparent" />
     </svg>
   )
 })
+
+// カーソルキーでセル移動したとき、scrollIntoViewは要素がぎりぎり画面内に収まる位置までスクロールするが、
+// それだと選択範囲の表示がテーブルのヘッダやスクロールバーに隠れてしまうため、
+// スクロール対象のrectのサイズを少し大きめにしておくことで選択範囲の表示が常に見える位置に表示されるようにする
+const SCROLL_RECT_MARGIN = {
+  X: 96,
+  Y: 96,
+}
