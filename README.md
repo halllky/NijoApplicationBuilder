@@ -204,6 +204,14 @@ C:\your-installed-directory\nijo.exe update
 #### nijo.exe のその他の使い方
 **執筆中**
 
+#### Contributing
+- コーディング規約
+  - Visual Studio Code
+    - `.editorconfig` が有効化される拡張機能をインストールすること
+    - 一部の.editorconfig設定（特にC#側の設定）は拡張機能のインストールのみでは有効化されないため、以下を行うこと
+      - settings.jsonにて `"dotnet.server.useOmnisharp": true` を設定すること
+      - C#(powered by omnisharp) 拡張機能をインストールすること
+
 ## デモ Demo
 このプロジェクトには、ユニットテストに用いている データパターンがいくつか存在します
 （どのようなパターンがあるかは [こちら](./Nijo.IntegrationTest/DataPatterns/) を参照してください）。
