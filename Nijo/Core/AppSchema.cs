@@ -153,7 +153,7 @@ namespace Nijo.Core {
                 var indent1L = string.Concat(Enumerable.Repeat("\t", depth));
                 var indent2L = "\t" + indent1L;
                 var indent2R = string.Concat(Enumerable.Repeat("\t", maxIndent - depth + 1));
-                builder.AppendLine($"{indent1L}{aggregate}");
+                builder.AppendLine($"{indent1L}{aggregate.Item.DisplayName}({aggregate.Item.Options.Handler})");
 
                 foreach (var member in aggregate.GetMembers()) {
                     builder.Append($"{indent2L}{member.MemberName}{indent2R}");
