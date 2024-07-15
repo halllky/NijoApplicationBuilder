@@ -23,6 +23,10 @@ namespace Nijo.Parts {
         /// 画面のソースが格納されるディレクトリの名前
         /// </summary>
         public const string PAGES = "pages";
+        /// <summary>
+        /// 入力コンポーネントが格納されるディレクトリの名前
+        /// </summary>
+        public const string INPUT = "input";
 
         public ReactProject(GeneratedProject generatedProject) {
             _generatedProject = generatedProject;

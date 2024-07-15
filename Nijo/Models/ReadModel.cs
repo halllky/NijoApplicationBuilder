@@ -155,5 +155,8 @@ namespace Nijo.Models {
 
         }
 
+        void IModel.GenerateCode(CodeRenderingContext context) {
+
+        }
     }
 }

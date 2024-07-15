@@ -81,20 +81,22 @@ namespace Nijo {
                 feature.GenerateCode(ctx);
             }
 
+            var handledModels = new HashSet<string>();
             var handlers = Models
                 .GetAll()
                 .ToDictionary(kv => kv.Key, kv => kv.Value.Invoke());
             foreach (var rootAggregate in ctx.Schema.RootAggregates()) {
                 if (!string.IsNullOrWhiteSpace(rootAggregate.Item.Options.Handler)
-                    && handlers.TryGetValue(rootAggregate.Item.Options.Handler, out var feature)) {
-                    feature.GenerateCode(ctx, rootAggregate);
+                    && handlers.TryGetValue(rootAggregate.Item.Options.Handler, out var model)) {
+                    model.GenerateCode(ctx, rootAggregate);
+                    handledModels.Add(rootAggregate.Item.Options.Handler);
                 } else {
                     // 特に指定の無い集約は処理対象外
                 }
             }
 
-            // 複数の集約から1個のソースが作成されるものはこのタイミングで作成
-            ctx.OnEndContext();
+            // 複数の集約から1個のソースが作成されるもの等はこのタイミングで作成
+            ctx.OnEndContext(handledModels);
 
             // 自動生成されるソースコードをカスタマイズするクラスを呼び出す
             var customizers = Assembly
