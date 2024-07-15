@@ -195,6 +195,13 @@ namespace Nijo.Core {
                 .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
                 .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Models.ReadModel.Key, E_Priority.Force);
 
+            parser.IfExists(NijoCodeGenerator.Models.WriteModel2.Key)
+                .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
+                .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Models.WriteModel2.Key, E_Priority.Force);
+            parser.IfExists(NijoCodeGenerator.Models.ReadModel2.Key)
+                .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
+                .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Models.ReadModel2.Key, E_Priority.Force);
+
             parser.IfExists("section")
                 .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)
                 .SetAggregateOption(opt => opt.IsArray, false, E_Priority.Force);
