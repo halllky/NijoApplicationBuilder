@@ -12,18 +12,27 @@ namespace Nijo.Models.ReadModel2Features {
     /// </summary>
     internal class BatchUpdateViewData {
 
-        internal string ReactHookName => throw new NotImplementedException("TODO");
+        internal string ReactHookName => "useBatchUpdateViewData";
 
         internal string RenderReactHook(CodeRenderingContext context) {
-            throw new NotImplementedException("TODO");
+            return $$"""
+                TODO #35
+                """;
         }
 
-        internal SourceFile RenderController() {
-            throw new NotImplementedException("TODO");
-        }
+        internal SourceFile RenderController() => new SourceFile {
+            FileName = "BatchUpdate.cs",
+            RenderContent = ctx => {
+                return $$"""
+                    TODO #35
+                    """;
+            },
+        };
 
         internal string RenderAppSrvMethod(CodeRenderingContext context) {
-            throw new NotImplementedException("TODO");
+            return $$"""
+                TODO #35
+                """;
         }
     }
 }

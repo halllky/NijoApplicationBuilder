@@ -10,18 +10,27 @@ namespace Nijo.Models.WriteModel2Features {
     /// 一括更新処理
     /// </summary>
     internal class BatchUpdate {
-        internal string HookName => throw new NotImplementedException();
+        internal string HookName => "useBatchUpdate";
 
         internal string RenderHook(CodeRenderingContext context) {
-            throw new NotImplementedException();
+            return $$"""
+                TODO #35
+                """;
         }
 
-        internal SourceFile RenderController() {
-            throw new NotImplementedException();
-        }
+        internal SourceFile RenderController() => new SourceFile {
+            FileName = "BatchUpdateController.cs",
+            RenderContent = ctx => {
+                return $$"""
+                    TODO #35
+                    """;
+            },
+        };
 
         internal string RenderAppSrvMethod(CodeRenderingContext context) {
-            throw new NotImplementedException();
+            return $$"""
+                TODO #35
+                """;
         }
     }
 }

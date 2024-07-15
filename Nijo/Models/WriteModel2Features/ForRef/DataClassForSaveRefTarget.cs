@@ -22,27 +22,35 @@ namespace Nijo.Models.WriteModel2Features.ForRef {
         /// データ構造を定義します（C#）
         /// </summary>
         internal string RenderCSharp(CodeRenderingContext context) {
-            throw new NotImplementedException();
+            return $$"""
+                TODO #35 
+                """;
         }
         /// <summary>
         /// データ構造を定義します（TypeScript）
         /// </summary>
         internal string RenderTypeScript(CodeRenderingContext context) {
-            throw new NotImplementedException();
+            return $$"""
+                TODO #35
+                """;
         }
 
         /// <summary>
         /// 画面表示用データクラスを登録更新用データクラスに変換します。
         /// </summary>
         private string RenderFromDisplayData() {
-            throw new NotImplementedException("TODO");
+            return $$"""
+                TODO #35
+                """;
         }
 
         /// <summary>
         /// 登録更新用データクラスの値をEFCoreEntityにマッピングします。
         /// </summary>
         private string ToDbEntity() {
-            throw new NotImplementedException("TODO");
+            return $$"""
+                TODO #35
+                """;
         }
     }
 }

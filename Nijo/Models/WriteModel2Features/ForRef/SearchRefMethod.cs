@@ -17,18 +17,24 @@ namespace Nijo.Models.WriteModel2Features.ForRef {
         }
         private GraphNode<Aggregate> agg;
 
-        internal string HookName => throw new NotImplementedException();
+        internal string HookName => $"useSearchReference{agg.Item.PhysicalName}";
 
         internal string RenderHook(CodeRenderingContext context) {
-            throw new NotImplementedException();
+            return $$"""
+                TODO #35
+                """;
         }
 
         internal string RenderController(CodeRenderingContext context) {
-            throw new NotImplementedException();
+            return $$"""
+                TODO #35
+                """;
         }
 
         internal string RenderAppSrvMethod(CodeRenderingContext context) {
-            throw new NotImplementedException();
+            return $$"""
+                TODO #35
+                """;
         }
     }
 }

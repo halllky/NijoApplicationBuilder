@@ -10,8 +10,13 @@ namespace Nijo.Models.WriteModel2Features {
     /// デバッグ用ダミーデータ作成関数
     /// </summary>
     internal class DummyDataGenerator {
-        internal SourceFile Render() {
-            throw new NotImplementedException();
-        }
+        internal SourceFile Render() => new SourceFile {
+            FileName = "generateDummyData.ts",
+            RenderContent = ctx => {
+                return $$"""
+                    TODO #35
+                    """;
+            },
+        };
     }
 }

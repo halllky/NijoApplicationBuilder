@@ -19,7 +19,9 @@ namespace Nijo.Models.WriteModel2Features.ForRef {
         private readonly GraphNode<Aggregate> _aggregate;
 
         internal string Render(CodeRenderingContext context) {
-            throw new NotImplementedException();
+            return $$"""
+                TODO #35
+                """;
         }
     }
 }

@@ -17,27 +17,36 @@ namespace Nijo.Models.ReadModel2Features {
         }
         private readonly GraphNode<Aggregate> _aggregate;
 
-        internal string ReactHookName => throw new NotImplementedException("TODO");
+        internal string ReactHookName =>
+             $$"""
+                TODO #35
+                """;
 
         /// <summary>
         /// クライアント側から検索処理を呼び出すReact hook をレンダリングします。
         /// </summary>
         internal string RenderReactHook(CodeRenderingContext context) {
-            throw new NotImplementedException("TODO");
+            return $$"""
+                TODO #35
+                """;
         }
 
         /// <summary>
         /// 検索処理のASP.NET Core Controller アクションをレンダリングします。
         /// </summary>
         internal string RenderControllerAction(CodeRenderingContext context) {
-            throw new NotImplementedException("TODO");
+            return $$"""
+                TODO #35
+                """;
         }
 
         /// <summary>
         /// 検索処理の抽象部分をレンダリングします。
         /// </summary>
         internal string RenderAppSrvAbstractMethod(CodeRenderingContext context) {
-            throw new NotImplementedException("TODO");
+            return $$"""
+                TODO #35
+                """;
         }
 
         /// <summary>
@@ -47,7 +56,9 @@ namespace Nijo.Models.ReadModel2Features {
         /// パラメータのskip, take によるページングを行います。
         /// </summary>
         internal string RenderAppSrvBaseMethod(CodeRenderingContext context) {
-            throw new NotImplementedException("TODO");
+            return $$"""
+                TODO #35
+                """;
         }
     }
 }

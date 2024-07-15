@@ -18,11 +18,15 @@ namespace Nijo.Models.WriteModel2Features {
         private readonly GraphNode<Aggregate> _aggregate;
 
         internal string Render(CodeRenderingContext context) {
-            throw new NotImplementedException();
+            return $$"""
+                TODO #35
+                """;
         }
 
         internal Func<string, string> RenderCallingOnModelCreating(CodeRenderingContext context) {
-            throw new NotImplementedException();
+            return modelBuilder => $$"""
+                TODO #35
+                """;
         }
     }
 }

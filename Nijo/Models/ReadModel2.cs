@@ -38,15 +38,15 @@ namespace Nijo.Models {
 
             // UI: MultiView
             var multiView = new MultiView(rootAggregate);
-            context.ReactProject.AddPage(multiView.Render());
+            context.ReactProject.AddPage(multiView);
 
             // UI: SingleView
             var createView = new SingleView(rootAggregate, SingleView.E_Type.New);
             var readOnlyView = new SingleView(rootAggregate, SingleView.E_Type.ReadOnly);
             var editView = new SingleView(rootAggregate, SingleView.E_Type.Edit);
-            context.ReactProject.AddPage(createView.Render());
-            context.ReactProject.AddPage(readOnlyView.Render());
-            context.ReactProject.AddPage(editView.Render());
+            context.ReactProject.AddPage(createView);
+            context.ReactProject.AddPage(readOnlyView);
+            context.ReactProject.AddPage(editView);
         }
 
         void IModel.GenerateCode(CodeRenderingContext context) {

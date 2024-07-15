@@ -28,46 +28,60 @@ namespace Nijo.Models.WriteModel2Features {
         /// このクラスの項目をEFCoreEntityにマッピングする処理をレンダリングします。
         /// </summary>
         private string RenderToDbEntity() {
-            throw new NotImplementedException("TODO");
+            return $$"""
+                TODO #35
+                """;
         }
 
         /// <summary>
         /// データ構造を定義します（C#）
         /// </summary>
         internal string RenderCSharp(CodeRenderingContext context) {
-            throw new NotImplementedException("TODO");
+            return $$"""
+                TODO #35
+                """;
         }
         /// <summary>
         /// データ構造を定義します（TypeScript）
         /// </summary>
         internal string RenderTypeScript(CodeRenderingContext context) {
-            throw new NotImplementedException("TODO");
+            return $$"""
+                TODO #35
+                """;
         }
 
         /// <summary>
         /// エラーメッセージ格納用の構造体を定義します（C#）
         /// </summary>
         internal string RenderCSharpReadOnlyStructure(CodeRenderingContext context) {
-            throw new NotImplementedException("TODO");
+            return $$"""
+                TODO #35
+                """;
         }
         /// <summary>
         /// エラーメッセージ格納用の構造体を定義します（TypeScript）
         /// </summary>
         internal string RenderTypeScriptErrorStructure(CodeRenderingContext context) {
-            throw new NotImplementedException("TODO");
+            return $$"""
+                TODO #35
+                """;
         }
 
         /// <summary>
         /// どの項目が読み取り専用かを表すための構造体を定義します（C#）
         /// </summary>
         internal string RenderTypeScriptReadOnlyStructure(CodeRenderingContext context) {
-            throw new NotImplementedException("TODO");
+            return $$"""
+                TODO #35
+                """;
         }
         /// <summary>
         /// どの項目が読み取り専用かを表すための構造体を定義します（TypeScript）
         /// </summary>
         internal string RenderCSharpErrorStructure(CodeRenderingContext context) {
-            throw new NotImplementedException("TODO");
+            return $$"""
+                TODO #35
+                """;
         }
     }
 }

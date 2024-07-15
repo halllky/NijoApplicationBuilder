@@ -22,7 +22,9 @@ namespace Nijo.Models.WriteModel2Features {
         /// データ更新処理をレンダリングします。
         /// </summary>
         internal string Render(CodeRenderingContext context) {
-            throw new NotImplementedException();
+            return $$"""
+                TODO #35
+                """;
         }
     }
 }

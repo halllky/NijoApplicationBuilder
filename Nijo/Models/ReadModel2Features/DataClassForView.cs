@@ -18,11 +18,15 @@ namespace Nijo.Models.ReadModel2Features {
         private readonly GraphNode<Aggregate> _aggregate;
 
         internal string RenderCSharpDeclaring(CodeRenderingContext context) {
-            throw new NotImplementedException("TODO");
+            return $$"""
+                TODO #35
+                """;
         }
 
         internal string RenderTypeScriptDeclaring(CodeRenderingContext context) {
-            throw new NotImplementedException("TODO");
+            return $$"""
+                TODO #35
+                """;
         }
     }
 }

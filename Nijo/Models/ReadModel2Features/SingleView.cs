@@ -1,5 +1,6 @@
 using Nijo.Core;
 using Nijo.Parts.WebClient;
+using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
@@ -11,7 +12,7 @@ namespace Nijo.Models.ReadModel2Features {
     /// <summary>
     /// 詳細画面。新規モード・閲覧モード・編集モードの3種類をもつ。
     /// </summary>
-    internal class SingleView {
+    internal class SingleView : IReactPage {
         /// <summary>
         /// 新規モード・閲覧モード・編集モードのうちいずれか
         /// </summary>
@@ -28,8 +29,36 @@ namespace Nijo.Models.ReadModel2Features {
         private readonly GraphNode<Aggregate> _aggregate;
         private readonly E_Type _type;
 
-        internal IReactPage Render() {
-            throw new NotImplementedException("TODO");
-        }
+        public string Url => $$"""
+                TODO #35
+                """;
+
+        public string DirNameInPageDir => $$"""
+                TODO #35
+                """;
+
+        public string ComponentPhysicalName => $$"""
+                TODO #35
+                """;
+
+        public bool ShowMenu => false;
+
+        public string? LabelInMenu => $$"""
+                TODO #35
+                """;
+
+        public SourceFile GetSourceFile() => new SourceFile {
+            FileName = _type switch {
+                E_Type.New => "new.tsx",
+                E_Type.ReadOnly => "detail.tsx",
+                E_Type.Edit => "edit.tsx",
+                _ => throw new NotImplementedException(),
+            },
+            RenderContent = ctx => {
+                return $$"""
+                    TODO #35
+                    """;
+            },
+        };
     }
 }

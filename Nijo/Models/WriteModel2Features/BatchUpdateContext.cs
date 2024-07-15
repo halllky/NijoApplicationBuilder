@@ -11,8 +11,13 @@ namespace Nijo.Models.WriteModel2Features {
     /// エラーメッセージや確認メッセージなどを書きやすくするためのもの。
     /// </summary>
     internal class BatchUpdateContext {
-        internal SourceFile Render() {
-            throw new NotImplementedException();
-        }
+        internal SourceFile Render() => new SourceFile {
+            FileName = "BatchUpdateContext.cs",
+            RenderContent = ctx => {
+                return $$"""
+                    TODO #35
+                    """;
+            },
+        };
     }
 }

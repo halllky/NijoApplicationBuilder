@@ -22,7 +22,9 @@ namespace Nijo.Models.WriteModel2Features {
         /// データ登録更新時に変更されてはならない項目がどれかを定義するメソッドをレンダリングします。
         /// </summary>
         internal string Render(CodeRenderingContext context) {
-            throw new NotImplementedException();
+            return $$"""
+                TODO #35
+                """;
         }
     }
 }
