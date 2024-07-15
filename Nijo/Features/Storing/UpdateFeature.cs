@@ -28,7 +28,7 @@ namespace Nijo.Features.Storing {
                 /// <summary>
                 /// 既存の{{_aggregate.Item.DisplayName}}を更新する Web API
                 /// </summary>
-                [HttpPost("{{Parts.WebClient.Controller.UPDATE_ACTION_NAME}}")]
+                [HttpPost("{{Controller.UPDATE_ACTION_NAME}}")]
                 public virtual IActionResult Update({{dataClass.CsClassName}} param) {
                     if (_applicationService.{{MethodName}}(param, out var updated, out var errors)) {
                         return this.JsonContent(updated);
@@ -41,7 +41,7 @@ namespace Nijo.Features.Storing {
 
         internal string RenderAppSrvMethod() {
             var appSrv = new ApplicationService();
-            var controller = new Parts.WebClient.Controller(_aggregate.Item);
+            var controller = new Controller(_aggregate.Item);
             var find = new FindFeature(_aggregate);
 
             var forSave = new DataClassForSave(_aggregate);

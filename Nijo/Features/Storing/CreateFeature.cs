@@ -22,14 +22,14 @@ namespace Nijo.Features.Storing {
         internal string MethodName => $"Create{_aggregate.Item.DisplayName.ToCSharpSafe()}";
 
         internal string RenderController() {
-            var controller = new Parts.WebClient.Controller(_aggregate.Item);
+            var controller = new Controller(_aggregate.Item);
             var param = new AggregateCreateCommand(_aggregate);
 
             return $$"""
                 /// <summary>
                 /// 新しい{{_aggregate.Item.DisplayName}}を作成する情報を受け取って登録する Web API
                 /// </summary>
-                [HttpPost("{{Parts.WebClient.Controller.CREATE_ACTION_NAME}}")]
+                [HttpPost("{{Controller.CREATE_ACTION_NAME}}")]
                 public virtual IActionResult Create([FromBody] {{param.CsClassName}} param) {
                     if (_applicationService.{{MethodName}}(param, out var created, out var errors)) {
                         return this.JsonContent(created);
@@ -42,7 +42,7 @@ namespace Nijo.Features.Storing {
 
         internal string RenderAppSrvMethod() {
             var appSrv = new ApplicationService();
-            var controller = new Parts.WebClient.Controller(_aggregate.Item);
+            var controller = new Controller(_aggregate.Item);
             var forSave = new DataClassForSave(_aggregate);
             var forDisplay = new DataClassForDisplay(_aggregate);
             var param = new AggregateCreateCommand(_aggregate);

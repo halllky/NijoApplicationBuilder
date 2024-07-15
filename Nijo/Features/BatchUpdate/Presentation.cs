@@ -8,7 +8,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Nijo.Parts.Utility;
-using Nijo.Parts.WebClient;
 
 namespace Nijo.Features.BatchUpdate {
     partial class BatchUpdateFeature {

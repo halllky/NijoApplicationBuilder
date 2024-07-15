@@ -346,7 +346,7 @@ namespace Nijo.Features.Storing {
             static string RenderCommitFunction(GraphNode<Aggregate> agg) {
                 var displayData = new DataClassForDisplay(agg);
                 var localRepos = new LocalRepository(agg);
-                var controller = new Parts.WebClient.Controller(agg.Item);
+                var controller = new Parts.WebServer.Controller(agg.Item);
 
                 return $$"""
                     async (localReposItem: LocalRepositoryStoredItem<AggregateType.{{displayData.TsTypeName}}>) => {

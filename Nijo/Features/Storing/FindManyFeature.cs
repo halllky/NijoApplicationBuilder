@@ -33,7 +33,7 @@ namespace Nijo.Features.Storing {
         internal const string PARAM_TAKE = "take";
 
         internal string GetUrlStringForReact() {
-            var controller = new Parts.WebClient.Controller(_aggregate.Item);
+            var controller = new Controller(_aggregate.Item);
             return $"/{controller.SubDomain}/{ACTION_NAME}";
         }
 

@@ -70,7 +70,7 @@ namespace Nijo.Models {
                 builder.TypeScriptDataTypes.Add(loadFeature.RenderSearchConditionTypeDeclaring(csharp: false));
                 builder.TypeScriptDataTypes.Add(loadFeature.RenderTypeScriptConditionInitializerFn());
 
-                var controller = new Parts.WebClient.Controller(rootAggregate.Item);
+                var controller = new Controller(rootAggregate.Item);
                 var editableMultiView = new MultiViewEditable(rootAggregate, new MultiViewEditable.Options {
                     ReadOnly = true,
                     Hooks = $$"""

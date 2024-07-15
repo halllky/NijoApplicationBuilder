@@ -27,9 +27,9 @@ namespace Nijo.Features.Storing {
             return $"/{controller.SubDomain}/{GetActionName()}";
         }
 
-        private Parts.WebClient.Controller GetController() {
+        private Controller GetController() {
             var root = _aggregate.GetRoot();
-            return new Parts.WebClient.Controller(root.Item);
+            return new Controller(root.Item);
         }
 
         internal string AppServiceMeghodName => $"SearchByKeyword{_aggregate.Item.DisplayName.ToCSharpSafe()}";

@@ -14,7 +14,7 @@ namespace Nijo.Features.BackgroundService {
 
         private static SourceFile RenderBgTaskListComponent(CodeRenderingContext context) {
             var agg = context.Schema.GetAggregate(GraphNodeId);
-            var controller = new Controller(agg.Item);
+            var controller = new Parts.WebServer.Controller(agg.Item);
             var members = agg.GetMembers().ToArray();
             var columns = DataTableColumn.FromMembers("GridRow", agg, true);
 

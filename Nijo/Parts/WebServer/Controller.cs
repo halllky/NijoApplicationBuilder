@@ -6,7 +6,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.Parts.WebClient {
+namespace Nijo.Parts.WebServer {
+    /// <summary>
+    /// ASP.NET Core のコントローラーの抽象
+    /// </summary>
     public class Controller {
         internal Controller(string physicalName) {
             _physicalName = physicalName;

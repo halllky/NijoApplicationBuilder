@@ -27,7 +27,7 @@ namespace Nijo.Features.Storing {
                 /// <summary>
                 /// 既存の{{_aggregate.Item.DisplayName}}を削除する Web API
                 /// </summary>
-                [HttpDelete("{{Parts.WebClient.Controller.DELETE_ACTION_NAME}}")]
+                [HttpDelete("{{Controller.DELETE_ACTION_NAME}}")]
                 public virtual IActionResult Delete({{dataClass.CsClassName}} param) {
                     if (_applicationService.{{MethodName}}(param, out var errors)) {
                         return Ok();
@@ -40,7 +40,7 @@ namespace Nijo.Features.Storing {
 
         internal string RenderAppSrvMethod() {
             var appSrv = new ApplicationService();
-            var controller = new Parts.WebClient.Controller(_aggregate.Item);
+            var controller = new Controller(_aggregate.Item);
             var dataClass = new DataClassForSave(_aggregate);
             var searchKeys = _aggregate
                 .GetKeys()

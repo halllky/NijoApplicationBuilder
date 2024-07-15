@@ -92,7 +92,7 @@ namespace Nijo.Features.Storing {
         internal SourceFile Render() => new SourceFile {
             FileName = FileName,
             RenderContent = context => {
-                var controller = new Controller(_aggregate.Item);
+                var controller = new Parts.WebServer.Controller(_aggregate.Item);
                 var multiViewUrl = new MultiViewEditable(_aggregate).Url;
                 var dataClass = new DataClassForDisplay(_aggregate);
                 var localRepos = new LocalRepository(_aggregate);

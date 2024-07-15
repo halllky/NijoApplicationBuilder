@@ -1,4 +1,3 @@
-using Nijo.Parts.WebClient;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using System;

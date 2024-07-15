@@ -31,7 +31,7 @@ namespace Nijo.Parts.WebServer {
                 FileName = $"{_aggregate.Item.DisplayName.ToFileNameSafe()}.cs",
                 RenderContent = context => {
                     var appSrv = new ApplicationService();
-                    var controller = new Parts.WebClient.Controller(_aggregate.Item);
+                    var controller = new Controller(_aggregate.Item);
 
                     return $$"""
                         namespace {{context.Config.RootNamespace}} {
@@ -50,7 +50,7 @@ namespace Nijo.Parts.WebServer {
                             /// {{_aggregate.Item.DisplayName}}に関する Web API 操作を提供する ASP.NET Core のコントローラー
                             /// </summary>
                             [ApiController]
-                            [Route("{{Parts.WebClient.Controller.SUBDOMAIN}}/[controller]")]
+                            [Route("{{Controller.SUBDOMAIN}}/[controller]")]
                             public partial class {{controller.ClassName}} : ControllerBase {
                                 public {{controller.ClassName}}(ILogger<{{controller.ClassName}}> logger, {{appSrv.ClassName}} applicationService) {
                                     _logger = logger;

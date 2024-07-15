@@ -15,7 +15,7 @@ namespace Nijo.Features.BackgroundService {
 
         public static string GetScheduleApiURL(CodeRenderingContext ctx) {
             var bgTaskAggregate = ctx.Schema.GetAggregate(GraphNodeId);
-            var controller = new Controller(bgTaskAggregate.Item);
+            var controller = new Parts.WebServer.Controller(bgTaskAggregate.Item);
             return $"{controller.SubDomain}/{SCHEDULE}";
         }
 

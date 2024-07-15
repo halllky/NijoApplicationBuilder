@@ -24,7 +24,7 @@ namespace Nijo.Features.Storing {
         private const string ACTION_NAME = "detail";
 
         internal string GetUrlStringForReact(IEnumerable<string> keyVariables) {
-            var controller = new Parts.WebClient.Controller(_aggregate.Item);
+            var controller = new Controller(_aggregate.Item);
             var encoded = keyVariables.Select(key => $"${{window.encodeURI({key})}}");
             return $"`/{controller.SubDomain}/{ACTION_NAME}/{encoded.Join("/")}`";
         }
@@ -34,7 +34,7 @@ namespace Nijo.Features.Storing {
                 .GetKeys()
                 .Where(m => m is AggregateMember.ValueMember)
                 .ToArray();
-            var controller = new Parts.WebClient.Controller(_aggregate.Item);
+            var controller = new Controller(_aggregate.Item);
 
             return $$"""
                 /// <summary>
