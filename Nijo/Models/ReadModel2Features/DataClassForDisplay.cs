@@ -11,8 +11,8 @@ namespace Nijo.Models.ReadModel2Features {
     /// <summary>
     /// 画面表示用データクラス
     /// </summary>
-    internal class DataClassForView {
-        internal DataClassForView(GraphNode<Aggregate> agg) {
+    internal class DataClassForDisplay {
+        internal DataClassForDisplay(GraphNode<Aggregate> agg) {
             _aggregate = agg;
         }
         private readonly GraphNode<Aggregate> _aggregate;

@@ -23,9 +23,9 @@ namespace Nijo.Models {
                     builder.TypeScriptDataTypes.Add(condition.RenderTypeScriptDeclaring(context));
 
                     // データ型: ビュークラス
-                    var viewData = new DataClassForView(agg);
-                    builder.DataClassDeclaring.Add(viewData.RenderCSharpDeclaring(context));
-                    builder.TypeScriptDataTypes.Add(viewData.RenderTypeScriptDeclaring(context));
+                    var displayData = new DataClassForDisplay(agg);
+                    builder.DataClassDeclaring.Add(displayData.RenderCSharpDeclaring(context));
+                    builder.TypeScriptDataTypes.Add(displayData.RenderTypeScriptDeclaring(context));
                 }
 
                 // 処理: 検索処理
