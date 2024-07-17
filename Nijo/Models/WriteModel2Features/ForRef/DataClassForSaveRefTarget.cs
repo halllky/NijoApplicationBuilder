@@ -18,6 +18,9 @@ namespace Nijo.Models.WriteModel2Features.ForRef {
 
         private readonly GraphNode<Aggregate> _aggregate;
 
+        internal string CsClassName => $"TODO #35";
+        internal string TsTypeName => $"TODO #35";
+
         /// <summary>
         /// データ構造を定義します（C#）
         /// </summary>

@@ -20,6 +20,8 @@ namespace Nijo.Core {
         internal string UniqueId => Id.Value.ToHashedString();
 
         public string PhysicalName => DisplayName.ToCSharpSafe();
+
+        // TODO: EFCoerEntityやDbSetを表すクラスがこれらの情報を保持するべき
         public string EFCoreEntityClassName => $"{PhysicalName}DbEntity";
         public string DbSetName => $"{PhysicalName}DbSet";
 

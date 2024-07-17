@@ -136,6 +136,7 @@ namespace Nijo.Core {
             }
         }
 
+        // TODO: レイヤが混在している。NavigationPropertyクラスがAggregateMemberに依存するようにすべき
         internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<Aggregate> aggregate) {
             foreach (var member in aggregate.GetMembers()) {
                 if (member is not RelationMember relationMember) continue;
@@ -161,6 +162,8 @@ namespace Nijo.Core {
             internal abstract GraphNode<Aggregate> DeclaringAggregate { get; }
             internal abstract string MemberName { get; }
             internal abstract decimal Order { get; }
+
+            // TODO: どの型名になるかは生成されるクラスごとに異なるためこのプロパティはここにあるべきではない
             internal abstract string CSharpTypeName { get; }
             internal abstract string TypeScriptTypename { get; }
 
