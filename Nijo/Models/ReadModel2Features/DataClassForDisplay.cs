@@ -1,4 +1,6 @@
 using Nijo.Core;
+using Nijo.Models.WriteModel2Features.ForRef;
+using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -13,20 +15,353 @@ namespace Nijo.Models.ReadModel2Features {
     /// </summary>
     internal class DataClassForDisplay {
         internal DataClassForDisplay(GraphNode<Aggregate> agg) {
-            _aggregate = agg;
+            Aggregate = agg;
         }
-        private readonly GraphNode<Aggregate> _aggregate;
+        internal GraphNode<Aggregate> Aggregate { get; }
 
+        /// <summary>C#クラス名</summary>
+        internal string CsClassName => $"{Aggregate.Item.PhysicalName}DisplayData";
+        /// <summary>TypeScript型名</summary>
+        internal string TsTypeName => $"{Aggregate.Item.PhysicalName}DisplayData";
+
+        /// <summary>値が格納されるプロパティの名前（C#）</summary>
+        internal const string VALUES_CS = "Values";
+        /// <summary>値が格納されるプロパティの名前（TypeScript）</summary>
+        internal const string VALUES_TS = "values";
+        /// <summary>値クラス名</summary>
+        internal string ValueClassName => $"{CsClassName}Values";
+
+        /// <summary>メッセージ情報が格納されるプロパティの名前（C#）</summary>
+        internal const string MESSAGES_CS = "Messages";
+        /// <summary>メッセージ情報が格納されるプロパティの名前（TypeScript）</summary>
+        internal const string MESSAGES_TS = "messages";
+        /// <summary>メンバーでなくオブジェクト自身へのメッセージ（C#）</summary>
+        internal const string OWN_MESSAGES_CS = "OwnMessages";
+        /// <summary>メンバーでなくオブジェクト自身へのメッセージ（TypeScript）</summary>
+        internal const string OWN_MESSAGES_TS = "ownMessages";
+        /// <summary>メッセージ用構造体 C#クラス名</summary>
+        internal string MessageDataCsClassName => $"{CsClassName}Messages";
+
+        /// <summary>読み取り専用か否かが格納されるプロパティの名前（C#）</summary>
+        internal const string READONLY_CS = "ReadOnly";
+        /// <summary>読み取り専用か否かが格納されるプロパティの名前（TypeScript）</summary>
+        internal const string READONLY_TS = "readOnly";
+        /// <summary>全項目が読み取り専用か否か（C#）</summary>
+        internal const string ALL_READONLY_CS = "AllReadOnly";
+        /// <summary>全項目が読み取り専用か否か（TypeScript）</summary>
+        internal const string ALL_READONLY_TS = "allReadOnly";
+        /// <summary>メッセージ用構造体 C#クラス名</summary>
+        internal string ReadOnlyDataCsClassName => $"{CsClassName}ReadOnly";
+
+        /// <summary>
+        /// インスタンスを一意に表す文字列（C#）。
+        /// 新規作成の場合はUUID。閲覧・更新・削除のときは主キーの値の配列のJSON。
+        /// 
+        /// 新規作成データの場合は画面上で主キー項目を編集可能であり、
+        /// 別途何らかの識別子を設けないと同一性を判定する方法が無いため、この項目が必要になる。
+        /// </summary>
+        internal const string INSTANCE_KEY_CS = "InstanceKey";
+        /// <summary>
+        /// インスタンスを一意に表す文字列（C#）。
+        /// 新規作成の場合はUUID。閲覧・更新・削除のときは主キーの値の配列のJSON。
+        /// 
+        /// 新規作成データの場合は画面上で主キー項目を編集可能であり、
+        /// 別途何らかの識別子を設けないと同一性を判定する方法が無いため、この項目が必要になる。
+        /// </summary>
+        internal const string INSTANCE_KEY_TS = "instanceKey";
+
+        /// <summary>このデータがDBに保存済みかどうか（C#）。つまり新規作成のときはfalse, 閲覧・更新・削除のときはtrue</summary>
+        internal const string EXISTS_IN_DB_CS = "ExistsInDatabase";
+        /// <summary>このデータがDBに保存済みかどうか（TypeScript）。つまり新規作成のときはfalse, 閲覧・更新・削除のときはtrue</summary>
+        internal const string EXISTS_IN_DB_TS = "existsInDatabase";
+
+        /// <summary>画面上で何らかの変更が加えられてから、保存処理の実行でその変更が確定するまでの間、trueになる（C#）</summary>
+        internal const string WILL_BE_CHANGED_CS = "WillBeChanged";
+        /// <summary>画面上で何らかの変更が加えられてから、保存処理の実行でその変更が確定するまでの間、trueになる（TypeScript）</summary>
+        internal const string WILL_BE_CHANGED_TS = "willBeChanged";
+
+        /// <summary>画面上で削除が指示されてから、保存処理の実行でその削除が確定するまでの間、trueになる（C#）</summary>
+        internal const string WILL_BE_DELETED_CS = "WillBeDeleted";
+        /// <summary>画面上で削除が指示されてから、保存処理の実行でその削除が確定するまでの間、trueになる（TypeScript）</summary>
+        internal const string WILL_BE_DELETED_TS = "willBeDeleted";
+
+        /// <summary>
+        /// 追加・更新・削除のタイミングが親要素と異なるか否か
+        /// </summary>
+        internal bool HasLifeCycle => Aggregate.IsRoot() || Aggregate.Item.Options.HasLifeCycle;
+        /// <summary>
+        /// インスタンスキー（<see cref="INSTANCE_KEY_CS"/>, <see cref="INSTANCE_KEY_TS"/>）を持つかどうか。
+        /// 追加更新削除のタイミングが親と異なる場合以外であっても、配列の要素の場合は配列の並び順が変わるなどしても
+        /// 従前の要素を追跡できるようにしておくためにインスタンスキーをもつ。
+        /// </summary>
+        internal bool HasInstanceKey => HasLifeCycle || Aggregate.IsChildrenMember();
+
+        /// <summary>
+        /// <see cref="VALUES_CS"/>, <see cref="VALUES_TS"/> に含まれるメンバーを列挙します。
+        /// </summary>
+        /// <returns></returns>
+        internal IEnumerable<AggregateMember.AggregateMemberBase> GetOwnMembers() {
+            return Aggregate
+                .GetMembers()
+                .Where(m => m.DeclaringAggregate == Aggregate
+                         && m is not AggregateMember.Parent);
+        }
+        /// <summary>
+        /// 子要素の画面表示用クラスを列挙します。
+        /// </summary>
+        internal IEnumerable<DataClassForDisplayDescendant> GetChildMembers() {
+            return Aggregate
+                .GetMembers()
+                .Where(m => m is AggregateMember.Child
+                         || m is AggregateMember.Children
+                         || m is AggregateMember.VariationItem)
+                .Select(m => new DataClassForDisplayDescendant((AggregateMember.RelationMember)m));
+        }
+
+
+        /// <summary>
+        /// クラス定義をレンダリングします（C#）
+        /// </summary>
         internal string RenderCSharpDeclaring(CodeRenderingContext context) {
             return $$"""
-                TODO #35
+                /// <summary>
+                /// {{Aggregate.Item.DisplayName}}の画面表示用データ構造
+                /// </summary>
+                public partial class {{CsClassName}} {
+                {{If(HasInstanceKey, () => $$"""
+                    /// <summary>
+                    /// インスタンスを一意に表す文字列。新規作成の場合はUUID。閲覧・更新・削除のときは主キーの値の配列のJSON。
+                    /// 新規作成データの場合は画面上で主キー項目を編集可能であり、
+                    /// 別途何らかの識別子を設けないと同一性を判定する方法が無いため、この項目が必要になる。
+                    /// </summary>
+                    [JsonPropertyName("{{INSTANCE_KEY_TS}}")]
+                    public required virtual string {{INSTANCE_KEY_CS}} { get; set; }
+                """)}}
+                {{If(HasLifeCycle, () => $$"""
+                    /// <summary>このデータがDBに保存済みかどうか</summary>
+                    [JsonPropertyName("{{EXISTS_IN_DB_TS}}")]
+                    public virtual bool {{EXISTS_IN_DB_CS}} { get; set; }
+                    /// <summary>このデータに更新がかかっているかどうか</summary>
+                    [JsonPropertyName("{{WILL_BE_CHANGED_TS}}")]
+                    public virtual bool {{WILL_BE_CHANGED_CS}} { get; set; }
+                    /// <summary>このデータが更新確定時に削除されるかどうか</summary>
+                    [JsonPropertyName("{{WILL_BE_DELETED_TS}}")]
+                    public virtual bool {{WILL_BE_DELETED_CS}} { get; set; }
+                """)}}
+                    /// <summary>メッセージ</summary>
+                    [JsonPropertyName("{{MESSAGES_TS}}")]
+                    public virtual {{MessageDataCsClassName}} {{MESSAGES_CS}} { get; set; } = new();
+                    /// <summary>どの項目が読み取り専用か</summary>
+                    [JsonPropertyName("{{READONLY_TS}}")]
+                    public virtual {{ReadOnlyDataCsClassName}} {{READONLY_CS}} { get; set; } = new();
+
+                    /// <summary>値</summary>
+                    [JsonPropertyName("{{VALUES_TS}}")]
+                    public virtual {{ValueClassName}} {{VALUES_CS}} { get; set; } = new();
+                {{GetChildMembers().SelectTextTemplate(member => member.Aggregate.IsChildrenMember() ? $$"""
+                    /// <summary>{{member.Aggregate.Item.DisplayName}}</summary>
+                    public virtual List<{{member.CsClassName}}> {{member.MemberInfo.MemberName}} { get; set; } = new();
+                """ : $$"""
+                    /// <summary>{{member.Aggregate.Item.DisplayName}}</summary>
+                    public virtual {{member.CsClassName}} {{member.MemberInfo.MemberName}} { get; set; } = new();
+                """)}}
+                }
+                {{RenderCsValueClass(context)}}
+                {{RenderCsMessageClass(context)}}
+                {{RenderCsReadonlyClass(context)}}
+                """;
+        }
+        /// <summary>
+        /// 型定義をレンダリングします（TypeScript）
+        /// </summary>
+        internal string RenderTypeScriptDeclaring(CodeRenderingContext context) {
+            return $$"""
+                /** {{Aggregate.Item.DisplayName}}の画面表示用データ構造 */
+                export type {{TsTypeName}} = {
+                {{If(HasInstanceKey, () => $$"""
+                  /**
+                   * インスタンスを一意に表す文字列。新規作成の場合はUUID。閲覧・更新・削除のときは主キーの値の配列のJSON。
+                   * 新規作成データの場合は画面上で主キー項目を編集可能であり、
+                   * 別途何らかの識別子を設けないと同一性を判定する方法が無いため、この項目が必要になる。
+                   */
+                  {{INSTANCE_KEY_TS}}: string
+                """)}}
+                {{If(HasLifeCycle, () => $$"""
+                  /** このデータがDBに保存済みかどうか */
+                  {{EXISTS_IN_DB_TS}}: boolean
+                  /** このデータに更新がかかっているかどうか */
+                  {{WILL_BE_CHANGED_TS}}: boolean
+                  /** このデータが更新確定時に削除されるかどうか */
+                  {{WILL_BE_DELETED_TS}}: boolean
+                """)}}
+                  /** メッセージ */
+                  {{MESSAGES_TS}}?: {{WithIndent(RenderMessageTs(context), "  ")}}
+                  /** どの項目が読み取り専用か */
+                  {{READONLY_TS}}?:: {{WithIndent(RenderReadonlyTsType(context), "  ")}}
+
+                  /** 値 */
+                  {{VALUES_TS}}: {{WithIndent(RenderTsValueType(context), "  ")}}
+                {{GetChildMembers().SelectTextTemplate(member => member.Aggregate.IsChildrenMember() ? $$"""
+                  /** {{member.Aggregate.Item.DisplayName}} */
+                  {{member.MemberInfo.MemberName}}: {{member.TsTypeName}}[]
+                """ : $$"""
+                  /** {{member.Aggregate.Item.DisplayName}} */
+                  {{member.MemberInfo.MemberName}}: {{member.TsTypeName}}
+                """)}}
+                }
                 """;
         }
 
-        internal string RenderTypeScriptDeclaring(CodeRenderingContext context) {
+
+        #region 値
+        private string RenderCsValueClass(CodeRenderingContext context) {
             return $$"""
-                TODO #35
+                /// <summary>
+                /// {{Aggregate.Item.DisplayName}}の画面表示用データの値の部分
+                /// </summary>
+                public partial class {{ValueClassName}} {
+                {{GetOwnMembers().SelectTextTemplate(member => $$"""
+                    /// <summary>{{member.MemberName}}</summary>
+                    public virtual {{GetMemberCsType(member)}}? {{member.MemberName}} { get; set; }
+                """)}}
+                }
                 """;
         }
+        private string RenderTsValueType(CodeRenderingContext context) {
+            return $$"""
+                {
+                {{GetOwnMembers().SelectTextTemplate(member => $$"""
+                  {{member.MemberName}}?: {{GetMemberTsType(member)}}
+                """)}}
+                }
+                """;
+        }
+        #endregion 値
+
+
+        #region メッセージ用構造体
+        private string RenderCsMessageClass(CodeRenderingContext context) {
+            return $$"""
+                /// <summary>
+                /// {{Aggregate.Item.DisplayName}}の画面表示用データのメッセージ情報格納部分
+                /// </summary>
+                public partial class {{MessageDataCsClassName}} {
+                    /// <summary>{{Aggregate.Item.DisplayName}}自身についてのメッセージ</summary>
+                    [JsonPropertyName("{{OWN_MESSAGES_TS}}")]
+                    public virtual {{MessageContainer.CS_CLASS_NAME}} {{OWN_MESSAGES_CS}} { get; } = new();
+                {{GetOwnMembers().SelectTextTemplate(member => $$"""
+                    /// <summary>{{member.MemberName}}についてのメッセージ</summary>
+                    public virtual {{MessageContainer.CS_CLASS_NAME}} {{member.MemberName}} { get; } = new();
+                """)}}
+                }
+                """;
+        }
+        private string RenderMessageTs(CodeRenderingContext context) {
+            return $$"""
+                {
+                  /** {{Aggregate.Item.DisplayName}}自身についてのメッセージ */
+                  {{OWN_MESSAGES_TS}}?: {{MessageContainer.TS_TYPE_NAME}}
+                {{GetOwnMembers().SelectTextTemplate(member => $$"""
+                  /** {{member.MemberName}}についてのメッセージ */
+                  {{member.MemberName}}?: {{MessageContainer.TS_TYPE_NAME}}
+                """)}}
+                }
+                """;
+        }
+        #endregion メッセージ用構造体
+
+
+        #region 読み取り専用用構造体
+        private string RenderCsReadonlyClass(CodeRenderingContext context) {
+            return $$"""
+                /// <summary>
+                /// {{Aggregate.Item.DisplayName}}の画面表示用データの読み取り専用情報格納部分
+                /// </summary>
+                public partial class {{ReadOnlyDataCsClassName}} {
+                    /// <summary>{{Aggregate.Item.DisplayName}}全体が読み取り専用か否か</summary>
+                    [JsonPropertyName("{{ALL_READONLY_TS}}")]
+                    public virtual {{ReadOnlyInfo.CS_CLASS_NAME}} {{ALL_READONLY_CS}} { get; } = new();
+                {{GetOwnMembers().SelectTextTemplate(member => $$"""
+                    /// <summary>{{member.MemberName}}が読み取り専用か否か</summary>
+                    public virtual {{ReadOnlyInfo.CS_CLASS_NAME}} {{member.MemberName}} { get; } = new();
+                """)}}
+                }
+                """;
+        }
+        private string RenderReadonlyTsType(CodeRenderingContext context) {
+            return $$"""
+                {
+                  /** {{Aggregate.Item.DisplayName}}全体が読み取り専用か否か */
+                  {{ALL_READONLY_TS}}?: {{ReadOnlyInfo.TS_TYPE_NAME}}
+                {{GetOwnMembers().SelectTextTemplate(member => $$"""
+                  /** {{member.MemberName}}が読み取り専用か否か */
+                  {{member.MemberName}}?: {{ReadOnlyInfo.TS_TYPE_NAME}}
+                """)}}
+                }
+                """;
+        }
+        #endregion 読み取り専用用構造体
+
+        /// <summary>
+        /// メンバーのC#型名を返します。null許容演算子は含みません。
+        /// </summary>
+        /// <param name="member"></param>
+        /// <returns></returns>
+        internal static string GetMemberCsType(AggregateMember.AggregateMemberBase member) {
+            if (member is AggregateMember.ValueMember vm) {
+                return vm.Options.MemberType.GetCSharpTypeName();
+
+            } else if (member is AggregateMember.Parent) {
+                throw new NotImplementedException(); // Parentのメンバーは定義されないので
+
+            } else if (member is AggregateMember.Ref @ref) {
+                var refTarget = new DataClassForDisplayRefTarget(@ref.RefTo);
+                return refTarget.CsClassName;
+
+            } else if (member is AggregateMember.Children children) {
+                var dataClass = new DataClassForDisplay(children.ChildrenAggregate);
+                return dataClass.CsClassName;
+
+            } else {
+                var dataClass = new DataClassForDisplay(((AggregateMember.RelationMember)member).MemberAggregate);
+                return dataClass.CsClassName;
+            }
+        }
+        /// <summary>
+        /// メンバーのTypeScript型名を返します。
+        /// </summary>
+        /// <param name="member"></param>
+        /// <returns></returns>
+        internal static string GetMemberTsType(AggregateMember.AggregateMemberBase member) {
+            if (member is AggregateMember.ValueMember vm) {
+                return vm.Options.MemberType.GetTypeScriptTypeName();
+
+            } else if (member is AggregateMember.Parent) {
+                throw new NotImplementedException(); // Parentのメンバーは定義されないので
+
+            } else if (member is AggregateMember.Ref @ref) {
+                var refTarget = new DataClassForDisplayRefTarget(@ref.RefTo);
+                return refTarget.TsTypeName;
+
+            } else if (member is AggregateMember.Children children) {
+                var dataClass = new DataClassForDisplay(children.ChildrenAggregate);
+                return dataClass.TsTypeName;
+
+            } else {
+                var dataClass = new DataClassForDisplay(((AggregateMember.RelationMember)member).MemberAggregate);
+                return dataClass.TsTypeName;
+            }
+        }
+    }
+
+    /// <summary>
+    /// <see cref="DataClassForDisplay"/> のうちルート集約でないもの
+    /// </summary>
+    internal class DataClassForDisplayDescendant : DataClassForDisplay {
+        internal DataClassForDisplayDescendant(AggregateMember.RelationMember memberInfo) : base(memberInfo.MemberAggregate) {
+            MemberInfo = memberInfo;
+        }
+
+        internal AggregateMember.RelationMember MemberInfo { get; }
     }
 }

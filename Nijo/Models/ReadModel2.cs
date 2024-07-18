@@ -1,5 +1,6 @@
 using Nijo.Core;
 using Nijo.Models.ReadModel2Features;
+using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -50,6 +51,12 @@ namespace Nijo.Models {
         }
 
         void IModel.GenerateCode(CodeRenderingContext context) {
+
+            // ユーティリティクラス等
+            context.CoreLibrary.UtilDir(dir => {
+                dir.Generate(MessageContainer.RenderCSharp());
+                dir.Generate(ReadOnlyInfo.RenderCSharp());
+            });
 
             // 処理: 一括更新処理
             var batchUpdate = new BatchUpdateViewData();

@@ -260,6 +260,9 @@ namespace Nijo.Core {
             parser.IfExists("hidden")
                 .SetMemberOption(opt => opt.InvisibleInGui, true, E_Priority.Force);
 
+            parser.IfExists("has-lifecycle")
+                .SetAggregateOption(opt => opt.HasLifeCycle, true, E_Priority.Force);
+
             var elementType = parser.GetElementType();
             var aggregateOption = parser.CreateAggregateOption();
             var memberOption = parser.CreateMemberOption();

@@ -113,10 +113,6 @@ namespace Nijo.Models.WriteModel2Features {
 
         #region 値
         /// <summary>
-        /// 追加・更新・削除のいずれかを表す区分を持つかどうか
-        /// </summary>
-        private bool HasAddModDel => _aggregate.IsRoot() || _aggregate.IsChildrenMember();
-        /// <summary>
         /// C#クラス名
         /// </summary>
         internal string CsClassName => _type == E_Type.Create
@@ -153,8 +149,8 @@ namespace Nijo.Models.WriteModel2Features {
         internal string RenderCSharp(CodeRenderingContext context) {
             // TODO #35 null許容に関して、型を堅牢にすべき
             return $$"""
-                public virtual class {{CsClassName}} {
-                {{If(HasAddModDel, () => $$"""
+                public partial class {{CsClassName}} {
+                {{If(_aggregate.IsRoot(), () => $$"""
                     /// <summary>追加・更新・削除のいずれかを表す区分</summary>
                     [JsonPropertyName("{{UPDATE_TYPE_TS}}")]
                     public required {{ADD_MOD_DEL_CS}} {{UPDATE_TYPE_CS}} { get; init; }
@@ -181,17 +177,24 @@ namespace Nijo.Models.WriteModel2Features {
             // TODO #35 optionalに関して、型を堅牢にすべき
             return $$"""
                 export type {{TsTypeName}} = {
-                {{If(HasAddModDel, () => $$"""
+                {{If(_aggregate.IsRoot(), () => $$"""
                   /** 追加・更新・削除のいずれかを表す区分 */
                   {{UPDATE_TYPE_TS}}: {{ADD_MOD_DEL_TS}}
                 """)}}
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
                   {{m.MemberName}}?: {{GetMemberTypeNameTypeScript(m, _type)}}
                 """)}}
+                {{If(_type == E_Type.UpdateOrDelete && _aggregate.IsRoot(), () => $$"""
+                  /** 楽観排他制御用のバージョニング情報 */
+                  {{VERSION_TS}}: number
+                """)}}
                 }
                 """;
         }
 
+        /// <summary>
+        /// このクラスのオブジェクトを <see cref="EFCoreEntity"/> 型に変換するメソッドの名前
+        /// </summary>
         internal const string TO_DBENTITY = "ToDbEntity";
 
         /// <summary>
@@ -297,15 +300,15 @@ namespace Nijo.Models.WriteModel2Features {
                 var members = new List<string>();
                 foreach (var m in dataClass.GetOwnMembers()) {
                     if (m is AggregateMember.ValueMember || m is AggregateMember.Ref) {
-                        members.Add($"public List<string> {m.MemberName} {{ get; }} = new(),");
+                        members.Add($"public List<string> {m.MemberName} {{ get; }} = new();");
 
                     } else if (m is AggregateMember.Children children) {
                         var descendant = new DataClassForSave(children.ChildrenAggregate, _type);
-                        members.Add($"public List<{descendant.ErrorDataCsClassName}> {m.MemberName} {{ get; }} = new(),");
+                        members.Add($"public List<{descendant.ErrorDataCsClassName}> {m.MemberName} {{ get; }} = new();");
 
                     } else if (m is AggregateMember.RelationMember rel) {
                         var descendant = new DataClassForSave(rel.MemberAggregate, _type);
-                        members.Add($"public {descendant.ErrorDataCsClassName} {m.MemberName} {{ get; }} = new(),");
+                        members.Add($"public {descendant.ErrorDataCsClassName} {m.MemberName} {{ get; }} = new();");
                     }
                 }
                 return $$"""
@@ -404,15 +407,15 @@ namespace Nijo.Models.WriteModel2Features {
                 var members = new List<string>();
                 foreach (var m in dataClass.GetOwnMembers()) {
                     if (m is AggregateMember.ValueMember || m is AggregateMember.Ref) {
-                        members.Add($"public bool {m.MemberName} {{ get; set; }},");
+                        members.Add($"public bool {m.MemberName} {{ get; set; }}");
 
                     } else if (m is AggregateMember.Children children) {
                         var descendant = new DataClassForSave(children.ChildrenAggregate, _type);
-                        members.Add($"public List<{dataClass.ReadOnlyCsClassName}> {m.MemberName} {{ get; }} = new(),");
+                        members.Add($"public List<{dataClass.ReadOnlyCsClassName}> {m.MemberName} {{ get; }} = new();");
 
                     } else if (m is AggregateMember.RelationMember rel) {
                         var descendant = new DataClassForSave(rel.MemberAggregate, _type);
-                        members.Add($"public {dataClass.ReadOnlyCsClassName} {m.MemberName} {{ get; }} = new(),");
+                        members.Add($"public {dataClass.ReadOnlyCsClassName} {m.MemberName} {{ get; }} = new();");
                     }
                 }
                 return $$"""
