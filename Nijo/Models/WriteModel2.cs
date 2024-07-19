@@ -88,7 +88,7 @@ namespace Nijo.Models {
 
         void IModel.GenerateCode(CodeRenderingContext context) {
             // 列挙体
-            DataClassForSave.RenderAddModDelEnum(); // TODO #35
+            context.CoreLibrary.Enums.Add(DataClassForSave.RenderAddModDelEnum());
 
             // データ型: 一括コミット コンテキスト引数
             var batchUpdateContext = new BatchUpdateContext();

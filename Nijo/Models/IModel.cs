@@ -19,8 +19,7 @@ namespace Nijo.Models {
         /// </summary>
         void GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate);
         /// <summary>
-        /// ルート集約1個と対応しないソースコードを生成します。
-        /// 例えばユーティリティや、1つのファイルの中に複数のルート集約のソースがレンダリングされるものなど。
+        /// ユーティリティクラスなどのような、ルート集約1個と対応しないソースコードを生成します。
         /// </summary>
         void GenerateCode(CodeRenderingContext context);
     }
