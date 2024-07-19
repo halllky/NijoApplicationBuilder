@@ -197,7 +197,7 @@ namespace Nijo.Models.ReadModel2Features {
                   /** メッセージ */
                   {{MESSAGES_TS}}?: {{WithIndent(RenderMessageTs(context), "  ")}}
                   /** どの項目が読み取り専用か */
-                  {{READONLY_TS}}?:: {{WithIndent(RenderReadonlyTsType(context), "  ")}}
+                  {{READONLY_TS}}?: {{WithIndent(RenderReadonlyTsType(context), "  ")}}
 
                   /** 値 */
                   {{VALUES_TS}}: {{WithIndent(RenderTsValueType(context), "  ")}}

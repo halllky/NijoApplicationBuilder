@@ -60,7 +60,11 @@ namespace Nijo.Models.WriteModel2Features {
         internal static string RenderAddModDelType() {
             return $$"""
                 /** 追加・更新・削除のいずれかを表す区分 */
-                export type {{ADD_MOD_DEL_TS}} = 'ADD' | 'MOD' | 'DEL' | 'NONE'
+                export type {{ADD_MOD_DEL_TS}}
+                  = 'ADD'  // 新規追加
+                  | 'MOD'  // 更新
+                  | 'DEL'  // 削除
+                  | 'NONE' // 変更なし
                 """;
         }
 

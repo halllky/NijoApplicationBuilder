@@ -11,16 +11,23 @@ using System.Threading.Tasks;
 namespace Nijo.Parts.WebClient {
     internal class TypesTsx : ISummarizedFile {
 
-        private readonly Dictionary<GraphNode<Aggregate>, List<string>> _sourceCodes = new();
+        private readonly List<string> _sourceCodes = new();
+        private readonly Dictionary<GraphNode<Aggregate>, List<string>> _sourceCodesRelatedAggregate = new();
 
         /// <summary>
-        /// TypeScriptのデータ構造定義のソースコードを追加します。
+        /// TypeScriptのデータ構造定義のソースコード（特定の集約に関連しないもの）を追加します。
+        /// </summary>
+        internal void Add(string sourceCode) {
+            _sourceCodes.Add(sourceCode);
+        }
+        /// <summary>
+        /// TypeScriptのデータ構造定義のソースコード（特定の集約に関連するもの）を追加します。
         /// </summary>
         internal void Add(GraphNode<Aggregate> aggregate, string sourceCode) {
-            if (_sourceCodes.TryGetValue(aggregate, out var list)) {
+            if (_sourceCodesRelatedAggregate.TryGetValue(aggregate, out var list)) {
                 list.Add(sourceCode);
             } else {
-                _sourceCodes.Add(aggregate, [sourceCode]);
+                _sourceCodesRelatedAggregate.Add(aggregate, [sourceCode]);
             }
         }
 
@@ -32,7 +39,11 @@ namespace Nijo.Parts.WebClient {
                         import { UUID } from 'uuidjs'
                         import * as Util from './util'
 
-                        {{_sourceCodes.SelectTextTemplate(item => $$"""
+                        {{_sourceCodes.SelectTextTemplate(source => $$"""
+                        {{source}}
+
+                        """)}}
+                        {{_sourceCodesRelatedAggregate.SelectTextTemplate(item => $$"""
                         // ------------------ {{item.Key.Item.DisplayName}} ------------------
                         {{item.Value.SelectTextTemplate(source => $$"""
                         {{source}}
