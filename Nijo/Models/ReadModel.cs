@@ -67,8 +67,8 @@ namespace Nijo.Models {
                 builder.ControllerActions.Add(loadFeature.RenderController());
                 builder.AppServiceMethods.Add(loadFeature.RenderAppSrvMethod(context));
                 builder.DataClassDeclaring.Add(loadFeature.RenderSearchConditionTypeDeclaring(csharp: true));
-                builder.TypeScriptDataTypes.Add(loadFeature.RenderSearchConditionTypeDeclaring(csharp: false));
-                builder.TypeScriptDataTypes.Add(loadFeature.RenderTypeScriptConditionInitializerFn());
+                context.ReactProject.Types.Add(rootAggregate, loadFeature.RenderSearchConditionTypeDeclaring(csharp: false));
+                context.ReactProject.Types.Add(rootAggregate, loadFeature.RenderTypeScriptConditionInitializerFn());
 
                 var controller = new Controller(rootAggregate.Item);
                 var editableMultiView = new MultiViewEditable(rootAggregate, new MultiViewEditable.Options {
@@ -92,7 +92,7 @@ namespace Nijo.Models {
                         <Input.Button onClick={handleRecalculateClick}>全件洗い替え(デバッグ用)</Input.Button>
                         """,
                 });
-                context.ReactProject.AddPage(editableMultiView);
+                context.ReactProject.Pages.Add(editableMultiView);
 
                 // Find & SingleView
                 var findFeature = new FindFeature(rootAggregate);
@@ -100,17 +100,17 @@ namespace Nijo.Models {
                 builder.AppServiceMethods.Add(findFeature.RenderAppSrvMethod());
 
                 var singleView = new SingleView(rootAggregate, SingleView.E_Type.View);
-                context.ReactProject.AddPage(singleView);
+                context.ReactProject.Pages.Add(singleView);
 
                 // データクラス定義を作成する
                 var singleViewDataClass = new DataClassForDisplay(rootAggregate);
                 builder.DataClassDeclaring.Add(singleViewDataClass.RenderCSharpDataClassDeclaration());
-                builder.TypeScriptDataTypes.Add(singleViewDataClass.RenderTypeScriptDataClassDeclaration());
+                context.ReactProject.Types.Add(rootAggregate, singleViewDataClass.RenderTypeScriptDataClassDeclaration());
 
                 foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
                     var aggregateDetail = new Features.Storing.DataClassForSave(aggregate);
                     builder.DataClassDeclaring.Add(aggregateDetail.RenderCSharp(context));
-                    builder.TypeScriptDataTypes.Add(aggregateDetail.RenderTypeScript(context));
+                    context.ReactProject.Types.Add(aggregate, aggregateDetail.RenderTypeScript(context));
                 }
 
                 // EFCoreエンティティ定義を作成する

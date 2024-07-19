@@ -18,112 +18,75 @@ namespace Nijo.Models {
     internal class WriteModel2 : IModel {
         void IModel.GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
             var allAggregates = rootAggregate.EnumerateThisAndDescendants();
+            var aggregateFile = context.CoreLibrary.UseAggregateFile(rootAggregate);
 
-            context.CoreLibrary.UseAggregateFile(rootAggregate, builder => {
-                foreach (var agg in allAggregates) {
-                    // データ型: EFCore Entity
-                    var efCoreEntity = new EFCoreEntity(agg);
-                    builder.DataClassDeclaring.Add(efCoreEntity.Render(context));
-                    context.CoreLibrary.DbContextOnModelCreating.Add(efCoreEntity.RenderCallingOnModelCreating(context));
+            foreach (var agg in allAggregates) {
+                // データ型: EFCore Entity
+                var efCoreEntity = new EFCoreEntity(agg);
+                aggregateFile.DataClassDeclaring.Add(efCoreEntity.Render(context));
+                context.CoreLibrary.DbContextOnModelCreating.Add(efCoreEntity.RenderCallingOnModelCreating(context));
 
-                    // データ型: DataClassForSave
-                    var dataClassForSave = new DataClassForSave(agg, DataClassForSave.E_Type.UpdateOrDelete);
-                    builder.DataClassDeclaring.Add(dataClassForSave.RenderCSharp(context));
-                    builder.DataClassDeclaring.Add(dataClassForSave.RenderCSharpErrorStructure(context));
-                    builder.DataClassDeclaring.Add(dataClassForSave.RenderCSharpReadOnlyStructure(context));
-                    builder.TypeScriptDataTypes.Add(dataClassForSave.RenderTypeScript(context));
-                    builder.TypeScriptDataTypes.Add(dataClassForSave.RenderTypeScriptErrorStructure(context));
-                    builder.TypeScriptDataTypes.Add(dataClassForSave.RenderTypeScriptReadOnlyStructure(context));
+                // データ型: DataClassForSave
+                var dataClassForSave = new DataClassForSave(agg, DataClassForSave.E_Type.UpdateOrDelete);
+                aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharp(context));
+                aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharpErrorStructure(context));
+                aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharpReadOnlyStructure(context));
+                context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScript(context));
+                context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScriptErrorStructure(context));
+                context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScriptReadOnlyStructure(context));
 
-                    // データ型: DataClassForNewItem
-                    var dataClassForNewItem = new DataClassForSave(agg, DataClassForSave.E_Type.Create);
-                    builder.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharp(context));
-                    builder.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharpErrorStructure(context));
-                    builder.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharpReadOnlyStructure(context));
-                    builder.TypeScriptDataTypes.Add(dataClassForNewItem.RenderTypeScript(context));
-                    builder.TypeScriptDataTypes.Add(dataClassForNewItem.RenderTypeScriptErrorStructure(context));
-                    builder.TypeScriptDataTypes.Add(dataClassForNewItem.RenderTypeScriptReadOnlyStructure(context));
-                }
-            });
+                // データ型: DataClassForNewItem
+                var dataClassForNewItem = new DataClassForSave(agg, DataClassForSave.E_Type.Create);
+                aggregateFile.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharp(context));
+                aggregateFile.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharpErrorStructure(context));
+                aggregateFile.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharpReadOnlyStructure(context));
+                context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScript(context));
+                context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScriptErrorStructure(context));
+                context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScriptReadOnlyStructure(context));
+            }
 
-            context.CoreLibrary.UseAggregateFile(rootAggregate, builder => {
-                // 処理: 新規作成処理 AppSrv
-                // 処理: 更新処理 AppSrv
-                // 処理: 削除処理 AppSrv
-                var create = new CreateMethod(rootAggregate);
-                var update = new UpdateMethod(rootAggregate);
-                var delete = new DeleteMethod(rootAggregate);
-                builder.AppServiceMethods.Add(create.Render(context));
-                builder.AppServiceMethods.Add(update.Render(context));
-                builder.AppServiceMethods.Add(delete.Render(context));
+            // 処理: 新規作成処理 AppSrv
+            // 処理: 更新処理 AppSrv
+            // 処理: 削除処理 AppSrv
+            var create = new CreateMethod(rootAggregate);
+            var update = new UpdateMethod(rootAggregate);
+            var delete = new DeleteMethod(rootAggregate);
+            aggregateFile.AppServiceMethods.Add(create.Render(context));
+            aggregateFile.AppServiceMethods.Add(update.Render(context));
+            aggregateFile.AppServiceMethods.Add(delete.Render(context));
 
-                // 処理: SetReadOnly AppSrv
-                var setReadOnly = new SetReadOnly(rootAggregate);
-                builder.AppServiceMethods.Add(setReadOnly.Render(context));
-            });
+            // 処理: SetReadOnly AppSrv
+            var setReadOnly = new SetReadOnly(rootAggregate);
+            aggregateFile.AppServiceMethods.Add(setReadOnly.Render(context));
 
             // ---------------------------------------------
             // 他の集約から参照されるときのための部品
 
-            context.CoreLibrary.UseAggregateFile(rootAggregate, builder => {
-                foreach (var agg in allAggregates) {
-                    // データ型
-                    var forSave = new DataClassForSaveRefTarget(agg);
-                    var forDisplay = new DataClassForDisplayRefTarget(agg);
-                    builder.DataClassDeclaring.Add(forSave.RenderCSharp(context));
-                    builder.DataClassDeclaring.Add(forDisplay.RenderCSharp(context));
-                    builder.TypeScriptDataTypes.Add(forSave.RenderTypeScript(context));
-                    builder.TypeScriptDataTypes.Add(forDisplay.RenderTypeScript(context));
+            foreach (var agg in allAggregates) {
+                // データ型
+                var forSave = new DataClassForSaveRefTarget(agg);
+                var forDisplay = new DataClassForDisplayRefTarget(agg);
+                aggregateFile.DataClassDeclaring.Add(forSave.RenderCSharp(context));
+                aggregateFile.DataClassDeclaring.Add(forDisplay.RenderCSharp(context));
+                context.ReactProject.Types.Add(rootAggregate, forSave.RenderTypeScript(context));
+                context.ReactProject.Types.Add(rootAggregate, forDisplay.RenderTypeScript(context));
 
-                    // UI: コンボボックス
-                    // UI: 検索ダイアログ
-                    var comboBox = new SearchComboBox(agg);
-                    var searchDialog = new SearchDialog(agg);
-                    context.ReactProject.AutoGeneratedInput.Add(comboBox.Render(context));
-                    context.ReactProject.AutoGeneratedInput.Add(searchDialog.Render(context));
+                // UI: コンボボックス
+                // UI: 検索ダイアログ
+                var comboBox = new SearchComboBox(agg);
+                var searchDialog = new SearchDialog(agg);
+                context.ReactProject.AutoGeneratedInput.Add(comboBox.Render(context));
+                context.ReactProject.AutoGeneratedInput.Add(searchDialog.Render(context));
 
-                    // 処理: 参照先検索
-                    var searchRef = new SearchRefMethod(agg);
-                    context.ReactProject.AutoGeneratedHook.Add(searchRef.HookName, searchRef.RenderHook(context));
-                    builder.ControllerActions.Add(searchRef.RenderController(context));
-                    builder.AppServiceMethods.Add(searchRef.RenderAppSrvMethod(context));
-                }
-            });
+                // 処理: 参照先検索
+                var searchRef = new SearchRefMethod(agg);
+                context.ReactProject.AutoGeneratedHook.Add(searchRef.HookName, searchRef.RenderHook(context));
+                aggregateFile.ControllerActions.Add(searchRef.RenderController(context));
+                aggregateFile.AppServiceMethods.Add(searchRef.RenderAppSrvMethod(context));
+            }
         }
 
         void IModel.GenerateCode(CodeRenderingContext context) {
-
-            // 1つのファイルに複数のクラス等がレンダリングされるもの
-            context.CoreLibrary.AutoGeneratedDir(genDir => {
-                foreach (var aggFile in context.CoreLibrary._itemsByAggregate.Values) {
-                    genDir.Generate(aggFile.RenderCoreLibrary());
-                }
-            });
-            context.WebApiProject.AutoGeneratedDir(genDir => {
-                foreach (var aggFile in context.CoreLibrary._itemsByAggregate.Values) {
-                    genDir.Generate(aggFile.RenderWebApi());
-                }
-            });
-            context.ReactProject.AutoGeneratedDir(reactDir => {
-                reactDir.Generate(TypesTsx.Render(context, context.CoreLibrary._itemsByAggregate.Select(x => KeyValuePair.Create(x.Key, x.Value.TypeScriptDataTypes))));
-
-                reactDir.Directory(ReactProject.INPUT, userInputDir => {
-                    // TODO: コンボボックス
-                });
-            });
-            context.ReactProject.UtilDir(reactUtilDir => {
-                reactUtilDir.Generate(NavigationWrapper.Render());
-            });
-            context.ReactProject.PagesDir(pageDir => {
-                foreach (var group in context.ReactProject.ReactPages.GroupBy(p => p.DirNameInPageDir)) {
-                    pageDir.Directory(group.Key, aggregatePageDir => {
-                        foreach (var page in group) {
-                            aggregatePageDir.Generate(page.GetSourceFile());
-                        }
-                    });
-                }
-            });
-
             // 列挙体
             DataClassForSave.RenderAddModDelEnum(); // TODO #35
 
