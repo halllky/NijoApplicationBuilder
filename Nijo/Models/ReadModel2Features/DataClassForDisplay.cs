@@ -85,6 +85,11 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>画面上で削除が指示されてから、保存処理の実行でその削除が確定するまでの間、trueになる（TypeScript）</summary>
         internal const string WILL_BE_DELETED_TS = "willBeDeleted";
 
+        /// <summary>楽観排他制御用のバージョニング情報をもつプロパティの名前（C#側）</summary>
+        internal const string VERSION_CS = "_Version";
+        /// <summary>楽観排他制御用のバージョニング情報をもつプロパティの名前（TypeScript側）</summary>
+        internal const string VERSION_TS = "_version";
+
         /// <summary>
         /// 追加・更新・削除のタイミングが親要素と異なるか否か
         /// </summary>
@@ -137,23 +142,6 @@ namespace Nijo.Models.ReadModel2Features {
                     [JsonPropertyName("{{INSTANCE_KEY_TS}}")]
                     public required virtual string {{INSTANCE_KEY_CS}} { get; set; }
                 """)}}
-                {{If(HasLifeCycle, () => $$"""
-                    /// <summary>このデータがDBに保存済みかどうか</summary>
-                    [JsonPropertyName("{{EXISTS_IN_DB_TS}}")]
-                    public virtual bool {{EXISTS_IN_DB_CS}} { get; set; }
-                    /// <summary>このデータに更新がかかっているかどうか</summary>
-                    [JsonPropertyName("{{WILL_BE_CHANGED_TS}}")]
-                    public virtual bool {{WILL_BE_CHANGED_CS}} { get; set; }
-                    /// <summary>このデータが更新確定時に削除されるかどうか</summary>
-                    [JsonPropertyName("{{WILL_BE_DELETED_TS}}")]
-                    public virtual bool {{WILL_BE_DELETED_CS}} { get; set; }
-                """)}}
-                    /// <summary>メッセージ</summary>
-                    [JsonPropertyName("{{MESSAGES_TS}}")]
-                    public virtual {{MessageDataCsClassName}} {{MESSAGES_CS}} { get; set; } = new();
-                    /// <summary>どの項目が読み取り専用か</summary>
-                    [JsonPropertyName("{{READONLY_TS}}")]
-                    public virtual {{ReadOnlyDataCsClassName}} {{READONLY_CS}} { get; set; } = new();
 
                     /// <summary>値</summary>
                     [JsonPropertyName("{{VALUES_TS}}")]
@@ -165,6 +153,27 @@ namespace Nijo.Models.ReadModel2Features {
                     /// <summary>{{member.Aggregate.Item.DisplayName}}</summary>
                     public virtual {{member.CsClassName}} {{member.MemberInfo.MemberName}} { get; set; } = new();
                 """)}}
+
+                {{If(HasLifeCycle, () => $$"""
+                    /// <summary>このデータがDBに保存済みかどうか</summary>
+                    [JsonPropertyName("{{EXISTS_IN_DB_TS}}")]
+                    public virtual required bool {{EXISTS_IN_DB_CS}} { get; set; }
+                    /// <summary>このデータに更新がかかっているかどうか</summary>
+                    [JsonPropertyName("{{WILL_BE_CHANGED_TS}}")]
+                    public virtual bool {{WILL_BE_CHANGED_CS}} { get; set; }
+                    /// <summary>このデータが更新確定時に削除されるかどうか</summary>
+                    [JsonPropertyName("{{WILL_BE_DELETED_TS}}")]
+                    public virtual bool {{WILL_BE_DELETED_CS}} { get; set; }
+                    /// <summary>楽観排他制御用のバージョニング情報</summary>
+                    [JsonPropertyName("{{VERSION_TS}}")]
+                    public virtual required int? {{VERSION_CS}} { get; set; }
+                """)}}
+                    /// <summary>メッセージ</summary>
+                    [JsonPropertyName("{{MESSAGES_TS}}")]
+                    public virtual {{MessageDataCsClassName}} {{MESSAGES_CS}} { get; set; } = new();
+                    /// <summary>どの項目が読み取り専用か</summary>
+                    [JsonPropertyName("{{READONLY_TS}}")]
+                    public virtual {{ReadOnlyDataCsClassName}} {{READONLY_CS}} { get; set; } = new();
                 }
                 {{RenderCsValueClass(context)}}
                 {{RenderCsMessageClass(context)}}
@@ -186,18 +195,6 @@ namespace Nijo.Models.ReadModel2Features {
                    */
                   {{INSTANCE_KEY_TS}}: string
                 """)}}
-                {{If(HasLifeCycle, () => $$"""
-                  /** このデータがDBに保存済みかどうか */
-                  {{EXISTS_IN_DB_TS}}: boolean
-                  /** このデータに更新がかかっているかどうか */
-                  {{WILL_BE_CHANGED_TS}}: boolean
-                  /** このデータが更新確定時に削除されるかどうか */
-                  {{WILL_BE_DELETED_TS}}: boolean
-                """)}}
-                  /** メッセージ */
-                  {{MESSAGES_TS}}?: {{WithIndent(RenderMessageTs(context), "  ")}}
-                  /** どの項目が読み取り専用か */
-                  {{READONLY_TS}}?: {{WithIndent(RenderReadonlyTsType(context), "  ")}}
 
                   /** 値 */
                   {{VALUES_TS}}: {{WithIndent(RenderTsValueType(context), "  ")}}
@@ -208,6 +205,21 @@ namespace Nijo.Models.ReadModel2Features {
                   /** {{member.Aggregate.Item.DisplayName}} */
                   {{member.MemberInfo.MemberName}}: {{member.TsTypeName}}
                 """)}}
+
+                {{If(HasLifeCycle, () => $$"""
+                  /** このデータがDBに保存済みかどうか */
+                  {{EXISTS_IN_DB_TS}}: boolean
+                  /** このデータに更新がかかっているかどうか */
+                  {{WILL_BE_CHANGED_TS}}: boolean
+                  /** このデータが更新確定時に削除されるかどうか */
+                  {{WILL_BE_DELETED_TS}}: boolean
+                  /** 楽観排他制御用のバージョニング情報 */
+                  {{VERSION_TS}}: number | undefined
+                """)}}
+                  /** メッセージ */
+                  {{MESSAGES_TS}}?: {{WithIndent(RenderMessageTs(context), "  ")}}
+                  /** どの項目が読み取り専用か */
+                  {{READONLY_TS}}?: {{WithIndent(RenderReadonlyTsType(context), "  ")}}
                 }
                 """;
         }

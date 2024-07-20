@@ -16,5 +16,11 @@ namespace Nijo.Util.CodeGenerating {
         /// </summary>
         /// <param name="context">コード生成コンテキスト</param>
         void OnEndGenerating(CodeRenderingContext context);
+
+        /// <summary>
+        /// レンダリングされる順番（値が小さいほうが先）。
+        /// <see cref="OnEndGenerating(CodeRenderingContext)"/> の中で別の <see cref="ISummarizedFile"/> の要素に変更をかけたりするので苦肉の策
+        /// </summary>
+        int RenderingOrder => 0;
     }
 }

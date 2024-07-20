@@ -10,7 +10,7 @@ using Nijo.Features.Storing;
 using Nijo.Util.CodeGenerating;
 
 namespace Nijo.Parts.Utility {
-    internal class UtilityClass {
+    internal class UtilityClass : ISummarizedFile {
         internal const string CLASSNAME = "Util";
         internal const string GET_JSONOPTION = "GetJsonSrializerOptions";
         internal const string MODIFY_JSONOPTION = "ModifyJsonSrializerOptions";
@@ -24,7 +24,14 @@ namespace Nijo.Parts.Utility {
         private const string INT_CONVERTER = "IntegerValueConverter";
         private const string DATETIME_CONVERTER = "DateTimeValueConverter";
 
-        internal static SourceFile RenderJsonConversionMethods(CodeRenderingContext ctx) => new SourceFile {
+        int ISummarizedFile.RenderingOrder => 999;
+        void ISummarizedFile.OnEndGenerating(CodeRenderingContext context) {
+            context.CoreLibrary.UtilDir(dir => {
+                dir.Generate(RenderJsonConversionMethods());
+            });
+        }
+
+        private SourceFile RenderJsonConversionMethods() => new SourceFile {
             FileName = "JsonConversion.cs",
             RenderContent = context => {
                 var refTargetJsonConverters = context.Schema
@@ -35,7 +42,7 @@ namespace Nijo.Parts.Utility {
                     .ToArray();
 
                 return $$"""
-                    namespace {{ctx.Config.RootNamespace}} {
+                    namespace {{context.Config.RootNamespace}} {
                         using System.Text.Json;
                         using System.Text.Json.Nodes;
 
@@ -54,6 +61,9 @@ namespace Nijo.Parts.Utility {
 
                     {{refTargetJsonConverters.SelectTextTemplate(converter => $$"""
                                 option.Converters.Add(new {{CUSTOM_CONVERTER_NAMESPACE}}.{{converter.CsJsonConverterName}}());
+                    """)}}
+                    {{_jsonConverters.SelectTextTemplate(converter => $$"""
+                                option.Converters.Add(new {{CUSTOM_CONVERTER_NAMESPACE}}.{{converter.ConverterClassName}}());
                     """)}}
                             }
                             public static JsonSerializerOptions {{GET_JSONOPTION}}() {
@@ -119,17 +129,20 @@ namespace Nijo.Parts.Utility {
                         }
                     }
 
-                    namespace {{ctx.Config.RootNamespace}}.{{CUSTOM_CONVERTER_NAMESPACE}} {
+                    namespace {{context.Config.RootNamespace}}.{{CUSTOM_CONVERTER_NAMESPACE}} {
                         using System.Text;
                         using System.Text.Json;
                         using System.Text.Json.Serialization;
 
-                        {{WithIndent(RenderIntConverter(ctx), "    ")}}
-                        {{WithIndent(RenderDateTimeConverter(ctx), "    ")}}
-
+                        {{WithIndent(RenderIntConverter(context), "    ")}}
+                        {{WithIndent(RenderDateTimeConverter(context), "    ")}}
                     {{refTargetJsonConverters.SelectTextTemplate(converter => $$"""
-                        {{WithIndent(converter.RenderServerSideJsonConverter(), "    ")}}
 
+                        {{WithIndent(converter.RenderServerSideJsonConverter(), "    ")}}
+                    """)}}
+                    {{_jsonConverters.SelectTextTemplate(converter => $$"""
+
+                        {{WithIndent(converter.ConverterClassDeclaring, "    ")}}
                     """)}}
                     }
                     """;
@@ -199,5 +212,21 @@ namespace Nijo.Parts.Utility {
                 }
                 """;
         }
+
+        #region JSONコンバータ
+        internal class CustomJsonConverter {
+            /// <summary>コンバータクラス名</summary>
+            internal required string ConverterClassName { get; init; }
+            /// <summary>コンバータクラス定義</summary>
+            internal required string ConverterClassDeclaring { get; init; }
+        }
+        private readonly List<CustomJsonConverter> _jsonConverters = new();
+        /// <summary>
+        /// 特定の型をJSON変換する処理を登録します。
+        /// </summary>
+        internal void AddJsonConverter(CustomJsonConverter customJsonConverter) {
+            _jsonConverters.Add(customJsonConverter);
+        }
+        #endregion JSONコンバータ
     }
 }

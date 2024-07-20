@@ -28,47 +28,6 @@ namespace Nijo.Models.WriteModel2Features {
         }
 
         /// <summary>
-        /// 追加・更新・削除のいずれかを表す区分のenum名（C#側）。
-        /// </summary>
-        internal const string ADD_MOD_DEL_CS = "E_AddOrModOrDel";
-        /// <summary>
-        /// 追加・更新・削除のいずれかを表す区分の型名（TypeScript側）。
-        /// </summary>
-        internal const string ADD_MOD_DEL_TS = "AddOrModOrDelType";
-
-        /// <summary>
-        /// 追加・更新・削除のいずれかを表す区分（C#側）の定義をレンダリングします。
-        /// </summary>
-        internal static string RenderAddModDelEnum() {
-            return $$"""
-                /// <summary>追加・更新・削除のいずれかを表す区分</summary>
-                public enum {{ADD_MOD_DEL_CS}} {
-                    /// <summary>新規追加</summary>
-                    ADD,
-                    /// <summary>更新</summary>
-                    MOD,
-                    /// <summary>削除</summary>
-                    DEL,
-                    /// <summary>変更なし</summary>
-                    NONE,
-                }
-                """;
-        }
-        /// <summary>
-        /// 追加・更新・削除のいずれかを表す区分（TypeScript側）の定義をレンダリングします。
-        /// </summary>
-        internal static string RenderAddModDelType() {
-            return $$"""
-                /** 追加・更新・削除のいずれかを表す区分 */
-                export type {{ADD_MOD_DEL_TS}}
-                  = 'ADD'  // 新規追加
-                  | 'MOD'  // 更新
-                  | 'DEL'  // 削除
-                  | 'NONE' // 変更なし
-                """;
-        }
-
-        /// <summary>
         /// <see cref="AggregateMember.AggregateMemberBase"/> のC#の型名を返します。
         /// このメソッドの戻り値にnull許容演算子はつきません。
         /// </summary>
@@ -130,44 +89,13 @@ namespace Nijo.Models.WriteModel2Features {
             : $"{_aggregate.Item.PhysicalName}SaveCommand";
 
         /// <summary>
-        /// 追加・更新・削除のいずれかを表す区分のプロパティ名（C#側）。
-        /// </summary>
-        internal const string UPDATE_TYPE_CS = "_UpdateType";
-        /// <summary>
-        /// 追加・更新・削除のいずれかを表す区分プロパティ名（TypeScript側）。
-        /// </summary>
-        internal const string UPDATE_TYPE_TS = "_updateType";
-
-        /// <summary>
-        /// 楽観排他制御用のバージョニング情報をもつプロパティの名前（C#側）
-        /// </summary>
-        internal const string VERSION_CS = "_Version";
-        /// <summary>
-        /// 楽観排他制御用のバージョニング情報をもつプロパティの名前（TypeScript側）
-        /// </summary>
-        internal const string VERSION_TS = "_version";
-
-        /// <summary>
         /// データ構造を定義します（C#）
         /// </summary>
         internal string RenderCSharp(CodeRenderingContext context) {
-            // TODO #35 null許容に関して、型を堅牢にすべき
             return $$"""
                 public partial class {{CsClassName}} {
-                {{If(_aggregate.IsRoot(), () => $$"""
-                    /// <summary>追加・更新・削除のいずれかを表す区分</summary>
-                    [JsonPropertyName("{{UPDATE_TYPE_TS}}")]
-                    public required {{ADD_MOD_DEL_CS}} {{UPDATE_TYPE_CS}} { get; init; }
-                """)}}
-
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
                     public {{GetMemberTypeNameCSharp(m, _type)}}? {{m.MemberName}} { get; set; }
-                """)}}
-
-                {{If(_type == E_Type.UpdateOrDelete && _aggregate.IsRoot(), () => $$"""
-                    /// <summary>楽観排他制御用のバージョニング情報</summary>
-                    [JsonPropertyName("{{VERSION_TS}}")]
-                    public required int {{VERSION_CS}} { get; set; }
                 """)}}
 
                     {{WithIndent(RenderToDbEntity(), "    ")}}
@@ -178,19 +106,10 @@ namespace Nijo.Models.WriteModel2Features {
         /// データ構造を定義します（TypeScript）
         /// </summary>
         internal string RenderTypeScript(CodeRenderingContext context) {
-            // TODO #35 optionalに関して、型を堅牢にすべき
             return $$"""
                 export type {{TsTypeName}} = {
-                {{If(_aggregate.IsRoot(), () => $$"""
-                  /** 追加・更新・削除のいずれかを表す区分 */
-                  {{UPDATE_TYPE_TS}}: {{ADD_MOD_DEL_TS}}
-                """)}}
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
-                  {{m.MemberName}}?: {{GetMemberTypeNameTypeScript(m, _type)}}
-                """)}}
-                {{If(_type == E_Type.UpdateOrDelete && _aggregate.IsRoot(), () => $$"""
-                  /** 楽観排他制御用のバージョニング情報 */
-                  {{VERSION_TS}}: number
+                  {{m.MemberName}}: {{GetMemberTypeNameTypeScript(m, _type)}} | undefined
                 """)}}
                 }
                 """;

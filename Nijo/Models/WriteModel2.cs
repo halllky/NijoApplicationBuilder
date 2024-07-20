@@ -20,6 +20,9 @@ namespace Nijo.Models {
             var allAggregates = rootAggregate.EnumerateThisAndDescendants();
             var aggregateFile = context.CoreLibrary.UseAggregateFile(rootAggregate);
 
+            // データ型: 登録更新コマンドベース
+            context.UseSummarizedFile<DataClassForSaveBase>().Register(rootAggregate);
+
             foreach (var agg in allAggregates) {
                 // データ型: EFCore Entity
                 var efCoreEntity = new EFCoreEntity(agg);
@@ -87,9 +90,6 @@ namespace Nijo.Models {
         }
 
         void IModel.GenerateCode(CodeRenderingContext context) {
-            // 列挙体
-            context.ReactProject.Types.Add(DataClassForSave.RenderAddModDelType());
-            context.CoreLibrary.Enums.Add(DataClassForSave.RenderAddModDelEnum());
 
             // データ型: 一括コミット コンテキスト引数
             var batchUpdateContext = new BatchUpdateContext();
