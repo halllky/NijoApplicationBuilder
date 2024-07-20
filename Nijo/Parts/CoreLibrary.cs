@@ -115,7 +115,7 @@ namespace Nijo.Parts {
 
             internal EnumDefs Enums => _context.UseSummarizedFile<EnumDefs>();
 
-            public List<string> AppSrvMethods { get; } = new List<string>();
+            public ApplicationService AppSrvMethods => _context.UseSummarizedFile<ApplicationService>();
 
             public List<Func<string, string>> ConfigureServices { get; } = new List<Func<string, string>>();
 

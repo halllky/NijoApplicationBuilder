@@ -18,6 +18,8 @@ namespace Nijo.Models.WriteModel2Features {
 
         private readonly GraphNode<Aggregate> _rootAggregate;
 
+        internal object MethodName => $"Create{_rootAggregate.Item.PhysicalName}";
+
         /// <summary>
         /// データ新規登録処理をレンダリングします。
         /// </summary>

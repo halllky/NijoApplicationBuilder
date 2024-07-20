@@ -23,7 +23,7 @@ namespace Nijo.Models.WriteModel2Features {
         internal const string UPDATE_COMMAND = "UpdateCommand";
         internal const string DELETE_COMMAND = "DeleteCommand";
         internal const string NO_OPERATION = "NoOperation";
-        internal const string TS_SAVE_COMMAND = "SaveCommand";
+        internal const string TS_SAVE_COMMAND = "BatchUpdateParameter";
 
         /// <summary>データ本体のプロパティの名前（C#側）</summary>
         internal const string VALUES_CS = "Values";
@@ -148,22 +148,40 @@ namespace Nijo.Models.WriteModel2Features {
                  * 一括更新のパラメータ。
                  * どの種類のデータの更新なのかの情報や、新規登録・更新・削除のいずれかの区分をもつ。
                  */
-                export type {{TS_SAVE_COMMAND}}<T> = {
-                  /** データ種別 */
-                  {{DATA_TYPE_TS}}: {{DATA_TYPE_ENUM_TS}}
-                  /** 更新内容 */
-                  {{VALUES_TS}}: T
-                } & ({
-                    /** 追加・更新・削除のいずれかを表す区分 */
-                    {{ADD_MOD_DEL_TS}}: 'ADD'
-                    /** 楽観排他制御用のバージョニング情報。新規登録の場合はundefined。更新削除の場合は更新前のバージョン */
-                    {{VERSION_TS}}?: undefined
-                  } | {
-                    /** 追加・更新・削除のいずれかを表す区分 */
-                    {{ADD_MOD_DEL_TS}}: {{ADD_MOD_DEL_ENUM_TS}}
-                    /** 楽観排他制御用のバージョニング情報。新規登録の場合はundefined。更新削除の場合は更新前のバージョン */
-                    {{VERSION_TS}}: number
-                  })
+                export type {{TS_SAVE_COMMAND}}
+                  = (CreateCommandMetadata & CreateCommandItem)
+                  | (SaveCommandMetadata & SaveCommandItem)
+
+                type CreateCommandMetadata = {
+                  /** 追加・更新・削除のいずれかを表す区分 */
+                  {{ADD_MOD_DEL_TS}}: 'ADD'
+                  /** 楽観排他制御用のバージョニング情報。新規登録の場合はundefined。更新削除の場合は更新前のバージョン */
+                  {{VERSION_TS}}?: undefined
+                }
+                type SaveCommandMetadata = {
+                  /** 追加・更新・削除のいずれかを表す区分 */
+                  {{ADD_MOD_DEL_TS}}: 'MOD' | 'DEL' | 'NONE'
+                  /** 楽観排他制御用のバージョニング情報。新規登録の場合はundefined。更新削除の場合は更新前のバージョン */
+                  {{VERSION_TS}}: number
+                }
+
+                {{If(_aggregates.Count == 0, () => $$"""
+                type CreateCommandItem = never
+                """).Else(() => $$"""
+                type CreateCommandItem
+                {{_aggregates.Select(agg => new { dataType = GetEnumValueOf(agg), dataClass = new DataClassForSave(agg, DataClassForSave.E_Type.Create) }).SelectTextTemplate((x, i) => $$"""
+                  {{(i == 0 ? "=" : "|")}} { {{DATA_TYPE_TS}}: '{{x.dataType}}', {{VALUES_TS}}: {{x.dataClass.TsTypeName}} }
+                """)}}
+                """)}}
+
+                {{If(_aggregates.Count == 0, () => $$"""
+                type SaveCommandItem = never
+                """).Else(() => $$"""
+                type SaveCommandItem
+                {{_aggregates.Select(agg => new { dataType = GetEnumValueOf(agg), dataClass = new DataClassForSave(agg, DataClassForSave.E_Type.UpdateOrDelete) }).SelectTextTemplate((x, i) => $$"""
+                  {{(i == 0 ? "=" : "|")}} { {{DATA_TYPE_TS}}: '{{x.dataType}}', {{VALUES_TS}}: {{x.dataClass.TsTypeName}} }
+                """)}}
+                """)}}
                 """;
         }
 

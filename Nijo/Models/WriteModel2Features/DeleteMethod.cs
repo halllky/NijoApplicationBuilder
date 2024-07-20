@@ -18,6 +18,8 @@ namespace Nijo.Models.WriteModel2Features {
 
         private readonly GraphNode<Aggregate> _rootAggregate;
 
+        internal object MethodName => $"Delete{_rootAggregate.Item.PhysicalName}";
+
         /// <summary>
         /// データ削除処理をレンダリングします。
         /// </summary>

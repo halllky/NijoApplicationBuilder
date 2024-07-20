@@ -18,6 +18,8 @@ namespace Nijo.Models.WriteModel2Features {
 
         private readonly GraphNode<Aggregate> _rootAggregate;
 
+        internal object MethodName => $"Update{_rootAggregate.Item.PhysicalName}";
+
         /// <summary>
         /// データ更新処理をレンダリングします。
         /// </summary>
