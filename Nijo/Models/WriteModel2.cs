@@ -95,7 +95,7 @@ namespace Nijo.Models {
         void IModel.GenerateCode(CodeRenderingContext context) {
 
             // データ型: 一括コミット コンテキスト引数
-            var batchUpdateContext = new BatchUpdateContext();
+            var batchUpdateContext = new SaveContext();
             context.CoreLibrary.UtilDir(utilDir => {
                 utilDir.Generate(batchUpdateContext.Render());
             });

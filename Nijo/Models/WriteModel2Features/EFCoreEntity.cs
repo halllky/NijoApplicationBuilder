@@ -20,10 +20,19 @@ namespace Nijo.Models.WriteModel2Features {
 
         internal string ClassName => _aggregate.Item.EFCoreEntityClassName;
 
-        /// <summary>
-        /// 楽観排他制御用のバージョニング用カラムの名前
-        /// </summary>
-        internal const string VERSION = "_Version";
+        /// <summary>楽観排他制御用のバージョニング用カラムの名前</summary>
+        internal const string VERSION = "Version";
+
+        /// <summary>データが新規作成された日時</summary>
+        internal const string CREATED_AT = "CteatedAt";
+        /// <summary>データが更新された日時</summary>
+        internal const string UPDATED_AT = "UpdatedAt";
+
+        /// <summary>データを新規作成したユーザー</summary>
+        internal const string CREATE_USER = "CreateUser";
+        /// <summary>データを更新したユーザー</summary>
+        internal const string UPDATE_USER = "UpdateUser";
+
         /// <summary>
         /// このエンティティに関するテーブルやカラムの詳細を定義する処理（"Fluent API  Entity FrameWork Core" で調べて）を
         /// エンティティクラス内にstaticメソッドで記述することにしているが、そのstaticメソッドの名前
@@ -60,7 +69,16 @@ namespace Nijo.Models.WriteModel2Features {
                     public {{col.Options.MemberType.GetCSharpTypeName()}}? {{col.MemberName}} { get; set; }
                 """)}}
                 {{If(_aggregate.IsRoot(), () => $$"""
+                    /// <summary>楽観排他制御用のバージョニング用カラム</summary>
                     public int? {{VERSION}} { get; set; }
+                    /// <summary>データが新規作成された日時</summary>
+                    public DateTime? {{CREATED_AT}} { get; set; }
+                    /// <summary>データが更新された日時</summary>
+                    public DateTime? {{UPDATED_AT}} { get; set; }
+                    /// <summary>データを新規作成したユーザー</summary>
+                    public string? {{CREATE_USER}} { get; set; }
+                    /// <summary>データを更新したユーザー</summary>
+                    public string? {{UPDATE_USER}} { get; set; }
                 """)}}
 
                 {{GetNavigationProperties().SelectTextTemplate(nav => $$"""

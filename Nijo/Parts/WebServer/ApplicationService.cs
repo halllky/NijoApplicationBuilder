@@ -13,7 +13,9 @@ namespace Nijo.Parts.WebServer {
 
         public string ServiceProvider = "ServiceProvider";
         public string DbContext = "DbContext";
-        public string CurrentTime = "CurrentTime";
+
+        public const string CURRENT_TIME = "CurrentTime";
+        public const string CURRENT_USER = "CurrentUser";
 
         // ----------------------------------------------
         /// <summary>
@@ -59,8 +61,27 @@ namespace Nijo.Parts.WebServer {
                         private {{ctx.Config.DbContextName}}? _dbContext;
                         public virtual {{ctx.Config.DbContextName}} {{DbContext}} => _dbContext ??= {{ServiceProvider}}.GetRequiredService<{{ctx.Config.DbContextName}}>();
 
+                        /// <summary>
+                        /// <para>
+                        /// 現在時刻。データ更新時の更新時刻の記録などに使用。
+                        /// <see cref="DateTime.Now"/> を使ってしまうと現在時刻に依存する処理のテストが困難になるので、基本的にはこのプロパティを使うこと。
+                        /// </para>
+                        /// <para>
+                        /// 同一のリクエストの中では、たとえ実時刻に多少のずれがあったとしてもすべて同じ時刻（リクエスト開始時点の時刻）になる。
+                        /// 理由は、例えば深夜0時前後の処理で処置の途中で日付が変わることでロジックに影響が出る、などといった事象を防ぐため。
+                        /// </para>
+                        /// <para>
+                        /// ちなみにログ出力の時刻にはこのプロパティが用いられず、正確な現在時刻が出力される。
+                        /// </para>
+                        /// </summary>
+                        public virtual DateTime {{CURRENT_TIME}} => _currentTime ??= DateTime.Now;
                         private DateTime? _currentTime;
-                        public virtual DateTime {{CurrentTime}} => _currentTime ??= DateTime.Now;
+
+                        /// <summary>
+                        /// 現在操作中のユーザーの名前。データ更新時の更新者の記録などに使用。
+                        /// </summary>
+                        public virtual string {{CURRENT_USER}} => _currentUser ??= "UNDEFINED";
+                        private string? _currentUser;
                 {{_sourceCodes.SelectTextTemplate(code => $$"""
 
                         {{WithIndent(code, "        ")}}
