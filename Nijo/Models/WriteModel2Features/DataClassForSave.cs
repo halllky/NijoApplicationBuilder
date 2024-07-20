@@ -1,5 +1,4 @@
 using Nijo.Core;
-using Nijo.Features.Storing;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -135,7 +134,7 @@ namespace Nijo.Models.WriteModel2Features {
                 foreach (var key in keys) {
                     var path = key.DeclaringAggregate.PathFromEntry();
                     if (!pkVarNames.ContainsKey((key.Declared, path)))
-                        pkVarNames.Add((key.Declared, path), $"{instanceName}.{key.Declared.GetFullPath(since: instanceAgg).Join("?.")}");
+                        pkVarNames.Add((key.Declared, path), $"{instanceName}.{key.Declared.GetFullPathAsForSave(since: instanceAgg).Join("?.")}");
                 }
 
                 foreach (var member in agg.GetMembers()) {
@@ -143,7 +142,7 @@ namespace Nijo.Models.WriteModel2Features {
                         var path = vm.DeclaringAggregate.PathFromEntry();
                         var value = pkVarNames.TryGetValue((vm.Declared, path), out var ancestorInstanceValue)
                             ? ancestorInstanceValue
-                            : $"{instanceName}.{vm.Declared.GetFullPath(since: instanceAgg).Join("?.")}";
+                            : $"{instanceName}.{vm.Declared.GetFullPathAsForSave(since: instanceAgg).Join("?.")}";
 
                         yield return $$"""
                             {{vm.MemberName}} = {{value}},
@@ -155,7 +154,7 @@ namespace Nijo.Models.WriteModel2Features {
                         var dbEntity = new EFCoreEntity(nav.Relevant.Owner);
 
                         yield return $$"""
-                            {{children.MemberName}} = {{instanceName}}.{{member.GetFullPath(since: instanceAgg).Join("?.")}}?.Select({{loopVar}} => new {{dbEntity.ClassName}} {
+                            {{children.MemberName}} = {{instanceName}}.{{member.GetFullPathAsForSave(since: instanceAgg).Join("?.")}}?.Select({{loopVar}} => new {{dbEntity.ClassName}} {
                                 {{WithIndent(RenderBodyOfToDbEntity(children.ChildrenAggregate, children.ChildrenAggregate, loopVar), "    ")}}
                             }).ToHashSet() ?? new HashSet<{{dbEntity.ClassName}}>(),
                             """;
@@ -402,5 +401,35 @@ namespace Nijo.Models.WriteModel2Features {
                 """;
         }
         #endregion 読み取り専用用構造体
+    }
+
+    partial class GetFullPathExtensions {
+
+        /// <summary>
+        /// エントリーからのパスを <see cref="DataClassForSave"/> のインスタンスの型のルールにあわせて返す。
+        /// </summary>
+        internal static IEnumerable<string> GetFullPathAsForSave(this GraphNode<Aggregate> aggregate, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+            var path = aggregate.PathFromEntry();
+            if (since != null) path = path.Since(since);
+            if (until != null) path = path.Until(until);
+
+            foreach (var edge in path) {
+                if (edge.Source == edge.Terminal && edge.IsParentChild()) {
+                    yield return $"/* エラー！{nameof(DataClassForSave)}では子は親の参照を持っていません */";
+                } else {
+                    yield return edge.RelationName;
+                }
+            }
+        }
+
+        /// <summary>
+        /// エントリーからのパスを <see cref="DataClassForSave"/> のインスタンスの型のルールにあわせて返す。
+        /// </summary>
+        internal static IEnumerable<string> GetFullPathAsForSave(this AggregateMember.AggregateMemberBase member, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+            foreach (var path in member.Owner.GetFullPathAsForSave(since, until)) {
+                yield return path;
+            }
+            yield return member.MemberName;
+        }
     }
 }

@@ -120,6 +120,7 @@ namespace Nijo.Parts {
             public List<Func<string, string>> ConfigureServices { get; } = new List<Func<string, string>>();
 
             public List<Func<string, string>> DbContextOnModelCreating { get; } = new List<Func<string, string>>();
+            public Dictionary<string, string> DbSetPropNameAndClassName { get; } = new();
         }
     }
 }

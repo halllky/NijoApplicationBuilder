@@ -31,6 +31,10 @@ namespace Nijo.Parts.WebServer {
                         public partial class {{ctx.Config.DbContextName}} : DbContext {
                             public {{ctx.Config.DbContextName}}(DbContextOptions<{{ctx.Config.DbContextName}}> options) : base(options) { }
 
+                    {{ctx.CoreLibrary.DbSetPropNameAndClassName.SelectTextTemplate(kv => $$"""
+                            public virtual DbSet<{{kv.Value}}> {{kv.Key}} { get; set; }
+                    """)}}
+
                             /// <inheritdoc />
                             protected override void OnModelCreating(ModelBuilder modelBuilder) {
                     {{onModelCreating.SelectTextTemplate(method => $$"""

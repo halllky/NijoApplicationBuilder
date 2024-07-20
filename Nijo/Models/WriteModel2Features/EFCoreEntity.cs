@@ -19,6 +19,7 @@ namespace Nijo.Models.WriteModel2Features {
         private readonly GraphNode<Aggregate> _aggregate;
 
         internal string ClassName => _aggregate.Item.EFCoreEntityClassName;
+        internal string DbSetName => $"{_aggregate.Item.PhysicalName}DbSet";
 
         /// <summary>楽観排他制御用のバージョニング用カラムの名前</summary>
         internal const string VERSION = "Version";
@@ -32,6 +33,9 @@ namespace Nijo.Models.WriteModel2Features {
         internal const string CREATE_USER = "CreateUser";
         /// <summary>データを更新したユーザー</summary>
         internal const string UPDATE_USER = "UpdateUser";
+
+        /// <summary>主キーが一致するかどうかを調べるメソッドの名前</summary>
+        internal const string KEYEQUALS = "KeyEquals";
 
         /// <summary>
         /// このエンティティに関するテーブルやカラムの詳細を定義する処理（"Fluent API  Entity FrameWork Core" で調べて）を
@@ -82,8 +86,16 @@ namespace Nijo.Models.WriteModel2Features {
                 """)}}
 
                 {{GetNavigationProperties().SelectTextTemplate(nav => $$"""
-                    public virtual {{nav.CSharpTypeName}} {{nav.PropertyName}} { get; set; }
+                    public virtual {{nav.CSharpTypeName}} {{nav.PropertyName}} { get; set; }{{nav.Initializer}}
                 """)}}
+
+                    /// <summary>このオブジェクトと比較対象のオブジェクトの主キーが一致するかを返します。</summary>
+                    public bool {{KEYEQUALS}}({{ClassName}} entity) {
+                {{_aggregate.GetKeys().OfType<AggregateMember.ValueMember>().SelectTextTemplate(col => $$"""
+                        if (entity.{{col.MemberName}} != this.{{col.MemberName}}) return false;
+                """)}}
+                        return true;
+                    }
 
                     /// <summary>
                     /// テーブルやカラムの詳細を定義します。
@@ -101,6 +113,11 @@ namespace Nijo.Models.WriteModel2Features {
                 {{_aggregate.GetMembers().OfType<AggregateMember.ValueMember>().SelectTextTemplate(col => $$"""
                             entity.Property(e => e.{{col.MemberName}})
                                 .IsRequired({{(col.IsRequired ? "true" : "false")}});
+                """)}}
+                {{If(_aggregate.IsRoot(), () => $$"""
+                            entity.Property(e => e.{{VERSION}})
+                                .IsRequired(true)
+                                .IsConcurrencyToken(true);
                 """)}}
 
                                 {{WithIndent(RenderNavigationPropertyOnModelCreating(), "                ")}}
@@ -156,6 +173,65 @@ namespace Nijo.Models.WriteModel2Features {
             return modelBuilder => $$"""
                 {{ClassName}}.{{ON_MODEL_CREATING}}({{modelBuilder}});
                 """;
+        }
+
+        /// <summary>
+        /// 子孫要素をIncludeする処理をレンダリングします。
+        /// </summary>
+        internal string RenderInclude() {
+            var includeEntities = _aggregate
+                .EnumerateThisAndDescendants()
+                .ToList();
+            var paths = includeEntities
+                .Select(entity => entity.PathFromEntry())
+                .Distinct()
+                .SelectMany(edge => edge)
+                .Select(edge => edge.As<Aggregate>())
+                .Select(edge => {
+                    var source = edge.Source.As<Aggregate>();
+                    var nav = new NavigationProperty(edge);
+                    var prop = edge.Source.As<Aggregate>() == nav.Principal.Owner
+                        ? nav.Principal.PropertyName
+                        : nav.Relevant.PropertyName;
+                    return new { source, prop };
+                });
+
+            return paths.SelectTextTemplate(path => path.source == _aggregate ? $$"""
+                .Include(x => x.{{path.prop}})
+                """ : $$"""
+                .ThenInclude(x => x.{{path.prop}})
+                """);
+        }
+    }
+
+    internal static partial class GetFullPathExtensions {
+
+        /// <summary>
+        /// エントリーからのパスを <see cref="EFCoreEntity"/> のインスタンスの型のルールにあわせて返す。
+        /// </summary>
+        internal static IEnumerable<string> GetFullPathAsDbEntity(this GraphNode<Aggregate> aggregate, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+            var path = aggregate.PathFromEntry();
+            if (since != null) path = path.Since(since);
+            if (until != null) path = path.Until(until);
+
+            foreach (var edge in path) {
+                var navigation = new NavigationProperty(edge.As<Aggregate>());
+                if (navigation.Principal.Owner == edge.Source.As<Aggregate>()) {
+                    yield return navigation.Principal.PropertyName;
+                } else {
+                    yield return navigation.Relevant.PropertyName;
+                }
+            }
+        }
+
+        /// <summary>
+        /// エントリーからのパスを <see cref="EFCoreEntity"/> のインスタンスの型のルールにあわせて返す。
+        /// </summary>
+        internal static IEnumerable<string> GetFullPathAsDbEntity(this AggregateMember.AggregateMemberBase member, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+            foreach (var path in member.Owner.GetFullPathAsDbEntity(since, until)) {
+                yield return path;
+            }
+            yield return member.MemberName;
         }
     }
 }
