@@ -114,7 +114,9 @@ namespace Nijo.Models.WriteModel2Features {
                             using var tran = _applicationService.DbContext.Database.BeginTransaction();
                             try {
                                 var context = new {{BatchUpdateContext.CLASS_NAME}}(ignoreConfirm);
-                                if (!_applicationService.{{APPSRV_METHOD}}(parameter.{{HOOK_PARAM_ITEMS}}, context)) {
+                                _applicationService.{{APPSRV_METHOD}}(parameter.{{HOOK_PARAM_ITEMS}}, context);
+
+                                if (context.HasUserError) {
                                     tran.Rollback();
                                     return Problem($"一括更新に失敗しました。{Environment.NewLine}{string.Join(Environment.NewLine, errors2)}");
                                 }

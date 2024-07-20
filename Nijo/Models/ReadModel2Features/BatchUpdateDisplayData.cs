@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace Nijo.Models.ReadModel2Features {
     /// <summary>
     /// <see cref="DataClassForDisplay"/> を一括更新する処理。
-    /// サーバー側で画面表示用データを <see cref="WriteModel2Features.DataClassForSave"/> に変換してForSaveの一括更新処理を呼ぶ。
+    /// サーバー側で画面表示用データを <see cref="DataClassForSave"/> に変換してForSaveの一括更新処理を呼ぶ。
     /// </summary>
     internal class BatchUpdateDisplayData : ISummarizedFile {
 

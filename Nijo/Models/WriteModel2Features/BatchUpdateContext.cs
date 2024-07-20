@@ -35,13 +35,19 @@ namespace Nijo.Models.WriteModel2Features {
                         /// 「はい(Yes)」を選択したときに処理が続行され、
                         /// 「いいえ(No)」を選択したときに処理が中断されるような文言にしてください。
                         /// </summary>
-                        void AddConfirm(string message);
+                        public void AddConfirm(string message);
 
                         /// <summary>
                         /// trueの場合、 <see cref="AddConfirm" /> による警告があっても更新処理が続行されます。
                         /// 画面側で警告に対して「はい(Yes)」が選択されたあとのリクエストではこの値がtrueになります。
                         /// </summary>
-                        bool IgnoreConfirm { get; }
+                        public bool IgnoreConfirm { get; }
+
+                        /// <summary>
+                        /// 更新処理の途中で、ユーザーに伝えるべきエラー（入力値不正など）が発生したかどうか。
+                        /// なおシステムエラーの場合は一般例外と同様に処理されるため、このプロパティを参照するまでもなく制御がcatch句に飛ぶ。
+                        /// </summary>
+                        public bool HasUserError { get; }
                     }
                     """;
             },
