@@ -9,19 +9,11 @@ namespace Nijo.Models.WriteModel2Features {
     /// <summary>
     /// 保存処理関連のコンテキスト引数
     /// </summary>
-    internal class SaveContext {
+    internal class BatchUpdateContext {
         /// <summary>
         /// 一括更新処理全体を通してのコンテキスト引数
         /// </summary>
-        internal const string BATCH_UPDATE_CONTEXT = "BatchUpadteContext";
-        /// <summary>
-        /// 更新前イベントの引数
-        /// </summary>
-        internal const string BEFORE_SAVE_CONTEXT = "BeforeSaveContext";
-        /// <summary>
-        /// 更新後イベントの引数
-        /// </summary>
-        internal const string AFTER_SAVE_CONTEXT = "AfterSaveContext";
+        internal const string CLASS_NAME = "BatchUpadteContext";
 
         internal SourceFile Render() => new SourceFile {
             FileName = "SaveContext.cs",
@@ -32,11 +24,12 @@ namespace Nijo.Models.WriteModel2Features {
                     /// <summary>
                     /// 一括更新処理のコンテキスト引数。エラーメッセージや確認メッセージなどを書きやすくするためのもの。
                     /// </summary>
-                    public partial class {{BATCH_UPDATE_CONTEXT}} {
-                        public {{BATCH_UPDATE_CONTEXT}}(bool ignoreConfirm) {
+                    public partial class {{CLASS_NAME}} {
+                        public {{CLASS_NAME}}(bool ignoreConfirm) {
                             IgnoreConfirm = ignoreConfirm;
                         }
 
+                        private readonly List<string> _confirms = new();
                         /// <summary>
                         /// <para>
                         /// 更新処理を実行してもよいかどうかをユーザーに問いかけるメッセージを追加します。
@@ -52,9 +45,14 @@ namespace Nijo.Models.WriteModel2Features {
                         /// </para>
                         /// </summary>
                         public void AddConfirm(string message) {
-                            TODO #35
+                            _confirms.Add(message);
                         }
-
+                        /// <summary>
+                        /// 更新処理を実行してもよいかどうかをユーザーに問いかけるメッセージが1件以上あるかどうかを返します。
+                        /// </summary>
+                        public bool HasConfirm() {
+                            return _confirms.Count > 0;
+                        }
                         /// <summary>
                         /// trueの場合、 <see cref="AddConfirm" /> による警告があっても更新処理が続行されます。
                         /// 画面側で警告に対して「はい(Yes)」が選択されたあとのリクエストではこの値がtrueになります。
@@ -62,39 +60,20 @@ namespace Nijo.Models.WriteModel2Features {
                         public bool IgnoreConfirm { get; }
 
                         /// <summary>
+                        /// ユーザーに知らせるべきエラー（入力値不正など）を追加します。
+                        /// </summary>
+                        /// <param name="errorItemIndex"></param>
+                        /// <param name="error"></param>
+                        public void AddError(int errorItemIndex, {{DataClassForSave.I_ERROR_DATA_STRUCTURE}} error) {
+                            TODO #35
+                        }
+                        /// <summary>
                         /// 更新処理の途中で、ユーザーに伝えるべきエラー（入力値不正など）が発生したかどうか。
                         /// なおシステムエラーの場合は一般例外と同様に処理されるため、このプロパティを参照するまでもなく制御がcatch句に飛ぶ。
                         /// </summary>
-                        public bool HasUserError { get; }
-                    }
+                        public bool HasError() {
 
-                    /// <summary>
-                    /// 更新処理実行前のコンテキスト引数。エラーメッセージや確認メッセージなどを書きやすくするためのもの。
-                    /// </summary>
-                    public partial class {{BEFORE_SAVE_CONTEXT}}<TErrorData> where TErrorData: new() {
-                        public {{BEFORE_SAVE_CONTEXT}}({{BATCH_UPDATE_CONTEXT}} outerContext) {
-                            _outerContext = outerContext;
                         }
-                        private readonly {{BATCH_UPDATE_CONTEXT}} _outerContext;
-
-                        /// <inheritdoc cref="{{BATCH_UPDATE_CONTEXT}}.AddConfirm(string)"/>
-                        public void AddConfirm(string message) => _outerContext.AddConfirm(message);
-
-                        /// <inheritdoc cref="{{BATCH_UPDATE_CONTEXT}}.IgnoreConfirm"/>
-                        public bool IgnoreConfirm { get; }
-
-                        /// <inheritdoc cref="{{BATCH_UPDATE_CONTEXT}}.HasUserError"/>
-                        public bool HasUserError { get; }
-
-                        /// <summary>入力値不正などのエラー情報。何らかのエラーがある場合は更新処理が中断されます。</summary>
-                        public TErrorData Errors { get; } = new();
-                    }
-
-                    /// <summary>
-                    /// 更新処理実行後のコンテキスト引数
-                    /// </summary>
-                    public partial class {{AFTER_SAVE_CONTEXT}} {
-                        // とくになし
                     }
                     """;
             },

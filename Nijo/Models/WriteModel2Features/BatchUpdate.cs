@@ -113,7 +113,7 @@ namespace Nijo.Models.WriteModel2Features {
                         public virtual IActionResult ExecuteImmediately([FromBody] WriteModelsBatchUpdateParameter parameter, [FromQuery] bool ignoreConfirm) {
                             using var tran = _applicationService.DbContext.Database.BeginTransaction();
                             try {
-                                var context = new {{SaveContext.BATCH_UPDATE_CONTEXT}}(ignoreConfirm);
+                                var context = new {{BatchUpdateContext.CLASS_NAME}}(ignoreConfirm);
                                 _applicationService.{{APPSRV_METHOD}}(parameter.{{HOOK_PARAM_ITEMS}}, context);
 
                                 if (context.HasUserError) {
@@ -167,7 +167,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// </summary>
                 /// <param name="items">更新データ</param>
                 /// <param name="saveContext">コンテキスト引数。エラーや警告の送出はこのオブジェクトを通して行なってください。</param>
-                public void {{APPSRV_METHOD}}(IEnumerable<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}> items, {{SaveContext.BATCH_UPDATE_CONTEXT}} saveContext) {
+                public void {{APPSRV_METHOD}}(IEnumerable<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}> items, {{BatchUpdateContext.CLASS_NAME}} saveContext) {
 
                     // パラメータの各要素の型を仕分けてそれぞれの配列に格納する
                 {{sortedAggregates.SelectTextTemplate(agg => $$"""

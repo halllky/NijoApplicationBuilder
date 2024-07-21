@@ -33,7 +33,8 @@ namespace Nijo.Models {
                 // データ型: DataClassForSave
                 var dataClassForSave = new DataClassForSave(agg, DataClassForSave.E_Type.UpdateOrDelete);
                 aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharp(context));
-                aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharpErrorStructure(context));
+                aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharpBeforeSaveEventArgs(context));
+                aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharpAfterSaveEventArgs(context));
                 aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharpReadOnlyStructure(context));
                 context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScript(context));
                 context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScriptErrorStructure(context));
@@ -42,7 +43,6 @@ namespace Nijo.Models {
                 // データ型: DataClassForNewItem
                 var dataClassForNewItem = new DataClassForSave(agg, DataClassForSave.E_Type.Create);
                 aggregateFile.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharp(context));
-                aggregateFile.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharpErrorStructure(context));
                 aggregateFile.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharpReadOnlyStructure(context));
                 context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScript(context));
                 context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScriptErrorStructure(context));
@@ -95,15 +95,18 @@ namespace Nijo.Models {
 
         void IModel.GenerateCode(CodeRenderingContext context) {
 
-            // データ型: 一括コミット コンテキスト引数
-            var batchUpdateContext = new SaveContext();
             context.CoreLibrary.UtilDir(utilDir => {
+                // データ型: 一括コミット コンテキスト引数
+                var batchUpdateContext = new BatchUpdateContext();
                 utilDir.Generate(batchUpdateContext.Render());
+
+                // エラーデータ用インターフェース
+                utilDir.Generate(DataClassForSave.RenderIErrorData());
             });
 
-            // 処理: デバッグ用ダミーデータ作成関数
-            var dummyDataGenerator = new DummyDataGenerator();
             context.ReactProject.UtilDir(utilDir => {
+                // 処理: デバッグ用ダミーデータ作成関数
+                var dummyDataGenerator = new DummyDataGenerator();
                 utilDir.Generate(dummyDataGenerator.Render());
             });
         }

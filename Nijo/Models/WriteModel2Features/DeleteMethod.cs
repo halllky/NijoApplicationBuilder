@@ -31,8 +31,6 @@ namespace Nijo.Models.WriteModel2Features {
             var efCoreEntity = new EFCoreEntity(_rootAggregate);
             var dataClass = new DataClassForSave(_rootAggregate, DataClassForSave.E_Type.UpdateOrDelete);
             var argType = $"{DataClassForSaveBase.DELETE_COMMAND}<{dataClass.CsClassName}>";
-            var beforeSaveContext = $"{SaveContext.BEFORE_SAVE_CONTEXT}<{dataClass.ErrorDataCsClassName}>";
-            var afterSaveContext = $"{SaveContext.AFTER_SAVE_CONTEXT}";
 
             var keys = _rootAggregate
                 .GetKeys()
@@ -42,20 +40,20 @@ namespace Nijo.Models.WriteModel2Features {
                 /// <summary>
                 /// 既存の{{_rootAggregate.Item.DisplayName}}を削除します。
                 /// </summary>
-                public virtual void {{MethodName}}({{argType}} after, {{SaveContext.BATCH_UPDATE_CONTEXT}} saveContext) {
-                    var beforeSaveContext = new {{beforeSaveContext}}(saveContext);
+                public virtual void {{MethodName}}({{argType}} after, {{BatchUpdateContext.CLASS_NAME}} saveContext) {
+                    var beforeSaveContext = new {{dataClass.BeforeSaveContextCsClassName}}(saveContext);
                     var afterDbEntity = after.{{DataClassForSaveBase.VALUES_CS}}.{{DataClassForSave.TO_DBENTITY}}();
 
                     // 更新に必要な項目が空の場合は処理中断
                 {{keys.SelectTextTemplate(vm => $$"""
                     if (afterDbEntity.{{vm.Declared.GetFullPathAsDbEntity().Join("?.")}} == null) {
-                        beforeSaveContext.Errors.Add("{{vm.MemberName}}が空です。");
+                        beforeSaveContext.AddError("{{vm.MemberName}}が空です。");
                     }
                 """)}}
                     if (afterDbEntity.{{EFCoreEntity.VERSION}} == null) {
-                        beforeSaveContext.Errors.Add("更新時は更新前データのバージョンを指定する必要があります。");
+                        beforeSaveContext.AddError("更新時は更新前データのバージョンを指定する必要があります。");
                     }
-                    if (beforeSaveContext.Errors.HasError()) {
+                    if (beforeSaveContext.HasError()) {
                         return;
                     }
 
@@ -66,11 +64,11 @@ namespace Nijo.Models.WriteModel2Features {
                                            {{(i == 0 ? "=>" : "&&")}} e.{{vm.GetFullPathAsDbEntity().Join(".")}} == afterDbEntity.{{vm.Declared.GetFullPathAsDbEntity().Join(".")}}
                                            """), "                           ")}});
                     if (beforeDbEntity == null) {
-                        beforeSaveContext.Errors.Add("削除対象のデータが見つかりません。");
+                        beforeSaveContext.AddError("削除対象のデータが見つかりません。");
                         return;
                     }
                     if (beforeDbEntity.{{EFCoreEntity.VERSION}} != afterDbEntity.{{EFCoreEntity.VERSION}}) {
-                        beforeSaveContext.Errors.Add("ほかのユーザーが更新しました。");
+                        beforeSaveContext.AddError("ほかのユーザーが更新しました。");
                         return;
                     }
 
@@ -78,7 +76,7 @@ namespace Nijo.Models.WriteModel2Features {
                     {{BeforeMethodName}}(beforeDbEntity, afterDbEntity, beforeSaveContext);
 
                     // エラーやコンファームがある場合は処理中断
-                    if (beforeSaveContext.Errors.HasError()) return;
+                    if (beforeSaveContext.HasError()) return;
                     if (!beforeSaveContext.IgnoreConfirm && beforeSaveContext.HasConfirm()) return;
 
                     // 更新実行
@@ -86,12 +84,12 @@ namespace Nijo.Models.WriteModel2Features {
                         {{appSrv.DbContext}}.Remove(beforeDbEntity);
                         {{appSrv.DbContext}}.SaveChanges();
                     } catch (DbUpdateException ex) {
-                        beforeSaveContext.Errors.Add(ex);
+                        beforeSaveContext.AddError(ex);
                         return;
                     }
 
                     // 更新後処理
-                    var afterSaveContext = new {{afterSaveContext}}();
+                    var afterSaveContext = new {{dataClass.AfterSaveContextCsClassName}}();
                     {{AfterMethodName}}(beforeDbEntity, afterDbEntity, afterSaveContext);
                 }
 
@@ -99,13 +97,13 @@ namespace Nijo.Models.WriteModel2Features {
                 /// {{_rootAggregate.Item.DisplayName}}の更新前に実行されます。
                 /// エラーチェック、ワーニング、自動算出項目の設定などを行います。
                 /// </summary>
-                protected virtual void {{BeforeMethodName}}({{efCoreEntity.ClassName}} beforeDbEntity, {{efCoreEntity.ClassName}} afterDbEntity, {{beforeSaveContext}} context) {
+                protected virtual void {{BeforeMethodName}}({{efCoreEntity.ClassName}} beforeDbEntity, {{efCoreEntity.ClassName}} afterDbEntity, {{dataClass.BeforeSaveContextCsClassName}} context) {
                     // このメソッドをオーバーライドしてエラーチェック等を記述してください。
                 }
                 /// <summary>
                 /// {{_rootAggregate.Item.DisplayName}}の更新SQL発行後、コミット前に実行されます。
                 /// </summary>
-                protected virtual void {{AfterMethodName}}({{efCoreEntity.ClassName}} beforeDbEntity, {{efCoreEntity.ClassName}} afterDbEntity, {{afterSaveContext}} context) {
+                protected virtual void {{AfterMethodName}}({{efCoreEntity.ClassName}} beforeDbEntity, {{efCoreEntity.ClassName}} afterDbEntity, {{dataClass.AfterSaveContextCsClassName}} context) {
                     // このメソッドをオーバーライドして必要な更新後処理を記述してください。
                 }
                 """;

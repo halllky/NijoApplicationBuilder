@@ -189,13 +189,11 @@ namespace Nijo.Models.WriteModel2Features {
         #endregion 値
 
 
-        #region エラーメッセージ用構造体
+        #region 更新前イベント
         /// <summary>
-        /// エラーメッセージ用構造体 C#クラス名
+        /// 更新前イベント引数 C#クラス名
         /// </summary>
-        internal string ErrorDataCsClassName => _type == E_Type.Create
-            ? $"{_aggregate.Item.PhysicalName}CreateCommandErrorData"
-            : $"{_aggregate.Item.PhysicalName}SaveCommandErrorData";
+        internal string BeforeSaveContextCsClassName => $"{_aggregate.Item.PhysicalName}BeforeSaveEventArgs";
         /// <summary>
         /// エラーメッセージ用構造体 TypeScript型名
         /// </summary>
@@ -213,9 +211,9 @@ namespace Nijo.Models.WriteModel2Features {
         internal const string OWN_ERRORS_TS = "_ownErrors";
 
         /// <summary>
-        /// エラーメッセージ格納用の構造体を定義します（C#）
+        /// 更新前イベント引数を定義します（C#）
         /// </summary>
-        internal string RenderCSharpErrorStructure(CodeRenderingContext context) {
+        internal string RenderCSharpBeforeSaveEventArgs(CodeRenderingContext context) {
             var members = new List<string>();
             foreach (var m in GetOwnMembers()) {
                 if (m is AggregateMember.ValueMember || m is AggregateMember.Ref) {
@@ -223,20 +221,50 @@ namespace Nijo.Models.WriteModel2Features {
 
                 } else if (m is AggregateMember.Children children) {
                     var descendant = new DataClassForSave(children.ChildrenAggregate, _type);
-                    members.Add($"public List<{descendant.ErrorDataCsClassName}> {m.MemberName} {{ get; }} = new();");
+                    members.Add($"public IReadOnlyList<{descendant.BeforeSaveContextCsClassName}> {m.MemberName} {{ get; }} = new();");
 
                 } else if (m is AggregateMember.RelationMember rel) {
                     var descendant = new DataClassForSave(rel.MemberAggregate, _type);
-                    members.Add($"public {descendant.ErrorDataCsClassName} {m.MemberName} {{ get; }} = new();");
+                    members.Add($"public {descendant.BeforeSaveContextCsClassName} {m.MemberName} {{ get; }} = new();");
                 }
             }
             return $$"""
                 /// <summary>
-                /// {{_aggregate.Item.DisplayName}}のエラーメッセージ格納用クラス
+                /// {{_aggregate.Item.DisplayName}}の更新前イベント
                 /// </summary>
-                public sealed class {{ErrorDataCsClassName}} {
+                public partial class {{BeforeSaveContextCsClassName}} {{(_aggregate.IsRoot() ? $": {I_ERROR_DATA_STRUCTURE} " : "")}}{
+                {{If(_aggregate.IsRoot(), () => $$"""
+                    public {{BeforeSaveContextCsClassName}}({{BatchUpdateContext.CLASS_NAME}} outerContext) {
+                        _outerContext = outerContext;
+                    }
+                    private readonly {{BatchUpdateContext.CLASS_NAME}} _outerContext;
+
+                    /// <inheritdoc cref="{{BatchUpdateContext.CLASS_NAME}}.AddConfirm(string)"/>
+                    public void AddConfirm(string message) => _outerContext.AddConfirm(message);
+                    /// <inheritdoc cref="{{BatchUpdateContext.CLASS_NAME}}.HasConfirm()"/>
+                    public bool HasConfirm() => _outerContext.HasConfirm();
+                    /// <inheritdoc cref="{{BatchUpdateContext.CLASS_NAME}}.IgnoreConfirm"/>
+                    public bool IgnoreConfirm => _outerContext.IgnoreConfirm;
+
+                    public bool HasError() {
+                    }
+                """)}}
+
                     [JsonPropertyName("{{OWN_ERRORS_TS}}")]
-                    public List<string> {{OWN_ERRORS_CS}} { get; } = new();
+                    private List<string> {{OWN_ERRORS_CS}} { get; } = new();
+
+                    /// <summary>
+                    /// {{_aggregate.Item.DisplayName}}に対するエラーメッセージを追加します。
+                    /// </summary>
+                    public void AddError(string message) {
+                        {{OWN_ERRORS_CS}}.Add(message);
+                    }
+                    /// <summary>
+                    /// {{_aggregate.Item.DisplayName}}に対して発生した例外を追加します。
+                    /// </summary>
+                    public void AddError(Exception ex) {
+                        {{OWN_ERRORS_CS}}.Add(ex.ToString());
+                    }
                     {{WithIndent(members, "    ")}}
                 }
                 """;
@@ -267,7 +295,51 @@ namespace Nijo.Models.WriteModel2Features {
                 }
                 """;
         }
-        #endregion エラーメッセージ用構造体
+        
+        /// <summary>
+        /// エラーデータ用のインターフェースをレンダリングします。
+        /// </summary>
+        internal static SourceFile RenderIErrorData() => new SourceFile {
+            FileName = "IErrorDataStructure.cs",
+            RenderContent = ctx => {
+                return $$"""
+                    namespace {{ctx.Config.RootNamespace}};
+
+                    /// <summary>
+                    /// エラーデータ構造体
+                    /// </summary>
+                    public interface {{I_ERROR_DATA_STRUCTURE}} {
+                        /// <summary>
+                        /// エラーがあるかどうかを返します。
+                        /// </summary>
+                        bool HasError();
+                    }
+                    """;
+            },
+        };
+        internal const string I_ERROR_DATA_STRUCTURE = "IErrorDataStructure";
+        #endregion 更新前イベント
+
+
+        #region 更新後イベント
+        /// <summary>
+        /// 更新前イベント引数 C#クラス名
+        /// </summary>
+        internal string AfterSaveContextCsClassName => $"{_aggregate.Item.PhysicalName}AfterSaveEventArgs";
+        /// <summary>
+        /// 更新前イベント引数を定義します（C#）
+        /// </summary>
+        internal string RenderCSharpAfterSaveEventArgs(CodeRenderingContext context) {
+            return $$"""
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}}の更新後イベント
+                /// </summary>
+                public partial class {{AfterSaveContextCsClassName}} {
+                    // 特になし
+                }
+                """;
+        }
+        #endregion 更新後イベント
 
 
         #region 読み取り専用用構造体
