@@ -17,12 +17,12 @@ namespace Nijo.Models {
         void IModel.GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
             var aggregateFile = context.CoreLibrary.UseAggregateFile(rootAggregate);
 
-            foreach (var agg in rootAggregate.EnumerateThisAndDescendants()) {
-                // データ型: 検索条件クラス
-                var condition = new SearchCondition(agg);
-                aggregateFile.DataClassDeclaring.Add(condition.RenderCSharpDeclaring(context));
-                context.ReactProject.Types.Add(agg, condition.RenderTypeScriptDeclaring(context));
+            // データ型: 検索条件クラス
+            var condition = new SearchCondition(rootAggregate);
+            aggregateFile.DataClassDeclaring.Add(condition.RenderCSharpDeclaringRecursively(context));
+            context.ReactProject.Types.Add(rootAggregate, condition.RenderTypeScriptDeclaringRecursively(context));
 
+            foreach (var agg in rootAggregate.EnumerateThisAndDescendants()) {
                 // データ型: ビュークラス
                 var displayData = new DataClassForDisplay(agg);
                 aggregateFile.DataClassDeclaring.Add(displayData.RenderCSharpDeclaring(context));

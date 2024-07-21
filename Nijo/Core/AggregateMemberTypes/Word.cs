@@ -6,9 +6,12 @@ using System.Threading.Tasks;
 
 namespace Nijo.Core.AggregateMemberTypes {
     public class Word : IAggregateMemberType {
-        public SearchBehavior SearchBehavior => SearchBehavior.Ambiguous;
+        public SearchBehavior SearchBehavior => SearchBehavior.PartialMatch;
         public string GetCSharpTypeName() => "string";
         public string GetTypeScriptTypeName() => "string";
+
+        public string GetSearchConditionCSharpType() => "string";
+        public string GetSearchConditionTypeScriptType() => "string";
 
         public ReactInputComponent GetReactComponent() {
             return new ReactInputComponent { Name = "Input.Word" };

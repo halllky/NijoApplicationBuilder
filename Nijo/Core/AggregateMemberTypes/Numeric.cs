@@ -7,16 +7,15 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Core.AggregateMemberTypes {
-    internal class Numeric : IAggregateMemberType {
-        public SearchBehavior SearchBehavior => SearchBehavior.Range;
-        public string GetCSharpTypeName() => "decimal";
-        public string GetTypeScriptTypeName() => "number";
+    internal class Numeric : SchalarMemberType {
+        public override string GetCSharpTypeName() => "decimal";
+        public override string GetTypeScriptTypeName() => "number";
 
-        public ReactInputComponent GetReactComponent() {
+        public override ReactInputComponent GetReactComponent() {
             return new ReactInputComponent { Name = "Input.Num" };
         }
 
-        public IGridColumnSetting GetGridColumnEditSetting() {
+        public override IGridColumnSetting GetGridColumnEditSetting() {
             return new TextColumnSetting {
                 GetValueFromRow = (value, formatted) => {
                     return $$"""

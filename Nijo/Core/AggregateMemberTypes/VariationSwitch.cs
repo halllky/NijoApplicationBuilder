@@ -25,6 +25,24 @@ namespace Nijo.Core.AggregateMemberTypes {
                 .Join(" | ");
         }
 
+        public string GetSearchConditionCSharpType() {
+            return SearchConditionEnum;
+        }
+        public string GetSearchConditionTypeScriptType() {
+            return $"{{ {_variationGroup.VariationAggregates.Values.Select(edge => $"{edge.Terminal.Item.PhysicalName}?: boolean").Join(", ")} }}";
+        }
+
+        private string SearchConditionEnum => $"{_variationGroup.GroupName}SearchCondition";
+        void IAggregateMemberType.GenerateCode(CodeRenderingContext context) {
+            context.CoreLibrary.Enums.Add($$"""
+                public class {{SearchConditionEnum}} {
+                {{_variationGroup.VariationAggregates.Values.SelectTextTemplate(edge => $$"""
+                    public bool {{edge.Terminal.Item.PhysicalName}} { get; set; }
+                """)}}
+                }
+                """);
+        }
+
         public ReactInputComponent GetReactComponent() {
             var props = new Dictionary<string, string> {
                 { "options", $"[{_variationGroup.VariationAggregates.Select(kv => $"'{kv.Value.RelationName}' as const").Join(", ")}]" },

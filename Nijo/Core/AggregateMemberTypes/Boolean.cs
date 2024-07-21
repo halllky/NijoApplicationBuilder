@@ -17,6 +17,9 @@ namespace Nijo.Core.AggregateMemberTypes {
             };
         }
 
+        public string GetSearchConditionCSharpType() => BOOL_SEARCH_CONDITION_ENUM;
+        public string GetSearchConditionTypeScriptType() => "'指定なし' | 'Trueのみ' | 'Falseのみ'";
+
         public IGridColumnSetting GetGridColumnEditSetting() {
             return new ComboboxColumnSetting {
                 OptionItemTypeName = $"{{ key: 'T' | 'F', text: string }}",
@@ -47,6 +50,17 @@ namespace Nijo.Core.AggregateMemberTypes {
                       && normalized !== '0'
                     """,
             };
+        }
+
+        private const string BOOL_SEARCH_CONDITION_ENUM = "E_BoolSearchCondition";
+        void IAggregateMemberType.GenerateCode(Util.CodeGenerating.CodeRenderingContext context) {
+            context.CoreLibrary.Enums.Add($$"""
+                public enum {{BOOL_SEARCH_CONDITION_ENUM}} {
+                    指定なし,
+                    Trueのみ,
+                    Falseのみ,
+                }
+                """);
         }
     }
 }

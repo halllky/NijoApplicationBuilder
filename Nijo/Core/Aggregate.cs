@@ -99,6 +99,25 @@ namespace Nijo.Core {
                 .EnumerateThisAndDescendants()
                 .Contains(agg);
         }
+        /// <summary>
+        /// この集約がエントリーのツリー内部にあるかどうかを返します。
+        /// つまり、ルート集約またはその子集約か、それとも参照されている外部の集約かを表します。
+        /// </summary>
+        internal static bool IsOutOfEntryTree(this GraphNode<Aggregate> agg) {
+            return !agg.IsInTreeOf(agg.GetEntry().As<Aggregate>());
+        }
+        /// <summary>
+        /// ルート集約のツリー内部からツリー外部へ出る瞬間のエッジを返します。
+        /// この集約がルート集約のツリーの外部の集約でない場合は例外になります。
+        /// </summary>
+        internal static GraphEdge<Aggregate> GetRefEdge(this GraphNode<Aggregate> agg) {
+            var entry = agg.GetEntry().As<Aggregate>();
+            foreach (var edge in agg.PathFromEntry()) {
+                var edge2 = edge.As<Aggregate>();
+                if (edge2.Terminal.GetRoot() != entry) return edge2;
+            }
+            throw new InvalidOperationException($"'{agg}'は'{entry}'のツリー外部の集約ではありません。");
+        }
 
         internal static bool IsChildrenMember(this GraphNode<Aggregate> graphNode) {
             var parent = graphNode.GetParent();

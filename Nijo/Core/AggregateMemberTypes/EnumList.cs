@@ -19,6 +19,24 @@ namespace Nijo.Core.AggregateMemberTypes {
             return Definition.Items.Select(x => $"'{x.PhysicalName}'").Join(" | ");
         }
 
+        public string GetSearchConditionCSharpType() {
+            return SearchConditionEnum;
+        }
+        public string GetSearchConditionTypeScriptType() {
+            return $"{{ {Definition.Items.Select(i => $"{i.PhysicalName}?: boolean").Join(", ")} }}";
+        }
+
+        private string SearchConditionEnum => $"{Definition.Name}SearchCondition";
+        void IAggregateMemberType.GenerateCode(CodeRenderingContext context) {
+            context.CoreLibrary.Enums.Add($$"""
+                public class {{SearchConditionEnum}} {
+                {{Definition.Items.SelectTextTemplate(item => $$"""
+                    public bool {{item.PhysicalName}} { get; set; }
+                """)}}
+                }
+                """);
+        }
+
         public ReactInputComponent GetReactComponent() {
             var props = new Dictionary<string, string> {
                 { "options", $"[{Definition.Items.Select(x => $"'{x.PhysicalName}' as const").Join(", ")}]" },

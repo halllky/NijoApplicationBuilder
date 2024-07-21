@@ -10,6 +10,9 @@ namespace Nijo.Core.AggregateMemberTypes {
         public string GetCSharpTypeName() => "string";
         public string GetTypeScriptTypeName() => "string";
 
+        public string GetSearchConditionCSharpType() => "string";
+        public string GetSearchConditionTypeScriptType() => "string";
+
         public ReactInputComponent GetReactComponent() {
             return new ReactInputComponent { Name = "Input.Word" };
         }

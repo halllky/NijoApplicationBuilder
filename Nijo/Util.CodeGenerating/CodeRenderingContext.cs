@@ -153,6 +153,17 @@ namespace Nijo.Util.CodeGenerating {
                 genDir.Generate(Configure.RenderCliConfigure());
             });
 
+            // メンバー型のコード生成。列挙体の定義などの生成を行う。
+            var allMemberTypes = Schema
+                .AllAggregates()
+                .SelectMany(agg => agg.GetMembers())
+                .OfType<AggregateMember.ValueMember>()
+                .Select(vm => vm.Options.MemberType)
+                .Distinct();
+            foreach (var memberType in allMemberTypes) {
+                memberType.GenerateCode(this);
+            }
+
             // モデルと関係するがルート集約1個と対応しないソースコードを生成する
             foreach (var kv in NijoCodeGenerator.Models.GetAll()) {
                 // この種類のモデルに属する集約が1つも存在しなかった場合はスキップ
