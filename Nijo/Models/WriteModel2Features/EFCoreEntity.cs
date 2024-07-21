@@ -120,7 +120,7 @@ namespace Nijo.Models.WriteModel2Features {
                                 .IsConcurrencyToken(true);
                 """)}}
 
-                                {{WithIndent(RenderNavigationPropertyOnModelCreating(), "                ")}}
+                            {{WithIndent(RenderNavigationPropertyOnModelCreating(), "            ")}}
                         });
                     }
                 }
@@ -178,10 +178,19 @@ namespace Nijo.Models.WriteModel2Features {
         /// <summary>
         /// 子孫要素をIncludeする処理をレンダリングします。
         /// </summary>
-        internal string RenderInclude() {
+        internal string RenderInclude(bool includeRefs) {
             var includeEntities = _aggregate
                 .EnumerateThisAndDescendants()
                 .ToList();
+            if (includeRefs) {
+                var refEntities = _aggregate
+                    .EnumerateThisAndDescendants()
+                    .SelectMany(agg => agg.GetMembers())
+                    .Select(m => m.DeclaringAggregate);
+                foreach (var entity in refEntities) {
+                    includeEntities.Add(entity);
+                }
+            }
             var paths = includeEntities
                 .Select(entity => entity.PathFromEntry())
                 .Distinct()

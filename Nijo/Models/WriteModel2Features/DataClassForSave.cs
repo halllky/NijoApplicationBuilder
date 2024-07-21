@@ -216,81 +216,55 @@ namespace Nijo.Models.WriteModel2Features {
         /// エラーメッセージ格納用の構造体を定義します（C#）
         /// </summary>
         internal string RenderCSharpErrorStructure(CodeRenderingContext context) {
+            var members = new List<string>();
+            foreach (var m in GetOwnMembers()) {
+                if (m is AggregateMember.ValueMember || m is AggregateMember.Ref) {
+                    members.Add($"public List<string> {m.MemberName} {{ get; }} = new();");
 
-            string Render(GraphNode<Aggregate> agg) {
-                var dataClass = new DataClassForSave(agg, _type);
-                var members = new List<string>();
-                foreach (var m in dataClass.GetOwnMembers()) {
-                    if (m is AggregateMember.ValueMember || m is AggregateMember.Ref) {
-                        members.Add($"public List<string> {m.MemberName} {{ get; }} = new();");
+                } else if (m is AggregateMember.Children children) {
+                    var descendant = new DataClassForSave(children.ChildrenAggregate, _type);
+                    members.Add($"public List<{descendant.ErrorDataCsClassName}> {m.MemberName} {{ get; }} = new();");
 
-                    } else if (m is AggregateMember.Children children) {
-                        var descendant = new DataClassForSave(children.ChildrenAggregate, _type);
-                        members.Add($"public List<{descendant.ErrorDataCsClassName}> {m.MemberName} {{ get; }} = new();");
-
-                    } else if (m is AggregateMember.RelationMember rel) {
-                        var descendant = new DataClassForSave(rel.MemberAggregate, _type);
-                        members.Add($"public {descendant.ErrorDataCsClassName} {m.MemberName} {{ get; }} = new();");
-                    }
+                } else if (m is AggregateMember.RelationMember rel) {
+                    var descendant = new DataClassForSave(rel.MemberAggregate, _type);
+                    members.Add($"public {descendant.ErrorDataCsClassName} {m.MemberName} {{ get; }} = new();");
                 }
-                return $$"""
-                    /// <summary>
-                    /// {{agg.Item.DisplayName}}のエラーメッセージ格納用クラス
-                    /// </summary>
-                    public sealed class {{dataClass.ErrorDataCsClassName}} {
-                        [JsonPropertyName("{{OWN_ERRORS_TS}}")]
-                        public List<string> {{OWN_ERRORS_CS}} { get; } = new();
-                        {{WithIndent(members, "    ")}}
-                    }
-                    """;
             }
-
             return $$"""
-                #region エラーメッセージ格納用クラス
-                {{_aggregate.EnumerateThisAndDescendants().SelectTextTemplate(agg => $$"""
-                {{Render(agg)}}
-                """)}}
-                #endregion エラーメッセージ格納用クラス
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}}のエラーメッセージ格納用クラス
+                /// </summary>
+                public sealed class {{ErrorDataCsClassName}} {
+                    [JsonPropertyName("{{OWN_ERRORS_TS}}")]
+                    public List<string> {{OWN_ERRORS_CS}} { get; } = new();
+                    {{WithIndent(members, "    ")}}
+                }
                 """;
         }
         /// <summary>
         /// エラーメッセージ格納用の構造体を定義します（TypeScript）
         /// </summary>
         internal string RenderTypeScriptErrorStructure(CodeRenderingContext context) {
+            var members = new List<string>();
+            foreach (var m in GetOwnMembers()) {
+                if (m is AggregateMember.ValueMember || m is AggregateMember.Ref) {
+                    members.Add($"{m.MemberName}?: string[]");
 
-            string Render(GraphNode<Aggregate> agg) {
-                var dataClass = new DataClassForSave(agg, _type);
-                var members = new List<string>();
-                foreach (var m in dataClass.GetOwnMembers()) {
-                    if (m is AggregateMember.ValueMember || m is AggregateMember.Ref) {
-                        members.Add($"{m.MemberName}?: string[]");
+                } else if (m is AggregateMember.Children children) {
+                    var descendant = new DataClassForSave(children.ChildrenAggregate, _type);
+                    members.Add($"{m.MemberName}?: {descendant.ErrorDataTsTypeName}[]");
 
-                    } else if (m is AggregateMember.Children children) {
-                        var descendant = new DataClassForSave(children.ChildrenAggregate, _type);
-                        members.Add($"{m.MemberName}?: {descendant.ErrorDataTsTypeName}[]");
-
-                    } else if (m is AggregateMember.RelationMember rel) {
-                        var descendant = new DataClassForSave(rel.MemberAggregate, _type);
-                        members.Add($"{m.MemberName}?: {descendant.ErrorDataTsTypeName}");
-                    }
+                } else if (m is AggregateMember.RelationMember rel) {
+                    var descendant = new DataClassForSave(rel.MemberAggregate, _type);
+                    members.Add($"{m.MemberName}?: {descendant.ErrorDataTsTypeName}");
                 }
-                return $$"""
-                    /** {{agg.Item.DisplayName}}のエラーメッセージ格納用の型 */
-                    export type {{dataClass.ErrorDataTsTypeName}} = {
-                      {{OWN_ERRORS_TS}}?: string[]
-                      {{WithIndent(members, "  ")}}
-                    }
-                    """;
             }
-
             return $$"""
-                // --------------------------------
-                // エラーメッセージ格納用の型
-                {{_aggregate.EnumerateThisAndDescendants().SelectTextTemplate(agg => $$"""
-
-                {{Render(agg)}}
-                """)}}
-
+                /** {{_aggregate.Item.DisplayName}}のエラーメッセージ格納用の型 */
+                export type {{ErrorDataTsTypeName}} = {
+                  {{OWN_ERRORS_TS}}?: string[]
+                  {{WithIndent(members, "  ")}}
+                }
                 """;
         }
         #endregion エラーメッセージ用構造体
@@ -323,81 +297,55 @@ namespace Nijo.Models.WriteModel2Features {
         /// どの項目が読み取り専用かを表すための構造体を定義します（C#）
         /// </summary>
         internal string RenderCSharpReadOnlyStructure(CodeRenderingContext context) {
+            var members = new List<string>();
+            foreach (var m in GetOwnMembers()) {
+                if (m is AggregateMember.ValueMember || m is AggregateMember.Ref) {
+                    members.Add($"public bool {m.MemberName} {{ get; set; }}");
 
-            string Render(GraphNode<Aggregate> agg) {
-                var dataClass = new DataClassForSave(agg, _type);
-                var members = new List<string>();
-                foreach (var m in dataClass.GetOwnMembers()) {
-                    if (m is AggregateMember.ValueMember || m is AggregateMember.Ref) {
-                        members.Add($"public bool {m.MemberName} {{ get; set; }}");
+                } else if (m is AggregateMember.Children children) {
+                    var descendant = new DataClassForSave(children.ChildrenAggregate, _type);
+                    members.Add($"public List<{descendant.ReadOnlyCsClassName}> {m.MemberName} {{ get; }} = new();");
 
-                    } else if (m is AggregateMember.Children children) {
-                        var descendant = new DataClassForSave(children.ChildrenAggregate, _type);
-                        members.Add($"public List<{dataClass.ReadOnlyCsClassName}> {m.MemberName} {{ get; }} = new();");
-
-                    } else if (m is AggregateMember.RelationMember rel) {
-                        var descendant = new DataClassForSave(rel.MemberAggregate, _type);
-                        members.Add($"public {dataClass.ReadOnlyCsClassName} {m.MemberName} {{ get; }} = new();");
-                    }
+                } else if (m is AggregateMember.RelationMember rel) {
+                    var descendant = new DataClassForSave(rel.MemberAggregate, _type);
+                    members.Add($"public {descendant.ReadOnlyCsClassName} {m.MemberName} {{ get; }} = new();");
                 }
-                return $$"""
-                    /// <summary>
-                    /// {{agg.Item.DisplayName}}のエラーメッセージ格納用クラス
-                    /// </summary>
-                    public sealed class {{dataClass.ReadOnlyCsClassName}} {
-                        [JsonPropertyName("{{THIS_IS_READONLY_TS}}")]
-                        public bool {{THIS_IS_READONLY_CS}} { get; set; }
-                        {{WithIndent(members, "    ")}}
-                    }
-                    """;
             }
-
             return $$"""
-                #region どの項目が読み取り専用か否かの情報を格納するクラス
-                {{_aggregate.EnumerateThisAndDescendants().SelectTextTemplate(agg => $$"""
-                {{Render(agg)}}
-                """)}}
-                #endregion どの項目が読み取り専用か否かの情報を格納するクラス
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}}のエラーメッセージ格納用クラス
+                /// </summary>
+                public sealed class {{ReadOnlyCsClassName}} {
+                    [JsonPropertyName("{{THIS_IS_READONLY_TS}}")]
+                    public bool {{THIS_IS_READONLY_CS}} { get; set; }
+                    {{WithIndent(members, "    ")}}
+                }
                 """;
         }
         /// <summary>
         /// どの項目が読み取り専用かを表すための構造体を定義します（TypeScript）
         /// </summary>
         internal string RenderTypeScriptReadOnlyStructure(CodeRenderingContext context) {
+            var members = new List<string>();
+            foreach (var m in GetOwnMembers()) {
+                if (m is AggregateMember.ValueMember || m is AggregateMember.Ref) {
+                    members.Add($"{m.MemberName}?: string[]");
 
-            string Render(GraphNode<Aggregate> agg) {
-                var dataClass = new DataClassForSave(agg, _type);
-                var members = new List<string>();
-                foreach (var m in dataClass.GetOwnMembers()) {
-                    if (m is AggregateMember.ValueMember || m is AggregateMember.Ref) {
-                        members.Add($"{m.MemberName}?: string[]");
+                } else if (m is AggregateMember.Children children) {
+                    var descendant = new DataClassForSave(children.ChildrenAggregate, _type);
+                    members.Add($"{m.MemberName}?: {descendant.ReadOnlyTsTypeName}[]");
 
-                    } else if (m is AggregateMember.Children children) {
-                        var descendant = new DataClassForSave(children.ChildrenAggregate, _type);
-                        members.Add($"{m.MemberName}?: {descendant.ReadOnlyTsTypeName}[]");
-
-                    } else if (m is AggregateMember.RelationMember rel) {
-                        var descendant = new DataClassForSave(rel.MemberAggregate, _type);
-                        members.Add($"{m.MemberName}?: {descendant.ReadOnlyTsTypeName}");
-                    }
+                } else if (m is AggregateMember.RelationMember rel) {
+                    var descendant = new DataClassForSave(rel.MemberAggregate, _type);
+                    members.Add($"{m.MemberName}?: {descendant.ReadOnlyTsTypeName}");
                 }
-                return $$"""
-                    /** {{agg.Item.DisplayName}}の読み取り専用情報格納用の型 */
-                    export type {{dataClass.ReadOnlyTsTypeName}} = {
-                      {{THIS_IS_READONLY_TS}}?: string[]
-                      {{WithIndent(members, "  ")}}
-                    }
-                    """;
             }
-
             return $$"""
-                // --------------------------------
-                // どの項目が読み取り専用か否かの情報を格納する型
-                {{_aggregate.EnumerateThisAndDescendants().SelectTextTemplate(agg => $$"""
-
-                {{Render(agg)}}
-                """)}}
-
+                /** {{_aggregate.Item.DisplayName}}の読み取り専用情報格納用の型 */
+                export type {{ReadOnlyTsTypeName}} = {
+                  {{THIS_IS_READONLY_TS}}?: string[]
+                  {{WithIndent(members, "  ")}}
+                }
                 """;
         }
         #endregion 読み取り専用用構造体

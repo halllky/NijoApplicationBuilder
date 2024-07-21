@@ -19,9 +19,9 @@ namespace Nijo.Models.WriteModel2Features {
 
         private readonly GraphNode<Aggregate> _rootAggregate;
 
-        internal string BeforeMethodName => $"Updating{_rootAggregate.Item.PhysicalName}";
         internal object MethodName => $"Update{_rootAggregate.Item.PhysicalName}";
-        internal string AfterMethodName => $"Updated{_rootAggregate.Item.PhysicalName}";
+        internal string BeforeMethodName => $"OnBeforeUpdate{_rootAggregate.Item.PhysicalName}";
+        internal string AfterMethodName => $"OnAfterUpdate{_rootAggregate.Item.PhysicalName}";
 
         /// <summary>
         /// データ更新処理をレンダリングします。
@@ -62,7 +62,7 @@ namespace Nijo.Models.WriteModel2Features {
                     // 更新前データ取得
                     var beforeDbEntity = {{appSrv.DbContext}}.{{efCoreEntity.DbSetName}}
                         .AsNoTracking()
-                        {{WithIndent(efCoreEntity.RenderInclude(), "        ")}}
+                        {{WithIndent(efCoreEntity.RenderInclude(true), "        ")}}
                         .SingleOrDefault(e {{WithIndent(keys.SelectTextTemplate((vm, i) => $$"""
                                            {{(i == 0 ? "=>" : "&&")}} e.{{vm.GetFullPathAsDbEntity().Join(".")}} == afterDbEntity.{{vm.Declared.GetFullPathAsDbEntity().Join(".")}}
                                            """), "                           ")}});
@@ -94,7 +94,6 @@ namespace Nijo.Models.WriteModel2Features {
                         entry.Property(e => e.{{EFCoreEntity.VERSION}}).OriginalValue = beforeDbEntity.{{EFCoreEntity.VERSION}};
 
                         {{WithIndent(RenderDescendantAttaching(), "        ")}}
-
                         {{appSrv.DbContext}}.SaveChanges();
                     } catch (DbUpdateException ex) {
                         beforeSaveContext.Errors.Add(ex);
@@ -133,30 +132,34 @@ namespace Nijo.Models.WriteModel2Features {
             var descendantDbEntities = _rootAggregate.EnumerateDescendants().ToArray();
             for (int i = 0; i < descendantDbEntities.Length; i++) {
                 var paths = descendantDbEntities[i].PathFromEntry().ToArray();
+                var before = $"before{descendantDbEntities[i].Item.PhysicalName}_{i}";
+                var after_ = $"after{descendantDbEntities[i].Item.PhysicalName}_{i}";
 
                 // before, after それぞれの子孫インスタンスを一次配列に格納する
                 void RenderEntityArray(bool renderBefore) {
+                    var tempVar = renderBefore ? before : after_;
+
                     if (paths.Any(path => path.Terminal.As<Aggregate>().IsChildrenMember())) {
                         // 子集約までの経路の途中に配列が含まれる場合
-                        builder.AppendLine($"var arr{i}_{(renderBefore ? "before" : "after")} = {(renderBefore ? "beforeDbEntity" : "afterDbEntity")}");
+                        builder.Append($"var {tempVar} {(renderBefore ? "= beforeDbEntity" : " =  afterDbEntity")}");
 
                         var select = false;
                         foreach (var path in paths) {
                             if (select && path.Terminal.As<Aggregate>().IsChildrenMember()) {
-                                builder.AppendLine($"    .SelectMany(x => x.{path.RelationName})");
+                                builder.Append($".SelectMany(x => x.{path.RelationName})");
                             } else if (select) {
-                                builder.AppendLine($"    .Select(x => x.{path.RelationName})");
+                                builder.Append($".Select(x => x.{path.RelationName})");
                             } else {
-                                builder.AppendLine($"    .{path.RelationName}?");
+                                builder.Append($".{path.RelationName}?");
                                 if (path.Terminal.As<Aggregate>().IsChildrenMember()) select = true;
                             }
                         }
-                        builder.AppendLine($"    .OfType<{descendantDbEntities[i].Item.EFCoreEntityClassName}>()");
-                        builder.AppendLine($"    ?? Enumerable.Empty<{descendantDbEntities[i].Item.EFCoreEntityClassName}>();");
+                        builder.Append($".OfType<{descendantDbEntities[i].Item.EFCoreEntityClassName}>()");
+                        builder.AppendLine($" ?? Enumerable.Empty<{descendantDbEntities[i].Item.EFCoreEntityClassName}>();");
 
                     } else {
                         // 子集約までの経路の途中に配列が含まれない場合
-                        builder.AppendLine($"var arr{i}_{(renderBefore ? "before" : "after")} = new {descendantDbEntities[i].Item.EFCoreEntityClassName}?[] {{");
+                        builder.AppendLine($"var {tempVar} = new {descendantDbEntities[i].Item.EFCoreEntityClassName}?[] {{");
                         builder.AppendLine($"    {(renderBefore ? "beforeDbEntity" : "afterDbEntity")}.{paths.Select(p => p.RelationName).Join("?.")},");
                         builder.AppendLine($"}}.OfType<{descendantDbEntities[i].Item.EFCoreEntityClassName}>().ToArray();");
                     }
@@ -165,8 +168,8 @@ namespace Nijo.Models.WriteModel2Features {
                 RenderEntityArray(false);
 
                 // ChangeState変更
-                builder.AppendLine($"foreach (var a in arr{i}_after) {{");
-                builder.AppendLine($"    var b = arr{i}_before.SingleOrDefault(b => b.{EFCoreEntity.KEYEQUALS}(a));");
+                builder.AppendLine($"foreach (var a in {after_}) {{");
+                builder.AppendLine($"    var b = {before}.SingleOrDefault(b => b.{EFCoreEntity.KEYEQUALS}(a));");
                 builder.AppendLine($"    if (b == null) {{");
                 builder.AppendLine($"        {dbContext}.Entry(a).State = EntityState.Added;");
                 builder.AppendLine($"    }} else {{");
@@ -174,12 +177,13 @@ namespace Nijo.Models.WriteModel2Features {
                 builder.AppendLine($"    }}");
                 builder.AppendLine($"}}");
 
-                builder.AppendLine($"foreach (var b in arr{i}_before) {{");
-                builder.AppendLine($"    var a = arr{i}_after.SingleOrDefault(a => a.{EFCoreEntity.KEYEQUALS}(b));");
+                builder.AppendLine($"foreach (var b in {before}) {{");
+                builder.AppendLine($"    var a = {after_}.SingleOrDefault(a => a.{EFCoreEntity.KEYEQUALS}(b));");
                 builder.AppendLine($"    if (a == null) {{");
                 builder.AppendLine($"        {dbContext}.Entry(b).State = EntityState.Deleted;");
                 builder.AppendLine($"    }}");
                 builder.AppendLine($"}}");
+                builder.AppendLine();
             }
 
             return builder.ToString();
