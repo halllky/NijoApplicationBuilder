@@ -57,6 +57,7 @@ namespace Nijo.Models.WriteModel2Features {
         }
 
 
+        int ISummarizedFile.RenderingOrder => 100; // BatchUpdateDisplayDataでマイナス1したときに既定値である0を下回るのがなんとなく不安だったので
         void ISummarizedFile.OnEndGenerating(CodeRenderingContext context) {
 
             // 基底クラス
@@ -67,10 +68,6 @@ namespace Nijo.Models.WriteModel2Features {
 
             // JSONコンバータ
             context.UseSummarizedFile<Parts.Utility.UtilityClass>().AddJsonConverter(RenderJsonDeserialization());
-
-            // データ種別列挙体
-            context.CoreLibrary.Enums.Add(RenderDataTypeEnumCs());
-            context.ReactProject.Types.Add(RenderDataTypeEnumTs());
 
             // 追加更新削除区分
             context.CoreLibrary.Enums.Add(RenderAddModDelEnum());
@@ -237,45 +234,6 @@ namespace Nijo.Models.WriteModel2Features {
                 }
                 """,
         };
-
-
-        #region データ種別
-        /// <summary>
-        /// データ種別の列挙体（C#）
-        /// </summary>
-        private string RenderDataTypeEnumCs() {
-            return $$"""
-                /// <summary>一括更新の際に必要になる、そのオブジェクトがどの集約のデータの更新なのかを示す種別名</summary>
-                public enum {{DATA_TYPE_ENUM_CS}} {
-                {{_aggregates.SelectTextTemplate(agg => $$"""
-                    {{GetEnumValueOf(agg)}},
-                """)}}
-                }
-                """;
-        }
-
-        /// <summary>
-        /// データ種別の列挙体（TypeScript）
-        /// </summary>
-        private string RenderDataTypeEnumTs() {
-            if (_aggregates.Count == 0) {
-                return $$"""
-                    /** 一括更新の際に必要になる、そのオブジェクトがどの集約のデータの更新なのかを示す種別名 */
-                    export type {{DATA_TYPE_ENUM_TS}} = never
-                    """;
-
-            } else {
-                return $$"""
-                    /** 一括更新の際に必要になる、そのオブジェクトがどの集約のデータの更新なのかを示す種別名 */
-                    export type {{DATA_TYPE_ENUM_TS}}
-                    {{_aggregates.SelectTextTemplate((agg, i) => $$"""
-                      {{(i == 0 ? "=" : "|")}} '{{GetEnumValueOf(agg)}}'
-                    """)}}
-                    """;
-
-            }
-        }
-        #endregion データ種別
 
 
         #region 追加更新削除区分

@@ -19,6 +19,8 @@ namespace Nijo.Models.ReadModel2Features {
         }
         internal GraphNode<Aggregate> Aggregate { get; }
 
+        internal const string BASE_CLASS_NAME = "DisplayDataClassBase";
+
         /// <summary>C#クラス名</summary>
         internal string CsClassName => $"{Aggregate.Item.PhysicalName}DisplayData";
         /// <summary>TypeScript型名</summary>
@@ -125,6 +127,22 @@ namespace Nijo.Models.ReadModel2Features {
 
 
         /// <summary>
+        /// C#の基底クラスをレンダリングします。
+        /// </summary>
+        internal static SourceFile RenderBaseClass() => new SourceFile {
+            FileName = "DisplayDataClassBase.cs",
+            RenderContent = context => {
+                return $$"""
+                    /// <summary>
+                    /// 画面表示用データの基底クラス
+                    /// </summary>
+                    public abstract partial class {{BASE_CLASS_NAME}} {
+                    }
+                    """;
+            },
+        };
+
+        /// <summary>
         /// クラス定義をレンダリングします（C#）
         /// </summary>
         internal string RenderCSharpDeclaring(CodeRenderingContext context) {
@@ -132,7 +150,7 @@ namespace Nijo.Models.ReadModel2Features {
                 /// <summary>
                 /// {{Aggregate.Item.DisplayName}}の画面表示用データ構造
                 /// </summary>
-                public partial class {{CsClassName}} {
+                public partial class {{CsClassName}} {{(Aggregate.IsRoot() ? $": {BASE_CLASS_NAME} " : "")}}{
                 {{If(HasInstanceKey, () => $$"""
                     /// <summary>
                     /// インスタンスを一意に表す文字列。新規作成の場合はUUID。閲覧・更新・削除のときは主キーの値の配列のJSON。

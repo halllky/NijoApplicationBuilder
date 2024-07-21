@@ -59,6 +59,7 @@ namespace Nijo.Models {
 
             // ユーティリティクラス等
             context.CoreLibrary.UtilDir(dir => {
+                dir.Generate(DataClassForDisplay.RenderBaseClass());
                 dir.Generate(MessageContainer.RenderCSharp());
                 dir.Generate(ReadOnlyInfo.RenderCSharp());
             });

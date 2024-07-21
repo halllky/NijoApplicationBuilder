@@ -39,10 +39,10 @@ namespace Nijo.Models.WriteModel2Features {
         internal const string HOOK_NAME = "useBatchUpdate";
         internal const string HOOK_PARAM_ITEMS = "Items";
 
-        private const string CONTROLLER_SUBDOMAIN = "batch-update";
+        internal const string CONTROLLER_SUBDOMAIN = "batch-update";
         private const string CONTROLLER_ACTION_IMMEDIATELY = "immediately";
 
-        private const string APPSRV_METHOD = "ExecuteBatchUpdate";
+        internal const string APPSRV_METHOD = "ExecuteBatchUpdate";
 
         int ISummarizedFile.RenderingOrder => 100; // BatchUpdateDisplayDataでマイナス1したときに既定値である0を下回るのがなんとなく不安だったので
         void ISummarizedFile.OnEndGenerating(CodeRenderingContext context) {
@@ -73,7 +73,7 @@ namespace Nijo.Models.WriteModel2Features {
                 {{_additionalHooks.Values.SelectTextTemplate(code => $$"""
                   {{WithIndent(code, "  ")}}
 
-                """)}}CodeRenderingContext context
+                """)}}
                   return {
                     batchUpdateImmediately,
                 {{_additionalHooks.Keys.SelectTextTemplate(hookName => $$"""
@@ -162,12 +162,16 @@ namespace Nijo.Models.WriteModel2Features {
 
             return $$"""
                 #region 一括更新
+                {{_additionalAppSrvMethods.SelectTextTemplate(code => $$"""
+                {{code}}
+
+                """)}}
                 /// <summary>
                 /// データ一括更新を実行します。
                 /// </summary>
                 /// <param name="items">更新データ</param>
                 /// <param name="saveContext">コンテキスト引数。エラーや警告の送出はこのオブジェクトを通して行なってください。</param>
-                public void {{APPSRV_METHOD}}(IEnumerable<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}> items, {{BatchUpdateContext.CLASS_NAME}} saveContext) {
+                public virtual void {{APPSRV_METHOD}}(IEnumerable<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}> items, {{BatchUpdateContext.CLASS_NAME}} saveContext) {
 
                     // パラメータの各要素の型を仕分けてそれぞれの配列に格納する
                 {{sortedAggregates.SelectTextTemplate(agg => $$"""
@@ -212,10 +216,6 @@ namespace Nijo.Models.WriteModel2Features {
                     foreach (var item in {{agg.UpdateItems}}) {{agg.Update}}(item, saveContext);
                 """)}}
                 }
-                {{_additionalAppSrvMethods.SelectTextTemplate(code => $$"""
-
-                {{code}}
-                """)}}
                 #endregion 一括更新
                 """;
         }
