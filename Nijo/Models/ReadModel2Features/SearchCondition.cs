@@ -19,6 +19,19 @@ namespace Nijo.Models.ReadModel2Features {
 
         internal virtual string CsClassName => $"{_aggregate.Item.PhysicalName}SearchCondition";
         internal virtual string TsTypeName => $"{_aggregate.Item.PhysicalName}SearchCondition";
+        internal virtual string CsFilterClassName => $"{_aggregate.Item.PhysicalName}SearchConditionFilter";
+        internal virtual string TsFilterTypeName => $"{_aggregate.Item.PhysicalName}SearchConditionFilter";
+
+        internal const string KEYWORD_CS = "Keyword";
+        internal const string KEYWORD_TS = "keyword";
+        internal const string FILTER_CS = "Filter";
+        internal const string FILTER_TS = "filter";
+        internal const string SORT_CS = "Sort";
+        internal const string SORT_TS = "sort";
+        internal const string SKIP_CS = "Skip";
+        internal const string SKIP_TS = "skip";
+        internal const string TAKE_CS = "Take";
+        internal const string TAKE_TS = "take";
 
         /// <summary>
         /// この集約自身がもつ検索条件を列挙します。
@@ -42,6 +55,34 @@ namespace Nijo.Models.ReadModel2Features {
                           || rm is AggregateMember.VariationItem
                           || rm is AggregateMember.Ref)
                 .Select(rm => new DescendantSearchCondition(rm));
+        }
+        /// <summary>
+        /// 並び順に指定することができるメンバーを列挙します。
+        /// </summary>
+        private IEnumerable<SearchConditionMember> EnumerateSortMembers() {
+            foreach (var ownMember in GetOwnMembers()) {
+                yield return ownMember;
+            }
+            foreach (var child in GetChildMembers()) {
+                // 子配列の要素でのソートは論理的に定義できない
+                if (child._aggregate.IsChildrenMember()) continue;
+
+                foreach (var childMember in child.EnumerateSortMembers()) {
+                    yield return childMember;
+                }
+            }
+        }
+        /// <summary>
+        /// '子要素.孫要素.プロパティ名::DESC' のような並び順候補の文字列を列挙します。
+        /// </summary>
+        private IEnumerable<string> EnumerateSortLiteral() {
+            foreach (var member in EnumerateSortMembers()) {
+                var fullpath = member.Member
+                    .GetFullPathAsSearchConditionFilter(E_CsTs.CSharp)
+                    .Skip(1); // "Filter"という名称を除外
+                yield return $"{fullpath.Join(".")}::ASC";  // 昇順
+                yield return $"{fullpath.Join(".")}::DESC"; // 降順
+            }
         }
 
         internal string RenderCSharpDeclaringRecursively(CodeRenderingContext context) {
@@ -69,15 +110,37 @@ namespace Nijo.Models.ReadModel2Features {
         }
         protected virtual string RenderCSharpDeclaring(CodeRenderingContext context) {
             return $$"""
+                {{If(_aggregate.IsRoot(), () => $$"""
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}の一覧検索条件
                 /// </summary>
                 public partial class {{CsClassName}} {
+                    /// <summary>絞り込み条件（キーワード検索）</summary>
+                    [JsonPropertyName("{{KEYWORD_TS}}")]
+                    public string? {{KEYWORD_CS}} { get; set; }
+                    /// <summary>絞り込み条件</summary>
+                    [JsonPropertyName("{{FILTER_TS}}")]
+                    public virtual {{CsFilterClassName}} {{FILTER_CS}} { get; set; } = new();
+                    /// <summary>並び順</summary>
+                    [JsonPropertyName("{{SORT_TS}}")]
+                    public virtual List<string> {{SORT_CS}} { get; set; } = new();
+                    /// <summary>先頭から何件スキップするか</summary>
+                    [JsonPropertyName("{{SKIP_TS}}")]
+                    public virtual int? {{SKIP_CS}} { get; set; }
+                    /// <summary>最大何件取得するか</summary>
+                    [JsonPropertyName("{{TAKE_TS}}")]
+                    public virtual int? {{TAKE_CS}} { get; set; }
+                }
+                """)}}
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}}の一覧検索条件のうち絞り込み条件を指定する部分
+                /// </summary>
+                public partial class {{CsFilterClassName}} {
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
                     public virtual {{m.CsTypeName}}? {{m.MemberName}} { get; set; }
                 """)}}
                 {{GetChildMembers().SelectTextTemplate(m => $$"""
-                    public virtual {{m.CsClassName}} {{m.MemberName}} { get; set; } = new();
+                    public virtual {{m.CsFilterClassName}} {{m.MemberName}} { get; set; } = new();
                 """)}}
                 }
                 """;
@@ -105,14 +168,43 @@ namespace Nijo.Models.ReadModel2Features {
                 """;
         }
         protected virtual string RenderTypeScriptDeclaring(CodeRenderingContext context) {
+            var sortLiteral = EnumerateSortLiteral()
+                .Select(x => $"'{x}'")
+                .ToArray();
+            var last = sortLiteral.Length - 1;
+            var sortType = sortLiteral.Length == 0
+                ? "never[]"
+                : $$"""
+                    (
+                    {{sortLiteral.SelectTextTemplate((sortLiteral, i) => $$"""
+                      {{sortLiteral}}{{(i == last ? "" : " |")}}
+                    """)}}
+                    )[]
+                    """;
+
             return $$"""
+                {{If(_aggregate.IsRoot(), () => $$"""
                 /** {{_aggregate.Item.DisplayName}}の一覧検索条件 */
                 export type {{TsTypeName}} = {
+                  /** 絞り込み条件（キーワード検索） */
+                  {{KEYWORD_TS}}?: string
+                  /** 絞り込み条件 */
+                  {{FILTER_TS}}?: {{TsFilterTypeName}}
+                  /** 並び順 */
+                  {{SORT_TS}}?: {{WithIndent(sortType, "  ")}}
+                  /** 先頭から何件スキップするか */
+                  {{SKIP_TS}}?: number
+                  /** 最大何件取得するか */
+                  {{TAKE_TS}}?: number
+                }
+                """)}}
+                /** {{_aggregate.Item.DisplayName}}の一覧検索条件のうち絞り込み条件を指定する部分 */
+                export type {{TsFilterTypeName}} = {
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
                   {{m.MemberName}}?: {{m.TsTypeName}}
                 """)}}
                 {{GetChildMembers().SelectTextTemplate(m => $$"""
-                  {{m.MemberName}}: {{m.TsTypeName}}
+                  {{m.MemberName}}: {{m.TsFilterTypeName}}
                 """)}}
                 }
                 """;
@@ -143,12 +235,52 @@ namespace Nijo.Models.ReadModel2Features {
 
     internal class SearchConditionMember {
         internal SearchConditionMember(AggregateMember.ValueMember vm) {
-            _vm = vm;
+            Member = vm;
         }
-        private readonly AggregateMember.ValueMember _vm;
+        internal AggregateMember.ValueMember Member { get; }
 
-        internal string MemberName => _vm.MemberName;
-        internal string CsTypeName => _vm.Options.MemberType.GetSearchConditionCSharpType();
-        internal string TsTypeName => _vm.Options.MemberType.GetSearchConditionTypeScriptType();
+        internal string MemberName => Member.MemberName;
+        internal string CsTypeName => Member.Options.MemberType.GetSearchConditionCSharpType();
+        internal string TsTypeName => Member.Options.MemberType.GetSearchConditionTypeScriptType();
+    }
+
+
+    internal static partial class GetFullPathExtensions {
+        /// <summary>
+        /// エントリーからのパスを <see cref="SearchCondition"/> のインスタンスの型のルールにあわせて返す。
+        /// </summary>
+        internal static IEnumerable<string> GetFullPathAsSearchConditionFilter(this GraphNode<Aggregate> aggregate, E_CsTs csts, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+            var entry = aggregate.GetEntry();
+
+            var path = aggregate.PathFromEntry();
+            if (since != null) path = path.Since(since);
+            if (until != null) path = path.Until(until);
+
+            foreach (var edge in path) {
+                if (edge.Initial == entry) {
+                    yield return csts == E_CsTs.CSharp
+                        ? SearchCondition.FILTER_CS
+                        : SearchCondition.FILTER_TS;
+                }
+                yield return edge.RelationName;
+            }
+        }
+        /// <summary>
+        /// エントリーからのパスを <see cref="SearchCondition"/> のインスタンスの型のルールにあわせて返す。
+        /// </summary>
+        internal static IEnumerable<string> GetFullPathAsSearchConditionFilter(this AggregateMember.AggregateMemberBase member, E_CsTs csts, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+            var fullpath = member.Owner
+                .GetFullPathAsSearchConditionFilter(csts, since, until)
+                .ToArray();
+            if (fullpath.Length == 0) {
+                yield return csts == E_CsTs.CSharp
+                    ? SearchCondition.FILTER_CS
+                    : SearchCondition.FILTER_TS;
+            }
+            foreach (var path in fullpath) {
+                yield return path;
+            }
+            yield return member.MemberName;
+        }
     }
 }
