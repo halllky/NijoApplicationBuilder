@@ -81,25 +81,20 @@ namespace Nijo.Models.ReadModel2Features {
             foreach (var member in EnumerateSortMembers()) {
                 yield return member;
             }
-            foreach (var childMember in GetChildMembers().SelectMany(child => child.EnumerateSortMembersRecursively())) {
-                yield return childMember;
+            foreach (var child in GetChildMembers()) {
+                // 子配列の要素でのソートは論理的に定義できない
+                if (child._aggregate.IsChildrenMember()) continue;
+
+                foreach (var childMember in child.EnumerateSortMembersRecursively()) {
+                    yield return childMember;
+                }
             }
         }
         /// <summary>
         /// 並び順に指定することができるメンバーを列挙します。
         /// </summary>
         private IEnumerable<SearchConditionMember> EnumerateSortMembers() {
-            foreach (var ownMember in GetOwnMembers()) {
-                yield return ownMember;
-            }
-            foreach (var child in GetChildMembers()) {
-                // 子配列の要素でのソートは論理的に定義できない
-                if (child._aggregate.IsChildrenMember()) continue;
-
-                foreach (var childMember in child.EnumerateSortMembers()) {
-                    yield return childMember;
-                }
-            }
+            return GetOwnMembers();
         }
         /// <summary>
         /// '子要素.孫要素.プロパティ名::ASC' のような並び順候補の文字列を返します。
@@ -199,7 +194,7 @@ namespace Nijo.Models.ReadModel2Features {
         }
         protected virtual string RenderTypeScriptDeclaring(CodeRenderingContext context) {
             var sortLiteral = new List<string>();
-            foreach (var sortMember in EnumerateSortMembers()) {
+            foreach (var sortMember in EnumerateSortMembersRecursively()) {
                 sortLiteral.Add($"'{GetSortLiteral(sortMember, E_AscDesc.ASC)}'");
                 sortLiteral.Add($"'{GetSortLiteral(sortMember, E_AscDesc.DESC)}'");
             }

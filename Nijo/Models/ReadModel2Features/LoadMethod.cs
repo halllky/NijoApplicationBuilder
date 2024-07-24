@@ -184,6 +184,15 @@ namespace Nijo.Models.ReadModel2Features {
 
             var argType = new SearchCondition(_aggregate);
             var returnType = new DataClassForDisplay(_aggregate);
+            var searchResult = new SearchResult(_aggregate);
+            var sortMemberePaths = argType
+                .EnumerateSortMembersRecursively()
+                .Select(m => new {
+                    AscLiteral = SearchCondition.GetSortLiteral(m, E_AscDesc.ASC),
+                    DescLiteral = SearchCondition.GetSortLiteral(m, E_AscDesc.DESC),
+                    Path = m.Member.Declared.GetFullPathAsSearchResult().Join("."),
+                })
+                .ToArray();
 
             return $$"""
                 /// <summary>
@@ -192,15 +201,40 @@ namespace Nijo.Models.ReadModel2Features {
                 public virtual IEnumerable<{{returnType.CsClassName}}> {{AppSrvLoadMethod}}({{argType.CsClassName}} searchCondition) {
                     var query = {{AppSrvCreateQueryMethod}}(searchCondition);
 
+                #pragma warning disable CS8602 // null 参照の可能性があるものの逆参照です。
                 {{argType.EnumerateFilterMembersRecursively().SelectTextTemplate(m => $$"""
                     // #35 フィルタリング
                 """)}}
+                #pragma warning restore CS8602 // null 参照の可能性があるものの逆参照です。
 
-                {{argType.EnumerateSortMembersRecursively().SelectTextTemplate(m => $$"""
-                    // #35 ソート
+                    // ソート
+                #pragma warning disable CS8602 // null 参照の可能性があるものの逆参照です。
+                    IOrderedQueryable<{{searchResult.CsClassName}}>? sorted = null;
+                    foreach (var sortOption in searchCondition.{{SearchCondition.SORT_CS}}) {
+                {{sortMemberePaths.SelectTextTemplate((m, i) => $$"""
+                        {{(i == 0 ? "if" : "} else if")}} (sortOption == "{{m.AscLiteral}}") {
+                            sorted = sorted == null
+                                ? query.OrderBy(e => e.{{m.Path}})
+                                : sorted.ThenBy(e => e.{{m.Path}});
+                        } else if (sortOption == "{{m.DescLiteral}}") {
+                            sorted = sorted == null
+                                ? query.OrderByDescending(e => e.{{m.Path}})
+                                : sorted.ThenByDescending(e => e.{{m.Path}});
+
                 """)}}
+                {{If(sortMemberePaths.Length > 0, () => $$"""
+                        }
+                """)}}
+                    }
+                #pragma warning restore CS8602 // null 参照の可能性があるものの逆参照です。
 
-                    // #35 ページング
+                    // ページング
+                    if (searchCondition.{{SearchCondition.SKIP_CS}} != null) {
+                        query = query.Skip(searchCondition.{{SearchCondition.SKIP_CS}}.Value);
+                    }
+                    if (searchCondition.{{SearchCondition.TAKE_CS}} != null) {
+                        query = query.Take(searchCondition.{{SearchCondition.TAKE_CS}}.Value);
+                    }
 
                     // 検索結果を画面表示用の型に変換
                     var displayDataList = query.AsEnumerable().Select(searchResult => {{WithIndent(RenderNewDisplayData(returnType, "searchResult", _aggregate), "    ")}});

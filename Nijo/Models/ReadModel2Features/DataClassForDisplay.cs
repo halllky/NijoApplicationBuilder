@@ -89,9 +89,9 @@ namespace Nijo.Models.ReadModel2Features {
         internal const string WILL_BE_DELETED_TS = "willBeDeleted";
 
         /// <summary>楽観排他制御用のバージョニング情報をもつプロパティの名前（C#側）</summary>
-        internal const string VERSION_CS = "_Version";
+        internal const string VERSION_CS = "Version";
         /// <summary>楽観排他制御用のバージョニング情報をもつプロパティの名前（TypeScript側）</summary>
-        internal const string VERSION_TS = "_version";
+        internal const string VERSION_TS = "version";
 
         /// <summary>
         /// 追加・更新・削除のタイミングが親要素と異なるか否か
