@@ -1,5 +1,6 @@
 using Nijo.Core;
 using Nijo.Models.ReadModel2Features;
+using Nijo.Parts.Utility;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
@@ -23,6 +24,10 @@ namespace Nijo.Models {
             context.ReactProject.Types.Add(rootAggregate, condition.RenderTypeScriptDeclaringRecursively(context));
 
             foreach (var agg in rootAggregate.EnumerateThisAndDescendants()) {
+                // データ型: 検索結果クラス
+                var searchResult = new SearchResult(agg);
+                aggregateFile.DataClassDeclaring.Add(searchResult.RenderCSharpDeclaring(context));
+
                 // データ型: ビュークラス
                 var displayData = new DataClassForDisplay(agg);
                 aggregateFile.DataClassDeclaring.Add(displayData.RenderCSharpDeclaring(context));
@@ -62,6 +67,7 @@ namespace Nijo.Models {
                 dir.Generate(DataClassForDisplay.RenderBaseClass());
                 dir.Generate(MessageContainer.RenderCSharp());
                 dir.Generate(ReadOnlyInfo.RenderCSharp());
+                dir.Generate(InstanceKey.RenderCSharp());
             });
         }
     }

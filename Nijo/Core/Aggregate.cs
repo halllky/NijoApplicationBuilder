@@ -145,7 +145,8 @@ namespace Nijo.Core {
         internal static bool IsStored(this GraphNode<Aggregate> aggregate) {
             var handler = aggregate.GetRoot().Item.Options.Handler;
             return handler == NijoCodeGenerator.Models.WriteModel.Key
-                || handler == NijoCodeGenerator.Models.ReadModel.Key;
+                || handler == NijoCodeGenerator.Models.ReadModel.Key
+                || handler == NijoCodeGenerator.Models.WriteModel2.Key;
         }
 
         /// <summary>

@@ -56,6 +56,35 @@ namespace Nijo.Models.ReadModel2Features {
                           || rm is AggregateMember.Ref)
                 .Select(rm => new DescendantSearchCondition(rm));
         }
+
+
+        #region フィルタリング
+        /// <summary>
+        /// 絞り込みに指定することができるメンバーを、子孫要素や参照先のそれも含めて列挙します。
+        /// </summary>
+        internal IEnumerable<SearchConditionMember> EnumerateFilterMembersRecursively() {
+            foreach (var member in GetOwnMembers()) {
+                yield return member;
+            }
+            foreach (var childMember in GetChildMembers().SelectMany(child => child.EnumerateFilterMembersRecursively())) {
+                yield return childMember;
+            }
+        }
+        #endregion フィルタリング
+
+
+        #region ソート
+        /// <summary>
+        /// 並び順に指定することができるメンバーを、子孫要素や参照先のそれも含めて列挙します。
+        /// </summary>
+        internal IEnumerable<SearchConditionMember> EnumerateSortMembersRecursively() {
+            foreach (var member in EnumerateSortMembers()) {
+                yield return member;
+            }
+            foreach (var childMember in GetChildMembers().SelectMany(child => child.EnumerateSortMembersRecursively())) {
+                yield return childMember;
+            }
+        }
         /// <summary>
         /// 並び順に指定することができるメンバーを列挙します。
         /// </summary>
@@ -73,17 +102,18 @@ namespace Nijo.Models.ReadModel2Features {
             }
         }
         /// <summary>
-        /// '子要素.孫要素.プロパティ名::DESC' のような並び順候補の文字列を列挙します。
+        /// '子要素.孫要素.プロパティ名::ASC' のような並び順候補の文字列を返します。
         /// </summary>
-        private IEnumerable<string> EnumerateSortLiteral() {
-            foreach (var member in EnumerateSortMembers()) {
-                var fullpath = member.Member
-                    .GetFullPathAsSearchConditionFilter(E_CsTs.CSharp)
-                    .Skip(1); // "Filter"という名称を除外
-                yield return $"{fullpath.Join(".")}::ASC";  // 昇順
-                yield return $"{fullpath.Join(".")}::DESC"; // 降順
-            }
+        internal static string GetSortLiteral(SearchConditionMember member, E_AscDesc ascDesc) {
+            var fullpath = member.Member
+                .GetFullPathAsSearchConditionFilter(E_CsTs.CSharp)
+                .Skip(1); // "Filter"という名称を除外
+            return ascDesc == E_AscDesc.ASC
+                ? $"{fullpath.Join(".")}::ASC"
+                : $"{fullpath.Join(".")}::DESC";
         }
+        #endregion ソート
+
 
         internal string RenderCSharpDeclaringRecursively(CodeRenderingContext context) {
             var descendants = _aggregate
@@ -168,11 +198,13 @@ namespace Nijo.Models.ReadModel2Features {
                 """;
         }
         protected virtual string RenderTypeScriptDeclaring(CodeRenderingContext context) {
-            var sortLiteral = EnumerateSortLiteral()
-                .Select(x => $"'{x}'")
-                .ToArray();
-            var last = sortLiteral.Length - 1;
-            var sortType = sortLiteral.Length == 0
+            var sortLiteral = new List<string>();
+            foreach (var sortMember in EnumerateSortMembers()) {
+                sortLiteral.Add($"'{GetSortLiteral(sortMember, E_AscDesc.ASC)}'");
+                sortLiteral.Add($"'{GetSortLiteral(sortMember, E_AscDesc.DESC)}'");
+            }
+            var last = sortLiteral.Count - 1;
+            var sortType = sortLiteral.Count == 0
                 ? "never[]"
                 : $$"""
                     (

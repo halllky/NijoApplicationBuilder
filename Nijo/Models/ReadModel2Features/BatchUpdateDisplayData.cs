@@ -89,7 +89,7 @@ namespace Nijo.Models.ReadModel2Features {
                 {{_aggregates.Select(agg => new { Aggregate = agg, DataClass = new DataClassForDisplay(agg) }).SelectTextTemplate(x => $$"""
                         if (dataType == "{{GetDataTypeLiteral(x.Aggregate)}}") {
                             return JsonSerializer.Deserialize<{{x.DataClass.CsClassName}}>(value.GetRawText(), options)
-                                ?? throw new InvalidOperationException($"パラメータを{{x.DataClass.CsClassName}}型に変換できません: {value.GetRawText()}"),
+                                ?? throw new InvalidOperationException($"パラメータを{{x.DataClass.CsClassName}}型に変換できません: {value.GetRawText()}");
                         }
                 """)}}
 

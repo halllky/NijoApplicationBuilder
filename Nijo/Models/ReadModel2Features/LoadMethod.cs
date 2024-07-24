@@ -1,4 +1,5 @@
 using Nijo.Core;
+using Nijo.Parts.Utility;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
@@ -24,8 +25,9 @@ namespace Nijo.Models.ReadModel2Features {
         internal const string RELOAD = "reload";
 
         private const string CONTROLLER_ACTION = "load";
-        private string AppSrvCreateQueryMethod => $"Create{_aggregate.Item.PhysicalName}QuerySource";
         private string AppSrvLoadMethod => $"Load{_aggregate.Item.PhysicalName}";
+        internal string AppSrvCreateQueryMethod => $"Create{_aggregate.Item.PhysicalName}QuerySource";
+        private string AppSrvAfterLoadedMethod => $"OnAfter{_aggregate.Item.PhysicalName}Loaded";
 
         /// <summary>
         /// クライアント側から検索処理を呼び出すReact hook をレンダリングします。
@@ -89,7 +91,8 @@ namespace Nijo.Models.ReadModel2Features {
         /// </summary>
         internal string RenderAppSrvAbstractMethod(CodeRenderingContext context) {
             var searchCondition = new SearchCondition(_aggregate);
-            var searchResult = new DataClassForDisplay(_aggregate);
+            var searchResult = new SearchResult(_aggregate);
+            var forDisplay = new DataClassForDisplay(_aggregate);
 
             return $$"""
                 /// <summary>
@@ -112,6 +115,17 @@ namespace Nijo.Models.ReadModel2Features {
                     // このメソッドをオーバーライドしてソース定義処理を記述してください。
                     return Enumerable.Empty<{{searchResult.CsClassName}}>().AsQueryable();
                 }
+
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}}の画面表示用データの、インメモリでのカスタマイズ処理。
+                /// 任意の項目のC#上での計算、読み取り専用項目の設定、画面に表示するメッセージの設定などを行います。
+                /// この処理はSQLに変換されるのではなくインメモリ上で実行されるため、
+                /// データベースから読み込んだデータにしかアクセスできない代わりに、
+                /// C#のメソッドやインターフェースなどを無制限に利用することができます。
+                /// </summary>
+                protected virtual {{forDisplay.CsClassName}} {{AppSrvAfterLoadedMethod}}({{forDisplay.CsClassName}} searchResult) {
+                    return searchResult;
+                }
                 """;
         }
 
@@ -122,21 +136,78 @@ namespace Nijo.Models.ReadModel2Features {
         /// パラメータのskip, take によるページングを行います。
         /// </summary>
         internal string RenderAppSrvBaseMethod(CodeRenderingContext context) {
-            var searchCondition = new SearchCondition(_aggregate);
-            var searchResult = new DataClassForDisplay(_aggregate);
+            var pkDict = new Dictionary<AggregateMember.ValueMember, string>();
+
+            string RenderNewDisplayData(DataClassForDisplay forDisplay, string instance, GraphNode<Aggregate> instanceAgg) {
+                // 主キー。レンダリング中の集約がChildrenの場合は親のキーをラムダ式の外の変数から参照する必要がある
+                var keys = new List<string>();
+                foreach (var key in forDisplay.Aggregate.GetKeys().OfType<AggregateMember.ValueMember>()) {
+                    if (!pkDict.TryGetValue(key.Declared, out var keyString)) {
+                        keyString = $"{instance}.{key.Declared.GetFullPathAsSearchResult(instanceAgg).Join("?.")}";
+                        pkDict.Add(key, keyString);
+                    }
+                    keys.Add(keyString);
+                }
+
+                var searchResultMembers = new SearchResult(forDisplay.Aggregate)
+                    .GetOwnMembers()
+                    .ToArray();
+                var depth = forDisplay.Aggregate
+                    .EnumerateAncestors()
+                    .Count();
+                var loopVar = depth == 0 ? "item" : $"item{depth}";
+
+                return $$"""
+                    new {{forDisplay.CsClassName}} {
+                    {{If(forDisplay.HasInstanceKey, () => $$"""
+                        {{DataClassForDisplay.INSTANCE_KEY_CS}} = {{InstanceKey.CS_CLASS_NAME}}.{{InstanceKey.FROM_PK}}({{keys.Join(", ")}}),
+                    """)}}
+                    {{If(forDisplay.HasLifeCycle, () => $$"""
+                        {{DataClassForDisplay.EXISTS_IN_DB_CS}} = true,
+                        {{DataClassForDisplay.WILL_BE_CHANGED_CS}} = false,
+                        {{DataClassForDisplay.WILL_BE_DELETED_CS}} = false,
+                        {{DataClassForDisplay.VERSION_CS}} = {{instance}}.{{SearchResult.VERSION}},
+                    """)}}
+                        {{DataClassForDisplay.VALUES_CS}} = new {{forDisplay.ValueCsClassName}} {
+                    {{forDisplay.GetOwnMembers().SelectTextTemplate(m1 => $$"""
+                            {{m1.MemberName}} = {{instance}}.{{searchResultMembers.Single(m2 => m2 == m1).GetFullPathAsSearchResult(instanceAgg).Join("?.")}},
+                    """)}}
+                        },
+                    {{forDisplay.GetChildMembers().SelectTextTemplate(child => child.IsArray ? $$"""
+                        {{child.MemberName}} = {{instance}}.{{child.GetFullPath(instanceAgg).Join("?.")}}?.Select({{loopVar}} => {{WithIndent(RenderNewDisplayData(child, loopVar, child.Aggregate), "    ")}}).ToList() ?? [],
+                    """ : $$"""
+                        {{child.MemberName}} = {{WithIndent(RenderNewDisplayData(child, instance, instanceAgg), "    ")}},
+                    """)}}
+                    }
+                    """;
+            }
+
+            var argType = new SearchCondition(_aggregate);
+            var returnType = new DataClassForDisplay(_aggregate);
 
             return $$"""
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}の一覧検索を行います。
                 /// </summary>
-                public virtual IEnumerable<{{searchResult.CsClassName}}> {{AppSrvLoadMethod}}({{searchCondition.CsClassName}} searchCondition) {
+                public virtual IEnumerable<{{returnType.CsClassName}}> {{AppSrvLoadMethod}}({{argType.CsClassName}} searchCondition) {
                     var query = {{AppSrvCreateQueryMethod}}(searchCondition);
 
+                {{argType.EnumerateFilterMembersRecursively().SelectTextTemplate(m => $$"""
                     // #35 フィルタリング
+                """)}}
+
+                {{argType.EnumerateSortMembersRecursively().SelectTextTemplate(m => $$"""
                     // #35 ソート
+                """)}}
+
                     // #35 ページング
 
-                    return query.AsEnumerable();
+                    // 検索結果を画面表示用の型に変換
+                    var displayDataList = query.AsEnumerable().Select(searchResult => {{WithIndent(RenderNewDisplayData(returnType, "searchResult", _aggregate), "    ")}});
+
+                    // 読み取り専用項目の設定や追加情報などを付す
+                    var returnValue = displayDataList.Select({{AppSrvAfterLoadedMethod}});
+                    return returnValue;
                 }
                 """;
         }

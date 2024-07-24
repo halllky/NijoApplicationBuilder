@@ -1,5 +1,6 @@
 using Nijo.Core;
 using Nijo.Models.WriteModel2Features.ForRef;
+using Nijo.Parts.Utility;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
@@ -31,7 +32,7 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>値が格納されるプロパティの名前（TypeScript）</summary>
         internal const string VALUES_TS = "values";
         /// <summary>値クラス名</summary>
-        internal string ValueClassName => $"{CsClassName}Values";
+        internal string ValueCsClassName => $"{CsClassName}Values";
 
         /// <summary>メッセージ情報が格納されるプロパティの名前（C#）</summary>
         internal const string MESSAGES_CS = "Messages";
@@ -108,10 +109,15 @@ namespace Nijo.Models.ReadModel2Features {
         /// </summary>
         /// <returns></returns>
         internal IEnumerable<AggregateMember.AggregateMemberBase> GetOwnMembers() {
-            return Aggregate
-                .GetMembers()
-                .Where(m => m.DeclaringAggregate == Aggregate
-                         && m is not AggregateMember.Parent);
+            foreach (var member in Aggregate.GetMembers()) {
+                if (member is AggregateMember.ValueMember) {
+                    if (member.DeclaringAggregate == Aggregate) yield return member;
+
+                } else if (member is AggregateMember.Ref) {
+                    yield return member;
+
+                }
+            }
         }
         /// <summary>
         /// 子要素の画面表示用クラスを列挙します。
@@ -158,18 +164,18 @@ namespace Nijo.Models.ReadModel2Features {
                     /// 別途何らかの識別子を設けないと同一性を判定する方法が無いため、この項目が必要になる。
                     /// </summary>
                     [JsonPropertyName("{{INSTANCE_KEY_TS}}")]
-                    public required virtual string {{INSTANCE_KEY_CS}} { get; set; }
+                    public required virtual {{InstanceKey.CS_CLASS_NAME}} {{INSTANCE_KEY_CS}} { get; set; }
                 """)}}
 
                     /// <summary>値</summary>
                     [JsonPropertyName("{{VALUES_TS}}")]
-                    public virtual {{ValueClassName}} {{VALUES_CS}} { get; set; } = new();
+                    public virtual {{ValueCsClassName}} {{VALUES_CS}} { get; set; } = new();
                 {{GetChildMembers().SelectTextTemplate(member => member.Aggregate.IsChildrenMember() ? $$"""
                     /// <summary>{{member.Aggregate.Item.DisplayName}}</summary>
-                    public virtual List<{{member.CsClassName}}> {{member.MemberInfo.MemberName}} { get; set; } = new();
+                    public virtual List<{{member.CsClassName}}> {{member.MemberName}} { get; set; } = new();
                 """ : $$"""
                     /// <summary>{{member.Aggregate.Item.DisplayName}}</summary>
-                    public virtual {{member.CsClassName}} {{member.MemberInfo.MemberName}} { get; set; } = new();
+                    public virtual {{member.CsClassName}} {{member.MemberName}} { get; set; } = new();
                 """)}}
 
                 {{If(HasLifeCycle, () => $$"""
@@ -218,10 +224,10 @@ namespace Nijo.Models.ReadModel2Features {
                   {{VALUES_TS}}: {{WithIndent(RenderTsValueType(context), "  ")}}
                 {{GetChildMembers().SelectTextTemplate(member => member.Aggregate.IsChildrenMember() ? $$"""
                   /** {{member.Aggregate.Item.DisplayName}} */
-                  {{member.MemberInfo.MemberName}}: {{member.TsTypeName}}[]
+                  {{member.MemberName}}: {{member.TsTypeName}}[]
                 """ : $$"""
                   /** {{member.Aggregate.Item.DisplayName}} */
-                  {{member.MemberInfo.MemberName}}: {{member.TsTypeName}}
+                  {{member.MemberName}}: {{member.TsTypeName}}
                 """)}}
 
                 {{If(HasLifeCycle, () => $$"""
@@ -249,7 +255,7 @@ namespace Nijo.Models.ReadModel2Features {
                 /// <summary>
                 /// {{Aggregate.Item.DisplayName}}の画面表示用データの値の部分
                 /// </summary>
-                public partial class {{ValueClassName}} {
+                public partial class {{ValueCsClassName}} {
                 {{GetOwnMembers().SelectTextTemplate(member => $$"""
                     /// <summary>{{member.MemberName}}</summary>
                     public virtual {{GetMemberCsType(member)}}? {{member.MemberName}} { get; set; }
@@ -335,8 +341,6 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// メンバーのC#型名を返します。null許容演算子は含みません。
         /// </summary>
-        /// <param name="member"></param>
-        /// <returns></returns>
         internal static string GetMemberCsType(AggregateMember.AggregateMemberBase member) {
             if (member is AggregateMember.ValueMember vm) {
                 return vm.Options.MemberType.GetCSharpTypeName();
@@ -349,19 +353,17 @@ namespace Nijo.Models.ReadModel2Features {
                 return refTarget.CsClassName;
 
             } else if (member is AggregateMember.Children children) {
-                var dataClass = new DataClassForDisplay(children.ChildrenAggregate);
-                return dataClass.CsClassName;
+                var dataClass = new DataClassForDisplayDescendant(children);
+                return $"List<{dataClass.CsClassName}>";
 
             } else {
-                var dataClass = new DataClassForDisplay(((AggregateMember.RelationMember)member).MemberAggregate);
+                var dataClass = new DataClassForDisplayDescendant((AggregateMember.RelationMember)member);
                 return dataClass.CsClassName;
             }
         }
         /// <summary>
         /// メンバーのTypeScript型名を返します。
         /// </summary>
-        /// <param name="member"></param>
-        /// <returns></returns>
         internal static string GetMemberTsType(AggregateMember.AggregateMemberBase member) {
             if (member is AggregateMember.ValueMember vm) {
                 return vm.Options.MemberType.GetTypeScriptTypeName();
@@ -374,11 +376,11 @@ namespace Nijo.Models.ReadModel2Features {
                 return refTarget.TsTypeName;
 
             } else if (member is AggregateMember.Children children) {
-                var dataClass = new DataClassForDisplay(children.ChildrenAggregate);
-                return dataClass.TsTypeName;
+                var dataClass = new DataClassForDisplayDescendant(children);
+                return $"{dataClass.TsTypeName}[]";
 
             } else {
-                var dataClass = new DataClassForDisplay(((AggregateMember.RelationMember)member).MemberAggregate);
+                var dataClass = new DataClassForDisplayDescendant((AggregateMember.RelationMember)member);
                 return dataClass.TsTypeName;
             }
         }
@@ -393,5 +395,33 @@ namespace Nijo.Models.ReadModel2Features {
         }
 
         internal AggregateMember.RelationMember MemberInfo { get; }
+
+        internal string MemberName => MemberInfo.MemberName;
+        internal bool IsArray => MemberInfo.MemberAggregate.IsChildrenMember();
+
+        internal IEnumerable<string> GetFullPath(GraphNode<Aggregate>? since = null) {
+            return MemberInfo.GetFullPathAsDataClassForDisplay(since);
+        }
+    }
+
+    partial class GetFullPathExtensions {
+
+        internal static IEnumerable<string> GetFullPathAsDataClassForDisplay(this GraphNode<Aggregate> aggregate, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+            var path = aggregate.PathFromEntry();
+            if (since != null) path = path.Since(since);
+            if (until != null) path = path.Until(until);
+            foreach (var edge in path) {
+                yield return edge.RelationName;
+            }
+        }
+        internal static IEnumerable<string> GetFullPathAsDataClassForDisplay(this AggregateMember.AggregateMemberBase member, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+            var fullpath = member.Owner
+                .GetFullPathAsDataClassForDisplay(since, until)
+                .ToArray();
+            foreach (var path in fullpath) {
+                yield return path;
+            }
+            yield return member.MemberName;
+        }
     }
 }
