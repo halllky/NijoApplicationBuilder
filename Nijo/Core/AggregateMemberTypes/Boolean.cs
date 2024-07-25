@@ -1,4 +1,7 @@
-using Newtonsoft.Json.Linq;
+using Nijo.Models.ReadModel2Features;
+using Nijo.Models.WriteModel2Features;
+using Nijo.Util.CodeGenerating;
+using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,9 +19,6 @@ namespace Nijo.Core.AggregateMemberTypes {
                 Name = "Input.CheckBox",
             };
         }
-
-        public string GetSearchConditionCSharpType() => BOOL_SEARCH_CONDITION_ENUM;
-        public string GetSearchConditionTypeScriptType() => "'指定なし' | 'Trueのみ' | 'Falseのみ'";
 
         public IGridColumnSetting GetGridColumnEditSetting() {
             return new ComboboxColumnSetting {
@@ -52,15 +52,48 @@ namespace Nijo.Core.AggregateMemberTypes {
             };
         }
 
+
         private const string BOOL_SEARCH_CONDITION_ENUM = "E_BoolSearchCondition";
-        void IAggregateMemberType.GenerateCode(Util.CodeGenerating.CodeRenderingContext context) {
+        private const string NO_FILTER = "指定なし";
+        private const string ONLY_TRUE = "Trueのみ";
+        private const string ONLY_FALSE = "Falseのみ";
+
+        public string GetSearchConditionCSharpType() => BOOL_SEARCH_CONDITION_ENUM;
+        public string GetSearchConditionTypeScriptType() => $"'{NO_FILTER}' | '{ONLY_TRUE}' | '{ONLY_FALSE}'";
+
+        void IAggregateMemberType.GenerateCode(CodeRenderingContext context) {
             context.CoreLibrary.Enums.Add($$"""
                 public enum {{BOOL_SEARCH_CONDITION_ENUM}} {
-                    指定なし,
-                    Trueのみ,
-                    Falseのみ,
+                    {{NO_FILTER}},
+                    {{ONLY_TRUE}},
+                    {{ONLY_FALSE}},
                 }
                 """);
+        }
+
+        public string RenderFilteringStatement(SearchConditionMember member, string query, string searchCondition) {
+            var isArray = member.Member.Owner.EnumerateAncestorsAndThis().Any(a => a.IsChildrenMember());
+            var path = member.Member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp);
+            var fullpathNullable = $"{searchCondition}.{path.Join("?.")}";
+            var fullpathNotNull = $"{searchCondition}.{path.Join(".")}";
+            var entityOwnerPath = member.Member.Owner.GetFullPathAsDbEntity().Join(".");
+            var entityMemberPath = member.Member.GetFullPathAsDbEntity().Join(".");
+
+            return $$"""
+                if ({{fullpathNullable}} == {{BOOL_SEARCH_CONDITION_ENUM}}.{{ONLY_TRUE}}) {
+                {{If(isArray, () => $$"""
+                    {{query}} = {{query}}.Where(x => x.{{entityOwnerPath}}.Any(y => y.{{member.MemberName}} == true));
+                """).Else(() => $$"""
+                    {{query}} = {{query}}.Where(x => x.{{entityMemberPath}} == true);
+                """)}}
+                } else if ({{fullpathNullable}} == {{BOOL_SEARCH_CONDITION_ENUM}}.{{ONLY_FALSE}}) {
+                {{If(isArray, () => $$"""
+                    {{query}} = {{query}}.Where(x => x.{{entityOwnerPath}}.Any(y => y.{{member.MemberName}} == false));
+                """).Else(() => $$"""
+                    {{query}} = {{query}}.Where(x => x.{{entityMemberPath}} == false);
+                """)}}
+                }
+                """;
         }
     }
 }

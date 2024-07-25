@@ -1,3 +1,5 @@
+using Nijo.Models.ReadModel2Features;
+using Nijo.Models.WriteModel2Features;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -17,24 +19,6 @@ namespace Nijo.Core.AggregateMemberTypes {
         public string GetCSharpTypeName() => Definition.Name;
         public string GetTypeScriptTypeName() {
             return Definition.Items.Select(x => $"'{x.PhysicalName}'").Join(" | ");
-        }
-
-        public string GetSearchConditionCSharpType() {
-            return SearchConditionEnum;
-        }
-        public string GetSearchConditionTypeScriptType() {
-            return $"{{ {Definition.Items.Select(i => $"{i.PhysicalName}?: boolean").Join(", ")} }}";
-        }
-
-        private string SearchConditionEnum => $"{Definition.Name}SearchCondition";
-        void IAggregateMemberType.GenerateCode(CodeRenderingContext context) {
-            context.CoreLibrary.Enums.Add($$"""
-                public class {{SearchConditionEnum}} {
-                {{Definition.Items.SelectTextTemplate(item => $$"""
-                    public bool {{item.PhysicalName}} { get; set; }
-                """)}}
-                }
-                """);
         }
 
         public ReactInputComponent GetReactComponent() {
@@ -71,6 +55,60 @@ namespace Nijo.Core.AggregateMemberTypes {
                     }
                     """,
             };
+        }
+
+
+        private string SearchConditionEnum => $"{Definition.Name}SearchCondition";
+        private const string ANY_CHECKED = "AnyChecked";
+
+        public string GetSearchConditionCSharpType() {
+            return SearchConditionEnum;
+        }
+        public string GetSearchConditionTypeScriptType() {
+            return $"{{ {Definition.Items.Select(i => $"{i.PhysicalName}?: boolean").Join(", ")} }}";
+        }
+
+        void IAggregateMemberType.GenerateCode(CodeRenderingContext context) {
+            context.CoreLibrary.Enums.Add($$"""
+                /// <summary>{{Definition.Name}}の検索条件クラス</summary>
+                public class {{SearchConditionEnum}} {
+                {{Definition.Items.SelectTextTemplate(item => $$"""
+                    public bool {{item.PhysicalName}} { get; set; }
+                """)}}
+
+                    /// <summary>いずれかの値が選択されているかを返します。</summary>
+                    public bool {{ANY_CHECKED}}() {
+                {{Definition.Items.SelectTextTemplate(item => $$"""
+                        if ({{item.PhysicalName}}) return true;
+                """)}}
+                        return false;
+                    }
+                }
+                """);
+        }
+        public string RenderFilteringStatement(SearchConditionMember member, string query, string searchCondition) {
+            var isArray = member.Member.Owner.EnumerateAncestorsAndThis().Any(a => a.IsChildrenMember());
+            var path = member.Member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp);
+            var fullpathNullable = $"{searchCondition}.{path.Join("?.")}";
+            var fullpathNotNull = $"{searchCondition}.{path.Join(".")}";
+            var entityOwnerPath = member.Member.Owner.GetFullPathAsDbEntity().Join(".");
+            var entityMemberPath = member.Member.GetFullPathAsDbEntity().Join(".");
+            var enumType = GetCSharpTypeName();
+
+            return $$"""
+                if ({{fullpathNullable}} != null && {{fullpathNotNull}}.{{ANY_CHECKED}}()) {
+                    var array = new List<{{enumType}}?>();
+                {{Definition.Items.SelectTextTemplate(item => $$"""
+                    if ({{fullpathNotNull}}.{{item.PhysicalName}}) array.Add({{enumType}}.{{item.PhysicalName}});
+                """)}}
+
+                {{If(isArray, () => $$"""
+                    {{query}} = {{query}}.Where(x => x.{{entityOwnerPath}}.Any(y => array.Contains(y.{{member.MemberName}})));
+                """).Else(() => $$"""
+                    {{query}} = {{query}}.Where(x => array.Contains(x.{{entityMemberPath}}));
+                """)}}
+                }
+                """;
         }
     }
 }

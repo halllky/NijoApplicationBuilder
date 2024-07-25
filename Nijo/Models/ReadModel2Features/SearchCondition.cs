@@ -260,7 +260,7 @@ namespace Nijo.Models.ReadModel2Features {
     }
 
 
-    internal class SearchConditionMember {
+    public class SearchConditionMember {
         internal SearchConditionMember(AggregateMember.ValueMember vm) {
             Member = vm;
         }

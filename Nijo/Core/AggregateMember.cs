@@ -23,7 +23,7 @@ namespace Nijo.Core {
     }
 
 
-    internal static class AggregateMember {
+    public static class AggregateMember {
 
         internal static IOrderedEnumerable<AggregateMemberBase> GetMembers(this GraphNode<Aggregate> aggregate) {
             return aggregate
@@ -153,7 +153,7 @@ namespace Nijo.Core {
         #region MEMBER BASE
         internal const string PARENT_PROPNAME = "Parent";
 
-        internal abstract class AggregateMemberBase : ValueObject {
+        public abstract class AggregateMemberBase : ValueObject {
             internal abstract GraphNode<Aggregate> Owner { get; }
             /// <summary>
             /// TODO: ParentだとDeclaringAggregateは子ではなく親になるのが違和感。

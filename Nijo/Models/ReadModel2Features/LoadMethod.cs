@@ -185,7 +185,9 @@ namespace Nijo.Models.ReadModel2Features {
             var argType = new SearchCondition(_aggregate);
             var returnType = new DataClassForDisplay(_aggregate);
             var searchResult = new SearchResult(_aggregate);
-            var sortMemberePaths = argType
+            var filterMembers = argType
+                .EnumerateFilterMembersRecursively();
+            var sortMembers = argType
                 .EnumerateSortMembersRecursively()
                 .Select(m => new {
                     AscLiteral = SearchCondition.GetSortLiteral(m, E_AscDesc.ASC),
@@ -202,16 +204,20 @@ namespace Nijo.Models.ReadModel2Features {
                     var query = {{AppSrvCreateQueryMethod}}(searchCondition);
 
                 #pragma warning disable CS8602 // null 参照の可能性があるものの逆参照です。
-                {{argType.EnumerateFilterMembersRecursively().SelectTextTemplate(m => $$"""
-                    // #35 フィルタリング
+                #pragma warning disable CS8604 // Null 参照引数の可能性があります。
+                {{filterMembers.SelectTextTemplate(m => $$"""
+                    // フィルタリング: {{m.MemberName}}
+                    {{WithIndent(m.Member.Options.MemberType.RenderFilteringStatement(m, "query", "searchCondition"), "    ")}}
+
                 """)}}
+                #pragma warning restore CS8604 // Null 参照引数の可能性があります。
                 #pragma warning restore CS8602 // null 参照の可能性があるものの逆参照です。
 
                     // ソート
                 #pragma warning disable CS8602 // null 参照の可能性があるものの逆参照です。
                     IOrderedQueryable<{{searchResult.CsClassName}}>? sorted = null;
                     foreach (var sortOption in searchCondition.{{SearchCondition.SORT_CS}}) {
-                {{sortMemberePaths.SelectTextTemplate((m, i) => $$"""
+                {{sortMembers.SelectTextTemplate((m, i) => $$"""
                         {{(i == 0 ? "if" : "} else if")}} (sortOption == "{{m.AscLiteral}}") {
                             sorted = sorted == null
                                 ? query.OrderBy(e => e.{{m.Path}})
@@ -222,7 +228,7 @@ namespace Nijo.Models.ReadModel2Features {
                                 : sorted.ThenByDescending(e => e.{{m.Path}});
 
                 """)}}
-                {{If(sortMemberePaths.Length > 0, () => $$"""
+                {{If(sortMembers.Length > 0, () => $$"""
                         }
                 """)}}
                     }
