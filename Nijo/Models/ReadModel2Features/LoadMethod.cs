@@ -195,6 +195,10 @@ namespace Nijo.Models.ReadModel2Features {
                     Path = m.Member.Declared.GetFullPathAsSearchResult().Join("."),
                 })
                 .ToArray();
+            var keys = _aggregate
+                .GetKeys()
+                .OfType<AggregateMember.ValueMember>()
+                .Select(m => m.Declared.GetFullPathAsSearchResult().Join("."));
 
             return $$"""
                 /// <summary>
@@ -231,6 +235,15 @@ namespace Nijo.Models.ReadModel2Features {
                 {{If(sortMembers.Length > 0, () => $$"""
                         }
                 """)}}
+                    }
+                    if (sorted == null) {
+                {{keys.SelectTextTemplate((path, i) => i == 0 ? $$"""
+                        query = query.OrderBy(e => e.{{path}})
+                """ : $$"""
+                            .ThenBy(e => e.{{path}})
+                """)}};
+                    } else {
+                        query = sorted;
                     }
                 #pragma warning restore CS8602 // null 参照の可能性があるものの逆参照です。
 
