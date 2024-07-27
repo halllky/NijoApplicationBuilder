@@ -7,12 +7,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.Models.RefTo {
+namespace Nijo.Models.WriteModel2Features {
     /// <summary>
-    /// ほかの集約から参照されるときのためのデータクラス
+    /// ほかの集約から参照されるときのためのデータクラス。
+    /// 登録更新に必要なキー情報のみが定義される。
     /// </summary>
-    internal class DataClassForSaveRefTarget {
-        internal DataClassForSaveRefTarget(GraphNode<Aggregate> agg) {
+    internal class DataClassForRefTargetKeys {
+        internal DataClassForRefTargetKeys(GraphNode<Aggregate> agg) {
             _aggregate = agg;
         }
 

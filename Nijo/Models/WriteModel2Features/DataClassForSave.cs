@@ -33,7 +33,7 @@ namespace Nijo.Models.WriteModel2Features {
         internal static string GetMemberTypeNameCSharp(AggregateMember.AggregateMemberBase member, E_Type type) {
             return member switch {
                 AggregateMember.ValueMember vm => vm.Options.MemberType.GetCSharpTypeName(),
-                AggregateMember.Ref @ref => new RefTo.DataClassForSaveRefTarget(@ref.RefTo).CsClassName,
+                AggregateMember.Ref @ref => new DataClassForRefTargetKeys(@ref.RefTo).CsClassName,
                 AggregateMember.Parent => throw new NotImplementedException(), // Parentはこのデータクラスのメンバーにならない
                 AggregateMember.Children children => $"List<{new DataClassForSave(children.ChildrenAggregate, type).CsClassName}>",
                 AggregateMember.Child child => new DataClassForSave(child.ChildAggregate, type).CsClassName,
@@ -47,7 +47,7 @@ namespace Nijo.Models.WriteModel2Features {
         internal static string GetMemberTypeNameTypeScript(AggregateMember.AggregateMemberBase member, E_Type type) {
             return member switch {
                 AggregateMember.ValueMember vm => vm.Options.MemberType.GetTypeScriptTypeName(),
-                AggregateMember.Ref @ref => new RefTo.DataClassForSaveRefTarget(@ref.RefTo).TsTypeName,
+                AggregateMember.Ref @ref => new DataClassForRefTargetKeys(@ref.RefTo).TsTypeName,
                 AggregateMember.Parent => throw new NotImplementedException(), // Parentはこのデータクラスのメンバーにならない
                 AggregateMember.Children children => $"{new DataClassForSave(children.ChildrenAggregate, type).TsTypeName}[]",
                 AggregateMember.Child child => new DataClassForSave(child.ChildAggregate, type).TsTypeName,

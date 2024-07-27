@@ -9,17 +9,13 @@ using System.Threading.Tasks;
 
 namespace Nijo.Models.RefTo {
     /// <summary>
-    /// ほかの集約から参照されるときのためのデータクラス
+    /// 参照先検索条件
     /// </summary>
-    internal class DataClassForDisplayRefTarget {
-        internal DataClassForDisplayRefTarget(GraphNode<Aggregate> agg) {
-            _aggregate = agg;
+    internal class RefSearchCondition {
+        internal RefSearchCondition(GraphNode<Aggregate> agg) {
+            this.agg = agg;
         }
-
-        private readonly GraphNode<Aggregate> _aggregate;
-
-        internal string CsClassName => "TODO #35";
-        internal string TsTypeName => "TODO #35";
+        private GraphNode<Aggregate> agg;
 
         /// <summary>
         /// データ構造を定義します（C#）

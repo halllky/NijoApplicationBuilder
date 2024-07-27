@@ -11,8 +11,8 @@ namespace Nijo.Models.RefTo {
     /// <summary>
     /// 参照先データ検索処理
     /// </summary>
-    internal class SearchRefMethod {
-        internal SearchRefMethod(GraphNode<Aggregate> agg) {
+    internal class RefSearchMethod {
+        internal RefSearchMethod(GraphNode<Aggregate> agg) {
             this.agg = agg;
         }
         private GraphNode<Aggregate> agg;

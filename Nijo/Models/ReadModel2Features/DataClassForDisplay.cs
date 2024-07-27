@@ -1,5 +1,5 @@
 using Nijo.Core;
-using Nijo.Models.WriteModel2Features.ForRef;
+using Nijo.Models.RefTo;
 using Nijo.Parts.Utility;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
@@ -349,7 +349,7 @@ namespace Nijo.Models.ReadModel2Features {
                 throw new NotImplementedException(); // Parentのメンバーは定義されないので
 
             } else if (member is AggregateMember.Ref @ref) {
-                var refTarget = new DataClassForDisplayRefTarget(@ref.RefTo);
+                var refTarget = new DataClassForRefTarget(@ref.RefTo);
                 return refTarget.CsClassName;
 
             } else if (member is AggregateMember.Children children) {
@@ -372,7 +372,7 @@ namespace Nijo.Models.ReadModel2Features {
                 throw new NotImplementedException(); // Parentのメンバーは定義されないので
 
             } else if (member is AggregateMember.Ref @ref) {
-                var refTarget = new DataClassForDisplayRefTarget(@ref.RefTo);
+                var refTarget = new DataClassForRefTarget(@ref.RefTo);
                 return refTarget.TsTypeName;
 
             } else if (member is AggregateMember.Children children) {
