@@ -20,31 +20,28 @@ namespace Nijo.Models.ReadModel2Features {
 
         public string Url =>
              $$"""
-                TODO #35
+                /* TODO #35 MultiView */
                 """;
 
-        public string DirNameInPageDir =>
-             $$"""
-                TODO #35
-                """;
+        public string DirNameInPageDir => _aggregate.Item.DisplayName.ToFileNameSafe();
 
         public string ComponentPhysicalName =>
              $$"""
-                TODO #35
+                /* TODO #35 MultiView */
                 """;
 
         public bool ShowMenu => true;
 
         public string? LabelInMenu =>
              $$"""
-                TODO #35
+                /* TODO #35 MultiView */
                 """;
 
         public SourceFile GetSourceFile() => new SourceFile {
             FileName = "list.tsx",
             RenderContent = ctx => {
                 return $$"""
-                    TODO #35
+                    // TODO #35 MultiView
                     """;
             },
         };

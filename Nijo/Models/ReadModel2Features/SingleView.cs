@@ -30,21 +30,19 @@ namespace Nijo.Models.ReadModel2Features {
         private readonly E_Type _type;
 
         public string Url => $$"""
-                TODO #35
+                /* TODO #35 SingleView */
                 """;
 
-        public string DirNameInPageDir => $$"""
-                TODO #35
-                """;
+        public string DirNameInPageDir => _aggregate.Item.DisplayName.ToFileNameSafe();
 
         public string ComponentPhysicalName => $$"""
-                TODO #35
+                /* TODO #35 SingleView */
                 """;
 
         public bool ShowMenu => false;
 
         public string? LabelInMenu => $$"""
-                TODO #35
+                /* TODO #35 SingleView */
                 """;
 
         public SourceFile GetSourceFile() => new SourceFile {
@@ -56,7 +54,7 @@ namespace Nijo.Models.ReadModel2Features {
             },
             RenderContent = ctx => {
                 return $$"""
-                    TODO #35
+                    // TODO #35 SingleView
                     """;
             },
         };

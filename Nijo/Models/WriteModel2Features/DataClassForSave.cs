@@ -221,7 +221,7 @@ namespace Nijo.Models.WriteModel2Features {
 
                 } else if (m is AggregateMember.Children children) {
                     var descendant = new DataClassForSave(children.ChildrenAggregate, _type);
-                    members.Add($"public IReadOnlyList<{descendant.BeforeSaveContextCsClassName}> {m.MemberName} {{ get; }} = new();");
+                    members.Add($"public IReadOnlyList<{descendant.BeforeSaveContextCsClassName}> {m.MemberName} {{ get; }} = [];");
 
                 } else if (m is AggregateMember.RelationMember rel) {
                     var descendant = new DataClassForSave(rel.MemberAggregate, _type);

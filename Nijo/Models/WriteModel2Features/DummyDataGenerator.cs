@@ -14,7 +14,7 @@ namespace Nijo.Models.WriteModel2Features {
             FileName = "generateDummyData.ts",
             RenderContent = ctx => {
                 return $$"""
-                    TODO #35
+                    // TODO #35 DummyDataGenerator
                     """;
             },
         };

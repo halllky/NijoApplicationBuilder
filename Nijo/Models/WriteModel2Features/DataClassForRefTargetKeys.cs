@@ -19,15 +19,15 @@ namespace Nijo.Models.WriteModel2Features {
 
         private readonly GraphNode<Aggregate> _aggregate;
 
-        internal string CsClassName => $"TODO #35";
-        internal string TsTypeName => $"TODO #35";
+        internal string CsClassName => $"/* TODO #35 DataClassForRefTargetKeys */";
+        internal string TsTypeName => $"/* TODO #35 DataClassForRefTargetKeys */";
 
         /// <summary>
         /// データ構造を定義します（C#）
         /// </summary>
         internal string RenderCSharp(CodeRenderingContext context) {
             return $$"""
-                TODO #35 
+                // TODO #35 DataClassForRefTargetKeys
                 """;
         }
         /// <summary>
@@ -35,7 +35,7 @@ namespace Nijo.Models.WriteModel2Features {
         /// </summary>
         internal string RenderTypeScript(CodeRenderingContext context) {
             return $$"""
-                TODO #35
+                // TODO #35 DataClassForRefTargetKeys
                 """;
         }
 
@@ -44,7 +44,7 @@ namespace Nijo.Models.WriteModel2Features {
         /// </summary>
         private string RenderFromDisplayData() {
             return $$"""
-                TODO #35
+                // TODO #35 DataClassForRefTargetKeys RenderFromDisplayData
                 """;
         }
 
@@ -53,7 +53,7 @@ namespace Nijo.Models.WriteModel2Features {
         /// </summary>
         private string ToDbEntity() {
             return $$"""
-                TODO #35
+                // TODO #35 DataClassForRefTargetKeys ToDbEntity
                 """;
         }
     }

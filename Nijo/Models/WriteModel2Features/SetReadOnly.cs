@@ -23,7 +23,7 @@ namespace Nijo.Models.WriteModel2Features {
         /// </summary>
         internal string Render(CodeRenderingContext context) {
             return $$"""
-                TODO #35
+                // TODO #35 SetReadOnly
                 """;
         }
     }
