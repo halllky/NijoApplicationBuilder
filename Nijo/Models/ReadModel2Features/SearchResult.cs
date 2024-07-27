@@ -1,6 +1,6 @@
 using Castle.Components.DictionaryAdapter.Xml;
 using Nijo.Core;
-using Nijo.Models.WriteModel2Features.ForRef;
+using Nijo.Models.RefTo;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
@@ -51,7 +51,7 @@ namespace Nijo.Models.ReadModel2Features {
                 throw new NotImplementedException(); // Parentのメンバーは定義されないので
 
             } else if (member is AggregateMember.Ref @ref) {
-                var refTarget = new DataClassForDisplayRefTarget(@ref.RefTo);
+                var refTarget = new DataClassForRefTarget(@ref.RefTo, @ref.RefTo);
                 return refTarget.CsClassName;
 
             } else if (member is AggregateMember.Children children) {

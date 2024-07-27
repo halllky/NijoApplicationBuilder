@@ -349,7 +349,7 @@ namespace Nijo.Models.ReadModel2Features {
                 throw new NotImplementedException(); // Parentのメンバーは定義されないので
 
             } else if (member is AggregateMember.Ref @ref) {
-                var refTarget = new DataClassForRefTarget(@ref.RefTo);
+                var refTarget = new DataClassForRefTarget(@ref.RefTo, @ref.RefTo);
                 return refTarget.CsClassName;
 
             } else if (member is AggregateMember.Children children) {
@@ -372,7 +372,7 @@ namespace Nijo.Models.ReadModel2Features {
                 throw new NotImplementedException(); // Parentのメンバーは定義されないので
 
             } else if (member is AggregateMember.Ref @ref) {
-                var refTarget = new DataClassForRefTarget(@ref.RefTo);
+                var refTarget = new DataClassForRefTarget(@ref.RefTo, @ref.RefTo);
                 return refTarget.TsTypeName;
 
             } else if (member is AggregateMember.Children children) {

@@ -252,10 +252,10 @@ namespace Nijo.Models.ReadModel2Features {
 
         // Refの場合は複数のReadModelから1つのWriteModelへの参照がある可能性があり名前衝突するかもしれないので"RefFrom～"をつける
         internal override string CsClassName => _relationMember.MemberAggregate.IsOutOfEntryTree()
-            ? $"{base.CsClassName}_RefFrom{_aggregate.GetEntry().As<Aggregate>().Item.PhysicalName}の{_relationMember.MemberAggregate.GetRefEdge().RelationName}"
+            ? $"{base.CsClassName}_RefFrom{_aggregate.GetEntry().As<Aggregate>().Item.PhysicalName}の{_relationMember.MemberAggregate.GetRefEntryEdge().RelationName}"
             : base.CsClassName;
         internal override string TsTypeName => _relationMember.MemberAggregate.IsOutOfEntryTree()
-            ? $"{base.TsTypeName}_RefFrom{_aggregate.GetEntry().As<Aggregate>().Item.PhysicalName}の{_relationMember.MemberAggregate.GetRefEdge().RelationName}"
+            ? $"{base.TsTypeName}_RefFrom{_aggregate.GetEntry().As<Aggregate>().Item.PhysicalName}の{_relationMember.MemberAggregate.GetRefEntryEdge().RelationName}"
             : base.TsTypeName;
     }
 

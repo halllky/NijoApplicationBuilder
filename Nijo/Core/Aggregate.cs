@@ -110,7 +110,7 @@ namespace Nijo.Core {
         /// ルート集約のツリー内部からツリー外部へ出る瞬間のエッジを返します。
         /// この集約がルート集約のツリーの外部の集約でない場合は例外になります。
         /// </summary>
-        internal static GraphEdge<Aggregate> GetRefEdge(this GraphNode<Aggregate> agg) {
+        internal static GraphEdge<Aggregate> GetRefEntryEdge(this GraphNode<Aggregate> agg) {
             var entry = agg.GetEntry().As<Aggregate>();
             foreach (var edge in agg.PathFromEntry()) {
                 var edge2 = edge.As<Aggregate>();
