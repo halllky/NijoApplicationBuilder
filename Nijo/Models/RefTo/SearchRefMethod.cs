@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Nijo.Models.WriteModel2Features.ForRef {
+namespace Nijo.Models.RefTo {
     /// <summary>
     /// 参照先データ検索処理
     /// </summary>
