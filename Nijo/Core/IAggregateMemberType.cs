@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Core {
-    public interface IAggregateMemberType {
+    internal interface IAggregateMemberType {
         /// <summary>
         /// TODO: 廃止予定
         /// </summary>
@@ -43,7 +43,7 @@ namespace Nijo.Core {
         /// <param name="query"> <see cref="IQueryable{T}"/> の変数の名前</param>
         /// <param name="searchCondition">検索処理のパラメータの値の変数の名前</param>
         /// <returns> <see cref="IQueryable{T}"/> の変数に絞り込み処理をつけたものを再代入するソースコード</returns>
-        string RenderFilteringStatement(SearchConditionMember member, string query, string searchCondition);
+        string RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition);
     }
 
     /// <summary>
@@ -77,13 +77,13 @@ namespace Nijo.Core {
             return new TextColumnSetting {
             };
         }
-        public string RenderFilteringStatement(SearchConditionMember member, string query, string searchCondition) {
-            var isArray = member.Member.Owner.EnumerateAncestorsAndThis().Any(a => a.IsChildrenMember());
-            var path = member.Member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp);
+        string IAggregateMemberType.RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition) {
+            var isArray = member.Owner.EnumerateAncestorsAndThis().Any(a => a.IsChildrenMember());
+            var path = member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp);
             var fullpathNullable = $"{searchCondition}.{path.Join("?.")}";
             var fullpathNotNull = $"{searchCondition}.{path.Join(".")}";
-            var entityOwnerPath = member.Member.Owner.GetFullPathAsDbEntity().Join(".");
-            var entityMemberPath = member.Member.GetFullPathAsDbEntity().Join(".");
+            var entityOwnerPath = member.Owner.GetFullPathAsDbEntity().Join(".");
+            var entityMemberPath = member.GetFullPathAsDbEntity().Join(".");
             var method = SearchBehavior switch {
                 E_SearchBehavior.PartialMatch => "Contains",
                 E_SearchBehavior.ForwardMatch => "StartsWith",
@@ -151,15 +151,15 @@ namespace Nijo.Core {
         public abstract IGridColumnSetting GetGridColumnEditSetting();
         public abstract ReactInputComponent GetReactComponent();
 
-        public string RenderFilteringStatement(SearchConditionMember member, string query, string searchCondition) {
-            var isArray = member.Member.Owner.EnumerateAncestorsAndThis().Any(a => a.IsChildrenMember());
-            var path = member.Member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp);
+        string IAggregateMemberType.RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition) {
+            var isArray = member.Owner.EnumerateAncestorsAndThis().Any(a => a.IsChildrenMember());
+            var path = member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp);
             var nullableFullPathFrom = $"{searchCondition}.{path.Join("?.")}.{FromTo.FROM}";
             var nullableFullPathTo = $"{searchCondition}.{path.Join("?.")}.{FromTo.TO}";
             var fullPathFrom = $"{searchCondition}.{path.Join(".")}.{FromTo.FROM}";
             var fullPathTo = $"{searchCondition}.{path.Join(".")}.{FromTo.TO}";
-            var ownerPath = member.Member.Owner.GetFullPathAsDbEntity().Join(".");
-            var memberPath = member.Member.GetFullPathAsDbEntity().Join(".");
+            var ownerPath = member.Owner.GetFullPathAsDbEntity().Join(".");
+            var memberPath = member.GetFullPathAsDbEntity().Join(".");
             return $$"""
                 if ({{nullableFullPathFrom}} != null && {{nullableFullPathTo}} != null) {
                     // from, to のうち to の方が小さい場合は from-to を逆に読み替える

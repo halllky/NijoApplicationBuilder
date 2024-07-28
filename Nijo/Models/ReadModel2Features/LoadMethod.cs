@@ -211,7 +211,7 @@ namespace Nijo.Models.ReadModel2Features {
                 #pragma warning disable CS8604 // Null 参照引数の可能性があります。
                 {{filterMembers.SelectTextTemplate(m => $$"""
                     // フィルタリング: {{m.MemberName}}
-                    {{WithIndent(m.Member.Options.MemberType.RenderFilteringStatement(m, "query", "searchCondition"), "    ")}}
+                    {{WithIndent(m.Member.Options.MemberType.RenderFilteringStatement(m.Member, "query", "searchCondition"), "    ")}}
 
                 """)}}
                 #pragma warning restore CS8604 // Null 参照引数の可能性があります。

@@ -71,13 +71,13 @@ namespace Nijo.Core.AggregateMemberTypes {
                 """);
         }
 
-        public string RenderFilteringStatement(SearchConditionMember member, string query, string searchCondition) {
-            var isArray = member.Member.Owner.EnumerateAncestorsAndThis().Any(a => a.IsChildrenMember());
-            var path = member.Member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp);
+        string IAggregateMemberType.RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition) {
+            var isArray = member.Owner.EnumerateAncestorsAndThis().Any(a => a.IsChildrenMember());
+            var path = member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp);
             var fullpathNullable = $"{searchCondition}.{path.Join("?.")}";
             var fullpathNotNull = $"{searchCondition}.{path.Join(".")}";
-            var entityOwnerPath = member.Member.Owner.GetFullPathAsDbEntity().Join(".");
-            var entityMemberPath = member.Member.GetFullPathAsDbEntity().Join(".");
+            var entityOwnerPath = member.Owner.GetFullPathAsDbEntity().Join(".");
+            var entityMemberPath = member.GetFullPathAsDbEntity().Join(".");
 
             return $$"""
                 if ({{fullpathNullable}} == {{BOOL_SEARCH_CONDITION_ENUM}}.{{ONLY_TRUE}}) {
