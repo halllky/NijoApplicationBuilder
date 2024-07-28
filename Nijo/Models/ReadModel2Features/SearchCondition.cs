@@ -47,14 +47,21 @@ namespace Nijo.Models.ReadModel2Features {
         /// 直近の子を列挙します。
         /// </summary>
         private IEnumerable<DescendantSearchCondition> GetChildMembers() {
-            return _aggregate
-                .GetMembers()
-                .OfType<AggregateMember.RelationMember>()
-                .Where(rm => rm is AggregateMember.Child
-                          || rm is AggregateMember.Children
-                          || rm is AggregateMember.VariationItem
-                          || rm is AggregateMember.Ref)
-                .Select(rm => new DescendantSearchCondition(rm));
+            var isOutOfEntryTree = _aggregate.IsOutOfEntryTree();
+
+            foreach (var rm in _aggregate.GetMembers().OfType<AggregateMember.RelationMember>()) {
+
+                if (isOutOfEntryTree) {
+                    // 参照先の集約の場合のロジック
+                    if (rm.MemberAggregate != _aggregate.Source?.Source.As<Aggregate>())
+                        yield return new DescendantSearchCondition(rm);
+
+                } else {
+                    // ルート集約のツリー内の場合のロジック
+                    if (rm is not AggregateMember.Parent)
+                        yield return new DescendantSearchCondition(rm);
+                }
+            }
         }
 
 
@@ -111,22 +118,18 @@ namespace Nijo.Models.ReadModel2Features {
 
 
         internal string RenderCSharpDeclaringRecursively(CodeRenderingContext context) {
-            var descendants = _aggregate
-                .EnumerateDescendants()
-                .Select(agg => new SearchCondition(agg));
-            var refToConditions = _aggregate
-                .EnumerateThisAndDescendants()
-                .SelectMany(agg => agg.GetMembers())
-                .OfType<AggregateMember.Ref>()
-                .Select(@ref => new DescendantSearchCondition(@ref));
+            var searchConditions = new List<SearchCondition>();
+            void CollectRecursively(SearchCondition sc) {
+                searchConditions.Add(sc);
+                foreach (var child in sc.GetChildMembers()) {
+                    CollectRecursively(child);
+                }
+            }
+            CollectRecursively(this);
 
             return $$"""
                 #region 検索条件クラス（{{_aggregate.Item.DisplayName}}）
-                {{RenderCSharpDeclaring(context)}}
-                {{descendants.SelectTextTemplate(sc => $$"""
-                {{sc.RenderCSharpDeclaring(context)}}
-                """)}}
-                {{refToConditions.SelectTextTemplate(sc => $$"""
+                {{searchConditions.SelectTextTemplate(sc => $$"""
                 {{sc.RenderCSharpDeclaring(context)}}
                 """)}}
                 #endregion 検索条件クラス（{{_aggregate.Item.DisplayName}}）
@@ -172,21 +175,20 @@ namespace Nijo.Models.ReadModel2Features {
         }
 
         internal string RenderTypeScriptDeclaringRecursively(CodeRenderingContext context) {
-            var descendants = _aggregate
-                .EnumerateDescendants()
-                .Select(agg => new SearchCondition(agg));
-            var refToConditions = _aggregate
-                .EnumerateThisAndDescendants()
-                .SelectMany(agg => agg.GetMembers())
-                .OfType<AggregateMember.Ref>()
-                .Select(@ref => new DescendantSearchCondition(@ref));
+            var searchConditions = new List<SearchCondition>();
+            void CollectRecursively(SearchCondition sc) {
+                searchConditions.Add(sc);
+                foreach (var child in sc.GetChildMembers()) {
+                    CollectRecursively(child);
+                }
+            }
+            CollectRecursively(this);
 
             return $$"""
-                {{RenderTypeScriptDeclaring(context)}}
-                {{descendants.SelectTextTemplate(sc => $$"""
-                {{sc.RenderTypeScriptDeclaring(context)}}
-                """)}}
-                {{refToConditions.SelectTextTemplate(sc => $$"""
+                // ----------------------------------------------------------
+                // 検索条件クラス（{{_aggregate.Item.DisplayName}}）
+
+                {{searchConditions.SelectTextTemplate(sc => $$"""
                 {{sc.RenderTypeScriptDeclaring(context)}}
                 """)}}
 
@@ -249,14 +251,6 @@ namespace Nijo.Models.ReadModel2Features {
 
         private readonly AggregateMember.RelationMember _relationMember;
         internal string MemberName => _relationMember.MemberName;
-
-        // Refの場合は複数のReadModelから1つのWriteModelへの参照がある可能性があり名前衝突するかもしれないので"RefFrom～"をつける
-        internal override string CsClassName => _relationMember.MemberAggregate.IsOutOfEntryTree()
-            ? $"{base.CsClassName}_RefFrom{_aggregate.GetEntry().As<Aggregate>().Item.PhysicalName}の{_relationMember.MemberAggregate.GetRefEntryEdge().RelationName}"
-            : base.CsClassName;
-        internal override string TsTypeName => _relationMember.MemberAggregate.IsOutOfEntryTree()
-            ? $"{base.TsTypeName}_RefFrom{_aggregate.GetEntry().As<Aggregate>().Item.PhysicalName}の{_relationMember.MemberAggregate.GetRefEntryEdge().RelationName}"
-            : base.TsTypeName;
     }
 
 
