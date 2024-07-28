@@ -58,7 +58,7 @@ namespace Nijo.Models.RefTo {
         /// <summary>
         /// 直近の子を列挙します。
         /// </summary>
-        internal virtual IEnumerable<RefDescendantSearchCondition> GetChildMembers() {
+        private IEnumerable<RefDescendantSearchCondition> GetChildMembers() {
             return _aggregate
                 .GetMembers()
                 .OfType<AggregateMember.RelationMember>()
