@@ -1,5 +1,4 @@
 using Nijo.Core;
-using Nijo.Models.ReadModel2Features;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -110,7 +109,7 @@ namespace Nijo.Models.RefTo {
         /// </summary>
         internal static string GetSortLiteral(RefSearchConditionMember member, E_AscDesc ascDesc) {
             var fullpath = member.Member
-                .GetFullPathAsSearchConditionFilter(E_CsTs.CSharp)
+                .GetFullPathAsRefSearchConditionFilter(E_CsTs.CSharp)
                 .Skip(1); // "Filter"という名称を除外
             return ascDesc == E_AscDesc.ASC
                 ? $"{fullpath.Join(".")}::ASC"
@@ -269,6 +268,54 @@ namespace Nijo.Models.RefTo {
             internal string MemberName => Member.MemberName;
             internal string CsTypeName => Member.Options.MemberType.GetSearchConditionCSharpType();
             internal string TsTypeName => Member.Options.MemberType.GetSearchConditionTypeScriptType();
+        }
+    }
+
+
+    internal static partial class GetFullPathExtensions {
+        /// <summary>
+        /// エントリーからのパスを
+        /// <see cref="SearchCondition"/> と
+        /// <see cref="RefTo.RefSearchCondition"/> の
+        /// インスタンスの型のルールにあわせて返す。
+        /// </summary>
+        internal static IEnumerable<string> GetFullPathAsRefSearchConditionFilter(this GraphNode<Aggregate> aggregate, E_CsTs csts, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+            var entry = aggregate.GetEntry();
+
+            var path = aggregate.PathFromEntry();
+            if (since != null) path = path.Since(since);
+            if (until != null) path = path.Until(until);
+
+            foreach (var edge in path) {
+                if (edge.Initial == entry) {
+                    yield return csts == E_CsTs.CSharp
+                        ? RefSearchCondition.FILTER_CS
+                        : RefSearchCondition.FILTER_TS;
+                }
+
+                if (edge.Source == edge.Terminal && edge.IsParentChild()) {
+                    // 子から親へ向かう経路の場合
+                    yield return RefSearchResult.PARENT;
+                } else {
+                    yield return edge.RelationName;
+                }
+            }
+        }
+
+        /// <inheritdoc cref="GetFullPathAsRefSearchConditionFilter(GraphNode{Aggregate}, E_CsTs, GraphNode{Aggregate}?, GraphNode{Aggregate}?)"/>
+        internal static IEnumerable<string> GetFullPathAsRefSearchConditionFilter(this AggregateMember.AggregateMemberBase member, E_CsTs csts, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+            var fullpath = member.Owner
+                .GetFullPathAsRefSearchConditionFilter(csts, since, until)
+                .ToArray();
+            if (fullpath.Length == 0) {
+                yield return csts == E_CsTs.CSharp
+                    ? RefSearchCondition.FILTER_CS
+                    : RefSearchCondition.FILTER_TS;
+            }
+            foreach (var path in fullpath) {
+                yield return path;
+            }
+            yield return member.MemberName;
         }
     }
 }

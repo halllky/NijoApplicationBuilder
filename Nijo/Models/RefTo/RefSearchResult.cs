@@ -1,4 +1,5 @@
 using Nijo.Core;
+using Nijo.Models.WriteModel2Features;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -100,6 +101,85 @@ namespace Nijo.Models.RefTo {
                 """)}}
                 }
                 """);
+        }
+
+        /// <summary>
+        /// WriteModelのDBエンティティから参照先検索結果への変換
+        /// </summary>
+        /// <param name="instance">DBエンティティのインスタンス名</param>
+        /// <returns></returns>
+        internal string RenderConvertFromWriteModelDbEntity(string instance) {
+            string RenderRecursively(GraphNode<Aggregate> renderingAggregate, GraphNode<Aggregate> dbEntityAggregate, string dbEntityInstance, bool renderNewStatement) {
+                var dbEntityMembers = new EFCoreEntity(renderingAggregate)
+                    .GetTableColumnMembers()
+                    .Select(vm => vm.Declared)
+                    .ToHashSet();
+
+                string RenderMemberStatement(AggregateMember.AggregateMemberBase member) {
+                    if (member is AggregateMember.ValueMember vm) {
+                        return $$"""
+                            {{dbEntityInstance}}.{{dbEntityMembers.Single(vm2 => vm2.Declared == vm.Declared).GetFullPathAsDbEntity(dbEntityAggregate).Join(".")}}
+                            """;
+
+                    } else if (member is AggregateMember.Ref @ref) {
+                        string RenderRefSearchResultRecursively(GraphNode<Aggregate> agg) {
+                            var rsr = new RefSearchResult(agg, _refEntry);
+                            return $$"""
+                                new() {
+                                {{rsr.GetOwnMembers().SelectTextTemplate(m => $$"""
+                                    {{GetMemberName(m)}} = {{WithIndent(RenderRefSearchResultMember(m), "    ")}},
+                                """)}}
+                                }
+                                """;
+                        }
+                        string RenderRefSearchResultMember(AggregateMember.AggregateMemberBase m) {
+                            if (m is AggregateMember.ValueMember vm3) {
+                                return $$"""
+                                    {{dbEntityInstance}}.{{dbEntityMembers.Single(vm4 => vm4.Declared == vm3.Declared).GetFullPathAsDbEntity(dbEntityAggregate).Join(".")}}
+                                    """;
+
+                            } else if (m is AggregateMember.Children children3) {
+                                var depth = children3.Owner.PathFromEntry().Count();
+                                var x = depth == 0 ? "x" : $"x{depth}";
+                                return $$"""
+                                    {{dbEntityInstance}}.{{children3.GetFullPathAsDbEntity(dbEntityAggregate).Join(".")}}.Select({{x}} => {{RenderRefSearchResultRecursively(children3.ChildrenAggregate)}}).ToList()
+                                    """;
+
+                            } else if (m is AggregateMember.RelationMember rm) {
+                                return RenderRefSearchResultRecursively(rm.MemberAggregate);
+
+                            } else {
+                                throw new NotImplementedException();
+                            }
+                        }
+                        return RenderRefSearchResultRecursively(@ref.RefTo);
+
+                    } else if (member is AggregateMember.Children children) {
+                        var depth = children.Owner.PathFromEntry().Count();
+                        var x = depth == 0 ? "x" : $"x{depth}";
+                        return $$"""
+                            {{dbEntityInstance}}.{{children.GetFullPathAsDbEntity(dbEntityAggregate).Join(".")}}.Select({{x}} => {{RenderRecursively(children.ChildrenAggregate, children.ChildrenAggregate, x, true)}}).ToList()
+                            """;
+
+                    } else if (member is AggregateMember.RelationMember rm) {
+                        return RenderRecursively(rm.MemberAggregate, dbEntityAggregate, dbEntityInstance, false);
+
+                    } else {
+                        throw new NotImplementedException();
+                    }
+                }
+
+                var rsr = new RefSearchResult(renderingAggregate, _refEntry);
+                var newStatement = renderNewStatement ? $"new {rsr.CsClassName}()" : "new()";
+                return $$"""
+                {{newStatement}} {
+                {{rsr.GetOwnMembers().SelectTextTemplate(m => $$"""
+                    {{GetMemberName(m)}} = {{WithIndent(RenderMemberStatement(m), "    ")}},
+                """)}}
+                }
+                """;
+            }
+            return RenderRecursively(_aggregate, _aggregate, instance, true);
         }
 
         #region メンバー用staticメソッド
