@@ -426,7 +426,10 @@ namespace Nijo.Models.WriteModel2Features {
     partial class GetFullPathExtensions {
 
         /// <summary>
-        /// エントリーからのパスを <see cref="DataClassForSave"/> のインスタンスの型のルールにあわせて返す。
+        /// エントリーからのパスを
+        /// <see cref="DataClassForSave"/> と
+        /// <see cref="DataClassForRefTargetKeys"/> の
+        /// インスタンスの型のルールにあわせて返す。
         /// </summary>
         internal static IEnumerable<string> GetFullPathAsForSave(this GraphNode<Aggregate> aggregate, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
             var path = aggregate.PathFromEntry();
@@ -435,16 +438,19 @@ namespace Nijo.Models.WriteModel2Features {
 
             foreach (var edge in path) {
                 if (edge.Source == edge.Terminal && edge.IsParentChild()) {
-                    yield return $"/* エラー！{nameof(DataClassForSave)}では子は親の参照を持っていません */";
+                    // 子から親へ向かう経路の場合
+                    if (edge.Initial.As<Aggregate>().IsOutOfEntryTree()) {
+                        yield return DataClassForRefTargetKeys.PARENT;
+                    } else {
+                        yield return $"/* エラー！{nameof(DataClassForSave)}では子は親の参照を持っていません */";
+                    }
                 } else {
                     yield return edge.RelationName;
                 }
             }
         }
 
-        /// <summary>
-        /// エントリーからのパスを <see cref="DataClassForSave"/> のインスタンスの型のルールにあわせて返す。
-        /// </summary>
+        /// <inheritdoc cref="GetFullPathAsForSave(GraphNode{Aggregate}, GraphNode{Aggregate}?, GraphNode{Aggregate}?)"/>
         internal static IEnumerable<string> GetFullPathAsForSave(this AggregateMember.AggregateMemberBase member, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
             foreach (var path in member.Owner.GetFullPathAsForSave(since, until)) {
                 yield return path;

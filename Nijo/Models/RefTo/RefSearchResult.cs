@@ -11,13 +11,13 @@ namespace Nijo.Models.RefTo {
     /// <summary>
     /// ほかの集約から参照されるときのためのデータクラス
     /// </summary>
-    internal class DataClassForRefTarget {
+    internal class RefSearchResult {
         /// <summary>
         /// ほかの集約から参照されるときのためのデータクラス
         /// </summary>
         /// <param name="agg">集約</param>
         /// <param name="refEntry">参照エントリー</param>
-        internal DataClassForRefTarget(GraphNode<Aggregate> agg, GraphNode<Aggregate> refEntry) {
+        internal RefSearchResult(GraphNode<Aggregate> agg, GraphNode<Aggregate> refEntry) {
             _aggregate = agg;
             _refEntry = refEntry;
         }
@@ -59,14 +59,14 @@ namespace Nijo.Models.RefTo {
         internal string RenderCSharp(CodeRenderingContext context) {
             // この集約を参照エントリーとして生成されるクラスを再帰的に
             var asEntry = _aggregate.AsEntry();
-            var refTargets = new List<DataClassForRefTarget>();
-            void CollectRecursively(DataClassForRefTarget refTarget) {
+            var refTargets = new List<RefSearchResult>();
+            void CollectRecursively(RefSearchResult refTarget) {
                 refTargets.Add(refTarget);
                 foreach (var rel in refTarget.GetOwnMembers().OfType<AggregateMember.RelationMember>()) {
-                    CollectRecursively(new DataClassForRefTarget(rel.MemberAggregate, asEntry));
+                    CollectRecursively(new RefSearchResult(rel.MemberAggregate, asEntry));
                 }
             }
-            CollectRecursively(new DataClassForRefTarget(asEntry, asEntry));
+            CollectRecursively(new RefSearchResult(asEntry, asEntry));
 
             return refTargets.SelectTextTemplate(rt =>  $$"""
                 /// <summary>{{rt._refEntry.Item.DisplayName}}が他の集約から参照されたときの{{rt._aggregate.Item.DisplayName}}のデータ型</summary>
@@ -83,14 +83,14 @@ namespace Nijo.Models.RefTo {
         internal string RenderTypeScript(CodeRenderingContext context) {
             // この集約を参照エントリーとして生成されるクラスを再帰的に
             var asEntry = _aggregate.AsEntry();
-            var refTargets = new List<DataClassForRefTarget>();
-            void CollectRecursively(DataClassForRefTarget refTarget) {
+            var refTargets = new List<RefSearchResult>();
+            void CollectRecursively(RefSearchResult refTarget) {
                 refTargets.Add(refTarget);
                 foreach (var rel in refTarget.GetOwnMembers().OfType<AggregateMember.RelationMember>()) {
-                    CollectRecursively(new DataClassForRefTarget(rel.MemberAggregate, asEntry));
+                    CollectRecursively(new RefSearchResult(rel.MemberAggregate, asEntry));
                 }
             }
-            CollectRecursively(new DataClassForRefTarget(asEntry, asEntry));
+            CollectRecursively(new RefSearchResult(asEntry, asEntry));
 
             return refTargets.SelectTextTemplate(rt => $$"""
                 /** {{rt._refEntry.Item.DisplayName}}が他の集約から参照されたときの{{rt._aggregate.Item.DisplayName}}のデータ型 */
@@ -122,11 +122,11 @@ namespace Nijo.Models.RefTo {
                 return vm.Options.MemberType.GetCSharpTypeName();
 
             } else if (member is AggregateMember.Children children) {
-                var refTo = new DataClassForRefTarget(children.ChildrenAggregate, _refEntry);
+                var refTo = new RefSearchResult(children.ChildrenAggregate, _refEntry);
                 return $"List<{refTo.CsClassName}>";
 
             } else if (member is AggregateMember.RelationMember rel) {
-                var refTo = new DataClassForRefTarget(rel.MemberAggregate, _refEntry);
+                var refTo = new RefSearchResult(rel.MemberAggregate, _refEntry);
                 return refTo.CsClassName;
 
             } else {
@@ -141,11 +141,11 @@ namespace Nijo.Models.RefTo {
                 return vm.Options.MemberType.GetTypeScriptTypeName();
 
             } else if (member is AggregateMember.Children children) {
-                var refTo = new DataClassForRefTarget(children.ChildrenAggregate, _refEntry);
+                var refTo = new RefSearchResult(children.ChildrenAggregate, _refEntry);
                 return $"{refTo.CsClassName}[]";
 
             } else if (member is AggregateMember.RelationMember rel) {
-                var refTo = new DataClassForRefTarget(rel.MemberAggregate, _refEntry);
+                var refTo = new RefSearchResult(rel.MemberAggregate, _refEntry);
                 return refTo.CsClassName;
 
             } else {
@@ -157,18 +157,25 @@ namespace Nijo.Models.RefTo {
 
     internal static partial class GetFullPathExtensions {
 
+        /// <summary>
+        /// エントリーからのパスを <see cref="RefSearchCondition"/> の インスタンスの型のルールにあわせて返す。
+        /// エントリーから全体が参照先検索結果クラスである場合のみ使用。
+        /// 参照元検索結果の一部として参照先が含まれる場合は <see cref="ReadModel2Features.GetFullPathExtensions.GetFullPathAsDataClassForDisplay(GraphNode{Aggregate}, GraphNode{Aggregate}?, GraphNode{Aggregate}?)"/> を使用すること
+        /// </summary>
         internal static IEnumerable<string> GetFullPathAsDataClassForRefTarget(this GraphNode<Aggregate> aggregate, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
             var path = aggregate.PathFromEntry();
             if (since != null) path = path.Since(since);
             if (until != null) path = path.Until(until);
             foreach (var edge in path) {
                 if (edge.IsParentChild() && edge.Source == edge.Terminal) {
-                    yield return DataClassForRefTarget.PARENT;
+                    yield return RefSearchResult.PARENT;
                 } else {
                     yield return edge.RelationName;
                 }
             }
         }
+
+        /// <inheritdoc cref="GetFullPathAsDataClassForRefTarget(GraphNode{Aggregate}, GraphNode{Aggregate}?, GraphNode{Aggregate}?)"/>
         internal static IEnumerable<string> GetFullPathAsDataClassForRefTarget(this AggregateMember.AggregateMemberBase member, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
             var fullpath = member.Owner
                 .GetFullPathAsDataClassForRefTarget(since, until)
@@ -176,7 +183,7 @@ namespace Nijo.Models.RefTo {
             foreach (var path in fullpath) {
                 yield return path;
             }
-            yield return DataClassForRefTarget.GetMemberName(member);
+            yield return RefSearchResult.GetMemberName(member);
         }
     }
 }

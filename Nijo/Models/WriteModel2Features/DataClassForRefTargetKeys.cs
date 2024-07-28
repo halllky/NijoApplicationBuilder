@@ -136,6 +136,8 @@ namespace Nijo.Models.WriteModel2Features {
         }
 
 
+        internal const string PARENT = "PARENT";
+
         private class DescendantRefTargetKeys : DataClassForRefTargetKeys {
             internal DescendantRefTargetKeys(AggregateMember.RelationMember rm, GraphNode<Aggregate> refEntry) : base(rm.MemberAggregate, refEntry) {
                 _relationMember = rm;
@@ -153,7 +155,9 @@ namespace Nijo.Models.WriteModel2Features {
             private readonly AggregateMember.AggregateMemberBase _member;
             private readonly GraphNode<Aggregate> _refEntry;
 
-            internal string MemberName => _member.MemberName;
+            internal string MemberName => _member is AggregateMember.Parent
+                ? PARENT
+                : _member.MemberName;
             internal string CsType => _member is AggregateMember.ValueMember vm
                 ? vm.Options.MemberType.GetCSharpTypeName()
                 : new DescendantRefTargetKeys((AggregateMember.RelationMember)_member, _refEntry).CsClassName;

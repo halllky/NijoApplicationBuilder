@@ -70,7 +70,7 @@ namespace Nijo.Models {
 
                 // データ型
                 var refSearchCondition = new RefSearchCondition(asEntry, asEntry);
-                var refSearchResult = new DataClassForRefTarget(asEntry, asEntry);
+                var refSearchResult = new RefSearchResult(asEntry, asEntry);
                 aggregateFile.DataClassDeclaring.Add(refSearchCondition.RenderCSharpDeclaringRecursively(context));
                 context.ReactProject.Types.Add(asEntry, refSearchCondition.RenderTypeScriptDeclaringRecursively(context));
                 aggregateFile.DataClassDeclaring.Add(refSearchResult.RenderCSharp(context));

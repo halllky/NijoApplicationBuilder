@@ -241,30 +241,34 @@ namespace Nijo.Models.RefTo {
                 """;
         }
 
-    }
 
-    /// <summary>
-    /// <see cref="RefSearchCondition"/> と <see cref="DescendantSearchCondition"/> の両方の性質を併せ持つ。
-    /// Parentも存在しうるので厳密にはDescendantという名称は正しくない。
-    /// </summary>
-    internal class RefDescendantSearchCondition : RefSearchCondition {
-        internal RefDescendantSearchCondition(AggregateMember.RelationMember relationMember, GraphNode<Aggregate> refEntry) : base(relationMember.MemberAggregate, refEntry) {
-            _relationMember = relationMember;
+        internal const string PARENT = "PARENT";
+
+        /// <summary>
+        /// <see cref="RefSearchCondition"/> と <see cref="DescendantSearchCondition"/> の両方の性質を併せ持つ。
+        /// Parentも存在しうるので厳密にはDescendantという名称は正しくない。
+        /// </summary>
+        internal class RefDescendantSearchCondition : RefSearchCondition {
+            internal RefDescendantSearchCondition(AggregateMember.RelationMember relationMember, GraphNode<Aggregate> refEntry) : base(relationMember.MemberAggregate, refEntry) {
+                _relationMember = relationMember;
+            }
+
+            private readonly AggregateMember.RelationMember _relationMember;
+            internal string MemberName => _relationMember is AggregateMember.Parent
+                ? PARENT
+                : _relationMember.MemberName;
         }
 
-        private readonly AggregateMember.RelationMember _relationMember;
-        internal string MemberName => _relationMember.MemberName;
-    }
 
+        public class RefSearchConditionMember {
+            internal RefSearchConditionMember(AggregateMember.ValueMember vm) {
+                Member = vm;
+            }
+            internal AggregateMember.ValueMember Member { get; }
 
-    public class RefSearchConditionMember {
-        internal RefSearchConditionMember(AggregateMember.ValueMember vm) {
-            Member = vm;
+            internal string MemberName => Member.MemberName;
+            internal string CsTypeName => Member.Options.MemberType.GetSearchConditionCSharpType();
+            internal string TsTypeName => Member.Options.MemberType.GetSearchConditionTypeScriptType();
         }
-        internal AggregateMember.ValueMember Member { get; }
-
-        internal string MemberName => Member.MemberName;
-        internal string CsTypeName => Member.Options.MemberType.GetSearchConditionCSharpType();
-        internal string TsTypeName => Member.Options.MemberType.GetSearchConditionTypeScriptType();
     }
 }

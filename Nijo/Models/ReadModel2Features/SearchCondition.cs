@@ -250,7 +250,9 @@ namespace Nijo.Models.ReadModel2Features {
         }
 
         private readonly AggregateMember.RelationMember _relationMember;
-        internal string MemberName => _relationMember.MemberName;
+        internal string MemberName => _relationMember is AggregateMember.Parent
+            ? RefTo.RefSearchCondition.PARENT
+            : _relationMember.MemberName;
     }
 
 
@@ -268,7 +270,10 @@ namespace Nijo.Models.ReadModel2Features {
 
     internal static partial class GetFullPathExtensions {
         /// <summary>
-        /// エントリーからのパスを <see cref="SearchCondition"/> のインスタンスの型のルールにあわせて返す。
+        /// エントリーからのパスを
+        /// <see cref="SearchCondition"/> と
+        /// <see cref="RefTo.RefSearchCondition"/> の
+        /// インスタンスの型のルールにあわせて返す。
         /// </summary>
         internal static IEnumerable<string> GetFullPathAsSearchConditionFilter(this GraphNode<Aggregate> aggregate, E_CsTs csts, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
             var entry = aggregate.GetEntry();
@@ -283,12 +288,21 @@ namespace Nijo.Models.ReadModel2Features {
                         ? SearchCondition.FILTER_CS
                         : SearchCondition.FILTER_TS;
                 }
-                yield return edge.RelationName;
+
+                if (edge.Source == edge.Terminal && edge.IsParentChild()) {
+                    // 子から親へ向かう経路の場合
+                    if (edge.Initial.As<Aggregate>().IsOutOfEntryTree()) {
+                        yield return RefTo.RefSearchResult.PARENT;
+                    } else {
+                        yield return $"/* エラー！{nameof(SearchCondition)}では子は親の参照を持っていません */";
+                    }
+                } else {
+                    yield return edge.RelationName;
+                }
             }
         }
-        /// <summary>
-        /// エントリーからのパスを <see cref="SearchCondition"/> のインスタンスの型のルールにあわせて返す。
-        /// </summary>
+
+        /// <inheritdoc cref="GetFullPathAsSearchConditionFilter(GraphNode{Aggregate}, E_CsTs, GraphNode{Aggregate}?, GraphNode{Aggregate}?)"/>
         internal static IEnumerable<string> GetFullPathAsSearchConditionFilter(this AggregateMember.AggregateMemberBase member, E_CsTs csts, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
             var fullpath = member.Owner
                 .GetFullPathAsSearchConditionFilter(csts, since, until)

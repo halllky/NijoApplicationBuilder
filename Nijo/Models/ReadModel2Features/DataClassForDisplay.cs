@@ -349,7 +349,7 @@ namespace Nijo.Models.ReadModel2Features {
                 throw new NotImplementedException(); // Parentのメンバーは定義されないので
 
             } else if (member is AggregateMember.Ref @ref) {
-                var refTarget = new DataClassForRefTarget(@ref.RefTo, @ref.RefTo);
+                var refTarget = new RefSearchResult(@ref.RefTo, @ref.RefTo);
                 return refTarget.CsClassName;
 
             } else if (member is AggregateMember.Children children) {
@@ -372,7 +372,7 @@ namespace Nijo.Models.ReadModel2Features {
                 throw new NotImplementedException(); // Parentのメンバーは定義されないので
 
             } else if (member is AggregateMember.Ref @ref) {
-                var refTarget = new DataClassForRefTarget(@ref.RefTo, @ref.RefTo);
+                var refTarget = new RefSearchResult(@ref.RefTo, @ref.RefTo);
                 return refTarget.TsTypeName;
 
             } else if (member is AggregateMember.Children children) {
@@ -405,15 +405,32 @@ namespace Nijo.Models.ReadModel2Features {
     }
 
     partial class GetFullPathExtensions {
-
+        /// <summary>
+        /// エントリーからのパスを
+        /// <see cref="DataClassForDisplay"/> と
+        /// <see cref="RefTo.RefSearchResult"/> の
+        /// インスタンスの型のルールにあわせて返す。
+        /// </summary>
         internal static IEnumerable<string> GetFullPathAsDataClassForDisplay(this GraphNode<Aggregate> aggregate, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
             var path = aggregate.PathFromEntry();
             if (since != null) path = path.Since(since);
             if (until != null) path = path.Until(until);
             foreach (var edge in path) {
-                yield return edge.RelationName;
+
+                if (edge.Source == edge.Terminal && edge.IsParentChild()) {
+                    // 子から親へ向かう経路の場合
+                    if (edge.Initial.As<Aggregate>().IsOutOfEntryTree()) {
+                        yield return RefSearchResult.PARENT;
+                    } else {
+                        yield return $"/* エラー！{nameof(DataClassForDisplay)}では子は親の参照を持っていません */";
+                    }
+                } else {
+                    yield return edge.RelationName;
+                }
             }
         }
+
+        /// <inheritdoc cref="GetFullPathAsDataClassForDisplay(GraphNode{Aggregate}, GraphNode{Aggregate}?, GraphNode{Aggregate}?)"/>
         internal static IEnumerable<string> GetFullPathAsDataClassForDisplay(this AggregateMember.AggregateMemberBase member, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
             var fullpath = member.Owner
                 .GetFullPathAsDataClassForDisplay(since, until)
