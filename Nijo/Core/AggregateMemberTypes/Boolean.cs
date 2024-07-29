@@ -1,4 +1,5 @@
 using Nijo.Models.ReadModel2Features;
+using Nijo.Models.RefTo;
 using Nijo.Models.WriteModel2Features;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
@@ -71,11 +72,13 @@ namespace Nijo.Core.AggregateMemberTypes {
                 """);
         }
 
-        string IAggregateMemberType.RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition) {
+        string IAggregateMemberType.RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition, E_SearchConditionObject searchConditionObject, E_SearchQueryObject searchQueryObject) {
             var isArray = member.Owner.EnumerateAncestorsAndThis().Any(a => a.IsChildrenMember());
-            var path = member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp);
-            var fullpathNullable = $"{searchCondition}.{path.Join("?.")}";
-            var fullpathNotNull = $"{searchCondition}.{path.Join(".")}";
+            var pathFromSearchCondition = searchConditionObject == E_SearchConditionObject.SearchCondition
+                ? member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp)
+                : member.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.CSharp);
+            var fullpathNullable = $"{searchCondition}.{pathFromSearchCondition.Join("?.")}";
+            var fullpathNotNull = $"{searchCondition}.{pathFromSearchCondition.Join(".")}";
             var entityOwnerPath = member.Owner.GetFullPathAsDbEntity().Join(".");
             var entityMemberPath = member.GetFullPathAsDbEntity().Join(".");
 

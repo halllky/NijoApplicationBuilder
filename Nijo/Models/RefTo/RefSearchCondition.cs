@@ -286,11 +286,13 @@ namespace Nijo.Models.RefTo {
             if (since != null) path = path.Since(since);
             if (until != null) path = path.Until(until);
 
+            var first = true;
             foreach (var edge in path) {
-                if (edge.Initial == entry) {
+                if (first) {
                     yield return csts == E_CsTs.CSharp
                         ? RefSearchCondition.FILTER_CS
                         : RefSearchCondition.FILTER_TS;
+                    first = false;
                 }
 
                 if (edge.Source == edge.Terminal && edge.IsParentChild()) {

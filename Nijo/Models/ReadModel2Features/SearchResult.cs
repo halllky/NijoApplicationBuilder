@@ -106,5 +106,70 @@ namespace Nijo.Models.ReadModel2Features {
             }
             yield return member.MemberName;
         }
+
+        /// <summary>
+        /// <see cref="GetFullPathAsSearchResult(AggregateMember.AggregateMemberBase, GraphNode{Aggregate}?, GraphNode{Aggregate}?)"/> と似ているが、
+        /// 経路の途中に配列がある場合は .Select または .SelectMany が挟まる。
+        /// </summary>
+        internal static IEnumerable<string> GetHandlingStatementAsSearchResult(
+            this AggregateMember.AggregateMemberBase member,
+            string? linqMethodifArray = null,
+            Func<string, string>? handlingStatement = null,
+            GraphNode<Aggregate>? since = null,
+            GraphNode<Aggregate>? until = null) {
+
+            if (linqMethodifArray == null) linqMethodifArray = "Select";
+            if (handlingStatement == null) handlingStatement = fullpath => fullpath;
+
+            var path = member.Owner.PathFromEntry();
+            if (since != null) path = path.Since(since);
+            if (until != null) path = path.Until(until);
+
+            var edges = path.ToArray();
+            if (edges.Length == 0) {
+                yield return handlingStatement(member.MemberName);
+                yield break;
+            }
+
+            var isArray = false;
+            for (int i = 0; i < edges.Length; i++) {
+                var edge = edges[i];
+                var isLast = i == edges.Length - 1;
+
+                var relationName = edge.IsParentChild() && edge.Source == edge.Terminal
+                    ? RefTo.RefSearchResult.PARENT
+                    : edge.RelationName;
+
+                var isMany = false;
+                if (edge.IsParentChild()
+                    && edge.Source == edge.Initial
+                    && edge.Terminal.As<Aggregate>().IsChildrenMember()) {
+                    isMany = true;
+
+                } else if (edge.IsRef()
+                    && edge.Source == edge.Terminal
+                    && edge.Terminal.As<Aggregate>().IsSingleRefKeyOf(edge.Initial.As<Aggregate>())) {
+                    isMany = true;
+                }
+
+                if (isMany) {
+                    yield return isArray
+                        ? $"SelectMany(x => x.{relationName})"
+                        : relationName;
+                    isArray = true;
+
+                } else {
+                    yield return isArray
+                        ? $"Select(x => x.{relationName})"
+                        : relationName;
+                }
+
+                if (isLast) {
+                    yield return isArray
+                        ? $"{linqMethodifArray}(x => {handlingStatement($"x.{member.MemberName}")})"
+                        : handlingStatement(member.MemberName);
+                }
+            }
+        }
     }
 }

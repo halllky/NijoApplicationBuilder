@@ -1,4 +1,5 @@
 using Nijo.Models.ReadModel2Features;
+using Nijo.Models.RefTo;
 using Nijo.Models.WriteModel2Features;
 using Nijo.Parts.Utility;
 using Nijo.Util.CodeGenerating;
@@ -42,8 +43,25 @@ namespace Nijo.Core {
         /// <param name="member">検索対象のメンバーの情報</param>
         /// <param name="query"> <see cref="IQueryable{T}"/> の変数の名前</param>
         /// <param name="searchCondition">検索処理のパラメータの値の変数の名前</param>
+        /// <param name="searchConditionObject">検索条件のオブジェクトの型</param>
+        /// <param name="searchQueryObject">検索結果のクエリのオブジェクトの型</param>
         /// <returns> <see cref="IQueryable{T}"/> の変数に絞り込み処理をつけたものを再代入するソースコード</returns>
-        string RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition);
+        string RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition, E_SearchConditionObject searchConditionObject, E_SearchQueryObject searchQueryObject);
+    }
+
+    /// <summary>検索条件のオブジェクトの型</summary>
+    internal enum E_SearchConditionObject {
+        /// <summary>検索条件の型は <see cref="Models.ReadModel2Features.SearchCondition"/> </summary>
+        SearchCondition,
+        /// <summary>検索条件の型は <see cref="Models.RefTo.RefSearchCondition"/> </summary>
+        RefSearchCondition,
+    }
+    /// <summary>検索結果のクエリのオブジェクトの型</summary>
+    internal enum E_SearchQueryObject {
+        /// <summary>クエリのオブジェクトの型は <see cref="Models.WriteModel2Features.EFCoreEntity"/> </summary>
+        EFCoreEntity,
+        /// <summary>クエリのオブジェクトの型は <see cref="Models.ReadModel2Features.SearchResult"/> </summary>
+        SearchResult,
     }
 
     /// <summary>
@@ -77,28 +95,26 @@ namespace Nijo.Core {
             return new TextColumnSetting {
             };
         }
-        string IAggregateMemberType.RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition) {
-            var isArray = member.Owner.EnumerateAncestorsAndThis().Any(a => a.IsChildrenMember());
-            var path = member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp);
-            var fullpathNullable = $"{searchCondition}.{path.Join("?.")}";
-            var fullpathNotNull = $"{searchCondition}.{path.Join(".")}";
-            var entityOwnerPath = member.Owner.GetFullPathAsDbEntity().Join(".");
-            var entityMemberPath = member.GetFullPathAsDbEntity().Join(".");
+        string IAggregateMemberType.RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition, E_SearchConditionObject searchConditionObject, E_SearchQueryObject searchQueryObject) {
+            var pathFromSearchCondition = searchConditionObject == E_SearchConditionObject.SearchCondition
+                ? member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp)
+                : member.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.CSharp);
+            var fullpathNullable = $"{searchCondition}.{pathFromSearchCondition.Join("?.")}";
+            var fullpathNotNull = $"{searchCondition}.{pathFromSearchCondition.Join(".")}";
             var method = SearchBehavior switch {
                 E_SearchBehavior.PartialMatch => "Contains",
                 E_SearchBehavior.ForwardMatch => "StartsWith",
                 E_SearchBehavior.BackwardMatch => "EndsWith",
                 _ => "Equals",
             };
+            var whereStatement = searchQueryObject == E_SearchQueryObject.SearchResult
+                ? member.GetHandlingStatementAsSearchResult("Any", path => $"{path}.{method}(trimmed)")
+                : member.GetHandlingStatementAsDbEntity("Any", path => $"{path}.{method}(trimmed)");
 
             return $$"""
                 if (!string.IsNullOrWhiteSpace({{fullpathNullable}})) {
                     var trimmed = {{fullpathNotNull}}.Trim();
-                {{If(isArray, () => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{entityOwnerPath}}.Any(y => y.{{member.MemberName}}.{{method}}(trimmed)));
-                """).Else(() => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{entityMemberPath}}.{{method}}(trimmed));
-                """)}}
+                    {{query}} = {{query}}.Where(x => x.{{whereStatement.Join(".")}});
                 }
                 """;
         }
@@ -151,15 +167,24 @@ namespace Nijo.Core {
         public abstract IGridColumnSetting GetGridColumnEditSetting();
         public abstract ReactInputComponent GetReactComponent();
 
-        string IAggregateMemberType.RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition) {
-            var isArray = member.Owner.EnumerateAncestorsAndThis().Any(a => a.IsChildrenMember());
-            var path = member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp);
-            var nullableFullPathFrom = $"{searchCondition}.{path.Join("?.")}.{FromTo.FROM}";
-            var nullableFullPathTo = $"{searchCondition}.{path.Join("?.")}.{FromTo.TO}";
-            var fullPathFrom = $"{searchCondition}.{path.Join(".")}.{FromTo.FROM}";
-            var fullPathTo = $"{searchCondition}.{path.Join(".")}.{FromTo.TO}";
-            var ownerPath = member.Owner.GetFullPathAsDbEntity().Join(".");
-            var memberPath = member.GetFullPathAsDbEntity().Join(".");
+        string IAggregateMemberType.RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition, E_SearchConditionObject searchConditionObject, E_SearchQueryObject searchQueryObject) {
+            var pathFromSearchCondition = searchConditionObject == E_SearchConditionObject.SearchCondition
+                ? member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp)
+                : member.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.CSharp);
+            var nullableFullPathFrom = $"{searchCondition}.{pathFromSearchCondition.Join("?.")}.{FromTo.FROM}";
+            var nullableFullPathTo = $"{searchCondition}.{pathFromSearchCondition.Join("?.")}.{FromTo.TO}";
+            var fullPathFrom = $"{searchCondition}.{pathFromSearchCondition.Join(".")}.{FromTo.FROM}";
+            var fullPathTo = $"{searchCondition}.{pathFromSearchCondition.Join(".")}.{FromTo.TO}";
+            var whereStatementFromTo = searchQueryObject == E_SearchQueryObject.SearchResult
+                ? member.GetHandlingStatementAsSearchResult("Any", path => $"{path} >= min && {path} <= max")
+                : member.GetHandlingStatementAsDbEntity("Any", path => $"{path} >= min && {path} <= max");
+            var whereStatementFromOnly = searchQueryObject == E_SearchQueryObject.SearchResult
+                ? member.GetHandlingStatementAsSearchResult("Any", path => $"{path} >= from")
+                : member.GetHandlingStatementAsDbEntity("Any", path => $"{path} >= from");
+            var whereStatementToOnly = searchQueryObject == E_SearchQueryObject.SearchResult
+                ? member.GetHandlingStatementAsSearchResult("Any", path => $"{path} <= to")
+                : member.GetHandlingStatementAsDbEntity("Any", path => $"{path} <= to");
+
             return $$"""
                 if ({{nullableFullPathFrom}} != null && {{nullableFullPathTo}} != null) {
                     // from, to のうち to の方が小さい場合は from-to を逆に読み替える
@@ -169,31 +194,15 @@ namespace Nijo.Core {
                     var max = {{fullPathFrom}} < {{fullPathTo}}
                         ? {{fullPathTo}}
                         : {{fullPathFrom}};
-                {{If(isArray, () => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{ownerPath}}.Any(y =>
-                        y.{{member.MemberName}} >= min &&
-                        y.{{member.MemberName}} <= max));
-                """).Else(() => $$"""
-                    {{query}} = {{query}}.Where(x =>
-                        x.{{memberPath}} >= min &&
-                        x.{{memberPath}} <= max);
-                """)}}
+                    {{query}} = {{query}}.Where(x => x.{{whereStatementFromTo.Join(".")}});
 
                 } else if ({{nullableFullPathFrom}} != null) {
                     var from = {{fullPathFrom}};
-                {{If(isArray, () => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{ownerPath}}.Any(y => y.{{member.MemberName}} >= from));
-                """).Else(() => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{memberPath}} >= from);
-                """)}}
+                    {{query}} = {{query}}.Where(x => x.{{whereStatementFromOnly.Join(".")}});
 
                 } else if ({{nullableFullPathTo}} != null) {
                     var to = {{fullPathTo}};
-                {{If(isArray, () => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{ownerPath}}.Any(y => y.{{member.MemberName}} <= to));
-                """).Else(() => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{memberPath}} <= to);
-                """)}}
+                    {{query}} = {{query}}.Where(x => x.{{whereStatementToOnly.Join(".")}});
                 }
                 """;
         }

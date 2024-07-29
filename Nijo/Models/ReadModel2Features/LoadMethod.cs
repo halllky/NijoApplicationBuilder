@@ -205,20 +205,18 @@ namespace Nijo.Models.ReadModel2Features {
                 /// {{_aggregate.Item.DisplayName}}の一覧検索を行います。
                 /// </summary>
                 public virtual IEnumerable<{{returnType.CsClassName}}> {{AppSrvLoadMethod}}({{argType.CsClassName}} searchCondition) {
+                    #pragma warning disable CS8602 // null 参照の可能性があるものの逆参照です。
+                    #pragma warning disable CS8604 // Null 参照引数の可能性があります。
+
                     var query = {{AppSrvCreateQueryMethod}}(searchCondition);
 
-                #pragma warning disable CS8602 // null 参照の可能性があるものの逆参照です。
-                #pragma warning disable CS8604 // Null 参照引数の可能性があります。
                 {{filterMembers.SelectTextTemplate(m => $$"""
                     // フィルタリング: {{m.MemberName}}
-                    {{WithIndent(m.Member.Options.MemberType.RenderFilteringStatement(m.Member, "query", "searchCondition"), "    ")}}
+                    {{WithIndent(m.Member.Options.MemberType.RenderFilteringStatement(m.Member, "query", "searchCondition", E_SearchConditionObject.SearchCondition, E_SearchQueryObject.SearchResult), "    ")}}
 
                 """)}}
-                #pragma warning restore CS8604 // Null 参照引数の可能性があります。
-                #pragma warning restore CS8602 // null 参照の可能性があるものの逆参照です。
 
                     // ソート
-                #pragma warning disable CS8602 // null 参照の可能性があるものの逆参照です。
                     IOrderedQueryable<{{searchResult.CsClassName}}>? sorted = null;
                     foreach (var sortOption in searchCondition.{{SearchCondition.SORT_CS}}) {
                 {{sortMembers.SelectTextTemplate((m, i) => $$"""
@@ -245,7 +243,6 @@ namespace Nijo.Models.ReadModel2Features {
                     } else {
                         query = sorted;
                     }
-                #pragma warning restore CS8602 // null 参照の可能性があるものの逆参照です。
 
                     // ページング
                     if (searchCondition.{{SearchCondition.SKIP_CS}} != null) {
@@ -261,6 +258,9 @@ namespace Nijo.Models.ReadModel2Features {
                     // 読み取り専用項目の設定や追加情報などを付す
                     var returnValue = displayDataList.Select({{AppSrvAfterLoadedMethod}});
                     return returnValue;
+
+                    #pragma warning restore CS8604 // Null 参照引数の可能性があります。
+                    #pragma warning restore CS8602 // null 参照の可能性があるものの逆参照です。
                 }
                 """;
         }

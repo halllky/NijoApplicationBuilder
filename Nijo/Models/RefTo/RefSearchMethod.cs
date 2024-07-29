@@ -115,7 +115,7 @@ namespace Nijo.Models.RefTo {
 
                 {{filterMembers.SelectTextTemplate(m => $$"""
                     // フィルタリング: {{m.MemberName}}
-                    {{WithIndent(m.Member.Options.MemberType.RenderFilteringStatement(m.Member, "query", "searchCondition"), "    ")}}
+                    {{WithIndent(m.Member.Options.MemberType.RenderFilteringStatement(m.Member, "query", "searchCondition", E_SearchConditionObject.RefSearchCondition, E_SearchQueryObject.EFCoreEntity), "    ")}}
 
                 """)}}
                     // フィルタリング: 任意の処理

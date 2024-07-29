@@ -242,5 +242,59 @@ namespace Nijo.Models.WriteModel2Features {
             }
             yield return member.MemberName;
         }
+
+        /// <summary>
+        /// <see cref="GetFullPathAsDbEntity(AggregateMember.AggregateMemberBase, GraphNode{Aggregate}?, GraphNode{Aggregate}?)"/> と似ているが、
+        /// 経路の途中に配列がある場合は .Select または .SelectMany が挟まる。
+        /// </summary>
+        internal static IEnumerable<string> GetHandlingStatementAsDbEntity(
+            this AggregateMember.AggregateMemberBase member,
+            string? linqMethodifArray = null,
+            Func<string, string>? handlingStatement = null,
+            GraphNode<Aggregate>? since = null,
+            GraphNode<Aggregate>? until = null) {
+
+            if (linqMethodifArray == null) linqMethodifArray = "Select";
+            if (handlingStatement == null) handlingStatement = fullpath => fullpath;
+
+            var path = member.Owner.PathFromEntry();
+            if (since != null) path = path.Since(since);
+            if (until != null) path = path.Until(until);
+
+            var edges = path.ToArray();
+            if (edges.Length == 0) {
+                yield return handlingStatement(member.MemberName);
+                yield break;
+            }
+
+            var isArray = false;
+            for (int i = 0; i < edges.Length; i++) {
+                var edge = edges[i];
+                var isLast = i == edges.Length - 1;
+
+                var navigation = new NavigationProperty(edge.As<Aggregate>());
+                var thisSide = navigation.Principal.Owner == edge.Source.As<Aggregate>()
+                    ? navigation.Principal
+                    : navigation.Relevant;
+
+                if (thisSide.OppositeIsMany) {
+                    yield return isArray
+                        ? $"SelectMany(x => x.{thisSide.PropertyName})"
+                        : thisSide.PropertyName;
+                    isArray = true;
+
+                } else {
+                    yield return isArray
+                        ? $"Select(x => x.{thisSide.PropertyName})"
+                        : thisSide.PropertyName;
+                }
+
+                if (isLast) {
+                    yield return isArray
+                        ? $"{linqMethodifArray}(x => {handlingStatement($"x.{member.MemberName}")})"
+                        : handlingStatement(member.MemberName);
+                }
+            }
+        }
     }
 }
