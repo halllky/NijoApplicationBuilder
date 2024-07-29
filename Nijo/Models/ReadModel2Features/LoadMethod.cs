@@ -123,8 +123,9 @@ namespace Nijo.Models.ReadModel2Features {
                 /// データベースから読み込んだデータにしかアクセスできない代わりに、
                 /// C#のメソッドやインターフェースなどを無制限に利用することができます。
                 /// </summary>
-                protected virtual {{forDisplay.CsClassName}} {{AppSrvAfterLoadedMethod}}({{forDisplay.CsClassName}} searchResult) {
-                    return searchResult;
+                /// <param name="currentPageSearchResult">検索結果。ページングされた後の、そのページのデータしかないので注意。</param>
+                protected virtual IEnumerable<{{forDisplay.CsClassName}}> {{AppSrvAfterLoadedMethod}}(IEnumerable<{{forDisplay.CsClassName}}> currentPageSearchResult) {
+                    return currentPageSearchResult;
                 }
                 """;
         }
@@ -253,10 +254,10 @@ namespace Nijo.Models.ReadModel2Features {
                     }
 
                     // 検索結果を画面表示用の型に変換
-                    var displayDataList = query.AsEnumerable().Select(searchResult => {{WithIndent(RenderNewDisplayData(returnType, "searchResult", _aggregate), "    ")}});
+                    var displayDataList = query.AsEnumerable().Select(searchResult => {{WithIndent(RenderNewDisplayData(returnType, "searchResult", _aggregate), "    ")}}).ToArray();
 
-                    // 読み取り専用項目の設定や追加情報などを付す
-                    var returnValue = displayDataList.Select({{AppSrvAfterLoadedMethod}});
+                    // 読み取り専用項目の設定や、追加情報などを付すなど、任意のカスタマイズ処理
+                    var returnValue = {{AppSrvAfterLoadedMethod}}(displayDataList);
                     return returnValue;
 
                     #pragma warning restore CS8604 // Null 参照引数の可能性があります。
