@@ -22,11 +22,11 @@ namespace Nijo.Models.WriteModel2Features {
         private readonly GraphNode<Aggregate> _refEntry;
 
         internal string CsClassName => _refEntry == _aggregate
-            ? $"{_aggregate.Item.PhysicalName}RefTargetKeys"
-            : $"{_aggregate.Item.PhysicalName}RefTargetKeysVia{_refEntry.Item.PhysicalName}";
+            ? $"{_refEntry.Item.PhysicalName}RefTargetKeys"
+            : $"{_refEntry.Item.PhysicalName}RefTargetKeys_{_aggregate.Item.PhysicalName}";
         internal string TsTypeName => _refEntry == _aggregate
-            ? $"{_aggregate.Item.PhysicalName}RefTargetKeys"
-            : $"{_aggregate.Item.PhysicalName}RefTargetKeysVia{_refEntry.Item.PhysicalName}";
+            ? $"{_refEntry.Item.PhysicalName}RefTargetKeys"
+            : $"{_refEntry.Item.PhysicalName}RefTargetKeys_{_aggregate.Item.PhysicalName}";
 
         /// <summary>
         /// この集約自身がもつメンバーを列挙します。

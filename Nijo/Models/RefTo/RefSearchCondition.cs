@@ -21,17 +21,17 @@ namespace Nijo.Models.RefTo {
         private readonly GraphNode<Aggregate> _refEntry;
 
         internal virtual string CsClassName => _refEntry == _aggregate
-            ? $"{_aggregate.Item.PhysicalName}RefSearchCondition"
-            : $"{_aggregate.Item.PhysicalName}RefSearchConditionVia{_refEntry.Item.PhysicalName}";
+            ? $"{_refEntry.Item.PhysicalName}RefSearchCondition"
+            : $"{_refEntry.Item.PhysicalName}RefSearchCondition_{_aggregate.Item.PhysicalName}";
         internal virtual string TsTypeName => _refEntry == _aggregate
-            ? $"{_aggregate.Item.PhysicalName}RefSearchCondition"
-            : $"{_aggregate.Item.PhysicalName}RefSearchConditionVia{_refEntry.Item.PhysicalName}";
+            ? $"{_refEntry.Item.PhysicalName}RefSearchCondition"
+            : $"{_refEntry.Item.PhysicalName}RefSearchCondition_{_aggregate.Item.PhysicalName}";
         internal virtual string CsFilterClassName => _refEntry == _aggregate
-            ? $"{_aggregate.Item.PhysicalName}RefSearchConditionFilter"
-            : $"{_aggregate.Item.PhysicalName}RefSearchConditionFilterVia{_refEntry.Item.PhysicalName}";
+            ? $"{_refEntry.Item.PhysicalName}RefSearchConditionFilter"
+            : $"{_refEntry.Item.PhysicalName}RefSearchConditionFilter_{_aggregate.Item.PhysicalName}";
         internal virtual string TsFilterTypeName => _refEntry == _aggregate
-            ? $"{_aggregate.Item.PhysicalName}RefSearchConditionFilter"
-            : $"{_aggregate.Item.PhysicalName}RefSearchConditionFilterVia{_refEntry.Item.PhysicalName}";
+            ? $"{_refEntry.Item.PhysicalName}RefSearchConditionFilter"
+            : $"{_refEntry.Item.PhysicalName}RefSearchConditionFilter_{_aggregate.Item.PhysicalName}";
 
         internal const string KEYWORD_CS = "Keyword";
         internal const string KEYWORD_TS = "keyword";

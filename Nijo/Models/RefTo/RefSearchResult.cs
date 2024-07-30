@@ -33,11 +33,11 @@ namespace Nijo.Models.RefTo {
         private readonly GraphNode<Aggregate> _refEntry;
 
         internal string CsClassName => _refEntry == _aggregate
-            ? $"{_aggregate.Item.PhysicalName}RefTarget"
-            : $"{_aggregate.Item.PhysicalName}RefTargetVia{_refEntry.Item.PhysicalName}";
+            ? $"{_refEntry.Item.PhysicalName}RefTarget"
+            : $"{_refEntry.Item.PhysicalName}RefTarget_{_aggregate.Item.PhysicalName}";
         internal string TsTypeName => _refEntry == _aggregate
-            ? $"{_aggregate.Item.PhysicalName}RefTarget"
-            : $"{_aggregate.Item.PhysicalName}RefTargetVia{_refEntry.Item.PhysicalName}";
+            ? $"{_refEntry.Item.PhysicalName}RefTarget"
+            : $"{_refEntry.Item.PhysicalName}RefTarget_{_aggregate.Item.PhysicalName}";
 
         private IEnumerable<AggregateMember.AggregateMemberBase> GetOwnMembers() {
             foreach (var member in _aggregate.GetMembers()) {
