@@ -90,7 +90,10 @@ namespace Nijo.Parts.WebServer {
 
 
                     #region データ構造クラス
-                        {{WithIndent(DataClassDeclaring, "    ")}}
+                    {{DataClassDeclaring.SelectTextTemplate(source => $$"""
+                        {{WithIndent(source, "    ")}}
+
+                    """)}}
                     #endregion データ構造クラス
                     }
 
