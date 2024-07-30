@@ -72,9 +72,9 @@ namespace Nijo.Models {
                 var refSearchCondition = new RefSearchCondition(asEntry, asEntry);
                 var refSearchResult = new RefSearchResult(asEntry, asEntry);
                 aggregateFile.DataClassDeclaring.Add(refSearchCondition.RenderCSharpDeclaringRecursively(context));
-                context.ReactProject.Types.Add(asEntry, refSearchCondition.RenderTypeScriptDeclaringRecursively(context));
                 aggregateFile.DataClassDeclaring.Add(refSearchResult.RenderCSharp(context));
-                context.ReactProject.Types.Add(asEntry, refSearchResult.RenderTypeScript(context));
+                context.ReactProject.Types.Add(rootAggregate, refSearchCondition.RenderTypeScriptDeclaringRecursively(context));
+                context.ReactProject.Types.Add(rootAggregate, refSearchResult.RenderTypeScript(context));
 
                 // UI: コンボボックス
                 // UI: 検索ダイアログ
