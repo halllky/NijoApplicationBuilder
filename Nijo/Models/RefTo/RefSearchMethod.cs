@@ -1,4 +1,5 @@
 using Nijo.Core;
+using Nijo.Models.ReadModel2Features;
 using Nijo.Models.WriteModel2Features;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
@@ -26,7 +27,9 @@ namespace Nijo.Models.RefTo {
         internal const string NOW_LOADING = "nowLoading";
         internal const string RELOAD = "reload";
 
-        private const string CONTROLLER_ACTION = "search-refs";
+        private string ControllerAction => _aggregate.IsRoot()
+            ? $"search-refs"
+            : $"search-refs/{_aggregate.Item.PhysicalName}";
         private string AppSrvLoadMethod => $"SearchRefs{_aggregate.Item.PhysicalName}";
         private string AppSrvBeforeLoadMethod => $"OnBeforeLoadSearchRefs{_aggregate.Item.PhysicalName}";
 
@@ -37,7 +40,7 @@ namespace Nijo.Models.RefTo {
 
             return $$"""
                 export const {{ReactHookName}} = (searchCondition?: Types.{{searchCondition.TsTypeName}}) => {
-                  const [{{CURRENT_PAGE_ITEMS}}, setCurrentPageItems] = React.useState<{{searchResult.TsTypeName}}[]>(() => [])
+                  const [{{CURRENT_PAGE_ITEMS}}, setCurrentPageItems] = React.useState<Types.{{searchResult.TsTypeName}}[]>(() => [])
                   const [{{NOW_LOADING}}, setNowLoading] = React.useState(false)
                   const [, dispatchMsg] = Util.useMsgContext()
                   const { post } = Util.useHttpRequest()
@@ -45,7 +48,7 @@ namespace Nijo.Models.RefTo {
                   const {{RELOAD}} = React.useCallback(async () => {
                     setNowLoading(true)
                     try {
-                      const res = await post<{{searchResult.TsTypeName}}[]>(`{{controller.SubDomain}}/{{CONTROLLER_ACTION}}`, searchCondition)
+                      const res = await post<Types.{{searchResult.TsTypeName}}[]>(`{{controller.SubDomain}}/{{ControllerAction}}`, searchCondition)
                       if (!res.ok) {
                         dispatchMsg(msg => msg.error('データ読み込みに失敗しました。'))
                         return
@@ -73,7 +76,7 @@ namespace Nijo.Models.RefTo {
             var searchCondition = new RefSearchCondition(_aggregate, _refEntry);
 
             return $$"""
-                [HttpPost("{{CONTROLLER_ACTION}}")]
+                [HttpPost("{{ControllerAction}}")]
                 public virtual IActionResult Load{{_aggregate.Item.PhysicalName}}([FromBody] {{searchCondition.CsClassName}} searchCondition) {
                     var searchResult = _applicationService.{{AppSrvLoadMethod}}(searchCondition);
                     return this.JsonContent(searchResult.ToArray());
@@ -178,9 +181,55 @@ namespace Nijo.Models.RefTo {
         }
 
         internal string RenderAppSrvMethodOfReadModel(CodeRenderingContext context) {
+            var load = new LoadMethod(_aggregate.GetRoot());
+            var searchCondition = new SearchCondition(_aggregate.GetRoot());
+            var searchResult = new DataClassForDisplay(_aggregate.GetRoot());
+            var refSearchCondition = new RefSearchCondition(_aggregate, _refEntry);
+            var refSearchResult = new RefSearchResult(_aggregate, _refEntry);
+
+            // 通常の一覧検索の戻り値は親要素の配列だが、
+            // この集約が子孫要素の場合、戻り値はその子孫要素の配列になる。そして祖先は各要素のプロパティになる。
+            // つまり親が子をプロパティとして持つのではなく子が親をプロパティとして持つ形になる。その逆転変換処理に使う変数
+            var ancestors = _aggregate
+                .EnumerateAncestors()
+                .Select(edge => new DataClassForDisplayDescendant(edge.Terminal.AsChildRelationMember()));
+            const string C_PARENT = "Parent";
+            const string C_CHILD = "Child";
+
             return $$"""
-                // TODO #35 RefSearchMethod RenderAppSrvMethod
+                /// <summary>
+                /// {{_aggregate.Item.DisplayName}} が他の集約から参照されるときの検索処理
+                /// </summary>
+                /// <param name="refSearchCondition">検索条件</param>
+                /// <returns>検索結果</returns>
+                public virtual IEnumerable<{{refSearchResult.CsClassName}}> {{AppSrvLoadMethod}}({{refSearchCondition.CsClassName}} refSearchCondition) {
+                    // 通常の一覧検索処理を流用する
+                    var searchCondition = new {{searchCondition.CsClassName}} {
+                        Filter = new() {
+                            // TODO #35 参照先検索条件を通常の検索条件に変換する
+                        },
+                        Keyword = refSearchCondition.Keyword,
+                        Skip = refSearchCondition.Skip,
+                        Sort = refSearchCondition.Sort,
+                        Take = refSearchCondition.Take,
+                    };
+                    var searchResult = {{load.AppSrvLoadMethod}}(searchCondition);
+
+                    // 通常の一覧検索結果の型を、他の集約から参照されるときの型に変換する
+                    var refTargets = searchResult
+                {{ancestors.SelectTextTemplate(prop => prop.IsArray ? $$"""
+                        .SelectMany(sr => sr.{{prop.MemberName}}, (parent, child) => new { {{C_PARENT}} = parent, {{C_CHILD}} = child })
+                """ : $$"""
+                        .Select(sr => new { {{C_PARENT}} = sr, {{C_CHILD}} = sr.{{prop.MemberName}} })
+                """)}}
+                        .Select(sr => new {{refSearchResult.CsClassName}} {
+                            // TODO #35 通常の一覧検索結果を参照先検索結果に変換する
+                        });
+                    return refTargets;
+                }
                 """;
         }
+
+
     }
 }

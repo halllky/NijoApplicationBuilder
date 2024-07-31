@@ -138,6 +138,20 @@ namespace Nijo.Core {
                 && parent.Attributes.TryGetValue(REL_ATTR_VARIATIONGROUPNAME, out var groupName)
                 && (string)groupName != string.Empty;
         }
+        /// <summary>
+        /// この集約を <see cref="AggregateMember.RelationMember"/> に変換します。
+        /// この集約がChild,Children,Variationのいずれでもない場合は例外になります。
+        /// </summary>
+        internal static AggregateMember.RelationMember AsChildRelationMember(this GraphNode<Aggregate> aggregate) {
+            var parentEdge = aggregate.GetParent()
+                ?? throw new InvalidOperationException($"{aggregate}の親を取得できません。");
+
+            return parentEdge.Initial
+                .GetMembers()
+                .OfType<AggregateMember.RelationMember>()
+                .SingleOrDefault(rm => rm.MemberAggregate == aggregate)
+                ?? throw new InvalidOperationException($"{parentEdge.Initial}のメンバーに{aggregate}がありません。");
+        }
 
         /// <summary>
         /// この集約がDBに保存されるものかどうかを返します。

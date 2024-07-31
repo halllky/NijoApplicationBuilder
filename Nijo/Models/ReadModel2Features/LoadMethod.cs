@@ -25,7 +25,7 @@ namespace Nijo.Models.ReadModel2Features {
         internal const string RELOAD = "reload";
 
         private const string CONTROLLER_ACTION = "load";
-        private string AppSrvLoadMethod => $"Load{_aggregate.Item.PhysicalName}";
+        internal string AppSrvLoadMethod => $"Load{_aggregate.Item.PhysicalName}";
         internal string AppSrvCreateQueryMethod => $"Create{_aggregate.Item.PhysicalName}QuerySource";
         private string AppSrvAfterLoadedMethod => $"OnAfter{_aggregate.Item.PhysicalName}Loaded";
 
