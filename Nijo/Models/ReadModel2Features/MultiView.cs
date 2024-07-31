@@ -18,30 +18,23 @@ namespace Nijo.Models.ReadModel2Features {
         }
         private readonly GraphNode<Aggregate> _aggregate;
 
-        public string Url =>
-             $$"""
-                /* TODO #35 MultiView */
-                """;
-
+        public string Url => $"/{_aggregate.Item.UniqueId}"; // React Router は全角文字非対応なので
         public string DirNameInPageDir => _aggregate.Item.DisplayName.ToFileNameSafe();
-
-        public string ComponentPhysicalName =>
-             $$"""
-                /* TODO #35 MultiView */
-                """;
-
+        public string ComponentPhysicalName => $"{_aggregate.Item.PhysicalName}MultiView";
         public bool ShowMenu => true;
-
-        public string? LabelInMenu =>
-             $$"""
-                /* TODO #35 MultiView */
-                """;
+        public string? LabelInMenu => _aggregate.Item.DisplayName;
 
         public SourceFile GetSourceFile() => new SourceFile {
             FileName = "list.tsx",
             RenderContent = ctx => {
                 return $$"""
-                    // TODO #35 MultiView
+                    export default function () {
+                      return (
+                        <div>
+                          TODO #35 MultiView
+                        </div>
+                      )
+                    }
                     """;
             },
         };

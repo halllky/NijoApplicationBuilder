@@ -45,7 +45,7 @@ namespace Nijo.Models {
             aggregateFile.AppServiceMethods.Add(load.RenderAppSrvAbstractMethod(context));
 
             // 処理: 一括更新処理
-            context.UseSummarizedFile<BatchUpdateDisplayData>().Register(rootAggregate);
+            context.UseSummarizedFile<BatchUpdateReadModel>().Register(rootAggregate);
 
             // UI: MultiView
             var multiView = new MultiView(rootAggregate);

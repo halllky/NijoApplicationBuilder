@@ -12,7 +12,7 @@ namespace Nijo.Models.WriteModel2Features {
     /// <summary>
     /// 一括更新処理
     /// </summary>
-    internal class BatchUpdate : ISummarizedFile {
+    internal class BatchUpdateWriteModel : ISummarizedFile {
 
         private readonly List<GraphNode<Aggregate>> _aggregates = new();
         internal void Register(GraphNode<Aggregate> aggregate) {
@@ -63,7 +63,7 @@ namespace Nijo.Models.WriteModel2Features {
                   const { post } = Util.useHttpRequest()
 
                   /** 一括更新を即時実行します。更新するデータの量によっては長い待ち時間が発生する可能性があります。 */
-                  const batchUpdateImmediately = React.useCallback(({{HOOK_PARAM_ITEMS}}: Types.{{DataClassForSaveBase.TS_SAVE_COMMAND}}[]) => {
+                  const batchUpdateImmediately = React.useCallback(async ({{HOOK_PARAM_ITEMS}}: Types.{{DataClassForSaveBase.TS_SAVE_COMMAND}}[]) => {
                     const res = await post(`{{Controller.SUBDOMAIN}}/{{CONTROLLER_SUBDOMAIN}}/{{CONTROLLER_ACTION_IMMEDIATELY}}`, { {{HOOK_PARAM_ITEMS}} })
                     if (!res.ok) {
                       dispatchMsg(msg => msg.error('一括更新に失敗しました。'))
@@ -116,9 +116,9 @@ namespace Nijo.Models.WriteModel2Features {
                                 var context = new {{BatchUpdateContext.CLASS_NAME}}(ignoreConfirm);
                                 _applicationService.{{APPSRV_METHOD}}(parameter.{{HOOK_PARAM_ITEMS}}, context);
 
-                                if (context.HasUserError) {
+                                if (context.HasError()) {
                                     tran.Rollback();
-                                    return Problem($"一括更新に失敗しました。{Environment.NewLine}{string.Join(Environment.NewLine, errors2)}");
+                                    return Problem($"一括更新に失敗しました。{Environment.NewLine}{string.Join(Environment.NewLine, context.GetErrorMessages())}");
                                 }
                                 tran.Commit();
                                 return Ok();

@@ -29,21 +29,38 @@ namespace Nijo.Models.ReadModel2Features {
         private readonly GraphNode<Aggregate> _aggregate;
         private readonly E_Type _type;
 
-        public string Url => $$"""
-                /* TODO #35 SingleView */
-                """;
+        public string Url {
+            get {
+                if (_type == E_Type.New) {
+                    return $"/{_aggregate.Item.UniqueId}/new";
 
+                } else {
+                    // React Router は全角文字非対応なので key0, key1, ... をURLに使う
+                    var urlKeys = _aggregate
+                        .GetKeys()
+                        .OfType<AggregateMember.ValueMember>()
+                        .Select((_, i) => $":key{i}");
+
+                    if (_type == E_Type.ReadOnly) {
+                        return $"/{_aggregate.Item.UniqueId}/detail/{urlKeys.Join("/")}";
+
+                    } else if (_type == E_Type.Edit) {
+                        return $"/{_aggregate.Item.UniqueId}/edit/{urlKeys.Join("/")}";
+                    } else {
+                        throw new InvalidOperationException($"SingleViewの種類が不正: {_aggregate.Item}");
+                    }
+                }
+            }
+        }
         public string DirNameInPageDir => _aggregate.Item.DisplayName.ToFileNameSafe();
-
-        public string ComponentPhysicalName => $$"""
-                /* TODO #35 SingleView */
-                """;
-
+        public string ComponentPhysicalName => _type switch {
+            E_Type.New => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}CreateView",
+            E_Type.ReadOnly => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}DetailView",
+            E_Type.Edit => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}EditView",
+            _ => throw new NotImplementedException(),
+        };
         public bool ShowMenu => false;
-
-        public string? LabelInMenu => $$"""
-                /* TODO #35 SingleView */
-                """;
+        public string? LabelInMenu => null;
 
         public SourceFile GetSourceFile() => new SourceFile {
             FileName = _type switch {
@@ -54,7 +71,13 @@ namespace Nijo.Models.ReadModel2Features {
             },
             RenderContent = ctx => {
                 return $$"""
-                    // TODO #35 SingleView
+                    export default function () {
+                      return (
+                        <div>
+                          TODO #35 SingleView({{_type}})
+                        </div>
+                      )
+                    }
                     """;
             },
         };

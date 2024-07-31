@@ -65,7 +65,7 @@ namespace Nijo.Models.WriteModel2Features {
                         /// <param name="errorItemIndex">パラメータの配列の何番目の要素でエラーが発生したか</param>
                         /// <param name="errorMessage">エラー内容</param>
                         public void AddError(int errorItemIndex, string errorMessage) {
-                            // TODO #35
+                            // TODO #35 AddError実装
                         }
                         /// <summary>
                         /// ユーザーに知らせるべきエラー（入力値不正など）を追加します。
@@ -73,14 +73,22 @@ namespace Nijo.Models.WriteModel2Features {
                         /// <param name="errorItemIndex">パラメータの配列の何番目の要素でエラーが発生したか</param>
                         /// <param name="error">エラー内容</param>
                         public void AddError(int errorItemIndex, {{DataClassForSave.I_ERROR_DATA_STRUCTURE}} error) {
-                            // TODO #35
+                            // TODO #35 AddError実装
                         }
                         /// <summary>
                         /// 更新処理の途中で、ユーザーに伝えるべきエラー（入力値不正など）が発生したかどうか。
                         /// なおシステムエラーの場合は一般例外と同様に処理されるため、このプロパティを参照するまでもなく制御がcatch句に飛ぶ。
                         /// </summary>
                         public bool HasError() {
-
+                            // TODO #35 HasError実装
+                            return false;
+                        }
+                        /// <summary>
+                        /// エラーメッセージの一覧を返します。
+                        /// </summary>
+                        public IEnumerable<string> GetErrorMessages() {
+                            // TODO #35 GetErrorMessages実装
+                            yield break;
                         }
                     }
                     """;

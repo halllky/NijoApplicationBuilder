@@ -50,7 +50,7 @@ namespace Nijo.Models {
             }
 
             // 処理: 一括更新処理
-            context.UseSummarizedFile<BatchUpdate>().Register(rootAggregate);
+            context.UseSummarizedFile<BatchUpdateWriteModel>().Register(rootAggregate);
 
             // 処理: 新規作成処理 AppSrv
             // 処理: 更新処理 AppSrv

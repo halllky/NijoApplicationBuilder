@@ -14,7 +14,7 @@ namespace Nijo.Models.ReadModel2Features {
     /// <see cref="DataClassForDisplay"/> を一括更新する処理。
     /// サーバー側で画面表示用データを <see cref="DataClassForSave"/> に変換してForSaveの一括更新処理を呼ぶ。
     /// </summary>
-    internal class BatchUpdateDisplayData : ISummarizedFile {
+    internal class BatchUpdateReadModel : ISummarizedFile {
 
         private readonly List<GraphNode<Aggregate>> _aggregates = new();
         internal void Register(GraphNode<Aggregate> aggregate) {
@@ -48,7 +48,7 @@ namespace Nijo.Models.ReadModel2Features {
         void ISummarizedFile.OnEndGenerating(CodeRenderingContext context) {
 
             // 一括更新処理
-            var batchUpdate = context.UseSummarizedFile<BatchUpdate>();
+            var batchUpdate = context.UseSummarizedFile<BatchUpdateWriteModel>();
             context.ReactProject.Types.Add(RenderHookParamType());
             batchUpdate.AddReactHook(HOOK_NAME, RenderReactHook(context));
             context.UseSummarizedFile<Parts.Utility.UtilityClass>().AddJsonConverter(RenderJsonConverter());
@@ -68,8 +68,8 @@ namespace Nijo.Models.ReadModel2Features {
         private string RenderReactHook(CodeRenderingContext context) {
             return $$"""
                 /** 画面表示用データの一括更新を即時実行します。更新するデータの量によっては長い待ち時間が発生する可能性があります。 */
-                const {{HOOK_NAME}} = React.useCallback((...{{HOOK_PARAM_ITEMS}}: Types.{{HOOK_PARA_TYPE}}[]) => {
-                    const res = await post(`{{Controller.SUBDOMAIN}}/{{BatchUpdate.CONTROLLER_SUBDOMAIN}}/{{CONTROLLER_ACTION}}`, { {{HOOK_PARAM_ITEMS}} })
+                const {{HOOK_NAME}} = React.useCallback(async (...{{HOOK_PARAM_ITEMS}}: Types.{{HOOK_PARA_TYPE}}[]) => {
+                    const res = await post(`{{Controller.SUBDOMAIN}}/{{BatchUpdateWriteModel.CONTROLLER_SUBDOMAIN}}/{{CONTROLLER_ACTION}}`, { {{HOOK_PARAM_ITEMS}} })
                     if (!res.ok) {
                       dispatchMsg(msg => msg.error('一括更新に失敗しました。'))
                     }
@@ -118,9 +118,9 @@ namespace Nijo.Models.ReadModel2Features {
                         var context = new {{BatchUpdateContext.CLASS_NAME}}(ignoreConfirm);
                         _applicationService.{{APPSRV_BATCH_UPDATE}}(parameter.{{HOOK_PARAM_ITEMS}}, context);
                 
-                        if (context.HasUserError) {
+                        if (context.HasError()) {
                             tran.Rollback();
-                            return Problem($"一括更新に失敗しました。{Environment.NewLine}{string.Join(Environment.NewLine, errors2)}");
+                            return Problem($"一括更新に失敗しました。{Environment.NewLine}{string.Join(Environment.NewLine, context.GetErrorMessages())}");
                         }
                         tran.Commit();
                         return Ok();
@@ -162,7 +162,7 @@ namespace Nijo.Models.ReadModel2Features {
                     }
 
                     // 一括更新実行
-                    {{BatchUpdate.APPSRV_METHOD}}(converted, saveContext);
+                    {{BatchUpdateWriteModel.APPSRV_METHOD}}(converted, saveContext);
                 }
 
                 {{_aggregates.SelectTextTemplate(agg => $$"""

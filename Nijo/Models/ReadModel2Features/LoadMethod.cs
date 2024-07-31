@@ -39,7 +39,7 @@ namespace Nijo.Models.ReadModel2Features {
 
             return $$"""
                 export const {{ReactHookName}} = (searchCondition?: Types.{{searchCondition.TsTypeName}}) => {
-                  const [{{CURRENT_PAGE_ITEMS}}, setCurrentPageItems] = React.useState<{{searchResult.TsTypeName}}[]>(() => [])
+                  const [{{CURRENT_PAGE_ITEMS}}, setCurrentPageItems] = React.useState<Types.{{searchResult.TsTypeName}}[]>(() => [])
                   const [{{NOW_LOADING}}, setNowLoading] = React.useState(false)
                   const [, dispatchMsg] = Util.useMsgContext()
                   const { post } = Util.useHttpRequest()
@@ -47,7 +47,7 @@ namespace Nijo.Models.ReadModel2Features {
                   const {{RELOAD}} = React.useCallback(async () => {
                     setNowLoading(true)
                     try {
-                      const res = await post<{{searchResult.TsTypeName}}[]>(`{{controller.SubDomain}}/{{CONTROLLER_ACTION}}`, searchCondition)
+                      const res = await post<Types.{{searchResult.TsTypeName}}[]>(`{{controller.SubDomain}}/{{CONTROLLER_ACTION}}`, searchCondition)
                       if (!res.ok) {
                         dispatchMsg(msg => msg.error('データ読み込みに失敗しました。'))
                         return

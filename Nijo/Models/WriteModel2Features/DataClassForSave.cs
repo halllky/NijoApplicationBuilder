@@ -96,8 +96,10 @@ namespace Nijo.Models.WriteModel2Features {
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
                     public {{GetMemberTypeNameCSharp(m, _type)}}? {{m.MemberName}} { get; set; }
                 """)}}
+                {{If(_aggregate.IsRoot(), () => $$"""
 
                     {{WithIndent(RenderToDbEntity(), "    ")}}
+                """)}}
                 }
                 """;
         }
@@ -247,6 +249,8 @@ namespace Nijo.Models.WriteModel2Features {
                     public bool IgnoreConfirm => _outerContext.IgnoreConfirm;
 
                     public bool HasError() {
+                        // TODO #35 HasError実装
+                        return false;
                     }
                 """)}}
 
