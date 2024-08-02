@@ -194,6 +194,9 @@ export const CellEditor = Util.forwardRefEx(<T,>({
         // クイック編集のためCellEditor自体は常に存在し続けるが、セル編集モードでないときは見えないようにする
         opacity: editingCellInfo === undefined ? 0 : undefined,
         pointerEvents: editingCellInfo === undefined ? 'none' : undefined,
+        //初期位置
+        left: 0,
+        top: 0,
       }}
       onKeyDown={handleKeyDown}
       tabIndex={0}
