@@ -53,9 +53,9 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
   const tdRefs = useRef<React.RefObject<HTMLTableCellElement>[][]>([])
   useLayoutEffect(() => {
     tdRefs.current = data?.map(() =>
-      Array.from({ length: columns.length }).map(() => React.createRef())
+      Array.from({ length: propsColumns?.length ?? 0 }).map(() => React.createRef())
     ) ?? []
-  }, [data, columns.length, tdRefs])
+  }, [data, propsColumns?.length, tdRefs])
 
   const {
     caretCell,
@@ -116,7 +116,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
     startEditing: () => {
       if (!caretCell.current || !cellEditorRef.current) return
       const row = api.getCoreRowModel().flatRows[caretCell.current.rowIndex]
-      const cell = row.getAllCells().find(cell => cell.column.id === caretCell.current!.colId)
+      const cell = row.getAllCells()[caretCell.current.colIndex]
       if (cell) cellEditorRef.current.startEditing(cell)
     },
   }), [getSelectedRows, divRef, cellEditorRef, api, caretCell])
@@ -187,6 +187,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
                   cellEditorRef={cellEditorRef}
                   getColWidth={getColWidth}
                   selectObject={selectObject}
+                  colIndex={colIndex}
                 />
               ))}
 
@@ -219,6 +220,7 @@ type MemorizedCellArgs<T> = {
   getColWidth: (column: RT.Column<T, unknown>) => string
   selectObject: (obj: SelectTarget) => void
   cellEditorRef: React.RefObject<CellEditorRef<T>>
+  colIndex: number
 }
 type MemorizedCellComponent = <T>(props: MemorizedCellArgs<T> & { ref: React.Ref<HTMLTableCellElement> }) => JSX.Element
 
@@ -227,13 +229,14 @@ const MemorizedTd: MemorizedCellComponent = React.memo(React.forwardRef(<T,>({
   getColWidth,
   selectObject,
   cellEditorRef,
+  colIndex,
 }: MemorizedCellArgs<T>, ref: React.ForwardedRef<HTMLTableCellElement>) => {
   return (
     <td
       ref={ref}
       className="relative overflow-hidden align-top p-0 border-r border-b border-1 border-color-3"
       style={{ ...getTdStickeyStyle(false), maxWidth: getColWidth(cell.column) }}
-      onMouseDown={e => selectObject({ target: 'cell', cell: { rowIndex: cell.row.index, colId: cell.column.id }, shiftKey: e.shiftKey })}
+      onMouseDown={e => selectObject({ target: 'cell', cell: { rowIndex: cell.row.index, colIndex }, shiftKey: e.shiftKey })}
       onDoubleClick={() => cellEditorRef.current?.startEditing(cell)}
     >
       {RT.flexRender(
@@ -246,6 +249,7 @@ const MemorizedTd: MemorizedCellComponent = React.memo(React.forwardRef(<T,>({
     && Object.is(prev.getColWidth, next.getColWidth)
     && Object.is(prev.selectObject, next.selectObject)
     && Object.is(prev.cellEditorRef, next.cellEditorRef)
+    && Object.is(prev.colIndex, next.colIndex)
 }) as <T>(props: MemorizedCellArgs<T>) => JSX.Element
 
 // -----------------------------------------------

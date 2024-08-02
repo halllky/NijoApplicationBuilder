@@ -31,20 +31,18 @@ export const useSelection = <T,>(
   const selectionStartTdRef = useRef<HTMLTableCellElement>()
   const updateTdRef = useCallback((caretCellPos: CellPosition | undefined, selectionStartPos: CellPosition | undefined) => {
     if (caretCellPos) {
-      const colIndex = columns.findIndex(col => col.id === caretCellPos.colId)
-      caretTdRef.current = tdRefs.current[caretCellPos.rowIndex]?.[colIndex]?.current ?? undefined
+      caretTdRef.current = tdRefs.current[caretCellPos.rowIndex]?.[caretCellPos.colIndex]?.current ?? undefined
     } else {
       caretTdRef.current = undefined
     }
     if (selectionStartPos) {
-      const colIndex = columns.findIndex(col => col.id === selectionStartPos.colId)
-      selectionStartTdRef.current = tdRefs.current[selectionStartPos.rowIndex]?.[colIndex]?.current ?? undefined
+      selectionStartTdRef.current = tdRefs.current[selectionStartPos.rowIndex]?.[selectionStartPos.colIndex]?.current ?? undefined
     } else {
       selectionStartTdRef.current = undefined
     }
     // 選択範囲の表示のアップデート
     activeCellRef.current?.update(caretTdRef.current, selectionStartTdRef.current, containsRowHeader)
-  }, [containsRowHeader, columns, tdRefs, caretTdRef, selectionStartTdRef, activeCellRef])
+  }, [containsRowHeader, tdRefs, caretTdRef, selectionStartTdRef, activeCellRef])
 
   // -----------------------------------------
   // 選択
@@ -59,7 +57,7 @@ export const useSelection = <T,>(
     // 何か選択
     else if (obj.target === 'any') {
       if (rowCount > 0 && colCount >= 0) {
-        const selected: CellPosition = { rowIndex: 0, colId: api.getAllColumns()[0].id }
+        const selected: CellPosition = { rowIndex: 0, colIndex: 0 }
         caretCell.current = selected
         selectionStart.current = selected
         setContainsRowHeader(false)
@@ -76,9 +74,9 @@ export const useSelection = <T,>(
     // 全選択
     else {
       if (rowCount > 0 && colCount >= 0) {
-        const columns = api.getAllColumns()
-        caretCell.current = { rowIndex: 0, colId: columns[0].id }
-        selectionStart.current = { rowIndex: rowCount - 1, colId: columns[columns.length - 1].id }
+        const columns = api.getAllLeafColumns()
+        caretCell.current = { rowIndex: 0, colIndex: 0 }
+        selectionStart.current = { rowIndex: rowCount - 1, colIndex: columns.length - 1 }
         setContainsRowHeader(true)
         onActiveRowChanged?.({ rowIndex: 0, getRow: () => api.getCoreRowModel().flatRows[rowCount - 1].original })
 
@@ -111,7 +109,7 @@ export const useSelection = <T,>(
       const rowIndex = e.key === 'ArrowUp'
         ? Math.max(0, movingCell.rowIndex - 1)
         : Math.min(rowCount - 1, movingCell.rowIndex + 1)
-      selectObject({ target: 'cell', cell: { rowIndex, colId: movingCell.colId }, shiftKey: e.shiftKey })
+      selectObject({ target: 'cell', cell: { rowIndex, colIndex: movingCell.colIndex }, shiftKey: e.shiftKey })
       e.preventDefault()
       activeCellRef.current?.scrollToActiveCell()
       return
@@ -124,13 +122,11 @@ export const useSelection = <T,>(
         return
       }
       // 1つ左または右のセルを選択
-      const columns = api.getAllColumns()
-      const currentColIndex = columns.findIndex(col => col.id === movingCell.colId)
-      const newColIndex = e.key === 'ArrowLeft'
-        ? Math.max(0, currentColIndex - 1)
-        : Math.min(columns.length - 1, currentColIndex + 1)
-      const newColumn = columns[newColIndex]
-      selectObject({ target: 'cell', cell: { rowIndex: movingCell.rowIndex, colId: newColumn.id }, shiftKey: e.shiftKey })
+      const columns = api.getAllLeafColumns()
+      const colIndex = e.key === 'ArrowLeft'
+        ? Math.max(0, movingCell.colIndex - 1)
+        : Math.min(columns.length - 1, movingCell.colIndex + 1)
+      selectObject({ target: 'cell', cell: { rowIndex: movingCell.rowIndex, colIndex }, shiftKey: e.shiftKey })
       e.preventDefault()
       activeCellRef.current?.scrollToActiveCell()
     }
@@ -146,9 +142,9 @@ export const useSelection = <T,>(
 
   const getSelectedColumns = useCallback(() => {
     if (!caretCell.current || !selectionStart.current) return []
-    const allColumns = api.getAllColumns()
-    const caretCellColIndex = allColumns.findIndex(c => c.id === caretCell.current!.colId)
-    const selectionStartColIndex = allColumns.findIndex(c => c.id === selectionStart.current!.colId)
+    const allColumns = api.getAllLeafColumns()
+    const caretCellColIndex = caretCell.current.colIndex
+    const selectionStartColIndex = selectionStart.current.colIndex
     if (caretCellColIndex === -1 || selectionStartColIndex === -1) return []
     const since = Math.min(caretCellColIndex, selectionStartColIndex)
     const until = Math.max(caretCellColIndex, selectionStartColIndex)

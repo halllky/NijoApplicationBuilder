@@ -42,7 +42,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
   const editorRef = useRef<Input.CustomComponentRef<string | unknown>>(null)
   useEffect(() => {
     if (caretCell.current) {
-      const columnDef = api.getColumn(caretCell.current.colId)?.columnDef as ColumnDefEx<T> | undefined
+      const columnDef = api.getAllLeafColumns()[caretCell.current.colIndex]?.columnDef as ColumnDefEx<T> | undefined
       setCaretCellEditingInfo(columnDef?.editSetting)
 
       // エディタを編集対象セルの位置に移動させる
@@ -164,7 +164,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
         && e.key === 'ArrowDown'
       )) {
         const row = api.getCoreRowModel().flatRows[caretCell.current.rowIndex]
-        const cell = row.getAllCells().find(cell => cell.column.id === caretCell.current!.colId)
+        const cell = row.getAllCells()[caretCell.current.colIndex]
         if (cell) startEditing(cell)
         return
       }

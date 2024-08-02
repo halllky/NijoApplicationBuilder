@@ -11,7 +11,7 @@ export const TABLE_ZINDEX = {
 
 export type CellPosition = {
   rowIndex: number
-  colId: string
+  colIndex: number
 }
 
 export type CellEditorRef<T> = {
