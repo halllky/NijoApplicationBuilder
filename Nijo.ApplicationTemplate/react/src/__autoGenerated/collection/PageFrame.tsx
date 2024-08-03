@@ -10,26 +10,24 @@ export const PageFrame = ({ header, footer, children, className, ...rest }: HTML
   children?: React.ReactNode
 }) => {
   return (
-    <Util.MsgContextProvider>
-      <div {...rest} className={`flex flex-col justify-start h-full overflow-auto ${className ?? ''}`}>
-        <header className="flex justify-start items-center p-1 gap-1">
-          <Util.SideMenuCollapseButton />
-          {header}
-        </header>
+    <div {...rest} className={`flex flex-col justify-start h-full overflow-auto ${className ?? ''}`}>
+      <header className="flex justify-start items-center p-1 gap-1">
+        <Util.SideMenuCollapseButton />
+        {header}
+      </header>
 
-        <Util.InlineMessageList />
+      <Util.InlineMessageList />
 
-        <main className="flex-1 p-1 overflow-scroll">
-          {children}
-        </main>
+      <main className="flex-1 p-1 overflow-scroll">
+        {children}
+      </main>
 
-        {footer && (
-          <footer className="flex justify-start items-center p-1 gap-1">
-            {footer}
-          </footer>
-        )}
-      </div>
-    </Util.MsgContextProvider>
+      {footer && (
+        <footer className="flex justify-start items-center p-1 gap-1">
+          {footer}
+        </footer>
+      )}
+    </div>
   )
 }
 

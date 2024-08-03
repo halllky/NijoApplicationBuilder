@@ -172,7 +172,6 @@ namespace Nijo.Models.ReadModel2Features {
 
                             {/* 検索結果欄 */}
                             <Panel>
-                              <Util.InlineMessageList />
                               <Layout.DataTable
                                 data={{{LoadMethod.CURRENT_PAGE_ITEMS}}}
                                 columns={columnDefs}
@@ -187,8 +186,10 @@ namespace Nijo.Models.ReadModel2Features {
 
                     /** クエリパラメータを解釈して画面初期表示時検索条件オブジェクトを返します。 */
                     function parseQueryParameter(url: string): AggregateType.{{searchCondition.TsTypeName}} {
-                      const searchParams = new URLSearchParams(new URL(url).search)
                       const searchCondition = AggregateType.{{searchCondition.CreateNewObjectFnName}}()
+                      if (!url) return searchCondition
+
+                      const searchParams = new URLSearchParams(new URL(url).search)
 
                       // 初期表示時検索条件の解釈（フィルタ）
                     {{searchCondition.EnumerateFilterMembersRecursively().SelectTextTemplate(m => $$"""
