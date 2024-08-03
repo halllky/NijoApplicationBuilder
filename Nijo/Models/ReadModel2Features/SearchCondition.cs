@@ -249,7 +249,6 @@ namespace Nijo.Models.ReadModel2Features {
         /// </summary>
         internal string RenderVFormBody(ReactPageRenderingContext context) {
 
-
             return $$"""
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
                 <VForm.Item label="{{m.MemberName}}">
@@ -257,7 +256,9 @@ namespace Nijo.Models.ReadModel2Features {
                 </VForm.Item>
                 """)}}
                 {{GetChildMembers().SelectTextTemplate(m => $$"""
-                  TODO #35
+                <VForm.Container label="{{m.DisplayMemberName}}">
+                  {{WithIndent(m.RenderVFormBody(context), "  ")}}
+                </VForm.Container>
                 """)}}
                 """;
         }
@@ -289,6 +290,9 @@ namespace Nijo.Models.ReadModel2Features {
         private readonly AggregateMember.RelationMember _relationMember;
         internal string MemberName => _relationMember is AggregateMember.Parent
             ? RefTo.RefSearchCondition.PARENT
+            : _relationMember.MemberName;
+        internal string DisplayMemberName => _relationMember is AggregateMember.Parent
+            ? _relationMember.MemberAggregate.Item.DisplayName
             : _relationMember.MemberName;
 
         internal override string RenderCreateNewObjectFn(CodeRenderingContext context) {

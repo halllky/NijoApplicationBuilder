@@ -159,7 +159,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                             {/* 検索条件欄 */}
                             <Panel ref={searchConditionPanelRef} defaultSize={30} collapsible onCollapse={setCollapsed}>
-                              <div className="h-full overflow-auto">
+                              <div className="h-full overflow-y-scroll">
                                 <FormProvider {...rhfSearchMethods}>
                                   <VForm.Container estimatedLabelWidth="10rem" className="p-1">
                                     {{WithIndent(searchCondition.RenderVFormBody(pageRenderingContext), "                ")}}
@@ -168,7 +168,7 @@ namespace Nijo.Models.ReadModel2Features {
                               </div>
                             </Panel>
 
-                            <PanelResizeHandle className="h-2 bg-color-4" />
+                            <PanelResizeHandle className="h-2" />
 
                             {/* 検索結果欄 */}
                             <Panel>
