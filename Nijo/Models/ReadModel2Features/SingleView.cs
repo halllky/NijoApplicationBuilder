@@ -62,8 +62,6 @@ namespace Nijo.Models.ReadModel2Features {
         public bool ShowMenu => false;
         public string? LabelInMenu => null;
 
-        public string GetUrlFnName => $"get{_aggregate.Item.PhysicalName}CreateViewUrl";
-
         public SourceFile GetSourceFile() => new SourceFile {
             FileName = _type switch {
                 E_Type.New => "new.tsx",
@@ -83,5 +81,46 @@ namespace Nijo.Models.ReadModel2Features {
                     """;
             },
         };
+
+        public string GetUrlFnName => _type switch {
+            E_Type.New => $"get{_aggregate.Item.PhysicalName}CreateViewUrl",
+            _ => $"get{_aggregate.Item.PhysicalName}SingleViewUrl",
+        };
+        internal string RenderGetUrlFn(CodeRenderingContext context) {
+            if (_type == E_Type.New) {
+                return $$"""
+                    export const {{GetUrlFnName}} = () => {
+                      return `{{Url}}`
+                    }
+                    """;
+            } else {
+                var readView = new SingleView(_aggregate, E_Type.ReadOnly);
+                var editView = new SingleView(_aggregate, E_Type.Edit);
+                var dataClass = new DataClassForDisplay(_aggregate);
+                var keys = _aggregate
+                    .GetKeys()
+                    .OfType<AggregateMember.ValueMember>()
+                    .Select(vm => new {
+                        vm.MemberName,
+                        Path = vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript),
+                    })
+                    .ToArray();
+                return $$"""
+                    export const {{GetUrlFnName}} = (obj: Types.{{dataClass.TsTypeName}}, to: 'readonly' | 'edit') => {
+                    {{keys.SelectTextTemplate((k, i) => $$"""
+                      const key{{i}} = obj.{{k.Path.Join("?.")}}
+                    """)}}
+                    {{keys.SelectTextTemplate((k, i) => $$"""
+                      if (key{{i}} === undefined) throw new Error('{{k.MemberName}}が指定されていません。')
+                    """)}}
+
+                      return to === 'readonly'
+                        ? `{{readView.Url}}/{{keys.Select((_, i) => $"/${{window.encodeURI(`${{key{i}}}`)}}").Join("")}}`
+                        : `{{editView.Url}}/{{keys.Select((_, i) => $"/${{window.encodeURI(`${{key{i}}}`)}}").Join("")}}`
+                    }
+                    """;
+
+            }
+        }
     }
 }

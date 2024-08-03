@@ -51,8 +51,8 @@ namespace Nijo.Models.ReadModel2Features {
                         CellContents = ctx => $$"""
                         cellProps => {
                           const row = cellProps.row.original
-                          const state = Util.getLocalRepositoryState(row)
-                          const singleViewUrl = Util.{{detailView.GetUrlFnName}}(row.{{DataClassForDisplay.INSTANCE_KEY_TS}})
+                          const state = Util.getUpdateType(row)
+                          const singleViewUrl = Util.{{detailView.GetUrlFnName}}(row, 'readonly')
                           return (
                             <div className="flex items-center gap-1 pl-1">
                               <Link to={singleViewUrl} className="text-link">詳細</Link>

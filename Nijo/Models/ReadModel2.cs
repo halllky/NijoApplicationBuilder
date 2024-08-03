@@ -62,7 +62,8 @@ namespace Nijo.Models {
             context.ReactProject.Pages.Add(editView);
 
             // UI: ナビゲーション用関数
-            context.ReactProject.UrlUtil.Add(rootAggregate);
+            context.ReactProject.UrlUtil.Add(createView.RenderGetUrlFn(context));
+            context.ReactProject.UrlUtil.Add(readOnlyView.RenderGetUrlFn(context)); // readonly, edit は関数共用
 
             // ---------------------------------------------
             // 他の集約から参照されるときのための部品
