@@ -1,5 +1,6 @@
 using Nijo.Core;
 using Nijo.Models.WriteModel2Features;
+using Nijo.Parts.Utility;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -39,6 +40,7 @@ namespace Nijo.Models.RefTo {
             ? $"{_refEntry.Item.PhysicalName}RefTarget"
             : $"{_refEntry.Item.PhysicalName}RefTarget_{_aggregate.Item.PhysicalName}";
 
+        internal bool HasInstanceKey => _aggregate == _refEntry;
         /// <summary>
         /// <see cref="ReadModel2Features.DataClassForDisplay.INSTANCE_KEY_CS"/> と同様の趣旨で必要な項目
         /// </summary>
@@ -81,12 +83,13 @@ namespace Nijo.Models.RefTo {
             return refTargets.SelectTextTemplate(rt =>  $$"""
                 /// <summary>{{rt._refEntry.Item.DisplayName}}が他の集約から参照されたときの{{rt._aggregate.Item.DisplayName}}のデータ型</summary>
                 public partial class {{rt.CsClassName}} {
-                {{If(_refEntry == _aggregate, () => $$"""
+                {{If(rt.HasInstanceKey, () => $$"""
                     /// <summary>
                     /// インスタンスを一意に表す文字列。新規作成の場合はUUID。閲覧・更新・削除のときは主キーの値の配列のJSON。
                     /// 新規作成データの場合は画面上で主キー項目を編集可能であり、
                     /// 別途何らかの識別子を設けないと同一性を判定する方法が無いため、この項目が必要になる。
                     /// </summary>
+                    [JsonPropertyName("{{INSTANCE_KEY_TS}}")]
                     public virtual required string {{INSTANCE_KEY_CS}} { get; set; }
 
                 """)}}
@@ -114,7 +117,7 @@ namespace Nijo.Models.RefTo {
             return refTargets.SelectTextTemplate(rt => $$"""
                 /** {{rt._refEntry.Item.DisplayName}}が他の集約から参照されたときの{{rt._aggregate.Item.DisplayName}}のデータ型 */
                 export type {{rt.TsTypeName}} = {
-                {{If(_refEntry == _aggregate, () => $$"""
+                {{If(rt.HasInstanceKey, () => $$"""
                   /**
                    * インスタンスを一意に表す文字列。新規作成の場合はUUID。閲覧・更新・削除のときは主キーの値の配列のJSON。
                    * 新規作成データの場合は画面上で主キー項目を編集可能であり、
@@ -136,7 +139,20 @@ namespace Nijo.Models.RefTo {
         /// <param name="instance">DBエンティティのインスタンス名</param>
         /// <returns></returns>
         internal string RenderConvertFromWriteModelDbEntity(string instance) {
+            // - 子孫要素を参照するデータを引数の配列中から探すためにはキーで引き当てる必要があるが、
+            //   子孫要素のラムダ式の中ではその外にある変数を参照するしかない
+            // - 複数経路の参照があるケースを想定してGraphPathもキーに加えている
+            var pkVarNames = new Dictionary<(AggregateMember.ValueMember, GraphPath), string>();
+
             string RenderRecursively(GraphNode<Aggregate> renderingAggregate, GraphNode<Aggregate> dbEntityAggregate, string dbEntityInstance, bool renderNewStatement) {
+                // 主キー辞書
+                var keys = renderingAggregate.GetKeys().OfType<AggregateMember.ValueMember>();
+                foreach (var key in keys) {
+                    var path = key.DeclaringAggregate.PathFromEntry();
+                    if (!pkVarNames.ContainsKey((key.Declared, path)))
+                        pkVarNames.Add((key.Declared, path), $"{dbEntityInstance}.{key.Declared.GetFullPathAsDbEntity(dbEntityAggregate).Join("?.")}");
+                }
+
                 var dbEntityMembers = new EFCoreEntity(renderingAggregate)
                     .GetTableColumnMembers()
                     .Select(vm => vm.Declared)
@@ -200,6 +216,13 @@ namespace Nijo.Models.RefTo {
                 var newStatement = renderNewStatement ? $"new {rsr.CsClassName}()" : "new()";
                 return $$"""
                 {{newStatement}} {
+                {{If(rsr.HasInstanceKey, () => $$"""
+                    {{INSTANCE_KEY_CS}} = {{UtilityClass.CLASSNAME}}.{{UtilityClass.TO_JSON}}(new object?[] {
+                {{keys.SelectTextTemplate(vm => $$"""
+                        {{pkVarNames[(vm.Declared, vm.DeclaringAggregate.PathFromEntry())]}},
+                """)}}
+                    }),
+                """)}}
                 {{rsr.GetOwnMembers().SelectTextTemplate(m => $$"""
                     {{GetMemberName(m)}} = {{WithIndent(RenderMemberStatement(m), "    ")}},
                 """)}}

@@ -164,7 +164,8 @@ namespace Nijo.Models.RefTo {
                         query = query.Take(searchCondition.{{RefSearchCondition.TAKE_CS}}.Value);
                     }
 
-                    var searchResult = query.Select(e => {{WithIndent(searchResult.RenderConvertFromWriteModelDbEntity("e"), "    ")}});
+                    // #35 N+1
+                    var searchResult = query.AsEnumerable().Select(e => {{WithIndent(searchResult.RenderConvertFromWriteModelDbEntity("e"), "    ")}});
                     return searchResult;
 
                     #pragma warning restore CS8604 // Null 参照引数の可能性があります。
@@ -226,6 +227,7 @@ namespace Nijo.Models.RefTo {
                         .Select(sr => new { {{C_PARENT}} = sr, {{C_CHILD}} = sr.{{prop.MemberName}} })
                 """)}}
                         .Select(sr => new {{refSearchResult.CsClassName}} {
+                            {{RefSearchResult.INSTANCE_KEY_CS}} = "", // TODO #35 IsntanceKey
                             // TODO #35 通常の一覧検索結果を参照先検索結果に変換する
                         });
                     return refTargets;

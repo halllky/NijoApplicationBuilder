@@ -439,9 +439,11 @@ namespace Nijo.Models.ReadModel2Features {
                 yield return path;
             }
 
-            yield return csTs == E_CsTs.CSharp
-                ? DataClassForDisplay.VALUES_CS
-                : DataClassForDisplay.VALUES_TS;
+            if (member is AggregateMember.ValueMember) {
+                yield return csTs == E_CsTs.CSharp
+                    ? DataClassForDisplay.VALUES_CS
+                    : DataClassForDisplay.VALUES_TS;
+            }
 
             yield return member.MemberName;
         }
