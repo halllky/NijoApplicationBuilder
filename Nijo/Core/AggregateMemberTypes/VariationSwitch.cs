@@ -120,5 +120,14 @@ namespace Nijo.Core.AggregateMemberTypes {
                 }
                 """;
         }
+
+        string IAggregateMemberType.RenderVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx) {
+            var component = GetReactComponent();
+            var fullpath = vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".");
+
+            return $$"""
+                <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)}{{component.GetPropsStatement().Join("")}} />
+                """;
+        }
     }
 }

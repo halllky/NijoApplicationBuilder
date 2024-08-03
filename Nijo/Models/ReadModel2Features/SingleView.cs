@@ -62,6 +62,8 @@ namespace Nijo.Models.ReadModel2Features {
         public bool ShowMenu => false;
         public string? LabelInMenu => null;
 
+        public string GetUrlFnName => $"get{_aggregate.Item.PhysicalName}CreateViewUrl";
+
         public SourceFile GetSourceFile() => new SourceFile {
             FileName = _type switch {
                 E_Type.New => "new.tsx",

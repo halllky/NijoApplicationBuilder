@@ -34,9 +34,14 @@ namespace Nijo.Models.ReadModel2Features {
         internal const string TAKE_TS = "take";
 
         /// <summary>
+        /// TypeScriptの新規オブジェクト作成関数の名前
+        /// </summary>
+        internal string CreateNewObjectFnName => $"createEmpty{TsTypeName}";
+
+        /// <summary>
         /// この集約自身がもつ検索条件を列挙します。
         /// </summary>
-        private IEnumerable<SearchConditionMember> GetOwnMembers() {
+        protected IEnumerable<SearchConditionMember> GetOwnMembers() {
             return _aggregate
                 .GetMembers()
                 .OfType<AggregateMember.ValueMember>()
@@ -46,7 +51,7 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// 直近の子を列挙します。
         /// </summary>
-        private IEnumerable<DescendantSearchCondition> GetChildMembers() {
+        protected IEnumerable<DescendantSearchCondition> GetChildMembers() {
             var isOutOfEntryTree = _aggregate.IsOutOfEntryTree();
 
             foreach (var rm in _aggregate.GetMembers().OfType<AggregateMember.RelationMember>()) {
@@ -218,9 +223,9 @@ namespace Nijo.Models.ReadModel2Features {
                   /** 絞り込み条件（キーワード検索） */
                   {{KEYWORD_TS}}?: string
                   /** 絞り込み条件 */
-                  {{FILTER_TS}}?: {{TsFilterTypeName}}
+                  {{FILTER_TS}}: {{TsFilterTypeName}}
                   /** 並び順 */
-                  {{SORT_TS}}?: {{WithIndent(sortType, "  ")}}
+                  {{SORT_TS}}: {{WithIndent(sortType, "  ")}}
                   /** 先頭から何件スキップするか */
                   {{SKIP_TS}}?: number
                   /** 最大何件取得するか */
@@ -238,6 +243,38 @@ namespace Nijo.Models.ReadModel2Features {
                 }
                 """;
         }
+
+        /// <summary>
+        /// フォームのUIをレンダリングします。VForm.Container の子要素の場所で呼んでください
+        /// </summary>
+        internal string RenderVFormBody(ReactPageRenderingContext context) {
+
+
+            return $$"""
+                {{GetOwnMembers().SelectTextTemplate(m => $$"""
+                <VForm.Item label="{{m.MemberName}}">
+                  {{WithIndent(m.Member.Options.MemberType.RenderVFormBody(m.Member, context), "  ")}}
+                </VForm.Item>
+                """)}}
+                {{GetChildMembers().SelectTextTemplate(m => $$"""
+                  TODO #35
+                """)}}
+                """;
+        }
+
+        internal virtual string RenderCreateNewObjectFn(CodeRenderingContext context) {
+            return $$"""
+                /** {{_aggregate.Item.DisplayName}}の検索条件クラスの空オブジェクトを作成して返します。 */
+                export const {{CreateNewObjectFnName}} = (): {{TsTypeName}} => ({
+                  {{FILTER_TS}}: {
+                {{GetChildMembers().SelectTextTemplate(m => $$"""
+                    {{m.MemberName}}: {{WithIndent(m.RenderCreateNewObjectFn(context), "    ")}},
+                """)}}
+                  },
+                  {{SORT_TS}}: [],
+                })
+                """;
+        }
     }
 
 
@@ -253,6 +290,16 @@ namespace Nijo.Models.ReadModel2Features {
         internal string MemberName => _relationMember is AggregateMember.Parent
             ? RefTo.RefSearchCondition.PARENT
             : _relationMember.MemberName;
+
+        internal override string RenderCreateNewObjectFn(CodeRenderingContext context) {
+            return $$"""
+                {
+                {{GetChildMembers().SelectTextTemplate(m => $$"""
+                  {{m.MemberName}}: {{WithIndent(m.RenderCreateNewObjectFn(context), "  ")}},
+                """)}}
+                }
+                """;
+        }
     }
 
 

@@ -1,6 +1,7 @@
 using Nijo.Models.ReadModel2Features;
 using Nijo.Models.RefTo;
 using Nijo.Models.WriteModel2Features;
+using Nijo.Parts.Utility;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -111,6 +112,15 @@ namespace Nijo.Core.AggregateMemberTypes {
                     {{query}} = {{query}}.Where(x => array.Contains(x.{{entityMemberPath}}));
                 """)}}
                 }
+                """;
+        }
+
+        string IAggregateMemberType.RenderVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx) {
+            var component = GetReactComponent();
+            var fullpath = vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".");
+
+            return $$"""
+                <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)}{{component.GetPropsStatement().Join("")}} />
                 """;
         }
     }
