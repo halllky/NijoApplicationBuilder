@@ -79,7 +79,8 @@ namespace Nijo.Models {
                 aggregateFile.DataClassDeclaring.Add(refTargetKeys.RenderCSharpDeclaringRecursively(context));
                 aggregateFile.DataClassDeclaring.Add(refSearchResult.RenderCSharp(context));
                 aggregateFile.DataClassDeclaring.Add(refSearchCondition.RenderCSharpDeclaringRecursively(context));
-                context.ReactProject.Types.Add(asEntry, refSearchCondition.RenderTypeScriptDeclaringRecursively(context));
+                context.ReactProject.Types.Add(rootAggregate, refSearchCondition.RenderTypeScriptDeclaringRecursively(context));
+                context.ReactProject.Types.Add(rootAggregate, refSearchCondition.RenderCreateNewObjectFn(context));
                 context.ReactProject.Types.Add(rootAggregate, refTargetKeys.RenderTypeScriptDeclaringRecursively(context));
                 context.ReactProject.Types.Add(rootAggregate, refSearchResult.RenderTypeScript(context));
 

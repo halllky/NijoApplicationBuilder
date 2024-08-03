@@ -39,6 +39,15 @@ namespace Nijo.Models.RefTo {
             ? $"{_refEntry.Item.PhysicalName}RefTarget"
             : $"{_refEntry.Item.PhysicalName}RefTarget_{_aggregate.Item.PhysicalName}";
 
+        /// <summary>
+        /// <see cref="ReadModel2Features.DataClassForDisplay.INSTANCE_KEY_CS"/> と同様の趣旨で必要な項目
+        /// </summary>
+        internal const string INSTANCE_KEY_CS = "InstanceKey";
+        /// <summary>
+        /// <see cref="ReadModel2Features.DataClassForDisplay.INSTANCE_KEY_TS"/> と同様の趣旨で必要な項目
+        /// </summary>
+        internal const string INSTANCE_KEY_TS = "instanceKey";
+
         private IEnumerable<AggregateMember.AggregateMemberBase> GetOwnMembers() {
             foreach (var member in _aggregate.GetMembers()) {
                 if (member is not AggregateMember.Parent
@@ -72,6 +81,15 @@ namespace Nijo.Models.RefTo {
             return refTargets.SelectTextTemplate(rt =>  $$"""
                 /// <summary>{{rt._refEntry.Item.DisplayName}}が他の集約から参照されたときの{{rt._aggregate.Item.DisplayName}}のデータ型</summary>
                 public partial class {{rt.CsClassName}} {
+                {{If(_refEntry == _aggregate, () => $$"""
+                    /// <summary>
+                    /// インスタンスを一意に表す文字列。新規作成の場合はUUID。閲覧・更新・削除のときは主キーの値の配列のJSON。
+                    /// 新規作成データの場合は画面上で主キー項目を編集可能であり、
+                    /// 別途何らかの識別子を設けないと同一性を判定する方法が無いため、この項目が必要になる。
+                    /// </summary>
+                    public virtual required string {{INSTANCE_KEY_CS}} { get; set; }
+
+                """)}}
                 {{rt.GetOwnMembers().SelectTextTemplate(m => $$"""
                     public virtual {{GetCSharpMemberType(m)}}? {{GetMemberName(m)}} { get; set; }
                 """)}}
@@ -96,6 +114,15 @@ namespace Nijo.Models.RefTo {
             return refTargets.SelectTextTemplate(rt => $$"""
                 /** {{rt._refEntry.Item.DisplayName}}が他の集約から参照されたときの{{rt._aggregate.Item.DisplayName}}のデータ型 */
                 export type {{rt.TsTypeName}} = {
+                {{If(_refEntry == _aggregate, () => $$"""
+                  /**
+                   * インスタンスを一意に表す文字列。新規作成の場合はUUID。閲覧・更新・削除のときは主キーの値の配列のJSON。
+                   * 新規作成データの場合は画面上で主キー項目を編集可能であり、
+                   * 別途何らかの識別子を設けないと同一性を判定する方法が無いため、この項目が必要になる。
+                   */
+                  {{INSTANCE_KEY_TS}}: string
+
+                """)}}
                 {{rt.GetOwnMembers().SelectTextTemplate(m => $$"""
                   {{GetMemberName(m)}}?: {{GetTypeScriptMemberType(m)}}
                 """)}}

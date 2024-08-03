@@ -25,8 +25,9 @@ namespace Nijo.Models.RefTo {
         internal string ReactHookName => $"useSearchReference{_aggregate.Item.PhysicalName}";
         internal const string CURRENT_PAGE_ITEMS = "currentPageItems";
         internal const string NOW_LOADING = "nowLoading";
-        internal const string RELOAD = "reload";
+        internal const string LOAD = "load";
 
+        internal string Url => $"{new Controller(_aggregate.Item).SubDomain}/{ControllerAction}";
         private string ControllerAction => _aggregate.IsRoot()
             ? $"search-refs"
             : $"search-refs/{_aggregate.Item.PhysicalName}";
@@ -39,13 +40,15 @@ namespace Nijo.Models.RefTo {
             var searchResult = new RefSearchResult(_aggregate, _refEntry);
 
             return $$"""
-                export const {{ReactHookName}} = (searchCondition?: Types.{{searchCondition.TsTypeName}}) => {
+                /** {{_aggregate.Item.DisplayName}}の参照先検索を行いその結果を保持します。 */
+                export const {{ReactHookName}} = () => {
                   const [{{CURRENT_PAGE_ITEMS}}, setCurrentPageItems] = React.useState<Types.{{searchResult.TsTypeName}}[]>(() => [])
                   const [{{NOW_LOADING}}, setNowLoading] = React.useState(false)
                   const [, dispatchMsg] = Util.useMsgContext()
                   const { post } = Util.useHttpRequest()
 
-                  const {{RELOAD}} = React.useCallback(async () => {
+                  /** {{_aggregate.Item.DisplayName}}の参照先検索を行います。結果は戻り値ではなくフックの状態に格納されます。 */
+                  const {{LOAD}} = React.useCallback(async (searchCondition: Types.{{searchCondition.TsTypeName}}) => {
                     setNowLoading(true)
                     try {
                       const res = await post<Types.{{searchResult.TsTypeName}}[]>(`{{controller.SubDomain}}/{{ControllerAction}}`, searchCondition)
@@ -57,16 +60,16 @@ namespace Nijo.Models.RefTo {
                     } finally {
                       setNowLoading(false)
                     }
-                  }, [searchCondition, post, dispatchMsg])
+                  }, [post, dispatchMsg])
 
                   React.useEffect(() => {
-                    if (!{{NOW_LOADING}}) {{RELOAD}}()
-                  }, [{{RELOAD}}])
+                    if (!{{NOW_LOADING}}) {{LOAD}}(Types.{{searchCondition.CreateNewObjectFnName}}())
+                  }, [{{LOAD}}])
 
                   return {
                     {{CURRENT_PAGE_ITEMS}},
                     {{NOW_LOADING}},
-                    {{RELOAD}},
+                    {{LOAD}},
                   }
                 }
                 """;

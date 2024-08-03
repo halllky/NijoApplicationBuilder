@@ -400,7 +400,7 @@ namespace Nijo.Models.ReadModel2Features {
         internal bool IsArray => MemberInfo.MemberAggregate.IsChildrenMember();
 
         internal IEnumerable<string> GetFullPath(GraphNode<Aggregate>? since = null) {
-            return MemberInfo.GetFullPathAsDataClassForDisplay(since);
+            return MemberInfo.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp, since);
         }
     }
 
@@ -411,7 +411,7 @@ namespace Nijo.Models.ReadModel2Features {
         /// <see cref="RefTo.RefSearchResult"/> の
         /// インスタンスの型のルールにあわせて返す。
         /// </summary>
-        internal static IEnumerable<string> GetFullPathAsDataClassForDisplay(this GraphNode<Aggregate> aggregate, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+        internal static IEnumerable<string> GetFullPathAsDataClassForDisplay(this GraphNode<Aggregate> aggregate, E_CsTs csTs, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
             var path = aggregate.PathFromEntry();
             if (since != null) path = path.Since(since);
             if (until != null) path = path.Until(until);
@@ -431,13 +431,18 @@ namespace Nijo.Models.ReadModel2Features {
         }
 
         /// <inheritdoc cref="GetFullPathAsDataClassForDisplay(GraphNode{Aggregate}, GraphNode{Aggregate}?, GraphNode{Aggregate}?)"/>
-        internal static IEnumerable<string> GetFullPathAsDataClassForDisplay(this AggregateMember.AggregateMemberBase member, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+        internal static IEnumerable<string> GetFullPathAsDataClassForDisplay(this AggregateMember.AggregateMemberBase member, E_CsTs csTs, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
             var fullpath = member.Owner
-                .GetFullPathAsDataClassForDisplay(since, until)
+                .GetFullPathAsDataClassForDisplay(csTs, since, until)
                 .ToArray();
             foreach (var path in fullpath) {
                 yield return path;
             }
+
+            yield return csTs == E_CsTs.CSharp
+                ? DataClassForDisplay.VALUES_CS
+                : DataClassForDisplay.VALUES_TS;
+
             yield return member.MemberName;
         }
     }

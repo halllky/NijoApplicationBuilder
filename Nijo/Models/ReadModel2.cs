@@ -76,6 +76,7 @@ namespace Nijo.Models {
                 aggregateFile.DataClassDeclaring.Add(refSearchCondition.RenderCSharpDeclaringRecursively(context));
                 aggregateFile.DataClassDeclaring.Add(refSearchResult.RenderCSharp(context));
                 context.ReactProject.Types.Add(rootAggregate, refSearchCondition.RenderTypeScriptDeclaringRecursively(context));
+                context.ReactProject.Types.Add(rootAggregate, refSearchCondition.RenderCreateNewObjectFn(context));
                 context.ReactProject.Types.Add(rootAggregate, refSearchResult.RenderTypeScript(context));
 
                 // UI: コンボボックス

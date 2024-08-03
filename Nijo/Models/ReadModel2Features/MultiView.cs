@@ -1,5 +1,6 @@
 using Nijo.Core;
 using Nijo.Parts.WebClient;
+using Nijo.Parts.WebClient.DataTable;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -41,13 +42,13 @@ namespace Nijo.Models.ReadModel2Features {
                     Register = "registerExCondition",
                 };
 
-                var rowHeader = new DataTableColumn {
-                    DataTableRowTypeName = $"AggregateType.{searchResult.TsTypeName}",
-                    Id = "col-header",
-                    Header = string.Empty,
-                    Size = 64,
-                    EnableResizing = false,
-                    Cell = $$"""
+                var tableBuilder = new DataTableBuilder(_aggregate, $"AggregateType.{searchResult.TsTypeName}")
+                    // 行ヘッダ（詳細リンク）
+                    .Add(new AdhocColumn {
+                        Header = string.Empty,
+                        DefaultWidth = 64,
+                        EnableResizing = false,
+                        CellContents = ctx => $$"""
                         cellProps => {
                           const row = cellProps.row.original
                           const state = Util.getLocalRepositoryState(row)
@@ -60,13 +61,9 @@ namespace Nijo.Models.ReadModel2Features {
                           )
                         }
                         """,
-                };
-                var gridColumns = new[] { rowHeader }.Concat(DataTableColumn.FromMembers(
-                    $"AggregateType.{searchResult.TsTypeName}",
-                    _aggregate,
-                    true,
-                    useFormContextType: $"{{ currentPageItems: AggregateType.{searchResult.TsTypeName}[] }}",
-                    registerPathModifier: path => $"currentPageItems.${{row.index}}.{path}"));
+                    })
+                    // メンバーの列
+                    .AddMembers(searchResult);
 
                 return $$"""
                     import React, { useCallback, useEffect, useMemo, useRef, useState, useReducer } from 'react'
@@ -135,7 +132,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                       // 列定義
                       const columnDefs: Layout.ColumnDefEx<AggregateType.{{searchResult.TsTypeName}}>[] = useMemo(() => [
-                        {{WithIndent(gridColumns.SelectTextTemplate(col => col.Render()), "    ")}}
+                        {{WithIndent(tableBuilder.RenderColumnDef(context), "    ")}}
                       ], [get])
 
 
