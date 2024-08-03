@@ -18,7 +18,7 @@ export const PageFrame = ({ header, footer, children, className, ...rest }: HTML
 
       <Util.InlineMessageList />
 
-      <main className="flex-1 p-1 overflow-scroll">
+      <main className="flex-1 p-1 overflow-auto">
         {children}
       </main>
 

@@ -49,7 +49,7 @@ namespace Nijo.Models.ReadModel2Features {
                   const {{LOAD}} = React.useCallback(async (searchCondition: Types.{{searchCondition.TsTypeName}}) => {
                     setNowLoading(true)
                     try {
-                      const res = await post<Types.{{searchResult.TsTypeName}}[]>(`{{controller.SubDomain}}/{{CONTROLLER_ACTION}}`, searchCondition)
+                      const res = await post<Types.{{searchResult.TsTypeName}}[]>(`/{{controller.SubDomain}}/{{CONTROLLER_ACTION}}`, searchCondition)
                       if (!res.ok) {
                         dispatchMsg(msg => msg.error('データ読み込みに失敗しました。'))
                         return
