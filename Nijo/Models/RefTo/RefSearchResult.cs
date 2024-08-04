@@ -50,7 +50,7 @@ namespace Nijo.Models.RefTo {
         /// </summary>
         internal const string INSTANCE_KEY_TS = "instanceKey";
 
-        private IEnumerable<AggregateMember.AggregateMemberBase> GetOwnMembers() {
+        internal IEnumerable<AggregateMember.AggregateMemberBase> GetOwnMembers() {
             foreach (var member in _aggregate.GetMembers()) {
                 if (member is not AggregateMember.Parent
                     && member.DeclaringAggregate != _aggregate) continue;

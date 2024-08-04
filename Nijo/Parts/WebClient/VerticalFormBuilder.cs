@@ -15,8 +15,16 @@ namespace Nijo.Parts.WebClient {
         internal VerticalFormBuilder() : base(null, null) {
         }
 
-        public override string Render(CodeRenderingContext context) {
-            var maxDepth = _childItems
+        /// <summary>
+        /// VForm2.Root としてレンダリングします。
+        /// VForm2.Indent としてレンダリングする場合は <see cref="VerticalFormSection.Render(CodeRenderingContext)"/> を使用のこと。
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="maxDepth">インデントの最大の深さ。未指定の場合は自動計算される。</param>
+        /// <returns></returns>
+        public string RenderAsRoot(CodeRenderingContext context, int? maxDepth = null) {
+            // 深さ未指定の場合は自動計算
+            maxDepth ??= _childItems
                 .DefaultIfEmpty()
                 .Max(x => x?.GetMaxDepth() ?? 0);
 
@@ -105,6 +113,10 @@ namespace Nijo.Parts.WebClient {
             _childItems.Add(section);
             return section;
         }
+        /// <summary>このセクションに任意の項目を追加します。</summary>
+        internal void AddUnknownParts(string sourceCode) {
+            _childItems.Add(new UnknownFormItem(sourceCode));
+        }
 
         int IVerticalFormParts.GetMaxDepth() {
             return _childItems.DefaultIfEmpty().Max(x => x?.GetMaxDepth() ?? 0) + 1;
@@ -113,7 +125,7 @@ namespace Nijo.Parts.WebClient {
             return _childItems;
         }
 
-        public virtual string Render(CodeRenderingContext context) {
+        public string Render(CodeRenderingContext context) {
             string label;
             if (_label == null) {
                 label = string.Empty;
@@ -207,6 +219,27 @@ namespace Nijo.Parts.WebClient {
                   {{WithIndent(_contents, "  ")}}
                 </VForm2.Item>
                 """;
+        }
+    }
+
+    /// <summary>
+    /// 任意の要素
+    /// </summary>
+    internal class UnknownFormItem : IVerticalFormParts {
+
+        internal UnknownFormItem(string sourceCode) {
+            _sourceCode = sourceCode;
+        }
+        private readonly string _sourceCode;
+
+        IEnumerable<IVerticalFormParts> IVerticalFormParts.GetChildItems() {
+            yield break;
+        }
+        int IVerticalFormParts.GetMaxDepth() {
+            return 0;
+        }
+        string IVerticalFormParts.Render(CodeRenderingContext context) {
+            return _sourceCode;
         }
     }
 

@@ -250,7 +250,7 @@ namespace Nijo.Models.ReadModel2Features {
         internal string RenderVForm2(ReactPageRenderingContext context) {
             var builder = new Parts.WebClient.VerticalFormBuilder();
             BuildVForm2(context, builder);
-            return builder.Render(context.CodeRenderingContext);
+            return builder.RenderAsRoot(context.CodeRenderingContext);
         }
         private void BuildVForm2(ReactPageRenderingContext context, Parts.WebClient.VerticalFormSection section) {
             foreach (var m in GetOwnMembers()) {
