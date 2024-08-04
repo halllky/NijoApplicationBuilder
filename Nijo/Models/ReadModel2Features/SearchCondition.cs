@@ -245,22 +245,27 @@ namespace Nijo.Models.ReadModel2Features {
         }
 
         /// <summary>
-        /// フォームのUIをレンダリングします。VForm.Container の子要素の場所で呼んでください
+        /// フォームのUIをレンダリングします。
         /// </summary>
-        internal string RenderVFormBody(ReactPageRenderingContext context) {
-
-            return $$"""
-                {{GetOwnMembers().SelectTextTemplate(m => $$"""
-                <VForm.Item label="{{m.MemberName}}">
-                  {{WithIndent(m.Member.Options.MemberType.RenderVFormBody(m.Member, context), "  ")}}
-                </VForm.Item>
-                """)}}
-                {{GetChildMembers().SelectTextTemplate(m => $$"""
-                <VForm.Container label="{{m.DisplayMemberName}}">
-                  {{WithIndent(m.RenderVFormBody(context), "  ")}}
-                </VForm.Container>
-                """)}}
-                """;
+        internal string RenderVForm2(ReactPageRenderingContext context) {
+            var builder = new Parts.WebClient.VerticalFormBuilder();
+            BuildVForm2(context, builder);
+            return builder.Render(context.CodeRenderingContext);
+        }
+        private void BuildVForm2(ReactPageRenderingContext context, Parts.WebClient.VerticalFormSection section) {
+            foreach (var m in GetOwnMembers()) {
+                section.AddItem(
+                    m.Member.Options.MemberType is Core.AggregateMemberTypes.Sentence,
+                    m.MemberName,
+                    Parts.WebClient.E_VForm2LabelType.String,
+                    m.Member.Options.MemberType.RenderVFormBody(m.Member, context));
+            }
+            foreach (var m in GetChildMembers()) {
+                var childSection = section.AddSection(
+                    m.DisplayMemberName,
+                    Parts.WebClient.E_VForm2LabelType.String);
+                m.BuildVForm2(context, childSection);
+            }
         }
 
         internal virtual string RenderCreateNewObjectFn(CodeRenderingContext context) {

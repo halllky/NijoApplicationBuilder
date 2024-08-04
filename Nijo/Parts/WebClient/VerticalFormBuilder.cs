@@ -53,7 +53,7 @@ namespace Nijo.Parts.WebClient {
                 // MAX: 799px, 1199px, 1599px, 1999px, -
                 //
                 var minmax = new List<string>();
-                if (!isFirst) minmax.Add($"(min-width: {colCount * 400 + 400}px)");
+                if (!isFirst) minmax.Add($"(min-width: {(colCount - 1) * 400 + 400}px)");
                 if (!isLast) minmax.Add($"(max-width: {colCount * 400 + 400 - 1}px)");
 
                 return $$"""
@@ -130,9 +130,9 @@ namespace Nijo.Parts.WebClient {
             }
 
             return $$"""
-                <VForm.Indent{{label}}>
+                <VForm2.Indent{{label}}>
                   {{WithIndent(RenderBody(context), "  ")}}
-                </VForm.Indent>
+                </VForm2.Indent>
                 """;
         }
         /// <summary>
@@ -142,7 +142,7 @@ namespace Nijo.Parts.WebClient {
         protected IEnumerable<string> RenderBody(CodeRenderingContext context) {
             var currentIsNoWideItem = false;
             foreach (var item in _childItems) {
-                if (item is VerticalFormItem vItem && vItem.IsWide) {
+                if (item is VerticalFormItem vItem && !vItem.IsWide) {
                     if (currentIsNoWideItem == false) {
                         yield return "<VForm2.AutoColumn>";
                         currentIsNoWideItem = true;
@@ -154,7 +154,9 @@ namespace Nijo.Parts.WebClient {
                     }
                 }
                 yield return currentIsNoWideItem
-                    ? WithIndent(item.Render(context), "  ")
+                    ? $$"""
+                          {{WithIndent(item.Render(context), "  ")}}
+                        """
                     : item.Render(context);
             }
             if (currentIsNoWideItem) {
@@ -201,7 +203,7 @@ namespace Nijo.Parts.WebClient {
                     """;
             }
             return $$"""
-                <VForm2.Item{{(IsWide ? " wide" : "")}} {{label}}>
+                <VForm2.Item{{(IsWide ? " wide" : "")}}{{label}}>
                   {{WithIndent(_contents, "  ")}}
                 </VForm2.Item>
                 """;

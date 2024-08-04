@@ -4,7 +4,6 @@ const DEFAULT_INDENT_SIZE = '1.5rem'
 const DEFAULT_LABEL_WIDTH = '8rem'
 
 
-/** フォームレイアウト */
 const Root = ({ estimatedLabelWidth, indentSize, maxDepth, children }: {
   /** フォーム内のラベルの横幅のうち最も大きいもの */
   estimatedLabelWidth?: string
@@ -28,7 +27,7 @@ const Root = ({ estimatedLabelWidth, indentSize, maxDepth, children }: {
 
   return (
     <div style={rootStyle}>
-      <div className="grid gap-px w-full h-full vform-template-column">
+      <div className="grid gap-px w-full h-full p-px vform-template-column">
         {children}
       </div>
     </div>
@@ -36,7 +35,6 @@ const Root = ({ estimatedLabelWidth, indentSize, maxDepth, children }: {
 }
 
 
-/** この要素の中にItemを並べると、コンテナの横幅にあわせて自動的に段組みされます。 */
 const AutoColumn = ({ children }: { children?: React.ReactNode }) => {
   // デフォルトのCSSファイルでこのクラス名に合った grid-template-rows が定義されています。
   // 例えば要素の数が3個のとき、以下5パターンそれぞれのコンテナクエリが定義されています。
@@ -45,7 +43,7 @@ const AutoColumn = ({ children }: { children?: React.ReactNode }) => {
   // - 画面の横幅が3列以上収まる幅の場合: 要素の縦方向の最大数は1個 (3 ÷ 3)
   const className = useMemo(() => {
     const count = React.Children.count(children)
-    return `grid gap-px grid-cols-subgrid col-span-full grid-flow-col vform-vertical-${count}-items`
+    return `grid gap-px grid-cols-[subgrid] col-span-full grid-flow-col vform-vertical-${count}-items`
   }, [children])
 
   return (
@@ -56,26 +54,24 @@ const AutoColumn = ({ children }: { children?: React.ReactNode }) => {
 }
 
 
-/** 1段落とす */
 const Indent = ({ label, children }: {
   label?: React.ReactNode
   children?: React.ReactNode
 }) => {
   return (
-    <div className="grid grid-cols-subgrid col-span-full border-vform bg-color-2">
+    <div className="grid grid-cols-[subgrid] col-span-full border-vform bg-color-2">
       {label && (
         <div className="px-1 col-span-full">
           {renderLabel(label)}
         </div>
       )}
-      <div className="grid gap-px grid-cols-subgrid col-span-full pl-[var(--vform-indent-size)]">
+      <div className="grid gap-px grid-cols-[subgrid] col-span-full pl-[var(--vform-indent-size)]">
         {children}
       </div>
     </div>
   )
 }
 
-/** フォームの要素のラベルと値 */
 const Item = ({ label, wide, children }: {
   label?: React.ReactNode
   /** trueの場合は要素が横幅いっぱいまで拡張される */
@@ -96,7 +92,7 @@ const Item = ({ label, wide, children }: {
     )
     // 要素の横幅が小さい場合のレイアウト
     : (
-      <div className="grid grid-flow-row grid-cols-subgrid col-span-2">
+      <div className="grid grid-flow-row grid-cols-[subgrid] col-span-2">
         <div className="px-1 border-vform bg-color-2">
           {renderLabel(label)}
         </div>
@@ -108,7 +104,6 @@ const Item = ({ label, wide, children }: {
 }
 
 
-/** フォームのラベル */
 const LabelText = ({ children }: {
   children?: React.ReactNode
 }) => {
@@ -130,9 +125,14 @@ const renderLabel = (label: React.ReactNode): React.ReactNode => {
 }
 
 export const VForm2 = {
+  /** フォームレイアウト */
   Root,
+  /** この要素の中にItemを並べると、コンテナの横幅にあわせて自動的に段組みされます。 */
   AutoColumn,
+  /** 入れ子セクション */
   Indent,
+  /** フォームの要素のラベルと値 */
   Item,
+  /** フォームのラベル */
   LabelText,
 }

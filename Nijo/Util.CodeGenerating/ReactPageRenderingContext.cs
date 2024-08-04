@@ -11,6 +11,7 @@ namespace Nijo.Util.CodeGenerating {
     /// 例えば、React hook form のregister関数のインスタンス名など。
     /// </summary>
     internal class ReactPageRenderingContext {
+        internal required CodeRenderingContext CodeRenderingContext { get; init; }
         /// <summary>
         /// React hook form の register関数の実際の名前
         /// （そのときのソースコードの都合で変数名にエイリアスがついていることがあるので）

@@ -1,4 +1,5 @@
 export * from "./VerticalForm"
+export * from "./VerticalForm2"
 export * from "./TabLayout"
 export * from "./TreeExplorer"
 export * from "./DataTable"
