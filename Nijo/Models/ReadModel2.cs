@@ -36,6 +36,7 @@ namespace Nijo.Models {
                 var displayData = new DataClassForDisplay(agg);
                 aggregateFile.DataClassDeclaring.Add(displayData.RenderCSharpDeclaring(context));
                 context.ReactProject.Types.Add(agg, displayData.RenderTypeScriptDeclaring(context));
+                context.ReactProject.Types.Add(agg, displayData.RenderTsNewObjectFunction(context));
             }
 
             // 処理: 検索処理

@@ -384,6 +384,53 @@ namespace Nijo.Models.ReadModel2Features {
                 return dataClass.TsTypeName;
             }
         }
+
+        /// <summary>
+        /// この型のオブジェクトを新規作成する関数の名前
+        /// </summary>
+        internal string TsNewObjectFunction => $"createNew{TsTypeName}";
+        internal string RenderTsNewObjectFunction(CodeRenderingContext context) {
+
+            // 初期値をレンダリングする。nullを返した場合は明示的な初期値なしになる。
+            string? RenderOwnMemberInitialize(AggregateMember.AggregateMemberBase member) {
+                // UUID型
+                if (member is AggregateMember.Schalar schalar
+                    && schalar.DeclaringAggregate == Aggregate
+                    && schalar.Options.MemberType is Core.AggregateMemberTypes.Uuid) {
+
+                    return $"{member.MemberName}: UUID.generate(),";
+                }
+
+                // バリエーション
+                if (member is AggregateMember.Variation variation
+                    && variation.DeclaringAggregate == Aggregate) {
+
+                    return $"{member.MemberName}: '{variation.GetGroupItems().First().TsValue}',";
+                }
+
+                // 初期値なし
+                return null;
+            }
+
+            return $$"""
+                {
+                {{If(HasInstanceKey, () => $$"""
+                  {{INSTANCE_KEY_TS}}: JSON.stringify(UUID.generate()) as Util.ItemKey,
+                """)}}
+                  {{VALUES_TS}}: {
+                {{GetOwnMembers().Select(RenderOwnMemberInitialize).OfType<string>().SelectTextTemplate(line => $$"""
+                    {{WithIndent(line, "    ")}}
+                """)}}
+                  },
+                {{If(HasLifeCycle, () => $$"""
+                  {{EXISTS_IN_DB_TS}}: false,
+                  {{WILL_BE_CHANGED_TS}}: true,
+                  {{WILL_BE_DELETED_TS}}: false,
+                  {{VERSION_TS}}: undefined,
+                """)}}
+                }
+                """;
+        }
     }
 
     /// <summary>
@@ -446,6 +493,76 @@ namespace Nijo.Models.ReadModel2Features {
             }
 
             yield return member.MemberName;
+        }
+
+        /// <summary>
+        /// React hook form のregister名でのフルパス
+        /// </summary>
+        /// <param name="arrayIndexes">配列インデックスを指定する変数の名前</param>
+        internal static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this GraphNode<Aggregate> aggregate, IEnumerable<string>? arrayIndexes = null) {
+            return GetFullPathAsReactHookFormRegisterName(aggregate, false, arrayIndexes);
+        }
+
+        /// <summary>
+        /// React hook form のregister名でのフルパス
+        /// </summary>
+        /// <param name="arrayIndexes">配列インデックスを指定する変数の名前</param>
+        internal static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this AggregateMember.AggregateMemberBase member, E_CsTs csts, IEnumerable<string>? arrayIndexes = null) {
+            foreach (var path in GetFullPathAsReactHookFormRegisterName(member.Owner, true, arrayIndexes)) {
+                yield return path;
+            }
+            yield return csts == E_CsTs.CSharp
+                ? DataClassForDisplay.VALUES_CS
+                : DataClassForDisplay.VALUES_TS;
+            yield return member.MemberName;
+        }
+
+        private static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this GraphNode<Aggregate> aggregate, bool enumerateLastChildrenIndex, IEnumerable<string>? arrayIndexes) {
+            var currentArrayIndex = 0;
+
+            foreach (var edge in aggregate.PathFromEntry()) {
+                if (edge.Source == edge.Terminal) {
+
+                    if (edge.IsParentChild()) {
+                        yield return RefSearchResult.PARENT; // 子から親に向かって辿る場合
+
+                    } else if (edge.IsRef()) {
+                        throw new InvalidOperationException($"有向グラフの矢印の先から元に向かうパターンは親子だけなのでこの分岐にくることはあり得ないはず");
+                    }
+
+                } else {
+                    var dataClass = new DataClassForDisplay(edge.Initial.As<Aggregate>());
+                    var terminal = edge.Terminal.As<Aggregate>();
+
+                    if (edge.IsParentChild()) {
+                        yield return dataClass
+                            .GetChildMembers()
+                            .Single(p => p.MemberInfo.MemberAggregate == terminal)
+                            .MemberName;
+
+                        // 子要素が配列の場合はその配列の何番目の要素かを指定する必要がある
+                        if (terminal.IsChildrenMember()
+                            // "….Children.${}" の最後の配列インデックスを列挙するか否か
+                            && (enumerateLastChildrenIndex || terminal != aggregate)) {
+
+                            var arrayIndex = arrayIndexes?.ElementAtOrDefault(currentArrayIndex);
+                            yield return $"${{{arrayIndex}}}";
+
+                            currentArrayIndex++;
+                        }
+
+                    } else if (edge.IsRef()) {
+                        yield return dataClass
+                            .GetOwnMembers()
+                            .OfType<AggregateMember.RelationMember>()
+                            .Single(m => m.MemberAggregate == terminal)
+                            .MemberName;
+
+                    } else {
+                        throw new InvalidOperationException($"有向グラフの矢印の先から元に向かうパターンは親子か参照だけなのでこの分岐にくることはあり得ないはず");
+                    }
+                }
+            }
         }
     }
 }

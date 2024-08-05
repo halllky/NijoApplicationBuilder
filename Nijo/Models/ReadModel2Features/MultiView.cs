@@ -41,6 +41,7 @@ namespace Nijo.Models.ReadModel2Features {
                 var pageRenderingContext = new ReactPageRenderingContext {
                     CodeRenderingContext = context,
                     Register = "registerExCondition",
+                    RenderingObjectType = E_ReactPageRenderingObjectType.SearchCondition,
                 };
 
                 var tableBuilder = new DataTableBuilder(_aggregate, $"AggregateType.{searchResult.TsTypeName}")

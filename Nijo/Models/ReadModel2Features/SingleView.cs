@@ -79,7 +79,13 @@ namespace Nijo.Models.ReadModel2Features {
                     .Select(vm => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript).ToArray())
                     .ToArray();
 
-                var rootAggregateComponent = new SingleViewAggregateComponent(dataClass);
+                var pageContext = new ReactPageRenderingContext {
+                    CodeRenderingContext = ctx,
+                    Register = "registerEx",
+                    RenderingObjectType = E_ReactPageRenderingObjectType.DataClassForDisplay,
+                };
+                var rootAggregateComponent = new SingleViewAggregateComponent(_aggregate);
+                var vForm = rootAggregateComponent.BuildVerticalForm(pageContext);
 
                 return $$"""
                     import React, { useState, useEffect, useCallback, useMemo, useReducer, useRef, useId, useContext, createContext } from 'react'
@@ -97,7 +103,8 @@ namespace Nijo.Models.ReadModel2Features {
                     export default function () {
 
                       const [defaultValues, setDefaultValues] = useState<AggregateType.{{dataClass.TsTypeName}} | undefined>()
-                      const reactHookFormMethods = Util.useFormEx<AggregateType.{{dataClass.TsTypeName}}>()
+                      const reactHookFormMethods = Util.useFormEx<AggregateType.{{dataClass.TsTypeName}}>({})
+                      const { register, registerEx, getValues, setValue } = reactHookFormMethods
 
                     {{If(_type != E_Type.New, () => $$"""
                       // 画面初期表示時
@@ -121,13 +128,15 @@ namespace Nijo.Models.ReadModel2Features {
                     """)}}
                             </>}
                           >
-                            {{rootAggregateComponent.RenderCaller()}}
+                            {{WithIndent(vForm.RenderAsRoot(ctx), "        ")}}
                           </Layout.PageFrame>
                         </FormProvider>
                       )
                     }
+                    {{rootAggregateComponent.EnumerateDescendantsRecursively().SelectTextTemplate(descendant => $$"""
 
-                    {{rootAggregateComponent.BuildVForm2(ctx).Render(ctx)}}
+                    {{descendant.RenderDeclaring(pageContext, _type == E_Type.ReadOnly)}}
+                    """)}}
                     """;
             },
         };

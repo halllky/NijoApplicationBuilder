@@ -106,11 +106,11 @@ namespace Nijo.Parts.WebClient.DataTable {
         }
 
         string IDataTableColumn2.RenderGetterOnEditStart(CodeRenderingContext ctx) {
-            throw new NotImplementedException(); // 非同期コンボボックスでこのメソッドが呼ばれることはない
+            return "非同期コンボボックスでこのメソッドが呼ばれることはない";
         }
 
         string IDataTableColumn2.RenderSetterOnEditEnd(CodeRenderingContext ctx) {
-            throw new NotImplementedException(); // 非同期コンボボックスでこのメソッドが呼ばれることはない
+            return "非同期コンボボックスでこのメソッドが呼ばれることはない";
         }
 
         string IDataTableColumn2.RenderOnClipboardCopy(CodeRenderingContext ctx) {

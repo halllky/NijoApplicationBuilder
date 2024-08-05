@@ -17,5 +17,16 @@ namespace Nijo.Util.CodeGenerating {
         /// （そのときのソースコードの都合で変数名にエイリアスがついていることがあるので）
         /// </summary>
         public required string Register { get; init; }
+
+        public required E_ReactPageRenderingObjectType RenderingObjectType { get; init; }
+    }
+
+    /// <summary>
+    /// どの種類のオブジェクトをレンダリングしているか
+    /// </summary>
+    public enum E_ReactPageRenderingObjectType {
+        SearchCondition,
+        DataClassForDisplay,
+        RefTarget,
     }
 }
