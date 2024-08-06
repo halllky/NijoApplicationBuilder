@@ -69,7 +69,7 @@ namespace Nijo.Models.ReadModel2Features {
             return $$"""
                 /** 画面表示用データの一括更新を即時実行します。更新するデータの量によっては長い待ち時間が発生する可能性があります。 */
                 const {{HOOK_NAME}} = React.useCallback(async (...{{HOOK_PARAM_ITEMS}}: Types.{{HOOK_PARA_TYPE}}[]) => {
-                    const res = await post(`{{Controller.SUBDOMAIN}}/{{BatchUpdateWriteModel.CONTROLLER_SUBDOMAIN}}/{{CONTROLLER_ACTION}}`, { {{HOOK_PARAM_ITEMS}} })
+                    const res = await post(`/{{Controller.SUBDOMAIN}}/{{BatchUpdateWriteModel.CONTROLLER_SUBDOMAIN}}/{{CONTROLLER_ACTION}}`, { {{HOOK_PARAM_ITEMS}} })
                     if (!res.ok) {
                       dispatchMsg(msg => msg.error('一括更新に失敗しました。'))
                       return false
