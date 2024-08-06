@@ -106,11 +106,17 @@ namespace Nijo.Parts.WebClient.DataTable {
         }
 
         string IDataTableColumn2.RenderGetterOnEditStart(CodeRenderingContext ctx) {
-            return "非同期コンボボックスでこのメソッドが呼ばれることはない";
+            return $$"""
+                row => row.{{_pathFromRowObject.Join("?.")}}
+                """;
         }
 
         string IDataTableColumn2.RenderSetterOnEditEnd(CodeRenderingContext ctx) {
-            return "非同期コンボボックスでこのメソッドが呼ばれることはない";
+            return $$"""
+                (row, value) => {
+                  row.{{_pathFromRowObject.Join(".")}} = value
+                }
+                """;
         }
 
         string IDataTableColumn2.RenderOnClipboardCopy(CodeRenderingContext ctx) {
@@ -130,7 +136,7 @@ namespace Nijo.Parts.WebClient.DataTable {
                 {{If(_pathFromRowObject.Count() >= 2, () => $$"""
                   if (row.{{_pathFromRowObject.SkipLast(1).Join("?.")}} === undefined) return
                 """)}}
-                  {{WithIndent(editSetting.OnClipboardPaste("value", "formatted"), "        ")}}
+                  {{WithIndent(editSetting.OnClipboardPaste("value", "formatted"), "  ")}}
                   row.{{_pathFromRowObject.Join(".")}} = formatted
                 }
                 """;

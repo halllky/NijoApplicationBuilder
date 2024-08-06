@@ -413,7 +413,8 @@ namespace Nijo.Models.ReadModel2Features {
             }
 
             return $$"""
-                {
+                /** {{Aggregate.Item.DisplayName}}の画面表示用オブジェクトを新規作成します。 */
+                export const {{TsNewObjectFunction}} = () => ({
                 {{If(HasInstanceKey, () => $$"""
                   {{INSTANCE_KEY_TS}}: JSON.stringify(UUID.generate()) as Util.ItemKey,
                 """)}}
@@ -428,7 +429,7 @@ namespace Nijo.Models.ReadModel2Features {
                   {{WILL_BE_DELETED_TS}}: false,
                   {{VERSION_TS}}: undefined,
                 """)}}
-                }
+                })
                 """;
         }
     }
@@ -471,6 +472,12 @@ namespace Nijo.Models.ReadModel2Features {
                     } else {
                         yield return $"/* エラー！{nameof(DataClassForDisplay)}では子は親の参照を持っていません */";
                     }
+                } else if (edge.IsRef()) {
+                    yield return csTs == E_CsTs.CSharp
+                        ? DataClassForDisplay.VALUES_CS
+                        : DataClassForDisplay.VALUES_TS;
+                    yield return edge.RelationName;
+
                 } else {
                     yield return edge.RelationName;
                 }
@@ -486,7 +493,7 @@ namespace Nijo.Models.ReadModel2Features {
                 yield return path;
             }
 
-            if (member is AggregateMember.ValueMember) {
+            if (member is AggregateMember.ValueMember || member is AggregateMember.Ref) {
                 yield return csTs == E_CsTs.CSharp
                     ? DataClassForDisplay.VALUES_CS
                     : DataClassForDisplay.VALUES_TS;
@@ -499,8 +506,8 @@ namespace Nijo.Models.ReadModel2Features {
         /// React hook form のregister名でのフルパス
         /// </summary>
         /// <param name="arrayIndexes">配列インデックスを指定する変数の名前</param>
-        internal static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this GraphNode<Aggregate> aggregate, IEnumerable<string>? arrayIndexes = null) {
-            return GetFullPathAsReactHookFormRegisterName(aggregate, false, arrayIndexes);
+        internal static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this GraphNode<Aggregate> aggregate, E_CsTs csts, IEnumerable<string>? arrayIndexes = null) {
+            return GetFullPathAsReactHookFormRegisterName(aggregate, csts, false, arrayIndexes);
         }
 
         /// <summary>
@@ -508,7 +515,7 @@ namespace Nijo.Models.ReadModel2Features {
         /// </summary>
         /// <param name="arrayIndexes">配列インデックスを指定する変数の名前</param>
         internal static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this AggregateMember.AggregateMemberBase member, E_CsTs csts, IEnumerable<string>? arrayIndexes = null) {
-            foreach (var path in GetFullPathAsReactHookFormRegisterName(member.Owner, true, arrayIndexes)) {
+            foreach (var path in GetFullPathAsReactHookFormRegisterName(member.Owner, csts, true, arrayIndexes)) {
                 yield return path;
             }
             yield return csts == E_CsTs.CSharp
@@ -517,7 +524,7 @@ namespace Nijo.Models.ReadModel2Features {
             yield return member.MemberName;
         }
 
-        private static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this GraphNode<Aggregate> aggregate, bool enumerateLastChildrenIndex, IEnumerable<string>? arrayIndexes) {
+        private static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this GraphNode<Aggregate> aggregate, E_CsTs csts, bool enumerateLastChildrenIndex, IEnumerable<string>? arrayIndexes) {
             var currentArrayIndex = 0;
 
             foreach (var edge in aggregate.PathFromEntry()) {
@@ -552,6 +559,10 @@ namespace Nijo.Models.ReadModel2Features {
                         }
 
                     } else if (edge.IsRef()) {
+                        yield return csts == E_CsTs.CSharp
+                            ? DataClassForDisplay.VALUES_CS
+                            : DataClassForDisplay.VALUES_TS;
+
                         yield return dataClass
                             .GetOwnMembers()
                             .OfType<AggregateMember.RelationMember>()

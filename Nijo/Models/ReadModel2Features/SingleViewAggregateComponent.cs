@@ -136,7 +136,7 @@ namespace Nijo.Models.ReadModel2Features {
             var useFormType = $"AggregateType.{new DataClassForDisplay(_dataClass.Aggregate.GetRoot()).TsTypeName}";
             var vForm = BuildVerticalForm(context);
 
-            var registerNameArray = _dataClass.Aggregate.GetFullPathAsReactHookFormRegisterName(args).ToArray();
+            var registerNameArray = _dataClass.Aggregate.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, args).ToArray();
             var registerName = registerNameArray.Length > 0 ? $"`{registerNameArray.Join(".")}`" : string.Empty;
 
             // Childのレンダリング

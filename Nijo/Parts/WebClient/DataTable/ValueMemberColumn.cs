@@ -130,7 +130,7 @@ namespace Nijo.Parts.WebClient.DataTable {
                 {{If(_pathFromRowObject.Count() >= 2, () => $$"""
                   if (row.{{_pathFromRowObject.SkipLast(1).Join("?.")}} === undefined) return
                 """)}}
-                  {{WithIndent(onPaste("value", "formatted"), "        ")}}
+                  {{WithIndent(onPaste("value", "formatted"), "  ")}}
                   row.{{_pathFromRowObject.Join(".")}} = formatted
                 }
                 """;
