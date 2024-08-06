@@ -67,7 +67,9 @@ namespace Nijo.Models.WriteModel2Features {
                     const res = await post(`{{Controller.SUBDOMAIN}}/{{CONTROLLER_SUBDOMAIN}}/{{CONTROLLER_ACTION_IMMEDIATELY}}`, { {{HOOK_PARAM_ITEMS}} })
                     if (!res.ok) {
                       dispatchMsg(msg => msg.error('一括更新に失敗しました。'))
+                      return false
                     }
+                    return true
                   }, [post, dispatchMsg])
 
                 {{_additionalHooks.Values.SelectTextTemplate(code => $$"""

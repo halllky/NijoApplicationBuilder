@@ -34,40 +34,7 @@ namespace Nijo.Core {
         /// データの流れの順（=Refされている順）に列挙
         /// </summary>
         internal IEnumerable<GraphNode<Aggregate>> RootAggregatesOrderByDataFlow() {
-            var rest = RootAggregates()
-                .Select(root => new {
-                    root,
-                    refTargets = root
-                        .EnumerateThisAndDescendants()
-                        .SelectMany(agg => agg.GetMembers())
-                        .OfType<AggregateMember.Ref>()
-                        .Select(@ref => @ref.RefTo.GetRoot())
-                        .ToHashSet(),
-                })
-                .ToList();
-            var index = 0;
-            while (true) {
-                if (rest.Count == 0) yield break;
-
-                var next = rest[index];
-
-                // 参照先集約が未処理ならば後回し
-                var notEnumerated = rest.Where(agg => next.refTargets.Contains(agg.root));
-                if (notEnumerated.Any()) {
-                    // 集約間の循環参照が存在するなどの場合は無限ループが発生するので例外。
-                    // なお循環参照はスキーマ作成時にエラーとする想定
-                    if (index + 1 >= rest.Count) throw new InvalidOperationException("集約間のデータの流れを決定できません。");
-
-                    index++;
-                    continue;
-                }
-
-                // 参照先集約が無い == nextは現在のrestの中で再上流の集約
-                yield return next.root;
-
-                rest.Remove(next);
-                index = 0;
-            }
+            return RootAggregates().OrderByDataFlow();
         }
 
         /// <summary>

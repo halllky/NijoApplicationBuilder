@@ -425,6 +425,52 @@ namespace Nijo.Models.WriteModel2Features {
                 """;
         }
         #endregion 読み取り専用用構造体
+
+
+        internal string TsNewObjectFnName => _type == E_Type.Create
+            ? $"createNew{_aggregate.Item.PhysicalName}CreateCommand"
+            : $"createNew{_aggregate.Item.PhysicalName}SaveCommand";
+        /// <summary>
+        /// TypeScriptの新規オブジェクト作成関数をレンダリングします。
+        /// </summary>
+        internal string RenderTsNewObjectFunction(CodeRenderingContext context) {
+
+            static string RenderObject(GraphNode<Aggregate> agg, E_Type type) {
+                var forSave = new DataClassForSave(agg, type);
+                return $$"""
+                    {
+                    {{forSave.GetOwnMembers().SelectTextTemplate(member => $$"""
+                      {{member.MemberName}}: {{WithIndent(RenderMemberValue(member, type), "  ")}},
+                    """)}}
+                    }
+                    """;
+            }
+            static string RenderMemberValue(AggregateMember.AggregateMemberBase member, E_Type type) {
+                if (member is AggregateMember.ValueMember vm) {
+                    return type == E_Type.Create && vm.Options.MemberType is Core.AggregateMemberTypes.Uuid
+                        ? "UUID.generate()"
+                        : "undefined";
+                } else if (member is AggregateMember.Ref) {
+                    return "undefined";
+                } else if (member is AggregateMember.Children) {
+                    return "[]";
+                } else if (member is AggregateMember.Child child) {
+                    return RenderObject(child.ChildAggregate, type);
+                } else if (member is AggregateMember.VariationItem variationItem) {
+                    return RenderObject(variationItem.VariationAggregate, type);
+                } else if (member is AggregateMember.Variation variation) {
+                    var first = variation.GetGroupItems().First();
+                    return $"'{first.Key}'";
+                } else {
+                    throw new NotImplementedException();
+                }
+            }
+
+            return $$"""
+                /** {{_aggregate.Item.DisplayName}}の{{(_type == E_Type.Create ? "新規作成用" : "更新用")}}コマンドを作成します。 */
+                export const {{TsNewObjectFnName}} = (): {{TsTypeName}} => ({{RenderObject(_aggregate, _type)}})
+                """;
+        }
     }
 
     partial class GetFullPathExtensions {

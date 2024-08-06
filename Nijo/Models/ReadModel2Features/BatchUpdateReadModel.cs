@@ -72,7 +72,9 @@ namespace Nijo.Models.ReadModel2Features {
                     const res = await post(`{{Controller.SUBDOMAIN}}/{{BatchUpdateWriteModel.CONTROLLER_SUBDOMAIN}}/{{CONTROLLER_ACTION}}`, { {{HOOK_PARAM_ITEMS}} })
                     if (!res.ok) {
                       dispatchMsg(msg => msg.error('一括更新に失敗しました。'))
+                      return false
                     }
+                    return true
                 }, [post, dispatchMsg])
                 """;
         }

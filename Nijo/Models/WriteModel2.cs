@@ -47,6 +47,12 @@ namespace Nijo.Models {
                 context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScript(context));
                 context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScriptErrorStructure(context));
                 context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScriptReadOnlyStructure(context));
+
+                // 処理: DataClassForSave, DataClassForNewItem 新規作成関数
+                if (agg.IsRoot() || agg.IsChildrenMember()) {
+                    context.ReactProject.Types.Add(dataClassForNewItem.RenderTsNewObjectFunction(context));
+                    context.ReactProject.Types.Add(dataClassForSave.RenderTsNewObjectFunction(context));
+                }
             }
 
             // 処理: 一括更新処理
@@ -100,6 +106,9 @@ namespace Nijo.Models {
                 aggregateFile.ControllerActions.Add(searchRef.RenderController(context));
                 aggregateFile.AppServiceMethods.Add(searchRef.RenderAppSrvMethodOfWriteModel(context));
             }
+
+            // 処理: デバッグ用ダミーデータ作成関数
+            context.UseSummarizedFile<DummyDataGenerator>().Add(rootAggregate);
         }
 
         void IModel.GenerateCode(CodeRenderingContext context) {
@@ -111,12 +120,6 @@ namespace Nijo.Models {
 
                 // エラーデータ用インターフェース
                 utilDir.Generate(DataClassForSave.RenderIErrorData());
-            });
-
-            context.ReactProject.UtilDir(utilDir => {
-                // 処理: デバッグ用ダミーデータ作成関数
-                var dummyDataGenerator = new DummyDataGenerator();
-                utilDir.Generate(dummyDataGenerator.Render());
             });
         }
     }
