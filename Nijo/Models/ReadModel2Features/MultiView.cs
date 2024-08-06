@@ -34,9 +34,7 @@ namespace Nijo.Models.ReadModel2Features {
                 var createView = new SingleView(_aggregate, SingleView.E_Type.New);
                 var detailView = new SingleView(_aggregate, SingleView.E_Type.ReadOnly);
 
-                // 新規作成画面へのリンクがあるかどうか
-                var linkToCreateView = context.Config.DisableLocalRepository
-                    && _aggregate.GetSingleRefKeyAggregate() == null;
+                const string TO_DETAIL_VIEW = "navigateToSingleView";
 
                 var pageRenderingContext = new ReactPageRenderingContext {
                     CodeRenderingContext = context,
@@ -54,10 +52,10 @@ namespace Nijo.Models.ReadModel2Features {
                         cellProps => {
                           const row = cellProps.row.original
                           const state = Util.getUpdateType(row)
-                          const singleViewUrl = Util.{{detailView.GetUrlFnName}}(row, 'readonly')
+
                           return (
                             <div className="flex items-center gap-1 pl-1">
-                              <Link to={singleViewUrl} className="text-link">詳細</Link>
+                              <button type="button" onClick={() => {{TO_DETAIL_VIEW}}(row, 'readonly')} className="text-link">詳細</button>
                               <span className="inline-block w-4 text-center">{state}</span>
                             </div>
                           )
@@ -131,12 +129,16 @@ namespace Nijo.Models.ReadModel2Features {
                         resetSearchCondition()
                         searchConditionPanelRef.current?.expand()
                       }, [resetSearchCondition, searchConditionPanelRef])
+                    
+                      // 画面遷移
+                      const {{TO_DETAIL_VIEW}} = Util.{{detailView.NavigateFnName}}()
+                      const navigateToCreateView = Util.{{createView.NavigateFnName}}()
+                      const onClickCreateViewLink = useEvent(() => navigateToCreateView())
 
                       // 列定義
                       const columnDefs: Layout.ColumnDefEx<AggregateType.{{searchResult.TsTypeName}}>[] = useMemo(() => [
                         {{WithIndent(tableBuilder.RenderColumnDef(context), "    ")}}
-                      ], [get])
-
+                      ], [get, {{TO_DETAIL_VIEW}}])
 
                       return (
                         <Layout.PageFrame
@@ -144,10 +146,11 @@ namespace Nijo.Models.ReadModel2Features {
                             <Layout.PageTitle className="self-center">
                               {{_aggregate.Item.DisplayName}}
                             </Layout.PageTitle>
-                    {{If(linkToCreateView, () => $$"""
-                            <Link to={Util.{{createView.GetUrlFnName}}()} className="self-center">新規作成</Link>
-                    """)}}
                             <div className="flex-1"></div>
+                    {{If(!_aggregate.Item.Options.IsReadOnlyAggregate, () => $$"""
+                            <Input.IconButton className="self-center" onClick={onClickCreateViewLink}>新規作成</Input.IconButton>
+                            <div className="basis-4"></div>
+                    """)}}
                             <Input.IconButton className="self-center" onClick={clearSearchCondition}>クリア</Input.IconButton>
                             <div className="self-center flex">
                               <Input.IconButton icon={Icon.MagnifyingGlassIcon} fill onClick={handleReload}>検索</Input.IconButton>

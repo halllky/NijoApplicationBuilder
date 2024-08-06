@@ -66,7 +66,7 @@ namespace Nijo.Models.ReadModel2Features {
         /// 新規作成モードで開くとき、この名前のクエリパラメータにJSONで初期値を設定すると
         /// 画面初期値にそれが入った状態になる。JSONパースに失敗した場合は警告
         /// </summary>
-        public const string NEW_MODE_INITVALUE = "init";
+        private const string NEW_MODE_INITVALUE = "init";
 
         public SourceFile GetSourceFile() => new SourceFile {
             FileName = _type switch {
@@ -195,15 +195,29 @@ namespace Nijo.Models.ReadModel2Features {
             },
         };
 
-        public string GetUrlFnName => _type switch {
-            E_Type.New => $"get{_aggregate.Item.PhysicalName}CreateViewUrl",
-            _ => $"get{_aggregate.Item.PhysicalName}SingleViewUrl",
+        /// <summary>
+        /// 詳細画面へ遷移する関数の名前
+        /// </summary>
+        public string NavigateFnName => _type switch {
+            E_Type.New => $"useNavigateTo{_aggregate.Item.PhysicalName}CreateView",
+            _ => $"useNavigateTo{_aggregate.Item.PhysicalName}SingleView",
         };
-        internal string RenderGetUrlFn(CodeRenderingContext context) {
+        internal string RenderNavigateFn(CodeRenderingContext context) {
             if (_type == E_Type.New) {
+                var dataClass = new DataClassForDisplay(_aggregate);
                 return $$"""
-                    export const {{GetUrlFnName}} = () => {
-                      return `{{Url}}`
+                    /** {{_aggregate.Item.DisplayName}}の新規作成画面へ遷移する関数を返します。引数にオブジェクトを渡した場合は画面初期値になります。 */
+                    export const {{NavigateFnName}} = () => {
+                      const navigate = useNavigate()
+
+                      return React.useCallback((initValue?: Types.{{dataClass.TsTypeName}}) => {
+                        if (initValue === undefined) {
+                          navigate('{{Url}}')
+                        } else {
+                          const queryString = new URLSearchParams({ {{NEW_MODE_INITVALUE}}: JSON.stringify(initValue) }).toString()
+                          navigate(`{{Url}}?${queryString}`)
+                        }
+                      }, [navigate])
                     }
                     """;
             } else {
@@ -219,17 +233,24 @@ namespace Nijo.Models.ReadModel2Features {
                     })
                     .ToArray();
                 return $$"""
-                    export const {{GetUrlFnName}} = (obj: Types.{{dataClass.TsTypeName}}, to: 'readonly' | 'edit') => {
+                    /** {{_aggregate.Item.DisplayName}}の閲覧画面または編集画面へ遷移する関数を返します。 */
+                    export const {{NavigateFnName}} = () => {
+                      const navigate = useNavigate()
+
+                      return React.useCallback((obj: Types.{{dataClass.TsTypeName}}, to: 'readonly' | 'edit') => {
                     {{keys.SelectTextTemplate((k, i) => $$"""
-                      const key{{i}} = obj.{{k.Path.Join("?.")}}
+                        const key{{i}} = obj.{{k.Path.Join("?.")}}
                     """)}}
                     {{keys.SelectTextTemplate((k, i) => $$"""
-                      if (key{{i}} === undefined) throw new Error('{{k.MemberName}}が指定されていません。')
+                        if (key{{i}} === undefined) throw new Error('{{k.MemberName}}が指定されていません。')
                     """)}}
 
-                      return to === 'readonly'
-                        ? `{{readView.Url}}/{{keys.Select((_, i) => $"/${{window.encodeURI(`${{key{i}}}`)}}").Join("")}}`
-                        : `{{editView.Url}}/{{keys.Select((_, i) => $"/${{window.encodeURI(`${{key{i}}}`)}}").Join("")}}`
+                        if (to === 'readonly') {
+                          navigate(`{{readView.Url}}/{{keys.Select((_, i) => $"/${{window.encodeURI(`${{key{i}}}`)}}").Join("")}}`)
+                        } else {
+                          navigate(`{{editView.Url}}/{{keys.Select((_, i) => $"/${{window.encodeURI(`${{key{i}}}`)}}").Join("")}}`)
+                        }
+                      }, [navigate])
                     }
                     """;
 

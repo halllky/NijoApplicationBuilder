@@ -27,7 +27,7 @@ namespace Nijo.Models.RefTo {
         internal const string NOW_LOADING = "nowLoading";
         internal const string LOAD = "load";
 
-        internal string Url => $"{new Controller(_aggregate.Item).SubDomain}/{ControllerAction}";
+        internal string Url => $"/{new Controller(_aggregate.Item).SubDomain}/{ControllerAction}";
         private string ControllerAction => _aggregate.IsRoot()
             ? $"search-refs"
             : $"search-refs/{_aggregate.Item.PhysicalName}";

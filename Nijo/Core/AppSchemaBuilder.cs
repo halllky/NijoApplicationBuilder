@@ -314,6 +314,10 @@ namespace Nijo.Core {
         /// 親の内容が画面上で変更されていてもこの集約に変更がなければ更新がかからなかったりする。
         /// </summary>
         public bool HasLifeCycle { get; set; }
+        /// <summary>
+        /// 画面から編集できる集約かそうでないかを表します。
+        /// </summary>
+        public bool IsReadOnlyAggregate { get; set; }
 
         public sealed class GroupOption {
             public required string GroupName { get; init; }

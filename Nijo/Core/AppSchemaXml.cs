@@ -262,6 +262,8 @@ namespace Nijo.Core {
 
             parser.IfExists("has-lifecycle")
                 .SetAggregateOption(opt => opt.HasLifeCycle, true, E_Priority.Force);
+            parser.IfExists("readonly")
+                .SetAggregateOption(opt => opt.IsReadOnlyAggregate, true, E_Priority.Force);
 
             var elementType = parser.GetElementType();
             var aggregateOption = parser.CreateAggregateOption();
