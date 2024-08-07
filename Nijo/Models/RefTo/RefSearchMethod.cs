@@ -200,6 +200,20 @@ namespace Nijo.Models.RefTo {
             const string C_PARENT = "Parent";
             const string C_CHILD = "Child";
 
+            // 参照先検索条件クラスのフィルタ部分を通常の検索条件クラスのものに変換する
+            static string RenderFilterConverting(SearchCondition sc) {
+                return $$"""
+                    new() {
+                    {{sc.GetOwnMembers().SelectTextTemplate(member => $$"""
+                        {{member.MemberName}} = refSearchCondition.{{member.Member.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.CSharp).Join(".")}},
+                    """)}}
+                    {{sc.GetChildMembers().SelectTextTemplate(child => $$"""
+                        {{child.MemberName}} = {{WithIndent(RenderFilterConverting(child), "    ")}},
+                    """)}}
+                    }
+                    """;
+            }
+
             return $$"""
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}} が他の集約から参照されるときの検索処理
@@ -209,9 +223,7 @@ namespace Nijo.Models.RefTo {
                 public virtual IEnumerable<{{refSearchResult.CsClassName}}> {{AppSrvLoadMethod}}({{refSearchCondition.CsClassName}} refSearchCondition) {
                     // 通常の一覧検索処理を流用する
                     var searchCondition = new {{searchCondition.CsClassName}} {
-                        Filter = new() {
-                            // TODO #35 参照先検索条件を通常の検索条件に変換する
-                        },
+                        Filter = {{WithIndent(RenderFilterConverting(searchCondition), "        ")}},
                         Keyword = refSearchCondition.Keyword,
                         Skip = refSearchCondition.Skip,
                         Sort = refSearchCondition.Sort,

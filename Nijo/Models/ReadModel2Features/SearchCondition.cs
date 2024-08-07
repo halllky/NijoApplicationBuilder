@@ -41,7 +41,7 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// この集約自身がもつ検索条件を列挙します。
         /// </summary>
-        protected IEnumerable<SearchConditionMember> GetOwnMembers() {
+        internal IEnumerable<SearchConditionMember> GetOwnMembers() {
             return _aggregate
                 .GetMembers()
                 .OfType<AggregateMember.ValueMember>()
@@ -51,7 +51,7 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// 直近の子を列挙します。
         /// </summary>
-        protected IEnumerable<DescendantSearchCondition> GetChildMembers() {
+        internal IEnumerable<DescendantSearchCondition> GetChildMembers() {
             var isOutOfEntryTree = _aggregate.IsOutOfEntryTree();
 
             foreach (var rm in _aggregate.GetMembers().OfType<AggregateMember.RelationMember>()) {
