@@ -48,7 +48,7 @@ namespace Nijo.Parts.Utility {
                         /// <summary>
                         /// 新しいUUIDを発番し <see cref="{{CS_CLASS_NAME}}"/> を作成します。
                         /// </summary>
-                        public static {{CS_CLASS_NAME}} {{FROM_PK}}() {
+                        public static {{CS_CLASS_NAME}} {{FROM_UUID}}() {
                             var guid = Guid.NewGuid().ToString();
                             return new {{CS_CLASS_NAME}}(guid, null);
                         }
@@ -82,11 +82,11 @@ namespace Nijo.Parts.Utility {
 
                         public override string ToString() {
                             if (_uuid != null) {
-                                return _uuid;
+                                return _uuid.ToJson();
                             } else if (_primaryKeys != null) {
                                 return _primaryKeys.ToJson();
                             } else {
-                                throw new NotImplementedException();
+                                throw new NotImplementedException(); // ありえないパターン
                             }
                         }
                     }
