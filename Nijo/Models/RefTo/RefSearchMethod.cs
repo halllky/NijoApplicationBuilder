@@ -184,6 +184,9 @@ namespace Nijo.Models.RefTo {
                 """;
         }
 
+        const string C_PARENT = "parent";
+        const string C_CHILD = "child";
+
         internal string RenderAppSrvMethodOfReadModel(CodeRenderingContext context) {
             var load = new LoadMethod(_aggregate.GetRoot());
             var searchCondition = new SearchCondition(_aggregate.GetRoot());
@@ -196,9 +199,8 @@ namespace Nijo.Models.RefTo {
             // つまり親が子をプロパティとして持つのではなく子が親をプロパティとして持つ形になる。その逆転変換処理に使う変数
             var ancestors = _aggregate
                 .EnumerateAncestors()
-                .Select(edge => new DataClassForDisplayDescendant(edge.Terminal.AsChildRelationMember()));
-            const string C_PARENT = "Parent";
-            const string C_CHILD = "Child";
+                .Select(edge => new DataClassForDisplayDescendant(edge.Terminal.AsChildRelationMember()))
+                .ToArray();
 
             // 参照先検索条件クラスのフィルタ部分を通常の検索条件クラスのものに変換する
             static string RenderFilterConverting(SearchCondition sc) {
@@ -209,6 +211,50 @@ namespace Nijo.Models.RefTo {
                     """)}}
                     {{sc.GetChildMembers().SelectTextTemplate(child => $$"""
                         {{child.MemberName}} = {{WithIndent(RenderFilterConverting(child), "    ")}},
+                    """)}}
+                    }
+                    """;
+            }
+
+            // 通常の一覧検索結果を参照先検索結果に変換する
+            string RenderResultConverting(RefSearchResult rsr, string instance, GraphNode<Aggregate> instanceAggregate, bool renderNewClassName) {
+
+                string RenderMember(AggregateMember.AggregateMemberBase member) {
+                    if (member is AggregateMember.ValueMember vm) {
+                        return $$"""
+                            {{instance}}.{{GetFullPathBeforeReturn(vm.Declared, instanceAggregate).Join("?.")}}
+                            """;
+
+                    } else if (member is AggregateMember.Children children) {
+                        var pathToArray = GetFullPathBeforeReturn(children.ChildrenAggregate, instanceAggregate);
+                        var depth = children.ChildrenAggregate.EnumerateAncestors().Count();
+                        var x = depth <= 1 ? "x" : $"x{depth}";
+                        var child = new RefSearchResult(children.ChildrenAggregate, _refEntry);
+                        return $$"""
+                            {{instance}}.{{pathToArray.Join("?.")}}.Select({{x}} => {{RenderResultConverting(child, x, children.ChildrenAggregate, true)}}).ToList()
+                            """;
+
+                    } else {
+                        var memberRefSearchResult = new RefSearchResult(((AggregateMember.RelationMember)member).MemberAggregate, _refEntry);
+                        return $$"""
+                            {{RenderResultConverting(memberRefSearchResult, instance, instanceAggregate, false)}}
+                            """;
+                    }
+                }
+
+                var @new = renderNewClassName
+                    ? $"new {rsr.CsClassName}"
+                    : $"new()";
+                var instanceKey = ancestors.Length == 0
+                    ? $"{instance}.{DataClassForDisplay.INSTANCE_KEY_CS}"
+                    : $"{instance}.{C_CHILD}.{DataClassForDisplay.INSTANCE_KEY_CS}";
+                return $$"""
+                    {{@new}} {
+                    {{If(rsr == refSearchResult, () => $$"""
+                        {{RefSearchResult.INSTANCE_KEY_CS}} = {{instanceKey}},
+                    """)}}
+                    {{rsr.GetOwnMembers().SelectTextTemplate(member => $$"""
+                        {{RefSearchResult.GetMemberName(member)}} = {{WithIndent(RenderMember(member), "    ")}},
                     """)}}
                     }
                     """;
@@ -234,19 +280,63 @@ namespace Nijo.Models.RefTo {
                     // 通常の一覧検索結果の型を、他の集約から参照されるときの型に変換する
                     var refTargets = searchResult
                 {{ancestors.SelectTextTemplate(prop => prop.IsArray ? $$"""
-                        .SelectMany(sr => sr.{{prop.MemberName}}, (parent, child) => new { {{C_PARENT}} = parent, {{C_CHILD}} = child })
+                        .SelectMany(sr => sr.{{prop.MemberName}}, ({{C_PARENT}}, {{C_CHILD}}) => new { {{C_PARENT}}, {{C_CHILD}} })
                 """ : $$"""
                         .Select(sr => new { {{C_PARENT}} = sr, {{C_CHILD}} = sr.{{prop.MemberName}} })
                 """)}}
-                        .Select(sr => new {{refSearchResult.CsClassName}} {
-                            {{RefSearchResult.INSTANCE_KEY_CS}} = "", // TODO #35 IsntanceKey
-                            // TODO #35 通常の一覧検索結果を参照先検索結果に変換する
-                        });
+                        .Select(sr => {{WithIndent(RenderResultConverting(refSearchResult, "sr", _aggregate, true), "        ")}});
                     return refTargets;
                 }
                 """;
         }
 
+        /// <summary>
+        /// 検索処理の最後の変換処理用のフルパス取得
+        /// </summary>
+        private IEnumerable<string> GetFullPathBeforeReturn(GraphNode<Aggregate> aggregate, GraphNode<Aggregate>? since = null) {
+            var pathFromEntry = aggregate.PathFromEntry();
+            if (since != null) pathFromEntry = pathFromEntry.Since(since);
 
+            var arr = pathFromEntry.ToArray();
+            for (int i = 0; i < arr.Length; i++) {
+                var edge = arr[i];
+                if (edge.IsParentChild() && edge.Source == edge.Terminal) {
+                    yield return C_PARENT;
+
+                } else if (edge.IsRef()) {
+                    if (i == 0 && !_refEntry.IsRoot()) {
+                        yield return C_CHILD;
+                    }
+                    yield return DataClassForDisplay.VALUES_CS;
+                    yield return edge.RelationName;
+                    break;
+
+                } else {
+                    yield return edge.RelationName;
+                }
+            }
+            if (aggregate.IsOutOfEntryTree()) {
+                var refEntry = aggregate.GetRefEntryEdge().Terminal;
+                foreach (var path in aggregate.GetFullPathAsDataClassForRefTarget(since: refEntry)) {
+                    yield return path;
+                }
+            }
+        }
+        /// <summary>
+        /// 検索処理の最後の変換処理用のフルパス取得
+        /// </summary>
+        private IEnumerable<string> GetFullPathBeforeReturn(AggregateMember.AggregateMemberBase member, GraphNode<Aggregate>? since = null) {
+            var ownerPath = GetFullPathBeforeReturn(member.Owner, since).ToArray();
+            if (ownerPath.Length == 0 && !_refEntry.IsRoot()) {
+                yield return C_CHILD;
+            }
+            foreach (var path in ownerPath) {
+                yield return path;
+            }
+            if (!member.Owner.IsOutOfEntryTree()) {
+                yield return DataClassForDisplay.VALUES_CS;
+            }
+            yield return RefSearchResult.GetMemberName(member);
+        }
     }
 }

@@ -90,7 +90,7 @@ namespace Nijo.Models.RefTo {
                     /// 別途何らかの識別子を設けないと同一性を判定する方法が無いため、この項目が必要になる。
                     /// </summary>
                     [JsonPropertyName("{{INSTANCE_KEY_TS}}")]
-                    public virtual required string {{INSTANCE_KEY_CS}} { get; set; }
+                    public virtual required {{InstanceKey.CS_CLASS_NAME}} {{INSTANCE_KEY_CS}} { get; set; }
 
                 """)}}
                 {{rt.GetOwnMembers().SelectTextTemplate(m => $$"""
@@ -214,14 +214,11 @@ namespace Nijo.Models.RefTo {
 
                 var rsr = new RefSearchResult(renderingAggregate, _refEntry);
                 var newStatement = renderNewStatement ? $"new {rsr.CsClassName}()" : "new()";
+                var pk = keys.Select(vm => pkVarNames[(vm.Declared, vm.DeclaringAggregate.PathFromEntry())]);
                 return $$"""
                 {{newStatement}} {
                 {{If(rsr.HasInstanceKey, () => $$"""
-                    {{INSTANCE_KEY_CS}} = {{UtilityClass.CLASSNAME}}.{{UtilityClass.TO_JSON}}(new object?[] {
-                {{keys.SelectTextTemplate(vm => $$"""
-                        {{pkVarNames[(vm.Declared, vm.DeclaringAggregate.PathFromEntry())]}},
-                """)}}
-                    }),
+                    {{INSTANCE_KEY_CS}} = {{InstanceKey.CS_CLASS_NAME}}.{{InstanceKey.FROM_PK}}({{pk.Join(", ")}}),
                 """)}}
                 {{rsr.GetOwnMembers().SelectTextTemplate(m => $$"""
                     {{GetMemberName(m)}} = {{WithIndent(RenderMemberStatement(m), "    ")}},
