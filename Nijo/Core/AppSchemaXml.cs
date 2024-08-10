@@ -202,6 +202,9 @@ namespace Nijo.Core {
                 .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
                 .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Models.ReadModel2.Key, E_Priority.Force);
 
+            parser.IfExists("generate-default-read-model")
+                .SetAggregateOption(opt => opt.GenerateDefaultReadModel, true, E_Priority.Force);
+
             parser.IfExists("section")
                 .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)
                 .SetAggregateOption(opt => opt.IsArray, false, E_Priority.Force);

@@ -318,6 +318,12 @@ namespace Nijo.Core {
         /// 画面から編集できる集約かそうでないかを表します。
         /// </summary>
         public bool IsReadOnlyAggregate { get; set; }
+        /// <summary>
+        /// この集約が <see cref="Models.WriteModel2"/> の場合に
+        /// 既定の <see cref="Models.ReadModel2"/> を生成するかどうか。
+        /// DBのデータ型と画面のデータ型が完全一致する場の使用を想定している。
+        /// </summary>
+        public bool GenerateDefaultReadModel { get; set; }
 
         public sealed class GroupOption {
             public required string GroupName { get; init; }
