@@ -28,7 +28,7 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>データ種別のプロパティ名（TypeScript側）</summary>
         private const string DATA_TYPE_TS = "dataType";
         /// <summary>データ種別の値</summary>
-        private static string GetDataTypeLiteral(GraphNode<Aggregate> aggregate) => aggregate.Item.DisplayName;
+        internal static string GetDataTypeLiteral(GraphNode<Aggregate> aggregate) => aggregate.Item.DisplayName;
 
         /// <summary>データ本体のプロパティの名前（C#側）</summary>
         private const string VALUES_CS = "Values";

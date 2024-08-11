@@ -1,4 +1,5 @@
 using Nijo.Core;
+using Nijo.Models.WriteModel2Features;
 using Nijo.Parts.WebClient;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
@@ -115,6 +116,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                 return $$"""
                     import React, { useState, useEffect, useCallback, useMemo, useReducer, useRef, useId, useContext, createContext } from 'react'
+                    import useEvent from 'react-use-event-hook'
                     import { Link, useParams, useNavigate, useLocation } from 'react-router-dom'
                     import { SubmitHandler, useForm, FormProvider, useFormContext, useFieldArray } from 'react-hook-form'
                     import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline'
@@ -141,8 +143,8 @@ namespace Nijo.Models.ReadModel2Features {
                     {{If(_type == E_Type.New, () => $$"""
                       const { search } = useLocation()
                       useEffect(() => {
-                        // クエリパラメータで画面初期値が指定されている場合はそれを初期表示する
                         try {
+                          // クエリパラメータで画面初期値が指定されている場合はそれを初期表示する
                           const queryParameter = new URLSearchParams(search)
                           const initValueJson = queryParameter.get('{{NEW_MODE_INITVALUE}}')
                           if (initValueJson != null) {
@@ -180,6 +182,25 @@ namespace Nijo.Models.ReadModel2Features {
                       }, [{{urlKeysWithMember.Values.Join(", ")}}, load{{_aggregate.Item.PhysicalName}}])
 
                     """)}}
+                    {{If(_type == E_Type.New || _type == E_Type.Edit, () => $$"""
+                      // 保存時
+                      const { {{BatchUpdateReadModel.HOOK_NAME}} } = AggregateHook.{{BatchUpdateWriteModel.HOOK_NAME}}()
+                      const handleSave = useEvent(() => {
+                        {{BatchUpdateReadModel.HOOK_NAME}}({
+                          dataType: '{{BatchUpdateReadModel.GetDataTypeLiteral(_aggregate)}}',
+                          values: getValues(),
+                        })
+                      })
+
+                    """)}}
+                    {{If(_type == E_Type.ReadOnly, () => $$"""
+                      // 編集画面への遷移
+                      const navigateToEditPage = Util.useNavigateTo参照先SingleView()
+                      const handleStartEditing = useEvent(() => {
+                        navigateToEditPage(getValues(), 'edit')
+                      })
+
+                    """)}}
                       return (
                         <FormProvider {...reactHookFormMethods}>
                           <Layout.PageFrame
@@ -191,6 +212,13 @@ namespace Nijo.Models.ReadModel2Features {
                                 {{_aggregate.Item.DisplayName}}&nbsp;{displayName}
                     """)}}
                               </Layout.PageTitle>
+                              <div className="flex-1"></div>
+                    {{If(_type == E_Type.New || _type == E_Type.Edit, () => $$"""
+                              <Input.IconButton fill onClick={handleSave}>保存</Input.IconButton>
+                    """)}}
+                    {{If(_type == E_Type.ReadOnly, () => $$"""
+                              <Input.IconButton fill onClick={handleStartEditing}>編集開始</Input.IconButton>
+                    """)}}
                             </>}
                           >
                             {{WithIndent(vForm.RenderAsRoot(ctx), "        ")}}
