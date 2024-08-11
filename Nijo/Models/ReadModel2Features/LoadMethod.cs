@@ -1,4 +1,5 @@
 using Nijo.Core;
+using Nijo.Models.WriteModel2Features;
 using Nijo.Parts.Utility;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
@@ -121,9 +122,13 @@ namespace Nijo.Models.ReadModel2Features {
                 /// </para>
                 /// </summary>
                 protected virtual IQueryable<{{searchResult.CsClassName}}> {{AppSrvCreateQueryMethod}}({{searchCondition.CsClassName}} searchCondition) {
+                {{If(_aggregate.Item.Options.GenerateDefaultReadModel, () => $$"""
+                    {{WithIndent(RenderWriteModelDefaultQuerySource(), "    ")}}
+                """).Else(() => $$"""
                     // クエリのソース定義部分は自動生成されません。
                     // このメソッドをオーバーライドしてソース定義処理を記述してください。
                     return Enumerable.Empty<{{searchResult.CsClassName}}>().AsQueryable();
+                """)}}
                 }
 
                 /// <summary>
@@ -138,6 +143,58 @@ namespace Nijo.Models.ReadModel2Features {
                     return currentPageSearchResult;
                 }
                 """;
+        }
+
+        /// <summary>
+        /// 既定のReadModelを生成するオプションが指定されている場合のWriteModelのクエリソース定義処理
+        /// </summary>
+        private string RenderWriteModelDefaultQuerySource() {
+            var dbEntity = new EFCoreEntity(_aggregate);
+            var searchResult = new SearchResult(_aggregate);
+
+            return $$"""
+                return DbContext.{{dbEntity.DbSetName}}.Select(e => {{RenderResultConverting(searchResult, "e", _aggregate, true)}});
+                """;
+
+            static string RenderResultConverting(SearchResult searchResult, string instance, GraphNode<Aggregate> instanceAggregate, bool renderNewClassName) {
+
+                string RenderMember(AggregateMember.AggregateMemberBase member) {
+                    if (member is AggregateMember.ValueMember vm) {
+                        return $$"""
+                            {{instance}}.{{vm.Declared.GetFullPathAsSearchResult(since: instanceAggregate).Join(".")}}
+                            """;
+
+                    } else if (member is AggregateMember.Children children) {
+                        var pathToArray = children.ChildrenAggregate.GetFullPathAsSearchResult(since: instanceAggregate);
+                        var depth = children.ChildrenAggregate.EnumerateAncestors().Count();
+                        var x = depth <= 1 ? "x" : $"x{depth}";
+                        var child = new SearchResult(children.ChildrenAggregate);
+                        return $$"""
+                            {{instance}}.{{pathToArray.Join(".")}}.Select({{x}} => {{RenderResultConverting(child, x, children.ChildrenAggregate, true)}}).ToList()
+                            """;
+
+                    } else {
+                        var memberSearchResult = new SearchResult(((AggregateMember.RelationMember)member).MemberAggregate);
+                        return $$"""
+                            {{RenderResultConverting(memberSearchResult, instance, instanceAggregate, false)}}
+                            """;
+                    }
+                }
+
+                var newStatement = renderNewClassName
+                    ? $"new {searchResult.CsClassName}"
+                    : $"new()";
+                return $$"""
+                    {{newStatement}} {
+                    {{searchResult.GetOwnMembers().SelectTextTemplate(member => $$"""
+                        {{member.MemberName}} = {{WithIndent(RenderMember(member), "    ")}},
+                    """)}}
+                    {{If(searchResult.HasLifeCycle, () => $$"""
+                        {{SearchResult.VERSION}} = {{instance}}.{{EFCoreEntity.VERSION}}!.Value,
+                    """)}}
+                    }
+                    """;
+            }
         }
 
         /// <summary>
