@@ -47,13 +47,12 @@ namespace Nijo.Core {
         /// <param name="searchQueryObject">検索結果のクエリのオブジェクトの型</param>
         /// <returns> <see cref="IQueryable{T}"/> の変数に絞り込み処理をつけたものを再代入するソースコード</returns>
         string RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition, E_SearchConditionObject searchConditionObject, E_SearchQueryObject searchQueryObject);
-
         /// <summary>
         /// 検索条件欄のUI（"VerticalForm.Item" の子要素）をレンダリングします。
         /// </summary>
         /// <param name="vm">検索対象のメンバーの情報</param>
         /// <param name="ctx">コンテキスト引数</param>
-        string RenderVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx);
+        string RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx);
     }
 
     /// <summary>検索条件のオブジェクトの型</summary>
@@ -126,7 +125,7 @@ namespace Nijo.Core {
                 """;
         }
 
-        string IAggregateMemberType.RenderVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx) {
+        string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx) {
             var fullpath = ctx.RenderingObjectType switch {
                 E_ReactPageRenderingObjectType.SearchCondition => vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join("."),
                 E_ReactPageRenderingObjectType.RefTarget => vm.Declared.GetFullPathAsDataClassForRefTarget().Join("."),
@@ -227,7 +226,7 @@ namespace Nijo.Core {
                 """;
         }
 
-        string IAggregateMemberType.RenderVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx) {
+        string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx) {
             var component = GetReactComponent();
             var fullpath = ctx.RenderingObjectType switch {
                 E_ReactPageRenderingObjectType.SearchCondition => vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join("."),

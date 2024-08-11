@@ -56,7 +56,7 @@ namespace Nijo.Models.ReadModel2Features {
                         vm.Options.MemberType is Core.AggregateMemberTypes.Sentence,
                         member.MemberName,
                         E_VForm2LabelType.String,
-                        vm.Options.MemberType.RenderVFormBody(vm, context));
+                        vm.Options.MemberType.RenderSearchConditionVFormBody(vm, context));
 
                 } else if (member is AggregateMember.Ref @ref) {
                     void BuildRecursively(RefTo.RefSearchResult refTarget, VerticalFormSection section) {
@@ -66,7 +66,7 @@ namespace Nijo.Models.ReadModel2Features {
                                     vm2.Options.MemberType is Core.AggregateMemberTypes.Sentence,
                                     member.MemberName,
                                     E_VForm2LabelType.String,
-                                    vm2.Options.MemberType.RenderVFormBody(vm2, context));
+                                    vm2.Options.MemberType.RenderSearchConditionVFormBody(vm2, context));
 
                             } else if (refMember is AggregateMember.RelationMember rel) {
                                 var relRefTarget = new RefTo.RefSearchResult(rel.MemberAggregate, @ref.RefTo);

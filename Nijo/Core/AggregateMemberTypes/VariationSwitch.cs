@@ -121,7 +121,7 @@ namespace Nijo.Core.AggregateMemberTypes {
                 """;
         }
 
-        string IAggregateMemberType.RenderVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx) {
+        string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx) {
             var component = GetReactComponent();
             var fullpath = ctx.RenderingObjectType switch {
                 E_ReactPageRenderingObjectType.SearchCondition => vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join("."),

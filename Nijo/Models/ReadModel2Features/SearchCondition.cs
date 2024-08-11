@@ -268,7 +268,7 @@ namespace Nijo.Models.ReadModel2Features {
                     m.Member.Options.MemberType is Core.AggregateMemberTypes.Sentence,
                     m.MemberName,
                     Parts.WebClient.E_VForm2LabelType.String,
-                    m.Member.Options.MemberType.RenderVFormBody(m.Member, context));
+                    m.Member.Options.MemberType.RenderSearchConditionVFormBody(m.Member, context));
             }
             foreach (var m in GetChildMembers()) {
                 var childSection = section.AddSection(
