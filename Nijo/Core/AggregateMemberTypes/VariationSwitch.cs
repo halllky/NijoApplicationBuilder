@@ -129,7 +129,21 @@ namespace Nijo.Core.AggregateMemberTypes {
                 E_ReactPageRenderingObjectType.DataClassForDisplay => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript).Join("."),
                 _ => throw new NotImplementedException(),
             };
+            return $$"""
+                {{_variationGroup.VariationAggregates.SelectTextTemplate(kv => $$"""
+                <Input.CheckBox {...{{ctx.Register}}(`{{fullpath}}.{{kv.Value.RelationName}}`)} />
+                """)}}
+                """;
+        }
 
+        string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx) {
+            var component = GetReactComponent();
+            var fullpath = ctx.RenderingObjectType switch {
+                E_ReactPageRenderingObjectType.SearchCondition => vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join("."),
+                E_ReactPageRenderingObjectType.RefTarget => vm.Declared.GetFullPathAsDataClassForRefTarget().Join("."),
+                E_ReactPageRenderingObjectType.DataClassForDisplay => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript).Join("."),
+                _ => throw new NotImplementedException(),
+            };
             return $$"""
                 <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)}{{component.GetPropsStatement().Join("")}} />
                 """;

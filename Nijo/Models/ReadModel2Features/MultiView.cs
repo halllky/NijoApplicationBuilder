@@ -25,6 +25,11 @@ namespace Nijo.Models.ReadModel2Features {
         public bool ShowMenu => true;
         public string? LabelInMenu => _aggregate.Item.DisplayName;
 
+        // 画面初期表示時の検索条件をMultiViewに来る前の画面で指定するためのURLクエリパラメータの名前
+        private const string URL_KEYWORD = "k";
+        private const string URL_FILTER = "f";
+        private const string URL_SORT = "s";
+
         public SourceFile GetSourceFile() => new SourceFile {
             FileName = "list.tsx",
             RenderContent = context => {
@@ -193,26 +198,16 @@ namespace Nijo.Models.ReadModel2Features {
                       if (!url) return searchCondition
 
                       const searchParams = new URLSearchParams(new URL(url).search)
-
-                      // 初期表示時検索条件の解釈（フィルタ）
-                    {{searchCondition.EnumerateFilterMembersRecursively().SelectTextTemplate(m => $$"""
-                      if (searchParams.has('{{m.Member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".")}}'))
-                        searchCondition.{{m.Member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".")}} = searchParams.get('{{m.Member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".")}}')!
-                    """)}}
-
-                      // 初期表示時検索条件の解釈（ソート）
-                      let i = 0
-                      while (true) {
-                        const sortOrder = searchParams.get({{QueryParamSort("i")}})
-                        if (sortOrder == null) break
-                        searchCondition.{{SearchCondition.SORT_TS}}.push(sortOrder as AggregateType.{{searchCondition.TsTypeName}}['{{SearchCondition.SORT_TS}}'][0])
-                        i++
-                      }
+                      if (searchParams.has('{{URL_KEYWORD}}'))
+                        searchCondition.{{SearchCondition.KEYWORD_TS}} = searchParams.get('{{URL_KEYWORD}}')!
+                      if (searchParams.has('{{URL_FILTER}}'))
+                        searchCondition.{{SearchCondition.FILTER_TS}} = JSON.parse(searchParams.get('{{URL_FILTER}}')!)
+                      if (searchParams.has('{{URL_SORT}}'))
+                        searchCondition.{{SearchCondition.SORT_TS}} = JSON.parse(searchParams.get('{{URL_SORT}}')!)
 
                       return searchCondition
                     }
 
-                    // TODO: utilに持っていく
                     type PageState = { pageIndex: number, loaded?: boolean }
                     const pagingReducer = Util.defineReducer((state: PageState) => ({
                       loadComplete: () => ({ pageIndex: state.pageIndex, loaded: true }),
@@ -234,19 +229,13 @@ namespace Nijo.Models.ReadModel2Features {
                   const navigate = ReactRouter.useNavigate()
 
                   /** {{_aggregate.Item.DisplayName}}の一覧検索画面へ遷移します。初期表示時検索条件を指定することができます。 */
-                  return React.useCallback((initialSearchCondition?: Types.{{searchCondition.TsTypeName}}) => {
-                    // 初期表示時検索条件の設定（フィルタ）
+                  return React.useCallback((init?: Types.{{searchCondition.TsTypeName}}) => {
+                    // 初期表示時検索条件の設定
                     const searchParams = new URLSearchParams()
-                {{searchCondition.EnumerateFilterMembersRecursively().SelectTextTemplate(m => $$"""
-                    if (initialSearchCondition?.{{m.Member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join("?.")}} !== undefined)
-                      searchParams.append('{{m.Member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".")}}', initialSearchCondition.{{m.Member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".")}})
-                """)}}
-
-                    // 初期表示時検索条件の設定（ソート）
-                    if (initialSearchCondition !== undefined) {
-                      for (let i = 0; i < initialSearchCondition.{{SearchCondition.SORT_TS}}.length; i++) {
-                        searchParams.append({{QueryParamSort("i")}}, initialSearchCondition.{{SearchCondition.SORT_TS}}[i])
-                      }
+                    if (init !== undefined) {
+                      searchParams.append('{{URL_FILTER}}', JSON.stringify(init.{{SearchCondition.FILTER_TS}}))
+                      if (init.{{SearchCondition.KEYWORD_TS}}) searchParams.append('{{URL_KEYWORD}}', init.{{SearchCondition.KEYWORD_TS}})
+                      if (init.{{SearchCondition.SORT_TS}}.length > 0) searchParams.append('{{URL_SORT}}', JSON.stringify(init.{{SearchCondition.SORT_TS}}))
                     }
 
                     navigate({

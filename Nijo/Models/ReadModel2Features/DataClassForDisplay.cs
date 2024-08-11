@@ -511,7 +511,8 @@ namespace Nijo.Models.ReadModel2Features {
                 yield return path;
             }
 
-            if (member is AggregateMember.ValueMember || member is AggregateMember.Ref) {
+            if (member is AggregateMember.ValueMember && !member.Owner.IsOutOfEntryTree()
+                || member is AggregateMember.Ref) {
                 yield return csTs == E_CsTs.CSharp
                     ? DataClassForDisplay.VALUES_CS
                     : DataClassForDisplay.VALUES_TS;

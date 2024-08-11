@@ -38,7 +38,7 @@ namespace Nijo.Core {
         string GetSearchConditionTypeScriptType();
 
         /// <summary>
-        /// 検索条件の絞り込み処理をレンダリングします。
+        /// 検索条件の絞り込み処理（WHERE句組み立て処理）をレンダリングします。
         /// </summary>
         /// <param name="member">検索対象のメンバーの情報</param>
         /// <param name="query"> <see cref="IQueryable{T}"/> の変数の名前</param>
@@ -53,6 +53,12 @@ namespace Nijo.Core {
         /// <param name="vm">検索対象のメンバーの情報</param>
         /// <param name="ctx">コンテキスト引数</param>
         string RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx);
+        /// <summary>
+        /// 詳細画面のUI（"VerticalForm.Item" の子要素）をレンダリングします。
+        /// </summary>
+        /// <param name="vm">検索対象のメンバーの情報</param>
+        /// <param name="ctx">コンテキスト引数</param>
+        string RenderSingleViewVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx);
     }
 
     /// <summary>検索条件のオブジェクトの型</summary>
@@ -132,9 +138,21 @@ namespace Nijo.Core {
                 E_ReactPageRenderingObjectType.DataClassForDisplay => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript).Join("."),
                 _ => throw new NotImplementedException(),
             };
-
             return $$"""
                 <Input.Word {...{{ctx.Register}}(`{{fullpath}}`)} />
+                """;
+        }
+
+        string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx) {
+            var component = GetReactComponent();
+            var fullpath = ctx.RenderingObjectType switch {
+                E_ReactPageRenderingObjectType.SearchCondition => vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join("."),
+                E_ReactPageRenderingObjectType.RefTarget => vm.Declared.GetFullPathAsDataClassForRefTarget().Join("."),
+                E_ReactPageRenderingObjectType.DataClassForDisplay => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript).Join("."),
+                _ => throw new NotImplementedException(),
+            };
+            return $$"""
+                <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)} />
                 """;
         }
 
@@ -234,11 +252,23 @@ namespace Nijo.Core {
                 E_ReactPageRenderingObjectType.DataClassForDisplay => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript).Join("."),
                 _ => throw new NotImplementedException(),
             };
-
             return $$"""
                 <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}.{{FromTo.FROM_TS}}`)}{{component.GetPropsStatement().Join("")}} />
                 <span className="select-none">～</span>
                 <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}.{{FromTo.TO_TS}}`)}{{component.GetPropsStatement().Join("")}} />
+                """;
+        }
+
+        string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx) {
+            var component = GetReactComponent();
+            var fullpath = ctx.RenderingObjectType switch {
+                E_ReactPageRenderingObjectType.SearchCondition => vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join("."),
+                E_ReactPageRenderingObjectType.RefTarget => vm.Declared.GetFullPathAsDataClassForRefTarget().Join("."),
+                E_ReactPageRenderingObjectType.DataClassForDisplay => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript).Join("."),
+                _ => throw new NotImplementedException(),
+            };
+            return $$"""
+                <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)}{{component.GetPropsStatement().Join("")}} />
                 """;
         }
     }
