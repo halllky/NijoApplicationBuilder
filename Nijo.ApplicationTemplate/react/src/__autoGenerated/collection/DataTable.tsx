@@ -157,7 +157,7 @@ export const DataTable = Util.forwardRefEx(<T,>(props: DataTableProps<T>, ref: R
                 {headerGroup.headers.filter(h => !(h.column.columnDef as ColumnDefEx<T>).hidden).map((header, thX) => (
                   <th key={header.id}
                     colSpan={header.colSpan}
-                    className="relative overflow-hidden whitespace-nowrap px-1 py-0 text-start bg-color-2 text-color-6 border-b border-color-3"
+                    className="relative overflow-hidden whitespace-nowrap px-1 py-0 text-start bg-color-2 text-color-7 text-sm border-b border-color-3"
                     style={getThStyle(false, thX, thY)}>
                     {!header.isPlaceholder && RT.flexRender(
                       header.column.columnDef.header,
