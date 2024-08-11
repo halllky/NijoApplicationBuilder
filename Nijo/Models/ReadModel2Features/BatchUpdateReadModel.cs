@@ -156,7 +156,7 @@ namespace Nijo.Models.ReadModel2Features {
                         var item = unknownItems[i];
                 {{_aggregates.SelectTextTemplate((agg, j) => $$"""
                         if (item is {{new DataClassForDisplay(agg).CsClassName}} item{{j}}) {
-                            converted.AddRange({{APPSRV_CONVERT_DISP_TO_SAVE}}(item{{j}}));
+                            converted.AddRange({{APPSRV_CONVERT_DISP_TO_SAVE}}(item{{j}}, i, saveContext));
                             continue;
                         }
                 """)}}
@@ -172,14 +172,96 @@ namespace Nijo.Models.ReadModel2Features {
                 /// 画面表示用データを登録更新用データに変換します。
                 /// </summary>
                 /// <param name="displayData">画面表示用データ</param>
-                /// <returns>登録更新用データ（複数）</returns>
-                public virtual IEnumerable<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}> {{APPSRV_CONVERT_DISP_TO_SAVE}}({{new DataClassForDisplay(agg).CsClassName}} displayData) {
+                /// <param name="itemIndex">更新データが一括更新処理のデータ中の何番目か</param>
+                /// <param name="saveContext">コンテキスト引数。エラーや警告の送出はこのオブジェクトを通して行なってください。</param>
+                /// <returns>登録更新用データ（複数返却可）</returns>
+                public virtual IEnumerable<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}> {{APPSRV_CONVERT_DISP_TO_SAVE}}({{new DataClassForDisplay(agg).CsClassName}} displayData, int itemIndex, {{BatchUpdateContext.CLASS_NAME}} saveContext) {
+                {{If(agg.Item.Options.GenerateDefaultReadModel, () => $$"""
+                    {{WithIndent(RenderWriteModelDefaultConversion(agg), "    ")}}
+                """).Else(() => $$"""
                     // 変換処理は自動生成されません。
                     // このメソッドをオーバーライドしてデータ変換処理を記述してください。
                     yield break;
+                """)}}
                 }
                 """)}}
                 """;
+        }
+
+        /// <summary>
+        /// 既定のReadModelを生成するオプションが指定されている場合のWriteModelの変換処理定義
+        /// </summary>
+        private static string RenderWriteModelDefaultConversion(GraphNode<Aggregate> aggregate) {
+            var createCommand = new DataClassForSave(aggregate, DataClassForSave.E_Type.Create);
+            var saveCommand = new DataClassForSave(aggregate, DataClassForSave.E_Type.UpdateOrDelete);
+
+            return $$"""
+                var saveType = displayData.{{DataClassForDisplay.GET_SAVE_TYPE}}();
+                if (saveType == {{DataClassForSaveBase.ADD_MOD_DEL_ENUM_CS}}.ADD) {
+                    yield return new {{DataClassForSaveBase.CREATE_COMMAND}}<{{createCommand.CsClassName}}> {
+                        {{DataClassForSaveBase.VALUES_CS}} = {{WithIndent(RenderValues(createCommand, "displayData", aggregate, false), "        ")}},
+                    };
+                } else if (saveType == {{DataClassForSaveBase.ADD_MOD_DEL_ENUM_CS}}.MOD) {
+                    if (displayData.{{DataClassForDisplay.VERSION_CS}} == null) {
+                        saveContext.AddError(itemIndex, "更新対象データの更新前のバージョンが指定されていません。");
+                        yield break;
+                    }
+                    yield return new {{DataClassForSaveBase.UPDATE_COMMAND}}<{{saveCommand.CsClassName}}> {
+                        {{DataClassForSaveBase.VALUES_CS}} = {{WithIndent(RenderValues(saveCommand, "displayData", aggregate, false), "        ")}},
+                        {{DataClassForSaveBase.VERSION_CS}} = displayData.{{DataClassForDisplay.VERSION_CS}}.Value,
+                    };
+                } else if (saveType == {{DataClassForSaveBase.ADD_MOD_DEL_ENUM_CS}}.DEL) {
+                    if (displayData.{{DataClassForDisplay.VERSION_CS}} == null) {
+                        saveContext.AddError(itemIndex, "更新対象データの更新前のバージョンが指定されていません。");
+                        yield break;
+                    }
+                    yield return new {{DataClassForSaveBase.DELETE_COMMAND}}<{{saveCommand.CsClassName}}> {
+                        {{DataClassForSaveBase.VALUES_CS}} = {{WithIndent(RenderValues(saveCommand, "displayData", aggregate, false), "        ")}},
+                        {{DataClassForSaveBase.VERSION_CS}} = displayData.{{DataClassForDisplay.VERSION_CS}}.Value,
+                    };
+                }
+                """;
+
+            static string RenderValues(
+                DataClassForSave forSave,
+                string instance,
+                GraphNode<Aggregate> instanceAggregate,
+                bool renderNewClassName) {
+
+                var newStatement = renderNewClassName
+                    ? $"new {forSave.CsClassName}"
+                    : $"new()";
+                return $$"""
+                    {{newStatement}} {
+                    {{forSave.GetOwnMembers().SelectTextTemplate(m => $$"""
+                        {{m.MemberName}} = {{WithIndent(RenderMember(m), "    ")}},
+                    """)}}
+                    }
+                    """;
+
+                string RenderMember(AggregateMember.AggregateMemberBase member) {
+                    if (member is AggregateMember.ValueMember vm) {
+                        return $$"""
+                            {{instance}}.{{vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp, since: instanceAggregate).Join(".")}}
+                            """;
+
+                    } else if (member is AggregateMember.Children children) {
+                        var pathToArray = children.ChildrenAggregate.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp, since: instanceAggregate);
+                        var depth = children.ChildrenAggregate.EnumerateAncestors().Count();
+                        var x = depth <= 1 ? "x" : $"x{depth}";
+                        var child = new DataClassForSave(children.ChildrenAggregate, forSave.Type);
+                        return $$"""
+                            {{instance}}.{{pathToArray.Join(".")}}.Select({{x}} => {{RenderValues(child, x, children.ChildrenAggregate, true)}}).ToList()
+                            """;
+
+                    } else {
+                        var memberDataClass = new DataClassForSave(((AggregateMember.RelationMember)member).MemberAggregate, forSave.Type);
+                        return $$"""
+                            {{RenderValues(memberDataClass, instance, instanceAggregate, false)}}
+                            """;
+                    }
+                }
+            }
         }
     }
 }

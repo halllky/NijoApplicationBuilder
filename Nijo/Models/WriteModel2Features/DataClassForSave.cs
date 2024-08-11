@@ -58,15 +58,15 @@ namespace Nijo.Models.WriteModel2Features {
 
         internal DataClassForSave(GraphNode<Aggregate> agg, E_Type type) {
             _aggregate = agg;
-            _type = type;
+            Type = type;
         }
         private readonly GraphNode<Aggregate> _aggregate;
-        private readonly E_Type _type;
+        internal E_Type Type { get; }
 
         /// <summary>
         /// 自身のプロパティとして定義されるメンバーを列挙します。
         /// </summary>
-        private IEnumerable<AggregateMember.AggregateMemberBase> GetOwnMembers() {
+        internal IEnumerable<AggregateMember.AggregateMemberBase> GetOwnMembers() {
             return _aggregate
                 .GetMembers()
                 .Where(m => m.DeclaringAggregate == _aggregate);
@@ -77,13 +77,13 @@ namespace Nijo.Models.WriteModel2Features {
         /// <summary>
         /// C#クラス名
         /// </summary>
-        internal string CsClassName => _type == E_Type.Create
+        internal string CsClassName => Type == E_Type.Create
             ? $"{_aggregate.Item.PhysicalName}CreateCommand"
             : $"{_aggregate.Item.PhysicalName}SaveCommand";
         /// <summary>
         /// TypeScript型名
         /// </summary>
-        internal string TsTypeName => _type == E_Type.Create
+        internal string TsTypeName => Type == E_Type.Create
             ? $"{_aggregate.Item.PhysicalName}CreateCommand"
             : $"{_aggregate.Item.PhysicalName}SaveCommand";
 
@@ -94,7 +94,7 @@ namespace Nijo.Models.WriteModel2Features {
             return $$"""
                 public partial class {{CsClassName}} {
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
-                    public {{GetMemberTypeNameCSharp(m, _type)}}? {{m.MemberName}} { get; set; }
+                    public {{GetMemberTypeNameCSharp(m, Type)}}? {{m.MemberName}} { get; set; }
                 """)}}
                 {{If(_aggregate.IsRoot(), () => $$"""
 
@@ -110,7 +110,7 @@ namespace Nijo.Models.WriteModel2Features {
             return $$"""
                 export type {{TsTypeName}} = {
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
-                  {{m.MemberName}}: {{GetMemberTypeNameTypeScript(m, _type)}} | undefined
+                  {{m.MemberName}}: {{GetMemberTypeNameTypeScript(m, Type)}} | undefined
                 """)}}
                 }
                 """;
@@ -199,7 +199,7 @@ namespace Nijo.Models.WriteModel2Features {
         /// <summary>
         /// エラーメッセージ用構造体 TypeScript型名
         /// </summary>
-        internal string ErrorDataTsTypeName => _type == E_Type.Create
+        internal string ErrorDataTsTypeName => Type == E_Type.Create
             ? $"{_aggregate.Item.PhysicalName}CreateCommandErrorData"
             : $"{_aggregate.Item.PhysicalName}SaveCommandErrorData";
 
@@ -222,11 +222,11 @@ namespace Nijo.Models.WriteModel2Features {
                     members.Add($"public List<string> {m.MemberName} {{ get; }} = new();");
 
                 } else if (m is AggregateMember.Children children) {
-                    var descendant = new DataClassForSave(children.ChildrenAggregate, _type);
+                    var descendant = new DataClassForSave(children.ChildrenAggregate, Type);
                     members.Add($"public IReadOnlyList<{descendant.BeforeSaveContextCsClassName}> {m.MemberName} {{ get; }} = [];");
 
                 } else if (m is AggregateMember.RelationMember rel) {
-                    var descendant = new DataClassForSave(rel.MemberAggregate, _type);
+                    var descendant = new DataClassForSave(rel.MemberAggregate, Type);
                     members.Add($"public {descendant.BeforeSaveContextCsClassName} {m.MemberName} {{ get; }} = new();");
                 }
             }
@@ -283,11 +283,11 @@ namespace Nijo.Models.WriteModel2Features {
                     members.Add($"{m.MemberName}?: string[]");
 
                 } else if (m is AggregateMember.Children children) {
-                    var descendant = new DataClassForSave(children.ChildrenAggregate, _type);
+                    var descendant = new DataClassForSave(children.ChildrenAggregate, Type);
                     members.Add($"{m.MemberName}?: {descendant.ErrorDataTsTypeName}[]");
 
                 } else if (m is AggregateMember.RelationMember rel) {
-                    var descendant = new DataClassForSave(rel.MemberAggregate, _type);
+                    var descendant = new DataClassForSave(rel.MemberAggregate, Type);
                     members.Add($"{m.MemberName}?: {descendant.ErrorDataTsTypeName}");
                 }
             }
@@ -350,13 +350,13 @@ namespace Nijo.Models.WriteModel2Features {
         /// <summary>
         /// エラーメッセージ用構造体 C#クラス名
         /// </summary>
-        internal string ReadOnlyCsClassName => _type == E_Type.Create
+        internal string ReadOnlyCsClassName => Type == E_Type.Create
             ? $"{_aggregate.Item.PhysicalName}CreateCommandReadOnlyData"
             : $"{_aggregate.Item.PhysicalName}SaveCommandReadOnlyData";
         /// <summary>
         /// エラーメッセージ用構造体 TypeScript型名
         /// </summary>
-        internal string ReadOnlyTsTypeName => _type == E_Type.Create
+        internal string ReadOnlyTsTypeName => Type == E_Type.Create
             ? $"{_aggregate.Item.PhysicalName}CreateCommandReadOnlyData"
             : $"{_aggregate.Item.PhysicalName}SaveCommandReadOnlyData";
 
@@ -379,11 +379,11 @@ namespace Nijo.Models.WriteModel2Features {
                     members.Add($"public bool {m.MemberName} {{ get; set; }}");
 
                 } else if (m is AggregateMember.Children children) {
-                    var descendant = new DataClassForSave(children.ChildrenAggregate, _type);
+                    var descendant = new DataClassForSave(children.ChildrenAggregate, Type);
                     members.Add($"public List<{descendant.ReadOnlyCsClassName}> {m.MemberName} {{ get; }} = new();");
 
                 } else if (m is AggregateMember.RelationMember rel) {
-                    var descendant = new DataClassForSave(rel.MemberAggregate, _type);
+                    var descendant = new DataClassForSave(rel.MemberAggregate, Type);
                     members.Add($"public {descendant.ReadOnlyCsClassName} {m.MemberName} {{ get; }} = new();");
                 }
             }
@@ -408,11 +408,11 @@ namespace Nijo.Models.WriteModel2Features {
                     members.Add($"{m.MemberName}?: string[]");
 
                 } else if (m is AggregateMember.Children children) {
-                    var descendant = new DataClassForSave(children.ChildrenAggregate, _type);
+                    var descendant = new DataClassForSave(children.ChildrenAggregate, Type);
                     members.Add($"{m.MemberName}?: {descendant.ReadOnlyTsTypeName}[]");
 
                 } else if (m is AggregateMember.RelationMember rel) {
-                    var descendant = new DataClassForSave(rel.MemberAggregate, _type);
+                    var descendant = new DataClassForSave(rel.MemberAggregate, Type);
                     members.Add($"{m.MemberName}?: {descendant.ReadOnlyTsTypeName}");
                 }
             }
@@ -427,7 +427,7 @@ namespace Nijo.Models.WriteModel2Features {
         #endregion 読み取り専用用構造体
 
 
-        internal string TsNewObjectFnName => _type == E_Type.Create
+        internal string TsNewObjectFnName => Type == E_Type.Create
             ? $"createNew{_aggregate.Item.PhysicalName}CreateCommand"
             : $"createNew{_aggregate.Item.PhysicalName}SaveCommand";
         /// <summary>
@@ -467,8 +467,8 @@ namespace Nijo.Models.WriteModel2Features {
             }
 
             return $$"""
-                /** {{_aggregate.Item.DisplayName}}の{{(_type == E_Type.Create ? "新規作成用" : "更新用")}}コマンドを作成します。 */
-                export const {{TsNewObjectFnName}} = (): {{TsTypeName}} => ({{RenderObject(_aggregate, _type)}})
+                /** {{_aggregate.Item.DisplayName}}の{{(Type == E_Type.Create ? "新規作成用" : "更新用")}}コマンドを作成します。 */
+                export const {{TsNewObjectFnName}} = (): {{TsTypeName}} => ({{RenderObject(_aggregate, Type)}})
                 """;
         }
     }

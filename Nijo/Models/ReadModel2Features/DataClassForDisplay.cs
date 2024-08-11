@@ -1,5 +1,6 @@
 using Nijo.Core;
 using Nijo.Models.RefTo;
+using Nijo.Models.WriteModel2Features;
 using Nijo.Parts.Utility;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
@@ -93,6 +94,9 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>楽観排他制御用のバージョニング情報をもつプロパティの名前（TypeScript側）</summary>
         internal const string VERSION_TS = "version";
 
+        /// <summary>追加・更新・削除のいずれかの区分を返すメソッドの名前</summary>
+        internal const string GET_SAVE_TYPE = "GetSaveType";
+
         /// <summary>
         /// 追加・更新・削除のタイミングが親要素と異なるか否か
         /// </summary>
@@ -152,11 +156,16 @@ namespace Nijo.Models.ReadModel2Features {
         /// クラス定義をレンダリングします（C#）
         /// </summary>
         internal string RenderCSharpDeclaring(CodeRenderingContext context) {
+            // クラスが継承しているクラスや実装しているインターフェース
+            var implements = new List<string>();
+            if (Aggregate.IsRoot()) implements.Add(BASE_CLASS_NAME);
+            if (HasLifeCycle) implements.Add(ISaveCommandConvertible.INTERFACE_NAME);
+
             return $$"""
                 /// <summary>
                 /// {{Aggregate.Item.DisplayName}}の画面表示用データ構造
                 /// </summary>
-                public partial class {{CsClassName}} {{(Aggregate.IsRoot() ? $": {BASE_CLASS_NAME} " : "")}}{
+                public partial class {{CsClassName}} {{(implements.Count == 0 ? "" : $": {implements.Join(", ")} ")}}{
                 {{If(HasInstanceKey, () => $$"""
                     /// <summary>
                     /// インスタンスを一意に表す文字列。新規作成の場合はUUID。閲覧・更新・削除のときは主キーの値の配列のJSON。
@@ -198,6 +207,15 @@ namespace Nijo.Models.ReadModel2Features {
                     /// <summary>どの項目が読み取り専用か</summary>
                     [JsonPropertyName("{{READONLY_TS}}")]
                     public virtual {{ReadOnlyDataCsClassName}} {{READONLY_CS}} { get; set; } = new();
+                {{If(HasLifeCycle, () => $$"""
+
+                    /// <summary>
+                    /// このオブジェクトの状態から、保存時に追加・更新・削除のうちどの処理が実行されるべきかを表す区分を返します。
+                    /// </summary>
+                    public {{DataClassForSaveBase.ADD_MOD_DEL_ENUM_CS}} {{GET_SAVE_TYPE}}() {
+                        return (({{ISaveCommandConvertible.INTERFACE_NAME}})this).{{ISaveCommandConvertible.GET_SAVE_TYPE}}();
+                    }
+                """)}}
                 }
                 {{RenderCsValueClass(context)}}
                 {{RenderCsMessageClass(context)}}

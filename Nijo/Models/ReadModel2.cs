@@ -107,6 +107,7 @@ namespace Nijo.Models {
                 dir.Generate(MessageContainer.RenderCSharp());
                 dir.Generate(ReadOnlyInfo.RenderCSharp());
                 dir.Generate(InstanceKey.RenderCSharp());
+                dir.Generate(ISaveCommandConvertible.Render());
             });
         }
     }
