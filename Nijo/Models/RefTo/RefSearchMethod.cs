@@ -188,9 +188,10 @@ namespace Nijo.Models.RefTo {
         const string C_CHILD = "child";
 
         internal string RenderAppSrvMethodOfReadModel(CodeRenderingContext context) {
-            var load = new LoadMethod(_aggregate.GetRoot());
-            var searchCondition = new SearchCondition(_aggregate.GetRoot());
-            var searchResult = new DataClassForDisplay(_aggregate.GetRoot());
+            var refTargetRoot = _aggregate.GetRoot();
+            var load = new LoadMethod(refTargetRoot);
+            var searchCondition = new SearchCondition(refTargetRoot, refTargetRoot);
+            var searchResult = new DataClassForDisplay(refTargetRoot);
             var refSearchCondition = new RefSearchCondition(_aggregate, _refEntry);
             var refSearchResult = new RefSearchResult(_aggregate, _refEntry);
 

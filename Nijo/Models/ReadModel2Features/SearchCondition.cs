@@ -12,15 +12,25 @@ namespace Nijo.Models.ReadModel2Features {
     /// 検索条件クラス
     /// </summary>
     internal class SearchCondition {
-        internal SearchCondition(GraphNode<Aggregate> agg) {
+        internal SearchCondition(GraphNode<Aggregate> agg, GraphNode<Aggregate>? entry = null) {
             _aggregate = agg;
+            _entry = entry ?? agg.GetEntry().As<Aggregate>();
         }
         protected readonly GraphNode<Aggregate> _aggregate;
+        private readonly GraphNode<Aggregate> _entry;
 
-        internal virtual string CsClassName => $"{_aggregate.Item.PhysicalName}SearchCondition";
-        internal virtual string TsTypeName => $"{_aggregate.Item.PhysicalName}SearchCondition";
-        internal virtual string CsFilterClassName => $"{_aggregate.Item.PhysicalName}SearchConditionFilter";
-        internal virtual string TsFilterTypeName => $"{_aggregate.Item.PhysicalName}SearchConditionFilter";
+        internal virtual string CsClassName => _aggregate == _entry
+            ? $"{_entry.Item.PhysicalName}SearchCondition"
+            : $"{_entry.Item.PhysicalName}SearchCondition_{_aggregate.Item.PhysicalName}";
+        internal virtual string TsTypeName => _aggregate == _entry
+            ? $"{_entry.Item.PhysicalName}SearchCondition"
+            : $"{_entry.Item.PhysicalName}SearchCondition_{_aggregate.Item.PhysicalName}";
+        internal virtual string CsFilterClassName => _aggregate == _entry
+            ? $"{_entry.Item.PhysicalName}SearchConditionFilter"
+            : $"{_entry.Item.PhysicalName}SearchConditionFilter_{_aggregate.Item.PhysicalName}";
+        internal virtual string TsFilterTypeName => _aggregate == _entry
+            ? $"{_entry.Item.PhysicalName}SearchConditionFilter"
+            : $"{_entry.Item.PhysicalName}SearchConditionFilter_{_aggregate.Item.PhysicalName}";
 
         internal const string KEYWORD_CS = "Keyword";
         internal const string KEYWORD_TS = "keyword";
