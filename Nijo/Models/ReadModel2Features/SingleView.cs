@@ -29,29 +29,40 @@ namespace Nijo.Models.ReadModel2Features {
         private readonly GraphNode<Aggregate> _aggregate;
         private readonly E_Type _type;
 
-        public string Url {
-            get {
-                if (_type == E_Type.New) {
-                    return $"/{_aggregate.Item.UniqueId}/new";
+        string IReactPage.Url => GetUrl(true);
+        /// <summary>
+        /// このページのURLを返します。
+        /// </summary>
+        /// <param name="asReactRouterDef">
+        /// trueの場合、 "/aaa/bbb/:key0/:key1" など React Router の記法に則ったパラメータ込みのURL定義を返します。
+        /// falseの場合、"/aaa/bbb" などパラメータ抜きのURLを返します。
+        /// </param>
+        /// <returns>クォートなしの文字列を返します。</returns>
+        internal string GetUrl(bool asReactRouterDef) {
+            if (_type == E_Type.New) {
+                return $"/{_aggregate.Item.UniqueId}/new";
 
+            } else {
+                // React Router は全角文字非対応なので key0, key1, ... をURLに使う
+                var urlKeys = _aggregate
+                    .GetKeys()
+                    .OfType<AggregateMember.ValueMember>()
+                    .Select((_, i) => $"/:key{i}");
+                var urlParams = asReactRouterDef
+                    ? urlKeys.Join("")
+                    : "";
+
+                if (_type == E_Type.ReadOnly) {
+                    return $"/{_aggregate.Item.UniqueId}/detail{urlParams}";
+
+                } else if (_type == E_Type.Edit) {
+                    return $"/{_aggregate.Item.UniqueId}/edit{urlParams}";
                 } else {
-                    // React Router は全角文字非対応なので key0, key1, ... をURLに使う
-                    var urlKeys = _aggregate
-                        .GetKeys()
-                        .OfType<AggregateMember.ValueMember>()
-                        .Select((_, i) => $":key{i}");
-
-                    if (_type == E_Type.ReadOnly) {
-                        return $"/{_aggregate.Item.UniqueId}/detail/{urlKeys.Join("/")}";
-
-                    } else if (_type == E_Type.Edit) {
-                        return $"/{_aggregate.Item.UniqueId}/edit/{urlKeys.Join("/")}";
-                    } else {
-                        throw new InvalidOperationException($"SingleViewの種類が不正: {_aggregate.Item}");
-                    }
+                    throw new InvalidOperationException($"SingleViewの種類が不正: {_aggregate.Item}");
                 }
             }
         }
+
         public string DirNameInPageDir => _aggregate.Item.DisplayName.ToFileNameSafe();
         public string ComponentPhysicalName => _type switch {
             E_Type.New => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}CreateView",
@@ -212,10 +223,10 @@ namespace Nijo.Models.ReadModel2Features {
 
                       return React.useCallback((initValue?: Types.{{dataClass.TsTypeName}}) => {
                         if (initValue === undefined) {
-                          navigate('{{Url}}')
+                          navigate('{{GetUrl(false)}}')
                         } else {
                           const queryString = new URLSearchParams({ {{NEW_MODE_INITVALUE}}: JSON.stringify(initValue) }).toString()
-                          navigate(`{{Url}}?${queryString}`)
+                          navigate(`{{GetUrl(false)}}?${queryString}`)
                         }
                       }, [navigate])
                     }
@@ -246,9 +257,9 @@ namespace Nijo.Models.ReadModel2Features {
                     """)}}
 
                         if (to === 'readonly') {
-                          navigate(`{{readView.Url}}/{{keys.Select((_, i) => $"/${{window.encodeURI(`${{key{i}}}`)}}").Join("")}}`)
+                          navigate(`{{readView.GetUrl(false)}}/{{keys.Select((_, i) => $"${{window.encodeURI(`${{key{i}}}`)}}").Join("/")}}`)
                         } else {
-                          navigate(`{{editView.Url}}/{{keys.Select((_, i) => $"/${{window.encodeURI(`${{key{i}}}`)}}").Join("")}}`)
+                          navigate(`{{editView.GetUrl(false)}}/{{keys.Select((_, i) => $"${{window.encodeURI(`${{key{i}}}`)}}").Join("/")}}`)
                         }
                       }, [navigate])
                     }
