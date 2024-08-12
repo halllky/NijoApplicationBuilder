@@ -73,12 +73,15 @@ namespace Nijo.Models {
                 var asEntry = agg.AsEntry();
 
                 // データ型
+                var refTargetKeys = new DataClassForRefTargetKeys(asEntry, asEntry);
                 var refSearchCondition = new RefSearchCondition(asEntry, asEntry);
                 var refSearchResult = new RefSearchResult(asEntry, asEntry);
+                aggregateFile.DataClassDeclaring.Add(refTargetKeys.RenderCSharpDeclaringRecursively(context));
                 aggregateFile.DataClassDeclaring.Add(refSearchCondition.RenderCSharpDeclaringRecursively(context));
                 aggregateFile.DataClassDeclaring.Add(refSearchResult.RenderCSharp(context));
                 context.ReactProject.Types.Add(rootAggregate, refSearchCondition.RenderTypeScriptDeclaringRecursively(context));
                 context.ReactProject.Types.Add(rootAggregate, refSearchCondition.RenderCreateNewObjectFn(context));
+                context.ReactProject.Types.Add(rootAggregate, refTargetKeys.RenderTypeScriptDeclaringRecursively(context));
                 context.ReactProject.Types.Add(rootAggregate, refSearchResult.RenderTypeScript(context));
 
                 // UI: コンボボックス

@@ -87,8 +87,8 @@ namespace Nijo.Models {
                     var refSearchCondition = new RefSearchCondition(asEntry, asEntry);
                     var refSearchResult = new RefSearchResult(asEntry, asEntry);
                     aggregateFile.DataClassDeclaring.Add(refTargetKeys.RenderCSharpDeclaringRecursively(context));
-                    aggregateFile.DataClassDeclaring.Add(refSearchResult.RenderCSharp(context));
                     aggregateFile.DataClassDeclaring.Add(refSearchCondition.RenderCSharpDeclaringRecursively(context));
+                    aggregateFile.DataClassDeclaring.Add(refSearchResult.RenderCSharp(context));
                     context.ReactProject.Types.Add(rootAggregate, refSearchCondition.RenderTypeScriptDeclaringRecursively(context));
                     context.ReactProject.Types.Add(rootAggregate, refSearchCondition.RenderCreateNewObjectFn(context));
                     context.ReactProject.Types.Add(rootAggregate, refTargetKeys.RenderTypeScriptDeclaringRecursively(context));
