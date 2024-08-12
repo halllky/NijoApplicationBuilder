@@ -75,7 +75,7 @@ namespace Nijo.Models {
 
             if (rootAggregate.Item.Options.GenerateDefaultReadModel) {
                 // 既定のReadModel（WriteModelと同じ型のReadModel）を生成する
-                ((IModel)new ReadModel2()).GenerateCode(context, rootAggregate);
+               context.GetModel<ReadModel2>().GenerateCode(context, rootAggregate);
 
             } else {
                 // 既定のReadModelが無い場合でも他の集約から参照されるときのための部品は必要になるので生成する
