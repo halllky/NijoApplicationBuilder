@@ -98,12 +98,12 @@ namespace Nijo.Core.AggregateMemberTypes {
             var pathFromSearchCondition = searchConditionObject == E_SearchConditionObject.SearchCondition
                 ? member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp)
                 : member.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.CSharp);
-            var isArray = member.Owner.EnumerateAncestorsAndThis().Any(a => a.IsChildrenMember());
             var fullpathNullable = $"{searchCondition}.{pathFromSearchCondition.Join("?.")}";
             var fullpathNotNull = $"{searchCondition}.{pathFromSearchCondition.Join(".")}";
-            var entityOwnerPath = member.Owner.GetFullPathAsDbEntity().Join(".");
-            var entityMemberPath = member.GetFullPathAsDbEntity().Join(".");
             var enumType = GetCSharpTypeName();
+            var whereFullpath = searchQueryObject == E_SearchQueryObject.SearchResult
+                ? member.GetFullPathAsSearchResult(E_CsTs.CSharp, out var isArray)
+                : member.GetFullPathAsDbEntity(E_CsTs.CSharp, out isArray);
 
             return $$"""
                 if ({{fullpathNullable}} != null && {{fullpathNotNull}}.{{ANY_CHECKED}}()) {
@@ -113,9 +113,9 @@ namespace Nijo.Core.AggregateMemberTypes {
                 """)}}
 
                 {{If(isArray, () => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{entityOwnerPath}}.Any(y => array.Contains(y.{{member.MemberName}})));
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => array.Contains(y.{{member.MemberName}})));
                 """).Else(() => $$"""
-                    {{query}} = {{query}}.Where(x => array.Contains(x.{{entityMemberPath}}));
+                    {{query}} = {{query}}.Where(x => array.Contains(x.{{whereFullpath.Join(".")}}));
                 """)}}
                 }
                 """;

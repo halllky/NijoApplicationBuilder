@@ -244,57 +244,55 @@ namespace Nijo.Models.WriteModel2Features {
         }
 
         /// <summary>
-        /// <see cref="GetFullPathAsDbEntity(AggregateMember.AggregateMemberBase, GraphNode{Aggregate}?, GraphNode{Aggregate}?)"/> と似ているが、
-        /// 経路の途中に配列がある場合は .Select または .SelectMany が挟まる。
+        /// フルパスの途中で配列が出てきた場合はSelectやmapをかける
         /// </summary>
-        internal static IEnumerable<string> GetHandlingStatementAsDbEntity(
-            this AggregateMember.AggregateMemberBase member,
-            string? linqMethodifArray = null,
-            Func<string, string>? handlingStatement = null,
-            GraphNode<Aggregate>? since = null,
-            GraphNode<Aggregate>? until = null) {
-
-            if (linqMethodifArray == null) linqMethodifArray = "Select";
-            if (handlingStatement == null) handlingStatement = fullpath => fullpath;
-
+        internal static IEnumerable<string> GetFullPathAsDbEntity(this AggregateMember.AggregateMemberBase member, E_CsTs csts, out bool isArray, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
             var path = member.Owner.PathFromEntry();
             if (since != null) path = path.Since(since);
             if (until != null) path = path.Until(until);
 
+            isArray = false;
             var edges = path.ToArray();
-            if (edges.Length == 0) {
-                yield return handlingStatement(member.MemberName);
-                yield break;
-            }
-
-            var isArray = false;
+            var result = new List<string>();
             for (int i = 0; i < edges.Length; i++) {
                 var edge = edges[i];
-                var isLast = i == edges.Length - 1;
 
                 var navigation = new NavigationProperty(edge.As<Aggregate>());
-                var thisSide = navigation.Principal.Owner == edge.Source.As<Aggregate>()
-                    ? navigation.Principal
-                    : navigation.Relevant;
+                var relationName = navigation.Principal.Owner == edge.Source.As<Aggregate>()
+                    ? navigation.Principal.PropertyName
+                    : navigation.Relevant.PropertyName;
 
-                if (thisSide.OppositeIsMany) {
-                    yield return isArray
-                        ? $"SelectMany(x => x.{thisSide.PropertyName})"
-                        : thisSide.PropertyName;
+                var isMany = false;
+                if (edge.IsParentChild()
+                    && edge.Source == edge.Initial
+                    && edge.Terminal.As<Aggregate>().IsChildrenMember()) {
+                    isMany = true;
+
+                } else if (edge.IsRef()
+                    && edge.Source == edge.Terminal
+                    && edge.Terminal.As<Aggregate>().IsSingleRefKeyOf(edge.Initial.As<Aggregate>())) {
+                    isMany = true;
+                }
+
+                if (isMany) {
+                    result.Add(isArray
+                        ? (csts == E_CsTs.CSharp
+                            ? $"SelectMany(x => x.{relationName})"
+                            : $"flatMap(x => x.{relationName})")
+                        : relationName);
                     isArray = true;
 
                 } else {
-                    yield return isArray
-                        ? $"Select(x => x.{thisSide.PropertyName})"
-                        : thisSide.PropertyName;
-                }
-
-                if (isLast) {
-                    yield return isArray
-                        ? $"{linqMethodifArray}(x => {handlingStatement($"x.{member.MemberName}")})"
-                        : handlingStatement(member.MemberName);
+                    result.Add(isArray
+                        ? (csts == E_CsTs.CSharp
+                            ? $"Select(x => x.{relationName})"
+                            : $"map(x => x.{relationName})")
+                        : relationName);
                 }
             }
+
+            result.Add(member.MemberName);
+            return result;
         }
     }
 }

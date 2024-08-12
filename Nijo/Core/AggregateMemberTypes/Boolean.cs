@@ -73,27 +73,26 @@ namespace Nijo.Core.AggregateMemberTypes {
         }
 
         string IAggregateMemberType.RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition, E_SearchConditionObject searchConditionObject, E_SearchQueryObject searchQueryObject) {
-            var isArray = member.Owner.EnumerateAncestorsAndThis().Any(a => a.IsChildrenMember());
             var pathFromSearchCondition = searchConditionObject == E_SearchConditionObject.SearchCondition
                 ? member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp)
                 : member.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.CSharp);
             var fullpathNullable = $"{searchCondition}.{pathFromSearchCondition.Join("?.")}";
-            var fullpathNotNull = $"{searchCondition}.{pathFromSearchCondition.Join(".")}";
-            var entityOwnerPath = member.Owner.GetFullPathAsDbEntity().Join(".");
-            var entityMemberPath = member.GetFullPathAsDbEntity().Join(".");
+            var whereFullpath = searchQueryObject == E_SearchQueryObject.SearchResult
+                ? member.GetFullPathAsSearchResult(E_CsTs.CSharp, out var isArray)
+                : member.GetFullPathAsDbEntity(E_CsTs.CSharp, out isArray);
 
             return $$"""
                 if ({{fullpathNullable}} == {{BOOL_SEARCH_CONDITION_ENUM}}.{{ONLY_TRUE}}) {
                 {{If(isArray, () => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{entityOwnerPath}}.Any(y => y.{{member.MemberName}} == true));
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{member.MemberName}} == true));
                 """).Else(() => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{entityMemberPath}} == true);
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} == true);
                 """)}}
                 } else if ({{fullpathNullable}} == {{BOOL_SEARCH_CONDITION_ENUM}}.{{ONLY_FALSE}}) {
                 {{If(isArray, () => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{entityOwnerPath}}.Any(y => y.{{member.MemberName}} == false));
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{member.MemberName}} == false));
                 """).Else(() => $$"""
-                    {{query}} = {{query}}.Where(x => x.{{entityMemberPath}} == false);
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} == false);
                 """)}}
                 }
                 """;

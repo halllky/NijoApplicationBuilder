@@ -119,14 +119,18 @@ namespace Nijo.Core {
                 E_SearchBehavior.BackwardMatch => "EndsWith",
                 _ => "Equals",
             };
-            var whereStatement = searchQueryObject == E_SearchQueryObject.SearchResult
-                ? member.GetHandlingStatementAsSearchResult("Any", path => $"{path}.{method}(trimmed)")
-                : member.GetHandlingStatementAsDbEntity("Any", path => $"{path}.{method}(trimmed)");
+            var whereFullpath = searchQueryObject == E_SearchQueryObject.SearchResult
+                ? member.GetFullPathAsSearchResult(E_CsTs.CSharp, out var isArray)
+                : member.GetFullPathAsDbEntity(E_CsTs.CSharp, out isArray);
 
             return $$"""
                 if (!string.IsNullOrWhiteSpace({{fullpathNullable}})) {
                     var trimmed = {{fullpathNotNull}}.Trim();
-                    {{query}} = {{query}}.Where(x => x.{{whereStatement.Join(".")}});
+                {{If(isArray, () => $$"""
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{member.MemberName}}.{{method}}(trimmed)));
+                """).Else(() => $$"""
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}}.{{method}}(trimmed));
+                """)}}
                 }
                 """;
         }
@@ -212,15 +216,9 @@ namespace Nijo.Core {
             var nullableFullPathTo = $"{searchCondition}.{pathFromSearchCondition.Join("?.")}.{FromTo.TO}";
             var fullPathFrom = $"{searchCondition}.{pathFromSearchCondition.Join(".")}.{FromTo.FROM}";
             var fullPathTo = $"{searchCondition}.{pathFromSearchCondition.Join(".")}.{FromTo.TO}";
-            var whereStatementFromTo = searchQueryObject == E_SearchQueryObject.SearchResult
-                ? member.GetHandlingStatementAsSearchResult("Any", path => $"{path} >= min && {path} <= max")
-                : member.GetHandlingStatementAsDbEntity("Any", path => $"{path} >= min && {path} <= max");
-            var whereStatementFromOnly = searchQueryObject == E_SearchQueryObject.SearchResult
-                ? member.GetHandlingStatementAsSearchResult("Any", path => $"{path} >= from")
-                : member.GetHandlingStatementAsDbEntity("Any", path => $"{path} >= from");
-            var whereStatementToOnly = searchQueryObject == E_SearchQueryObject.SearchResult
-                ? member.GetHandlingStatementAsSearchResult("Any", path => $"{path} <= to")
-                : member.GetHandlingStatementAsDbEntity("Any", path => $"{path} <= to");
+            var whereFullpath = searchQueryObject == E_SearchQueryObject.SearchResult
+                ? member.GetFullPathAsSearchResult(E_CsTs.CSharp, out var isArray)
+                : member.GetFullPathAsDbEntity(E_CsTs.CSharp, out isArray);
 
             return $$"""
                 if ({{nullableFullPathFrom}} != null && {{nullableFullPathTo}} != null) {
@@ -231,15 +229,27 @@ namespace Nijo.Core {
                     var max = {{fullPathFrom}} < {{fullPathTo}}
                         ? {{fullPathTo}}
                         : {{fullPathFrom}};
-                    {{query}} = {{query}}.Where(x => x.{{whereStatementFromTo.Join(".")}});
+                {{If(isArray, () => $$"""
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{member.MemberName}} >= min && y.{{member.MemberName}} <= max));
+                """).Else(() => $$"""
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} >= min && x.{{whereFullpath.Join(".")}} <= max);
+                """)}}
 
                 } else if ({{nullableFullPathFrom}} != null) {
                     var from = {{fullPathFrom}};
-                    {{query}} = {{query}}.Where(x => x.{{whereStatementFromOnly.Join(".")}});
+                {{If(isArray, () => $$"""
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{member.MemberName}} >= from));
+                """).Else(() => $$"""
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} >= from);
+                """)}}
 
                 } else if ({{nullableFullPathTo}} != null) {
                     var to = {{fullPathTo}};
-                    {{query}} = {{query}}.Where(x => x.{{whereStatementToOnly.Join(".")}});
+                {{If(isArray, () => $$"""
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => y.{{member.MemberName}} <= to));
+                """).Else(() => $$"""
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.Join(".")}} <= to);
+                """)}}
                 }
                 """;
         }
