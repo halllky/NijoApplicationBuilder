@@ -114,6 +114,8 @@ namespace Nijo.Models.ReadModel2Features {
                 var rootAggregateComponent = new SingleViewAggregateComponent(_aggregate);
                 var vForm = rootAggregateComponent.BuildVerticalForm(pageContext);
 
+                var editView = new SingleView(_aggregate, E_Type.Edit);
+
                 return $$"""
                     import React, { useState, useEffect, useCallback, useMemo, useReducer, useRef, useId, useContext, createContext } from 'react'
                     import useEvent from 'react-use-event-hook'
@@ -195,7 +197,7 @@ namespace Nijo.Models.ReadModel2Features {
                     """)}}
                     {{If(_type == E_Type.ReadOnly, () => $$"""
                       // 編集画面への遷移
-                      const navigateToEditPage = Util.useNavigateTo参照先SingleView()
+                      const navigateToEditPage = Util.{{editView.NavigateFnName}}()
                       const handleStartEditing = useEvent(() => {
                         navigateToEditPage(getValues(), 'edit')
                       })
