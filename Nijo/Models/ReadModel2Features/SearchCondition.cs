@@ -21,16 +21,25 @@ namespace Nijo.Models.ReadModel2Features {
 
         internal virtual string CsClassName => _aggregate == _entry
             ? $"{_entry.Item.PhysicalName}SearchCondition"
-            : $"{_entry.Item.PhysicalName}SearchCondition_{_aggregate.Item.PhysicalName}";
+            : $"{_entry.Item.PhysicalName}SearchCondition_{GetRelationHistory().Join("の")}";
         internal virtual string TsTypeName => _aggregate == _entry
             ? $"{_entry.Item.PhysicalName}SearchCondition"
-            : $"{_entry.Item.PhysicalName}SearchCondition_{_aggregate.Item.PhysicalName}";
+            : $"{_entry.Item.PhysicalName}SearchCondition_{GetRelationHistory().Join("の")}";
         internal virtual string CsFilterClassName => _aggregate == _entry
             ? $"{_entry.Item.PhysicalName}SearchConditionFilter"
-            : $"{_entry.Item.PhysicalName}SearchConditionFilter_{_aggregate.Item.PhysicalName}";
+            : $"{_entry.Item.PhysicalName}SearchConditionFilter_{GetRelationHistory().Join("の")}";
         internal virtual string TsFilterTypeName => _aggregate == _entry
             ? $"{_entry.Item.PhysicalName}SearchConditionFilter"
-            : $"{_entry.Item.PhysicalName}SearchConditionFilter_{_aggregate.Item.PhysicalName}";
+            : $"{_entry.Item.PhysicalName}SearchConditionFilter_{GetRelationHistory().Join("の")}";
+        private IEnumerable<string> GetRelationHistory() {
+            foreach (var edge in _aggregate.PathFromEntry().Since(_entry)) {
+                if (edge.IsParentChild() && edge.Source == edge.Terminal) {
+                    yield return edge.Initial.As<Aggregate>().Item.PhysicalName;
+                } else {
+                    yield return edge.RelationName.ToCSharpSafe();
+                }
+            }
+        }
 
         internal const string KEYWORD_CS = "Keyword";
         internal const string KEYWORD_TS = "keyword";

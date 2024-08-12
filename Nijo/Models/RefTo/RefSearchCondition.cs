@@ -22,16 +22,25 @@ namespace Nijo.Models.RefTo {
 
         internal virtual string CsClassName => _refEntry == _aggregate
             ? $"{_refEntry.Item.PhysicalName}RefSearchCondition"
-            : $"{_refEntry.Item.PhysicalName}RefSearchCondition_{_aggregate.Item.PhysicalName}";
+            : $"{_refEntry.Item.PhysicalName}RefSearchCondition_{GetRelationHistory().Join("の")}";
         internal virtual string TsTypeName => _refEntry == _aggregate
             ? $"{_refEntry.Item.PhysicalName}RefSearchCondition"
-            : $"{_refEntry.Item.PhysicalName}RefSearchCondition_{_aggregate.Item.PhysicalName}";
+            : $"{_refEntry.Item.PhysicalName}RefSearchCondition_{GetRelationHistory().Join("の")}";
         internal virtual string CsFilterClassName => _refEntry == _aggregate
             ? $"{_refEntry.Item.PhysicalName}RefSearchConditionFilter"
-            : $"{_refEntry.Item.PhysicalName}RefSearchConditionFilter_{_aggregate.Item.PhysicalName}";
+            : $"{_refEntry.Item.PhysicalName}RefSearchConditionFilter_{GetRelationHistory().Join("の")}";
         internal virtual string TsFilterTypeName => _refEntry == _aggregate
             ? $"{_refEntry.Item.PhysicalName}RefSearchConditionFilter"
-            : $"{_refEntry.Item.PhysicalName}RefSearchConditionFilter_{_aggregate.Item.PhysicalName}";
+            : $"{_refEntry.Item.PhysicalName}RefSearchConditionFilter_{GetRelationHistory().Join("の")}";
+        private IEnumerable<string> GetRelationHistory() {
+            foreach (var edge in _aggregate.PathFromEntry().Since(_refEntry)) {
+                if (edge.IsParentChild() && edge.Source == edge.Terminal) {
+                    yield return edge.Initial.As<Aggregate>().Item.PhysicalName;
+                } else {
+                    yield return edge.RelationName.ToCSharpSafe();
+                }
+            }
+        }
 
         internal const string KEYWORD_CS = "Keyword";
         internal const string KEYWORD_TS = "keyword";

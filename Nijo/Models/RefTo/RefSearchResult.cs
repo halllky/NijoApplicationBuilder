@@ -35,10 +35,19 @@ namespace Nijo.Models.RefTo {
 
         internal string CsClassName => _refEntry == _aggregate
             ? $"{_refEntry.Item.PhysicalName}RefTarget"
-            : $"{_refEntry.Item.PhysicalName}RefTarget_{_aggregate.Item.PhysicalName}";
+            : $"{_refEntry.Item.PhysicalName}RefTarget_{GetRelationHistory().Join("の")}";
         internal string TsTypeName => _refEntry == _aggregate
             ? $"{_refEntry.Item.PhysicalName}RefTarget"
-            : $"{_refEntry.Item.PhysicalName}RefTarget_{_aggregate.Item.PhysicalName}";
+            : $"{_refEntry.Item.PhysicalName}RefTarget_{GetRelationHistory().Join("の")}";
+        private IEnumerable<string> GetRelationHistory() {
+            foreach (var edge in _aggregate.PathFromEntry().Since(_refEntry)) {
+                if (edge.IsParentChild() && edge.Source == edge.Terminal) {
+                    yield return edge.Initial.As<Aggregate>().Item.PhysicalName;
+                } else {
+                    yield return edge.RelationName.ToCSharpSafe();
+                }
+            }
+        }
 
         internal bool HasInstanceKey => _aggregate == _refEntry;
         /// <summary>
@@ -80,7 +89,7 @@ namespace Nijo.Models.RefTo {
             }
             CollectRecursively(new RefSearchResult(asEntry, asEntry));
 
-            return refTargets.SelectTextTemplate(rt =>  $$"""
+            return refTargets.SelectTextTemplate(rt => $$"""
                 /// <summary>{{rt._refEntry.Item.DisplayName}}が他の集約から参照されたときの{{rt._aggregate.Item.DisplayName}}のデータ型</summary>
                 public partial class {{rt.CsClassName}} {
                 {{If(rt.HasInstanceKey, () => $$"""
