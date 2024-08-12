@@ -59,7 +59,7 @@ namespace Nijo.Models.ReadModel2Features {
                         vm.Options.MemberType.RenderSingleViewVFormBody(vm, context));
 
                 } else if (member is AggregateMember.Ref @ref) {
-                    void BuildRecursively(RefTo.RefSearchResult refTarget, VerticalFormSection section) {
+                    void BuildRecursively(RefTo.RefDisplayData refTarget, VerticalFormSection section) {
                         foreach (var refMember in refTarget.GetOwnMembers()) {
                             if (refMember is AggregateMember.ValueMember vm2) {
                                 formBuilder.AddItem(
@@ -69,13 +69,13 @@ namespace Nijo.Models.ReadModel2Features {
                                     vm2.Options.MemberType.RenderSingleViewVFormBody(vm2, context));
 
                             } else if (refMember is AggregateMember.RelationMember rel) {
-                                var relRefTarget = new RefTo.RefSearchResult(rel.MemberAggregate, @ref.RefTo);
+                                var relRefTarget = new RefTo.RefDisplayData(rel.MemberAggregate, @ref.RefTo);
                                 var relSection = formBuilder.AddSection(rel.MemberName, E_VForm2LabelType.String);
                                 BuildRecursively(relRefTarget, relSection);
                             }
                         }
                     }
-                    var refTarget = new RefTo.RefSearchResult(@ref.RefTo, @ref.RefTo);
+                    var refTarget = new RefTo.RefDisplayData(@ref.RefTo, @ref.RefTo);
                     var section = new VerticalFormSection(@ref.MemberName, E_VForm2LabelType.String);
                     BuildRecursively(refTarget, section);
                 }

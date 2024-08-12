@@ -367,7 +367,7 @@ namespace Nijo.Models.ReadModel2Features {
                 if (edge.Source == edge.Terminal && edge.IsParentChild()) {
                     // 子から親へ向かう経路の場合
                     if (edge.Initial.As<Aggregate>().IsOutOfEntryTree()) {
-                        yield return RefTo.RefSearchResult.PARENT;
+                        yield return RefTo.RefDisplayData.PARENT;
                     } else {
                         yield return $"/* エラー！{nameof(SearchCondition)}では子は親の参照を持っていません */";
                     }

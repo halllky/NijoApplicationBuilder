@@ -11,15 +11,15 @@ using System.Threading.Tasks;
 
 namespace Nijo.Models.RefTo {
     /// <summary>
-    /// ほかの集約から参照されるときのためのデータクラス
+    /// ほかの集約から参照されるときの画面表示用データクラス
     /// </summary>
-    internal class RefSearchResult {
+    internal class RefDisplayData {
         /// <summary>
-        /// ほかの集約から参照されるときのためのデータクラス
+        /// ほかの集約から参照されるときの画面表示用データクラス
         /// </summary>
         /// <param name="agg">集約</param>
         /// <param name="refEntry">参照エントリー</param>
-        internal RefSearchResult(GraphNode<Aggregate> agg, GraphNode<Aggregate> refEntry) {
+        internal RefDisplayData(GraphNode<Aggregate> agg, GraphNode<Aggregate> refEntry) {
             _aggregate = agg;
             _refEntry = refEntry;
         }
@@ -80,14 +80,14 @@ namespace Nijo.Models.RefTo {
         internal string RenderCSharp(CodeRenderingContext context) {
             // この集約を参照エントリーとして生成されるクラスを再帰的に
             var asEntry = _aggregate.AsEntry();
-            var refTargets = new List<RefSearchResult>();
-            void CollectRecursively(RefSearchResult refTarget) {
+            var refTargets = new List<RefDisplayData>();
+            void CollectRecursively(RefDisplayData refTarget) {
                 refTargets.Add(refTarget);
                 foreach (var rel in refTarget.GetOwnMembers().OfType<AggregateMember.RelationMember>()) {
-                    CollectRecursively(new RefSearchResult(rel.MemberAggregate, asEntry));
+                    CollectRecursively(new RefDisplayData(rel.MemberAggregate, asEntry));
                 }
             }
-            CollectRecursively(new RefSearchResult(asEntry, asEntry));
+            CollectRecursively(new RefDisplayData(asEntry, asEntry));
 
             return refTargets.SelectTextTemplate(rt => $$"""
                 /// <summary>{{rt._refEntry.Item.DisplayName}}が他の集約から参照されたときの{{rt._aggregate.Item.DisplayName}}のデータ型</summary>
@@ -114,14 +114,14 @@ namespace Nijo.Models.RefTo {
         internal string RenderTypeScript(CodeRenderingContext context) {
             // この集約を参照エントリーとして生成されるクラスを再帰的に
             var asEntry = _aggregate.AsEntry();
-            var refTargets = new List<RefSearchResult>();
-            void CollectRecursively(RefSearchResult refTarget) {
+            var refTargets = new List<RefDisplayData>();
+            void CollectRecursively(RefDisplayData refTarget) {
                 refTargets.Add(refTarget);
                 foreach (var rel in refTarget.GetOwnMembers().OfType<AggregateMember.RelationMember>()) {
-                    CollectRecursively(new RefSearchResult(rel.MemberAggregate, asEntry));
+                    CollectRecursively(new RefDisplayData(rel.MemberAggregate, asEntry));
                 }
             }
-            CollectRecursively(new RefSearchResult(asEntry, asEntry));
+            CollectRecursively(new RefDisplayData(asEntry, asEntry));
 
             return refTargets.SelectTextTemplate(rt => $$"""
                 /** {{rt._refEntry.Item.DisplayName}}が他の集約から参照されたときの{{rt._aggregate.Item.DisplayName}}のデータ型 */
@@ -175,7 +175,7 @@ namespace Nijo.Models.RefTo {
 
                     } else if (member is AggregateMember.Ref @ref) {
                         string RenderRefSearchResultRecursively(GraphNode<Aggregate> agg) {
-                            var rsr = new RefSearchResult(agg, _refEntry);
+                            var rsr = new RefDisplayData(agg, _refEntry);
                             return $$"""
                                 new() {
                                 {{rsr.GetOwnMembers().SelectTextTemplate(m => $$"""
@@ -221,7 +221,7 @@ namespace Nijo.Models.RefTo {
                     }
                 }
 
-                var rsr = new RefSearchResult(renderingAggregate, _refEntry);
+                var rsr = new RefDisplayData(renderingAggregate, _refEntry);
                 var newStatement = renderNewStatement ? $"new {rsr.CsClassName}()" : "new()";
                 var pk = keys.Select(vm => pkVarNames[(vm.Declared, vm.DeclaringAggregate.PathFromEntry())]);
                 return $$"""
@@ -258,11 +258,11 @@ namespace Nijo.Models.RefTo {
                 return vm.Options.MemberType.GetCSharpTypeName();
 
             } else if (member is AggregateMember.Children children) {
-                var refTo = new RefSearchResult(children.ChildrenAggregate, _refEntry);
+                var refTo = new RefDisplayData(children.ChildrenAggregate, _refEntry);
                 return $"List<{refTo.CsClassName}>";
 
             } else if (member is AggregateMember.RelationMember rel) {
-                var refTo = new RefSearchResult(rel.MemberAggregate, _refEntry);
+                var refTo = new RefDisplayData(rel.MemberAggregate, _refEntry);
                 return refTo.CsClassName;
 
             } else {
@@ -277,11 +277,11 @@ namespace Nijo.Models.RefTo {
                 return vm.Options.MemberType.GetTypeScriptTypeName();
 
             } else if (member is AggregateMember.Children children) {
-                var refTo = new RefSearchResult(children.ChildrenAggregate, _refEntry);
+                var refTo = new RefDisplayData(children.ChildrenAggregate, _refEntry);
                 return $"{refTo.CsClassName}[]";
 
             } else if (member is AggregateMember.RelationMember rel) {
-                var refTo = new RefSearchResult(rel.MemberAggregate, _refEntry);
+                var refTo = new RefDisplayData(rel.MemberAggregate, _refEntry);
                 return refTo.CsClassName;
 
             } else {
@@ -304,7 +304,7 @@ namespace Nijo.Models.RefTo {
             if (until != null) path = path.Until(until);
             foreach (var edge in path) {
                 if (edge.IsParentChild() && edge.Source == edge.Terminal) {
-                    yield return RefSearchResult.PARENT;
+                    yield return RefDisplayData.PARENT;
                 } else {
                     yield return edge.RelationName;
                 }
@@ -319,7 +319,7 @@ namespace Nijo.Models.RefTo {
             foreach (var path in fullpath) {
                 yield return path;
             }
-            yield return RefSearchResult.GetMemberName(member);
+            yield return RefDisplayData.GetMemberName(member);
         }
     }
 }

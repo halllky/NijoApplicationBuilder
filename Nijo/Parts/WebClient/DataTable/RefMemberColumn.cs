@@ -53,7 +53,7 @@ namespace Nijo.Parts.WebClient.DataTable {
         }
 
         IGridColumnSetting? IDataTableColumn2.GetEditSetting() {
-            var refInfo = new RefSearchResult(_ref.RefTo, _ref.RefTo);
+            var refInfo = new RefDisplayData(_ref.RefTo, _ref.RefTo);
             var refSearch = new RefSearchMethod(_ref.RefTo, _ref.RefTo);
             var combo = new SearchComboBox(_ref.RefTo);
             var keys = _ref.RefTo
@@ -76,8 +76,8 @@ namespace Nijo.Parts.WebClient.DataTable {
                     }
                     """,
                 EmitValueSelector = $"item => item",
-                MatchingKeySelectorFromEmitValue = $"item => item.{RefSearchResult.INSTANCE_KEY_TS}",
-                MatchingKeySelectorFromOption = $"item => item.{RefSearchResult.INSTANCE_KEY_TS}",
+                MatchingKeySelectorFromEmitValue = $"item => item.{RefDisplayData.INSTANCE_KEY_TS}",
+                MatchingKeySelectorFromOption = $"item => item.{RefDisplayData.INSTANCE_KEY_TS}",
                 TextSelector = $"item => `{names.Select(n => $"${{item.{n.Declared.GetFullPathAsSearchResult().Join("?.")} ?? ''}}").Join("")}`",
                 OnClipboardCopy = (value, formatted) => $$"""
                     const {{formatted}} = {{value}} ? JSON.stringify({{value}}) : ''
@@ -88,8 +88,8 @@ namespace Nijo.Parts.WebClient.DataTable {
                       try {
                         const obj: AggregateType.{{refInfo.TsTypeName}} = JSON.parse({{value}})
                         // 登録にはインスタンスキーが使われるのでキーの型だけは細かくチェックする
-                        if (obj.{{RefSearchResult.INSTANCE_KEY_TS}} === undefined) throw new Error
-                        const arrInstanceKey: [{{keys.Select(k => k.Options.MemberType.GetTypeScriptTypeName()).Join(", ")}}] = JSON.parse(obj.{{RefSearchResult.INSTANCE_KEY_TS}})
+                        if (obj.{{RefDisplayData.INSTANCE_KEY_TS}} === undefined) throw new Error
+                        const arrInstanceKey: [{{keys.Select(k => k.Options.MemberType.GetTypeScriptTypeName()).Join(", ")}}] = JSON.parse(obj.{{RefDisplayData.INSTANCE_KEY_TS}})
                         if (!Array.isArray(arrInstanceKey)) throw new Error
                     {{keys.SelectTextTemplate((k, i) => $$"""
                         if (typeof arrInstanceKey[{{i}}] !== '{{k.Options.MemberType.GetTypeScriptTypeName()}}') throw new Error

@@ -51,7 +51,7 @@ namespace Nijo.Models.ReadModel2Features {
                 throw new NotImplementedException(); // Parentのメンバーは定義されないので
 
             } else if (member is AggregateMember.Ref @ref) {
-                var refTarget = new RefSearchResult(@ref.RefTo, @ref.RefTo);
+                var refTarget = new RefDisplayData(@ref.RefTo, @ref.RefTo);
                 return refTarget.CsClassName;
 
             } else if (member is AggregateMember.Children children) {
@@ -122,7 +122,7 @@ namespace Nijo.Models.ReadModel2Features {
                 var edge = edges[i];
 
                 var relationName = edge.IsParentChild() && edge.Source == edge.Terminal
-                    ? RefTo.RefSearchResult.PARENT
+                    ? RefTo.RefDisplayData.PARENT
                     : edge.RelationName;
 
                 var isMany = false;

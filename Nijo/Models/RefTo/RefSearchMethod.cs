@@ -37,7 +37,7 @@ namespace Nijo.Models.RefTo {
         internal string RenderHook(CodeRenderingContext context) {
             var controller = new Controller(_aggregate.Item);
             var searchCondition = new RefSearchCondition(_aggregate, _refEntry);
-            var searchResult = new RefSearchResult(_aggregate, _refEntry);
+            var searchResult = new RefDisplayData(_aggregate, _refEntry);
 
             return $$"""
                 /** {{_aggregate.Item.DisplayName}}の参照先検索を行いその結果を保持します。 */
@@ -89,7 +89,7 @@ namespace Nijo.Models.RefTo {
 
         internal string RenderAppSrvMethodOfWriteModel(CodeRenderingContext context) {
             var searchCondition = new RefSearchCondition(_aggregate, _refEntry);
-            var searchResult = new RefSearchResult(_aggregate, _refEntry);
+            var searchResult = new RefDisplayData(_aggregate, _refEntry);
             var dbEntity = new EFCoreEntity(_aggregate);
 
             var filterMembers = searchCondition
@@ -193,7 +193,7 @@ namespace Nijo.Models.RefTo {
             var searchCondition = new SearchCondition(refTargetRoot, refTargetRoot);
             var searchResult = new DataClassForDisplay(refTargetRoot);
             var refSearchCondition = new RefSearchCondition(_aggregate, _refEntry);
-            var refSearchResult = new RefSearchResult(_aggregate, _refEntry);
+            var refSearchResult = new RefDisplayData(_aggregate, _refEntry);
 
             // 通常の一覧検索の戻り値は親要素の配列だが、
             // この集約が子孫要素の場合、戻り値はその子孫要素の配列になる。そして祖先は各要素のプロパティになる。
@@ -218,7 +218,7 @@ namespace Nijo.Models.RefTo {
             }
 
             // 通常の一覧検索結果を参照先検索結果に変換する
-            string RenderResultConverting(RefSearchResult rsr, string instance, GraphNode<Aggregate> instanceAggregate, bool renderNewClassName) {
+            string RenderResultConverting(RefDisplayData rsr, string instance, GraphNode<Aggregate> instanceAggregate, bool renderNewClassName) {
 
                 string RenderMember(AggregateMember.AggregateMemberBase member) {
                     if (member is AggregateMember.ValueMember vm) {
@@ -230,13 +230,13 @@ namespace Nijo.Models.RefTo {
                         var pathToArray = GetFullPathBeforeReturn(children.ChildrenAggregate, instanceAggregate);
                         var depth = children.ChildrenAggregate.EnumerateAncestors().Count();
                         var x = depth <= 1 ? "x" : $"x{depth}";
-                        var child = new RefSearchResult(children.ChildrenAggregate, _refEntry);
+                        var child = new RefDisplayData(children.ChildrenAggregate, _refEntry);
                         return $$"""
                             {{instance}}.{{pathToArray.Join("?.")}}.Select({{x}} => {{RenderResultConverting(child, x, children.ChildrenAggregate, true)}}).ToList()
                             """;
 
                     } else {
-                        var memberRefSearchResult = new RefSearchResult(((AggregateMember.RelationMember)member).MemberAggregate, _refEntry);
+                        var memberRefSearchResult = new RefDisplayData(((AggregateMember.RelationMember)member).MemberAggregate, _refEntry);
                         return $$"""
                             {{RenderResultConverting(memberRefSearchResult, instance, instanceAggregate, false)}}
                             """;
@@ -252,10 +252,10 @@ namespace Nijo.Models.RefTo {
                 return $$"""
                     {{@new}} {
                     {{If(rsr == refSearchResult, () => $$"""
-                        {{RefSearchResult.INSTANCE_KEY_CS}} = {{instanceKey}},
+                        {{RefDisplayData.INSTANCE_KEY_CS}} = {{instanceKey}},
                     """)}}
                     {{rsr.GetOwnMembers().SelectTextTemplate(member => $$"""
-                        {{RefSearchResult.GetMemberName(member)}} = {{WithIndent(RenderMember(member), "    ")}},
+                        {{RefDisplayData.GetMemberName(member)}} = {{WithIndent(RenderMember(member), "    ")}},
                     """)}}
                     }
                     """;
@@ -337,7 +337,7 @@ namespace Nijo.Models.RefTo {
             if (!member.Owner.IsOutOfEntryTree()) {
                 yield return DataClassForDisplay.VALUES_CS;
             }
-            yield return RefSearchResult.GetMemberName(member);
+            yield return RefDisplayData.GetMemberName(member);
         }
     }
 }

@@ -367,7 +367,7 @@ namespace Nijo.Models.ReadModel2Features {
                 throw new NotImplementedException(); // Parentのメンバーは定義されないので
 
             } else if (member is AggregateMember.Ref @ref) {
-                var refTarget = new RefSearchResult(@ref.RefTo, @ref.RefTo);
+                var refTarget = new RefDisplayData(@ref.RefTo, @ref.RefTo);
                 return refTarget.CsClassName;
 
             } else if (member is AggregateMember.Children children) {
@@ -390,7 +390,7 @@ namespace Nijo.Models.ReadModel2Features {
                 throw new NotImplementedException(); // Parentのメンバーは定義されないので
 
             } else if (member is AggregateMember.Ref @ref) {
-                var refTarget = new RefSearchResult(@ref.RefTo, @ref.RefTo);
+                var refTarget = new RefDisplayData(@ref.RefTo, @ref.RefTo);
                 return refTarget.TsTypeName;
 
             } else if (member is AggregateMember.Children children) {
@@ -474,7 +474,7 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// エントリーからのパスを
         /// <see cref="DataClassForDisplay"/> と
-        /// <see cref="RefTo.RefSearchResult"/> の
+        /// <see cref="RefTo.RefDisplayData"/> の
         /// インスタンスの型のルールにあわせて返す。
         /// </summary>
         internal static IEnumerable<string> GetFullPathAsDataClassForDisplay(this GraphNode<Aggregate> aggregate, E_CsTs csTs, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
@@ -486,7 +486,7 @@ namespace Nijo.Models.ReadModel2Features {
                 if (edge.Source == edge.Terminal && edge.IsParentChild()) {
                     // 子から親へ向かう経路の場合
                     if (edge.Initial.As<Aggregate>().IsOutOfEntryTree()) {
-                        yield return RefSearchResult.PARENT;
+                        yield return RefDisplayData.PARENT;
                     } else {
                         yield return $"/* エラー！{nameof(DataClassForDisplay)}では子は親の参照を持っていません */";
                     }
@@ -550,7 +550,7 @@ namespace Nijo.Models.ReadModel2Features {
                 if (edge.Source == edge.Terminal) {
 
                     if (edge.IsParentChild()) {
-                        yield return RefSearchResult.PARENT; // 子から親に向かって辿る場合
+                        yield return RefDisplayData.PARENT; // 子から親に向かって辿る場合
 
                     } else if (edge.IsRef()) {
                         throw new InvalidOperationException($"有向グラフの矢印の先から元に向かうパターンは親子だけなのでこの分岐にくることはあり得ないはず");

@@ -335,7 +335,7 @@ namespace Nijo.Models.RefTo {
 
                 if (edge.Source == edge.Terminal && edge.IsParentChild()) {
                     // 子から親へ向かう経路の場合
-                    yield return RefSearchResult.PARENT;
+                    yield return RefDisplayData.PARENT;
                 } else {
                     yield return edge.RelationName;
                 }

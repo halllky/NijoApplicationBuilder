@@ -75,7 +75,7 @@ namespace Nijo.Models {
                 // データ型
                 var refTargetKeys = new DataClassForRefTargetKeys(asEntry, asEntry);
                 var refSearchCondition = new RefSearchCondition(asEntry, asEntry);
-                var refSearchResult = new RefSearchResult(asEntry, asEntry);
+                var refSearchResult = new RefDisplayData(asEntry, asEntry);
                 aggregateFile.DataClassDeclaring.Add(refTargetKeys.RenderCSharpDeclaringRecursively(context));
                 aggregateFile.DataClassDeclaring.Add(refSearchCondition.RenderCSharpDeclaringRecursively(context));
                 aggregateFile.DataClassDeclaring.Add(refSearchResult.RenderCSharp(context));
