@@ -35,7 +35,7 @@ namespace Nijo.Models.RefTo {
         private string AppSrvBeforeLoadMethod => $"OnBeforeLoadSearchRefs{_aggregate.Item.PhysicalName}";
 
         internal string RenderHook(CodeRenderingContext context) {
-            var controller = new Controller(_aggregate.Item);
+            var controller = new Controller(_aggregate.GetRoot().Item);
             var searchCondition = new RefSearchCondition(_aggregate, _refEntry);
             var searchResult = new RefDisplayData(_aggregate, _refEntry);
 
