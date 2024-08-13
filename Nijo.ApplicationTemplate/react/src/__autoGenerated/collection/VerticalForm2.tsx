@@ -93,10 +93,10 @@ const Item = ({ label, wide, children }: {
     // 要素の横幅が小さい場合のレイアウト
     : (
       <div className="grid grid-flow-row grid-cols-[subgrid] col-span-2">
-        <div className="px-1 border-vform bg-color-2">
+        <div className="px-1 py-px border-vform bg-color-2">
           {renderLabel(label)}
         </div>
-        <div className="px-1 border-vform bg-color-0">
+        <div className="px-1 py-px border-vform bg-color-0">
           {children}
         </div>
       </div>

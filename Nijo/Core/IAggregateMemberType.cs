@@ -263,9 +263,11 @@ namespace Nijo.Core {
                 _ => throw new NotImplementedException(),
             };
             return $$"""
-                <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}.{{FromTo.FROM_TS}}`)}{{component.GetPropsStatement().Join("")}} />
-                <span className="select-none">～</span>
-                <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}.{{FromTo.TO_TS}}`)}{{component.GetPropsStatement().Join("")}} />
+                <div className="flex flex-wrap items-center gap-1">
+                  <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}.{{FromTo.FROM_TS}}`)}{{component.GetPropsStatement().Join("")}} />
+                  <span className="select-none">～</span>
+                  <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}.{{FromTo.TO_TS}}`)}{{component.GetPropsStatement().Join("")}} />
+                </div>
                 """;
         }
 

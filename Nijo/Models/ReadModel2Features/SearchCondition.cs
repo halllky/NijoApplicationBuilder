@@ -273,8 +273,10 @@ namespace Nijo.Models.ReadModel2Features {
         }
         private void BuildVForm2(ReactPageRenderingContext context, Parts.WebClient.VerticalFormSection section) {
             foreach (var m in GetOwnMembers()) {
+                if (m.Member.Options.InvisibleInGui) continue; // 非表示項目
+
                 section.AddItem(
-                    m.Member.Options.MemberType is Core.AggregateMemberTypes.Sentence,
+                    false,
                     m.MemberName,
                     Parts.WebClient.E_VForm2LabelType.String,
                     m.Member.Options.MemberType.RenderSearchConditionVFormBody(m.Member, context));

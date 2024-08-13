@@ -125,7 +125,7 @@ namespace Nijo.Core.AggregateMemberTypes {
             };
             return $$"""
                 {{Definition.Items.SelectTextTemplate(item => $$"""
-                <Input.CheckBox {...{{ctx.Register}}(`{{fullpath}}.{{item.PhysicalName}}`)} />
+                <Input.CheckBox label="{{item.PhysicalName}}" {...{{ctx.Register}}(`{{fullpath}}.{{item.PhysicalName}}`)} />
                 """)}}
                 """;
         }

@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useRef, useImperativeHandle, useState } from "react"
+import React, { useMemo, useCallback, useRef, useImperativeHandle, useState } from "react"
 import { useQuery } from "react-query"
 import { useMsgContext } from "../util"
 import { AsyncComboProps, CustomComponentProps, CustomComponentRef, defineCustomComponent } from "./InputBase"
@@ -96,8 +96,16 @@ export const AsyncComboBox = defineCustomComponent(<TOption, TEmitValue, TMatchi
 })
 
 /** チェックボックス */
-export const CheckBox = defineCustomComponent<boolean>((props, ref) => {
-  return <ToggleBase ref={ref} {...props} />
+export const CheckBox = defineCustomComponent<boolean, { label?: React.ReactNode }>((props, ref) => {
+  const { label, className, style, ...rest } = props
+  return (
+    <label className={`flex items-center gap-1 ${className ?? ''}`} style={style}>
+      <ToggleBase ref={ref} {...rest} />
+      <span className="select-none">
+        {label}
+      </span>
+    </label>
+  )
 })
 
 /** チェックボックス（グリッド用） */

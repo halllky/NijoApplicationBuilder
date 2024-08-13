@@ -67,6 +67,7 @@ namespace Nijo.Core.AggregateMemberTypes {
 
         private string SearchConditionClass => $"{_variationGroup.GroupName}SearchCondition";
         private const string ANY_CHECKED = "AnyChecked";
+        private const string ALL_CHECKED = "AllChecked";
 
         public string GetSearchConditionCSharpType() {
             return SearchConditionClass;
@@ -90,6 +91,13 @@ namespace Nijo.Core.AggregateMemberTypes {
                 """)}}
                         return false;
                     }
+                    /// <summary>すべての値が選択されているかを返します。</summary>
+                    public bool {{ALL_CHECKED}}() {
+                {{_variationGroup.VariationAggregates.Values.SelectTextTemplate(edge => $$"""
+                        if (!{{edge.Terminal.Item.PhysicalName}}) return false;
+                """)}}
+                        return true;
+                    }
                 }
                 """);
         }
@@ -106,7 +114,9 @@ namespace Nijo.Core.AggregateMemberTypes {
                 : member.GetFullPathAsDbEntity(E_CsTs.CSharp, out isArray);
 
             return $$"""
-                if ({{fullpathNullable}} != null && {{fullpathNotNull}}.{{ANY_CHECKED}}()) {
+                if ({{fullpathNullable}} != null
+                    && {{fullpathNotNull}}.{{ANY_CHECKED}}()
+                    && !{{fullpathNotNull}}.{{ALL_CHECKED}}()) {
                     var array = new List<{{enumType}}?>();
                 {{_variationGroup.VariationAggregates.Values.SelectTextTemplate(edge => $$"""
                     if ({{fullpathNotNull}}.{{edge.Terminal.Item.PhysicalName}}) array.Add({{enumType}}.{{edge.Terminal.Item.PhysicalName}});
@@ -131,7 +141,7 @@ namespace Nijo.Core.AggregateMemberTypes {
             };
             return $$"""
                 {{_variationGroup.VariationAggregates.SelectTextTemplate(kv => $$"""
-                <Input.CheckBox {...{{ctx.Register}}(`{{fullpath}}.{{kv.Value.RelationName}}`)} />
+                <Input.CheckBox label="{{kv.Value.RelationName}}" {...{{ctx.Register}}(`{{fullpath}}.{{kv.Value.RelationName}}`)} />
                 """)}}
                 """;
         }

@@ -37,6 +37,8 @@ namespace Nijo.Parts.WebClient.DataTable {
         /// 画面表示用データのメンバーの列を追加します。
         /// </summary>
         internal DataTableBuilder AddMembers(DataClassForDisplay dataClass) {
+            _columns.AddRange(Enumerate(dataClass));
+            return this;
 
             IEnumerable<IDataTableColumn2> Enumerate(DataClassForDisplay rendering) {
                 foreach (var member in rendering.GetOwnMembers()) {
@@ -47,7 +49,6 @@ namespace Nijo.Parts.WebClient.DataTable {
                             vm,
                             vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, since: TableOwner),
                             this);
-                        _columns.Add(column);
                         yield return column;
 
                     } else if (member is AggregateMember.Ref @ref) {
@@ -56,7 +57,6 @@ namespace Nijo.Parts.WebClient.DataTable {
                             @ref,
                             @ref.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, since: TableOwner),
                             this);
-                        _columns.Add(column);
                         yield return column;
                     }
                 }
@@ -71,8 +71,6 @@ namespace Nijo.Parts.WebClient.DataTable {
                     }
                 }
             }
-            _columns.AddRange(Enumerate(dataClass));
-            return this;
         }
 
         internal string RenderColumnDef(CodeRenderingContext context) {

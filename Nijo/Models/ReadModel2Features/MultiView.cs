@@ -134,7 +134,7 @@ namespace Nijo.Models.ReadModel2Features {
                         resetSearchCondition()
                         searchConditionPanelRef.current?.expand()
                       }, [resetSearchCondition, searchConditionPanelRef])
-                    
+
                       // 画面遷移
                       const {{TO_DETAIL_VIEW}} = Util.{{detailView.NavigateFnName}}()
                       const navigateToCreateView = Util.{{createView.NavigateFnName}}()
@@ -169,7 +169,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                             {/* 検索条件欄 */}
                             <Panel ref={searchConditionPanelRef} defaultSize={30} collapsible onCollapse={setCollapsed}>
-                              <div className="h-full overflow-y-scroll">
+                              <div className="h-full overflow-y-scroll border border-color-4">
                                 <FormProvider {...rhfSearchMethods}>
                                   {{WithIndent(searchCondition.RenderVForm2(pageRenderingContext), "              ")}}
                                 </FormProvider>
@@ -183,7 +183,7 @@ namespace Nijo.Models.ReadModel2Features {
                               <Layout.DataTable
                                 data={{{LoadMethod.CURRENT_PAGE_ITEMS}}}
                                 columns={columnDefs}
-                                className="h-full"
+                                className="h-full border border-color-4"
                               ></Layout.DataTable>
                             </Panel>
                           </PanelGroup>
