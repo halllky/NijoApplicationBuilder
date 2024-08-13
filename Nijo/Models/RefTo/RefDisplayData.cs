@@ -238,6 +238,67 @@ namespace Nijo.Models.RefTo {
             return RenderRecursively(_aggregate, _aggregate, instance, true);
         }
 
+        internal string RenderConvertFromRefSearchResult(string instance, GraphNode<Aggregate> instanceAggregate, bool renderNewClassName) {
+            var pkDict = new Dictionary<AggregateMember.ValueMember, string>();
+            return RenderConvertFromRefSearchResultPrivate(instance, instanceAggregate, renderNewClassName, pkDict);
+        }
+        private string RenderConvertFromRefSearchResultPrivate(
+            string instance,
+            GraphNode<Aggregate> instanceAggregate,
+            bool renderNewClassName,
+            Dictionary<AggregateMember.ValueMember, string> pkDict) {
+
+            // 主キー。レンダリング中の集約がChildrenの場合は親のキーをラムダ式の外の変数から参照する必要がある
+            var keys = new List<string>();
+            foreach (var key in _aggregate.GetKeys().OfType<AggregateMember.ValueMember>()) {
+                if (!pkDict.TryGetValue(key.Declared, out var keyString)) {
+                    keyString = $"{instance}.{key.Declared.GetFullPathAsRefSearchResult(since: instanceAggregate).Join("?.")}";
+                    pkDict.Add(key, keyString);
+                }
+                keys.Add(keyString);
+            }
+
+            var newStatement = renderNewClassName
+                ? $"new {CsClassName}()"
+                : $"new()";
+            return $$"""
+                {{newStatement}} {
+                {{If(HasInstanceKey, () => $$"""
+                    {{INSTANCE_KEY_CS}} = {{InstanceKey.CS_CLASS_NAME}}.{{InstanceKey.FROM_PK}}({{keys.Join(", ")}}),
+                """)}}
+                {{GetOwnMembers().SelectTextTemplate(m => $$"""
+                    {{GetMemberName(m)}} = {{WithIndent(RenderMember(m), "    ")}},
+                """)}}
+                }
+                """;
+
+            string RenderMember(AggregateMember.AggregateMemberBase member) {
+                if (member is AggregateMember.ValueMember vm) {
+                    return $$"""
+                        {{instance}}.{{vm.Declared.GetFullPathAsRefSearchResult(instanceAggregate).Join("?.")}}
+                        """;
+                } else if (member is AggregateMember.Children children) {
+                    var rdd = new RefDisplayData(children.ChildrenAggregate, _refEntry);
+                    var pathToArray = children.GetFullPathAsRefSearchResult(since: instanceAggregate);
+                    var depth = member.Owner.PathFromEntry().Count();
+                    var x = depth == 0 ? "x" : $"x{depth}";
+                    return $$"""
+                        {{instance}}.{{pathToArray.Join("?.")}}.Select({{x}} => {{rdd.RenderConvertFromRefSearchResultPrivate(x, children.ChildrenAggregate, true, pkDict)}}) ?? []
+                        """;
+
+                } else if (member is AggregateMember.RelationMember rel) {
+                    var rdd = new RefDisplayData(rel.MemberAggregate, _refEntry);
+                    return $$"""
+                        {{rdd.RenderConvertFromRefSearchResultPrivate(instance, rel.MemberAggregate, false, pkDict)}}
+                        """;
+
+                } else {
+                    throw new NotImplementedException();
+                }
+            }
+
+        }
+
         #region メンバー用staticメソッド
         internal const string PARENT = "PARENT";
         /// <summary>
@@ -294,7 +355,7 @@ namespace Nijo.Models.RefTo {
     internal static partial class GetFullPathExtensions {
 
         /// <summary>
-        /// エントリーからのパスを <see cref="RefSearchCondition"/> の インスタンスの型のルールにあわせて返す。
+        /// エントリーからのパスを <see cref="RefDisplayData"/> の インスタンスの型のルールにあわせて返す。
         /// エントリーから全体が参照先検索結果クラスである場合のみ使用。
         /// 参照元検索結果の一部として参照先が含まれる場合は <see cref="ReadModel2Features.GetFullPathExtensions.GetFullPathAsDataClassForDisplay(GraphNode{Aggregate}, GraphNode{Aggregate}?, GraphNode{Aggregate}?)"/> を使用すること
         /// </summary>

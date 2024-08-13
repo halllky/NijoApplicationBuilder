@@ -153,7 +153,9 @@ namespace Nijo.Models.ReadModel2Features {
             var dbEntity = new EFCoreEntity(_aggregate);
             var searchResult = new SearchResult(_aggregate);
             return $$"""
+                #pragma warning disable CS8602 // null 参照の可能性があるものの逆参照です。
                 return DbContext.{{dbEntity.DbSetName}}.Select(e => {{RenderResultConverting(searchResult, "e", _aggregate, true)}});
+                #pragma warning restore CS8602 // null 参照の可能性があるものの逆参照です。
                 """;
 
             static string RenderResultConverting(SearchResult searchResult, string instance, GraphNode<Aggregate> instanceAggregate, bool renderNewClassName) {
@@ -209,52 +211,6 @@ namespace Nijo.Models.ReadModel2Features {
         /// パラメータのskip, take によるページングを行います。
         /// </summary>
         internal string RenderAppSrvBaseMethod(CodeRenderingContext context) {
-            var pkDict = new Dictionary<AggregateMember.ValueMember, string>();
-
-            string RenderNewDisplayData(DataClassForDisplay forDisplay, string instance, GraphNode<Aggregate> instanceAgg) {
-                // 主キー。レンダリング中の集約がChildrenの場合は親のキーをラムダ式の外の変数から参照する必要がある
-                var keys = new List<string>();
-                foreach (var key in forDisplay.Aggregate.GetKeys().OfType<AggregateMember.ValueMember>()) {
-                    if (!pkDict.TryGetValue(key.Declared, out var keyString)) {
-                        keyString = $"{instance}.{key.Declared.GetFullPathAsSearchResult(instanceAgg).Join("?.")}";
-                        pkDict.Add(key, keyString);
-                    }
-                    keys.Add(keyString);
-                }
-
-                var searchResultMembers = new SearchResult(forDisplay.Aggregate)
-                    .GetOwnMembers()
-                    .ToArray();
-                var depth = forDisplay.Aggregate
-                    .EnumerateAncestors()
-                    .Count();
-                var loopVar = depth == 0 ? "item" : $"item{depth}";
-
-                return $$"""
-                    new {{forDisplay.CsClassName}} {
-                    {{If(forDisplay.HasInstanceKey, () => $$"""
-                        {{DataClassForDisplay.INSTANCE_KEY_CS}} = {{InstanceKey.CS_CLASS_NAME}}.{{InstanceKey.FROM_PK}}({{keys.Join(", ")}}),
-                    """)}}
-                    {{If(forDisplay.HasLifeCycle, () => $$"""
-                        {{DataClassForDisplay.EXISTS_IN_DB_CS}} = true,
-                        {{DataClassForDisplay.WILL_BE_CHANGED_CS}} = false,
-                        {{DataClassForDisplay.WILL_BE_DELETED_CS}} = false,
-                        {{DataClassForDisplay.VERSION_CS}} = {{instance}}.{{SearchResult.VERSION}},
-                    """)}}
-                        {{DataClassForDisplay.VALUES_CS}} = new {{forDisplay.ValueCsClassName}} {
-                    {{forDisplay.GetOwnMembers().SelectTextTemplate(m1 => $$"""
-                            {{m1.MemberName}} = {{instance}}.{{searchResultMembers.Single(m2 => m2 == m1).GetFullPathAsSearchResult(instanceAgg).Join("?.")}},
-                    """)}}
-                        },
-                    {{forDisplay.GetChildMembers().SelectTextTemplate(child => child.IsArray ? $$"""
-                        {{child.MemberName}} = {{instance}}.{{child.GetFullPath(instanceAgg).Join("?.")}}?.Select({{loopVar}} => {{WithIndent(RenderNewDisplayData(child, loopVar, child.Aggregate), "    ")}}).ToList() ?? [],
-                    """ : $$"""
-                        {{child.MemberName}} = {{WithIndent(RenderNewDisplayData(child, instance, instanceAgg), "    ")}},
-                    """)}}
-                    }
-                    """;
-            }
-
             var argType = new SearchCondition(_aggregate);
             var returnType = new DataClassForDisplay(_aggregate);
             var searchResult = new SearchResult(_aggregate);
@@ -326,7 +282,7 @@ namespace Nijo.Models.ReadModel2Features {
                     }
 
                     // 検索結果を画面表示用の型に変換
-                    var displayDataList = query.AsEnumerable().Select(searchResult => {{WithIndent(RenderNewDisplayData(returnType, "searchResult", _aggregate), "    ")}}).ToArray();
+                    var displayDataList = query.AsEnumerable().Select(searchResult => {{WithIndent(returnType.RenderConvertFromSearchResult("searchResult", _aggregate, true), "    ")}}).ToArray();
 
                     // 読み取り専用項目の設定や、追加情報などを付すなど、任意のカスタマイズ処理
                     var returnValue = {{AppSrvAfterLoadedMethod}}(displayDataList);

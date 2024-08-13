@@ -450,6 +450,82 @@ namespace Nijo.Models.ReadModel2Features {
                 })
                 """;
         }
+
+        /// <summary>
+        /// <see cref="SearchResult"/> からの変換処理をレンダリングします。
+        /// </summary>
+        /// <param name="instance">検索結果のインスタンスの名前</param>
+        /// <param name="instanceAggregate">instanceの型</param>
+        /// <param name="renderNewClassName">new演算子のあとにクラス名をレンダリングするかどうか</param>
+        internal string RenderConvertFromSearchResult(string instance, GraphNode<Aggregate> instanceAggregate, bool renderNewClassName) {
+            var pkDict = new Dictionary<AggregateMember.ValueMember, string>();
+            return RenderConvertFromSearchResultPrivate(instance, instanceAggregate, renderNewClassName, pkDict);
+        }
+        private string RenderConvertFromSearchResultPrivate(
+            string instance,
+            GraphNode<Aggregate> instanceAgg,
+            bool renderNewClassName,
+            Dictionary<AggregateMember.ValueMember, string> pkDict) {
+
+            // 主キー。レンダリング中の集約がChildrenの場合は親のキーをラムダ式の外の変数から参照する必要がある
+            var keys = new List<string>();
+            foreach (var key in Aggregate.GetKeys().OfType<AggregateMember.ValueMember>()) {
+                if (!pkDict.TryGetValue(key.Declared, out var keyString)) {
+                    keyString = $"{instance}.{key.Declared.GetFullPathAsSearchResult(instanceAgg).Join("?.")}";
+                    pkDict.Add(key, keyString);
+                }
+                keys.Add(keyString);
+            }
+
+            var newStatement = renderNewClassName
+                ? $"new {CsClassName}"
+                : $"new()";
+            var depth = Aggregate
+                .EnumerateAncestors()
+                .Count();
+            var loopVar = depth == 0 ? "item" : $"item{depth}";
+
+            return $$"""
+                {{newStatement}} {
+                {{If(HasInstanceKey, () => $$"""
+                    {{INSTANCE_KEY_CS}} = {{InstanceKey.CS_CLASS_NAME}}.{{InstanceKey.FROM_PK}}({{keys.Join(", ")}}),
+                """)}}
+                {{If(HasLifeCycle, () => $$"""
+                    {{EXISTS_IN_DB_CS}} = true,
+                    {{WILL_BE_CHANGED_CS}} = false,
+                    {{WILL_BE_DELETED_CS}} = false,
+                    {{VERSION_CS}} = {{instance}}.{{SearchResult.VERSION}},
+                """)}}
+                    {{VALUES_CS}} = new {{ValueCsClassName}} {
+                {{GetOwnMembers().SelectTextTemplate(m => $$"""
+                        {{m.MemberName}} = {{WithIndent(RenderOwnMemberConvert(m), "        ")}},
+                """)}}
+                    },
+                {{GetChildMembers().SelectTextTemplate(child => child.IsArray ? $$"""
+                    {{child.MemberName}} = {{instance}}.{{child.GetFullPath(instanceAgg).Join("?.")}}?.Select({{loopVar}} => {{WithIndent(child.RenderConvertFromSearchResultPrivate(loopVar, child.Aggregate, true, pkDict), "    ")}}).ToList() ?? [],
+                """ : $$"""
+                    {{child.MemberName}} = {{WithIndent(child.RenderConvertFromSearchResultPrivate(instance, instanceAgg, false, pkDict), "    ")}},
+                """)}}
+                }
+                """;
+
+            string RenderOwnMemberConvert(AggregateMember.AggregateMemberBase member) {
+                if (member is AggregateMember.ValueMember vm) {
+                    return $$"""
+                        {{instance}}.{{vm.Declared.GetFullPathAsSearchResult(instanceAgg).Join("?.")}}
+                        """;
+
+                } else if (member is AggregateMember.Ref @ref) {
+                    var refDisplayData = new RefDisplayData(@ref.RefTo, @ref.RefTo);
+                    return $$"""
+                        {{refDisplayData.RenderConvertFromRefSearchResult(instance, instanceAgg, false)}}
+                        """;
+
+                } else {
+                    throw new NotImplementedException();
+                }
+            }
+        }
     }
 
     /// <summary>

@@ -201,4 +201,17 @@ namespace Nijo.Models.RefTo {
         }
         #endregion メンバー用staticメソッド
     }
+
+    partial class GetFullPathExtensions {
+
+        internal static IEnumerable<string> GetFullPathAsRefSearchResult(this GraphNode<Aggregate> aggregate, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+            // 画面表示用データとデータ構造が同じなので流用する
+            return aggregate.GetFullPathAsDataClassForRefTarget(since, until);
+        }
+        internal static IEnumerable<string> GetFullPathAsRefSearchResult(this AggregateMember.AggregateMemberBase member, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+            // 画面表示用データとデータ構造が同じなので流用する
+            return member.GetFullPathAsDataClassForRefTarget(since, until);
+        }
+
+    }
 }

@@ -298,27 +298,32 @@ namespace Nijo.Models.RefTo {
             var pathFromEntry = aggregate.PathFromEntry();
             if (since != null) pathFromEntry = pathFromEntry.Since(since);
 
+            GraphNode<Aggregate>? refSince = null;
             var arr = pathFromEntry.ToArray();
             for (int i = 0; i < arr.Length; i++) {
                 var edge = arr[i];
                 if (edge.IsParentChild() && edge.Source == edge.Terminal) {
                     yield return C_PARENT;
+                    refSince = edge.Initial.As<Aggregate>();
 
                 } else if (edge.IsRef()) {
                     if (i == 0 && !_refEntry.IsRoot()) {
                         yield return C_CHILD;
                     }
                     yield return DataClassForDisplay.VALUES_CS;
-                    yield return edge.RelationName;
                     break;
 
                 } else {
                     yield return edge.RelationName;
                 }
             }
+
             if (aggregate.IsOutOfEntryTree()) {
-                var refEntry = aggregate.GetRefEntryEdge().Terminal;
-                foreach (var path in aggregate.GetFullPathAsDataClassForRefTarget(since: refEntry)) {
+                var refEntry = aggregate.GetRefEntryEdge();
+                if (refSince == null) {
+                    yield return refEntry.RelationName;
+                }
+                foreach (var path in aggregate.GetFullPathAsDataClassForRefTarget(since: refSince ?? refEntry.Terminal)) {
                     yield return path;
                 }
             }
