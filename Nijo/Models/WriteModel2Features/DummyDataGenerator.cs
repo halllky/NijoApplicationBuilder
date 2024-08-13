@@ -1,5 +1,6 @@
 using Nijo.Core;
 using Nijo.Core.AggregateMemberTypes;
+using Nijo.Models.RefTo;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -33,6 +34,9 @@ namespace Nijo.Models.WriteModel2Features {
                 var random = new Random(0);
                 var ordered = _aggregates
                     .OrderByDataFlow();
+                var refSearchHooks = _aggregates
+                    .SelectMany(agg => agg.EnumerateThisAndDescendants())
+                    .Select(agg => new RefSearchHookTemp(agg));
 
                 return $$"""
                     import { useCallback } from 'react'
@@ -43,6 +47,9 @@ namespace Nijo.Models.WriteModel2Features {
                     export const useDummyDataGenerator2 = () => {
                       const { get } = useHttpRequest()
                       const { batchUpdateImmediately } = AggregateHook.{{BatchUpdateWriteModel.HOOK_NAME}}()
+                    {{refSearchHooks.SelectTextTemplate(x => $$"""
+                      const { {{RefSearchMethod.LOAD}}: {{x.Load}} } = AggregateHook.{{x.Hook}}()
+                    """)}}
 
                       return useCallback(async () => {
 
@@ -51,7 +58,13 @@ namespace Nijo.Models.WriteModel2Features {
 
                     """)}}
                         return true
-                      }, [get, batchUpdateImmediately])
+                      }, [
+                        get,
+                        batchUpdateImmediately,
+                    {{refSearchHooks.SelectTextTemplate(x => $$"""
+                        {{x.Load}},
+                    """)}}
+                      ])
                     }
                     """;
             },
@@ -63,6 +76,40 @@ namespace Nijo.Models.WriteModel2Features {
                 .Range(0, DATA_COUNT)
                 .Select(_ => $"data{random.Next(99999999):00000000}")
                 .ToArray();
+            var forSave = new DataClassForSave(rootAggregate, DataClassForSave.E_Type.Create);
+            var response = $"response{random.Next(99999999):00000000}";
+
+            return $$"""
+                // ----------------------- {{rootAggregate.Item.DisplayName}}のダミーデータ作成 -----------------------
+                {{instanceList.SelectTextTemplate(instance => $$"""
+                const {{instance}} = AggregateType.{{forSave.TsNewObjectFnName}}()
+                """)}}
+
+                {{rootAggregate.GetMembers().Where(m => m.DeclaringAggregate == rootAggregate).SelectTextTemplate(member => $$"""
+                {{instanceList.SelectTextTemplate((instance, index) => $$"""
+                {{SetDummyValue(member, instance, index)}}
+                """)}}
+                """)}}
+
+                {{descendants.SelectTextTemplate(agg => $$"""
+                {{instanceList.SelectTextTemplate(instance => $$"""
+                {{instance}}.{{ObjectPath(agg).Join(".")}} = {{NewObject(agg)}}
+                """)}}
+                {{agg.GetMembers().Where(m => m.DeclaringAggregate == agg).SelectTextTemplate(member => $$"""
+                {{instanceList.SelectTextTemplate((instance, index) => $$"""
+                {{SetDummyValue(member, instance, index)}}
+                """)}}
+                """)}}
+
+                """)}}
+                const {{response}} = await batchUpdateImmediately([{{instanceList.Join(", ")}}].map(data => ({
+                  {{DataClassForSaveBase.DATA_TYPE_TS}}: '{{DataClassForSaveBase.GetEnumValueOf(rootAggregate)}}',
+                  {{DataClassForSaveBase.ADD_MOD_DEL_TS}}: 'ADD',
+                  {{DataClassForSaveBase.VALUES_TS}}: data,
+                })))
+                if (!{{response}}) return false
+
+                """;
 
             static IEnumerable<string> ObjectPath(GraphNode<Aggregate> agg) {
                 return agg
@@ -125,12 +172,12 @@ namespace Nijo.Models.WriteModel2Features {
                         : $"{instance}.{path.Join(".")} = {dummyValue}";
 
                 } else if (member is AggregateMember.Ref @ref) {
-                    var api = new Features.Storing.KeywordSearchingFeature(@ref.RefTo).GetUri();
-                    var apiReturnType = new RefTo.RefDisplayData(@ref.RefTo, @ref.RefTo);
+                    var refSearch = new RefSearchHookTemp(@ref.RefTo);
+                    var apiReturnType = new RefDisplayData(@ref.RefTo, @ref.RefTo);
                     var res = $"response{random.Next(99999999):00000000}";
                     return $$"""
-                        const {{res}} = await get<AggregateType.{{apiReturnType.TsTypeName}}[]>(`{{api}}`, {})
-                        {{instance}}.{{path.Join(".")}} = {{res}}.ok ? {{res}}.data[{{index}}] : undefined
+                        const {{res}} = await {{refSearch.Load}}(AggregateType.{{refSearch.NewCondition}}())
+                        {{instance}}.{{path.Join(".")}} = {{res}}[{{index}}]
                         """;
 
                 } else if (member is AggregateMember.Child
@@ -142,41 +189,21 @@ namespace Nijo.Models.WriteModel2Features {
                     throw new NotImplementedException();
                 }
             }
-
-            var forSave = new DataClassForSave(rootAggregate, DataClassForSave.E_Type.Create);
-            var response = $"response{random.Next(99999999):00000000}";
-            return $$"""
-                // ----------------------- {{rootAggregate.Item.DisplayName}}のダミーデータ作成 -----------------------
-                {{instanceList.SelectTextTemplate(instance => $$"""
-                const {{instance}} = AggregateType.{{forSave.TsNewObjectFnName}}()
-                """)}}
-
-                {{rootAggregate.GetMembers().Where(m => m.DeclaringAggregate == rootAggregate).SelectTextTemplate(member => $$"""
-                {{instanceList.SelectTextTemplate((instance, index) => $$"""
-                {{SetDummyValue(member, instance, index)}}
-                """)}}
-                """)}}
-
-                {{descendants.SelectTextTemplate(agg => $$"""
-                {{instanceList.SelectTextTemplate(instance => $$"""
-                {{instance}}.{{ObjectPath(agg).Join(".")}} = {{NewObject(agg)}}
-                """)}}
-                {{agg.GetMembers().Where(m => m.DeclaringAggregate == agg).SelectTextTemplate(member => $$"""
-                {{instanceList.SelectTextTemplate((instance, index) => $$"""
-                {{SetDummyValue(member, instance, index)}}
-                """)}}
-                """)}}
-
-                """)}}
-                const {{response}} = await batchUpdateImmediately([{{instanceList.Join(", ")}}].map(data => ({
-                  {{DataClassForSaveBase.DATA_TYPE_TS}}: '{{DataClassForSaveBase.GetEnumValueOf(rootAggregate)}}',
-                  {{DataClassForSaveBase.ADD_MOD_DEL_TS}}: 'ADD',
-                  {{DataClassForSaveBase.VALUES_TS}}: data,
-                })))
-                if (!{{response}}) return false
-
-                """;
         }
 
+        private class RefSearchHookTemp {
+            internal RefSearchHookTemp(GraphNode<Aggregate> aggregate) {
+                _aggregate = aggregate;
+                _refSearchMethod = new RefSearchMethod(aggregate, aggregate);
+                _refSearchCondition = new RefSearchCondition(aggregate, aggregate);
+            }
+            private readonly GraphNode<Aggregate> _aggregate;
+            private readonly RefSearchMethod _refSearchMethod;
+            private readonly RefSearchCondition _refSearchCondition;
+
+            internal string Hook => _refSearchMethod.ReactHookName;
+            internal string Load => $"load{_aggregate.Item.PhysicalName}_{_aggregate.Item.UniqueId}";
+            internal string NewCondition => _refSearchCondition.CreateNewObjectFnName;
+        }
     }
 }

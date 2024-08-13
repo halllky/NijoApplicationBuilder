@@ -72,10 +72,10 @@ namespace Nijo.Models.ReadModel2Features {
                     /** 現在読み込み中か否かを返します。 */
                     {{NOW_LOADING}},
                     /**
-                     *  {{_aggregate.Item.DisplayName}}の一覧検索を行います。
-                     *  結果はこの関数の戻り値として返されます。
-                     *  また戻り値と同じものがこのフックの状態（{{CURRENT_PAGE_ITEMS}}）に格納されます。
-                     *  どちらか使いやすい方で参照してください。
+                     * {{_aggregate.Item.DisplayName}}の一覧検索を行います。
+                     * 結果はこの関数の戻り値として返されます。
+                     * また戻り値と同じものがこのフックの状態（{{CURRENT_PAGE_ITEMS}}）に格納されます。
+                     * どちらか使いやすい方で参照してください。
                      */
                     {{LOAD}},
                   }
@@ -264,6 +264,7 @@ namespace Nijo.Models.ReadModel2Features {
                 """)}}
                     }
                     if (sorted == null) {
+                        // ソート順未指定の場合
                 {{keys.SelectTextTemplate((path, i) => i == 0 ? $$"""
                         query = query.OrderBy(e => e.{{path}})
                 """ : $$"""

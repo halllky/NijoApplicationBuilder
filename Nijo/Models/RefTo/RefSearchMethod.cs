@@ -47,16 +47,16 @@ namespace Nijo.Models.RefTo {
                   const [, dispatchMsg] = Util.useMsgContext()
                   const { post } = Util.useHttpRequest()
 
-                  /** {{_aggregate.Item.DisplayName}}の参照先検索を行います。結果は戻り値ではなくフックの状態に格納されます。 */
-                  const {{LOAD}} = React.useCallback(async (searchCondition: Types.{{searchCondition.TsTypeName}}) => {
+                  const {{LOAD}} = React.useCallback(async (searchCondition: Types.{{searchCondition.TsTypeName}}): Promise<Types.{{searchResult.TsTypeName}}[]> => {
                     setNowLoading(true)
                     try {
-                      const res = await post<Types.{{searchResult.TsTypeName}}[]>(`{{controller.SubDomain}}/{{ControllerAction}}`, searchCondition)
+                      const res = await post<Types.{{searchResult.TsTypeName}}[]>(`/{{controller.SubDomain}}/{{ControllerAction}}`, searchCondition)
                       if (!res.ok) {
                         dispatchMsg(msg => msg.error('データ読み込みに失敗しました。'))
-                        return
+                        return []
                       }
                       setCurrentPageItems(res.data)
+                      return res.data
                     } finally {
                       setNowLoading(false)
                     }
@@ -67,8 +67,16 @@ namespace Nijo.Models.RefTo {
                   }, [{{LOAD}}])
 
                   return {
+                    /** 読み込み結果の一覧です。現在表示中のページのデータのみが格納されています。 */
                     {{CURRENT_PAGE_ITEMS}},
+                    /** 現在読み込み中か否かを返します。 */
                     {{NOW_LOADING}},
+                    /**
+                     * {{_aggregate.Item.DisplayName}}の一覧検索を行います。
+                     * 結果はこの関数の戻り値として返されます。
+                     * また戻り値と同じものがこのフックの状態（{{CURRENT_PAGE_ITEMS}}）に格納されます。
+                     * どちらか使いやすい方で参照してください。
+                     */
                     {{LOAD}},
                   }
                 }
@@ -146,6 +154,7 @@ namespace Nijo.Models.RefTo {
                 """)}}
                     }
                     if (sorted == null) {
+                        // ソート順未指定の場合
                         query = query
                 {{keys.SelectTextTemplate((path, i) => i == 0 ? $$"""
                             .OrderBy(e => e.{{path}})
