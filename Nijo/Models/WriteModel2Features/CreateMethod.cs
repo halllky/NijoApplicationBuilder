@@ -36,7 +36,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// <summary>
                 /// 新しい{{_rootAggregate.Item.DisplayName}}を作成する情報を受け取って登録します。
                 /// </summary>
-                public virtual void {{MethodName}}({{argType}} command, {{BatchUpdateContext.CLASS_NAME}} saveContext) {
+                public virtual void {{MethodName}}({{argType}} command, {{SaveContext.CLASS_NAME}} saveContext) {
 
                     var dbEntity = command.{{DataClassForSaveBase.VALUES_CS}}.{{DataClassForSave.TO_DBENTITY}}();
 

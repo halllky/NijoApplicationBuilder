@@ -236,16 +236,16 @@ namespace Nijo.Models.WriteModel2Features {
                 /// </summary>
                 public partial class {{BeforeSaveContextCsClassName}} {{(_aggregate.IsRoot() ? $": {I_ERROR_DATA_STRUCTURE} " : "")}}{
                 {{If(_aggregate.IsRoot(), () => $$"""
-                    public {{BeforeSaveContextCsClassName}}({{BatchUpdateContext.CLASS_NAME}} outerContext) {
+                    public {{BeforeSaveContextCsClassName}}({{SaveContext.CLASS_NAME}} outerContext) {
                         _outerContext = outerContext;
                     }
-                    private readonly {{BatchUpdateContext.CLASS_NAME}} _outerContext;
+                    private readonly {{SaveContext.CLASS_NAME}} _outerContext;
 
-                    /// <inheritdoc cref="{{BatchUpdateContext.CLASS_NAME}}.AddConfirm(string)"/>
+                    /// <inheritdoc cref="{{SaveContext.CLASS_NAME}}.AddConfirm(string)"/>
                     public void AddConfirm(string message) => _outerContext.AddConfirm(message);
-                    /// <inheritdoc cref="{{BatchUpdateContext.CLASS_NAME}}.HasConfirm()"/>
+                    /// <inheritdoc cref="{{SaveContext.CLASS_NAME}}.HasConfirm()"/>
                     public bool HasConfirm() => _outerContext.HasConfirm();
-                    /// <inheritdoc cref="{{BatchUpdateContext.CLASS_NAME}}.IgnoreConfirm"/>
+                    /// <inheritdoc cref="{{SaveContext.CLASS_NAME}}.IgnoreConfirm"/>
                     public bool IgnoreConfirm => _outerContext.IgnoreConfirm;
 
                     public bool HasError() {

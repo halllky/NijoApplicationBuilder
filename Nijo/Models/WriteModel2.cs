@@ -123,8 +123,8 @@ namespace Nijo.Models {
 
             context.CoreLibrary.UtilDir(utilDir => {
                 // データ型: 一括コミット コンテキスト引数
-                var batchUpdateContext = new BatchUpdateContext();
-                utilDir.Generate(batchUpdateContext.Render());
+                var saveContext = new SaveContext();
+                utilDir.Generate(saveContext.Render());
 
                 // エラーデータ用インターフェース
                 utilDir.Generate(DataClassForSave.RenderIErrorData());

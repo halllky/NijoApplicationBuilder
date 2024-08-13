@@ -9,11 +9,11 @@ namespace Nijo.Models.WriteModel2Features {
     /// <summary>
     /// 保存処理関連のコンテキスト引数
     /// </summary>
-    internal class BatchUpdateContext {
+    internal class SaveContext {
         /// <summary>
         /// 一括更新処理全体を通してのコンテキスト引数
         /// </summary>
-        internal const string CLASS_NAME = "BatchUpadteContext";
+        internal const string CLASS_NAME = "SaveContext";
 
         internal SourceFile Render() => new SourceFile {
             FileName = "SaveContext.cs",

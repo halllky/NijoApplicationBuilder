@@ -118,7 +118,7 @@ namespace Nijo.Models.ReadModel2Features {
                 public virtual IActionResult ExecuteImmediately([FromBody] ReadModelsBatchUpdateParameter parameter, [FromQuery] bool ignoreConfirm) {
                     using var tran = _applicationService.DbContext.Database.BeginTransaction();
                     try {
-                        var context = new {{BatchUpdateContext.CLASS_NAME}}(ignoreConfirm);
+                        var context = new {{SaveContext.CLASS_NAME}}(ignoreConfirm);
                         _applicationService.{{APPSRV_BATCH_UPDATE}}(parameter.{{HOOK_PARAM_ITEMS}}, context);
                 
                         if (context.HasError()) {
@@ -148,7 +148,7 @@ namespace Nijo.Models.ReadModel2Features {
                 /// </summary>
                 /// <param name="items">更新データ</param>
                 /// <param name="saveContext">コンテキスト引数。エラーや警告の送出はこのオブジェクトを通して行なってください。</param>
-                public virtual void {{APPSRV_BATCH_UPDATE}}(IEnumerable<{{DataClassForDisplay.BASE_CLASS_NAME}}> items, {{BatchUpdateContext.CLASS_NAME}} saveContext) {
+                public virtual void {{APPSRV_BATCH_UPDATE}}(IEnumerable<{{DataClassForDisplay.BASE_CLASS_NAME}}> items, {{SaveContext.CLASS_NAME}} saveContext) {
 
                     // 画面表示用データを登録更新用データに変換
                     var unknownItems = items.ToArray();
@@ -176,7 +176,7 @@ namespace Nijo.Models.ReadModel2Features {
                 /// <param name="itemIndex">更新データが一括更新処理のデータ中の何番目か</param>
                 /// <param name="saveContext">コンテキスト引数。エラーや警告の送出はこのオブジェクトを通して行なってください。</param>
                 /// <returns>登録更新用データ（複数返却可）</returns>
-                public virtual IEnumerable<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}> {{APPSRV_CONVERT_DISP_TO_SAVE}}({{new DataClassForDisplay(agg).CsClassName}} displayData, int itemIndex, {{BatchUpdateContext.CLASS_NAME}} saveContext) {
+                public virtual IEnumerable<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}> {{APPSRV_CONVERT_DISP_TO_SAVE}}({{new DataClassForDisplay(agg).CsClassName}} displayData, int itemIndex, {{SaveContext.CLASS_NAME}} saveContext) {
                 {{If(agg.Item.Options.GenerateDefaultReadModel, () => $$"""
                     {{WithIndent(RenderWriteModelDefaultConversion(agg), "    ")}}
                 """).Else(() => $$"""

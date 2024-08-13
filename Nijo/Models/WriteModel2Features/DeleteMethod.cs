@@ -40,7 +40,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// <summary>
                 /// 既存の{{_rootAggregate.Item.DisplayName}}を削除します。
                 /// </summary>
-                public virtual void {{MethodName}}({{argType}} after, {{BatchUpdateContext.CLASS_NAME}} saveContext) {
+                public virtual void {{MethodName}}({{argType}} after, {{SaveContext.CLASS_NAME}} saveContext) {
                     var beforeSaveContext = new {{dataClass.BeforeSaveContextCsClassName}}(saveContext);
                     var afterDbEntity = after.{{DataClassForSaveBase.VALUES_CS}}.{{DataClassForSave.TO_DBENTITY}}();
 
