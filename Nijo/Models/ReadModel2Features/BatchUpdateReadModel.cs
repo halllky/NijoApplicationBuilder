@@ -242,7 +242,13 @@ namespace Nijo.Models.ReadModel2Features {
                 string RenderMember(AggregateMember.AggregateMemberBase member) {
                     if (member is AggregateMember.ValueMember vm) {
                         return $$"""
-                            {{instance}}.{{vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp, since: instanceAggregate).Join(".")}}
+                            {{instance}}.{{vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp, since: instanceAggregate).Join("?.")}}
+                            """;
+
+                    } else if (member is AggregateMember.Ref @ref) {
+                        var refTargetKeys = new DataClassForRefTargetKeys(@ref.RefTo, @ref.RefTo);
+                        return $$"""
+                            {{refTargetKeys.RenderFromDisplayData(instance, instanceAggregate, false)}}
                             """;
 
                     } else if (member is AggregateMember.Children children) {
@@ -251,7 +257,7 @@ namespace Nijo.Models.ReadModel2Features {
                         var x = depth <= 1 ? "x" : $"x{depth}";
                         var child = new DataClassForSave(children.ChildrenAggregate, forSave.Type);
                         return $$"""
-                            {{instance}}.{{pathToArray.Join(".")}}.Select({{x}} => {{RenderValues(child, x, children.ChildrenAggregate, true)}}).ToList()
+                            {{instance}}.{{pathToArray.Join("?.")}}.Select({{x}} => {{RenderValues(child, x, children.ChildrenAggregate, true)}}).ToList() ?? []
                             """;
 
                     } else {

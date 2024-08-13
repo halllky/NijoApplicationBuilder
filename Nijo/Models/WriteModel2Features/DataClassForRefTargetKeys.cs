@@ -1,4 +1,5 @@
 using Nijo.Core;
+using Nijo.Models.ReadModel2Features;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -120,9 +121,24 @@ namespace Nijo.Models.WriteModel2Features {
         /// <summary>
         /// 画面表示用データクラスを登録更新用データクラスに変換します。
         /// </summary>
-        private string RenderFromDisplayData() {
+        internal string RenderFromDisplayData(string sourceInstance, GraphNode<Aggregate> sourceInstanceAgg, bool renderNewClassName) {
+            var @new = renderNewClassName
+                ? $"new {CsClassName}"
+                : $"new()";
+            var depth = _aggregate.PathFromEntry().Count();
+            var x = depth == 0 ? "x" : $"x{depth}";
+
             return $$"""
-                // TODO #35 DataClassForRefTargetKeys RenderFromDisplayData
+                {{@new}} {
+                {{GetOwnMembers().SelectTextTemplate(m => $$"""
+                    {{m.MemberName}} = {{sourceInstance}}.{{m.Member.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp, sourceInstanceAgg).Join("?.")}},
+                """)}}
+                {{GetChildMembers().SelectTextTemplate(m => m.IsArray ? $$"""
+                    {{m.MemberName}} = {{sourceInstance}}.{{m.MemberAggregate.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp, sourceInstanceAgg).Join("?.")}}.Select({{x}} => {{WithIndent(m.RenderFromDisplayData(x, m.MemberAggregate, true), "    ")}}).ToList() ?? [],
+                """ : $$"""
+                    {{m.MemberName}} = {{WithIndent(m.RenderFromDisplayData(sourceInstance, sourceInstanceAgg, false), "    ")}},
+                """)}}
+                }
                 """;
         }
 
@@ -144,26 +160,28 @@ namespace Nijo.Models.WriteModel2Features {
             }
 
             private readonly AggregateMember.RelationMember _relationMember;
+            internal GraphNode<Aggregate> MemberAggregate => _relationMember.MemberAggregate;
             internal string MemberName => _relationMember.MemberName;
+            internal bool IsArray => _relationMember is AggregateMember.Children;
         }
 
         private class KeyMember {
             internal KeyMember(AggregateMember.AggregateMemberBase member, GraphNode<Aggregate> refEntry) {
-                _member = member;
+                Member = member;
                 _refEntry = refEntry;
             }
-            private readonly AggregateMember.AggregateMemberBase _member;
+            internal AggregateMember.AggregateMemberBase Member { get; }
             private readonly GraphNode<Aggregate> _refEntry;
 
-            internal string MemberName => _member is AggregateMember.Parent
+            internal string MemberName => Member is AggregateMember.Parent
                 ? PARENT
-                : _member.MemberName;
-            internal string CsType => _member is AggregateMember.ValueMember vm
+                : Member.MemberName;
+            internal string CsType => Member is AggregateMember.ValueMember vm
                 ? vm.Options.MemberType.GetCSharpTypeName()
-                : new DescendantRefTargetKeys((AggregateMember.RelationMember)_member, _refEntry).CsClassName;
-            internal string TsType => _member is AggregateMember.ValueMember vm
+                : new DescendantRefTargetKeys((AggregateMember.RelationMember)Member, _refEntry).CsClassName;
+            internal string TsType => Member is AggregateMember.ValueMember vm
                 ? vm.Options.MemberType.GetTypeScriptTypeName()
-                : new DescendantRefTargetKeys((AggregateMember.RelationMember)_member, _refEntry).TsTypeName;
+                : new DescendantRefTargetKeys((AggregateMember.RelationMember)Member, _refEntry).TsTypeName;
         }
     }
 }
