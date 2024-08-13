@@ -212,8 +212,8 @@ namespace Nijo.Core {
             var pathFromSearchCondition = searchConditionObject == E_SearchConditionObject.SearchCondition
                 ? member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp)
                 : member.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.CSharp);
-            var nullableFullPathFrom = $"{searchCondition}.{pathFromSearchCondition.Join("?.")}.{FromTo.FROM}";
-            var nullableFullPathTo = $"{searchCondition}.{pathFromSearchCondition.Join("?.")}.{FromTo.TO}";
+            var nullableFullPathFrom = $"{searchCondition}.{pathFromSearchCondition.Join("?.")}?.{FromTo.FROM}";
+            var nullableFullPathTo = $"{searchCondition}.{pathFromSearchCondition.Join("?.")}?.{FromTo.TO}";
             var fullPathFrom = $"{searchCondition}.{pathFromSearchCondition.Join(".")}.{FromTo.FROM}";
             var fullPathTo = $"{searchCondition}.{pathFromSearchCondition.Join(".")}.{FromTo.TO}";
             var whereFullpath = searchQueryObject == E_SearchQueryObject.SearchResult
