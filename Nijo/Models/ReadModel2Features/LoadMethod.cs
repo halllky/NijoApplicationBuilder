@@ -1,4 +1,5 @@
 using Nijo.Core;
+using Nijo.Models.RefTo;
 using Nijo.Models.WriteModel2Features;
 using Nijo.Parts.Utility;
 using Nijo.Parts.WebServer;
@@ -151,17 +152,35 @@ namespace Nijo.Models.ReadModel2Features {
         private string RenderWriteModelDefaultQuerySource() {
             var dbEntity = new EFCoreEntity(_aggregate);
             var searchResult = new SearchResult(_aggregate);
-
             return $$"""
                 return DbContext.{{dbEntity.DbSetName}}.Select(e => {{RenderResultConverting(searchResult, "e", _aggregate, true)}});
                 """;
 
             static string RenderResultConverting(SearchResult searchResult, string instance, GraphNode<Aggregate> instanceAggregate, bool renderNewClassName) {
+                var newStatement = renderNewClassName
+                    ? $"new {searchResult.CsClassName}"
+                    : $"new()";
+                return $$"""
+                    {{newStatement}} {
+                    {{searchResult.GetOwnMembers().SelectTextTemplate(member => $$"""
+                        {{member.MemberName}} = {{WithIndent(RenderMember(member), "    ")}},
+                    """)}}
+                    {{If(searchResult.HasLifeCycle, () => $$"""
+                        {{SearchResult.VERSION}} = {{instance}}.{{EFCoreEntity.VERSION}}!.Value,
+                    """)}}
+                    }
+                    """;
 
                 string RenderMember(AggregateMember.AggregateMemberBase member) {
                     if (member is AggregateMember.ValueMember vm) {
                         return $$"""
                             {{instance}}.{{vm.Declared.GetFullPathAsSearchResult(since: instanceAggregate).Join(".")}}
+                            """;
+
+                    } else if (member is AggregateMember.Ref @ref) {
+                        var refSearchResult = new RefSearchResult(@ref.RefTo, @ref.RefTo);
+                        return $$"""
+                            {{refSearchResult.RenderConvertFromDbEntity(instance, instanceAggregate, false)}}
                             """;
 
                     } else if (member is AggregateMember.Children children) {
@@ -180,20 +199,6 @@ namespace Nijo.Models.ReadModel2Features {
                             """;
                     }
                 }
-
-                var newStatement = renderNewClassName
-                    ? $"new {searchResult.CsClassName}"
-                    : $"new()";
-                return $$"""
-                    {{newStatement}} {
-                    {{searchResult.GetOwnMembers().SelectTextTemplate(member => $$"""
-                        {{member.MemberName}} = {{WithIndent(RenderMember(member), "    ")}},
-                    """)}}
-                    {{If(searchResult.HasLifeCycle, () => $$"""
-                        {{SearchResult.VERSION}} = {{instance}}.{{EFCoreEntity.VERSION}}!.Value,
-                    """)}}
-                    }
-                    """;
             }
         }
 

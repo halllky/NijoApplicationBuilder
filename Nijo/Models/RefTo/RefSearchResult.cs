@@ -86,14 +86,16 @@ namespace Nijo.Models.RefTo {
         }
 
         /// <summary>
-        /// WriteModelのDBエンティティから参照先検索結果への変換処理をレンダリングします。
+        /// DBエンティティから参照先検索結果への変換処理をレンダリングします。
         /// </summary>
-        /// <param name="instance">DBエンティティのインスタンス名</param>
-        internal string RenderConvertFromWriteModelDbEntity(string instance) {
+        /// <param name="dbEntityInstance">DBエンティティのインスタンス名</param>
+        /// <param name="dbEntityAggregate">DBエンティティのインスタンスの型</param>
+        /// <param name="renderNewClassName">new演算子のあとにクラス名をレンダリングするかどうか</param>
+        internal string RenderConvertFromDbEntity(string dbEntityInstance, GraphNode<Aggregate> dbEntityAggregate, bool renderNewClassName) {
 
-            return RenderRecursively(_aggregate, _aggregate, instance, true);
+            return RenderRecursively(_aggregate, dbEntityInstance, dbEntityAggregate, renderNewClassName);
 
-            string RenderRecursively(GraphNode<Aggregate> renderingAggregate, GraphNode<Aggregate> dbEntityAggregate, string dbEntityInstance, bool renderNewStatement) {
+            string RenderRecursively(GraphNode<Aggregate> renderingAggregate, string dbEntityInstance, GraphNode<Aggregate> dbEntityAggregate, bool renderNewStatement) {
                 var dbEntityMembers = new EFCoreEntity(renderingAggregate)
                     .GetTableColumnMembers()
                     .Select(vm => vm.Declared)
@@ -153,11 +155,11 @@ namespace Nijo.Models.RefTo {
                         var depth = children.Owner.PathFromEntry().Count();
                         var x = depth == 0 ? "x" : $"x{depth}";
                         return $$"""
-                            {{dbEntityInstance}}.{{children.GetFullPathAsDbEntity(dbEntityAggregate).Join(".")}}.Select({{x}} => {{RenderRecursively(children.ChildrenAggregate, children.ChildrenAggregate, x, true)}}).ToList()
+                            {{dbEntityInstance}}.{{children.GetFullPathAsDbEntity(dbEntityAggregate).Join(".")}}.Select({{x}} => {{RenderRecursively(children.ChildrenAggregate, x, children.ChildrenAggregate, true)}}).ToList()
                             """;
 
                     } else if (member is AggregateMember.RelationMember rm) {
-                        return RenderRecursively(rm.MemberAggregate, dbEntityAggregate, dbEntityInstance, false);
+                        return RenderRecursively(rm.MemberAggregate, dbEntityInstance, dbEntityAggregate, false);
 
                     } else {
                         throw new NotImplementedException();
