@@ -52,6 +52,8 @@ namespace Nijo.Models.ReadModel2Features {
 
             foreach (var member in _dataClass.GetOwnMembers()) {
                 if (member is AggregateMember.ValueMember vm) {
+                    if (vm.Options.InvisibleInGui) continue; // 非表示項目
+
                     formBuilder.AddItem(
                         vm.Options.MemberType is Core.AggregateMemberTypes.Sentence,
                         member.MemberName,
