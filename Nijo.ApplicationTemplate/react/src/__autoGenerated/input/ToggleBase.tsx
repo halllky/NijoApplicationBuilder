@@ -39,7 +39,7 @@ export const ToggleBase = defineCustomComponent<boolean>((props, ref) => {
   }, [emitChange])
 
   // コンポーネントの描画後にbooleanかundefinedかが切り替わってはいけないのでundefinedはfalseに読み替える
-  const boundValue = valueEx === undefined ? false : valueEx
+  const boundValue = valueEx ?? false
 
   return (
     <label className="relative inline-flex justify-center items-center focus-within:outline outline-1">
