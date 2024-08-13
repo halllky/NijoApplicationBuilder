@@ -39,14 +39,16 @@ namespace Nijo.Models.ReadModel2Features {
                         /// 画面上で削除が指示されてから、保存処理の実行でその削除が確定するまでの間、trueになる。
                         /// </summary>
                         bool {{WILL_BE_DELETED_CS}} { get; }
+                    }
 
+                    public static class ISaveCommandConvertibleExtensions {
                         /// <summary>
                         /// このオブジェクトの状態から、保存時に追加・更新・削除のうちどの処理が実行されるべきかを表す区分を返します。
                         /// </summary>
-                        public {{ADD_MOD_DEL_ENUM_CS}} {{GET_SAVE_TYPE}}() {
-                            if ({{WILL_BE_DELETED_CS}}) return {{ADD_MOD_DEL_ENUM_CS}}.DEL;
-                            if (!{{EXISTS_IN_DB_CS}}) return {{ADD_MOD_DEL_ENUM_CS}}.ADD;
-                            if ({{WILL_BE_CHANGED_CS}}) return {{ADD_MOD_DEL_ENUM_CS}}.MOD;
+                        public static {{ADD_MOD_DEL_ENUM_CS}} {{GET_SAVE_TYPE}}<T>(this T obj) where T : {{INTERFACE_NAME}} {
+                            if (obj.{{WILL_BE_DELETED_CS}}) return {{ADD_MOD_DEL_ENUM_CS}}.DEL;
+                            if (!obj.{{EXISTS_IN_DB_CS}}) return {{ADD_MOD_DEL_ENUM_CS}}.ADD;
+                            if (obj.{{WILL_BE_CHANGED_CS}}) return {{ADD_MOD_DEL_ENUM_CS}}.MOD;
                             return {{ADD_MOD_DEL_ENUM_CS}}.NONE;
                         }
                     }

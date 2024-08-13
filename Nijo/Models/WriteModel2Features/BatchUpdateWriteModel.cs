@@ -60,6 +60,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /** 一括更新処理を使用します。 */
                 export const useBatchUpdate = () => {
                   const [, dispatchMsg] = Util.useMsgContext()
+                  const [, dispatchToast] = Util.useToastContext()
                   const { post } = Util.useHttpRequest()
 
                   /** 一括更新を即時実行します。更新するデータの量によっては長い待ち時間が発生する可能性があります。 */
@@ -69,8 +70,9 @@ namespace Nijo.Models.WriteModel2Features {
                       dispatchMsg(msg => msg.error('一括更新に失敗しました。'))
                       return false
                     }
+                    dispatchToast(msg => msg.info('保存しました。'))
                     return true
-                  }, [post, dispatchMsg])
+                  }, [post, dispatchMsg, dispatchToast])
 
                 {{_additionalHooks.Values.SelectTextTemplate(code => $$"""
                   {{WithIndent(code, "  ")}}

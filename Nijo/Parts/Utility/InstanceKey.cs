@@ -93,5 +93,27 @@ namespace Nijo.Parts.Utility {
                     """;
             },
         };
+
+        internal static UtilityClass.CustomJsonConverter GetCustomJsonConverter() => new UtilityClass.CustomJsonConverter {
+            ConverterClassName = "InstanceKeyJsonConverter",
+            ConverterClassDeclaring = $$"""
+                class InstanceKeyJsonConverter : JsonConverter<{{CS_CLASS_NAME}}> {
+                    public override {{CS_CLASS_NAME}}? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
+                        var stringValue = reader.GetString();
+                        return string.IsNullOrWhiteSpace(stringValue)
+                            ? null
+                            : {{CS_CLASS_NAME}}.{{RESTORE}}(stringValue);
+                    }
+                    public override void Write(Utf8JsonWriter writer, {{CS_CLASS_NAME}}? value, JsonSerializerOptions options) {
+                        if (value == null) {
+                            writer.WriteNullValue();
+                        } else {
+                            writer.WriteStringValue(value.ToString());
+                        }
+                    }
+                }
+
+                """,
+        };
     }
 }

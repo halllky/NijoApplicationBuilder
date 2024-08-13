@@ -146,12 +146,15 @@ namespace Nijo.Models.ReadModel2Features {
                       const { search } = useLocation()
                       useEffect(() => {
                         try {
-                          // クエリパラメータで画面初期値が指定されている場合はそれを初期表示する
                           const queryParameter = new URLSearchParams(search)
                           const initValueJson = queryParameter.get('{{NEW_MODE_INITVALUE}}')
                           if (initValueJson != null) {
+                            // クエリパラメータで画面初期値が指定されている場合はそれを初期表示する
                             const initValueObject: AggregateType.{{dataClass.TsTypeName}} = JSON.parse(initValueJson)
                             reset(initValueObject)
+                          } else {
+                            // 通常の初期値
+                            reset(AggregateType.{{dataClass.TsNewObjectFunction}}())
                           }
                         } catch {
                           dispatchMsg(msg => msg.warn('画面初期表示に失敗しました。'))

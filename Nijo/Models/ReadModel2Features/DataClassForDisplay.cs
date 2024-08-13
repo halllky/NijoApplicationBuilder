@@ -190,7 +190,7 @@ namespace Nijo.Models.ReadModel2Features {
                 {{If(HasLifeCycle, () => $$"""
                     /// <summary>このデータがDBに保存済みかどうか</summary>
                     [JsonPropertyName("{{EXISTS_IN_DB_TS}}")]
-                    public virtual required bool {{EXISTS_IN_DB_CS}} { get; set; }
+                    public virtual bool {{EXISTS_IN_DB_CS}} { get; set; }
                     /// <summary>このデータに更新がかかっているかどうか</summary>
                     [JsonPropertyName("{{WILL_BE_CHANGED_TS}}")]
                     public virtual bool {{WILL_BE_CHANGED_CS}} { get; set; }
@@ -199,7 +199,7 @@ namespace Nijo.Models.ReadModel2Features {
                     public virtual bool {{WILL_BE_DELETED_CS}} { get; set; }
                     /// <summary>楽観排他制御用のバージョニング情報</summary>
                     [JsonPropertyName("{{VERSION_TS}}")]
-                    public virtual required int? {{VERSION_CS}} { get; set; }
+                    public virtual int? {{VERSION_CS}} { get; set; }
                 """)}}
                     /// <summary>メッセージ</summary>
                     [JsonPropertyName("{{MESSAGES_TS}}")]
@@ -207,15 +207,6 @@ namespace Nijo.Models.ReadModel2Features {
                     /// <summary>どの項目が読み取り専用か</summary>
                     [JsonPropertyName("{{READONLY_TS}}")]
                     public virtual {{ReadOnlyDataCsClassName}} {{READONLY_CS}} { get; set; } = new();
-                {{If(HasLifeCycle, () => $$"""
-
-                    /// <summary>
-                    /// このオブジェクトの状態から、保存時に追加・更新・削除のうちどの処理が実行されるべきかを表す区分を返します。
-                    /// </summary>
-                    public {{DataClassForSaveBase.ADD_MOD_DEL_ENUM_CS}} {{GET_SAVE_TYPE}}() {
-                        return (({{ISaveCommandConvertible.INTERFACE_NAME}})this).{{ISaveCommandConvertible.GET_SAVE_TYPE}}();
-                    }
-                """)}}
                 }
                 {{RenderCsValueClass(context)}}
                 {{RenderCsMessageClass(context)}}
