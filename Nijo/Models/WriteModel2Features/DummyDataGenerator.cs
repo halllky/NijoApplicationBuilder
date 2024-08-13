@@ -130,7 +130,7 @@ namespace Nijo.Models.WriteModel2Features {
                     var res = $"response{random.Next(99999999):00000000}";
                     return $$"""
                         const {{res}} = await get<AggregateType.{{apiReturnType.TsTypeName}}[]>(`{{api}}`, {})
-                        {{instance}}.{{path.Join(".")}} = {{res}}.ok ? {{res}}.data[{{index}}].{{RefTo.RefDisplayData.INSTANCE_KEY_TS}} : undefined
+                        {{instance}}.{{path.Join(".")}} = {{res}}.ok ? {{res}}.data[{{index}}] : undefined
                         """;
 
                 } else if (member is AggregateMember.Child

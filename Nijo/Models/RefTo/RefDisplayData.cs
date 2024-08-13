@@ -136,7 +136,7 @@ namespace Nijo.Models.RefTo {
 
                 """)}}
                 {{rt.GetOwnMembers().SelectTextTemplate(m => $$"""
-                  {{GetMemberName(m)}}?: {{GetTypeScriptMemberType(m)}}
+                  {{GetMemberName(m)}}: {{GetTypeScriptMemberType(m)}} | undefined
                 """)}}
                 }
                 """);
