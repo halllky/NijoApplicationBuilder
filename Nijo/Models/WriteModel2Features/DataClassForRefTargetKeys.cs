@@ -142,15 +142,6 @@ namespace Nijo.Models.WriteModel2Features {
                 """;
         }
 
-        /// <summary>
-        /// 登録更新用データクラスの値をEFCoreEntityにマッピングします。
-        /// </summary>
-        private string ToDbEntity() {
-            return $$"""
-                // TODO #35 DataClassForRefTargetKeys ToDbEntity
-                """;
-        }
-
 
         internal const string PARENT = "PARENT";
 

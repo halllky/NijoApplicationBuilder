@@ -39,10 +39,15 @@ namespace Nijo.Models.ReadModel2Features {
         internal const string MESSAGES_CS = "Messages";
         /// <summary>メッセージ情報が格納されるプロパティの名前（TypeScript）</summary>
         internal const string MESSAGES_TS = "messages";
-        /// <summary>メンバーでなくオブジェクト自身へのメッセージ（TypeScript）</summary>
+        /// <summary>
+        /// メンバーでなくオブジェクト自身へのメッセージ（TypeScript）。
+        /// JsonNodeを直に組み立てるため、これと対応するC#の定数は無い。
+        /// </summary>
         internal const string OWN_MESSAGES_TS = "ownMessages";
-        /// <summary>メッセージ用構造体 C#クラス名</summary>
-        internal string MessageDataCsClassName => $"{CsClassName}Messages";
+        /// <summary>エラーメッセージ用構造体 C#クラス名</summary>
+        internal string MessageDataCsClassName => $"{CsClassName}ErrorMessages";
+        /// <summary>エラーメッセージ用構造体 TypeScript型名</summary>
+        internal string MessageDataTsTypeName => $"{CsClassName}ErrorMessages";
 
         /// <summary>読み取り専用か否かが格納されるプロパティの名前（C#）</summary>
         internal const string READONLY_CS = "ReadOnly";
@@ -248,10 +253,12 @@ namespace Nijo.Models.ReadModel2Features {
                   {{VERSION_TS}}: number | undefined
                 """)}}
                   /** メッセージ */
-                  {{MESSAGES_TS}}?: {{WithIndent(RenderMessageTs(context), "  ")}}
+                  {{MESSAGES_TS}}?: {{WithIndent(MessageDataTsTypeName, "  ")}}
                   /** どの項目が読み取り専用か */
                   {{READONLY_TS}}?: {{WithIndent(RenderReadonlyTsType(context), "  ")}}
                 }
+
+                {{RenderMessageTs(context)}}
                 """;
         }
 
@@ -286,13 +293,17 @@ namespace Nijo.Models.ReadModel2Features {
         private string RenderCsMessageClass(CodeRenderingContext context) {
             var members = GetOwnMembers().Select(m => new {
                 m.MemberName,
-                TypeName = ErrorReceiver.RECEIVER,
+                CsTypeName = ErrorReceiver.RECEIVER,
+                m.Order,
             }).Concat(GetChildMembers().Select(desc => new {
                 desc.MemberName,
-                TypeName = desc.MemberInfo is AggregateMember.Children children
+                CsTypeName = desc.MemberInfo is AggregateMember.Children children
                     ? $"{ErrorReceiver.RECEIVER_LIST}<{desc.MessageDataCsClassName}>"
                     : desc.MessageDataCsClassName,
-            })).ToArray();
+                desc.MemberInfo.Order,
+            }))
+            .OrderBy(m => m.Order)
+            .ToArray();
 
             return $$"""
                 /// <summary>
@@ -301,7 +312,7 @@ namespace Nijo.Models.ReadModel2Features {
                 public partial class {{MessageDataCsClassName}} : {{ErrorReceiver.RECEIVER}} {
                 {{members.SelectTextTemplate(m => $$"""
                     /// <summary>{{m.MemberName}}についてのメッセージ</summary>
-                    public virtual {{m.TypeName}} {{m.MemberName}} { get; } = new();
+                    public virtual {{m.CsTypeName}} {{m.MemberName}} { get; } = new();
                 """)}}
 
                 {{If(members.Length > 0, () => $$"""
@@ -311,17 +322,42 @@ namespace Nijo.Models.ReadModel2Features {
                 """)}}
                     }
                 """)}}
+
+                    public override JsonNode? ToJsonNode() {
+                        if (HasError()) {
+                            return new JsonObject {
+                                ["{{OWN_MESSAGES_TS}}"] = base.ToJsonNode(),
+                {{members.SelectTextTemplate(m => $$"""
+                                [nameof({{m.MemberName}})] = {{m.MemberName}}.ToJsonNode(),
+                """)}}
+                            };
+                        } else {
+                            return null;
+                        }
+                    }
                 }
                 """;
         }
         private string RenderMessageTs(CodeRenderingContext context) {
+            var members = GetOwnMembers().Select(m => new {
+                m.MemberName,
+                TsTypeName = ErrorReceiver.TS_TYPE_NAME,
+                m.Order,
+            }).Concat(GetChildMembers().Select(desc => new {
+                desc.MemberName,
+                TsTypeName = desc.MemberInfo is AggregateMember.Children children
+                    ? $"{{ {ErrorReceiver.RECEIVER_LIST_OWN_ERRORS}: {ErrorReceiver.TS_TYPE_NAME}, {ErrorReceiver.RECEIVER_LIST_ITEM_ERRORS}: {desc.MessageDataTsTypeName}[] }}"
+                    : desc.MessageDataTsTypeName,
+                desc.MemberInfo.Order,
+            }))
+            .OrderBy(m => m.Order)
+            .ToArray();
+
             return $$"""
-                {
-                  /** {{Aggregate.Item.DisplayName}}自身についてのメッセージ */
+                export type {{MessageDataTsTypeName}} = {
                   {{OWN_MESSAGES_TS}}?: {{ErrorReceiver.TS_TYPE_NAME}}
-                {{GetOwnMembers().SelectTextTemplate(member => $$"""
-                  /** {{member.MemberName}}についてのメッセージ */
-                  {{member.MemberName}}?: {{ErrorReceiver.TS_TYPE_NAME}}
+                {{members.SelectTextTemplate(m => $$"""
+                  {{m.MemberName}}?: {{m.TsTypeName}}
                 """)}}
                 }
                 """;

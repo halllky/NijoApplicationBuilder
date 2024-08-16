@@ -179,6 +179,7 @@ namespace Nijo.Models.ReadModel2Features {
                                 .Select(saveContextState.{{SaveContext.GET_ERR_MSG_CONTAINER}})
                                 .ToArray();
 
+                            saveContextState.RegisterErrorData(i, readModelErrorMessageContainer);
                             converted.AddRange(writeModels);
                             continue;
                         }
@@ -189,7 +190,7 @@ namespace Nijo.Models.ReadModel2Features {
                     }
 
                     // ----------- 一括更新実行 -----------
-                    {{BatchUpdateWriteModel.APPSRV_METHOD}}(converted, saveContextState);
+                    {{BatchUpdateWriteModel.APPSRV_METHOD_PROTECTED}}(converted, saveContextState);
 
                     // ----------- エラーメッセージの転送 -----------
                     // 転送元先プロパティの設定

@@ -209,10 +209,6 @@ namespace Nijo.Models.WriteModel2Features {
         /// <summary>
         /// データクラスのメンバーではなくデータクラス自身につくエラー
         /// </summary>
-        private const string OWN_ERRORS_CS = "_OwnErrors";
-        /// <summary>
-        /// データクラスのメンバーではなくデータクラス自身につくエラー
-        /// </summary>
         private const string OWN_ERRORS_TS = "_ownErrors";
 
         /// <summary>
@@ -247,6 +243,19 @@ namespace Nijo.Models.WriteModel2Features {
                 """)}}
                     }
                 """)}}
+
+                    public override JsonNode? ToJsonNode() {
+                        if (HasError()) {
+                            return new JsonObject {
+                                ["{{OWN_ERRORS_TS}}"] = base.ToJsonNode(),
+                {{members.SelectTextTemplate(m => $$"""
+                                [nameof({{m.MemberName}})] = {{m.MemberName}}.ToJsonNode(),
+                """)}}
+                            };
+                        } else {
+                            return null;
+                        }
+                    }
                 }
                 """;
         }
@@ -257,11 +266,11 @@ namespace Nijo.Models.WriteModel2Features {
             var members = new List<string>();
             foreach (var m in GetOwnMembers()) {
                 if (m is AggregateMember.ValueMember || m is AggregateMember.Ref) {
-                    members.Add($"{m.MemberName}?: string[]");
+                    members.Add($"{m.MemberName}?: {ErrorReceiver.TS_TYPE_NAME}");
 
                 } else if (m is AggregateMember.Children children) {
                     var descendant = new DataClassForSave(children.ChildrenAggregate, Type);
-                    members.Add($"{m.MemberName}?: {descendant.ErrorDataTsTypeName}[]");
+                    members.Add($"{m.MemberName}?: {{ {ErrorReceiver.RECEIVER_LIST_OWN_ERRORS}: {ErrorReceiver.TS_TYPE_NAME}, {ErrorReceiver.RECEIVER_LIST_ITEM_ERRORS}: {descendant.ErrorDataTsTypeName}[] }}");
 
                 } else if (m is AggregateMember.RelationMember rel) {
                     var descendant = new DataClassForSave(rel.MemberAggregate, Type);
@@ -271,7 +280,7 @@ namespace Nijo.Models.WriteModel2Features {
             return $$"""
                 /** {{_aggregate.Item.DisplayName}}のエラーメッセージ格納用の型 */
                 export type {{ErrorDataTsTypeName}} = {
-                  {{OWN_ERRORS_TS}}?: string[]
+                  {{OWN_ERRORS_TS}}?: {{ErrorReceiver.TS_TYPE_NAME}}
                   {{WithIndent(members, "  ")}}
                 }
                 """;

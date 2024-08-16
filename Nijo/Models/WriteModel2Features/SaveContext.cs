@@ -60,6 +60,8 @@ namespace Nijo.Models.WriteModel2Features {
                 });
 
                 return $$"""
+                    using System.Text.Json.Nodes;
+
                     namespace {{context.Config.RootNamespace}};
 
                     /// <summary>
@@ -93,7 +95,12 @@ namespace Nijo.Models.WriteModel2Features {
                             return _errors.Values.Any(e => e.HasError());
                         }
                         public string GetErrorDataJson() {
-                            throw new NotImplementedException("TODO #35");
+                            var array = new JsonArray();
+                            foreach (var kv in _errors.OrderBy(kv => kv.Key)) {
+                                var node = kv.Value.ToJsonNode();
+                                array.Add(node);
+                            }
+                            return array.ToJsonString();
                         }
                         #endregion エラー
 

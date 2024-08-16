@@ -42,7 +42,8 @@ namespace Nijo.Models.WriteModel2Features {
         internal const string CONTROLLER_SUBDOMAIN = "batch-update";
         private const string CONTROLLER_ACTION_IMMEDIATELY = "immediately";
 
-        internal const string APPSRV_METHOD = "ExecuteBatchUpdate";
+        internal const string APPSRV_METHOD = "ExecuteBatchUpdateWriteModels";
+        internal const string APPSRV_METHOD_PROTECTED = "ExecuteBatchUpdate";
 
         int ISummarizedFile.RenderingOrder => 100; // BatchUpdateDisplayDataでマイナス1したときに既定値である0を下回るのがなんとなく不安だったので
         void ISummarizedFile.OnEndGenerating(CodeRenderingContext context) {
@@ -180,11 +181,26 @@ namespace Nijo.Models.WriteModel2Features {
 
                 """)}}
                 /// <summary>
+                /// WriteModelを一括更新します。
+                /// </summary>
+                /// <param name="items">更新データ</param>
+                /// <param name="saveContext">コンテキスト引数。エラーや警告の送出はこのオブジェクトを通して行なってください。</param>
+                public virtual void {{APPSRV_METHOD}}(IReadOnlyList<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}> items, {{SaveContext.STATE_CLASS_NAME}} saveContextState) {
+                    // エラーメッセージの入れ物のオブジェクトを用意する
+                    for (var i = 0; i < items.Count; i++) {
+                        var errorContainer = saveContextState.{{SaveContext.GET_ERR_MSG_CONTAINER}}(items[i]);
+                        saveContextState.RegisterErrorData(i, errorContainer);
+                    }
+
+                    {{APPSRV_METHOD_PROTECTED}}(items, saveContextState);
+                }
+
+                /// <summary>
                 /// データ一括更新を実行します。
                 /// </summary>
                 /// <param name="items">更新データ</param>
                 /// <param name="saveContext">コンテキスト引数。エラーや警告の送出はこのオブジェクトを通して行なってください。</param>
-                public virtual void {{APPSRV_METHOD}}(IEnumerable<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}> items, {{SaveContext.STATE_CLASS_NAME}} saveContextState) {
+                protected virtual void {{APPSRV_METHOD_PROTECTED}}(IEnumerable<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}> items, {{SaveContext.STATE_CLASS_NAME}} saveContextState) {
 
                     // パラメータの各要素の型を仕分けてそれぞれの配列に格納する
                 {{sortedAggregates.SelectTextTemplate(agg => $$"""

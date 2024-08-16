@@ -14,20 +14,19 @@ namespace Nijo.Parts.WebServer {
     /// </summary>
     internal class ErrorReceiver {
         internal const string RECEIVER = "ErrorReceiver";
-        internal const string RECEIVER_LIST = "ErrorReceiverList";
-        internal const string ERROR_MESSAGE_MAPPER = "ErrorMessageMapper";
-
         internal const string FORWARD_TO = "ForwardTo";
         internal const string EXEC_TRANSFER_MESSAGE = "ExecuteTransferMessages";
+        internal const string TS_TYPE_NAME = "string[]";
 
-        internal const string TS_TYPE_NAME = "{ type: 'error' | 'info', text: string }[]";
+        internal const string RECEIVER_LIST = "ErrorReceiverList";
+        internal const string RECEIVER_LIST_OWN_ERRORS = "ownErrors";
+        internal const string RECEIVER_LIST_ITEM_ERRORS = "itemErrors";
+
+        internal const string ERROR_MESSAGE_MAPPER = "ErrorMessageMapper";
 
         internal static SourceFile RenderCSharp() => new SourceFile {
             FileName = "ErrorReceiver.cs",
             RenderContent = context => {
-
-                // TODO: メッセージが空ならJSON化しないようにする
-
                 return $$"""
                     using System.Collections;
                     using System.Text.Json;
@@ -61,7 +60,7 @@ namespace Nijo.Parts.WebServer {
                         /// JSON要素はクライアント側の画面でハンドリングされるエラーデータと同じ構造を持つ必要があります。
                         /// エラーメッセージが無い場合はnullを返します。
                         /// </summary>
-                        public JsonArray? ToJsonElement() {
+                        public virtual JsonNode? ToJsonNode() {
                             if (_errorMessages.Count == 0) {
                                 return null;
                             } else {
@@ -154,6 +153,17 @@ namespace Nijo.Parts.WebServer {
                         protected override IEnumerable<{{RECEIVER}}> EnumerateChildren() {
                             foreach (var item in this) {
                                 if (item != null) yield return item;
+                            }
+                        }
+
+                        public override JsonNode? ToJsonNode() {
+                            if (HasError()) {
+                                return new JsonObject {
+                                    ["{{RECEIVER_LIST_OWN_ERRORS}}"] = base.ToJsonNode(),
+                                    ["{{RECEIVER_LIST_ITEM_ERRORS}}"] = new JsonArray(this.Select(item => item?.ToJsonNode()).ToArray()),
+                                };
+                            } else {
+                                return null;
                             }
                         }
                     }
