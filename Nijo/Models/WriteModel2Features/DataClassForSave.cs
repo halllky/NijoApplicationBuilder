@@ -1,4 +1,5 @@
 using Nijo.Core;
+using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -191,11 +192,13 @@ namespace Nijo.Models.WriteModel2Features {
         #endregion 値
 
 
-        #region 更新前イベント
+        #region 更新前イベント（エラーデータ構造体）
         /// <summary>
-        /// 更新前イベント引数 C#クラス名
+        /// エラーメッセージ用構造体 C#型名
         /// </summary>
-        internal string BeforeSaveContextCsClassName => $"{_aggregate.Item.PhysicalName}BeforeSaveEventArgs";
+        internal string ErrorDataCsClassName => Type == E_Type.Create
+            ? $"{_aggregate.Item.PhysicalName}CreateCommandErrorData"
+            : $"{_aggregate.Item.PhysicalName}SaveCommandErrorData";
         /// <summary>
         /// エラーメッセージ用構造体 TypeScript型名
         /// </summary>
@@ -206,70 +209,44 @@ namespace Nijo.Models.WriteModel2Features {
         /// <summary>
         /// データクラスのメンバーではなくデータクラス自身につくエラー
         /// </summary>
-        internal const string OWN_ERRORS_CS = "_OwnErrors";
+        private const string OWN_ERRORS_CS = "_OwnErrors";
         /// <summary>
         /// データクラスのメンバーではなくデータクラス自身につくエラー
         /// </summary>
-        internal const string OWN_ERRORS_TS = "_ownErrors";
+        private const string OWN_ERRORS_TS = "_ownErrors";
 
         /// <summary>
-        /// 更新前イベント引数を定義します（C#）
+        /// エラーデータ構造体を定義します（C#）
         /// </summary>
-        internal string RenderCSharpBeforeSaveEventArgs(CodeRenderingContext context) {
-            var members = new List<string>();
-            foreach (var m in GetOwnMembers()) {
+        internal string RenderCSharpErrorStructure(CodeRenderingContext context) {
+            var members = GetOwnMembers().Select(m => {
                 if (m is AggregateMember.ValueMember || m is AggregateMember.Ref) {
-                    members.Add($"public List<string> {m.MemberName} {{ get; }} = new();");
-
+                    return new { m.MemberName, Type = ErrorReceiver.RECEIVER };
                 } else if (m is AggregateMember.Children children) {
                     var descendant = new DataClassForSave(children.ChildrenAggregate, Type);
-                    members.Add($"public IReadOnlyList<{descendant.BeforeSaveContextCsClassName}> {m.MemberName} {{ get; }} = [];");
-
-                } else if (m is AggregateMember.RelationMember rel) {
-                    var descendant = new DataClassForSave(rel.MemberAggregate, Type);
-                    members.Add($"public {descendant.BeforeSaveContextCsClassName} {m.MemberName} {{ get; }} = new();");
+                    return new { m.MemberName, Type = $"{ErrorReceiver.RECEIVER_LIST}<{descendant.ErrorDataCsClassName}>" };
+                } else {
+                    var descendant = new DataClassForSave(((AggregateMember.RelationMember)m).MemberAggregate, Type);
+                    return new { m.MemberName, Type = descendant.ErrorDataCsClassName };
                 }
-            }
+            }).ToArray();
+
             return $$"""
                 /// <summary>
-                /// {{_aggregate.Item.DisplayName}}の更新前イベント
+                /// {{_aggregate.Item.DisplayName}}のエラーデータ
                 /// </summary>
-                public partial class {{BeforeSaveContextCsClassName}} {{(_aggregate.IsRoot() ? $": {I_ERROR_DATA_STRUCTURE} " : "")}}{
-                {{If(_aggregate.IsRoot(), () => $$"""
-                    public {{BeforeSaveContextCsClassName}}({{SaveContext.CLASS_NAME}} outerContext) {
-                        _outerContext = outerContext;
-                    }
-                    private readonly {{SaveContext.CLASS_NAME}} _outerContext;
-
-                    /// <inheritdoc cref="{{SaveContext.CLASS_NAME}}.AddConfirm(string)"/>
-                    public void AddConfirm(string message) => _outerContext.AddConfirm(message);
-                    /// <inheritdoc cref="{{SaveContext.CLASS_NAME}}.HasConfirm()"/>
-                    public bool HasConfirm() => _outerContext.HasConfirm();
-                    /// <inheritdoc cref="{{SaveContext.CLASS_NAME}}.IgnoreConfirm"/>
-                    public bool IgnoreConfirm => _outerContext.IgnoreConfirm;
-
-                    public bool HasError() {
-                        // TODO #35 HasError実装
-                        return false;
-                    }
+                public partial class {{ErrorDataCsClassName}} : {{ErrorReceiver.RECEIVER}} {
+                {{members.SelectTextTemplate(m => $$"""
+                    public {{m.Type}} {{m.MemberName}} { get; } = new();
                 """)}}
 
-                    [JsonPropertyName("{{OWN_ERRORS_TS}}")]
-                    private List<string> {{OWN_ERRORS_CS}} { get; } = new();
-
-                    /// <summary>
-                    /// {{_aggregate.Item.DisplayName}}に対するエラーメッセージを追加します。
-                    /// </summary>
-                    public void AddError(string message) {
-                        {{OWN_ERRORS_CS}}.Add(message);
+                {{If(members.Length > 0, () => $$"""
+                    protected override IEnumerable<{{ErrorReceiver.RECEIVER}}> EnumerateChildren() {
+                {{members.SelectTextTemplate(m => $$"""
+                        yield return {{m.MemberName}};
+                """)}}
                     }
-                    /// <summary>
-                    /// {{_aggregate.Item.DisplayName}}に対して発生した例外を追加します。
-                    /// </summary>
-                    public void AddError(Exception ex) {
-                        {{OWN_ERRORS_CS}}.Add(ex.ToString());
-                    }
-                    {{WithIndent(members, "    ")}}
+                """)}}
                 }
                 """;
         }
@@ -299,30 +276,7 @@ namespace Nijo.Models.WriteModel2Features {
                 }
                 """;
         }
-        
-        /// <summary>
-        /// エラーデータ用のインターフェースをレンダリングします。
-        /// </summary>
-        internal static SourceFile RenderIErrorData() => new SourceFile {
-            FileName = "IErrorDataStructure.cs",
-            RenderContent = ctx => {
-                return $$"""
-                    namespace {{ctx.Config.RootNamespace}};
-
-                    /// <summary>
-                    /// エラーデータ構造体
-                    /// </summary>
-                    public interface {{I_ERROR_DATA_STRUCTURE}} {
-                        /// <summary>
-                        /// エラーがあるかどうかを返します。
-                        /// </summary>
-                        bool HasError();
-                    }
-                    """;
-            },
-        };
-        internal const string I_ERROR_DATA_STRUCTURE = "IErrorDataStructure";
-        #endregion 更新前イベント
+        #endregion 更新前イベント（エラーデータ構造体）
 
 
         #region 更新後イベント

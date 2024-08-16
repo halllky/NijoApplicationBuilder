@@ -40,7 +40,7 @@ namespace Nijo.Features.Storing {
                         return $$"""
                             namespace {{ctx.Config.RootNamespace}} {
 
-                                #region 更新前イベント引数
+                                #region 更新前イベント引数 ※削除予定
                                 public interface IBeforeSaveEventArg {
                                     /// <summary>
                                     /// 更新処理を実行してもよいかどうかをユーザーに問いかけるメッセージを追加します。
@@ -76,9 +76,9 @@ namespace Nijo.Features.Storing {
                                     /// <summary>削除されるデータ</summary>
                                     TSaveCommand Data { get; }
                                 }
-                                #endregion 更新前イベント引数
+                                #endregion 更新前イベント引数 ※削除予定
 
-                                #region 更新後イベント引数
+                                #region 更新後イベント引数 ※削除予定
                                 public interface {{AFTER_CREATE_EVENT_ARGS}}<TSaveCommand> {
                                     /// <summary>作成されたデータ</summary>
                                     TSaveCommand Created { get; }
@@ -93,7 +93,7 @@ namespace Nijo.Features.Storing {
                                     /// <summary>削除されたデータ</summary>
                                     TSaveCommand Deleted { get; }
                                 }
-                                #endregion 更新後イベント引数
+                                #endregion 更新後イベント引数 ※削除予定
                             }
                             """;
                     },

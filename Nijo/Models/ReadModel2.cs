@@ -46,6 +46,10 @@ namespace Nijo.Models {
             aggregateFile.AppServiceMethods.Add(load.RenderAppSrvBaseMethod(context));
             aggregateFile.AppServiceMethods.Add(load.RenderAppSrvAbstractMethod(context));
 
+            // データ型: 一括更新処理 エラーメッセージの入れ物
+            context.UseSummarizedFile<SaveContext>().AddReadModel(rootAggregate);
+            context.CoreLibrary.AppSrvMethods.Add(new DataClassForDisplay(rootAggregate).RenderErrorMessageMappingMethod());
+
             // 処理: 一括更新処理
             context.UseSummarizedFile<BatchUpdateReadModel>().Register(rootAggregate);
 
@@ -109,7 +113,7 @@ namespace Nijo.Models {
             // ユーティリティクラス等
             context.CoreLibrary.UtilDir(dir => {
                 dir.Generate(DataClassForDisplay.RenderBaseClass());
-                dir.Generate(MessageContainer.RenderCSharp());
+                dir.Generate(ErrorReceiver.RenderCSharp());
                 dir.Generate(ReadOnlyInfo.RenderCSharp());
                 dir.Generate(InstanceKey.RenderCSharp());
                 dir.Generate(ISaveCommandConvertible.Render());

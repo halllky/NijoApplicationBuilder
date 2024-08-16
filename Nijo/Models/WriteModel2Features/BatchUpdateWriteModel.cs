@@ -117,12 +117,14 @@ namespace Nijo.Models.WriteModel2Features {
                         public virtual IActionResult ExecuteImmediately([FromBody] WriteModelsBatchUpdateParameter parameter, [FromQuery] bool ignoreConfirm) {
                             using var tran = _applicationService.DbContext.Database.BeginTransaction();
                             try {
-                                var context = new {{SaveContext.CLASS_NAME}}(ignoreConfirm);
+                                var context = new {{SaveContext.STATE_CLASS_NAME}}(new() {
+                                    IgnoreConfirm = ignoreConfirm,
+                                });
                                 _applicationService.{{APPSRV_METHOD}}(parameter.{{HOOK_PARAM_ITEMS}}, context);
 
                                 if (context.HasError()) {
                                     tran.Rollback();
-                                    return Problem($"一括更新に失敗しました。{Environment.NewLine}{string.Join(Environment.NewLine, context.GetErrorMessages())}");
+                                    return Problem(context.GetErrorDataJson());
                                 }
                                 tran.Commit();
                                 return Ok();
@@ -148,19 +150,26 @@ namespace Nijo.Models.WriteModel2Features {
         private string RenderAppSrvMethod(CodeRenderingContext context) {
             var sortedAggregates = _aggregates
                 //.OrderBy(agg => 依存される順) // TODO #35
-                .Select((agg, i) => new {
-                    CreateItems = $"create{agg.Item.PhysicalName}", // 引数のうちこの集約の新規追加データのみから成る配列の変数名
-                    UpdateItems = $"update{agg.Item.PhysicalName}", // 引数のうちこの集約の更新データのみから成る配列の変数名
-                    DeleteItems = $"delete{agg.Item.PhysicalName}", // 引数のうちこの集約の削除データのみから成る配列の変数名
-                    CreateCommand = $"{DataClassForSaveBase.CREATE_COMMAND}<{new DataClassForSave(agg, DataClassForSave.E_Type.Create).CsClassName}>", // 新規作成コマンドのクラス名
-                    UpdateCommand = $"{DataClassForSaveBase.UPDATE_COMMAND}<{new DataClassForSave(agg, DataClassForSave.E_Type.UpdateOrDelete).CsClassName}>", // 更新コマンドのクラス名
-                    DeleteCommand = $"{DataClassForSaveBase.DELETE_COMMAND}<{new DataClassForSave(agg, DataClassForSave.E_Type.UpdateOrDelete).CsClassName}>", // 削除コマンドのクラス名
-                    TempVar0 = $"x{(i * 3) + 0}", // 一時変数
-                    TempVar1 = $"x{(i * 3) + 1}", // 一時変数
-                    TempVar2 = $"x{(i * 3) + 2}", // 一時変数
-                    Create = new CreateMethod(agg).MethodName, // メソッド名
-                    Update = new UpdateMethod(agg).MethodName, // メソッド名
-                    Delete = new DeleteMethod(agg).MethodName, // メソッド名
+                .Select((agg, i) => {
+                    var create = new DataClassForSave(agg, DataClassForSave.E_Type.Create);
+                    var save = new DataClassForSave(agg, DataClassForSave.E_Type.UpdateOrDelete);
+                    return new {
+                        CreateItems = $"create{agg.Item.PhysicalName}", // 引数のうちこの集約の新規追加データのみから成る配列の変数名
+                        UpdateItems = $"update{agg.Item.PhysicalName}", // 引数のうちこの集約の更新データのみから成る配列の変数名
+                        DeleteItems = $"delete{agg.Item.PhysicalName}", // 引数のうちこの集約の削除データのみから成る配列の変数名
+                        CreateCommand = $"{DataClassForSaveBase.CREATE_COMMAND}<{create.CsClassName}>", // 新規作成コマンドのクラス名
+                        UpdateCommand = $"{DataClassForSaveBase.UPDATE_COMMAND}<{save.CsClassName}>", // 更新コマンドのクラス名
+                        DeleteCommand = $"{DataClassForSaveBase.DELETE_COMMAND}<{save.CsClassName}>", // 削除コマンドのクラス名
+                        TempVar0 = $"x{(i * 3) + 0}", // 一時変数
+                        TempVar1 = $"x{(i * 3) + 1}", // 一時変数
+                        TempVar2 = $"x{(i * 3) + 2}", // 一時変数
+                        Create = new CreateMethod(agg).MethodName, // メソッド名
+                        Update = new UpdateMethod(agg).MethodName, // メソッド名
+                        Delete = new DeleteMethod(agg).MethodName, // メソッド名
+                        CreateArgs = $"new {SaveContext.BEFORE_SAVE}<{create.ErrorDataCsClassName}>(saveContextState, ({create.ErrorDataCsClassName})saveContextState.{SaveContext.GET_ERR_MSG_CONTAINER}(item))",
+                        UpdateArgs = $"new {SaveContext.BEFORE_SAVE}<{save.ErrorDataCsClassName}>(saveContextState, ({save.ErrorDataCsClassName})saveContextState.{SaveContext.GET_ERR_MSG_CONTAINER}(item))",
+                        DeleteArgs = $"new {SaveContext.BEFORE_SAVE}<{save.ErrorDataCsClassName}>(saveContextState, ({save.ErrorDataCsClassName})saveContextState.{SaveContext.GET_ERR_MSG_CONTAINER}(item))",
+                    };
                 })
                 .ToArray();
 
@@ -175,7 +184,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// </summary>
                 /// <param name="items">更新データ</param>
                 /// <param name="saveContext">コンテキスト引数。エラーや警告の送出はこのオブジェクトを通して行なってください。</param>
-                public virtual void {{APPSRV_METHOD}}(IEnumerable<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}> items, {{SaveContext.CLASS_NAME}} saveContext) {
+                public virtual void {{APPSRV_METHOD}}(IEnumerable<{{DataClassForSaveBase.SAVE_COMMAND_BASE}}> items, {{SaveContext.STATE_CLASS_NAME}} saveContextState) {
 
                     // パラメータの各要素の型を仕分けてそれぞれの配列に格納する
                 {{sortedAggregates.SelectTextTemplate(agg => $$"""
@@ -211,13 +220,13 @@ namespace Nijo.Models.WriteModel2Features {
                     // 5. 依存される側のデータの更新
                     // 6. 依存する側  のデータの更新
                 {{sortedAggregates.Reverse().SelectTextTemplate(agg => $$"""
-                    foreach (var item in {{agg.DeleteItems}}) {{agg.Delete}}(item, saveContext);
+                    foreach (var item in {{agg.DeleteItems}}) {{agg.Delete}}(item, {{agg.DeleteArgs}});
                 """)}}
                 {{sortedAggregates.SelectTextTemplate(agg => $$"""
-                    foreach (var item in {{agg.CreateItems}}) {{agg.Create}}(item, saveContext);
+                    foreach (var item in {{agg.CreateItems}}) {{agg.Create}}(item, {{agg.CreateArgs}});
                 """)}}
                 {{sortedAggregates.SelectTextTemplate(agg => $$"""
-                    foreach (var item in {{agg.UpdateItems}}) {{agg.Update}}(item, saveContext);
+                    foreach (var item in {{agg.UpdateItems}}) {{agg.Update}}(item, {{agg.UpdateArgs}});
                 """)}}
                 }
                 #endregion 一括更新

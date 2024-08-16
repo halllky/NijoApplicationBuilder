@@ -39,8 +39,6 @@ namespace Nijo.Models.ReadModel2Features {
         internal const string MESSAGES_CS = "Messages";
         /// <summary>メッセージ情報が格納されるプロパティの名前（TypeScript）</summary>
         internal const string MESSAGES_TS = "messages";
-        /// <summary>メンバーでなくオブジェクト自身へのメッセージ（C#）</summary>
-        internal const string OWN_MESSAGES_CS = "OwnMessages";
         /// <summary>メンバーでなくオブジェクト自身へのメッセージ（TypeScript）</summary>
         internal const string OWN_MESSAGES_TS = "ownMessages";
         /// <summary>メッセージ用構造体 C#クラス名</summary>
@@ -286,17 +284,32 @@ namespace Nijo.Models.ReadModel2Features {
 
         #region メッセージ用構造体
         private string RenderCsMessageClass(CodeRenderingContext context) {
+            var members = GetOwnMembers().Select(m => new {
+                m.MemberName,
+                TypeName = ErrorReceiver.RECEIVER,
+            }).Concat(GetChildMembers().Select(desc => new {
+                desc.MemberName,
+                TypeName = desc.MemberInfo is AggregateMember.Children children
+                    ? $"{ErrorReceiver.RECEIVER_LIST}<{desc.MessageDataCsClassName}>"
+                    : desc.MessageDataCsClassName,
+            })).ToArray();
+
             return $$"""
                 /// <summary>
                 /// {{Aggregate.Item.DisplayName}}の画面表示用データのメッセージ情報格納部分
                 /// </summary>
-                public partial class {{MessageDataCsClassName}} {
-                    /// <summary>{{Aggregate.Item.DisplayName}}自身についてのメッセージ</summary>
-                    [JsonPropertyName("{{OWN_MESSAGES_TS}}")]
-                    public virtual {{MessageContainer.CS_CLASS_NAME}} {{OWN_MESSAGES_CS}} { get; } = new();
-                {{GetOwnMembers().SelectTextTemplate(member => $$"""
-                    /// <summary>{{member.MemberName}}についてのメッセージ</summary>
-                    public virtual {{MessageContainer.CS_CLASS_NAME}} {{member.MemberName}} { get; } = new();
+                public partial class {{MessageDataCsClassName}} : {{ErrorReceiver.RECEIVER}} {
+                {{members.SelectTextTemplate(m => $$"""
+                    /// <summary>{{m.MemberName}}についてのメッセージ</summary>
+                    public virtual {{m.TypeName}} {{m.MemberName}} { get; } = new();
+                """)}}
+
+                {{If(members.Length > 0, () => $$"""
+                    protected override IEnumerable<{{ErrorReceiver.RECEIVER}}> EnumerateChildren() {
+                {{members.SelectTextTemplate(m => $$"""
+                        yield return {{m.MemberName}};
+                """)}}
+                    }
                 """)}}
                 }
                 """;
@@ -305,14 +318,57 @@ namespace Nijo.Models.ReadModel2Features {
             return $$"""
                 {
                   /** {{Aggregate.Item.DisplayName}}自身についてのメッセージ */
-                  {{OWN_MESSAGES_TS}}?: {{MessageContainer.TS_TYPE_NAME}}
+                  {{OWN_MESSAGES_TS}}?: {{ErrorReceiver.TS_TYPE_NAME}}
                 {{GetOwnMembers().SelectTextTemplate(member => $$"""
                   /** {{member.MemberName}}についてのメッセージ */
-                  {{member.MemberName}}?: {{MessageContainer.TS_TYPE_NAME}}
+                  {{member.MemberName}}?: {{ErrorReceiver.TS_TYPE_NAME}}
                 """)}}
                 }
                 """;
         }
+        internal string RenderErrorMessageMappingMethod() {
+            // 記述例のレンダリング用
+            var firstMemberPath = Aggregate
+                .GetMembers()
+                .OfType<AggregateMember.ValueMember>()
+                .FirstOrDefault(vm => !vm.Options.InvisibleInGui)
+                ?.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp)
+                .Join(".");
+            var childrenPath = Aggregate
+                .GetMembers()
+                .OfType<AggregateMember.Children>()
+                .FirstOrDefault()
+                ?.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp)
+                .Join(".");
+
+            return $$"""
+                /// <summary>
+                /// 登録更新処理中で発生したエラーメッセージはWriteModelに対して設定されますが、
+                /// 画面に表示されるデータ型は <see cref="{{MessageDataCsClassName}}"/> のため、
+                /// そのままでは画面のどの項目にエラーメッセージを表示させるべきかが定まりません。
+                /// そのエラーメッセージの項目をマッピングするのがこのメソッドです。
+                ///
+                /// なお、どこにもマッピングされなかったエラーは特定の画面項目に紐づかない画面全体のエラーとして表示されます。
+                /// </summary>
+                public virtual void {{DEFINE_ERR_MSG_MAPPING}}({{MessageDataCsClassName}} displayData, {{ErrorReceiver.ERROR_MESSAGE_MAPPER}} mapper) {
+                    // マッピング処理は自動生成されません。
+                    // このメソッドをオーバーライドし、以下の例のようにマッピング処理を記述してください。
+                    //
+                    // mapper.Map<WriteModelのエラーデータのクラス名>(error => {
+                    //     error.{{ErrorReceiver.FORWARD_TO}}(displayData);
+                {{If(firstMemberPath != null, () => $$"""
+                    //     error.{{firstMemberPath}}.{{ErrorReceiver.FORWARD_TO}}(displayData.{{firstMemberPath}});
+                """)}}
+                {{If(childrenPath != null, () => $$"""
+                    //     for (var i = 0; i < error.{{childrenPath}}.Count; i++) {
+                    //         error.{{childrenPath}}[i].{{ErrorReceiver.FORWARD_TO}}(displayData.{{childrenPath}}[i]);
+                    //     }
+                """)}}
+                    // });
+                }
+                """;
+        }
+        internal const string DEFINE_ERR_MSG_MAPPING = "DefineErrorMessageMapping";
         #endregion メッセージ用構造体
 
 

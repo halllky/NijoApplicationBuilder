@@ -30,23 +30,26 @@ namespace Nijo.Models {
                 context.CoreLibrary.DbSetPropNameAndClassName.Add(efCoreEntity.DbSetName, efCoreEntity.ClassName);
                 context.CoreLibrary.DbContextOnModelCreating.Add(efCoreEntity.RenderCallingOnModelCreating(context));
 
+                // データ型: DataClassForNewItem
+                var dataClassForNewItem = new DataClassForSave(agg, DataClassForSave.E_Type.Create);
+                aggregateFile.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharp(context));
+                aggregateFile.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharpErrorStructure(context));
+                aggregateFile.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharpReadOnlyStructure(context));
+                context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScript(context));
+                context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScriptErrorStructure(context));
+                context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScriptReadOnlyStructure(context));
+
                 // データ型: DataClassForSave
                 var dataClassForSave = new DataClassForSave(agg, DataClassForSave.E_Type.UpdateOrDelete);
                 aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharp(context));
-                aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharpBeforeSaveEventArgs(context));
-                aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharpAfterSaveEventArgs(context));
+                aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharpErrorStructure(context));
                 aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharpReadOnlyStructure(context));
                 context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScript(context));
                 context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScriptErrorStructure(context));
                 context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScriptReadOnlyStructure(context));
 
-                // データ型: DataClassForNewItem
-                var dataClassForNewItem = new DataClassForSave(agg, DataClassForSave.E_Type.Create);
-                aggregateFile.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharp(context));
-                aggregateFile.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharpReadOnlyStructure(context));
-                context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScript(context));
-                context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScriptErrorStructure(context));
-                context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScriptReadOnlyStructure(context));
+                // データ型: 作成・更新・削除で共有するもの
+                aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharpAfterSaveEventArgs(context));
 
                 // 処理: DataClassForSave, DataClassForNewItem 新規作成関数
                 if (agg.IsRoot() || agg.IsChildrenMember()) {
@@ -54,6 +57,9 @@ namespace Nijo.Models {
                     context.ReactProject.Types.Add(dataClassForSave.RenderTsNewObjectFunction(context));
                 }
             }
+
+            // データ型: 一括更新処理 エラーメッセージの入れ物
+            context.UseSummarizedFile<SaveContext>().AddWriteModel(rootAggregate);
 
             // 処理: 一括更新処理
             context.UseSummarizedFile<BatchUpdateWriteModel>().Register(rootAggregate);
@@ -120,15 +126,6 @@ namespace Nijo.Models {
         }
 
         void IModel.GenerateCode(CodeRenderingContext context) {
-
-            context.CoreLibrary.UtilDir(utilDir => {
-                // データ型: 一括コミット コンテキスト引数
-                var saveContext = new SaveContext();
-                utilDir.Generate(saveContext.Render());
-
-                // エラーデータ用インターフェース
-                utilDir.Generate(DataClassForSave.RenderIErrorData());
-            });
         }
     }
 }

@@ -36,7 +36,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// <summary>
                 /// 新しい{{_rootAggregate.Item.DisplayName}}を作成する情報を受け取って登録します。
                 /// </summary>
-                public virtual void {{MethodName}}({{argType}} command, {{SaveContext.CLASS_NAME}} saveContext) {
+                public virtual void {{MethodName}}({{argType}} command, {{SaveContext.BEFORE_SAVE}}<{{dataClass.ErrorDataTsTypeName}}> saveContext) {
 
                     var dbEntity = command.{{DataClassForSaveBase.VALUES_CS}}.{{DataClassForSave.TO_DBENTITY}}();
 
@@ -48,19 +48,18 @@ namespace Nijo.Models.WriteModel2Features {
                     dbEntity.{{EFCoreEntity.UPDATE_USER}} = {{ApplicationService.CURRENT_USER}};
 
                     // 更新前処理。入力検証や自動補完項目の設定を行う。
-                    var beforeSaveContext = new {{dataClass.BeforeSaveContextCsClassName}}(saveContext);
-                    {{BeforeMethodName}}(dbEntity, beforeSaveContext);
+                    {{BeforeMethodName}}(dbEntity, saveContext);
 
                     // エラーやコンファームがある場合は処理中断
-                    if (beforeSaveContext.HasError()) return;
-                    if (!beforeSaveContext.IgnoreConfirm && beforeSaveContext.HasConfirm()) return;
+                    if (saveContext.Errors.HasError()) return;
+                    if (!saveContext.Options.IgnoreConfirm && saveContext.HasConfirm()) return;
 
                     // 更新実行
                     try {
                         {{appSrv.DbContext}}.Add(dbEntity);
                         {{appSrv.DbContext}}.SaveChanges();
                     } catch (DbUpdateException ex) {
-                        beforeSaveContext.AddError(ex);
+                        saveContext.Errors.Add(ex.Message);
                         return;
                     }
 
@@ -73,7 +72,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// {{_rootAggregate.Item.DisplayName}}の新規登録前に実行されます。
                 /// エラーチェック、ワーニング、自動算出項目の設定などを行います。
                 /// </summary>
-                protected virtual void {{BeforeMethodName}}({{efCoreEntity.ClassName}} dbEntity, {{dataClass.BeforeSaveContextCsClassName}} context) {
+                protected virtual void {{BeforeMethodName}}({{efCoreEntity.ClassName}} dbEntity, {{SaveContext.BEFORE_SAVE}}<{{dataClass.ErrorDataTsTypeName}}> context) {
                     // このメソッドをオーバーライドしてエラーチェック等を記述してください。
                 }
                 /// <summary>
