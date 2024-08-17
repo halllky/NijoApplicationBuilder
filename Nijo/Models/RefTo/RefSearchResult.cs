@@ -96,10 +96,6 @@ namespace Nijo.Models.RefTo {
             return RenderRecursively(_aggregate, dbEntityInstance, dbEntityAggregate, renderNewClassName);
 
             string RenderRecursively(GraphNode<Aggregate> renderingAggregate, string dbEntityInstance, GraphNode<Aggregate> dbEntityAggregate, bool renderNewStatement) {
-                var dbEntityMembers = new EFCoreEntity(renderingAggregate)
-                    .GetTableColumnMembers()
-                    .Select(vm => vm.Declared)
-                    .ToHashSet();
                 var rsr = new RefSearchResult(renderingAggregate, _refEntry);
                 var newStatement = renderNewStatement ? $"new {rsr.CsClassName}()" : "new()";
                 return $$"""
@@ -113,16 +109,19 @@ namespace Nijo.Models.RefTo {
                 string RenderMemberStatement(AggregateMember.AggregateMemberBase member) {
                     if (member is AggregateMember.ValueMember vm) {
                         return $$"""
-                            {{dbEntityInstance}}.{{dbEntityMembers.Single(vm2 => vm2.Declared == vm.Declared).GetFullPathAsDbEntity(dbEntityAggregate).Join(".")}}
+                            {{dbEntityInstance}}.{{vm.Declared.GetFullPathAsDbEntity(dbEntityAggregate).Join(".")}}
                             """;
 
                     } else if (member is AggregateMember.Ref @ref) {
-                        return RenderRefSearchResultRecursively(@ref.RefTo);
+                        return RenderRefSearchResultRecursively(@ref.RefTo, false);
 
-                        string RenderRefSearchResultRecursively(GraphNode<Aggregate> agg) {
+                        string RenderRefSearchResultRecursively(GraphNode<Aggregate> agg, bool renderNewClassName) {
                             var rsr = new RefSearchResult(agg, _refEntry);
+                            var @new = renderNewClassName
+                                ? $"new {rsr.CsClassName}"
+                                : $"new()";
                             return $$"""
-                                new() {
+                                {{@new}} {
                                 {{rsr.GetOwnMembers().SelectTextTemplate(m => $$"""
                                     {{GetMemberName(m)}} = {{WithIndent(RenderRefSearchResultMember(m), "    ")}},
                                 """)}}
@@ -133,18 +132,18 @@ namespace Nijo.Models.RefTo {
                         string RenderRefSearchResultMember(AggregateMember.AggregateMemberBase m) {
                             if (m is AggregateMember.ValueMember vm3) {
                                 return $$"""
-                                    {{dbEntityInstance}}.{{dbEntityMembers.Single(vm4 => vm4.Declared == vm3.Declared).GetFullPathAsDbEntity(dbEntityAggregate).Join(".")}}
+                                    {{dbEntityInstance}}.{{vm3.Declared.GetFullPathAsDbEntity(dbEntityAggregate).Join(".")}}
                                     """;
 
                             } else if (m is AggregateMember.Children children3) {
                                 var depth = children3.Owner.PathFromEntry().Count();
                                 var x = depth == 0 ? "x" : $"x{depth}";
                                 return $$"""
-                                    {{dbEntityInstance}}.{{children3.GetFullPathAsDbEntity(dbEntityAggregate).Join(".")}}.Select({{x}} => {{RenderRefSearchResultRecursively(children3.ChildrenAggregate)}}).ToList()
+                                    {{dbEntityInstance}}.{{children3.GetFullPathAsDbEntity(dbEntityAggregate).Join(".")}}.Select({{x}} => {{RenderRefSearchResultRecursively(children3.ChildrenAggregate, true)}}).ToList()
                                     """;
 
                             } else if (m is AggregateMember.RelationMember rm) {
-                                return RenderRefSearchResultRecursively(rm.MemberAggregate);
+                                return RenderRefSearchResultRecursively(rm.MemberAggregate, false);
 
                             } else {
                                 throw new NotImplementedException();
