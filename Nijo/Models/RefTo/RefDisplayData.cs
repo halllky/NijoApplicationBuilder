@@ -70,7 +70,17 @@ namespace Nijo.Models.RefTo {
                     if (source == rm.Relation) continue;
                 }
 
+                // TODO #35 ここでValueMemberのDeclaringAggregateの条件足りなくないか？
+                // TODO #35 DataClassForDisplayのそれと列挙される要素の条件を統一する
+
                 yield return member;
+            }
+        }
+
+        // TODO #35 これで置き換えられそうなソースが結構あるのでリファクタリングする
+        internal IEnumerable<RefDisplayDataDescendant> GetChildMembers() {
+            foreach (var member in GetOwnMembers().OfType<AggregateMember.RelationMember>()) {
+                yield return new RefDisplayDataDescendant(member, _refEntry);
             }
         }
 
@@ -350,6 +360,14 @@ namespace Nijo.Models.RefTo {
             }
         }
         #endregion メンバー用staticメソッド
+    }
+
+    internal class RefDisplayDataDescendant : RefDisplayData {
+        internal RefDisplayDataDescendant(AggregateMember.RelationMember rel, GraphNode<Aggregate> refEntry) : base(rel.MemberAggregate, refEntry) {
+            MemberInfo = rel;
+        }
+
+        internal AggregateMember.RelationMember MemberInfo { get; }
     }
 
     internal static partial class GetFullPathExtensions {

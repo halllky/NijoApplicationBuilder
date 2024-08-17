@@ -1,4 +1,5 @@
 using Nijo.Core;
+using Nijo.Models.RefTo;
 using Nijo.Parts.WebClient;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
@@ -15,23 +16,23 @@ namespace Nijo.Models.ReadModel2Features {
     internal class SingleViewAggregateComponent {
 
         internal SingleViewAggregateComponent(GraphNode<Aggregate> aggregate) {
-            _dataClass = new DataClassForDisplay(aggregate);
+            _aggregate = aggregate;
         }
 
-        protected readonly DataClassForDisplay _dataClass;
+        protected readonly GraphNode<Aggregate> _aggregate;
 
         protected string ComponentName {
             get {
-                if (_dataClass.Aggregate.IsOutOfEntryTree()) {
-                    var refEntry = _dataClass.Aggregate.GetRefEntryEdge().RelationName;
-                    return $"{_dataClass.Aggregate.Item.PhysicalName}ViewOf{refEntry}Reference";
+                if (_aggregate.IsOutOfEntryTree()) {
+                    var refEntry = _aggregate.GetRefEntryEdge().RelationName;
+                    return $"{_aggregate.Item.PhysicalName}ViewOf{refEntry}Reference";
 
                 } else {
-                    return $"{_dataClass.Aggregate.Item.PhysicalName}View";
+                    return $"{_aggregate.Item.PhysicalName}View";
                 }
             }
         }
-        protected string UseFormType => $"AggregateType.{new DataClassForDisplay(_dataClass.Aggregate.GetRoot()).TsTypeName}";
+        protected string UseFormType => $"AggregateType.{new DataClassForDisplay(_aggregate.GetRoot()).TsTypeName}";
 
         /// <summary>
         /// このコンポーネントが受け取る引数の名前のリスト。
@@ -39,9 +40,9 @@ namespace Nijo.Models.ReadModel2Features {
         /// このコンポーネントのその配列中でのインデックスが特定されている必要があるので、それを引数で受け取る。
         /// </summary>
         protected IReadOnlyList<string> GetArguments() {
-            return _dataClass.Aggregate
+            return _aggregate
                 .PathFromEntry()
-                .Where(edge => edge.Terminal != _dataClass.Aggregate
+                .Where(edge => edge.Terminal != _aggregate
                             && edge.Terminal.As<Aggregate>().IsChildrenMember())
                 .Select((_, i) => $"index{i}")
                 .ToArray();
@@ -59,8 +60,23 @@ namespace Nijo.Models.ReadModel2Features {
         internal IEnumerable<SingleViewAggregateComponent> EnumerateThisAndDescendants() {
             yield return this;
 
-            var descendants = _dataClass
-                .GetChildMembers()
+            // 子要素の列挙
+            IEnumerable<AggregateMember.RelationMember> members;
+            if (_aggregate.IsOutOfEntryTree()) {
+                var refEntry = _aggregate.GetRefEntryEdge().Terminal;
+                var displayData = new RefDisplayData(_aggregate, refEntry);
+                members = displayData
+                    .GetOwnMembers()
+                    .OfType<AggregateMember.RelationMember>();
+            } else {
+                var displayData = new DataClassForDisplay(_aggregate);
+                members = displayData
+                    .GetChildMembers()
+                    .Select(x => x.MemberInfo);
+            }
+
+            // 子要素のコンポーネントへの変換
+            var descendants = members
                 .Select(GetDescendantComponent)
                 .SelectMany(component => component.EnumerateThisAndDescendants());
             foreach (var component in descendants) {
@@ -72,6 +88,21 @@ namespace Nijo.Models.ReadModel2Features {
         /// <see cref="VerticalFormBuilder"/> のインスタンスを組み立てます。
         /// </summary>
         protected VerticalFormBuilder BuildVerticalForm(CodeRenderingContext context) {
+            // レンダリング対象メンバーを列挙
+            IEnumerable<AggregateMember.AggregateMemberBase> members;
+            if (_aggregate.IsOutOfEntryTree()) {
+                var refEntry = _aggregate.GetRefEntryEdge().Terminal;
+                var displayData = new RefDisplayData(_aggregate, refEntry);
+                members = displayData
+                    .GetOwnMembers();
+            } else {
+                var displayData = new DataClassForDisplay(_aggregate);
+                members = displayData
+                    .GetOwnMembers()
+                    .Concat(displayData.GetChildMembers().Select(x => x.MemberInfo));
+            }
+
+            // フォーム組み立て
             var formBuilder = new VerticalFormBuilder();
             var formContext = new ReactPageRenderingContext {
                 CodeRenderingContext = context,
@@ -79,8 +110,7 @@ namespace Nijo.Models.ReadModel2Features {
                 AncestorsIndexes = GetArgumentsAndLoopVar(),
                 RenderErrorMessage = vm => {
                     var fullpath = vm.Declared.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, GetArgumentsAndLoopVar());
-                    var render = vm.DeclaringAggregate == _dataClass.Aggregate; // 参照先のValueMemberにはエラーメッセージが無い。
-                                                                                // エラーメッセージは参照先のValueMemberではなくRefにつく
+                    var render = vm.DeclaringAggregate == _aggregate; // 参照先のValueMemberにはエラーメッセージが無い。エラーメッセージは参照先のValueMemberではなくRefにつく
                     return $$"""
                         {{If(render, () => $$"""
                         <Input.ErrorMessage name={`{{fullpath.Join(".")}}`} errors={errors} />
@@ -88,12 +118,8 @@ namespace Nijo.Models.ReadModel2Features {
                         """;
                 },
             };
-
-            foreach (var member in _dataClass.GetOwnMembers()) {
+            foreach (var member in members.OrderBy(m => m.Order)) {
                 if (member is AggregateMember.ValueMember vm) {
-                    if (vm.DeclaringAggregate != _dataClass.Aggregate) continue; // 参照先の項目
-                    if (vm.Options.InvisibleInGui) continue; // 非表示項目
-
                     formBuilder.AddItem(
                         vm.Options.MemberType is Core.AggregateMemberTypes.Sentence,
                         member.MemberName,
@@ -101,7 +127,7 @@ namespace Nijo.Models.ReadModel2Features {
                         vm.Options.MemberType.RenderSingleViewVFormBody(vm, formContext));
 
                 } else if (member is AggregateMember.Ref @ref) {
-                    var refTarget = new RefTo.RefDisplayData(@ref.RefTo, @ref.RefTo);
+                    var refTarget = new RefDisplayData(@ref.RefTo, @ref.RefTo);
                     var fullpath = @ref.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, GetArguments());
                     var section = formBuilder.AddSection($$"""
                         (<>
@@ -112,7 +138,7 @@ namespace Nijo.Models.ReadModel2Features {
                         E_VForm2LabelType.JsxElement);
                     BuildRecursively(refTarget, section);
 
-                    void BuildRecursively(RefTo.RefDisplayData refTarget, VerticalFormSection section) {
+                    void BuildRecursively(RefDisplayData refTarget, VerticalFormSection section) {
                         foreach (var refMember in refTarget.GetOwnMembers()) {
                             if (refMember is AggregateMember.ValueMember vm2) {
                                 section.AddItem(
@@ -122,17 +148,20 @@ namespace Nijo.Models.ReadModel2Features {
                                     vm2.Options.MemberType.RenderSingleViewVFormBody(vm2, formContext));
 
                             } else if (refMember is AggregateMember.RelationMember rel) {
-                                var relRefTarget = new RefTo.RefDisplayData(rel.MemberAggregate, @ref.RefTo);
+                                var relRefTarget = new RefDisplayData(rel.MemberAggregate, @ref.RefTo);
                                 var relSection = section.AddSection(rel.MemberName, E_VForm2LabelType.String);
                                 BuildRecursively(relRefTarget, relSection);
                             }
                         }
                     }
+
+                } else if (member is AggregateMember.RelationMember rel) {
+                    var descendant = GetDescendantComponent(rel);
+                    formBuilder.AddUnknownParts(descendant.RenderCaller(GetArgumentsAndLoopVar()));
+
+                } else {
+                    throw new NotImplementedException();
                 }
-            }
-            foreach (var childDataClass in _dataClass.GetChildMembers()) {
-                var descendant = GetDescendantComponent(childDataClass);
-                formBuilder.AddUnknownParts(descendant.RenderCaller(GetArgumentsAndLoopVar()));
             }
 
             return formBuilder;
@@ -173,17 +202,17 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// 子孫要素のコンポーネントをその種類に応じて返します。
         /// </summary>
-        private static SingleViewAggregateComponent GetDescendantComponent(DataClassForDisplayDescendant displayData) {
-            if (displayData.MemberInfo is AggregateMember.Child child) {
+        private static SingleViewAggregateComponent GetDescendantComponent(AggregateMember.RelationMember member) {
+            if (member is AggregateMember.Child child) {
                 return new ChildComponent(child);
 
-            } else if (displayData.MemberInfo is AggregateMember.VariationItem variation) {
+            } else if (member is AggregateMember.VariationItem variation) {
                 return new VariationItemComponent(variation);
 
-            } else if (displayData.MemberInfo is AggregateMember.Children children1 && !displayData.Aggregate.CanDisplayAllMembersAs2DGrid()) {
+            } else if (member is AggregateMember.Children children1 && !children1.ChildrenAggregate.CanDisplayAllMembersAs2DGrid()) {
                 return new ChildrenFormComponent(children1);
 
-            } else if (displayData.MemberInfo is AggregateMember.Children children2 && displayData.Aggregate.CanDisplayAllMembersAs2DGrid()) {
+            } else if (member is AggregateMember.Children children2 && children2.ChildrenAggregate.CanDisplayAllMembersAs2DGrid()) {
                 return new ChildrenGridComponent(children2);
 
             } else {
@@ -294,12 +323,18 @@ namespace Nijo.Models.ReadModel2Features {
                 var vForm = BuildVerticalForm(context);
                 var loopVar = GetLoopVar();
 
-                var registerNameArray = _dataClass.Aggregate
+                var registerNameArray = _aggregate
                         .GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, args)
                         .ToArray();
                 var registerName = registerNameArray.Length > 0
                     ? $"`{registerNameArray.Join(".")}`"
                     : string.Empty;
+
+                var creatable = !isReadOnly
+                    && !_aggregate.IsOutOfEntryTree(); // 参照先の集約の子孫要素は追加削除不可
+                var createNewItem = _aggregate.IsOutOfEntryTree()
+                    ? string.Empty
+                    : $"AggregateType.{new DataClassForDisplay(_aggregate).TsNewObjectFunction}()";
 
                 return $$"""
                     const {{ComponentName}} = ({{{args.Join(", ")}} }: {
@@ -309,9 +344,9 @@ namespace Nijo.Models.ReadModel2Features {
                     }) => {
                       const { register, registerEx, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
                       const { fields, append, remove } = useFieldArray({ control, name: {{registerName}} })
-                    {{If(!isReadOnly, () => $$"""
+                    {{If(creatable, () => $$"""
                       const onCreate = useCallback(() => {
-                        append(AggregateType.{{_dataClass.TsNewObjectFunction}}())
+                        append({{createNewItem}})
                       }, [append])
                       const onRemove = useCallback((index: number) => {
                         return (e: React.MouseEvent) => {
@@ -324,21 +359,21 @@ namespace Nijo.Models.ReadModel2Features {
                       return (
                         <VForm2.Indent label={(
                           <div className="flex gap-2 justify-start">
-                            <VForm2.LabelText>{{_dataClass.Aggregate.GetParent()?.RelationName}}</VForm2.LabelText>
-                    {{If(!isReadOnly, () => $$"""
+                            <VForm2.LabelText>{{_aggregate.GetParent()?.RelationName}}</VForm2.LabelText>
+                    {{If(creatable, () => $$"""
                             <Input.Button onClick={onCreate}>追加</Input.Button>
                     """)}}
                           </div>
                         )}>
                           {fields.map((item, {{loopVar}}) => (
                             <VForm2.Indent key={{{loopVar}}} label={(
-                    {{If(isReadOnly, () => $$"""
-                              <VForm2.LabelText>{{{loopVar}}}</VForm2.LabelText>
-                    """).Else(() => $$"""
+                    {{If(creatable, () => $$"""
                               <div className="flex flex-col gap-1">
                                 <VForm2.LabelText>{{{loopVar}}}</VForm2.LabelText>
                                 <Input.IconButton underline icon={XMarkIcon} onClick={onRemove({{loopVar}})}>削除</Input.IconButton>
                               </div>
+                    """).Else(() => $$"""
+                              <VForm2.LabelText>{{{loopVar}}}</VForm2.LabelText>
                     """)}}
                             )}>
                               {{WithIndent(vForm.Render(context), "          ")}}
@@ -374,19 +409,36 @@ namespace Nijo.Models.ReadModel2Features {
             }
 
             internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
+                Parts.WebClient.DataTable.DataTableBuilder tableBuilder;
+                string rowType;
+                string createNewItem;
+                if (_aggregate.IsOutOfEntryTree()) {
+                    var refEntry = _aggregate.GetRefEntryEdge().Terminal;
+                    var displayData = new RefDisplayData(_aggregate, refEntry);
+                    rowType = $"AggregateType.{displayData.TsTypeName}";
+                    createNewItem = string.Empty;
+                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType);
+                    tableBuilder.AddMembers(displayData);
+                } else {
+                    var displayData = new DataClassForDisplay(_aggregate);
+                    rowType = $"AggregateType.{displayData.TsTypeName}";
+                    createNewItem = $"AggregateType.{displayData.TsNewObjectFunction}()";
+                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType);
+                    tableBuilder.AddMembers(displayData);
+                }
+
                 var args = GetArguments().ToArray();
                 var vForm = BuildVerticalForm(context);
                 var loopVar = GetLoopVar();
 
-                var registerNameArray = _dataClass.Aggregate
+                var registerNameArray = _aggregate
                         .GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, args)
                         .ToArray();
                 var registerName = registerNameArray.Length > 0
                     ? $"`{registerNameArray.Join(".")}`"
                     : string.Empty;
 
-                var tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_dataClass.Aggregate, $"AggregateType.{_dataClass.TsTypeName}");
-                tableBuilder.AddMembers(_dataClass);
+                var creatable = !isReadOnly && !_aggregate.IsOutOfEntryTree();
 
                 return $$"""
                     const {{ComponentName}} = ({{{args.Join(", ")}} }: {
@@ -397,11 +449,11 @@ namespace Nijo.Models.ReadModel2Features {
                       const { get } = Util.useHttpRequest()
                       const { register, registerEx, control } = Util.useFormContextEx<{{UseFormType}}>()
                       const { fields, append, remove, update } = useFieldArray({ control, name: {{registerName}} })
-                      const dtRef = useRef<Layout.DataTableRef<AggregateType.{{_dataClass.TsTypeName}}>>(null)
+                      const dtRef = useRef<Layout.DataTableRef<{{rowType}}>>(null)
 
-                    {{If(!isReadOnly, () => $$"""
+                    {{If(creatable, () => $$"""
                       const onAdd = useCallback((e: React.MouseEvent) => {
-                        append(AggregateType.{{_dataClass.TsNewObjectFunction}}())
+                        append({{createNewItem}})
                         e.preventDefault()
                       }, [append])
                       const onRemove = useCallback((e: React.MouseEvent) => {
@@ -411,8 +463,8 @@ namespace Nijo.Models.ReadModel2Features {
                       }, [dtRef, remove])
 
                     """)}}
-                      const options = useMemo<Layout.DataTableProps<AggregateType.{{_dataClass.TsTypeName}}>>(() => ({
-                    {{If(!isReadOnly, () => $$"""
+                      const options = useMemo<Layout.DataTableProps<{{rowType}}>>(() => ({
+                    {{If(creatable, () => $$"""
                         onChangeRow: update,
                     """)}}
                         columns: [
@@ -422,16 +474,16 @@ namespace Nijo.Models.ReadModel2Features {
 
                       return (
                         <VForm2.Item wide
-                    {{If(isReadOnly, () => $$"""
-                          label="{{_dataClass.Aggregate.GetParent()?.RelationName}}"
-                    """).Else(() => $$"""
+                    {{If(creatable, () => $$"""
                           label={(
                             <div className="flex items-center gap-2">
-                              <VForm2.LabelText>{{_dataClass.Aggregate.GetParent()?.RelationName}}</VForm2.LabelText>
+                              <VForm2.LabelText>{{_aggregate.GetParent()?.RelationName}}</VForm2.LabelText>
                               <Input.Button icon={PlusIcon} onClick={onAdd}>追加</Input.Button>
                               <Input.Button icon={XMarkIcon} onClick={onRemove}>削除</Input.Button>
                             </div>
                           )}
+                    """).Else(() => $$"""
+                          label="{{_aggregate.GetParent()?.RelationName}}"
                     """)}}
                           >
                           <Layout.DataTable

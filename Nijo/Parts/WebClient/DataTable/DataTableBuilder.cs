@@ -1,5 +1,6 @@
 using Nijo.Core;
 using Nijo.Models.ReadModel2Features;
+using Nijo.Models.RefTo;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -44,6 +45,45 @@ namespace Nijo.Parts.WebClient.DataTable {
                 foreach (var member in rendering.GetOwnMembers()) {
                     if (member is AggregateMember.ValueMember vm) {
                         if (vm.DeclaringAggregate != rendering.Aggregate) continue;
+                        if (vm.Options.InvisibleInGui) continue;
+                        var column = new ValueMemberColumn(
+                            vm,
+                            vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, since: TableOwner),
+                            this);
+                        yield return column;
+
+                    } else if (member is AggregateMember.Ref @ref) {
+                        if (@ref.RefTo.IsSingleRefKeyOf(@ref.Owner)) continue;
+                        var column = new RefMemberColumn(
+                            @ref,
+                            @ref.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, since: TableOwner),
+                            this);
+                        yield return column;
+                    }
+                }
+                foreach (var desc in rendering.GetChildMembers()) {
+
+                    // ChildrenやVariationのメンバーを列挙していないのはグリッド上で表現できないため
+                    if (desc.MemberInfo is AggregateMember.Children) continue;
+                    if (desc.MemberInfo is AggregateMember.VariationItem) continue;
+
+                    foreach (var reucusive in Enumerate(desc)) {
+                        yield return reucusive;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 参照先の画面表示用データのメンバーの列を追加します。
+        /// </summary>
+        internal DataTableBuilder AddMembers(RefDisplayData refDisplayData) {
+            _columns.AddRange(Enumerate(refDisplayData));
+            return this;
+
+            IEnumerable<IDataTableColumn2> Enumerate(RefDisplayData rendering) {
+                foreach (var member in rendering.GetOwnMembers()) {
+                    if (member is AggregateMember.ValueMember vm) {
                         if (vm.Options.InvisibleInGui) continue;
                         var column = new ValueMemberColumn(
                             vm,
