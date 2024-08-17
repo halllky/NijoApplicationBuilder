@@ -52,6 +52,7 @@ namespace Nijo.Models.ReadModel2Features {
 
             foreach (var member in _dataClass.GetOwnMembers()) {
                 if (member is AggregateMember.ValueMember vm) {
+                    if (vm.DeclaringAggregate != _dataClass.Aggregate) continue; // 参照先の項目
                     if (vm.Options.InvisibleInGui) continue; // 非表示項目
 
                     formBuilder.AddItem(
@@ -61,10 +62,21 @@ namespace Nijo.Models.ReadModel2Features {
                         vm.Options.MemberType.RenderSingleViewVFormBody(vm, context));
 
                 } else if (member is AggregateMember.Ref @ref) {
+                    var refTarget = new RefTo.RefDisplayData(@ref.RefTo, @ref.RefTo);
+                    var errorVarName = $"{@ref.MemberName}Errors"; // TODO #35 SingleViewでの変数名定義処理と重複
+                    var label = $$"""
+                        (<>
+                          <VForm2.LabelText>{{@ref.MemberName}}</VForm2.LabelText>
+                          <Input.ErrorMessage value={{{errorVarName}}} />
+                        </>)
+                        """;
+                    var section = formBuilder.AddSection(label, E_VForm2LabelType.JsxElement);
+                    BuildRecursively(refTarget, section);
+
                     void BuildRecursively(RefTo.RefDisplayData refTarget, VerticalFormSection section) {
                         foreach (var refMember in refTarget.GetOwnMembers()) {
                             if (refMember is AggregateMember.ValueMember vm2) {
-                                formBuilder.AddItem(
+                                section.AddItem(
                                     vm2.Options.MemberType is Core.AggregateMemberTypes.Sentence,
                                     member.MemberName,
                                     E_VForm2LabelType.String,
@@ -72,14 +84,11 @@ namespace Nijo.Models.ReadModel2Features {
 
                             } else if (refMember is AggregateMember.RelationMember rel) {
                                 var relRefTarget = new RefTo.RefDisplayData(rel.MemberAggregate, @ref.RefTo);
-                                var relSection = formBuilder.AddSection(rel.MemberName, E_VForm2LabelType.String);
+                                var relSection = section.AddSection(rel.MemberName, E_VForm2LabelType.String);
                                 BuildRecursively(relRefTarget, relSection);
                             }
                         }
                     }
-                    var refTarget = new RefTo.RefDisplayData(@ref.RefTo, @ref.RefTo);
-                    var section = new VerticalFormSection(@ref.MemberName, E_VForm2LabelType.String);
-                    BuildRecursively(refTarget, section);
                 }
             }
             foreach (var childDataClass in _dataClass.GetChildMembers()) {
@@ -138,7 +147,7 @@ namespace Nijo.Models.ReadModel2Features {
             var useFormType = $"AggregateType.{new DataClassForDisplay(_dataClass.Aggregate.GetRoot()).TsTypeName}";
             var vForm = BuildVerticalForm(context);
 
-            var registerNameArray = _dataClass.Aggregate.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, args).ToArray();
+            var registerNameArray = _dataClass.Aggregate.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, args).ToArray();
             var registerName = registerNameArray.Length > 0 ? $"`{registerNameArray.Join(".")}`" : string.Empty;
 
             // Childのレンダリング
@@ -160,7 +169,7 @@ namespace Nijo.Models.ReadModel2Features {
 
             // Variationメンバーのレンダリング
             if (_relationMember is AggregateMember.VariationItem variation) {
-                var switchProp = $"`{variation.Group.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, args).Join(".")}`";
+                var switchProp = $"`{variation.Group.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, args).Join(".")}`";
 
                 return $$"""
                     const {{componentName}} = ({{{args.Join(", ")}} }: {

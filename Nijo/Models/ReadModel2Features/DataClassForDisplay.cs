@@ -35,10 +35,10 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>値クラス名</summary>
         internal string ValueCsClassName => $"{CsClassName}Values";
 
-        /// <summary>メッセージ情報が格納されるプロパティの名前（C#）</summary>
-        internal const string MESSAGES_CS = "Messages";
-        /// <summary>メッセージ情報が格納されるプロパティの名前（TypeScript）</summary>
-        internal const string MESSAGES_TS = "messages";
+        /// <summary>エラーメッセージ情報が格納されるプロパティの名前（C#）</summary>
+        internal const string MESSAGES_CS = "Errors";
+        /// <summary>エラーメッセージ情報が格納されるプロパティの名前（TypeScript）</summary>
+        internal const string MESSAGES_TS = "errors";
         /// <summary>
         /// メンバーでなくオブジェクト自身へのメッセージ（TypeScript）。
         /// JsonNodeを直に組み立てるため、これと対応するC#の定数は無い。
@@ -684,25 +684,36 @@ namespace Nijo.Models.ReadModel2Features {
         /// React hook form のregister名でのフルパス
         /// </summary>
         /// <param name="arrayIndexes">配列インデックスを指定する変数の名前</param>
-        internal static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this GraphNode<Aggregate> aggregate, E_CsTs csts, IEnumerable<string>? arrayIndexes = null) {
-            return GetFullPathAsReactHookFormRegisterName(aggregate, csts, false, arrayIndexes);
+        internal static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this GraphNode<Aggregate> aggregate, E_CsTs csts, E_PathType pathType, IEnumerable<string>? arrayIndexes = null) {
+            if (pathType != E_PathType.Value) {
+                yield return GetDisplayDataPropertyPrefix(csts, pathType);
+            }
+            foreach (var path in GetFullPathAsReactHookFormRegisterName(aggregate, csts, pathType, false, arrayIndexes)) {
+                yield return path;
+            }
+            if (pathType == E_PathType.ErrorMessage && csts == E_CsTs.TypeScript) {
+                yield return DataClassForDisplay.OWN_MESSAGES_TS;
+            }
         }
 
         /// <summary>
         /// React hook form のregister名でのフルパス
         /// </summary>
         /// <param name="arrayIndexes">配列インデックスを指定する変数の名前</param>
-        internal static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this AggregateMember.AggregateMemberBase member, E_CsTs csts, IEnumerable<string>? arrayIndexes = null) {
-            foreach (var path in GetFullPathAsReactHookFormRegisterName(member.Owner, csts, true, arrayIndexes)) {
+        internal static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this AggregateMember.AggregateMemberBase member, E_CsTs csts, E_PathType pathType, IEnumerable<string>? arrayIndexes = null) {
+            if (pathType != E_PathType.Value) {
+                yield return GetDisplayDataPropertyPrefix(csts, pathType);
+            }
+            foreach (var path in GetFullPathAsReactHookFormRegisterName(member.Owner, csts, pathType, true, arrayIndexes)) {
                 yield return path;
             }
-            yield return csts == E_CsTs.CSharp
-                ? DataClassForDisplay.VALUES_CS
-                : DataClassForDisplay.VALUES_TS;
+            if (pathType == E_PathType.Value) {
+                yield return GetDisplayDataPropertyPrefix(csts, pathType);
+            }
             yield return member.MemberName;
         }
 
-        private static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this GraphNode<Aggregate> aggregate, E_CsTs csts, bool enumerateLastChildrenIndex, IEnumerable<string>? arrayIndexes) {
+        private static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this GraphNode<Aggregate> aggregate, E_CsTs csts, E_PathType pathType, bool enumerateLastChildrenIndex, IEnumerable<string>? arrayIndexes) {
             var currentArrayIndex = 0;
 
             foreach (var edge in aggregate.PathFromEntry()) {
@@ -737,10 +748,9 @@ namespace Nijo.Models.ReadModel2Features {
                         }
 
                     } else if (edge.IsRef()) {
-                        yield return csts == E_CsTs.CSharp
-                            ? DataClassForDisplay.VALUES_CS
-                            : DataClassForDisplay.VALUES_TS;
-
+                        if (pathType == E_PathType.Value) {
+                            yield return GetDisplayDataPropertyPrefix(csts, pathType);
+                        }
                         yield return dataClass
                             .GetOwnMembers()
                             .OfType<AggregateMember.RelationMember>()
@@ -753,5 +763,29 @@ namespace Nijo.Models.ReadModel2Features {
                 }
             }
         }
+
+        private static string GetDisplayDataPropertyPrefix(E_CsTs csts, E_PathType pathType) {
+            return pathType switch {
+                E_PathType.Value => csts == E_CsTs.CSharp
+                    ? DataClassForDisplay.VALUES_CS
+                    : DataClassForDisplay.VALUES_TS,
+                E_PathType.ReadOnly => csts == E_CsTs.CSharp
+                    ? DataClassForDisplay.READONLY_CS
+                    : DataClassForDisplay.READONLY_TS,
+                E_PathType.ErrorMessage => csts == E_CsTs.CSharp
+                    ? DataClassForDisplay.MESSAGES_CS
+                    : DataClassForDisplay.MESSAGES_TS,
+                _ => throw new NotImplementedException(),
+            };
+        }
+    }
+
+    /// <summary>
+    /// 画面表示用データのReact hook form のフルパス取得でどの値のパスをとるか
+    /// </summary>
+    internal enum E_PathType {
+        Value,
+        ErrorMessage,
+        ReadOnly,
     }
 }

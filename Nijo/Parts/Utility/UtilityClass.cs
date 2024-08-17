@@ -45,6 +45,7 @@ namespace Nijo.Parts.Utility {
                     namespace {{context.Config.RootNamespace}} {
                         using System.Text.Json;
                         using System.Text.Json.Nodes;
+                        using System.Text.Json.Serialization;
 
                         public static partial class {{CLASSNAME}} {
                             public static void {{MODIFY_JSONOPTION}}(JsonSerializerOptions option) {
@@ -54,6 +55,9 @@ namespace Nijo.Parts.Utility {
                                 // json中のenumの値を名前で設定できるようにする
                                 var enumConverter = new System.Text.Json.Serialization.JsonStringEnumConverter();
                                 option.Converters.Add(enumConverter);
+
+                                // 値がnullの場合はレンダリングしない
+                                option.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 
                                 // カスタムコンバータ
                                 option.Converters.Add(new {{CUSTOM_CONVERTER_NAMESPACE}}.{{INT_CONVERTER}}());

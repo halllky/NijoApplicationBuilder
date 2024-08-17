@@ -121,6 +121,7 @@ namespace Nijo.Core.AggregateMemberTypes {
             };
             return $$"""
                 <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)}{{component.GetPropsStatement().Join("")}} />
+                {{ctx.RenderErrorMessage(vm)}}
                 """;
         }
     }

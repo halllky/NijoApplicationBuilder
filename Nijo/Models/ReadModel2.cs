@@ -118,6 +118,8 @@ namespace Nijo.Models {
                 dir.Generate(InstanceKey.RenderCSharp());
                 dir.Generate(ISaveCommandConvertible.Render());
             });
+
+            context.UseSummarizedFile<UtilityClass>().AddJsonConverter(ErrorReceiver.GetCustomJsonConverter());
         }
     }
 }

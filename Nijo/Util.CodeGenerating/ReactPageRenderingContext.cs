@@ -1,3 +1,4 @@
+using Nijo.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +20,11 @@ namespace Nijo.Util.CodeGenerating {
         public required string Register { get; init; }
 
         public required E_ReactPageRenderingObjectType RenderingObjectType { get; init; }
+
+        /// <summary>
+        /// エラーメッセージ表示コンポーネントをレンダリングします。
+        /// </summary>
+        public required Func<AggregateMember.ValueMember, string> RenderErrorMessage { get; init; }
     }
 
     /// <summary>

@@ -1,6 +1,7 @@
 using Nijo.Core;
 using Nijo.Models.WriteModel2Features;
 using Nijo.Parts.WebClient;
+using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -106,10 +107,33 @@ namespace Nijo.Models.ReadModel2Features {
                     .Select(vm => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript).ToArray())
                     .ToArray();
 
+                string? GetErrorVarName(AggregateMember.AggregateMemberBase m) {
+                    return m.DeclaringAggregate == _aggregate
+                        ? $"{m.MemberName}Errors"
+                        : null; // 参照先の項目はエラーメッセージなし
+                }
+                var errorVariables = dataClass
+                    .GetOwnMembers()
+                    .Where(m => m is not AggregateMember.ValueMember vm || !vm.Options.InvisibleInGui)
+                    .Where(m => m.DeclaringAggregate == _aggregate) // TODO #35 参照先のインライン表示ができるまでの暫定対応
+                    .Select(m => new {
+                        VarName = GetErrorVarName(m),
+                        FullPath = m.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.ErrorMessage),
+                    })
+                    .ToArray();
+
                 var pageContext = new ReactPageRenderingContext {
                     CodeRenderingContext = ctx,
                     Register = "registerEx",
                     RenderingObjectType = E_ReactPageRenderingObjectType.DataClassForDisplay,
+                    RenderErrorMessage = vm => {
+                        var err = GetErrorVarName(vm);
+                        return $$"""
+                            {{If(err != null, () => $$"""
+                            <Input.ErrorMessage value={{{err}}} />
+                            """)}}
+                            """;
+                    },
                 };
                 var rootAggregateComponent = new SingleViewAggregateComponent(_aggregate);
                 var vForm = rootAggregateComponent.BuildVerticalForm(pageContext);
@@ -120,7 +144,7 @@ namespace Nijo.Models.ReadModel2Features {
                     import React, { useState, useEffect, useCallback, useMemo, useReducer, useRef, useId, useContext, createContext } from 'react'
                     import useEvent from 'react-use-event-hook'
                     import { Link, useParams, useNavigate, useLocation } from 'react-router-dom'
-                    import { SubmitHandler, useForm, FormProvider, useFormContext, useFieldArray } from 'react-hook-form'
+                    import { SubmitHandler, useForm, FormProvider, useFormContext, useFieldArray, useWatch } from 'react-hook-form'
                     import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline'
                     import dayjs from 'dayjs'
                     import * as Input from '../../input'
@@ -136,7 +160,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                       // 表示データ
                       const reactHookFormMethods = Util.useFormEx<AggregateType.{{dataClass.TsTypeName}}>({})
-                      const { register, registerEx, getValues, setValue, reset } = reactHookFormMethods
+                      const { register, registerEx, getValues, setValue, reset, control } = reactHookFormMethods
                     {{If(_type != E_Type.New, () => $$"""
                       const [displayName, setDisplayName] = useState('')
                     """)}}
@@ -206,6 +230,12 @@ namespace Nijo.Models.ReadModel2Features {
                       })
 
                     """)}}
+                      // エラーメッセージ
+                      const ownErrors = useWatch({ name: '{{_aggregate.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.ErrorMessage).Join(".")}}', control })
+                    {{errorVariables.SelectTextTemplate(err => $$"""
+                      const {{err.VarName}} = useWatch({ name: `{{err.FullPath.Join(".")}}`, control })
+                    """)}}
+
                       return (
                         <FormProvider {...reactHookFormMethods}>
                           <Layout.PageFrame
@@ -226,6 +256,7 @@ namespace Nijo.Models.ReadModel2Features {
                     """)}}
                             </>}
                           >
+                            <Input.ErrorMessage value={ownErrors} />
                             {{WithIndent(vForm.RenderAsRoot(ctx), "        ")}}
                           </Layout.PageFrame>
                         </FormProvider>

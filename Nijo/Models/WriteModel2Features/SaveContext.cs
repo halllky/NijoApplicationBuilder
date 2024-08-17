@@ -100,7 +100,7 @@ namespace Nijo.Models.WriteModel2Features {
                                 var node = kv.Value.ToJsonNode();
                                 array.Add(node);
                             }
-                            return array.ToJsonString();
+                            return array.ToJson();
                         }
                         #endregion エラー
 

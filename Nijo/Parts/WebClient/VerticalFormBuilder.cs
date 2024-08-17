@@ -135,9 +135,7 @@ namespace Nijo.Parts.WebClient {
                     """;
             } else {
                 label = $$"""
-                     label={(
-                      {{WithIndent(_label, "  ")}}
-                    )}
+                     label={{{_label}}}
                     """;
             }
 

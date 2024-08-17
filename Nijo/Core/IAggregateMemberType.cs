@@ -157,6 +157,7 @@ namespace Nijo.Core {
             };
             return $$"""
                 <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)} />
+                {{ctx.RenderErrorMessage(vm)}}
                 """;
         }
 
@@ -281,6 +282,7 @@ namespace Nijo.Core {
             };
             return $$"""
                 <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)}{{component.GetPropsStatement().Join("")}} />
+                {{ctx.RenderErrorMessage(vm)}}
                 """;
         }
     }

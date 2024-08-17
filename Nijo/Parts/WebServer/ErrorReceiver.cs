@@ -192,5 +192,24 @@ namespace Nijo.Parts.WebServer {
                     """;
             },
         };
+
+        internal static Utility.UtilityClass.CustomJsonConverter GetCustomJsonConverter() => new Utility.UtilityClass.CustomJsonConverter {
+            ConverterClassName = $"{RECEIVER}JsonConverter",
+            ConverterClassDeclaring = $$"""
+                class {{RECEIVER}}JsonConverter : JsonConverter<{{RECEIVER}}> {
+                    public override {{RECEIVER}}? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
+                        return null;
+                    }
+                    public override void Write(Utf8JsonWriter writer, {{RECEIVER}}? value, JsonSerializerOptions options) {
+                        var jsonNode = value?.ToJsonNode();
+                        if (jsonNode == null) {
+                            writer.WriteNullValue();
+                        } else {
+                            writer.WriteStringValue(jsonNode.ToJson());
+                        }
+                    }
+                }
+                """,
+        };
     }
 }
