@@ -35,19 +35,8 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>値クラス名</summary>
         internal string ValueCsClassName => $"{CsClassName}Values";
 
-        /// <summary>エラーメッセージ情報が格納されるプロパティの名前（C#）</summary>
-        internal const string MESSAGES_CS = "Errors";
-        /// <summary>エラーメッセージ情報が格納されるプロパティの名前（TypeScript）</summary>
-        internal const string MESSAGES_TS = "errors";
-        /// <summary>
-        /// メンバーでなくオブジェクト自身へのメッセージ（TypeScript）。
-        /// JsonNodeを直に組み立てるため、これと対応するC#の定数は無い。
-        /// </summary>
-        internal const string OWN_MESSAGES_TS = "ownMessages";
         /// <summary>エラーメッセージ用構造体 C#クラス名</summary>
         internal string MessageDataCsClassName => $"{CsClassName}ErrorMessages";
-        /// <summary>エラーメッセージ用構造体 TypeScript型名</summary>
-        internal string MessageDataTsTypeName => $"{CsClassName}ErrorMessages";
 
         /// <summary>読み取り専用か否かが格納されるプロパティの名前（C#）</summary>
         internal const string READONLY_CS = "ReadOnly";
@@ -204,9 +193,6 @@ namespace Nijo.Models.ReadModel2Features {
                     [JsonPropertyName("{{VERSION_TS}}")]
                     public virtual int? {{VERSION_CS}} { get; set; }
                 """)}}
-                    /// <summary>メッセージ</summary>
-                    [JsonPropertyName("{{MESSAGES_TS}}")]
-                    public virtual {{MessageDataCsClassName}} {{MESSAGES_CS}} { get; set; } = new();
                     /// <summary>どの項目が読み取り専用か</summary>
                     [JsonPropertyName("{{READONLY_TS}}")]
                     public virtual {{ReadOnlyDataCsClassName}} {{READONLY_CS}} { get; set; } = new();
@@ -252,13 +238,9 @@ namespace Nijo.Models.ReadModel2Features {
                   /** 楽観排他制御用のバージョニング情報 */
                   {{VERSION_TS}}: number | undefined
                 """)}}
-                  /** メッセージ */
-                  {{MESSAGES_TS}}?: {{WithIndent(MessageDataTsTypeName, "  ")}}
                   /** どの項目が読み取り専用か */
                   {{READONLY_TS}}?: {{WithIndent(RenderReadonlyTsType(context), "  ")}}
                 }
-
-                {{RenderMessageTs(context)}}
                 """;
         }
 
@@ -293,10 +275,12 @@ namespace Nijo.Models.ReadModel2Features {
         private string RenderCsMessageClass(CodeRenderingContext context) {
             var members = GetOwnMembers().Select(m => new {
                 m.MemberName,
+                RHFName = $"{VALUES_TS}.{m.MemberName}",
                 CsTypeName = ErrorReceiver.RECEIVER,
                 m.Order,
             }).Concat(GetChildMembers().Select(desc => new {
                 desc.MemberName,
+                RHFName = desc.MemberName,
                 CsTypeName = desc.MemberInfo is AggregateMember.Children children
                     ? $"{ErrorReceiver.RECEIVER_LIST}<{desc.MessageDataCsClassName}>"
                     : desc.MessageDataCsClassName,
@@ -323,42 +307,18 @@ namespace Nijo.Models.ReadModel2Features {
                     }
                 """)}}
 
-                    public override JsonNode? ToJsonNode() {
-                        if (HasError()) {
-                            return new JsonObject {
-                                ["{{OWN_MESSAGES_TS}}"] = base.ToJsonNode(),
-                {{members.SelectTextTemplate(m => $$"""
-                                [nameof({{m.MemberName}})] = {{m.MemberName}}.ToJsonNode(),
-                """)}}
-                            };
-                        } else {
-                            return null;
+                    public override IEnumerable<JsonNode> ToJsonNodes(string? path) {
+                        // このオブジェクト自身に対するエラー
+                        foreach (var node in base.ToJsonNodes(path)) {
+                            yield return node;
                         }
-                    }
-                }
-                """;
-        }
-        private string RenderMessageTs(CodeRenderingContext context) {
-            var members = GetOwnMembers().Select(m => new {
-                m.MemberName,
-                TsTypeName = ErrorReceiver.TS_TYPE_NAME,
-                m.Order,
-            }).Concat(GetChildMembers().Select(desc => new {
-                desc.MemberName,
-                TsTypeName = desc.MemberInfo is AggregateMember.Children children
-                    ? $"{{ {ErrorReceiver.RECEIVER_LIST_OWN_ERRORS}: {ErrorReceiver.TS_TYPE_NAME}, {ErrorReceiver.RECEIVER_LIST_ITEM_ERRORS}: {desc.MessageDataTsTypeName}[] }}"
-                    : desc.MessageDataTsTypeName,
-                desc.MemberInfo.Order,
-            }))
-            .OrderBy(m => m.Order)
-            .ToArray();
 
-            return $$"""
-                export type {{MessageDataTsTypeName}} = {
-                  {{OWN_MESSAGES_TS}}?: {{ErrorReceiver.TS_TYPE_NAME}}
+                        // 各メンバーに対するエラー
+                        var p = path == null ? string.Empty : $"{path}.";
                 {{members.SelectTextTemplate(m => $$"""
-                  {{m.MemberName}}?: {{m.TsTypeName}}
+                        foreach (var node in {{m.MemberName}}.ToJsonNodes($"{p}{{m.RHFName}}")) yield return node;
                 """)}}
+                    }
                 }
                 """;
         }
@@ -691,9 +651,6 @@ namespace Nijo.Models.ReadModel2Features {
             foreach (var path in GetFullPathAsReactHookFormRegisterName(aggregate, csts, pathType, false, arrayIndexes)) {
                 yield return path;
             }
-            if (pathType == E_PathType.ErrorMessage && csts == E_CsTs.TypeScript) {
-                yield return DataClassForDisplay.OWN_MESSAGES_TS;
-            }
         }
 
         /// <summary>
@@ -772,9 +729,6 @@ namespace Nijo.Models.ReadModel2Features {
                 E_PathType.ReadOnly => csts == E_CsTs.CSharp
                     ? DataClassForDisplay.READONLY_CS
                     : DataClassForDisplay.READONLY_TS,
-                E_PathType.ErrorMessage => csts == E_CsTs.CSharp
-                    ? DataClassForDisplay.MESSAGES_CS
-                    : DataClassForDisplay.MESSAGES_TS,
                 _ => throw new NotImplementedException(),
             };
         }
@@ -785,7 +739,6 @@ namespace Nijo.Models.ReadModel2Features {
     /// </summary>
     internal enum E_PathType {
         Value,
-        ErrorMessage,
         ReadOnly,
     }
 }

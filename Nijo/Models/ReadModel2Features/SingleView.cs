@@ -115,7 +115,7 @@ namespace Nijo.Models.ReadModel2Features {
                     import React, { useState, useEffect, useCallback, useMemo, useReducer, useRef, useId, useContext, createContext } from 'react'
                     import useEvent from 'react-use-event-hook'
                     import { Link, useParams, useNavigate, useLocation } from 'react-router-dom'
-                    import { SubmitHandler, useForm, FormProvider, useFormContext, useFieldArray, useWatch } from 'react-hook-form'
+                    import { SubmitHandler, useForm, FormProvider, useFormContext, useFieldArray, useWatch, FieldPath } from 'react-hook-form'
                     import { BookmarkSquareIcon, PencilIcon, XMarkIcon, PlusIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline'
                     import dayjs from 'dayjs'
                     import * as Input from '../../input'
@@ -131,7 +131,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                       // 表示データ
                       const reactHookFormMethods = Util.useFormEx<AggregateType.{{dataClass.TsTypeName}}>({ criteriaMode: 'all' })
-                      const { register, registerEx, getValues, setValue, reset, control } = reactHookFormMethods
+                      const { register, registerEx, getValues, setValue, setError, reset, control } = reactHookFormMethods
                     {{If(_type != E_Type.New, () => $$"""
                       const [displayName, setDisplayName] = useState('')
                     """)}}
@@ -185,11 +185,17 @@ namespace Nijo.Models.ReadModel2Features {
                     {{If(_type == E_Type.New || _type == E_Type.Edit, () => $$"""
                       // 保存時
                       const { {{BatchUpdateReadModel.HOOK_NAME}} } = AggregateHook.{{BatchUpdateWriteModel.HOOK_NAME}}()
-                      const handleSave = useEvent(() => {
-                        {{BatchUpdateReadModel.HOOK_NAME}}({
+                      const handleSave = useEvent(async () => {
+                        const response = await {{BatchUpdateReadModel.HOOK_NAME}}({
                           dataType: '{{BatchUpdateReadModel.GetDataTypeLiteral(_aggregate)}}',
                           values: getValues(),
                         })
+                        if (!response.ok) {
+                          const errors = response.errors as [FieldPath<AggregateType.{{dataClass.TsTypeName}}>, { types: { [key: string]: string } }][][]
+                          for (const [name, error] of errors[0]) {
+                            setError(name, error)
+                          }
+                        }
                       })
 
                     """)}}

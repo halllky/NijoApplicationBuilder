@@ -151,16 +151,6 @@ namespace Nijo.Models.ReadModel2Features {
             // ルート要素のコンポーネントのレンダリング
             var vForm = BuildVerticalForm(context);
 
-            var errorVariables = _dataClass
-                .GetOwnMembers()
-                .Where(m => m is not AggregateMember.ValueMember vm || !vm.Options.InvisibleInGui)
-                .Where(m => m.DeclaringAggregate == _dataClass.Aggregate) // 参照先の項目を弾く
-                .Select(m => new {
-                    VarName = $"{m.MemberName}Errors",
-                    FullPath = m.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.ErrorMessage),
-                })
-                .ToArray();
-
             return $$"""
                 const {{ComponentName}} = () => {
                   const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()

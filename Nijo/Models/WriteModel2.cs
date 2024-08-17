@@ -36,7 +36,6 @@ namespace Nijo.Models {
                 aggregateFile.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharpErrorStructure(context));
                 aggregateFile.DataClassDeclaring.Add(dataClassForNewItem.RenderCSharpReadOnlyStructure(context));
                 context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScript(context));
-                context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScriptErrorStructure(context));
                 context.ReactProject.Types.Add(rootAggregate, dataClassForNewItem.RenderTypeScriptReadOnlyStructure(context));
 
                 // データ型: DataClassForSave
@@ -45,7 +44,6 @@ namespace Nijo.Models {
                 aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharpErrorStructure(context));
                 aggregateFile.DataClassDeclaring.Add(dataClassForSave.RenderCSharpReadOnlyStructure(context));
                 context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScript(context));
-                context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScriptErrorStructure(context));
                 context.ReactProject.Types.Add(rootAggregate, dataClassForSave.RenderTypeScriptReadOnlyStructure(context));
 
                 // データ型: 作成・更新・削除で共有するもの

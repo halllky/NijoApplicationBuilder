@@ -94,13 +94,13 @@ namespace Nijo.Models.WriteModel2Features {
                         public bool HasError() {
                             return _errors.Values.Any(e => e.HasError());
                         }
-                        public string GetErrorDataJson() {
+                        public JsonNode GetErrorDataJson() {
                             var array = new JsonArray();
                             foreach (var kv in _errors.OrderBy(kv => kv.Key)) {
-                                var node = kv.Value.ToJsonNode();
+                                var node = kv.Value.ToJsonNodes(null);
                                 array.Add(node);
                             }
-                            return array.ToJson();
+                            return array;
                         }
                         #endregion エラー
 

@@ -36,7 +36,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// <summary>
                 /// 新しい{{_rootAggregate.Item.DisplayName}}を作成する情報を受け取って登録します。
                 /// </summary>
-                public virtual void {{MethodName}}({{argType}} command, {{SaveContext.BEFORE_SAVE}}<{{dataClass.ErrorDataTsTypeName}}> saveContext) {
+                public virtual void {{MethodName}}({{argType}} command, {{SaveContext.BEFORE_SAVE}}<{{dataClass.ErrorDataCsClassName}}> saveContext) {
 
                     var dbEntity = command.{{DataClassForSaveBase.VALUES_CS}}.{{DataClassForSave.TO_DBENTITY}}();
 
@@ -72,7 +72,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// {{_rootAggregate.Item.DisplayName}}の新規登録前に実行されます。
                 /// エラーチェック、ワーニング、自動算出項目の設定などを行います。
                 /// </summary>
-                protected virtual void {{BeforeMethodName}}({{efCoreEntity.ClassName}} dbEntity, {{SaveContext.BEFORE_SAVE}}<{{dataClass.ErrorDataTsTypeName}}> context) {
+                protected virtual void {{BeforeMethodName}}({{efCoreEntity.ClassName}} dbEntity, {{SaveContext.BEFORE_SAVE}}<{{dataClass.ErrorDataCsClassName}}> context) {
                     // このメソッドをオーバーライドしてエラーチェック等を記述してください。
                 }
                 /// <summary>

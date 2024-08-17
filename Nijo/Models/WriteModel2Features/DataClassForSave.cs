@@ -199,17 +199,6 @@ namespace Nijo.Models.WriteModel2Features {
         internal string ErrorDataCsClassName => Type == E_Type.Create
             ? $"{_aggregate.Item.PhysicalName}CreateCommandErrorData"
             : $"{_aggregate.Item.PhysicalName}SaveCommandErrorData";
-        /// <summary>
-        /// エラーメッセージ用構造体 TypeScript型名
-        /// </summary>
-        internal string ErrorDataTsTypeName => Type == E_Type.Create
-            ? $"{_aggregate.Item.PhysicalName}CreateCommandErrorData"
-            : $"{_aggregate.Item.PhysicalName}SaveCommandErrorData";
-
-        /// <summary>
-        /// データクラスのメンバーではなくデータクラス自身につくエラー
-        /// </summary>
-        private const string OWN_ERRORS_TS = "_ownErrors";
 
         /// <summary>
         /// エラーデータ構造体を定義します（C#）
@@ -244,44 +233,18 @@ namespace Nijo.Models.WriteModel2Features {
                     }
                 """)}}
 
-                    public override JsonNode? ToJsonNode() {
-                        if (HasError()) {
-                            return new JsonObject {
-                                ["{{OWN_ERRORS_TS}}"] = base.ToJsonNode(),
-                {{members.SelectTextTemplate(m => $$"""
-                                [nameof({{m.MemberName}})] = {{m.MemberName}}.ToJsonNode(),
-                """)}}
-                            };
-                        } else {
-                            return null;
+                    public override IEnumerable<JsonNode> ToJsonNodes(string? path) {
+                        // このオブジェクト自身に対するエラー
+                        foreach (var node in base.ToJsonNodes(path)) {
+                            yield return node;
                         }
+
+                        // 各メンバーに対するエラー
+                        var p = path == null ? string.Empty : $"{path}.";
+                {{members.SelectTextTemplate(m => $$"""
+                        foreach (var node in {{m.MemberName}}.ToJsonNodes($"{p}{{m.MemberName}}")) yield return node;
+                """)}}
                     }
-                }
-                """;
-        }
-        /// <summary>
-        /// エラーメッセージ格納用の構造体を定義します（TypeScript）
-        /// </summary>
-        internal string RenderTypeScriptErrorStructure(CodeRenderingContext context) {
-            var members = new List<string>();
-            foreach (var m in GetOwnMembers()) {
-                if (m is AggregateMember.ValueMember || m is AggregateMember.Ref) {
-                    members.Add($"{m.MemberName}?: {ErrorReceiver.TS_TYPE_NAME}");
-
-                } else if (m is AggregateMember.Children children) {
-                    var descendant = new DataClassForSave(children.ChildrenAggregate, Type);
-                    members.Add($"{m.MemberName}?: {{ {ErrorReceiver.RECEIVER_LIST_OWN_ERRORS}: {ErrorReceiver.TS_TYPE_NAME}, {ErrorReceiver.RECEIVER_LIST_ITEM_ERRORS}: {descendant.ErrorDataTsTypeName}[] }}");
-
-                } else if (m is AggregateMember.RelationMember rel) {
-                    var descendant = new DataClassForSave(rel.MemberAggregate, Type);
-                    members.Add($"{m.MemberName}?: {descendant.ErrorDataTsTypeName}");
-                }
-            }
-            return $$"""
-                /** {{_aggregate.Item.DisplayName}}のエラーメッセージ格納用の型 */
-                export type {{ErrorDataTsTypeName}} = {
-                  {{OWN_ERRORS_TS}}?: {{ErrorReceiver.TS_TYPE_NAME}}
-                  {{WithIndent(members, "  ")}}
                 }
                 """;
         }

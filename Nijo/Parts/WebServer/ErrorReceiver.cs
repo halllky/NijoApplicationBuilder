@@ -16,13 +16,19 @@ namespace Nijo.Parts.WebServer {
         internal const string RECEIVER = "ErrorReceiver";
         internal const string FORWARD_TO = "ForwardTo";
         internal const string EXEC_TRANSFER_MESSAGE = "ExecuteTransferMessages";
-        internal const string TS_TYPE_NAME = "string[]";
 
         internal const string RECEIVER_LIST = "ErrorReceiverList";
-        internal const string RECEIVER_LIST_OWN_ERRORS = "ownErrors";
-        internal const string RECEIVER_LIST_ITEM_ERRORS = "itemErrors";
 
         internal const string ERROR_MESSAGE_MAPPER = "ErrorMessageMapper";
+
+        /// <summary>
+        /// React hook form のsetErrorsの引数の形に準じている
+        /// </summary>
+        internal const string CLIENT_TYPE_TS = "[string, { types: { [key: string]: string } }]";
+        /// <summary>
+        /// React hook form ではルート要素自体へのエラーはこの名前で設定される
+        /// </summary>
+        internal const string ERROR_TO_ROOT = "root";
 
         internal static SourceFile RenderCSharp() => new SourceFile {
             FileName = "ErrorReceiver.cs",
@@ -58,18 +64,20 @@ namespace Nijo.Parts.WebServer {
                         /// このオブジェクトをJSON要素に変換します。
                         /// クライアント側へ返されるHTTPレスポンスではこのメソッドが使用されます。
                         /// JSON要素はクライアント側の画面でハンドリングされるエラーデータと同じ構造を持つ必要があります。
-                        /// エラーメッセージが無い場合はnullを返します。
                         /// </summary>
-                        public virtual JsonNode? ToJsonNode() {
+                        /// <param name="path">React hook form のフィールドパスの記法に従った祖先要素のパス（末尾ピリオドなし）。nullの場合はルート要素であることを示す</param>
+                        public virtual IEnumerable<JsonNode> ToJsonNodes(string? path) {
                             if (_errorMessages.Count == 0) {
-                                return null;
-                            } else {
-                                var array = new JsonArray();
-                                foreach (var message in _errorMessages) {
-                                    array.Add(message);
-                                }
-                                return array;
+                                yield break;
                             }
+                            var types = new JsonObject();
+                            for (var i = 0; i < _errorMessages.Count; i++) {
+                                types[i.ToString()] = _errorMessages[i];
+                            }
+                            yield return new JsonArray {
+                                path ?? "{{ERROR_TO_ROOT}}",
+                                new JsonObject { ["types"] = types },
+                            };
                         }
 
                         /// <summary>直近の子要素を列挙する。</summary>
@@ -156,14 +164,21 @@ namespace Nijo.Parts.WebServer {
                             }
                         }
 
-                        public override JsonNode? ToJsonNode() {
-                            if (HasError()) {
-                                return new JsonObject {
-                                    ["{{RECEIVER_LIST_OWN_ERRORS}}"] = base.ToJsonNode(),
-                                    ["{{RECEIVER_LIST_ITEM_ERRORS}}"] = new JsonArray(this.Select(item => item?.ToJsonNode()).ToArray()),
-                                };
-                            } else {
-                                return null;
+                        public override IEnumerable<JsonNode> ToJsonNodes(string? path) {
+                            // この配列自身に対するエラー
+                            foreach (var node in base.ToJsonNodes(path)) {
+                                yield return node;
+                            }
+
+                            // 配列の各要素に対するエラー
+                            var items = this.ToArray();
+                            for (var i = 0; i < items.Length; i++) {
+                                var item = items[i];
+                                if (item == null) continue;
+
+                                foreach (var node in item.ToJsonNodes($"{path ?? "{{ERROR_TO_ROOT}}"}.{i}")) {
+                                    yield return node;
+                                }
                             }
                         }
                     }
@@ -191,25 +206,6 @@ namespace Nijo.Parts.WebServer {
                     }
                     """;
             },
-        };
-
-        internal static Utility.UtilityClass.CustomJsonConverter GetCustomJsonConverter() => new Utility.UtilityClass.CustomJsonConverter {
-            ConverterClassName = $"{RECEIVER}JsonConverter",
-            ConverterClassDeclaring = $$"""
-                class {{RECEIVER}}JsonConverter : JsonConverter<{{RECEIVER}}> {
-                    public override {{RECEIVER}}? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
-                        return null;
-                    }
-                    public override void Write(Utf8JsonWriter writer, {{RECEIVER}}? value, JsonSerializerOptions options) {
-                        var jsonNode = value?.ToJsonNode();
-                        if (jsonNode == null) {
-                            writer.WriteNullValue();
-                        } else {
-                            writer.WriteStringValue(jsonNode.ToJson());
-                        }
-                    }
-                }
-                """,
         };
     }
 }
