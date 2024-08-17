@@ -34,7 +34,16 @@ namespace Nijo.Models.WriteModel2Features {
 
             var keys = _rootAggregate
                 .GetKeys()
-                .OfType<AggregateMember.ValueMember>();
+                .OfType<AggregateMember.ValueMember>()
+                .Select((vm, i) => new {
+                    TempVarName = $"searchKey{i + 1}",
+                    vm.MemberName,
+                    DbEntityFullPath = vm.Declared.GetFullPathAsDbEntity().ToArray(),
+                    ErrorFullPath = vm.Declared.Owner.IsOutOfEntryTree()
+                        ? vm.Declared.Owner.GetRefEntryEdge().Terminal.GetFullPathAsForSave()
+                        : vm.Declared.GetFullPathAsForSave(),
+                })
+                .ToArray();
 
             return $$"""
                 /// <summary>
@@ -44,9 +53,9 @@ namespace Nijo.Models.WriteModel2Features {
                     var afterDbEntity = after.{{DataClassForSaveBase.VALUES_CS}}.{{DataClassForSave.TO_DBENTITY}}();
 
                     // 更新に必要な項目が空の場合は処理中断
-                {{keys.SelectTextTemplate(vm => $$"""
-                    if (afterDbEntity.{{vm.Declared.GetFullPathAsDbEntity().Join("?.")}} == null) {
-                        saveContext.Errors.{{vm.Declared.GetFullPathAsDbEntity().Join(".")}}.Add("{{vm.MemberName}}が空です。");
+                {{keys.SelectTextTemplate(k => $$"""
+                    if (afterDbEntity.{{k.DbEntityFullPath.Join("?.")}} == null) {
+                        saveContext.Errors.{{k.ErrorFullPath.Join(".")}}.Add("{{k.MemberName}}が空です。");
                     }
                 """)}}
                     if (afterDbEntity.{{EFCoreEntity.VERSION}} == null) {
@@ -56,12 +65,19 @@ namespace Nijo.Models.WriteModel2Features {
                         return;
                     }
 
+                    #pragma warning disable CS8602 // null 参照の可能性があるものの逆参照です。
                     // 更新前データ取得
+                {{keys.SelectTextTemplate(k => $$"""
+                    var {{k.TempVarName}} = afterDbEntity.{{k.DbEntityFullPath.Join(".")}};
+                """)}}
+
                     var beforeDbEntity = {{appSrv.DbContext}}.{{efCoreEntity.DbSetName}}
                         {{WithIndent(efCoreEntity.RenderInclude(true), "        ")}}
-                        .SingleOrDefault(e {{WithIndent(keys.SelectTextTemplate((vm, i) => $$"""
-                                           {{(i == 0 ? "=>" : "&&")}} e.{{vm.GetFullPathAsDbEntity().Join(".")}} == afterDbEntity.{{vm.Declared.GetFullPathAsDbEntity().Join(".")}}
+                        .SingleOrDefault(e {{WithIndent(keys.SelectTextTemplate((k, i) => $$"""
+                                           {{(i == 0 ? "=>" : "&&")}} e.{{k.DbEntityFullPath.Join(".")}} == {{k.TempVarName}}
                                            """), "                           ")}});
+                    #pragma warning restore CS8602 // null 参照の可能性があるものの逆参照です。
+
                     if (beforeDbEntity == null) {
                         saveContext.Errors.Add("削除対象のデータが見つかりません。");
                         return;

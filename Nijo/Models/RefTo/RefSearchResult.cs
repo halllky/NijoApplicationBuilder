@@ -113,10 +113,10 @@ namespace Nijo.Models.RefTo {
                             """;
 
                     } else if (member is AggregateMember.Ref @ref) {
-                        return RenderRefSearchResultRecursively(@ref.RefTo, false);
+                        return RenderRefSearchResultRecursively(@ref.RefTo, dbEntityInstance, dbEntityAggregate, false);
 
-                        string RenderRefSearchResultRecursively(GraphNode<Aggregate> agg, bool renderNewClassName) {
-                            var rsr = new RefSearchResult(agg, _refEntry);
+                        string RenderRefSearchResultRecursively(GraphNode<Aggregate> renderingAgg, string instance, GraphNode<Aggregate> instanceAgg, bool renderNewClassName) {
+                            var rsr = new RefSearchResult(renderingAgg, _refEntry);
                             var @new = renderNewClassName
                                 ? $"new {rsr.CsClassName}"
                                 : $"new()";
@@ -127,26 +127,26 @@ namespace Nijo.Models.RefTo {
                                 """)}}
                                 }
                                 """;
-                        }
 
-                        string RenderRefSearchResultMember(AggregateMember.AggregateMemberBase m) {
-                            if (m is AggregateMember.ValueMember vm3) {
-                                return $$"""
-                                    {{dbEntityInstance}}.{{vm3.Declared.GetFullPathAsDbEntity(dbEntityAggregate).Join(".")}}
-                                    """;
+                            string RenderRefSearchResultMember(AggregateMember.AggregateMemberBase m) {
+                                if (m is AggregateMember.ValueMember vm3) {
+                                    return $$"""
+                                        {{instance}}.{{vm3.Declared.GetFullPathAsDbEntity(instanceAgg).Join(".")}}
+                                        """;
 
-                            } else if (m is AggregateMember.Children children3) {
-                                var depth = children3.Owner.PathFromEntry().Count();
-                                var x = depth == 0 ? "x" : $"x{depth}";
-                                return $$"""
-                                    {{dbEntityInstance}}.{{children3.GetFullPathAsDbEntity(dbEntityAggregate).Join(".")}}.Select({{x}} => {{RenderRefSearchResultRecursively(children3.ChildrenAggregate, true)}}).ToList()
-                                    """;
+                                } else if (m is AggregateMember.Children children3) {
+                                    var depth = children3.Owner.PathFromEntry().Count();
+                                    var x = depth == 0 ? "x" : $"x{depth}";
+                                    return $$"""
+                                        {{instance}}.{{children3.GetFullPathAsDbEntity(instanceAgg).Join(".")}}.Select({{x}} => {{RenderRefSearchResultRecursively(children3.ChildrenAggregate, x, children3.ChildrenAggregate, true)}}).ToList()
+                                        """;
 
-                            } else if (m is AggregateMember.RelationMember rm) {
-                                return RenderRefSearchResultRecursively(rm.MemberAggregate, false);
+                                } else if (m is AggregateMember.RelationMember rm) {
+                                    return RenderRefSearchResultRecursively(rm.MemberAggregate, instance, instanceAgg, false);
 
-                            } else {
-                                throw new NotImplementedException();
+                                } else {
+                                    throw new NotImplementedException();
+                                }
                             }
                         }
 

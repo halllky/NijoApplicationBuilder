@@ -226,8 +226,7 @@ namespace Nijo.Models.ReadModel2Features {
                 .ToArray();
             var keys = _aggregate
                 .GetKeys()
-                .OfType<AggregateMember.ValueMember>()
-                .Select(m => m.Declared.GetFullPathAsSearchResult().Join("."));
+                .OfType<AggregateMember.ValueMember>();
 
             return $$"""
                 /// <summary>
@@ -265,10 +264,10 @@ namespace Nijo.Models.ReadModel2Features {
                     }
                     if (sorted == null) {
                         // ソート順未指定の場合
-                {{keys.SelectTextTemplate((path, i) => i == 0 ? $$"""
-                        query = query.OrderBy(e => e.{{path}})
+                {{keys.SelectTextTemplate((vm, i) => i == 0 ? $$"""
+                        query = query.OrderBy(e => e.{{vm.Declared.GetFullPathAsSearchResult().Join(".")}})
                 """ : $$"""
-                            .ThenBy(e => e.{{path}})
+                            .ThenBy(e => e.{{vm.Declared.GetFullPathAsSearchResult().Join(".")}})
                 """)}};
                     } else {
                         query = sorted;

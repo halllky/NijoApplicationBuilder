@@ -283,13 +283,13 @@ namespace Nijo.Models.RefTo {
                     var depth = member.Owner.PathFromEntry().Count();
                     var x = depth == 0 ? "x" : $"x{depth}";
                     return $$"""
-                        {{instance}}.{{pathToArray.Join("?.")}}.Select({{x}} => {{rdd.RenderConvertFromRefSearchResultPrivate(x, children.ChildrenAggregate, true, pkDict)}}) ?? []
+                        {{instance}}.{{pathToArray.Join("?.")}}.Select({{x}} => {{rdd.RenderConvertFromRefSearchResultPrivate(x, children.ChildrenAggregate, true, pkDict)}}).ToList() ?? []
                         """;
 
                 } else if (member is AggregateMember.RelationMember rel) {
                     var rdd = new RefDisplayData(rel.MemberAggregate, _refEntry);
                     return $$"""
-                        {{rdd.RenderConvertFromRefSearchResultPrivate(instance, rel.MemberAggregate, false, pkDict)}}
+                        {{rdd.RenderConvertFromRefSearchResultPrivate(instance, instanceAggregate, false, pkDict)}}
                         """;
 
                 } else {

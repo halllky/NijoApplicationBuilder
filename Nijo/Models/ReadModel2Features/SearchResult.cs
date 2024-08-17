@@ -93,8 +93,29 @@ namespace Nijo.Models.ReadModel2Features {
             var path = aggregate.PathFromEntry();
             if (since != null) path = path.Since(since);
             if (until != null) path = path.Until(until);
+
             foreach (var edge in path) {
-                yield return edge.RelationName;
+                if (edge.IsRef()) {
+                    // ありえないパターンだが念のため
+                    if (edge.Source == edge.Terminal) {
+                        yield return "/* エラー！参照先から参照元へ辿る経路 */";
+                        yield break;
+                    }
+
+                    yield return edge.RelationName;
+
+                    // 参照先の経路の列挙
+                    var refEntry = edge.Terminal.As<Aggregate>();
+                    foreach (var refPath in aggregate.GetFullPathAsRefSearchResult(since: refEntry)) {
+                        yield return refPath;
+                    }
+                    yield break;
+
+                } else if (edge.IsParentChild() && edge.Source == edge.Terminal) {
+                    yield return "/* エラー！参照先でないのに子から親へ辿る経路はありえない */";
+                } else {
+                    yield return edge.RelationName;
+                }
             }
         }
         internal static IEnumerable<string> GetFullPathAsSearchResult(this AggregateMember.AggregateMemberBase member, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
@@ -106,6 +127,8 @@ namespace Nijo.Models.ReadModel2Features {
             }
             yield return member.MemberName;
         }
+
+        /* ↑ ↓ ここフルパスとして取得されるものの仕様が大きく違うので注意（もしかしたら下だけで十分で上は不要かもしれない……） */
 
         /// <summary>
         /// フルパスの途中で配列が出てきた場合はSelectやmapをかける
