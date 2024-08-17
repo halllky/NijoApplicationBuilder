@@ -149,12 +149,7 @@ namespace Nijo.Core {
 
         string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx) {
             var component = GetReactComponent();
-            var fullpath = ctx.RenderingObjectType switch {
-                E_ReactPageRenderingObjectType.SearchCondition => vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join("."),
-                E_ReactPageRenderingObjectType.RefTarget => vm.Declared.GetFullPathAsDataClassForRefTarget().Join("."),
-                E_ReactPageRenderingObjectType.DataClassForDisplay => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript).Join("."),
-                _ => throw new NotImplementedException(),
-            };
+            var fullpath = vm.Declared.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, ctx.AncestorsIndexes).Join(".");
             return $$"""
                 <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)} />
                 {{ctx.RenderErrorMessage(vm)}}
@@ -274,12 +269,7 @@ namespace Nijo.Core {
 
         string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx) {
             var component = GetReactComponent();
-            var fullpath = ctx.RenderingObjectType switch {
-                E_ReactPageRenderingObjectType.SearchCondition => vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join("."),
-                E_ReactPageRenderingObjectType.RefTarget => vm.Declared.GetFullPathAsDataClassForRefTarget().Join("."),
-                E_ReactPageRenderingObjectType.DataClassForDisplay => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript).Join("."),
-                _ => throw new NotImplementedException(),
-            };
+            var fullpath = vm.Declared.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, ctx.AncestorsIndexes).Join(".");
             return $$"""
                 <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)}{{component.GetPropsStatement().Join("")}} />
                 {{ctx.RenderErrorMessage(vm)}}

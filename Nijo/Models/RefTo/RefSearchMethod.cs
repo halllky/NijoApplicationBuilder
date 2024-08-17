@@ -123,6 +123,7 @@ namespace Nijo.Models.RefTo {
                 /// <returns>検索結果</returns>
                 public virtual IEnumerable<{{searchResult.CsClassName}}> {{AppSrvLoadMethod}}({{searchCondition.CsClassName}} searchCondition) {
                     #pragma warning disable CS8602 // null 参照の可能性があるものの逆参照です。
+                    #pragma warning disable CS8603 // Null 参照戻り値である可能性があります。
                     #pragma warning disable CS8604 // Null 参照引数の可能性があります。
 
                     var query = (IQueryable<{{dbEntity.ClassName}}>)DbContext.{{dbEntity.DbSetName}};
@@ -178,6 +179,7 @@ namespace Nijo.Models.RefTo {
                     return searchResult;
 
                     #pragma warning restore CS8604 // Null 参照引数の可能性があります。
+                    #pragma warning restore CS8603 // Null 参照戻り値である可能性があります。
                     #pragma warning restore CS8602 // null 参照の可能性があるものの逆参照です。
                 }
 
@@ -228,6 +230,22 @@ namespace Nijo.Models.RefTo {
 
             // 通常の一覧検索結果を参照先検索結果に変換する
             string RenderResultConverting(RefDisplayData rsr, string instance, GraphNode<Aggregate> instanceAggregate, bool renderNewClassName) {
+                var @new = renderNewClassName
+                    ? $"new {rsr.CsClassName}"
+                    : $"new()";
+                var instanceKey = ancestors.Length == 0
+                    ? $"{instance}.{DataClassForDisplay.INSTANCE_KEY_CS}"
+                    : $"{instance}.{C_CHILD}.{DataClassForDisplay.INSTANCE_KEY_CS}";
+                return $$"""
+                    {{@new}} {
+                    {{If(rsr == refSearchResult, () => $$"""
+                        {{RefDisplayData.INSTANCE_KEY_CS}} = {{instanceKey}},
+                    """)}}
+                    {{rsr.GetOwnMembers().SelectTextTemplate(member => $$"""
+                        {{RefDisplayData.GetMemberName(member)}} = {{WithIndent(RenderMember(member), "    ")}},
+                    """)}}
+                    }
+                    """;
 
                 string RenderMember(AggregateMember.AggregateMemberBase member) {
                     if (member is AggregateMember.ValueMember vm) {
@@ -251,23 +269,6 @@ namespace Nijo.Models.RefTo {
                             """;
                     }
                 }
-
-                var @new = renderNewClassName
-                    ? $"new {rsr.CsClassName}"
-                    : $"new()";
-                var instanceKey = ancestors.Length == 0
-                    ? $"{instance}.{DataClassForDisplay.INSTANCE_KEY_CS}"
-                    : $"{instance}.{C_CHILD}.{DataClassForDisplay.INSTANCE_KEY_CS}";
-                return $$"""
-                    {{@new}} {
-                    {{If(rsr == refSearchResult, () => $$"""
-                        {{RefDisplayData.INSTANCE_KEY_CS}} = {{instanceKey}},
-                    """)}}
-                    {{rsr.GetOwnMembers().SelectTextTemplate(member => $$"""
-                        {{RefDisplayData.GetMemberName(member)}} = {{WithIndent(RenderMember(member), "    ")}},
-                    """)}}
-                    }
-                    """;
             }
 
             return $$"""

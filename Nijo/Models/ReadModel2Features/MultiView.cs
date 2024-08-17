@@ -45,6 +45,7 @@ namespace Nijo.Models.ReadModel2Features {
                     CodeRenderingContext = context,
                     Register = "registerExCondition",
                     RenderingObjectType = E_ReactPageRenderingObjectType.SearchCondition,
+                    AncestorsIndexes = Enumerable.Empty<string>(),
                     RenderErrorMessage = vm => throw new InvalidOperationException("検索条件欄では項目ごとにエラーメッセージを表示するという概念が無い"),
                 };
 

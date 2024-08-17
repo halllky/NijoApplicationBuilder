@@ -253,7 +253,7 @@ namespace Nijo.Models.RefTo {
             foreach (var key in _aggregate.GetKeys().OfType<AggregateMember.ValueMember>()) {
                 if (!pkDict.TryGetValue(key.Declared, out var keyString)) {
                     keyString = $"{instance}.{key.Declared.GetFullPathAsRefSearchResult(since: instanceAggregate).Join("?.")}";
-                    pkDict.Add(key, keyString);
+                    pkDict.Add(key.Declared, keyString);
                 }
                 keys.Add(keyString);
             }

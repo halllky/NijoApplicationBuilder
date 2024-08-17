@@ -475,7 +475,7 @@ namespace Nijo.Models.ReadModel2Features {
 
             return $$"""
                 /** {{Aggregate.Item.DisplayName}}の画面表示用オブジェクトを新規作成します。 */
-                export const {{TsNewObjectFunction}} = () => ({
+                export const {{TsNewObjectFunction}} = (): {{TsTypeName}} => ({
                 {{If(HasInstanceKey, () => $$"""
                   {{INSTANCE_KEY_TS}}: JSON.stringify(UUID.generate()) as Util.ItemKey,
                 """)}}
@@ -484,6 +484,11 @@ namespace Nijo.Models.ReadModel2Features {
                     {{WithIndent(line, "    ")}}
                 """)}}
                   },
+                {{GetChildMembers().SelectTextTemplate(m => m.IsArray ? $$"""
+                  {{m.MemberName}}: [],
+                """ : $$"""
+                  {{m.MemberName}}: {{m.TsNewObjectFunction}}(),
+                """)}}
                 {{If(HasLifeCycle, () => $$"""
                   {{EXISTS_IN_DB_TS}}: false,
                   {{WILL_BE_CHANGED_TS}}: true,
@@ -515,7 +520,7 @@ namespace Nijo.Models.ReadModel2Features {
             foreach (var key in Aggregate.GetKeys().OfType<AggregateMember.ValueMember>()) {
                 if (!pkDict.TryGetValue(key.Declared, out var keyString)) {
                     keyString = $"{instance}.{key.Declared.GetFullPathAsSearchResult(instanceAgg).Join("?.")}";
-                    pkDict.Add(key, keyString);
+                    pkDict.Add(key.Declared, keyString);
                 }
                 keys.Add(keyString);
             }
@@ -664,7 +669,7 @@ namespace Nijo.Models.ReadModel2Features {
             foreach (var path in GetFullPathAsReactHookFormRegisterName(member.Owner, csts, pathType, true, arrayIndexes)) {
                 yield return path;
             }
-            if (pathType == E_PathType.Value) {
+            if (!member.Owner.IsOutOfEntryTree() && pathType == E_PathType.Value) {
                 yield return GetDisplayDataPropertyPrefix(csts, pathType);
             }
             yield return member.MemberName;
@@ -705,13 +710,13 @@ namespace Nijo.Models.ReadModel2Features {
                         }
 
                     } else if (edge.IsRef()) {
-                        if (pathType == E_PathType.Value) {
+                        if (!edge.Initial.As<Aggregate>().IsOutOfEntryTree() && pathType == E_PathType.Value) {
                             yield return GetDisplayDataPropertyPrefix(csts, pathType);
                         }
                         yield return dataClass
                             .GetOwnMembers()
                             .OfType<AggregateMember.RelationMember>()
-                            .Single(m => m.MemberAggregate == terminal)
+                            .Single(m => m.Relation == edge)
                             .MemberName;
 
                     } else {

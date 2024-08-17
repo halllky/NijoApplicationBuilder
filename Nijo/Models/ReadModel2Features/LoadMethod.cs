@@ -234,6 +234,7 @@ namespace Nijo.Models.ReadModel2Features {
                 /// </summary>
                 public virtual IEnumerable<{{returnType.CsClassName}}> {{AppSrvLoadMethod}}({{argType.CsClassName}} searchCondition) {
                     #pragma warning disable CS8602 // null 参照の可能性があるものの逆参照です。
+                    #pragma warning disable CS8603 // Null 参照戻り値である可能性があります。
                     #pragma warning disable CS8604 // Null 参照引数の可能性があります。
 
                     var query = {{AppSrvCreateQueryMethod}}(searchCondition);
@@ -289,6 +290,7 @@ namespace Nijo.Models.ReadModel2Features {
                     return returnValue;
 
                     #pragma warning restore CS8604 // Null 参照引数の可能性があります。
+                    #pragma warning restore CS8603 // Null 参照戻り値である可能性があります。
                     #pragma warning restore CS8602 // null 参照の可能性があるものの逆参照です。
                 }
                 """;

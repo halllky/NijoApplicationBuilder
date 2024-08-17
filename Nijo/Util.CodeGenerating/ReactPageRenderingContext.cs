@@ -25,6 +25,11 @@ namespace Nijo.Util.CodeGenerating {
         /// エラーメッセージ表示コンポーネントをレンダリングします。
         /// </summary>
         public required Func<AggregateMember.ValueMember, string> RenderErrorMessage { get; init; }
+
+        /// <summary>
+        /// 子配列コンポーネント以下で必要になる、配列中の何番目の要素かを表す変数のリスト
+        /// </summary>
+        public required IEnumerable<string> AncestorsIndexes { get; init; }
     }
 
     /// <summary>

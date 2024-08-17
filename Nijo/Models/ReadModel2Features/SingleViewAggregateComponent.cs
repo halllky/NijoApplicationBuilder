@@ -46,6 +46,12 @@ namespace Nijo.Models.ReadModel2Features {
                 .Select((_, i) => $"index{i}")
                 .ToArray();
         }
+        /// <summary>
+        /// コンポーネント引数 + Children用のループ変数
+        /// </summary>
+        protected virtual IEnumerable<string> GetArgumentsAndLoopVar() {
+            return GetArguments();
+        }
 
         /// <summary>
         /// このコンポーネントと子孫コンポーネントを再帰的に列挙します。
@@ -71,8 +77,9 @@ namespace Nijo.Models.ReadModel2Features {
                 CodeRenderingContext = context,
                 Register = "registerEx",
                 RenderingObjectType = E_ReactPageRenderingObjectType.DataClassForDisplay,
+                AncestorsIndexes = GetArgumentsAndLoopVar(),
                 RenderErrorMessage = vm => {
-                    var fullpath = vm.Declared.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, GetArguments());
+                    var fullpath = vm.Declared.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, GetArgumentsAndLoopVar());
 
                     // 参照先のValueMemberにはエラーメッセージが無い。
                     // エラーメッセージは参照先のValueMemberではなくRefにつく
@@ -128,9 +135,8 @@ namespace Nijo.Models.ReadModel2Features {
                 }
             }
             foreach (var childDataClass in _dataClass.GetChildMembers()) {
-                var args = GetArguments().ToArray();
                 var descendant = GetDescendantComponent(childDataClass);
-                formBuilder.AddUnknownParts(descendant.RenderCaller(args));
+                formBuilder.AddUnknownParts(descendant.RenderCaller(GetArgumentsAndLoopVar()));
             }
 
             return formBuilder;
@@ -139,9 +145,9 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// このコンポーネントの呼び出し処理をレンダリングします。
         /// </summary>
-        internal string RenderCaller(params string[] args) {
+        internal string RenderCaller(IEnumerable<string>? args = null) {
             var parameters = GetArguments()
-                .Select((a, i) => $"{a}={{{args.ElementAtOrDefault(i)}}} ");
+                .Select((a, i) => $"{a}={{{args?.ElementAtOrDefault(i)}}} ");
             return $$"""
                 <{{ComponentName}} {{parameters.Join("")}}/>
                 """;
@@ -210,7 +216,7 @@ namespace Nijo.Models.ReadModel2Features {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const { register, registerEx, getValues, setValue } = Util.useFormContextEx<{{UseFormType}}>()
+                      const { register, registerEx, getValues, setValue, formState: { errors } } = Util.useFormContextEx<{{UseFormType}}>()
 
                       return (
                         {{WithIndent(vForm.Render(context), "    ")}}
@@ -234,7 +240,7 @@ namespace Nijo.Models.ReadModel2Features {
             internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
                 var args = GetArguments().ToArray();
                 var vForm = BuildVerticalForm(context);
-                var switchProp = $"`{_variation.Group.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, args).Join(".")}`";
+                var switchProp = _variation.Group.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, args).Join(".");
 
                 return $$"""
                     const {{ComponentName}} = ({{{args.Join(", ")}} }: {
@@ -242,7 +248,7 @@ namespace Nijo.Models.ReadModel2Features {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const { register, registerEx, getValues, setValue, control } = Util.useFormContextEx<{{UseFormType}}>()
+                      const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
                       const switchProp = useWatch({ name: `{{switchProp}}`, control })
 
                       const body = (
@@ -275,10 +281,22 @@ namespace Nijo.Models.ReadModel2Features {
 
             private readonly AggregateMember.Children _children;
 
+            private string GetLoopVar() {
+                var args = GetArguments().ToArray();
+                return args.Length == 0 ? "x" : $"x{args.Length}";
+            }
+
+            protected override IEnumerable<string> GetArgumentsAndLoopVar() {
+                foreach (var arg in GetArguments()) {
+                    yield return arg;
+                }
+                yield return GetLoopVar();
+            }
+
             internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
                 var args = GetArguments().ToArray();
                 var vForm = BuildVerticalForm(context);
-                var loopVar = args.Length == 0 ? "x" : $"x{args.Length}";
+                var loopVar = GetLoopVar();
 
                 var registerNameArray = _dataClass.Aggregate
                         .GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, args)
@@ -293,7 +311,7 @@ namespace Nijo.Models.ReadModel2Features {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const { register, registerEx, control } = Util.useFormContextEx<{{UseFormType}}>()
+                      const { register, registerEx, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
                       const { fields, append, remove } = useFieldArray({ control, name: {{registerName}} })
                     {{If(!isReadOnly, () => $$"""
                       const onCreate = useCallback(() => {
@@ -317,7 +335,7 @@ namespace Nijo.Models.ReadModel2Features {
                           </div>
                         )}>
                           {fields.map((item, {{loopVar}}) => (
-                            <VForm2.Indent key={{{loopVar}}} labelPosition="left" label={(
+                            <VForm2.Indent key={{{loopVar}}} label={(
                     {{If(isReadOnly, () => $$"""
                               <VForm2.LabelText>{{{loopVar}}}</VForm2.LabelText>
                     """).Else(() => $$"""
@@ -348,10 +366,21 @@ namespace Nijo.Models.ReadModel2Features {
 
             private readonly AggregateMember.Children _children;
 
+            private string GetLoopVar() {
+                var args = GetArguments().ToArray();
+                return args.Length == 0 ? "x" : $"x{args.Length}";
+            }
+            protected override IEnumerable<string> GetArgumentsAndLoopVar() {
+                foreach (var arg in GetArguments()) {
+                    yield return arg;
+                }
+                yield return GetLoopVar();
+            }
+
             internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
                 var args = GetArguments().ToArray();
                 var vForm = BuildVerticalForm(context);
-                var loopVar = args.Length == 0 ? "x" : $"x{args.Length}";
+                var loopVar = GetLoopVar();
 
                 var registerNameArray = _dataClass.Aggregate
                         .GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, args)
