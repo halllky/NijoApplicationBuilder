@@ -23,16 +23,30 @@ namespace Nijo.Models.ReadModel2Features {
 
         protected string ComponentName {
             get {
-                if (_aggregate.IsOutOfEntryTree()) {
-                    var refEntry = _aggregate.GetRefEntryEdge().RelationName;
-                    return $"{_aggregate.Item.PhysicalName}ViewOf{refEntry}Reference";
+                if (_componentName == null) {
+                    if (_aggregate.IsOutOfEntryTree()) {
+                        var relationHistory = new List<string>();
+                        var refEntry = _aggregate.GetRefEntryEdge();
+                        relationHistory.Add(refEntry.RelationName.ToCSharpSafe());
+                        foreach (var edge in _aggregate.PathFromEntry().Since(refEntry.Terminal)) {
+                            if (edge.IsParentChild() && edge.Source == edge.Terminal) {
+                                relationHistory.Add(edge.Initial.As<Aggregate>().Item.PhysicalName);
+                            } else {
+                                relationHistory.Add(edge.RelationName.ToCSharpSafe());
+                            }
+                        }
+                        _componentName = $"{_aggregate.Item.PhysicalName}View_{relationHistory.Join("の")}";
 
-                } else {
-                    return $"{_aggregate.Item.PhysicalName}View";
+                    } else {
+                        _componentName = $"{_aggregate.Item.PhysicalName}View";
+                    }
                 }
+                return _componentName;
             }
         }
-        protected string UseFormType => $"AggregateType.{new DataClassForDisplay(_aggregate.GetRoot()).TsTypeName}";
+        private string? _componentName;
+
+        protected string UseFormType => $"AggregateType.{new DataClassForDisplay(_aggregate.GetEntry().As<Aggregate>()).TsTypeName}";
 
         /// <summary>
         /// このコンポーネントが受け取る引数の名前のリスト。
@@ -55,7 +69,7 @@ namespace Nijo.Models.ReadModel2Features {
         }
 
         /// <summary>
-        /// このコンポーネントと子孫コンポーネントを再帰的に列挙します。
+        /// このコンポーネント、参照先のコンポーネント、子孫コンポーネントを再帰的に列挙します。
         /// </summary>
         internal IEnumerable<SingleViewAggregateComponent> EnumerateThisAndDescendants() {
             yield return this;
@@ -70,9 +84,13 @@ namespace Nijo.Models.ReadModel2Features {
                     .OfType<AggregateMember.RelationMember>();
             } else {
                 var displayData = new DataClassForDisplay(_aggregate);
-                members = displayData
+                var refs = displayData
+                    .GetOwnMembers()
+                    .OfType<AggregateMember.Ref>();
+                var child = displayData
                     .GetChildMembers()
                     .Select(x => x.MemberInfo);
+                members = refs.Concat(child);
             }
 
             // 子要素のコンポーネントへの変換
@@ -126,35 +144,6 @@ namespace Nijo.Models.ReadModel2Features {
                         E_VForm2LabelType.String,
                         vm.Options.MemberType.RenderSingleViewVFormBody(vm, formContext));
 
-                } else if (member is AggregateMember.Ref @ref) {
-                    var refTarget = new RefDisplayData(@ref.RefTo, @ref.RefTo);
-                    var fullpath = @ref.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, GetArguments());
-                    var section = formBuilder.AddSection($$"""
-                        (<>
-                          <VForm2.LabelText>{{@ref.MemberName}}</VForm2.LabelText>
-                          <Input.ErrorMessage name={`{{fullpath.Join(".")}}`} errors={errors} />
-                        </>)
-                        """,
-                        E_VForm2LabelType.JsxElement);
-                    BuildRecursively(refTarget, section);
-
-                    void BuildRecursively(RefDisplayData refTarget, VerticalFormSection section) {
-                        foreach (var refMember in refTarget.GetOwnMembers()) {
-                            if (refMember is AggregateMember.ValueMember vm2) {
-                                section.AddItem(
-                                    vm2.Options.MemberType is Core.AggregateMemberTypes.Sentence,
-                                    vm2.MemberName,
-                                    E_VForm2LabelType.String,
-                                    vm2.Options.MemberType.RenderSingleViewVFormBody(vm2, formContext));
-
-                            } else if (refMember is AggregateMember.RelationMember rel) {
-                                var relRefTarget = new RefDisplayData(rel.MemberAggregate, @ref.RefTo);
-                                var relSection = section.AddSection(rel.MemberName, E_VForm2LabelType.String);
-                                BuildRecursively(relRefTarget, relSection);
-                            }
-                        }
-                    }
-
                 } else if (member is AggregateMember.RelationMember rel) {
                     var descendant = GetDescendantComponent(rel);
                     formBuilder.AddUnknownParts(descendant.RenderCaller(GetArgumentsAndLoopVar()));
@@ -203,8 +192,14 @@ namespace Nijo.Models.ReadModel2Features {
         /// 子孫要素のコンポーネントをその種類に応じて返します。
         /// </summary>
         private static SingleViewAggregateComponent GetDescendantComponent(AggregateMember.RelationMember member) {
-            if (member is AggregateMember.Child child) {
-                return new ChildComponent(child);
+            if (member is AggregateMember.Parent parent) {
+                return new ParentOrChildOrRefComponent(parent);
+
+            } else if (member is AggregateMember.Ref @ref) {
+                return new ParentOrChildOrRefComponent(@ref);
+
+            } else if (member is AggregateMember.Child child) {
+                return new ParentOrChildOrRefComponent(child);
 
             } else if (member is AggregateMember.VariationItem variation) {
                 return new VariationItemComponent(variation);
@@ -222,21 +217,19 @@ namespace Nijo.Models.ReadModel2Features {
 
 
         /// <summary>
-        /// <see cref="AggregateMember.Child"/> のコンポーネント
+        /// 単純な1個の隣接要素のコンポーネント
         /// </summary>
-        private class ChildComponent : SingleViewAggregateComponent {
-            internal ChildComponent(AggregateMember.Child child) : base(child.ChildAggregate) {
-                _child = child;
-            }
-
-            private readonly AggregateMember.Child _child;
+        private class ParentOrChildOrRefComponent : SingleViewAggregateComponent {
+            internal ParentOrChildOrRefComponent(AggregateMember.Parent parent) : base(parent.ParentAggregate) { }
+            internal ParentOrChildOrRefComponent(AggregateMember.Child child) : base(child.ChildAggregate) { }
+            internal ParentOrChildOrRefComponent(AggregateMember.Ref @ref) : base(@ref.RefTo) { }
 
             internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
                 var args = GetArguments().ToArray();
                 var vForm = BuildVerticalForm(context);
 
                 return $$"""
-                    const {{ComponentName}} = ({{{args.Join(", ")}} }: {
+                    const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
                     {{args.SelectTextTemplate(arg => $$"""
                       {{arg}}: number
                     """)}}
@@ -268,7 +261,7 @@ namespace Nijo.Models.ReadModel2Features {
                 var switchProp = _variation.Group.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, args).Join(".");
 
                 return $$"""
-                    const {{ComponentName}} = ({{{args.Join(", ")}} }: {
+                    const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
                     {{args.SelectTextTemplate(arg => $$"""
                       {{arg}}: number
                     """)}}
@@ -337,7 +330,7 @@ namespace Nijo.Models.ReadModel2Features {
                     : $"AggregateType.{new DataClassForDisplay(_aggregate).TsNewObjectFunction}()";
 
                 return $$"""
-                    const {{ComponentName}} = ({{{args.Join(", ")}} }: {
+                    const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
                     {{args.SelectTextTemplate(arg => $$"""
                       {{arg}}: number
                     """)}}
@@ -441,7 +434,7 @@ namespace Nijo.Models.ReadModel2Features {
                 var creatable = !isReadOnly && !_aggregate.IsOutOfEntryTree();
 
                 return $$"""
-                    const {{ComponentName}} = ({{{args.Join(", ")}} }: {
+                    const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
                     {{args.SelectTextTemplate(arg => $$"""
                       {{arg}}: number
                     """)}}
@@ -485,7 +478,7 @@ namespace Nijo.Models.ReadModel2Features {
                     """).Else(() => $$"""
                           label="{{_aggregate.GetParent()?.RelationName}}"
                     """)}}
-                          >
+                        >
                           <Layout.DataTable
                             ref={dtRef}
                             data={fields}

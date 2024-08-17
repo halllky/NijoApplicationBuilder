@@ -161,6 +161,9 @@ namespace Nijo.Core {
             /// </summary>
             internal abstract GraphNode<Aggregate> DeclaringAggregate { get; }
             internal abstract string MemberName { get; }
+            /// <summary>
+            /// スキーマ定義でこのメンバーが定義されている順番
+            /// </summary>
             internal abstract decimal Order { get; }
 
             // TODO: どの型名になるかは生成されるクラスごとに異なるためこのプロパティはここにあるべきではない
