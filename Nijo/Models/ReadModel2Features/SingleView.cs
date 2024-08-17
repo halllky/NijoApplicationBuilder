@@ -130,7 +130,7 @@ namespace Nijo.Models.ReadModel2Features {
                       const [, dispatchMsg] = Util.useMsgContext()
 
                       // 表示データ
-                      const reactHookFormMethods = Util.useFormEx<AggregateType.{{dataClass.TsTypeName}}>({})
+                      const reactHookFormMethods = Util.useFormEx<AggregateType.{{dataClass.TsTypeName}}>({ criteriaMode: 'all' })
                       const { register, registerEx, getValues, setValue, reset, control } = reactHookFormMethods
                     {{If(_type != E_Type.New, () => $$"""
                       const [displayName, setDisplayName] = useState('')

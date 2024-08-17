@@ -72,12 +72,15 @@ namespace Nijo.Models.ReadModel2Features {
                 Register = "registerEx",
                 RenderingObjectType = E_ReactPageRenderingObjectType.DataClassForDisplay,
                 RenderErrorMessage = vm => {
-                    var err = vm.DeclaringAggregate == _dataClass.Aggregate
-                        ? $"{vm.MemberName}Errors"
-                        : null; // 参照先の項目にはエラーメッセージがつかない。エラーメッセージは参照自体につく
+                    var fullpath = vm.Declared.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, GetArguments());
+
+                    // 参照先のValueMemberにはエラーメッセージが無い。
+                    // エラーメッセージは参照先のValueMemberではなくRefにつく
+                    var render = vm.DeclaringAggregate == _dataClass.Aggregate;
+
                     return $$"""
-                        {{If(err != null, () => $$"""
-                        <Input.ErrorMessage value={{{err}}} />
+                        {{If(render, () => $$"""
+                        <Input.ErrorMessage name={`{{fullpath.Join(".")}}`} errors={errors} />
                         """)}}
                         """;
                 },
@@ -96,14 +99,14 @@ namespace Nijo.Models.ReadModel2Features {
 
                 } else if (member is AggregateMember.Ref @ref) {
                     var refTarget = new RefTo.RefDisplayData(@ref.RefTo, @ref.RefTo);
-                    var errorVarName = $"{@ref.MemberName}Errors"; // TODO #35 SingleViewでの変数名定義処理と重複
-                    var label = $$"""
+                    var fullpath = @ref.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, GetArguments());
+                    var section = formBuilder.AddSection($$"""
                         (<>
                           <VForm2.LabelText>{{@ref.MemberName}}</VForm2.LabelText>
-                          <Input.ErrorMessage value={{{errorVarName}}} />
+                          <Input.ErrorMessage name={`{{fullpath.Join(".")}}`} errors={errors} />
                         </>)
-                        """;
-                    var section = formBuilder.AddSection(label, E_VForm2LabelType.JsxElement);
+                        """,
+                        E_VForm2LabelType.JsxElement);
                     BuildRecursively(refTarget, section);
 
                     void BuildRecursively(RefTo.RefDisplayData refTarget, VerticalFormSection section) {
@@ -146,7 +149,6 @@ namespace Nijo.Models.ReadModel2Features {
 
         internal virtual string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
             // ルート要素のコンポーネントのレンダリング
-            var useFormType = $"AggregateType.{_dataClass.TsTypeName}";
             var vForm = BuildVerticalForm(context);
 
             var errorVariables = _dataClass
@@ -161,17 +163,11 @@ namespace Nijo.Models.ReadModel2Features {
 
             return $$"""
                 const {{ComponentName}} = () => {
-                  const { register, registerEx, getValues, setValue, control } = Util.useFormContextEx<{{useFormType}}>()
-
-                  // エラーメッセージ
-                  const ownErrors = useWatch({ name: '{{_dataClass.Aggregate.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.ErrorMessage).Join(".")}}', control })
-                {{errorVariables.SelectTextTemplate(err => $$"""
-                  const {{err.VarName}} = useWatch({ name: `{{err.FullPath.Join(".")}}`, control })
-                """)}}
+                  const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
 
                   return (
                     <div className="p-px">
-                      <Input.ErrorMessage value={ownErrors} />
+                      <Input.ErrorMessage name="root" errors={errors} />
                       {{WithIndent(vForm.RenderAsRoot(context), "      ")}}
                     </div>
                   )
