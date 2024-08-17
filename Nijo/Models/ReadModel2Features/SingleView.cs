@@ -107,36 +107,7 @@ namespace Nijo.Models.ReadModel2Features {
                     .Select(vm => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript).ToArray())
                     .ToArray();
 
-                string? GetErrorVarName(AggregateMember.AggregateMemberBase m) {
-                    return m.DeclaringAggregate == _aggregate
-                        ? $"{m.MemberName}Errors"
-                        : null; // 参照先の項目はエラーメッセージなし
-                }
-                var errorVariables = dataClass
-                    .GetOwnMembers()
-                    .Where(m => m is not AggregateMember.ValueMember vm || !vm.Options.InvisibleInGui)
-                    .Where(m => m.DeclaringAggregate == _aggregate) // TODO #35 参照先のインライン表示ができるまでの暫定対応
-                    .Select(m => new {
-                        VarName = GetErrorVarName(m),
-                        FullPath = m.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.ErrorMessage),
-                    })
-                    .ToArray();
-
-                var pageContext = new ReactPageRenderingContext {
-                    CodeRenderingContext = ctx,
-                    Register = "registerEx",
-                    RenderingObjectType = E_ReactPageRenderingObjectType.DataClassForDisplay,
-                    RenderErrorMessage = vm => {
-                        var err = GetErrorVarName(vm);
-                        return $$"""
-                            {{If(err != null, () => $$"""
-                            <Input.ErrorMessage value={{{err}}} />
-                            """)}}
-                            """;
-                    },
-                };
                 var rootAggregateComponent = new SingleViewAggregateComponent(_aggregate);
-                var vForm = rootAggregateComponent.BuildVerticalForm(pageContext);
 
                 var editView = new SingleView(_aggregate, E_Type.Edit);
 
@@ -230,11 +201,6 @@ namespace Nijo.Models.ReadModel2Features {
                       })
 
                     """)}}
-                      // エラーメッセージ
-                      const ownErrors = useWatch({ name: '{{_aggregate.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.ErrorMessage).Join(".")}}', control })
-                    {{errorVariables.SelectTextTemplate(err => $$"""
-                      const {{err.VarName}} = useWatch({ name: `{{err.FullPath.Join(".")}}`, control })
-                    """)}}
 
                       return (
                         <FormProvider {...reactHookFormMethods}>
@@ -256,15 +222,14 @@ namespace Nijo.Models.ReadModel2Features {
                     """)}}
                             </>}
                           >
-                            <Input.ErrorMessage value={ownErrors} />
-                            {{WithIndent(vForm.RenderAsRoot(ctx), "        ")}}
+                            {{WithIndent(rootAggregateComponent.RenderCaller(), "        ")}}
                           </Layout.PageFrame>
                         </FormProvider>
                       )
                     }
-                    {{rootAggregateComponent.EnumerateDescendantsRecursively().SelectTextTemplate(descendant => $$"""
+                    {{rootAggregateComponent.EnumerateThisAndDescendants().SelectTextTemplate(component => $$"""
 
-                    {{descendant.RenderDeclaring(pageContext, _type == E_Type.ReadOnly)}}
+                    {{component.RenderDeclaring(ctx, _type == E_Type.ReadOnly)}}
                     """)}}
                     """;
             },

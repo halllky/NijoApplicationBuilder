@@ -20,35 +20,68 @@ namespace Nijo.Models.ReadModel2Features {
 
         protected readonly DataClassForDisplay _dataClass;
 
-        protected string GetComponentName() {
-            if (_dataClass.Aggregate.IsOutOfEntryTree()) {
-                var refEntry = _dataClass.Aggregate.GetRefEntryEdge().RelationName;
-                return $"{_dataClass.Aggregate.Item.PhysicalName}ViewOf{refEntry}Reference";
+        protected string ComponentName {
+            get {
+                if (_dataClass.Aggregate.IsOutOfEntryTree()) {
+                    var refEntry = _dataClass.Aggregate.GetRefEntryEdge().RelationName;
+                    return $"{_dataClass.Aggregate.Item.PhysicalName}ViewOf{refEntry}Reference";
 
-            } else {
-                return $"{_dataClass.Aggregate.Item.PhysicalName}View";
+                } else {
+                    return $"{_dataClass.Aggregate.Item.PhysicalName}View";
+                }
             }
+        }
+        protected string UseFormType => $"AggregateType.{new DataClassForDisplay(_dataClass.Aggregate.GetRoot()).TsTypeName}";
+
+        /// <summary>
+        /// このコンポーネントが受け取る引数の名前のリスト。
+        /// 祖先コンポーネントの中に含まれるChildrenの数だけ、
+        /// このコンポーネントのその配列中でのインデックスが特定されている必要があるので、それを引数で受け取る。
+        /// </summary>
+        protected IReadOnlyList<string> GetArguments() {
+            return _dataClass.Aggregate
+                .PathFromEntry()
+                .Where(edge => edge.Terminal != _dataClass.Aggregate
+                            && edge.Terminal.As<Aggregate>().IsChildrenMember())
+                .Select((_, i) => $"index{i}")
+                .ToArray();
         }
 
         /// <summary>
-        /// 子孫コンポーネントを再帰的に列挙します。
+        /// このコンポーネントと子孫コンポーネントを再帰的に列挙します。
         /// </summary>
-        internal IEnumerable<SingleViewDescendantAggregateComponent> EnumerateDescendantsRecursively() {
-            foreach (var child in _dataClass.GetChildMembers()) {
-                var childComponent = new SingleViewDescendantAggregateComponent(child.MemberInfo);
-                yield return childComponent;
+        internal IEnumerable<SingleViewAggregateComponent> EnumerateThisAndDescendants() {
+            yield return this;
 
-                foreach (var grandChildComponent in childComponent.EnumerateDescendantsRecursively()) {
-                    yield return grandChildComponent;
-                }
+            var descendants = _dataClass
+                .GetChildMembers()
+                .Select(GetDescendantComponent)
+                .SelectMany(component => component.EnumerateThisAndDescendants());
+            foreach (var component in descendants) {
+                yield return component;
             }
         }
 
         /// <summary>
         /// <see cref="VerticalFormBuilder"/> のインスタンスを組み立てます。
         /// </summary>
-        internal VerticalFormBuilder BuildVerticalForm(ReactPageRenderingContext context) {
+        protected VerticalFormBuilder BuildVerticalForm(CodeRenderingContext context) {
             var formBuilder = new VerticalFormBuilder();
+            var formContext = new ReactPageRenderingContext {
+                CodeRenderingContext = context,
+                Register = "registerEx",
+                RenderingObjectType = E_ReactPageRenderingObjectType.DataClassForDisplay,
+                RenderErrorMessage = vm => {
+                    var err = vm.DeclaringAggregate == _dataClass.Aggregate
+                        ? $"{vm.MemberName}Errors"
+                        : null; // 参照先の項目にはエラーメッセージがつかない。エラーメッセージは参照自体につく
+                    return $$"""
+                        {{If(err != null, () => $$"""
+                        <Input.ErrorMessage value={{{err}}} />
+                        """)}}
+                        """;
+                },
+            };
 
             foreach (var member in _dataClass.GetOwnMembers()) {
                 if (member is AggregateMember.ValueMember vm) {
@@ -59,7 +92,7 @@ namespace Nijo.Models.ReadModel2Features {
                         vm.Options.MemberType is Core.AggregateMemberTypes.Sentence,
                         member.MemberName,
                         E_VForm2LabelType.String,
-                        vm.Options.MemberType.RenderSingleViewVFormBody(vm, context));
+                        vm.Options.MemberType.RenderSingleViewVFormBody(vm, formContext));
 
                 } else if (member is AggregateMember.Ref @ref) {
                     var refTarget = new RefTo.RefDisplayData(@ref.RefTo, @ref.RefTo);
@@ -80,7 +113,7 @@ namespace Nijo.Models.ReadModel2Features {
                                     vm2.Options.MemberType is Core.AggregateMemberTypes.Sentence,
                                     member.MemberName,
                                     E_VForm2LabelType.String,
-                                    vm2.Options.MemberType.RenderSingleViewVFormBody(vm2, context));
+                                    vm2.Options.MemberType.RenderSingleViewVFormBody(vm2, formContext));
 
                             } else if (refMember is AggregateMember.RelationMember rel) {
                                 var relRefTarget = new RefTo.RefDisplayData(rel.MemberAggregate, @ref.RefTo);
@@ -92,99 +125,143 @@ namespace Nijo.Models.ReadModel2Features {
                 }
             }
             foreach (var childDataClass in _dataClass.GetChildMembers()) {
-                var childComponent = new SingleViewDescendantAggregateComponent(childDataClass.MemberInfo);
-                formBuilder.AddUnknownParts(childComponent.RenderCaller());
+                var args = GetArguments().ToArray();
+                var descendant = GetDescendantComponent(childDataClass);
+                formBuilder.AddUnknownParts(descendant.RenderCaller(args));
             }
 
             return formBuilder;
         }
-    }
 
-    /// <summary>
-    /// 子孫要素の <see cref="SingleViewAggregateComponent"/>
-    /// </summary>
-    internal class SingleViewDescendantAggregateComponent : SingleViewAggregateComponent {
-        internal SingleViewDescendantAggregateComponent(AggregateMember.RelationMember relationMember) : base(relationMember.MemberAggregate) {
-            _relationMember = relationMember;
-        }
-
-        private readonly AggregateMember.RelationMember _relationMember;
-
-        /// <summary>
-        /// このコンポーネントが受け取る引数の名前のリスト。
-        /// 祖先コンポーネントの中に含まれるChildrenの数だけ、
-        /// このコンポーネントのその配列中でのインデックスが特定されている必要があるので、それを引数で受け取る。
-        /// </summary>
-        protected IReadOnlyList<string> GetArguments() {
-            return _dataClass.Aggregate
-                .PathFromEntry()
-                .Where(edge => edge.Terminal != _dataClass.Aggregate
-                            && edge.Terminal.As<Aggregate>().IsChildrenMember())
-                .Select((_, i) => $"index_{i}")
-                .ToArray();
-        }
-        /// <summary>
-        /// Childrenのレンダリングのために用いられるループ変数の名前
-        /// </summary>
-        private string GetLoopVarName() {
-            return $"index_{GetArguments().Count}";
-        }
         /// <summary>
         /// このコンポーネントの呼び出し処理をレンダリングします。
         /// </summary>
-        internal string RenderCaller() {
+        internal string RenderCaller(params string[] args) {
+            var parameters = GetArguments()
+                .Select((a, i) => $"{a}={{{args.ElementAtOrDefault(i)}}} ");
             return $$"""
-                <{{GetComponentName()}} />
+                <{{ComponentName}} {{parameters.Join("")}}/>
                 """;
         }
 
-        /// <summary>
-        /// 子孫要素のコンポーネント定義をレンダリングします。
-        /// </summary>
-        internal string RenderDeclaring(ReactPageRenderingContext context, bool isReadOnly) {
-            var componentName = GetComponentName();
-            var args = GetArguments().ToArray();
-            var useFormType = $"AggregateType.{new DataClassForDisplay(_dataClass.Aggregate.GetRoot()).TsTypeName}";
+        internal virtual string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
+            // ルート要素のコンポーネントのレンダリング
+            var useFormType = $"AggregateType.{_dataClass.TsTypeName}";
             var vForm = BuildVerticalForm(context);
 
-            var registerNameArray = _dataClass.Aggregate.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, args).ToArray();
-            var registerName = registerNameArray.Length > 0 ? $"`{registerNameArray.Join(".")}`" : string.Empty;
+            var errorVariables = _dataClass
+                .GetOwnMembers()
+                .Where(m => m is not AggregateMember.ValueMember vm || !vm.Options.InvisibleInGui)
+                .Where(m => m.DeclaringAggregate == _dataClass.Aggregate) // 参照先の項目を弾く
+                .Select(m => new {
+                    VarName = $"{m.MemberName}Errors",
+                    FullPath = m.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.ErrorMessage),
+                })
+                .ToArray();
 
-            // Childのレンダリング
-            if (_relationMember is AggregateMember.Child) {
+            return $$"""
+                const {{ComponentName}} = () => {
+                  const { register, registerEx, getValues, setValue, control } = Util.useFormContextEx<{{useFormType}}>()
+
+                  // エラーメッセージ
+                  const ownErrors = useWatch({ name: '{{_dataClass.Aggregate.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.ErrorMessage).Join(".")}}', control })
+                {{errorVariables.SelectTextTemplate(err => $$"""
+                  const {{err.VarName}} = useWatch({ name: `{{err.FullPath.Join(".")}}`, control })
+                """)}}
+
+                  return <>
+                    <Input.ErrorMessage value={ownErrors} />
+                    {{WithIndent(vForm.Render(context), "    ")}}
+                  </>
+                }
+                """;
+        }
+
+
+        /* ------------------------- 子孫要素のコンポーネント ここから ------------------------------ */
+
+        /// <summary>
+        /// 子孫要素のコンポーネントをその種類に応じて返します。
+        /// </summary>
+        private static SingleViewAggregateComponent GetDescendantComponent(DataClassForDisplayDescendant displayData) {
+            if (displayData.MemberInfo is AggregateMember.Child child) {
+                return new ChildComponent(child);
+
+            } else if (displayData.MemberInfo is AggregateMember.VariationItem variation) {
+                return new VariationItemComponent(variation);
+
+            } else if (displayData.MemberInfo is AggregateMember.Children children1 && !displayData.Aggregate.CanDisplayAllMembersAs2DGrid()) {
+                return new ChildrenFormComponent(children1);
+
+            } else if (displayData.MemberInfo is AggregateMember.Children children2 && displayData.Aggregate.CanDisplayAllMembersAs2DGrid()) {
+                return new ChildrenGridComponent(children2);
+
+            } else {
+                throw new NotImplementedException();
+            }
+        }
+
+
+        /// <summary>
+        /// <see cref="AggregateMember.Child"/> のコンポーネント
+        /// </summary>
+        private class ChildComponent : SingleViewAggregateComponent {
+            internal ChildComponent(AggregateMember.Child child) : base(child.ChildAggregate) {
+                _child = child;
+            }
+
+            private readonly AggregateMember.Child _child;
+
+            internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
+                var args = GetArguments().ToArray();
+                var vForm = BuildVerticalForm(context);
+
                 return $$"""
-                    const {{componentName}} = ({{{args.Join(", ")}} }: {
+                    const {{ComponentName}} = ({{{args.Join(", ")}} }: {
                     {{args.SelectTextTemplate(arg => $$"""
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const { register, registerEx, getValues, setValue } = Util.useFormContextEx<{{useFormType}}>()
+                      const { register, registerEx, getValues, setValue } = Util.useFormContextEx<{{UseFormType}}>()
 
                       return (
-                        {{WithIndent(vForm.Render(context.CodeRenderingContext), "    ")}}
+                        {{WithIndent(vForm.Render(context), "    ")}}
                       )
                     }
                     """;
             }
+        }
 
-            // Variationメンバーのレンダリング
-            if (_relationMember is AggregateMember.VariationItem variation) {
-                var switchProp = $"`{variation.Group.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, args).Join(".")}`";
+
+        /// <summary>
+        /// <see cref="AggregateMember.VariationItem"/> のコンポーネント
+        /// </summary>
+        private class VariationItemComponent : SingleViewAggregateComponent {
+            internal VariationItemComponent(AggregateMember.VariationItem variation) : base(variation.VariationAggregate) {
+                _variation = variation;
+            }
+
+            private readonly AggregateMember.VariationItem _variation;
+
+            internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
+                var args = GetArguments().ToArray();
+                var vForm = BuildVerticalForm(context);
+                var switchProp = $"`{_variation.Group.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, args).Join(".")}`";
 
                 return $$"""
-                    const {{componentName}} = ({{{args.Join(", ")}} }: {
+                    const {{ComponentName}} = ({{{args.Join(", ")}} }: {
                     {{args.SelectTextTemplate(arg => $$"""
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const { register, registerEx, getValues, setValue } = Util.useFormContextEx<{{useFormType}}>()
-                      const switchProp = useWatch({{switchProp}})
+                      const { register, registerEx, getValues, setValue, control } = Util.useFormContextEx<{{UseFormType}}>()
+                      const switchProp = useWatch({ name: `{{switchProp}}`, control })
 
                       const body = (
-                        {{WithIndent(vForm.Render(context.CodeRenderingContext), "    ")}}
+                        {{WithIndent(vForm.Render(context), "    ")}}
                       )
 
-                      return switchProp === '{{variation.TsValue}}'
+                      return switchProp === '{{_variation.TsValue}}'
                         ? (
                           <>
                             {body}
@@ -196,20 +273,39 @@ namespace Nijo.Models.ReadModel2Features {
                         )
                     }
                     """;
+            }
+        }
 
+
+        /// <summary>
+        /// <see cref="AggregateMember.Children"/> のコンポーネント（子配列をもつなど表であらわせない場合）
+        /// </summary>
+        private class ChildrenFormComponent : SingleViewAggregateComponent {
+            internal ChildrenFormComponent(AggregateMember.Children children) : base(children.ChildrenAggregate) {
+                _children = children;
             }
 
-            // Childrenのレンダリング（子集約をもつなど表であらわせない場合）
-            if (_relationMember is AggregateMember.Children && !_dataClass.Aggregate.CanDisplayAllMembersAs2DGrid()) {
-                var loopVar = GetLoopVarName();
+            private readonly AggregateMember.Children _children;
+
+            internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
+                var args = GetArguments().ToArray();
+                var vForm = BuildVerticalForm(context);
+                var loopVar = args.Length == 0 ? "x" : $"x{args.Length}";
+
+                var registerNameArray = _dataClass.Aggregate
+                        .GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, args)
+                        .ToArray();
+                var registerName = registerNameArray.Length > 0
+                    ? $"`{registerNameArray.Join(".")}`"
+                    : string.Empty;
 
                 return $$"""
-                    const {{componentName}} = ({{{args.Join(", ")}} }: {
+                    const {{ComponentName}} = ({{{args.Join(", ")}} }: {
                     {{args.SelectTextTemplate(arg => $$"""
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const { register, registerEx, control } = Util.useFormContextEx<{{useFormType}}>()
+                      const { register, registerEx, control } = Util.useFormContextEx<{{UseFormType}}>()
                       const { fields, append, remove } = useFieldArray({ control, name: {{registerName}} })
                     {{If(!isReadOnly, () => $$"""
                       const onCreate = useCallback(() => {
@@ -243,7 +339,7 @@ namespace Nijo.Models.ReadModel2Features {
                               </div>
                     """)}}
                             )}>
-                              {{WithIndent(vForm.Render(context.CodeRenderingContext), "          ")}}
+                              {{WithIndent(vForm.Render(context), "          ")}}
                             </VForm2.Indent>
                           ))}
                         </VForm2.Indent>
@@ -251,21 +347,42 @@ namespace Nijo.Models.ReadModel2Features {
                     }
                     """;
             }
+        }
 
-            // Childrenのレンダリング（子集約をもたず表で表せる場合）
-            if (_relationMember is AggregateMember.Children && _dataClass.Aggregate.CanDisplayAllMembersAs2DGrid()) {
-                var loopVar = GetLoopVarName();
+
+        /// <summary>
+        /// <see cref="AggregateMember.Children"/> のコンポーネント（子配列などをもたず表で表せる場合）
+        /// </summary>
+        private class ChildrenGridComponent : SingleViewAggregateComponent {
+            internal ChildrenGridComponent(AggregateMember.Children children) : base(children.ChildrenAggregate) {
+                _children = children;
+            }
+
+            private readonly AggregateMember.Children _children;
+
+            internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
+                var args = GetArguments().ToArray();
+                var vForm = BuildVerticalForm(context);
+                var loopVar = args.Length == 0 ? "x" : $"x{args.Length}";
+
+                var registerNameArray = _dataClass.Aggregate
+                        .GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, args)
+                        .ToArray();
+                var registerName = registerNameArray.Length > 0
+                    ? $"`{registerNameArray.Join(".")}`"
+                    : string.Empty;
+
                 var tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_dataClass.Aggregate, $"AggregateType.{_dataClass.TsTypeName}");
                 tableBuilder.AddMembers(_dataClass);
 
                 return $$"""
-                    const {{componentName}} = ({{{args.Join(", ")}} }: {
+                    const {{ComponentName}} = ({{{args.Join(", ")}} }: {
                     {{args.SelectTextTemplate(arg => $$"""
                       {{arg}}: number
                     """)}}
                     }) => {
                       const { get } = Util.useHttpRequest()
-                      const { register, registerEx, control } = Util.useFormContextEx<{{useFormType}}>()
+                      const { register, registerEx, control } = Util.useFormContextEx<{{UseFormType}}>()
                       const { fields, append, remove, update } = useFieldArray({ control, name: {{registerName}} })
                       const dtRef = useRef<Layout.DataTableRef<AggregateType.{{_dataClass.TsTypeName}}>>(null)
 
@@ -286,7 +403,7 @@ namespace Nijo.Models.ReadModel2Features {
                         onChangeRow: update,
                     """)}}
                         columns: [
-                          {{WithIndent(tableBuilder.RenderColumnDef(context.CodeRenderingContext), "      ")}}
+                          {{WithIndent(tableBuilder.RenderColumnDef(context), "      ")}}
                         ],
                       }), [get, {{args.Select(a => $"{a}, ").Join("")}}update])
 
@@ -315,8 +432,6 @@ namespace Nijo.Models.ReadModel2Features {
                     }
                     """;
             }
-
-            throw new NotImplementedException();
         }
     }
 }
