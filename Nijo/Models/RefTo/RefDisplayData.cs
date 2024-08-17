@@ -61,6 +61,9 @@ namespace Nijo.Models.RefTo {
 
         internal IEnumerable<AggregateMember.AggregateMemberBase> GetOwnMembers() {
             foreach (var member in _aggregate.GetMembers()) {
+                if (member is AggregateMember.ValueMember vm
+                    && vm.DeclaringAggregate != _aggregate) continue;
+
                 if (member is not AggregateMember.Parent
                     && member.DeclaringAggregate != _aggregate) continue;
 
@@ -70,14 +73,10 @@ namespace Nijo.Models.RefTo {
                     if (source == rm.Relation) continue;
                 }
 
-                // TODO #35 ここでValueMemberのDeclaringAggregateの条件足りなくないか？
-                // TODO #35 DataClassForDisplayのそれと列挙される要素の条件を統一する
-
                 yield return member;
             }
         }
 
-        // TODO #35 これで置き換えられそうなソースが結構あるのでリファクタリングする
         internal IEnumerable<RefDisplayDataDescendant> GetChildMembers() {
             foreach (var member in GetOwnMembers().OfType<AggregateMember.RelationMember>()) {
                 yield return new RefDisplayDataDescendant(member, _refEntry);
@@ -93,8 +92,8 @@ namespace Nijo.Models.RefTo {
             var refTargets = new List<RefDisplayData>();
             void CollectRecursively(RefDisplayData refTarget) {
                 refTargets.Add(refTarget);
-                foreach (var rel in refTarget.GetOwnMembers().OfType<AggregateMember.RelationMember>()) {
-                    CollectRecursively(new RefDisplayData(rel.MemberAggregate, asEntry));
+                foreach (var child in refTarget.GetChildMembers()) {
+                    CollectRecursively(child);
                 }
             }
             CollectRecursively(new RefDisplayData(asEntry, asEntry));
@@ -127,8 +126,8 @@ namespace Nijo.Models.RefTo {
             var refTargets = new List<RefDisplayData>();
             void CollectRecursively(RefDisplayData refTarget) {
                 refTargets.Add(refTarget);
-                foreach (var rel in refTarget.GetOwnMembers().OfType<AggregateMember.RelationMember>()) {
-                    CollectRecursively(new RefDisplayData(rel.MemberAggregate, asEntry));
+                foreach (var child in refTarget.GetChildMembers()) {
+                    CollectRecursively(child);
                 }
             }
             CollectRecursively(new RefDisplayData(asEntry, asEntry));
