@@ -76,15 +76,11 @@ namespace Nijo.Models.ReadModel2Features {
             var formContext = new ReactPageRenderingContext {
                 CodeRenderingContext = context,
                 Register = "registerEx",
-                RenderingObjectType = E_ReactPageRenderingObjectType.DataClassForDisplay,
                 AncestorsIndexes = GetArgumentsAndLoopVar(),
                 RenderErrorMessage = vm => {
                     var fullpath = vm.Declared.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, GetArgumentsAndLoopVar());
-
-                    // 参照先のValueMemberにはエラーメッセージが無い。
-                    // エラーメッセージは参照先のValueMemberではなくRefにつく
-                    var render = vm.DeclaringAggregate == _dataClass.Aggregate;
-
+                    var render = vm.DeclaringAggregate == _dataClass.Aggregate; // 参照先のValueMemberにはエラーメッセージが無い。
+                                                                                // エラーメッセージは参照先のValueMemberではなくRefにつく
                     return $$"""
                         {{If(render, () => $$"""
                         <Input.ErrorMessage name={`{{fullpath.Join(".")}}`} errors={errors} />

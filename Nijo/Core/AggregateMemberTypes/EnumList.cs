@@ -117,12 +117,7 @@ namespace Nijo.Core.AggregateMemberTypes {
 
         string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx) {
             var component = GetReactComponent();
-            var fullpath = ctx.RenderingObjectType switch {
-                E_ReactPageRenderingObjectType.SearchCondition => vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join("."),
-                E_ReactPageRenderingObjectType.RefTarget => vm.Declared.GetFullPathAsDataClassForRefTarget().Join("."),
-                E_ReactPageRenderingObjectType.DataClassForDisplay => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript).Join("."),
-                _ => throw new NotImplementedException(),
-            };
+            var fullpath = vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".");
             return $$"""
                 {{Definition.Items.SelectTextTemplate(item => $$"""
                 <Input.CheckBox label="{{item.PhysicalName}}" {...{{ctx.Register}}(`{{fullpath}}.{{item.PhysicalName}}`)} />

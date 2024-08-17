@@ -1,6 +1,5 @@
 using Nijo.Core;
 using Nijo.Models.RefTo;
-using Nijo.Models.WriteModel2Features;
 using Nijo.Parts.Utility;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
@@ -550,7 +549,7 @@ namespace Nijo.Models.ReadModel2Features {
                 """)}}
                     },
                 {{GetChildMembers().SelectTextTemplate(child => child.IsArray ? $$"""
-                    {{child.MemberName}} = {{instance}}.{{child.GetFullPath(instanceAgg).Join("?.")}}?.Select({{loopVar}} => {{WithIndent(child.RenderConvertFromSearchResultPrivate(loopVar, child.Aggregate, true, pkDict), "    ")}}).ToList() ?? [],
+                    {{child.MemberName}} = {{instance}}.{{child.MemberInfo.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp, instanceAgg).Join("?.")}}?.Select({{loopVar}} => {{WithIndent(child.RenderConvertFromSearchResultPrivate(loopVar, child.Aggregate, true, pkDict), "    ")}}).ToList() ?? [],
                 """ : $$"""
                     {{child.MemberName}} = {{WithIndent(child.RenderConvertFromSearchResultPrivate(instance, instanceAgg, false, pkDict), "    ")}},
                 """)}}
@@ -588,10 +587,6 @@ namespace Nijo.Models.ReadModel2Features {
 
         internal string MemberName => MemberInfo.MemberName;
         internal bool IsArray => MemberInfo.MemberAggregate.IsChildrenMember();
-
-        internal IEnumerable<string> GetFullPath(GraphNode<Aggregate>? since = null) {
-            return MemberInfo.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp, since);
-        }
     }
 
     partial class GetFullPathExtensions {

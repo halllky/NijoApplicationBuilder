@@ -19,8 +19,6 @@ namespace Nijo.Util.CodeGenerating {
         /// </summary>
         public required string Register { get; init; }
 
-        public required E_ReactPageRenderingObjectType RenderingObjectType { get; init; }
-
         /// <summary>
         /// エラーメッセージ表示コンポーネントをレンダリングします。
         /// </summary>
@@ -30,14 +28,5 @@ namespace Nijo.Util.CodeGenerating {
         /// 子配列コンポーネント以下で必要になる、配列中の何番目の要素かを表す変数のリスト
         /// </summary>
         public required IEnumerable<string> AncestorsIndexes { get; init; }
-    }
-
-    /// <summary>
-    /// どの種類のオブジェクトをレンダリングしているか
-    /// </summary>
-    public enum E_ReactPageRenderingObjectType {
-        SearchCondition,
-        DataClassForDisplay,
-        RefTarget,
     }
 }
