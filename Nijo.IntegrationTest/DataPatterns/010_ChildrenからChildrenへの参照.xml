@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <自動テストで作成されたプロジェクト>
-  <参照先 is="write-model">
-    <参照先集約ID is="id" />
+  <参照先 is="write-model-2 generate-default-read-model">
+    <参照先集約ID is="uuid" />
     <参照先集約名 is="name" />
     <参照先の子配列 is="array">
-      <参照先の子配列のキー is="id" />
+      <参照先の子配列のキー is="uuid" />
       <参照先の子配列の名前プロパティ is="name" />
     </参照先の子配列>
   </参照先>
-  <参照元 is="write-model">
-    <参照元集約ID is="id" />
+  <参照元 is="read-model-2">
+    <参照元集約ID is="uuid" />
     <参照元集約名 is="name" />
     <参照元の子配列 is="array">
-      <参照元の子配列のキー is="id" />
+      <参照元の子配列のキー is="uuid" />
       <参照 is="ref-to:参照先/参照先の子配列" />
     </参照元の子配列>
   </参照元>

@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <自動テストで作成されたプロジェクト>
-  <取引先 is="write-model">
+  <取引先 is="write-model-2 generate-default-read-model">
     <取引先番号 is="id key" />
     <会社名 is="name" />
   </取引先>
 
-  <取引先営業情報 is="write-model">
+  <取引先営業情報 is="write-model-2 generate-default-read-model">
     <取引先 is="ref-to:取引先 key" />
     <関係性 is="関係性 name-like" />
   </取引先営業情報>
 
-  <お届け先 is="write-model">
+  <お届け先 is="write-model-2 generate-default-read-model">
     <ID is="uuid" />
     <取引先 is="ref-to:取引先 key name-like" />
     <郵便番号 is="word name-like" />
     <住所 is="word name-like" />
   </お届け先>
 
-  <配送指示 is="write-model">
+  <配送指示 is="write-model-2 generate-default-read-model">
     <ID is="uuid" />
     <荷物名 is="word" />
     <配送日 is="date" />

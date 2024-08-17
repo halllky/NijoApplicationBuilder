@@ -11,12 +11,12 @@
     <HDD/>
   </資産種別>
 
-  <従業員 is="write-model">
+  <従業員 is="write-model-2 generate-default-read-model">
     <従業員コード is="word key" />
     <名前 is="word" />
   </従業員>
 
-  <資産取得 is="write-model">
+  <資産取得 is="write-model-2 generate-default-read-model">
     <資産ID is="uuid" />
     <名前 is="word" />
     <種別 is="資産種別" />
@@ -25,7 +25,7 @@
     <管理者 is="ref-to:従業員" />
   </資産取得>
 
-  <資産移動 is="write-model">
+  <資産移動 is="write-model-2 generate-default-read-model">
     <ID is="uuid" />
     <資産 is="ref-to:資産取得" />
     <移動日 is="date" />
