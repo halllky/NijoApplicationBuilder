@@ -27,7 +27,7 @@ const Root = ({ estimatedLabelWidth, indentSize, maxDepth, children }: {
 
   return (
     <div style={rootStyle}>
-      <div className="grid gap-px w-full h-full p-px vform-template-column">
+      <div className="grid gap-px w-full h-full vform-template-column">
         {children}
       </div>
     </div>
@@ -93,10 +93,10 @@ const Item = ({ label, wide, children }: {
     // 要素の横幅が小さい場合のレイアウト
     : (
       <div className="grid grid-flow-row grid-cols-[subgrid] col-span-2">
-        <div className="px-1 py-px border-vform bg-color-2">
+        <div className="p-px border-vform bg-color-2">
           {renderLabel(label)}
         </div>
-        <div className="px-1 py-px border-vform bg-color-0">
+        <div className="p-px border-vform bg-color-0">
           {children}
         </div>
       </div>

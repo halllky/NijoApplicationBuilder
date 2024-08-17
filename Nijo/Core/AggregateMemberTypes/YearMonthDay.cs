@@ -12,6 +12,7 @@ namespace Nijo.Core.AggregateMemberTypes {
         public override ReactInputComponent GetReactComponent() {
             return new ReactInputComponent {
                 Name = "Input.Date",
+                Props = { ["className"] = "\"w-28\"" },
             };
         }
 

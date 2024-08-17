@@ -111,7 +111,7 @@ namespace Nijo.Models.ReadModel2Features {
                             if (refMember is AggregateMember.ValueMember vm2) {
                                 section.AddItem(
                                     vm2.Options.MemberType is Core.AggregateMemberTypes.Sentence,
-                                    member.MemberName,
+                                    vm2.MemberName,
                                     E_VForm2LabelType.String,
                                     vm2.Options.MemberType.RenderSingleViewVFormBody(vm2, formContext));
 
@@ -169,10 +169,12 @@ namespace Nijo.Models.ReadModel2Features {
                   const {{err.VarName}} = useWatch({ name: `{{err.FullPath.Join(".")}}`, control })
                 """)}}
 
-                  return <>
-                    <Input.ErrorMessage value={ownErrors} />
-                    {{WithIndent(vForm.Render(context), "    ")}}
-                  </>
+                  return (
+                    <div className="p-px">
+                      <Input.ErrorMessage value={ownErrors} />
+                      {{WithIndent(vForm.RenderAsRoot(context), "      ")}}
+                    </div>
+                  )
                 }
                 """;
         }
@@ -425,7 +427,7 @@ namespace Nijo.Models.ReadModel2Features {
                             ref={dtRef}
                             data={fields}
                             {...options}
-                            className="h-64 w-full border-t border-color-3"
+                            className="h-64 resize-y w-full border-none"
                           />
                         </VForm2.Item>
                       )
