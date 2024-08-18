@@ -53,8 +53,9 @@ namespace Nijo.Parts.WebClient.DataTable {
         }
 
         IGridColumnSetting? IDataTableColumn2.GetEditSetting() {
-            var refInfo = new RefDisplayData(_ref.RefTo, _ref.RefTo);
-            var refSearch = new RefSearchMethod(_ref.RefTo, _ref.RefTo);
+            var refEntry = _ref.RefTo.GetRefEntryEdge().Terminal;
+            var refInfo = new RefDisplayData(_ref.RefTo, refEntry);
+            var refSearch = new RefSearchMethod(_ref.RefTo, refEntry);
             var combo = new SearchComboBox(_ref.RefTo);
             var keys = _ref.RefTo
                 .AsEntry()
