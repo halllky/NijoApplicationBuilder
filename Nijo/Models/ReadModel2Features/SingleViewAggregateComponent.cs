@@ -17,9 +17,15 @@ namespace Nijo.Models.ReadModel2Features {
 
         internal SingleViewAggregateComponent(GraphNode<Aggregate> aggregate) {
             _aggregate = aggregate;
+            _depth = 0;
+        }
+        protected SingleViewAggregateComponent(GraphNode<Aggregate> aggregate, int depth) {
+            _aggregate = aggregate;
+            _depth = depth;
         }
 
         protected readonly GraphNode<Aggregate> _aggregate;
+        private readonly int _depth;
 
         protected string ComponentName {
             get {
@@ -77,7 +83,7 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// このコンポーネント、参照先のコンポーネント、子孫コンポーネントを再帰的に列挙します。
         /// </summary>
-        internal virtual IEnumerable<SingleViewAggregateComponent> EnumerateThisAndDescendants() {
+        internal virtual IEnumerable<SingleViewAggregateComponent> EnumerateThisAndDescendantsRecursively() {
             yield return this;
 
             // 子要素の列挙
@@ -102,7 +108,7 @@ namespace Nijo.Models.ReadModel2Features {
             // 子要素のコンポーネントへの変換
             var descendants = members
                 .Select(GetDescendantComponent)
-                .SelectMany(component => component.EnumerateThisAndDescendants());
+                .SelectMany(component => component.EnumerateThisAndDescendantsRecursively());
             foreach (var component in descendants) {
                 yield return component;
             }
@@ -176,6 +182,7 @@ namespace Nijo.Models.ReadModel2Features {
         internal virtual string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
             // ルート要素のコンポーネントのレンダリング
             var vForm = BuildVerticalForm(context, isReadOnly);
+            var maxDepth = EnumerateThisAndDescendantsRecursively().Max(component => component._depth);
 
             return $$"""
                 const {{ComponentName}} = () => {
@@ -184,7 +191,7 @@ namespace Nijo.Models.ReadModel2Features {
                   return (
                     <div className="p-px">
                       <Input.ErrorMessage name="root" errors={errors} />
-                      {{WithIndent(vForm.RenderAsRoot(context), "      ")}}
+                      {{WithIndent(vForm.RenderAsRoot(context, maxDepth), "      ")}}
                     </div>
                   )
                 }
@@ -197,24 +204,24 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// 子孫要素のコンポーネントをその種類に応じて返します。
         /// </summary>
-        private static SingleViewAggregateComponent GetDescendantComponent(AggregateMember.RelationMember member) {
+        private SingleViewAggregateComponent GetDescendantComponent(AggregateMember.RelationMember member) {
             if (member is AggregateMember.Parent parent) {
-                return new ParentOrChildOrRefComponent(parent);
+                return new ParentOrChildOrRefComponent(parent, _depth + 1);
 
             } else if (member is AggregateMember.Ref @ref) {
-                return new ParentOrChildOrRefComponent(@ref);
+                return new ParentOrChildOrRefComponent(@ref, _depth + 1);
 
             } else if (member is AggregateMember.Child child) {
-                return new ParentOrChildOrRefComponent(child);
+                return new ParentOrChildOrRefComponent(child, _depth + 1);
 
             } else if (member is AggregateMember.VariationItem variation) {
-                return new VariationItemComponent(variation);
+                return new VariationItemComponent(variation, _depth + 1);
 
             } else if (member is AggregateMember.Children children1 && !children1.ChildrenAggregate.CanDisplayAllMembersAs2DGrid()) {
-                return new ChildrenFormComponent(children1);
+                return new ChildrenFormComponent(children1, _depth + 1);
 
             } else if (member is AggregateMember.Children children2 && children2.ChildrenAggregate.CanDisplayAllMembersAs2DGrid()) {
-                return new ChildrenGridComponent(children2);
+                return new ChildrenGridComponent(children2, _depth + 1);
 
             } else {
                 throw new NotImplementedException();
@@ -225,7 +232,7 @@ namespace Nijo.Models.ReadModel2Features {
         /// 子孫コンポーネント
         /// </summary>
         private abstract class DescendantComponent : SingleViewAggregateComponent {
-            internal DescendantComponent(AggregateMember.RelationMember member) : base(member.MemberAggregate) {
+            internal DescendantComponent(AggregateMember.RelationMember member, int depth) : base(member.MemberAggregate, depth) {
                 _member = member;
             }
 
@@ -233,9 +240,12 @@ namespace Nijo.Models.ReadModel2Features {
 
             protected override VerticalFormBuilder GetComponentRoot(bool isReadOnly) {
                 var fullpath = _member.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
+                var sectionName = _member is AggregateMember.Parent parent
+                    ? parent.ParentAggregate.Item.DisplayName
+                    : _member.MemberName;
                 var label = $$"""
                     <>
-                      <VForm2.LabelText>{{_member.MemberName}}</VForm2.LabelText>
+                      <VForm2.LabelText>{{sectionName}}</VForm2.LabelText>
                       <Input.ErrorMessage name={`{{fullpath.Join(".")}}`} errors={errors} />
                     </>
                     """;
@@ -248,9 +258,9 @@ namespace Nijo.Models.ReadModel2Features {
         /// 単純な1個の隣接要素のコンポーネント
         /// </summary>
         private class ParentOrChildOrRefComponent : DescendantComponent {
-            internal ParentOrChildOrRefComponent(AggregateMember.Parent parent) : base(parent) { }
-            internal ParentOrChildOrRefComponent(AggregateMember.Child child) : base(child) { }
-            internal ParentOrChildOrRefComponent(AggregateMember.Ref @ref) : base(@ref) { }
+            internal ParentOrChildOrRefComponent(AggregateMember.Parent parent, int depth) : base(parent, depth) { }
+            internal ParentOrChildOrRefComponent(AggregateMember.Child child, int depth) : base(child, depth) { }
+            internal ParentOrChildOrRefComponent(AggregateMember.Ref @ref, int depth) : base(@ref, depth) { }
 
             internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
                 var args = GetArguments().ToArray();
@@ -277,7 +287,7 @@ namespace Nijo.Models.ReadModel2Features {
         /// <see cref="AggregateMember.VariationItem"/> のコンポーネント
         /// </summary>
         private class VariationItemComponent : DescendantComponent {
-            internal VariationItemComponent(AggregateMember.VariationItem variation) : base(variation) {
+            internal VariationItemComponent(AggregateMember.VariationItem variation, int depth) : base(variation, depth) {
                 _variation = variation;
             }
 
@@ -321,7 +331,7 @@ namespace Nijo.Models.ReadModel2Features {
         /// <see cref="AggregateMember.Children"/> のコンポーネント（グリッド形式・フォーム形式共通）
         /// </summary>
         private abstract class ChildrenComponent : DescendantComponent {
-            internal ChildrenComponent(AggregateMember.Children children) : base(children) {
+            internal ChildrenComponent(AggregateMember.Children children, int depth) : base(children, depth) {
                 _children = children;
             }
             protected readonly AggregateMember.Children _children;
@@ -344,7 +354,7 @@ namespace Nijo.Models.ReadModel2Features {
         /// <see cref="AggregateMember.Children"/> のコンポーネント（子配列をもつなど表であらわせない場合）
         /// </summary>
         private class ChildrenFormComponent : ChildrenComponent {
-            internal ChildrenFormComponent(AggregateMember.Children children) : base(children) { }
+            internal ChildrenFormComponent(AggregateMember.Children children, int depth) : base(children, depth) { }
 
             protected override VerticalFormBuilder GetComponentRoot(bool isReadOnly) {
                 // ここでビルドされるフォームは配列全体ではなくループの中身の方
@@ -425,7 +435,7 @@ namespace Nijo.Models.ReadModel2Features {
         /// <see cref="AggregateMember.Children"/> のコンポーネント（子配列などをもたず表で表せる場合）
         /// </summary>
         private class ChildrenGridComponent : ChildrenComponent {
-            internal ChildrenGridComponent(AggregateMember.Children children) : base(children) { }
+            internal ChildrenGridComponent(AggregateMember.Children children, int depth) : base(children, depth) { }
 
             internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
                 Parts.WebClient.DataTable.DataTableBuilder tableBuilder;
@@ -531,7 +541,7 @@ namespace Nijo.Models.ReadModel2Features {
                     """;
             }
 
-            internal override IEnumerable<SingleViewAggregateComponent> EnumerateThisAndDescendants() {
+            internal override IEnumerable<SingleViewAggregateComponent> EnumerateThisAndDescendantsRecursively() {
                 yield return this;
 
                 // グリッドなので、このコンポーネントから呼ばれる他の子コンポーネントや参照先コンポーネントは無い

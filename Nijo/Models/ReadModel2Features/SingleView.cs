@@ -234,7 +234,7 @@ namespace Nijo.Models.ReadModel2Features {
                         </FormProvider>
                       )
                     }
-                    {{rootAggregateComponent.EnumerateThisAndDescendants().SelectTextTemplate(component => $$"""
+                    {{rootAggregateComponent.EnumerateThisAndDescendantsRecursively().SelectTextTemplate(component => $$"""
 
                     {{component.RenderDeclaring(ctx, _type == E_Type.ReadOnly)}}
                     """)}}

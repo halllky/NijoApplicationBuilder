@@ -14,7 +14,7 @@
   </受注>
 
   <納品 is="write-model-2 generate-default-read-model">
-    <受注 is="key ref-to:受注/明細" />
+    <受注明細 is="key ref-to:受注/明細" />
     <表示名称 is="name" />
     <納品日 is="date" />
     <納品数量 is="int" />
