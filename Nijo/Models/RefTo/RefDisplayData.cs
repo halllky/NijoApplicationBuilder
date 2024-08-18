@@ -83,6 +83,10 @@ namespace Nijo.Models.RefTo {
             }
         }
 
+        internal IEnumerable<AggregateMember.AggregateMemberBase> GetKeys() {
+            return _aggregate.GetKeys();
+        }
+
         /// <summary>
         /// データ構造を定義します（C#）
         /// </summary>

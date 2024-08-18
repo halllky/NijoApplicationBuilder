@@ -103,8 +103,14 @@ namespace Nijo.Core {
         /// この集約がエントリーのツリー内部にあるかどうかを返します。
         /// つまり、ルート集約またはその子集約か、それとも参照されている外部の集約かを表します。
         /// </summary>
+        internal static bool IsInEntryTree(this GraphNode<Aggregate> agg) {
+            return agg.IsInTreeOf(agg.GetEntry().As<Aggregate>());
+        }
+        /// <summary>
+        /// この集約がエントリーのツリーの外にあるかどうかを返します（<see cref="IsInEntryTree"/> の逆）
+        /// </summary>
         internal static bool IsOutOfEntryTree(this GraphNode<Aggregate> agg) {
-            return !agg.IsInTreeOf(agg.GetEntry().As<Aggregate>());
+            return !agg.IsInEntryTree();
         }
         /// <summary>
         /// ルート集約のツリー内部からツリー外部へ出る瞬間のエッジを返します。
