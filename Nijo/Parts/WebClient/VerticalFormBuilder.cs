@@ -12,7 +12,7 @@ namespace Nijo.Parts.WebClient {
     /// VForm2.tsx と密接に関わっているのでそちらも併せて参照のこと
     /// </summary>
     internal class VerticalFormBuilder : VerticalFormSection {
-        internal VerticalFormBuilder() : base(null, null) {
+        internal VerticalFormBuilder(string? label = null, E_VForm2LabelType? labelType = null, string? key = null) : base(label, labelType, key) {
         }
 
         /// <summary>
@@ -28,8 +28,12 @@ namespace Nijo.Parts.WebClient {
                 .DefaultIfEmpty()
                 .Max(x => x?.GetMaxDepth() ?? 0);
 
+            var key = _key == null
+                ? string.Empty
+                : $"key={{{_key}}} ";
+
             return $$"""
-                <VForm2.Root maxDepth={{{maxDepth}}}>
+                <VForm2.Root {{key}}maxDepth={{{maxDepth}}}>
                   {{WithIndent(RenderBody(context), "  ")}}
                 </VForm2.Root>
                 """;
@@ -93,11 +97,13 @@ namespace Nijo.Parts.WebClient {
     /// VForm2 の入れ子セクション
     /// </summary>
     internal class VerticalFormSection : IVerticalFormParts {
-        internal VerticalFormSection(string? label, E_VForm2LabelType? labelType) {
+        internal VerticalFormSection(string? label, E_VForm2LabelType? labelType, string? key) {
             _label = label;
             _labelType = labelType;
+            _key = key;
         }
 
+        protected readonly string? _key;
         protected readonly string? _label;
         protected readonly E_VForm2LabelType? _labelType;
         protected readonly List<IVerticalFormParts> _childItems = new();
@@ -108,8 +114,8 @@ namespace Nijo.Parts.WebClient {
             _childItems.Add(item);
         }
         /// <summary>このセクションに入れ子の子セクションを追加します。</summary>
-        internal VerticalFormSection AddSection(string? label, E_VForm2LabelType? labelType) {
-            var section = new VerticalFormSection(label, labelType);
+        internal VerticalFormSection AddSection(string? label, E_VForm2LabelType? labelType, string? key = null) {
+            var section = new VerticalFormSection(label, labelType, key);
             _childItems.Add(section);
             return section;
         }
@@ -139,8 +145,12 @@ namespace Nijo.Parts.WebClient {
                     """;
             }
 
+            var key = _key == null
+                ? string.Empty
+                : $" key={{{_key}}}";
+
             return $$"""
-                <VForm2.Indent{{label}}>
+                <VForm2.Indent{{key}}{{label}}>
                   {{WithIndent(RenderBody(context), "  ")}}
                 </VForm2.Indent>
                 """;

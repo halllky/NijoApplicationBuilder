@@ -68,6 +68,13 @@ namespace Nijo.Models.ReadModel2Features {
         }
 
         /// <summary>
+        /// コンポーネントのルート要素
+        /// </summary>
+        protected virtual VerticalFormBuilder GetComponentRoot(bool isReadOnly) {
+            return new VerticalFormBuilder();
+        }
+
+        /// <summary>
         /// このコンポーネント、参照先のコンポーネント、子孫コンポーネントを再帰的に列挙します。
         /// </summary>
         internal virtual IEnumerable<SingleViewAggregateComponent> EnumerateThisAndDescendants() {
@@ -104,7 +111,7 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// <see cref="VerticalFormBuilder"/> のインスタンスを組み立てます。
         /// </summary>
-        protected VerticalFormBuilder BuildVerticalForm(CodeRenderingContext context) {
+        protected VerticalFormBuilder BuildVerticalForm(CodeRenderingContext context, bool isReadOnly) {
             // レンダリング対象メンバーを列挙
             IEnumerable<AggregateMember.AggregateMemberBase> members;
             if (_aggregate.IsOutOfEntryTree()) {
@@ -120,7 +127,7 @@ namespace Nijo.Models.ReadModel2Features {
             }
 
             // フォーム組み立て
-            var formBuilder = new VerticalFormBuilder();
+            var formBuilder = GetComponentRoot(isReadOnly);
             var formContext = new ReactPageRenderingContext {
                 CodeRenderingContext = context,
                 Register = "registerEx",
@@ -168,7 +175,7 @@ namespace Nijo.Models.ReadModel2Features {
 
         internal virtual string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
             // ルート要素のコンポーネントのレンダリング
-            var vForm = BuildVerticalForm(context);
+            var vForm = BuildVerticalForm(context, isReadOnly);
 
             return $$"""
                 const {{ComponentName}} = () => {
@@ -214,18 +221,40 @@ namespace Nijo.Models.ReadModel2Features {
             }
         }
 
+        /// <summary>
+        /// 子孫コンポーネント
+        /// </summary>
+        private abstract class DescendantComponent : SingleViewAggregateComponent {
+            internal DescendantComponent(AggregateMember.RelationMember member) : base(member.MemberAggregate) {
+                _member = member;
+            }
+
+            private readonly AggregateMember.RelationMember _member;
+
+            protected override VerticalFormBuilder GetComponentRoot(bool isReadOnly) {
+                var fullpath = _member.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
+                var label = $$"""
+                    <>
+                      <VForm2.LabelText>{{_member.MemberName}}</VForm2.LabelText>
+                      <Input.ErrorMessage name={`{{fullpath.Join(".")}}`} errors={errors} />
+                    </>
+                    """;
+                return new VerticalFormBuilder(label, E_VForm2LabelType.JsxElement);
+            }
+        }
+
 
         /// <summary>
         /// 単純な1個の隣接要素のコンポーネント
         /// </summary>
-        private class ParentOrChildOrRefComponent : SingleViewAggregateComponent {
-            internal ParentOrChildOrRefComponent(AggregateMember.Parent parent) : base(parent.ParentAggregate) { }
-            internal ParentOrChildOrRefComponent(AggregateMember.Child child) : base(child.ChildAggregate) { }
-            internal ParentOrChildOrRefComponent(AggregateMember.Ref @ref) : base(@ref.RefTo) { }
+        private class ParentOrChildOrRefComponent : DescendantComponent {
+            internal ParentOrChildOrRefComponent(AggregateMember.Parent parent) : base(parent) { }
+            internal ParentOrChildOrRefComponent(AggregateMember.Child child) : base(child) { }
+            internal ParentOrChildOrRefComponent(AggregateMember.Ref @ref) : base(@ref) { }
 
             internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
                 var args = GetArguments().ToArray();
-                var vForm = BuildVerticalForm(context);
+                var vForm = BuildVerticalForm(context, isReadOnly);
 
                 return $$"""
                     const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
@@ -247,8 +276,8 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// <see cref="AggregateMember.VariationItem"/> のコンポーネント
         /// </summary>
-        private class VariationItemComponent : SingleViewAggregateComponent {
-            internal VariationItemComponent(AggregateMember.VariationItem variation) : base(variation.VariationAggregate) {
+        private class VariationItemComponent : DescendantComponent {
+            internal VariationItemComponent(AggregateMember.VariationItem variation) : base(variation) {
                 _variation = variation;
             }
 
@@ -256,7 +285,7 @@ namespace Nijo.Models.ReadModel2Features {
 
             internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
                 var args = GetArguments().ToArray();
-                var vForm = BuildVerticalForm(context);
+                var vForm = BuildVerticalForm(context, isReadOnly);
                 var switchProp = _variation.Group.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, args).Join(".");
 
                 return $$"""
@@ -289,16 +318,15 @@ namespace Nijo.Models.ReadModel2Features {
 
 
         /// <summary>
-        /// <see cref="AggregateMember.Children"/> のコンポーネント（子配列をもつなど表であらわせない場合）
+        /// <see cref="AggregateMember.Children"/> のコンポーネント（グリッド形式・フォーム形式共通）
         /// </summary>
-        private class ChildrenFormComponent : SingleViewAggregateComponent {
-            internal ChildrenFormComponent(AggregateMember.Children children) : base(children.ChildrenAggregate) {
+        private abstract class ChildrenComponent : DescendantComponent {
+            internal ChildrenComponent(AggregateMember.Children children) : base(children) {
                 _children = children;
             }
+            protected readonly AggregateMember.Children _children;
 
-            private readonly AggregateMember.Children _children;
-
-            private string GetLoopVar() {
+            protected string GetLoopVar() {
                 var args = GetArguments().ToArray();
                 return args.Length == 0 ? "x" : $"x{args.Length}";
             }
@@ -309,18 +337,42 @@ namespace Nijo.Models.ReadModel2Features {
                 }
                 yield return GetLoopVar();
             }
+        }
+
+
+        /// <summary>
+        /// <see cref="AggregateMember.Children"/> のコンポーネント（子配列をもつなど表であらわせない場合）
+        /// </summary>
+        private class ChildrenFormComponent : ChildrenComponent {
+            internal ChildrenFormComponent(AggregateMember.Children children) : base(children) { }
+
+            protected override VerticalFormBuilder GetComponentRoot(bool isReadOnly) {
+                // ここでビルドされるフォームは配列全体ではなくループの中身の方
+                var loopVar = GetLoopVar();
+                var creatable = !isReadOnly && !_aggregate.IsOutOfEntryTree(); // 参照先の集約の子孫要素は追加削除不可
+                var fullpath = _children.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
+                var label = $$"""
+                    <>
+                      <div className="inline-flex gap-2 py-px justify-start items-center">
+                        <VForm2.LabelText>{{{loopVar}}}</VForm2.LabelText>
+                    {{If(creatable, () => $$"""
+                        <Input.IconButton outline mini icon={XMarkIcon} onClick={onRemove({{loopVar}})}>削除</Input.IconButton>
+                    """)}}
+                      </div>
+                      <Input.ErrorMessage name={`{{fullpath.Join(".")}}.${{{loopVar}}}`} errors={errors} />
+                    </>
+                    """;
+                return new VerticalFormBuilder(label, E_VForm2LabelType.JsxElement, loopVar);
+            }
 
             internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
                 var args = GetArguments().ToArray();
-                var vForm = BuildVerticalForm(context);
+                var vForm = BuildVerticalForm(context, isReadOnly);
                 var loopVar = GetLoopVar();
 
-                var registerNameArray = _aggregate
+                var registerNameArray = _children
                     .GetFullPathAsReactHookFormRegisterName(E_PathType.Value, args)
                     .ToArray();
-                var registerName = registerNameArray.Length > 0
-                    ? $"`{registerNameArray.Join(".")}`"
-                    : string.Empty;
 
                 var creatable = !isReadOnly
                     && !_aggregate.IsOutOfEntryTree(); // 参照先の集約の子孫要素は追加削除不可
@@ -335,7 +387,7 @@ namespace Nijo.Models.ReadModel2Features {
                     """)}}
                     }) => {
                       const { register, registerEx, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
-                      const { fields, append, remove } = useFieldArray({ control, name: {{registerName}} })
+                      const { fields, append, remove } = useFieldArray({ control, name: `{{registerNameArray.Join(".")}}` })
                     {{If(creatable, () => $$"""
                       const onCreate = useCallback(() => {
                         append({{createNewItem}})
@@ -349,27 +401,17 @@ namespace Nijo.Models.ReadModel2Features {
                     """)}}
 
                       return (
-                        <VForm2.Indent label={(
-                          <div className="flex gap-2 justify-start">
+                        <VForm2.Indent label={<>
+                          <div className="inline-flex gap-2 py-px justify-start items-center">
                             <VForm2.LabelText>{{_aggregate.GetParent()?.RelationName}}</VForm2.LabelText>
                     {{If(creatable, () => $$"""
-                            <Input.Button onClick={onCreate}>追加</Input.Button>
+                            <Input.IconButton outline mini icon={PlusIcon} onClick={onCreate}>追加</Input.IconButton>
                     """)}}
                           </div>
-                        )}>
+                          <Input.ErrorMessage name={`{{registerNameArray.Join(".")}}`} errors={errors} />
+                        </>}>
                           {fields.map((item, {{loopVar}}) => (
-                            <VForm2.Indent key={{{loopVar}}} label={(
-                    {{If(creatable, () => $$"""
-                              <div className="flex flex-col gap-1">
-                                <VForm2.LabelText>{{{loopVar}}}</VForm2.LabelText>
-                                <Input.IconButton underline icon={XMarkIcon} onClick={onRemove({{loopVar}})}>削除</Input.IconButton>
-                              </div>
-                    """).Else(() => $$"""
-                              <VForm2.LabelText>{{{loopVar}}}</VForm2.LabelText>
-                    """)}}
-                            )}>
-                              {{WithIndent(vForm.Render(context), "          ")}}
-                            </VForm2.Indent>
+                            {{WithIndent(vForm.Render(context), "        ")}}
                           ))}
                         </VForm2.Indent>
                       )
@@ -382,23 +424,8 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// <see cref="AggregateMember.Children"/> のコンポーネント（子配列などをもたず表で表せる場合）
         /// </summary>
-        private class ChildrenGridComponent : SingleViewAggregateComponent {
-            internal ChildrenGridComponent(AggregateMember.Children children) : base(children.ChildrenAggregate) {
-                _children = children;
-            }
-
-            private readonly AggregateMember.Children _children;
-
-            private string GetLoopVar() {
-                var args = GetArguments().ToArray();
-                return args.Length == 0 ? "x" : $"x{args.Length}";
-            }
-            protected override IEnumerable<string> GetArgumentsAndLoopVar() {
-                foreach (var arg in GetArguments()) {
-                    yield return arg;
-                }
-                yield return GetLoopVar();
-            }
+        private class ChildrenGridComponent : ChildrenComponent {
+            internal ChildrenGridComponent(AggregateMember.Children children) : base(children) { }
 
             internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
                 Parts.WebClient.DataTable.DataTableBuilder tableBuilder;
@@ -420,19 +447,13 @@ namespace Nijo.Models.ReadModel2Features {
                 }
 
                 var args = GetArguments().ToArray();
-                var vForm = BuildVerticalForm(context);
-                var loopVar = GetLoopVar();
-
-                var registerNameArray = _aggregate
+                var registerNameArray = _children
                     .GetFullPathAsReactHookFormRegisterName(E_PathType.Value, args)
                     .ToArray();
-                var registerName = registerNameArray.Length > 0
-                    ? $"`{registerNameArray.Join(".")}`"
-                    : string.Empty;
-
                 var editable = !isReadOnly && !_aggregate.IsOutOfEntryTree();
 
                 // 何らかの状態変更があったときに更新フラグを立てる集約
+                // （自身または祖先集約の中でライフサイクルをもっているもののうち直近の集約）
                 var nearestHavingLifeCycleAggregate = _aggregate
                     .EnumerateAncestorsAndThis()
                     .Reverse()
@@ -443,7 +464,8 @@ namespace Nijo.Models.ReadModel2Features {
                 } else if (nearestHavingLifeCycleAggregate.IsRoot()) {
                     willBeChanged = DataClassForDisplay.WILL_BE_CHANGED_TS;
                 } else {
-                    var path = nearestHavingLifeCycleAggregate.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
+                    var asChildren = (AggregateMember.Children)nearestHavingLifeCycleAggregate.AsChildRelationMember();
+                    var path = asChildren.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
                     willBeChanged = nearestHavingLifeCycleAggregate == _aggregate
                         ? $"{path.Join(".")}.${{rowIndex}}.{DataClassForDisplay.WILL_BE_CHANGED_TS}"
                         : $"{path.Join(".")}.{DataClassForDisplay.WILL_BE_CHANGED_TS}";
@@ -456,8 +478,8 @@ namespace Nijo.Models.ReadModel2Features {
                     """)}}
                     }) => {
                       const { get } = Util.useHttpRequest()
-                      const { register, registerEx, setValue, control } = Util.useFormContextEx<{{UseFormType}}>()
-                      const { fields, append, remove, update } = useFieldArray({ control, name: {{registerName}} })
+                      const { register, registerEx, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
+                      const { fields, append, remove, update } = useFieldArray({ control, name: `{{registerNameArray.Join(".")}}` })
                       const dtRef = useRef<Layout.DataTableRef<{{rowType}}>>(null)
 
                     {{If(editable, () => $$"""
@@ -486,17 +508,16 @@ namespace Nijo.Models.ReadModel2Features {
 
                       return (
                         <VForm2.Item wide
-                    {{If(editable, () => $$"""
-                          label={(
+                          label={<>
                             <div className="flex items-center gap-2">
                               <VForm2.LabelText>{{_aggregate.GetParent()?.RelationName}}</VForm2.LabelText>
-                              <Input.Button icon={PlusIcon} onClick={onAdd}>追加</Input.Button>
-                              <Input.Button icon={XMarkIcon} onClick={onRemove}>削除</Input.Button>
-                            </div>
-                          )}
-                    """).Else(() => $$"""
-                          label="{{_aggregate.GetParent()?.RelationName}}"
+                    {{If(editable, () => $$"""
+                              <Input.IconButton outline mini icon={PlusIcon} onClick={onAdd}>追加</Input.IconButton>
+                              <Input.IconButton outline mini icon={XMarkIcon} onClick={onRemove}>削除</Input.IconButton>
                     """)}}
+                            </div>
+                            <Input.ErrorMessage name={`{{registerNameArray.Join(".")}}`} errors={errors} />
+                          </>}
                         >
                           <Layout.DataTable
                             ref={dtRef}

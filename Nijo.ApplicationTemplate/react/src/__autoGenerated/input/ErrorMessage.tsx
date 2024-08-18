@@ -1,12 +1,18 @@
 import { useCallback } from 'react'
-import { FieldErrors, FieldName, FieldValues } from 'react-hook-form'
+import { FieldErrors, FieldName, FieldPath } from 'react-hook-form'
 import { FieldValuesFromFieldErrors, ErrorMessage as HookFormErrorMessage } from '@hookform/error-message'
 import * as Util from '../util'
 
 /** `@hookform/error-message` のErrorMessageコンポーネントのラッパー */
-export const ErrorMessage = <T extends FieldValues = {},>({ name, errors, className }: {
-  name: FieldName<FieldValuesFromFieldErrors<T>>
+export const ErrorMessage = <T extends {} = {},>({ name, errors, className }: {
+  /** エラーメッセージ一覧 */
   errors?: FieldErrors<T>
+  /**
+   * errorsのオブジェクト中からこのnameに合致する項目のエラーが抽出される。
+   * @hookform/error-message に合わせるなら FieldName<FieldValuesFromFieldErrors<T>> だが、それだと型検査が働いてくれないのでこの型にしている。
+   * 'root' はルート要素に対するエラーメッセージが格納されるフィールドの名前。
+   */
+  name: 'root' | FieldPath<T>
   className?: string
 }) => {
   const { data: { darkMode } } = Util.useUserSetting()
@@ -30,7 +36,7 @@ export const ErrorMessage = <T extends FieldValues = {},>({ name, errors, classN
 
   return (
     <HookFormErrorMessage
-      name={name}
+      name={name as FieldName<FieldValuesFromFieldErrors<FieldErrors<T>>>}
       errors={errors}
       render={renderer}
     />

@@ -60,11 +60,9 @@ const Indent = ({ label, children }: {
 }) => {
   return (
     <div className="grid grid-cols-[subgrid] col-span-full border-vform bg-color-2">
-      {label && (
-        <div className="px-1 col-span-full">
-          {renderLabel(label)}
-        </div>
-      )}
+      <div className="px-1 col-span-full select-none">
+        {renderLabel(label)}&nbsp;
+      </div>
       <div className="grid gap-px grid-cols-[subgrid] col-span-full pl-[var(--vform-indent-size)]">
         {children}
       </div>

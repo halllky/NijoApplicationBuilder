@@ -672,89 +672,56 @@ namespace Nijo.Models.ReadModel2Features {
         /// React hook form のregister名でのフルパス
         /// </summary>
         /// <param name="arrayIndexes">配列インデックスを指定する変数の名前</param>
-        internal static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this GraphNode<Aggregate> aggregate, E_PathType pathType, IEnumerable<string>? arrayIndexes = null) {
-            if (pathType != E_PathType.Value) {
-                yield return GetDisplayDataPropertyPrefix(pathType);
-            }
-            foreach (var path in GetFullPathAsReactHookFormRegisterName(aggregate, pathType, false, arrayIndexes)) {
-                yield return path;
-            }
-        }
-
-        /// <summary>
-        /// React hook form のregister名でのフルパス
-        /// </summary>
-        /// <param name="arrayIndexes">配列インデックスを指定する変数の名前</param>
         internal static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this AggregateMember.AggregateMemberBase member, E_PathType pathType, IEnumerable<string>? arrayIndexes = null) {
-            if (pathType != E_PathType.Value) {
-                yield return GetDisplayDataPropertyPrefix(pathType);
-            }
-            foreach (var path in GetFullPathAsReactHookFormRegisterName(member.Owner, pathType, true, arrayIndexes)) {
-                yield return path;
-            }
-            if (!member.Owner.IsOutOfEntryTree() && pathType == E_PathType.Value) {
-                yield return GetDisplayDataPropertyPrefix(pathType);
-            }
-            yield return member.MemberName;
-        }
-
-        private static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this GraphNode<Aggregate> aggregate, E_PathType pathType, bool enumerateLastChildrenIndex, IEnumerable<string>? arrayIndexes) {
             var currentArrayIndex = 0;
+            var path = member.Owner.PathFromEntry();
+            foreach (var e in path) {
+                var edge = e.As<Aggregate>();
 
-            foreach (var edge in aggregate.PathFromEntry()) {
-                if (edge.Source == edge.Terminal) {
-
-                    if (edge.IsParentChild()) {
-                        yield return RefDisplayData.PARENT; // 子から親に向かって辿る場合
-
-                    } else if (edge.IsRef()) {
-                        throw new InvalidOperationException($"有向グラフの矢印の先から元に向かうパターンは親子だけなのでこの分岐にくることはあり得ないはず");
+                if (edge.Source == edge.Terminal && edge.IsParentChild()) {
+                    // 子から親へ向かう経路の場合
+                    if (edge.Initial.IsOutOfEntryTree()) {
+                        yield return RefDisplayData.PARENT;
+                    } else {
+                        yield return $"/* エラー！{nameof(DataClassForDisplay)}では子は親の参照を持っていません */";
                     }
+                } else if (edge.IsRef()) {
+                    if (!edge.Initial.IsOutOfEntryTree()) {
+                        yield return pathType == E_PathType.Value
+                            ? DataClassForDisplay.VALUES_TS
+                            : DataClassForDisplay.READONLY_TS;
+                    }
+                    yield return edge.RelationName;
 
                 } else {
-                    var dataClass = new DataClassForDisplay(edge.Initial.As<Aggregate>());
-                    var terminal = edge.Terminal.As<Aggregate>();
+                    yield return edge.RelationName;
 
-                    if (edge.IsParentChild()) {
-                        yield return dataClass
-                            .GetChildMembers()
-                            .Single(p => p.MemberInfo.MemberAggregate == terminal)
-                            .MemberName;
-
-                        // 子要素が配列の場合はその配列の何番目の要素かを指定する必要がある
-                        if (terminal.IsChildrenMember()
-                            // "….Children.${}" の最後の配列インデックスを列挙するか否か
-                            && (enumerateLastChildrenIndex || terminal != aggregate)) {
-
-                            var arrayIndex = arrayIndexes?.ElementAtOrDefault(currentArrayIndex);
-                            yield return $"${{{arrayIndex}}}";
-
-                            currentArrayIndex++;
-                        }
-
-                    } else if (edge.IsRef()) {
-                        if (!edge.Initial.As<Aggregate>().IsOutOfEntryTree() && pathType == E_PathType.Value) {
-                            yield return GetDisplayDataPropertyPrefix(pathType);
-                        }
-                        yield return dataClass
-                            .GetOwnMembers()
-                            .OfType<AggregateMember.RelationMember>()
-                            .Single(m => m.Relation == edge)
-                            .MemberName;
-
-                    } else {
-                        throw new InvalidOperationException($"有向グラフの矢印の先から元に向かうパターンは親子か参照だけなのでこの分岐にくることはあり得ないはず");
+                    // 配列インデックス
+                    var isChildren = edge.Source == edge.Initial && edge.Terminal.IsChildrenMember();
+                    var isLastChildren = member is AggregateMember.Children children && edge == children.Relation; // 配列自身に対するフルパス列挙の場合は末尾の配列インデックスは列挙しない
+                    if (isChildren && !isLastChildren) {
+                        yield return $"${{{arrayIndexes?.ElementAtOrDefault(currentArrayIndex)}}}";
+                        currentArrayIndex++;
                     }
                 }
             }
-        }
 
-        private static string GetDisplayDataPropertyPrefix(E_PathType pathType) {
-            return pathType switch {
-                E_PathType.Value => DataClassForDisplay.VALUES_TS,
-                E_PathType.ReadOnly => DataClassForDisplay.READONLY_TS,
-                _ => throw new NotImplementedException(),
-            };
+            if ((member is AggregateMember.Ref || member is AggregateMember.ValueMember)
+                && !member.Owner.IsOutOfEntryTree()) {
+                yield return pathType == E_PathType.Value
+                    ? DataClassForDisplay.VALUES_TS
+                    : DataClassForDisplay.READONLY_TS;
+            }
+
+            if (member is AggregateMember.Parent) {
+                if (member.Owner.IsOutOfEntryTree()) {
+                    yield return RefDisplayData.PARENT;
+                } else {
+                    yield return $"/* エラー！{nameof(DataClassForDisplay)}では子は親の参照を持っていません */";
+                }
+            } else {
+                yield return member.MemberName;
+            }
         }
     }
 
