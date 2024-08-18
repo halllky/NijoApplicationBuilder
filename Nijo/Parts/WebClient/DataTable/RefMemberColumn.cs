@@ -40,7 +40,7 @@ namespace Nijo.Parts.WebClient.DataTable {
             return $$"""
                 cellProps => {
                   const value = cellProps.row.original.{{_pathFromRowObject.Join("?.")}}
-                  const formatted = `{{names.Select(n => $"${{value?.{n.Declared.GetFullPathAsSearchResult().Join("?.")} ?? ''}}").Join("")}}`
+                  const formatted = `{{names.Select(n => $"${{value?.{n.Declared.GetFullPathAsDataClassForRefTarget().Join("?.")} ?? ''}}").Join("")}}`
 
                   return (
                     <span className="block w-full px-1 overflow-hidden whitespace-nowrap">
@@ -78,7 +78,7 @@ namespace Nijo.Parts.WebClient.DataTable {
                 EmitValueSelector = $"item => item",
                 MatchingKeySelectorFromEmitValue = $"item => item.{RefDisplayData.INSTANCE_KEY_TS}",
                 MatchingKeySelectorFromOption = $"item => item.{RefDisplayData.INSTANCE_KEY_TS}",
-                TextSelector = $"item => `{names.Select(n => $"${{item.{n.Declared.GetFullPathAsSearchResult().Join("?.")} ?? ''}}").Join("")}`",
+                TextSelector = $"item => `{names.Select(n => $"${{item.{n.Declared.GetFullPathAsDataClassForRefTarget().Join("?.")} ?? ''}}").Join("")}`",
                 OnClipboardCopy = (value, formatted) => $$"""
                     const {{formatted}} = {{value}} ? JSON.stringify({{value}}) : ''
                     """,

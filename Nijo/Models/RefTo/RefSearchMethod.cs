@@ -338,6 +338,10 @@ namespace Nijo.Models.RefTo {
 
                     } else {
                         // 参照エントリ
+                        if (!self) {
+                            if (!skip && !edge.Initial.IsRoot()) yield return C_SELF;
+                            self = true;
+                        }
                         if (!skip) yield return DataClassForDisplay.VALUES_CS;
                         if (!skip) yield return edge.RelationName;
                     }

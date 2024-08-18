@@ -26,9 +26,7 @@ namespace Nijo.Models.ReadModel2Features {
                 if (_componentName == null) {
                     if (_aggregate.IsOutOfEntryTree()) {
                         var relationHistory = new List<string>();
-                        var refEntry = _aggregate.GetRefEntryEdge();
-                        relationHistory.Add(refEntry.RelationName.ToCSharpSafe());
-                        foreach (var edge in _aggregate.PathFromEntry().Since(refEntry.Terminal)) {
+                        foreach (var edge in _aggregate.PathFromEntry()) {
                             if (edge.IsParentChild() && edge.Source == edge.Terminal) {
                                 relationHistory.Add(edge.Initial.As<Aggregate>().Item.PhysicalName);
                             } else {
@@ -72,7 +70,7 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// このコンポーネント、参照先のコンポーネント、子孫コンポーネントを再帰的に列挙します。
         /// </summary>
-        internal IEnumerable<SingleViewAggregateComponent> EnumerateThisAndDescendants() {
+        internal virtual IEnumerable<SingleViewAggregateComponent> EnumerateThisAndDescendants() {
             yield return this;
 
             // 子要素の列挙
@@ -490,6 +488,12 @@ namespace Nijo.Models.ReadModel2Features {
                       )
                     }
                     """;
+            }
+
+            internal override IEnumerable<SingleViewAggregateComponent> EnumerateThisAndDescendants() {
+                yield return this;
+
+                // グリッドなので、このコンポーネントから呼ばれる他の子コンポーネントや参照先コンポーネントは無い
             }
         }
     }

@@ -1,5 +1,6 @@
 using Nijo.Core;
 using Nijo.Models.WriteModel2Features;
+using Nijo.Parts.Utility;
 using Nijo.Parts.WebClient;
 using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
@@ -167,7 +168,7 @@ namespace Nijo.Models.ReadModel2Features {
                         // URLで指定されたキーで検索をかける。1件だけヒットするはずなのでそれを画面に初期表示する
                         const searchCondition = AggregateType.{{searchCondition.CreateNewObjectFnName}}()
                     {{urlKeysWithMember.SelectTextTemplate(kv => $$"""
-                        searchCondition.{{kv.Key.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".")}} = {{kv.Value}}
+                        searchCondition.{{kv.Key.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".")}} = {{ConvertUrlParamToSearchConditionValue(kv.Key, kv.Value)}}
                     """)}}
 
                         load{{_aggregate.Item.PhysicalName}}(searchCondition).then(searchResult => {
@@ -299,7 +300,25 @@ namespace Nijo.Models.ReadModel2Features {
                       }, [navigate])
                     }
                     """;
+            }
+        }
 
+        /// <summary>
+        /// 詳細画面初期表示時の検索で、URLから受け取ったパラメータを <see cref="SearchCondition"/> に設定する。
+        /// この処理は理論的には AggregateMemberType に保持させるのが綺麗だが、主キーなので結局stringかnumberしかありえないことから、
+        /// URLのパラメータに設定する処理に近いここに書いている。
+        /// </summary>
+        private static string ConvertUrlParamToSearchConditionValue(AggregateMember.ValueMember vm, string urlParam) {
+            var tsType = vm.Options.MemberType.GetTypeScriptTypeName();
+
+            if (tsType == "number") {
+                // 数値の場合は範囲検索で最小値最大値両方にURLパラメータを設定する
+                return $"{{ {FromTo.FROM_TS}: Number({urlParam}), {FromTo.TO_TS}: Number({urlParam}) }}";
+
+            } else {
+                // 予期しない型の主キーが登場した場合はその時考える（ここに分岐を追加するか、AggregateMemberTypeに処理を委譲する）。
+                // 文字列や列挙体の場合はURLパラメータそのまま検索にかけてよいのでそのままreturn
+                return urlParam;
             }
         }
     }
