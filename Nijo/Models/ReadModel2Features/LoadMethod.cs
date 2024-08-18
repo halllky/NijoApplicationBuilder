@@ -167,7 +167,7 @@ namespace Nijo.Models.ReadModel2Features {
                     {{searchResult.GetOwnMembers().SelectTextTemplate(member => $$"""
                         {{member.MemberName}} = {{WithIndent(RenderMember(member), "    ")}},
                     """)}}
-                    {{If(searchResult.HasLifeCycle, () => $$"""
+                    {{If(searchResult.HasVersion, () => $$"""
                         {{SearchResult.VERSION}} = {{instance}}.{{EFCoreEntity.VERSION}}!.Value,
                     """)}}
                     }

@@ -20,6 +20,7 @@ namespace Nijo.Parts.Utility {
 
         internal const string CS_CLASS_NAME = "InstanceKey";
 
+        internal const string EMPTY = "Empty";
         /// <summary>新しいUUIDを発番し <see cref="InstanceKey"/> を作成します。</summary>
         internal const string FROM_UUID = "FromUuid";
         /// <summary>DBに保存された主キーから <see cref="InstanceKey"/> を作成します。</summary>
@@ -45,6 +46,12 @@ namespace Nijo.Parts.Utility {
                     /// </summary>
                     public class {{CS_CLASS_NAME}} {
 
+                        /// <summary>
+                        /// 空の <see cref="{{CS_CLASS_NAME}}"/> を作成します。
+                        /// </summary>
+                        public static {{CS_CLASS_NAME}} {{EMPTY}}() {
+                            return new {{CS_CLASS_NAME}}(null, Array.Empty<object?>());
+                        }
                         /// <summary>
                         /// 新しいUUIDを発番し <see cref="{{CS_CLASS_NAME}}"/> を作成します。
                         /// </summary>

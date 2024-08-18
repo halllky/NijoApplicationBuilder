@@ -91,7 +91,11 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// 追加・更新・削除のタイミングが親要素と異なるか否か
         /// </summary>
-        internal bool HasLifeCycle => Aggregate.IsRoot() || Aggregate.Item.Options.HasLifeCycle;
+        internal bool HasLifeCycle => Aggregate.IsRoot() || Aggregate.IsChildrenMember() || Aggregate.Item.Options.HasLifeCycle;
+        /// <summary>
+        /// 楽観排他制御用のバージョンをもつかどうか
+        /// </summary>
+        internal bool HasVersion => Aggregate.IsRoot() || Aggregate.Item.Options.HasLifeCycle;
         /// <summary>
         /// インスタンスキー（<see cref="INSTANCE_KEY_CS"/>, <see cref="INSTANCE_KEY_TS"/>）を持つかどうか。
         /// 追加更新削除のタイミングが親と異なる場合以外であっても、配列の要素の場合は配列の並び順が変わるなどしても
@@ -164,7 +168,7 @@ namespace Nijo.Models.ReadModel2Features {
                     /// 別途何らかの識別子を設けないと同一性を判定する方法が無いため、この項目が必要になる。
                     /// </summary>
                     [JsonPropertyName("{{INSTANCE_KEY_TS}}")]
-                    public required virtual {{InstanceKey.CS_CLASS_NAME}} {{INSTANCE_KEY_CS}} { get; set; }
+                    public virtual {{InstanceKey.CS_CLASS_NAME}} {{INSTANCE_KEY_CS}} { get; set; } = {{InstanceKey.CS_CLASS_NAME}}.{{InstanceKey.EMPTY}}();
                 """)}}
 
                     /// <summary>値</summary>
@@ -188,6 +192,8 @@ namespace Nijo.Models.ReadModel2Features {
                     /// <summary>このデータが更新確定時に削除されるかどうか</summary>
                     [JsonPropertyName("{{WILL_BE_DELETED_TS}}")]
                     public virtual bool {{WILL_BE_DELETED_CS}} { get; set; }
+                """)}}
+                {{If(HasVersion, () => $$"""
                     /// <summary>楽観排他制御用のバージョニング情報</summary>
                     [JsonPropertyName("{{VERSION_TS}}")]
                     public virtual int? {{VERSION_CS}} { get; set; }
@@ -234,6 +240,8 @@ namespace Nijo.Models.ReadModel2Features {
                   {{WILL_BE_CHANGED_TS}}: boolean
                   /** このデータが更新確定時に削除されるかどうか */
                   {{WILL_BE_DELETED_TS}}: boolean
+                """)}}
+                {{If(HasVersion, () => $$"""
                   /** 楽観排他制御用のバージョニング情報 */
                   {{VERSION_TS}}: number | undefined
                 """)}}
@@ -492,6 +500,8 @@ namespace Nijo.Models.ReadModel2Features {
                   {{EXISTS_IN_DB_TS}}: false,
                   {{WILL_BE_CHANGED_TS}}: true,
                   {{WILL_BE_DELETED_TS}}: false,
+                """)}}
+                {{If(HasVersion, () => $$"""
                   {{VERSION_TS}}: undefined,
                 """)}}
                 })
@@ -541,6 +551,8 @@ namespace Nijo.Models.ReadModel2Features {
                     {{EXISTS_IN_DB_CS}} = true,
                     {{WILL_BE_CHANGED_CS}} = false,
                     {{WILL_BE_DELETED_CS}} = false,
+                """)}}
+                {{If(HasVersion, () => $$"""
                     {{VERSION_CS}} = {{instance}}.{{SearchResult.VERSION}},
                 """)}}
                     {{VALUES_CS}} = new {{ValueCsClassName}} {

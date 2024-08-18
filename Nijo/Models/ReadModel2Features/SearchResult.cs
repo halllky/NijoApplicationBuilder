@@ -24,7 +24,7 @@ namespace Nijo.Models.ReadModel2Features {
         internal GraphNode<Aggregate> Aggregate { get; }
 
         internal string CsClassName => $"{Aggregate.Item.PhysicalName}SearchResult";
-        internal bool HasLifeCycle => new DataClassForDisplay(Aggregate).HasLifeCycle;
+        internal bool HasVersion => new DataClassForDisplay(Aggregate).HasVersion;
 
         internal const string VERSION = "Version";
 
@@ -77,7 +77,7 @@ namespace Nijo.Models.ReadModel2Features {
                     /// <summary>{{member.MemberName}}</summary>
                     public virtual {{GetMemberCsType(member)}}? {{member.MemberName}} { get; set; }
                 """)}}
-                {{If(HasLifeCycle, () => $$"""
+                {{If(HasVersion, () => $$"""
                     /// <summary>楽観排他制御用のバージョニング用</summary>
                     public required int {{VERSION}} { get; set; }
                 """)}}

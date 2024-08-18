@@ -430,7 +430,24 @@ namespace Nijo.Models.ReadModel2Features {
                     ? $"`{registerNameArray.Join(".")}`"
                     : string.Empty;
 
-                var creatable = !isReadOnly && !_aggregate.IsOutOfEntryTree();
+                var editable = !isReadOnly && !_aggregate.IsOutOfEntryTree();
+
+                // 何らかの状態変更があったときに更新フラグを立てる集約
+                var nearestHavingLifeCycleAggregate = _aggregate
+                    .EnumerateAncestorsAndThis()
+                    .Reverse()
+                    .FirstOrDefault(agg => new DataClassForDisplay(agg).HasLifeCycle);
+                string willBeChanged;
+                if (nearestHavingLifeCycleAggregate == null) {
+                    willBeChanged = $"/*エラー！更新フラグを立てるべきオブジェクトを特定できません。*/.{DataClassForDisplay.WILL_BE_CHANGED_TS}";
+                } else if (nearestHavingLifeCycleAggregate.IsRoot()) {
+                    willBeChanged = DataClassForDisplay.WILL_BE_CHANGED_TS;
+                } else {
+                    var path = nearestHavingLifeCycleAggregate.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
+                    willBeChanged = nearestHavingLifeCycleAggregate == _aggregate
+                        ? $"{path.Join(".")}.${{rowIndex}}.{DataClassForDisplay.WILL_BE_CHANGED_TS}"
+                        : $"{path.Join(".")}.{DataClassForDisplay.WILL_BE_CHANGED_TS}";
+                }
 
                 return $$"""
                     const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
@@ -439,11 +456,11 @@ namespace Nijo.Models.ReadModel2Features {
                     """)}}
                     }) => {
                       const { get } = Util.useHttpRequest()
-                      const { register, registerEx, control } = Util.useFormContextEx<{{UseFormType}}>()
+                      const { register, registerEx, setValue, control } = Util.useFormContextEx<{{UseFormType}}>()
                       const { fields, append, remove, update } = useFieldArray({ control, name: {{registerName}} })
                       const dtRef = useRef<Layout.DataTableRef<{{rowType}}>>(null)
 
-                    {{If(creatable, () => $$"""
+                    {{If(editable, () => $$"""
                       const onAdd = useCallback((e: React.MouseEvent) => {
                         append({{createNewItem}})
                         e.preventDefault()
@@ -456,17 +473,20 @@ namespace Nijo.Models.ReadModel2Features {
 
                     """)}}
                       const options = useMemo<Layout.DataTableProps<{{rowType}}>>(() => ({
-                    {{If(creatable, () => $$"""
-                        onChangeRow: update,
+                    {{If(editable, () => $$"""
+                        onChangeRow: (rowIndex, row) => {
+                          setValue(`{{willBeChanged}}`, true)
+                          update(rowIndex, row)
+                        },
                     """)}}
                         columns: [
                           {{WithIndent(tableBuilder.RenderColumnDef(context), "      ")}}
                         ],
-                      }), [get, {{args.Select(a => $"{a}, ").Join("")}}update])
+                      }), [get, update, setValue{{args.Select(a => $", {a}").Join("")}}])
 
                       return (
                         <VForm2.Item wide
-                    {{If(creatable, () => $$"""
+                    {{If(editable, () => $$"""
                           label={(
                             <div className="flex items-center gap-2">
                               <VForm2.LabelText>{{_aggregate.GetParent()?.RelationName}}</VForm2.LabelText>

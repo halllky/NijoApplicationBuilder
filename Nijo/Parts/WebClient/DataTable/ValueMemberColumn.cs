@@ -92,7 +92,6 @@ namespace Nijo.Parts.WebClient.DataTable {
                         {{WithIndent(editSetting!.SetValueToRow!("value", "formatted"), "    ")}}
                         row.{{_pathFromRowObject.Join(".")}} = formatted
                     """)}}
-                        row.{{DataClassForDisplay.WILL_BE_CHANGED_TS}} = true
                       }
                     }
                     """;
