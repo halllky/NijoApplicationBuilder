@@ -47,8 +47,8 @@ namespace Nijo.Models.WriteModel2Features {
         /// </summary>
         internal static string GetMemberTypeNameTypeScript(AggregateMember.AggregateMemberBase member, E_Type type) {
             return member switch {
-                AggregateMember.ValueMember vm => vm.Options.MemberType.GetTypeScriptTypeName(),
-                AggregateMember.Ref @ref => new DataClassForRefTargetKeys(@ref.RefTo, @ref.RefTo).TsTypeName,
+                AggregateMember.ValueMember vm => $"{vm.Options.MemberType.GetTypeScriptTypeName()} | undefined",
+                AggregateMember.Ref @ref => $"{new DataClassForRefTargetKeys(@ref.RefTo, @ref.RefTo).TsTypeName} | undefined",
                 AggregateMember.Parent => throw new NotImplementedException(), // Parentはこのデータクラスのメンバーにならない
                 AggregateMember.Children children => $"{new DataClassForSave(children.ChildrenAggregate, type).TsTypeName}[]",
                 AggregateMember.Child child => new DataClassForSave(child.ChildAggregate, type).TsTypeName,
@@ -111,7 +111,7 @@ namespace Nijo.Models.WriteModel2Features {
             return $$"""
                 export type {{TsTypeName}} = {
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
-                  {{m.MemberName}}: {{GetMemberTypeNameTypeScript(m, Type)}} | undefined
+                  {{m.MemberName}}: {{GetMemberTypeNameTypeScript(m, Type)}}
                 """)}}
                 }
                 """;

@@ -53,13 +53,14 @@ namespace Nijo.Models.ReadModel2Features {
         /// 祖先コンポーネントの中に含まれるChildrenの数だけ、
         /// このコンポーネントのその配列中でのインデックスが特定されている必要があるので、それを引数で受け取る。
         /// </summary>
-        protected IReadOnlyList<string> GetArguments() {
+        protected IEnumerable<string> GetArguments() {
             return _aggregate
                 .PathFromEntry()
                 .Where(edge => edge.Terminal != _aggregate
+                            && edge.Source == edge.Initial
+                            && edge.IsParentChild()
                             && edge.Terminal.As<Aggregate>().IsChildrenMember())
-                .Select((_, i) => $"index{i}")
-                .ToArray();
+                .Select((_, i) => $"index{i}");
         }
         /// <summary>
         /// コンポーネント引数 + Children用のループ変数

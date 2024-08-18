@@ -92,8 +92,10 @@ namespace Nijo.Models.WriteModel2Features {
                 """)}}
 
                 {{descendants.SelectTextTemplate(agg => $$"""
+                {{If(agg.IsChildrenMember(), () => $$"""
                 {{instanceList.SelectTextTemplate(instance => $$"""
                 {{instance}}.{{ObjectPath(agg).Join(".")}} = {{NewObject(agg)}}
+                """)}}
                 """)}}
                 {{agg.GetMembers().Where(m => m.DeclaringAggregate == agg).SelectTextTemplate(member => $$"""
                 {{instanceList.SelectTextTemplate((instance, index) => $$"""
