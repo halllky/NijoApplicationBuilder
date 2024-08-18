@@ -99,7 +99,7 @@ namespace Nijo.Models.RefTo {
             CollectRecursively(new RefDisplayData(asEntry, asEntry));
 
             return refTargets.SelectTextTemplate(rt => $$"""
-                /// <summary>{{rt._refEntry.Item.DisplayName}}が他の集約から参照されたときの{{rt._aggregate.Item.DisplayName}}のデータ型</summary>
+                /// <summary>{{rt._refEntry.Item.DisplayName}}が他の集約から参照されたときの{{rt._aggregate.Item.DisplayName}}の画面表示用データ型</summary>
                 public partial class {{rt.CsClassName}} {
                 {{If(rt.HasInstanceKey, () => $$"""
                     /// <summary>
@@ -133,7 +133,7 @@ namespace Nijo.Models.RefTo {
             CollectRecursively(new RefDisplayData(asEntry, asEntry));
 
             return refTargets.SelectTextTemplate(rt => $$"""
-                /** {{rt._refEntry.Item.DisplayName}}が他の集約から参照されたときの{{rt._aggregate.Item.DisplayName}}のデータ型 */
+                /** {{rt._refEntry.Item.DisplayName}}が他の集約から参照されたときの{{rt._aggregate.Item.DisplayName}}の画面表示用データ型 */
                 export type {{rt.TsTypeName}} = {
                 {{If(rt.HasInstanceKey, () => $$"""
                   /**
@@ -308,6 +308,27 @@ namespace Nijo.Models.RefTo {
 
         }
 
+        /// <summary>
+        /// TypeScriptで <see cref="DataClassForRefTargetKeys"/> への変換処理をレンダリングします。
+        /// ダミーデータ生成処理で使用。
+        /// </summary>
+        internal string RenderConvertToTsWriteModelKey(string instance, GraphNode<Aggregate> instanceAggregate) {
+            return Render(new DataClassForRefTargetKeys(_aggregate, _refEntry));
+
+            string Render(DataClassForRefTargetKeys writeModel) {
+                return $$"""
+                    {
+                    {{writeModel.GetValueMembers().SelectTextTemplate(m => $$"""
+                      {{m.MemberName}}: {{instance}}.{{m.Member.Declared.GetFullPathAsDataClassForRefTarget(since: instanceAggregate).Join("?.")}},
+                    """)}}
+                    {{writeModel.GetRelationMembers().SelectTextTemplate(m => $$"""
+                      {{m.MemberName}}: {{WithIndent(Render(m), "  ")}},
+                    """)}}
+                    }
+                    """;
+            }
+        }
+
         #region メンバー用staticメソッド
         internal const string PARENT = "PARENT";
         /// <summary>
@@ -374,7 +395,7 @@ namespace Nijo.Models.RefTo {
         /// <summary>
         /// エントリーからのパスを <see cref="RefDisplayData"/> の インスタンスの型のルールにあわせて返す。
         /// エントリーから全体が参照先検索結果クラスである場合のみ使用。
-        /// 参照元検索結果の一部として参照先が含まれる場合は <see cref="ReadModel2Features.GetFullPathExtensions.GetFullPathAsDataClassForDisplay(GraphNode{Aggregate}, GraphNode{Aggregate}?, GraphNode{Aggregate}?)"/> を使用すること
+        /// 参照元検索結果の一部として参照先が含まれる場合は <see cref="ReadModel2Features.GetFullPathExtensions.GetFullPathAsDataClassForDisplay"/> を使用すること
         /// </summary>
         internal static IEnumerable<string> GetFullPathAsDataClassForRefTarget(this GraphNode<Aggregate> aggregate, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
             var path = aggregate.PathFromEntry();

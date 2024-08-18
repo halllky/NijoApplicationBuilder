@@ -179,7 +179,7 @@ namespace Nijo.Models.WriteModel2Features {
                     var res = $"response{random.Next(99999999):00000000}";
                     return $$"""
                         const {{res}} = await {{refSearch.Load}}(AggregateType.{{refSearch.NewCondition}}())
-                        {{instance}}.{{path.Join(".")}} = {{res}}[{{index}}]
+                        {{instance}}.{{path.Join(".")}} = {{apiReturnType.RenderConvertToTsWriteModelKey($"{res}[{index}]", @ref.RefTo)}}
                         """;
 
                 } else if (member is AggregateMember.Child

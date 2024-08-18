@@ -95,7 +95,7 @@ namespace Nijo.Models.WriteModel2Features {
             return $$"""
                 public partial class {{CsClassName}} {
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
-                    public {{GetMemberTypeNameCSharp(m, Type)}}? {{m.MemberName}} { get; set; }
+                    public {{GetMemberTypeNameCSharp(m, Type)}}? {{GetMemberName(m)}} { get; set; }
                 """)}}
                 {{If(_aggregate.IsRoot(), () => $$"""
 
@@ -111,7 +111,7 @@ namespace Nijo.Models.WriteModel2Features {
             return $$"""
                 export type {{TsTypeName}} = {
                 {{GetOwnMembers().SelectTextTemplate(m => $$"""
-                  {{m.MemberName}}: {{GetMemberTypeNameTypeScript(m, Type)}}
+                  {{GetMemberName(m)}}: {{GetMemberTypeNameTypeScript(m, Type)}}
                 """)}}
                 }
                 """;
@@ -396,6 +396,23 @@ namespace Nijo.Models.WriteModel2Features {
                 /** {{_aggregate.Item.DisplayName}}の{{(Type == E_Type.Create ? "新規作成用" : "更新用")}}コマンドを作成します。 */
                 export const {{TsNewObjectFnName}} = (): {{TsTypeName}} => ({{RenderObject(_aggregate, Type)}})
                 """;
+        }
+
+        /// <summary>
+        /// <see cref="DataClassForSave"/> と <see cref="DataClassForRefTargetKeys"/> のルールに合わせたメンバー名を返します。
+        /// </summary>
+        internal static string GetMemberName(AggregateMember.AggregateMemberBase member) {
+            if (member is AggregateMember.Parent) {
+
+                if (member.Owner.IsOutOfEntryTree()) {
+                    return DataClassForRefTargetKeys.PARENT;
+                } else {
+                    return $"Parent/* エラー！{nameof(DataClassForSave)}では子は親への参照をもっていない */";
+                }
+
+            } else {
+                return member.MemberName;
+            }
         }
     }
 

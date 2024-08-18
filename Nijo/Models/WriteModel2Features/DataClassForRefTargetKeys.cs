@@ -33,23 +33,17 @@ namespace Nijo.Models.WriteModel2Features {
         /// この集約自身がもつメンバーを列挙します。
         /// </summary>
         /// <returns></returns>
-        private IEnumerable<KeyMember> GetOwnMembers() {
-            foreach (var member in _aggregate.GetKeys()) {
-                if (member is AggregateMember.RelationMember rm) {
-                    if (_aggregate.Source?.Source.As<Aggregate>() == rm.MemberAggregate) continue;
-
-                    yield return new KeyMember(member, _refEntry);
-
-                } else {
-                    if (member.DeclaringAggregate == _aggregate)
-                        yield return new KeyMember(member, _refEntry);
-                }
-            }
+        internal IEnumerable<KeyMember> GetValueMembers() {
+            return _aggregate
+                .GetKeys()
+                .OfType<AggregateMember.ValueMember>()
+                .Where(vm => vm.DeclaringAggregate == _aggregate)
+                .Select(vm => new KeyMember(vm, _refEntry));
         }
         /// <summary>
         /// 直近の子を列挙します。
         /// </summary>
-        private IEnumerable<DescendantRefTargetKeys> GetChildMembers() {
+        internal IEnumerable<DescendantRefTargetKeys> GetRelationMembers() {
             return _aggregate
                 .GetKeys()
                 .OfType<AggregateMember.RelationMember>()
@@ -60,7 +54,7 @@ namespace Nijo.Models.WriteModel2Features {
         /// 子を再帰的に列挙します。
         /// </summary>
         private IEnumerable<DescendantRefTargetKeys> GetChildMembersRecursively() {
-            foreach (var child in GetChildMembers()) {
+            foreach (var child in GetRelationMembers()) {
                 yield return child;
 
                 foreach (var grandChild in child.GetChildMembersRecursively()) {
@@ -88,8 +82,11 @@ namespace Nijo.Models.WriteModel2Features {
                 /// {{_aggregate.Item.DisplayName}} のキー
                 /// </summary>
                 public partial class {{CsClassName}} {
-                {{GetOwnMembers().SelectTextTemplate(m => $$"""
+                {{GetValueMembers().SelectTextTemplate(m => $$"""
                     public required {{m.CsType}}? {{m.MemberName}} { get; set; }
+                """)}}
+                {{GetRelationMembers().SelectTextTemplate(m => $$"""
+                    public required {{m.CsClassName}} {{m.MemberName}} { get; set; }
                 """)}}
                 }
                 """;
@@ -111,8 +108,11 @@ namespace Nijo.Models.WriteModel2Features {
             return $$"""
                 /** {{_aggregate.Item.DisplayName}} のキー */
                 export type {{TsTypeName}} = {
-                {{GetOwnMembers().SelectTextTemplate(m => $$"""
-                  {{m.MemberName}}: {{m.CsType}} | undefined
+                {{GetValueMembers().SelectTextTemplate(m => $$"""
+                  {{m.MemberName}}: {{m.TsType}} | undefined
+                """)}}
+                {{GetRelationMembers().SelectTextTemplate(m => $$"""
+                  {{m.MemberName}}: {{m.TsTypeName}}
                 """)}}
                 }
                 """;
@@ -130,10 +130,10 @@ namespace Nijo.Models.WriteModel2Features {
 
             return $$"""
                 {{@new}} {
-                {{GetOwnMembers().SelectTextTemplate(m => $$"""
-                    {{m.MemberName}} = {{sourceInstance}}.{{m.Member.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp, sourceInstanceAgg).Join("?.")}},
+                {{GetValueMembers().SelectTextTemplate(m => $$"""
+                    {{m.MemberName}} = {{sourceInstance}}.{{m.Member.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp, sourceInstanceAgg).Join("?.")}},
                 """)}}
-                {{GetChildMembers().SelectTextTemplate(m => m.IsArray ? $$"""
+                {{GetRelationMembers().SelectTextTemplate(m => m.IsArray ? $$"""
                     {{m.MemberName}} = {{sourceInstance}}.{{m.MemberAggregate.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp, sourceInstanceAgg).Join("?.")}}.Select({{x}} => {{WithIndent(m.RenderFromDisplayData(x, m.MemberAggregate, true), "    ")}}).ToList() ?? [],
                 """ : $$"""
                     {{m.MemberName}} = {{WithIndent(m.RenderFromDisplayData(sourceInstance, sourceInstanceAgg, false), "    ")}},
@@ -145,34 +145,30 @@ namespace Nijo.Models.WriteModel2Features {
 
         internal const string PARENT = "PARENT";
 
-        private class DescendantRefTargetKeys : DataClassForRefTargetKeys {
+        internal class DescendantRefTargetKeys : DataClassForRefTargetKeys {
             internal DescendantRefTargetKeys(AggregateMember.RelationMember rm, GraphNode<Aggregate> refEntry) : base(rm.MemberAggregate, refEntry) {
                 _relationMember = rm;
             }
 
             private readonly AggregateMember.RelationMember _relationMember;
             internal GraphNode<Aggregate> MemberAggregate => _relationMember.MemberAggregate;
-            internal string MemberName => _relationMember.MemberName;
+            internal string MemberName => _relationMember is AggregateMember.Parent
+                ? PARENT
+                : _relationMember.MemberName;
             internal bool IsArray => _relationMember is AggregateMember.Children;
         }
 
-        private class KeyMember {
-            internal KeyMember(AggregateMember.AggregateMemberBase member, GraphNode<Aggregate> refEntry) {
+        internal class KeyMember {
+            internal KeyMember(AggregateMember.ValueMember member, GraphNode<Aggregate> refEntry) {
                 Member = member;
                 _refEntry = refEntry;
             }
-            internal AggregateMember.AggregateMemberBase Member { get; }
+            internal AggregateMember.ValueMember Member { get; }
             private readonly GraphNode<Aggregate> _refEntry;
 
-            internal string MemberName => Member is AggregateMember.Parent
-                ? PARENT
-                : Member.MemberName;
-            internal string CsType => Member is AggregateMember.ValueMember vm
-                ? vm.Options.MemberType.GetCSharpTypeName()
-                : new DescendantRefTargetKeys((AggregateMember.RelationMember)Member, _refEntry).CsClassName;
-            internal string TsType => Member is AggregateMember.ValueMember vm
-                ? vm.Options.MemberType.GetTypeScriptTypeName()
-                : new DescendantRefTargetKeys((AggregateMember.RelationMember)Member, _refEntry).TsTypeName;
+            internal string MemberName => Member.MemberName;
+            internal string CsType => Member.Options.MemberType.GetCSharpTypeName();
+            internal string TsType => Member.Options.MemberType.GetTypeScriptTypeName();
         }
     }
 }

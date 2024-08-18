@@ -281,7 +281,7 @@ namespace Nijo.Models.ReadModel2Features {
                 return $$"""
                     {{newStatement}} {
                     {{forSave.GetOwnMembers().SelectTextTemplate(m => $$"""
-                        {{m.MemberName}} = {{WithIndent(RenderMember(m), "    ")}},
+                        {{DataClassForSave.GetMemberName(m)}} = {{WithIndent(RenderMember(m), "    ")}},
                     """)}}
                     }
                     """;
