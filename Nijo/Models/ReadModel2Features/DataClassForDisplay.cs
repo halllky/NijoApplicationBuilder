@@ -129,6 +129,15 @@ namespace Nijo.Models.ReadModel2Features {
                          || m is AggregateMember.VariationItem)
                 .Select(m => new DataClassForDisplayDescendant((AggregateMember.RelationMember)m));
         }
+        /// <summary>
+        /// 画面表示用クラスを再帰的に列挙します。
+        /// </summary>
+        private IEnumerable<DataClassForDisplay> EnumerateThisAndDescendantsRecursively() {
+            yield return this;
+            foreach (var descendant in GetChildMembers().SelectMany(child => child.EnumerateThisAndDescendantsRecursively())) {
+                yield return descendant;
+            }
+        }
 
 
         /// <summary>
@@ -406,6 +415,7 @@ namespace Nijo.Models.ReadModel2Features {
         }
         #endregion 読み取り専用用構造体
 
+
         /// <summary>
         /// メンバーのC#型名を返します。null許容演算子は含みません。
         /// </summary>
@@ -453,6 +463,8 @@ namespace Nijo.Models.ReadModel2Features {
             }
         }
 
+
+        #region クライアント側でのオブジェクト新規作成
         /// <summary>
         /// この型のオブジェクトを新規作成する関数の名前
         /// </summary>
@@ -507,6 +519,89 @@ namespace Nijo.Models.ReadModel2Features {
                 })
                 """;
         }
+        #endregion クライアント側でのオブジェクト新規作成
+
+
+        #region ディープ・イコール
+        /// <summary>
+        /// 値比較関数の名前
+        /// </summary>
+        internal string DeepEqualFunction => $"deepEquals{TsTypeName}";
+        internal string RenderDeepEqualFunctionRecursively(CodeRenderingContext context) {
+            // 登録更新の対象となる子孫要素（==楽観排他制御用のバージョンを持っている子孫要素）のみレンダリングする
+            var rendering = EnumerateThisAndDescendantsRecursively()
+                .Where(displayData => displayData.HasVersion);
+
+            return $$"""
+                {{rendering.SelectTextTemplate(displayData => displayData.RenderDeepEqualFunction(context))}}
+                """;
+        }
+        private string RenderDeepEqualFunction(CodeRenderingContext context) {
+            if (!HasVersion) throw new InvalidOperationException("更新の単位にならないオブジェクトでディープイコール関数は定義不可");
+
+            return $$"""
+                /** 2つの{{Aggregate.Item.DisplayName}}オブジェクトの値を比較し、一致しているかを返します。 */
+                export const {{DeepEqualFunction}} = (a: {{TsTypeName}}, b: {{TsTypeName}}): boolean => {
+                  {{WithIndent(RenderAggregate(this, "a", "b", Aggregate), "  ")}}
+                  return true
+                }
+                """;
+
+            string RenderAggregate(DataClassForDisplay rendering, string a, string b, GraphNode<Aggregate> instanceAgg) {
+                var ownMembers = rendering
+                    .GetOwnMembers();
+                var childMembers = rendering
+                    .GetChildMembers()
+                    .Where(m => !m.HasVersion); // バージョンを持っている子要素は別のライフサイクルを持つのでこの関数では判定しない
+
+                return $$"""
+                    {{ownMembers.SelectTextTemplate(RenderOwnMember)}}
+                    {{childMembers.SelectTextTemplate(RenderChildMember)}}
+                    """;
+
+                string RenderOwnMember(AggregateMember.AggregateMemberBase member) {
+                    if (member is AggregateMember.ValueMember vm) {
+                        var fullpath = vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, instanceAgg);
+                        return $$"""
+                            if (({{a}}.{{fullpath.Join("?.")}} ?? undefined) !== ({{b}}.{{fullpath.Join("?.")}} ?? undefined)) return false
+                            """;
+                    } else if (member is AggregateMember.Ref @ref) {
+                        var fullpath = @ref.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, instanceAgg);
+                        var instanceKey = $"{fullpath.Join("?.")}?.{RefDisplayData.INSTANCE_KEY_TS}";
+                        return $$"""
+                            if (({{a}}.{{instanceKey}} ?? undefined) !== ({{b}}.{{instanceKey}} ?? undefined)) return false
+                            """;
+                    } else {
+                        throw new NotImplementedException();
+                    }
+                }
+
+                string RenderChildMember(DataClassForDisplayDescendant descendant) {
+                    if (descendant.IsArray) {
+                        var arrayPath = descendant.MemberInfo.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, instanceAgg);
+                        var depth = descendant.MemberInfo.Owner.EnumerateAncestors().Count();
+                        var i = depth < 1 ? "i" : $"i{depth}";
+                        var a1 = $"a{depth}";
+                        var b1 = $"b{depth}";
+                        return $$"""
+                            if ({{a}}.{{arrayPath.Join("?.")}}.length !== {{b}}.{{arrayPath.Join("?.")}}.length) return false;
+                            if (({{a}}.{{arrayPath.Join("?.")}} ?? undefined) !== undefined && ({{b}}.{{arrayPath.Join("?.")}} ?? undefined) !== undefined) {
+                              for (let {{i}} = 0; {{i}} < {{a}}.{{arrayPath.Join(".")}}.length; {{i}}++) {
+                                const {{a1}} = {{a}}.{{arrayPath.Join(".")}}[{{i}}]
+                                const {{b1}} = {{b}}.{{arrayPath.Join(".")}}[{{i}}]
+                                {{WithIndent(RenderAggregate(descendant, a1, b1, descendant.Aggregate), "    ")}}
+                              }
+                            }
+                            """;
+
+                    } else {
+                        return RenderAggregate(descendant, a, b, instanceAgg);
+                    }
+                }
+            }
+        }
+        #endregion ディープ・イコール
+
 
         /// <summary>
         /// <see cref="SearchResult"/> からの変換処理をレンダリングします。

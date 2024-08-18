@@ -20,6 +20,7 @@ namespace Nijo.Models {
         void IModel.GenerateCode(CodeRenderingContext context, GraphNode<Aggregate> rootAggregate) {
             var allAggregates = rootAggregate.EnumerateThisAndDescendants();
             var aggregateFile = context.CoreLibrary.UseAggregateFile(rootAggregate);
+            var rootDisplayData = new DataClassForDisplay(rootAggregate);
 
             // データ型: 検索条件クラス
             var condition = new SearchCondition(rootAggregate);
@@ -48,10 +49,13 @@ namespace Nijo.Models {
 
             // データ型: 一括更新処理 エラーメッセージの入れ物
             context.UseSummarizedFile<SaveContext>().AddReadModel(rootAggregate);
-            context.CoreLibrary.AppSrvMethods.Add(new DataClassForDisplay(rootAggregate).RenderErrorMessageMappingMethod());
+            context.CoreLibrary.AppSrvMethods.Add(rootDisplayData.RenderErrorMessageMappingMethod());
 
             // 処理: 一括更新処理
             context.UseSummarizedFile<BatchUpdateReadModel>().Register(rootAggregate);
+
+            // 処理: ディープイコール比較関数
+            context.ReactProject.Types.Add(rootDisplayData.RenderDeepEqualFunctionRecursively(context));
 
             // UI: MultiView
             var multiView = new MultiView(rootAggregate);
