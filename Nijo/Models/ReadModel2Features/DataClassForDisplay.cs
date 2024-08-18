@@ -589,14 +589,15 @@ namespace Nijo.Models.ReadModel2Features {
         internal bool IsArray => MemberInfo.MemberAggregate.IsChildrenMember();
     }
 
+
     partial class GetFullPathExtensions {
         /// <summary>
         /// エントリーからのパスを
         /// <see cref="DataClassForDisplay"/> と
-        /// <see cref="RefTo.RefDisplayData"/> の
+        /// <see cref="RefDisplayData"/> の
         /// インスタンスの型のルールにあわせて返す。
         /// </summary>
-        internal static IEnumerable<string> GetFullPathAsDataClassForDisplay(this GraphNode<Aggregate> aggregate, E_CsTs csTs, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+        internal static IEnumerable<string> GetFullPathAsDataClassForDisplay(this GraphNode<Aggregate> aggregate, E_CsTs csts, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
             var path = aggregate.PathFromEntry();
             if (since != null) path = path.Since(since);
             if (until != null) path = path.Until(until);
@@ -610,9 +611,11 @@ namespace Nijo.Models.ReadModel2Features {
                         yield return $"/* エラー！{nameof(DataClassForDisplay)}では子は親の参照を持っていません */";
                     }
                 } else if (edge.IsRef()) {
-                    yield return csTs == E_CsTs.CSharp
-                        ? DataClassForDisplay.VALUES_CS
-                        : DataClassForDisplay.VALUES_TS;
+                    if (!edge.Initial.As<Aggregate>().IsOutOfEntryTree()) {
+                        yield return csts == E_CsTs.CSharp
+                            ? DataClassForDisplay.VALUES_CS
+                            : DataClassForDisplay.VALUES_TS;
+                    }
                     yield return edge.RelationName;
 
                 } else {
@@ -621,34 +624,47 @@ namespace Nijo.Models.ReadModel2Features {
             }
         }
 
-        /// <inheritdoc cref="GetFullPathAsDataClassForDisplay(GraphNode{Aggregate}, GraphNode{Aggregate}?, GraphNode{Aggregate}?)"/>
-        internal static IEnumerable<string> GetFullPathAsDataClassForDisplay(this AggregateMember.AggregateMemberBase member, E_CsTs csTs, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+        /// <summary>
+        /// エントリーからのパスを
+        /// <see cref="DataClassForDisplay"/> と
+        /// <see cref="RefDisplayData"/> の
+        /// インスタンスの型のルールにあわせて返す。
+        /// </summary>
+        internal static IEnumerable<string> GetFullPathAsDataClassForDisplay(this AggregateMember.AggregateMemberBase member, E_CsTs csts, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
             var fullpath = member.Owner
-                .GetFullPathAsDataClassForDisplay(csTs, since, until)
+                .GetFullPathAsDataClassForDisplay(csts, since, until)
                 .ToArray();
             foreach (var path in fullpath) {
                 yield return path;
             }
 
-            if (member is AggregateMember.ValueMember && !member.Owner.IsOutOfEntryTree()
-                || member is AggregateMember.Ref) {
-                yield return csTs == E_CsTs.CSharp
+            if ((member is AggregateMember.Ref || member is AggregateMember.ValueMember)
+                && !member.Owner.IsOutOfEntryTree()) {
+                yield return csts == E_CsTs.CSharp
                     ? DataClassForDisplay.VALUES_CS
                     : DataClassForDisplay.VALUES_TS;
             }
 
             yield return member.MemberName;
         }
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * React hook form のregister等に用いるためのパス生成 ここから
+     */
+    partial class GetFullPathExtensions {
 
         /// <summary>
         /// React hook form のregister名でのフルパス
         /// </summary>
         /// <param name="arrayIndexes">配列インデックスを指定する変数の名前</param>
-        internal static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this GraphNode<Aggregate> aggregate, E_CsTs csts, E_PathType pathType, IEnumerable<string>? arrayIndexes = null) {
+        internal static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this GraphNode<Aggregate> aggregate, E_PathType pathType, IEnumerable<string>? arrayIndexes = null) {
             if (pathType != E_PathType.Value) {
-                yield return GetDisplayDataPropertyPrefix(csts, pathType);
+                yield return GetDisplayDataPropertyPrefix(pathType);
             }
-            foreach (var path in GetFullPathAsReactHookFormRegisterName(aggregate, csts, pathType, false, arrayIndexes)) {
+            foreach (var path in GetFullPathAsReactHookFormRegisterName(aggregate, pathType, false, arrayIndexes)) {
                 yield return path;
             }
         }
@@ -657,20 +673,20 @@ namespace Nijo.Models.ReadModel2Features {
         /// React hook form のregister名でのフルパス
         /// </summary>
         /// <param name="arrayIndexes">配列インデックスを指定する変数の名前</param>
-        internal static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this AggregateMember.AggregateMemberBase member, E_CsTs csts, E_PathType pathType, IEnumerable<string>? arrayIndexes = null) {
+        internal static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this AggregateMember.AggregateMemberBase member, E_PathType pathType, IEnumerable<string>? arrayIndexes = null) {
             if (pathType != E_PathType.Value) {
-                yield return GetDisplayDataPropertyPrefix(csts, pathType);
+                yield return GetDisplayDataPropertyPrefix(pathType);
             }
-            foreach (var path in GetFullPathAsReactHookFormRegisterName(member.Owner, csts, pathType, true, arrayIndexes)) {
+            foreach (var path in GetFullPathAsReactHookFormRegisterName(member.Owner, pathType, true, arrayIndexes)) {
                 yield return path;
             }
             if (!member.Owner.IsOutOfEntryTree() && pathType == E_PathType.Value) {
-                yield return GetDisplayDataPropertyPrefix(csts, pathType);
+                yield return GetDisplayDataPropertyPrefix(pathType);
             }
             yield return member.MemberName;
         }
 
-        private static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this GraphNode<Aggregate> aggregate, E_CsTs csts, E_PathType pathType, bool enumerateLastChildrenIndex, IEnumerable<string>? arrayIndexes) {
+        private static IEnumerable<string> GetFullPathAsReactHookFormRegisterName(this GraphNode<Aggregate> aggregate, E_PathType pathType, bool enumerateLastChildrenIndex, IEnumerable<string>? arrayIndexes) {
             var currentArrayIndex = 0;
 
             foreach (var edge in aggregate.PathFromEntry()) {
@@ -706,7 +722,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                     } else if (edge.IsRef()) {
                         if (!edge.Initial.As<Aggregate>().IsOutOfEntryTree() && pathType == E_PathType.Value) {
-                            yield return GetDisplayDataPropertyPrefix(csts, pathType);
+                            yield return GetDisplayDataPropertyPrefix(pathType);
                         }
                         yield return dataClass
                             .GetOwnMembers()
@@ -721,14 +737,10 @@ namespace Nijo.Models.ReadModel2Features {
             }
         }
 
-        private static string GetDisplayDataPropertyPrefix(E_CsTs csts, E_PathType pathType) {
+        private static string GetDisplayDataPropertyPrefix(E_PathType pathType) {
             return pathType switch {
-                E_PathType.Value => csts == E_CsTs.CSharp
-                    ? DataClassForDisplay.VALUES_CS
-                    : DataClassForDisplay.VALUES_TS,
-                E_PathType.ReadOnly => csts == E_CsTs.CSharp
-                    ? DataClassForDisplay.READONLY_CS
-                    : DataClassForDisplay.READONLY_TS,
+                E_PathType.Value => DataClassForDisplay.VALUES_TS,
+                E_PathType.ReadOnly => DataClassForDisplay.READONLY_TS,
                 _ => throw new NotImplementedException(),
             };
         }

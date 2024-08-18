@@ -128,7 +128,7 @@ namespace Nijo.Models.ReadModel2Features {
                 Register = "registerEx",
                 AncestorsIndexes = GetArgumentsAndLoopVar(),
                 RenderErrorMessage = vm => {
-                    var fullpath = vm.Declared.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, GetArgumentsAndLoopVar());
+                    var fullpath = vm.Declared.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
                     var render = vm.DeclaringAggregate == _aggregate; // 参照先のValueMemberにはエラーメッセージが無い。エラーメッセージは参照先のValueMemberではなくRefにつく
                     return $$"""
                         {{If(render, () => $$"""
@@ -259,7 +259,7 @@ namespace Nijo.Models.ReadModel2Features {
             internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
                 var args = GetArguments().ToArray();
                 var vForm = BuildVerticalForm(context);
-                var switchProp = _variation.Group.GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, args).Join(".");
+                var switchProp = _variation.Group.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, args).Join(".");
 
                 return $$"""
                     const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
@@ -318,8 +318,8 @@ namespace Nijo.Models.ReadModel2Features {
                 var loopVar = GetLoopVar();
 
                 var registerNameArray = _aggregate
-                        .GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, args)
-                        .ToArray();
+                    .GetFullPathAsReactHookFormRegisterName(E_PathType.Value, args)
+                    .ToArray();
                 var registerName = registerNameArray.Length > 0
                     ? $"`{registerNameArray.Join(".")}`"
                     : string.Empty;
@@ -426,8 +426,8 @@ namespace Nijo.Models.ReadModel2Features {
                 var loopVar = GetLoopVar();
 
                 var registerNameArray = _aggregate
-                        .GetFullPathAsReactHookFormRegisterName(E_CsTs.TypeScript, E_PathType.Value, args)
-                        .ToArray();
+                    .GetFullPathAsReactHookFormRegisterName(E_PathType.Value, args)
+                    .ToArray();
                 var registerName = registerNameArray.Length > 0
                     ? $"`{registerNameArray.Join(".")}`"
                     : string.Empty;
