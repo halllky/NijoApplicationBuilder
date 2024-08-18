@@ -12,7 +12,10 @@ namespace Nijo.Core.AggregateMemberTypes {
         public override string GetTypeScriptTypeName() => "number";
 
         public override ReactInputComponent GetReactComponent() {
-            return new ReactInputComponent { Name = "Input.Num" };
+            return new ReactInputComponent {
+                Name = "Input.Num",
+                Props = { ["className"] = "\"w-28\"" },
+            };
         }
 
         public override IGridColumnSetting GetGridColumnEditSetting() {

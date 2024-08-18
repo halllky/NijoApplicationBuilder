@@ -108,7 +108,7 @@ namespace Nijo.Models.WriteModel2Features {
                   {{DataClassForSaveBase.DATA_TYPE_TS}}: '{{DataClassForSaveBase.GetEnumValueOf(rootAggregate)}}',
                   {{DataClassForSaveBase.ADD_MOD_DEL_TS}}: 'ADD',
                   {{DataClassForSaveBase.VALUES_TS}}: data,
-                })))
+                })), { noMessage: true })
                 if (!{{response}}) return false
 
                 """;

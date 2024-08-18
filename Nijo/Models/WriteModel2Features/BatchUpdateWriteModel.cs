@@ -65,9 +65,9 @@ namespace Nijo.Models.WriteModel2Features {
                   const { post } = Util.useHttpRequest()
 
                   /** 一括更新を即時実行します。更新するデータの量によっては長い待ち時間が発生する可能性があります。 */
-                  const batchUpdateImmediately = React.useCallback(async ({{HOOK_PARAM_ITEMS}}: Types.{{DataClassForSaveBase.TS_SAVE_COMMAND}}[]) => {
+                  const batchUpdateImmediately = React.useCallback(async ({{HOOK_PARAM_ITEMS}}: Types.{{DataClassForSaveBase.TS_SAVE_COMMAND}}[], options?: { noMessage?: boolean }) => {
                     const res = await post(`/{{Controller.SUBDOMAIN}}/{{CONTROLLER_SUBDOMAIN}}/{{CONTROLLER_ACTION_IMMEDIATELY}}`, { {{HOOK_PARAM_ITEMS}} })
-                    if (res.ok) dispatchToast(msg => msg.info('保存しました。'))
+                    if (res.ok && !options?.noMessage) dispatchToast(msg => msg.info('保存しました。'))
                     return res
                   }, [post, dispatchMsg, dispatchToast])
 
