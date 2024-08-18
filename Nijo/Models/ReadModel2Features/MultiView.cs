@@ -48,7 +48,7 @@ namespace Nijo.Models.ReadModel2Features {
                     RenderErrorMessage = vm => throw new InvalidOperationException("検索条件欄では項目ごとにエラーメッセージを表示するという概念が無い"),
                 };
 
-                var tableBuilder = new DataTableBuilder(_aggregate, $"AggregateType.{searchResult.TsTypeName}")
+                var tableBuilder = new DataTableBuilder(_aggregate, $"AggregateType.{searchResult.TsTypeName}", false)
                     // 行ヘッダ（詳細リンク）
                     .Add(new AdhocColumn {
                         Header = string.Empty,

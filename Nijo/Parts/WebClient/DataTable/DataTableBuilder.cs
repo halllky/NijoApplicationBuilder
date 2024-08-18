@@ -14,9 +14,10 @@ namespace Nijo.Parts.WebClient.DataTable {
     /// テーブル列定義ビルダー
     /// </summary>
     internal class DataTableBuilder {
-        internal DataTableBuilder(GraphNode<Aggregate> tableOwner, string rowTypeName) {
+        internal DataTableBuilder(GraphNode<Aggregate> tableOwner, string rowTypeName, bool editable) {
             TableOwner = tableOwner;
             _rowTypeName = rowTypeName;
+            _editable = editable;
         }
 
         /// <summary>
@@ -24,6 +25,7 @@ namespace Nijo.Parts.WebClient.DataTable {
         /// </summary>
         internal GraphNode<Aggregate> TableOwner { get; }
         private readonly string _rowTypeName;
+        private readonly bool _editable;
         private readonly List<IDataTableColumn2> _columns = [];
 
         /// <summary>
@@ -137,14 +139,14 @@ namespace Nijo.Parts.WebClient.DataTable {
                     {{If(column.HeaderGroupName != null, () => $$"""
                       headerGroupName: '{{column.HeaderGroupName}}',
                     """)}}
-                    {{If(textboxEditSetting != null, () => $$"""
+                    {{If(_editable && textboxEditSetting != null, () => $$"""
                       editSetting: {
                         type: 'text',
                         getTextValue: {{WithIndent(column.RenderGetterOnEditStart(context), "    ")}},
                         setTextValue: {{WithIndent(column.RenderSetterOnEditEnd(context), "    ")}},
                       },
                     """)}}
-                    {{If(comboboxEditSetting != null, () => $$"""
+                    {{If(_editable && comboboxEditSetting != null, () => $$"""
                       editSetting: (() => {
                         const comboSetting: Layout.ColumnEditSetting<{{_rowTypeName}}, {{comboboxEditSetting!.OptionItemTypeName}}> = {
                           type: 'combo',
@@ -163,7 +165,7 @@ namespace Nijo.Parts.WebClient.DataTable {
                         return comboSetting as Layout.ColumnEditSetting<{{_rowTypeName}}, unknown>
                       })(),
                     """)}}
-                    {{If(asyncComboEditSetting != null, () => $$"""
+                    {{If(_editable && asyncComboEditSetting != null, () => $$"""
                       editSetting: (() => {
                         const asyncComboSetting: Layout.ColumnEditSetting<{{_rowTypeName}}, {{asyncComboEditSetting!.OptionItemTypeName}}> = {
                           type: 'async-combo',

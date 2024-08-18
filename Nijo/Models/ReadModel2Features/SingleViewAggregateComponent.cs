@@ -409,13 +409,13 @@ namespace Nijo.Models.ReadModel2Features {
                     var displayData = new RefDisplayData(_aggregate, refEntry);
                     rowType = $"AggregateType.{displayData.TsTypeName}";
                     createNewItem = string.Empty;
-                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType);
+                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType, false);
                     tableBuilder.AddMembers(displayData);
                 } else {
                     var displayData = new DataClassForDisplay(_aggregate);
                     rowType = $"AggregateType.{displayData.TsTypeName}";
                     createNewItem = $"AggregateType.{displayData.TsNewObjectFunction}()";
-                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType);
+                    tableBuilder = new Parts.WebClient.DataTable.DataTableBuilder(_aggregate, rowType, !isReadOnly);
                     tableBuilder.AddMembers(displayData);
                 }
 
