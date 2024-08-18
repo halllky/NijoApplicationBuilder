@@ -25,7 +25,7 @@ export const useHttpRequest = () => {
     try {
       response = await fetch(url, option)
     } catch (errors) {
-      dispatchMsg(msg => msg.error(`通信でエラーが発生しました(${url})\n${errors}`))
+      dispatchMsg(msg => msg.error(`通信でエラーが発生しました(${url})\n${parseUnknownErrors(errors).join('\n')}`))
       return { ok: false, errors }
     }
     // 処理結果解釈
@@ -41,17 +41,20 @@ export const useHttpRequest = () => {
       if (response.status >= 400 && response.status <= 499) {
         return { ok: false, errors: data }
       }
-      // ASP.NET Core のControllerの return Problem ではエラー詳細はdetailという名前のプロパティの中に入っている
-      if (response.status >= 500 && response.status <= 599 && (data as { detail: unknown }).detail !== undefined) {
-        throw (data as { detail: unknown }).detail
+      // ASP.NET Core のControllerの return Problem ではエラー詳細はcontentやdetailという名前のプロパティの中に入っている
+      if (response.status >= 500 && response.status <= 599) {
+        const { detail } = data as { detail: unknown }
+        if (detail) throw detail
+        const { content } = data as { content: unknown }
+        if (content) throw content
       }
       // 処理結果解釈不能
       throw data
 
     } catch (errors) {
       dispatchMsg(msg => response.ok
-        ? msg.warn(`処理は成功しましたが処理結果の解釈に失敗しました。\n${errors}`)
-        : msg.error(`処理に失敗しました。\n${errors}`))
+        ? msg.warn(`処理は成功しましたが処理結果の解釈に失敗しました。\n${parseUnknownErrors(errors).join('\n')}`)
+        : msg.error(`処理に失敗しました。\n${parseUnknownErrors(errors).join('\n')}`))
       return { ok: false, errors }
     }
   }, [dispatchMsg])
@@ -108,4 +111,35 @@ export const useHttpRequest = () => {
   }, [dotnetWebApiDomain, dispatchMsg])
 
   return { get, post, httpDelete, download }
+}
+
+const parseUnknownErrors = (err: unknown): string[] => {
+  const type = typeof err
+  if (type === 'string') {
+    try {
+      const parsed = JSON.parse(err as string)
+      return parseUnknownErrors(parsed)
+    } catch {
+      return [err as string]
+    }
+
+  } else if (type === 'boolean'
+    || type === 'number'
+    || type === 'bigint'
+    || type === 'function'
+    || type === 'symbol') {
+    return [String(err)]
+
+  } else if (type === 'undefined') {
+    return []
+
+  } else if (err === null) {
+    return []
+
+  } else if (Array.isArray(err)) {
+    return err.flatMap(e => parseUnknownErrors(e))
+
+  } else {
+    return [JSON.stringify(err)]
+  }
 }
