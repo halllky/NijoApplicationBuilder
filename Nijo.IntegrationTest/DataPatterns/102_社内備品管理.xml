@@ -32,7 +32,7 @@
     <移動後管理者 is="ref-to:従業員" />
   </資産移動>
 
-  <資産 is="read-model" dependsOn="資産取得 資産移動">
+  <資産 is="read-model-2" dependsOn="資産取得 資産移動">
     <資産ID is="uuid" />
     <名前 is="word" />
     <種別 is="資産種別" />
@@ -43,46 +43,5 @@
       <管理者 is="ref-to:従業員" />
     </履歴>
   </資産>
-
-  <ReplaceOverridedApplicationServiceCodeForUnitTest>
-    public override IEnumerable&lt;資産DbEntity&gt; Recalculate資産() {
-        // DBから資産取得を全件読み込み
-        var buys = DbContext.資産取得DbSet
-            .Include(x =&gt; x.RefferedBy_資産移動DbEntity_資産);
-
-        // 履歴を計算
-        foreach (var buy in buys) {
-            var history = new List&lt;履歴DbEntity&gt;();
-            history.Add(new 履歴DbEntity {
-                期間FROM = buy.購入日,
-                管理者_従業員コード = buy.管理者_従業員コード,
-            });
-
-            foreach (var move in buy.RefferedBy_資産移動DbEntity_資産) {
-                history.Add(new 履歴DbEntity {
-                    期間FROM = move.移動日,
-                    管理者_従業員コード = move.移動後管理者_従業員コード,
-                });
-            }
-
-            // 時系列順に並べて期間TOを計算する
-            var orderedHistory = history.OrderBy(x =&gt; x.期間FROM).ToList();
-            for (int i = 0; i &lt; orderedHistory.Count; i++) {
-                orderedHistory[i].連番 = i;
-
-                if (i &lt; orderedHistory.Count - 1) {
-                    orderedHistory[i].期間TO = orderedHistory[i + 1].期間FROM?.AddDays(-1);
-                }
-            }
-
-            yield return new 資産DbEntity {
-                資産ID = buy.資産ID,
-                名前 = buy.名前,
-                種別 = buy.種別,
-                履歴 = orderedHistory,
-            };
-        }
-    }
-  </ReplaceOverridedApplicationServiceCodeForUnitTest>
 
 </自動テストで作成されたプロジェクト>
