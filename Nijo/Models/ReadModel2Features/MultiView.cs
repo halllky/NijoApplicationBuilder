@@ -170,7 +170,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                             {/* 検索条件欄 */}
                             <Panel ref={searchConditionPanelRef} defaultSize={30} collapsible onCollapse={setCollapsed}>
-                              <div className="h-full overflow-y-scroll border border-color-4">
+                              <div className="h-full overflow-y-scroll border border-color-4 bg-color-gutter">
                                 <FormProvider {...rhfSearchMethods}>
                                   {{WithIndent(searchCondition.RenderVForm2(pageRenderingContext), "              ")}}
                                 </FormProvider>

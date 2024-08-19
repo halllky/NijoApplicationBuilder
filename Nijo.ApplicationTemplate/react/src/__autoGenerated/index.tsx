@@ -47,7 +47,7 @@ function ApplicationRootInContext({ children }: {
       {/* サイドメニュー */}
       <Panel defaultSize={20} className={collapsed ? 'hidden' : ''}>
         <PanelGroup direction="vertical"
-          className="bg-color-gutter text-color-12"
+          className="bg-color-2 text-color-12"
           autoSaveId="LOCAL_STORAGE_KEY.SIDEBAR_SIZE_Y">
           <Panel className="flex flex-col">
             <Link to='/' className="p-1 ellipsis-ex font-semibold select-none">
@@ -60,7 +60,7 @@ function ApplicationRootInContext({ children }: {
             </nav>
           </Panel>
 
-          <PanelResizeHandle className="h-1 bg-color-base" />
+          <PanelResizeHandle className="h-2 bg-color-base" />
 
           <Panel className="flex flex-col">
             <nav className="flex-1 overflow-y-auto leading-none">

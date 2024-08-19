@@ -27,7 +27,7 @@ const Root = ({ estimatedLabelWidth, indentSize, maxDepth, children }: {
 
   return (
     <div style={rootStyle}>
-      <div className="grid gap-px w-full h-full vform-template-column">
+      <div className="grid gap-px w-full h-full vform-template-column border-vform bg-color-2">
         {children}
       </div>
     </div>
@@ -59,7 +59,7 @@ const Indent = ({ label, children }: {
   children?: React.ReactNode
 }) => {
   return (
-    <div className="grid grid-cols-[subgrid] col-span-full border-vform bg-color-2">
+    <div className="grid grid-cols-[subgrid] col-span-full border-vform">
       <div className="px-1 col-span-full select-none">
         {renderLabel(label)}&nbsp;
       </div>
@@ -80,7 +80,7 @@ const Item = ({ label, wide, children }: {
     // 要素がグリッドの横幅いっぱい確保される場合のレイアウト
     ? (
       <>
-        <div className="px-1 col-span-full border-vform bg-color-2">
+        <div className="px-1 col-span-full border-vform">
           {renderLabel(label)}
         </div>
         <div className="col-span-full border-vform bg-color-0">
@@ -91,7 +91,7 @@ const Item = ({ label, wide, children }: {
     // 要素の横幅が小さい場合のレイアウト
     : (
       <div className="grid grid-flow-row grid-cols-[subgrid] col-span-2">
-        <div className="p-px border-vform bg-color-2">
+        <div className="p-px border-vform">
           {renderLabel(label)}
         </div>
         <div className="p-px border-vform bg-color-0">
