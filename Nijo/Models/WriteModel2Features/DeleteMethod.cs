@@ -51,6 +51,7 @@ namespace Nijo.Models.WriteModel2Features {
                 /// </summary>
                 public virtual void {{MethodName}}({{argType}} after, {{SaveContext.BEFORE_SAVE}}<{{dataClass.ErrorDataCsClassName}}> saveContext) {
                     var afterDbEntity = after.{{DataClassForSaveBase.VALUES_CS}}.{{DataClassForSave.TO_DBENTITY}}();
+                    afterDbEntity.{{EFCoreEntity.VERSION}} = after.{{DataClassForSaveBase.VERSION_CS}};
 
                     // 更新に必要な項目が空の場合は処理中断
                 {{keys.SelectTextTemplate(k => $$"""
