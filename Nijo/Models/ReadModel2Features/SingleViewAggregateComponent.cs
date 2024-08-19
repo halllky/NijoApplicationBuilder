@@ -462,25 +462,6 @@ namespace Nijo.Models.ReadModel2Features {
                     .ToArray();
                 var editable = !isReadOnly && !_aggregate.IsOutOfEntryTree();
 
-                // 何らかの状態変更があったときに更新フラグを立てる集約
-                // （自身または祖先集約の中でライフサイクルをもっているもののうち直近の集約）
-                var nearestHavingLifeCycleAggregate = _aggregate
-                    .EnumerateAncestorsAndThis()
-                    .Reverse()
-                    .FirstOrDefault(agg => new DataClassForDisplay(agg).HasLifeCycle);
-                string willBeChanged;
-                if (nearestHavingLifeCycleAggregate == null) {
-                    willBeChanged = $"/*エラー！更新フラグを立てるべきオブジェクトを特定できません。*/.{DataClassForDisplay.WILL_BE_CHANGED_TS}";
-                } else if (nearestHavingLifeCycleAggregate.IsRoot()) {
-                    willBeChanged = DataClassForDisplay.WILL_BE_CHANGED_TS;
-                } else {
-                    var asChildren = (AggregateMember.Children)nearestHavingLifeCycleAggregate.AsChildRelationMember();
-                    var path = asChildren.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
-                    willBeChanged = nearestHavingLifeCycleAggregate == _aggregate
-                        ? $"{path.Join(".")}.${{rowIndex}}.{DataClassForDisplay.WILL_BE_CHANGED_TS}"
-                        : $"{path.Join(".")}.{DataClassForDisplay.WILL_BE_CHANGED_TS}";
-                }
-
                 return $$"""
                     const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
                     {{args.SelectTextTemplate(arg => $$"""
@@ -506,10 +487,7 @@ namespace Nijo.Models.ReadModel2Features {
                     """)}}
                       const options = useMemo<Layout.DataTableProps<{{rowType}}>>(() => ({
                     {{If(editable, () => $$"""
-                        onChangeRow: (rowIndex, row) => {
-                          setValue(`{{willBeChanged}}`, true)
-                          update(rowIndex, row)
-                        },
+                        onChangeRow: update,
                     """)}}
                         columns: [
                           {{WithIndent(tableBuilder.RenderColumnDef(context), "      ")}}

@@ -54,8 +54,9 @@ namespace Nijo.Models {
             // 処理: 一括更新処理
             context.UseSummarizedFile<BatchUpdateReadModel>().Register(rootAggregate);
 
-            // 処理: ディープイコール比較関数
+            // 処理: 一括更新処理前関数（ディープイコール比較関数、変更比較関数）
             context.ReactProject.Types.Add(rootDisplayData.RenderDeepEqualFunctionRecursively(context));
+            context.ReactProject.Types.Add(rootDisplayData.RenderCheckChangesFunction(context));
 
             // UI: MultiView
             var multiView = new MultiView(rootAggregate);

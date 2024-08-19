@@ -603,6 +603,75 @@ namespace Nijo.Models.ReadModel2Features {
         #endregion ディープ・イコール
 
 
+        #region 変更確認
+        /// <summary>
+        /// 変更確認関数の名前
+        /// </summary>
+        internal string CheckChangesFunction => $"checkChanges{TsTypeName}";
+        internal string RenderCheckChangesFunction(CodeRenderingContext context) {
+            var descendants = EnumerateThisAndDescendantsRecursively()
+                .OfType<DataClassForDisplayDescendant>()
+                .Where(disp => disp.HasVersion)
+                .Select((disp, i) => {
+                    var path = disp.MemberInfo.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, out var isArray);
+                    return new {
+                        Path = path,
+                        IsArray = isArray,
+                        DeepEquals = disp.DeepEqualFunction,
+                        DefaultValue = $"{disp.Aggregate.Item.PhysicalName}defaultValue{(isArray ? "s" : "")}{i}",
+                        CurrentValue = $"{disp.Aggregate.Item.PhysicalName}currentValue{(isArray ? "s" : "")}{i}",
+                        disp.TsTypeName,
+                    };
+                });
+
+            return $$"""
+                /** 更新前後の値をディープイコールで判定し、変更があったオブジェクトのwillBeChangedプロパティをtrueに設定して返します。 */
+                export const {{CheckChangesFunction}} = ({ defaultValues, currentValues }: {
+                  defaultValues: {{TsTypeName}}
+                  currentValues: {{TsTypeName}}
+                }): boolean => {
+                  let anyChanged = false
+
+                  if ({{DeepEqualFunction}}(defaultValues, currentValues)) {
+                    currentValues.{{WILL_BE_CHANGED_TS}} = false
+                  } else {
+                    currentValues.{{WILL_BE_CHANGED_TS}} = true
+                    anyChanged = true
+                  }
+
+                {{descendants.SelectTextTemplate(x => x.IsArray ? $$"""
+                  const {{x.DefaultValue}} = new Map((defaultValues.{{x.Path.Join("?.")}} ?? []).map(x => [x.{{INSTANCE_KEY_TS}}, x]))
+                  const {{x.CurrentValue}} = currentValues.{{x.Path.Join("?.")}} ?? []
+                  for (const after of {{x.CurrentValue}}) {
+                    const before = {{x.DefaultValue}}.get(after.{{INSTANCE_KEY_TS}})
+                    if (before && {{x.DeepEquals}}(before, after)) {
+                      after.{{WILL_BE_CHANGED_TS}} = false
+                    } else {
+                      after.{{WILL_BE_CHANGED_TS}} = true
+                      anyChanged = true
+                    }
+                  }
+
+                """ : $$"""
+                  const {{x.DefaultValue}} = defaultValues.{{x.Path.Join("?.")}}
+                  const {{x.CurrentValue}} = currentValues.{{x.Path.Join("?.")}}
+                  if ({{x.CurrentValue}}) {
+                    if ({{x.DeepEquals}}({{x.DefaultValue}}, {{x.CurrentValue}})) {
+                      {{x.CurrentValue}}.{{WILL_BE_CHANGED_TS}} = false
+                    } else {
+                      {{x.CurrentValue}}.{{WILL_BE_CHANGED_TS}} = true
+                      anyChanged = true
+                    }
+                  }
+
+                """)}}
+                  return anyChanged
+                }
+                """;
+        }
+        #endregion 変更確認
+
+
         /// <summary>
         /// <see cref="SearchResult"/> からの変換処理をレンダリングします。
         /// </summary>
@@ -753,6 +822,81 @@ namespace Nijo.Models.ReadModel2Features {
             }
 
             yield return member.MemberName;
+        }
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Select, SelectMany, map, flatMap 込みのフルパスを返すAPI ここから
+     */
+
+    partial class GetFullPathExtensions {
+        /// <summary>
+        /// フルパスの途中で配列が出てきた場合はSelectやmapをかける
+        /// </summary>
+        internal static IEnumerable<string> GetFullPathAsDataClassForDisplay(this AggregateMember.AggregateMemberBase member, E_CsTs csts, out bool isArray, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+            var result = new List<string>();
+            isArray = false;
+            var path = member.Owner.PathFromEntry();
+            if (since != null) path = path.Since(since);
+            if (until != null) path = path.Until(until);
+            foreach (var e in path) {
+                var edge = e.As<Aggregate>();
+
+                if (edge.IsParentChild()) {
+                    if (edge.Source == edge.Terminal) {
+                        // 子から親へ向かう経路の場合
+                        if (edge.Initial.IsOutOfEntryTree()) {
+                            result.Add(RefDisplayData.PARENT);
+                        } else {
+                            result.Add($"/* エラー！{nameof(DataClassForDisplay)}では子は親の参照を持っていません */");
+                        }
+
+                    } else {
+                        // 親から子へ向かう経路の場合
+                        var isMany = edge.Terminal.IsChildrenMember();
+                        if (isMany) {
+                            result.Add(isArray
+                                ? (csts == E_CsTs.CSharp
+                                    ? $"SelectMany(x => x.{edge.RelationName})"
+                                    : $"flatMap(x => x.{edge.RelationName})")
+                                : edge.RelationName);
+                            isArray = true;
+
+                        } else {
+                            result.Add(isArray
+                                ? (csts == E_CsTs.CSharp
+                                    ? $"Select(x => x.{edge.RelationName})"
+                                    : $"map(x => x.{edge.RelationName})")
+                                : edge.RelationName);
+                        }
+                    }
+                } else if (edge.IsRef()) {
+                    if (!edge.Initial.IsOutOfEntryTree()) {
+                        result.Add(csts == E_CsTs.CSharp
+                            ? DataClassForDisplay.VALUES_CS
+                            : DataClassForDisplay.VALUES_TS);
+                    }
+                    result.Add(edge.RelationName);
+
+                } else {
+                    throw new NotImplementedException();
+                }
+            }
+
+            if ((member is AggregateMember.Ref || member is AggregateMember.ValueMember)
+                && !member.Owner.IsOutOfEntryTree()) {
+                result.Add(csts == E_CsTs.CSharp
+                    ? DataClassForDisplay.VALUES_CS
+                    : DataClassForDisplay.VALUES_TS);
+            }
+            if (!isArray && member is AggregateMember.Children) {
+                isArray = true;
+            }
+            result.Add(member.MemberName);
+
+            return result;
         }
     }
 

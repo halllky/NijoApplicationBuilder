@@ -132,7 +132,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                       // 表示データ
                       const reactHookFormMethods = Util.useFormEx<AggregateType.{{dataClass.TsTypeName}}>({ criteriaMode: 'all' })
-                      const { register, registerEx, getValues, setValue, setError, reset, control } = reactHookFormMethods
+                      const { register, registerEx, getValues, setValue, setError, reset, formState: { defaultValues }, control } = reactHookFormMethods
                     {{If(_type != E_Type.New, () => $$"""
                       const [displayName, setDisplayName] = useState('')
                     """)}}
@@ -187,9 +187,22 @@ namespace Nijo.Models.ReadModel2Features {
                       // 保存時
                       const { {{BatchUpdateReadModel.HOOK_NAME}} } = AggregateHook.{{BatchUpdateWriteModel.HOOK_NAME}}()
                       const handleSave = useEvent(async () => {
+                        const currentValues = getValues()
+                    {{If(_type == E_Type.Edit, () => $$"""
+                        if (defaultValues) {
+                          const changed = AggregateType.{{dataClass.CheckChangesFunction}}({
+                            defaultValues: defaultValues as AggregateType.{{dataClass.TsTypeName}},
+                            currentValues,
+                          })
+                          if (!changed) {
+                            alert('変更された内容がありません。')
+                            return
+                          }
+                        }
+                    """)}}
                         const response = await {{BatchUpdateReadModel.HOOK_NAME}}({
                           dataType: '{{BatchUpdateReadModel.GetDataTypeLiteral(_aggregate)}}',
-                          values: getValues(),
+                          values: currentValues,
                         })
                         if (!response.ok) {
                           const errors = response.errors as [FieldPath<AggregateType.{{dataClass.TsTypeName}}>, { types: { [key: string]: string } }][][]
