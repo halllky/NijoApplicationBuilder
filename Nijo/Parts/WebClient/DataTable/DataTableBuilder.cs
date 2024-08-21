@@ -89,7 +89,7 @@ namespace Nijo.Parts.WebClient.DataTable {
                         if (vm.Options.InvisibleInGui) continue;
                         var column = new ValueMemberColumn(
                             vm,
-                            vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, since: TableOwner),
+                            vm.Declared.GetFullPathAsDataClassForRefTarget(since: TableOwner),
                             this);
                         yield return column;
 
@@ -97,7 +97,7 @@ namespace Nijo.Parts.WebClient.DataTable {
                         if (@ref.RefTo.IsSingleRefKeyOf(@ref.Owner)) continue;
                         var column = new RefMemberColumn(
                             @ref,
-                            @ref.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript, since: TableOwner),
+                            @ref.GetFullPathAsDataClassForRefTarget(since: TableOwner),
                             this);
                         yield return column;
                     }

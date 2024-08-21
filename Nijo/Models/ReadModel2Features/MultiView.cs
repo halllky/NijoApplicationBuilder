@@ -92,7 +92,7 @@ namespace Nijo.Models.ReadModel2Features {
                       const { get } = Util.useHttpRequest()
 
                       // 検索条件
-                      const [currentPage, dispatchPaging] = useReducer(pagingReducer, { pageIndex: 0 })
+                      const [currentPage, dispatchPaging] = useReducer(Util.pagingReducer, { pageIndex: 0 })
                       const rhfSearchMethods = Util.useFormEx<AggregateType.{{searchCondition.TsTypeName}}>({})
                       const {
                         getValues: getConditionValues,
@@ -101,7 +101,7 @@ namespace Nijo.Models.ReadModel2Features {
                       } = rhfSearchMethods
 
                       // 検索結果
-                      const { {{LoadMethod.LOAD}}, {{LoadMethod.CURRENT_PAGE_ITEMS}} } =  AggregateHook.{{loadMethod.ReactHookName}}()
+                      const { {{LoadMethod.LOAD}}, {{LoadMethod.CURRENT_PAGE_ITEMS}} } = AggregateHook.{{loadMethod.ReactHookName}}()
 
                       // 検索条件欄の開閉
                       const searchConditionPanelRef = useRef<ImperativePanelHandle>(null)
@@ -208,14 +208,6 @@ namespace Nijo.Models.ReadModel2Features {
 
                       return searchCondition
                     }
-
-                    type PageState = { pageIndex: number, loaded?: boolean }
-                    const pagingReducer = Util.defineReducer((state: PageState) => ({
-                      loadComplete: () => ({ pageIndex: state.pageIndex, loaded: true }),
-                      nextPage: () => ({ pageIndex: state.pageIndex + 1, loaded: false }),
-                      prevPage: () => ({ pageIndex: Math.max(0, state.pageIndex - 1), loaded: false }),
-                      moveTo: (pageIndex: number) => ({ pageIndex, loaded: false }),
-                    }))
                     """;
             },
         };
