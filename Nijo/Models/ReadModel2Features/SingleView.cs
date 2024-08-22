@@ -110,6 +110,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                 var rootAggregateComponent = new SingleViewAggregateComponent(_aggregate);
 
+                var detailView = new SingleView(_aggregate, E_Type.ReadOnly);
                 var editView = new SingleView(_aggregate, E_Type.Edit);
 
                 return $$"""
@@ -187,6 +188,7 @@ namespace Nijo.Models.ReadModel2Features {
                     {{If(_type == E_Type.New || _type == E_Type.Edit, () => $$"""
                       // 保存時
                       const { {{BatchUpdateReadModel.HOOK_NAME}} } = AggregateHook.{{BatchUpdateWriteModel.HOOK_NAME}}()
+                      const navigateToDetailPage = Util.{{detailView.NavigateFnName}}()
                       const handleSave = useEvent(async () => {
                         const currentValues = getValues()
                     {{If(_type == E_Type.Edit, () => $$"""
@@ -206,11 +208,15 @@ namespace Nijo.Models.ReadModel2Features {
                           values: currentValues,
                         })
                         if (!response.ok) {
+                          // 入力エラーを画面に表示
                           const errors = response.errors as [FieldPath<AggregateType.{{dataClass.TsTypeName}}>, { types: { [key: string]: string } }][][]
                           for (const [name, error] of errors[0]) {
                             setError(name, error)
                           }
+                          return
                         }
+                        // 詳細画面（読み取り専用）へ遷移
+                        navigateToDetailPage(currentValues, 'readonly')
                       })
 
                     """)}}
