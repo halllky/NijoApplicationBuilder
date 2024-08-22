@@ -7,11 +7,10 @@ using System.Threading.Tasks;
 
 namespace Nijo.Util.CodeGenerating {
     /// <summary>
-    /// Reactのページのソースコードのレンダリング処理は複数箇所に散らばることが多いので、
-    /// それらの間で情報をやり取りするためのクラス。
+    /// フォームUIのレンダリング処理において <see cref="IAggregateMemberType"/> 側が必要とするコンテキスト情報。
     /// 例えば、React hook form のregister関数のインスタンス名など。
     /// </summary>
-    internal class ReactPageRenderingContext {
+    internal class FormUIRenderingContext {
         internal required CodeRenderingContext CodeRenderingContext { get; init; }
         /// <summary>
         /// React hook form の register関数の実際の名前
@@ -25,8 +24,9 @@ namespace Nijo.Util.CodeGenerating {
         public required Func<AggregateMember.ValueMember, string> RenderErrorMessage { get; init; }
 
         /// <summary>
-        /// 子配列コンポーネント以下で必要になる、配列中の何番目の要素かを表す変数のリスト
+        /// react-hook-form のフィールドパス取得処理。
+        /// レンダリングするオブジェクト（検索条件のオブジェクトだったり詳細画面のオブジェクトだったりする）によってパスが変わるので。
         /// </summary>
-        public required IEnumerable<string> AncestorsIndexes { get; init; }
+        public required Func<AggregateMember.ValueMember, IEnumerable<string>> GetReactHookFormFieldPath { get; init; }
     }
 }

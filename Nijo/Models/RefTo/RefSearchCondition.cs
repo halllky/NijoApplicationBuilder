@@ -271,12 +271,12 @@ namespace Nijo.Models.RefTo {
         /// <summary>
         /// フォームのUIをレンダリングします。
         /// </summary>
-        internal string RenderVForm2(ReactPageRenderingContext context) {
+        internal string RenderVForm2(FormUIRenderingContext context) {
             var builder = new Parts.WebClient.VerticalFormBuilder();
             BuildVForm2(context, builder);
             return builder.RenderAsRoot(context.CodeRenderingContext);
         }
-        private void BuildVForm2(ReactPageRenderingContext context, Parts.WebClient.VerticalFormSection section) {
+        private void BuildVForm2(FormUIRenderingContext context, Parts.WebClient.VerticalFormSection section) {
             foreach (var m in GetOwnMembers()) {
                 if (m.Member.Options.InvisibleInGui) continue; // 非表示項目
 
@@ -284,7 +284,7 @@ namespace Nijo.Models.RefTo {
                     false,
                     m.MemberName,
                     Parts.WebClient.E_VForm2LabelType.String,
-                    m.Member.Options.MemberType.RenderSearchConditionVFormBody(m.Member, context, E_SearchConditionObject.RefSearchCondition));
+                    m.Member.Options.MemberType.RenderSearchConditionVFormBody(m.Member, context));
             }
             foreach (var m in GetChildMembers()) {
                 var childSection = section.AddSection(

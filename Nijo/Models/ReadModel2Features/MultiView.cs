@@ -41,10 +41,10 @@ namespace Nijo.Models.ReadModel2Features {
 
                 const string TO_DETAIL_VIEW = "navigateToSingleView";
 
-                var pageRenderingContext = new ReactPageRenderingContext {
+                var pageRenderingContext = new FormUIRenderingContext {
                     CodeRenderingContext = context,
                     Register = "registerExCondition",
-                    AncestorsIndexes = Enumerable.Empty<string>(),
+                    GetReactHookFormFieldPath = vm => vm.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript),
                     RenderErrorMessage = vm => throw new InvalidOperationException("検索条件欄では項目ごとにエラーメッセージを表示するという概念が無い"),
                 };
 

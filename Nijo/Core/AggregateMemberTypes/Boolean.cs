@@ -98,19 +98,17 @@ namespace Nijo.Core.AggregateMemberTypes {
                 """;
         }
 
-        string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx, E_SearchConditionObject searchConditionObject) {
+        string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
             var component = GetReactComponent();
-            var fullpath = searchConditionObject == E_SearchConditionObject.SearchCondition
-                ? vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".")
-                : vm.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript).Join(".");
+            var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
             return $$"""
                 <Input.Selection {...{{ctx.Register}}(`{{fullpath}}`)}{{component.GetPropsStatement().Join("")}} options={['Trueのみ', 'Falseのみ', '指定なし']} textSelector={item => item} />
                 """;
         }
 
-        string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx) {
+        string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
             var component = GetReactComponent();
-            var fullpath = vm.Declared.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, ctx.AncestorsIndexes).Join(".");
+            var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
             return $$"""
                 <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)}{{component.GetPropsStatement().Join("")}} />
                 {{ctx.RenderErrorMessage(vm)}}

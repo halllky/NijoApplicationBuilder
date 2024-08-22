@@ -134,10 +134,10 @@ namespace Nijo.Models.ReadModel2Features {
 
             // フォーム組み立て
             var formBuilder = GetComponentRoot(isReadOnly);
-            var formContext = new ReactPageRenderingContext {
+            var formContext = new FormUIRenderingContext {
                 CodeRenderingContext = context,
                 Register = "registerEx",
-                AncestorsIndexes = GetArgumentsAndLoopVar(),
+                GetReactHookFormFieldPath = vm => vm.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar()),
                 RenderErrorMessage = vm => {
                     var fullpath = vm.Declared.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
                     var render = vm.DeclaringAggregate == _aggregate; // 参照先のValueMemberにはエラーメッセージが無い。エラーメッセージは参照先のValueMemberではなくRefにつく

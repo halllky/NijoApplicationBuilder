@@ -28,10 +28,10 @@ namespace Nijo.Models.RefTo {
             var searchResult = new RefDisplayData(_aggregate, _refEntry);
             var search = new RefSearchMethod(_aggregate, _refEntry);
 
-            var pageRenderingContext = new ReactPageRenderingContext {
+            var pageRenderingContext = new FormUIRenderingContext {
                 CodeRenderingContext = context,
                 Register = "registerExCondition",
-                AncestorsIndexes = Enumerable.Empty<string>(),
+                GetReactHookFormFieldPath = vm => vm.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript),
                 RenderErrorMessage = vm => throw new InvalidOperationException("検索条件欄では項目ごとにエラーメッセージを表示するという概念が無い"),
             };
             var tableBuilder = new DataTableBuilder(_aggregate, $"Types.{searchResult.TsTypeName}", false)

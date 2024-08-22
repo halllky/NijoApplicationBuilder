@@ -53,13 +53,13 @@ namespace Nijo.Core {
         /// <param name="vm">検索対象のメンバーの情報</param>
         /// <param name="ctx">コンテキスト引数</param>
         /// <param name="searchConditionObject">検索条件のオブジェクトの型</param>
-        string RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx, E_SearchConditionObject searchConditionObject);
+        string RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx);
         /// <summary>
         /// 詳細画面のUI（"VerticalForm.Item" の子要素）をレンダリングします。
         /// </summary>
         /// <param name="vm">検索対象のメンバーの情報</param>
         /// <param name="ctx">コンテキスト引数</param>
-        string RenderSingleViewVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx);
+        string RenderSingleViewVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx);
     }
 
     /// <summary>検索条件のオブジェクトの型</summary>
@@ -136,18 +136,16 @@ namespace Nijo.Core {
                 """;
         }
 
-        string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx, E_SearchConditionObject searchConditionObject) {
-            var fullpath = searchConditionObject == E_SearchConditionObject.SearchCondition
-                ? vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".")
-                : vm.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript).Join(".");
+        string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
+            var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
             return $$"""
                 <Input.Word {...{{ctx.Register}}(`{{fullpath}}`)} />
                 """;
         }
 
-        string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx) {
+        string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
             var component = GetReactComponent();
-            var fullpath = vm.Declared.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, ctx.AncestorsIndexes).Join(".");
+            var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
             return $$"""
                 <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)} />
                 {{ctx.RenderErrorMessage(vm)}}
@@ -248,11 +246,9 @@ namespace Nijo.Core {
                 """;
         }
 
-        string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx, E_SearchConditionObject searchConditionObject) {
+        string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
             var component = GetReactComponent();
-            var fullpath = searchConditionObject == E_SearchConditionObject.SearchCondition
-                ? vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".")
-                : vm.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript).Join(".");
+            var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
             return $$"""
                 <div className="flex flex-wrap items-center gap-1">
                   <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}.{{FromTo.FROM_TS}}`)}{{component.GetPropsStatement().Join("")}} />
@@ -262,9 +258,9 @@ namespace Nijo.Core {
                 """;
         }
 
-        string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx) {
+        string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
             var component = GetReactComponent();
-            var fullpath = vm.Declared.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, ctx.AncestorsIndexes).Join(".");
+            var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
             return $$"""
                 <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)}{{component.GetPropsStatement().Join("")}} />
                 {{ctx.RenderErrorMessage(vm)}}
