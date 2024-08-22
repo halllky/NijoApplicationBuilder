@@ -181,11 +181,15 @@ namespace Nijo.Models.ReadModel2Features {
                 var refEntry = _aggregate.GetRefEntryEdge().Terminal;
                 var displayData = new RefDisplayData(_aggregate, refEntry);
                 return displayData
-                    .GetOwnMembers();
+                    .GetOwnMembers()
+                    .Where(m => m is not AggregateMember.ValueMember vm
+                             || !vm.Options.InvisibleInGui);
             } else {
                 var displayData = new DataClassForDisplay(_aggregate);
                 return displayData
                     .GetOwnMembers()
+                    .Where(m => m is not AggregateMember.ValueMember vm
+                             || !vm.Options.InvisibleInGui)
                     .Concat(displayData.GetChildMembers().Select(x => x.MemberInfo));
             }
         }

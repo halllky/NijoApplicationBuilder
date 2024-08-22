@@ -13,7 +13,7 @@ export const TextareaBase = defineCustomComponent<string, {}, TextareaHTMLAttrib
     readOnly,
     onFocus,
     rows,
-    className,
+    className: propsClassName,
     ...rest
   } = props
 
@@ -32,14 +32,16 @@ export const TextareaBase = defineCustomComponent<string, {}, TextareaHTMLAttrib
     onChange?.(e.target.value)
   }, [onChange])
 
+  const className = readOnly
+    ? `block w-full outline-none px-1 bg-transparent cursor-default ${propsClassName}`
+    : `block w-full outline-none px-1 bg-color-base border border-color-5 ${propsClassName}`
+
   return (
     <textarea
       {...rest}
       ref={textareaRef}
       value={value ?? ''}
-      className={readOnly
-        ? `block w-full outline-none px-1 border border-color-4 bg-transparent cursor-default ${className}`
-        : `block w-full outline-none px-1 border border-color-5 bg-color-base  ${className}`}
+      className={className}
       autoComplete="off"
       spellCheck={false}
       rows={rows || 3}
