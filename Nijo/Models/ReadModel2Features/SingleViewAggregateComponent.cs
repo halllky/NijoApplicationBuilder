@@ -206,16 +206,16 @@ namespace Nijo.Models.ReadModel2Features {
         /// </summary>
         private SingleViewAggregateComponent GetDescendantComponent(AggregateMember.RelationMember member) {
             if (member is AggregateMember.Parent parent) {
-                return new ParentOrChildOrRefComponent(parent, _depth + 1);
-
-            } else if (member is AggregateMember.Ref @ref) {
-                return new ParentOrChildOrRefComponent(@ref, _depth + 1);
+                return new ParentOrChildComponent(parent, _depth + 1);
 
             } else if (member is AggregateMember.Child child) {
-                return new ParentOrChildOrRefComponent(child, _depth + 1);
+                return new ParentOrChildComponent(child, _depth + 1);
 
             } else if (member is AggregateMember.VariationItem variation) {
                 return new VariationItemComponent(variation, _depth + 1);
+
+            } else if (member is AggregateMember.Ref @ref) {
+                return new RefComponent(@ref, _depth + 1);
 
             } else if (member is AggregateMember.Children children1 && !children1.ChildrenAggregate.CanDisplayAllMembersAs2DGrid()) {
                 return new ChildrenFormComponent(children1, _depth + 1);
@@ -257,10 +257,9 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// 単純な1個の隣接要素のコンポーネント
         /// </summary>
-        private class ParentOrChildOrRefComponent : DescendantComponent {
-            internal ParentOrChildOrRefComponent(AggregateMember.Parent parent, int depth) : base(parent, depth) { }
-            internal ParentOrChildOrRefComponent(AggregateMember.Child child, int depth) : base(child, depth) { }
-            internal ParentOrChildOrRefComponent(AggregateMember.Ref @ref, int depth) : base(@ref, depth) { }
+        private class ParentOrChildComponent : DescendantComponent {
+            internal ParentOrChildComponent(AggregateMember.Parent parent, int depth) : base(parent, depth) { }
+            internal ParentOrChildComponent(AggregateMember.Child child, int depth) : base(child, depth) { }
 
             internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
                 var args = GetArguments().ToArray();
@@ -279,6 +278,63 @@ namespace Nijo.Models.ReadModel2Features {
                       )
                     }
                     """;
+            }
+        }
+
+
+        /// <summary>
+        /// <see cref="AggregateMember.Ref"/> のコンポーネント
+        /// </summary>
+        private class RefComponent : DescendantComponent {
+            internal RefComponent(AggregateMember.Ref @ref, int depth) : base(@ref, depth) {
+                _ref = @ref;
+            }
+            private readonly AggregateMember.Ref _ref;
+            private const string OPEN = "openSearchDialog";
+
+            internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
+                var args = GetArguments().ToArray();
+                var vForm = BuildVerticalForm(context, isReadOnly);
+                var dialog = new SearchDialog(_ref.RefTo, _ref.RefTo);
+                var fullpath = _ref.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
+
+                return $$"""
+                    const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
+                    {{args.SelectTextTemplate(arg => $$"""
+                      {{arg}}: number
+                    """)}}
+                    }) => {
+                      const { register, registerEx, getValues, setValue, formState: { errors } } = Util.useFormContextEx<{{UseFormType}}>()
+                    {{If(!isReadOnly, () => $$"""
+                      const {{OPEN}} = AggregateComponent.{{dialog.HookName}}()
+                      const handleClickSearch = useEvent(() => {
+                        {{OPEN}}({
+                          onSelect: item => setValue(`{{fullpath.Join(".")}}`, item)
+                        })
+                      })
+                    """)}}
+
+                      return (
+                        {{WithIndent(vForm.Render(context), "    ")}}
+                      )
+                    }
+                    """;
+            }
+
+            protected override VerticalFormBuilder GetComponentRoot(bool isReadOnly) {
+                var fullpath = _ref.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
+                var label = $$"""
+                    <>
+                      <div className="inline-flex items-center py-1 gap-2">
+                        <VForm2.LabelText>{{_ref.MemberName}}</VForm2.LabelText>
+                    {{If(!isReadOnly, () => $$"""
+                        <Input.IconButton underline mini icon={Icon.MagnifyingGlassIcon} onClick={handleClickSearch}>検索</Input.IconButton>
+                    """)}}
+                      </div>
+                      <Input.ErrorMessage name={`{{fullpath.Join(".")}}`} errors={errors} />
+                    </>
+                    """;
+                return new VerticalFormBuilder(label, E_VForm2LabelType.JsxElement);
             }
         }
 
@@ -366,7 +422,7 @@ namespace Nijo.Models.ReadModel2Features {
                       <div className="inline-flex gap-2 py-px justify-start items-center">
                         <VForm2.LabelText>{{{loopVar}}}</VForm2.LabelText>
                     {{If(creatable, () => $$"""
-                        <Input.IconButton outline mini icon={XMarkIcon} onClick={onRemove({{loopVar}})}>削除</Input.IconButton>
+                        <Input.IconButton outline mini icon={Icon.XMarkIcon} onClick={onRemove({{loopVar}})}>削除</Input.IconButton>
                     """)}}
                       </div>
                       <Input.ErrorMessage name={`{{fullpath.Join(".")}}.${{{loopVar}}}`} errors={errors} />
@@ -415,7 +471,7 @@ namespace Nijo.Models.ReadModel2Features {
                           <div className="inline-flex gap-2 py-px justify-start items-center">
                             <VForm2.LabelText>{{_aggregate.GetParent()?.RelationName}}</VForm2.LabelText>
                     {{If(creatable, () => $$"""
-                            <Input.IconButton outline mini icon={PlusIcon} onClick={onCreate}>追加</Input.IconButton>
+                            <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={onCreate}>追加</Input.IconButton>
                     """)}}
                           </div>
                           <Input.ErrorMessage name={`{{registerNameArray.Join(".")}}`} errors={errors} />
@@ -500,8 +556,8 @@ namespace Nijo.Models.ReadModel2Features {
                             <div className="flex items-center gap-2">
                               <VForm2.LabelText>{{_aggregate.GetParent()?.RelationName}}</VForm2.LabelText>
                     {{If(editable, () => $$"""
-                              <Input.IconButton outline mini icon={PlusIcon} onClick={onAdd}>追加</Input.IconButton>
-                              <Input.IconButton outline mini icon={XMarkIcon} onClick={onRemove}>削除</Input.IconButton>
+                              <Input.IconButton outline mini icon={Icon.PlusIcon} onClick={onAdd}>追加</Input.IconButton>
+                              <Input.IconButton outline mini icon={Icon.XMarkIcon} onClick={onRemove}>削除</Input.IconButton>
                     """)}}
                             </div>
                             <Input.ErrorMessage name={`{{registerNameArray.Join(".")}}`} errors={errors} />
