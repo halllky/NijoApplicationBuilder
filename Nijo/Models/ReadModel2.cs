@@ -119,7 +119,6 @@ namespace Nijo.Models {
             context.CoreLibrary.UtilDir(dir => {
                 dir.Generate(DataClassForDisplay.RenderBaseClass());
                 dir.Generate(ErrorReceiver.RenderCSharp());
-                dir.Generate(ReadOnlyInfo.RenderCSharp());
                 dir.Generate(InstanceKey.RenderCSharp());
                 dir.Generate(ISaveCommandConvertible.Render());
             });

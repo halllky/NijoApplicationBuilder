@@ -146,8 +146,9 @@ namespace Nijo.Core {
         string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
             var component = GetReactComponent();
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
+            var readOnly = ctx.RenderReadOnlyStatement(vm.Declared);
             return $$"""
-                <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)} />
+                <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)} {{readOnly}}/>
                 {{ctx.RenderErrorMessage(vm)}}
                 """;
         }
@@ -261,8 +262,9 @@ namespace Nijo.Core {
         string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
             var component = GetReactComponent();
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
+            var readOnly = ctx.RenderReadOnlyStatement(vm.Declared);
             return $$"""
-                <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)}{{component.GetPropsStatement().Join("")}} />
+                <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)}{{component.GetPropsStatement().Join("")}} {{readOnly}}/>
                 {{ctx.RenderErrorMessage(vm)}}
                 """;
         }

@@ -24,6 +24,19 @@ namespace Nijo.Util.CodeGenerating {
         public required Func<AggregateMember.ValueMember, string> RenderErrorMessage { get; init; }
 
         /// <summary>
+        /// この項目が常に読み取り専用の場合は "<see cref="READONLY"/>" の定数文字列を返す。
+        /// この項目が画面表示時の条件によって読み取り専用か否かが変わる場合はその条件が含まれた式を返す。
+        /// この項目が読み取り専用にならない場合は空文字を返す。
+        /// </summary>
+        public required Func<AggregateMember.ValueMember, string> RenderReadOnlyStatement { get; init; }
+        /// <summary>
+        /// 自動生成されるアプリケーションのReactコンポーネントの入力コントロールは、
+        /// それが読み取り専用か否かを表すboolean型のプロパティを持っている。
+        /// そのプロパティの名前。
+        /// </summary>
+        internal const string READONLY = "readOnly";
+
+        /// <summary>
         /// react-hook-form のフィールドパス取得処理。
         /// レンダリングするオブジェクト（検索条件のオブジェクトだったり詳細画面のオブジェクトだったりする）によってパスが変わるので。
         /// </summary>

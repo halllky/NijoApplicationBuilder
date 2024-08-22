@@ -393,10 +393,10 @@ namespace Nijo.Models.ReadModel2Features {
                 public partial class {{ReadOnlyDataCsClassName}} {
                     /// <summary>{{Aggregate.Item.DisplayName}}全体が読み取り専用か否か</summary>
                     [JsonPropertyName("{{ALL_READONLY_TS}}")]
-                    public virtual {{ReadOnlyInfo.CS_CLASS_NAME}} {{ALL_READONLY_CS}} { get; } = new();
+                    public virtual bool {{ALL_READONLY_CS}} { get; set; }
                 {{GetOwnMembers().SelectTextTemplate(member => $$"""
                     /// <summary>{{member.MemberName}}が読み取り専用か否か</summary>
-                    public virtual {{ReadOnlyInfo.CS_CLASS_NAME}} {{member.MemberName}} { get; } = new();
+                    public virtual bool {{member.MemberName}} { get; set; }
                 """)}}
                 }
                 """;
@@ -405,10 +405,10 @@ namespace Nijo.Models.ReadModel2Features {
             return $$"""
                 {
                   /** {{Aggregate.Item.DisplayName}}全体が読み取り専用か否か */
-                  {{ALL_READONLY_TS}}?: {{ReadOnlyInfo.TS_TYPE_NAME}}
+                  {{ALL_READONLY_TS}}?: boolean
                 {{GetOwnMembers().SelectTextTemplate(member => $$"""
                   /** {{member.MemberName}}が読み取り専用か否か */
-                  {{member.MemberName}}?: {{ReadOnlyInfo.TS_TYPE_NAME}}
+                  {{member.MemberName}}?: boolean
                 """)}}
                 }
                 """;

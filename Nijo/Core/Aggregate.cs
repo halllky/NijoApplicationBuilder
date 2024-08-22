@@ -158,6 +158,16 @@ namespace Nijo.Core {
                 .SingleOrDefault(rm => rm.MemberAggregate == aggregate)
                 ?? throw new InvalidOperationException($"{parentEdge.Initial}のメンバーに{aggregate}がありません。");
         }
+        /// <summary>
+        /// このエッジを <see cref="AggregateMember.Ref"/> に変換します。
+        /// このエッジが参照を表すエッジでない場合は例外になります。
+        /// </summary>
+        internal static AggregateMember.Ref AsRefMember(this GraphEdge<Aggregate> edge) {
+            return edge.Initial
+                .GetMembers()
+                .OfType<AggregateMember.Ref>()
+                .Single(rm => rm.Relation == edge);
+        }
 
         /// <summary>
         /// この集約がDBに保存されるものかどうかを返します。

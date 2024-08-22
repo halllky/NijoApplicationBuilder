@@ -118,26 +118,32 @@ namespace Nijo.Models.ReadModel2Features {
         /// <see cref="VerticalFormBuilder"/> のインスタンスを組み立てます。
         /// </summary>
         protected VerticalFormBuilder BuildVerticalForm(CodeRenderingContext context, bool isReadOnly) {
-            // レンダリング対象メンバーを列挙
-            IEnumerable<AggregateMember.AggregateMemberBase> members;
-            if (_aggregate.IsOutOfEntryTree()) {
-                var refEntry = _aggregate.GetRefEntryEdge().Terminal;
-                var displayData = new RefDisplayData(_aggregate, refEntry);
-                members = displayData
-                    .GetOwnMembers();
-            } else {
-                var displayData = new DataClassForDisplay(_aggregate);
-                members = displayData
-                    .GetOwnMembers()
-                    .Concat(displayData.GetChildMembers().Select(x => x.MemberInfo));
-            }
-
-            // フォーム組み立て
             var formBuilder = GetComponentRoot(isReadOnly);
             var formContext = new FormUIRenderingContext {
                 CodeRenderingContext = context,
                 Register = "registerEx",
                 GetReactHookFormFieldPath = vm => vm.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar()),
+                RenderReadOnlyStatement = vm => {
+                    if (isReadOnly) {
+                        return FormUIRenderingContext.READONLY;
+                    } else if (vm.Owner.IsOutOfEntryTree()) {
+                        if (vm.IsKey) {
+                            // 参照先のキーが読み取り専用か否かはその参照に読み取り専用が設定されているか否かに従う
+                            var fullpath = vm.Owner
+                                .GetRefEntryEdge()
+                                .AsRefMember()
+                                .GetFullPathAsReactHookFormRegisterName(E_PathType.ReadOnly, GetArgumentsAndLoopVar());
+                            return $"{FormUIRenderingContext.READONLY}={{getValues(`{fullpath.Join(".")}`)}}";
+
+                        } else {
+                            // 参照先かつキーでない項目は読み取り専用
+                            return FormUIRenderingContext.READONLY;
+                        }
+                    } else {
+                        var fullpath = vm.Declared.GetFullPathAsReactHookFormRegisterName(E_PathType.ReadOnly, GetArgumentsAndLoopVar());
+                        return $"{FormUIRenderingContext.READONLY}={{getValues(`{fullpath.Join(".")}`)}}";
+                    }
+                },
                 RenderErrorMessage = vm => {
                     var fullpath = vm.Declared.GetFullPathAsReactHookFormRegisterName(E_PathType.Value, GetArgumentsAndLoopVar());
                     var render = vm.DeclaringAggregate == _aggregate; // 参照先のValueMemberにはエラーメッセージが無い。エラーメッセージは参照先のValueMemberではなくRefにつく
@@ -148,7 +154,7 @@ namespace Nijo.Models.ReadModel2Features {
                         """;
                 },
             };
-            foreach (var member in members.OrderBy(m => m.Order)) {
+            foreach (var member in EnumerateRenderedMemberes().OrderBy(m => m.Order)) {
                 if (member is AggregateMember.ValueMember vm) {
                     formBuilder.AddItem(
                         vm.Options.MemberType is Core.AggregateMemberTypes.Sentence,
@@ -166,6 +172,22 @@ namespace Nijo.Models.ReadModel2Features {
             }
 
             return formBuilder;
+        }
+        /// <summary>
+        /// レンダリング対象メンバーを列挙
+        /// </summary>
+        private IEnumerable<AggregateMember.AggregateMemberBase> EnumerateRenderedMemberes() {
+            if (_aggregate.IsOutOfEntryTree()) {
+                var refEntry = _aggregate.GetRefEntryEdge().Terminal;
+                var displayData = new RefDisplayData(_aggregate, refEntry);
+                return displayData
+                    .GetOwnMembers();
+            } else {
+                var displayData = new DataClassForDisplay(_aggregate);
+                return displayData
+                    .GetOwnMembers()
+                    .Concat(displayData.GetChildMembers().Select(x => x.MemberInfo));
+            }
         }
 
         /// <summary>

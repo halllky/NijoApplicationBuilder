@@ -45,6 +45,7 @@ namespace Nijo.Models.ReadModel2Features {
                     CodeRenderingContext = context,
                     Register = "registerExCondition",
                     GetReactHookFormFieldPath = vm => vm.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript),
+                    RenderReadOnlyStatement = vm => string.Empty, // 検索条件欄の項目が読み取り専用になることはない
                     RenderErrorMessage = vm => throw new InvalidOperationException("検索条件欄では項目ごとにエラーメッセージを表示するという概念が無い"),
                 };
 
