@@ -132,10 +132,10 @@ namespace Nijo.Models.ReadModel2Features {
                       }, [{{LoadMethod.LOAD}}, getConditionValues, resetSearchCondition, searchConditionPanelRef])
 
                       // クリア時処理
-                      const clearSearchCondition = useCallback(() => {
-                        resetSearchCondition()
+                      const clearSearchCondition = useEvent(() => {
+                        resetSearchCondition(AggregateType.{{searchCondition.CreateNewObjectFnName}}())
                         searchConditionPanelRef.current?.expand()
-                      }, [resetSearchCondition, searchConditionPanelRef])
+                      })
 
                       // 画面遷移
                       const {{TO_DETAIL_VIEW}} = Util.{{detailView.NavigateFnName}}()

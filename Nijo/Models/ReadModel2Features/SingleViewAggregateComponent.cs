@@ -478,7 +478,7 @@ namespace Nijo.Models.ReadModel2Features {
                       {{arg}}: number
                     """)}}
                     }) => {
-                      const { register, registerEx, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
+                      const { register, registerEx, getValues, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
                       const { fields, append, remove } = useFieldArray({ control, name: `{{registerNameArray.Join(".")}}` })
                     {{If(creatable, () => $$"""
                       const onCreate = useCallback(() => {
@@ -551,7 +551,7 @@ namespace Nijo.Models.ReadModel2Features {
                     """)}}
                     }) => {
                       const { get } = Util.useHttpRequest()
-                      const { register, registerEx, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
+                      const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
                       const { fields, append, remove, update } = useFieldArray({ control, name: `{{registerNameArray.Join(".")}}` })
                       const dtRef = useRef<Layout.DataTableRef<{{rowType}}>>(null)
 

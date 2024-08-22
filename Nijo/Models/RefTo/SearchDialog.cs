@@ -84,7 +84,7 @@ namespace Nijo.Models.RefTo {
 
                       // クリア時処理
                       const clearSearchCondition = useEvent(() => {
-                        resetSearchCondition()
+                        resetSearchCondition(Types.{{searchCondition.CreateNewObjectFnName}}())
                       })
 
                       // 検索時処理
