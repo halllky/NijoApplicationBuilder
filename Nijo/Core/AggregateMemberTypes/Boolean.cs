@@ -98,9 +98,11 @@ namespace Nijo.Core.AggregateMemberTypes {
                 """;
         }
 
-        string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx) {
+        string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx, E_SearchConditionObject searchConditionObject) {
             var component = GetReactComponent();
-            var fullpath = vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".");
+            var fullpath = searchConditionObject == E_SearchConditionObject.SearchCondition
+                ? vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".")
+                : vm.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript).Join(".");
             return $$"""
                 <Input.Selection {...{{ctx.Register}}(`{{fullpath}}`)}{{component.GetPropsStatement().Join("")}} options={['Trueのみ', 'Falseのみ', '指定なし']} textSelector={item => item} />
                 """;

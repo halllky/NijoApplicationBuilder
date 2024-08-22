@@ -52,7 +52,8 @@ namespace Nijo.Core {
         /// </summary>
         /// <param name="vm">検索対象のメンバーの情報</param>
         /// <param name="ctx">コンテキスト引数</param>
-        string RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx);
+        /// <param name="searchConditionObject">検索条件のオブジェクトの型</param>
+        string RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx, E_SearchConditionObject searchConditionObject);
         /// <summary>
         /// 詳細画面のUI（"VerticalForm.Item" の子要素）をレンダリングします。
         /// </summary>
@@ -135,8 +136,10 @@ namespace Nijo.Core {
                 """;
         }
 
-        string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx) {
-            var fullpath = vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".");
+        string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx, E_SearchConditionObject searchConditionObject) {
+            var fullpath = searchConditionObject == E_SearchConditionObject.SearchCondition
+                ? vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".")
+                : vm.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript).Join(".");
             return $$"""
                 <Input.Word {...{{ctx.Register}}(`{{fullpath}}`)} />
                 """;
@@ -245,9 +248,11 @@ namespace Nijo.Core {
                 """;
         }
 
-        string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx) {
+        string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, ReactPageRenderingContext ctx, E_SearchConditionObject searchConditionObject) {
             var component = GetReactComponent();
-            var fullpath = vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".");
+            var fullpath = searchConditionObject == E_SearchConditionObject.SearchCondition
+                ? vm.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".")
+                : vm.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript).Join(".");
             return $$"""
                 <div className="flex flex-wrap items-center gap-1">
                   <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}.{{FromTo.FROM_TS}}`)}{{component.GetPropsStatement().Join("")}} />

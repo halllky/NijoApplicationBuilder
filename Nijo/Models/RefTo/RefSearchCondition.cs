@@ -284,7 +284,7 @@ namespace Nijo.Models.RefTo {
                     false,
                     m.MemberName,
                     Parts.WebClient.E_VForm2LabelType.String,
-                    m.Member.Options.MemberType.RenderSearchConditionVFormBody(m.Member, context));
+                    m.Member.Options.MemberType.RenderSearchConditionVFormBody(m.Member, context, E_SearchConditionObject.RefSearchCondition));
             }
             foreach (var m in GetChildMembers()) {
                 var childSection = section.AddSection(
