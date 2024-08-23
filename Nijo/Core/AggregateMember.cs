@@ -199,9 +199,19 @@ namespace Nijo.Core {
             private string? _membername;
             internal sealed override string MemberName {
                 get {
-                    return _membername ??= Inherits == null
-                        ? Options.MemberName
-                        : $"{Inherits.Relation.RelationName}_{Inherits.Member.MemberName}";
+                    if (_membername == null) {
+                        if (Inherits == null) {
+                            _membername = Options.MemberName;
+
+                        } else if (Inherits.Relation.IsParentChild()) {
+                            // 親のメンバーと対応して暗黙的に定義されるメンバーの名前
+                            _membername = $"PARENT_{Inherits.Member.MemberName}";
+                        } else {
+                            // 参照先のメンバーと対応して暗黙的に定義されるメンバーの名前
+                            _membername = $"{Inherits.Relation.RelationName}_{Inherits.Member.MemberName}";
+                        }
+                    }
+                    return _membername;
                 }
             }
             internal sealed override GraphNode<Aggregate> DeclaringAggregate => Inherits?.Member.DeclaringAggregate ?? Owner;
