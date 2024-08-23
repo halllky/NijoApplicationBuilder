@@ -158,5 +158,9 @@ namespace Nijo.Models {
         void IModel.GenerateCode(CodeRenderingContext context) {
 
         }
+
+        IEnumerable<string> IModel.ValidateAggregate(GraphNode<Aggregate> rootAggregate) {
+            yield break;
+        }
     }
 }

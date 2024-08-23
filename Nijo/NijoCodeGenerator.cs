@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using Nijo.Models;
 using Nijo.Features;
+using Nijo.Util.DotnetEx;
 
 namespace Nijo {
     /// <summary>
@@ -87,13 +88,31 @@ namespace Nijo {
                 feature.GenerateCode(ctx);
             }
 
+            var validationErrors = new Dictionary<GraphNode<Aggregate>, IEnumerable<string>>();
             foreach (var rootAggregate in ctx.Schema.RootAggregates()) {
                 if (!string.IsNullOrWhiteSpace(rootAggregate.Item.Options.Handler)) {
                     var model = ctx.GetModel(rootAggregate.Item.Options.Handler);
+                    var modelErrors = model.ValidateAggregate(rootAggregate).ToArray();
+                    if (modelErrors.Length > 0) {
+                        validationErrors.Add(rootAggregate, modelErrors);
+                        continue;
+                    }
                     model.GenerateCode(ctx, rootAggregate);
                 } else {
                     // 特に指定の無い集約は処理対象外
                 }
+            }
+            if (validationErrors.Count > 0) {
+                throw new InvalidOperationException($$"""
+                    集約定義が不正です。
+                    {{validationErrors.SelectTextTemplate(err => $$"""
+                    - {{err.Key.Item.DisplayName}}
+                    {{err.Value.SelectTextTemplate(msg => $$"""
+                      - {{WithIndent(msg, "    ")}}
+                    """)}}
+                    """)}}
+
+                    """);
             }
 
             // 複数の集約から1個のソースが作成されるもの等はこのタイミングで作成

@@ -22,5 +22,10 @@ namespace Nijo.Models {
         /// ユーティリティクラスなどのような、ルート集約1個と対応しないソースコードを生成します。
         /// </summary>
         void GenerateCode(CodeRenderingContext context);
+        /// <summary>
+        /// 不正な集約定義が無いかを検査し、エラーメッセージの一覧を返します。
+        /// 例えば、キーが1つも無いなど。
+        /// </summary>
+        IEnumerable<string> ValidateAggregate(GraphNode<Aggregate> rootAggregate);
     }
 }

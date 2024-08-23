@@ -123,5 +123,21 @@ namespace Nijo.Models {
                 dir.Generate(ISaveCommandConvertible.Render());
             });
         }
+
+        IEnumerable<string> IModel.ValidateAggregate(GraphNode<Aggregate> rootAggregate) {
+            foreach (var agg in rootAggregate.EnumerateThisAndDescendants()) {
+
+                // ルート集約またはChildrenはキー必須
+                if (agg.IsRoot() || agg.IsChildrenMember()) {
+                    var ownKeys = agg
+                        .GetKeys()
+                        .Where(m => m is AggregateMember.ValueMember vm && vm.DeclaringAggregate == vm.Owner
+                                 || m is AggregateMember.Ref);
+                    if (!ownKeys.Any()) {
+                        yield return $"{agg.Item.DisplayName}にキーが1つもありません。";
+                    }
+                }
+            }
+        }
     }
 }

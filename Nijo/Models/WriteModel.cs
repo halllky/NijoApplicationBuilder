@@ -147,5 +147,9 @@ namespace Nijo.Models {
                 });
             });
         }
+
+        IEnumerable<string> IModel.ValidateAggregate(GraphNode<Aggregate> rootAggregate) {
+            yield break;
+        }
     }
 }

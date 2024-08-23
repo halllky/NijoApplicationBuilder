@@ -125,5 +125,38 @@ namespace Nijo.Models {
 
         void IModel.GenerateCode(CodeRenderingContext context) {
         }
+
+        IEnumerable<string> IModel.ValidateAggregate(GraphNode<Aggregate> rootAggregate) {
+            foreach (var agg in rootAggregate.EnumerateThisAndDescendants()) {
+
+                // ルート集約またはChildrenはキー必須
+                if (agg.IsRoot() || agg.IsChildrenMember()) {
+                    var ownKeys = agg
+                        .GetKeys()
+                        .Where(m => m is AggregateMember.ValueMember vm && vm.DeclaringAggregate == vm.Owner
+                                 || m is AggregateMember.Ref);
+                    if (!ownKeys.Any()) {
+                        yield return $"{agg.Item.DisplayName}にキーが1つもありません。";
+                    }
+                }
+
+                // HasLifecycleはReadModel専用の属性
+                if (agg.Item.Options.HasLifeCycle) {
+                    yield return
+                        $"{agg.Item.DisplayName}: {nameof(AggregateBuildOption.HasLifeCycle)}は{nameof(ReadModel2)}専用の属性です。" +
+                        $"{nameof(WriteModel2)}でライフサイクルが分かれる部分は別のルート集約として定義し、元集約への参照をキーにすることで表現してください。";
+                }
+
+                foreach (var member in agg.GetMembers()) {
+
+                    // WriteModelからReadModelへの参照は不可
+                    if (member is AggregateMember.Ref @ref
+                        && @ref.RefTo.GetRoot().Item.Options.Handler != NijoCodeGenerator.Models.WriteModel2.Key) {
+
+                        yield return $"{agg.Item.DisplayName}.{member.MemberName}: {nameof(WriteModel2)}の参照先は{nameof(WriteModel2)}である必要があります。";
+                    }
+                }
+            }
+        }
     }
 }
