@@ -67,17 +67,12 @@ namespace Nijo.Models.CommandModelFeatures {
                       } else {
                         // 処理結果の詳細情報がある場合、ダイアログで結果を表示。
                         const detail = response.data.detail
-                        dispatchDialog(state => state.pushDialog(({ closeDialog }) => {
+                        dispatchDialog(state => state.pushDialog(message, ({ closeDialog }) => {
                           return (
-                            <div className="h-full flex flex-col">
-                              <div>
-                                {message}
+                            <div className="h-full flex flex-col gap-1">
+                              <div className="flex-1 overflow-y-auto">
+                                <Layout.UnknownObjectViewer label="詳細" value={detail} />
                               </div>
-                              <Layout.UnknownObjectViewer
-                                label="詳細"
-                                value={detail}
-                                className="flex-1"
-                              />
                               <div className="flex justify-end">
                                 <Input.IconButton fill onClick={closeDialog}>OK</Input.IconButton>
                               </div>

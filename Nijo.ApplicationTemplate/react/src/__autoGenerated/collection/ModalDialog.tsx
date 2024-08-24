@@ -61,7 +61,7 @@ const ModalDialog = ({ title, open, onClose, children, className }: {
 // ダイアログの枠とダイアログを呼び出す各画面は React Context を使って接続する ここから
 
 type DialogContextState = {
-  stack: { id: string, contents: DialogContents }[]
+  stack: { id: string, title: string, contents: DialogContents }[]
 }
 type DialogContents = (props: {
   closeDialog: () => void
@@ -73,8 +73,8 @@ const initialize = (): DialogContextState => ({
 const { reducer, ContextProvider, useContext: useDialogContext } = defineContext2(
   initialize,
   state => ({
-    pushDialog: (contents: DialogContents) => ({
-      stack: [{ id: UUID.generate(), contents }, ...state.stack],
+    pushDialog: (title: string, contents: DialogContents) => ({
+      stack: [{ id: UUID.generate(), title, contents }, ...state.stack],
     }),
     removeDialog: (id: string) => {
       return ({
@@ -96,8 +96,8 @@ const DialogContextProvider = ({ children }: {
   return (
     <ContextProvider value={reducerReturns}>
       {children}
-      {stack.map(({ id, contents }) => (
-        <ModalDialog key={id} open onClose={handleCancel(id)}>
+      {stack.map(({ id, title, contents }) => (
+        <ModalDialog key={id} open title={title} onClose={handleCancel(id)}>
           {React.createElement(contents, {
             closeDialog: handleCancel(id),
           })}

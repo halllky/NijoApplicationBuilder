@@ -25,6 +25,10 @@ namespace Nijo.Models.CommandModelFeatures {
         internal const string RESULT_WEB_CLASS_NAME = "CommandResultInWeb";
         internal const string RESULT_CLI_CLASS_NAME = "CommandResultInCli";
 
+        // HTTPレスポンスの種類
+        private const string TYPE_MESSAGE = "message";
+        private const string TYPE_REDIRECT = "redirect";
+
         internal static SourceFile RenderInterface(CodeRenderingContext context) => new SourceFile {
             FileName = "ICommandResultGenerator.cs",
             RenderContent = ctx => {
@@ -102,7 +106,7 @@ namespace Nijo.Models.CommandModelFeatures {
 
                         {{RESULT_INTERFACE_NAME}} {{GENERATOR_INTERFACE_NAME}}.Success<T>(string? text, T detail) {
                             return new {{ACTION_RESULT_CONTAINER}} {
-                                ActionResult = _controller.Ok(new { text, detail }),
+                                ActionResult = _controller.Ok(new { type = "{{TYPE_MESSAGE}}", text, detail }),
                             };
                         }
                         {{RESULT_INTERFACE_NAME}} {{GENERATOR_INTERFACE_NAME}}.Redirect() {
@@ -150,8 +154,8 @@ namespace Nijo.Models.CommandModelFeatures {
             return $$"""
                 /** コマンド正常終了時の処理結果 */
                 export type {{TS_TYPE_NAME}}
-                  = { type: 'message', text?: string, detail?: object } // 処理結果のメッセージや詳細情報が画面上に表示される。
-                  | { type: 'redirect', url: string } // 特定の画面へ遷移する。画面初期値はクエリパラメータに付される。
+                  = { type: '{{TYPE_MESSAGE}}', text?: string, detail?: object } // 処理結果のメッセージや詳細情報が画面上に表示される。
+                  | { type: '{{TYPE_REDIRECT}}', url: string } // 特定の画面へ遷移する。画面初期値はクエリパラメータに付される。
                   | { type: 'file', blob: string } // ファイルダウンロード
                 """;
         }

@@ -1,4 +1,5 @@
 using Nijo.Core;
+using Nijo.Models.RefTo;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -28,7 +29,7 @@ namespace Nijo.Models.CommandModelFeatures {
                 : $"_{_aggregate.GetRoot().Item.UniqueId.Substring(0, 8)}"; // 8桁も切り取れば重複しないはず
         }
 
-        private IEnumerable<Member> GetOwnMembers() {
+        internal IEnumerable<Member> GetOwnMembers() {
             return _aggregate
                 .GetMembers()
                 .Where(m => m.DeclaringAggregate == _aggregate)
@@ -70,17 +71,28 @@ namespace Nijo.Models.CommandModelFeatures {
                 """);
         }
 
+        internal string TsNewObjectFunction => $"createEmpty{TsTypeName}";
+        internal string RenderTsNewObjectFunction(CodeRenderingContext context) {
+            return $$"""
+                export const {{TsNewObjectFunction}} = (): {{TsTypeName}} => ({
+                {{GetOwnMembers().SelectTextTemplate(m => $$"""
+                  {{m.MemberName}}: {{WithIndent(m.RenderInitializer(), "  ")}},
+                """)}}
+                })
+                """;
+        }
+
         /// <summary>
         /// <see cref="CommandParameter"/> のメンバー
         /// </summary>
-        private class Member {
+        internal class Member {
             internal Member(AggregateMember.AggregateMemberBase member) {
-                _member = member;
+                MemberInfo = member;
             }
-            private readonly AggregateMember.AggregateMemberBase _member;
+            internal AggregateMember.AggregateMemberBase MemberInfo { get; }
 
-            internal string MemberName => _member.MemberName;
-            internal string CsTypeName => _member switch {
+            internal string MemberName => MemberInfo.MemberName;
+            internal string CsTypeName => MemberInfo switch {
                 AggregateMember.ValueMember vm => vm.Options.MemberType.GetCSharpTypeName(),
                 AggregateMember.Children children => $"{new CommandParameter(children.ChildrenAggregate).CsClassName}[]",
                 AggregateMember.Child child => new CommandParameter(child.ChildAggregate).CsClassName,
@@ -88,7 +100,7 @@ namespace Nijo.Models.CommandModelFeatures {
                 AggregateMember.Ref @ref => new RefTo.RefDisplayData(@ref.RefTo, @ref.RefTo).CsClassName,
                 _ => throw new NotImplementedException(),
             };
-            internal string TsTypeName => _member switch {
+            internal string TsTypeName => MemberInfo switch {
                 AggregateMember.ValueMember vm => vm.Options.MemberType.GetTypeScriptTypeName(),
                 AggregateMember.Children children => $"{new CommandParameter(children.ChildrenAggregate).TsTypeName}[]",
                 AggregateMember.Child child => new CommandParameter(child.ChildAggregate).TsTypeName,
@@ -98,12 +110,118 @@ namespace Nijo.Models.CommandModelFeatures {
             };
 
             internal CommandParameter? GetMemberParameter() {
-                if (_member is not AggregateMember.RelationMember rel) return null;
-                if (_member is AggregateMember.Parent) return null;
-                if (_member is AggregateMember.Ref) return null;
+                if (MemberInfo is not AggregateMember.RelationMember rel) return null;
+                if (MemberInfo is AggregateMember.Ref) return null;
 
                 return new CommandParameter(rel.MemberAggregate);
             }
+
+            /// <summary>
+            /// オブジェクト新規作成関数の中での値初期化
+            /// </summary>
+            internal string RenderInitializer() {
+                if (MemberInfo is AggregateMember.ValueMember) {
+                    return $"undefined"; // 初期値なし
+
+                } else if (MemberInfo is AggregateMember.Ref) {
+                    return $"undefined"; // 初期値なし
+
+                } else if (MemberInfo is AggregateMember.Children) {
+                    return $"[]";
+
+                } else {
+                    var childParam = GetMemberParameter()!;
+                    return $$"""
+                        {
+                        {{childParam.GetOwnMembers().SelectTextTemplate(m => $$"""
+                          {{m.MemberName}}: {{WithIndent(m.RenderInitializer(), "  ")}},
+                        """)}}
+                        }
+                        """;
+                }
+            }
+        }
+    }
+
+
+    internal static partial class GetFullPathExtensions {
+        /// <summary>
+        /// エントリーからのパスを
+        /// <see cref="CommandParameter"/> と
+        /// <see cref="RefTo.RefSearchCondition"/> の
+        /// インスタンスの型のルールにあわせて返す。
+        /// </summary>
+        internal static IEnumerable<string> GetFullPathAsCommandParameter(this AggregateMember.AggregateMemberBase member, GraphNode<Aggregate>? since = null, GraphNode<Aggregate>? until = null) {
+            var path = member.Owner.PathFromEntry();
+            if (since != null) path = path.Since(since);
+            if (until != null) path = path.Until(until);
+
+            foreach (var e in path) {
+                var edge = e.As<Aggregate>();
+                if (edge.Terminal.IsInEntryTree()) {
+                    // コマンドのツリー内部のパス。コマンドパラメータ型の定義に合わせる
+                    if (edge.Source == edge.Terminal && edge.IsParentChild()) {
+                        // 子から親へ向かう経路の場合
+                        yield return $"/* エラー！{nameof(CommandParameter)}では子は親の参照を持っていません */";
+
+                    } else {
+                        var asMember = edge.Terminal.AsChildRelationMember();
+                        yield return new CommandParameter.Member(asMember).MemberName;
+                    }
+
+                } else {
+                    // コマンドのツリー外部のパス。Refの画面表示データの定義に合わせる
+                    foreach (var p in member.GetFullPathAsDataClassForRefTarget(since: edge.Initial)) {
+                        yield return p;
+                    }
+                    yield break;
+                }
+            }
+
+            yield return new CommandParameter.Member(member).MemberName;
+        }
+
+        /// <summary>
+        /// エントリーからのパスを
+        /// <see cref="CommandParameter"/> と
+        /// <see cref="RefTo.RefSearchCondition"/> の
+        /// インスタンスの型のルールにあわせて返す。（React hook form のパス形式）
+        /// </summary>
+        internal static IEnumerable<string> GetFullPathAsCommandParameterRHFRegisterName(this AggregateMember.AggregateMemberBase member, IEnumerable<string>? arrayIndexes = null) {
+            var currentArrayIndex = 0;
+            var path = member.Owner.PathFromEntry();
+
+            foreach (var e in path) {
+                var edge = e.As<Aggregate>();
+                if (edge.Terminal.IsInEntryTree()) {
+                    // コマンドのツリー内部のパス。コマンドパラメータ型の定義に合わせる
+                    if (edge.Source == edge.Terminal && edge.IsParentChild()) {
+                        // 子から親へ向かう経路の場合
+                        yield return $"/* エラー！{nameof(CommandParameter)}では子は親の参照を持っていません */";
+
+                    } else {
+                        var asMember = edge.Terminal.AsChildRelationMember();
+                        yield return new CommandParameter.Member(asMember).MemberName;
+
+                        // 配列インデックス
+                        var isChildren = edge.Source == edge.Initial && edge.Terminal.IsChildrenMember();
+                        var isLastChildren = member is AggregateMember.Children children && edge == children.Relation; // 配列自身に対するフルパス列挙の場合は末尾の配列インデックスは列挙しない
+                        if (isChildren && !isLastChildren) {
+                            yield return $"${{{arrayIndexes?.ElementAtOrDefault(currentArrayIndex)}}}";
+                            currentArrayIndex++;
+                        }
+                    }
+
+                } else {
+                    // コマンドのツリー外部のパス。Refの画面表示データの定義に合わせる
+                    foreach (var p in member.GetFullPathAsDataClassForRefTarget(since: edge.Initial)) {
+                        yield return p;
+                    }
+                    yield break;
+                }
+            }
+
+            yield return new CommandParameter.Member(member).MemberName;
         }
     }
 }
