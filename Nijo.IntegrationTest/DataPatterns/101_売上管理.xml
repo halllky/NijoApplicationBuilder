@@ -10,7 +10,7 @@
     <受注ID is="uuid" />
     <受注日 is="word" />
     <受注明細 is="array">
-      <商品 is="ref-to:商品" />
+      <商品 is="ref-to:商品 key" />
       <数量 is="int" />
       <単価 is="int" />
     </受注明細>
@@ -20,6 +20,7 @@
     <商品ID is="uuid" />
     <納品日 is="word" />
     <納品明細 is="array">
+      <ID is="uuid" />
       <商品 is="ref-to:商品" />
       <数量 is="int" />
       <受注 is="ref-to:受注" />
@@ -31,6 +32,7 @@
     <請求日 is="word" />
     <納品 is="ref-to:納品" />
     <請求明細 is="array">
+      <ID is="uuid" />
       <商品 is="ref-to:商品" />
       <数量 is="int" />
       <単価 is="int" />
