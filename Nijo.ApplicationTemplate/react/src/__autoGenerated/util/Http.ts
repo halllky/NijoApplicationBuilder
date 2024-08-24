@@ -3,7 +3,7 @@ import { useUserSetting } from "./UserSetting"
 import { useMsgContext } from "./Notification"
 
 type HttpSendResult<T>
-  = { ok: true, data: T }
+  = { ok: true, contentType: string | null, data: T }
   | { ok: false, errors: unknown }
 
 export const useHttpRequest = () => {
@@ -35,7 +35,7 @@ export const useHttpRequest = () => {
         : await response.text()
       // 正常終了
       if (response.ok) {
-        return { ok: true, data: data as T }
+        return { ok: true, contentType: response.headers.get('Content-Type'), data: data as T }
       }
       // ASP.NET Core のControllerの return BadRequest ではエラー詳細は response.json() の結果そのまま
       if (response.status >= 400 && response.status <= 499) {

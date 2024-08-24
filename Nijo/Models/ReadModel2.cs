@@ -137,6 +137,17 @@ namespace Nijo.Models {
                         yield return $"{agg.Item.DisplayName}にキーが1つもありません。";
                     }
                 }
+
+                foreach (var member in agg.GetMembers()) {
+
+                    // WriteModelからReadModelへの参照は不可
+                    if (member is AggregateMember.Ref @ref
+                        && @ref.RefTo.GetRoot().Item.Options.Handler != NijoCodeGenerator.Models.ReadModel2.Key
+                        && @ref.RefTo.GetRoot().Item.Options.Handler != NijoCodeGenerator.Models.WriteModel2.Key) {
+
+                        yield return $"{agg.Item.DisplayName}.{member.MemberName}: {nameof(WriteModel2)}の参照先は{nameof(ReadModel2)}または{nameof(WriteModel2)}である必要があります。";
+                    }
+                }
             }
         }
     }
