@@ -120,7 +120,11 @@ namespace Nijo.Models.CommandModelFeatures {
             /// オブジェクト新規作成関数の中での値初期化
             /// </summary>
             internal string RenderInitializer() {
-                if (MemberInfo is AggregateMember.ValueMember) {
+                if (MemberInfo is AggregateMember.Variation variation) {
+                    var first = variation.GetGroupItems().First().TsValue;
+                    return $"'{first}'";
+
+                } else if (MemberInfo is AggregateMember.ValueMember) {
                     return $"undefined"; // 初期値なし
 
                 } else if (MemberInfo is AggregateMember.Ref) {

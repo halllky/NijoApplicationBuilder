@@ -42,7 +42,7 @@ namespace Nijo.Models.CommandModelFeatures {
 
                       return (
                         <FormProvider {...rhfMethods}>
-                          <div className="h-full flex flex-col">
+                          <div className="h-full flex flex-col gap-1">
                             <div className="flex-1 overflow-y-auto">
                               {{form.RenderCaller()}}
                             </div>
