@@ -1,4 +1,6 @@
+using Nijo.Core;
 using Nijo.Util.CodeGenerating;
+using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
 using System.Linq;

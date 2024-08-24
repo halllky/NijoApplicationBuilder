@@ -13,7 +13,7 @@ namespace Nijo.Features.BatchUpdate {
     partial class BatchUpdateFeature {
         private static SourceFile RenderReactHook(CodeRenderingContext context) {
             var controller = GetBatchUpdateController();
-            var availableAggregates = GetAvailableAggregatesOrderByDataFlow(context);
+            var availableAggregates = GetAvailableAggregatesOrderByDataFlow(context).ToArray();
 
             return new SourceFile {
                 FileName = "useBatchUpdate.ts",
@@ -27,6 +27,9 @@ namespace Nijo.Features.BatchUpdate {
                     export type BatchUpdateItem
                     {{availableAggregates.SelectTextTemplate((agg, i) => $$"""
                       {{(i == 0 ? "=" : "|")}} { {{PARAM_DATATYPE}}: '{{GetKey(agg)}}', {{PARAM_ACTION}}: '{{ACTION_ADD}}' | '{{ACTION_MODIFY}}' | '{{ACTION_DELETE}}', {{PARAM_DATA}}: Types.{{new DataClassForSave(agg).TsTypeName}} }
+                    """)}}
+                    {{If(availableAggregates.Length == 0, () => $$"""
+                      = never
                     """)}}
 
                     export default () => {

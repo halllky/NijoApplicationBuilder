@@ -2,7 +2,9 @@ import { useCallback, useMemo } from "react"
 import { useUserSetting } from "./UserSetting"
 import { useMsgContext } from "./Notification"
 
-type HttpSendResult<T> = { ok: true, data: T } | { ok: false }
+type HttpSendResult<T>
+  = { ok: true, data: T }
+  | { ok: false, errors: unknown }
 
 export const useHttpRequest = () => {
   const { data: { apiDomain } } = useUserSetting()
@@ -18,49 +20,42 @@ export const useHttpRequest = () => {
   }, [apiDomain])
 
   const sendHttpRequest = useCallback(async <T>([url, option]: Parameters<typeof fetch>): Promise<HttpSendResult<T>> => {
+    // HTTPリクエスト実行
+    let response: Response
     try {
-      const response = await fetch(url, option)
+      response = await fetch(url, option)
+    } catch (errors) {
+      dispatchMsg(msg => msg.error(`通信でエラーが発生しました(${url})\n${parseUnknownErrors(errors).join('\n')}`))
+      return { ok: false, errors }
+    }
+    // 処理結果解釈
+    try {
+      const data = response.headers.get('content-type')?.toLowerCase().includes('application/json')
+        ? await response.json() as unknown
+        : await response.text()
+      // 正常終了
       if (response.ok) {
-        const text = await response.text()
-        try {
-          const data = text === ''
-            ? '' as T
-            : JSON.parse(text) as T
-          return { ok: true, data }
-        } catch {
-          dispatchMsg(msg => msg.warn(`処理は成功しましたがサーバーからのレスポンスを解釈できませんでした: ${text}`))
-          return { ok: false }
-        }
-      } else {
-        dispatchMsg(msg => msg.error(`ERROR(${url})`))
-
-        // エラーメッセージの抽出
-        let errorMessages: string[]
-        const text = await response.text()
-        try {
-          const parsed = JSON.parse(text)
-          if (typeof parsed.content === 'string') {
-            errorMessages = [parsed.content]
-          } else if (Array.isArray(parsed.content)) {
-            errorMessages = parsed.content as string[]
-          } else if (Array.isArray(parsed.errors)) {
-            errorMessages = parsed.errors as string[]
-          } else if (typeof parsed.errors === 'object') {
-            errorMessages = Object.values(parsed.errors).flatMap(err => err as string[])
-          } else {
-            console.log(parsed)
-            errorMessages = [text]
-          }
-        } catch {
-          errorMessages = [text]
-        }
-        dispatchMsg(msg => msg.error(...errorMessages))
-        return { ok: false }
+        return { ok: true, data: data as T }
       }
+      // ASP.NET Core のControllerの return BadRequest ではエラー詳細は response.json() の結果そのまま
+      if (response.status >= 400 && response.status <= 499) {
+        return { ok: false, errors: data }
+      }
+      // ASP.NET Core のControllerの return Problem ではエラー詳細はcontentやdetailという名前のプロパティの中に入っている
+      if (response.status >= 500 && response.status <= 599) {
+        const { detail } = data as { detail: unknown }
+        if (detail) throw detail
+        const { content } = data as { content: unknown }
+        if (content) throw content
+      }
+      // 処理結果解釈不能
+      throw data
 
-    } catch (error) {
-      dispatchMsg(msg => msg.error(`${error}(${url})`))
-      return { ok: false }
+    } catch (errors) {
+      dispatchMsg(msg => response.ok
+        ? msg.warn(`処理は成功しましたが処理結果の解釈に失敗しました。\n${parseUnknownErrors(errors).join('\n')}`)
+        : msg.error(`処理に失敗しました。\n${parseUnknownErrors(errors).join('\n')}`))
+      return { ok: false, errors }
     }
   }, [dispatchMsg])
 
@@ -116,4 +111,35 @@ export const useHttpRequest = () => {
   }, [dotnetWebApiDomain, dispatchMsg])
 
   return { get, post, httpDelete, download }
+}
+
+const parseUnknownErrors = (err: unknown): string[] => {
+  const type = typeof err
+  if (type === 'string') {
+    try {
+      const parsed = JSON.parse(err as string)
+      return parseUnknownErrors(parsed)
+    } catch {
+      return [err as string]
+    }
+
+  } else if (type === 'boolean'
+    || type === 'number'
+    || type === 'bigint'
+    || type === 'function'
+    || type === 'symbol') {
+    return [String(err)]
+
+  } else if (type === 'undefined') {
+    return []
+
+  } else if (err === null) {
+    return []
+
+  } else if (Array.isArray(err)) {
+    return err.flatMap(e => parseUnknownErrors(e))
+
+  } else {
+    return [JSON.stringify(err)]
+  }
 }

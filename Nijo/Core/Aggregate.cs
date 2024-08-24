@@ -20,6 +20,8 @@ namespace Nijo.Core {
         internal string UniqueId => Id.Value.ToHashedString();
 
         public string PhysicalName => DisplayName.ToCSharpSafe();
+
+        // TODO: EFCoerEntityやDbSetを表すクラスがこれらの情報を保持するべき
         public string EFCoreEntityClassName => $"{PhysicalName}DbEntity";
         public string DbSetName => $"{PhysicalName}DbSet";
 
@@ -97,6 +99,31 @@ namespace Nijo.Core {
                 .EnumerateThisAndDescendants()
                 .Contains(agg);
         }
+        /// <summary>
+        /// この集約がエントリーのツリー内部にあるかどうかを返します。
+        /// つまり、ルート集約またはその子集約か、それとも参照されている外部の集約かを表します。
+        /// </summary>
+        internal static bool IsInEntryTree(this GraphNode<Aggregate> agg) {
+            return agg.IsInTreeOf(agg.GetEntry().As<Aggregate>());
+        }
+        /// <summary>
+        /// この集約がエントリーのツリーの外にあるかどうかを返します（<see cref="IsInEntryTree"/> の逆）
+        /// </summary>
+        internal static bool IsOutOfEntryTree(this GraphNode<Aggregate> agg) {
+            return !agg.IsInEntryTree();
+        }
+        /// <summary>
+        /// ルート集約のツリー内部からツリー外部へ出る瞬間のエッジを返します。
+        /// この集約がルート集約のツリーの外部の集約でない場合は例外になります。
+        /// </summary>
+        internal static GraphEdge<Aggregate> GetRefEntryEdge(this GraphNode<Aggregate> agg) {
+            var entry = agg.GetEntry().As<Aggregate>();
+            foreach (var edge in agg.PathFromEntry()) {
+                var edge2 = edge.As<Aggregate>();
+                if (edge2.Terminal.GetRoot() != entry) return edge2;
+            }
+            throw new InvalidOperationException($"'{agg}'は'{entry}'のツリー外部の集約ではありません。");
+        }
 
         internal static bool IsChildrenMember(this GraphNode<Aggregate> graphNode) {
             var parent = graphNode.GetParent();
@@ -117,6 +144,30 @@ namespace Nijo.Core {
                 && parent.Attributes.TryGetValue(REL_ATTR_VARIATIONGROUPNAME, out var groupName)
                 && (string)groupName != string.Empty;
         }
+        /// <summary>
+        /// この集約を <see cref="AggregateMember.RelationMember"/> に変換します。
+        /// この集約がChild,Children,Variationのいずれでもない場合は例外になります。
+        /// </summary>
+        internal static AggregateMember.RelationMember AsChildRelationMember(this GraphNode<Aggregate> aggregate) {
+            var parentEdge = aggregate.GetParent()
+                ?? throw new InvalidOperationException($"{aggregate}の親を取得できません。");
+
+            return parentEdge.Initial
+                .GetMembers()
+                .OfType<AggregateMember.RelationMember>()
+                .SingleOrDefault(rm => rm.MemberAggregate == aggregate)
+                ?? throw new InvalidOperationException($"{parentEdge.Initial}のメンバーに{aggregate}がありません。");
+        }
+        /// <summary>
+        /// このエッジを <see cref="AggregateMember.Ref"/> に変換します。
+        /// このエッジが参照を表すエッジでない場合は例外になります。
+        /// </summary>
+        internal static AggregateMember.Ref AsRefMember(this GraphEdge<Aggregate> edge) {
+            return edge.Initial
+                .GetMembers()
+                .OfType<AggregateMember.Ref>()
+                .Single(rm => rm.Relation == edge);
+        }
 
         /// <summary>
         /// この集約がDBに保存されるものかどうかを返します。
@@ -124,7 +175,8 @@ namespace Nijo.Core {
         internal static bool IsStored(this GraphNode<Aggregate> aggregate) {
             var handler = aggregate.GetRoot().Item.Options.Handler;
             return handler == NijoCodeGenerator.Models.WriteModel.Key
-                || handler == NijoCodeGenerator.Models.ReadModel.Key;
+                || handler == NijoCodeGenerator.Models.ReadModel.Key
+                || handler == NijoCodeGenerator.Models.WriteModel2.Key;
         }
 
         /// <summary>
@@ -253,6 +305,46 @@ namespace Nijo.Core {
                 .EnumerateDescendants()
                 .All(agg => !agg.IsChildrenMember()
                          && !agg.IsVariationMember());
+        }
+
+        /// <summary>
+        /// データの流れの順（=Refされている順）に列挙
+        /// </summary>
+        internal static IEnumerable<GraphNode<Aggregate>> OrderByDataFlow(this IEnumerable<GraphNode<Aggregate>> aggregates) {
+            var rest = aggregates
+                .Select(root => new {
+                    root,
+                    refTargets = root
+                        .EnumerateThisAndDescendants()
+                        .SelectMany(agg => agg.GetMembers())
+                        .OfType<AggregateMember.Ref>()
+                        .Select(@ref => @ref.RefTo.GetRoot())
+                        .ToHashSet(),
+                })
+                .ToList();
+            var index = 0;
+            while (true) {
+                if (rest.Count == 0) yield break;
+
+                var next = rest[index];
+
+                // 参照先集約が未処理ならば後回し
+                var notEnumerated = rest.Where(agg => next.refTargets.Contains(agg.root));
+                if (notEnumerated.Any()) {
+                    // 集約間の循環参照が存在するなどの場合は無限ループが発生するので例外。
+                    // なお循環参照はスキーマ作成時にエラーとする想定
+                    if (index + 1 >= rest.Count) throw new InvalidOperationException("集約間のデータの流れを決定できません。");
+
+                    index++;
+                    continue;
+                }
+
+                // 参照先集約が無い == nextは現在のrestの中で再上流の集約
+                yield return next.root;
+
+                rest.Remove(next);
+                index = 0;
+            }
         }
     }
 }

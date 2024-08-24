@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <自動テストで作成されたプロジェクト>
-  <営業区 is="write-model">
+  <営業区 is="write-model-2 generate-default-read-model">
     <営業区ID is="id" />
     <営業区名 is="name" />
 
@@ -11,7 +11,7 @@
     </部署>
   </営業区>
 
-  <依頼 is="write-model">
+  <依頼 is="write-model-2 generate-default-read-model">
     <依頼番号 is="id key" />
     <発注部署 is="ref-to:営業区/部署 key" />
     <!-- TODO: #24 キーに同じ集約を複数設定できるようになったらコメントアウトを解除 -->
@@ -21,7 +21,7 @@
     <依頼内容 is="sentence" />
   </依頼>
 
-  <従業員ステータス is="write-model">
+  <従業員ステータス is="write-model-2 generate-default-read-model">
     <従業員ID is="id key" />
     <担当中の作業 is="ref-to:依頼 key" />
     <!-- TODO: #24 キーに同じ集約を複数設定できるようになったらコメントアウトを解除 -->

@@ -6,6 +6,7 @@ export const IconButton = (args: {
   fill?: boolean
   outline?: boolean
   underline?: boolean
+  mini?: boolean
   hideText?: boolean
   icon?: React.ElementType
   iconRight?: boolean
@@ -17,11 +18,12 @@ export const IconButton = (args: {
 
   const flex = args.inline ? 'inline-flex' : 'flex'
   const direction = args.iconRight ? 'flex-row-reverse' : 'flex-row'
+  const padding = args.mini ? 'px-1 py-px' : 'px-2 py-1'
   let className: string
   if (args.fill) {
-    className = `${flex} ${direction} justify-center items-center select-none outline-none ${args.className} gap-1 px-2 py-1 text-color-0 bg-color-button`
+    className = `${flex} ${direction} justify-center items-center select-none outline-none ${args.className} gap-1 ${padding} text-color-0 bg-color-button`
   } else if (args.outline) {
-    className = `${flex} ${direction} justify-center items-center select-none outline-none ${args.className} gap-1 px-2 py-1 border border-color-7`
+    className = `${flex} ${direction} justify-center items-center select-none outline-none ${args.className} gap-1 ${padding} border border-color-7`
   } else if (args.underline) {
     className = `${flex} ${direction} justify-center items-center select-none outline-none ${args.className} pr-1 text-blue-600 border-b border-blue-500`
   } else {

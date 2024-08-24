@@ -259,7 +259,7 @@ namespace Nijo.Features.Storing {
                     """;
             }
 
-            if (vm.Options.MemberType.SearchBehavior == SearchBehavior.Ambiguous) {
+            if (vm.Options.MemberType.SearchBehavior == SearchBehavior.PartialMatch) {
                 return $$"""
                     if (!string.IsNullOrWhiteSpace({{paramValueOrNull}})) {
                         var trimmed = {{paramValue}}.Trim();

@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using Nijo.Models;
 using Nijo.Features;
+using Nijo.Util.DotnetEx;
 
 namespace Nijo {
     /// <summary>
@@ -36,9 +37,15 @@ namespace Nijo {
             internal static KeyValuePair<string, Func<IModel>> WriteModel => KeyValuePair.Create("write-model", () => (IModel)new WriteModel());
             internal static KeyValuePair<string, Func<IModel>> ReadModel => KeyValuePair.Create("read-model", () => (IModel)new ReadModel());
 
+            internal static KeyValuePair<string, Func<IModel>> WriteModel2 => KeyValuePair.Create("write-model-2", () => (IModel)new WriteModel2());
+            internal static KeyValuePair<string, Func<IModel>> ReadModel2 => KeyValuePair.Create("read-model-2", () => (IModel)new ReadModel2());
+
             internal static IEnumerable<KeyValuePair<string, Func<IModel>>> GetAll() {
                 yield return WriteModel;
                 yield return ReadModel;
+
+                yield return WriteModel2;
+                yield return ReadModel2;
             }
         }
 
@@ -81,22 +88,35 @@ namespace Nijo {
                 feature.GenerateCode(ctx);
             }
 
-            var handledModels = new HashSet<string>();
-            var handlers = Models
-                .GetAll()
-                .ToDictionary(kv => kv.Key, kv => kv.Value.Invoke());
+            var validationErrors = new Dictionary<GraphNode<Aggregate>, IEnumerable<string>>();
             foreach (var rootAggregate in ctx.Schema.RootAggregates()) {
-                if (!string.IsNullOrWhiteSpace(rootAggregate.Item.Options.Handler)
-                    && handlers.TryGetValue(rootAggregate.Item.Options.Handler, out var model)) {
+                if (!string.IsNullOrWhiteSpace(rootAggregate.Item.Options.Handler)) {
+                    var model = ctx.GetModel(rootAggregate.Item.Options.Handler);
+                    var modelErrors = model.ValidateAggregate(rootAggregate).ToArray();
+                    if (modelErrors.Length > 0) {
+                        validationErrors.Add(rootAggregate, modelErrors);
+                        continue;
+                    }
                     model.GenerateCode(ctx, rootAggregate);
-                    handledModels.Add(rootAggregate.Item.Options.Handler);
                 } else {
                     // 特に指定の無い集約は処理対象外
                 }
             }
+            if (validationErrors.Count > 0) {
+                throw new InvalidOperationException($$"""
+                    集約定義が不正です。
+                    {{validationErrors.SelectTextTemplate(err => $$"""
+                    - {{err.Key.Item.DisplayName}}
+                    {{err.Value.SelectTextTemplate(msg => $$"""
+                      - {{WithIndent(msg, "    ")}}
+                    """)}}
+                    """)}}
+
+                    """);
+            }
 
             // 複数の集約から1個のソースが作成されるもの等はこのタイミングで作成
-            ctx.OnEndContext(handledModels);
+            ctx.OnEndContext();
 
             // 自動生成されるソースコードをカスタマイズするクラスを呼び出す
             var customizers = Assembly

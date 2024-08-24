@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <自動テストで作成されたプロジェクト>
-  <ユースケース is="write-model">
+  <ユースケース is="write-model-2 generate-default-read-model">
     <ID is="uuid" />
     <ステップ is="array">
+      <ID is="uuid" />
       <正常系 is="sentence" />
       <異常系 is="array">
+        <ID is="uuid" />
         <ケース is="sentence" />
         <対応 is="sentence" />
       </異常系>

@@ -15,6 +15,21 @@ export type LocalRepositoryState
   | '+' // Add
   | '*' // Modify
   | '-' // Delete
+/** 引数のオブジェクトが、更新確定時に、新規追加・更新・削除のいずれの処理にかけられるかの種別を計算して返します。 */
+export const getUpdateType = (item: {
+  /** このデータがDBに保存済みかどうか */
+  existsInDatabase: boolean
+  /** このデータに更新がかかっているかどうか */
+  willBeChanged: boolean
+  /** このデータが更新確定時に削除されるかどうか */
+  willBeDeleted: boolean
+}): LocalRepositoryState => {
+  if (item.willBeDeleted) return '-'
+  if (!item.existsInDatabase) return '+'
+  if (item.willBeChanged) return '*'
+  return ''
+}
+/** getUpdateStateと一部のプロパティ名が異なるオブジェクトのための関数。やっていることは同じ */
 export const getLocalRepositoryState = (item: Pick<LocalRepositoryItem<unknown>, 'existsInRemoteRepository' | 'willBeChanged' | 'willBeDeleted'>): LocalRepositoryState => {
   if (item.willBeDeleted) return '-'
   if (!item.existsInRemoteRepository) return '+'

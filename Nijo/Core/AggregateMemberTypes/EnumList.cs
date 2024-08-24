@@ -1,3 +1,7 @@
+using Nijo.Models.ReadModel2Features;
+using Nijo.Models.RefTo;
+using Nijo.Models.WriteModel2Features;
+using Nijo.Parts.Utility;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -53,6 +57,82 @@ namespace Nijo.Core.AggregateMemberTypes {
                     }
                     """,
             };
+        }
+
+
+        private string SearchConditionEnum => $"{Definition.Name}SearchCondition";
+        private const string ANY_CHECKED = "AnyChecked";
+
+        public string GetSearchConditionCSharpType() {
+            return SearchConditionEnum;
+        }
+        public string GetSearchConditionTypeScriptType() {
+            return $"{{ {Definition.Items.Select(i => $"{i.PhysicalName}?: boolean").Join(", ")} }}";
+        }
+
+        void IAggregateMemberType.GenerateCode(CodeRenderingContext context) {
+            context.CoreLibrary.Enums.Add($$"""
+                /// <summary>{{Definition.Name}}の検索条件クラス</summary>
+                public class {{SearchConditionEnum}} {
+                {{Definition.Items.SelectTextTemplate(item => $$"""
+                    public bool {{item.PhysicalName}} { get; set; }
+                """)}}
+
+                    /// <summary>いずれかの値が選択されているかを返します。</summary>
+                    public bool {{ANY_CHECKED}}() {
+                {{Definition.Items.SelectTextTemplate(item => $$"""
+                        if ({{item.PhysicalName}}) return true;
+                """)}}
+                        return false;
+                    }
+                }
+                """);
+        }
+        string IAggregateMemberType.RenderFilteringStatement(AggregateMember.ValueMember member, string query, string searchCondition, E_SearchConditionObject searchConditionObject, E_SearchQueryObject searchQueryObject) {
+            var pathFromSearchCondition = searchConditionObject == E_SearchConditionObject.SearchCondition
+                ? member.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.CSharp)
+                : member.Declared.GetFullPathAsRefSearchConditionFilter(E_CsTs.CSharp);
+            var fullpathNullable = $"{searchCondition}.{pathFromSearchCondition.Join("?.")}";
+            var fullpathNotNull = $"{searchCondition}.{pathFromSearchCondition.Join(".")}";
+            var enumType = GetCSharpTypeName();
+            var whereFullpath = searchQueryObject == E_SearchQueryObject.SearchResult
+                ? member.GetFullPathAsSearchResult(E_CsTs.CSharp, out var isArray)
+                : member.GetFullPathAsDbEntity(E_CsTs.CSharp, out isArray);
+
+            return $$"""
+                if ({{fullpathNullable}} != null && {{fullpathNotNull}}.{{ANY_CHECKED}}()) {
+                    var array = new List<{{enumType}}?>();
+                {{Definition.Items.SelectTextTemplate(item => $$"""
+                    if ({{fullpathNotNull}}.{{item.PhysicalName}}) array.Add({{enumType}}.{{item.PhysicalName}});
+                """)}}
+
+                {{If(isArray, () => $$"""
+                    {{query}} = {{query}}.Where(x => x.{{whereFullpath.SkipLast(1).Join(".")}}.Any(y => array.Contains(y.{{member.MemberName}})));
+                """).Else(() => $$"""
+                    {{query}} = {{query}}.Where(x => array.Contains(x.{{whereFullpath.Join(".")}}));
+                """)}}
+                }
+                """;
+        }
+
+        string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
+            var component = GetReactComponent();
+            var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
+            return $$"""
+                {{Definition.Items.SelectTextTemplate(item => $$"""
+                <Input.CheckBox label="{{item.PhysicalName}}" {...{{ctx.Register}}(`{{fullpath}}.{{item.PhysicalName}}`)} />
+                """)}}
+                """;
+        }
+
+        string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
+            var component = GetReactComponent();
+            var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
+            var readOnly = ctx.RenderReadOnlyStatement(vm.Declared);
+            return $$"""
+                <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)}{{component.GetPropsStatement().Join("")}} {{readOnly}}/>
+                {{ctx.RenderErrorMessage(vm)}}
+                """;
         }
     }
 }

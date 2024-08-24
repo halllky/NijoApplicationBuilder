@@ -174,7 +174,6 @@ namespace Nijo.Parts.WebClient {
                             {{WithIndent(editSetting!.SetValueToRow!("value", "formatted"), "    ")}}
                             row.{{memberPath.Join(".")}} = formatted
                         """)}}
-                            row{{rootAggPath.Select(x => $".{x}").Join("")}}.{{DataClassForDisplay.WILL_BE_CHANGED}} = true
                           }
                         }
                         """;

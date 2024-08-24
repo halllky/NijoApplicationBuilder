@@ -5,18 +5,18 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Core.AggregateMemberTypes {
-    internal class YearMonth : IAggregateMemberType {
-        public SearchBehavior SearchBehavior => SearchBehavior.Range;
-        public string GetCSharpTypeName() => "int";
-        public string GetTypeScriptTypeName() => "number";
+    internal class YearMonth : SchalarMemberType {
+        public override string GetCSharpTypeName() => "int";
+        public override string GetTypeScriptTypeName() => "number";
 
-        public ReactInputComponent GetReactComponent() {
+        public override ReactInputComponent GetReactComponent() {
             return new ReactInputComponent {
                 Name = "Input.YearMonth",
+                Props = { ["className"] = "\"w-20\"" },
             };
         }
 
-        public IGridColumnSetting GetGridColumnEditSetting() {
+        public override IGridColumnSetting GetGridColumnEditSetting() {
             return new TextColumnSetting {
                 GetValueFromRow = (value, formatted) => {
                     return $$"""

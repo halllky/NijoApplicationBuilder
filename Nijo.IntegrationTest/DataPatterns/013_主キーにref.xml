@@ -2,10 +2,10 @@
 
 <自動テストで作成されたプロジェクト>
 
-  <受注 is="write-model">
+  <受注 is="write-model-2 generate-default-read-model">
     <ID is="uuid" />
     <表示名称 is="name" />
-    <受注日 is="datetime" />
+    <受注日 is="date" />
     <明細 is="array">
       <連番 is="key int" />
       <商品名 is="word" />
@@ -13,10 +13,10 @@
     </明細>
   </受注>
 
-  <納品 is="write-model">
-    <受注 is="key ref-to:受注/明細" />
+  <納品 is="write-model-2 generate-default-read-model">
+    <受注明細 is="key ref-to:受注/明細" />
     <表示名称 is="name" />
-    <納品日 is="datetime" />
+    <納品日 is="date" />
     <納品数量 is="int" />
     <備考 is="array">
       <備考連番 is="key int" />
@@ -24,13 +24,13 @@
     </備考>
   </納品>
 
-  <請求 is="write-model">
+  <請求 is="write-model-2 generate-default-read-model">
     <納品 is="key ref-to:納品" />
     <表示名称 is="name" />
     <金額 is="int" />
   </請求>
 
-  <入金 is="write-model">
+  <入金 is="write-model-2 generate-default-read-model">
     <請求 is="key ref-to:請求" />
     <表示名称 is="name" />
     <金額 is="int" />
@@ -45,7 +45,7 @@
     <ステータス is="word" />
   </状況>-->
 
-  <状況2 is="read-model" dependsOn="受注 納品 請求 入金">
+  <状況2 is="read-model-2" dependsOn="受注 納品 請求 入金">
     <受注 is="ref-to:受注 key" />
     <受注数 is="int" />
     <納品数 is="int" />

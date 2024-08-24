@@ -81,6 +81,7 @@ const getColumnDef = (): Layout.ColumnDefEx<DisplayData>[] => [
   {
     id: 'col1',
     header: 'numValue',
+    headerGroupName: '属性項目',
     accessorFn: row => row.numValue,
     editSetting: {
       type: 'text',
@@ -94,6 +95,7 @@ const getColumnDef = (): Layout.ColumnDefEx<DisplayData>[] => [
   {
     id: 'col2',
     header: 'enmValue',
+    headerGroupName: '属性項目',
     accessorFn: row => row.enmValue?.t,
     editSetting: ({
       type: 'combo',

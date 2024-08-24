@@ -195,6 +195,16 @@ namespace Nijo.Core {
                 .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
                 .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Models.ReadModel.Key, E_Priority.Force);
 
+            parser.IfExists(NijoCodeGenerator.Models.WriteModel2.Key)
+                .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
+                .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Models.WriteModel2.Key, E_Priority.Force);
+            parser.IfExists(NijoCodeGenerator.Models.ReadModel2.Key)
+                .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
+                .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Models.ReadModel2.Key, E_Priority.Force);
+
+            parser.IfExists("generate-default-read-model")
+                .SetAggregateOption(opt => opt.GenerateDefaultReadModel, true, E_Priority.Force);
+
             parser.IfExists("section")
                 .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)
                 .SetAggregateOption(opt => opt.IsArray, false, E_Priority.Force);
@@ -252,6 +262,11 @@ namespace Nijo.Core {
 
             parser.IfExists("hidden")
                 .SetMemberOption(opt => opt.InvisibleInGui, true, E_Priority.Force);
+
+            parser.IfExists("has-lifecycle")
+                .SetAggregateOption(opt => opt.HasLifeCycle, true, E_Priority.Force);
+            parser.IfExists("readonly")
+                .SetAggregateOption(opt => opt.IsReadOnlyAggregate, true, E_Priority.Force);
 
             var elementType = parser.GetElementType();
             var aggregateOption = parser.CreateAggregateOption();

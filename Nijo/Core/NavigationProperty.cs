@@ -114,7 +114,7 @@ namespace Nijo.Core {
                 ? $"ICollection<{Opposite.Item.EFCoreEntityClassName}>"
                 : $"{Opposite.Item.EFCoreEntityClassName}?";
             internal string? Initializer => OppositeIsMany
-                ? $"new HashSet<{Opposite.Item.EFCoreEntityClassName}>()"
+                ? $" = new HashSet<{Opposite.Item.EFCoreEntityClassName}>();"
                 : null;
 
             internal IEnumerable<AggregateMember.ValueMember> GetForeignKeys() {

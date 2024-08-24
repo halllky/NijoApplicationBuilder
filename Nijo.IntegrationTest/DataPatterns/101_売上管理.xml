@@ -1,43 +1,45 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <自動テストで作成されたプロジェクト>
-  <商品 is="write-model">
+  <商品 is="write-model-2 generate-default-read-model">
     <商品ID is="uuid" />
     <商品名 is="word" />
   </商品>
 
-  <受注 is="write-model">
+  <受注 is="write-model-2 generate-default-read-model">
     <受注ID is="uuid" />
     <受注日 is="word" />
     <受注明細 is="array">
-      <商品 is="ref-to:商品" />
+      <商品 is="ref-to:商品 key" />
       <数量 is="int" />
       <単価 is="int" />
     </受注明細>
   </受注>
 
-  <納品 is="write-model">
+  <納品 is="write-model-2 generate-default-read-model">
     <商品ID is="uuid" />
     <納品日 is="word" />
     <納品明細 is="array">
+      <ID is="uuid" />
       <商品 is="ref-to:商品" />
       <数量 is="int" />
       <受注 is="ref-to:受注" />
     </納品明細>
   </納品>
 
-  <請求 is="write-model">
+  <請求 is="write-model-2 generate-default-read-model">
     <請求ID is="uuid" />
     <請求日 is="word" />
     <納品 is="ref-to:納品" />
     <請求明細 is="array">
+      <ID is="uuid" />
       <商品 is="ref-to:商品" />
       <数量 is="int" />
       <単価 is="int" />
     </請求明細>
   </請求>
 
-  <入金 is="write-model">
+  <入金 is="write-model-2 generate-default-read-model">
     <入金ID is="uuid" />
     <入金日 is="word" />
     <金額 is="int" />

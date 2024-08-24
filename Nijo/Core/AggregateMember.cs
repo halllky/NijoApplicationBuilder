@@ -23,8 +23,11 @@ namespace Nijo.Core {
     }
 
 
-    internal static class AggregateMember {
+    public static class AggregateMember {
 
+        /// <summary>
+        /// この集約に属するメンバーを列挙します。
+        /// </summary>
         internal static IOrderedEnumerable<AggregateMemberBase> GetMembers(this GraphNode<Aggregate> aggregate) {
             return aggregate
                 .GetNonOrderedMembers()
@@ -90,6 +93,10 @@ namespace Nijo.Core {
             }
         }
 
+        /// <summary>
+        /// この集約に属するメンバーのうちキーを列挙します。
+        /// 自身のメンバーのうちキー属性が指定されているもの、親集約、参照先がキーである場合はその参照先と参照先のキー、がキーになりえます。
+        /// </summary>
         internal static IEnumerable<AggregateMemberBase> GetKeys(this GraphNode<Aggregate> aggregate) {
             foreach (var member in aggregate.GetMembers()) {
                 if (member is ValueMember valueMember && valueMember.IsKey) {
@@ -136,6 +143,7 @@ namespace Nijo.Core {
             }
         }
 
+        // TODO: レイヤが混在している。NavigationPropertyクラスがAggregateMemberに依存するようにすべき
         internal static IEnumerable<NavigationProperty> GetNavigationProperties(this GraphNode<Aggregate> aggregate) {
             foreach (var member in aggregate.GetMembers()) {
                 if (member is not RelationMember relationMember) continue;
@@ -152,7 +160,10 @@ namespace Nijo.Core {
         #region MEMBER BASE
         internal const string PARENT_PROPNAME = "Parent";
 
-        internal abstract class AggregateMemberBase : ValueObject {
+        /// <summary>
+        /// 集約メンバーはすべてこのクラスを継承します。
+        /// </summary>
+        public abstract class AggregateMemberBase : ValueObject {
             internal abstract GraphNode<Aggregate> Owner { get; }
             /// <summary>
             /// TODO: ParentだとDeclaringAggregateは子ではなく親になるのが違和感。
@@ -160,7 +171,12 @@ namespace Nijo.Core {
             /// </summary>
             internal abstract GraphNode<Aggregate> DeclaringAggregate { get; }
             internal abstract string MemberName { get; }
+            /// <summary>
+            /// スキーマ定義でこのメンバーが定義されている順番
+            /// </summary>
             internal abstract decimal Order { get; }
+
+            // TODO: どの型名になるかは生成されるクラスごとに異なるためこのプロパティはここにあるべきではない
             internal abstract string CSharpTypeName { get; }
             internal abstract string TypeScriptTypename { get; }
 
@@ -168,6 +184,11 @@ namespace Nijo.Core {
                 return this.GetFullPath().Join(".");
             }
         }
+        /// <summary>
+        /// 値メンバー。
+        /// 数値や文字列など普通のメンバー（<see cref="Schalar"/>）のほか、
+        /// バリエーションがある場合はそのバリエーションがどの種類なのかを切り替えるスイッチ（<see cref="Variation"/>）がこれに含まれます。
+        /// </summary>
         internal abstract class ValueMember : AggregateMemberBase {
             protected ValueMember(InheritInfo? inherits) {
                 Inherits = inherits;
@@ -178,9 +199,19 @@ namespace Nijo.Core {
             private string? _membername;
             internal sealed override string MemberName {
                 get {
-                    return _membername ??= Inherits == null
-                        ? Options.MemberName
-                        : $"{Inherits.Relation.RelationName}_{Inherits.Member.MemberName}";
+                    if (_membername == null) {
+                        if (Inherits == null) {
+                            _membername = Options.MemberName;
+
+                        } else if (Inherits.Relation.IsParentChild()) {
+                            // 親のメンバーと対応して暗黙的に定義されるメンバーの名前
+                            _membername = $"PARENT_{Inherits.Member.MemberName}";
+                        } else {
+                            // 参照先のメンバーと対応して暗黙的に定義されるメンバーの名前
+                            _membername = $"{Inherits.Relation.RelationName}_{Inherits.Member.MemberName}";
+                        }
+                    }
+                    return _membername;
                 }
             }
             internal sealed override GraphNode<Aggregate> DeclaringAggregate => Inherits?.Member.DeclaringAggregate ?? Owner;
@@ -232,6 +263,10 @@ namespace Nijo.Core {
             }
         }
 
+        /// <summary>
+        /// リレーションメンバー。
+        /// 親（<see cref="Parent"/>）、子（<see cref="Child"/>, <see cref="Children"/>, <see cref="VariationItem"/>）、参照先（<see cref="Ref"/>）がこれに含まれます。
+        /// </summary>
         internal abstract class RelationMember : AggregateMemberBase {
             internal abstract GraphEdge<Aggregate> Relation { get; }
             internal abstract GraphNode<Aggregate> MemberAggregate { get; }
@@ -254,6 +289,10 @@ namespace Nijo.Core {
 
 
         #region MEMBER IMPLEMEMT
+        /// <summary>
+        /// 数値や文字列などいわゆる普通の値メンバー。
+        /// 有向グラフ上にはこのメンバーと対応するノードが存在します。
+        /// </summary>
         internal class Schalar : ValueMember {
             internal Schalar(GraphNode<AggregateMemberNode> aggregateMemberNode) : base(null) {
                 GraphNode = aggregateMemberNode;
@@ -279,6 +318,9 @@ namespace Nijo.Core {
             }
         }
 
+        /// <summary>
+        /// 親集約1件に対して複数存在する子集約。
+        /// </summary>
         internal class Children : RelationMember {
             internal Children(GraphEdge<Aggregate> edge) {
                 Relation = edge;
@@ -291,6 +333,9 @@ namespace Nijo.Core {
             internal override string TypeScriptTypename => $"{new DataClassForSave(Relation.Terminal).TsTypeName}[]";
         }
 
+        /// <summary>
+        /// 親集約1件に対して1件存在する子集約。
+        /// </summary>
         internal class Child : RelationMember {
             internal Child(GraphEdge<Aggregate> edge) {
                 Relation = edge;
@@ -303,6 +348,12 @@ namespace Nijo.Core {
             internal override string TypeScriptTypename => new  DataClassForSave(Relation.Terminal).TsTypeName;
         }
 
+        /// <summary>
+        /// バリエーションの切り替え用メンバー。
+        /// 子集約のデータ型が複数の種類のうちから1種類をとりうるとき、
+        /// それらのうちどの種類に属するかを切り替えるためのメンバー。
+        /// 子集約は <see cref="VariationItem"/>
+        /// </summary>
         internal class Variation : ValueMember {
             internal Variation(VariationGroup<Aggregate> group) : base(null) {
                 VariationGroup = group;
@@ -344,6 +395,11 @@ namespace Nijo.Core {
             }
         }
 
+        /// <summary>
+        /// バリエーションの子集約。親集約1件に対して1件存在する。
+        /// 子集約のデータ型が複数の種類のうちから1種類をとりうるとき、その子集約側。
+        /// それらのうちどの種類に属するかの切り替え用メンバーは <see cref="Variation"/>。
+        /// </summary>
         internal class VariationItem : RelationMember {
             internal VariationItem(Variation group, string key, GraphEdge<Aggregate> edge) {
                 Relation = edge;
@@ -365,6 +421,10 @@ namespace Nijo.Core {
             internal string TsValue => Relation.RelationName;
         }
 
+        /// <summary>
+        /// 参照先。
+        /// 有向グラフ上はエッジとして表現される。
+        /// </summary>
         internal class Ref : RelationMember {
             internal Ref(GraphEdge<Aggregate> edge, GraphNode<Aggregate>? owner = null) {
                 Relation = edge;
@@ -394,6 +454,10 @@ namespace Nijo.Core {
                 }
             }
         }
+
+        /// <summary>
+        /// 親集約。
+        /// </summary>
         internal class Parent : RelationMember {
             internal Parent(GraphEdge<Aggregate> edge, GraphNode<Aggregate>? owner = null) {
                 Relation = edge;

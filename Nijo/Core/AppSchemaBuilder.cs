@@ -300,6 +300,7 @@ namespace Nijo.Core {
         }
     }
 
+    // TODO: それぞれのオプションの説明を書く
     public sealed class AggregateBuildOption {
         public bool? IsPrimary { get; set; }
         public bool? IsArray { get; set; }
@@ -307,12 +308,29 @@ namespace Nijo.Core {
         public bool? InvisibleInGui { get; set; }
         public string? Handler { get; set; }
         public List<string> DependsOn { get; } = new();
+        /// <summary>
+        /// <see cref="Models.ReadModel2"/> において、この集約の登録・更新・削除のタイミングが親集約と別々かどうかを表す。
+        /// 別々な場合、この集約のオブジェクトを画面上で追加したり削除したりすることができたり、
+        /// 親の内容が画面上で変更されていてもこの集約に変更がなければ更新がかからなかったりする。
+        /// </summary>
+        public bool HasLifeCycle { get; set; }
+        /// <summary>
+        /// 画面から編集できる集約かそうでないかを表します。
+        /// </summary>
+        public bool IsReadOnlyAggregate { get; set; }
+        /// <summary>
+        /// この集約が <see cref="Models.WriteModel2"/> の場合に
+        /// 既定の <see cref="Models.ReadModel2"/> を生成するかどうか。
+        /// DBのデータ型と画面のデータ型が完全一致する場の使用を想定している。
+        /// </summary>
+        public bool GenerateDefaultReadModel { get; set; }
 
         public sealed class GroupOption {
             public required string GroupName { get; init; }
             public required string Key { get; init; }
         }
     }
+    // TODO: それぞれのオプションの説明を書く
     public sealed class AggregateMemberBuildOption {
         public string? MemberType { get; set; }
         public bool? IsPrimary { get; set; }

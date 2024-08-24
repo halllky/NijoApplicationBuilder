@@ -39,7 +39,7 @@ namespace Nijo.Core {
         private MemberTypeResolver() { }
         private readonly Dictionary<string, IAggregateMemberType> _registered = new();
 
-        public MemberTypeResolver Register(string typeName, IAggregateMemberType member) {
+        internal MemberTypeResolver Register(string typeName, IAggregateMemberType member) {
             _registered[typeName] = member;
             return this;
         }

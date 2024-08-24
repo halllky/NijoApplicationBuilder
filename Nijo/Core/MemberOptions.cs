@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Nijo.Core {
-    public class MemberOptions : IReadOnlyMemberOptions {
+    internal class MemberOptions : IReadOnlyMemberOptions {
         public required string MemberName { get; set; }
         public required IAggregateMemberType MemberType { get; set; }
         public bool IsKey { get; set; }
@@ -17,7 +17,7 @@ namespace Nijo.Core {
         public bool InvisibleInGui { get; set; }
     }
 
-    public interface IReadOnlyMemberOptions {
+    internal interface IReadOnlyMemberOptions {
         string MemberName { get; }
         IAggregateMemberType MemberType { get; }
         bool IsKey { get; }

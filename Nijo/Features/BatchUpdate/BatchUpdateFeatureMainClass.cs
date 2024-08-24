@@ -93,6 +93,9 @@ namespace Nijo.Features.BatchUpdate {
                                         var item = allItems.First();
                                         allItems.RemoveAt(0);
 
+                        {{If(aggregates.Length == 0, () => $$"""
+                                        if (false) {
+                        """)}}
                         {{aggregates.SelectTextTemplate((agg, i) => $$"""
                                         {{(i == 0 ? "if " : "} else if ")}}(item.DataType == "{{agg.DisplayName}}") {
                                             if (item.Action == E_ActionType.ADD) {

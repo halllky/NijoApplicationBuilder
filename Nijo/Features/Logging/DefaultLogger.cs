@@ -43,7 +43,8 @@ namespace Nijo.Features.Logging {
 
                             var now = DateTime.Now;
                             var file = Path.Combine(_logDirectory, $"{now:yyyyMMdd}.log");
-                            using var streamWriter = new StreamWriter(file, append: true, encoding: Encoding.UTF8);
+                            using var fileStream = new FileStream(file, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+                            using var streamWriter = new StreamWriter(fileStream, encoding: Encoding.UTF8) { AutoFlush = true };
                             using var textWriter = TextWriter.Synchronized(streamWriter);
 
                             var header = $"{now:G}\t[{logLevel}]";
