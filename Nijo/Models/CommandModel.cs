@@ -54,7 +54,16 @@ namespace Nijo.Models {
         }
 
         IEnumerable<string> IModel.ValidateAggregate(GraphNode<Aggregate> rootAggregate) {
-            yield break;
+            foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
+                foreach (var member in aggregate.GetMembers()) {
+
+                    // キー指定不可
+                    if (member is AggregateMember.ValueMember vm && vm.IsKey
+                        || member is AggregateMember.Ref @ref && @ref.Relation.IsPrimary()) {
+                        yield return $"{aggregate.Item.DisplayName}.{member.MemberName}: {nameof(CommandModel)}のメンバーをキーに指定することはできません。";
+                    }
+                }
+            }
         }
     }
 }
