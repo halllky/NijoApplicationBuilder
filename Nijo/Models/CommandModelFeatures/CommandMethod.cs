@@ -1,4 +1,5 @@
 using Nijo.Core;
+using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -30,7 +31,7 @@ namespace Nijo.Models.CommandModelFeatures {
             return $$"""
                 /** {{_rootAggregate.Item.DisplayName}}処理を呼び出す関数を返します。 */
                 export const {{HookName}} = () => {
-                  const launchCommand = Util.{{USE_COMMAND_LAUNCHER}}()
+                  const launchCommand = {{USE_COMMAND_LAUNCHER}}()
                   return React.useCallback(async (param: Types.{{param.TsTypeName}}) => {
                     await launchCommand({ url: `{{Url}}`, param, defaultSuccessMessage: '{{_rootAggregate.Item.DisplayName}}処理が成功しました。' })
                   }, [launchCommand])
@@ -46,7 +47,7 @@ namespace Nijo.Models.CommandModelFeatures {
                   const [, dispatchToast] = Util.useToastContext()
                   const [, dispatchDialog] = Layout.useDialogContext()
 
-                  return React.useCallback(async <T,>({ url, param, defaultSuccessMessage }: {
+                  return React.useCallback(async <T extends object>({ url, param, defaultSuccessMessage }: {
                     url: string
                     param: T
                     defaultSuccessMessage?: string
@@ -65,6 +66,7 @@ namespace Nijo.Models.CommandModelFeatures {
 
                       } else {
                         // 処理結果の詳細情報がある場合、ダイアログで結果を表示。
+                        const detail = response.data.detail
                         dispatchDialog(state => state.pushDialog(({ closeDialog }) => {
                           return (
                             <div className="h-full flex flex-col">
@@ -73,11 +75,11 @@ namespace Nijo.Models.CommandModelFeatures {
                               </div>
                               <Layout.UnknownObjectViewer
                                 label="詳細"
-                                value={response.data.detail}
+                                value={detail}
                                 className="flex-1"
                               />
                               <div className="flex justify-end">
-                                <Icon.IconButton fill>OK</Icon.IconButton>
+                                <Input.IconButton fill onClick={closeDialog}>OK</Input.IconButton>
                               </div>
                             </div>
                           )
@@ -113,7 +115,7 @@ namespace Nijo.Models.CommandModelFeatures {
                 public virtual IActionResult {{_rootAggregate.Item.PhysicalName}}([FromBody] {{param.CsClassName}} param) {
                     var result = new {{CommandResult.GENERATOR_WEB_CLASS_NAME}}(this);
                     var commandResult = _applicationService.{{AppSrvMethod}}(param, result);
-                    return (({{CommandResult.GENERATOR_WEB_CLASS_NAME}}.{{CommandResult.ACTION_RESULT_CONTAINER}})commandResult).ActionResut;
+                    return (({{CommandResult.GENERATOR_WEB_CLASS_NAME}}.{{CommandResult.ACTION_RESULT_CONTAINER}})commandResult).ActionResult;
                 }
                 """;
         }

@@ -21,12 +21,12 @@ namespace Nijo.Models.CommandModelFeatures {
         internal const string GENERATOR_WEB_CLASS_NAME = "CommandResultGeneratorInWeb";
         internal const string GENERATOR_CLI_CLASS_NAME = "CommandResultGeneratorInCli";
 
-        internal const string RESULT_INTERFACE_NAME = "ICommandResultGenerator";
-        internal const string RESULT_WEB_CLASS_NAME = "CommandResultGeneratorInWeb";
-        internal const string RESULT_CLI_CLASS_NAME = "CommandResultGeneratorInCli";
+        internal const string RESULT_INTERFACE_NAME = "ICommandResult";
+        internal const string RESULT_WEB_CLASS_NAME = "CommandResultInWeb";
+        internal const string RESULT_CLI_CLASS_NAME = "CommandResultInCli";
 
         internal static SourceFile RenderInterface(CodeRenderingContext context) => new SourceFile {
-            FileName = "ICommandResult.cs",
+            FileName = "ICommandResultGenerator.cs",
             RenderContent = ctx => {
                 return $$"""
                     namespace {{ctx.Config.RootNamespace}};
@@ -47,7 +47,7 @@ namespace Nijo.Models.CommandModelFeatures {
                         /// </summary>
                         /// <param name="detail">詳細情報</param>
                         {{RESULT_INTERFACE_NAME}} Success<T>(T detail) {
-                            return this.Success<T>(null, detail);
+                            return this.Success(null, detail);
                         }
                         /// <summary>
                         /// 処理が成功した旨のみをユーザーに伝えます。
@@ -67,6 +67,15 @@ namespace Nijo.Models.CommandModelFeatures {
                         /// <param name="file">ファイルコンテンツのバイナリ</param>
                         /// <param name="contentType">HTTPの Content-Type</param>
                         {{RESULT_INTERFACE_NAME}} File(byte[] bytes, string contentType);
+                    }
+
+                    /// <summary>
+                    /// コマンド実行結果。
+                    /// コマンド処理のメソッド内の記述中に想定外のオブジェクトがreturnされるコードが書かれたとき
+                    /// コンパイルエラーにするためだけにインターフェースとしている。
+                    /// </summary>
+                    public interface {{RESULT_INTERFACE_NAME}} {
+                        // 特になし
                     }
                     """;
             },
@@ -129,7 +138,7 @@ namespace Nijo.Models.CommandModelFeatures {
                         {{RESULT_INTERFACE_NAME}} {{GENERATOR_INTERFACE_NAME}}.Redirect() {
                             throw new NotImplementedException("TODO #3 未実装");
                         }
-                        {{RESULT_INTERFACE_NAME}} {{GENERATOR_INTERFACE_NAME}}.File(byte[] bytes) {
+                        {{RESULT_INTERFACE_NAME}} {{GENERATOR_INTERFACE_NAME}}.File(byte[] bytes, string contentType) {
                             throw new NotImplementedException("TODO #3 未実装");
                         }
                     }
