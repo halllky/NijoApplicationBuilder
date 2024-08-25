@@ -50,22 +50,22 @@ namespace Nijo.Models.CommandModelFeatures {
                         /// <summary>
                         /// 処理が成功した旨のみをユーザーに伝えます。
                         /// </summary>
-                        {{RESULT_INTERFACE_NAME}} Success<T>() {
-                            return this.Success<object?>(null, null);
+                        {{RESULT_INTERFACE_NAME}} Ok<T>() {
+                            return this.Ok<object?>(null, null);
                         }
                         /// <summary>
                         /// 処理が成功した旨のみをユーザーに伝えます。
                         /// </summary>
                         /// <param name="detail">詳細情報</param>
-                        {{RESULT_INTERFACE_NAME}} Success<T>(T detail) {
-                            return this.Success(null, detail);
+                        {{RESULT_INTERFACE_NAME}} Ok<T>(T detail) {
+                            return this.Ok(null, detail);
                         }
                         /// <summary>
                         /// 処理が成功した旨のみをユーザーに伝えます。
                         /// </summary>
                         /// <param name="text">メッセージ</param>
                         /// <param name="detail">詳細情報</param>
-                        {{RESULT_INTERFACE_NAME}} Success<T>(string? text, T detail);
+                        {{RESULT_INTERFACE_NAME}} Ok<T>(string? text, T detail);
 
                         /// <summary>
                         /// 特定画面への遷移を行います。
@@ -128,7 +128,7 @@ namespace Nijo.Models.CommandModelFeatures {
                         }
                         private readonly ControllerBase _controller;
 
-                        {{RESULT_INTERFACE_NAME}} {{GENERATOR_INTERFACE_NAME}}.Success<T>(string? text, T detail) {
+                        {{RESULT_INTERFACE_NAME}} {{GENERATOR_INTERFACE_NAME}}.Ok<T>(string? text, T detail) {
                             return new {{ACTION_RESULT_CONTAINER}} {
                                 ActionResult = _controller.Ok(new { type = "{{TYPE_MESSAGE}}", text, detail }),
                             };
@@ -171,7 +171,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     /// 主な役割は処理結果のハンドリングに関する処理。
                     /// </summary>
                     public sealed partial class {{GENERATOR_CLI_CLASS_NAME}} : {{GENERATOR_INTERFACE_NAME}}, {{ERROR_GENERATOR_INTERFACE_NAME}} {
-                        {{RESULT_INTERFACE_NAME}} {{GENERATOR_INTERFACE_NAME}}.Success<T>(string? text, T detail) {
+                        {{RESULT_INTERFACE_NAME}} {{GENERATOR_INTERFACE_NAME}}.Ok<T>(string? text, T detail) {
                             throw new NotImplementedException("TODO #3 未実装");
                         }
                         {{RESULT_INTERFACE_NAME}} {{GENERATOR_INTERFACE_NAME}}.Redirect() {
