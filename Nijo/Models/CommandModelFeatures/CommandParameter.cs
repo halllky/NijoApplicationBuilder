@@ -1,5 +1,6 @@
 using Nijo.Core;
 using Nijo.Models.RefTo;
+using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -20,6 +21,8 @@ namespace Nijo.Models.CommandModelFeatures {
 
         internal string CsClassName => $"{_aggregate.Item.PhysicalName}Parameter{GetUniqueId()}";
         internal string TsTypeName => $"{_aggregate.Item.PhysicalName}Parameter{GetUniqueId()}";
+        internal string MessageDataCsClassName => $"{_aggregate.Item.PhysicalName}ParameterErrorMessages{GetUniqueId()}";
+
         /// <summary>
         /// 異なるコマンドの子孫要素同士で名称衝突するのを防ぐためにフルパスの経路をクラス名に含める
         /// </summary>
@@ -60,6 +63,60 @@ namespace Nijo.Models.CommandModelFeatures {
                 """);
         }
 
+        internal string RenderCSharpErrorClassDeclaring(CodeRenderingContext context) {
+            return EnumerateThisAndDescendants().SelectTextTemplate(param => {
+                var members = param.GetOwnMembers().ToArray();
+
+                return $$"""
+                    /// <summary>
+                    /// {{_aggregate.Item.DisplayName}}処理のパラメータ{{(param._aggregate.IsRoot() ? "" : "の一部")}}のエラーメッセージ格納用クラス
+                    /// </summary>
+                    public partial class {{param.MessageDataCsClassName}} : {{ErrorReceiver.RECEIVER}} {
+                    {{members.SelectTextTemplate(m => $$"""
+                        public virtual {{m.CsErrorMemberType}} {{m.MemberName}} { get; } = new();
+                    """)}}
+
+                    {{If(_aggregate.IsRoot(), () => $$"""
+                        /// <summary>
+                        /// 「～ですが処理実行してよいですか？」等の確認メッセージを追加します。
+                        /// </summary>
+                        public void AddConfirm(string message) {
+                            _confirms.Add(message);
+                        }
+                        public bool HasConfirm() {
+                            return _confirms.Count > 0;
+                        }
+                        public IEnumerable<string> GetConfirms() {
+                            return _confirms;
+                        }
+                        private readonly List<string> _confirms = new();
+
+                    """)}}
+                    {{If(members.Length > 0, () => $$"""
+                        protected override IEnumerable<{{ErrorReceiver.RECEIVER}}> EnumerateChildren() {
+                    {{members.SelectTextTemplate(m => $$"""
+                            yield return {{m.MemberName}};
+                    """)}}
+                        }
+                    """)}}
+
+                        public override IEnumerable<JsonNode> ToJsonNodes(string? path) {
+                            // このオブジェクト自身に対するエラー
+                            foreach (var node in base.ToJsonNodes(path)) {
+                                yield return node;
+                            }
+
+                            // 各メンバーに対するエラー
+                            var p = path == null ? string.Empty : $"{path}.";
+                    {{members.SelectTextTemplate(m => $$"""
+                            foreach (var node in {{m.MemberName}}.ToJsonNodes($"{p}{{m.MemberName}}")) yield return node;
+                    """)}}
+                        }
+                    }
+                    """;
+            });
+        }
+
         internal string RenderTsDeclaring(CodeRenderingContext context) {
             return EnumerateThisAndDescendants().SelectTextTemplate(param => $$"""
                 /** {{_aggregate.Item.DisplayName}}処理のパラメータ{{(param._aggregate.IsRoot() ? "" : "の一部")}} */
@@ -94,7 +151,7 @@ namespace Nijo.Models.CommandModelFeatures {
             internal string MemberName => MemberInfo.MemberName;
             internal string CsTypeName => MemberInfo switch {
                 AggregateMember.ValueMember vm => vm.Options.MemberType.GetCSharpTypeName(),
-                AggregateMember.Children children => $"{new CommandParameter(children.ChildrenAggregate).CsClassName}[]",
+                AggregateMember.Children children => $"List<{new CommandParameter(children.ChildrenAggregate).CsClassName}>",
                 AggregateMember.Child child => new CommandParameter(child.ChildAggregate).CsClassName,
                 AggregateMember.VariationItem variation => new CommandParameter(variation.VariationAggregate).CsClassName,
                 AggregateMember.Ref @ref => new RefTo.RefDisplayData(@ref.RefTo, @ref.RefTo).CsClassName,
@@ -106,6 +163,15 @@ namespace Nijo.Models.CommandModelFeatures {
                 AggregateMember.Child child => new CommandParameter(child.ChildAggregate).TsTypeName,
                 AggregateMember.VariationItem variation => new CommandParameter(variation.VariationAggregate).TsTypeName,
                 AggregateMember.Ref @ref => new RefTo.RefDisplayData(@ref.RefTo, @ref.RefTo).TsTypeName,
+                _ => throw new NotImplementedException(),
+            };
+
+            internal string CsErrorMemberType => MemberInfo switch {
+                AggregateMember.ValueMember => ErrorReceiver.RECEIVER,
+                AggregateMember.Children children => $"{ErrorReceiver.RECEIVER_LIST}<{new CommandParameter(children.ChildrenAggregate).MessageDataCsClassName}>",
+                AggregateMember.Child child => new CommandParameter(child.ChildAggregate).MessageDataCsClassName,
+                AggregateMember.VariationItem variation => new CommandParameter(variation.VariationAggregate).MessageDataCsClassName,
+                AggregateMember.Ref => ErrorReceiver.RECEIVER,
                 _ => throw new NotImplementedException(),
             };
 

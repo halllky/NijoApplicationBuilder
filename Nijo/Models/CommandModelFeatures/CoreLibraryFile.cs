@@ -30,6 +30,8 @@ namespace Nijo.Models.CommandModelFeatures {
                         var appSrv = new ApplicationService();
 
                         return $$"""
+                            using System.Text.Json.Nodes;
+
                             namespace {{ctx.Config.RootNamespace}};
 
                             {{_classDeclarings.SelectTextTemplate(sourceCode => $$"""

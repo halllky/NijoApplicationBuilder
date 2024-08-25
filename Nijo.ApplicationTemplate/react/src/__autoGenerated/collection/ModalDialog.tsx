@@ -3,6 +3,7 @@ import useEvent from 'react-use-event-hook'
 import { IconButton } from '../input/IconButton'
 import { UUID } from 'uuidjs'
 import { defineContext2 } from '../util/ReactUtil'
+import { MsgContextProvider, InlineMessageList } from '../util/Notification'
 
 /** モーダルダイアログの枠 */
 const ModalDialog = ({ title, open, onClose, children, className }: {
@@ -31,29 +32,33 @@ const ModalDialog = ({ title, open, onClose, children, className }: {
   })
 
   return (
-    <dialog
-      ref={dialogRef}
-      onClick={handleDialogClick}
-      onClose={onClose}
-      onCancel={onClose}
-      className={`absolute inset-12 w-auto h-auto border border-color-5 outline-none ${className ?? ''}`}
-    >
-      <div className="w-full h-full flex flex-col">
+    <MsgContextProvider>
+      <dialog
+        ref={dialogRef}
+        onClick={handleDialogClick}
+        onClose={onClose}
+        onCancel={onClose}
+        className={`absolute inset-12 w-auto h-auto border border-color-5 outline-none ${className ?? ''}`}
+      >
+        <div className="w-full h-full flex flex-col">
 
-        <div className="flex items-center p-1 border-b border-color-4" onClick={handleTitleClick}>
-          {title && (
-            <span className="font-medium select-none">{title}</span>
-          )}
-          <div className="flex-1"></div>
-          <IconButton onClick={onClose}>閉じる</IconButton>
+          <div className="flex items-center p-1 border-b border-color-4" onClick={handleTitleClick}>
+            {title && (
+              <span className="font-medium select-none">{title}</span>
+            )}
+            <div className="flex-1"></div>
+            <IconButton onClick={onClose}>閉じる</IconButton>
+          </div>
+          <InlineMessageList />
+
+          <div className="flex-1 p-1 overflow-auto">
+            {children}
+          </div>
+
         </div>
+      </dialog>
 
-        <div className="flex-1 p-1 overflow-auto">
-          {children}
-        </div>
-
-      </div>
-    </dialog>
+    </MsgContextProvider>
   )
 }
 

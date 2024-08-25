@@ -33,11 +33,11 @@ namespace Nijo.Models.CommandModelFeatures {
                   return React.useCallback((initialParam?: Types.{{param.TsTypeName}}) => {
                     dispatchDialog(state => state.pushDialog('{{_rootAggregate.Item.DisplayName}}', ({ closeDialog }) => {
                       const rhfMethods = Util.useFormEx<Types.{{param.TsTypeName}}>({ defaultValues: initialParam ?? Types.{{param.TsNewObjectFunction}}() })
-                      const { getValues } = rhfMethods
-                      const execute = Hooks.{{executor.HookName}}()
-                      const handleClickExec = useEvent(() => {
-                        execute(getValues())
-                        closeDialog()
+                      const { getValues, setError } = rhfMethods
+                      const execute = Hooks.{{executor.HookName}}(setError)
+                      const handleClickExec = useEvent(async () => {
+                        const success = await execute(getValues())
+                        if (success) closeDialog()
                       })
 
                       return (

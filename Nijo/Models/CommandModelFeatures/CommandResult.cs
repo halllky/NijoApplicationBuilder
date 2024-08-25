@@ -1,3 +1,4 @@
+using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using System;
 using System.Collections.Generic;
@@ -18,6 +19,8 @@ namespace Nijo.Models.CommandModelFeatures {
         // 例えばファイル生成処理の場合、Webならブラウザにバイナリを返してダウンロードさせるが、
         // コマンドラインの場合は実行環境のどこかのフォルダにファイルを出力する。
         internal const string GENERATOR_INTERFACE_NAME = "ICommandResultGenerator";
+        internal const string ERROR_GENERATOR_INTERFACE_NAME = "ICommandParameterErrorGenerator";
+
         internal const string GENERATOR_WEB_CLASS_NAME = "CommandResultGeneratorInWeb";
         internal const string GENERATOR_CLI_CLASS_NAME = "CommandResultGeneratorInCli";
 
@@ -25,9 +28,13 @@ namespace Nijo.Models.CommandModelFeatures {
         internal const string RESULT_WEB_CLASS_NAME = "CommandResultInWeb";
         internal const string RESULT_CLI_CLASS_NAME = "CommandResultInCli";
 
-        // HTTPレスポンスの種類
-        private const string TYPE_MESSAGE = "message";
-        private const string TYPE_REDIRECT = "redirect";
+        // HTTPレスポンス
+        internal const string TYPE_MESSAGE = "message";
+        internal const string TYPE_REDIRECT = "redirect";
+        internal const string TYPE_CONFIRM = "confirm";
+        internal const string TYPE_ERROR = "error";
+        internal const string HTTP_CONFIRM_DETAIL = "detail";
+        internal const string HTTP_ERROR_DETAIL = "detail";
 
         internal static SourceFile RenderInterface(CodeRenderingContext context) => new SourceFile {
             FileName = "ICommandResultGenerator.cs",
@@ -69,8 +76,25 @@ namespace Nijo.Models.CommandModelFeatures {
                         /// ユーザーにファイルを返します。
                         /// </summary>
                         /// <param name="file">ファイルコンテンツのバイナリ</param>
-                        /// <param name="contentType">HTTPの Content-Type</param>
+                        /// <param name="contentType">HTTPレスポンスヘッダにつけるContent-Type</param>
                         {{RESULT_INTERFACE_NAME}} File(byte[] bytes, string contentType);
+                    }
+
+                    /// <summary>
+                    /// コマンドパラメータにエラーがあった旨をクライアント側に返すためのオブジェクト
+                    /// </summary>
+                    public interface {{ERROR_GENERATOR_INTERFACE_NAME}} {
+                        /// <summary>
+                        /// パラメータが不正であり処理が中断された旨を返します。
+                        /// </summary>
+                        /// <param name="errors">エラー内容</param>
+                        {{RESULT_INTERFACE_NAME}} Error({{ErrorReceiver.RECEIVER}} errors);
+
+                        /// <summary>
+                        /// 処理を続行してもよいかどうかユーザー側が確認し了承する必要がある旨を返します。
+                        /// </summary>
+                        /// <param name="confirms">確認メッセージの一覧</param>
+                        {{RESULT_INTERFACE_NAME}} Confirm(IEnumerable<string> confirms);
                     }
 
                     /// <summary>
@@ -98,7 +122,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     /// コマンド本処理実行時引数。
                     /// 主な役割は処理結果のハンドリングに関する処理。
                     /// </summary>
-                    public sealed partial class {{GENERATOR_WEB_CLASS_NAME}} : {{GENERATOR_INTERFACE_NAME}} {
+                    public sealed partial class {{GENERATOR_WEB_CLASS_NAME}} : {{GENERATOR_INTERFACE_NAME}}, {{ERROR_GENERATOR_INTERFACE_NAME}} {
                         public {{GENERATOR_WEB_CLASS_NAME}}(ControllerBase controller) {
                             _controller = controller;
                         }
@@ -115,6 +139,17 @@ namespace Nijo.Models.CommandModelFeatures {
                         {{RESULT_INTERFACE_NAME}} {{GENERATOR_INTERFACE_NAME}}.File(byte[] bytes, string contentType) {
                             return new {{ACTION_RESULT_CONTAINER}} {
                                 ActionResult = _controller.File(bytes, contentType),
+                            };
+                        }
+
+                        {{RESULT_INTERFACE_NAME}} {{ERROR_GENERATOR_INTERFACE_NAME}}.Error({{ErrorReceiver.RECEIVER}} errors) {
+                            return new {{ACTION_RESULT_CONTAINER}} {
+                                ActionResult = _controller.UnprocessableEntity(new { type = "{{TYPE_ERROR}}", {{HTTP_ERROR_DETAIL}} = errors.ToJsonNodes(null) }),
+                            };
+                        }
+                        {{RESULT_INTERFACE_NAME}} {{ERROR_GENERATOR_INTERFACE_NAME}}.Confirm(IEnumerable<string> confirms) {
+                            return new {{ACTION_RESULT_CONTAINER}} {
+                                ActionResult = _controller.UnprocessableEntity(new { type = "{{TYPE_CONFIRM}}", {{HTTP_CONFIRM_DETAIL}} = confirms.ToArray() }),
                             };
                         }
 
@@ -135,7 +170,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     /// コマンド本処理実行時引数。
                     /// 主な役割は処理結果のハンドリングに関する処理。
                     /// </summary>
-                    public sealed partial class {{GENERATOR_CLI_CLASS_NAME}} : {{GENERATOR_INTERFACE_NAME}} {
+                    public sealed partial class {{GENERATOR_CLI_CLASS_NAME}} : {{GENERATOR_INTERFACE_NAME}}, {{ERROR_GENERATOR_INTERFACE_NAME}} {
                         {{RESULT_INTERFACE_NAME}} {{GENERATOR_INTERFACE_NAME}}.Success<T>(string? text, T detail) {
                             throw new NotImplementedException("TODO #3 未実装");
                         }
@@ -143,6 +178,12 @@ namespace Nijo.Models.CommandModelFeatures {
                             throw new NotImplementedException("TODO #3 未実装");
                         }
                         {{RESULT_INTERFACE_NAME}} {{GENERATOR_INTERFACE_NAME}}.File(byte[] bytes, string contentType) {
+                            throw new NotImplementedException("TODO #3 未実装");
+                        }
+                        {{RESULT_INTERFACE_NAME}} {{ERROR_GENERATOR_INTERFACE_NAME}}.Error({{ErrorReceiver.RECEIVER}} errors) {
+                            throw new NotImplementedException("TODO #3 未実装");
+                        }
+                        {{RESULT_INTERFACE_NAME}} {{ERROR_GENERATOR_INTERFACE_NAME}}.Confirm(IEnumerable<string> confirms) {
                             throw new NotImplementedException("TODO #3 未実装");
                         }
                     }
