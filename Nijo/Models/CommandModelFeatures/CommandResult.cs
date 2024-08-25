@@ -50,7 +50,7 @@ namespace Nijo.Models.CommandModelFeatures {
                         /// <summary>
                         /// 処理が成功した旨のみをユーザーに伝えます。
                         /// </summary>
-                        {{RESULT_INTERFACE_NAME}} Ok<T>() {
+                        {{RESULT_INTERFACE_NAME}} Ok() {
                             return this.Ok<object?>(null, null);
                         }
                         /// <summary>
@@ -66,6 +66,12 @@ namespace Nijo.Models.CommandModelFeatures {
                         /// <param name="text">メッセージ</param>
                         /// <param name="detail">詳細情報</param>
                         {{RESULT_INTERFACE_NAME}} Ok<T>(string? text, T detail);
+
+                        /// <summary>
+                        /// 処理の途中でエラーが発生した旨をユーザーに伝えます。
+                        /// </summary>
+                        /// <param name="text">メッセージ</param>
+                        {{RESULT_INTERFACE_NAME}} Error(string text);
 
                         /// <summary>
                         /// 特定画面への遷移を行います。
@@ -133,6 +139,11 @@ namespace Nijo.Models.CommandModelFeatures {
                                 ActionResult = _controller.Ok(new { type = "{{TYPE_MESSAGE}}", text, detail }),
                             };
                         }
+                        {{RESULT_INTERFACE_NAME}} {{GENERATOR_INTERFACE_NAME}}.Error(string text) {
+                            return new {{ACTION_RESULT_CONTAINER}} {
+                                ActionResult = _controller.Problem(text),
+                            };
+                        }
                         {{RESULT_INTERFACE_NAME}} {{GENERATOR_INTERFACE_NAME}}.Redirect() {
                             throw new NotImplementedException("TODO #3 未実装");
                         }
@@ -172,6 +183,9 @@ namespace Nijo.Models.CommandModelFeatures {
                     /// </summary>
                     public sealed partial class {{GENERATOR_CLI_CLASS_NAME}} : {{GENERATOR_INTERFACE_NAME}}, {{ERROR_GENERATOR_INTERFACE_NAME}} {
                         {{RESULT_INTERFACE_NAME}} {{GENERATOR_INTERFACE_NAME}}.Ok<T>(string? text, T detail) {
+                            throw new NotImplementedException("TODO #3 未実装");
+                        }
+                        {{RESULT_INTERFACE_NAME}} {{GENERATOR_INTERFACE_NAME}}.Error(string text) {
                             throw new NotImplementedException("TODO #3 未実装");
                         }
                         {{RESULT_INTERFACE_NAME}} {{GENERATOR_INTERFACE_NAME}}.Redirect() {

@@ -169,6 +169,13 @@ namespace Nijo.Models.CommandModelFeatures {
                           }
                           return { success: false }
                         }
+
+                      } else if (response.status === 500 /* 想定外のエラー */) {
+                        const data = (await response.json()) as { detail: string }
+                        if (typeof data?.detail === 'string') {
+                          dispatchMsg(msg => msg.error(data.detail))
+                          return { success: false }
+                        }
                       }
                     })
                   })
