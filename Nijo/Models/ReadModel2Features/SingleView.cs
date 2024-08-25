@@ -2,7 +2,6 @@ using Nijo.Core;
 using Nijo.Models.WriteModel2Features;
 using Nijo.Parts.Utility;
 using Nijo.Parts.WebClient;
-using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -33,6 +32,11 @@ namespace Nijo.Models.ReadModel2Features {
         private readonly E_Type _type;
 
         string IReactPage.Url => GetUrl(true);
+        private string UrlSubDomain => _aggregate.Item.UniqueId;
+        private const string URL_NEW = "new";
+        private const string URL_DETAIL = "detail";
+        private const string URL_EDIT = "edit";
+
         /// <summary>
         /// このページのURLを返します。
         /// </summary>
@@ -43,7 +47,7 @@ namespace Nijo.Models.ReadModel2Features {
         /// <returns>クォートなしの文字列を返します。</returns>
         internal string GetUrl(bool asReactRouterDef) {
             if (_type == E_Type.New) {
-                return $"/{_aggregate.Item.UniqueId}/new";
+                return $"/{UrlSubDomain}/{URL_NEW}";
 
             } else {
                 // React Router は全角文字非対応なので key0, key1, ... をURLに使う
@@ -56,10 +60,10 @@ namespace Nijo.Models.ReadModel2Features {
                     : "";
 
                 if (_type == E_Type.ReadOnly) {
-                    return $"/{_aggregate.Item.UniqueId}/detail{urlParams}";
+                    return $"/{UrlSubDomain}/{URL_DETAIL}{urlParams}";
 
                 } else if (_type == E_Type.Edit) {
-                    return $"/{_aggregate.Item.UniqueId}/edit{urlParams}";
+                    return $"/{UrlSubDomain}/{URL_EDIT}{urlParams}";
                 } else {
                     throw new InvalidOperationException($"SingleViewの種類が不正: {_aggregate.Item}");
                 }
@@ -81,6 +85,11 @@ namespace Nijo.Models.ReadModel2Features {
         /// 画面初期値にそれが入った状態になる。JSONパースに失敗した場合は警告
         /// </summary>
         private const string NEW_MODE_INITVALUE = "init";
+        /// <summary>
+        /// 編集モードで開くとき、この名前のクエリパラメータにJSONで初期値を設定すると
+        /// 画面初期値にそれが入った状態になる。JSONパースに失敗した場合は警告
+        /// </summary>
+        private const string EDIT_MODE_INITVALUE = "init";
 
         public SourceFile GetSourceFile() => new SourceFile {
             FileName = _type switch {
@@ -160,6 +169,7 @@ namespace Nijo.Models.ReadModel2Features {
                       }, [search])
 
                     """).Else(() => $$"""
+                      const { search } = useLocation()
                       const { {{urlKeysWithMember.Values.Join(", ")}} } = useParams() // URLから表示データのキーを受け取る
                       const { {{LoadMethod.LOAD}}: load{{_aggregate.Item.PhysicalName}} } = AggregateHook.{{loadFeature.ReactHookName}}()
                       useEffect(() => {
@@ -178,9 +188,23 @@ namespace Nijo.Models.ReadModel2Features {
                             dispatchMsg(msg => msg.warn(`表示対象のデータが見つかりません。（{{urlKeysWithMember.Select(kv => $"{kv.Key.MemberName}: ${{{kv.Value}}}").Join(", ")}}）`))
                             return
                           }
-                          const initValue = searchResult[0]
-                          setDisplayName(`{{names.Select(n => $"${{initValue.{n.Join("?.")}}}").Join("")}}`)
-                          reset(initValue)
+                          const loadedValue = searchResult[0]
+                          setDisplayName(`{{names.Select(n => $"${{loadedValue.{n.Join("?.")}}}").Join("")}}`)
+                          reset(loadedValue)
+                    {{If(_type == E_Type.Edit, () => $$"""
+
+                          // 編集モードの場合、遷移前の画面からクエリパラメータで画面初期値が指定されていることがあるため、その値で画面の値を上書きする
+                          try {
+                            const queryParameter = new URLSearchParams(search)
+                            const initValueJson = queryParameter.get('{{EDIT_MODE_INITVALUE}}')
+                            if (initValueJson != null) {
+                              const queryParameterValue: AggregateType.{{dataClass.TsTypeName}} = JSON.parse(initValueJson)
+                              reset(queryParameterValue, { keepDefaultValues: true }) // あくまで手で入力した場合と同じ扱いとするためdefaultValuesはキープする
+                            }
+                          } catch {
+                            dispatchMsg(msg => msg.warn('画面初期表示に失敗しました。'))
+                          }
+                    """)}}
                         })
                       }, [{{urlKeysWithMember.Values.Join(", ")}}, load{{_aggregate.Item.PhysicalName}}])
 
@@ -262,6 +286,7 @@ namespace Nijo.Models.ReadModel2Features {
             },
         };
 
+        #region この画面へ遷移する処理＠クライアント側
         /// <summary>
         /// 詳細画面へ遷移する関数の名前
         /// </summary>
@@ -304,7 +329,13 @@ namespace Nijo.Models.ReadModel2Features {
                     export const {{NavigateFnName}} = () => {
                       const navigate = useNavigate()
 
-                      return React.useCallback((obj: Types.{{dataClass.TsTypeName}}, to: 'readonly' | 'edit') => {
+                      return React.useCallback((
+                        obj: Types.{{dataClass.TsTypeName}},
+                        /** 閲覧画面へ遷移するか編集画面へ遷移するか */
+                        to: 'readonly' | 'edit',
+                        /** 編集画面への遷移でのみ有効。このパラメータがtrueならば、初期表示時、サーバーから最新データを取得したあと、遷移前に指定した値で上書きされる。 */
+                        overwrite?: boolean
+                      ) => {
                     {{keys.SelectTextTemplate((k, i) => $$"""
                         const key{{i}} = obj.{{k.Path.Join("?.")}}
                     """)}}
@@ -315,13 +346,102 @@ namespace Nijo.Models.ReadModel2Features {
                         if (to === 'readonly') {
                           navigate(`{{readView.GetUrl(false)}}/{{keys.Select((_, i) => $"${{window.encodeURI(`${{key{i}}}`)}}").Join("/")}}`)
                         } else {
-                          navigate(`{{editView.GetUrl(false)}}/{{keys.Select((_, i) => $"${{window.encodeURI(`${{key{i}}}`)}}").Join("/")}}`)
+                          const queryString = overwrite
+                            ? `?${new URLSearchParams({ {{EDIT_MODE_INITVALUE}}: JSON.stringify(obj) }).toString()}`
+                            : ''
+                          navigate(`{{editView.GetUrl(false)}}/{{keys.Select((_, i) => $"${{window.encodeURI(`${{key{i}}}`)}}").Join("/")}}${queryString}`)
                         }
                       }, [navigate])
                     }
                     """;
             }
         }
+        #endregion この画面へ遷移する処理＠クライアント側
+
+        #region この画面へ遷移する処理＠サーバー側
+        /// <summary>新規 or 編集 or 閲覧</summary>
+        internal const string E_SINGLE_VIEW_TYPE = "E_SingleViewType";
+        /// <summary>初期表示時に最新データを取得しなおすか、サーバー側で組み立てた値を初期表示するか</summary>
+        internal const string E_REFETCH_TYPE = "E_RefetchType";
+        internal static string RenderSingleViewNavigationEnums() {
+            return $$"""
+                /// <summary>詳細画面のモード</summary>
+                public enum {{E_SINGLE_VIEW_TYPE}} {
+                    /// <summary>新規データ作成モード</summary>
+                    New,
+                    /// <summary>既存データの編集モード</summary>
+                    Edit,
+                    /// <summary>既存データの閲覧モード</summary>
+                    ReadOnly,
+                }
+                /// <summary>
+                /// 初期表示時に最新データを取得しなおすか、
+                /// サーバー側で組み立てた値を初期表示するか
+                /// </summary>
+                public enum {{E_REFETCH_TYPE}} {
+                    /// <summary>画面遷移後、初期表示時は最新データを取得しなおす</summary>
+                    Refetch,
+                    /// <summary>
+                    /// 画面遷移後、初期表示時に最新データを取得しなおした後、遷移前に指定した値で上書きする。
+                    /// <see cref="{{E_SINGLE_VIEW_TYPE}}.Edit"/> でのみ有効。
+                    /// </summary>
+                    Overwrite,
+                }
+                """;
+        }
+        internal const string GET_URL_FROM_DISPLAY_DATA = "GetSingleViewUrlFromDisplayData";
+        /// <summary>
+        /// 画面表示用データを渡したらパラメータつきでその画面のURLを貰えるApplicationServiceのメソッド
+        /// </summary>
+        internal string RenderAppSrvGetUrlMethod() {
+            var displayData = new DataClassForDisplay(_aggregate);
+            var keys = _aggregate
+                .GetKeys()
+                .OfType<AggregateMember.ValueMember>()
+                .Select(vm => new {
+                    vm.MemberName,
+                    Path = vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp),
+                })
+                .ToArray();
+
+            return $$"""
+                /// <summary>
+                /// 詳細画面を引数のオブジェクトで表示するためのURLを作成して返します。
+                /// URLにドメイン部分は含まれません。
+                /// </summary>
+                /// <param name="displayData">遷移先データ</param>
+                /// <param name="mode">画面モード。新規か閲覧か編集か</param>
+                /// <param name="refetchType">初期表示時に最新データを取得しなおしたあと、遷移前に指定した値での上書きを行うかどうか</param>
+                public virtual string {{GET_URL_FROM_DISPLAY_DATA}}({{displayData.CsClassName}} displayData, {{E_SINGLE_VIEW_TYPE}} mode, {{E_REFETCH_TYPE}} refetchType) {
+
+                    if (mode == {{E_SINGLE_VIEW_TYPE}}.New) {
+                        var encodedJson = System.Net.WebUtility.UrlEncode(displayData.{{UtilityClass.TO_JSON}}());
+                        return $"/{{UrlSubDomain}}/{{URL_NEW}}?{{NEW_MODE_INITVALUE}}={encodedJson}";
+
+                    } else {
+                {{keys.SelectTextTemplate((k, i) => $$"""
+                        var key{{i}} = displayData.{{k.Path.Join("?.")}};
+                """)}}
+                {{keys.SelectTextTemplate((k, i) => $$"""
+                        if (key{{i}} == null) throw new ArgumentException($"{{k.MemberName}}が指定されていません。");
+                """)}}
+                {{keys.SelectTextTemplate((k, i) => $$"""
+                        key{{i}} = System.Net.WebUtility.UrlEncode(key{{i}});
+                """)}}
+
+                        var subdomain = mode == {{E_SINGLE_VIEW_TYPE}}.Edit
+                            ? "{{URL_EDIT}}"
+                            : "{{URL_DETAIL}}";
+                        var queryString = refetchType == {{E_REFETCH_TYPE}}.Overwrite
+                            ? $"?{{EDIT_MODE_INITVALUE}}={System.Net.WebUtility.UrlEncode(displayData.{{UtilityClass.TO_JSON}}())}"
+                            : string.Empty;
+
+                        return $"/{{UrlSubDomain}}/{subdomain}{{keys.Select((_, i) => $"/{{key{i}}}").Join("")}}{queryString}";
+                    }
+                }
+                """;
+        }
+        #endregion この画面へ遷移する処理＠サーバー側
 
         /// <summary>
         /// 詳細画面初期表示時の検索で、URLから受け取ったパラメータを <see cref="SearchCondition"/> に設定する。

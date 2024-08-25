@@ -5,6 +5,7 @@ import { useMsgContext } from "./Notification"
 type HttpSendResult<T>
   = { ok: true, data: T }
   | { ok: false, errors: unknown }
+type ResponseHandler = (response: Response) => Promise<{ success: boolean } | void>
 
 export const useHttpRequest = () => {
   const { data: { apiDomain } } = useUserSetting()
@@ -19,7 +20,12 @@ export const useHttpRequest = () => {
       : domain
   }, [apiDomain])
 
-  const sendHttpRequest = useCallback(async <T>([url, option]: Parameters<typeof fetch>): Promise<HttpSendResult<T>> => {
+  const sendHttpRequest = useCallback(async <T>(
+    /** URLと追加パラメータ */
+    [url, option]: Parameters<typeof fetch>,
+    /** レスポンスを細かく解釈したい場合に用いる。未指定の場合は既定の解釈処理にかけられる。 */
+    responseHandler?: ResponseHandler
+  ): Promise<HttpSendResult<T>> => {
     // HTTPリクエスト実行
     let response: Response
     try {
@@ -30,6 +36,11 @@ export const useHttpRequest = () => {
     }
     // 処理結果解釈
     try {
+      // レスポンスを解釈する処理が指定されている場合の処理
+      const handled = await responseHandler?.(response)
+      if (handled) return { ok: handled.success, data: undefined as T, errors: undefined }
+
+      // ここから既定のレスポンス解釈処理
       const data = response.headers.get('content-type')?.toLowerCase().includes('application/json')
         ? await response.json() as unknown
         : await response.text()
@@ -72,7 +83,7 @@ export const useHttpRequest = () => {
     }
     const queryString = query.toString()
     return await sendHttpRequest([queryString ? `${dotnetWebApiDomain}${url}?${queryString}` : `${dotnetWebApiDomain}${url}`])
-  }, [dotnetWebApiDomain, sendHttpRequest, dispatchMsg])
+  }, [dotnetWebApiDomain, sendHttpRequest])
 
   const post = useCallback(async <T>(url: string, data: object = {}): Promise<HttpSendResult<T>> => {
     return await sendHttpRequest([`${dotnetWebApiDomain}${url}`, {
@@ -80,7 +91,16 @@ export const useHttpRequest = () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     }])
-  }, [dotnetWebApiDomain, sendHttpRequest, dispatchMsg])
+  }, [dotnetWebApiDomain, sendHttpRequest])
+
+  const postWithHandler = useCallback(async (url: string, data: object, responseHandler: ResponseHandler) => {
+    const result = await sendHttpRequest([`${dotnetWebApiDomain}${url}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }], responseHandler)
+    return result.ok
+  }, [dotnetWebApiDomain, sendHttpRequest])
 
   const httpDelete = useCallback(async (url: string, data: object = {}) => {
     return await sendHttpRequest([`${dotnetWebApiDomain}${url}`, {
@@ -110,7 +130,14 @@ export const useHttpRequest = () => {
     }
   }, [dotnetWebApiDomain, dispatchMsg])
 
-  return { get, post, httpDelete, download }
+  return {
+    get,
+    post,
+    /** HTTPレスポンスの内容次第で細かく制御を分けたい場合はこちらを使用 */
+    postWithHandler,
+    httpDelete,
+    download,
+  }
 }
 
 const parseUnknownErrors = (err: unknown): string[] => {

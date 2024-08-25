@@ -113,7 +113,7 @@ export const InlineMessageList = ({ type, name, className }: {
           </li>
         ))}
       </ul>
-      {filtered.length > 1 && (
+      {filtered.length > 0 && (
         <div className={`flex gap-8 text-sm select-none items-center ${getTextColor()}`}>
           {filtered.length}件のメッセージ
           <Components.IconButton onClick={() => dispatch(msg => msg.clear(name))}>

@@ -22,8 +22,10 @@ namespace Nijo.IntegrationTest {
         public const string FILENAME_011 = "011_ダブル.xml";
         public const string FILENAME_012 = "012_スカラメンバー網羅.xml";
         public const string FILENAME_013 = "013_主キーにRef.xml";
+        public const string FILENAME_014 = "014_複数経路の参照.xml";
         public const string FILENAME_015 = "015_ChildrenがDataTableで表示できない.xml";
         public const string FILENAME_016 = "016_NameLike.xml";
+        public const string FILENAME_017 = "017_CommandModel.xml";
         public const string FILENAME_100 = "100_RDRA.xml";
         public const string FILENAME_101 = "101_売上管理.xml";
         public const string FILENAME_102 = "102_社内備品管理.xml";

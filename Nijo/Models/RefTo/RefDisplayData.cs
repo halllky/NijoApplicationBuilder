@@ -112,7 +112,7 @@ namespace Nijo.Models.RefTo {
                     /// 別途何らかの識別子を設けないと同一性を判定する方法が無いため、この項目が必要になる。
                     /// </summary>
                     [JsonPropertyName("{{INSTANCE_KEY_TS}}")]
-                    public virtual required {{InstanceKey.CS_CLASS_NAME}} {{INSTANCE_KEY_CS}} { get; set; }
+                    public virtual {{InstanceKey.CS_CLASS_NAME}} {{INSTANCE_KEY_CS}} { get; set; } = {{InstanceKey.CS_CLASS_NAME}}.{{InstanceKey.EMPTY}}();
 
                 """)}}
                 {{rt.GetOwnMembers().SelectTextTemplate(m => $$"""

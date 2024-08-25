@@ -36,6 +36,7 @@ namespace Nijo.Parts.WebClient.DataTable {
             return this;
         }
 
+        #region AddMembers
         /// <summary>
         /// 画面表示用データのメンバーの列を追加します。
         /// </summary>
@@ -114,6 +115,47 @@ namespace Nijo.Parts.WebClient.DataTable {
                 }
             }
         }
+
+        /// <summary>
+        /// コマンドパラメータのメンバーの列を追加します。
+        /// </summary>
+        internal DataTableBuilder AddMembers(Models.CommandModelFeatures.CommandParameter commandParameter) {
+            _columns.AddRange(Enumerate(commandParameter));
+            return this;
+
+            IEnumerable<IDataTableColumn2> Enumerate(Models.CommandModelFeatures.CommandParameter rendering) {
+                var members = rendering
+                    .GetOwnMembers()
+                    .Select(m => m.MemberInfo)
+                    .ToArray();
+                foreach (var member in members) {
+                    if (member is AggregateMember.ValueMember vm) {
+                        if (vm.Options.InvisibleInGui) continue;
+                        var column = new ValueMemberColumn(
+                            vm,
+                            vm.Declared.GetFullPathAsDataClassForRefTarget(since: TableOwner),
+                            this);
+                        yield return column;
+
+                    } else if (member is AggregateMember.Ref @ref) {
+                        if (@ref.RefTo.IsSingleRefKeyOf(@ref.Owner)) continue;
+                        var column = new RefMemberColumn(
+                            @ref,
+                            @ref.GetFullPathAsDataClassForRefTarget(since: TableOwner),
+                            this);
+                        yield return column;
+
+                    } else if (member is AggregateMember.Child child) {
+                        var childParam = new Models.CommandModelFeatures.CommandParameter.Member(child);
+                        foreach (var reucusive in Enumerate(childParam.GetMemberParameter()!)) {
+                            yield return reucusive;
+                        }
+                    }
+                    // ChildrenやVariationのメンバーを列挙していないのはグリッド上で表現できないため
+                }
+            }
+        }
+        #endregion AddMembers
 
         internal string RenderColumnDef(CodeRenderingContext context) {
             string Render(IDataTableColumn2 column, int index) {

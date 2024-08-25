@@ -201,6 +201,9 @@ namespace Nijo.Core {
             parser.IfExists(NijoCodeGenerator.Models.ReadModel2.Key)
                 .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
                 .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Models.ReadModel2.Key, E_Priority.Force);
+            parser.IfExists(NijoCodeGenerator.Models.CommandModel.Key)
+                .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
+                .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Models.CommandModel.Key, E_Priority.Force);
 
             parser.IfExists("generate-default-read-model")
                 .SetAggregateOption(opt => opt.GenerateDefaultReadModel, true, E_Priority.Force);
