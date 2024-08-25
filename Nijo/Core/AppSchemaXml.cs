@@ -188,6 +188,9 @@ namespace Nijo.Core {
             var keyValues = ToKeyValues(element, errors);
             var parser = new XElementOptionCollection(keyValues, errors.Add);
 
+            // ------------------------------------------------
+            // ルート集約用の属性 ここから
+
             parser.IfExists(NijoCodeGenerator.Models.WriteModel.Key)
                 .ElementTypeIs(E_XElementType.RootAggregate, E_Priority.Force)
                 .SetAggregateOption(opt => opt.Handler, NijoCodeGenerator.Models.WriteModel.Key, E_Priority.Force);
@@ -208,6 +211,9 @@ namespace Nijo.Core {
             parser.IfExists("generate-default-read-model")
                 .SetAggregateOption(opt => opt.GenerateDefaultReadModel, true, E_Priority.Force);
 
+            // ------------------------------------------------
+            // 子孫集約用の属性 ここから
+
             parser.IfExists("section")
                 .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)
                 .SetAggregateOption(opt => opt.IsArray, false, E_Priority.Force);
@@ -220,6 +226,9 @@ namespace Nijo.Core {
             parser.IfExists("variation-key")
                 .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)
                 .SetAggregateOption(opt => opt.IsVariationGroupMember, variationKey => new() { GroupName = element.Parent?.Name.LocalName ?? string.Empty, Key = variationKey }, E_Priority.Force);
+
+            // ------------------------------------------------
+            // 集約メンバー用の属性 ここから
 
             parser.IfExists("ref-to")
                 .ElementTypeIs(E_XElementType.Ref, E_Priority.Force)
@@ -235,6 +244,8 @@ namespace Nijo.Core {
                 .SetMemberOption(opt => opt.IsDisplayName, true, E_Priority.Force)
                 .SetMemberOption(opt => opt.IsNameLike, true, E_Priority.IfNotSpecified)
                 .SetMemberOption(opt => opt.MemberType, MemberTypeResolver.TYPE_WORD, E_Priority.IfNotSpecified);
+
+            // 廃止予定 非推奨
             parser.IfExists("name-like")
                 .SetMemberOption(opt => opt.IsNameLike, true, E_Priority.Force);
 
@@ -286,6 +297,8 @@ namespace Nijo.Core {
                 memberOption.MemberType = parser.NotHandledKeys.Single();
             }
 
+            // ------------------------------------------------
+
             // ReadModelのトリガー
             var dependsOn = element.Attribute("dependsOn")?.Value;
             if (dependsOn != null) {
@@ -295,6 +308,8 @@ namespace Nijo.Core {
                     .Select(name => name.Trim());
                 aggregateOption.DependsOn.AddRange(dependencies);
             }
+
+            // ------------------------------------------------
 
             return new ParsedXElement {
                 Source = element,
