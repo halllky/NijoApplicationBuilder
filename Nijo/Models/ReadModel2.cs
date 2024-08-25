@@ -74,6 +74,7 @@ namespace Nijo.Models {
             // UI: ナビゲーション用関数
             context.ReactProject.UrlUtil.Add(createView.RenderNavigateFn(context));
             context.ReactProject.UrlUtil.Add(readOnlyView.RenderNavigateFn(context)); // readonly, edit は関数共用
+            context.CoreLibrary.AppSrvMethods.Add(createView.RenderAppSrvGetUrlMethod()); // サーバー側は全モードで1つのメソッド
 
             // ---------------------------------------------
             // 他の集約から参照されるときのための部品
@@ -122,6 +123,7 @@ namespace Nijo.Models {
                 dir.Generate(InstanceKey.RenderCSharp());
                 dir.Generate(ISaveCommandConvertible.Render());
             });
+            context.CoreLibrary.Enums.Add(SingleView.RenderSingleViewNavigationEnums());
         }
 
         IEnumerable<string> IModel.ValidateAggregate(GraphNode<Aggregate> rootAggregate) {
