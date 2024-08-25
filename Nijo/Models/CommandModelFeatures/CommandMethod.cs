@@ -26,8 +26,8 @@ namespace Nijo.Models.CommandModelFeatures {
         private string AppSrvValidateMethod => $"Validate{_rootAggregate.Item.PhysicalName}Parameter";
         private string AppSrvBodyMethod => $"Execute{_rootAggregate.Item.PhysicalName}";
 
-        private const string USE_COMMAND_LAUNCHER = "useCommandLauncher";
-        internal const string HTTP_PARAM_IGNORECONFIRM = "ignoreConfirm";
+        private const string USE_COMMAND_RESULT_PARSER = "useCommandResultParser";
+        private const string HTTP_PARAM_IGNORECONFIRM = "ignoreConfirm";
 
         internal string RenderHook(CodeRenderingContext context) {
             var param = new CommandParameter(_rootAggregate);
@@ -35,51 +35,59 @@ namespace Nijo.Models.CommandModelFeatures {
             return $$"""
                 /** {{_rootAggregate.Item.DisplayName}}処理を呼び出す関数を返します。 */
                 export const {{HookName}} = (setError?: ReactHookForm.UseFormSetError<Types.{{param.TsTypeName}}>) => {
-                  // エラーを react hook form にマッピングする処理
-                  const onValidationError = React.useMemo(() => {
-                    if (setError === undefined) return undefined
-                    return (err: object) => {
-                      const errors = err as [ReactHookForm.FieldPath<Types.{{param.TsTypeName}}>, { types: { [key: string]: string } }][]
-                      for (const [name, error] of errors) {
-                        setError(name, error)
-                      }
-                    }
-                  }, [setError])
-
-                  // 呼び出し処理
-                  const launchCommand = {{USE_COMMAND_LAUNCHER}}()
-                  return React.useCallback(async (param: Types.{{param.TsTypeName}}) => {
-                    return await launchCommand({
+                  const { executeCommandApi, resultDetail } = {{USE_COMMAND_RESULT_PARSER}}(setError)
+                  const launch = React.useCallback(async (param: Types.{{param.TsTypeName}}) => {
+                    return await executeCommandApi({
                       url: `{{Url}}`,
                       param,
                       defaultSuccessMessage: '{{_rootAggregate.Item.DisplayName}}処理が成功しました。',
-                      onValidationError,
                     })
-                  }, [launchCommand, onValidationError])
+                  }, [executeCommandApi])
+
+                  return {
+                    /** コマンドを実行します。 */
+                    launch,
+                    /** 画面上に表示させるべき処理結果の詳細データが帰ってきた場合はこのオブジェクトに格納されます。 */
+                    resultDetail,
+                  }
                 }
                 """;
         }
         internal static string RenderCommonHook(CodeRenderingContext context) {
             return $$"""
                 /** コマンドを呼び出し、その処理結果を解釈して画面遷移したりファイルダウンロードを開始したりする */
-                export const {{USE_COMMAND_LAUNCHER}} = () => {
+                export const {{USE_COMMAND_RESULT_PARSER}} = <T extends object>(setError?: ReactHookForm.UseFormSetError<T>) => {
                   const navigate = ReactRouter.useNavigate()
                   const { postWithHandler } = Util.useHttpRequest()
                   const [, dispatchToast] = Util.useToastContext()
                   const [, dispatchMsg] = Util.useMsgContext()
-                  const [, dispatchDialog] = Layout.useDialogContext()
+                  const [resultDetail, setResultDetail] = React.useState<unknown>()
 
-                  const executeCommandApi = useEvent(async <T extends object>({ url, param, defaultSuccessMessage, onValidationError, defaultFileName }: {
+                  const executeCommandApi = useEvent(async ({ url, param, defaultSuccessMessage, defaultFileName }: {
                     url: string
                     param: T
                     defaultSuccessMessage?: string
-                    /** パラメータの入力内容が不正だった場合にそれを画面に表示する処理 */
-                    onValidationError?: (err: object) => void
                     /** 処理結果のファイルダウンロード時の既定の名前 */
                     defaultFileName?: string
                   }) => {
                     return await postWithHandler(url, param, async response => {
-                      if (response.ok) {
+                      if (response.status === 202 /* Accepted. このリクエストにおいては「～してもよいですか？」の確認メッセージ表示を意味する */) {
+                        // 「～してもよいですか？」の確認メッセージ表示
+                        const data = (await response.json()) as { {{CommandResult.HTTP_CONFIRM_DETAIL}}: string[] }
+                        for (const msg of data.{{CommandResult.HTTP_CONFIRM_DETAIL}}) {
+                          if (!window.confirm(msg)) {
+                            return { success: false } // "OK"が選択されなかった場合は処理実行APIを呼ばずに処理中断
+                          }
+                        }
+                        // すべての確認メッセージで"OK"が選ばれた場合は再度処理実行APIを呼ぶ。確認メッセージを表示しない旨のオプションをつけたうえで呼ぶ。
+                        executeCommandApi({
+                          url: `${url}?{{HTTP_PARAM_IGNORECONFIRM}}=true`,
+                          param,
+                          defaultSuccessMessage,
+                        })
+                        return { success: false }
+
+                      } else if (response.ok) {
                         const contentType = response.headers.get('Content-Type')?.toLowerCase()
                         if (contentType?.includes('application/json')) {
                           const data = await response.json() as Types.{{CommandResult.TS_TYPE_NAME}}
@@ -92,29 +100,16 @@ namespace Nijo.Models.CommandModelFeatures {
 
                           // 処理結果表示
                           if (data.type === '{{CommandResult.TYPE_MESSAGE}}') {
-                            const message = data.text ?? defaultSuccessMessage ?? '処理が成功しました。'
-                            if (!data.detail) {
-                              // 処理結果の詳細情報がない場合、トーストで処理成功の旨だけ表示。
-                              dispatchToast(msg => msg.info(message))
-                              return { success: true }
+                            // トーストで処理成功の旨を表示
+                            dispatchToast(msg => msg.info(data.text ?? defaultSuccessMessage ?? '処理が成功しました。'))
 
+                            if (data.detail) {
+                              // 処理結果の詳細情報がある場合、画面上で結果を表示。
+                              // 具体的な表示方法はUIを伴うのでこのフックを呼ぶ側に任せる。
+                              setResultDetail(data.detail)
+                              return { success: false } // ここの値がtrueだと呼び元のダイアログが閉じてしまうのでfalseにしている
                             } else {
-                              // 処理結果の詳細情報がある場合、ダイアログで結果を表示。
-                              // TODO #3: フックが入れ子になっているせいでここのdispatchDialogがコンテキストに入っていない。detailだけ呼び元に返してもっと浅いところでUIをレンダリングさせる。
-                              const detail = data.detail
-                              dispatchDialog(state => state.pushDialog(message, ({ closeDialog }) => {
-                                return (
-                                  <div className="h-full flex flex-col gap-1">
-                                    <div className="flex-1 overflow-y-auto">
-                                      <Layout.UnknownObjectViewer label="詳細" value={detail} />
-                                    </div>
-                                    <div className="flex justify-end">
-                                      <Input.IconButton fill onClick={closeDialog}>OK</Input.IconButton>
-                                    </div>
-                                  </div>
-                                )
-                              }))
-                              return { success: true }
+                              return { success: true } // トーストでの表示のみの場合はダイアログを閉じる
                             }
                           }
                           dispatchToast(msg => msg.warn(`処理結果を解釈できません。(type: ${data.type})`))
@@ -140,35 +135,17 @@ namespace Nijo.Models.CommandModelFeatures {
                           }
                         }
 
-                      } else if (response.status === 422 /* Unprocessable Content. エラーまたは警告 */) {
-                        const data = (await response.json()) as
-                          { type: '{{CommandResult.TYPE_CONFIRM}}', {{CommandResult.HTTP_CONFIRM_DETAIL}}: string[] } |
-                          { type: '{{CommandResult.TYPE_ERROR}}', {{CommandResult.HTTP_ERROR_DETAIL}}: object }
-
-                        if (data.type === '{{CommandResult.TYPE_CONFIRM}}') {
-                          // 「～してもよいですか？」の確認メッセージ表示
-                          for (const msg of data.{{CommandResult.HTTP_CONFIRM_DETAIL}}) {
-                            if (!window.confirm(msg)) {
-                              return { success: false } // "OK"が選択されなかった場合は処理実行APIを呼ばずに処理中断
-                            }
+                      } else if (response.status === 422 /* Unprocessable Content. エラー */) {
+                        // 入力内容エラー
+                        const data = (await response.json()) as { {{CommandResult.HTTP_ERROR_DETAIL}}: [ReactHookForm.FieldPath<T>, { types: { [key: string]: string } }][] }
+                        if (setError) {
+                          for (const [name, error] of data.{{CommandResult.HTTP_ERROR_DETAIL}}) {
+                            setError(name, error)
                           }
-                          // すべての確認メッセージで"OK"が選ばれた場合は再度処理実行APIを呼ぶ。確認メッセージを表示しない旨のオプションをつけたうえで呼ぶ。
-                          executeCommandApi({
-                            url: `${url}?{{HTTP_PARAM_IGNORECONFIRM}}=true`,
-                            param,
-                            defaultSuccessMessage,
-                          })
-                          return { success: false }
-
                         } else {
-                          // 入力内容エラー
-                          if (onValidationError) {
-                            onValidationError(data.{{CommandResult.HTTP_ERROR_DETAIL}})
-                          } else {
-                            dispatchMsg(msg => msg.error(`入力内容が不正です: ${JSON.stringify(data.{{CommandResult.HTTP_ERROR_DETAIL}})}`))
-                          }
-                          return { success: false }
+                          dispatchMsg(msg => msg.error(`入力内容が不正です: ${JSON.stringify(data.{{CommandResult.HTTP_ERROR_DETAIL}})}`))
                         }
+                        return { success: false }
 
                       } else if (response.status === 500 /* 想定外のエラー */) {
                         const data = (await response.json()) as { detail: string }
@@ -179,7 +156,7 @@ namespace Nijo.Models.CommandModelFeatures {
                       }
                     })
                   })
-                  return executeCommandApi
+                  return { executeCommandApi, resultDetail }
                 }
                 """;
         }

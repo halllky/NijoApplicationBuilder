@@ -33,8 +33,6 @@ namespace Nijo.Models.CommandModelFeatures {
         // HTTPレスポンス
         internal const string TYPE_MESSAGE = "message";
         internal const string TYPE_REDIRECT = "redirect";
-        internal const string TYPE_CONFIRM = "confirm";
-        internal const string TYPE_ERROR = "error";
         internal const string HTTP_CONFIRM_DETAIL = "detail";
         internal const string HTTP_ERROR_DETAIL = "detail";
 
@@ -200,12 +198,12 @@ namespace Nijo.Models.CommandModelFeatures {
 
                         {{RESULT_INTERFACE_NAME}} {{ERROR_GENERATOR_INTERFACE_NAME}}.Error({{ErrorReceiver.RECEIVER}} errors) {
                             return new {{ACTION_RESULT_CONTAINER}} {
-                                ActionResult = _controller.UnprocessableEntity(new { type = "{{TYPE_ERROR}}", {{HTTP_ERROR_DETAIL}} = errors.ToJsonNodes(null) }),
+                                ActionResult = _controller.UnprocessableEntity(new { {{HTTP_ERROR_DETAIL}} = errors.ToJsonNodes(null) }),
                             };
                         }
                         {{RESULT_INTERFACE_NAME}} {{ERROR_GENERATOR_INTERFACE_NAME}}.Confirm(IEnumerable<string> confirms) {
                             return new {{ACTION_RESULT_CONTAINER}} {
-                                ActionResult = _controller.UnprocessableEntity(new { type = "{{TYPE_CONFIRM}}", {{HTTP_CONFIRM_DETAIL}} = confirms.ToArray() }),
+                                ActionResult = _controller.Accepted(new { {{HTTP_CONFIRM_DETAIL}} = confirms.ToArray() }),
                             };
                         }
 

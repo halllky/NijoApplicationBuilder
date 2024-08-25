@@ -34,22 +34,28 @@ namespace Nijo.Models.CommandModelFeatures {
                     dispatchDialog(state => state.pushDialog('{{_rootAggregate.Item.DisplayName}}', ({ closeDialog }) => {
                       const rhfMethods = Util.useFormEx<Types.{{param.TsTypeName}}>({ defaultValues: initialParam ?? Types.{{param.TsNewObjectFunction}}() })
                       const { getValues, setError, clearErrors } = rhfMethods
-                      const execute = Hooks.{{executor.HookName}}(setError)
+                      const { launch, resultDetail } = Hooks.{{executor.HookName}}(setError)
                       const handleClickExec = useEvent(async () => {
                         clearErrors()
-                        const success = await execute(getValues())
-                        if (success) closeDialog()
+                        const finish = await launch(getValues())
+                        if (finish) closeDialog()
                       })
 
                       return (
                         <FormProvider {...rhfMethods}>
                           <div className="h-full flex flex-col gap-1">
                             <div className="flex-1 overflow-y-auto">
-                              {{form.RenderCaller()}}
+                              {resultDetail === undefined ? (
+                                {{form.RenderCaller()}}
+                              ) : (
+                                <Layout.UnknownObjectViewer label="処理結果" value={resultDetail} />
+                              )}
                             </div>
-                            <div className="flex justify-end">
-                              <Input.IconButton fill onClick={handleClickExec}>実行</Input.IconButton>
-                            </div>
+                            {resultDetail === undefined && (
+                              <div className="flex justify-end">
+                                <Input.IconButton fill onClick={handleClickExec}>実行</Input.IconButton>
+                              </div>
+                            )}
                           </div>
                         </FormProvider>
                       )
