@@ -69,7 +69,7 @@ namespace Nijo.Models.CommandModelFeatures {
                     defaultSuccessMessage?: string
                     /** 処理結果のファイルダウンロード時の既定の名前 */
                     defaultFileName?: string
-                  }) => {
+                  }): Promise<boolean> => {
                     return await postWithHandler(url, param, async response => {
                       if (response.status === 202 /* Accepted. このリクエストにおいては「～してもよいですか？」の確認メッセージ表示を意味する */) {
                         // 「～してもよいですか？」の確認メッセージ表示
@@ -80,12 +80,12 @@ namespace Nijo.Models.CommandModelFeatures {
                           }
                         }
                         // すべての確認メッセージで"OK"が選ばれた場合は再度処理実行APIを呼ぶ。確認メッセージを表示しない旨のオプションをつけたうえで呼ぶ。
-                        executeCommandApi({
+                        const success = await executeCommandApi({
                           url: `${url}?{{HTTP_PARAM_IGNORECONFIRM}}=true`,
                           param,
                           defaultSuccessMessage,
                         })
-                        return { success: false }
+                        return { success }
 
                       } else if (response.ok) {
                         const contentType = response.headers.get('Content-Type')?.toLowerCase()
