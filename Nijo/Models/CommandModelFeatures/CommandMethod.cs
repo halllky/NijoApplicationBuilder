@@ -193,7 +193,7 @@ namespace Nijo.Models.CommandModelFeatures {
                 /// </summary>
                 [HttpPost("{{_rootAggregate.Item.UniqueId}}")]
                 public virtual IActionResult {{_rootAggregate.Item.PhysicalName}}([FromBody] {{param.CsClassName}} param, [FromQuery] bool {{HTTP_PARAM_IGNORECONFIRM}}) {
-                    var result = new {{CommandResult.GENERATOR_WEB_CLASS_NAME}}(this);
+                    var result = new {{CommandResult.GENERATOR_WEB_CLASS_NAME}}(this, _applicationService);
                     var commandResult = _applicationService.{{AppSrvMethod}}(param, result, {{HTTP_PARAM_IGNORECONFIRM}});
                     return (({{CommandResult.GENERATOR_WEB_CLASS_NAME}}.{{CommandResult.ACTION_RESULT_CONTAINER}})commandResult).ActionResult;
                 }

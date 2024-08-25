@@ -2,7 +2,6 @@ using Nijo.Core;
 using Nijo.Models.WriteModel2Features;
 using Nijo.Parts.Utility;
 using Nijo.Parts.WebClient;
-using Nijo.Parts.WebServer;
 using Nijo.Util.CodeGenerating;
 using Nijo.Util.DotnetEx;
 using System;
@@ -170,6 +169,7 @@ namespace Nijo.Models.ReadModel2Features {
                       }, [search])
 
                     """).Else(() => $$"""
+                      const { search } = useLocation()
                       const { {{urlKeysWithMember.Values.Join(", ")}} } = useParams() // URLから表示データのキーを受け取る
                       const { {{LoadMethod.LOAD}}: load{{_aggregate.Item.PhysicalName}} } = AggregateHook.{{loadFeature.ReactHookName}}()
                       useEffect(() => {
@@ -188,9 +188,23 @@ namespace Nijo.Models.ReadModel2Features {
                             dispatchMsg(msg => msg.warn(`表示対象のデータが見つかりません。（{{urlKeysWithMember.Select(kv => $"{kv.Key.MemberName}: ${{{kv.Value}}}").Join(", ")}}）`))
                             return
                           }
-                          const initValue = searchResult[0]
-                          setDisplayName(`{{names.Select(n => $"${{initValue.{n.Join("?.")}}}").Join("")}}`)
-                          reset(initValue)
+                          const loadedValue = searchResult[0]
+                          setDisplayName(`{{names.Select(n => $"${{loadedValue.{n.Join("?.")}}}").Join("")}}`)
+                          reset(loadedValue)
+                    {{If(_type == E_Type.Edit, () => $$"""
+
+                          // 編集モードの場合、遷移前の画面からクエリパラメータで画面初期値が指定されていることがあるため、その値で画面の値を上書きする
+                          try {
+                            const queryParameter = new URLSearchParams(search)
+                            const initValueJson = queryParameter.get('{{EDIT_MODE_INITVALUE}}')
+                            if (initValueJson != null) {
+                              const queryParameterValue: AggregateType.{{dataClass.TsTypeName}} = JSON.parse(initValueJson)
+                              reset(queryParameterValue, { keepDefaultValues: true }) // あくまで手で入力した場合と同じ扱いとするためdefaultValuesはキープする
+                            }
+                          } catch {
+                            dispatchMsg(msg => msg.warn('画面初期表示に失敗しました。'))
+                          }
+                    """)}}
                         })
                       }, [{{urlKeysWithMember.Values.Join(", ")}}, load{{_aggregate.Item.PhysicalName}}])
 

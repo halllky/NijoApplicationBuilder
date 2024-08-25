@@ -76,6 +76,9 @@ namespace Nijo.Models {
             context.ReactProject.UrlUtil.Add(readOnlyView.RenderNavigateFn(context)); // readonly, edit は関数共用
             context.CoreLibrary.AppSrvMethods.Add(createView.RenderAppSrvGetUrlMethod()); // サーバー側は全モードで1つのメソッド
 
+            // コマンドの処理結果でこの集約の詳細画面に遷移できるように登録する
+            context.UseSummarizedFile<CommandModelFeatures.CommandResult>().Register(rootAggregate);
+
             // ---------------------------------------------
             // 他の集約から参照されるときのための部品
 
