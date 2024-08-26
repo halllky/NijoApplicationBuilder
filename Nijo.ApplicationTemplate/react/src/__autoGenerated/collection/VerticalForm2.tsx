@@ -54,12 +54,13 @@ const AutoColumn = ({ children }: { children?: React.ReactNode }) => {
 }
 
 
-const Indent = ({ label, children }: {
+const Indent = ({ label, children, className }: {
   label?: React.ReactNode
   children?: React.ReactNode
+  className?: string
 }) => {
   return (
-    <div className="grid grid-cols-[subgrid] col-span-full border-vform">
+    <div className={`grid grid-cols-[subgrid] col-span-full border-vform ${className ?? ''}`}>
       <div className="px-1 col-span-full select-none">
         {renderLabel(label)}&nbsp;
       </div>

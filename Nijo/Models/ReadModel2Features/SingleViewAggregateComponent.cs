@@ -454,7 +454,7 @@ namespace Nijo.Models.ReadModel2Features {
                       <Input.ErrorMessage name={`{{fullpath.Join(".")}}.${{{loopVar}}}`} errors={errors} />
                     </>
                     """;
-                return new VerticalFormBuilder(label, E_VForm2LabelType.JsxElement, loopVar);
+                return new VerticalFormBuilder(label, E_VForm2LabelType.JsxElement, $"key={{{loopVar}}}");
             }
 
             internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {

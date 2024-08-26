@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<自動テストで作成されたプロジェクト>
+
+  <従業員 is="write-model-2 generate-default-read-model">
+    <内部ID is="uuid key" />
+    <従業員コード is="word" />
+    <名前 is="name" />
+    <区分 is="従業員区分" />
+  </従業員>
+
+  <従業員区分 is="enum">
+    <ベテラン />
+    <ビギナー />
+  </従業員区分>
+
+  <従業員データ一括取り込み is="command">
+    <これは最初の画面です is="step:1">
+      <取込ファイル is="word" />
+      <!-- <取込ファイル is="file" /> -->
+    </これは最初の画面です>
+
+    <これは2画面目です is="step:2">
+      <処理範囲 is="variation">
+        <特定データのみ is="variation-key:1">
+          <従業員 is="ref-to:従業員" />
+        </特定データのみ>
+        <全部更新 is="variation-key:2" />
+      </処理範囲>
+    </これは2画面目です>
+  </従業員データ一括取り込み>
+
+</自動テストで作成されたプロジェクト>
