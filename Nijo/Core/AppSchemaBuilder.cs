@@ -325,6 +325,13 @@ namespace Nijo.Core {
         /// </summary>
         public bool GenerateDefaultReadModel { get; set; }
 
+        /// <summary>
+        /// <see cref="Models.CommandModel"/> 用のステップ属性。その入力項目がウィザード形式の入力画面の何番目かを表す。
+        /// ルート集約の直下の <see cref="AggregateMember.Child"/> でのみ指定可能。
+        /// ステップありなしは混在不可能（ステップをつけるなら全てのChildをステップにする必要がある）。
+        /// </summary>
+        public int? Step { get; set; }
+
         public sealed class GroupOption {
             public required string GroupName { get; init; }
             public required string Key { get; init; }

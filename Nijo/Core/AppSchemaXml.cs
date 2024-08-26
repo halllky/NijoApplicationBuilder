@@ -227,6 +227,12 @@ namespace Nijo.Core {
                 .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)
                 .SetAggregateOption(opt => opt.IsVariationGroupMember, variationKey => new() { GroupName = element.Parent?.Name.LocalName ?? string.Empty, Key = variationKey }, E_Priority.Force);
 
+            // コマンド用のステップ属性
+            parser.IfExists("step")
+                .ElementTypeIs(E_XElementType.ChildAggregate, E_Priority.Force)
+                .SetAggregateOption(opt => opt.IsArray, false, E_Priority.Force)
+                .SetAggregateOption(opt => opt.Step, v => int.TryParse(v, out var step) ? step : 0, E_Priority.Force);
+
             // ------------------------------------------------
             // 集約メンバー用の属性 ここから
 

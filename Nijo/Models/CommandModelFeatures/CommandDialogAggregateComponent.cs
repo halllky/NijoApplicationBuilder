@@ -24,6 +24,12 @@ namespace Nijo.Models.CommandModelFeatures {
             _depth = depth;
         }
 
+        /// <summary>
+        /// ルート集約がステップ属性をもつ子集約のコンポーネントを呼び出すときに
+        /// 現在表示中のステップ数と一致する子要素のみ表示させるための状態
+        /// </summary>
+        internal const string CURRENT_STEP = "currentStep";
+
         protected readonly GraphNode<Aggregate> _aggregate;
         private readonly int _depth;
 
@@ -149,7 +155,15 @@ namespace Nijo.Models.CommandModelFeatures {
 
                 } else if (member is AggregateMember.RelationMember rel) {
                     var descendant = GetDescendantComponent(rel);
-                    formBuilder.AddUnknownParts(descendant.RenderCaller(GetArgumentsAndLoopVar()));
+
+                    // ルート集約がステップ属性をもつ子集約のコンポーネントを呼び出すときは
+                    // 現在表示中のステップ数と一致する子要素のみ表示させる
+                    var step = rel.MemberAggregate.Item.Options.Step;
+                    var hidden = step == null
+                        ? Enumerable.Empty<string>()
+                        : [$"hidden={{{CURRENT_STEP} !== {step}}}"];
+
+                    formBuilder.AddUnknownParts(descendant.RenderCaller(GetArgumentsAndLoopVar(), hidden));
 
                 } else {
                     throw new NotImplementedException();
@@ -182,9 +196,10 @@ namespace Nijo.Models.CommandModelFeatures {
         /// <summary>
         /// このコンポーネントの呼び出し処理をレンダリングします。
         /// </summary>
-        internal string RenderCaller(IEnumerable<string>? args = null) {
+        internal string RenderCaller(IEnumerable<string>? args = null, IEnumerable<string>? additionalAttributes = null) {
             var parameters = GetArguments()
-                .Select((a, i) => $"{a}={{{args?.ElementAtOrDefault(i)}}} ");
+                .Select((a, i) => $"{a}={{{args?.ElementAtOrDefault(i)}}} ")
+                .Concat(additionalAttributes?.Select(x => $"{x} ") ?? Enumerable.Empty<string>());
             return $$"""
                 <{{ComponentName}} {{parameters.Join("")}}/>
                 """;
@@ -195,8 +210,19 @@ namespace Nijo.Models.CommandModelFeatures {
             var vForm = BuildVerticalForm(context, isReadOnly);
             var maxDepth = EnumerateThisAndDescendantsRecursively().Max(component => component._depth);
 
+            var existsStep = _aggregate
+                .GetMembers()
+                .Any(m => m is AggregateMember.RelationMember rm && rm.MemberAggregate.Item.Options.Step != null);
+            var args = existsStep
+                ? $$"""
+                    { {{CURRENT_STEP}} }: {
+                      {{CURRENT_STEP}}: number
+                    }
+                    """
+                : string.Empty;
+
             return $$"""
-                const {{ComponentName}} = () => {
+                const {{ComponentName}} = ({{args}}) => {
                   const { register, registerEx, getValues, setValue, formState: { errors }, control } = Util.useFormContextEx<{{UseFormType}}>()
 
                   return (
@@ -217,10 +243,10 @@ namespace Nijo.Models.CommandModelFeatures {
         /// </summary>
         private CommandDialogAggregateComponent GetDescendantComponent(AggregateMember.RelationMember member) {
             if (member is AggregateMember.Parent parent) {
-                return new ParentOrChildComponent(parent, _depth + 1);
+                return new ParentComponent(parent, _depth + 1);
 
             } else if (member is AggregateMember.Child child) {
-                return new ParentOrChildComponent(child, _depth + 1);
+                return new ChildComponent(child, _depth + 1);
 
             } else if (member is AggregateMember.VariationItem variation) {
                 return new VariationItemComponent(variation, _depth + 1);
@@ -268,9 +294,8 @@ namespace Nijo.Models.CommandModelFeatures {
         /// <summary>
         /// 単純な1個の隣接要素のコンポーネント
         /// </summary>
-        private class ParentOrChildComponent : DescendantComponent {
-            internal ParentOrChildComponent(AggregateMember.Parent parent, int depth) : base(parent, depth) { }
-            internal ParentOrChildComponent(AggregateMember.Child child, int depth) : base(child, depth) { }
+        private class ParentComponent : DescendantComponent {
+            internal ParentComponent(AggregateMember.Parent parent, int depth) : base(parent, depth) { }
 
             internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
                 var args = GetArguments().ToArray();
@@ -280,6 +305,44 @@ namespace Nijo.Models.CommandModelFeatures {
                     const {{ComponentName}} = ({{{(args.Length == 0 ? " " : $" {args.Join(", ")} ")}}}: {
                     {{args.SelectTextTemplate(arg => $$"""
                       {{arg}}: number
+                    """)}}
+                    }) => {
+                      const { register, registerEx, getValues, setValue, formState: { errors } } = Util.useFormContextEx<{{UseFormType}}>()
+
+                      return (
+                        {{WithIndent(vForm.Render(context), "    ")}}
+                      )
+                    }
+                    """;
+            }
+        }
+
+
+        /// <summary>
+        /// 単純な1個の隣接要素のコンポーネント
+        /// </summary>
+        private class ChildComponent : DescendantComponent {
+            internal ChildComponent(AggregateMember.Child child, int depth) : base(child, depth) { }
+
+            private bool HasStep => _aggregate.Item.Options.Step != null;
+
+            protected override VerticalFormBuilder GetComponentRoot(bool isReadOnly) {
+                var attributes = HasStep
+                    ? new[] { $"className={{(hidden ? 'hidden' : '')}}" }
+                    : [];
+                return new VerticalFormBuilder(_aggregate.Item.DisplayName, E_VForm2LabelType.String, attributes);
+            }
+
+            internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
+                var vForm = BuildVerticalForm(context, isReadOnly);
+
+                var args = GetArguments().ToDictionary(x => x, _ => "number");
+                if (HasStep) args.Add("hidden", "boolean");
+
+                return $$"""
+                    const {{ComponentName}} = ({{{(args.Count == 0 ? " " : $" {args.Keys.Join(", ")} ")}}}: {
+                    {{args.SelectTextTemplate(arg => $$"""
+                      {{arg.Key}}: {{arg.Value}}
                     """)}}
                     }) => {
                       const { register, registerEx, getValues, setValue, formState: { errors } } = Util.useFormContextEx<{{UseFormType}}>()
@@ -439,7 +502,7 @@ namespace Nijo.Models.CommandModelFeatures {
                       <Input.ErrorMessage name={`{{fullpath.Join(".")}}.${{{loopVar}}}`} errors={errors} />
                     </>
                     """;
-                return new VerticalFormBuilder(label, E_VForm2LabelType.JsxElement, loopVar);
+                return new VerticalFormBuilder(label, E_VForm2LabelType.JsxElement, $"key={{{loopVar}}}");
             }
 
             internal override string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {

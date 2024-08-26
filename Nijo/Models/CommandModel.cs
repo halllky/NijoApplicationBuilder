@@ -48,7 +48,17 @@ namespace Nijo.Models {
         }
 
         IEnumerable<string> IModel.ValidateAggregate(GraphNode<Aggregate> rootAggregate) {
+            var existsInvalidStep = false;
             foreach (var aggregate in rootAggregate.EnumerateThisAndDescendants()) {
+
+                // ステップ属性をつけることができるのはルート集約の直下のみ
+                if (aggregate.Item.Options.Step != null
+                    && (aggregate.GetParent()?.Initial.IsRoot() != true
+                    || !aggregate.IsChildMember())) {
+                    yield return $"{aggregate.Item.DisplayName}: step属性を定義できるのはルート集約の直下の{nameof(AggregateMember.Child)}集約のみです。";
+                    existsInvalidStep = true;
+                }
+
                 foreach (var member in aggregate.GetMembers()) {
 
                     // キー指定不可
@@ -56,6 +66,24 @@ namespace Nijo.Models {
                         || member is AggregateMember.Ref @ref && @ref.Relation.IsPrimary()) {
                         yield return $"{aggregate.Item.DisplayName}.{member.MemberName}: {nameof(CommandModel)}のメンバーをキーに指定することはできません。";
                     }
+                }
+            }
+
+            // ステップ属性の有無は混在不可能
+            if (!existsInvalidStep) {
+                var ownMembers = rootAggregate
+                    .GetMembers()
+                    .Where(m => m.DeclaringAggregate == rootAggregate);
+                var steps = ownMembers
+                    .Where(m => m is AggregateMember.RelationMember rel
+                             && rel.MemberAggregate.Item.Options.Step != null)
+                    .ToArray();
+                var notSteps = ownMembers
+                    .Where(m => m is not AggregateMember.RelationMember rel
+                             || rel.MemberAggregate.Item.Options.Step == null)
+                    .ToArray();
+                if (steps.Length > 0 && notSteps.Length > 0) {
+                    yield return $"{rootAggregate.Item.DisplayName}: step属性をつける場合はルート集約の「直下」の全ての要素にstep属性をつける必要があります。";
                 }
             }
         }
