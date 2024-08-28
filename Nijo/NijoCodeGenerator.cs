@@ -27,7 +27,6 @@ namespace Nijo {
         internal IEnumerable<IFeature> GetFeatures() {
             yield return new Features.Debugging.DebuggingFeature();
             yield return new Features.Logging.LoggingFeature();
-            yield return new Features.BackgroundService.BgTaskFeature();
         }
 
         internal static class Models {
