@@ -62,7 +62,7 @@ namespace Nijo.Util.CodeGenerating {
             }
         }
 
-        internal void CopyEmbeddedResource(Parts.EmbeddedResource resource) {
+        internal void CopyEmbeddedResource(Parts.EmbeddedResource resource, Func<string, string>? replacer = null) {
             var destination = System.IO.Path.GetFullPath(System.IO.Path.Combine(Path, resource.FileName));
 
             // 他の何かの機能で既に同名のファイルが生成されている場合はスキップ
@@ -72,7 +72,9 @@ namespace Nijo.Util.CodeGenerating {
             using var reader = resource.GetStreamReader();
             using var writer = SourceFile.GetStreamWriter(destination);
             while (!reader.EndOfStream) {
-                writer.WriteLine(reader.ReadLine());
+                var line = reader.ReadLine();
+                if (replacer != null) line = replacer(line);
+                writer.WriteLine(line);
             }
         }
 

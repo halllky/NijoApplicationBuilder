@@ -56,6 +56,11 @@ namespace Nijo.Parts {
             var beforeReplace = File.ReadAllText(afterCsproj);
             var afterReplace = beforeReplace.Replace("NIJO_APPLICATION_TEMPLATE", config.RootNamespace);
             File.WriteAllText(afterCsproj, afterReplace);
+
+            var programCs = Path.Combine(ProjectRoot, "Program.cs");
+            var beforeReplace2 = File.ReadAllText(programCs);
+            var afterReplace2 = beforeReplace2.Replace("NIJO_APPLICATION_TEMPLATE_Cli", config.RootNamespace);
+            File.WriteAllText(programCs, afterReplace2);
         }
 
         /// <summary>
