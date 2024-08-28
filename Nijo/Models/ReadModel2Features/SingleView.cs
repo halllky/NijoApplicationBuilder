@@ -400,6 +400,7 @@ namespace Nijo.Models.ReadModel2Features {
                 .OfType<AggregateMember.ValueMember>()
                 .Select(vm => new {
                     vm.MemberName,
+                    IsString = vm.Options.MemberType.GetCSharpTypeName() == "string",
                     Path = vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.CSharp),
                 })
                 .ToArray();
@@ -420,7 +421,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                     } else {
                 {{keys.SelectTextTemplate((k, i) => $$"""
-                        var key{{i}} = displayData.{{k.Path.Join("?.")}};
+                        var key{{i}} = displayData.{{k.Path.Join("?.")}}{{(k.IsString ? "" : "?.ToString()")}};
                 """)}}
                 {{keys.SelectTextTemplate((k, i) => $$"""
                         if (key{{i}} == null) throw new ArgumentException($"{{k.MemberName}}が指定されていません。");
