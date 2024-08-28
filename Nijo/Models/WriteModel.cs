@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using Nijo.Parts;
 using Nijo.Parts.WebClient;
 using Nijo.Features;
-using Nijo.Features.BatchUpdate;
 using Nijo.Features.Storing;
 
 namespace Nijo.Models {
@@ -132,12 +131,6 @@ namespace Nijo.Models {
                 utilDir.Generate(LocalRepository.UseLocalRepositoryCommitHandling(context));
                 utilDir.Generate(LocalRepository.RenderUseAggregateLocalRepository());
             });
-
-            // 一括アップデート
-            if (!context.Config.DisableBatchUpdate) {
-                var batchUpdate = new BatchUpdateFeature();
-                batchUpdate.GenerateCode(context);
-            }
         }
 
         void IModel.GenerateCode(CodeRenderingContext context) {

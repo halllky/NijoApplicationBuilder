@@ -28,9 +28,6 @@ namespace Nijo {
             yield return new Features.Debugging.DebuggingFeature();
             yield return new Features.Logging.LoggingFeature();
             yield return new Features.BackgroundService.BgTaskFeature();
-            if (!_project.ReadConfig().DisableBatchUpdate) {
-                yield return new Features.BatchUpdate.BatchUpdateFeature();
-            }
         }
 
         internal static class Models {
