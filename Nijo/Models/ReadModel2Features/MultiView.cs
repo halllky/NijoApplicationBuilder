@@ -240,12 +240,5 @@ namespace Nijo.Models.ReadModel2Features {
                 }
                 """;
         }
-
-        /// <summary>
-        /// JavaScriptのURLSearchParamsクラスに設定するソートの値のキー名
-        /// </summary>
-        private static string QueryParamSort(string i) {
-            return $"`SORT.${{{i}}}`";
-        }
     }
 }
