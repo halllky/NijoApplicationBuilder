@@ -11,7 +11,7 @@ export const PageFrame = ({ header, footer, children, className, ...rest }: HTML
 }) => {
   return (
     <div {...rest} className={`flex flex-col justify-start h-full overflow-auto ${className ?? ''}`}>
-      <header className="flex justify-start items-center basis-10 p-1 gap-2">
+      <header className="flex justify-start items-center basis-10 p-1 gap-4">
         <Util.SideMenuCollapseButton />
         {header}
       </header>
