@@ -110,33 +110,36 @@ export const useHttpRequest = () => {
     }])
   }, [dotnetWebApiDomain, sendHttpRequest])
 
-  const download = useCallback(async (url: string, filename?: string) => {
-    const a = document.createElement('a')
-    let blobUrl: string | undefined = undefined
-    try {
-      const response = await fetch(`${dotnetWebApiDomain}${url}`)
-      const blob = await response.blob()
-      const blobUrl = window.URL.createObjectURL(blob)
-      a.href = blobUrl
-      a.download = filename ?? ''
-      document.body.appendChild(a)
-      a.click()
-
-    } catch (error) {
-      dispatchMsg(msg => msg.error(`ファイルダウンロードに失敗しました: ${error}`))
-    } finally {
-      if (blobUrl !== undefined) window.URL.revokeObjectURL(blobUrl)
-      document.body.removeChild(a)
-    }
-  }, [dotnetWebApiDomain, dispatchMsg])
+  const postAndDownload = useCallback(async (url: string, data: object = {}, filename?: string) => {
+    return await postWithHandler(url, data, async response => {
+      const a = document.createElement('a')
+      let blobUrl: string | undefined = undefined
+      try {
+        const blob = await response.blob()
+        const blobUrl = window.URL.createObjectURL(blob)
+        a.href = blobUrl
+        a.download = filename ?? ''
+        document.body.appendChild(a)
+        a.click()
+        return { success: true }
+      } catch (error) {
+        throw `ファイルダウンロードに失敗しました: ${error}`
+      } finally {
+        // 後処理
+        if (blobUrl !== undefined) window.URL.revokeObjectURL(blobUrl)
+        document.body.removeChild(a)
+      }
+    })
+  }, [postWithHandler])
 
   return {
     get,
     post,
     /** HTTPレスポンスの内容次第で細かく制御を分けたい場合はこちらを使用 */
     postWithHandler,
+    /** POSTリクエストを送信し、レスポンスをデータでなくファイルとして解釈してダウンロードを開始します。 */
+    postAndDownload,
     httpDelete,
-    download,
   }
 }
 
