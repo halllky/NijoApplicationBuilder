@@ -625,7 +625,7 @@ namespace Nijo.Models.CommandModelFeatures {
                       }), [get, update, setValue{{args.Select(a => $", {a}").Join("")}}])
 
                       return (
-                        <VForm2.Item wide
+                        <VForm2.Item wideLabelValue
                           label={<>
                             <div className="flex items-center gap-2">
                               <VForm2.LabelText>{{_aggregate.GetParent()?.RelationName}}</VForm2.LabelText>

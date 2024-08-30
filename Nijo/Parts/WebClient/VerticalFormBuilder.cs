@@ -215,7 +215,7 @@ namespace Nijo.Parts.WebClient {
                     """;
             }
             return $$"""
-                <VForm2.Item{{(IsWide ? " wide" : "")}}{{label}}>
+                <VForm2.Item{{(IsWide ? " wideValue" : "")}}{{label}}>
                   {{WithIndent(_contents, "  ")}}
                 </VForm2.Item>
                 """;

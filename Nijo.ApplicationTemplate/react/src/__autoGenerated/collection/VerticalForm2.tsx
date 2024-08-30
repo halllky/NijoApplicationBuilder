@@ -71,35 +71,47 @@ const Indent = ({ label, children, className }: {
   )
 }
 
-const Item = ({ label, wide, children }: {
+const Item = ({ label, wideLabelValue, wideValue, children }: {
   label?: React.ReactNode
-  /** trueの場合は要素が横幅いっぱいまで拡張される */
-  wide?: boolean
+  /** trueの場合はラベルと値の両方が横幅いっぱいまで拡張される */
+  wideLabelValue?: boolean
+  /** trueの場合は値が横幅いっぱいまで拡張される */
+  wideValue?: boolean
   children?: React.ReactNode
 }) => {
-  return wide
-    // 要素がグリッドの横幅いっぱい確保される場合のレイアウト
-    ? (
-      <>
-        <div className="px-1 col-span-full border-vform">
-          {renderLabel(label)}
-        </div>
-        <div className="col-span-full border-vform bg-color-0">
-          {children}
-        </div>
-      </>
-    )
-    // 要素の横幅が小さい場合のレイアウト
-    : (
-      <div className="grid grid-flow-row grid-cols-[subgrid] col-span-2 border-vform">
-        <div className="p-px">
-          {renderLabel(label)}
-        </div>
-        <div className="p-px">
-          {children}
-        </div>
+  // 要素がグリッドの横幅いっぱい確保される場合のレイアウト
+  if (wideLabelValue) return (
+    <>
+      <div className="px-1 col-span-full border-vform">
+        {renderLabel(label)}
       </div>
-    )
+      <div className="col-span-full border-vform bg-color-0">
+        {children}
+      </div>
+    </>
+  )
+  // 値だけ横幅いっぱいの場合のレイアウト
+  if (wideValue) return (
+    <div className="grid grid-flow-row grid-cols-[subgrid] col-span-full border-vform">
+      <div className="p-px col-[1/1]">
+        {renderLabel(label)}
+      </div>
+      <div className="p-px col-[2/-1]">
+        {children}
+      </div>
+    </div>
+  )
+  // 上記以外（通常のレイアウト）
+  return (
+    <div className="grid grid-flow-row grid-cols-[subgrid] col-span-2 border-vform">
+      <div className="p-px">
+        {renderLabel(label)}
+      </div>
+      <div className="p-px">
+        {children}
+      </div>
+    </div>
+  )
 }
 
 
