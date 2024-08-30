@@ -119,9 +119,11 @@ namespace Nijo.Core.AggregateMemberTypes {
             var component = GetReactComponent();
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
             return $$"""
+                <div className="flex flex-wrap gap-x-2 gap-y-1">
                 {{Definition.Items.SelectTextTemplate(item => $$"""
-                <Input.CheckBox label="{{item.PhysicalName}}" {...{{ctx.Register}}(`{{fullpath}}.{{item.PhysicalName}}`)} />
+                  <Input.CheckBox label="{{item.PhysicalName}}" {...{{ctx.Register}}(`{{fullpath}}.{{item.PhysicalName}}`)} />
                 """)}}
+                </div>
                 """;
         }
 

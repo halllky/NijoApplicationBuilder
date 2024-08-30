@@ -135,9 +135,11 @@ namespace Nijo.Core.AggregateMemberTypes {
             var component = GetReactComponent();
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
             return $$"""
+                <div className="flex flex-wrap gap-x-2 gap-y-1">
                 {{_variationGroup.VariationAggregates.SelectTextTemplate(kv => $$"""
-                <Input.CheckBox label="{{kv.Value.RelationName}}" {...{{ctx.Register}}(`{{fullpath}}.{{kv.Value.RelationName}}`)} />
+                  <Input.CheckBox label="{{kv.Value.RelationName}}" {...{{ctx.Register}}(`{{fullpath}}.{{kv.Value.RelationName}}`)} />
                 """)}}
+                </div>
                 """;
         }
 
