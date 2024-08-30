@@ -15,6 +15,8 @@ namespace Nijo.Core {
         public bool IsNameLike { get; set; }
         public bool IsRequired { get; set; }
         public bool InvisibleInGui { get; set; }
+        public required string? SingleViewCustomUiComponentName { get; set; }
+        public required string? SearchConditionCustomUiComponentName { get; set; }
     }
 
     internal interface IReadOnlyMemberOptions {
@@ -25,5 +27,7 @@ namespace Nijo.Core {
         bool IsNameLike { get; }
         bool IsRequired { get; }
         bool InvisibleInGui { get; }
+        string? SingleViewCustomUiComponentName { get; }
+        string? SearchConditionCustomUiComponentName { get; }
     }
 }

@@ -129,20 +129,20 @@ namespace Nijo.Core {
             var parent = graphNode.GetParent();
             return parent != null
                 && parent.Attributes.TryGetValue(REL_ATTR_MULTIPLE, out var isArray)
-                && (bool)isArray;
+                && (bool)isArray!;
         }
         internal static bool IsChildMember(this GraphNode<Aggregate> graphNode) {
             var parent = graphNode.GetParent();
             return parent != null
-                && (!parent.Attributes.TryGetValue(REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray == false)
-                && (!parent.Attributes.TryGetValue(REL_ATTR_VARIATIONGROUPNAME, out var groupName) || (string)groupName == string.Empty);
+                && (!parent.Attributes.TryGetValue(REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray! == false)
+                && (!parent.Attributes.TryGetValue(REL_ATTR_VARIATIONGROUPNAME, out var groupName) || (string)groupName! == string.Empty);
         }
         internal static bool IsVariationMember(this GraphNode<Aggregate> graphNode) {
             var parent = graphNode.GetParent();
             return parent != null
-                && (!parent.Attributes.TryGetValue(REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray == false)
+                && (!parent.Attributes.TryGetValue(REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray! == false)
                 && parent.Attributes.TryGetValue(REL_ATTR_VARIATIONGROUPNAME, out var groupName)
-                && (string)groupName != string.Empty;
+                && (string)groupName! != string.Empty;
         }
         /// <summary>
         /// この集約を <see cref="AggregateMember.RelationMember"/> に変換します。
@@ -188,7 +188,7 @@ namespace Nijo.Core {
 
             foreach (var edge in readModel.Out) {
                 if (!edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)) continue;
-                if ((string)type != REL_ATTRVALUE_DEPENDSON) continue;
+                if ((string)type! != REL_ATTRVALUE_DEPENDSON) continue;
                 yield return edge.Terminal.As<Aggregate>();
             }
         }
@@ -201,7 +201,7 @@ namespace Nijo.Core {
 
             foreach (var edge in writeModel.In) {
                 if (!edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)) continue;
-                if ((string)type != REL_ATTRVALUE_DEPENDSON) continue;
+                if ((string)type! != REL_ATTRVALUE_DEPENDSON) continue;
                 yield return edge.Initial.As<Aggregate>();
             }
         }
@@ -234,7 +234,7 @@ namespace Nijo.Core {
         internal static IEnumerable<GraphEdge<Aggregate>> GetReferedEdges(this GraphNode<Aggregate> graphNode) {
             return graphNode.In
                 .Where(edge => edge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                            && (string)type == REL_ATTRVALUE_REFERENCE
+                            && (string)type! == REL_ATTRVALUE_REFERENCE
                             && edge.Initial.Item is Aggregate)
                 .Select(edge => edge.As<Aggregate>());
         }

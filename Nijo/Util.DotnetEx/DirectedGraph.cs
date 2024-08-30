@@ -256,7 +256,7 @@ namespace Nijo.Util.DotnetEx {
         private readonly DirectedGraph _graph;
 
         public string RelationName => _info.RelationName;
-        public IReadOnlyDictionary<string, object> Attributes => _info.Attributes;
+        public IReadOnlyDictionary<string, object?> Attributes => _info.Attributes;
 
         /// <summary>
         /// 辺の始点ではなくこの辺がどこから辿ってきて生成されたか
@@ -467,7 +467,7 @@ namespace Nijo.Util.DotnetEx {
         public required NodeId Initial { get; init; }
         public required NodeId Terminal { get; init; }
         public required string RelationName { get; init; }
-        public IReadOnlyDictionary<string, object> Attributes { get; init; } = new Dictionary<string, object>();
+        public IReadOnlyDictionary<string, object?> Attributes { get; init; } = new Dictionary<string, object?>();
     }
     #endregion VALUE
 

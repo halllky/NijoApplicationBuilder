@@ -18,6 +18,8 @@ namespace Nijo.Core {
         public required bool IsNameLike { get; init; }
         public required bool IsRequired { get; init; }
         public required bool InvisibleInGui { get; init; }
+        public required string? SingleViewCustomUiComponentName { get; init; }
+        public required string? SearchConditionCustomUiComponentName { get; init; }
 
         public override string ToString() => Id.Value;
     }
@@ -42,7 +44,7 @@ namespace Nijo.Core {
             }
 
             var memberEdges = aggregate.Out.Where(edge =>
-                (string)edge.Attributes[DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE] == DirectedEdgeExtensions.REL_ATTRVALUE_HAVING);
+                (string)edge.Attributes[DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE]! == DirectedEdgeExtensions.REL_ATTRVALUE_HAVING);
             foreach (var edge in memberEdges) {
                 yield return new Schalar(edge.Terminal.As<AggregateMemberNode>());
             }
@@ -50,15 +52,15 @@ namespace Nijo.Core {
             var childrenEdges = aggregate.Out.Where(edge =>
                 edge.IsParentChild()
                 && edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_MULTIPLE, out var isArray)
-                && (bool)isArray);
+                && (bool)isArray!);
             foreach (var edge in childrenEdges) {
                 yield return new Children(edge.As<Aggregate>());
             }
 
             var childEdges = aggregate.Out.Where(edge =>
                 edge.IsParentChild()
-                && (!edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray == false)
-                && (!edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, out var groupName) || (string)groupName == string.Empty));
+                && (!edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray! == false)
+                && (!edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, out var groupName) || (string)groupName! == string.Empty));
             foreach (var edge in childEdges) {
                 yield return new Child(edge.As<Aggregate>());
             }
@@ -66,14 +68,14 @@ namespace Nijo.Core {
             var variationGroups = aggregate.Out
                 .Where(edge =>
                     edge.IsParentChild()
-                    && (!edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray == false)
+                    && (!edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_MULTIPLE, out var isArray) || (bool)isArray! == false)
                     && edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, out var groupName)
                     && (string)groupName! != string.Empty)
-                .GroupBy(edge => (string)edge.Attributes[DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME])
+                .GroupBy(edge => (string)edge.Attributes[DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME]!)
                 .Select(group => new VariationGroup<Aggregate> {
                     GroupName = group.Key,
                     VariationAggregates = group.ToDictionary(
-                        edge => (string)edge.Attributes[DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH],
+                        edge => (string)edge.Attributes[DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH]!,
                         edge => edge.As<Aggregate>()),
                     MemberOrder = group.First().GetMemberOrder(),
                 });
@@ -85,7 +87,7 @@ namespace Nijo.Core {
 
             var refEdges = aggregate.Out.Where(edge =>
                 edge.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, out var type)
-                && (string)type == DirectedEdgeExtensions.REL_ATTRVALUE_REFERENCE);
+                && (string)type! == DirectedEdgeExtensions.REL_ATTRVALUE_REFERENCE);
             foreach (var edge in refEdges) {
                 var refMember = new Ref(edge.As<Aggregate>());
                 yield return refMember;
@@ -365,6 +367,8 @@ namespace Nijo.Core {
                     IsNameLike = group.IsNameLike,
                     IsRequired = group.RequiredAtDB,
                     InvisibleInGui = false,
+                    SingleViewCustomUiComponentName = null,
+                    SearchConditionCustomUiComponentName = null,
                 };
                 Owner = group.Owner;
             }
@@ -437,6 +441,10 @@ namespace Nijo.Core {
             internal override GraphNode<Aggregate> MemberAggregate => Relation.Terminal;
             internal override string CSharpTypeName => new DataClassForSaveRefTarget(Relation.Terminal).CSharpClassName;
             internal override string TypeScriptTypename => new DataClassForSaveRefTarget(Relation.Terminal).TypeScriptTypeName;
+            /// <summary>生成後のソースで外から注入して、中で React context 経由で参照するコンポーネント。ValueMemberまたはRefでのみ使用</summary>
+            internal string? SingleViewCustomUiComponentName => Relation.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_SINGLEVIEW_CUSTOM_UI_COMPONENT_NAME, out var s) ? (string?)s : null;
+            /// <summary>生成後のソースで外から注入して、中で React context 経由で参照するコンポーネント。ValueMemberまたはRefでのみ使用</summary>
+            internal string? SearchConditionCustomUiComponentName => Relation.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_SEARCHCONDITION_CUSTOM_UI_COMPONENT_NAME, out var s) ? (string?)s : null;
 
             internal IEnumerable<ValueMember> GetForeignKeys() {
                 foreach (var fk in Relation.Terminal.GetKeys()) {

@@ -283,6 +283,11 @@ namespace Nijo.Core {
             parser.IfExists("hidden")
                 .SetMemberOption(opt => opt.InvisibleInGui, true, E_Priority.Force);
 
+            parser.IfExists("single-view-ui")
+                .SetMemberOption(opt => opt.SingleViewCustomUiComponentName, componentName => componentName, E_Priority.Force);
+            parser.IfExists("search-condition-ui")
+                .SetMemberOption(opt => opt.SearchConditionCustomUiComponentName, componentName => componentName, E_Priority.Force);
+
             parser.IfExists("has-lifecycle")
                 .SetAggregateOption(opt => opt.HasLifeCycle, true, E_Priority.Force);
             parser.IfExists("readonly")

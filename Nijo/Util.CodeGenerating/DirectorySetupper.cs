@@ -73,6 +73,7 @@ namespace Nijo.Util.CodeGenerating {
             using var writer = SourceFile.GetStreamWriter(destination);
             while (!reader.EndOfStream) {
                 var line = reader.ReadLine();
+                if (line == null) continue;
                 if (replacer != null) line = replacer(line);
                 writer.WriteLine(line);
             }

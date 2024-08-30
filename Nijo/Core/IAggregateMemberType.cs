@@ -60,6 +60,19 @@ namespace Nijo.Core {
         /// <param name="vm">検索対象のメンバーの情報</param>
         /// <param name="ctx">コンテキスト引数</param>
         string RenderSingleViewVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx);
+
+        /// <summary>
+        /// ソース生成後プロジェクトでカスタマイズされた検索条件UIを使用する場合の、当該検索条件UIのReactコンポーネントのpropsのうち、
+        /// どのコンポーネントでも必要な共通のプロパティを除いたものを "プロパティ名: 型名" の配列の形で列挙します。
+        /// 未指定の場合はそういった追加のプロパティは特になし。
+        /// </summary>
+        IEnumerable<string> EnumerateSearchConditionCustomFormUiAdditionalProps() => [];
+        /// <summary>
+        /// ソース生成後プロジェクトでカスタマイズされた詳細画面フォームUIを使用する場合の、当該詳細画面フォームUIのReactコンポーネントのpropsのうち、
+        /// どのコンポーネントでも必要な共通のプロパティを除いたものを "プロパティ名: 型名" の配列の形で列挙します。
+        /// 未指定の場合はそういった追加のプロパティは特になし。
+        /// </summary>
+        IEnumerable<string> EnumerateSingleViewCustomFormUiAdditionalProps() => [];
     }
 
     /// <summary>検索条件のオブジェクトの型</summary>

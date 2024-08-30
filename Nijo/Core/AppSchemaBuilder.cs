@@ -75,7 +75,7 @@ namespace Nijo.Core {
                     Initial = aggregate.TreePath.Parent,
                     Terminal = aggregate.TreePath,
                     RelationName = aggregate.TreePath.BaseName,
-                    Attributes = new Dictionary<string, object> {
+                    Attributes = new Dictionary<string, object?> {
                         { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_PARENT_CHILD },
                         { DirectedEdgeExtensions.REL_ATTR_MULTIPLE, aggregate.Options.IsArray == true },
                         { DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH, aggregate.Options.IsVariationGroupMember?.Key ?? string.Empty },
@@ -92,13 +92,15 @@ namespace Nijo.Core {
                     Initial = x.aggregate.TreePath,
                     Terminal = TreePath.FromString(x.member.Options.IsReferenceTo!),
                     RelationName = x.member.Name,
-                    Attributes = new Dictionary<string, object> {
+                    Attributes = new Dictionary<string, object?> {
                         { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_REFERENCE },
                         { DirectedEdgeExtensions.REL_ATTR_IS_PRIMARY, x.member.Options.IsPrimary == true },
                         { DirectedEdgeExtensions.REL_ATTR_IS_INSTANCE_NAME, x.member.Options.IsDisplayName == true },
                         { DirectedEdgeExtensions.REL_ATTR_IS_NAME_LIKE, x.member.Options.IsNameLike == true },
                         { DirectedEdgeExtensions.REL_ATTR_IS_REQUIRED, x.member.Options.IsRequired == true },
                         { DirectedEdgeExtensions.REL_ATTR_INVISIBLE_IN_GUI, x.member.Options.InvisibleInGui == true },
+                        { DirectedEdgeExtensions.REL_ATTR_SINGLEVIEW_CUSTOM_UI_COMPONENT_NAME, x.member.Options.SingleViewCustomUiComponentName },
+                        { DirectedEdgeExtensions.REL_ATTR_SEARCHCONDITION_CUSTOM_UI_COMPONENT_NAME, x.member.Options.SearchConditionCustomUiComponentName },
                         { DirectedEdgeExtensions.REL_ATTR_MEMBER_ORDER, x.member.Order },
                     },
                 });
@@ -111,7 +113,7 @@ namespace Nijo.Core {
                     Initial = x.aggregate.TreePath,
                     Terminal = TreePath.FromString(x.dependent),
                     RelationName = "Depends On",
-                    Attributes = new Dictionary<string, object> {
+                    Attributes = new Dictionary<string, object?> {
                         { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_DEPENDSON },
                     },
                 });
@@ -168,13 +170,13 @@ namespace Nijo.Core {
             // enumの組み立て（Variation）
             var variationGroups = relationDefs
                 .GroupBy(relation => relation.Attributes.TryGetValue(DirectedEdgeExtensions.REL_ATTR_VARIATIONGROUPNAME, out var groupName)
-                    ? (string)groupName
+                    ? (string)groupName!
                     : string.Empty)
                 .Where(group => group.Key != string.Empty);
             foreach (var variationGroup in variationGroups) {
                 var enumValues = new List<EnumDefinition.Item>();
                 foreach (var relation in variationGroup) {
-                    var strValue = (string)relation.Attributes[DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH];
+                    var strValue = (string)relation.Attributes[DirectedEdgeExtensions.REL_ATTR_VARIATIONSWITCH]!;
                     if (!int.TryParse(strValue, out var intValue)) {
                         errors.Add($"Variationのキー '{strValue}' が整数ではありません。");
                         continue;
@@ -235,12 +237,14 @@ namespace Nijo.Core {
                         IsNameLike = member.Options.IsNameLike == true,
                         IsRequired = member.Options.IsRequired == true,
                         InvisibleInGui = member.Options.InvisibleInGui == true,
+                        SingleViewCustomUiComponentName = member.Options.SingleViewCustomUiComponentName,
+                        SearchConditionCustomUiComponentName = member.Options.SearchConditionCustomUiComponentName,
                     });
                     edgesFromAggToMember.Add(new GraphEdgeInfo {
                         Initial = aggregateId,
                         Terminal = memberId,
                         RelationName = member.Name,
-                        Attributes = new Dictionary<string, object> {
+                        Attributes = new Dictionary<string, object?> {
                             { DirectedEdgeExtensions.REL_ATTR_RELATION_TYPE, DirectedEdgeExtensions.REL_ATTRVALUE_HAVING },
                             { DirectedEdgeExtensions.REL_ATTR_MEMBER_ORDER, member.Order },
                         },
@@ -346,6 +350,10 @@ namespace Nijo.Core {
         public bool? IsRequired { get; set; }
         public string? IsReferenceTo { get; set; }
         public bool? InvisibleInGui { get; set; }
+        /// <summary>生成後のソースで外から注入して、中で React context 経由で参照する詳細画面用コンポーネント。ValueMemberまたはRefでのみ使用</summary>
+        public string? SingleViewCustomUiComponentName { get; set; }
+        /// <summary>生成後のソースで外から注入して、中で React context 経由で参照する詳細画面用コンポーネント。ValueMemberまたはRefでのみ使用</summary>
+        public string? SearchConditionCustomUiComponentName { get; set; }
     }
     public sealed class EnumValueOption {
         public string Name { get; set; } = string.Empty;
@@ -368,37 +376,39 @@ namespace Nijo.Core {
         internal const string REL_ATTR_IS_NAME_LIKE = "is-name-like";
         internal const string REL_ATTR_IS_REQUIRED = "is-required";
         internal const string REL_ATTR_INVISIBLE_IN_GUI = "invisible-in-gui";
+        internal const string REL_ATTR_SINGLEVIEW_CUSTOM_UI_COMPONENT_NAME = "singleview-custom-ui-component-name";
+        internal const string REL_ATTR_SEARCHCONDITION_CUSTOM_UI_COMPONENT_NAME = "searchcondition-custom-ui-component-name";
         internal const string REL_ATTR_MEMBER_ORDER = "relation-aggregate-order";
 
 
         // ----------------------------- GraphEdge extensions -----------------------------
 
         internal static bool IsPrimary(this GraphEdge graphEdge) {
-            return graphEdge.Attributes.TryGetValue(REL_ATTR_IS_PRIMARY, out var bln) && (bool)bln;
+            return graphEdge.Attributes.TryGetValue(REL_ATTR_IS_PRIMARY, out var bln) && (bool)bln!;
         }
         internal static bool IsInstanceName(this GraphEdge graphEdge) {
-            return graphEdge.Attributes.TryGetValue(REL_ATTR_IS_INSTANCE_NAME, out var bln) && (bool)bln;
+            return graphEdge.Attributes.TryGetValue(REL_ATTR_IS_INSTANCE_NAME, out var bln) && (bool)bln!;
         }
         internal static bool IsNameLike(this GraphEdge graphEdge) {
-            return graphEdge.Attributes.TryGetValue(REL_ATTR_IS_NAME_LIKE, out var bln) && (bool)bln;
+            return graphEdge.Attributes.TryGetValue(REL_ATTR_IS_NAME_LIKE, out var bln) && (bool)bln!;
         }
         internal static bool IsRequired(this GraphEdge graphEdge) {
-            return graphEdge.Attributes.TryGetValue(REL_ATTR_IS_REQUIRED, out var bln) && (bool)bln;
+            return graphEdge.Attributes.TryGetValue(REL_ATTR_IS_REQUIRED, out var bln) && (bool)bln!;
         }
         internal static bool InvisibleInGui(this GraphEdge graphEdge) {
-            return graphEdge.Attributes.TryGetValue(REL_ATTR_INVISIBLE_IN_GUI, out var bln) && (bool)bln;
+            return graphEdge.Attributes.TryGetValue(REL_ATTR_INVISIBLE_IN_GUI, out var bln) && (bool)bln!;
         }
         internal static bool IsRef(this GraphEdge graphEdge) {
             return graphEdge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                && (string)type == REL_ATTRVALUE_REFERENCE;
+                && (string)type! == REL_ATTRVALUE_REFERENCE;
         }
         internal static bool IsParentChild(this GraphEdge graphEdge) {
             return graphEdge.Attributes.TryGetValue(REL_ATTR_RELATION_TYPE, out var type)
-                && (string)type == REL_ATTRVALUE_PARENT_CHILD;
+                && (string)type! == REL_ATTRVALUE_PARENT_CHILD;
         }
 
         internal static int GetMemberOrder(this GraphEdge graphEdge) {
-            return (int)graphEdge.Attributes[REL_ATTR_MEMBER_ORDER];
+            return (int)graphEdge.Attributes[REL_ATTR_MEMBER_ORDER]!;
         }
     }
 
