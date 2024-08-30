@@ -6,6 +6,27 @@ import { normalize } from "../util/JsUtil"
 
 import "dayjs/locale/ja"
 
+/** 日付時刻 */
+export const DateTime = defineCustomComponent<string>((props, ref) => {
+  const value = useMemo(() => {
+    const validated = dateTimeValidation(props.value ?? '')
+    return validated.ok ? validated.formatted : ''
+  }, [props.value])
+  const overrideProps = {
+    ...props,
+    value,
+    placeholder: props.placeholder ?? '0000-00-00 00:00:00',
+    onValidate: dateTimeValidation,
+  }
+  return <TextInputBase ref={ref} {...overrideProps} />
+})
+const dateTimeValidation: ValidationHandler = value => {
+  const normalized = normalize(value)
+  if (normalized === '') return { ok: true, formatted: '' }
+  const parsed = parseAsDate(normalized, 'YYYY-MM-DD HH:mm:ss')
+  return parsed
+}
+
 /** 年月日 */
 export const Date = defineCustomComponent<string>((props, ref) => {
   const value = useMemo(() => {

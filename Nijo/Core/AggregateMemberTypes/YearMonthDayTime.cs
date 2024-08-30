@@ -11,13 +11,13 @@ namespace Nijo.Core.AggregateMemberTypes {
 
         public override ReactInputComponent GetReactComponent() {
             return new ReactInputComponent {
-                Name = "Input.Date",
+                Name = "Input.DateTime",
             };
         }
 
-        protected override string ComponentName => "Input.Date";
+        protected override string ComponentName => "Input.DateTime";
         protected override IEnumerable<string> RenderAttributes() {
-            yield break;
+            yield return $"className=\"w-48\"";
         }
 
         public override IGridColumnSetting GetGridColumnEditSetting() {
