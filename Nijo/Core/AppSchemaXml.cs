@@ -233,6 +233,11 @@ namespace Nijo.Core {
                 .SetAggregateOption(opt => opt.IsArray, false, E_Priority.Force)
                 .SetAggregateOption(opt => opt.Step, v => int.TryParse(v, out var step) ? step : 0, E_Priority.Force);
 
+            parser.IfExists("has-lifecycle")
+                .SetAggregateOption(opt => opt.HasLifeCycle, true, E_Priority.Force);
+            parser.IfExists("readonly")
+                .SetAggregateOption(opt => opt.IsReadOnlyAggregate, true, E_Priority.Force);
+
             // ------------------------------------------------
             // 集約メンバー用の属性 ここから
 
@@ -283,16 +288,13 @@ namespace Nijo.Core {
             parser.IfExists("hidden")
                 .SetMemberOption(opt => opt.InvisibleInGui, true, E_Priority.Force);
 
+            // UIコンポーネントの注入
             parser.IfExists("single-view-ui")
                 .SetMemberOption(opt => opt.SingleViewCustomUiComponentName, componentName => componentName, E_Priority.Force);
             parser.IfExists("search-condition-ui")
                 .SetMemberOption(opt => opt.SearchConditionCustomUiComponentName, componentName => componentName, E_Priority.Force);
 
-            parser.IfExists("has-lifecycle")
-                .SetAggregateOption(opt => opt.HasLifeCycle, true, E_Priority.Force);
-            parser.IfExists("readonly")
-                .SetAggregateOption(opt => opt.IsReadOnlyAggregate, true, E_Priority.Force);
-
+            // ------------------------------------------------
             var elementType = parser.GetElementType();
             var aggregateOption = parser.CreateAggregateOption();
             var memberOption = parser.CreateMemberOption();
