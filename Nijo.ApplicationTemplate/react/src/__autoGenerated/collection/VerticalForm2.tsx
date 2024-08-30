@@ -91,11 +91,11 @@ const Item = ({ label, wide, children }: {
     )
     // 要素の横幅が小さい場合のレイアウト
     : (
-      <div className="grid grid-flow-row grid-cols-[subgrid] col-span-2">
-        <div className="p-px border-vform">
+      <div className="grid grid-flow-row grid-cols-[subgrid] col-span-2 border-vform">
+        <div className="p-px">
           {renderLabel(label)}
         </div>
-        <div className="p-px border-vform bg-color-0">
+        <div className="p-px">
           {children}
         </div>
       </div>
@@ -107,7 +107,7 @@ const LabelText = ({ children }: {
   children?: React.ReactNode
 }) => {
   return (
-    <span className="select-none text-color-7 text-sm font-semibold">
+    <span className="select-none text-color-6 text-sm font-semibold">
       {children}
     </span>
   )
