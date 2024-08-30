@@ -15,6 +15,11 @@ namespace Nijo.Core.AggregateMemberTypes {
             };
         }
 
+        protected override string ComponentName => "Input.Date";
+        protected override IEnumerable<string> RenderAttributes() {
+            yield break;
+        }
+
         public override IGridColumnSetting GetGridColumnEditSetting() {
             return new TextColumnSetting {
                 SetValueToRow = (value, parsed) => {

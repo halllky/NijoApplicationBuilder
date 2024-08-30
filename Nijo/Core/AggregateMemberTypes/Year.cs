@@ -17,6 +17,12 @@ namespace Nijo.Core.AggregateMemberTypes {
             };
         }
 
+        protected override string ComponentName => "Input.Num";
+        protected override IEnumerable<string> RenderAttributes() {
+            yield return $"className=\"w-16\"";
+            yield return $"placeholder=\"0000\"";
+        }
+
         public override IGridColumnSetting GetGridColumnEditSetting() {
             return new TextColumnSetting {
                 GetValueFromRow = (value, formatted) => {

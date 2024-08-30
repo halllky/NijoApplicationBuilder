@@ -20,6 +20,7 @@ namespace Nijo.Core {
         public required bool InvisibleInGui { get; init; }
         public required string? SingleViewCustomUiComponentName { get; init; }
         public required string? SearchConditionCustomUiComponentName { get; init; }
+        public required TextBoxWidth? UiWidth { get; init; }
 
         public override string ToString() => Id.Value;
     }
@@ -369,6 +370,7 @@ namespace Nijo.Core {
                     InvisibleInGui = false,
                     SingleViewCustomUiComponentName = null,
                     SearchConditionCustomUiComponentName = null,
+                    UiWidth = null,
                 };
                 Owner = group.Owner;
             }

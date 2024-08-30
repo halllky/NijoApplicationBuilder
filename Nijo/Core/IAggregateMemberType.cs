@@ -150,18 +150,27 @@ namespace Nijo.Core {
         }
 
         string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
+            var attrs = new List<string>();
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
+            attrs.Add($"{{...{ctx.Register}(`{fullpath}`)}}");
+            if (vm.Options.UiWidth != null) attrs.Add($"className=\"w-[{vm.Options.UiWidth.GetCssValue()}]\"");
+
             return $$"""
-                <Input.Word {...{{ctx.Register}}(`{{fullpath}}`)} />
+                <Input.Word {{attrs.Join(" ")}}/>
                 """;
         }
 
         string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
             var component = GetReactComponent();
+
+            var attrs = new List<string>();
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
-            var readOnly = ctx.RenderReadOnlyStatement(vm.Declared);
+            attrs.Add($"{{...{ctx.Register}(`{fullpath}`)}}");
+            attrs.Add(ctx.RenderReadOnlyStatement(vm.Declared));
+            if (vm.Options.UiWidth != null) attrs.Add($"className=\"w-[{vm.Options.UiWidth.GetCssValue()}]\"");
+
             return $$"""
-                <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)} {{readOnly}}/>
+                <{{component.Name}} {{attrs.Join(" ")}}/>
                 {{ctx.RenderErrorMessage(vm)}}
                 """;
         }
@@ -260,24 +269,32 @@ namespace Nijo.Core {
                 """;
         }
 
+        /// <summary>コンポーネント名</summary>
+        protected abstract string ComponentName { get; }
+        /// <summary>レンダリングされるコンポーネントの属性をレンダリングします</summary>
+        protected abstract IEnumerable<string> RenderAttributes();
+
         string IAggregateMemberType.RenderSearchConditionVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
-            var component = GetReactComponent();
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
+
             return $$"""
                 <div className="flex flex-wrap items-center gap-1">
-                  <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}.{{FromTo.FROM_TS}}`)}{{component.GetPropsStatement().Join("")}} />
+                  <{{ComponentName}} {...{{ctx.Register}}(`{{fullpath}}.{{FromTo.FROM_TS}}`)} {{RenderAttributes().Select(x => $"{x} ").Join("")}}/>
                   <span className="select-none">～</span>
-                  <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}.{{FromTo.TO_TS}}`)}{{component.GetPropsStatement().Join("")}} />
+                  <{{ComponentName}} {...{{ctx.Register}}(`{{fullpath}}.{{FromTo.TO_TS}}`)} {{RenderAttributes().Select(x => $"{x} ").Join("")}}/>
                 </div>
                 """;
         }
 
         string IAggregateMemberType.RenderSingleViewVFormBody(AggregateMember.ValueMember vm, FormUIRenderingContext ctx) {
-            var component = GetReactComponent();
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
+
+            var attrs = RenderAttributes().ToList();
             var readOnly = ctx.RenderReadOnlyStatement(vm.Declared);
+            if (readOnly != null) attrs.Add(readOnly);
+
             return $$"""
-                <{{component.Name}} {...{{ctx.Register}}(`{{fullpath}}`)}{{component.GetPropsStatement().Join("")}} {{readOnly}}/>
+                <{{ComponentName}} {...{{ctx.Register}}(`{{fullpath}}`)} {{RenderAttributes().Select(x => $"{x} ").Join("")}}/>
                 {{ctx.RenderErrorMessage(vm)}}
                 """;
         }

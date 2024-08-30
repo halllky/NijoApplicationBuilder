@@ -294,6 +294,21 @@ namespace Nijo.Core {
             parser.IfExists("search-condition-ui")
                 .SetMemberOption(opt => opt.SearchConditionCustomUiComponentName, componentName => componentName, E_Priority.Force);
 
+            // レイアウト
+            parser.IfExists("width")
+                .SetMemberOption(opt => opt.UiWidthRem, value => {
+                    return new TextBoxWidth {
+                        ZenHan = value.FirstOrDefault() switch {
+                            'z' => TextBoxWidth.E_ZenHan.Zenkaku,
+                            'h' => TextBoxWidth.E_ZenHan.Hankaku,
+                            _ => throw new InvalidOperationException($"{element.Name}: widthの指定が誤りです。全角10文字なら'z10', 半角10文字なら'h10'のようにzかhをつけて指定してください。"),
+                        },
+                        CharCount = int.TryParse(value.AsSpan(1), out var charCount)
+                            ? charCount
+                            : throw new InvalidOperationException($"{element.Name}: widthの2文字目以降を数値として解釈できません。"),
+                    };
+                }, E_Priority.Force);
+
             // ------------------------------------------------
             var elementType = parser.GetElementType();
             var aggregateOption = parser.CreateAggregateOption();

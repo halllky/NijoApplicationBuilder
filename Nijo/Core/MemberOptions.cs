@@ -17,6 +17,7 @@ namespace Nijo.Core {
         public bool InvisibleInGui { get; set; }
         public required string? SingleViewCustomUiComponentName { get; set; }
         public required string? SearchConditionCustomUiComponentName { get; set; }
+        public required TextBoxWidth? UiWidth { get; set; }
     }
 
     internal interface IReadOnlyMemberOptions {
@@ -29,5 +30,6 @@ namespace Nijo.Core {
         bool InvisibleInGui { get; }
         string? SingleViewCustomUiComponentName { get; }
         string? SearchConditionCustomUiComponentName { get; }
+        TextBoxWidth? UiWidth { get; }
     }
 }

@@ -16,6 +16,11 @@ namespace Nijo.Core.AggregateMemberTypes {
             };
         }
 
+        protected override string ComponentName => "Input.YearMonth";
+        protected override IEnumerable<string> RenderAttributes() {
+            yield return $"className=\"w-20\"";
+        }
+
         public override IGridColumnSetting GetGridColumnEditSetting() {
             return new TextColumnSetting {
                 GetValueFromRow = (value, formatted) => {

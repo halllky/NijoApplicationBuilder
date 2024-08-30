@@ -1,9 +1,11 @@
+using Newtonsoft.Json.Linq;
 using Nijo.Core.AggregateMemberTypes;
 using Nijo.Util.DotnetEx;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Nijo.Core {
 
@@ -239,6 +241,7 @@ namespace Nijo.Core {
                         InvisibleInGui = member.Options.InvisibleInGui == true,
                         SingleViewCustomUiComponentName = member.Options.SingleViewCustomUiComponentName,
                         SearchConditionCustomUiComponentName = member.Options.SearchConditionCustomUiComponentName,
+                        UiWidth = member.Options.UiWidthRem,
                     });
                     edgesFromAggToMember.Add(new GraphEdgeInfo {
                         Initial = aggregateId,
@@ -354,10 +357,34 @@ namespace Nijo.Core {
         public string? SingleViewCustomUiComponentName { get; set; }
         /// <summary>生成後のソースで外から注入して、中で React context 経由で参照する詳細画面用コンポーネント。ValueMemberまたはRefでのみ使用</summary>
         public string? SearchConditionCustomUiComponentName { get; set; }
+        /// <summary>テキストボックスの横幅。文字列型と数値型のValueMemberでのみ有効</summary>
+        public TextBoxWidth? UiWidthRem { get; set; }
     }
     public sealed class EnumValueOption {
         public string Name { get; set; } = string.Empty;
         public int? Value { get; set; }
+    }
+    public sealed class TextBoxWidth {
+        public required E_ZenHan ZenHan { get; init; }
+        public required int CharCount { get; set; }
+
+        public string GetCssValue() {
+            // 確認に用いたフォントは font-family:"Cascadia Mono", "BIZ UDGothic"。
+            // 0.5m は テキストボックス内のパディング。
+            var width = ZenHan == E_ZenHan.Zenkaku
+                ? 0.5m + (CharCount * 1.050m)
+                : 0.5m + (CharCount * 0.615m);
+
+            // 小数第三位以下は誤差として小数第二位で切り上げる
+            var ceiled = Math.Ceiling(width * 100) / 100;
+
+            return $"{ceiled}rem";
+        }
+
+        public enum E_ZenHan {
+            Zenkaku,
+            Hankaku,
+        }
     }
 
 
