@@ -294,7 +294,7 @@ namespace Nijo.Core {
             if (readOnly != null) attrs.Add(readOnly);
 
             return $$"""
-                <{{ComponentName}} {...{{ctx.Register}}(`{{fullpath}}`)} {{RenderAttributes().Select(x => $"{x} ").Join("")}}/>
+                <{{ComponentName}} {...{{ctx.Register}}(`{{fullpath}}`)} {{attrs.Join(" ")}}/>
                 {{ctx.RenderErrorMessage(vm)}}
                 """;
         }
