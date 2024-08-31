@@ -18,6 +18,7 @@ namespace Nijo.Core {
         public required string? SingleViewCustomUiComponentName { get; set; }
         public required string? SearchConditionCustomUiComponentName { get; set; }
         public required TextBoxWidth? UiWidth { get; set; }
+        public required bool WideInVForm { get; set; }
     }
 
     internal interface IReadOnlyMemberOptions {
@@ -31,5 +32,6 @@ namespace Nijo.Core {
         string? SingleViewCustomUiComponentName { get; }
         string? SearchConditionCustomUiComponentName { get; }
         TextBoxWidth? UiWidth { get; }
+        bool WideInVForm { get; }
     }
 }

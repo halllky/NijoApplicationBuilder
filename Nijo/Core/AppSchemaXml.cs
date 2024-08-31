@@ -308,6 +308,8 @@ namespace Nijo.Core {
                             : throw new InvalidOperationException($"{element.Name}: widthの2文字目以降を数値として解釈できません。"),
                     };
                 }, E_Priority.Force);
+            parser.IfExists("wide")
+                .SetMemberOption(opt => opt.WideInVForm, true, E_Priority.Force);
 
             // ------------------------------------------------
             var elementType = parser.GetElementType();

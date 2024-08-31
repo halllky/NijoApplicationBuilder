@@ -45,7 +45,7 @@ namespace Nijo.Parts.WebClient {
 
             const int MAX_COLUMN = 5;  // 最大列数。通常のデスクトップPCならこの列数まで用意しておけば足りるだろう
             const int MAX_MEMBER = 20; // CSSクラスを生成する数。1つの親要素の直下に並ぶメンバーの限界値
-            const int THRESHOLD = 400; // 列数が切り替わる閾値（px）
+            const int THRESHOLD = 320; // 列数が切り替わる閾値（px）
 
             return Enumerable.Range(1, MAX_COLUMN).SelectTextTemplate(col => {
 

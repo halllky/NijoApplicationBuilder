@@ -21,6 +21,7 @@ namespace Nijo.Core {
         public required string? SingleViewCustomUiComponentName { get; init; }
         public required string? SearchConditionCustomUiComponentName { get; init; }
         public required TextBoxWidth? UiWidth { get; init; }
+        public required bool WideInVForm { get; init; }
 
         public override string ToString() => Id.Value;
     }
@@ -371,6 +372,7 @@ namespace Nijo.Core {
                     SingleViewCustomUiComponentName = null,
                     SearchConditionCustomUiComponentName = null,
                     UiWidth = null,
+                    WideInVForm = false,
                 };
                 Owner = group.Owner;
             }

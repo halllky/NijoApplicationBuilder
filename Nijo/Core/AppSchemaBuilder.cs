@@ -242,6 +242,7 @@ namespace Nijo.Core {
                         SingleViewCustomUiComponentName = member.Options.SingleViewCustomUiComponentName,
                         SearchConditionCustomUiComponentName = member.Options.SearchConditionCustomUiComponentName,
                         UiWidth = member.Options.UiWidthRem,
+                        WideInVForm = member.Options.WideInVForm == true,
                     });
                     edgesFromAggToMember.Add(new GraphEdgeInfo {
                         Initial = aggregateId,
@@ -359,6 +360,8 @@ namespace Nijo.Core {
         public string? SearchConditionCustomUiComponentName { get; set; }
         /// <summary>テキストボックスの横幅。文字列型と数値型のValueMemberでのみ有効</summary>
         public TextBoxWidth? UiWidthRem { get; set; }
+        /// <summary>フォームのUIで横幅いっぱい占有するかどうか</summary>
+        public bool? WideInVForm { get; set; }
     }
     public sealed class EnumValueOption {
         public string Name { get; set; } = string.Empty;

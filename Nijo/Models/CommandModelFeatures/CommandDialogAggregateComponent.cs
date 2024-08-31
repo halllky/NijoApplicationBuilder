@@ -148,7 +148,7 @@ namespace Nijo.Models.CommandModelFeatures {
             foreach (var member in EnumerateRenderedMemberes().OrderBy(m => m.Order)) {
                 if (member is AggregateMember.ValueMember vm) {
                     formBuilder.AddItem(
-                        vm.Options.MemberType is Core.AggregateMemberTypes.Sentence,
+                        vm.Options.WideInVForm,
                         member.MemberName,
                         E_VForm2LabelType.String,
                         vm.Options.MemberType.RenderSingleViewVFormBody(vm, formContext));

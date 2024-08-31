@@ -96,7 +96,7 @@ const Item = ({ label, wideLabelValue, wideValue, children }: {
       <div className="p-px col-[1/1]">
         {renderLabel(label)}
       </div>
-      <div className="p-px col-[2/-1]">
+      <div className="p-px col-[2/-1] overflow-x-auto">
         {children}
       </div>
     </div>
@@ -107,7 +107,7 @@ const Item = ({ label, wideLabelValue, wideValue, children }: {
       <div className="p-px">
         {renderLabel(label)}
       </div>
-      <div className="p-px">
+      <div className="p-px overflow-x-auto">
         {children}
       </div>
     </div>

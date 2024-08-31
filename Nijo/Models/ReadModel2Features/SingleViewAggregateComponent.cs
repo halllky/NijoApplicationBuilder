@@ -145,7 +145,7 @@ namespace Nijo.Models.ReadModel2Features {
                             {{formContext.RenderErrorMessage(vm)}}
                             """;
                     formBuilder.AddItem(
-                        vm.Options.MemberType is Core.AggregateMemberTypes.Sentence,
+                        vm.Options.WideInVForm,
                         member.MemberName,
                         E_VForm2LabelType.String,
                         body);
