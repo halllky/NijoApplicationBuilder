@@ -103,6 +103,7 @@ export const CheckBox = defineCustomComponent<boolean, { label?: React.ReactNode
       <ToggleBase ref={ref} {...rest} />
       <span className="select-none">
         {label}
+        &nbsp;
       </span>
     </label>
   )
