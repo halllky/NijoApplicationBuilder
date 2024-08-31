@@ -340,6 +340,11 @@ namespace Nijo.Core {
         /// </summary>
         public int? Step { get; set; }
 
+        /// <summary>
+        /// VFormにおけるラベル列の横幅。単位はCSSのrem。
+        /// </summary>
+        public decimal? EstimatedLabelWidth { get; set; }
+
         public sealed class GroupOption {
             public required string GroupName { get; init; }
             public required string Key { get; init; }

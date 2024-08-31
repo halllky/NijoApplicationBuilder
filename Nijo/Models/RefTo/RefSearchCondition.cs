@@ -274,7 +274,7 @@ namespace Nijo.Models.RefTo {
         internal string RenderVForm2(FormUIRenderingContext context) {
             var builder = new Parts.WebClient.VerticalFormBuilder();
             BuildVForm2(context, builder);
-            return builder.RenderAsRoot(context.CodeRenderingContext);
+            return builder.RenderAsRoot(context.CodeRenderingContext, null, _aggregate.Item.Options.EstimatedLabelWidth);
         }
         private void BuildVForm2(FormUIRenderingContext context, Parts.WebClient.VerticalFormSection section) {
             foreach (var m in GetOwnMembers()) {

@@ -21,15 +21,24 @@ namespace Nijo.Parts.WebClient {
         /// </summary>
         /// <param name="context"></param>
         /// <param name="maxDepth">インデントの最大の深さ。未指定の場合は自動計算される。</param>
+        /// <param name="estimatedLabelWidthRem">ラベル列の横幅。単位はCSSのrem。基本的にはそのフォーム中で登場する最も長い項目名の文字数</param>
         /// <returns></returns>
-        public string RenderAsRoot(CodeRenderingContext context, int? maxDepth = null) {
+        public string RenderAsRoot(CodeRenderingContext context, int? maxDepth, decimal? estimatedLabelWidthRem) {
+            var attrs = new List<string>();
+
             // 深さ未指定の場合は自動計算
             maxDepth ??= _childItems
                 .DefaultIfEmpty()
                 .Max(x => x?.GetMaxDepth() ?? 0);
+            attrs.Add($"maxDepth={{{maxDepth}}}");
+
+            // ラベル列の横幅
+            if (estimatedLabelWidthRem.HasValue) attrs.Add($"estimatedLabelWidth=\"{estimatedLabelWidthRem}rem\"");
+
+            attrs.AddRange(_additionalAttributes);
 
             return $$"""
-                <VForm2.Root {{_additionalAttributes.Select(x => $"{x} ").Join("")}}maxDepth={{{maxDepth}}}>
+                <VForm2.Root {{attrs.Join(" ")}}>
                   {{WithIndent(RenderBody(context), "  ")}}
                 </VForm2.Root>
                 """;
