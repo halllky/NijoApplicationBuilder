@@ -33,7 +33,7 @@ export const ServerSettingScreen = () => {
   const { data: appState, save } = useUserSetting()
   const { registerEx, getValues } = useFormEx<UserSettings>({ defaultValues: appState })
   const handleSave = useCallback(() => {
-    save(getValues())
+    save(omitEmptyStringValues(getValues()))
     dispatchToast(msg => msg.info('保存しました。'))
   }, [save, dispatchToast])
 
@@ -86,6 +86,19 @@ export const ServerSettingScreen = () => {
       </VForm.Root>
     </PageFrame>
   )
+}
+
+// ---------------------------------
+// ストレージに保存されるデータの容量削減のため設定値が空文字ならプロパティ自体を消す
+const omitEmptyStringValues = (setting: UserSettings): UserSettings => {
+  const json = JSON.stringify(setting, (_, value) => {
+    if (value === '') {
+      return undefined // JSON.stringifyの第2引数でundefinedが返されたプロパティはJSONから消える
+    } else {
+      return value
+    }
+  })
+  return JSON.parse(json) as UserSettings
 }
 
 // ---------------------------------
