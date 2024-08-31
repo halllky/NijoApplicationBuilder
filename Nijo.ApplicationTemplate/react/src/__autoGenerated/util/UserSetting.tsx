@@ -14,8 +14,9 @@ export type UserSettings = {
   environmentColor?: string
 }
 export const DEFAULT_FONT_FAMILY = [
-  'Arial',
+  '"Cascadia Mono"',
   '"BIZ UDGothic"',
+  'Arial',
   'sans-serif'
 ].join(',')
 
