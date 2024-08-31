@@ -53,6 +53,13 @@ namespace Nijo.Models.ReadModel2Features {
         internal const string TAKE_TS = "take";
 
         /// <summary>
+        /// もしこのオブジェクトがエントリーポイントならば
+        /// <see cref="SORT_CS"/> や <see cref="SKIP_CS"/> などの項目を持っているが
+        /// そうでなければ持っていない
+        /// </summary>
+        protected virtual bool IsSearchConditionEntry => _aggregate.IsRoot();
+
+        /// <summary>
         /// TypeScriptの新規オブジェクト作成関数の名前
         /// </summary>
         internal string CreateNewObjectFnName => $"createEmpty{TsTypeName}";
@@ -70,20 +77,14 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// 直近の子を列挙します。
         /// </summary>
-        internal IEnumerable<DescendantSearchCondition> GetChildMembers() {
-            var isOutOfEntryTree = _aggregate.IsOutOfEntryTree();
-
+        internal virtual IEnumerable<DescendantSearchCondition> GetChildMembers() {
             foreach (var rm in _aggregate.GetMembers().OfType<AggregateMember.RelationMember>()) {
-
-                if (isOutOfEntryTree) {
-                    // 参照先の集約の場合のロジック
-                    if (rm.MemberAggregate != _aggregate.Source?.Source.As<Aggregate>())
-                        yield return new DescendantSearchCondition(rm);
-
+                if (rm is AggregateMember.Parent) {
+                    continue;
+                } else if (rm is AggregateMember.Ref @ref) {
+                    yield return new RefTo.RefSearchCondition.RefDescendantSearchCondition(@ref, @ref.RefTo);
                 } else {
-                    // ルート集約のツリー内の場合のロジック
-                    if (rm is not AggregateMember.Parent)
-                        yield return new DescendantSearchCondition(rm);
+                    yield return new DescendantSearchCondition(rm);
                 }
             }
         }
@@ -146,6 +147,9 @@ namespace Nijo.Models.ReadModel2Features {
             void CollectRecursively(SearchCondition sc) {
                 searchConditions.Add(sc);
                 foreach (var child in sc.GetChildMembers()) {
+                    // 参照先の型は参照先クラスのほうでレンダリングするので除外
+                    if (!child._aggregate.IsInTreeOf(_aggregate)) continue;
+
                     CollectRecursively(child);
                 }
             }
@@ -162,7 +166,7 @@ namespace Nijo.Models.ReadModel2Features {
         }
         protected virtual string RenderCSharpDeclaring(CodeRenderingContext context) {
             return $$"""
-                {{If(_aggregate.IsRoot(), () => $$"""
+                {{If(IsSearchConditionEntry, () => $$"""
                 /// <summary>
                 /// {{_aggregate.Item.DisplayName}}の一覧検索条件
                 /// </summary>
@@ -203,6 +207,9 @@ namespace Nijo.Models.ReadModel2Features {
             void CollectRecursively(SearchCondition sc) {
                 searchConditions.Add(sc);
                 foreach (var child in sc.GetChildMembers()) {
+                    // 参照先の型は参照先クラスのほうでレンダリングするので除外
+                    if (!child._aggregate.IsInTreeOf(_aggregate)) continue;
+
                     CollectRecursively(child);
                 }
             }
@@ -236,7 +243,7 @@ namespace Nijo.Models.ReadModel2Features {
                     """;
 
             return $$"""
-                {{If(_aggregate.IsRoot(), () => $$"""
+                {{If(IsSearchConditionEntry, () => $$"""
                 /** {{_aggregate.Item.DisplayName}}の一覧検索条件 */
                 export type {{TsTypeName}} = {
                   /** 絞り込み条件（キーワード検索） */

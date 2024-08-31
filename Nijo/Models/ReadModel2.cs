@@ -104,7 +104,7 @@ namespace Nijo.Models {
                             []);
                     }
                     if (@ref.SearchConditionCustomUiComponentName != null) {
-                        var refTarget = new DescendantSearchCondition(@ref);
+                        var refTarget = new RefSearchCondition.RefDescendantSearchCondition(@ref, @ref.RefTo);
                         customizer.AddCustomUi(
                             @ref.SearchConditionCustomUiComponentName,
                             $"AggregateType.{refTarget.TsFilterTypeName}", // 検索条件のfiterは " | undeifned" 不要
