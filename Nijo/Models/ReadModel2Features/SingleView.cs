@@ -119,10 +119,10 @@ namespace Nijo.Models.ReadModel2Features {
                     if (modeInUrl === '{{URL_EDIT}}') return 'edit' as const
                     return undefined
                   }, [modeInUrl])
-                  const [nowLoading, setNowLoading] = React.useState(false)
+                  const [loadState, setLoadState] = React.useState<'loading' | 'ready' | 'error' | undefined>()
                   const reload = useEvent(async () => {
-                    if (nowLoading) return
-                    setNowLoading(true)
+                    if (loadState === 'loading') return
+                    setLoadState('loading')
                     try {
                       if ({{MODE}} === 'new') {
                         // ------ 画面表示時処理: 新規作成モードの場合 ------
@@ -137,6 +137,7 @@ namespace Nijo.Models.ReadModel2Features {
                           // 通常の初期値
                           reset(Types.{{dataClass.TsNewObjectFunction}}())
                         }
+                        setLoadState('ready')
 
                       } else if ({{MODE}} === 'detail' || {{MODE}} === 'edit') {
                         // ------ 画面表示時処理: 閲覧モードまたは編集モードの場合 ------
@@ -153,6 +154,7 @@ namespace Nijo.Models.ReadModel2Features {
                         const searchResult = await load{{_aggregate.Item.PhysicalName}}(searchCondition)
                         if (searchResult.length === 0) {
                           dispatchMsg(msg => msg.warn(`表示対象のデータが見つかりません。（{{urlKeysWithMember.Select(kv => $"{kv.Key.MemberName}: ${{{kv.Value}}}").Join(", ")}}）`))
+                          setLoadState('error')
                           return
                         }
                         const loadedValue = searchResult[0]
@@ -172,11 +174,11 @@ namespace Nijo.Models.ReadModel2Features {
                             dispatchMsg(msg => msg.warn('遷移前画面で指定されたパラメータが不正です。データベースから読み込んだ値を表示します。'))
                           }
                         }
+                        setLoadState('ready')
                       }
                     } catch {
+                      setLoadState('error')
                       dispatchMsg(msg => msg.warn('データの読み込みに失敗しました。'))
-                    } finally {
-                      setNowLoading(false)
                     }
                   })
                   React.useEffect(() => {
@@ -222,16 +224,15 @@ namespace Nijo.Models.ReadModel2Features {
                   })
 
                   // ページの外枠
-                  const SingleViewPageFrame = ({ children, header, footer, nowLoading }: {
+                  const SingleViewPageFrame = ({ children, header, footer }: {
                     children?: React.ReactNode
                     header?: React.ReactNode
                     footer?: React.ReactNode
-                    nowLoading?: boolean
                   }) => {
                     return (
                       <ReactHookForm.FormProvider {...reactHookFormMethods}>
                         <Layout.PageFrame
-                          nowLoading={nowLoading}
+                          nowLoading={loadState === undefined || loadState === 'loading'}
                           header={<>
                             <Layout.PageTitle>
                               {{_aggregate.Item.DisplayName}}&nbsp;{displayName}
@@ -241,19 +242,26 @@ namespace Nijo.Models.ReadModel2Features {
                           </>}
                           footer={footer}
                         >
-                          {children}
+                          {loadState === 'ready' && (
+                            children
+                          )}
+                          {loadState === 'error' && (
+                            <div className="m-auto h-full flex justify-center items-center">
+                              <Input.IconButton onClick={reload} fill>再読み込み</Input.IconButton>
+                            </div>
+                          )}
                         </Layout.PageFrame>
                       </ReactHookForm.FormProvider>
                     )
                   }
 
                   return {
-                    /** 初期表示中 */
-                    nowLoading,
-                    /** 画面モード */
-                    {{MODE}},
                     /** ページの外枠 */
                     SingleViewPageFrame,
+                    /** データの読み込み状態 */
+                    loadState,
+                    /** 画面モード */
+                    {{MODE}},
                     /** React hook form のメソッド群。これを通すか、またはuseFormContextを通すことで画面表示中データにアクセスします。 */
                     reactHookFormMethods,
                     /** 画面データを読み込みなおします。通常これを使うことはないはず。 */
@@ -320,7 +328,7 @@ namespace Nijo.Models.ReadModel2Features {
                     const VForm2 = Layout.VForm2
 
                     export default function () {
-                      const { SingleViewPageFrame, reactHookFormMethods, nowLoading, mode, save } = AggregateHook.{{FrameHookName}}()
+                      const { SingleViewPageFrame, reactHookFormMethods, loadState, mode, save } = AggregateHook.{{FrameHookName}}()
                       const { register, registerEx, getValues, setValue, setError, reset, formState: { defaultValues }, control } = reactHookFormMethods
 
                       // 編集画面への遷移
@@ -331,17 +339,16 @@ namespace Nijo.Models.ReadModel2Features {
 
                       return (
                         <SingleViewPageFrame
-                          nowLoading={nowLoading}
                           header={<>
-                            {(mode === 'new' || mode === 'edit') && (
+                            {loadState === 'ready' && (mode === 'new' || mode === 'edit') && (
                               <Input.IconButton fill onClick={save}>保存</Input.IconButton>
                             )}
-                            {mode === 'detail' && (
+                            {loadState === 'ready' && mode === 'detail' && (
                               <Input.IconButton fill onClick={handleStartEditing}>編集開始</Input.IconButton>
                             )}
                           </>}
                         >
-                          {{WithIndent(rootAggregateComponent.RenderCaller(), "        ")}}
+                          {{WithIndent(rootAggregateComponent.RenderCaller(), "      ")}}
                         </SingleViewPageFrame>
                       )
                     }

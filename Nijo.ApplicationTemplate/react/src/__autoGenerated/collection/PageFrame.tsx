@@ -12,7 +12,7 @@ export const PageFrame = ({ header, footer, children, className, nowLoading, ...
   nowLoading?: boolean
 }) => {
   return (
-    <div {...rest} className={`relative flex flex-col justify-start h-full overflow-auto ${className ?? ''}`}>
+    <div {...rest} className={`flex flex-col justify-start h-full overflow-auto ${className ?? ''}`}>
       <header className="flex justify-start items-center basis-10 p-1 gap-4">
         <Util.SideMenuCollapseButton />
         {header}
@@ -20,8 +20,11 @@ export const PageFrame = ({ header, footer, children, className, nowLoading, ...
 
       <Util.InlineMessageList />
 
-      <main className="flex-1 p-1 overflow-auto">
+      <main className="relative flex-1 p-1 overflow-auto">
         {children}
+        {nowLoading && (
+          <NowLoading />
+        )}
       </main>
 
       {footer && (
@@ -30,9 +33,6 @@ export const PageFrame = ({ header, footer, children, className, nowLoading, ...
         </footer>
       )}
 
-      {nowLoading && (
-        <NowLoading />
-      )}
     </div>
   )
 }
