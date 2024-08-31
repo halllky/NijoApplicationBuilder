@@ -153,7 +153,7 @@ namespace Nijo.Core {
             var attrs = new List<string>();
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
             attrs.Add($"{{...{ctx.Register}(`{fullpath}`)}}");
-            if (vm.Options.UiWidth != null) attrs.Add($"className=\"w-[{vm.Options.UiWidth.GetCssValue()}]\"");
+            if (vm.Options.UiWidth != null) attrs.Add($"className=\"min-w-[{vm.Options.UiWidth.GetCssValue()}]\"");
 
             return $$"""
                 <Input.Word {{attrs.Join(" ")}}/>
@@ -167,7 +167,7 @@ namespace Nijo.Core {
             var fullpath = ctx.GetReactHookFormFieldPath(vm.Declared).Join(".");
             attrs.Add($"{{...{ctx.Register}(`{fullpath}`)}}");
             attrs.Add(ctx.RenderReadOnlyStatement(vm.Declared));
-            if (vm.Options.UiWidth != null) attrs.Add($"className=\"w-[{vm.Options.UiWidth.GetCssValue()}]\"");
+            if (vm.Options.UiWidth != null) attrs.Add($"className=\"min-w-[{vm.Options.UiWidth.GetCssValue()}]\"");
 
             return $$"""
                 <{{component.Name}} {{attrs.Join(" ")}}/>
