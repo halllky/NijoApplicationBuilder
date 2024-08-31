@@ -27,6 +27,9 @@ namespace Nijo.Parts.WebClient {
         public string RenderAsRoot(CodeRenderingContext context, string? label, int? maxDepth, decimal? estimatedLabelWidthRem) {
             var attrs = new List<string>();
 
+            // ラベル
+            if (label != null) attrs.Add($"label=\"{label}\"");
+
             // 深さ未指定の場合は自動計算
             maxDepth ??= _childItems
                 .DefaultIfEmpty()
