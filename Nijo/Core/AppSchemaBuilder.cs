@@ -344,6 +344,10 @@ namespace Nijo.Core {
         /// VFormにおけるラベル列の横幅。単位はCSSのrem。
         /// </summary>
         public decimal? EstimatedLabelWidth { get; set; }
+        /// <summary>
+        /// VFormにおける入れ子の最大の深さ。左端列の横幅の計算に使う。未指定の場合は自動計算。
+        /// </summary>
+        public int? FormDepth { get; set; }
 
         public sealed class GroupOption {
             public required string GroupName { get; init; }

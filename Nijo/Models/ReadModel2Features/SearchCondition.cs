@@ -276,7 +276,11 @@ namespace Nijo.Models.ReadModel2Features {
         internal string RenderVForm2(FormUIRenderingContext context) {
             var builder = new Parts.WebClient.VerticalFormBuilder();
             BuildVForm2(context, builder);
-            return builder.RenderAsRoot(context.CodeRenderingContext, "検索条件", null, _aggregate.Item.Options.EstimatedLabelWidth);
+            return builder.RenderAsRoot(
+                context.CodeRenderingContext,
+                "検索条件",
+                _aggregate.Item.Options.FormDepth,
+                _aggregate.Item.Options.EstimatedLabelWidth);
         }
         private void BuildVForm2(FormUIRenderingContext context, Parts.WebClient.VerticalFormSection section) {
             foreach (var m in GetOwnMembers()) {

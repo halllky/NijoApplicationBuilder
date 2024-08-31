@@ -248,7 +248,7 @@ namespace Nijo.Models.ReadModel2Features {
         internal virtual string RenderDeclaring(CodeRenderingContext context) {
             // ルート要素のコンポーネントのレンダリング
             var vForm = BuildVerticalForm(context);
-            var maxDepth = EnumerateThisAndDescendantsRecursively().Max(component => component._depth);
+            var maxDepth = _aggregate.Item.Options.FormDepth ?? EnumerateThisAndDescendantsRecursively().Max(component => component._depth);
             var existsCustomUi = _aggregate
                 .GetMembers()
                 .Any(m => m is AggregateMember.ValueMember vm && vm.DeclaringAggregate == _aggregate && vm.Options.SingleViewCustomUiComponentName != null

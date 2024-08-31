@@ -208,7 +208,7 @@ namespace Nijo.Models.CommandModelFeatures {
         internal virtual string RenderDeclaring(CodeRenderingContext context, bool isReadOnly) {
             // ルート要素のコンポーネントのレンダリング
             var vForm = BuildVerticalForm(context, isReadOnly);
-            var maxDepth = EnumerateThisAndDescendantsRecursively().Max(component => component._depth);
+            var maxDepth = _aggregate.Item.Options.FormDepth ?? EnumerateThisAndDescendantsRecursively().Max(component => component._depth);
 
             var existsStep = _aggregate
                 .GetMembers()
