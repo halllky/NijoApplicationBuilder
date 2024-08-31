@@ -1,4 +1,4 @@
-import { FieldPath, FieldValues, PathValue, UseFormProps, useForm, useFormContext } from 'react-hook-form'
+import { FieldPath, FieldValues, PathValue, UseFormGetValues, UseFormProps, useForm, useFormContext } from 'react-hook-form'
 
 // ---------------------------------------------
 // 値の自動保存のためにコンテキスト内の値の変化を拾いたい
@@ -40,4 +40,33 @@ export const useFormContextEx = <T extends FieldValues = FieldValues>() => {
     }),
     onAnyValueChange: (useFormContextReturns as { onAnyValueChange?: OnAnyValueChangeEvent }).onAnyValueChange,
   }
+}
+
+// ---------------------------------------------
+/**
+ * getValuesを使用して、項目が読み取り専用か否かを返します。
+ * 引数のパス自体が読み取り専用である場合以外にも、
+ * 祖先要素のうちのいずれかのオブジェクトの'allReadOnly'がtrueに設定されている場合でも読み取り専用になります。
+ */
+export const isReadOnlyField = <T extends FieldValues = FieldValues,>(path: FieldPath<T>, getValues: UseFormGetValues<T>): boolean => {
+  if (getValues(path) === true) return true
+
+  // 後ろから1文字ずつ削っていって、いずれかの祖先要素の'allReadOnly'が指定されてるかを調べる
+  let partialPath = path
+  while (true) {
+    if (partialPath.length === 0) {
+      // ルート要素のパス
+      if (getValues(`readOnly.allReadOnly` as FieldPath<T>) === true) return true
+      break
+    } else if (partialPath.endsWith('.')) {
+      // ルート要素以外の祖先要素のパス
+      partialPath = partialPath.substring(0, partialPath.length - 1) as FieldPath<T>
+      if (getValues(`${partialPath}.allReadOnly` as FieldPath<T>) === true) return true
+      if (getValues(`${partialPath}.readOnly.allReadOnly` as FieldPath<T>) === true) return true
+    } else {
+      // 祖先の名前の途中の中途半端な部分
+      partialPath = partialPath.substring(0, partialPath.length - 1) as FieldPath<T>
+    }
+  }
+  return false
 }

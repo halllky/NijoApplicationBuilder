@@ -160,10 +160,13 @@ namespace Nijo.Models.ReadModel2Features {
                         }
                         const loadedValue = searchResult[0]
                         setDisplayName(`{{names.Select(n => $"${{loadedValue.{n.Join("?.")}}}").Join("")}}`)
-                        reset(loadedValue)
-                      
-                        // 編集モードの場合、遷移前の画面からクエリパラメータで画面初期値が指定されていることがあるため、その値で画面の値を上書きする
-                        if ({{MODE}} === 'edit') {
+
+                        if ({{MODE}} === 'detail') {
+                          reset({ ...loadedValue, readOnly: { allReadOnly: true } })
+                        } else {
+                          reset(loadedValue)
+
+                          // 編集モードの場合、遷移前の画面からクエリパラメータで画面初期値が指定されていることがあるため、その値で画面の値を上書きする
                           try {
                             const queryParameter = new URLSearchParams(search)
                             const initValueJson = queryParameter.get('{{EDIT_MODE_INITVALUE}}')
@@ -184,7 +187,7 @@ namespace Nijo.Models.ReadModel2Features {
                   })
                   React.useEffect(() => {
                     reload()
-                  }, [])
+                  }, [{{MODE}}])
 
                   // 保存時
                   const { {{BatchUpdateReadModel.HOOK_NAME}} } = {{BatchUpdateWriteModel.HOOK_NAME}}()
@@ -225,34 +228,36 @@ namespace Nijo.Models.ReadModel2Features {
                   })
 
                   // ページの外枠
-                  const SingleViewPageFrame = ({ children, header, footer }: {
+                  const SingleViewPageFrame = React.useCallback(({ children, header, footer }: {
                     children?: React.ReactNode
                     header?: React.ReactNode
                     footer?: React.ReactNode
                   }) => {
                     return (
-                      <Layout.PageFrame
-                        nowLoading={loadState === undefined || loadState === 'loading'}
-                        header={<>
-                          <Layout.PageTitle>
-                            {{_aggregate.Item.DisplayName}}&nbsp;{displayName}
-                          </Layout.PageTitle>
-                          <div className="flex-1"></div>
-                          {header}
-                        </>}
-                        footer={footer}
-                      >
-                        {loadState === 'ready' && (
-                          children
-                        )}
-                        {loadState === 'error' && (
-                          <div className="m-auto h-full flex justify-center items-center">
-                            <Input.IconButton onClick={reload} fill>再読み込み</Input.IconButton>
-                          </div>
-                        )}
-                      </Layout.PageFrame>
+                      <ReactHookForm.FormProvider {...reactHookFormMethods}>
+                        <Layout.PageFrame
+                          nowLoading={loadState === undefined || loadState === 'loading'}
+                          header={<>
+                            <Layout.PageTitle>
+                              {{_aggregate.Item.DisplayName}}&nbsp;{displayName}
+                            </Layout.PageTitle>
+                            <div className="flex-1"></div>
+                            {header}
+                          </>}
+                          footer={footer}
+                        >
+                          {loadState === 'ready' && (
+                            children
+                          )}
+                          {loadState === 'error' && (
+                            <div className="m-auto h-full flex justify-center items-center">
+                              <Input.IconButton onClick={reload} fill>再読み込み</Input.IconButton>
+                            </div>
+                          )}
+                        </Layout.PageFrame>
+                      </ReactHookForm.FormProvider>
                     )
-                  }
+                  }, [loadState, displayName])
 
                   return {
                     /** ページの外枠 */
@@ -332,7 +337,7 @@ namespace Nijo.Models.ReadModel2Features {
                     const VForm2 = Layout.VForm2
 
                     // ページ全体の状態をコンポーネント間で状態を受け渡すのに使うコンテキスト
-                    const {{PAGE_CONTEXT}} = createContext({} as ReturnType<typeof AggregateHook.{{FrameHookName}}>)
+                    const {{PAGE_CONTEXT}} = createContext({} as Pick<ReturnType<typeof AggregateHook.{{FrameHookName}}>, 'mode'>)
 
                     /** {{_aggregate.Item.DisplayName}}詳細画面 */
                     export default function () {
@@ -340,6 +345,11 @@ namespace Nijo.Models.ReadModel2Features {
                       const pageState = AggregateHook.{{FrameHookName}}()
                       const { SingleViewPageFrame, reactHookFormMethods, loadState, mode, save } = pageState
                       const { register, registerEx, getValues, setValue, setError, reset, formState: { defaultValues }, control } = reactHookFormMethods
+
+                      // ページの状態を子コンポーネントへ渡す
+                      const pageContextValue = useMemo(() => ({
+                        mode,
+                      }), [mode])
 
                       // 編集画面への遷移
                       const navigateToEditPage = Util.{{editView.NavigateFnName}}()
@@ -358,7 +368,7 @@ namespace Nijo.Models.ReadModel2Features {
                             )}
                           </>}
                         >
-                          <{{PAGE_CONTEXT}}.Provider value={pageState}>
+                          <{{PAGE_CONTEXT}}.Provider value={pageContextValue}>
                             {{WithIndent(rootAggregateComponent.RenderCaller(), "        ")}}
                           </{{PAGE_CONTEXT}}.Provider>
                         </SingleViewPageFrame>
