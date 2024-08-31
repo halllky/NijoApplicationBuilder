@@ -31,42 +31,38 @@ namespace Nijo.Models.ReadModel2Features {
         private readonly GraphNode<Aggregate> _aggregate;
         private readonly E_Type _type;
 
-        string IReactPage.Url => GetUrl(true);
+        string IReactPage.Url {
+            get {
+                // React Router は全角文字非対応なので key0, key1, ... をURLに使う。
+                // 新規作成モードでは key0, key1, ... は無視されるため、オプショナルとして定義する。
+                var urlKeys = _aggregate
+                    .GetKeys()
+                    .OfType<AggregateMember.ValueMember>()
+                    .Select((_, i) => $"/:key{i}?");
+                return $"/{UrlSubDomain}/:{MODE}{urlKeys.Join("")}";
+            }
+        }
         private string UrlSubDomain => _aggregate.Item.UniqueId;
         private const string URL_NEW = "new";
         private const string URL_DETAIL = "detail";
         private const string URL_EDIT = "edit";
 
+        private const string MODE = "mode";
+
         /// <summary>
         /// このページのURLを返します。
         /// </summary>
-        /// <param name="asReactRouterDef">
-        /// trueの場合、 "/aaa/bbb/:key0/:key1" など React Router の記法に則ったパラメータ込みのURL定義を返します。
-        /// falseの場合、"/aaa/bbb" などパラメータ抜きのURLを返します。
-        /// </param>
-        /// <returns>クォートなしの文字列を返します。</returns>
-        internal string GetUrl(bool asReactRouterDef) {
+        private string GetUrl() {
             if (_type == E_Type.New) {
                 return $"/{UrlSubDomain}/{URL_NEW}";
 
+            } else if (_type == E_Type.ReadOnly) {
+                return $"/{UrlSubDomain}/{URL_DETAIL}";
+
+            } else if (_type == E_Type.Edit) {
+                return $"/{UrlSubDomain}/{URL_EDIT}";
             } else {
-                // React Router は全角文字非対応なので key0, key1, ... をURLに使う
-                var urlKeys = _aggregate
-                    .GetKeys()
-                    .OfType<AggregateMember.ValueMember>()
-                    .Select((_, i) => $"/:key{i}");
-                var urlParams = asReactRouterDef
-                    ? urlKeys.Join("")
-                    : "";
-
-                if (_type == E_Type.ReadOnly) {
-                    return $"/{UrlSubDomain}/{URL_DETAIL}{urlParams}";
-
-                } else if (_type == E_Type.Edit) {
-                    return $"/{UrlSubDomain}/{URL_EDIT}{urlParams}";
-                } else {
-                    throw new InvalidOperationException($"SingleViewの種類が不正: {_aggregate.Item}");
-                }
+                throw new InvalidOperationException($"SingleViewの種類が不正: {_aggregate.Item}");
             }
         }
 
@@ -80,6 +76,195 @@ namespace Nijo.Models.ReadModel2Features {
         public bool ShowMenu => false;
         public string? LabelInMenu => null;
 
+        internal string FrameHookName => $"use{_aggregate.Item.PhysicalName}SingleViewFrame";
+        /// <summary>
+        /// 画面表示時のデータの読み込み、保存ボタン押下時の保存処理、ページの枠、をやってくれるフック
+        /// </summary>
+        internal string RenderPageFrameComponent(CodeRenderingContext context) {
+            var dataClass = new DataClassForDisplay(_aggregate);
+            var searchCondition = new SearchCondition(_aggregate);
+            var loadFeature = new LoadMethod(_aggregate);
+            var detailView = new SingleView(_aggregate, E_Type.ReadOnly);
+
+            var keys = _aggregate
+                .GetKeys()
+                .OfType<AggregateMember.ValueMember>()
+                .ToArray();
+            var urlKeysWithMember = keys
+                .Select((vm, i) => new { ValueMember = vm, Index = i })
+                .ToDictionary(x => x.ValueMember.Declared, x => $"key{x.Index}");
+            var names = _aggregate
+                .GetNames()
+                .OfType<AggregateMember.ValueMember>()
+                .Where(vm => vm.DeclaringAggregate == _aggregate)
+                .Select(vm => vm.Declared.GetFullPathAsDataClassForDisplay(E_CsTs.TypeScript).ToArray())
+                .ToArray();
+
+            return $$"""
+                export const {{FrameHookName}} = () => {
+                  const [, dispatchMsg] = Util.useMsgContext()
+
+                  // 表示データ
+                  const reactHookFormMethods = Util.useFormEx<Types.{{dataClass.TsTypeName}}>({ criteriaMode: 'all' })
+                  const { register, registerEx, getValues, setValue, setError, reset, formState: { defaultValues }, control } = reactHookFormMethods
+                  const [displayName, setDisplayName] = React.useState('')
+
+                  // 画面表示時
+                  const { search } = ReactRouter.useLocation() // URLからクエリパラメータを受け取る
+                  const { {{new[] { $"{MODE}: modeInUrl" }.Concat(urlKeysWithMember.Values).Join(", ")}} } = ReactRouter.useParams() // URLから画面モードと表示データのキーを受け取る
+                  const { {{LoadMethod.LOAD}}: load{{_aggregate.Item.PhysicalName}} } = {{loadFeature.ReactHookName}}()
+                  const mode = React.useMemo(() => {
+                    if (modeInUrl === '{{URL_NEW}}') return 'new' as const
+                    if (modeInUrl === '{{URL_DETAIL}}') return 'detail' as const
+                    if (modeInUrl === '{{URL_EDIT}}') return 'edit' as const
+                    return undefined
+                  }, [modeInUrl])
+                  const [nowLoading, setNowLoading] = React.useState(false)
+                  const reload = useEvent(async () => {
+                    if (nowLoading) return
+                    setNowLoading(true)
+                    try {
+                      if ({{MODE}} === 'new') {
+                        // ------ 画面表示時処理: 新規作成モードの場合 ------
+                        setDisplayName('新規作成')
+                        const queryParameter = new URLSearchParams(search)
+                        const initValueJson = queryParameter.get('{{NEW_MODE_INITVALUE}}')
+                        if (initValueJson != null) {
+                          // クエリパラメータで画面初期値が指定されている場合はそれを初期表示する
+                          const initValueObject: Types.{{dataClass.TsTypeName}} = JSON.parse(initValueJson)
+                          reset(initValueObject)
+                        } else {
+                          // 通常の初期値
+                          reset(Types.{{dataClass.TsNewObjectFunction}}())
+                        }
+
+                      } else if ({{MODE}} === 'detail' || {{MODE}} === 'edit') {
+                        // ------ 画面表示時処理: 閲覧モードまたは編集モードの場合 ------
+                {{urlKeysWithMember.Values.SelectTextTemplate(key => $$"""
+                        if ({{key}} === undefined) return
+                """)}}
+
+                        // URLで指定されたキーで検索をかける。1件だけヒットするはずなのでそれを画面に初期表示する
+                        const searchCondition = Types.{{searchCondition.CreateNewObjectFnName}}()
+                {{urlKeysWithMember.SelectTextTemplate(kv => $$"""
+                        searchCondition.{{kv.Key.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".")}} = {{ConvertUrlParamToSearchConditionValue(kv.Key, kv.Value)}}
+                """)}}
+
+                        const searchResult = await load{{_aggregate.Item.PhysicalName}}(searchCondition)
+                        if (searchResult.length === 0) {
+                          dispatchMsg(msg => msg.warn(`表示対象のデータが見つかりません。（{{urlKeysWithMember.Select(kv => $"{kv.Key.MemberName}: ${{{kv.Value}}}").Join(", ")}}）`))
+                          return
+                        }
+                        const loadedValue = searchResult[0]
+                        setDisplayName(`{{names.Select(n => $"${{loadedValue.{n.Join("?.")}}}").Join("")}}`)
+                        reset(loadedValue)
+                      
+                        // 編集モードの場合、遷移前の画面からクエリパラメータで画面初期値が指定されていることがあるため、その値で画面の値を上書きする
+                        if ({{MODE}} === 'edit') {
+                          try {
+                            const queryParameter = new URLSearchParams(search)
+                            const initValueJson = queryParameter.get('{{EDIT_MODE_INITVALUE}}')
+                            if (initValueJson != null) {
+                              const queryParameterValue: Types.{{dataClass.TsTypeName}} = JSON.parse(initValueJson)
+                              reset(queryParameterValue, { keepDefaultValues: true }) // あくまで手で入力した場合と同じ扱いとするためdefaultValuesはキープする
+                            }
+                          } catch {
+                            dispatchMsg(msg => msg.warn('遷移前画面で指定されたパラメータが不正です。データベースから読み込んだ値を表示します。'))
+                          }
+                        }
+                      }
+                    } catch {
+                      dispatchMsg(msg => msg.warn('データの読み込みに失敗しました。'))
+                    } finally {
+                      setNowLoading(false)
+                    }
+                  })
+                  React.useEffect(() => {
+                    reload()
+                  }, [])
+
+                  // 保存時
+                  const { {{BatchUpdateReadModel.HOOK_NAME}} } = {{BatchUpdateWriteModel.HOOK_NAME}}()
+                  const navigateToDetailPage = Util.{{detailView.NavigateFnName}}()
+                  const save = useEvent(async () => {
+                    // 閲覧モードでは保存不可
+                    if ({{MODE}} === 'detail') {
+                      dispatchMsg(msg => msg.warn('閲覧モードで表示中のためデータを更新することができません。'))
+                      return
+                    }
+                    // React hook form が持っている画面表示時（reset時）の値と最新の状態をディープイコールで比較し、変更がなければ保存処理中断
+                    const currentValues = getValues()
+                    if ({{MODE}} === 'edit' && defaultValues) {
+                      const changed = Types.{{dataClass.CheckChangesFunction}}({
+                        defaultValues: defaultValues as Types.{{dataClass.TsTypeName}},
+                        currentValues,
+                      })
+                      if (!changed) {
+                        alert('変更された内容がありません。')
+                        return
+                      }
+                    }
+                    // 一括更新APIを呼ぶ
+                    const response = await {{BatchUpdateReadModel.HOOK_NAME}}({
+                      dataType: '{{BatchUpdateReadModel.GetDataTypeLiteral(_aggregate)}}',
+                      values: currentValues,
+                    })
+                    // 処理失敗の場合、入力エラーを画面に表示
+                    if (!response.ok) {
+                      const errors = response.errors as [ReactHookForm.FieldPath<Types.{{dataClass.TsTypeName}}>, { types: { [key: string]: string } }][][]
+                      for (const [name, error] of errors[0]) {
+                        setError(name, error)
+                      }
+                      return
+                    }
+                    // 処理成功の場合、詳細画面（読み取り専用）へ遷移
+                    navigateToDetailPage(currentValues, 'readonly')
+                  })
+
+                  // ページの外枠
+                  const SingleViewPageFrame = ({ children, header, footer, nowLoading }: {
+                    children?: React.ReactNode
+                    header?: React.ReactNode
+                    footer?: React.ReactNode
+                    nowLoading?: boolean
+                  }) => {
+                    return (
+                      <ReactHookForm.FormProvider {...reactHookFormMethods}>
+                        <Layout.PageFrame
+                          nowLoading={nowLoading}
+                          header={<>
+                            <Layout.PageTitle>
+                              {{_aggregate.Item.DisplayName}}&nbsp;{displayName}
+                            </Layout.PageTitle>
+                            <div className="flex-1"></div>
+                            {header}
+                          </>}
+                          footer={footer}
+                        >
+                          {children}
+                        </Layout.PageFrame>
+                      </ReactHookForm.FormProvider>
+                    )
+                  }
+
+                  return {
+                    /** 初期表示中 */
+                    nowLoading,
+                    /** 画面モード */
+                    {{MODE}},
+                    /** ページの外枠 */
+                    SingleViewPageFrame,
+                    /** React hook form のメソッド群。これを通すか、またはuseFormContextを通すことで画面表示中データにアクセスします。 */
+                    reactHookFormMethods,
+                    /** 画面データを読み込みなおします。通常これを使うことはないはず。 */
+                    reload,
+                    /** 画面の内容で保存処理を実行します。 */
+                    save,
+                  }
+                }
+                """;
+        }
+
         /// <summary>
         /// 新規作成モードで開くとき、この名前のクエリパラメータにJSONで初期値を設定すると
         /// 画面初期値にそれが入った状態になる。JSONパースに失敗した場合は警告
@@ -92,12 +277,7 @@ namespace Nijo.Models.ReadModel2Features {
         private const string EDIT_MODE_INITVALUE = "init";
 
         public SourceFile GetSourceFile() => new SourceFile {
-            FileName = _type switch {
-                E_Type.New => "new.tsx",
-                E_Type.ReadOnly => "detail.tsx",
-                E_Type.Edit => "edit.tsx",
-                _ => throw new NotImplementedException(),
-            },
+            FileName = "single-view.tsx",
             RenderContent = ctx => {
                 var dataClass = new DataClassForDisplay(_aggregate);
                 var searchCondition = new SearchCondition(_aggregate);
@@ -140,143 +320,29 @@ namespace Nijo.Models.ReadModel2Features {
                     const VForm2 = Layout.VForm2
 
                     export default function () {
-                      const [, dispatchMsg] = Util.useMsgContext()
-
-                      // 表示データ
-                      const reactHookFormMethods = Util.useFormEx<AggregateType.{{dataClass.TsTypeName}}>({ criteriaMode: 'all' })
+                      const { SingleViewPageFrame, reactHookFormMethods, nowLoading, mode, save } = AggregateHook.{{FrameHookName}}()
                       const { register, registerEx, getValues, setValue, setError, reset, formState: { defaultValues }, control } = reactHookFormMethods
-                    {{If(_type != E_Type.New, () => $$"""
-                      const [displayName, setDisplayName] = useState('')
-                    """)}}
 
-                      // 画面初期表示時
-                    {{If(_type == E_Type.New, () => $$"""
-                      const { search } = useLocation()
-                      useEffect(() => {
-                        try {
-                          const queryParameter = new URLSearchParams(search)
-                          const initValueJson = queryParameter.get('{{NEW_MODE_INITVALUE}}')
-                          if (initValueJson != null) {
-                            // クエリパラメータで画面初期値が指定されている場合はそれを初期表示する
-                            const initValueObject: AggregateType.{{dataClass.TsTypeName}} = JSON.parse(initValueJson)
-                            reset(initValueObject)
-                          } else {
-                            // 通常の初期値
-                            reset(AggregateType.{{dataClass.TsNewObjectFunction}}())
-                          }
-                        } catch {
-                          dispatchMsg(msg => msg.warn('画面初期表示に失敗しました。'))
-                        }
-                      }, [search])
-
-                    """).Else(() => $$"""
-                      const { search } = useLocation()
-                      const { {{urlKeysWithMember.Values.Join(", ")}} } = useParams() // URLから表示データのキーを受け取る
-                      const { {{LoadMethod.LOAD}}: load{{_aggregate.Item.PhysicalName}} } = AggregateHook.{{loadFeature.ReactHookName}}()
-                      useEffect(() => {
-                    {{urlKeysWithMember.Values.SelectTextTemplate(key => $$"""
-                        if ({{key}} === undefined) return
-                    """)}}
-
-                        // URLで指定されたキーで検索をかける。1件だけヒットするはずなのでそれを画面に初期表示する
-                        const searchCondition = AggregateType.{{searchCondition.CreateNewObjectFnName}}()
-                    {{urlKeysWithMember.SelectTextTemplate(kv => $$"""
-                        searchCondition.{{kv.Key.Declared.GetFullPathAsSearchConditionFilter(E_CsTs.TypeScript).Join(".")}} = {{ConvertUrlParamToSearchConditionValue(kv.Key, kv.Value)}}
-                    """)}}
-
-                        load{{_aggregate.Item.PhysicalName}}(searchCondition).then(searchResult => {
-                          if (searchResult.length === 0) {
-                            dispatchMsg(msg => msg.warn(`表示対象のデータが見つかりません。（{{urlKeysWithMember.Select(kv => $"{kv.Key.MemberName}: ${{{kv.Value}}}").Join(", ")}}）`))
-                            return
-                          }
-                          const loadedValue = searchResult[0]
-                          setDisplayName(`{{names.Select(n => $"${{loadedValue.{n.Join("?.")}}}").Join("")}}`)
-                          reset(loadedValue)
-                    {{If(_type == E_Type.Edit, () => $$"""
-
-                          // 編集モードの場合、遷移前の画面からクエリパラメータで画面初期値が指定されていることがあるため、その値で画面の値を上書きする
-                          try {
-                            const queryParameter = new URLSearchParams(search)
-                            const initValueJson = queryParameter.get('{{EDIT_MODE_INITVALUE}}')
-                            if (initValueJson != null) {
-                              const queryParameterValue: AggregateType.{{dataClass.TsTypeName}} = JSON.parse(initValueJson)
-                              reset(queryParameterValue, { keepDefaultValues: true }) // あくまで手で入力した場合と同じ扱いとするためdefaultValuesはキープする
-                            }
-                          } catch {
-                            dispatchMsg(msg => msg.warn('画面初期表示に失敗しました。'))
-                          }
-                    """)}}
-                        })
-                      }, [{{urlKeysWithMember.Values.Join(", ")}}, load{{_aggregate.Item.PhysicalName}}])
-
-                    """)}}
-                    {{If(_type == E_Type.New || _type == E_Type.Edit, () => $$"""
-                      // 保存時
-                      const { {{BatchUpdateReadModel.HOOK_NAME}} } = AggregateHook.{{BatchUpdateWriteModel.HOOK_NAME}}()
-                      const navigateToDetailPage = Util.{{detailView.NavigateFnName}}()
-                      const handleSave = useEvent(async () => {
-                        const currentValues = getValues()
-                    {{If(_type == E_Type.Edit, () => $$"""
-                        if (defaultValues) {
-                          const changed = AggregateType.{{dataClass.CheckChangesFunction}}({
-                            defaultValues: defaultValues as AggregateType.{{dataClass.TsTypeName}},
-                            currentValues,
-                          })
-                          if (!changed) {
-                            alert('変更された内容がありません。')
-                            return
-                          }
-                        }
-                    """)}}
-                        const response = await {{BatchUpdateReadModel.HOOK_NAME}}({
-                          dataType: '{{BatchUpdateReadModel.GetDataTypeLiteral(_aggregate)}}',
-                          values: currentValues,
-                        })
-                        if (!response.ok) {
-                          // 入力エラーを画面に表示
-                          const errors = response.errors as [FieldPath<AggregateType.{{dataClass.TsTypeName}}>, { types: { [key: string]: string } }][][]
-                          for (const [name, error] of errors[0]) {
-                            setError(name, error)
-                          }
-                          return
-                        }
-                        // 詳細画面（読み取り専用）へ遷移
-                        navigateToDetailPage(currentValues, 'readonly')
-                      })
-
-                    """)}}
-                    {{If(_type == E_Type.ReadOnly, () => $$"""
                       // 編集画面への遷移
                       const navigateToEditPage = Util.{{editView.NavigateFnName}}()
                       const handleStartEditing = useEvent(() => {
                         navigateToEditPage(getValues(), 'edit')
                       })
 
-                    """)}}
-
                       return (
-                        <FormProvider {...reactHookFormMethods}>
-                          <Layout.PageFrame
-                            header={<>
-                              <Layout.PageTitle>
-                    {{If(_type == E_Type.New, () => $$"""
-                                {{_aggregate.Item.DisplayName}}&nbsp;新規作成
-                    """).Else(() => $$"""
-                                {{_aggregate.Item.DisplayName}}&nbsp;{displayName}
-                    """)}}
-                              </Layout.PageTitle>
-                              <div className="flex-1"></div>
-                    {{If(_type == E_Type.New || _type == E_Type.Edit, () => $$"""
-                              <Input.IconButton fill onClick={handleSave}>保存</Input.IconButton>
-                    """)}}
-                    {{If(_type == E_Type.ReadOnly, () => $$"""
+                        <SingleViewPageFrame
+                          nowLoading={nowLoading}
+                          header={<>
+                            {(mode === 'new' || mode === 'edit') && (
+                              <Input.IconButton fill onClick={save}>保存</Input.IconButton>
+                            )}
+                            {mode === 'detail' && (
                               <Input.IconButton fill onClick={handleStartEditing}>編集開始</Input.IconButton>
-                    """)}}
-                            </>}
-                          >
-                            {{WithIndent(rootAggregateComponent.RenderCaller(), "        ")}}
-                          </Layout.PageFrame>
-                        </FormProvider>
+                            )}
+                          </>}
+                        >
+                          {{WithIndent(rootAggregateComponent.RenderCaller(), "        ")}}
+                        </SingleViewPageFrame>
                       )
                     }
                     {{rootAggregateComponent.EnumerateThisAndDescendantsRecursively().SelectTextTemplate(component => $$"""
@@ -305,10 +371,10 @@ namespace Nijo.Models.ReadModel2Features {
 
                       return React.useCallback((initValue?: Types.{{dataClass.TsTypeName}}) => {
                         if (initValue === undefined) {
-                          navigate('{{GetUrl(false)}}')
+                          navigate('{{GetUrl()}}')
                         } else {
                           const queryString = new URLSearchParams({ {{NEW_MODE_INITVALUE}}: JSON.stringify(initValue) }).toString()
-                          navigate(`{{GetUrl(false)}}?${queryString}`)
+                          navigate(`{{GetUrl()}}?${queryString}`)
                         }
                       }, [navigate])
                     }
@@ -345,12 +411,12 @@ namespace Nijo.Models.ReadModel2Features {
                     """)}}
 
                         if (to === 'readonly') {
-                          navigate(`{{readView.GetUrl(false)}}/{{keys.Select((_, i) => $"${{window.encodeURI(`${{key{i}}}`)}}").Join("/")}}`)
+                          navigate(`{{readView.GetUrl()}}/{{keys.Select((_, i) => $"${{window.encodeURI(`${{key{i}}}`)}}").Join("/")}}`)
                         } else {
                           const queryString = overwrite
                             ? `?${new URLSearchParams({ {{EDIT_MODE_INITVALUE}}: JSON.stringify(obj) }).toString()}`
                             : ''
-                          navigate(`{{editView.GetUrl(false)}}/{{keys.Select((_, i) => $"${{window.encodeURI(`${{key{i}}}`)}}").Join("/")}}${queryString}`)
+                          navigate(`{{editView.GetUrl()}}/{{keys.Select((_, i) => $"${{window.encodeURI(`${{key{i}}}`)}}").Join("/")}}${queryString}`)
                         }
                       }, [navigate])
                     }
