@@ -59,7 +59,7 @@ export const CellEditor = Util.forwardRefEx(<T,>({
     }
   }, [caretCell.current, api, caretTdRef, containerRef])
   useEffect(() => {
-    editorRef.current?.focus()
+    if (caretCellEditingInfo) editorRef.current?.focus()
   }, [caretCellEditingInfo])
 
   /** 編集開始 */
