@@ -1,10 +1,9 @@
 import { useCallback, useMemo } from 'react';
 import * as Input from "../input";
-import { VerticalForm as VForm } from "../collection";
-import { useFormEx } from "./ReactHookFormUtil";
+import { PageFrame, PageTitle, VForm2 as VForm } from '../collection'
+import { useFormEx } from './ReactHookFormUtil'
 import { defineStorageContext } from './Storage'
 import { useToastContext } from './Notification'
-import { SideMenuCollapseButton } from './SideMenuCollapseButton';
 
 export type UserSettings = {
   apiDomain?: string
@@ -32,50 +31,60 @@ export const ServerSettingScreen = () => {
 
   const [, dispatchToast] = useToastContext()
   const { data: appState, save } = useUserSetting()
-  const { registerEx, handleSubmit } = useFormEx<UserSettings>({ defaultValues: appState })
-  const handleSave = useCallback((value: UserSettings) => {
-    save(value)
+  const { registerEx, getValues } = useFormEx<UserSettings>({ defaultValues: appState })
+  const handleSave = useCallback(() => {
+    save(getValues())
     dispatchToast(msg => msg.info('保存しました。'))
   }, [save, dispatchToast])
 
   return (
-    <form className="page-content-root" onSubmit={handleSubmit(handleSave)}>
-      <h1 className="flex gap-1 p-1 font-semibold select-none">
-        <SideMenuCollapseButton />
-        設定
-      </h1>
-      <VForm.Container className="p-1">
-        <VForm.Container label="基本設定">
-          <VForm.Item label="ダークモード">
-            <Input.CheckBox {...registerEx('darkMode')} />
-          </VForm.Item>
-          <VForm.Item label="フォント(font-family)" wide className="p-1">
+    <PageFrame
+      header={<>
+        <PageTitle>設定</PageTitle>
+        <div className="flex-1"></div>
+        <Input.IconButton fill onClick={handleSave}>更新</Input.IconButton>
+      </>}
+    >
+      <VForm.Root estimatedLabelWidth="10rem">
+        <VForm.Indent label="外観設定">
+          <VForm.AutoColumn>
+            <VForm.Item label="ダークモード">
+              <Input.CheckBox {...registerEx('darkMode')} />
+            </VForm.Item>
+          </VForm.AutoColumn>
+          <VForm.Item label="フォント" wideValue>
             <Input.Word {...registerEx('fontFamily')} className="w-full" />
+            <span className="block text-sm text-color-6">
+              CSSの font-family の記法で記載してください。
+            </span>
           </VForm.Item>
-          <VForm.Container label="画面隅のリボン" estimatedLabelWidth="8rem">
+        </VForm.Indent>
+
+        <VForm.Indent label="画面隅のリボン">
+          <VForm.AutoColumn>
             <VForm.Item label="文字">
               <Input.Word {...registerEx('environmentName')} />
             </VForm.Item>
             <VForm.Item label="色">
               <Input.Word {...registerEx('environmentColor')} />
             </VForm.Item>
-          </VForm.Container>
-          <VForm.Item label="APIサーバーURL" wide className="flex flex-col w-full p-1">
-            <Input.Word {...registerEx('apiDomain')} />
-            <span className="text-sm">
+          </VForm.AutoColumn>
+        </VForm.Indent>
+
+        <VForm.Indent label="デバッグ設定">
+          <VForm.Item label="APIサーバーURL" wideValue>
+            <Input.Word {...registerEx('apiDomain')} className="w-full" />
+            <span className="block text-sm text-color-6">
               この値は基本的に未指定で問題ありませんが、
               APIサーバーが動作しているにもかかわらず
               接続できない場合は手入力してください。
               <br />
-              未指定の場合の規定値は <span>{import.meta.env.VITE_BACKEND_API}</span> です。
+              未指定の場合の規定値は <span className="select-all">{import.meta.env.VITE_BACKEND_API}</span> です。
             </span>
           </VForm.Item>
-          <VForm.Item wide>
-            <Input.Button outlined submit>更新</Input.Button>
-          </VForm.Item>
-        </VForm.Container>
-      </VForm.Container>
-    </form>
+        </VForm.Indent>
+      </VForm.Root>
+    </PageFrame>
   )
 }
 
