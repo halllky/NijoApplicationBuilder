@@ -653,12 +653,13 @@ namespace Nijo.Models.ReadModel2Features {
                     """)}}
                       const options = useMemo<Layout.DataTableProps<{{rowType}}>>(() => ({
                     {{If(editable, () => $$"""
-                        onChangeRow: update,
+                        // 未指定の場合はセル編集不可になる
+                        onChangeRow: mode === 'detail' ? undefined : update,
                     """)}}
                         columns: [
                           {{WithIndent(tableBuilder.RenderColumnDef(context), "      ")}}
                         ],
-                      }), [get, update, setValue{{args.Select(a => $", {a}").Join("")}}])
+                      }), [mode, get, update, setValue{{args.Select(a => $", {a}").Join("")}}])
 
                       return (
                         <VForm2.Item wideLabelValue
