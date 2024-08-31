@@ -226,12 +226,12 @@ button[type="reset"].bg-color-button {
 
 .border-vform {
   /* neutral-200 */
-  box-shadow: 0 0 0 1px #e5e5e5;
+  box-shadow: 0 0 0 1px #d4d4d4;
 }
 
 .dark .border-vform {
   /* neutral-800 */
-  box-shadow: 0 0 0 1px #262626;
+  box-shadow: 0 0 0 1px #404040;
 }
 
 /* react-simplemde-editor, easymde 用の設定 */

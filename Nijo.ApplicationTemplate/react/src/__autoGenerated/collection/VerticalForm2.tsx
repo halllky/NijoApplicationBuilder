@@ -92,8 +92,8 @@ const Item = ({ label, wideLabelValue, wideValue, children }: {
   )
   // 値だけ横幅いっぱいの場合のレイアウト
   if (wideValue) return (
-    <div className="grid grid-flow-row grid-cols-[subgrid] col-span-full border-vform">
-      <div className="p-px col-[1/1]">
+    <div className="grid grid-flow-row grid-cols-[subgrid] col-span-full">
+      <div className="p-px col-[1/1] text-right pr-2">
         {renderLabel(label)}
       </div>
       <div className="p-px col-[2/-1] overflow-x-auto">
@@ -103,8 +103,8 @@ const Item = ({ label, wideLabelValue, wideValue, children }: {
   )
   // 上記以外（通常のレイアウト）
   return (
-    <div className="grid grid-flow-row grid-cols-[subgrid] col-span-2 border-vform">
-      <div className="p-px">
+    <div className="grid grid-flow-row grid-cols-[subgrid] col-span-2">
+      <div className="p-px text-right pr-2">
         {renderLabel(label)}
       </div>
       <div className="p-px overflow-x-auto">
