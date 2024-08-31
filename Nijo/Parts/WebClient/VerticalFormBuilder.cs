@@ -43,38 +43,35 @@ namespace Nijo.Parts.WebClient {
         /// </summary>
         internal static string RenderContainerQuery() {
 
-            // 横5列までのレイアウトまで用意しておけば足りるだろう
-            var columns = Enumerable.Range(1, 5).ToArray();
+            const int MAX_COLUMN = 5;  // 最大列数。通常のデスクトップPCならこの列数まで用意しておけば足りるだろう
+            const int MAX_MEMBER = 20; // CSSクラスを生成する数。1つの親要素の直下に並ぶメンバーの限界値
+            const int THRESHOLD = 400; // 列数が切り替わる閾値（px）
 
-            // 1つの親要素の直下に並ぶメンバーの数としては20個まで考慮しておけばおおよそ足りるだろう
-            var array = Enumerable.Range(1, 20).ToArray();
+            return Enumerable.Range(1, MAX_COLUMN).SelectTextTemplate(col => {
 
-            return columns.SelectTextTemplate(colCount => {
-                var isFirst = colCount == columns.Min();
-                var isLast = colCount == columns.Max();
-
-                // そのレイアウトが適用されるコンテナ横幅の最小から最大までの幅。各列数ごとの具体的な値は以下
+                // minmaxはそのレイアウトが適用されるコンテナ横幅の最小から最大までの幅。
+                // 例えば閾値が400pxの場合、各列数ごとの具体的な値は以下
                 // 
                 // COL: 1      2       3       4       5
                 // -------------------------------------------
                 // MIN: -    ,  800px, 1200px, 1600px, 2000px
                 // MAX: 799px, 1199px, 1599px, 1999px, -
-                //
+
                 var minmax = new List<string>();
-                if (!isFirst) minmax.Add($"(min-width: {(colCount - 1) * 400 + 400}px)");
-                if (!isLast) minmax.Add($"(max-width: {colCount * 400 + 400 - 1}px)");
+                if (col > 1) minmax.Add($"(min-width: {(col - 1) * THRESHOLD + THRESHOLD}px)");
+                if (col < MAX_COLUMN) minmax.Add($"(max-width: {col * THRESHOLD + THRESHOLD - 1}px)");
 
                 return $$"""
 
-                    /* VForm2: 横{{colCount}}列の場合のレイアウト */
+                    /* VForm2: 横{{col}}列の場合のレイアウト */
                     @container {{minmax.Join(" and ")}} {
                       .vform-template-column {
-                        grid-template-columns: calc((var(--vform-indent-size) * var(--vform-max-depth)) + var(--vform-label-width)) 1fr{{(colCount >= 2 ? $" repeat({colCount - 1}, var(--vform-label-width) 1fr)" : "")}};
+                        grid-template-columns: calc((var(--vform-indent-size) * var(--vform-max-depth)) + var(--vform-label-width)) 1fr{{(col >= 2 ? $" repeat({col - 1}, var(--vform-label-width) 1fr)" : "")}};
                       }
-                    {{array.SelectTextTemplate(i => $$"""
+                    {{Enumerable.Range(1, MAX_MEMBER).SelectTextTemplate(i => $$"""
 
                       .vform-vertical-{{i}}-items {
-                        grid-template-rows: repeat({{Math.Ceiling((decimal)i / colCount)}}, auto);
+                        grid-template-rows: repeat({{Math.Ceiling((decimal)i / col)}}, auto);
                       }
                     """)}}
                     }
