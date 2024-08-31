@@ -24,12 +24,10 @@ namespace Nijo.Models.ReadModel2Features {
             Edit,
         }
 
-        internal SingleView(GraphNode<Aggregate> agg, E_Type type) {
+        internal SingleView(GraphNode<Aggregate> agg) {
             _aggregate = agg;
-            _type = type;
         }
         private readonly GraphNode<Aggregate> _aggregate;
-        private readonly E_Type _type;
 
         string IReactPage.Url {
             get {
@@ -52,14 +50,14 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// このページのURLを返します。
         /// </summary>
-        private string GetUrl() {
-            if (_type == E_Type.New) {
+        private string GetUrl(E_Type type) {
+            if (type == E_Type.New) {
                 return $"/{UrlSubDomain}/{URL_NEW}";
 
-            } else if (_type == E_Type.ReadOnly) {
+            } else if (type == E_Type.ReadOnly) {
                 return $"/{UrlSubDomain}/{URL_DETAIL}";
 
-            } else if (_type == E_Type.Edit) {
+            } else if (type == E_Type.Edit) {
                 return $"/{UrlSubDomain}/{URL_EDIT}";
             } else {
                 throw new InvalidOperationException($"SingleViewの種類が不正: {_aggregate.Item}");
@@ -67,12 +65,7 @@ namespace Nijo.Models.ReadModel2Features {
         }
 
         public string DirNameInPageDir => _aggregate.Item.DisplayName.ToFileNameSafe();
-        public string ComponentPhysicalName => _type switch {
-            E_Type.New => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}CreateView",
-            E_Type.ReadOnly => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}DetailView",
-            E_Type.Edit => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}EditView",
-            _ => throw new NotImplementedException(),
-        };
+        public string ComponentPhysicalName => $"{_aggregate.Item.DisplayName.ToCSharpSafe()}SingleView";
         public bool ShowMenu => false;
         public string? LabelInMenu => null;
 
@@ -85,7 +78,6 @@ namespace Nijo.Models.ReadModel2Features {
             var dataClass = new DataClassForDisplay(_aggregate);
             var searchCondition = new SearchCondition(_aggregate);
             var loadFeature = new LoadMethod(_aggregate);
-            var detailView = new SingleView(_aggregate, E_Type.ReadOnly);
 
             var keys = _aggregate
                 .GetKeys()
@@ -191,7 +183,7 @@ namespace Nijo.Models.ReadModel2Features {
 
                   // 保存時
                   const { {{BatchUpdateReadModel.HOOK_NAME}} } = {{BatchUpdateWriteModel.HOOK_NAME}}()
-                  const navigateToDetailPage = Util.{{detailView.NavigateFnName}}()
+                  const navigateToDetailPage = Util.{{GetNavigateFnName(E_Type.ReadOnly)}}()
                   const save = useEvent(async () => {
                     // 閲覧モードでは保存不可
                     if ({{MODE}} === 'detail') {
@@ -316,9 +308,6 @@ namespace Nijo.Models.ReadModel2Features {
 
                 var rootAggregateComponent = new SingleViewAggregateComponent(_aggregate);
 
-                var detailView = new SingleView(_aggregate, E_Type.ReadOnly);
-                var editView = new SingleView(_aggregate, E_Type.Edit);
-
                 return $$"""
                     import React, { useState, useEffect, useCallback, useMemo, useReducer, useRef, useId, useContext, createContext } from 'react'
                     import useEvent from 'react-use-event-hook'
@@ -352,7 +341,7 @@ namespace Nijo.Models.ReadModel2Features {
                       }), [mode])
 
                       // 編集画面への遷移
-                      const navigateToEditPage = Util.{{editView.NavigateFnName}}()
+                      const navigateToEditPage = Util.{{GetNavigateFnName(E_Type.Edit)}}()
                       const handleStartEditing = useEvent(() => {
                         navigateToEditPage(getValues(), 'edit')
                       })
@@ -386,31 +375,31 @@ namespace Nijo.Models.ReadModel2Features {
         /// <summary>
         /// 詳細画面へ遷移する関数の名前
         /// </summary>
-        public string NavigateFnName => _type switch {
-            E_Type.New => $"useNavigateTo{_aggregate.Item.PhysicalName}CreateView",
-            _ => $"useNavigateTo{_aggregate.Item.PhysicalName}SingleView",
-        };
-        internal string RenderNavigateFn(CodeRenderingContext context) {
-            if (_type == E_Type.New) {
+        public string GetNavigateFnName(E_Type type) {
+            return type switch {
+                E_Type.New => $"useNavigateTo{_aggregate.Item.PhysicalName}CreateView",
+                _ => $"useNavigateTo{_aggregate.Item.PhysicalName}SingleView",
+            };
+        }
+        internal string RenderNavigateFn(CodeRenderingContext context, E_Type type) {
+            if (type == E_Type.New) {
                 var dataClass = new DataClassForDisplay(_aggregate);
                 return $$"""
                     /** {{_aggregate.Item.DisplayName}}の新規作成画面へ遷移する関数を返します。引数にオブジェクトを渡した場合は画面初期値になります。 */
-                    export const {{NavigateFnName}} = () => {
+                    export const {{GetNavigateFnName(type)}} = () => {
                       const navigate = useNavigate()
 
                       return React.useCallback((initValue?: Types.{{dataClass.TsTypeName}}) => {
                         if (initValue === undefined) {
-                          navigate('{{GetUrl()}}')
+                          navigate('{{GetUrl(type)}}')
                         } else {
                           const queryString = new URLSearchParams({ {{NEW_MODE_INITVALUE}}: JSON.stringify(initValue) }).toString()
-                          navigate(`{{GetUrl()}}?${queryString}`)
+                          navigate(`{{GetUrl(type)}}?${queryString}`)
                         }
                       }, [navigate])
                     }
                     """;
             } else {
-                var readView = new SingleView(_aggregate, E_Type.ReadOnly);
-                var editView = new SingleView(_aggregate, E_Type.Edit);
                 var dataClass = new DataClassForDisplay(_aggregate);
                 var keys = _aggregate
                     .GetKeys()
@@ -422,7 +411,7 @@ namespace Nijo.Models.ReadModel2Features {
                     .ToArray();
                 return $$"""
                     /** {{_aggregate.Item.DisplayName}}の閲覧画面または編集画面へ遷移する関数を返します。 */
-                    export const {{NavigateFnName}} = () => {
+                    export const {{GetNavigateFnName(type)}} = () => {
                       const navigate = useNavigate()
 
                       return React.useCallback((
@@ -440,12 +429,12 @@ namespace Nijo.Models.ReadModel2Features {
                     """)}}
 
                         if (to === 'readonly') {
-                          navigate(`{{readView.GetUrl()}}/{{keys.Select((_, i) => $"${{window.encodeURI(`${{key{i}}}`)}}").Join("/")}}`)
+                          navigate(`{{GetUrl(E_Type.ReadOnly)}}/{{keys.Select((_, i) => $"${{window.encodeURI(`${{key{i}}}`)}}").Join("/")}}`)
                         } else {
                           const queryString = overwrite
                             ? `?${new URLSearchParams({ {{EDIT_MODE_INITVALUE}}: JSON.stringify(obj) }).toString()}`
                             : ''
-                          navigate(`{{editView.GetUrl()}}/{{keys.Select((_, i) => $"${{window.encodeURI(`${{key{i}}}`)}}").Join("/")}}${queryString}`)
+                          navigate(`{{GetUrl(E_Type.Edit)}}/{{keys.Select((_, i) => $"${{window.encodeURI(`${{key{i}}}`)}}").Join("/")}}${queryString}`)
                         }
                       }, [navigate])
                     }

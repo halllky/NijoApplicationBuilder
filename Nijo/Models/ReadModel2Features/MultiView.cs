@@ -36,8 +36,7 @@ namespace Nijo.Models.ReadModel2Features {
                 var searchCondition = new SearchCondition(_aggregate);
                 var searchResult = new DataClassForDisplay(_aggregate);
                 var loadMethod = new LoadMethod(_aggregate);
-                var createView = new SingleView(_aggregate, SingleView.E_Type.New);
-                var detailView = new SingleView(_aggregate, SingleView.E_Type.ReadOnly);
+                var singleView = new SingleView(_aggregate);
 
                 const string TO_DETAIL_VIEW = "navigateToSingleView";
 
@@ -139,8 +138,8 @@ namespace Nijo.Models.ReadModel2Features {
                       })
 
                       // 画面遷移
-                      const {{TO_DETAIL_VIEW}} = Util.{{detailView.NavigateFnName}}()
-                      const navigateToCreateView = Util.{{createView.NavigateFnName}}()
+                      const {{TO_DETAIL_VIEW}} = Util.{{singleView.GetNavigateFnName(SingleView.E_Type.ReadOnly)}}()
+                      const navigateToCreateView = Util.{{singleView.GetNavigateFnName(SingleView.E_Type.New)}}()
                       const onClickCreateViewLink = useEvent(() => navigateToCreateView())
 
                       // カスタマイズ
