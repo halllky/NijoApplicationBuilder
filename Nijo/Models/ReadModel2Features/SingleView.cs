@@ -77,6 +77,7 @@ namespace Nijo.Models.ReadModel2Features {
         public string? LabelInMenu => null;
 
         internal string FrameHookName => $"use{_aggregate.Item.PhysicalName}SingleViewFrame";
+
         /// <summary>
         /// 画面表示時のデータの読み込み、保存ボタン押下時の保存処理、ページの枠、をやってくれるフック
         /// </summary>
@@ -230,28 +231,26 @@ namespace Nijo.Models.ReadModel2Features {
                     footer?: React.ReactNode
                   }) => {
                     return (
-                      <ReactHookForm.FormProvider {...reactHookFormMethods}>
-                        <Layout.PageFrame
-                          nowLoading={loadState === undefined || loadState === 'loading'}
-                          header={<>
-                            <Layout.PageTitle>
-                              {{_aggregate.Item.DisplayName}}&nbsp;{displayName}
-                            </Layout.PageTitle>
-                            <div className="flex-1"></div>
-                            {header}
-                          </>}
-                          footer={footer}
-                        >
-                          {loadState === 'ready' && (
-                            children
-                          )}
-                          {loadState === 'error' && (
-                            <div className="m-auto h-full flex justify-center items-center">
-                              <Input.IconButton onClick={reload} fill>再読み込み</Input.IconButton>
-                            </div>
-                          )}
-                        </Layout.PageFrame>
-                      </ReactHookForm.FormProvider>
+                      <Layout.PageFrame
+                        nowLoading={loadState === undefined || loadState === 'loading'}
+                        header={<>
+                          <Layout.PageTitle>
+                            {{_aggregate.Item.DisplayName}}&nbsp;{displayName}
+                          </Layout.PageTitle>
+                          <div className="flex-1"></div>
+                          {header}
+                        </>}
+                        footer={footer}
+                      >
+                        {loadState === 'ready' && (
+                          children
+                        )}
+                        {loadState === 'error' && (
+                          <div className="m-auto h-full flex justify-center items-center">
+                            <Input.IconButton onClick={reload} fill>再読み込み</Input.IconButton>
+                          </div>
+                        )}
+                      </Layout.PageFrame>
                     )
                   }
 
@@ -283,6 +282,11 @@ namespace Nijo.Models.ReadModel2Features {
         /// 画面初期値にそれが入った状態になる。JSONパースに失敗した場合は警告
         /// </summary>
         private const string EDIT_MODE_INITVALUE = "init";
+
+        /// <summary>
+        /// ページ全体の状態をコンポーネント間で状態を受け渡すのに使うReactコンテキスト
+        /// </summary>
+        internal const string PAGE_CONTEXT = "PageContext";
 
         public SourceFile GetSourceFile() => new SourceFile {
             FileName = "single-view.tsx",
@@ -327,8 +331,14 @@ namespace Nijo.Models.ReadModel2Features {
 
                     const VForm2 = Layout.VForm2
 
+                    // ページ全体の状態をコンポーネント間で状態を受け渡すのに使うコンテキスト
+                    const {{PAGE_CONTEXT}} = createContext({} as ReturnType<typeof AggregateHook.{{FrameHookName}}>)
+
+                    /** {{_aggregate.Item.DisplayName}}詳細画面 */
                     export default function () {
-                      const { SingleViewPageFrame, reactHookFormMethods, loadState, mode, save } = AggregateHook.{{FrameHookName}}()
+                      // 表示データ
+                      const pageState = AggregateHook.{{FrameHookName}}()
+                      const { SingleViewPageFrame, reactHookFormMethods, loadState, mode, save } = pageState
                       const { register, registerEx, getValues, setValue, setError, reset, formState: { defaultValues }, control } = reactHookFormMethods
 
                       // 編集画面への遷移
@@ -348,13 +358,15 @@ namespace Nijo.Models.ReadModel2Features {
                             )}
                           </>}
                         >
-                          {{WithIndent(rootAggregateComponent.RenderCaller(), "      ")}}
+                          <{{PAGE_CONTEXT}}.Provider value={pageState}>
+                            {{WithIndent(rootAggregateComponent.RenderCaller(), "        ")}}
+                          </{{PAGE_CONTEXT}}.Provider>
                         </SingleViewPageFrame>
                       )
                     }
                     {{rootAggregateComponent.EnumerateThisAndDescendantsRecursively().SelectTextTemplate(component => $$"""
 
-                    {{component.RenderDeclaring(ctx, _type == E_Type.ReadOnly)}}
+                    {{component.RenderDeclaring(ctx)}}
                     """)}}
                     """;
             },
