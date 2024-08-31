@@ -31,7 +31,7 @@ namespace Nijo.Models.ReadModel2Features {
         private const string URL_SORT = "s";
 
         public SourceFile GetSourceFile() => new SourceFile {
-            FileName = "list.tsx",
+            FileName = "multi-view.tsx",
             RenderContent = context => {
                 var searchCondition = new SearchCondition(_aggregate);
                 var searchResult = new DataClassForDisplay(_aggregate);
