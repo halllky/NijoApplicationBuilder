@@ -4,7 +4,8 @@ const DEFAULT_INDENT_SIZE = '1.5rem'
 const DEFAULT_LABEL_WIDTH = '8rem'
 
 
-const Root = ({ estimatedLabelWidth, indentSize, maxDepth, children }: {
+const Root = ({ label, estimatedLabelWidth, indentSize, maxDepth, children }: {
+  label?: React.ReactNode
   /** フォーム内のラベルの横幅のうち最も大きいもの */
   estimatedLabelWidth?: string
   /** 子孫要素の部分のインデントの大きさ */
@@ -28,6 +29,11 @@ const Root = ({ estimatedLabelWidth, indentSize, maxDepth, children }: {
   return (
     <div style={rootStyle}>
       <div className="grid gap-px w-full h-full vform-template-column border-vform bg-color-2">
+        {label && (
+          <div className="px-1 col-span-full select-none">
+            {renderLabel(label)}&nbsp;
+          </div>
+        )}
         {children}
       </div>
     </div>

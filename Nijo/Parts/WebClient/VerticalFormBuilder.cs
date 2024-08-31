@@ -20,10 +20,11 @@ namespace Nijo.Parts.WebClient {
         /// VForm2.Indent としてレンダリングする場合は <see cref="VerticalFormSection.Render(CodeRenderingContext)"/> を使用のこと。
         /// </summary>
         /// <param name="context"></param>
+        /// <param name="label">ラベル</param>
         /// <param name="maxDepth">インデントの最大の深さ。未指定の場合は自動計算される。</param>
         /// <param name="estimatedLabelWidthRem">ラベル列の横幅。単位はCSSのrem。基本的にはそのフォーム中で登場する最も長い項目名の文字数</param>
         /// <returns></returns>
-        public string RenderAsRoot(CodeRenderingContext context, int? maxDepth, decimal? estimatedLabelWidthRem) {
+        public string RenderAsRoot(CodeRenderingContext context, string? label, int? maxDepth, decimal? estimatedLabelWidthRem) {
             var attrs = new List<string>();
 
             // 深さ未指定の場合は自動計算

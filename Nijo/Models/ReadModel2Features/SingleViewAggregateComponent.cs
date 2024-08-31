@@ -266,7 +266,7 @@ namespace Nijo.Models.ReadModel2Features {
                   return (
                     <div className="p-px">
                       <Input.ErrorMessage name="root" errors={errors} />
-                      {{WithIndent(vForm.RenderAsRoot(context, maxDepth, _aggregate.Item.Options.EstimatedLabelWidth), "      ")}}
+                      {{WithIndent(vForm.RenderAsRoot(context, null, maxDepth, _aggregate.Item.Options.EstimatedLabelWidth), "      ")}}
                     </div>
                   )
                 }
