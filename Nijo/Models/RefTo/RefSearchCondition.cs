@@ -62,6 +62,10 @@ namespace Nijo.Models.RefTo {
             }
         }
 
+        protected override IEnumerable<string> GetFullPathForRefRHFRegisterName(AggregateMember.Ref @ref) {
+            return @ref.GetFullPathAsRefSearchConditionFilter(E_CsTs.TypeScript);
+        }
+
 
         internal const string PARENT = "PARENT";
 
@@ -86,6 +90,7 @@ namespace Nijo.Models.RefTo {
             internal override string TsFilterTypeName => _asRSC.TsFilterTypeName;
             protected override bool IsSearchConditionEntry => _asRSC.IsSearchConditionEntry;
             internal override IEnumerable<RefDescendantSearchCondition> GetChildMembers() => _asRSC.GetChildMembers();
+            protected override IEnumerable<string> GetFullPathForRefRHFRegisterName(AggregateMember.Ref @ref) => _asRSC.GetFullPathForRefRHFRegisterName(@ref);
         }
     }
 
