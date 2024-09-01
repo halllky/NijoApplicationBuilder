@@ -56,7 +56,7 @@ namespace Nijo.IntegrationTest {
                         chcp 65001
                         cd %~dp0
                         dotnet build ..\Nijo
-                        ..\Nijo\bin\Debug\net8.0\nijo.exe update . --overwrite-overrided-application-service-file
+                        ..\Nijo\bin\Debug\net8.0\nijo.exe update . 
                         pause
                         """, new UTF8Encoding(false, false));
 
@@ -65,7 +65,14 @@ namespace Nijo.IntegrationTest {
                         chcp 65001
                         cd %~dp0
                         dotnet build ..\Nijo
-                        ..\Nijo\bin\Debug\net8.0\nijo.exe debug . --overwrite-overrided-application-service-file
+                        ..\Nijo\bin\Debug\net8.0\nijo.exe debug . 
+                        pause
+                        """, new UTF8Encoding(false, false));
+
+                    File.WriteAllText(Path.Combine(dir, "TSC.cmd"), $$"""
+                        @echo off
+                        cd %~dp0react
+                        call npm run tsc
                         pause
                         """, new UTF8Encoding(false, false));
                 }
@@ -74,13 +81,36 @@ namespace Nijo.IntegrationTest {
                     File.WriteAllText(Path.Combine(dir, "BUILD.command"), $$"""
                         cd `dirname $0`
                         dotnet build ../Nijo
-                        ../Nijo/bin/Debug/net8.0/nijo update . --overwrite-overrided-application-service-file
+                        ../Nijo/bin/Debug/net8.0/nijo update . 
                         """.Replace("\r\n", "\n"), new UTF8Encoding(false, false));
 
                     File.WriteAllText(Path.Combine(dir, "DEBUG.command"), $$"""
                         cd `dirname $0`
                         dotnet build ../Nijo
-                        ../Nijo/bin/Debug/net8.0/nijo debug . --overwrite-overrided-application-service-file
+                        ../Nijo/bin/Debug/net8.0/nijo debug . 
+                        """.Replace("\r\n", "\n"), new UTF8Encoding(false, false));
+
+                    File.WriteAllText(Path.Combine(dir, "TSC.command"), $$"""
+                        cd `dirname $0`
+                        cd react
+                        npm run tsc
+                        """.Replace("\r\n", "\n"), new UTF8Encoding(false, false));
+                }
+
+                // Visual Studio Code 用設定
+                var vscode = Path.Combine(dir, ".vscode");
+                var settingsJson = Path.Combine(vscode, "settings.json");
+                if (!Directory.Exists(vscode)) {
+                    Directory.CreateDirectory(vscode);
+                }
+                if (!File.Exists(settingsJson)) {
+                    File.WriteAllText(settingsJson, $$"""
+                        {
+                          "workbench.colorCustomizations": {
+                            "titleBar.activeBackground": "#c17838",
+                            "titleBar.activeForeground": "#000000"
+                          }
+                        }
                         """.Replace("\r\n", "\n"), new UTF8Encoding(false, false));
                 }
             }
